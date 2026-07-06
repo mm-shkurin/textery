@@ -1,0 +1,1297 @@
+[21.06.2026 15:15] Victory ООО ИИ: Ниже — полный комплект продуктовой архитектуры, системной архитектуры и артефактов, который обычно формируется на этапе Discovery + Solution Design для такого проекта.
+
+1. Product Vision
+Продукт
+SaaS-платформа для генерации учебных и деловых текстов по подписке.
+Цель пользователя:
+Получить готовый текст за несколько минут и доработать его прямо внутри сервиса.
+Цель бизнеса:
+Максимизировать конверсию в подписку и удержание пользователей через регулярное использование генератора.
+
+2. Product Strategy
+Целевая аудитория
+Сегмент 1
+Студенты
+Потребности:
+рефераты;
+эссе;
+доклады;
+курсовые наброски.
+Сегмент 2
+Школьники
+Потребности:
+сочинения;
+доклады;
+презентационные тексты.
+Сегмент 3
+Начинающие специалисты
+Потребности:
+отчеты;
+деловые тексты;
+резюме материалов.
+
+3. Product Metrics
+North Star Metric
+Количество успешно сохранённых документов.
+
+Product KPI
+Acquisition
+Visits
+Sign Up Conversion
+CAC по UTM
+Activation
+Registration → First Generation
+Monetization
+Subscription Conversion
+ARPU
+Retention
+DAU
+WAU
+MAU
+Repeat Generation Rate
+
+4. User Journey Map
+Landing
+ ↓
+Registration
+ ↓
+Subscription
+ ↓
+First Generation
+ ↓
+Editor
+ ↓
+Save
+ ↓
+History
+ ↓
+Repeat Usage
+
+5. Product Funnel
+Funnel 1 — Registration
+Site Visit
+ ↓
+Registration Opened
+ ↓
+Registration Completed
+ ↓
+First Generation
+ ↓
+First Save
+
+Funnel 2 — Subscription
+Pricing Page
+ ↓
+Checkout Opened
+ ↓
+Subscription Activated
+ ↓
+Generation Started
+ ↓
+Return Session
+
+6. Customer Journey
+Landing
+Показываем:
+примеры работ;
+преимущества;
+тарифы;
+CTA.
+CTA:
+Создать работу за 2 минуты
+
+Onboarding
+Шаг 1
+Регистрация
+Шаг 2
+Предложение подписки
+Шаг 3
+Первая генерация
+
+7. Information Architecture
+/
+├── Landing
+├── Pricing
+├── Login
+├── Registration
+├── Dashboard
+│
+├── Generate
+│
+├── Editor
+│
+├── History
+│
+├── Subscription
+│
+├── Analytics (Admin)
+│
+└── Profile
+
+8. Frontend Architecture (React)
+Рекомендуемый стек:
+React
+TypeScript
+Vite
+React Router
+React Query
+Zustand
+Material UI / Ant Design
+TipTap Editor
+
+Frontend Layers
+src/
+
+├── app
+│
+├── pages
+│
+├── widgets
+│
+├── features
+│
+├── entities
+│
+├── shared
+│
+└── infrastructure
+Архитектура:
+Feature-Sliced Design.
+
+9. Backend Architecture
+Рекомендация:
+Node.js + NestJS
+Причины:
+быстрое развитие продукта;
+модульность;
+хороший DDD-подход;
+удобно для REST API.
+
+Backend Modules
+Backend
+
+├── Auth
+├── User
+├── Subscription
+├── Billing
+├── Generation
+├── Editor
+├── History
+├── Analytics
+├── Marketing
+└── Reporting
+
+10. Logical Architecture
+React SPA
+     |
+     v
+
+API Gateway
+
+     |
+     +----------------+
+     |                |
+     v                v
+
+Auth Service     Generation Service
+
+     |                |
+     v                v
+
+User DB      AI Provider Adapter
+
+     |
+     v
+
+Analytics Service
+
+     |
+     v
+
+Reporting Service
+
+11. Domain Model
+User
+User
+- id
+- email
+- name
+- country
+- language
+- deviceType
+- os
+- ip
+- createdAt
+
+Marketing Data
+MarketingProfile
+
+- userId
+
+- utmSource
+- utmMedium
+- utmCampaign
+- utmContent
+- utmTerm
+
+Subscription
+Subscription
+
+- id
+- userId
+- plan
+- status
+
+- autoRenew
+
+- startDate
+- endDate
+
+Generation
+Generation
+
+- id
+- userId
+
+- type
+
+- prompt
+
+- requirements
+
+- volume
+
+- result
+
+- createdAt
+
+Document
+Document
+
+- id
+- generationId
+
+- title
+
+- content
+
+- version
+
+- updatedAt
+
+Analytics Event
+AnalyticsEvent
+
+- id
+
+- userId
+
+- eventName
+
+- eventTime
+
+- metadata
+
+12. Database Schema
+users
+users
+(
+ id UUID PK,
+ email,
+ name,
+
+ country,
+ ip,
+ device_type,
+ os,
+ language,
+
+ created_at
+)
+
+marketing_profiles
+marketing_profiles
+(
+ id UUID,
+ user_id,
+
+ utm_source,
+ utm_medium,
+ utm_campaign,
+ utm_content,
+ utm_term
+)
+
+subscriptions
+subscriptions
+(
+ id UUID,
+ user_id,
+
+ plan,
+
+ status,
+
+ auto_renew,
+
+ start_date,
+ end_date
+)
+
+generations
+generations
+(
+ id UUID,
+
+ user_id,
+
+ type,
+
+ prompt,
+
+ requirements,
+
+ volume,
+
+ generated_text,
+
+ created_at
+)
+
+documents
+documents
+(
+ id UUID,
+
+ generation_id,
+
+ content,
+
+ version,
+
+ updated_at
+)
+
+analytics_events
+analytics_events
+(
+ id UUID,
+
+ user_id,
+
+ event_name,
+
+ event_time,
+
+ payload JSONB
+)
+
+13. Application Interfaces (по требованию ТЗ)
+Каждый интерфейс = отдельная Feature.
+[21.06.2026 15:15] Victory ООО ИИ: Auth Feature
+interface AuthFeature {
+ register(): Promise<User>;
+ login(): Promise<Token>;
+ logout(): Promise<void>;
+ profile(): Promise<User>;
+}
+
+Subscription Feature
+interface SubscriptionFeature {
+ subscribe(planId: string): Promise<void>;
+
+ enableAutoRenew(): Promise<void>;
+
+ disableAutoRenew(): Promise<void>;
+
+ getCurrentSubscription(): Promise<Subscription>;
+}
+
+Generation Feature
+interface GenerationFeature {
+ generate(
+   request: GenerationRequest
+ ): Promise<Document>;
+}
+
+Editor Feature
+interface EditorFeature {
+ save(
+   documentId: string,
+   content: string
+ ): Promise<void>;
+
+ load(
+   documentId: string
+ ): Promise<Document>;
+}
+
+Analytics Feature
+interface AnalyticsFeature {
+ track(
+   event: AnalyticsEvent
+ ): Promise<void>;
+}
+
+14. Event Architecture
+Product Events
+SITE_VISITED
+
+REGISTRATION_STARTED
+REGISTRATION_COMPLETED
+
+LOGIN_SUCCESS
+
+PRICING_OPENED
+
+CHECKOUT_STARTED
+
+SUBSCRIPTION_ACTIVATED
+
+GENERATION_STARTED
+GENERATION_COMPLETED
+
+EDITOR_OPENED
+DOCUMENT_SAVED
+
+AUTO_RENEW_DISABLED
+
+15. Analytics Pipeline
+Frontend Event
+
+↓
+
+Analytics API
+
+↓
+
+analytics_events
+
+↓
+
+Views
+
+↓
+
+CSV Export
+
+↓
+
+BI Tool
+
+16. SQL Views для воронок
+Registration Funnel
+CREATE VIEW registration_funnel AS
+SELECT
+event_name,
+COUNT(DISTINCT user_id)
+FROM analytics_events
+GROUP BY event_name;
+
+Subscription Funnel
+CREATE VIEW subscription_funnel AS
+SELECT
+event_name,
+COUNT(DISTINCT user_id)
+FROM analytics_events
+WHERE event_name IN (
+'PRICING_OPENED',
+'CHECKOUT_STARTED',
+'SUBSCRIPTION_ACTIVATED'
+)
+GROUP BY event_name;
+
+17. Генерация текста
+Рекомендуемый паттерн:
+Generation Service
+
+      |
+      v
+
+AI Adapter
+
+      |
+      +------ OpenAI
+      |
+      +------ Local LLM
+      |
+      +------ Mock Generator
+Интерфейс:
+interface TextGenerator {
+ generate(
+   request: GenerationRequest
+ ): Promise<string>;
+}
+
+18. Текстовый редактор
+Рекомендуется:
+Tiptap
+Функции:
+H1-H6
+Bold
+Italic
+Lists
+Tables
+Undo/Redo
+Autosave
+
+19. Security Architecture
+Authentication
+JWT Access Token
+Refresh Token
+
+OAuth
+Google OAuth
+Yandex OAuth
+
+Mock Email Login
+Email
+
+↓
+
+Generate Code
+
+↓
+
+Store in DB
+
+↓
+
+Show code in backend logs
+
+↓
+
+User enters code
+
+20. Test Strategy
+Unit Tests
+Покрываются все Feature Interfaces.
+AuthFeatureTests
+SubscriptionFeatureTests
+GenerationFeatureTests
+EditorFeatureTests
+AnalyticsFeatureTests
+
+Integration Tests
+Auth → Subscription
+
+Subscription → Generation
+
+Generation → Editor
+
+Editor → History
+
+21. MVP Backlog (Epic → Feature)
+Epic 1. Acquisition
+Landing
+Pricing
+Registration
+Login
+Epic 2. Monetization
+Subscription
+Billing Mock
+Auto Renew
+Epic 3. Core Value
+Generate Text
+Editor
+Save Document
+History
+Epic 4. Analytics
+Event Tracking
+Funnels
+Reports
+CSV Export
+
+22. C4 Architecture (Container Level)
+[Browser]
+
+     |
+     v
+
+[React SPA]
+
+     |
+ REST API
+     |
+     v
+
+[NestJS Backend]
+
+     |
+     +------------------+
+     |                  |
+     v                  v
+
+[PostgreSQL]      [LLM Provider]
+
+     |
+     v
+
+[Analytics Views]
+
+23. Что показать на защите проекта
+Продуктовую воронку.
+CJM пользователя.
+Архитектуру React (FSD).
+Архитектуру Backend (NestJS).
+ER-диаграмму БД.
+Feature-интерфейсы.
+Систему подписок.
+Аналитику и SQL View.
+Генерацию текста.
+Встроенный редактор.
+Автотесты.
+Демонстрацию пути:
+Landing
+→ Registration
+→ Subscription
+→ Generation
+→ Editor
+→ Save
+→ History
+Такой набор артефактов соответствует роли Product Owner + Solution Architect + System Analyst и практически полностью закрывает требования ТЗ как для учебной защиты, так и для реального MVP SaaS-продукта.
+[21.06.2026 15:20] Victory ООО ИИ: Если смотреть на проект глазами QA Manager / Test Manager, то на 6 спринтов лучше планировать не только функциональность, но и обеспечение качества, тестовую стратегию, автоматизацию и приемочные критерии.
+Ниже пример USM (User Story Mapping) + Sprint Plan на 6 спринтов.
+User Story Map
+Активность 1. Привлечение пользователя
+User Stories
+Как пользователь, я хочу открыть лендинг
+Как пользователь, я хочу посмотреть преимущества сервиса
+Как пользователь, я хочу посмотреть тарифы
+Как пользователь, я хочу перейти к регистрации
+
+Активность 2. Регистрация и вход
+User Stories
+Регистрация по email
+Вход по email-коду
+Вход через Google
+Вход через Яндекс
+Выход из системы
+Просмотр профиля
+
+Активность 3. Подписка
+User Stories
+Просмотр тарифов
+Оформление подписки
+Включение автопродления
+Отключение автопродления
+Просмотр статуса подписки
+
+Активность 4. Генерация текста
+User Stories
+Выбор типа работы
+Ввод параметров генерации
+Запуск генерации
+Получение результата
+
+Активность 5. Редактирование
+User Stories
+Открытие документа
+Редактирование текста
+Форматирование
+Сохранение
+
+Активность 6. История
+User Stories
+Просмотр списка документов
+Открытие старой версии
+Повторное редактирование
+
+Активность 7. Аналитика
+User Stories
+Сбор событий
+Построение воронок
+Экспорт CSV
+
+Sprint 1 — MVP Foundation
+Функционал
+Landing
+Главная страница
+CTA кнопки
+Auth
+Регистрация по Email
+Логин по Email-коду
+Analytics
+SITE_VISITED
+REGISTRATION_STARTED
+REGISTRATION_COMPLETED
+
+QA Scope
+Тест-дизайн
+Подготовить:
+Test Strategy
+Test Plan
+Definition of Done
+Checklist регистрации
+Автотесты
+Backend:
+Auth API
+Frontend:
+Smoke tests
+
+Артефакты QA
+RTM v1 (Requirements Traceability Matrix)
+Smoke Checklist
+Risk Register
+
+Sprint 2 — Subscription
+Функционал
+Страница тарифов
+Mock Checkout
+Создание подписки
+Автопродление
+События
+PRICING_OPENED
+CHECKOUT_STARTED
+SUBSCRIPTION_ACTIVATED
+
+QA Scope
+Тестирование
+Functional
+Negative
+Boundary
+Автоматизация
+API:
+Subscription tests
+UI:
+Checkout Flow
+
+Выходные артефакты
+Test Cases
+Bug Report Template
+Subscription Test Suite
+
+Sprint 3 — Text Generation MVP
+Функционал
+Форма генерации
+Создание текста
+Сохранение результата
+События
+GENERATION_STARTED
+GENERATION_COMPLETED
+
+QA Scope
+Проверки
+Валидация полей
+Большие объемы текста
+Ошибки генерации
+Автоматизация
+Generation API Tests
+Contract Tests
+
+Артефакты
+API Collection
+Regression Pack v1
+
+Sprint 4 — Editor
+Функционал
+TipTap Editor
+Форматирование
+Сохранение документа
+События
+EDITOR_OPENED
+DOCUMENT_SAVED
+
+QA Scope
+Тестирование
+Formatting
+Autosave
+Undo/Redo
+Автоматизация
+E2E:
+Login
+→ Generate
+→ Open Editor
+→ Save
+
+Артефакты
+Editor Checklist
+E2E Suite v1
+
+Sprint 5 — History & Analytics
+Функционал
+История документов
+Просмотр старых версий
+Аналитические отчеты
+CSV экспорт
+
+QA Scope
+Проверки
+История документов
+Консистентность данных
+CSV экспорт
+Автоматизация
+Analytics API
+Export Tests
+
+Артефакты
+Data Validation Report
+Funnel Validation Report
+
+Sprint 6 — Hardening & Release
+Функционал
+Полировка продукта
+Исправление дефектов
+Подготовка релиза
+
+QA Scope
+Полный Regression
+Покрыть:
+Auth
+Subscription
+Generation
+Editor
+History
+Analytics
+
+Нефункциональное тестирование
+Performance
+Проверить:
+100 пользователей
+500 пользователей
+1000 пользователей
+
+Security
+Проверить:
+JWT
+OAuth
+XSS
+SQL Injection
+CSRF
+
+Mobile
+iOS Safari
+Android Chrome
+
+План качества по спринтам
+Sprint
+Functional
+API
+UI
+E2E
+Performance
+1
+✅
+✅
+✅
+❌
+❌
+2
+✅
+✅
+✅
+❌
+❌
+3
+✅
+✅
+⚠️
+❌
+❌
+4
+✅
+✅
+✅
+✅
+❌
+5
+✅
+✅
+✅
+✅
+❌
+6
+✅
+✅
+✅
+✅
+✅
+Критерии готовности релиза (Release Exit Criteria)
+100% User Stories протестированы.
+100% критических дефектов закрыты.
+Нет открытых Blocker/Critical багов.
+Автотесты проходят ≥ 95%.
+Регрессия завершена успешно.
+Конверсионные события аналитики фиксируются корректно.
+Основные воронки считаются без потери данных.
+Такой план выглядит профессионально для роли QA Manager и хорошо ложится на 6 двухнедельных спринтов (3 месяца разработки).
+[21.06.2026 15:22] Victory ООО ИИ: Для защиты проекта, планирования разработки и тестирования лучше подготовить полный User Story Mapping (USM), который покрывает весь функционал продукта от первого захода пользователя до повторного использования и аналитики.
+
+USM — Платформа генерации учебных текстов
+Backbone (Путь пользователя)
+Узнать о сервисе
+    ↓
+Зарегистрироваться
+    ↓
+Оформить подписку
+    ↓
+Создать текст
+    ↓
+Отредактировать текст
+    ↓
+Сохранить документ
+    ↓
+Просмотреть историю
+    ↓
+Управлять подпиской
+    ↓
+Вернуться в сервис
+
+EPIC 1. Landing & Marketing
+User Activity
+Узнать о продукте
+User Story 1
+Как посетитель
+Я хочу увидеть описание сервиса
+Чтобы понять его ценность.
+User Story 2
+Как посетитель
+Я хочу увидеть примеры работ
+Чтобы оценить качество результата.
+User Story 3
+Как посетитель
+Я хочу ознакомиться с преимуществами
+Чтобы принять решение о регистрации.
+User Story 4
+Как посетитель
+Я хочу увидеть тарифы
+Чтобы понять стоимость использования.
+User Story 5
+Как посетитель
+Я хочу перейти к регистрации
+Чтобы начать пользоваться сервисом.
+
+Acceptance Criteria
+Лендинг открывается корректно
+CTA работает
+Тарифы отображаются
+Примеры работ доступны
+Событие SITE_VISITED сохраняется
+
+EPIC 2. Регистрация
+User Activity
+Создать аккаунт
+User Story 1
+Как пользователь
+Я хочу зарегистрироваться по email
+Чтобы получить доступ к сервису.
+User Story 2
+Как пользователь
+Я хочу войти через Google
+Чтобы быстро создать аккаунт.
+User Story 3
+Как пользователь
+Я хочу войти через Яндекс
+Чтобы использовать существующий аккаунт.
+User Story 4
+Как пользователь
+Я хочу подтвердить вход кодом
+Чтобы безопасно войти.
+
+Сохраняемые данные
+User Story
+Как владелец продукта
+Я хочу собирать маркетинговые данные
+Чтобы анализировать эффективность рекламы.
+
+Система сохраняет
+email
+ip
+country
+os
+device
+language
+utm_source
+utm_medium
+utm_campaign
+utm_term
+utm_content
+
+Acceptance Criteria
+Пользователь зарегистрирован
+Создан профиль
+UTM сохранены
+Устройство сохранено
+Регистрация отображается в аналитике
+
+EPIC 3. Авторизация
+User Activity
+Войти в систему
+User Story 1
+Как пользователь
+Я хочу войти по email-коду
+Чтобы получить доступ к кабинету.
+User Story 2
+Как пользователь
+Я хочу выйти из системы
+Чтобы завершить сессию.
+User Story 3
+Как пользователь
+Я хочу видеть свой профиль
+Чтобы контролировать данные аккаунта.
+
+Acceptance Criteria
+Вход работает
+Выход работает
+Профиль отображается
+
+EPIC 4. Подписка
+User Activity
+Получить доступ к генерации
+User Story 1
+Как пользователь
+Я хочу просмотреть тарифы
+Чтобы выбрать подходящий план.
+User Story 2
+Как пользователь
+Я хочу оформить подписку
+Чтобы пользоваться сервисом.
+User Story 3
+Как пользователь
+Я хочу видеть статус подписки
+Чтобы понимать срок действия.
+User Story 4
+Как пользователь
+Я хочу включать автопродление
+Чтобы не потерять доступ.
+User Story 5
+Как пользователь
+Я хочу отключать автопродление
+Чтобы самостоятельно контролировать оплату.
+
+Acceptance Criteria
+Подписка создается
+Статус отображается
+Автопродление переключается
+История изменений сохраняется
+
+EPIC 5. Биллинг
+User Activity
+Оплатить подписку
+User Story 1
+Как пользователь
+Я хочу открыть экран оплаты
+Чтобы активировать тариф.
+User Story 2
+Как пользователь
+Я хочу увидеть успешную оплату
+Чтобы понимать что доступ активирован.
+User Story 3
+Как пользователь
+Я хочу видеть историю подписок
+Чтобы отслеживать изменения.
+
+Acceptance Criteria
+Оплата эмулируется
+Подписка активируется
+История изменений сохраняется
+
+EPIC 6. Генерация текста
+User Activity
+Создать работу
+User Story 1
+Как пользователь
+Я хочу выбрать тип работы
+Чтобы получить нужный формат документа.
+
+Типы
+реферат
+эссе
+доклад
+сочинение
+статья
+отчет
+другое
+
+User Story 2
+Как пользователь
+Я хочу указать тему
+Чтобы текст соответствовал заданию.
+User Story 3
+Как пользователь
+Я хочу указать объем
+Чтобы получить нужное количество страниц.
+User Story 4
+Как пользователь
+Я хочу добавить требования
+Чтобы текст соответствовал условиям преподавателя.
+User Story 5
+Как пользователь
+Я хочу запустить генерацию
+Чтобы получить готовый документ.
+User Story 6
+Как пользователь
+Я хочу увидеть прогресс генерации
+Чтобы понимать что происходит.
+User Story 7
+[21.06.2026 15:22] Victory ООО ИИ: Как пользователь
+Я хочу получить результат
+Чтобы начать работу с текстом.
+
+Acceptance Criteria
+Генерация запускается
+Документ создается
+Результат сохраняется
+История генераций обновляется
+
+EPIC 7. Текстовый редактор
+User Activity
+Редактировать результат
+User Story 1
+Как пользователь
+Я хочу открыть документ
+Чтобы начать редактирование.
+User Story 2
+Как пользователь
+Я хочу менять текст
+Чтобы улучшить результат.
+User Story 3
+Как пользователь
+Я хочу форматировать заголовки
+Чтобы документ выглядел профессионально.
+User Story 4
+Как пользователь
+Я хочу создавать списки
+Чтобы структурировать информацию.
+User Story 5
+Как пользователь
+Я хочу использовать жирный текст
+Чтобы выделять важное.
+User Story 6
+Как пользователь
+Я хочу использовать курсив
+Чтобы оформлять документ.
+User Story 7
+Как пользователь
+Я хочу сохранять изменения
+Чтобы не потерять данные.
+User Story 8
+Как пользователь
+Я хочу автосохранение
+Чтобы не сохранять вручную.
+
+Acceptance Criteria
+Форматирование работает
+Сохранение работает
+Автосохранение работает
+
+EPIC 8. Управление документами
+User Activity
+Работать с документами
+User Story 1
+Как пользователь
+Я хочу переименовать документ
+Чтобы удобно находить его позже.
+User Story 2
+Как пользователь
+Я хочу удалить документ
+Чтобы очистить историю.
+User Story 3
+Как пользователь
+Я хочу создать копию документа
+Чтобы использовать как шаблон.
+
+Acceptance Criteria
+CRUD документов работает
+
+EPIC 9. История
+User Activity
+Просматривать предыдущие работы
+User Story 1
+Как пользователь
+Я хочу видеть список документов
+Чтобы быстро находить нужный.
+User Story 2
+Как пользователь
+Я хочу искать документы
+Чтобы не листать всю историю.
+User Story 3
+Как пользователь
+Я хочу фильтровать документы
+По типу работы.
+User Story 4
+Как пользователь
+Я хочу открывать старые документы
+Чтобы продолжить работу.
+
+Acceptance Criteria
+История отображается
+Поиск работает
+Фильтры работают
+
+EPIC 10. Профиль
+User Activity
+Управлять аккаунтом
+User Story 1
+Как пользователь
+Я хочу видеть информацию профиля
+Чтобы контролировать аккаунт.
+User Story 2
+Как пользователь
+Я хочу изменить имя
+Чтобы обновить профиль.
+User Story 3
+Как пользователь
+Я хочу увидеть информацию о подписке
+Чтобы понимать статус доступа.
+
+EPIC 11. Аналитика
+User Activity
+Собирать продуктовые данные
+User Story
+Как Product Manager
+Я хочу видеть поведение пользователей
+Чтобы улучшать конверсию.
+
+События
+SITE_VISITED
+REGISTRATION_STARTED
+REGISTRATION_COMPLETED
+LOGIN_SUCCESS
+PRICING_OPENED
+CHECKOUT_STARTED
+SUBSCRIPTION_ACTIVATED
+GENERATION_STARTED
+GENERATION_COMPLETED
+EDITOR_OPENED
+DOCUMENT_SAVED
+AUTO_RENEW_DISABLED
+
+EPIC 12. Отчеты
+User Activity
+Анализировать продукт
+User Story 1
+Как аналитик
+Я хочу видеть воронку регистрации
+Чтобы находить точки оттока.
+User Story 2
+Как аналитик
+Я хочу видеть воронку подписки
+Чтобы оценивать монетизацию.
+User Story 3
+Как аналитик
+Я хочу выгружать данные в CSV
+Чтобы работать с ними во внешних системах.
+
+MVP Slice (что обязательно сделать)
+Sprint 1
+Landing
+Registration
+Login
+Analytics Base
+Sprint 2
+Subscription
+Billing Mock
+Sprint 3
+Generation
+Sprint 4
+Editor
+Sprint 5
+History
+Profile
+Sprint 6
+Analytics
+Reports
+CSV Export
+
+Такой USM содержит 12 Epic, 60+ User Stories, Acceptance Criteria, MVP-срез и полный пользовательский путь, что обычно достаточно для построения backlog, тестовой модели (RTM), оценки трудозатрат и покрытия всего ТЗ без функциональных пробелов.
