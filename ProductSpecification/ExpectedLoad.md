@@ -1,11 +1,9 @@
 # Expected Load
 
-<!-- Define the expected scale. Examples:
-- Single-user or multi-tenant?
-- How many concurrent users?
-- Data volume limits?
-- Request rate expectations?
--->
-
-- [user model, e.g., "Single-user application" or "Multi-tenant SaaS"]
-- [data volume constraint, e.g., "No more than 10,000 records per tenant"]
+- Multi-tenant SaaS — many independent users, not single-user.
+- Target: hundreds of concurrent users (not just a small demo stand) — confirmed with
+  the user 2026-07-06.
+- Consequence for architecture: text generation must be async/queued (background task +
+  polling or websocket/status endpoint), not a synchronous request held open for the
+  duration of an LLM call. DB access needs connection pooling sized for that concurrency.
+- Data volume: not yet bounded — revisit once generation/history story specs land.

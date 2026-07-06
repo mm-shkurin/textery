@@ -12,6 +12,20 @@ open before the first story can start.
 - **Methodology:** strict TDD/ATDD via `/continue` — see
   [steerings/development-conventions.md](../steerings/development-conventions.md).
 
+- **Generation engine:** external LLM API (Anthropic Claude) — real generation calls,
+  not templates or a local model. Product is literally branded "Textery AI".
+- **Concurrency model:** hundreds of concurrent users expected (see
+  `ProductSpecification/ExpectedLoad.md`) → text generation must be async/queued
+  (background task + status polling or similar), never a request held open for the
+  duration of an LLM call.
+- **Auth:** email+password with a mocked email verification code (no real mail
+  integration) + Yandex ID OAuth + VK ID OAuth. **No Google** anywhere in this project —
+  the reference architecture doc's Google OAuth suggestion does not apply here.
+- **Subscriptions:** 3 tariffs, differing by AI model tier and monthly generation quota.
+  Billing fully mocked (no real payment provider).
+- **Document export:** Word + PDF generation from the editor's content — explicitly
+  lower priority than the rest of the flow.
+
 ## Open — must resolve before the `python-fastapi-hex` tech profile can be authored
 - ORM / persistence: SQLAlchemy vs raw asyncpg vs other?
 - Migrations tool: Alembic vs other?
@@ -19,6 +33,9 @@ open before the first story can start.
   (e.g. `dependency-injector`)?
 - Test runner / mocking: pytest + what mocking library (unittest.mock, pytest-mock)?
 - Coverage tool: coverage.py / pytest-cov?
+- Async task queue for generation: Celery / arq / FastAPI `BackgroundTasks` (too weak for
+  this scale) / other?
+- Docx/PDF generation library (python-docx + a PDF renderer, or a different approach)?
 
 Once these are answered, `.claude/tech/python-fastapi-hex/` (coding.md, tdd.md,
 infrastructure.md, templates/) gets written, and
@@ -26,5 +43,8 @@ infrastructure.md, templates/) gets written, and
 that file's current TODO markers.
 
 ## Entities / domain model
-None yet — no story has gone through `/interview` → `/story` yet
-(`ProductSpecification/stories.md` is still empty).
+Draft entities from the reference architecture doc (`.memory-bank/комплект продуктовой
+архитектуры.txt`): User, MarketingProfile, Subscription, Generation, Document,
+AnalyticsEvent. Not yet formalized as domain code — no story has gone through
+`/interview` → `/story` yet (`ProductSpecification/stories.md` now has a 12-story
+backlog, none started).
