@@ -19,5 +19,5 @@ class TestCreateGenerationAcceptance(AbstractBackendTest):
     async def test_should_reject_request_without_topic(self, generation_statements):
         response = await generation_statements.given_generation_request_submitted_without_topic()
 
-        generation_statements.assert_validation_error(response)
+        generation_statements.assert_missing_topic_error(response)
         generation_statements.assert_no_generation_created(response)

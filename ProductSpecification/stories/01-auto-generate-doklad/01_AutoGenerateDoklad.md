@@ -31,8 +31,11 @@ user retrieves the resulting document once ready.
   content.
 - A request with `document_type=доклад`, valid topic, and volume 1-10 completes
   end-to-end (worker calls a stub OpenRouter server in tests, the real one in prod).
-- Requests with missing topic or out-of-range volume are rejected with 422 before
-  anything is enqueued.
+- Requests with missing topic or out-of-range volume are rejected with 400 before
+  anything is enqueued (400 = field-level validation error; 422 is reserved for
+  unsupported `document_type` or server-owned-field overrides — see Validation Rules
+  below and `api-specs/generations_create.yaml`. Corrected 2026-07-07, matching the same
+  fix already made in `interview.md` — this line was missed the first time).
 - OpenRouter failures retry a bounded number of times, then the generation moves to
   `failed` — never stuck in `pending`/`in_progress` forever.
 - `GET /generations` returns all generations, regardless of origin (no auth binding yet).

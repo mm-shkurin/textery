@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import ClassVar, Optional
 
+from clients.application.dto.generation.generation_request_dto import CreateGenerationRequestDto
+
 
 @dataclass(frozen=True)
 class GenerationScope:
@@ -21,3 +23,12 @@ class GenerationScope:
     @classmethod
     def builder(cls, **overrides) -> "GenerationScope":
         return cls(**{**cls.DEFAULTS, **overrides})
+
+    def to_request_dto(self) -> CreateGenerationRequestDto:
+        return CreateGenerationRequestDto(
+            document_type=self.document_type,
+            topic=self.topic,
+            volume_pages=self.volume_pages,
+            requirements=self.requirements,
+            extra_wishes=self.extra_wishes,
+        )

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Optional
 
 
@@ -11,13 +11,4 @@ class CreateGenerationRequestDto:
     extra_wishes: Optional[str] = None
 
     def to_json(self) -> dict:
-        payload: dict = {"document_type": self.document_type}
-        if self.topic is not None:
-            payload["topic"] = self.topic
-        if self.volume_pages is not None:
-            payload["volume_pages"] = self.volume_pages
-        if self.requirements is not None:
-            payload["requirements"] = self.requirements
-        if self.extra_wishes is not None:
-            payload["extra_wishes"] = self.extra_wishes
-        return payload
+        return {key: value for key, value in asdict(self).items() if value is not None}

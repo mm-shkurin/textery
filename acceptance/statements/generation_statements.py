@@ -1,7 +1,6 @@
 from typing import ClassVar
 
 from clients.application.application_client import ApplicationClient
-from clients.application.dto.generation.generation_request_dto import CreateGenerationRequestDto
 from clients.application.dto.generation.generation_response_dto import GenerationResponseDto
 from statements.generation_scope import GenerationScope
 from statements.test_data import TestData
@@ -18,16 +17,10 @@ class GenerationStatements:
 
     async def given_generation_request_submitted_without_topic(self) -> GenerationResponseDto:
         scope = GenerationScope.builder(topic=None)
-        request = CreateGenerationRequestDto(
-            document_type=scope.document_type,
-            topic=scope.topic,
-            volume_pages=scope.volume_pages,
-            requirements=scope.requirements,
-            extra_wishes=scope.extra_wishes,
-        )
+        request = scope.to_request_dto()
         return await self._client.create_generation(request, TestData.unique_idempotency_key())
 
-    def assert_validation_error(self, response: GenerationResponseDto) -> None:
+    def assert_missing_topic_error(self, response: GenerationResponseDto) -> None:
         assert response.status_code == 400, (
             f"expected 400 Bad Request (missing-field validation error), got {response.status_code}"
         )
