@@ -7,7 +7,7 @@ these **P0** scenarios first, in this order — they're the walking skeleton tha
 the product actually work end-to-end and unblocks frontend integration. Branch:
 `features/story-1-auto-generate-doklad`, PR into `dev` once P0 is green and deployed.
 
-- [ ] **P0-1** — Backend 1.1: Reject request with missing topic (`red-acceptance` done, `design` in progress)
+- [ ] **P0-1** — Backend 1.1: Reject request with missing topic (`red-acceptance` + `design` done, see `decisions/request-validation-architecture-decision.md`; `red-usecase` next)
 - [ ] **P0-2** — Backend 1.2: Reject request with out-of-range volume
 - [ ] **P0-3** — Backend 2.1: Valid request is accepted and queued without waiting on the LLM call
 - [ ] **P0-4** — Backend 4.1: A pending generation reports its status without document content
@@ -31,8 +31,8 @@ otherwise pick.
 
 ### Scenario 1.1: Reject request with missing topic
 - [x] red-acceptance
-- [~] design
-- [ ] red-usecase
+- [x] design
+- [~] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance

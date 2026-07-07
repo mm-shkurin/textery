@@ -44,7 +44,7 @@ user retrieves the resulting document once ready.
 
 | Field | Rule |
 |-------|------|
-| topic | required, non-empty string |
+| topic | required, non-empty after trimming whitespace (rejects omitted/`null`/`""`/whitespace-only/invisible-char identically), max 300 chars |
 | volume_pages | required, integer, 1–10 |
 | requirements | optional string, max 2000 chars |
 | extra_wishes | optional string, max 2000 chars |
@@ -133,3 +133,8 @@ breadcrumb chip since it's chosen in an earlier modal), `05-chat-pending`,
   ASCII) — no single ratio calibrated on Latin text is assumed to hold for "доклад".
 - `arq` worker runs with a configured `max_jobs` concurrency ceiling (a floor exists now;
   the exact number is tuned during the load-test scenarios, not this story).
+- All request-field validation funnels through one domain factory (`Generation.create()`),
+  raising `ValidationException`; a centralized catch-all exception handler (registered
+  alongside the `ValidationException` handler) maps any *unhandled* exception to a generic
+  500 that never echoes `str(exception)` or a traceback — see
+  `decisions/request-validation-architecture-decision.md`.
