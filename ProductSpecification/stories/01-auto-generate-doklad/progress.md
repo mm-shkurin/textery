@@ -1,5 +1,25 @@
 # Story 1: Auto-generate: доклад — Progress
 
+## Priority for Sprint 1 (decided 2026-07-07 — see .memory-bank/tasks/sprint-plan.md)
+
+67 scenarios / 424 steps is far more than fits before Friday's deploy deadline. Work
+these **P0** scenarios first, in this order — they're the walking skeleton that makes
+the product actually work end-to-end and unblocks frontend integration. Branch:
+`features/story-1-auto-generate-doklad`, PR into `dev` once P0 is green and deployed.
+
+- [ ] **P0-1** — Backend 1.1: Reject request with missing topic (`red-acceptance` done, `design` in progress)
+- [ ] **P0-2** — Backend 1.2: Reject request with out-of-range volume
+- [ ] **P0-3** — Backend 2.1: Valid request is accepted and queued without waiting on the LLM call
+- [ ] **P0-4** — Backend 4.1: A pending generation reports its status without document content
+- [ ] **P0-5** — Backend 4.2: A completed generation includes the document content
+- [ ] **P0-6** — Integration 1.1: A successful provider call produces a completed document
+- [ ] **P0-7** — Integration 1.2: The requested volume converts to a pinned, tested prompt budget for Cyrillic text
+
+**Everything else below (60 scenarios) is explicitly deferred past this Friday** —
+retry policy, reconciliation sweep, load, most security/infra hardening. Do not work
+them before P0-1..7 are green and deployed, no matter what order `/continue` would
+otherwise pick.
+
 ## Spec
 - [x] interview
 - [x] story

@@ -5,6 +5,36 @@ plan derived from it, kept in sync with `ProductSpecification/stories.md`.
 
 ## Progress log
 
+### 2026-07-07 (sprint 1, day 2, later) — pace check: 67 scenarios / 424 steps, 1 done — P0 triage
+
+Checked `ProductSpecification/stories/01-auto-generate-doklad/progress.md`: 67 hazard-
+scanned scenarios × 6-8 TDD steps each = 424 total steps for story 1 alone. Only
+scenario 1.1's `red-acceptance` is done (`design` in progress) — roughly 1/424. At this
+granularity, finishing all 67 before Thursday is not realistic; it was never actually
+required — the Friday bar is "the demo works," not "every hazard-scanned edge case is
+green."
+
+**P0 (7 scenarios — the walking skeleton, must be green + deployed by Thursday):**
+Backend 1.1, 1.2, 2.1, 4.1, 4.2 + Integration 1.1, 1.2 — full list with rationale now
+lives in `progress.md`'s new "Priority for Sprint 1" section at the top (source of
+truth; don't duplicate scenario details here). This is the minimum that makes
+submit-topic → generated-доклад actually work end-to-end through a real deployed API.
+
+**Explicitly deferred past Friday:** the other 60 scenarios — retry policy,
+reconciliation sweep, load tests, most security/infra hardening. Real engineering
+value, not demo-visible, not worth the time this week.
+
+**Branching for this:** `features/story-1-auto-generate-doklad` off `dev`, one branch
+for the whole P0 push (not per-scenario — the new main/dev/features convention rewards
+feature-branch evidence in the code-quality audit, but per-TDD-step branching would be
+absurd overhead at this granularity), PR into `dev` once P0 is green and deployed.
+
+**Frontend unblocked in parallel, not serially:** the REST contract (`endpoints.md` +
+`ProductSpecification/api-specs/*.yaml`) is already finalized and won't change based on
+whether tests are green. Frontend can build the 18a-e screens against mocked responses
+matching that contract right now, and swap to the real backend once P0 lands — no need
+to wait.
+
 ### 2026-07-06 (sprint 1, day 1) — spec phase for story 1 complete, zero code written yet
 
 Two parallel sessions (backend, infra) ran the full pre-implementation pipeline. Nothing
