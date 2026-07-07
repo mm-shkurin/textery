@@ -14,8 +14,8 @@ and `progress.md` per story as the persistence mechanism across context resets.
 tech-profile:
   backend: python-fastapi-hex
   frontend: react-ts
-  css: TODO
-  browser-testing: TODO
+  css: plain-css
+  browser-testing: selenium
 
 ## Backend
 
@@ -45,11 +45,17 @@ tech-profile:
 
 ## CSS
 
-TODO — decide with the user when frontend work starts (tailwind vs plain-css).
+Plain CSS — decided 2026-07-07. The already-regenerated mockups
+(`ProductSpecification/stories/01-auto-generate-doklad/mockups/`) are hand-written CSS
+with custom properties (`:root { --bg-page: ...; --accent-gradient: ...; }`), not
+Tailwind utility classes — porting them 1:1 into the React app is faster than
+translating to Tailwind under this deadline. Revisit post-sprint-1 if the design system
+grows enough to want a utility framework.
 
 ## Browser Testing
 
-TODO — decide with the user when frontend work starts (playwright vs selenium vs cypress).
+Selenium — per tech-lead guidance 2026-07-07 (see `.memory-bank/tasks/known-debt.md`,
+now-closed #1).
 
 ## Testing (Backend)
 

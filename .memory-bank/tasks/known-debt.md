@@ -3,12 +3,10 @@
 Tracked deliberately instead of fixed now — each entry says what's deferred, why, and
 where it must resurface.
 
-## 1. CSS / browser-testing profile not chosen
-`ProductSpecification/technology.md` has `css: TODO` and `browser-testing: TODO`.
-Deferred because no story has reached its frontend phase yet.
-**Resurfaces:** the moment story 1 (auto-generate доклад) reaches `/mockups` or
-`/design-preview` for its frontend scenarios — decide tailwind vs plain-css and
-playwright vs selenium vs cypress then, not before.
+## 1. CSS / browser-testing profile — CLOSED 2026-07-07
+`ProductSpecification/technology.md` now has `css: plain-css` (matches the already-
+regenerated mockups' hand-written CSS) and `browser-testing: selenium` (tech-lead
+guidance). No longer open.
 
 ## 2. Story 7 must retrofit `userId` onto Generation/Document
 Stories 1–4 (auto-generate доклад/эссе/сочинение/реферат) build `Generation` and
@@ -63,3 +61,27 @@ happens it likely touches: the worker (publish incremental chunks, e.g. via Redi
 pub/sub, instead of one final write), a new streaming endpoint/transport, and the
 frontend's chat screen (incremental append instead of reveal-on-complete). Not story 1's
 problem today — tracked here so it isn't mistaken for "already good enough."
+
+## 6. Task queue stays `arq`, not Celery+Flower — against tech-lead notes
+Decided 2026-07-07: tech-lead meeting notes list "Flower" (Celery-only monitoring
+tool — doesn't work with `arq`). Kept `arq` anyway — story 1's backend spec already has
+Core Requirements written around `arq` specifics (job timeout margin, `max_jobs`
+ceiling, `burst=True` test mode) that a Celery switch would invalidate, and `arq` was
+originally chosen deliberately (async-native, fits FastAPI/asyncio without Celery's
+sync-worker baggage).
+**Resurfaces:** if the tech lead pushes back specifically on this (not just "Flower was
+in my notes" but "I actually want Celery"), or once story 1's P0 push is done and a
+lower-stakes moment exists to revisit — consider whether `arq`'s lack of a monitoring
+dashboard is actually costing anything in practice (Redis can be inspected directly
+without Celery/Flower).
+
+## 7. Kafka / Saga / webhook / payment-idempotency cluster — belongs to story #8, not now
+Tech-lead meeting notes (2026-07-07) also list Kafka, the Saga pattern, payment
+idempotency, and retries — reads as guidance for how **billing** (story #8, mocked
+payment, sprint 6 per the roadmap) should be architected, not something relevant to
+story 1's generation flow. Not evaluated or decided yet — just captured here so it
+isn't lost between now and sprint 6.
+**Resurfaces:** MUST be raised explicitly during story #8's `/interview` — bring these
+notes back up then: does "mocked billing" still warrant a real Saga/Kafka architecture
+for demonstration purposes, or is that over-engineering for a mocked payment flow?
+Needs a real decision with the user, not an assumption either way.
