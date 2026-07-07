@@ -12,5 +12,39 @@
   "statusLine": {
     "type": "command",
     "command": "bash .claude/statusline.sh"
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Bash(pytest*)",
+      "Bash(python -m pytest*)",
+      "Bash(python3 -m pytest*)",
+      "Bash(uv run pytest*)",
+      "Bash(alembic*)",
+      "Bash(uvicorn*)",
+      "Bash(arq*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git branch)",
+      "Bash(git branch --show-current)",
+      "Bash(docker compose ps*)",
+      "Bash(docker compose logs*)",
+      "Bash(docker compose exec*)",
+      "Bash(docker compose config*)"
+    ],
+    "ask": [
+      "Bash(git push*)",
+      "Bash(git reset*)",
+      "Bash(git checkout*)",
+      "Bash(git clean*)",
+      "Bash(git branch -D*)",
+      "Bash(docker compose down*)",
+      "Bash(docker compose up*)",
+      "Bash(rm -rf*)"
+    ]
   }
 }

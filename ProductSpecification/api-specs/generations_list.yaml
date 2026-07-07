@@ -1,0 +1,70 @@
+openapi: 3.0.3
+info:
+  title: List Generations
+  version: 1.0.0
+
+paths:
+  /api/v1/generations:
+    get:
+      summary: >
+        List all generations (temporary, unscoped stand-in for history — no auth exists
+        yet; see known-debt.md #4). Keyset-paginated, never offset/limit.
+      operationId: listGenerations
+      tags:
+        - generations
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          required: false
+          description: Opaque cursor from a previous response's next_cursor. Omit for the first page.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationListResponse'
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    GenerationListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GenerationResponse'
+        next_cursor:
+          type: string
+          nullable: true
+          description: Pass as `cursor` to fetch the next page; null when there are no more results.
+    GenerationResponse:
+      type: object
+      properties:
+        generation_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, in_progress, completed, failed]
+        document_type:
+          type: string
+        topic:
+          type: string
+        volume_pages:
+          type: integer
+        created_at:
+          type: string
+          format: date-time

@@ -1,0 +1,179 @@
+
+Система оценивания | Сезон 2026
+Информация может обновляться. Не сохраняйте, открывайте по ссылке
+Дата последней редакции: 17.06.2026
+Структура сезона
+8 недельных спринтов (с понедельника по пятницу), первый спринт стартует 6 июля, восьмой (крайний) спринт стартует 24 августа
+каждый вторник - фестиваль консультаций ПМиФИ LabFest с 11:00 до 20:00 (площадка уточняется, ожидается Точка кипения ОмГТУ)
+каждую пятницу промежуточное демо в онлайн-формате (с 18:00 до 20:00), за исключением крайнего спринта
+за каждый спринт команда может получить до 10 баллов; баллы за крайний спринт удваиваются
+таким образом максимально команда может получить 90 баллов за 8 спринтов
+проекты разделены на 2 группы по 4 (AI-assisted с одним разработчиком и классические команды), критерии оценивания в группах различаются
+в конце сезона 4 команды (по 2 из каждой группы) с наибольшим количеством баллов проходят в финальный DemoFest, который запланирован на 12 сентября
+полученные во время сезона баллы в DemoFest не учитываются
+организаторы могут начислять дополнительные баллы за альтернативные активности в ходе сезона (пример - фото команды во время ice-braking, которое даёт дополнительные 5 баллов в основной зачёт)
+
+Работа каждой команды в сезоне Лаборатории оценивается по двум аспектам: технический и продуктовый
+Общие правила оценивания
+По результатам каждого спринта (включая первый) команда должна предоставлять ссылки, по которым можно будет открыть и посмотреть промежуточное решение в собранном и запущенном виде. В том случае, если ссылок не предоставлено или они не открываются, или приложения не запускаются / не функционируют, работа за весь спринт оценивается в 0 баллов (оценивание по критериям не производится).
+Все материалы проекта (исходный код, ссылки, инструкции, соглашения, презентации, другие артефакты) должны размещаться только в GitVerse. Артефакты из других источников оцениваться не будут.
+Оценивание технического аспекта 
+
+5 баллов максимум
+Разработка
+Традиционные команды (несколько разработчиков)
+Ведение Git-репозитория и документация в виде README и Wiki проекта (в том числе поддержание их в актуальном состоянии): 0-1 балл.
+Командная работа над кодом (консистентность, следование общему архитектурному стилю и подходам к форматированию): 0-1 балл.
+Качество исходного кода (Code Smells): 0-1 балл.
+Оценка по всем критериям производится в рамках каждого репозитория, если репозиториев несколько - оценка усредняется и округляется по правилам округления
+
+Если по мнению проверяющих изменения в коде отсутствуют или не соответствуют тому, что презентовано на демо, то за данный репозиторий (проект) ставится средняя оценка по группе (не по отдельным критериям средние, а в целом средняя с округлением по правилам округления)
+
+Рекомендуется изучить открытую базу частых ошибок по технической части и наши рекомендации по работе с Git
+AI-assisted команды (один разработчик)
+Общее качество кодовой базы (клонированные репозитории) проекта: 0-3 балла.
+Оценивание будет производиться с применением Cursor AI в Agent-режиме с LLM Claude Opus 4.8 (Extra High Effort)
+Развернуть
+You are an expert code reviewer performing a comprehensive automated audit of an entire codebase. Your task is to evaluate the repository thoroughly and produce a structured report.
+
+## PHASE 1 — Repository Discovery
+
+Use terminal tools to explore the repository structure:
+- Run `find . -type f | head -200` to map all files
+- Run `git log --oneline -20` to inspect recent commit history
+- Run `git log --stat --oneline -10` to assess commit granularity
+- Run `git branch -a` to review branching strategy
+- Run `git diff HEAD~5 HEAD --stat` to understand recent change patterns
+- Run `git shortlog -s -n` to evaluate team contribution distribution
+- Run `cat README.md` (or equivalent) to understand project purpose
+- Identify all languages and frameworks used
+- Locate configuration files (CI/CD, linters, formatters, Docker, env files, etc.)
+
+## PHASE 2 — Deep Code Analysis
+
+Systematically read and analyze the source code. For each major area, assess the following:
+
+### Architecture & Design
+- Separation of concerns (layers, modules, services)
+- Adherence to relevant architectural patterns (MVC, hexagonal, microservices, etc.)
+- Coupling and cohesion — tight coupling, God objects, circular dependencies
+- Dependency management and inversion of control
+- Scalability and extensibility of current design
+
+### Code Quality & Smells
+- Long methods / large classes
+- Duplicate code (DRY violations)
+- Dead code and unused imports/variables
+- Magic numbers and hardcoded values
+- Overly complex conditionals (high cyclomatic complexity)
+- Inappropriate intimacy between modules
+- Inconsistent abstraction levels within functions
+
+### Formatting & Consistency
+- Naming conventions (variables, functions, classes, files)
+- Code style consistency across files and contributors
+- Presence and correctness of linter/formatter configuration
+- Comment quality (outdated, trivial, or missing where critical)
+- File and folder naming conventions
+
+### Error Handling & Reliability
+- Proper exception/error handling patterns
+- Graceful degradation and fallback strategies
+- Input validation and sanitization
+- Logging quality and consistency
+
+### Security
+- Secrets, credentials, or tokens in code or tracked files (run `git log --all -S "password\|secret\|token\|key" --oneline` to check)
+- Unsafe deserialization, SQL/command injection risks
+- Overly permissive configurations
+
+### Testing
+- Presence and coverage of unit/integration tests
+- Test quality: meaningful assertions, no test interdependencies
+- CI pipeline test automation
+
+### Git Practices
+- Commit message quality (clarity, imperative mood, scope)
+- Commit granularity (atomic vs. monolithic commits)
+- Branching strategy (feature branches, main/master protection evidence)
+- Presence of `.gitignore` and its adequacy (check for accidentally tracked env/build files via `git ls-files | grep -E "\.env|node_modules|__pycache__|dist/"`)
+- Merge/rebase strategy consistency
+
+### Documentation
+- README completeness (setup, usage, architecture overview)
+- Inline documentation for public APIs and non-obvious logic
+- Changelog or versioning practices
+
+## PHASE 3 — Scoring
+
+After completing the full analysis, assign a single overall score using this scale:
+
+| Score | Meaning |
+|-------|---------|
+| 0.0 | Unusable — critical issues everywhere, no standards |
+| 0.5 | Very poor — fundamental problems dominate |
+| 1.0 | Poor — significant issues in most areas |
+| 1.5 | Below average — more issues than strengths |
+| 2.0 | Average — reasonable baseline, notable gaps |
+| 2.5 | Good — solid work with a few clear improvement areas |
+| 3.0 | Excellent — professional, production-ready quality |
+
+Score in increments of 0.5 only.
+
+## OUTPUT FORMAT
+
+Your response must contain EXACTLY two things and nothing else:
+
+**Score: X.X / 3.0**
+
+- <bullet point finding 1>
+- <bullet point finding 2>
+- <bullet point finding 3>
+- ... (as many specific findings as needed, no upper limit)
+
+Each bullet must:
+- Reference a specific file, function, pattern, or git metric where applicable
+- Be actionable and concrete (not vague like "improve code quality")
+- Be language/stack agnostic in phrasing but specific to what was found
+
+Do not include any introduction, summary, praise, conclusion, or explanation outside the score line and bullet list.
+Тестирование
+Первый спринт
+Оценивание тест-плана (не факт тестирования, а готовность команды к нему):
+Тест-план отсутствует или представляет собой общие фразы без конкретики - 0 баллов.
+Тест-план составлен в черновом виде, указаны ключевые разделы, но отсутствует детализация, приоритизация или конкретные сценарии - 1 балл.
+Тест-план проработан: определены цели, подходы, подходы к баг-фиксации, потенциальные сценарии. Видна готовность к началу тестирования - 2 балла.
+Примеры тест-планов:
+Спринты 2-8
+Полнота и корректность тест-кейсов:
+Тест-кейсы отсутствуют или не представляют ценности (неполные, абстрактные, не по делу) - 0 баллов.
+Тест-кейсы есть, но оформлены формально, структурированность слабая. Подходят больше для черновой проверки фичи - 1 балл.
+Тест-кейсы оформлены чётко, охватывают реализованный функционал, структурированы, понятны любому человеку - 2 балла.
+Пример тест кейса
+Рекомендуется гнаться не за количеством тест-кейсов, а за качеством и минимальным покрытием всех требований.
+Оценивание продуктового аспекта
+
+5 баллов максимум
+Питч проекта: 0-2 балла.
+Дизайн продукта (UX/UI): 0-2 балла.
+Реализация на основе User Story Map: 0-1 балл (работает ли всё, что было продемонстрировано на демо)
+Правила округления баллов
+приоритет - округление вверх до ближайшего целого числа, если модуль разности значений не превышает 2
+жюри в случае особых пожеланий имеет право округлить до половинных долей
+из дробных значений допускаются только половинные доли и только получаемые в результате выполнения правил округления
+примеры основных ситуаций:
+1 и 3 → 2
+1 и 4 → 2,5
+2 и 6 → 4
+1 и 6 → 4
+Другие замечания
+указанные критерии не претендуют на объективность, как и любые критерии при любом оценивании
+проверка работ начинается в 21:00 (GMT+6) по пятницам, все артефакты должны быть доступны к этому времени (несвоевременная публикация артефактов будет отслеживаться, они не будут проверяться)
+период оценивания не регламентируется в виду занятости жюри, однако на практике мы публикуем баллы за спринт до конца выходных
+информация о составе жюри не разглашается
+материалы всех образовательных мероприятий, которые могут быть вам полезны, размещены здесь
+по вопросам оценивания обращайтесь к директору по образованию
+https://buildin.ai/login?promotionChannel=Share_02
+https://buildin.ai/login?promotionChannel=Share_02
+https://buildin.ai/login?promotionChannel=Share_02
+byBuildin.AItechnology

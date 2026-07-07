@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375">
+<title>Textery — Доклад готов</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root{
+    --bg-page:#111214; --bg-surface:#1a1b1e; --bg-surface-raised:#232428;
+    --border-subtle:rgba(255,255,255,0.08);
+    --text-primary:#f5f5f7; --text-secondary:#9a9ba3; --text-muted:#6b6c74;
+    --accent-start:#6366f1; --accent-end:#a855f7;
+    --accent-gradient:linear-gradient(135deg,var(--accent-start),var(--accent-end));
+    --success:#22c55e;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg-page); color:var(--text-primary); font-family:'Inter',sans-serif; line-height:1.6;}
+  .header{display:flex; align-items:center; justify-content:space-between; padding:16px; border-bottom:1px solid var(--border-subtle);}
+  .logo{display:flex; align-items:center; gap:8px; font-weight:700; font-size:16px;}
+  .logo-mark{width:28px; height:28px; border-radius:8px; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; font-size:14px;}
+  .btn{border:none; border-radius:10px; padding:12px 16px; font-family:inherit; font-weight:600; font-size:13px; cursor:pointer;}
+  .btn-primary{background:#f5f5f7; color:#111214;}
+  .container{padding:20px 16px 40px;}
+  .badge{display:inline-flex; align-items:center; gap:8px; background:var(--bg-surface-raised); padding:6px 14px; border-radius:999px; font-size:12px; font-weight:600; margin-bottom:14px;}
+  .dot{width:8px; height:8px; border-radius:50%; background:var(--success);}
+  .chat-panel{background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:14px; padding:14px; margin-bottom:14px;}
+  .chat-msg{display:flex; gap:8px; margin-bottom:8px;}
+  .chat-msg:last-child{margin-bottom:0;}
+  .chat-avatar{width:22px; height:22px; border-radius:6px; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .chat-avatar i{width:12px; height:12px; color:#fff;}
+  .chat-bubble{background:var(--bg-surface-raised); border-radius:8px; padding:7px 10px; font-size:12px; color:var(--text-secondary);}
+  .chat-bubble.done{color:var(--success);}
+  .doc-area{background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:14px; padding:20px;}
+  .doc-meta{color:var(--text-secondary); font-size:13px; margin-bottom:16px;}
+  .doc-area h2{font-size:17px; margin-bottom:10px;}
+  .doc-area h3{font-size:15px; margin:16px 0 8px;}
+  .doc-area p{color:var(--text-secondary); font-size:14px; margin-bottom:12px;}
+  .actions-row{margin-top:16px;}
+  .actions-row .btn-primary{width:100%; padding:14px; text-align:center;}
+  .note{margin-top:12px; font-size:12px; color:var(--text-muted); display:flex; align-items:flex-start; gap:6px;}
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo"><div class="logo-mark">T</div>Textery</div>
+    <button class="btn btn-primary">Попробовать</button>
+  </div>
+  <div class="container">
+    <div class="badge"><span class="dot"></span>Готово</div>
+    <div class="chat-panel">
+      <div class="chat-msg">
+        <div class="chat-avatar"><i data-lucide="sparkles"></i></div>
+        <div class="chat-bubble">Пишу доклад</div>
+      </div>
+      <div class="chat-msg">
+        <div class="chat-avatar"><i data-lucide="check"></i></div>
+        <div class="chat-bubble done">Готово!</div>
+      </div>
+    </div>
+    <div class="doc-area">
+      <div class="doc-meta">Доклад · 5 страниц · создан только что</div>
+      <h2>Влияние ИИ на образование</h2>
+      <h3>Введение</h3>
+      <p>Искусственный интеллект стремительно меняет подходы к обучению, открывая новые возможности для персонализации образовательного процесса.</p>
+      <h3>Основная часть</h3>
+      <p>Технологии машинного обучения позволяют адаптировать учебные материалы под индивидуальные потребности каждого учащегося.</p>
+      <h3>Заключение</h3>
+      <p>Интеграция ИИ в образование повышает качество и доступность обучения.</p>
+      <div class="actions-row">
+        <button class="btn btn-primary"><i data-lucide="sparkles" style="width:14px;height:14px;vertical-align:-2px;margin-right:6px;"></i>Создать новый доклад</button>
+      </div>
+      <div class="note"><i data-lucide="info" style="width:13px;height:13px;flex-shrink:0;margin-top:1px;"></i>Редактирование появится позже</div>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

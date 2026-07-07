@@ -11,6 +11,22 @@ node_modules/
 .gradle/
 target/
 
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Alembic (keep migration scripts, ignore local sqlite fallback if ever used)
+*.sqlite3
+
 # Environment
 .env
 .env.local
@@ -23,6 +39,9 @@ target/
 
 # Plans (generated during conversations)
 ProductSpecification/plans/
+
+# Throwaway scaffolding from the /screenshot skill (puppeteer + its node_modules)
+.screenshots-temp/
 
 # OS
 .DS_Store

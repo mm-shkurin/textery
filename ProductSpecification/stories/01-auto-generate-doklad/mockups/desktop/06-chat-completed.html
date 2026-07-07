@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1400">
+<title>Textery — Доклад готов</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root{
+    --bg-page:#111214; --bg-surface:#1a1b1e; --bg-surface-raised:#232428;
+    --border-subtle:rgba(255,255,255,0.08);
+    --text-primary:#f5f5f7; --text-secondary:#9a9ba3; --text-muted:#6b6c74;
+    --accent-start:#6366f1; --accent-end:#a855f7;
+    --accent-gradient:linear-gradient(135deg,var(--accent-start),var(--accent-end));
+    --success:#22c55e;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg-page); color:var(--text-primary); font-family:'Inter',sans-serif; line-height:1.6;}
+  .header{display:flex; align-items:center; justify-content:space-between; padding:20px 48px; border-bottom:1px solid var(--border-subtle);}
+  .logo{display:flex; align-items:center; gap:10px; font-weight:700; font-size:18px;}
+  .logo-mark{width:32px; height:32px; border-radius:9px; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff;}
+  .header-actions{display:flex; align-items:center; gap:12px;}
+  .btn{border:none; border-radius:10px; padding:12px 22px; font-family:inherit; font-weight:600; font-size:14px; cursor:pointer;}
+  .btn-secondary{background:transparent; color:var(--text-secondary); border:1px solid var(--border-subtle);}
+  .btn-primary{background:#f5f5f7; color:#111214;}
+  .container{max-width:1100px; margin:0 auto; padding:40px 24px 96px;}
+  .badge{display:inline-flex; align-items:center; gap:8px; background:var(--bg-surface-raised); padding:6px 14px; border-radius:999px; font-size:13px; font-weight:600; margin-bottom:20px;}
+  .dot{width:8px; height:8px; border-radius:50%; background:var(--success);}
+  .layout{display:grid; grid-template-columns:320px 1fr; gap:24px;}
+  .chat-panel{background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:16px; padding:24px; height:fit-content;}
+  .chat-panel h3{font-size:14px; color:var(--text-secondary); margin-bottom:16px; text-transform:uppercase; letter-spacing:0.04em;}
+  .chat-msg{display:flex; gap:10px; margin-bottom:16px;}
+  .chat-avatar{width:28px; height:28px; border-radius:8px; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .chat-avatar i{width:15px; height:15px; color:#fff;}
+  .chat-bubble{background:var(--bg-surface-raised); border-radius:10px; padding:10px 12px; font-size:13px; color:var(--text-secondary);}
+  .chat-bubble.done{color:var(--success);}
+  .doc-area{background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:16px; padding:48px;}
+  .doc-meta{color:var(--text-secondary); font-size:13px; margin-bottom:20px;}
+  .doc-area h2{font-size:22px; margin-bottom:16px;}
+  .doc-area h3{font-size:17px; margin:22px 0 10px;}
+  .doc-area p{color:var(--text-secondary); font-size:15px; margin-bottom:14px;}
+  .actions-row{margin-top:28px; display:flex; gap:12px;}
+  .note{margin-top:14px; font-size:13px; color:var(--text-muted); display:flex; align-items:center; gap:8px;}
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo"><div class="logo-mark">T</div>Textery</div>
+    <div class="header-actions">
+      <button class="btn btn-secondary">Вход</button>
+      <button class="btn btn-primary">Попробовать бесплатно</button>
+    </div>
+  </div>
+  <div class="container">
+    <div class="badge"><span class="dot"></span>Готово</div>
+    <div class="layout">
+      <div class="chat-panel">
+        <h3>Ход генерации</h3>
+        <div class="chat-msg">
+          <div class="chat-avatar"><i data-lucide="sparkles"></i></div>
+          <div class="chat-bubble">Анализирую тему и требования</div>
+        </div>
+        <div class="chat-msg">
+          <div class="chat-avatar"><i data-lucide="sparkles"></i></div>
+          <div class="chat-bubble">Пишу доклад</div>
+        </div>
+        <div class="chat-msg">
+          <div class="chat-avatar"><i data-lucide="check"></i></div>
+          <div class="chat-bubble done">Готово!</div>
+        </div>
+      </div>
+      <div class="doc-area">
+        <div class="doc-meta">Доклад · 5 страниц · создан только что</div>
+        <h2>Влияние искусственного интеллекта на образование</h2>
+        <h3>Введение</h3>
+        <p>Искусственный интеллект стремительно меняет подходы к обучению, открывая новые возможности для персонализации образовательного процесса и автоматизации рутинных задач преподавателя.</p>
+        <h3>Основная часть</h3>
+        <p>Технологии машинного обучения позволяют адаптировать учебные материалы под индивидуальные потребности каждого учащегося, отслеживать прогресс в реальном времени и своевременно выявлять пробелы в знаниях.</p>
+        <p>Одновременно с этим возникают вопросы этики, конфиденциальности данных и необходимости сохранения роли живого преподавателя в образовательном процессе.</p>
+        <h3>Заключение</h3>
+        <p>Интеграция ИИ в образование — это не замена традиционных методов, а инструмент, который при разумном использовании способен значительно повысить качество и доступность обучения.</p>
+        <div class="actions-row">
+          <button class="btn btn-primary"><i data-lucide="sparkles" style="width:16px;height:16px;vertical-align:-3px;margin-right:6px;"></i>Создать новый доклад</button>
+        </div>
+        <div class="note"><i data-lucide="info" style="width:14px;height:14px;"></i>Редактирование и сохранение появятся в следующем обновлении</div>
+      </div>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

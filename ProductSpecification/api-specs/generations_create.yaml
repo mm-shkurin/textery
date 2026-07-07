@@ -1,0 +1,95 @@
+openapi: 3.0.3
+info:
+  title: Create Generation
+  version: 1.0.0
+
+paths:
+  /api/v1/generations:
+    post:
+      summary: Submit a new document generation request (доклад)
+      operationId: createGeneration
+      tags:
+        - generations
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: >
+            Client-generated key. Replaying the same key returns the existing
+            generation (200) instead of creating a new one.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGenerationRequest'
+      responses:
+        '201':
+          description: Generation created and enqueued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationResponse'
+        '200':
+          description: Idempotency-Key already seen — returns the existing generation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationResponse'
+        '400':
+          description: Validation error — missing topic, out-of-range volume_pages, or field over max length
+        '422':
+          description: Unsupported document_type, or a request body containing a server-owned field (status, id)
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    CreateGenerationRequest:
+      type: object
+      required:
+        - document_type
+        - topic
+        - volume_pages
+      properties:
+        document_type:
+          type: string
+          enum: [доклад]
+          description: Only "доклад" is accepted in this story; stories #2-#4 add the rest.
+        topic:
+          type: string
+          minLength: 1
+        volume_pages:
+          type: integer
+          minimum: 1
+          maximum: 10
+        requirements:
+          type: string
+          maxLength: 2000
+          nullable: true
+        extra_wishes:
+          type: string
+          maxLength: 2000
+          nullable: true
+    GenerationResponse:
+      type: object
+      properties:
+        generation_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, in_progress, completed, failed]
+        document_type:
+          type: string
+        topic:
+          type: string
+        volume_pages:
+          type: integer
+        created_at:
+          type: string
+          format: date-time

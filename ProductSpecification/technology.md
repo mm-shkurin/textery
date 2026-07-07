@@ -12,18 +12,26 @@ mandatory quality gates (test-review, coverage, refactor) before every commit,
 and `progress.md` per story as the persistence mechanism across context resets.
 
 tech-profile:
-  backend: TODO # planned: python-fastapi-hex (custom profile, not yet authored)
+  backend: python-fastapi-hex
   frontend: react-ts
   css: TODO
   browser-testing: TODO
 
 ## Backend
 
-TODO — no built-in profile for FastAPI + Hexagonal Architecture yet.
-Needs a new profile at `.claude/tech/python-fastapi-hex/` (coding.md, tdd.md,
-infrastructure.md, templates/) plus a few stack decisions first: ORM
-(SQLAlchemy? raw asyncpg?), migrations tool, DI approach, test runner/mocking
-library. Fill this section and `.claude/tech/python-fastapi-hex/` together.
+| Concern | Technology |
+|---------|-----------|
+| Language | Python 3.12 |
+| Framework | FastAPI |
+| Architecture | Hexagonal (Ports & Adapters), mapped onto Clean Architecture layers |
+| ORM | SQLAlchemy 2.0 (async engine) |
+| Migrations | Alembic |
+| Database | PostgreSQL |
+| Task queue | `arq` (Redis-backed) — generation runs as a background job, never inline in a request |
+| DI | FastAPI `Depends()` + manual composition root (`container.py`) — no DI framework |
+| Generation engine | OpenRouter (OpenAI-compatible gateway to Claude + other models) via `openai` Python SDK, async client |
+| HTTP client (other) | `httpx` (async) |
+| Auth (story 7+) | JWT (`PyJWT`) + Yandex ID / VK ID OAuth (no Google) |
 
 ## Frontend
 
@@ -45,19 +53,36 @@ TODO — decide with the user when frontend work starts (playwright vs selenium 
 
 ## Testing (Backend)
 
-TODO — depends on backend profile decisions above.
+| Concern | Technology |
+|---------|-----------|
+| Test runner | pytest |
+| Async test support | pytest-asyncio (`asyncio_mode = auto`) |
+| Mocking | pytest-mock |
+| Coverage | pytest-cov (coverage.py) |
+| REST test client | httpx.AsyncClient + ASGITransport (in-process, no running server) |
 
 ## Infrastructure
 
 | Concern | Technology |
 |---------|-----------|
-| Containerization | Docker / docker-compose |
+| Containerization | Docker / docker-compose (provisioned by the separate `infra/` harness — see `infra/architecture.md`) |
+| Database | PostgreSQL |
+| Cache / queue | Redis (backs `arq`) |
 
 ## Conventions
 
 ### Backend
 
-TODO — fill in once the python-fastapi-hex profile is authored.
+| Concern | Convention |
+|---------|-----------|
+| Test skip marker | `@pytest.mark.skip(reason="RED: ...")` |
+| Not-implemented marker | `raise NotImplementedError()` |
+| Dev command | `uvicorn app.main:app --reload --port $BACKEND_PORT` |
+| Worker command | `arq backend.application.worker.WorkerSettings` |
+| Test command | `pytest backend/` |
+| Coverage report path | `backend/coverage.xml`, `backend/htmlcov/index.html` |
+| Migration command | `alembic revision --autogenerate -m "..."` / `alembic upgrade head` |
+| Env config syntax | `os.environ.get('VAR', 'fallback')` |
 
 ### Frontend
 

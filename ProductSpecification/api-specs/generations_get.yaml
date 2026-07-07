@@ -1,0 +1,61 @@
+openapi: 3.0.3
+info:
+  title: Get Generation
+  version: 1.0.0
+
+paths:
+  /api/v1/generations/{generation_id}:
+    get:
+      summary: Get generation status, and document content once completed
+      operationId: getGeneration
+      tags:
+        - generations
+      parameters:
+        - name: generation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationDetailResponse'
+        '404':
+          description: No generation with this id
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    GenerationDetailResponse:
+      type: object
+      properties:
+        generation_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, in_progress, completed, failed]
+        document_type:
+          type: string
+        topic:
+          type: string
+        volume_pages:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        document:
+          type: object
+          nullable: true
+          description: Present only when status is "completed"; escaped/sanitized text, never raw unescaped HTML.
+          properties:
+            content:
+              type: string
+            created_at:
+              type: string
+              format: date-time

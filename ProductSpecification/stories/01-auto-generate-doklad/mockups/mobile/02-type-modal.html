@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375">
+<title>Textery — Выбор типа документа</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root{
+    --bg-page:#111214; --bg-surface:#1a1b1e; --bg-surface-raised:#232428;
+    --border-subtle:rgba(255,255,255,0.08);
+    --text-primary:#f5f5f7; --text-secondary:#9a9ba3; --text-muted:#6b6c74;
+    --accent-start:#6366f1; --accent-end:#a855f7;
+    --accent-gradient:linear-gradient(135deg,var(--accent-start),var(--accent-end));
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg-page); color:var(--text-primary); font-family:'Inter',sans-serif; line-height:1.5;}
+  .sheet{position:fixed; inset:0; background:var(--bg-surface); display:flex; flex-direction:column;}
+  .sheet-header{display:flex; align-items:center; justify-content:space-between; padding:20px 16px; border-bottom:1px solid var(--border-subtle);}
+  h1{font-size:19px; font-weight:700;}
+  .close-btn{width:32px; height:32px; border-radius:9px; background:var(--bg-surface-raised); border:1px solid var(--border-subtle); display:flex; align-items:center; justify-content:center;}
+  .close-btn i{width:16px; height:16px; color:var(--text-secondary);}
+  .subtitle{color:var(--text-secondary); font-size:14px; padding:16px 16px 4px;}
+  .type-list{display:flex; flex-direction:column; gap:10px; padding:12px 16px 24px;}
+  .type-card{background:var(--bg-surface-raised); border-radius:14px; padding:16px; border:1px solid var(--border-subtle); display:flex; align-items:center; gap:14px; position:relative;}
+  .type-card.active{border:1.5px solid transparent; background-image:linear-gradient(var(--bg-surface-raised),var(--bg-surface-raised)), var(--accent-gradient); background-origin:border-box; background-clip:padding-box, border-box;}
+  .type-card.disabled{opacity:0.45;}
+  .icon-badge{width:40px; height:40px; border-radius:10px; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .icon-badge i{color:#fff; width:20px; height:20px;}
+  .type-name{font-size:15px; font-weight:700;}
+  .soon-pill{position:absolute; top:12px; right:12px; background:var(--bg-page); color:var(--text-muted); font-size:10px; padding:3px 8px; border-radius:999px;}
+  .check-badge{position:absolute; top:14px; right:14px; width:20px; height:20px; border-radius:50%; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center;}
+  .check-badge i{width:12px; height:12px; color:#fff;}
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="sheet-header">
+      <h1>Создание документа</h1>
+      <div class="close-btn"><i data-lucide="x"></i></div>
+    </div>
+    <p class="subtitle">Выберите тип работы</p>
+    <div class="type-list">
+      <div class="type-card active">
+        <div class="check-badge"><i data-lucide="check"></i></div>
+        <div class="icon-badge"><i data-lucide="presentation"></i></div>
+        <div class="type-name">Доклад</div>
+      </div>
+      <div class="type-card disabled">
+        <span class="soon-pill">скоро</span>
+        <div class="icon-badge"><i data-lucide="feather"></i></div>
+        <div class="type-name">Эссе</div>
+      </div>
+      <div class="type-card disabled">
+        <span class="soon-pill">скоро</span>
+        <div class="icon-badge"><i data-lucide="pen-line"></i></div>
+        <div class="type-name">Сочинение</div>
+      </div>
+      <div class="type-card disabled">
+        <span class="soon-pill">скоро</span>
+        <div class="icon-badge"><i data-lucide="book-open"></i></div>
+        <div class="type-name">Реферат</div>
+      </div>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

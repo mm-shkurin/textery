@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375">
+<title>Textery — Word онлайн с генерацией через нейросеть</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root{
+    --bg-page:#111214; --bg-surface:#1a1b1e; --bg-surface-raised:#232428;
+    --border-subtle:rgba(255,255,255,0.08);
+    --text-primary:#f5f5f7; --text-secondary:#9a9ba3; --text-muted:#6b6c74;
+    --accent-start:#6366f1; --accent-end:#a855f7;
+    --accent-gradient:linear-gradient(135deg,var(--accent-start),var(--accent-end));
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg-page); color:var(--text-primary); font-family:'Inter',sans-serif; line-height:1.5;}
+  .header{display:flex; align-items:center; justify-content:space-between; padding:16px;border-bottom:1px solid var(--border-subtle);}
+  .logo{display:flex; align-items:center; gap:8px; font-weight:700; font-size:16px;}
+  .logo-mark{width:28px; height:28px; border-radius:8px; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; font-size:14px;}
+  .btn-primary{border:none; background:#f5f5f7; color:#111214; border-radius:10px; padding:10px 16px; font-family:inherit; font-weight:600; font-size:13px;}
+  .hero{padding:40px 20px 56px; text-align:center;}
+  .eyebrow{display:inline-flex; align-items:center; gap:6px; background:var(--bg-surface-raised); border:1px solid var(--border-subtle); padding:6px 14px; border-radius:999px; font-size:12px; color:var(--text-secondary); margin-bottom:18px;}
+  h1{font-size:28px; font-weight:700; letter-spacing:-0.02em; margin-bottom:12px;}
+  .accent{background:var(--accent-gradient); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .subtitle{color:var(--text-secondary); font-size:15px; margin-bottom:28px;}
+  .cta-row{display:flex; flex-direction:column; gap:10px;}
+  .btn-primary.large, .btn-secondary.large{padding:14px; font-size:15px; border-radius:10px; font-weight:600;}
+  .btn-secondary.large{background:transparent; color:var(--text-secondary); border:1px solid var(--border-subtle);}
+  .hero-preview{margin-top:40px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:16px; padding:28px; display:flex; justify-content:center; gap:12px;}
+  .preview-card{width:80px; height:110px; background:var(--bg-surface-raised); border-radius:10px; border:1px solid var(--border-subtle); display:flex; align-items:center; justify-content:center;}
+  .preview-card i{color:var(--text-muted); width:24px; height:24px;}
+  .preview-card.tall{height:140px; border:1px solid transparent; background-image:linear-gradient(var(--bg-surface-raised),var(--bg-surface-raised)), var(--accent-gradient); background-origin:border-box; background-clip:padding-box, border-box;}
+  .social-proof{text-align:center; margin-top:24px; color:var(--text-muted); font-size:12px;}
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo"><div class="logo-mark">T</div>Textery</div>
+    <button class="btn-primary">Попробовать</button>
+  </div>
+  <div class="hero">
+    <div class="eyebrow"><i data-lucide="sparkles" style="width:12px;height:12px;"></i>Работает на Textery AI</div>
+    <h1>Word онлайн <span class="accent">с генерацией через нейросеть</span></h1>
+    <p class="subtitle">Опишите тему — получите готовый текст и доработайте его в редакторе.</p>
+    <div class="cta-row">
+      <button class="btn-primary large"><i data-lucide="sparkles" style="width:14px;height:14px;vertical-align:-2px;margin-right:6px;"></i>Попробовать бесплатно</button>
+      <button class="btn-secondary large">Как это работает</button>
+    </div>
+    <div class="hero-preview">
+      <div class="preview-card"><i data-lucide="file-text"></i></div>
+      <div class="preview-card tall"><i data-lucide="presentation"></i></div>
+      <div class="preview-card"><i data-lucide="book-open"></i></div>
+    </div>
+    <div class="social-proof">Нам доверяют тысячи пользователей!</div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

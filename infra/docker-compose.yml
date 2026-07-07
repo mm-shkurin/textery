@@ -1,0 +1,95 @@
+# Local-dev only. Do NOT reuse as a prod/prod-copy template without revisiting
+# the exposed Postgres/Redis host ports and the TEMP backend/frontend images.
+# See infra/architecture.md for topology, port map, and env var contract.
+#
+# All ports/credentials come from infra/.env (gitignored; copy from
+# infra/.env.example). No literals below, no container_name (avoids collisions
+# across parallel worktrees/sessions on the same host).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # TEMP: builds from a placeholder Dockerfile until real FastAPI code lands
+  # in backend/. See infra/docker/backend.Dockerfile.
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    # ANTHROPIC_API_KEY and any other backend secrets live in backend/.env,
+    # not here. `required: false` because backend/.env doesn't exist yet
+    # (backend/ is still empty) — compose must still be able to boot today.
+    env_file:
+      - path: ../backend/.env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "${BACKEND_PORT}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # TEMP: separate process from `backend` for the future arq worker — same
+  # placeholder image, different command, since the API and the worker have
+  # different lifecycles. Replace `command:` with the real
+  # `arq worker.WorkerSettings` entrypoint once backend/ has code.
+  worker:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    command: ["tail", "-f", "/dev/null"]
+    # The image's HEALTHCHECK probes an HTTP server this command doesn't run.
+    healthcheck:
+      disable: true
+    env_file:
+      - path: ../backend/.env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # TEMP: static nginx stub until the real React app lands in frontend/. See
+  # infra/docker/frontend.Dockerfile. No framework scaffolding here.
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    ports:
+      - "${FRONTEND_PORT}:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
