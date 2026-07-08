@@ -7,6 +7,8 @@ _ADAPTERS_DIR = os.path.dirname(_REST_DIR)
 _BACKEND_DIR = os.path.dirname(_ADAPTERS_DIR)
 _REST_SRC = os.path.join(_REST_DIR, "src")
 _DOMAIN_SRC = os.path.join(_BACKEND_DIR, "domain", "src")
+_USECASE_SRC = os.path.join(_BACKEND_DIR, "usecase", "src")
 
 sys.path.insert(0, _REST_SRC)
 sys.path.insert(0, _DOMAIN_SRC)
+sys.path.insert(0, _USECASE_SRC)
