@@ -7,7 +7,7 @@ these **P0** scenarios first, in this order — they're the walking skeleton tha
 the product actually work end-to-end and unblocks frontend integration. Branch:
 `features/story-1-auto-generate-doklad`, PR into `dev` once P0 is green and deployed.
 
-- [ ] **P0-1** — Backend 1.1: Reject request with missing topic (`red-acceptance` + `design` + `red-usecase` + `green-usecase` + `adapters-discovery` + `red-adapter rest` + `green-adapter rest` done, see `decisions/request-validation-architecture-decision.md`; `green-acceptance` next)
+- [x] **P0-1** — Backend 1.1: Reject request with missing topic (all steps done through `green-acceptance`, see `decisions/request-validation-architecture-decision.md`)
 - [ ] **P0-2** — Backend 1.2: Reject request with out-of-range volume
 - [ ] **P0-3** — Backend 2.1: Valid request is accepted and queued without waiting on the LLM call
 - [ ] **P0-4** — Backend 4.1: A pending generation reports its status without document content
@@ -37,7 +37,7 @@ otherwise pick.
 - [x] adapters-discovery (rest) — Check 1 (ports): [S] no outbound port, rejects before persistence. Check 2 (exceptions): rest — ValidationException unmapped, no FastAPI app/exception handler exists yet. Check 3 (response shape): rest — placeholder http.server returns 501 instead of 400 `{"detail": "topic is required"}`. Checks 2+3 collapse into one rest pair. green-adapter rest must also introduce a minimal `RequestGeneration` usecase wrapping `Generation.create()` (controller must delegate to a usecase per coding-rules.md, none exists yet).
 - [x] red-adapter rest
 - [x] green-adapter rest
-- [~] green-acceptance
+- [x] green-acceptance
 
 ### Scenario 1.2: Reject request with out-of-range volume
 - [ ] red-acceptance

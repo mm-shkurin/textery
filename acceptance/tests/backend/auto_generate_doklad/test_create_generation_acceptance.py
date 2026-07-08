@@ -1,12 +1,6 @@
-import pytest
-
 from tests.backend.abstract_backend_test import AbstractBackendTest
 
 
-@pytest.mark.skip(
-    reason="RED: backend/ has no FastAPI app yet (placeholder http.server) -- "
-    "POST /api/v1/generations returns 501 Unsupported method instead of 400"
-)
 class TestCreateGenerationAcceptance(AbstractBackendTest):
     """Scenario 1.1: Reject request with missing topic.
 
