@@ -11,6 +11,9 @@ class GenerationStatements:
     # requirements/extra_wishes) are 400 per ProductSpecification/api-specs/generations_create.yaml;
     # 422 is reserved for unsupported document_type or a server-owned field in the body (scenario 1.4/1.5).
     EXPECTED_MISSING_TOPIC_ERROR: ClassVar[dict] = {"detail": "topic is required"}
+    EXPECTED_OUT_OF_RANGE_VOLUME_ERROR: ClassVar[dict] = {
+        "detail": "volume_pages must be between 1 and 10",
+    }
 
     def __init__(self, client: ApplicationClient):
         self._client = client
@@ -20,12 +23,25 @@ class GenerationStatements:
         request = scope.to_request_dto()
         return await self._client.create_generation(request, TestData.unique_idempotency_key())
 
+    async def given_generation_request_submitted_with_volume(self, volume_pages: int) -> GenerationResponseDto:
+        scope = GenerationScope.builder(volume_pages=volume_pages)
+        request = scope.to_request_dto()
+        return await self._client.create_generation(request, TestData.unique_idempotency_key())
+
     def assert_missing_topic_error(self, response: GenerationResponseDto) -> None:
         assert response.status_code == 400, (
             f"expected 400 Bad Request (missing-field validation error), got {response.status_code}"
         )
         assert response.body == self.EXPECTED_MISSING_TOPIC_ERROR, (
             f"expected validation error body {self.EXPECTED_MISSING_TOPIC_ERROR}, got {response.body}"
+        )
+
+    def assert_out_of_range_volume_error(self, response: GenerationResponseDto) -> None:
+        assert response.status_code == 400, (
+            f"expected 400 Bad Request (out-of-range volume_pages validation error), got {response.status_code}"
+        )
+        assert response.body == self.EXPECTED_OUT_OF_RANGE_VOLUME_ERROR, (
+            f"expected validation error body {self.EXPECTED_OUT_OF_RANGE_VOLUME_ERROR}, got {response.body}"
         )
 
     def assert_no_generation_created(self, response: GenerationResponseDto) -> None:
