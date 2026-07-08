@@ -9,10 +9,6 @@ from shared.exceptions import ValidationException
 EXPECTED_MISSING_TOPIC_MESSAGE = "topic is required"
 
 
-@pytest.mark.skip(
-    reason="RED: backend/adapters/rest/src has no generation router yet -- "
-    "ModuleNotFoundError: No module named 'router.generation.generation_router'"
-)
 class TestCreateGenerationRouter:
     """Scenario 1.1: Reject request with missing topic.
 

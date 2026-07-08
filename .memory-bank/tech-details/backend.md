@@ -1,15 +1,18 @@
 # Tech Details — Backend
 
 ## Status
-No code written yet — `backend/` is still empty (expected: red-usecase, the first step
-that touches `backend/`, hasn't run yet). Story 1's spec pipeline is complete
-(`/interview` → `/story` → `/mockups` → `/api-spec` → `/test-spec`, hazard-catalogue
-scanned twice — see `ProductSpecification/stories/01-auto-generate-doklad/` and
+Story 1's spec pipeline is complete (`/interview` → `/story` → `/mockups` → `/api-spec` →
+`/test-spec`, hazard-catalogue scanned twice — see
+`ProductSpecification/stories/01-auto-generate-doklad/` and
 `.memory-bank/tasks/sprint-plan.md`'s progress log for the full breakdown). All items
 below are now confirmed, not proposed. TDD loop is in progress on
-`features/story-1-auto-generate-doklad` — P0-1 (scenario 1.1) is at
-`red-usecase` next; see `progress.md`'s "Priority for Sprint 1" section for the P0
-list and current step.
+`features/story-1-auto-generate-doklad` — P0-1 (scenario 1.1) has real code now:
+`backend/domain`, `backend/usecase`, and `backend/adapters/rest` all exist and are green
+through `green-adapter rest`; only `green-acceptance` remains before scenario 1.1 is
+fully done. See `progress.md`'s "Priority for Sprint 1" section for the P0 list and
+current step. Dependency manifest: `backend/requirements.txt` (fastapi, httpx, pytest,
+pytest-asyncio, pytest-mock, pytest-cov — pins only what's actually in use today, not
+the full stack below).
 
 ## Decided — request validation architecture (2026-07-07)
 Domain-level validation, not controller-level imperative checks: `Generation.create(...)`
