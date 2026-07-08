@@ -339,9 +339,9 @@ otherwise pick.
 - [x] red-selenium
 - [x] red-frontend
 - [x] green-frontend
-- [~] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
+- [S] red-frontend-api — purely presentational (static hero heading + CTA button), no backend call; `POST /generations`/`GET /generations` belong to later scenarios in the flow. Handled entirely in the component (align-design).
+- [S] green-frontend-api — see red-frontend-api skip reason
+- [~] align-design
 - [ ] green-selenium
 - [ ] demo
 
