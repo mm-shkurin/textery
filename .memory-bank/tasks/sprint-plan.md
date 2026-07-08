@@ -16,6 +16,41 @@ not the main `textery/` folder, from now on.
 
 ## Progress log
 
+### 2026-07-08 (sprint 1, day 3) — P0-1 (scenario 1.1) through green-adapter rest; only green-acceptance left
+
+`/continue` ran the full TDD chain for scenario 1.1 end to end this session:
+red-usecase → green-usecase → adapters-discovery → red-adapter rest → green-adapter rest,
+each with `/test-review`/`/test-coverage` + `/refactor` + the two pre-commit review passes
+(`agent-review`, `premortem`). All commits landed on `features/story-1-auto-generate-doklad`;
+5 tests passing (4 usecase, 1 rest-adapter), 0 failing.
+
+- `backend/domain`, `backend/usecase`, `backend/adapters/rest` all exist now (previously
+  empty). `Generation.create()` rejects a blank topic (Unicode-aware: strips ordinary
+  whitespace + category `Cf` format chars, e.g. U+200B — plain `str.strip()` would have
+  missed that case). `RequestGeneration` usecase delegates to it without swallowing the
+  exception. REST router (`POST /api/v1/generations`) genuinely delegates to the usecase
+  (not inline validation) and a `validation_exception_handler` maps `ValidationException`
+  → 400.
+- `backend/requirements.txt` created (fastapi, httpx, pytest, pytest-asyncio, pytest-mock,
+  pytest-cov) — closes a gap where fastapi/pytest-mock had been pip-installed ad hoc with
+  nothing recording them.
+- `adapters-discovery` surfaced that no usecase orchestrator existed yet (red/green-usecase
+  had only exercised `Generation.create()` directly, per the ADR's scope) — folded into
+  `green-adapter rest`'s steps rather than reopening the usecase phase.
+- Known open gaps (flagged by review passes, not yet closed — see
+  `ProductSpecification/stories/01-auto-generate-doklad/summaries/1-1-reject-request-with-missing-topic.md`
+  for detail): `_is_blank_topic()` doesn't filter Unicode categories `Cc`/`Cs` (control
+  chars, surrogates); the `ValidationException` → 400 handler is currently registered only
+  inside the adapter test's local app, not on any shared/importable app — `green-acceptance`
+  (next step) will need a real `backend/application` composition root that replicates it,
+  plus the ADR's still-missing catch-all `Exception` → 500 handler.
+- Three background sub-agent dispatches hit a session-limit API error mid-run once; retried
+  successfully on the same commit — no data lost, just re-run.
+
+**P0-1 now 7/7 sub-steps done through green-adapter rest** (red-acceptance, design,
+red-usecase, green-usecase, adapters-discovery, red-adapter rest, green-adapter rest);
+next is **green-acceptance**. **0/7 P0 scenarios fully complete yet.**
+
 ### 2026-07-07 (sprint 1, day 2, TDD loop underway) — P0-1 design done; backend session rotating out (context limit)
 
 Backend session ran real TDD work on `features/story-1-auto-generate-doklad` (branched
