@@ -41,9 +41,9 @@ otherwise pick.
 
 ### Scenario 1.2: Reject request with out-of-range volume
 - [x] red-acceptance
-- [~] design
-- [ ] red-usecase
-- [ ] green-usecase
+- [x] design
+- [x] red-usecase
+- [~] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
