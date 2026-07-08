@@ -1,0 +1,19 @@
+import os
+import sys
+
+_TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
+_USECASE_DIR = os.path.dirname(_TESTS_DIR)
+_BACKEND_DIR = os.path.dirname(_USECASE_DIR)
+_DOMAIN_SRC = os.path.join(_BACKEND_DIR, "domain", "src")
+
+sys.path.insert(0, _TESTS_DIR)
+sys.path.insert(0, _DOMAIN_SRC)
+
+import pytest
+
+from statements.generation_statements import GenerationStatements
+
+
+@pytest.fixture
+def generation_statements():
+    return GenerationStatements()
