@@ -35,3 +35,9 @@
 **Quirk:** `LandingPage` (new component) is not imported or rendered anywhere reachable from `main.tsx`/`App.tsx` — `App.tsx` still returns a bare `<div id="app" />`.
 **Where:** `frontend/src/App.tsx`.
 **Implication:** A real browser hitting `app_url` shows nothing yet; `green-selenium` will time out waiting on `hero-heading`/`hero-primary-cta-button` until a later step (`align-design` or `green-frontend-api`) wires `LandingPage` into `App`.
+
+## align-design (2026-07-08)
+
+**Quirk:** `index.html` now loads a render-blocking `fonts.googleapis.com` stylesheet on a page real Selenium runs will actually hit (previously `App.tsx` rendered nothing, so no page load ever reached `<head>`).
+**Where:** `frontend/index.html`; `acceptance/statements/frontend/landing_page_statements.py`'s `WAIT_TIMEOUT_SECONDS = 5`.
+**Implication:** `green-selenium` (next step) can time out on `hero-heading` visibility if the test runner has no outbound internet or the font CDN is slow/blocked — a failure mode the vitest unit test can never surface since jsdom never loads `index.html`'s head.
