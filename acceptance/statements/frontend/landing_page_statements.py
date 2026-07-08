@@ -8,7 +8,12 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 HERO_HEADING = (By.CSS_SELECTOR, "[data-testid='hero-heading']")
 HERO_SUBHEADING = (By.CSS_SELECTOR, "[data-testid='hero-subheading']")
-PRIMARY_CTA_BUTTON = (By.CSS_SELECTOR, "[data-testid='primary-cta-button']")
+# Scoped to "hero-primary-cta-button", not a generic "primary-cta-button": the Figma
+# export (.memory-bank/figma/Landing.png) shows three "Создать генерацию" buttons
+# (header nav, hero, page footer) — a shared, unscoped testid would let Selenium's
+# first-DOM-match resolution silently bind to the wrong one once green-frontend wires
+# up all three instances.
+PRIMARY_CTA_BUTTON = (By.CSS_SELECTOR, "[data-testid='hero-primary-cta-button']")
 
 WAIT_TIMEOUT_SECONDS = 5
 
@@ -25,24 +30,27 @@ class LandingPageStatements:
         driver.get(app_url)
 
     def assert_hero_heading_is_visible(self, driver: WebDriver) -> None:
-        element = self._wait_for_visible(driver, HERO_HEADING)
-        assert element.is_displayed(), "expected hero heading to be visible"
-        assert element.text.strip() == self.EXPECTED_HERO_HEADING_TEXT, (
-            f"expected hero heading text '{self.EXPECTED_HERO_HEADING_TEXT}', got '{element.text}'"
+        self._assert_element_visible_with_text(
+            driver, HERO_HEADING, self.EXPECTED_HERO_HEADING_TEXT, "hero heading"
         )
 
     def assert_hero_subheading_is_visible(self, driver: WebDriver) -> None:
-        element = self._wait_for_visible(driver, HERO_SUBHEADING)
-        assert element.is_displayed(), "expected hero subheading to be visible"
-        assert element.text.strip() == self.EXPECTED_HERO_SUBHEADING_TEXT, (
-            f"expected hero subheading text '{self.EXPECTED_HERO_SUBHEADING_TEXT}', got '{element.text}'"
+        self._assert_element_visible_with_text(
+            driver, HERO_SUBHEADING, self.EXPECTED_HERO_SUBHEADING_TEXT, "hero subheading"
         )
 
     def assert_primary_cta_button_is_visible(self, driver: WebDriver) -> None:
-        element = self._wait_for_visible(driver, PRIMARY_CTA_BUTTON)
-        assert element.is_displayed(), "expected primary CTA button to be visible"
-        assert element.text.strip() == self.EXPECTED_PRIMARY_CTA_TEXT, (
-            f"expected CTA button text '{self.EXPECTED_PRIMARY_CTA_TEXT}', got '{element.text}'"
+        self._assert_element_visible_with_text(
+            driver, PRIMARY_CTA_BUTTON, self.EXPECTED_PRIMARY_CTA_TEXT, "primary CTA button"
+        )
+
+    def _assert_element_visible_with_text(
+        self, driver: WebDriver, locator: tuple[str, str], expected_text: str, label: str
+    ) -> None:
+        element = self._wait_for_visible(driver, locator)
+        assert element.is_displayed(), f"expected {label} to be visible"
+        assert element.text.strip() == expected_text, (
+            f"expected {label} text '{expected_text}', got '{element.text}'"
         )
 
     def _wait_for_visible(self, driver: WebDriver, locator: tuple[str, str]) -> WebElement:

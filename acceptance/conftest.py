@@ -27,8 +27,7 @@ def generation_statements(application_client):
 
 @pytest.fixture
 def app_url():
-    frontend_port = os.environ.get("FRONTEND_PORT", "5175")
-    return f"http://127.0.0.1:{frontend_port}"
+    return f"http://127.0.0.1:{os.environ.get('FRONTEND_PORT', '5173')}"
 
 
 @pytest.fixture
