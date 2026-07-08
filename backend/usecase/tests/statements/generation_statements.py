@@ -27,14 +27,7 @@ class GenerationStatements:
             self.thrown_exception = exc
 
     def assert_missing_topic_error_raised(self) -> None:
-        assert isinstance(self.thrown_exception, ValidationException), (
-            f"expected ValidationException to be raised, got "
-            f"{type(self.thrown_exception).__name__ if self.thrown_exception else 'no exception'}"
-        )
-        assert str(self.thrown_exception) == self.EXPECTED_MISSING_TOPIC_MESSAGE, (
-            f"expected ValidationException message '{self.EXPECTED_MISSING_TOPIC_MESSAGE}', "
-            f"got '{self.thrown_exception}'"
-        )
+        self._assert_validation_error_raised(self.EXPECTED_MISSING_TOPIC_MESSAGE)
 
     def attempt_creating_generation_with_volume_pages(self, volume_pages: Optional[int]) -> None:
         scope = GenerationRequestScope.builder(volume_pages=volume_pages)
@@ -51,11 +44,14 @@ class GenerationStatements:
             self.thrown_exception = exc
 
     def assert_out_of_range_volume_error_raised(self) -> None:
+        self._assert_validation_error_raised(self.EXPECTED_OUT_OF_RANGE_VOLUME_MESSAGE)
+
+    def _assert_validation_error_raised(self, expected_message: str) -> None:
         assert isinstance(self.thrown_exception, ValidationException), (
             f"expected ValidationException to be raised, got "
             f"{type(self.thrown_exception).__name__ if self.thrown_exception else 'no exception'}"
         )
-        assert str(self.thrown_exception) == self.EXPECTED_OUT_OF_RANGE_VOLUME_MESSAGE, (
-            f"expected ValidationException message '{self.EXPECTED_OUT_OF_RANGE_VOLUME_MESSAGE}', "
+        assert str(self.thrown_exception) == expected_message, (
+            f"expected ValidationException message '{expected_message}', "
             f"got '{self.thrown_exception}'"
         )
