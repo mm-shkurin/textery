@@ -3,7 +3,57 @@
 Source of truth for scoring rules: `.memory-bank/sprint.txt`. This file is the working
 plan derived from it, kept in sync with `ProductSpecification/stories.md`.
 
+## Working copies (2026-07-07)
+
+Backend and frontend sessions were sharing one working directory (`textery/`), which
+risked one session's uncommitted edits landing in the other's commits. Fixed with a
+git worktree: `C:\Users\trape\OneDrive\Desktop\textery-frontend` is an isolated
+checkout on branch `features/story-1-frontend` (forked from
+`features/story-1-auto-generate-doklad` at the point backend reached `red-usecase` for
+scenario 1.1). Both feature branches PR into `dev` independently — no need to merge
+one into the other first. Frontend session should be pointed at the worktree path,
+not the main `textery/` folder, from now on.
+
 ## Progress log
+
+### 2026-07-07 (sprint 1, day 2, TDD loop underway) — P0-1 design done; backend session rotating out (context limit)
+
+Backend session ran real TDD work on `features/story-1-auto-generate-doklad` (branched
+off `dev` per the earlier call — one branch for the whole P0 push):
+- **red-acceptance** (scenario 1.1, "reject missing topic"): predicted-vs-actual failure
+  matched exactly (400 expected, 501 actual — placeholder backend). Self-corrected a
+  wrong 422 prediction mid-unit, traced it to a stale line in the story spec, fixed the
+  spec too, not just the test.
+- **design** (scenario 1.1): domain-level validation architecture —
+  `Generation.create(...)` factory + `ValidationException` + two centralized FastAPI
+  exception handlers (400 for validation, generic 500 catch-all, never leaks internals).
+  Rejected per-controller imperative checks (would duplicate trim/length/emptiness logic
+  per field as 1.2/1.3/1.4 land). **Declared the pattern for 1.2/1.3/1.4 and stories
+  #2-4** — now recorded in `tech-details/backend.md`'s "Decided" section, full ADR at
+  `ProductSpecification/stories/01-auto-generate-doklad/decisions/request-validation-architecture-decision.md`.
+  Hazard-scanned the design itself (not just the spec) — 4 groups clean/out-of-altitude,
+  4 found real gaps, all folded in: trim-before-emptiness-check, 300-char topic max,
+  omitted/null/empty-string all producing the identical 400, the catch-all handler
+  requirement.
+- Review passes (`agent-review`, `premortem`) both returned CONCERNS on the
+  red-acceptance step and got acted on for P0-relevant findings (422/400 fix, a
+  backwards tech-profile rule, an over-scoped assertion method rename); non-P0 findings
+  explicitly deferred with reasons (DTO mass-assignment escape hatch → scenarios 1.5/1.6,
+  Statements file split → later, empty-string-vs-missing equivalence class → out of
+  scenario 1.1's scope).
+
+Commits: `885e44e` (P0 triage), `a5c0ccd` (acceptance scaffold refactor + 422/400 fix),
+`019faa9` (known-debt #1 close, tech-lead notes), `76d9b25` (design ADR).
+
+**P0-1 now 2/6 steps done** (red-acceptance, design); next is **red-usecase** — first
+step that actually touches `backend/` (still empty until now, correctly). **0/7 P0
+scenarios fully complete yet.**
+
+**Session rotating out at this point (context limit)** — this is exactly the scenario
+continue-framework's `progress.md` persistence is designed for: a fresh backend session
+can pick up from `progress.md` + this log + the ADR with nothing lost. See the handoff
+prompt used to start the next backend session (not stored here — given fresh each
+rotation).
 
 ### 2026-07-07 (sprint 1, day 2, later) — pace check: 67 scenarios / 424 steps, 1 done — P0 triage
 

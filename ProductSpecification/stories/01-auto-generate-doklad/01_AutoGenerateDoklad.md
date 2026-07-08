@@ -57,15 +57,20 @@ page. API contract is unaffected (still `POST /generations` + poll); this only c
 what the frontend shows. See `.memory-bank/tasks/known-debt.md` #5 for the streaming
 simplification.
 
-- **Landing** (minimal slice pulled forward from story #9 — hero + "Попробовать
-  бесплатно" CTA only, not the full marketing page). Reference: `.memory-bank/Landing.png`.
+- **Landing** (minimal slice pulled forward from story #9 — hero + CTA only, not the
+  full marketing page). CTA copy is **"Создать генерацию"** (per designer's Figma, not
+  the earlier placeholder "Попробовать бесплатно"). Reference (authoritative):
+  `.memory-bank/figma/Landing.png`. Earlier reference: `.memory-bank/Landing.png`.
 - **Modal — document type select**: доклад / эссе / сочинение / реферат. Only доклад is
-  active this story; the other three show a "скоро" badge (same pattern as the existing
-  `mockups/desktop/01-generation-form.html`, just relocated into a modal). Reference:
-  `.memory-bank/Тип документа.png`.
+  active this story; the other three show a "скоро" badge — **this disabled treatment is
+  this story's addition, not in the Figma export itself** (Figma renders all 4 cards
+  uniformly selectable — it's a reusable, story-agnostic modal design). Reference
+  (authoritative, layout/chrome): `.memory-bank/figma/Generation screen.png`. Earlier
+  reference: `.memory-bank/Тип документа.png`.
 - **Modal — mode select**: Ручной режим / Автоматический режим. Only Автоматический is
-  active; Ручной shows "скоро" (story #5 isn't built yet — same disabled-option
-  convention as the type modal). Reference: `.memory-bank/Тип Работы.png`.
+  active; Ручной shows "скоро" — same caveat as above, Figma shows both cards uniform.
+  Reference (authoritative): `.memory-bank/figma/Generation screen 2.png`. Earlier
+  reference: `.memory-bank/Тип Работы.png`.
 - **Generation form** (topic / volume / requirements / wishes, submit) — reached after
   both modals; this is the existing `01-generation-form.html` mockup, now a step inside
   the flow rather than the entry point.

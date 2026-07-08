@@ -1,11 +1,27 @@
 # Tech Details — Backend
 
 ## Status
-No code written yet — `backend/` is still empty. Story 1's spec pipeline is complete
+No code written yet — `backend/` is still empty (expected: red-usecase, the first step
+that touches `backend/`, hasn't run yet). Story 1's spec pipeline is complete
 (`/interview` → `/story` → `/mockups` → `/api-spec` → `/test-spec`, hazard-catalogue
 scanned twice — see `ProductSpecification/stories/01-auto-generate-doklad/` and
 `.memory-bank/tasks/sprint-plan.md`'s progress log for the full breakdown). All items
-below are now confirmed, not proposed. Next step is the actual red/green TDD loop.
+below are now confirmed, not proposed. TDD loop is in progress on
+`features/story-1-auto-generate-doklad` — P0-1 (scenario 1.1) is at
+`red-usecase` next; see `progress.md`'s "Priority for Sprint 1" section for the P0
+list and current step.
+
+## Decided — request validation architecture (2026-07-07)
+Domain-level validation, not controller-level imperative checks: `Generation.create(...)`
+is the sole entry point for field validation, raises `ValidationException` on any bad
+field; two centralized FastAPI exception handlers in the composition root map
+`ValidationException` → 400 and a catch-all `Exception` → generic 500 (never echoes
+internals/stack traces). Chosen over per-controller `if not request.topic: raise
+HTTPException(...)` checks specifically because that would duplicate trim/length/
+tri-state-emptiness logic per field as scenarios 1.2/1.3 land. **This is now the
+pattern for scenarios 1.2/1.3/1.4 and stories #2-4** (эссе/сочинение/реферат reuse the
+same `Generation.create` shape) — don't re-litigate it per scenario. Full ADR:
+`ProductSpecification/stories/01-auto-generate-doklad/decisions/request-validation-architecture-decision.md`.
 
 ## Decided
 - **Language/framework:** Python + FastAPI.
