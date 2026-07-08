@@ -85,3 +85,21 @@ isn't lost between now and sprint 6.
 notes back up then: does "mocked billing" still warrant a real Saga/Kafka architecture
 for demonstration purposes, or is that over-engineering for a mocked payment flow?
 Needs a real decision with the user, not an assumption either way.
+
+## 8. `_is_blank_topic()` doesn't reject control chars (Cc) or lone surrogates (Cs)
+Found 2026-07-07 by `agent-review` + `premortem` on scenario 1.1's green-usecase commit
+(`64995f7`), independently, same root cause. The guard filters Unicode category Cf
+(zero-width/format chars) but not Cc (NUL, BEL, ...) or Cs (lone surrogates like
+`\ud800`) — a topic consisting solely of those passes as "non-blank". Traced concrete
+downstream failures once real data flows past validation: a NUL-only topic would crash
+on Postgres's UTF-8 constraint (scenario 2.1+) instead of failing cleanly with 400; a
+lone-surrogate topic reaching the OpenRouter call inside the worker would raise
+`UnicodeEncodeError` outside any handler, leaving the generation stuck. Not
+purely theoretical — copy-pasted topic text (e.g. from Word/PDF) occasionally carries
+stray control/format characters, this isn't only an adversarial-input concern.
+Did not block the 1.1 commit — both review passes agreed the fix (widen the category
+filter in `backend/domain/src/generation/generation.py:30-34` to exclude Cc and Cs too,
+not just Cf) is cheap and doesn't need a detour from P0 sequencing right now.
+**Resurfaces:** close this — with a test case — during scenario 2.1's (P0-3) design
+phase, before its happy path starts writing real topics to storage/the OpenRouter call.
+Don't let 2.1 land without it; that's the point where the traced incidents become live.
