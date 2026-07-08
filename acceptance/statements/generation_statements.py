@@ -28,20 +28,12 @@ class GenerationStatements:
         request = scope.to_request_dto()
         return await self._client.create_generation(request, TestData.unique_idempotency_key())
 
-    def assert_missing_topic_error(self, response: GenerationResponseDto) -> None:
+    def assert_validation_error(self, response: GenerationResponseDto, expected_error: dict) -> None:
         assert response.status_code == 400, (
-            f"expected 400 Bad Request (missing-field validation error), got {response.status_code}"
+            f"expected 400 Bad Request (validation error), got {response.status_code}"
         )
-        assert response.body == self.EXPECTED_MISSING_TOPIC_ERROR, (
-            f"expected validation error body {self.EXPECTED_MISSING_TOPIC_ERROR}, got {response.body}"
-        )
-
-    def assert_out_of_range_volume_error(self, response: GenerationResponseDto) -> None:
-        assert response.status_code == 400, (
-            f"expected 400 Bad Request (out-of-range volume_pages validation error), got {response.status_code}"
-        )
-        assert response.body == self.EXPECTED_OUT_OF_RANGE_VOLUME_ERROR, (
-            f"expected validation error body {self.EXPECTED_OUT_OF_RANGE_VOLUME_ERROR}, got {response.body}"
+        assert response.body == expected_error, (
+            f"expected validation error body {expected_error}, got {response.body}"
         )
 
     def assert_no_generation_created(self, response: GenerationResponseDto) -> None:
