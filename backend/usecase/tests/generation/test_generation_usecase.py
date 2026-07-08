@@ -5,7 +5,6 @@ from statements.generation_statements import GenerationStatements
 INVISIBLE_CHAR_TOPIC = "​"
 
 
-@pytest.mark.skip(reason="RED: Generation.create not implemented -- raises NotImplementedError instead of ValidationException")
 class TestGenerationUsecase:
     """Scenario 1.1: Reject request with missing topic.
 
