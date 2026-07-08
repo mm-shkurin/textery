@@ -29,3 +29,9 @@
 **Quirk:** `vite.config.ts` sets `test.globals: true` but `tsconfig.app.json`'s `types` array omits `vitest/globals`, so bare-global test code (`describe`/`it`/`expect` with no import) passes `vitest run` but fails `tsc -b`.
 **Where:** `frontend/vite.config.ts` / `frontend/tsconfig.app.json`.
 **Implication:** Future test files relying on the `globals: true` config (rather than explicit `vitest` imports, as this scenario's test uses) will break `npm run build` even though they pass the test suite.
+
+## green-frontend (2026-07-08)
+
+**Quirk:** `LandingPage` (new component) is not imported or rendered anywhere reachable from `main.tsx`/`App.tsx` — `App.tsx` still returns a bare `<div id="app" />`.
+**Where:** `frontend/src/App.tsx`.
+**Implication:** A real browser hitting `app_url` shows nothing yet; `green-selenium` will time out waiting on `hero-heading`/`hero-primary-cta-button` until a later step (`align-design` or `green-frontend-api`) wires `LandingPage` into `App`.
