@@ -1,5 +1,7 @@
+import { LandingPage } from './features/landing/components/LandingPage'
+
 function App() {
-  return <div id="app" />
+  return <LandingPage />
 }
 
 export default App

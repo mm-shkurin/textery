@@ -338,13 +338,13 @@ otherwise pick.
 > sections, up from 11). No frontend code existed yet, so nothing here was in-flight.
 
 ### Scenario 1.1: The landing page displays the hero and primary CTA
-- [~] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
-- [ ] green-selenium
+- [x] red-selenium
+- [x] red-frontend
+- [x] green-frontend
+- [S] red-frontend-api — purely presentational (static hero heading + CTA button), no backend call; `POST /generations`/`GET /generations` belong to later scenarios in the flow. Handled entirely in the component (align-design).
+- [S] green-frontend-api — see red-frontend-api skip reason
+- [x] align-design
+- [~] green-selenium
 - [ ] demo
 
 ### Scenario 1.2: The primary CTA opens the document-type modal
