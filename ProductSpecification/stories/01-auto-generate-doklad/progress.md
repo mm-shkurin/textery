@@ -338,8 +338,8 @@ otherwise pick.
 ### Scenario 1.1: The landing page displays the hero and primary CTA
 - [x] red-selenium
 - [x] red-frontend
-- [~] green-frontend
-- [ ] red-frontend-api
+- [x] green-frontend
+- [~] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
 - [ ] green-selenium

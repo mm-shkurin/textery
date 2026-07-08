@@ -4,10 +4,7 @@ import { render, screen } from '@testing-library/react'
 import { LandingPage } from '../components/LandingPage'
 
 describe('LandingPage', () => {
-  // RED: frontend/src/features/landing/components/LandingPage.tsx does not exist yet --
-  // Vite fails to resolve the import at transform time ("Failed to resolve import
-  // '../components/LandingPage'"), before any test body runs.
-  it.skip('should display the hero heading, subheading, and primary CTA', () => {
+  it('should display the hero heading, subheading, and primary CTA', () => {
     render(<LandingPage />)
 
     // toHaveTextContent does a substring `includes()` check (see jest-dom matchers-*.js

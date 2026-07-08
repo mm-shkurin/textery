@@ -17,3 +17,15 @@
 **Decision:** The hero CTA button's locator is `data-testid="hero-primary-cta-button"`, not a generic `primary-cta-button`.
 **Why:** The Figma export shows three identical "Создать генерацию" buttons (header, hero, footer); a shared testid would let Selenium's first-DOM-match resolution silently bind to the wrong one.
 **Where applied:** `acceptance/statements/frontend/landing_page_statements.py`'s `PRIMARY_CTA_BUTTON` locator — the green-frontend hero CTA component must render this exact testid.
+
+## red-frontend (2026-07-08)
+
+**Quirk:** `npm run build` (`tsc -b && vite build`) fails as soon as a RED-phase test file exists, because `frontend/tsconfig.app.json`'s `include: ["src"]` has no exclude for `__tests__`/`*.test.tsx`, so `tsc -b` type-checks tests importing not-yet-created components.
+**Where:** `frontend/tsconfig.app.json`.
+**Implication:** Every future `red-frontend` step will break `npm run build` until this is fixed with an exclude or a separate build-only tsconfig; `vitest run` (the actual RED gate) is unaffected.
+
+## red-frontend (2026-07-08)
+
+**Quirk:** `vite.config.ts` sets `test.globals: true` but `tsconfig.app.json`'s `types` array omits `vitest/globals`, so bare-global test code (`describe`/`it`/`expect` with no import) passes `vitest run` but fails `tsc -b`.
+**Where:** `frontend/vite.config.ts` / `frontend/tsconfig.app.json`.
+**Implication:** Future test files relying on the `globals: true` config (rather than explicit `vitest` imports, as this scenario's test uses) will break `npm run build` even though they pass the test suite.
