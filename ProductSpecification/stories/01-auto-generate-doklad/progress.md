@@ -336,8 +336,8 @@ otherwise pick.
 > sections, up from 11). No frontend code existed yet, so nothing here was in-flight.
 
 ### Scenario 1.1: The landing page displays the hero and primary CTA
-- [~] red-selenium
-- [ ] red-frontend
+- [x] red-selenium
+- [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
