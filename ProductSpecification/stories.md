@@ -4,7 +4,7 @@
 
 | #  | Story                         | Spec | Back | Intg | Front | Sec | Load | Infra | Tests | %  |
 |----|-------------------------------|------|------|------|-----|-------|------|-------|-------|----|
-| 1  | Auto-generate: доклад          | ✅   | 🔧   | —    | 🔧   | —     | —    | —     | 1/74  | 1% |
+| 1  | Auto-generate: доклад          | ✅   | 🔧   | —    | 🔧   | —     | —    | —     | 5/74  | 7% |
 
 # Backlog — Core sequence (build order, decided 2026-07-06)
 
