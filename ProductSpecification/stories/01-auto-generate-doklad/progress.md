@@ -107,7 +107,13 @@ Revert this once P0-1..7 are green and deployed — resume full `/continue` cere
 - [x] design — see `decisions/persist-and-enqueue-architecture-decision.md`
 - [x] red-usecase
 - [x] green-usecase
-- [~] adapters-discovery
+- [x] adapters-discovery — Check 1 (ports): GenerationStorage has no adapter at all (`backend/adapters/db` doesn't exist yet) → needs `red-adapter db`/`green-adapter db` (SQLAlchemy model + Alembic migration for `generations` table with CHECK constraint per ADR, session/engine setup). GenerationQueue has no adapter at all (no arq module yet) → needs `red-adapter queue`/`green-adapter queue` (arq producer using `REDIS_URL`). Check 2 (exceptions): [S] scenario 2.1 is happy-path only, no new domain exception to map. Check 3 (response shape): REST router currently returns no body (201 only) but the already-red acceptance test expects `generation_id`/`status`/echoed fields/`created_at` in the body → needs `red-adapter rest`/`green-adapter rest`. Also `get_generation_usecase()` still does `return RequestGeneration()` with no args (will raise `TypeError` once real ports are wired) — must be updated to inject the real db/queue adapters.
+- [ ] red-adapter db
+- [ ] green-adapter db
+- [ ] red-adapter queue
+- [ ] green-adapter queue
+- [ ] red-adapter rest
+- [ ] green-adapter rest
 - [ ] green-acceptance
 
 ### Scenario 2.2: An entirely Cyrillic request round-trips without corruption
