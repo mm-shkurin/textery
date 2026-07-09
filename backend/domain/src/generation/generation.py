@@ -46,6 +46,7 @@ class Generation:
         self.status = COMPLETED_STATUS
 
     def fail(self, reason: str) -> None:
+        self.content = reason
         self.status = FAILED_STATUS
 
     @classmethod

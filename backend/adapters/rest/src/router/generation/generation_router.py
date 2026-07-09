@@ -2,9 +2,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException
 
-from container import create_generate_document, create_get_generation, create_request_generation
 from dto.generation.generation_request_dto import GenerationRequestDto
 from dto.generation.generation_response_dto import GenerationCreatedDto, GenerationDetailDto
+from generation.generate_document import GenerateDocument
 from generation.get_generation import GetGeneration
 from generation.request_generation import RequestGeneration
 
@@ -12,16 +12,15 @@ router = APIRouter(prefix="/api/v1/generations", tags=["generations"])
 
 
 def get_request_generation_usecase() -> RequestGeneration:
-    return create_request_generation()
+    raise NotImplementedError("wired by the application composition root")
 
 
 def get_get_generation_usecase() -> GetGeneration:
-    return create_get_generation()
+    raise NotImplementedError("wired by the application composition root")
 
 
-async def run_generate_document(generation_id: UUID) -> None:
-    usecase = create_generate_document()
-    await usecase.execute(generation_id)
+def get_generate_document_usecase() -> GenerateDocument:
+    raise NotImplementedError("wired by the application composition root")
 
 
 @router.post("", status_code=201, response_model=GenerationCreatedDto)
@@ -30,6 +29,7 @@ async def create_generation(
     background_tasks: BackgroundTasks,
     idempotency_key: str = Header(..., alias="Idempotency-Key"),
     usecase: RequestGeneration = Depends(get_request_generation_usecase),
+    generate_document: GenerateDocument = Depends(get_generate_document_usecase),
 ) -> GenerationCreatedDto:
     generation = await usecase.execute(
         topic=request.topic,
@@ -38,7 +38,7 @@ async def create_generation(
         extra_wishes=request.extra_wishes,
         document_type=request.document_type,
     )
-    background_tasks.add_task(run_generate_document, generation.id)
+    background_tasks.add_task(generate_document.execute, generation.id)
     return GenerationCreatedDto.from_domain(generation)
 
 
