@@ -43,8 +43,8 @@ otherwise pick.
 - [x] red-acceptance
 - [x] design
 - [x] red-usecase
-- [~] green-usecase
-- [ ] adapters-discovery
+- [x] green-usecase
+- [~] adapters-discovery
 - [ ] green-acceptance
 
 ### Scenario 1.3: Reject requirements/extra_wishes exceeding the length limit

@@ -24,7 +24,6 @@ class TestGenerationUsecase:
         generation_statements.assert_missing_topic_error_raised()
 
 
-@pytest.mark.skip(reason="RED: Generation.create has no volume_pages guard, falls through to NotImplementedError")
 class TestGenerationUsecaseVolumeRange:
     """Scenario 1.2: Reject request with out-of-range volume.
 
