@@ -8,7 +8,7 @@ the product actually work end-to-end and unblocks frontend integration. Branch:
 `features/story-1-auto-generate-doklad`, PR into `dev` once P0 is green and deployed.
 
 - [x] **P0-1** — Backend 1.1: Reject request with missing topic (all steps done through `green-acceptance`, see `decisions/request-validation-architecture-decision.md`)
-- [ ] **P0-2** — Backend 1.2: Reject request with out-of-range volume
+- [x] **P0-2** — Backend 1.2: Reject request with out-of-range volume
 - [ ] **P0-3** — Backend 2.1: Valid request is accepted and queued without waiting on the LLM call
 - [ ] **P0-4** — Backend 4.1: A pending generation reports its status without document content
 - [ ] **P0-5** — Backend 4.2: A completed generation includes the document content
@@ -59,8 +59,8 @@ Revert this once P0-1..7 are green and deployed — resume full `/continue` cere
 - [x] design
 - [x] red-usecase
 - [x] green-usecase
-- [~] adapters-discovery
-- [ ] green-acceptance
+- [x] adapters-discovery — Check 1 (ports): [S] no outbound port, same as 1.1. Check 2 (exceptions): [S] `ValidationException` already mapped to 400 by the generic handler registered in 1.1's `green-adapter rest`. Check 3 (response shape): [S] router already forwards `volume_pages` through to `Generation.create`; response shape (400 + `{"detail": ...}`) matches acceptance expectation, same code path as 1.1. No adapter changes needed — only the acceptance test's skip marker (stale per agent-review finding) blocks green-acceptance.
+- [x] green-acceptance — un-skipped only (no production code needed, adapter already sufficient per discovery above); 3/3 acceptance tests passed
 
 ### Scenario 1.3: Reject requirements/extra_wishes exceeding the length limit
 - [ ] red-acceptance
