@@ -29,6 +29,7 @@ class GenerationModel(Base):
     requirements: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     extra_wishes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     document_type: Mapped[str] = mapped_column(String, nullable=False)
+    content: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     @classmethod
     def from_domain(cls, generation: Generation) -> "GenerationModel":
@@ -41,6 +42,7 @@ class GenerationModel(Base):
             requirements=generation.requirements,
             extra_wishes=generation.extra_wishes,
             document_type=generation.document_type,
+            content=generation.content,
         )
 
     def to_domain(self) -> Generation:
@@ -53,4 +55,5 @@ class GenerationModel(Base):
             requirements=self.requirements,
             extra_wishes=self.extra_wishes,
             document_type=self.document_type,
+            content=self.content,
         )
