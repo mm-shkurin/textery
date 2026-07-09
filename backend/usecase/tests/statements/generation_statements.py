@@ -14,24 +14,19 @@ class GenerationStatements:
 
     def attempt_creating_generation_with_topic(self, topic: Optional[str]) -> None:
         scope = GenerationRequestScope.builder(topic=topic)
-
-        try:
-            Generation.create(
-                topic=scope.topic,
-                volume_pages=scope.volume_pages,
-                requirements=scope.requirements,
-                extra_wishes=scope.extra_wishes,
-                document_type=scope.document_type,
-            )
-        except Exception as exc:
-            self.thrown_exception = exc
+        self._attempt_creating_generation(scope)
 
     def assert_missing_topic_error_raised(self) -> None:
         self._assert_validation_error_raised(self.EXPECTED_MISSING_TOPIC_MESSAGE)
 
     def attempt_creating_generation_with_volume_pages(self, volume_pages: Optional[int]) -> None:
         scope = GenerationRequestScope.builder(volume_pages=volume_pages)
+        self._attempt_creating_generation(scope)
 
+    def assert_out_of_range_volume_error_raised(self) -> None:
+        self._assert_validation_error_raised(self.EXPECTED_OUT_OF_RANGE_VOLUME_MESSAGE)
+
+    def _attempt_creating_generation(self, scope: GenerationRequestScope) -> None:
         try:
             Generation.create(
                 topic=scope.topic,
@@ -42,9 +37,6 @@ class GenerationStatements:
             )
         except Exception as exc:
             self.thrown_exception = exc
-
-    def assert_out_of_range_volume_error_raised(self) -> None:
-        self._assert_validation_error_raised(self.EXPECTED_OUT_OF_RANGE_VOLUME_MESSAGE)
 
     def _assert_validation_error_raised(self, expected_message: str) -> None:
         assert isinstance(self.thrown_exception, ValidationException), (
