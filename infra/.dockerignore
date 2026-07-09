@@ -1,8 +1,0 @@
-# Build context for backend/frontend Dockerfiles is infra/ itself. Keep
-# harness/bookkeeping directories and future language caches out of the image.
-.git
-.memory-bank
-swarm-report
-node_modules
-.venv
-__pycache__

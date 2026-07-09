@@ -1,22 +1,25 @@
-# TEMP placeholder — backend/ is empty until a separate session lands the real
-# FastAPI app. This Dockerfile only proves the `backend`/`worker` services can
-# build, boot, and reach Postgres/Redis. Replace once real code exists:
-#   - COPY the real app (or bind-mount it — see infra/architecture.md) and
-#     install its dependencies (requirements.txt / poetry / uv).
-#   - Replace the CMD below with `uvicorn app.main:app --host 0.0.0.0 --port 8000`.
-#   - Keep the `worker` service's `command:` override for the real
-#     `arq worker.WorkerSettings` entrypoint (see docker-compose.yml).
+# Real backend image: FastAPI app + Alembic migrations, run against the
+# compose `postgres`/`redis` services. Build context is the repo root (see
+# docker-compose.yml `backend.build.context: ..`) so this Dockerfile can COPY
+# every backend/ module (domain, usecase, adapters/*, application) — main.py
+# adds each module's src/ to sys.path itself (see application/src/app/main.py).
 FROM python:3.12-slim
 
 WORKDIR /app
 
-# No COPY: backend/ has no code yet.
+COPY backend/requirements.txt backend/requirements.txt
+RUN pip install --no-cache-dir -r backend/requirements.txt
+
+COPY backend/domain backend/domain
+COPY backend/usecase backend/usecase
+COPY backend/adapters backend/adapters
+COPY backend/application backend/application
 
 EXPOSE 8000
 
-# Trivial HTTP server so the `backend` service responds to something and the
-# container has a real listening port to heal-check against.
-CMD ["python3", "-m", "http.server", "8000"]
+# Apply migrations, then serve. alembic.ini's script_location is relative, so
+# alembic must run with cwd = backend/adapters/db.
+CMD ["sh", "-c", "cd backend/adapters/db && alembic upgrade head && cd /app && uvicorn app.main:app --app-dir backend/application/src --host 0.0.0.0 --port 8000"]
 
-HEALTHCHECK --interval=10s --timeout=3s --retries=3 \
-  CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/', timeout=2)" || exit 1
+HEALTHCHECK --interval=10s --timeout=3s --retries=5 --start-period=15s \
+  CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/openapi.json', timeout=2)" || exit 1

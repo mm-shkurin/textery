@@ -1,0 +1,19 @@
+# Build context for infra/docker/*.Dockerfile is the repo root (see
+# infra/docker-compose.yml build.context: ..). Keep VCS/harness bookkeeping,
+# language caches, and local envs out of build images.
+.git
+.claude
+ProductSpecification
+infra/.memory-bank
+infra/swarm-report
+node_modules
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+htmlcov
+coverage.xml
+*.egg-info
+.env
