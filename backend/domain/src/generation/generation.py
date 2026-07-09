@@ -10,6 +10,9 @@ OUT_OF_RANGE_VOLUME_MESSAGE = "volume_pages must be between 1 and 10"
 MIN_VOLUME_PAGES = 1
 MAX_VOLUME_PAGES = 10
 PENDING_STATUS = "pending"
+IN_PROGRESS_STATUS = "in_progress"
+COMPLETED_STATUS = "completed"
+FAILED_STATUS = "failed"
 
 
 class Generation:
@@ -23,6 +26,7 @@ class Generation:
         requirements: Optional[str],
         extra_wishes: Optional[str],
         document_type: str,
+        content: Optional[str] = None,
     ) -> None:
         self.id = id
         self.status = status
@@ -32,6 +36,17 @@ class Generation:
         self.requirements = requirements
         self.extra_wishes = extra_wishes
         self.document_type = document_type
+        self.content = content
+
+    def mark_in_progress(self) -> None:
+        self.status = IN_PROGRESS_STATUS
+
+    def complete(self, content: str) -> None:
+        self.content = content
+        self.status = COMPLETED_STATUS
+
+    def fail(self, reason: str) -> None:
+        self.status = FAILED_STATUS
 
     @classmethod
     def create(
