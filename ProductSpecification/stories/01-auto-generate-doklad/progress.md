@@ -9,11 +9,25 @@ the product actually work end-to-end and unblocks frontend integration. Branch:
 
 - [x] **P0-1** — Backend 1.1: Reject request with missing topic (all steps done through `green-acceptance`, see `decisions/request-validation-architecture-decision.md`)
 - [x] **P0-2** — Backend 1.2: Reject request with out-of-range volume
-- [ ] **P0-3** — Backend 2.1: Valid request is accepted and queued without waiting on the LLM call
-- [ ] **P0-4** — Backend 4.1: A pending generation reports its status without document content
-- [ ] **P0-5** — Backend 4.2: A completed generation includes the document content
-- [ ] **P0-6** — Integration 1.1: A successful provider call produces a completed document
+- [S] **P0-3** — Backend 2.1: Valid request is accepted and queued without waiting on the LLM call — built off-framework, see `evening-demo-backend-plan.md` + known-debt #10
+- [S] **P0-4** — Backend 4.1: A pending generation reports its status without document content — same evening-demo slice
+- [S] **P0-5** — Backend 4.2: A completed generation includes the document content — same evening-demo slice
+- [S] **P0-6** — Integration 1.1: A successful provider call produces a completed document — verified manually end-to-end against real GigaChat, no automated integration test
 - [ ] **P0-7** — Integration 1.2: The requested volume converts to a pinned, tested prompt budget for Cyrillic text
+
+## Evening-demo backend slice (2026-07-09) — result
+
+Built end-to-end per `evening-demo-backend-plan.md`, all 13 steps done, no TDD ceremony
+(known-debt #10). Manually verified live: `POST /api/v1/generations` → 201 pending →
+background task calls real `GigaChatProvider` (creds in `backend/.env`, gitignored) →
+`GET /api/v1/generations/{id}` polls to `completed` with generated Cyrillic doklad text;
+unknown id → 404. Fixed along the way: alembic was never wired (`migrations/env.py`,
+`script.py.mako`, hand-written `generations` table migration — no live DB for
+autogenerate at write time); GigaChat needs the Russian Minsvyaz trust-CA
+(`generation_provider/certs/russiantrustedca.pem`, bundled) and a 30s httpx timeout
+(default 5s times out against it). Known gap: `SqlAlchemyGenerationStorage` sessions
+from `container.py` factories are never explicitly closed — SAWarning in logs, not
+blocking, not fixed in this slice.
 
 ## Frontend framework-skip decision (decided 2026-07-09 — speed measure)
 
