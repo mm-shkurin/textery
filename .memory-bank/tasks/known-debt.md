@@ -103,3 +103,31 @@ not just Cf) is cheap and doesn't need a detour from P0 sequencing right now.
 **Resurfaces:** close this — with a test case — during scenario 2.1's (P0-3) design
 phase, before its happy path starts writing real topics to storage/the OpenRouter call.
 Don't let 2.1 land without it; that's the point where the traced incidents become live.
+
+## 9. Generation-form page (mockup 04, spec section 4) replaced by single doc+chat screen
+Decided 2026-07-09, speed measure for the Friday deadline. `02_UI_Tests.md` section 4
+("Generation Form — Page Display") and `mockups/desktop/04-generation-form.html`
+describe a standalone form page with four discrete fields (topic, requirements, volume,
+extra wishes). The actual build skips that page: after the mode modal, the visitor
+lands directly on the same doc-left/chat-right layout used for the pending/completed/
+failed states (mockups 05-07, columns flipped — document wide on the left, chat panel
+narrow on the right), and the initial request is a single free-text chat input
+(messenger-style), not four separate fields.
+
+**Consequence — mapping is lossy:** the single chat message is sent as `topic`.
+`volume` (required, 1-10 range, has its own inline-error scenario 7.2) has no field to
+come from — it is sent as a fixed default. `requirements`/`extra_wishes` are sent
+empty. Scenario 5.1 ("submit disabled until required fields filled") becomes "until
+the chat input is non-empty". Scenario 7.2 (out-of-range volume inline error) has no
+UI surface to trigger it anymore — untestable as written. `02_UI_Tests.md` section 4
+and mockup 04 were deliberately NOT updated (per explicit user call) to avoid spending
+sprint time on doc churn — they are now stale/aspirational, not the source of truth for
+what got built.
+
+**Resurfaces:** MUST be revisited once the Friday deadline pressure is off — either (a)
+restore discrete fields (topic/volume/requirements/wishes) in the chat panel so `volume`
+has a real input and scenario 7.2 is meaningful again, or (b) deliberately keep the
+single-input UX and rewrite `02_UI_Tests.md` section 4 + mockup 04 (or delete them) to
+match, and decide what `volume`/`requirements`/`extra_wishes` should actually be when
+the user only typed one free-text message — a fixed default is a placeholder, not a
+real product decision.

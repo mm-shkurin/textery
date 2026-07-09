@@ -1,13 +1,6 @@
-import pytest
-
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
-@pytest.mark.skip(
-    reason="RED: frontend/ has no Landing page markup yet -- placeholder App renders an "
-    "empty <div id='app' /> with no hero/CTA data-testid elements, so the hero heading "
-    "locator times out (TimeoutException) instead of resolving"
-)
 class TestLandingPageAcceptance(AbstractFrontendTest):
     """UI Test Scenario 1.1: The landing page displays the hero and primary CTA.
 

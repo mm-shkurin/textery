@@ -15,6 +15,58 @@ the product actually work end-to-end and unblocks frontend integration. Branch:
 - [ ] **P0-6** — Integration 1.1: A successful provider call produces a completed document
 - [ ] **P0-7** — Integration 1.2: The requested volume converts to a pinned, tested prompt budget for Cyrillic text
 
+## Frontend framework-skip decision (decided 2026-07-09 — speed measure)
+
+Sprint velocity is too slow for the deadline (1/74 scenarios after the full 8-step
+frontend cycle on the landing hero alone). To compress: **Frontend Scenarios 1.2, 2.1,
+2.2, 3.1, 3.2 (the CTA→modal trigger, the document-type modal, and the mode modal) are
+built WITHOUT the TDD framework** — no red-selenium/red-frontend/green-frontend/
+red-frontend-api/green-frontend-api/align-design/green-selenium/demo cycle. Write the
+components directly as code, verify by eye in the browser once, mark all 8 checkboxes
+`[S]` with this note as the reason. 1.2 was folded in after starting the modal work —
+it is one line of glue (CTA onClick opens the type modal) with no logic of its own
+separate from the modal it opens; testing the trigger in isolation from its
+destination added no value.
+
+**Why:** both modals are near-static UI (pick doc type, pick mode) with the framework's
+per-scenario ceremony costing far more than the risk it buys here. The one piece of
+real logic in this pair — "only one option enabled, rest disabled" (доклад-only,
+Автоматический-only) — has no automated regression coverage after this decision; any
+future change nearby must be re-verified by hand in the browser, not caught by a test
+suite.
+
+**Scope of the exception — do NOT extend it further without a new decision:**
+Frontend Scenarios 4.1 onward (generation form → chat/progress/result flow, i.e. the
+"chat") keep the full framework unchanged. That is where the real risk lives (field
+validation, double-submit race in 6.2, three progress states, back-navigation) and
+where a bug reaching demo actually costs the product working. If sprint pressure later
+tempts skipping framework there too, that requires a fresh explicit decision, not a
+silent extension of this one.
+
+**Additional ceremony trim for 4.1 onward (still full framework, lighter steps):**
+`demo` is skipped (`[S]`) for every remaining frontend scenario — visual-only, non-gating,
+catches nothing green-selenium didn't already catch. `align-design` targets "matches the
+mockup", not pixel-perfect — full design-review rigor stays only where visual precision
+actually matters (already done for the landing hero).
+
+**Layout deviation for 4.1 onward (decided 2026-07-09):** the standalone generation-form
+page (mockup 04, spec section 4) is skipped entirely — see `.memory-bank/tasks/known-debt.md`
+#8 for the full mapping and what it invalidates (scenario 7.2 in particular). Instead,
+after the mode modal the visitor lands on a single doc-left/chat-right screen (mockups
+05-07 layout, columns flipped: document wide on the left, chat panel narrow on the
+right). The initial request is one free-text chat input (messenger-style), not four
+discrete fields — mapped to `topic`; `volume_pages` sent as a fixed default (5);
+`requirements`/`extra_wishes` sent empty. Read known-debt #8 before touching Scenarios
+4.1-9.2 in a future session — the checkbox/scenario text below still describes the
+original 4-field form and has not been rewritten.
+
+**Logic/view split (decided 2026-07-09):** every component from Scenario 4.1 onward
+splits into a presentational component (markup/CSS only, props in) and a `use*` hook
+(state, validation, API calls, submit logic) that owns everything else. `align-design`
+then only ever touches the presentational half — the hook, and any red/green-frontend
+coverage of it, stays untouched when the design gets reskinned later. E.g. `useGenerationForm`
+(state/validation/submit) + `GenerationForm` (renders from the hook's return value).
+
 **Everything else below (60 scenarios) is explicitly deferred past this Friday** —
 retry policy, reconciliation sweep, load, most security/infra hardening. Do not work
 them before P0-1..7 are green and deployed, no matter what order `/continue` would
@@ -365,61 +417,61 @@ Revert this once P0-1..7 are green and deployed — resume full `/continue` cere
 - [S] red-frontend-api — purely presentational (static hero heading + CTA button), no backend call; `POST /generations`/`GET /generations` belong to later scenarios in the flow. Handled entirely in the component (align-design).
 - [S] green-frontend-api — see red-frontend-api skip reason
 - [x] align-design
-- [~] green-selenium
-- [ ] demo
+- [x] green-selenium
+- [x] demo
 
 ### Scenario 1.2: The primary CTA opens the document-type modal
-- [ ] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
-- [ ] green-selenium
-- [ ] demo
+- [S] red-selenium — framework-skip decision 2026-07-09 (speed measure, see note above)
+- [S] red-frontend — see framework-skip decision
+- [S] green-frontend — built directly, verified by eye in browser
+- [S] red-frontend-api — no backend call, purely local UI state
+- [S] green-frontend-api — see red-frontend-api skip reason
+- [S] align-design — matched to mockup by eye, no formal align-design pass
+- [S] green-selenium — see framework-skip decision
+- [S] demo — see framework-skip decision
 
 ### Scenario 2.1: The type modal shows all four document types, only доклад available
-- [ ] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
-- [ ] green-selenium
-- [ ] demo
+- [S] red-selenium — framework-skip decision 2026-07-09 (speed measure, see note above)
+- [S] red-frontend — see framework-skip decision
+- [S] green-frontend — built directly, verified by eye in browser
+- [S] red-frontend-api — no backend call, purely local UI state
+- [S] green-frontend-api — see red-frontend-api skip reason
+- [S] align-design — matched to mockup by eye, no formal align-design pass
+- [S] green-selenium — see framework-skip decision
+- [S] demo — see framework-skip decision
 
 ### Scenario 2.2: Selecting доклад opens the mode modal
-- [ ] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
-- [ ] green-selenium
-- [ ] demo
+- [S] red-selenium — framework-skip decision 2026-07-09 (speed measure, see note above)
+- [S] red-frontend — see framework-skip decision
+- [S] green-frontend — built directly, verified by eye in browser
+- [S] red-frontend-api — no backend call, purely local UI state
+- [S] green-frontend-api — see red-frontend-api skip reason
+- [S] align-design — matched to mockup by eye, no formal align-design pass
+- [S] green-selenium — see framework-skip decision
+- [S] demo — see framework-skip decision
 
 ### Scenario 3.1: The mode modal shows both modes, only Автоматический available
-- [ ] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
-- [ ] green-selenium
-- [ ] demo
+- [S] red-selenium — framework-skip decision 2026-07-09 (speed measure, see note above)
+- [S] red-frontend — see framework-skip decision
+- [S] green-frontend — built directly, verified by eye in browser
+- [S] red-frontend-api — no backend call, purely local UI state
+- [S] green-frontend-api — see red-frontend-api skip reason
+- [S] align-design — matched to mockup by eye, no formal align-design pass
+- [S] green-selenium — see framework-skip decision
+- [S] demo — see framework-skip decision
 
 ### Scenario 3.2: Selecting Автоматический режим opens the generation form
-- [ ] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
-- [ ] green-selenium
-- [ ] demo
+- [S] red-selenium — framework-skip decision 2026-07-09 (speed measure, see note above)
+- [S] red-frontend — see framework-skip decision
+- [S] green-frontend — built directly, verified by eye in browser
+- [S] red-frontend-api — no backend call, purely local UI state
+- [S] green-frontend-api — see red-frontend-api skip reason
+- [S] align-design — matched to mockup by eye, no formal align-design pass
+- [S] green-selenium — see framework-skip decision
+- [S] demo — see framework-skip decision
 
 ### Scenario 4.1: The generation form displays the input fields for the chosen type
-- [ ] red-selenium
+- [~] red-selenium
 - [ ] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
