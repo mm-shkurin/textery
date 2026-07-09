@@ -43,6 +43,19 @@ where a bug reaching demo actually costs the product working. If sprint pressure
 tempts skipping framework there too, that requires a fresh explicit decision, not a
 silent extension of this one.
 
+**Additional ceremony trim for 4.1 onward (still full framework, lighter steps):**
+`demo` is skipped (`[S]`) for every remaining frontend scenario — visual-only, non-gating,
+catches nothing green-selenium didn't already catch. `align-design` targets "matches the
+mockup", not pixel-perfect — full design-review rigor stays only where visual precision
+actually matters (already done for the landing hero).
+
+**Logic/view split (decided 2026-07-09):** every component from Scenario 4.1 onward
+splits into a presentational component (markup/CSS only, props in) and a `use*` hook
+(state, validation, API calls, submit logic) that owns everything else. `align-design`
+then only ever touches the presentational half — the hook, and any red/green-frontend
+coverage of it, stays untouched when the design gets reskinned later. E.g. `useGenerationForm`
+(state/validation/submit) + `GenerationForm` (renders from the hook's return value).
+
 **Everything else below (60 scenarios) is explicitly deferred past this Friday** —
 retry policy, reconciliation sweep, load, most security/infra hardening. Do not work
 them before P0-1..7 are green and deployed, no matter what order `/continue` would
