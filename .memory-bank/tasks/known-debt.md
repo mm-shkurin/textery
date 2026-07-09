@@ -131,3 +131,43 @@ single-input UX and rewrite `02_UI_Tests.md` section 4 + mockup 04 (or delete th
 match, and decide what `volume`/`requirements`/`extra_wishes` should actually be when
 the user only typed one free-text message — a fixed default is a placeholder, not a
 real product decision.
+
+## 10. Evening-demo vertical slice built OFF the TDD framework — no per-scenario coverage
+Decided 2026-07-09 (velocity too slow: ~6 backend scenarios green in a week under the
+full framework, deadline is tonight). The end-to-end doklad generation slice — domain
+`complete`/`fail`/`content`, `GenerationProvider` port, provider adapter, DB
+`save`/`get`/`update` + migration, `GenerateDocument`/`GetGeneration` usecases,
+`container.py`, REST POST fix + `GET /generations/{id}` — is built **directly by hand
+against the hexagonal architecture, with NO red/green/adapters-discovery/test-review/
+coverage/refactor/agent-review/premortem ceremony.** Verification = one manual
+end-to-end run (POST → poll GET → completed with text) + browser, plus at most one
+acceptance test as demo proof. This extends the framework-skip precedent (progress.md
+"Frontend framework-skip" + "Ceremony cut for P0-1..7") from the modals/frontend onto
+the **backend generation core** — the part progress.md explicitly said keeps the full
+framework because "the real risk lives" there.
+**Consequence:** the generation happy-path and its failure handling ship with zero
+automated regression coverage. The many unbuilt backend scenarios in progress.md
+(2.2 Cyrillic round-trip, 3.x idempotency, 4.3 not-found, 5.x retry/reconciliation,
+6.x listing, all Integration/Security/Load/Infra) are now **behind** working code
+rather than driving it — their red/green checkboxes describe behavior the code may or
+may not already satisfy, unverified.
+**Resurfaces:** once the demo is delivered, backfill acceptance + usecase tests for the
+slice BEFORE building further on it, and reconcile progress.md checkboxes against what
+the hand-built code actually does (mark `[S]` with this note where covered-by-slice,
+or write the missing red test). Do not treat the green checkboxes as truth until then.
+
+## 11. Generation provider is GigaChat (Sber), not OpenRouter as technology.md states
+Decided 2026-07-09: the neural provider for generation is **GigaChat** (Sber) using its
+own credentials, NOT OpenRouter/`openai` SDK as `technology.md` ("Generation engine:
+OpenRouter ... via `openai` Python SDK") and known-debt #3/#5 currently say. GigaChat
+has a different auth flow (OAuth2 token from `ngw.devices.sberbank.ru` with Basic client
+creds + scope, ~30-min access token) and a different endpoint/SDK (`gigachat` Python
+package or raw REST to `gigachat.devices.sberbank.ru`), plus a Russian-CA TLS quirk —
+not drop-in `openai`-compatible. The adapter is `GigaChatProvider`, not
+`OpenRouterProvider`. Key/creds not yet in the environment at decision time → the slice
+may start against a `FakeProvider` (fixed doklad text) and swap in `GigaChatProvider`
+once creds land.
+**Resurfaces:** update `technology.md` (Generation engine row + HTTP client) and the
+OpenRouter references in known-debt #3 and #5 to say GigaChat, once the slice is
+working and doc-churn time exists. Confirm where GigaChat creds live (`backend/.env`
+per #3) and that the TLS-cert handling is done properly, not disabled globally.
