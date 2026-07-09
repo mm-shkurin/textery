@@ -18,11 +18,15 @@ the product actually work end-to-end and unblocks frontend integration. Branch:
 ## Frontend framework-skip decision (decided 2026-07-09 — speed measure)
 
 Sprint velocity is too slow for the deadline (1/74 scenarios after the full 8-step
-frontend cycle on the landing hero alone). To compress: **Frontend Scenarios 2.1, 2.2,
-3.1, 3.2 (the document-type modal and mode modal) are built WITHOUT the TDD framework**
-— no red-selenium/red-frontend/green-frontend/red-frontend-api/green-frontend-api/
-align-design/green-selenium/demo cycle. Write the components directly as code, verify
-by eye in the browser once, mark all 8 checkboxes `[S]` with this note as the reason.
+frontend cycle on the landing hero alone). To compress: **Frontend Scenarios 1.2, 2.1,
+2.2, 3.1, 3.2 (the CTA→modal trigger, the document-type modal, and the mode modal) are
+built WITHOUT the TDD framework** — no red-selenium/red-frontend/green-frontend/
+red-frontend-api/green-frontend-api/align-design/green-selenium/demo cycle. Write the
+components directly as code, verify by eye in the browser once, mark all 8 checkboxes
+`[S]` with this note as the reason. 1.2 was folded in after starting the modal work —
+it is one line of glue (CTA onClick opens the type modal) with no logic of its own
+separate from the modal it opens; testing the trigger in isolation from its
+destination added no value.
 
 **Why:** both modals are near-static UI (pick doc type, pick mode) with the framework's
 per-scenario ceremony costing far more than the risk it buys here. The one piece of
@@ -370,14 +374,14 @@ otherwise pick.
 - [x] demo
 
 ### Scenario 1.2: The primary CTA opens the document-type modal
-- [~] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
-- [ ] green-selenium
-- [ ] demo
+- [S] red-selenium — framework-skip decision 2026-07-09 (speed measure, see note above)
+- [S] red-frontend — see framework-skip decision
+- [S] green-frontend — built directly, verified by eye in browser
+- [S] red-frontend-api — no backend call, purely local UI state
+- [S] green-frontend-api — see red-frontend-api skip reason
+- [S] align-design — matched to mockup by eye, no formal align-design pass
+- [S] green-selenium — see framework-skip decision
+- [S] demo — see framework-skip decision
 
 ### Scenario 2.1: The type modal shows all four document types, only доклад available
 - [S] red-selenium — framework-skip decision 2026-07-09 (speed measure, see note above)
@@ -420,7 +424,7 @@ otherwise pick.
 - [S] demo — see framework-skip decision
 
 ### Scenario 4.1: The generation form displays the input fields for the chosen type
-- [ ] red-selenium
+- [~] red-selenium
 - [ ] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api

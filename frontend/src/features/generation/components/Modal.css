@@ -1,0 +1,134 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 8, 10, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  width: 760px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  padding: 40px;
+  text-align: left;
+}
+
+.modal.modal-narrow {
+  width: 640px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.modal-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.back-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+}
+
+.close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal-subtitle {
+  color: var(--text-secondary);
+  font-size: 15px;
+  margin-bottom: 32px;
+}
+
+.type-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.type-card,
+.mode-card {
+  background: var(--bg-surface-raised);
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
+  position: relative;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.type-card {
+  padding: 24px;
+}
+
+.mode-card {
+  padding: 28px 24px;
+  text-align: center;
+}
+
+.type-card.disabled,
+.mode-card.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.type-name,
+.mode-name {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.mode-name {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.mode-desc {
+  display: block;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.soon-pill {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: var(--bg-page);
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
