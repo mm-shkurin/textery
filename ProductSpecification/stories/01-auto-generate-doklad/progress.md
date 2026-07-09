@@ -343,10 +343,10 @@ otherwise pick.
 - [S] green-frontend-api — see red-frontend-api skip reason
 - [x] align-design
 - [x] green-selenium
-- [~] demo
+- [x] demo
 
 ### Scenario 1.2: The primary CTA opens the document-type modal
-- [ ] red-selenium
+- [~] red-selenium
 - [ ] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
