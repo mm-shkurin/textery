@@ -20,6 +20,21 @@ retry policy, reconciliation sweep, load, most security/infra hardening. Do not 
 them before P0-1..7 are green and deployed, no matter what order `/continue` would
 otherwise pick.
 
+**Ceremony cut for P0-1..7 only (decided 2026-07-09) — forced measure, sprint deadline
+pressure, NOT a permanent process change:** after scenario 1.2's green-usecase work
+unit took ~10 background agent dispatches for one step, we're dropping process weight
+that doesn't gate correctness, to fit the remaining P0 scenarios before Friday:
+- **Skip** the two pre-commit review passes (`agent-review-agent` + `premortem-agent`) —
+  they're non-gating/advisory only, findings are a nice-to-have, not required for P0.
+- **Skip** the full `/refactor` detector fan-out (3 concurrent cluster agents) — only
+  refactor inline if a duplication/smell is obvious on sight; don't dispatch the fan-out
+  for small diffs.
+- **Do NOT skip**: red/green TDD cycle, `/test-review` (assertion strictness),
+  `/test-coverage`. These are the actual correctness signal — cutting them would mean
+  shipping P0 to prod unverified, which is worse than missing ceremony.
+Revert this once P0-1..7 are green and deployed — resume full `/continue` ceremony
+(review passes + refactor fan-out) for everything after.
+
 ## Spec
 - [x] interview
 - [x] story
