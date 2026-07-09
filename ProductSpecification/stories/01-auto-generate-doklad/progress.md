@@ -105,8 +105,8 @@ Revert this once P0-1..7 are green and deployed — resume full `/continue` cere
 ### Scenario 2.1: Valid request is accepted and queued without waiting on the LLM call
 - [x] red-acceptance
 - [x] design — see `decisions/persist-and-enqueue-architecture-decision.md`
-- [ ] red-usecase
-- [ ] green-usecase
+- [x] red-usecase
+- [~] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
