@@ -342,8 +342,8 @@ otherwise pick.
 - [S] red-frontend-api — purely presentational (static hero heading + CTA button), no backend call; `POST /generations`/`GET /generations` belong to later scenarios in the flow. Handled entirely in the component (align-design).
 - [S] green-frontend-api — see red-frontend-api skip reason
 - [x] align-design
-- [~] green-selenium
-- [ ] demo
+- [x] green-selenium
+- [~] demo
 
 ### Scenario 1.2: The primary CTA opens the document-type modal
 - [ ] red-selenium
