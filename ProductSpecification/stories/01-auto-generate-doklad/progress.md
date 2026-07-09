@@ -49,6 +49,17 @@ catches nothing green-selenium didn't already catch. `align-design` targets "mat
 mockup", not pixel-perfect — full design-review rigor stays only where visual precision
 actually matters (already done for the landing hero).
 
+**Layout deviation for 4.1 onward (decided 2026-07-09):** the standalone generation-form
+page (mockup 04, spec section 4) is skipped entirely — see `.memory-bank/tasks/known-debt.md`
+#8 for the full mapping and what it invalidates (scenario 7.2 in particular). Instead,
+after the mode modal the visitor lands on a single doc-left/chat-right screen (mockups
+05-07 layout, columns flipped: document wide on the left, chat panel narrow on the
+right). The initial request is one free-text chat input (messenger-style), not four
+discrete fields — mapped to `topic`; `volume_pages` sent as a fixed default (5);
+`requirements`/`extra_wishes` sent empty. Read known-debt #8 before touching Scenarios
+4.1-9.2 in a future session — the checkbox/scenario text below still describes the
+original 4-field form and has not been rewritten.
+
 **Logic/view split (decided 2026-07-09):** every component from Scenario 4.1 onward
 splits into a presentational component (markup/CSS only, props in) and a `use*` hook
 (state, validation, API calls, submit logic) that owns everything else. `align-design`
