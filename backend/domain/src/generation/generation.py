@@ -1,5 +1,7 @@
 import unicodedata
+from datetime import datetime, timezone
 from typing import Optional
+from uuid import UUID, uuid4
 
 from shared.exceptions import ValidationException
 
@@ -7,9 +9,30 @@ MISSING_TOPIC_MESSAGE = "topic is required"
 OUT_OF_RANGE_VOLUME_MESSAGE = "volume_pages must be between 1 and 10"
 MIN_VOLUME_PAGES = 1
 MAX_VOLUME_PAGES = 10
+PENDING_STATUS = "pending"
 
 
 class Generation:
+    def __init__(
+        self,
+        id: UUID,
+        status: str,
+        created_at: datetime,
+        topic: Optional[str],
+        volume_pages: Optional[int],
+        requirements: Optional[str],
+        extra_wishes: Optional[str],
+        document_type: str,
+    ) -> None:
+        self.id = id
+        self.status = status
+        self.created_at = created_at
+        self.topic = topic
+        self.volume_pages = volume_pages
+        self.requirements = requirements
+        self.extra_wishes = extra_wishes
+        self.document_type = document_type
+
     @classmethod
     def create(
         cls,
@@ -23,7 +46,16 @@ class Generation:
             raise ValidationException(MISSING_TOPIC_MESSAGE)
         if cls._is_out_of_range_volume(volume_pages):
             raise ValidationException(OUT_OF_RANGE_VOLUME_MESSAGE)
-        raise NotImplementedError()
+        return cls(
+            id=uuid4(),
+            status=PENDING_STATUS,
+            created_at=datetime.now(timezone.utc),
+            topic=topic,
+            volume_pages=volume_pages,
+            requirements=requirements,
+            extra_wishes=extra_wishes,
+            document_type=document_type,
+        )
 
     @staticmethod
     def _is_out_of_range_volume(volume_pages: Optional[int]) -> bool:

@@ -11,12 +11,9 @@ class RequestGeneration:
     Scenario 1.1 scope: delegate field validation to the domain factory,
     letting ValidationException propagate uncaught.
 
-    Scenario 2.1 scope: constructor now takes the storage and queue ports
-    per the persist-and-enqueue architecture decision. execute() still only
-    delegates to Generation.create() -- persisting and enqueueing are wired
-    in green-usecase, once Generation.create() itself generates id/status/
-    created_at (it currently still raises NotImplementedError for a valid
-    topic).
+    Scenario 2.1 scope: per the persist-and-enqueue architecture decision,
+    a valid request is persisted via GenerationStorage.save() and then
+    handed off to GenerationQueue.enqueue() before returning.
     """
 
     def __init__(self, storage: GenerationStorage, queue: GenerationQueue) -> None:
@@ -31,10 +28,13 @@ class RequestGeneration:
         extra_wishes: Optional[str],
         document_type: str,
     ) -> Generation:
-        return Generation.create(
+        generation = Generation.create(
             topic=topic,
             volume_pages=volume_pages,
             requirements=requirements,
             extra_wishes=extra_wishes,
             document_type=document_type,
         )
+        await self._storage.save(generation)
+        await self._queue.enqueue(generation.id)
+        return generation

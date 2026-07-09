@@ -106,8 +106,8 @@ Revert this once P0-1..7 are green and deployed — resume full `/continue` cere
 - [x] red-acceptance
 - [x] design — see `decisions/persist-and-enqueue-architecture-decision.md`
 - [x] red-usecase
-- [~] green-usecase
-- [ ] adapters-discovery
+- [x] green-usecase
+- [~] adapters-discovery
 - [ ] green-acceptance
 
 ### Scenario 2.2: An entirely Cyrillic request round-trips without corruption

@@ -48,7 +48,6 @@ class TestGenerationUsecaseVolumeRange:
         generation_statements.assert_out_of_range_volume_error_raised()
 
 
-@pytest.mark.skip(reason="RED: Generation.create() still raises NotImplementedError() past validation checks")
 class TestGenerationUsecaseHappyPath:
     """Scenario 2.1: Valid request is accepted and queued without waiting on the LLM call.
 
