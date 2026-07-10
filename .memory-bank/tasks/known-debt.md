@@ -171,3 +171,19 @@ once creds land.
 OpenRouter references in known-debt #3 and #5 to say GigaChat, once the slice is
 working and doc-churn time exists. Confirm where GigaChat creds live (`backend/.env`
 per #3) and that the TLS-cert handling is done properly, not disabled globally.
+
+## 12. Landing page acceptance test red — `hero-subheading` testid no longer exists
+Found 2026-07-10 during scenario 4.1's premortem pass. `test_should_display_hero_and_primary_cta`
+(`acceptance/tests/frontend/landing/test_landing_page_acceptance.py`) times out on
+`assert_hero_subheading_is_visible` — the user removed the hero subheading directly from
+`LandingPage.tsx` in an earlier edit (same edit that dropped the hero CTA button, per
+progress.md's Figma-alignment section, where the vitest suite was narrowed accordingly
+but this Selenium test was not). A separate, already-fixed testid drift (stale
+`hero-primary-cta-button` → `header-primary-cta-button`) was caught and corrected in the
+same session (commit `5f520c3`) — that fix is in; this one is not. Confirmed
+pre-existing, not a regression from anything in this session (reproduced on `git stash`).
+**Priority: low.** User's call (2026-07-10): the landing page is a single static info
+page, not worth a dedicated red/green cycle right now. Deprioritized, not deleted.
+**Resurfaces:** whenever scenario 1.1 (landing hero) gets touched again — drop the
+subheading assertion (or restore the subheading in the component, if it's coming back)
+and get the Selenium suite green again.
