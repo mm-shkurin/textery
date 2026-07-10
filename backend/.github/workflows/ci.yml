@@ -23,23 +23,28 @@ jobs:
           cache: 'pip'
           cache-dependency-path: requirements.txt
 
-      - name: Start postgres and redis
+      - name: Install postgres and redis
         run: |
-          docker run -d --name ci-postgres \
-            -e POSTGRES_USER=textery -e POSTGRES_PASSWORD=textery -e POSTGRES_DB=textery \
-            -p 5432:5432 postgres:16
-          docker run -d --name ci-redis -p 6379:6379 redis:7
+          sudo apt-get update
+          sudo apt-get install -y postgresql redis-server
+          sudo systemctl start postgresql
+          sudo systemctl start redis-server
 
       - name: Wait for postgres and redis
         run: |
           for i in $(seq 1 30); do
-            docker exec ci-postgres pg_isready -U textery && break
+            pg_isready -h localhost -p 5432 && break
             sleep 2
           done
           for i in $(seq 1 30); do
-            docker exec ci-redis redis-cli ping && break
+            redis-cli -h localhost ping && break
             sleep 2
           done
+
+      - name: Create database and user
+        run: |
+          sudo -u postgres psql -c "CREATE USER textery WITH PASSWORD 'textery' SUPERUSER;"
+          sudo -u postgres psql -c "CREATE DATABASE textery OWNER textery;"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -56,7 +61,3 @@ jobs:
         with:
           name: backend-coverage
           path: coverage.xml
-
-      - name: Stop postgres and redis
-        if: always()
-        run: docker rm -f ci-postgres ci-redis
