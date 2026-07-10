@@ -9,7 +9,7 @@ the product actually work end-to-end and unblocks frontend integration. Branch:
 
 - [x] **P0-1** — Backend 1.1: Reject request with missing topic (all steps done through `green-acceptance`, see `decisions/request-validation-architecture-decision.md`)
 - [x] **P0-2** — Backend 1.2: Reject request with out-of-range volume
-- [S] **P0-3** — Backend 2.1: Valid request is accepted and queued without waiting on the LLM call — built off-framework, see `evening-demo-backend-plan.md` + known-debt #10
+- [S] **P0-3** — Backend 2.1: Valid request is accepted and queued without waiting on the LLM call — built off-framework, see `evening-demo-backend-plan.md` + known-debt #10. `SqlAlchemyGenerationStorage` (save/get/update) persistence-adapter coverage backfilled 2026-07-10 against real Postgres (`backend/adapters/db/tests/`), verified genuinely red first — the queue adapter (arq) and REST POST response shape are still unbackfilled.
 - [x] **P0-4** — Backend 4.1: A pending generation reports its status without document content — usecase-layer coverage backfilled 2026-07-10 (`test_generation_lifecycle_usecase.py`), verified genuinely red against a `NotImplementedError` stub first
 - [x] **P0-5** — Backend 4.2: A completed generation includes the document content — same backfill pass, same file
 - [S] **P0-6** — Integration 1.1: A successful provider call produces a completed document — verified manually end-to-end against real GigaChat, no automated integration test
