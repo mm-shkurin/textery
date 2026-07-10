@@ -1,4 +1,4 @@
-import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
+import { SelectableCard } from './SelectableCard'
 import './Modal.css'
 
 export type GenerationMode = 'auto' | 'manual'
@@ -31,28 +31,15 @@ export function ModeModal({ documentTypeLabel, onSelect, onBack, onClose }: Mode
         <p className="modal-subtitle">Выберите тип работы который вы будете использовать</p>
         <div className="mode-grid">
           {MODES.map((mode) => (
-            <div key={mode.id} className="card-slot">
-              <button
-                type="button"
-                className={`mode-card${mode.available ? '' : ' disabled'}`}
-                disabled={!mode.available}
-                data-testid={`mode-card-${mode.id}`}
-                onClick={() => mode.available && onSelect(mode.id)}
-              >
-                {!mode.available && <span className="soon-pill">скоро</span>}
-                <PlaceholderImage className="card-icon" />
-                <span className="mode-name">{mode.name}</span>
-              </button>
-              <button
-                type="button"
-                className="add-btn"
-                disabled={!mode.available}
-                aria-label={`Выбрать ${mode.name}`}
-                onClick={() => mode.available && onSelect(mode.id)}
-              >
-                +
-              </button>
-            </div>
+            <SelectableCard
+              key={mode.id}
+              available={mode.available}
+              name={mode.name}
+              cardClassName="mode-card"
+              nameClassName="mode-name"
+              testId={`mode-card-${mode.id}`}
+              onSelect={() => onSelect(mode.id)}
+            />
           ))}
         </div>
       </div>

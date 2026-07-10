@@ -1,6 +1,7 @@
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
 import { Header } from './Header'
 import './LandingPage.css'
+import './LandingPageFeatures.css'
 
 interface LandingPageProps {
   onPrimaryCtaClick?: () => void
@@ -66,7 +67,12 @@ export function LandingPage({ onPrimaryCtaClick }: LandingPageProps) {
           <PlaceholderImage className="feature-hero-image" />
         </div>
 
-        <button type="button" className="btn-light centered" onClick={onPrimaryCtaClick}>
+        <button
+          type="button"
+          className="btn-light centered"
+          data-testid="features-primary-cta-button"
+          onClick={onPrimaryCtaClick}
+        >
           Создать генерацию
         </button>
       </section>
