@@ -1,32 +1,35 @@
-# React + TypeScript + Vite
+# Textery frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + TypeScript + Vite app for Textery — lets a user pick a document type,
+describe a topic, and watch an AI-generated document appear as it's produced.
 
-Currently, two official plugins are available:
+## Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- `src/features/landing` — marketing landing page.
+- `src/features/generation` — the document-generation flow: type/mode
+  selection modals, the chat-style workspace, the polling hook
+  (`useGeneration`), and the HTTP client (`generationApi`).
+- `src/shared` — components shared across features.
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev      # start dev server (proxies /api to the backend)
+npm run build    # type-check + production build
+npm run lint      # oxlint
+npm run test      # run tests once
+npm run test:watch
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Environment
+
+- `VITE_API_BASE_URL` — base URL for the generation API. Defaults to `''`,
+  which routes requests through the Vite dev server's `/api` proxy
+  (see `vite.config.ts`, target controlled by `VITE_API_PROXY_TARGET`).
+- `FRONTEND_PORT` — port the dev server listens on (defaults to `5173`).
+
+## Testing
+
+Tests use Vitest + Testing Library (`src/test/setup.ts`). Run `npm run test`
+before committing; `npm run build` also type-checks via `tsc -b`.
