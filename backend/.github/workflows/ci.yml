@@ -9,30 +9,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: textery
-          POSTGRES_PASSWORD: textery
-          POSTGRES_DB: textery
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U textery"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
     env:
       DATABASE_URL: postgresql+asyncpg://textery:textery@localhost:5432/textery
       REDIS_URL: redis://localhost:6379/0
@@ -46,6 +22,24 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
           cache-dependency-path: requirements.txt
+
+      - name: Start postgres and redis
+        run: |
+          docker run -d --name ci-postgres \
+            -e POSTGRES_USER=textery -e POSTGRES_PASSWORD=textery -e POSTGRES_DB=textery \
+            -p 5432:5432 postgres:16
+          docker run -d --name ci-redis -p 6379:6379 redis:7
+
+      - name: Wait for postgres and redis
+        run: |
+          for i in $(seq 1 30); do
+            docker exec ci-postgres pg_isready -U textery && break
+            sleep 2
+          done
+          for i in $(seq 1 30); do
+            docker exec ci-redis redis-cli ping && break
+            sleep 2
+          done
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -62,3 +56,7 @@ jobs:
         with:
           name: backend-coverage
           path: coverage.xml
+
+      - name: Stop postgres and redis
+        if: always()
+        run: docker rm -f ci-postgres ci-redis
