@@ -13,9 +13,15 @@ sys.path.insert(0, _USECASE_SRC)
 
 import pytest
 
+from statements.generation_lifecycle_statements import GenerationLifecycleStatements
 from statements.generation_statements import GenerationStatements
 
 
 @pytest.fixture
 def generation_statements():
     return GenerationStatements()
+
+
+@pytest.fixture
+def generation_lifecycle_statements():
+    return GenerationLifecycleStatements()
