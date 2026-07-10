@@ -11,6 +11,7 @@ interface ChatWorkspaceProps {
   state: GenerationUiState
   content: string | null
   volumePages: number | null
+  createdAt?: string | null
   error: string | null
   onSubmit: (topic: string) => void
   onReset: () => void
@@ -24,7 +25,8 @@ const BADGE: Record<GenerationUiState, string> = {
 }
 
 export function ChatWorkspace(props: ChatWorkspaceProps) {
-  const { documentTypeLabel, state, content, volumePages, error, onSubmit, onReset } = props
+  const { documentTypeLabel, state, content, volumePages, createdAt, error, onSubmit, onReset } =
+    props
   const [topic, setTopic] = useState('')
 
   const send = () => {
@@ -55,6 +57,7 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
               state={state}
               content={content}
               volumePages={volumePages}
+              createdAt={createdAt ?? null}
               error={error}
               label={documentTypeLabel}
               onReset={onReset}

@@ -1,5 +1,6 @@
 import ReactMarkdown from 'react-markdown'
 import type { GenerationUiState } from '../hooks/useGeneration'
+import { formatRelativeTime } from '../formatRelativeTime'
 
 interface DocAreaProps {
   state: GenerationUiState
@@ -7,15 +8,24 @@ interface DocAreaProps {
   volumePages: number | null
   error: string | null
   label: string
+  createdAt: string | null
   onReset: () => void
 }
 
-export function DocArea({ state, content, volumePages, error, label, onReset }: DocAreaProps) {
+export function DocArea({
+  state,
+  content,
+  volumePages,
+  error,
+  label,
+  createdAt,
+  onReset,
+}: DocAreaProps) {
   if (state === 'completed') {
     return (
       <div className="doc-content">
         <div className="doc-meta">
-          {label} · {volumePages ?? '—'} страниц · создан только что
+          {label} · {volumePages ?? '—'} страниц · {formatRelativeTime(createdAt)}
         </div>
         <div className="doc-body markdown-body" data-testid="doc-body">
           <ReactMarkdown>{content ?? ''}</ReactMarkdown>

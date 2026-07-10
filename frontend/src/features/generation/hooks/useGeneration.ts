@@ -10,6 +10,7 @@ export interface UseGeneration {
   state: GenerationUiState
   content: string | null
   volumePages: number | null
+  createdAt: string | null
   error: string | null
   submit: (topic: string) => void
   reset: () => void
@@ -19,6 +20,7 @@ export function useGeneration(): UseGeneration {
   const [state, setState] = useState<GenerationUiState>('idle')
   const [content, setContent] = useState<string | null>(null)
   const [volumePages, setVolumePages] = useState<number | null>(null)
+  const [createdAt, setCreatedAt] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const intervalRef = useRef<number | null>(null)
   const attemptsRef = useRef(0)
@@ -45,6 +47,7 @@ export function useGeneration(): UseGeneration {
           stopPolling()
           setContent(res.content)
           setVolumePages(res.volumePages)
+          setCreatedAt(res.createdAt)
           setState('completed')
         } else if (res.status === 'failed') {
           stopPolling()
@@ -66,6 +69,7 @@ export function useGeneration(): UseGeneration {
       setState('pending')
       setContent(null)
       setVolumePages(null)
+      setCreatedAt(null)
       setError(null)
       stopPolling()
       attemptsRef.current = 0
@@ -89,11 +93,12 @@ export function useGeneration(): UseGeneration {
     setState('idle')
     setContent(null)
     setVolumePages(null)
+    setCreatedAt(null)
     setError(null)
   }, [stopPolling])
 
   // Clean up any running interval on unmount.
   useEffect(() => stopPolling, [stopPolling])
 
-  return { state, content, volumePages, error, submit, reset }
+  return { state, content, volumePages, createdAt, error, submit, reset }
 }

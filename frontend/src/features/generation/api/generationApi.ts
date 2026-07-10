@@ -4,6 +4,8 @@ import { DEFAULT_DOCUMENT_TYPE } from '../documentTypes'
 
 const API_BASE: string = import.meta.env.VITE_API_BASE_URL ?? ''
 
+// No UI control exists yet for volume — every request asks for a fixed 5-page document
+// until the product adds a page-count selector.
 const DEFAULT_VOLUME_PAGES = 5
 
 export interface CreateGenerationResult {

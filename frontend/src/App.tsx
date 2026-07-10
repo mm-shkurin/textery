@@ -17,6 +17,7 @@ const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
 function App() {
   const [step, setStep] = useState<Step>('landing')
   const [documentType, setDocumentType] = useState<DocumentType | null>(null)
+  // `mode` is UI-only: backend has no mode parameter yet, only 'auto' is selectable today.
   const [mode, setMode] = useState<GenerationMode | null>(null)
   const generation = useGeneration()
 
@@ -34,6 +35,7 @@ function App() {
         state={generation.state}
         content={generation.content}
         volumePages={generation.volumePages}
+        createdAt={generation.createdAt}
         error={generation.error}
         onSubmit={generation.submit}
         onReset={generation.reset}
