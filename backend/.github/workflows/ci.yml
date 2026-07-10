@@ -10,7 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DATABASE_URL: postgresql+asyncpg://textery:textery@localhost:5432/textery
+      DATABASE_URL: postgresql+asyncpg://textery:change-me@localhost:5432/textery
+      TEST_DATABASE_URL: postgresql://textery:change-me@localhost:5432/textery
       REDIS_URL: redis://localhost:6379/0
       GENERATION_PROVIDER: fake
 
@@ -43,7 +44,7 @@ jobs:
 
       - name: Create database and user
         run: |
-          sudo -u postgres psql -c "CREATE USER textery WITH PASSWORD 'textery' SUPERUSER;"
+          sudo -u postgres psql -c "CREATE USER textery WITH PASSWORD 'change-me' SUPERUSER;"
           sudo -u postgres psql -c "CREATE DATABASE textery OWNER textery;"
 
       - name: Install dependencies
