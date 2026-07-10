@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, Protocol
 from uuid import UUID
 
@@ -12,4 +13,7 @@ class GenerationStorage(Protocol):
         ...
 
     async def update(self, generation: Generation) -> None:
+        ...
+
+    async def list_stale(self, older_than: datetime) -> list[Generation]:
         ...

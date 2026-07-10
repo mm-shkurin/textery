@@ -34,10 +34,12 @@ class Generation:
         document_type: str,
         content: Optional[str] = None,
         error_message: Optional[str] = None,
+        version: int = 1,
     ) -> None:
         self.id = id
         self.status = status
         self.created_at = created_at
+        self.version = version
         self.topic = topic
         self.volume_pages = volume_pages
         self.requirements = requirements

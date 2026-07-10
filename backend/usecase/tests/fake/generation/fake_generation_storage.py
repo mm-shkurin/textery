@@ -1,4 +1,5 @@
 import copy
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
@@ -8,6 +9,7 @@ from generation.generation import Generation
 CALL_SAVE = "save"
 CALL_GET = "get"
 CALL_UPDATE = "update"
+CALL_LIST_STALE = "list_stale"
 
 
 class FakeGenerationStorage(CallOrderRecordingFake):
@@ -36,3 +38,11 @@ class FakeGenerationStorage(CallOrderRecordingFake):
 
     def seed(self, generation: Generation) -> None:
         self._by_id[generation.id] = generation
+
+    async def list_stale(self, older_than: datetime) -> list[Generation]:
+        self._record(CALL_LIST_STALE, older_than)
+        return [
+            generation
+            for generation in self._by_id.values()
+            if generation.status in ("pending", "in_progress") and generation.created_at < older_than
+        ]
