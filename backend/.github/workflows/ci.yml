@@ -34,8 +34,8 @@ jobs:
           --health-retries 10
 
     env:
-      DATABASE_URL: postgresql+asyncpg://textery:textery@localhost:5432/textery
-      REDIS_URL: redis://localhost:6379/0
+      DATABASE_URL: postgresql+asyncpg://textery:textery@postgres:5432/textery
+      REDIS_URL: redis://redis:6379/0
       GENERATION_PROVIDER: fake
 
     steps:
