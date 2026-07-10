@@ -27,8 +27,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql redis-server
-          sudo systemctl start postgresql
-          sudo systemctl start redis-server
+          sudo pg_ctlcluster 16 main start
+          sudo redis-server --daemonize yes --bind 127.0.0.1
 
       - name: Wait for postgres and redis
         run: |
