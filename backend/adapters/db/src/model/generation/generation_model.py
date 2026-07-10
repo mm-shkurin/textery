@@ -6,17 +6,24 @@ from sqlalchemy import CheckConstraint, DateTime, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from generation.generation import Generation
+from generation.generation import (
+    COMPLETED_STATUS,
+    FAILED_STATUS,
+    IN_PROGRESS_STATUS,
+    PENDING_STATUS,
+    Generation,
+)
 from model.base import Base
 
-ALLOWED_STATUSES = ("pending", "in_progress", "completed", "failed")
+ALLOWED_STATUSES = (PENDING_STATUS, IN_PROGRESS_STATUS, COMPLETED_STATUS, FAILED_STATUS)
+_ALLOWED_STATUSES_SQL = ", ".join(repr(status) for status in ALLOWED_STATUSES)
 
 
 class GenerationModel(Base):
     __tablename__ = "generations"
     __table_args__ = (
         CheckConstraint(
-            "status IN ('pending', 'in_progress', 'completed', 'failed')",
+            f"status IN ({_ALLOWED_STATUSES_SQL})",
             name="ck_generations_status",
         ),
     )
@@ -30,6 +37,7 @@ class GenerationModel(Base):
     extra_wishes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     document_type: Mapped[str] = mapped_column(String, nullable=False)
     content: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     @classmethod
     def from_domain(cls, generation: Generation) -> "GenerationModel":
@@ -43,6 +51,7 @@ class GenerationModel(Base):
             extra_wishes=generation.extra_wishes,
             document_type=generation.document_type,
             content=generation.content,
+            error_message=generation.error_message,
         )
 
     def to_domain(self) -> Generation:
@@ -56,4 +65,5 @@ class GenerationModel(Base):
             extra_wishes=self.extra_wishes,
             document_type=self.document_type,
             content=self.content,
+            error_message=self.error_message,
         )
