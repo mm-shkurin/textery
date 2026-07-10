@@ -2,9 +2,8 @@ from typing import ClassVar
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.support import expected_conditions as ec
-from selenium.webdriver.support.wait import WebDriverWait
+
+from statements.frontend.base_frontend_statements import BaseFrontendStatements
 
 PRIMARY_CTA_BUTTON = (By.CSS_SELECTOR, "[data-testid='header-primary-cta-button']")
 TYPE_CARD_DOKLAD = (By.CSS_SELECTOR, "[data-testid='type-card-doklad']")
@@ -14,10 +13,8 @@ CHAT_PANEL = (By.CSS_SELECTOR, "[data-testid='chat-panel']")
 TOPIC_INPUT = (By.CSS_SELECTOR, "[data-testid='topic-input']")
 TOPIC_SEND_BUTTON = (By.CSS_SELECTOR, "[data-testid='topic-send']")
 
-WAIT_TIMEOUT_SECONDS = 5
 
-
-class ChatWorkspaceStatements:
+class ChatWorkspaceStatements(BaseFrontendStatements):
     # Per known-debt #8, the standalone generation-form page (mockup 04) was replaced
     # by a single doc-left/chat-right screen; the "form fields" for scenario 4.1 are
     # now a single free-text composer in the chat panel, mapped to `topic` on submit.
@@ -56,6 +53,3 @@ class ChatWorkspaceStatements:
             f"expected send button text '{self.EXPECTED_SEND_BUTTON_TEXT}', got '{element.text}'"
         )
         assert not element.is_enabled(), "expected send button to be disabled before any text is entered"
-
-    def _wait_for_visible(self, driver: WebDriver, locator: tuple[str, str]) -> WebElement:
-        return WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(ec.visibility_of_element_located(locator))
