@@ -9,7 +9,7 @@ the product actually work end-to-end and unblocks frontend integration. Branch:
 
 - [x] **P0-1** — Backend 1.1: Reject request with missing topic (all steps done through `green-acceptance`, see `decisions/request-validation-architecture-decision.md`)
 - [x] **P0-2** — Backend 1.2: Reject request with out-of-range volume
-- [S] **P0-3** — Backend 2.1: Valid request is accepted and queued without waiting on the LLM call — built off-framework, see `evening-demo-backend-plan.md` + known-debt #10. `SqlAlchemyGenerationStorage` (save/get/update) persistence-adapter coverage backfilled 2026-07-10 against real Postgres (`backend/adapters/db/tests/`), verified genuinely red first — the queue adapter (arq) and REST POST response shape are still unbackfilled.
+- [x] **P0-3** — Backend 2.1: Valid request is accepted and queued without waiting on the LLM call — originally built off-framework (`evening-demo-backend-plan.md` + known-debt #10), fully backfilled 2026-07-10: usecase (pre-existing), DB storage adapter, REST adapter (with a real DTO-shape fix — `GenerationCreatedDto` was missing the echoed fields the original red-acceptance test expected), and green-acceptance (real backend, 4/4 passing). Queue adapter stays `[S]` — `NoOpGenerationQueue` is a deliberate known-debt no-op, nothing to test.
 - [x] **P0-4** — Backend 4.1: A pending generation reports its status without document content — usecase-layer coverage backfilled 2026-07-10 (`test_generation_lifecycle_usecase.py`), verified genuinely red against a `NotImplementedError` stub first
 - [x] **P0-5** — Backend 4.2: A completed generation includes the document content — same backfill pass, same file
 - [S] **P0-6** — Integration 1.1: A successful provider call produces a completed document — verified manually end-to-end against real GigaChat, no automated integration test
@@ -264,9 +264,9 @@ up -d --no-deps frontend`) after every change so the user could review in the br
 - [x] green-adapter db — same backfill pass, real Postgres round-trip green
 - [S] red-adapter queue — `NoOpGenerationQueue` is a deliberate no-op (known-debt #10/#11), no real arq producer exists to test; generation runs inline via FastAPI `BackgroundTasks` instead
 - [S] green-adapter queue — see red-adapter queue skip reason
-- [x] red-adapter rest — backfilled 2026-07-10, `test_generation_post_router.py`, verified genuinely red against a `NotImplementedError` handler stub. Note: the "echoed fields" response-shape expectation in this discovery note above was stale — the actual/tested `GenerationCreatedDto` shape is `generation_id`/`status`/`created_at` only, no request-field echo.
-- [x] green-adapter rest — same backfill pass, 201 + background-task enqueue verified
-- [~] green-acceptance — router-level HTTP coverage done (mocked usecase); no top-level `acceptance/` black-box test against the running app yet
+- [x] red-adapter rest — backfilled 2026-07-10, `test_generation_post_router.py`, verified genuinely red against a `NotImplementedError` handler stub. Correction to an earlier same-day note: the "echoed fields" expectation in this discovery note above was in fact still correct — the evening-demo `GenerationCreatedDto` had regressed to `generation_id`/`status`/`created_at` only, dropping the fields the original red-acceptance test (below) already expected. Fixed by extending the DTO with `topic`/`volume_pages`/`document_type`, not by narrowing the test.
+- [x] green-adapter rest — same backfill pass, 201 + background-task enqueue verified against the corrected DTO shape
+- [x] green-acceptance — un-skipped `test_should_accept_and_queue_valid_request_without_waiting_on_llm` (remove-marker-only), ran against a real running backend (uvicorn + local Postgres + fake provider). Backend acceptance suite: 4/4 passing.
 
 ### Scenario 2.2: An entirely Cyrillic request round-trips without corruption
 - [ ] red-acceptance
