@@ -79,6 +79,22 @@ class GenerationLifecycleStatements:
         usecase = GenerateDocument(storage=self._storage, provider=self._provider)
         await usecase.execute(self._seeded_generation.id)
 
+    async def process_pending_generation_with_transient_provider_error(
+        self, error: Exception, fail_times: int, content: str = "Готовый доклад"
+    ) -> None:
+        self.given_pending_generation()
+        self._provider = FakeGenerationProvider()
+        self._provider.error_to_raise = error
+        self._provider.fail_times = fail_times
+        self._provider.content_to_return = content
+        usecase = GenerateDocument(storage=self._storage, provider=self._provider)
+        await usecase.execute(self._seeded_generation.id)
+
+    def assert_provider_call_count(self, expected_count: int) -> None:
+        assert self._provider.call_count == expected_count, (
+            f"expected provider called {expected_count} times, got {self._provider.call_count}"
+        )
+
     def assert_generation_completed_with_content(self, expected_content: str) -> None:
         stored = self._storage.updated_generations[-1]
         assert stored.status == "completed", f"expected status 'completed', got '{stored.status}'"

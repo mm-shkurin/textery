@@ -60,3 +60,24 @@ class TestGenerateDocumentProviderFailure:
         )
         generation_lifecycle_statements.assert_generation_failed_with_reason("provider unavailable")
         generation_lifecycle_statements.assert_generation_marked_in_progress_before_final_update()
+
+    async def test_should_retry_provider_once_before_giving_up(
+        self, generation_lifecycle_statements: GenerationLifecycleStatements
+    ):
+        await generation_lifecycle_statements.process_pending_generation_with_provider_error(
+            RuntimeError("provider unavailable")
+        )
+        generation_lifecycle_statements.assert_provider_call_count(2)
+
+
+class TestGenerateDocumentTransientProviderFailure:
+    """Evening-demo slice: a transient provider error is retried and can still succeed."""
+
+    async def test_should_complete_generation_after_one_transient_failure(
+        self, generation_lifecycle_statements: GenerationLifecycleStatements
+    ):
+        await generation_lifecycle_statements.process_pending_generation_with_transient_provider_error(
+            RuntimeError("temporary blip"), fail_times=1, content="Готовый доклад"
+        )
+        generation_lifecycle_statements.assert_generation_completed_with_content("Готовый доклад")
+        generation_lifecycle_statements.assert_provider_call_count(2)
