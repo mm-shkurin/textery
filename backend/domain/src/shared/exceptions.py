@@ -12,3 +12,7 @@ class NotFoundException(DomainException):
 
 class ConfigurationException(DomainException):
     pass
+
+
+class ConflictException(DomainException):
+    pass
