@@ -29,8 +29,9 @@ class GenerationModel(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    status: Mapped[str] = mapped_column(String, nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     topic: Mapped[str] = mapped_column(String, nullable=False)
     volume_pages: Mapped[int] = mapped_column(Integer, nullable=False)
     requirements: Mapped[Optional[str]] = mapped_column(String, nullable=True)
@@ -45,6 +46,7 @@ class GenerationModel(Base):
             id=generation.id,
             status=generation.status,
             created_at=generation.created_at,
+            version=generation.version,
             topic=generation.topic,
             volume_pages=generation.volume_pages,
             requirements=generation.requirements,
@@ -59,6 +61,7 @@ class GenerationModel(Base):
             id=self.id,
             status=self.status,
             created_at=self.created_at,
+            version=self.version,
             topic=self.topic,
             volume_pages=self.volume_pages,
             requirements=self.requirements,
