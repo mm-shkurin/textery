@@ -4,3 +4,11 @@ class DomainException(Exception):
 
 class ValidationException(DomainException):
     pass
+
+
+class NotFoundException(DomainException):
+    pass
+
+
+class ConfigurationException(DomainException):
+    pass
