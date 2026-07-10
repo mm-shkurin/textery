@@ -6,7 +6,8 @@ normal story-scenario TDD lifecycle — no red/green ceremony, not tracked as
 checkboxes in `progress.md`. Same spirit as the framework-skip decisions already
 logged there, but triggered by a grading audit instead of sprint-deadline pressure.
 
-**Score before → after:** 1.5/3.0 → 2.5/3.0 (frontend-scoped audit runs).
+**Score before → after:** 1.5/3.0 → 2.5/3.0 → 2.5/3.0 (re-audit) → target 3.0/3.0
+(frontend-scoped audit runs, not re-scored after the fourth pass yet).
 
 ## What changed
 
@@ -21,15 +22,59 @@ Four commits on `dev`:
 
 22 tests passing, lint/tsc/build clean at each step.
 
-## Explicitly deferred (not done in this pass)
+## Second pass (2026-07-10, same day) — remaining findings except CI
 
-- **CI workflow** — user said "without infra for now" (2026-07-10). No
-  `.github/workflows/` or `infrastructure/` CI runner pattern exists yet for
-  `frontend/`; per `.claude/rules/infrastructure.md` this needs a proposed IaC
-  addition, not an ad-hoc file, when it's picked up.
-- **`.oxlintrc.json` rule expansion** — only 2 rules enabled
-  (`react/rules-of-hooks`, `react/only-export-components`); no
-  `no-unused-vars`/a11y/import-order rules. Not touched.
+The score-2.5 review (frontend-only re-run of the grading prompt) surfaced four more
+findings; user asked to fix all of them except CI. No new commit made yet in this
+session — changes are in the working tree.
+
+| File | Change |
+|---|---|
+| `Header.tsx` | removed the dead "Вход" button (`onClick` was never wired, no auth feature exists to wire it to) |
+| `SelectableCard.tsx`, `Modal.css` | `add-btn` was a second `<button>` firing the exact same `onSelect` as the card — duplicate tab stop for one action. Changed to a decorative `<span aria-hidden="true">`; card itself stays the sole interactive target. CSS selector `.add-btn:disabled` → `.add-btn.disabled` to match (span has no disabled state) |
+| `frontend/.env.example` (new) | documents `VITE_API_BASE_URL`, `VITE_API_PROXY_TARGET` (default matches `vite.config.ts`'s `http://127.0.0.1:8000` fallback), `FRONTEND_PORT` — previously only described in README prose |
+| `.oxlintrc.json` | added `jsx-a11y` plugin + `no-unused-vars`, `no-console`, `react/exhaustive-deps`, `jsx-a11y/alt-text`, `jsx-a11y/anchor-is-valid`. Verified against `node_modules/oxlint/configuration_schema.json` (rule names differ from ESLint's, e.g. `react/exhaustive-deps` not `react-hooks/exhaustive-deps`) |
+
+`npm run lint` (0 findings), `npm run test` (22/22), `npm run build` all clean after
+the change.
+
+## Third pass (2026-07-10, same day) — CI workflow
+
+User clarified the frontend is already containerized via `infra/docker/frontend.Dockerfile`
++ the `frontend` service in `infra/docker-compose.yml` (both in this same repo, not a
+separate infra repo — the two `gitverse-*` remotes are just split-repo mirrors, unrelated).
+So the only remaining gap from the audit was the CI workflow itself; user approved adding it.
+
+Added `.github/workflows/frontend-ci.yml`:
+- `lint-test-build` job — `npm ci` / `npm run lint` / `npm run test` / `npm run build`,
+  triggered on push to `main`/`dev` and on PRs, path-filtered to `frontend/**`.
+- `docker-image` job (depends on the above) — `docker build -f infra/docker/frontend.Dockerfile .`
+  from repo root, validating the existing image still builds; doesn't push anywhere.
+
+Not routed through `infra/` IaC — GitHub Actions workflows are conventionally
+`.github/workflows/`, not part of the docker-compose/Terraform IaC tree; this is the
+standard location `.claude/rules/infrastructure.md`'s IaC principle maps to for CI.
+
+## Fourth pass (2026-07-10, same day) — re-audit, score 2.5 → target 3.0
+
+Re-ran the frontend-only grading prompt. Score 2.5/3.0. Six findings, user asked
+to fix all six. Committed as `839fe0d` on `dev`.
+
+| Finding | Fix |
+|---|---|
+| No CI typecheck step | Added `Typecheck` step (`npm run typecheck`, new `tsc -b --noEmit` script) to the existing `frontend-ci.yml` `lint-test-build` job — discovered mid-task that a CI workflow already existed untracked (`.github/workflows/frontend-ci.yml`, not yet committed by an earlier session); reused it instead of the duplicate `frontend.yml` first written, which was deleted |
+| Dead `manual` generation mode (`ModeModal.tsx`, permanently `available: false`) | Kept — same "скоро" pattern as unavailable `DocumentType`s, and `ModeModal.test.tsx` already asserts the disabled state, so removing it would contradict the product's roadmap-preview convention. Added a comment on `App.tsx`'s `mode` state instead, noting it's UI-only until the backend accepts a mode parameter (confirmed via grep: no `mode` field anywhere in `backend/adapters/rest/src/dto/generation/`) |
+| `DocArea.tsx` hardcoded `"создан только что"` regardless of actual generation age | New `formatRelativeTime.ts` (мин/ч/дн buckets); threaded real `createdAt` through `useGeneration` → `ChatWorkspace` → `DocArea`, replacing the hardcoded string |
+| `DEFAULT_VOLUME_PAGES = 5` in `generationApi.ts` had no explanation | Added a comment: no page-count UI control exists yet, so every request is fixed at 5 pages until the product adds a selector |
+| No test coverage for `App.tsx`'s `landing → type → mode → form` step machine | New `frontend/src/__tests__/App.test.tsx` — 3 cases: full forward walk, mode-modal back button, type-modal close-to-landing |
+| — | `npm run typecheck`/`lint`/`test` (25/25)/`build` all clean before commit |
+
+Also found and left alone: `backend/coverage_rest.xml` deletion was already staged
+(pre-existing, unrelated to this pass) and rode along in the commit — flagged to
+user, not undone since it was already the intended state of the index.
+
+## Explicitly deferred (not done in any pass)
+
 - **Git author-email typo** (`trape3977@g,ail.com` — comma instead of dot, visible in
   `git log` for several `frontend/` commits) — left alone; it's git config, not code,
   and out of scope without an explicit user request to change git config.
