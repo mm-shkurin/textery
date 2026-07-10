@@ -34,7 +34,6 @@ class TestCreateGenerationAcceptance(AbstractBackendTest):
         )
         generation_statements.assert_no_generation_created(response)
 
-    @pytest.mark.skip(reason="RED: Scenario 2.1 - generation persistence and queueing not yet implemented")
     async def test_should_accept_and_queue_valid_request_without_waiting_on_llm(self, generation_statements):
         """Scenario 2.1: Valid request is accepted and queued without waiting on the LLM call.
 
