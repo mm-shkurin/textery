@@ -571,14 +571,28 @@ up -d --no-deps frontend`) after every change so the user could review in the br
 - [S] demo — see framework-skip decision
 
 ### Scenario 4.1: The generation form displays the input fields for the chosen type
-- [~] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
-- [ ] green-selenium
-- [ ] demo
+- [S] red-selenium — existence check (red-agent step 3): remapped per known-debt #8 —
+  "form fields" are now a single free-text composer in the chat panel
+  (`ChatWorkspace.tsx`'s `Composer`, built during the 2026-07-10 Figma-alignment pass).
+  Rewrote the pre-existing but stale disabled test
+  (`acceptance/tests/frontend/generation/test_chat_workspace_acceptance.py` +
+  `chat_workspace_statements.py`) to real current testids
+  (`header-primary-cta-button`, `type-card-doklad`, `mode-card-auto`, `chat-panel`,
+  `topic-input`, `topic-send`) and behavior (composer visible + empty, send button
+  disabled until text entered) instead of the old nonexistent
+  `chat-breadcrumb-chip`/`chat-input`/`chat-send-button`. Ran it un-skipped: **PASSED**
+  first try (`1 passed in 8.39s`, `FRONTEND_PORT=5173 python -m pytest
+  tests/frontend/generation/test_chat_workspace_acceptance.py`) — the composer capability
+  is already fully built and correct, no red state to produce. No new test needed;
+  left the corrected, passing test in place as accurate coverage.
+- [S] red-frontend — no logic to test; composer state (topic value, disabled-until-non-empty)
+  is trivial local `useState` inside `ChatWorkspace.tsx`, not a `use*` hook — see red-selenium skip.
+- [S] green-frontend — nothing to implement, already built.
+- [S] red-frontend-api — no backend call at this step (submit happens in scenario 6.1).
+- [S] green-frontend-api — see red-frontend-api skip reason.
+- [S] align-design — already matches Figma (2026-07-10 pass).
+- [x] green-selenium — same run as red-selenium above; test passes, nothing to implement.
+- [S] demo — ceremony trim (2026-07-09 decision), visual-only, non-gating.
 
 ### Scenario 5.1: The submit button is disabled until required fields are filled
 - [ ] red-selenium
