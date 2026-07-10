@@ -33,6 +33,7 @@ function App() {
         documentTypeLabel={DOCUMENT_TYPE_LABELS[documentType]}
         state={generation.state}
         content={generation.content}
+        volumePages={generation.volumePages}
         error={generation.error}
         onSubmit={generation.submit}
         onReset={generation.reset}

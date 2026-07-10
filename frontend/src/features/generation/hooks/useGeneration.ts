@@ -4,10 +4,12 @@ import { createGeneration, getGeneration } from '../api/generationApi'
 export type GenerationUiState = 'idle' | 'pending' | 'completed' | 'failed'
 
 const POLL_INTERVAL_MS = 5000
+const MAX_POLL_ATTEMPTS = 60 // ~5 minutes at POLL_INTERVAL_MS
 
 export interface UseGeneration {
   state: GenerationUiState
   content: string | null
+  volumePages: number | null
   error: string | null
   submit: (topic: string) => void
   reset: () => void
@@ -16,8 +18,10 @@ export interface UseGeneration {
 export function useGeneration(): UseGeneration {
   const [state, setState] = useState<GenerationUiState>('idle')
   const [content, setContent] = useState<string | null>(null)
+  const [volumePages, setVolumePages] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const intervalRef = useRef<number | null>(null)
+  const attemptsRef = useRef(0)
 
   const stopPolling = useCallback(() => {
     if (intervalRef.current !== null) {
@@ -28,11 +32,19 @@ export function useGeneration(): UseGeneration {
 
   const poll = useCallback(
     async (id: string) => {
+      attemptsRef.current += 1
+      if (attemptsRef.current > MAX_POLL_ATTEMPTS) {
+        stopPolling()
+        setError('Превышено время ожидания генерации')
+        setState('failed')
+        return
+      }
       try {
         const res = await getGeneration(id)
         if (res.status === 'completed') {
           stopPolling()
           setContent(res.content)
+          setVolumePages(res.volumePages)
           setState('completed')
         } else if (res.status === 'failed') {
           stopPolling()
@@ -53,8 +65,10 @@ export function useGeneration(): UseGeneration {
     async (topic: string) => {
       setState('pending')
       setContent(null)
+      setVolumePages(null)
       setError(null)
       stopPolling()
+      attemptsRef.current = 0
       try {
         const { generationId } = await createGeneration(topic)
         void poll(generationId) // immediate first check
@@ -74,11 +88,12 @@ export function useGeneration(): UseGeneration {
     stopPolling()
     setState('idle')
     setContent(null)
+    setVolumePages(null)
     setError(null)
   }, [stopPolling])
 
   // Clean up any running interval on unmount.
   useEffect(() => stopPolling, [stopPolling])
 
-  return { state, content, error, submit, reset }
+  return { state, content, volumePages, error, submit, reset }
 }
