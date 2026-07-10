@@ -1,35 +1,37 @@
-# Textery frontend
+# Textery — фронтенд
 
-React + TypeScript + Vite app for Textery — lets a user pick a document type,
-describe a topic, and watch an AI-generated document appear as it's produced.
+Приложение на React + TypeScript + Vite для Textery: пользователь выбирает тип
+документа, описывает тему, и наблюдает, как сгенерированный ИИ документ
+появляется по мере создания.
 
-## Structure
+## Структура
 
-- `src/features/landing` — marketing landing page.
-- `src/features/generation` — the document-generation flow: type/mode
-  selection modals, the chat-style workspace, the polling hook
-  (`useGeneration`), and the HTTP client (`generationApi`).
-- `src/shared` — components shared across features.
+- `src/features/landing` — маркетинговая посадочная страница.
+- `src/features/generation` — процесс генерации документа: модалки выбора
+  типа/режима, чат-подобное рабочее пространство, хук поллинга
+  (`useGeneration`) и HTTP-клиент (`generationApi`).
+- `src/shared` — компоненты, общие для разных фич.
 
-## Setup
+## Установка и запуск
 
 ```bash
 npm install
-npm run dev      # start dev server (proxies /api to the backend)
-npm run build    # type-check + production build
+npm run dev      # запуск dev-сервера (проксирует /api на бэкенд)
+npm run build    # проверка типов + production-сборка
 npm run lint      # oxlint
-npm run test      # run tests once
+npm run test      # разовый запуск тестов
 npm run test:watch
 ```
 
-## Environment
+## Переменные окружения
 
-- `VITE_API_BASE_URL` — base URL for the generation API. Defaults to `''`,
-  which routes requests through the Vite dev server's `/api` proxy
-  (see `vite.config.ts`, target controlled by `VITE_API_PROXY_TARGET`).
-- `FRONTEND_PORT` — port the dev server listens on (defaults to `5173`).
+- `VITE_API_BASE_URL` — базовый URL для API генерации. По умолчанию `''`,
+  что направляет запросы через прокси `/api` dev-сервера Vite
+  (см. `vite.config.ts`, целевой адрес задаётся `VITE_API_PROXY_TARGET`).
+- `FRONTEND_PORT` — порт, на котором слушает dev-сервер (по умолчанию `5173`).
 
-## Testing
+## Тестирование
 
-Tests use Vitest + Testing Library (`src/test/setup.ts`). Run `npm run test`
-before committing; `npm run build` also type-checks via `tsc -b`.
+Тесты используют Vitest + Testing Library (`src/test/setup.ts`). Перед
+коммитом запускайте `npm run test`; `npm run build` также проверяет типы
+через `tsc -b`.
