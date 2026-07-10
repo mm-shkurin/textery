@@ -187,6 +187,13 @@ from `acceptance/`. The `infra-frontend-1` Docker container (built via
 up -d --no-deps frontend`) after every change so the user could review in the browser at
 `http://localhost:80`.
 
+## Frontend audit remediation (2026-07-10)
+
+Direct fixes against an external code-quality grading audit, outside the TDD
+scenario ceremony — see `frontend-audit-remediation.md` for what changed (polling
+cap, error surfacing, dedup, file-size-cap splits, new test coverage, README) and
+what's still deferred (CI, oxlint rules, git-config typo).
+
 ## Spec
 - [x] interview
 - [x] story
