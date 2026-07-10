@@ -172,7 +172,7 @@ OpenRouter references in known-debt #3 and #5 to say GigaChat, once the slice is
 working and doc-churn time exists. Confirm where GigaChat creds live (`backend/.env`
 per #3) and that the TLS-cert handling is done properly, not disabled globally.
 
-## 12. Landing page acceptance test red — `hero-subheading` testid no longer exists
+## 12. CLOSED 2026-07-10 — Landing page acceptance test red — `hero-subheading` testid no longer exists
 Found 2026-07-10 during scenario 4.1's premortem pass. `test_should_display_hero_and_primary_cta`
 (`acceptance/tests/frontend/landing/test_landing_page_acceptance.py`) times out on
 `assert_hero_subheading_is_visible` — the user removed the hero subheading directly from
