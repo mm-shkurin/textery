@@ -260,13 +260,13 @@ up -d --no-deps frontend`) after every change so the user could review in the br
 - [x] red-usecase
 - [x] green-usecase
 - [x] adapters-discovery — Check 1 (ports): GenerationStorage has no adapter at all (`backend/adapters/db` doesn't exist yet) → needs `red-adapter db`/`green-adapter db` (SQLAlchemy model + Alembic migration for `generations` table with CHECK constraint per ADR, session/engine setup). GenerationQueue has no adapter at all (no arq module yet) → needs `red-adapter queue`/`green-adapter queue` (arq producer using `REDIS_URL`). Check 2 (exceptions): [S] scenario 2.1 is happy-path only, no new domain exception to map. Check 3 (response shape): REST router currently returns no body (201 only) but the already-red acceptance test expects `generation_id`/`status`/echoed fields/`created_at` in the body → needs `red-adapter rest`/`green-adapter rest`. Also `get_generation_usecase()` still does `return RequestGeneration()` with no args (will raise `TypeError` once real ports are wired) — must be updated to inject the real db/queue adapters.
-- [ ] red-adapter db
-- [ ] green-adapter db
-- [ ] red-adapter queue
-- [ ] green-adapter queue
-- [ ] red-adapter rest
-- [ ] green-adapter rest
-- [ ] green-acceptance
+- [x] red-adapter db — backfilled 2026-07-10 under P0-3's note, `backend/adapters/db/tests/`, verified genuinely red
+- [x] green-adapter db — same backfill pass, real Postgres round-trip green
+- [S] red-adapter queue — `NoOpGenerationQueue` is a deliberate no-op (known-debt #10/#11), no real arq producer exists to test; generation runs inline via FastAPI `BackgroundTasks` instead
+- [S] green-adapter queue — see red-adapter queue skip reason
+- [x] red-adapter rest — backfilled 2026-07-10, `test_generation_post_router.py`, verified genuinely red against a `NotImplementedError` handler stub. Note: the "echoed fields" response-shape expectation in this discovery note above was stale — the actual/tested `GenerationCreatedDto` shape is `generation_id`/`status`/`created_at` only, no request-field echo.
+- [x] green-adapter rest — same backfill pass, 201 + background-task enqueue verified
+- [~] green-acceptance — router-level HTTP coverage done (mocked usecase); no top-level `acceptance/` black-box test against the running app yet
 
 ### Scenario 2.2: An entirely Cyrillic request round-trips without corruption
 - [ ] red-acceptance
