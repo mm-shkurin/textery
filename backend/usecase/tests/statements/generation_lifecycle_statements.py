@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 from fake.generation.fake_generation_provider import FakeGenerationProvider
 from fake.generation.fake_generation_storage import FakeGenerationStorage
-from generation.generate_document import GenerateDocument
+from generation.generate_document import GENERIC_FAILURE_MESSAGE, GenerateDocument
 from generation.generation import Generation
 from generation.get_generation import GetGeneration
 
@@ -105,9 +105,12 @@ class GenerationLifecycleStatements:
     def assert_generation_failed_with_reason(self, expected_reason: str) -> None:
         stored = self._storage.updated_generations[-1]
         assert stored.status == "failed", f"expected status 'failed', got '{stored.status}'"
-        assert stored.content == expected_reason, (
-            f"expected failure reason '{expected_reason}', got '{stored.content}'"
+        assert stored.error_message == expected_reason, (
+            f"expected failure reason '{expected_reason}', got '{stored.error_message}'"
         )
+
+    def assert_generation_failed_with_generic_reason(self) -> None:
+        self.assert_generation_failed_with_reason(GENERIC_FAILURE_MESSAGE)
 
     def assert_generation_marked_in_progress_before_final_update(self) -> None:
         statuses = [g.status for g in self._storage.updated_generations]

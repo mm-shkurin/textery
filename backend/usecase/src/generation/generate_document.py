@@ -1,10 +1,12 @@
 import logging
+from typing import Optional
 from uuid import UUID
 
-from adapters.generation_provider import GenerationProvider
+from adapters.generation_provider import GenerationProvider, ProviderError
 from adapters.generation_storage import GenerationStorage
 
 MAX_PROVIDER_ATTEMPTS = 2
+GENERIC_FAILURE_MESSAGE = "Не удалось сгенерировать документ. Попробуйте позже."
 
 logger = logging.getLogger(__name__)
 
@@ -19,11 +21,11 @@ class GenerateDocument:
         generation.mark_in_progress()
         await self._storage.update(generation)
 
-        last_error: Exception | None = None
+        last_error: Optional[ProviderError] = None
         for attempt in range(1, MAX_PROVIDER_ATTEMPTS + 1):
             try:
                 content = await self._provider.generate(generation)
-            except Exception as error:
+            except ProviderError as error:
                 last_error = error
                 logger.warning(
                     "generation %s provider attempt %d/%d failed: %s",
@@ -35,5 +37,5 @@ class GenerateDocument:
             return
 
         logger.error("generation %s failed after %d attempts: %s", generation.id, MAX_PROVIDER_ATTEMPTS, last_error)
-        generation.fail(str(last_error))
+        generation.fail(GENERIC_FAILURE_MESSAGE)
         await self._storage.update(generation)

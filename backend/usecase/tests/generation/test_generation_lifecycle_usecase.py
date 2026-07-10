@@ -1,5 +1,6 @@
 import pytest
 
+from adapters.generation_provider import ProviderError
 from statements.generation_lifecycle_statements import GenerationLifecycleStatements
 
 
@@ -50,22 +51,22 @@ class TestGenerateDocumentSuccess:
 
 
 class TestGenerateDocumentProviderFailure:
-    """Evening-demo slice: a provider error fails the generation with the error reason."""
+    """Evening-demo slice: a provider error fails the generation with a generic, sanitized reason."""
 
-    async def test_should_fail_generation_with_error_reason(
+    async def test_should_fail_generation_with_generic_reason(
         self, generation_lifecycle_statements: GenerationLifecycleStatements
     ):
         await generation_lifecycle_statements.process_pending_generation_with_provider_error(
-            RuntimeError("provider unavailable")
+            ProviderError("https://gigachat.devices.sberbank.ru/api/v1/chat/completions: connection refused")
         )
-        generation_lifecycle_statements.assert_generation_failed_with_reason("provider unavailable")
+        generation_lifecycle_statements.assert_generation_failed_with_generic_reason()
         generation_lifecycle_statements.assert_generation_marked_in_progress_before_final_update()
 
     async def test_should_retry_provider_once_before_giving_up(
         self, generation_lifecycle_statements: GenerationLifecycleStatements
     ):
         await generation_lifecycle_statements.process_pending_generation_with_provider_error(
-            RuntimeError("provider unavailable")
+            ProviderError("provider unavailable")
         )
         generation_lifecycle_statements.assert_provider_call_count(2)
 
@@ -77,7 +78,7 @@ class TestGenerateDocumentTransientProviderFailure:
         self, generation_lifecycle_statements: GenerationLifecycleStatements
     ):
         await generation_lifecycle_statements.process_pending_generation_with_transient_provider_error(
-            RuntimeError("temporary blip"), fail_times=1, content="Готовый доклад"
+            ProviderError("temporary blip"), fail_times=1, content="Готовый доклад"
         )
         generation_lifecycle_statements.assert_generation_completed_with_content("Готовый доклад")
         generation_lifecycle_statements.assert_provider_call_count(2)
