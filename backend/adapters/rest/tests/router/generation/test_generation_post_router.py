@@ -56,6 +56,9 @@ class TestCreateGenerationHappyPath:
             "generation_id": str(generation.id),
             "status": "pending",
             "created_at": "2026-07-10T12:00:00Z",
+            "topic": "Как работает фотосинтез",
+            "volume_pages": 3,
+            "document_type": "доклад",
         }, f"unexpected response body {response.json()}"
         mock_request_usecase.execute.assert_awaited_once_with(
             topic="Как работает фотосинтез",

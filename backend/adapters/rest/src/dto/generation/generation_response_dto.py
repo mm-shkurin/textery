@@ -10,6 +10,9 @@ class GenerationCreatedDto(BaseModel):
     generation_id: str
     status: str
     created_at: datetime
+    topic: Optional[str]
+    volume_pages: Optional[int]
+    document_type: str
 
     @classmethod
     def from_domain(cls, generation: Generation) -> "GenerationCreatedDto":
@@ -17,6 +20,9 @@ class GenerationCreatedDto(BaseModel):
             generation_id=str(generation.id),
             status=generation.status,
             created_at=generation.created_at,
+            topic=generation.topic,
+            volume_pages=generation.volume_pages,
+            document_type=generation.document_type,
         )
 
 
