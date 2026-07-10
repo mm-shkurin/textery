@@ -101,6 +101,92 @@ that doesn't gate correctness, to fit the remaining P0 scenarios before Friday:
 Revert this once P0-1..7 are green and deployed — resume full `/continue` ceremony
 (review passes + refactor fan-out) for everything after.
 
+## Ad-hoc Figma design-alignment pass (2026-07-10) — landing, modals, chat, mobile
+
+Done outside the formal per-scenario framework (same spirit as the 1.2-3.2 framework-skip
+above — near-static visual work) at the user's direct request, driven by a real Figma
+file (`https://www.figma.com/design/rA86oLSfshnx9CYlAtSfqr/...`, frames "Main screen 2.0",
+"Generation screen", "Generation screen 2") plus `.memory-bank/figma/` exports. Design
+tokens (Inter font sizes, dark-surface color scale, radius scale) were pulled via the
+Figma REST API (`GET /v1/files/{key}/nodes`) using a user-supplied personal access token
+— token was pasted in chat and not persisted anywhere in the repo; user was told to
+rotate it in Figma settings after the session.
+
+**What changed (all in `frontend/src/`):**
+- `index.css` — `:root` tokens replaced with the real Figma palette/radius scale
+  (`--bg-page`, `--bg-header`, `--bg-card`, `--radius-sm/md/lg/pill`, etc.), old
+  `--accent-*` vars kept alongside (still used by `ChatWorkspace`/`ChatWorkspaceDoc` CSS).
+- `features/landing/components/Header.tsx` (new) + `Header.css` (new) — nav bar with
+  logo, "Вход" ghost button, primary CTA (`data-testid="header-primary-cta-button"`).
+- `features/landing/components/LandingPage.tsx`/`.css` — added hero image collage
+  (`frontend/public/hero-collage.svg`, built from `.memory-bank/figma/Разметка.svg`
+  geometry, cropped to drop the vector-glyph pill text and duplicate blur layers), a
+  real-DOM trust-row pill (accessible text, not the SVG's baked-in glyphs), a features
+  section (4 cards + big placeholder), and a big "Textery AI" footer wordmark. A
+  fade-out grid background (`.hero-collage-wrap::before`, CSS linear-gradients +
+  radial-gradient mask) was added behind the collage to match a later `Разметка.png`
+  revision that added a grid backdrop.
+- `shared/components/PlaceholderImage.tsx` (new) — reusable inline-SVG placeholder icon
+  (frame + circle + "mountain"), used across the landing features section and both
+  generation modals.
+- `features/generation/components/TypeModal.tsx`/`ModeModal.tsx`/`Modal.css` — cards
+  restyled to match the Figma modal frames (top image placeholder + name + separate
+  "+" button below, not an overlaid "скоро" badge); `ModeModal` card order flipped to
+  Ручной-first/Автоматический-second to match the mockup; back control changed from a
+  text row to an icon-only arrow button.
+- `public/logo.svg` (added by user) — swapped in as the real logo everywhere a
+  hand-built "T" mark existed: `Header.tsx` (landing) and
+  `features/generation/components/ChatWorkspace.tsx` (chat header).
+- `features/generation/components/ChatWorkspace.tsx`/`.css` — **layout swap**: the
+  `cw-layout` grid was `320px 1fr` (chat left, doc right); now `1fr 320px` with
+  `.chat-panel { order: 2 }` / `.doc-area { order: 1 }`, so the document is on the left
+  and the chat/composer panel is on the right (doc-testids unchanged — `chat-panel`/
+  `doc-area` still identify the same regions, just repositioned via CSS `order`, no
+  test assumed a left/right position so nothing broke).
+- **Markdown rendering** — `doc-body` used to render GigaChat's raw string via
+  `{content}` (`white-space: pre-wrap`); now renders `<ReactMarkdown>{content ?? ''}</ReactMarkdown>`
+  (added `react-markdown` as a real dependency — reuse over hand-rolling a parser) with
+  a `.markdown-body` stylesheet block in `ChatWorkspaceDoc.css` (headings, lists, bold,
+  links, blockquote, code/pre) matching the existing dark theme.
+- `frontend/src/features/landing/__tests__/LandingPage.test.tsx` — updated after the
+  user removed the hero subheading/CTA button from `LandingPage.tsx` directly (their
+  own edit, not this session's); the vitest assertion was narrowed to just the hero
+  heading so the suite reflects what's actually rendered.
+
+**Mobile-responsive pass — the one piece done through real red/green tests:**
+User asked to "prescribe the phone design through tests" and confirmed Selenium
+(window-resize + real rendered layout) over a jsdom `matchMedia` mock. Added:
+- `acceptance/conftest.py` — `mobile_webdriver` fixture (headless Chrome,
+  `--window-size=390,844`, iPhone 12/13-class viewport).
+- `acceptance/statements/frontend/responsive_statements.py` (new) —
+  `assert_no_horizontal_overflow(driver, label)`, comparing
+  `document.documentElement.scrollWidth` to `window.innerWidth`.
+- `acceptance/tests/frontend/landing/test_landing_page_mobile_acceptance.py` (new) —
+  two scenarios: landing page and the (header-CTA-opened) type modal must not
+  horizontally overflow at 390px width.
+- **RED** (before the CSS fix): both failed — `scrollWidth` 533px vs a 390-504px
+  viewport, caused by the decorative fade-grid `::before` bleeding via negative
+  `inset` past the container edge, and by the modals' hardcoded `width: 760px`/`640px`.
+- **GREEN**: `.landing { overflow-x: hidden }` (clips the decorative bleed only — the
+  grid already fades to transparent before the container edge, so nothing visible is
+  lost), `.modal { max-width: calc(100vw - 32px) }`, and `@media (max-width: 640px)`
+  blocks in `LandingPage.css` (smaller hero/heading type, features grid to 1 column,
+  hides the big placeholder image, wraps the trust row), `Header.css` (hides the
+  "Вход" ghost button, shrinks padding), and `Modal.css` (`type-grid` → 2 columns,
+  `mode-grid` → 1 column, smaller card icons). Both scenarios pass.
+- **Not covered**: `ChatWorkspace`'s `cw-layout` grid (`1fr 320px`, hardcoded) has the
+  same class of bug on a phone viewport and was not given a red/green cycle in this
+  session — flagged here so a future pass doesn't have to rediscover it.
+
+**Verification run each iteration:** `npx tsc --noEmit`, `npx vite build`,
+`npx vitest run --pool=threads` (default `--pool=forks` hung/timed out in this Windows
+environment — always pass `--pool=threads` here), and for the mobile scenarios
+`FRONTEND_PORT=80 python -m pytest tests/frontend/landing/test_landing_page_mobile_acceptance.py`
+from `acceptance/`. The `infra-frontend-1` Docker container (built via
+`infra/docker-compose.yml`) was rebuilt (`docker compose build frontend && docker compose
+up -d --no-deps frontend`) after every change so the user could review in the browser at
+`http://localhost:80`.
+
 ## Spec
 - [x] interview
 - [x] story

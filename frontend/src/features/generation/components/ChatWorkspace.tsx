@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
+import ReactMarkdown from 'react-markdown'
 import './ChatWorkspace.css'
 import './ChatWorkspaceDoc.css'
 import type { GenerationUiState } from '../hooks/useGeneration'
@@ -32,9 +33,7 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
   return (
     <div className="chat-page">
       <header className="cw-header">
-        <div className="cw-logo">
-          <span className="cw-logo-mark">T</span>Textery
-        </div>
+        <img className="cw-logo" src="/logo.svg" alt="Textery" />
       </header>
       <div className="cw-container">
         <div className={`cw-badge cw-badge-${state}`}>
@@ -159,8 +158,8 @@ function DocArea({ state, content, error, label, onReset }: DocAreaProps) {
     return (
       <div className="doc-content">
         <div className="doc-meta">{label} · 5 страниц · создан только что</div>
-        <div className="doc-body" data-testid="doc-body">
-          {content}
+        <div className="doc-body markdown-body" data-testid="doc-body">
+          <ReactMarkdown>{content ?? ''}</ReactMarkdown>
         </div>
         <div className="actions-row">
           <button type="button" className="cw-btn cw-btn-primary" onClick={onReset}>

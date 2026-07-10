@@ -1,3 +1,4 @@
+import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
 import './Modal.css'
 
 export type DocumentType = 'doklad' | 'essay' | 'sochinenie' | 'referat'
@@ -24,20 +25,31 @@ export function TypeModal({ onSelect, onClose }: TypeModalProps) {
             ×
           </button>
         </div>
-        <p className="modal-subtitle">Выберите тип работы, который будете создавать</p>
+        <p className="modal-subtitle">Выберите тип документа с которым будете работать</p>
         <div className="type-grid">
           {TYPES.map((type) => (
-            <button
-              key={type.id}
-              type="button"
-              className={`type-card${type.available ? '' : ' disabled'}`}
-              disabled={!type.available}
-              data-testid={`type-card-${type.id}`}
-              onClick={() => type.available && onSelect(type.id)}
-            >
-              {!type.available && <span className="soon-pill">скоро</span>}
-              <span className="type-name">{type.name}</span>
-            </button>
+            <div key={type.id} className="card-slot">
+              <button
+                type="button"
+                className={`type-card${type.available ? '' : ' disabled'}`}
+                disabled={!type.available}
+                data-testid={`type-card-${type.id}`}
+                onClick={() => type.available && onSelect(type.id)}
+              >
+                {!type.available && <span className="soon-pill">скоро</span>}
+                <PlaceholderImage className="card-icon" />
+                <span className="type-name">{type.name}</span>
+              </button>
+              <button
+                type="button"
+                className="add-btn"
+                disabled={!type.available}
+                aria-label={`Выбрать ${type.name}`}
+                onClick={() => type.available && onSelect(type.id)}
+              >
+                +
+              </button>
+            </div>
           ))}
         </div>
       </div>

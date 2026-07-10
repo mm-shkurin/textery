@@ -14,23 +14,9 @@
 }
 
 .cw-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  font-size: 18px;
-}
-
-.cw-logo-mark {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
-  background: var(--accent-gradient);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  color: #fff;
+  height: 28px;
+  width: auto;
+  display: block;
 }
 
 .cw-container {
@@ -70,16 +56,21 @@
 
 .cw-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 1fr 320px;
   gap: 24px;
 }
 
 .chat-panel {
+  order: 2;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: 16px;
   padding: 24px;
   height: fit-content;
+}
+
+.doc-area {
+  order: 1;
 }
 
 .chat-panel h3 {
