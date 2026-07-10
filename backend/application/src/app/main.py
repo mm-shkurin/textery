@@ -18,9 +18,18 @@ sys.path.insert(0, _USECASE_SRC)
 sys.path.insert(0, _DB_SRC)
 sys.path.insert(0, _PROVIDER_SRC)
 
+import asyncio
+import contextlib
+import logging
+
 from fastapi import FastAPI
 
-from container import create_generate_document, create_get_generation, create_request_generation
+from container import (
+    create_generate_document,
+    create_get_generation,
+    create_request_generation,
+    run_stale_generation_sweep,
+)
 from error_handling.exception_handlers import unhandled_exception_handler, validation_exception_handler
 from router.generation.generation_router import (
     get_generate_document_usecase,
@@ -30,7 +39,32 @@ from router.generation.generation_router import (
 from router.generation.generation_router import router as generation_router
 from shared.exceptions import ValidationException
 
-app = FastAPI()
+SWEEP_INTERVAL_SECONDS = 60
+
+logger = logging.getLogger(__name__)
+
+
+async def _sweep_loop() -> None:
+    while True:
+        await asyncio.sleep(SWEEP_INTERVAL_SECONDS)
+        try:
+            await run_stale_generation_sweep()
+        except Exception:
+            logger.exception("stale generation sweep failed")
+
+
+@contextlib.asynccontextmanager
+async def lifespan(app: FastAPI):
+    sweep_task = asyncio.create_task(_sweep_loop())
+    try:
+        yield
+    finally:
+        sweep_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await sweep_task
+
+
+app = FastAPI(lifespan=lifespan)
 app.include_router(generation_router)
 app.add_exception_handler(ValidationException, validation_exception_handler)
 app.add_exception_handler(Exception, unhandled_exception_handler)
