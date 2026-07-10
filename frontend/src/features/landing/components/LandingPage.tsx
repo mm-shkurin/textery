@@ -7,6 +7,8 @@ interface LandingPageProps {
   onPrimaryCtaClick?: () => void
 }
 
+const TRUST_AVATAR_COUNT = 4
+
 const FEATURES = [
   {
     title: 'Множество шаблонов',
@@ -41,7 +43,7 @@ export function LandingPage({ onPrimaryCtaClick }: LandingPageProps) {
 
       <div className="trust-row">
         <div className="trust-avatars">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: TRUST_AVATAR_COUNT }).map((_, i) => (
             <span className="trust-avatar" key={i} />
           ))}
         </div>

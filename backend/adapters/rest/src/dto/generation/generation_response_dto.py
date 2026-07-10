@@ -34,6 +34,7 @@ class GenerationDetailDto(BaseModel):
     volume_pages: Optional[int]
     document_type: str
     content: Optional[str]
+    error_message: Optional[str]
 
     @classmethod
     def from_domain(cls, generation: Generation) -> "GenerationDetailDto":
@@ -45,4 +46,5 @@ class GenerationDetailDto(BaseModel):
             volume_pages=generation.volume_pages,
             document_type=generation.document_type,
             content=generation.content,
+            error_message=generation.error_message,
         )

@@ -31,15 +31,9 @@ export function SelectableCard({
         <PlaceholderImage className="card-icon" />
         <span className={nameClassName}>{name}</span>
       </button>
-      <button
-        type="button"
-        className="add-btn"
-        disabled={!available}
-        aria-label={`Выбрать ${name}`}
-        onClick={() => available && onSelect()}
-      >
+      <span className={`add-btn${available ? '' : ' disabled'}`} aria-hidden="true">
         +
-      </button>
+      </span>
     </div>
   )
 }

@@ -55,6 +55,7 @@ class TestGetGenerationPending:
             "volume_pages": 3,
             "document_type": "доклад",
             "content": None,
+            "error_message": None,
         }, f"unexpected response body {response.json()}"
 
 

@@ -9,9 +9,6 @@ export function Header({ onPrimaryCtaClick }: HeaderProps) {
     <header className="site-header">
       <img className="brand-logo" src="/logo.svg" alt="Textery" />
       <div className="header-actions">
-        <button type="button" className="btn-ghost">
-          Вход
-        </button>
         <button
           type="button"
           className="btn-light"

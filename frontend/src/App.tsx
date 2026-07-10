@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { LandingPage } from './features/landing/components/LandingPage'
-import { TypeModal, type DocumentType } from './features/generation/components/TypeModal'
+import { TypeModal } from './features/generation/components/TypeModal'
+import type { DocumentType } from './features/generation/documentTypes'
 import { ModeModal, type GenerationMode } from './features/generation/components/ModeModal'
 import { ChatWorkspace } from './features/generation/components/ChatWorkspace'
 import { useGeneration } from './features/generation/hooks/useGeneration'

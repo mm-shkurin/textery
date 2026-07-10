@@ -6,13 +6,16 @@
 **Implication:** A stray `uvicorn` process left listening on `BACKEND_PORT` across a session survives a plain `pkill -f "uvicorn main:app"` (Windows Python processes don't match that pattern) — free the port with `netstat -ano | grep :{port}` + `taskkill //F //PID {pid}` on the specific PID before restarting. Docker Desktop restarting mid-session also drops `infra-postgres-1` silently — recheck `docker ps` before assuming the DB is still up.
 **From:** scenario 2.1 (valid-request-accepted-and-queued)
 
-## Deferred: frontend CI workflow and oxlint rule expansion
-**Quirk:** No CI ever wired up for `frontend/` — `npm run lint`/`tsc -b`/`npm run test`
-only run manually. `.oxlintrc.json` only has 2 rules enabled.
-**Where:** repo-wide — no `.github/workflows/` and no CI runner pattern under
-`infrastructure/` for the frontend yet.
-**Implication:** flagged, not fixed, during the 2026-07-10 audit-remediation pass
-(user said "without infra for now" — see `frontend-audit-remediation.md`). When this
-gets picked up, propose the IaC addition per `.claude/rules/infrastructure.md` rather
-than dropping an ad-hoc `.github/workflows/*.yml`.
+## Resolved: frontend CI workflow now exists
+**Quirk:** was flagged deferred across two 2026-07-10 passes, then added in a third
+pass the same day once the user confirmed the frontend was already containerized
+(`infra/docker/frontend.Dockerfile` + `infra/docker-compose.yml`, same repo — the
+`gitverse-backend`/`gitverse-frontend` remotes are unrelated split-repo mirrors, not
+a separate infra repo).
+**Where:** `.github/workflows/frontend-ci.yml` — `lint-test-build` job
+(`npm ci`/`lint`/`test`/`build`) + `docker-image` job (builds
+`infra/docker/frontend.Dockerfile` from repo root to catch Dockerfile drift).
+**Implication:** if this repo's remote strategy changes (e.g. CI needs to run on
+`gitverse` instead of/in addition to GitHub), the workflow will need porting to
+whatever CI the new host supports — GitHub Actions syntax doesn't transfer.
 **From:** frontend-audit-remediation.md, 2026-07-10

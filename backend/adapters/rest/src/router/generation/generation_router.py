@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
 from dto.generation.generation_request_dto import GenerationRequestDto
 from dto.generation.generation_response_dto import GenerationCreatedDto, GenerationDetailDto
@@ -27,7 +27,6 @@ def get_generate_document_usecase() -> GenerateDocument:
 async def create_generation(
     request: GenerationRequestDto,
     background_tasks: BackgroundTasks,
-    idempotency_key: str = Header(..., alias="Idempotency-Key"),
     usecase: RequestGeneration = Depends(get_request_generation_usecase),
     generate_document: GenerateDocument = Depends(get_generate_document_usecase),
 ) -> GenerationCreatedDto:

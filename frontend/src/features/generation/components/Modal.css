@@ -114,6 +114,9 @@
 }
 
 .add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 36px;
   height: 36px;
   border-radius: var(--radius-sm);
@@ -122,13 +125,11 @@
   color: var(--text-primary);
   font-size: 18px;
   line-height: 1;
-  cursor: pointer;
   font-family: inherit;
 }
 
-.add-btn:disabled {
+.add-btn.disabled {
   opacity: 0.45;
-  cursor: not-allowed;
 }
 
 .soon-pill {

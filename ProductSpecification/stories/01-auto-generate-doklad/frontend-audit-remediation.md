@@ -73,6 +73,26 @@ Also found and left alone: `backend/coverage_rest.xml` deletion was already stag
 (pre-existing, unrelated to this pass) and rode along in the commit — flagged to
 user, not undone since it was already the intended state of the index.
 
+## Fifth pass (2026-07-10, same day) — re-audit, score 2.5 → minor fixes only
+
+Re-ran the frontend-only grading prompt again (score 2.5/3.0). User asked to fix
+only the minor findings from this round, leaving the larger ones (error boundary,
+state persistence, CSS file-size margin, `DEFAULT_VOLUME_PAGES` UI control) for a
+future pass.
+
+| Finding | Fix |
+|---|---|
+| `LandingPage.tsx` trust-avatar count (`Array.from({ length: 4 })`) was a bare magic number | Extracted `TRUST_AVATAR_COUNT = 4` constant |
+| `TypeModal.tsx` re-exported `DocumentType` (`export type { DocumentType }`) even though `documentTypes.ts` already exports it — two import paths for the same type | Removed the re-export; `App.tsx` now imports `DocumentType` directly from `../features/generation/documentTypes` instead of via `TypeModal` |
+| `formatRelativeTime.ts` had four bucket-boundary branches (60s/60min/24h) with zero direct unit test | New `frontend/src/features/generation/__tests__/formatRelativeTime.test.ts` — 8 cases covering null/invalid input and each boundary (59s/60s, 59min/60min, 23h/24h) using `vi.useFakeTimers()` |
+
+`npx tsc -b --noEmit` clean, `npx vitest run` 33/33 passing (up from 25) after the change.
+
+Not fixed this pass (flagged, deferred by user request): missing global error
+boundary in `App.tsx`/`main.tsx`, no persistence of `App.tsx`'s step/documentType/mode
+state across a refresh, `ChatWorkspaceDoc.css` sitting exactly at the 200-line cap
+with no margin, `DEFAULT_VOLUME_PAGES` still hardcoded with no selector UI.
+
 ## Explicitly deferred (not done in any pass)
 
 - **Git author-email typo** (`trape3977@g,ail.com` — comma instead of dot, visible in
