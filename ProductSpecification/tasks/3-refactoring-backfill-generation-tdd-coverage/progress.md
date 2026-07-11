@@ -30,8 +30,8 @@ move on rather than rewriting existing tests.
 
 ### Step 5: Provider integration — cover GigaChatProvider or explicitly isolate
 - [x] red-adapter generation_provider — took the **cover** option. Existing test covered only the constructor; `gigachat_provider.py` was 65% (generate() lines 35-50 + _fetch_token() 53-63 untested) and `fake_provider.py` unimported (0%). Added `test_gigachat_provider_generate.py` (stubs the httpx boundary via pytest-mock) characterizing the two-call flow: token fetch (Basic creds + scope + RqUID uuid4), Bearer wiring, exact prompt + completions body, and `httpx.HTTPError → ProviderError(str(error))`; plus `test_fake_provider.py` (returns exact `FAKE_DOKLAD_TEXT`). Closes provider package to 100% line+branch. Characterization → GREEN on first run, no production change. /test-review tightened assertions (full-dict body + token-call auth). The **live** GigaChat network path stays out of CI (stub only); CI runs with GENERATION_PROVIDER=fake.
-- [~] green-adapter generation_provider
+- [S] green-adapter generation_provider — nothing to implement: the red characterization tests are GREEN on first run and the provider package (`gigachat_provider.py` + `fake_provider.py`) is at 100% line+branch (pytest-cov, 6 passed, 2026-07-12). No production code to add.
 
 ### Step 6: Acceptance — happy-path create → pending → status → completed content
-- [ ] red-acceptance
+- [~] red-acceptance
 - [ ] green-acceptance
