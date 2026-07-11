@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import ClassVar
 from uuid import UUID
@@ -8,6 +9,9 @@ from statements.generation_scope import GenerationScope
 from statements.test_data import TestData
 
 CREATED_AT_MAX_AGE = timedelta(minutes=1)
+GENERATION_POLL_ATTEMPTS = 10
+GENERATION_POLL_INTERVAL_SECONDS = 0.5
+TERMINAL_STATUSES = ("completed", "failed")
 
 
 class GenerationStatements:
@@ -36,6 +40,59 @@ class GenerationStatements:
         scope = GenerationScope.builder()
         request = scope.to_request_dto()
         return await self._client.create_generation(request, TestData.unique_idempotency_key())
+
+    async def await_generation_completed(self, create_response: GenerationResponseDto) -> GenerationResponseDto:
+        assert create_response.body is not None, "cannot poll: create response had no body"
+        generation_id = create_response.body["generation_id"]
+        last_response = None
+        for _ in range(GENERATION_POLL_ATTEMPTS):
+            last_response = await self._client.get_generation(generation_id)
+            assert last_response.status_code == 200, (
+                f"expected 200 OK from GET generation, got status_code={last_response.status_code}, "
+                f"body={last_response.body}"
+            )
+            status = (last_response.body or {}).get("status")
+            if status in TERMINAL_STATUSES:
+                return last_response
+            await asyncio.sleep(GENERATION_POLL_INTERVAL_SECONDS)
+        raise AssertionError(
+            f"generation {generation_id} did not reach a terminal status within "
+            f"{GENERATION_POLL_ATTEMPTS} polls; last body={last_response.body if last_response else None}"
+        )
+
+    def assert_generation_completed_with_content(
+        self, completed_response: GenerationResponseDto, create_response: GenerationResponseDto
+    ) -> None:
+        assert completed_response.status_code == 200, (
+            f"expected 200 OK from GET generation, got status_code={completed_response.status_code}, "
+            f"body={completed_response.body}"
+        )
+        body = completed_response.body
+        assert body is not None, "expected a response body, got None"
+        assert body.get("status") == "completed", f"expected status 'completed', got body={body}"
+
+        created = create_response.body
+        # created_at is stamped at creation and immutable, so the completed GET must echo the
+        # exact value returned by the create (201) response — capturable from setup, assert equal.
+        for field in ("generation_id", "topic", "document_type", "volume_pages", "created_at"):
+            assert body.get(field) == created.get(field), (
+                f"expected {field} to match the created generation ({created.get(field)!r}), "
+                f"got {body.get(field)!r}"
+            )
+
+        assert body.get("error_message") is None, (
+            f"expected no error_message on a successfully completed generation, "
+            f"got {body.get('error_message')!r}"
+        )
+
+        content = body.get("content")
+        assert isinstance(content, str) and content, f"expected non-empty string content, got {content!r}"
+        # The exact fake document text is an internal constant of FakeProvider, not part of the
+        # API contract; asserting the whole body would couple this black-box test to that constant.
+        # startswith("Введение") is the strongest stable structural assertion for a completed доклад.
+        assert content.startswith("Введение"), (
+            f"expected completed content to begin with the document's opening section, got {content[:40]!r}"
+        )
 
     def assert_generation_created_pending(self, response: GenerationResponseDto) -> None:
         assert response.status_code == 201, (

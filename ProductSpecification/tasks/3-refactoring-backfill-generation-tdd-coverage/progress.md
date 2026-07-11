@@ -33,5 +33,5 @@ move on rather than rewriting existing tests.
 - [S] green-adapter generation_provider — nothing to implement: the red characterization tests are GREEN on first run and the provider package (`gigachat_provider.py` + `fake_provider.py`) is at 100% line+branch (pytest-cov, 6 passed, 2026-07-12). No production code to add.
 
 ### Step 6: Acceptance — happy-path create → pending → status → completed content
-- [~] red-acceptance
-- [ ] green-acceptance
+- [x] red-acceptance — no create→completed acceptance test existed (create-only suite) and `ApplicationClient` had no GET method. Added `get_generation()` to the client, `await_generation_completed` (bounded poll 10×0.5s, 200 each GET, clear timeout) + `assert_generation_completed_with_content` (exact status='completed', all create fields incl. created_at match, error_message None, content non-empty str startswith "Введение") to `GenerationStatements`, and `test_generation_lifecycle_acceptance.py` (Scenarios 2.1→4.1→4.2). Verified GREEN against the wired backend (fake provider, local Postgres) then left DISABLED with the RED skip marker for green-acceptance. /test-review tightened to full contract-field assertions. This closes the Step-4-premortem gap (no end-to-end GET against the wired app). Note: `api-specs/generations_get.yaml` drifts from impl (nests content under `document.content`; impl returns top-level `content`) — characterization pins the real impl.
+- [~] green-acceptance
