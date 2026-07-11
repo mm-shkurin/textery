@@ -25,8 +25,8 @@ move on rather than rewriting existing tests.
 - [S] green-adapter db — nothing to implement: red found no gap (storage + model both at 100%).
 
 ### Step 4: REST adapter — POST creates pending, GET returns status/content
-- [~] red-adapter rest
-- [ ] green-adapter rest
+- [x] red-adapter rest — scenario behaviors (POST 201 pending, GET pending/completed/404, POST 400 missing-topic) were already 100% covered; the only gap was `generation_router.py` at 89% (lines 15/19/23 = the three unwired dependency-provider guards). Added `test_generation_router_wiring.py` (parametrized, 3 cases) asserting each `get_*_usecase()` raises `NotImplementedError("wired by the application composition root")` — closes router to 100% line+branch. Characterization of existing behavior → GREEN on first run, no production change. /test-review PASS.
+- [~] green-adapter rest
 
 ### Step 5: Provider integration — cover GigaChatProvider or explicitly isolate
 - [ ] red-adapter generation_provider
