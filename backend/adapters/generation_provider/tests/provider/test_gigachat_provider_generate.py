@@ -7,6 +7,7 @@ import pytest
 from adapters.generation_provider import ProviderError
 from generation.generation import Generation
 from provider.gigachat_provider import (
+    CA_BUNDLE_ENV_VAR,
     COMPLETIONS_URL,
     CREDENTIALS_ENV_VAR,
     SCOPE,
@@ -59,7 +60,7 @@ def _build_generation():
 
 def _set_credentials(monkeypatch):
     monkeypatch.setenv(CREDENTIALS_ENV_VAR, CREDENTIALS)
-    monkeypatch.setenv("GIGACHAT_CA_BUNDLE", "dummy-ca-bundle")
+    monkeypatch.setenv(CA_BUNDLE_ENV_VAR, "dummy-ca-bundle")
 
 
 class TestGenerateHappyPath:
