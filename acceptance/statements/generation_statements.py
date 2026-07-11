@@ -47,10 +47,7 @@ class GenerationStatements:
         last_response = None
         for _ in range(GENERATION_POLL_ATTEMPTS):
             last_response = await self._client.get_generation(generation_id)
-            assert last_response.status_code == 200, (
-                f"expected 200 OK from GET generation, got status_code={last_response.status_code}, "
-                f"body={last_response.body}"
-            )
+            self._assert_get_generation_ok(last_response)
             status = (last_response.body or {}).get("status")
             if status in TERMINAL_STATUSES:
                 return last_response
@@ -60,13 +57,16 @@ class GenerationStatements:
             f"{GENERATION_POLL_ATTEMPTS} polls; last body={last_response.body if last_response else None}"
         )
 
+    def _assert_get_generation_ok(self, response: GenerationResponseDto) -> None:
+        assert response.status_code == 200, (
+            f"expected 200 OK from GET generation, got status_code={response.status_code}, "
+            f"body={response.body}"
+        )
+
     def assert_generation_completed_with_content(
         self, completed_response: GenerationResponseDto, create_response: GenerationResponseDto
     ) -> None:
-        assert completed_response.status_code == 200, (
-            f"expected 200 OK from GET generation, got status_code={completed_response.status_code}, "
-            f"body={completed_response.body}"
-        )
+        self._assert_get_generation_ok(completed_response)
         body = completed_response.body
         assert body is not None, "expected a response body, got None"
         assert body.get("status") == "completed", f"expected status 'completed', got body={body}"
