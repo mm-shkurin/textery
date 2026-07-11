@@ -21,11 +21,11 @@ move on rather than rewriting existing tests.
 - [S] green-usecase — nothing to implement: red found no gap (layer already 100% covered).
 
 ### Step 3: DB storage adapter — persist & read generation (status + content)
-- [~] red-adapter db
-- [ ] green-adapter db
+- [S] red-adapter db — already covered: `generation_storage.py` at 100% line+branch and `generation_model.py` at 100% (pytest-cov against local Postgres 16, 2026-07-12). 7 passing tests characterize the full SqlAlchemyGenerationStorage surface: TestSaveAndGet (round-trip all fields), TestGetUnknownId (None), TestUpdate (persist status+content — the Step 3 target), TestUpdateUnknownId (NotFoundException), TestUpdateConcurrentConflict (ConflictException / optimistic lock), TestListStale (include stale / exclude fresh). No gap; adding a test would rewrite existing coverage.
+- [S] green-adapter db — nothing to implement: red found no gap (storage + model both at 100%).
 
 ### Step 4: REST adapter — POST creates pending, GET returns status/content
-- [ ] red-adapter rest
+- [~] red-adapter rest
 - [ ] green-adapter rest
 
 ### Step 5: Provider integration — cover GigaChatProvider or explicitly isolate
