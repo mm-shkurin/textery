@@ -1,5 +1,3 @@
-import pytest
-
 from tests.backend.abstract_backend_test import AbstractBackendTest
 
 
@@ -13,7 +11,6 @@ class TestGenerationLifecycleAcceptance(AbstractBackendTest):
     And the completed generation returns the document content.
     """
 
-    @pytest.mark.skip(reason="RED: green-acceptance re-enables — characterization of existing create→completed flow")
     async def test_should_create_pending_then_return_completed_document_content(self, generation_statements):
         create_response = await generation_statements.given_valid_generation_request_submitted()
         generation_statements.assert_generation_created_pending(create_response)
