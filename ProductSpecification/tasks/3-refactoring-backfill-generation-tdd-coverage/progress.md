@@ -17,11 +17,11 @@ move on rather than rewriting existing tests.
 - [S] green-usecase — nothing to implement: red found no gap (layer already 100% covered).
 
 ### Step 2: Usecase — GetGeneration returns status; completed returns content (4.1 / 4.2)
-- [~] red-usecase
-- [ ] green-usecase
+- [S] red-usecase — already covered: `get_generation.py` at 100% line+branch (pytest-cov, 2026-07-12). GetGeneration is a pass-through (`return storage.get(id)`); Scenarios 4.1/4.2/4.3 characterized by TestGetGenerationStatus / TestGetGenerationCompleted / TestGetGenerationNotFound (all run + PASS), strictly asserting status='pending'+content=None (4.1), status='completed'+content==expected (4.2), None for unknown id (4.3). No gap; adding a test would rewrite existing coverage.
+- [S] green-usecase — nothing to implement: red found no gap (layer already 100% covered).
 
 ### Step 3: DB storage adapter — persist & read generation (status + content)
-- [ ] red-adapter db
+- [~] red-adapter db
 - [ ] green-adapter db
 
 ### Step 4: REST adapter — POST creates pending, GET returns status/content
