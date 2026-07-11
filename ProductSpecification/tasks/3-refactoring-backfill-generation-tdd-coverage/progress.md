@@ -13,11 +13,11 @@ characterize the code as it stands today. Confirm a layer already covered and
 move on rather than rewriting existing tests.
 
 ### Step 1: Usecase — RequestGeneration creates pending + enqueues (Scenario 2.1)
-- [ ] red-usecase
-- [ ] green-usecase
+- [S] red-usecase — already covered: `request_generation.py` at 100% line+branch (pytest-cov `--cov=generation --cov-branch`, 2026-07-12). `TestGenerationUsecaseHappyPath.test_should_return_pending_generation_and_enqueue_job` (runs + PASSES, not skipped) strictly characterizes status='pending', id is UUID, created_at within submit window, all 5 request fields, save-exactly-once, enqueue-exactly-once, save-before-enqueue ordering. No genuine gap; adding a test would rewrite existing coverage (task rule: confirm covered and move on).
+- [S] green-usecase — nothing to implement: red found no gap (layer already 100% covered).
 
 ### Step 2: Usecase — GetGeneration returns status; completed returns content (4.1 / 4.2)
-- [ ] red-usecase
+- [~] red-usecase
 - [ ] green-usecase
 
 ### Step 3: DB storage adapter — persist & read generation (status + content)
