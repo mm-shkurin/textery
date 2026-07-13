@@ -32,10 +32,19 @@
 - [ ] `/cleanup-chrome` skill: убрать `taskkill /IM chrome.exe /F`, заменить на убийство только процессов текущей сессии
 - [ ] Redis в `infra/docker-compose.yml`/CI — оставить как задел под `arq` или убрать
 
-## Фаза 5 — CI дедупликация
+## Фаза 5 — CI (исправлена трактовка аудита, не дубликат)
 
-- [ ] Выяснить какой CI-подход реально проходит на раннере (`.github/workflows/` service-контейнеры vs `backend/.github/`+`frontend/.github/` apt-get)
-- [ ] Убрать/пересобрать дубликат, унифицировать пароли БД
+Аудит ошибочно назвал это "задублированным и разошедшимся CI". Реально — два CI для
+двух разных репо: корневой `.github/workflows/{backend,frontend}-ci.yml` для GitHub
+(`mm-shkurin/textery`), `backend/.github/`+`frontend/.github/` — станут корнем после
+`git subtree split --prefix=backend/frontend` при пуше на GitVerse (конкурс засчитывает
+только GitVerse, см. `.memory-bank/steerings/development-conventions.md:20-45`). Разный
+подход к Postgres/Redis (service-контейнеры vs apt-get) — не рассинхрон, а следствие
+разных раннеров (GitVerse-раннер без Docker socket).
+
+- [x] Установлена причина: два репо, не один пайплайн — не требует объединения
+- [x] Root `.github/workflows/backend-ci.yml` (монорепо/GitHub) актуализирован под рабочий нативный apt-get подход из `backend/.github/workflows/ci.yml` (GitVerse) — service-контейнеры заменены на нативную установку postgres/redis, пароль унифицирован на `change-me`. Frontend CI различий не имел (только paths-фильтры и docker-image job, нужные только монорепо) — не трогал.
+- [ ] Проверить, что `git subtree split` реально гоняется перед каждым дедлайном (документ сам называет процесс "currently manual") — если забыли прогнать перед сдачей, GitVerse-репо с CI отстанет от кода вопреки грейдингу
 
 ## Фаза 6 — разделение бек/фронт (запрос сокомандника)
 
