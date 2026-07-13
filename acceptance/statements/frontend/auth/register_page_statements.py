@@ -24,37 +24,22 @@ class RegisterPageStatements(BaseFrontendStatements):
         driver.get(f"{app_url}/register")
 
     def assert_email_field_is_visible(self, driver: WebDriver) -> None:
-        element = self._wait_for_visible(driver, EMAIL_INPUT)
-        assert element.is_displayed(), "expected email field to be visible"
-        assert element.get_attribute("type") == "email", (
-            f"expected email field type 'email', got '{element.get_attribute('type')}'"
-        )
-        assert element.get_attribute("placeholder") == self.EXPECTED_EMAIL_PLACEHOLDER, (
-            f"expected email field placeholder '{self.EXPECTED_EMAIL_PLACEHOLDER}', "
-            f"got '{element.get_attribute('placeholder')}'"
+        self._assert_field_visible(
+            driver, EMAIL_INPUT, "email", self.EXPECTED_EMAIL_PLACEHOLDER, "email field"
         )
 
     def assert_password_field_is_visible(self, driver: WebDriver) -> None:
-        element = self._wait_for_visible(driver, PASSWORD_INPUT)
-        assert element.is_displayed(), "expected password field to be visible"
-        assert element.get_attribute("type") == "password", (
-            f"expected password field type 'password', got '{element.get_attribute('type')}'"
-        )
-        assert element.get_attribute("placeholder") == self.EXPECTED_PASSWORD_PLACEHOLDER, (
-            f"expected password field placeholder '{self.EXPECTED_PASSWORD_PLACEHOLDER}', "
-            f"got '{element.get_attribute('placeholder')}'"
+        self._assert_field_visible(
+            driver, PASSWORD_INPUT, "password", self.EXPECTED_PASSWORD_PLACEHOLDER, "password field"
         )
 
     def assert_confirm_password_field_is_visible(self, driver: WebDriver) -> None:
-        element = self._wait_for_visible(driver, CONFIRM_PASSWORD_INPUT)
-        assert element.is_displayed(), "expected confirm password field to be visible"
-        assert element.get_attribute("type") == "password", (
-            f"expected confirm password field type 'password', got '{element.get_attribute('type')}'"
-        )
-        assert element.get_attribute("placeholder") == self.EXPECTED_CONFIRM_PASSWORD_PLACEHOLDER, (
-            f"expected confirm password field placeholder "
-            f"'{self.EXPECTED_CONFIRM_PASSWORD_PLACEHOLDER}', got "
-            f"'{element.get_attribute('placeholder')}'"
+        self._assert_field_visible(
+            driver,
+            CONFIRM_PASSWORD_INPUT,
+            "password",
+            self.EXPECTED_CONFIRM_PASSWORD_PLACEHOLDER,
+            "confirm password field",
         )
 
     def assert_submit_button_is_visible(self, driver: WebDriver) -> None:
@@ -65,4 +50,22 @@ class RegisterPageStatements(BaseFrontendStatements):
         )
         assert element.text.strip() == self.EXPECTED_SUBMIT_BUTTON_TEXT, (
             f"expected submit button text '{self.EXPECTED_SUBMIT_BUTTON_TEXT}', got '{element.text}'"
+        )
+
+    def _assert_field_visible(
+        self,
+        driver: WebDriver,
+        locator: tuple[str, str],
+        expected_type: str,
+        expected_placeholder: str,
+        label: str,
+    ) -> None:
+        element = self._wait_for_visible(driver, locator)
+        assert element.is_displayed(), f"expected {label} to be visible"
+        assert element.get_attribute("type") == expected_type, (
+            f"expected {label} type '{expected_type}', got '{element.get_attribute('type')}'"
+        )
+        assert element.get_attribute("placeholder") == expected_placeholder, (
+            f"expected {label} placeholder '{expected_placeholder}', "
+            f"got '{element.get_attribute('placeholder')}'"
         )
