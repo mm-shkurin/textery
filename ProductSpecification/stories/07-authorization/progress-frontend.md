@@ -19,8 +19,8 @@ Demo step skipped for all scenarios (visual-only, non-gating), same convention a
 - [S] demo (skipped per convention, see note above)
 
 ### 1.2: Login form displays email and password fields
-- [~] red-selenium
-- [ ] red-frontend
+- [x] red-selenium
+- [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
