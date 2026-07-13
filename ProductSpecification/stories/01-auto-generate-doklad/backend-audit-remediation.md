@@ -83,6 +83,16 @@ after both sessions' work merged.
   User chose to skip it this pass rather than stub a minimal `X-User-Id` header or
   commit to full login/token infrastructure.
 
+## Closure (2026-07-13, docs cleanup session)
+
+Never re-audited after the single remediation pass — score stands at its **pre-fix
+2.0/3.0 baseline**, unrefreshed. 9/10 findings closed by direct commit inspection
+(see Session A/B tables above); finding 5 (auth/ACL) explicitly deferred, no auth
+system exists in `backend/` at all. Re-running the external grading prompt is a
+separate exercise, not a documentation fix, so it's out of scope for this
+docs-cleanup session — flagging this explicitly instead of leaving the score
+looking silently unfinished.
+
 ## Where this sits relative to the story
 
 Touched files (`domain/src/generation/generation.py`,

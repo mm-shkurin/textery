@@ -35,7 +35,9 @@
 - [x] `.claude/skills/run-backend/SKILL.md`, `run-frontend/SKILL.md`, `stop-backend/SKILL.md` — переписаны под реальный запуск через `docker compose -f infra/docker-compose.yml up/stop <service>` (сверено с `infra/architecture.md`), т.к. `infra/scripts/*.sh` не существуют
 - [x] `.claude/guidelines/agent-logging.md`, `.claude/skills/continue/SKILL.md` — путь лог-файла `infrastructure/agent-progress.log` → `infra/agent-progress.log`
 - [x] `.claude/guidelines/frontend-rules.md` — путь исправлен; **дополнительно найдено**: `notes/acceptance-test-gotchas.md` тоже никогда не был написан (ни в `infrastructure/`, ни в `infra/` нет `notes/`) — помечено честно, не сочинён контент
-- [x] `.claude/skills/test-acceptance/SKILL.md`, `demo/SKILL.md`, `qa-run/SKILL.md` — безопасная часть (`.env` путь) исправлена. **НЕ исправлено полностью**: эти три файла содержат более глубокий generic-шаблонный мусор — Gradle-синтаксис тестов (`backendTest --tests "*ClassName*"`, не соответствует реальному `pytest`/`vitest` стеку), ссылки на `infrastructure/scripts/test-acceptance.sh`/`run-backend.sh`/`stop-backend.sh` (не существуют), `infra/load-baseline/README.md` (не существует), `infrastructure/creds.txt` (не существует). Это не переименование путей, а нереализованный слой — нужна отдельная сессия, чтобы переписать эти три skill'а под реальные pytest/vitest команды и решить, нужен ли вообще load-baseline механизм для этого проекта
+- [x] `.claude/skills/test-acceptance/SKILL.md` — Gradle-синтаксис (`backendTest --tests`) заменён на `pytest acceptance/ -m backend/frontend -k ClassName`; несуществующий `infrastructure/scripts/test-acceptance.sh` убран; `load`-ветка — честно "не реализовано" со ссылкой на `03_Load_Tests.md` вместо выдуманного load-baseline механизма; poll-паттерн переписан под pytest-вывод (`passed`/`failed`/`error`), "compile task FAILED" → "collection error"
+- [x] `.claude/skills/demo/SKILL.md` — `infrastructure/scripts/{run,stop}-backend.sh` заменены на вызов skill'ов `/run-backend`/`/stop-backend`; тестовый фильтр переписан под `pytest -k`
+- [x] `.claude/skills/qa-run/SKILL.md` — `infrastructure/creds.txt` → `infra/creds.txt`; добавлена оговорка, что prod-copy окружения в проекте пока не существует (не выдуман механизм)
 - [x] `/cleanup-chrome` skill: убрал `taskkill /IM chrome.exe /F` (убивало все процессы в системе, включая чужие Selenium-сессии и браузер пользователя, прямое нарушение `infrastructure.md`) — заменил на поиск осиротевших процессов по дереву (родитель мёртв) и убийство по конкретному PID
 - [x] Redis в `infra/docker-compose.yml`/CI — решено оставить как задел под `arq` (known-debt #13)
 
@@ -51,7 +53,7 @@
 
 - [x] Установлена причина: два репо, не один пайплайн — не требует объединения
 - [x] Root `.github/workflows/backend-ci.yml` (монорепо/GitHub) актуализирован под рабочий нативный apt-get подход из `backend/.github/workflows/ci.yml` (GitVerse) — service-контейнеры заменены на нативную установку postgres/redis, пароль унифицирован на `change-me`. Frontend CI различий не имел (только paths-фильтры и docker-image job, нужные только монорепо) — не трогал.
-- [ ] Проверить, что `git subtree split` реально гоняется перед каждым дедлайном (документ сам называет процесс "currently manual") — если забыли прогнать перед сдачей, GitVerse-репо с CI отстанет от кода вопреки грейдингу
+- [x] Проверено 2026-07-13: `gitverse-backend` main отставал на 3 коммита (недостающие тесты provider/router wiring, ~180 строк) от актуального `backend/` subtree-split; `gitverse-frontend` был свежий (15=15). Пересобран `backend` subtree-split, запушен как ветка `features/story-1-auto-generate-doklad`, затем force-push в `main` (subtree split каждый раз пересчитывает хэши — обычный fast-forward невозможен даже без конфликтов в содержимом)
 
 ## Фаза 6 — разделение бек/фронт (запрос сокомандника)
 
@@ -64,11 +66,11 @@
 - [x] `progress.md` урезан до нарратива/decisions/Spec-чеклиста, добавлен указатель на новые файлы
 - [x] `.claude/rules/workflow.md` — "Progress Tracking" переписан под 2-файловую+narrative схему
 - [x] `.claude/skills/continue/SKILL.md` — резолюция аргумента (`/continue 1 backend`), чтение нужного файла, behavior commit только своего слоя, "Updating stories.md" под split-layout
-- [ ] Зафиксировать правило владения файлами/слоями между двумя разработчиками в `CLAUDE.md` (опционально, не обязательно — split-layout сам по себе уже минимизирует конфликты)
+- [x] Правило владения файлами/слоями зафиксировано в `CLAUDE.md` ("File Ownership") — backend/frontend session границы, worktree, кто что правит в общих `progress.md`/`stories.md`
 
 ## Фаза 7 — верификация живым стеком
 
 - [x] Поднят `infra/docker-compose.yml` целиком (postgres/redis/backend/frontend, все healthy), backend временно переключён на `GENERATION_PROVIDER=fake` (чтобы не тратить реальную квоту GigaChat на тестовый прогон), после тестов откачено и стек снесён (`docker compose down`) — среда осталась чистой
 - [x] `adapters/db` тесты против реального Postgres — **7/7 passed** (`TestSaveAndGet`, `TestGetUnknownId`, `TestUpdate`, `TestUpdateUnknownId`, `TestUpdateConcurrentConflict`, `TestListStale` × 2)
 - [x] `acceptance/` набор целиком — **backend 5/5 passed** (create + reject + lifecycle), **frontend 4/4 passed** (chat workspace initial state, landing hero+CTA, 2× mobile no-overflow). Подтверждает вертикальный срез Story 1 реально работает end-to-end, не только на бумаге
-- [ ] Финальный re-audit `backend-audit-remediation.md`/`frontend-audit-remediation.md` — не проводился (отдельная методология внешнего аудита качества кода, не часть этой сессии чистки документации); рекомендация — провести отдельно или явно закрыть frontend-документ с текущим счётом 2.5/3.0
+- [x] Re-audit не проводился (отдельная методология внешнего грейдинга, не часть этой сессии) — вместо этого добавлены явные Closure-секции в оба файла: frontend закрыт на 2.5/3.0 с списком оставшихся гэпов, backend закрыт на baseline 2.0/3.0 (9/10 находок закрыто, finding 5 auth/ACL сознательно отложен) — счёт больше не выглядит "недоделанным молча"

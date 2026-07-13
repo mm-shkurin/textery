@@ -50,22 +50,22 @@ Locate the UI test base class and Browser statements class using tech profile te
 
 ### 3. Ensure Clean Environment
 
-- Kill any existing backend process: `infrastructure/scripts/stop-backend.sh`
-- Clear test email inbox via infrastructure HTTP API
-- Start backend fresh: `infrastructure/scripts/run-backend.sh` (background)
+- Stop any existing backend: `Skill tool: skill="stop-backend"`
+- Clear test email inbox via the mail adapter's test API, if this project has one
+- Start backend fresh: `Skill tool: skill="run-backend"`
 - Wait for backend to be UP: poll health endpoint (read from tech profile)
 - Verify frontend is running (start with `/run-frontend` if not)
 
 ### 4. Run the Test
 
-Resolve the argument to a test filter using the acceptance test command pattern from Conventions table.
+Resolve the argument to a `pytest -k` filter (see `/test-acceptance` Action section).
 
-| Argument | Filter |
-|----------|--------|
-| `should_method_name` | Filter to `*.ClassName.should_method_name` (search test files to resolve class) |
-| `ClassName.should_method_name` | Filter to `*.ClassName.should_method_name` |
-| `ClassName` | Filter to `*.ClassName` |
-| *(none)* | Run all frontend acceptance tests |
+| Argument | Command |
+|----------|---------|
+| `should_method_name` | `pytest acceptance/ -k should_method_name -m frontend` (search test files to resolve class if ambiguous) |
+| `ClassName.should_method_name` | `pytest acceptance/ -k "ClassName and should_method_name" -m frontend` |
+| `ClassName` | `pytest acceptance/ -k ClassName -m frontend` |
+| *(none)* | `pytest acceptance/ -m frontend` |
 
 Use a generous timeout (180s) since delays add up.
 
