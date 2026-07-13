@@ -3,6 +3,7 @@ from typing import ClassVar
 from clients.application.application_client import ApplicationClient
 from clients.application.dto.auth.register_response_dto import RegisterResponseDto
 from statements.auth_scope import RegisterScope
+from statements.response_assertions import assert_validation_error
 
 MALFORMED_EMAIL = "not-an-email"
 
@@ -24,13 +25,7 @@ class AuthStatements:
         return await self._client.register(request)
 
     def assert_validation_error(self, response: RegisterResponseDto, expected_error: dict) -> None:
-        assert response.status_code == 400, (
-            f"expected 400 Bad Request (validation error), got status_code={response.status_code}, "
-            f"body={response.body}"
-        )
-        assert response.body == expected_error, (
-            f"expected validation error body {expected_error}, got {response.body}"
-        )
+        assert_validation_error(response, expected_error)
 
     def assert_no_account_created(self, response: RegisterResponseDto) -> None:
         assert response.status_code not in (200, 201), (

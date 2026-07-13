@@ -6,6 +6,7 @@ from uuid import UUID
 from clients.application.application_client import ApplicationClient
 from clients.application.dto.generation.generation_response_dto import GenerationResponseDto
 from statements.generation_scope import GenerationScope
+from statements.response_assertions import assert_validation_error
 from statements.test_data import TestData
 
 CREATED_AT_MAX_AGE = timedelta(minutes=1)
@@ -142,12 +143,7 @@ class GenerationStatements:
         )
 
     def assert_validation_error(self, response: GenerationResponseDto, expected_error: dict) -> None:
-        assert response.status_code == 400, (
-            f"expected 400 Bad Request (validation error), got {response.status_code}"
-        )
-        assert response.body == expected_error, (
-            f"expected validation error body {expected_error}, got {response.body}"
-        )
+        assert_validation_error(response, expected_error)
 
     def assert_no_generation_created(self, response: GenerationResponseDto) -> None:
         assert response.status_code not in (200, 201), (
