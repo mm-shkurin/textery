@@ -13,7 +13,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 
 ### Scenario 1.1: Reject malformed email
 - [x] red-acceptance
-- [~] design
+- [x] design (see `decisions/register-validation-error-taxonomy-decision.md`)
+- [~] red-usecase
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
