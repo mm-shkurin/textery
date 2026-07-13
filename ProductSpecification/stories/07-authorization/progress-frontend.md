@@ -9,7 +9,7 @@
 - [S] red-frontend-api (no API call in this scenario — page-display only, per tests/02_UI_Tests.md §1 note "Start with page display (no API needed)")
 - [S] green-frontend-api (see above)
 - [x] align-design
-- [ ] green-selenium (BLOCKED: first attempt failed — no router/no /register route in frontend/src/App.tsx, RegisterForm.tsx not wired anywhere. green-agent stopped per remove-marker-only rule, no production code touched, skip marker restored to keep suite green. Gap: this story is the first to need client-side routing — App.tsx is currently a single-page state machine (landing/type/mode/form) with no router library installed.)
+- [S] green-selenium (first attempt BLOCKED — no router/no /register route in frontend/src/App.tsx; superseded by the routing sub-cycle below, see the second green-selenium entry which is the real completion)
 - [x] red-frontend (routing: install router, wire /register route to render RegisterForm)
 - [x] green-frontend (routing: minimal App.tsx wiring so /register renders RegisterForm)
 - [x] green-selenium (retry after routing lands)
