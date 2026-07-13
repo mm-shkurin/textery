@@ -1,0 +1,41 @@
+<!-- Story 7 — Authorization. Mobile, 375px. Mirrors desktop/04-account-locked.html. -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375">
+<title>Аккаунт заблокирован — Textery AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root {
+    --bg-page:#111214; --bg-surface:#1a1b1e; --bg-surface-raised:#232428;
+    --border-subtle:rgba(255,255,255,0.08);
+    --text-primary:#f5f5f7; --text-secondary:#9a9ba3;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Inter',sans-serif; background:var(--bg-page); color:var(--text-primary); }
+  header { display:flex; align-items:center; padding:16px; }
+  .logo { display:flex; align-items:center; gap:8px; font-weight:700; font-size:16px; }
+  .logo-mark { width:28px; height:28px; border-radius:7px; background:linear-gradient(135deg,#6366f1,#a855f7); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; }
+  main { padding:32px 16px 48px; text-align:center; }
+  .icon-badge { width:48px; height:48px; border-radius:12px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); display:flex; align-items:center; justify-content:center; margin:0 auto 18px; }
+  h1 { font-size:20px; font-weight:700; letter-spacing:-0.02em; margin-bottom:10px; }
+  .subtitle { color:var(--text-secondary); font-size:13px; margin-bottom:20px; line-height:1.5; }
+  .timer-pill { display:inline-block; background:var(--bg-surface-raised); border:1px solid var(--border-subtle); border-radius:999px; padding:8px 18px; font-size:13px; font-weight:600; margin-bottom:24px; }
+  .btn-secondary { width:100%; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); border-radius:10px; padding:14px 24px; font-size:15px; font-weight:600; min-height:44px; text-decoration:none; display:block; }
+</style>
+</head>
+<body>
+<header><div class="logo"><div class="logo-mark">T</div>Textery</div></header>
+<main>
+  <div class="icon-badge"><i data-lucide="lock" color="#ef4444" width="22" height="22"></i></div>
+  <h1>Аккаунт временно заблокирован</h1>
+  <p class="subtitle">Слишком много неудачных попыток входа. Попробуйте снова через некоторое время.</p>
+  <div class="timer-pill">Повторная попытка через 04:52</div>
+  <a href="03-login.html" class="btn-secondary">Вернуться ко входу</a>
+</main>
+<script>lucide.createIcons();</script>
+</body>
+</html>

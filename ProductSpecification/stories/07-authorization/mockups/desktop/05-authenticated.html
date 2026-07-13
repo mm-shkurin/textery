@@ -1,0 +1,52 @@
+<!-- Story 7 — Authorization. Desktop, 1400px. "Authenticated app shell" per
+     07_Authorization.md Screen States — no dashboard/sidebar exists yet (per
+     ui-conventions.md Layout section, story 1 is anonymous-only), so this is a minimal
+     placeholder confirming the token was issued and the session header now shows the
+     user instead of Вход/Попробовать бесплатно. -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1400">
+<title>Textery AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root {
+    --bg-page:#111214; --bg-surface:#1a1b1e; --bg-surface-raised:#232428;
+    --border-subtle:rgba(255,255,255,0.08);
+    --text-primary:#f5f5f7; --text-secondary:#9a9ba3; --text-muted:#6b6c74;
+    --accent-gradient:linear-gradient(135deg,#6366f1,#a855f7);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Inter',sans-serif; background:var(--bg-page); color:var(--text-primary); min-height:100vh; }
+  header { display:flex; align-items:center; justify-content:space-between; padding:24px 64px; border-bottom:1px solid var(--border-subtle); }
+  .logo { display:flex; align-items:center; gap:10px; font-weight:700; font-size:18px; }
+  .logo-mark { width:32px; height:32px; border-radius:8px; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; font-weight:700; }
+  .user-menu { display:flex; align-items:center; gap:10px; background:var(--bg-surface-raised); border:1px solid var(--border-subtle); border-radius:999px; padding:6px 16px 6px 6px; }
+  .avatar { width:32px; height:32px; border-radius:50%; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; font-weight:600; font-size:14px; }
+  .user-email { font-size:14px; color:var(--text-secondary); }
+  main { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:120px 24px; text-align:center; }
+  .icon-badge { width:64px; height:64px; border-radius:16px; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; margin-bottom:24px; }
+  h1 { font-size:28px; font-weight:700; letter-spacing:-0.02em; margin-bottom:12px; }
+  .subtitle { color:var(--text-secondary); font-size:16px; max-width:480px; line-height:1.5; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-mark">T</div>Textery</div>
+  <div class="user-menu">
+    <div class="avatar">M</div>
+    <span class="user-email">maria.vinter2005@yandex.ru</span>
+    <i data-lucide="chevron-down" width="16" height="16"></i>
+  </div>
+</header>
+<main>
+  <div class="icon-badge"><i data-lucide="check-circle" color="white" width="32" height="32"></i></div>
+  <h1>Вы авторизованы</h1>
+  <p class="subtitle">Сессия активна. Раздел генерации документов и личный кабинет появятся здесь по мере готовности других историй.</p>
+</main>
+<script>lucide.createIcons();</script>
+</body>
+</html>

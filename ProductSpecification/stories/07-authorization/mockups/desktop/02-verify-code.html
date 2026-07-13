@@ -1,0 +1,70 @@
+<!-- Story 7 — Authorization. Desktop, 1400px. Copy tone from Figma "Email code" frame
+     (node 182:1749): "Проверка почты" title, resend-timer pattern, "Письмо не пришло?"
+     link. Adapted to 6-digit code + 60s resend cooldown per 07_Authorization.md. Inline
+     error state (wrong/expired code) shown as an alternate state of the same field. -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1400">
+<title>Проверка почты — Textery AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root {
+    --bg-page:#111214; --bg-surface:#1a1b1e; --bg-surface-raised:#232428;
+    --border-subtle:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.16);
+    --text-primary:#f5f5f7; --text-secondary:#9a9ba3; --text-muted:#6b6c74;
+    --accent-start:#6366f1; --accent-end:#a855f7;
+    --accent-gradient:linear-gradient(135deg,var(--accent-start),var(--accent-end));
+    --error:#ef4444;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Inter',sans-serif; background:var(--bg-page); color:var(--text-primary); min-height:100vh; }
+  header { display:flex; align-items:center; padding:24px 64px; }
+  .logo { display:flex; align-items:center; gap:10px; font-weight:700; font-size:18px; }
+  .logo-mark { width:32px; height:32px; border-radius:8px; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; font-weight:700; }
+  main { display:flex; justify-content:center; padding:48px 24px 96px; }
+  .card { width:440px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:16px; padding:40px; text-align:center; }
+  .icon-badge { width:56px; height:56px; border-radius:12px; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; margin:0 auto 20px; }
+  h1 { font-size:24px; font-weight:700; letter-spacing:-0.02em; margin-bottom:12px; }
+  .subtitle { color:var(--text-secondary); font-size:14px; margin-bottom:32px; line-height:1.5; }
+  .subtitle b { color:var(--text-primary); font-weight:500; }
+  .code-row { display:flex; gap:10px; justify-content:center; margin-bottom:16px; }
+  .code-box { width:52px; height:60px; background:var(--bg-surface-raised); border:1px solid var(--border-subtle); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:600; }
+  .code-box.filled { border-color:var(--border-strong); }
+  .code-box.error { border-color:var(--error); }
+  .error-text { color:var(--error); font-size:13px; margin-bottom:20px; }
+  .btn-primary { width:100%; background:#f5f5f7; color:#111214; border:none; border-radius:10px; padding:14px 24px; font-size:16px; font-weight:600; cursor:pointer; margin-top:8px; }
+  .resend-row { margin-top:24px; font-size:14px; color:var(--text-secondary); }
+  .resend-row .timer { color:var(--text-primary); font-weight:500; }
+  .resend-row a { color:var(--text-muted); pointer-events:none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-mark">T</div>Textery</div>
+</header>
+<main>
+  <div class="card">
+    <div class="icon-badge"><i data-lucide="mail-check" color="white" width="28" height="28"></i></div>
+    <h1>Проверка почты</h1>
+    <p class="subtitle">Мы отправили одноразовый код подтверждения на <b>maria.vinter2005@yandex.ru</b>. Введите код для завершения регистрации</p>
+    <div class="code-row">
+      <div class="code-box error">4</div>
+      <div class="code-box error">1</div>
+      <div class="code-box error">2</div>
+      <div class="code-box">&nbsp;</div>
+      <div class="code-box">&nbsp;</div>
+      <div class="code-box">&nbsp;</div>
+    </div>
+    <p class="error-text">Неверный код. Проверьте код из письма или запросите новый.</p>
+    <button type="submit" class="btn-primary">Подтвердить</button>
+    <p class="resend-row">Повторный код можно запросить через <span class="timer">00:47</span></p>
+    <p class="resend-row"><a href="#">Письмо не пришло? Отправить код повторно</a></p>
+  </div>
+</main>
+<script>lucide.createIcons();</script>
+</body>
+</html>

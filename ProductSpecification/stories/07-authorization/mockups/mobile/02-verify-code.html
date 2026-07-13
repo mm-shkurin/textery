@@ -1,0 +1,59 @@
+<!-- Story 7 — Authorization. Mobile, 375px. Mirrors desktop/02-verify-code.html. -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375">
+<title>Проверка почты — Textery AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root {
+    --bg-page:#111214; --bg-surface:#1a1b1e; --bg-surface-raised:#232428;
+    --border-subtle:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.16);
+    --text-primary:#f5f5f7; --text-secondary:#9a9ba3; --text-muted:#6b6c74;
+    --accent-gradient:linear-gradient(135deg,#6366f1,#a855f7); --error:#ef4444;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Inter',sans-serif; background:var(--bg-page); color:var(--text-primary); }
+  header { display:flex; align-items:center; padding:16px; }
+  .logo { display:flex; align-items:center; gap:8px; font-weight:700; font-size:16px; }
+  .logo-mark { width:28px; height:28px; border-radius:7px; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; }
+  main { padding:16px; text-align:center; }
+  .icon-badge { width:48px; height:48px; border-radius:12px; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; margin:8px auto 16px; }
+  h1 { font-size:20px; font-weight:700; letter-spacing:-0.02em; margin-bottom:10px; }
+  .subtitle { color:var(--text-secondary); font-size:13px; margin-bottom:24px; line-height:1.5; }
+  .subtitle b { color:var(--text-primary); font-weight:500; }
+  .code-row { display:flex; gap:6px; justify-content:center; margin-bottom:14px; }
+  .code-box { width:42px; height:52px; background:var(--bg-surface-raised); border:1px solid var(--border-subtle); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:600; }
+  .code-box.error { border-color:var(--error); }
+  .error-text { color:var(--error); font-size:12px; margin-bottom:18px; }
+  .btn-primary { width:100%; background:#f5f5f7; color:#111214; border:none; border-radius:10px; padding:14px 24px; font-size:15px; font-weight:600; min-height:44px; margin-top:4px; }
+  .resend-row { margin-top:20px; font-size:13px; color:var(--text-secondary); }
+  .resend-row .timer { color:var(--text-primary); font-weight:500; }
+  .resend-row a { color:var(--text-muted); }
+</style>
+</head>
+<body>
+<header><div class="logo"><div class="logo-mark">T</div>Textery</div></header>
+<main>
+  <div class="icon-badge"><i data-lucide="mail-check" color="white" width="22" height="22"></i></div>
+  <h1>Проверка почты</h1>
+  <p class="subtitle">Мы отправили одноразовый код подтверждения на <b>maria.vinter2005@yandex.ru</b>. Введите код для завершения регистрации</p>
+  <div class="code-row">
+    <div class="code-box error">4</div>
+    <div class="code-box error">1</div>
+    <div class="code-box error">2</div>
+    <div class="code-box">&nbsp;</div>
+    <div class="code-box">&nbsp;</div>
+    <div class="code-box">&nbsp;</div>
+  </div>
+  <p class="error-text">Неверный код. Проверьте код из письма или запросите новый.</p>
+  <button type="submit" class="btn-primary">Подтвердить</button>
+  <p class="resend-row">Повторный код можно запросить через <span class="timer">00:47</span></p>
+  <p class="resend-row"><a href="#">Письмо не пришло? Отправить код повторно</a></p>
+</main>
+<script>lucide.createIcons();</script>
+</body>
+</html>
