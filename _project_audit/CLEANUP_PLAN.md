@@ -66,8 +66,9 @@
 - [x] `.claude/skills/continue/SKILL.md` — резолюция аргумента (`/continue 1 backend`), чтение нужного файла, behavior commit только своего слоя, "Updating stories.md" под split-layout
 - [ ] Зафиксировать правило владения файлами/слоями между двумя разработчиками в `CLAUDE.md` (опционально, не обязательно — split-layout сам по себе уже минимизирует конфликты)
 
-## Фаза 7 — верификация живым стеком (опционально, требует Postgres/браузер)
+## Фаза 7 — верификация живым стеком
 
-- [ ] Прогнать `adapters/db` тесты против реального Postgres
-- [ ] Прогнать `acceptance/` набор целиком (backend+frontend+Chrome)
-- [ ] Финальный re-audit `backend-audit-remediation.md`/`frontend-audit-remediation.md` — провести или явно закрыть с текущим счётом
+- [x] Поднят `infra/docker-compose.yml` целиком (postgres/redis/backend/frontend, все healthy), backend временно переключён на `GENERATION_PROVIDER=fake` (чтобы не тратить реальную квоту GigaChat на тестовый прогон), после тестов откачено и стек снесён (`docker compose down`) — среда осталась чистой
+- [x] `adapters/db` тесты против реального Postgres — **7/7 passed** (`TestSaveAndGet`, `TestGetUnknownId`, `TestUpdate`, `TestUpdateUnknownId`, `TestUpdateConcurrentConflict`, `TestListStale` × 2)
+- [x] `acceptance/` набор целиком — **backend 5/5 passed** (create + reject + lifecycle), **frontend 4/4 passed** (chat workspace initial state, landing hero+CTA, 2× mobile no-overflow). Подтверждает вертикальный срез Story 1 реально работает end-to-end, не только на бумаге
+- [ ] Финальный re-audit `backend-audit-remediation.md`/`frontend-audit-remediation.md` — не проводился (отдельная методология внешнего аудита качества кода, не часть этой сессии чистки документации); рекомендация — провести отдельно или явно закрыть frontend-документ с текущим счётом 2.5/3.0
