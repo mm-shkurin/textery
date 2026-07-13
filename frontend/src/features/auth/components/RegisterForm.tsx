@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import './AuthForm.css'
 import './RegisterForm.css'
 
@@ -48,7 +49,7 @@ export function RegisterForm() {
         </p>
       </form>
       <p className="auth-footer-link">
-        Уже есть аккаунт? <a href="/login">Войти</a>
+        Уже есть аккаунт? <Link to="/login">Войти</Link>
       </p>
     </div>
   )

@@ -3,6 +3,11 @@
 Demo step skipped for all scenarios (visual-only, non-gating), same convention as story 1
 (see `ProductSpecification/stories/01-auto-generate-doklad/progress.md`, commit `1cf7a27`).
 
+Register/login footer cross-links use react-router-dom `Link` (not raw `<a href>`) — fixed
+proactively during 1.2's align-design after agent-review/premortem flagged the pattern
+twice (full-page-reload risk, route-string drift). Scenarios 6.1/6.2 will add navigation
+click-through tests but the components themselves already use the router primitive.
+
 ## Frontend Scenarios (tests/02_UI_Tests.md)
 
 ### 1.1: Registration form displays email, password, confirm password fields

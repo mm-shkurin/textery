@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import './AuthForm.css'
 import './LoginForm.css'
 
@@ -36,7 +37,7 @@ export function LoginForm() {
         </button>
       </form>
       <p className="auth-footer-link">
-        Нет аккаунта? <a href="/register">Зарегистрироваться</a>
+        Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
       </p>
     </div>
   )
