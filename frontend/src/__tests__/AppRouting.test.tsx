@@ -7,7 +7,7 @@ describe('App routing', () => {
   // Importing it dynamically here so it.skip actually suppresses resolution;
   // when unskipped without the dependency installed, this rejects with:
   // Error: Failed to resolve import "react-router-dom" from "src/__tests__/AppRouting.test.tsx"
-  it.skip('renders RegisterForm at /register', async () => {
+  it('renders RegisterForm at /register', async () => {
     const { MemoryRouter } = await import('react-router-dom')
 
     render(

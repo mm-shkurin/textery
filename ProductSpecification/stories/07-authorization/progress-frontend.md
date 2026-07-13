@@ -11,8 +11,8 @@
 - [x] align-design
 - [ ] green-selenium (BLOCKED: first attempt failed — no router/no /register route in frontend/src/App.tsx, RegisterForm.tsx not wired anywhere. green-agent stopped per remove-marker-only rule, no production code touched, skip marker restored to keep suite green. Gap: this story is the first to need client-side routing — App.tsx is currently a single-page state machine (landing/type/mode/form) with no router library installed.)
 - [x] red-frontend (routing: install router, wire /register route to render RegisterForm)
-- [~] green-frontend (routing: minimal App.tsx wiring so /register renders RegisterForm)
-- [ ] green-selenium (retry after routing lands)
+- [x] green-frontend (routing: minimal App.tsx wiring so /register renders RegisterForm)
+- [~] green-selenium (retry after routing lands)
 - [ ] demo
 
 ### 1.2: Login form displays email and password fields
