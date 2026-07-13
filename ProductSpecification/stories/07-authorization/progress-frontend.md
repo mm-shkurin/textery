@@ -6,9 +6,9 @@
 - [x] red-selenium
 - [x] red-frontend
 - [x] green-frontend
-- [~] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
+- [S] red-frontend-api (no API call in this scenario — page-display only, per tests/02_UI_Tests.md §1 note "Start with page display (no API needed)")
+- [S] green-frontend-api (see above)
+- [~] align-design
 - [ ] green-selenium
 - [ ] demo
 
