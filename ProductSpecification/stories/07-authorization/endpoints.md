@@ -16,4 +16,5 @@
   trade-off documented in `07_Authorization_Notes.md` (Security Considerations).
 - Errors use a uniform `{ "error_code": string, "message": string }` shape; `message`
   is always a generic, client-safe string — never a raw stack trace or internal detail
-  (hazard-scan group 7 guard).
+  (hazard-scan group 7 guard). See [`../../api-specs/README.md`](../../api-specs/README.md)
+  for the shared handler and app-wide implications.
