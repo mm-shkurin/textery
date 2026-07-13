@@ -1,5 +1,8 @@
 # Story 7: Authorization — Frontend Progress
 
+Demo step skipped for all scenarios (visual-only, non-gating), same convention as story 1
+(see `ProductSpecification/stories/01-auto-generate-doklad/progress.md`, commit `1cf7a27`).
+
 ## Frontend Scenarios (tests/02_UI_Tests.md)
 
 ### 1.1: Registration form displays email, password, confirm password fields
@@ -13,10 +16,10 @@
 - [x] red-frontend (routing: install router, wire /register route to render RegisterForm)
 - [x] green-frontend (routing: minimal App.tsx wiring so /register renders RegisterForm)
 - [x] green-selenium (retry after routing lands)
-- [~] demo
+- [S] demo (skipped per convention, see note above)
 
 ### 1.2: Login form displays email and password fields
-- [ ] red-selenium
+- [~] red-selenium
 - [ ] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
