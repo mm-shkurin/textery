@@ -46,7 +46,10 @@ class TestCreateGenerationRouter:
             f"expected 400 Bad Request for missing topic, got {response.status_code} "
             f"with body {response.text}"
         )
-        assert response.json() == {"detail": EXPECTED_MISSING_TOPIC_MESSAGE}, (
-            f"expected error body {{'detail': '{EXPECTED_MISSING_TOPIC_MESSAGE}'}}, "
+        assert response.json() == {
+            "error_code": "VALIDATION_ERROR",
+            "message": EXPECTED_MISSING_TOPIC_MESSAGE,
+        }, (
+            f"expected error body {{'error_code': 'VALIDATION_ERROR', 'message': '{EXPECTED_MISSING_TOPIC_MESSAGE}'}}, "
             f"got {response.json()}"
         )

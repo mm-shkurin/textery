@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 async def validation_exception_handler(request: Request, exc: ValidationException) -> JSONResponse:
-    return JSONResponse(status_code=400, content={"detail": str(exc)})
+    return JSONResponse(status_code=400, content={"error_code": exc.error_code, "message": exc.message})
 
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:

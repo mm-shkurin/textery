@@ -3,7 +3,31 @@ import logging
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from error_handling.exception_handlers import unhandled_exception_handler
+from error_handling.exception_handlers import unhandled_exception_handler, validation_exception_handler
+from shared.exceptions import ValidationException
+
+
+class TestValidationExceptionHandler:
+    """A ValidationException is mapped to the {error_code, message} envelope at HTTP 400."""
+
+    async def test_should_return_400_with_error_code_and_message(self):
+        app = FastAPI()
+
+        @app.get("/invalid")
+        async def invalid() -> None:
+            raise ValidationException(error_code="INVALID_EMAIL", message="The email address is not valid.")
+
+        app.add_exception_handler(ValidationException, validation_exception_handler)
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/invalid")
+
+        assert response.status_code == 400, f"expected 400, got {response.status_code}"
+        assert response.json() == {
+            "error_code": "INVALID_EMAIL",
+            "message": "The email address is not valid.",
+        }, f"unexpected response body {response.json()}"
 
 
 class TestUnhandledExceptionHandler:

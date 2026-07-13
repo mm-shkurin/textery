@@ -20,7 +20,9 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-usecase (coverage: Email constructor rejects non-string input)
 - [x] adapters-discovery (Check 1 ports: [S] none — RegisterUser.execute takes no injected port for this scenario, no persistence on this path. Check 2 exceptions: ValidationException currently maps to {"detail": str(exc)} in exception_handlers.py, not the story's {"error_code","message"} shape → gap. Check 3 response shape: no /api/v1/auth/register endpoint exists yet (only generation router) → gap. Both gaps land in the same adapter module (rest), one pair.)
 - [x] red-adapter rest
-- [~] green-adapter rest (must update the shared `validation_exception_handler` in `backend/adapters/rest/src/error_handling/exception_handlers.py` to emit `{error_code, message}` -- not a router-local shadow handler; the red test's isolated mini-FastAPI app doesn't exercise the shared handler, so nothing else forces this. Also add/update `test_exception_handlers.py` to pin the new shape.)
+- [x] green-adapter rest (must update the shared `validation_exception_handler` in `backend/adapters/rest/src/error_handling/exception_handlers.py` to emit `{error_code, message}` -- not a router-local shadow handler; the red test's isolated mini-FastAPI app doesn't exercise the shared handler, so nothing else forces this. Also add/update `test_exception_handlers.py` to pin the new shape.)
+- [~] red-adapter rest (coverage: get_register_user_usecase DI stub raises NotImplementedError)
+- [ ] green-adapter rest (coverage: get_register_user_usecase DI stub raises NotImplementedError)
 - [ ] green-acceptance
 
 ### Scenario 1.2: Reject email exceeding the length limit
