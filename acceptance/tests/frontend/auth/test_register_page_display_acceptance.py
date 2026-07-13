@@ -12,11 +12,6 @@ class TestRegisterPageDisplayAcceptance(AbstractFrontendTest):
     And the submit button is visible
     """
 
-    @pytest.mark.skip(
-        reason="RED: selenium.common.exceptions.TimeoutException waiting on "
-        "[data-testid='register-email-input'] -- no /register route or "
-        "registration form exists yet, App.tsx only renders the landing page"
-    )
     def test_should_display_registration_form_fields(self, webdriver, app_url, register_page_statements):
         register_page_statements.navigate_to_register_page(webdriver, app_url)
 
