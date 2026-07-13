@@ -4,7 +4,7 @@ Tech binding for `infrastructure.md`. Load alongside the universal rules.
 
 ## Health Check
 
-- FastAPI health endpoint: `source infrastructure/.env && curl http://localhost:$BACKEND_PORT/health`
+- FastAPI health endpoint: `source infra/.env && curl http://localhost:$BACKEND_PORT/health`
 
 ## Process Safety
 
@@ -24,5 +24,5 @@ Each file type has its own fallback pattern:
 
 ## Local Infrastructure Dependencies
 
-- PostgreSQL and Redis (for `arq`) are provisioned by a separate infra session's `docker-compose` — this profile's skills/agents connect to them via `infrastructure/.env` ports and never attempt to start/stop those containers themselves.
+- PostgreSQL and Redis (for `arq`) are provisioned by a separate infra session's `docker-compose` — this profile's skills/agents connect to them via `infra/.env` ports and never attempt to start/stop those containers themselves.
 - Alembic migrations run against the same PostgreSQL instance: `alembic upgrade head` before backend startup in local dev.

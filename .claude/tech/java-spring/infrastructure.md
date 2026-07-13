@@ -4,7 +4,7 @@ Tech binding for `infrastructure.md`. Load alongside the universal rules.
 
 ## Health Check
 
-- Spring Actuator endpoint: `source infrastructure/.env && curl http://localhost:$BACKEND_PORT/actuator/health`
+- Spring Actuator endpoint: `source infra/.env && curl http://localhost:$BACKEND_PORT/actuator/health`
 
 ## Process Safety
 

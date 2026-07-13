@@ -4,7 +4,7 @@ Tech binding for `infrastructure.md`. Load alongside the universal rules.
 
 ## Health Check
 
-- Custom health endpoint (no built-in actuator): `source infrastructure/.env && curl http://localhost:$BACKEND_PORT/health`
+- Custom health endpoint (no built-in actuator): `source infra/.env && curl http://localhost:$BACKEND_PORT/health`
 
 ## Process Safety
 
