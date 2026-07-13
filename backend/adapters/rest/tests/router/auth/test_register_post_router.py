@@ -58,3 +58,20 @@ class TestRegisterPostRouterMalformedEmail:
             password="Sup3rSecret!",
             confirm_password="Sup3rSecret!",
         )
+
+
+class TestGetRegisterUserUsecaseDependencyStub:
+    """Coverage: get_register_user_usecase DI stub raises NotImplementedError.
+
+    Given real usecase wiring has not landed yet
+    When the DI provider function is invoked directly (not overridden)
+    Then it raises NotImplementedError
+    """
+
+    def test_should_raise_not_implemented_error(self):
+        with pytest.raises(NotImplementedError) as excinfo:
+            get_register_user_usecase()
+
+        assert str(excinfo.value) == "wired by the application composition root", (
+            f"unexpected NotImplementedError message: {excinfo.value}"
+        )
