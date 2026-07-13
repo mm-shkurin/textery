@@ -10,7 +10,13 @@ from selenium.webdriver.chrome.options import Options as ChromeOptions
 
 from clients.application.application_client import ApplicationClient
 from statements.frontend.landing_page_statements import LandingPageStatements
+from statements.frontend.generation.chat_workspace_statements import ChatWorkspaceStatements
+from statements.frontend.responsive_statements import ResponsiveStatements
 from statements.generation_statements import GenerationStatements
+
+# iPhone 12/13-class viewport — the smallest common real-device width the
+# "design for phone" scenarios must not horizontally overflow at.
+MOBILE_WINDOW_SIZE = "390,844"
 
 
 @pytest_asyncio.fixture
@@ -41,5 +47,25 @@ def webdriver():
 
 
 @pytest.fixture
+def mobile_webdriver():
+    options = ChromeOptions()
+    options.add_argument("--headless=new")
+    options.add_argument(f"--window-size={MOBILE_WINDOW_SIZE}")
+    driver = selenium_webdriver.Chrome(options=options)
+    yield driver
+    driver.quit()
+
+
+@pytest.fixture
 def landing_page_statements():
     return LandingPageStatements()
+
+
+@pytest.fixture
+def responsive_statements():
+    return ResponsiveStatements()
+
+
+@pytest.fixture
+def chat_workspace_statements():
+    return ChatWorkspaceStatements()

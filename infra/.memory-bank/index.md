@@ -19,13 +19,18 @@
   map, env var contract, and TEMP-placeholder callouts (backend/frontend have
   no real code yet).
 - Decisions already made → `./decisions.md`:
-  - Anthropic API key (used by `backend/` for text generation, story 1) lives in a local
-    `.env` for now — decided 2026-07-06. Revisit (e.g. move to a cloud secret store) once
-    a cloud provider is chosen; do not build any Lockbox/cloud-secret wiring before that.
+  - `GIGACHAT_CREDENTIALS`/`GIGACHAT_CA_BUNDLE` (used by `backend/` for text generation,
+    story 1) live in a local `.env` for now — updated 2026-07-13, provider switched from
+    the originally-planned Anthropic/OpenRouter to GigaChat 2026-07-09 (see
+    `.memory-bank/tasks/known-debt.md` #11; `infra/architecture.md` already had this
+    right). Revisit (e.g. move to a cloud secret store) once a cloud provider is chosen;
+    do not build any Lockbox/cloud-secret wiring before that.
 - Open questions → `./open-questions.md`:
   - Cloud provider: not decided. When it is, confirm whether `terraform-yandex` applies
     (Yandex Cloud) or a different/generic IaC agent is needed.
-  - CI/CD platform not chosen yet.
+  - CI/CD platform: resolved — `.github/workflows/{backend,frontend}-ci.yml` exist and
+    run since 2026-07-10 (duplicated/diverged copies also exist under `backend/.github/`
+    and `frontend/.github/`, see `_project_audit/05_CLEANUP_CANDIDATES.md` #8).
 
 (Create the files above as the project grows. Keep this index small — it is a table of
 contents, not a dump.)

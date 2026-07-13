@@ -1,10 +1,10 @@
 # Agent Progress Logging
 
-When running as a sub-agent (spawned by `/continue` or another orchestrator), write milestone entries to `infrastructure/agent-progress.log` so the user can monitor progress in real time via `tail -f`.
+When running as a sub-agent (spawned by `/continue` or another orchestrator), write milestone entries to `infra/agent-progress.log` so the user can monitor progress in real time via `tail -f`.
 
 ## Format
 
-Append lines using `echo "..." >> infrastructure/agent-progress.log`. One line per milestone.
+Append lines using `echo "..." >> infra/agent-progress.log`. One line per milestone.
 
 ```
 [TIMESTAMP] [AGENT_NAME] PHASE: Brief description

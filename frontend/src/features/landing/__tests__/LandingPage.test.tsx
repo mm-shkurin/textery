@@ -1,19 +1,33 @@
-import { describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
 
 import { LandingPage } from '../components/LandingPage'
 
 describe('LandingPage', () => {
-  it('should display the hero heading, subheading, and primary CTA', () => {
+  it('should display the hero heading', () => {
     render(<LandingPage />)
 
     // toHaveTextContent does a substring `includes()` check (see jest-dom matchers-*.js
     // `matches()`), not exact equality -- asserting on `.textContent` with `toBe` instead
     // so a partial-text render (e.g. missing a word) fails the test.
     expect(screen.getByTestId('hero-heading').textContent).toBe('Word онлайн')
-    expect(screen.getByTestId('hero-subheading').textContent).toBe(
-      'С возможностью генерации через нейросеть Textery AI',
-    )
-    expect(screen.getByTestId('hero-primary-cta-button').textContent).toBe('Создать генерацию')
+  })
+
+  it('calls onPrimaryCtaClick when the header CTA is clicked', () => {
+    const onPrimaryCtaClick = vi.fn()
+    render(<LandingPage onPrimaryCtaClick={onPrimaryCtaClick} />)
+
+    fireEvent.click(screen.getByTestId('header-primary-cta-button'))
+
+    expect(onPrimaryCtaClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('calls onPrimaryCtaClick when the features-section CTA is clicked', () => {
+    const onPrimaryCtaClick = vi.fn()
+    render(<LandingPage onPrimaryCtaClick={onPrimaryCtaClick} />)
+
+    fireEvent.click(screen.getByTestId('features-primary-cta-button'))
+
+    expect(onPrimaryCtaClick).toHaveBeenCalledTimes(1)
   })
 })

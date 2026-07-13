@@ -7,11 +7,12 @@ description: Stop the running backend application. Use when user wants to stop t
 
 ## Action
 
-Use `TaskStop` with the backend task ID (from `/run-backend` output).
+If the backend was started as a background task (e.g. `npm run dev`/`uvicorn` invoked
+directly), use `TaskStop` with its task ID.
 
-If task ID unknown, use the stop script (reads port from `.env`):
+If the backend is running via the compose stack (`/run-backend`'s default path):
 ```bash
-infrastructure/scripts/stop-backend.sh
+docker compose -f infra/docker-compose.yml stop backend
 ```
 
 ## Output

@@ -39,6 +39,10 @@ The always-on rules (`.claude/rules/*.md`) hold only the high-level map, invaria
 | Load or wire a technology binding (two-layer tech structure) | `.claude/guidelines/technology-loading.md` |
 | Emit sub-agent progress to the live log | `.claude/guidelines/agent-logging.md` |
 
+## File Ownership (parallel backend/frontend sessions)
+
+Two developers can work the same story at once — one per layer. Each session edits only its own files: backend session touches `backend/`, `acceptance/tests/backend/`, `ProductSpecification/stories/*/progress-backend.md`; frontend session touches `frontend/`, `acceptance/tests/frontend/`, `ProductSpecification/stories/*/progress-frontend.md`. Shared files (`progress.md` narrative/decisions, `ProductSpecification/stories.md`) — edit only the section belonging to your own layer's update, never rewrite the other layer's rows. Use separate `git worktree`s (see `.memory-bank/steerings/development-conventions.md`), not one shared checkout.
+
 ## Interaction Rules
 
 - **Never block longer than 30 seconds.** No `sleep 60`, no `TaskOutput` with 5-minute timeouts. Use `run_in_background: true` for long commands, then poll with short separate calls (≤30s each) so the user sees progress between each check.

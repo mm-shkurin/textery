@@ -7,24 +7,25 @@ description: Start the frontend dev server. Use when user wants to start the fro
 
 ## Prerequisite
 
-Ensure `.env` file exists. If not, run setup first:
-```bash
-infrastructure/scripts/setup-ports.sh
-```
+Ensure `infra/.env` exists (copy from `infra/.env.example` if not — no generator script,
+see `infra/architecture.md`).
 
 ## Action
 
-Run the frontend script in background:
+Start the frontend service via the real compose stack:
 ```bash
-infrastructure/scripts/run-frontend.sh
+docker compose -f infra/docker-compose.yml up -d --build frontend
 ```
 
-Use `run_in_background: true` so the dev server keeps running.
+This builds the Vite app and serves it via nginx (see `infra/architecture.md`'s
+`frontend.Dockerfile` notes) — not a hot-reload dev server. For local hot-reload
+development instead, run `npm run dev` directly inside `frontend/`.
 
-The script loads port configuration from `infrastructure/.env` and starts the frontend on the configured port.
+Port comes from `FRONTEND_PORT` in `infra/.env` (default `80` for the compose route,
+Vite's own default for `npm run dev`).
 
 ## Output
 
-Report startup status. Dev server runs at `http://localhost:{FRONTEND_PORT}` (from .env)
+Report startup status. App runs at `http://localhost:{FRONTEND_PORT}` (from `infra/.env`).
 
-Stop with Ctrl+C or kill the background process.
+Stop with `docker compose -f infra/docker-compose.yml stop frontend`.

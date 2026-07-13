@@ -170,7 +170,7 @@ After writing, determine whether the update changes **expected behavior** of any
 | `templates/workflow/*` | `/continue` |
 | `tech/{browser-testing}/templates/align-design-*` | `/align-design` |
 | `tech/{browser-testing}/templates/design-review-*` | `design-review-agent` |
-| `technology.md`, `infrastructure/.env` | `/demo`, `/test-acceptance`, `/align-design` |
+| `technology.md`, `infra/.env` | `/demo`, `/test-acceptance`, `/align-design` |
 | `tech/{concern-value}/coding.md`, `tech/{concern-value}/tdd.md`, etc. | All agents that load tech bindings |
 
 ### When to run `/skill-creator`

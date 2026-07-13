@@ -7,24 +7,37 @@ description: Kill orphaned chromedriver and headless Chrome processes left over 
 
 Failed or interrupted Selenium test runs leave behind chromedriver and headless Chrome processes. These accumulate and exhaust system resources, causing new Selenium tests to fail with `Connection reset` / `TimeoutException` on the Chrome DevTools WebSocket.
 
+**NEVER kill by executable name (`taskkill /IM chromedriver.exe /F` or `/IM chrome.exe
+/F`)** — this project's `.claude/rules/infrastructure.md` bans it outright: it kills
+every instance system-wide, including other Claude sessions' active Selenium runs and
+the user's own open browser windows. Kill only specific orphaned PIDs, identified by
+process tree, never by name.
+
 ## Action
 
-1. **Count** orphaned processes to assess the situation:
-   ```bash
-   echo "chromedriver: $(tasklist //FI "IMAGENAME eq chromedriver.exe" 2>/dev/null | grep -c chromedriver)" && echo "chrome: $(tasklist //FI "IMAGENAME eq chrome.exe" 2>/dev/null | grep -c chrome)"
+1. **Identify orphaned processes by PID**, not name. An orphan is a `chromedriver.exe`
+   or `chrome.exe` process whose parent PID no longer exists (the parent test run died,
+   the child didn't get cleaned up):
+   ```powershell
+   $live = Get-CimInstance Win32_Process | Where-Object { $_.Name -in 'chromedriver.exe','chrome.exe' }
+   $livePids = $live.ProcessId
+   $orphans = $live | Where-Object { $_.ParentProcessId -notin $livePids -and -not (Get-Process -Id $_.ParentProcessId -ErrorAction SilentlyContinue) }
+   $orphans | Select-Object ProcessId, Name, ParentProcessId
    ```
 
-2. **Kill all** chromedriver processes (these are always test-spawned):
-   ```bash
-   taskkill //IM chromedriver.exe //F 2>&1 | tail -1
+2. **Report the orphan list to the user before killing anything** — show PID, name,
+   count. If the count is 0, stop here; there is nothing to clean up (do not fall back
+   to a blanket kill).
+
+3. **Kill only those specific PIDs:**
+   ```powershell
+   $orphans | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
    ```
 
-3. **Kill all** headless Chrome processes:
-   ```bash
-   taskkill //IM chrome.exe //F 2>&1 | tail -1
-   ```
-
-4. **Repeat** kill commands until counts reach 0 — processes can respawn briefly as child processes exit. Usually 2-3 rounds suffice.
+4. **Re-run step 1** to confirm the orphan count reached 0 — a chromedriver parent
+   exiting can leave a fresh orphaned chrome.exe child; one or two more rounds may be
+   needed. Never widen the kill to "any chrome.exe" if orphans persist — investigate why
+   instead (e.g. a chromedriver process still alive but hung, which is a different fix).
 
 5. **Clean locked test output** if it exists:
    ```bash
@@ -33,8 +46,5 @@ Failed or interrupted Selenium test runs leave behind chromedriver and headless 
 
 ## Output
 
-Report how many processes were killed and confirm cleanup is complete.
-
-## Note
-
-This kills ALL Chrome and chromedriver processes, including the user's own browser. Warn the user before proceeding if they might have a Chrome browser open with unsaved work.
+Report how many orphaned processes were found and killed (by PID), and confirm no
+running Selenium session or the user's own browser was touched.

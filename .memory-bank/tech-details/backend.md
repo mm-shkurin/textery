@@ -1,5 +1,14 @@
 # Tech Details — Backend
 
+> **Frozen snapshot as of 2026-07-08.** Progress moved well past this file since
+> (Task 1, 2, 3 all completed by 2026-07-12; see `ProductSpecification/stories/
+> 01-auto-generate-doklad/progress.md` for current state). Two facts below are also
+> now **stale**: the generation engine is **GigaChat** (Sber), not OpenRouter/Claude
+> (superseded 2026-07-09, `.memory-bank/tasks/known-debt.md` #11); the task queue is
+> FastAPI `BackgroundTasks` + DB-sweep, not `arq` (`arq` remains the target, see
+> known-debt #13). Treat `ProductSpecification/technology.md` as the current source
+> of truth for both. Keep the rest of this file as historical decision context.
+
 ## Status
 Story 1's spec pipeline is complete (`/interview` → `/story` → `/mockups` → `/api-spec` →
 `/test-spec`, hazard-catalogue scanned twice — see

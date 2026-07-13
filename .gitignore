@@ -52,3 +52,6 @@ Desktop.ini
 *.log
 bash.exe.stackdump
 /.claude/projects/
+
+# Local project documentation (not committed)
+/Test/

@@ -2,7 +2,11 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from router.generation.generation_router import router as generation_router, get_generation_usecase
+from router.generation.generation_router import (
+    router as generation_router,
+    get_generate_document_usecase,
+    get_request_generation_usecase,
+)
 from error_handling.exception_handlers import validation_exception_handler
 from shared.exceptions import ValidationException
 
@@ -27,7 +31,8 @@ class TestCreateGenerationRouter:
         mock_usecase.execute = mocker.AsyncMock(
             side_effect=ValidationException(EXPECTED_MISSING_TOPIC_MESSAGE)
         )
-        app.dependency_overrides[get_generation_usecase] = lambda: mock_usecase
+        app.dependency_overrides[get_request_generation_usecase] = lambda: mock_usecase
+        app.dependency_overrides[get_generate_document_usecase] = lambda: mocker.Mock()
 
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:

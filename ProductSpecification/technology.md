@@ -27,9 +27,9 @@ tech-profile:
 | ORM | SQLAlchemy 2.0 (async engine) |
 | Migrations | Alembic |
 | Database | PostgreSQL |
-| Task queue | `arq` (Redis-backed) — generation runs as a background job, never inline in a request |
+| Task queue | FastAPI `BackgroundTasks` + periodic DB-based sweep (reconciles stale/orphaned generations) — `arq`+Redis was the original plan (`ExpectedLoad.md`) but isn't implemented; Redis is still provisioned in `infra/docker-compose.yml`/CI as a placeholder for a future move to `arq`, unused by current code |
 | DI | FastAPI `Depends()` + manual composition root (`container.py`) — no DI framework |
-| Generation engine | OpenRouter (OpenAI-compatible gateway to Claude + other models) via `openai` Python SDK, async client |
+| Generation engine | GigaChat (Sber) — direct `httpx` HTTP client (`backend/adapters/generation_provider/src/provider/gigachat_provider.py`) with a custom Russian trust CA bundle (`russiantrustedca.pem`). OpenRouter/Claude was the original plan, superseded 2026-07-09 (known-debt #11) |
 | HTTP client (other) | `httpx` (async) |
 | Auth (story 7+) | JWT (`PyJWT`) + Yandex ID / VK ID OAuth (no Google) |
 
@@ -41,7 +41,8 @@ tech-profile:
 | Framework | React 18 |
 | Build tool | Vite |
 | Test runner | Vitest |
-| HTTP mocking | MSW (Mock Service Worker) |
+| HTTP mocking | `vi.mock()` (native Vitest) — MSW was the original plan, never installed |
+| Linter | oxlint (`.oxlintrc.json`) |
 
 ## CSS
 
@@ -73,7 +74,7 @@ now-closed #1).
 |---------|-----------|
 | Containerization | Docker / docker-compose (provisioned by the separate `infra/` harness — see `infra/architecture.md`) |
 | Database | PostgreSQL |
-| Cache / queue | Redis (backs `arq`) |
+| Cache / queue | Redis — provisioned, not used by current code (see Task queue row above) |
 
 ## Conventions
 
@@ -84,7 +85,7 @@ now-closed #1).
 | Test skip marker | `@pytest.mark.skip(reason="RED: ...")` |
 | Not-implemented marker | `raise NotImplementedError()` |
 | Dev command | `uvicorn app.main:app --reload --port $BACKEND_PORT` |
-| Worker command | `arq backend.application.worker.WorkerSettings` |
+| Worker command | none — generation runs inline via `BackgroundTasks` in the ASGI process; `arq backend.application.worker.WorkerSettings` was the planned command, not yet needed |
 | Test command | `pytest backend/` |
 | Coverage report path | `backend/coverage.xml`, `backend/htmlcov/index.html` |
 | Migration command | `alembic revision --autogenerate -m "..."` / `alembic upgrade head` |
@@ -101,4 +102,5 @@ now-closed #1).
 
 ### Browser Testing
 
-TODO
+See `.claude/guidelines/frontend-rules.md` ("Selenium Tests" section) for the 2-tier
+DSL, `data-testid` conventions, and the ban on direct URL navigation.

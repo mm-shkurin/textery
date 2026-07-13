@@ -103,3 +103,108 @@ not just Cf) is cheap and doesn't need a detour from P0 sequencing right now.
 **Resurfaces:** close this — with a test case — during scenario 2.1's (P0-3) design
 phase, before its happy path starts writing real topics to storage/the OpenRouter call.
 Don't let 2.1 land without it; that's the point where the traced incidents become live.
+
+## 9. Generation-form page (mockup 04, spec section 4) replaced by single doc+chat screen
+Decided 2026-07-09, speed measure for the Friday deadline. `02_UI_Tests.md` section 4
+("Generation Form — Page Display") and `mockups/desktop/04-generation-form.html`
+describe a standalone form page with four discrete fields (topic, requirements, volume,
+extra wishes). The actual build skips that page: after the mode modal, the visitor
+lands directly on the same doc-left/chat-right layout used for the pending/completed/
+failed states (mockups 05-07, columns flipped — document wide on the left, chat panel
+narrow on the right), and the initial request is a single free-text chat input
+(messenger-style), not four separate fields.
+
+**Consequence — mapping is lossy:** the single chat message is sent as `topic`.
+`volume` (required, 1-10 range, has its own inline-error scenario 7.2) has no field to
+come from — it is sent as a fixed default. `requirements`/`extra_wishes` are sent
+empty. Scenario 5.1 ("submit disabled until required fields filled") becomes "until
+the chat input is non-empty". Scenario 7.2 (out-of-range volume inline error) has no
+UI surface to trigger it anymore — untestable as written. `02_UI_Tests.md` section 4
+and mockup 04 were deliberately NOT updated (per explicit user call) to avoid spending
+sprint time on doc churn — they are now stale/aspirational, not the source of truth for
+what got built.
+
+**Resurfaces:** MUST be revisited once the Friday deadline pressure is off — either (a)
+restore discrete fields (topic/volume/requirements/wishes) in the chat panel so `volume`
+has a real input and scenario 7.2 is meaningful again, or (b) deliberately keep the
+single-input UX and rewrite `02_UI_Tests.md` section 4 + mockup 04 (or delete them) to
+match, and decide what `volume`/`requirements`/`extra_wishes` should actually be when
+the user only typed one free-text message — a fixed default is a placeholder, not a
+real product decision.
+
+## 10. Evening-demo vertical slice built OFF the TDD framework — no per-scenario coverage
+Decided 2026-07-09 (velocity too slow: ~6 backend scenarios green in a week under the
+full framework, deadline is tonight). The end-to-end doklad generation slice — domain
+`complete`/`fail`/`content`, `GenerationProvider` port, provider adapter, DB
+`save`/`get`/`update` + migration, `GenerateDocument`/`GetGeneration` usecases,
+`container.py`, REST POST fix + `GET /generations/{id}` — is built **directly by hand
+against the hexagonal architecture, with NO red/green/adapters-discovery/test-review/
+coverage/refactor/agent-review/premortem ceremony.** Verification = one manual
+end-to-end run (POST → poll GET → completed with text) + browser, plus at most one
+acceptance test as demo proof. This extends the framework-skip precedent (progress.md
+"Frontend framework-skip" + "Ceremony cut for P0-1..7") from the modals/frontend onto
+the **backend generation core** — the part progress.md explicitly said keeps the full
+framework because "the real risk lives" there.
+**Consequence:** the generation happy-path and its failure handling ship with zero
+automated regression coverage. The many unbuilt backend scenarios in progress.md
+(2.2 Cyrillic round-trip, 3.x idempotency, 4.3 not-found, 5.x retry/reconciliation,
+6.x listing, all Integration/Security/Load/Infra) are now **behind** working code
+rather than driving it — their red/green checkboxes describe behavior the code may or
+may not already satisfy, unverified.
+**Resurfaces:** once the demo is delivered, backfill acceptance + usecase tests for the
+slice BEFORE building further on it, and reconcile progress.md checkboxes against what
+the hand-built code actually does (mark `[S]` with this note where covered-by-slice,
+or write the missing red test). Do not treat the green checkboxes as truth until then.
+
+## 11. Generation provider is GigaChat (Sber), not OpenRouter as technology.md states
+Decided 2026-07-09: the neural provider for generation is **GigaChat** (Sber) using its
+own credentials, NOT OpenRouter/`openai` SDK as `technology.md` ("Generation engine:
+OpenRouter ... via `openai` Python SDK") and known-debt #3/#5 currently say. GigaChat
+has a different auth flow (OAuth2 token from `ngw.devices.sberbank.ru` with Basic client
+creds + scope, ~30-min access token) and a different endpoint/SDK (`gigachat` Python
+package or raw REST to `gigachat.devices.sberbank.ru`), plus a Russian-CA TLS quirk —
+not drop-in `openai`-compatible. The adapter is `GigaChatProvider`, not
+`OpenRouterProvider`. Key/creds not yet in the environment at decision time → the slice
+may start against a `FakeProvider` (fixed doklad text) and swap in `GigaChatProvider`
+once creds land.
+**Resurfaces:** update `technology.md` (Generation engine row + HTTP client) and the
+OpenRouter references in known-debt #3 and #5 to say GigaChat, once the slice is
+working and doc-churn time exists. Confirm where GigaChat creds live (`backend/.env`
+per #3) and that the TLS-cert handling is done properly, not disabled globally.
+
+## 13. Task queue is FastAPI `BackgroundTasks` + DB-sweep, not `arq` — `arq` is still the target
+Found by the 2026-07-13 project audit (`_project_audit/04_DOCUMENTATION_DRIFT.md` #2):
+`technology.md` and known-debt #6 describe the queue as `arq` (Redis-backed), but no code
+uses `arq` — `backend/requirements.txt` has no `arq` dependency, and generation actually
+runs via `NoOpGenerationQueue` + FastAPI `BackgroundTasks.add_task()` inline in the ASGI
+process, with a periodic DB-based sweep (`main.py` lifespan) reconciling stale/orphaned
+generations instead of a real broker-backed retry/redelivery mechanism. Redis is still
+provisioned in `infra/docker-compose.yml` and CI (`REDIS_URL` env var present) but nothing
+in the codebase connects to it — pure placeholder for the day this debt is paid off.
+This was a deliberate simplification under the Friday sprint-1 deadline (same root cause
+as #10's off-framework evening-demo slice), not a reversal of the #6 decision to use `arq`
+over Celery — `arq` is still the intended real implementation, just not built yet.
+**Resurfaces:** when picking up real task-queue work — implement `arq` worker
+(`backend/application/worker.py` + `WorkerSettings`), wire `REDIS_URL`, replace
+`NoOpGenerationQueue`/`BackgroundTasks` with a real `arq` producer, and only then update
+`technology.md`'s Task queue row back to describe `arq` as implemented (it currently
+already documents the interim `BackgroundTasks`+sweep reality, corrected 2026-07-13).
+Needed once: real worker redelivery/retry semantics (scenarios 3.2, 5.4-5.6), horizontal
+scaling of generation processing beyond one ASGI process, or removing the unused
+Redis service becomes worth doing instead of leaving it as a placeholder.
+
+## 12. CLOSED 2026-07-10 — Landing page acceptance test red — `hero-subheading` testid no longer exists
+Found 2026-07-10 during scenario 4.1's premortem pass. `test_should_display_hero_and_primary_cta`
+(`acceptance/tests/frontend/landing/test_landing_page_acceptance.py`) times out on
+`assert_hero_subheading_is_visible` — the user removed the hero subheading directly from
+`LandingPage.tsx` in an earlier edit (same edit that dropped the hero CTA button, per
+progress.md's Figma-alignment section, where the vitest suite was narrowed accordingly
+but this Selenium test was not). A separate, already-fixed testid drift (stale
+`hero-primary-cta-button` → `header-primary-cta-button`) was caught and corrected in the
+same session (commit `5f520c3`) — that fix is in; this one is not. Confirmed
+pre-existing, not a regression from anything in this session (reproduced on `git stash`).
+**Priority: low.** User's call (2026-07-10): the landing page is a single static info
+page, not worth a dedicated red/green cycle right now. Deprioritized, not deleted.
+**Resurfaces:** whenever scenario 1.1 (landing hero) gets touched again — drop the
+subheading assertion (or restore the subheading in the component, if it's coming back)
+and get the Selenium suite green again.

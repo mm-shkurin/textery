@@ -21,6 +21,10 @@ class ApplicationClient:
         )
         return GenerationResponseDto(status_code=response.status_code, body=self._parsed_body(response))
 
+    async def get_generation(self, generation_id: str) -> GenerationResponseDto:
+        response = await self._client.get(f"/api/v1/generations/{generation_id}")
+        return GenerationResponseDto(status_code=response.status_code, body=self._parsed_body(response))
+
     @staticmethod
     def _parsed_body(response: httpx.Response) -> dict | None:
         try:

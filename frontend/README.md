@@ -1,32 +1,37 @@
-# React + TypeScript + Vite
+# Textery — фронтенд
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Приложение на React + TypeScript + Vite для Textery: пользователь выбирает тип
+документа, описывает тему, и наблюдает, как сгенерированный ИИ документ
+появляется по мере создания.
 
-Currently, two official plugins are available:
+## Структура
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- `src/features/landing` — маркетинговая посадочная страница.
+- `src/features/generation` — процесс генерации документа: модалки выбора
+  типа/режима, чат-подобное рабочее пространство, хук поллинга
+  (`useGeneration`) и HTTP-клиент (`generationApi`).
+- `src/shared` — компоненты, общие для разных фич.
 
-## React Compiler
+## Установка и запуск
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev      # запуск dev-сервера (проксирует /api на бэкенд)
+npm run build    # проверка типов + production-сборка
+npm run lint      # oxlint
+npm run test      # разовый запуск тестов
+npm run test:watch
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Переменные окружения
+
+- `VITE_API_BASE_URL` — базовый URL для API генерации. По умолчанию `''`,
+  что направляет запросы через прокси `/api` dev-сервера Vite
+  (см. `vite.config.ts`, целевой адрес задаётся `VITE_API_PROXY_TARGET`).
+- `FRONTEND_PORT` — порт, на котором слушает dev-сервер (по умолчанию `5173`).
+
+## Тестирование
+
+Тесты используют Vitest + Testing Library (`src/test/setup.ts`). Перед
+коммитом запускайте `npm run test`; `npm run build` также проверяет типы
+через `tsc -b`.

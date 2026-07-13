@@ -58,6 +58,6 @@ for i in $(seq 1 20); do <short-check> && break; sleep 5; done
 
 ## Credentials
 
-External-integration credentials come from `infrastructure/creds.txt` (gitignored —
+External-integration credentials come from `infra/creds.txt` (gitignored —
 **NEVER commit**) and from the tester per case. Never echo a secret into a committed
 file or into a screenshot filename.

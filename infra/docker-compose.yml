@@ -1,6 +1,5 @@
-# Local-dev only. Do NOT reuse as a prod/prod-copy template without revisiting
-# the exposed Postgres/Redis host ports and the TEMP backend/frontend images.
-# See infra/architecture.md for topology, port map, and env var contract.
+# Real services — no mocks/placeholders. See infra/architecture.md for
+# topology, port map, and env var contract.
 #
 # All ports/credentials come from infra/.env (gitignored; copy from
 # infra/.env.example). No literals below, no container_name (avoids collisions
@@ -33,15 +32,14 @@ services:
       timeout: 3s
       retries: 5
 
-  # TEMP: builds from a placeholder Dockerfile until real FastAPI code lands
-  # in backend/. See infra/docker/backend.Dockerfile.
+  # Real FastAPI app (backend/), migrated via Alembic on boot. Build context
+  # is the repo root so the Dockerfile can COPY every backend/ module.
   backend:
     build:
-      context: .
-      dockerfile: docker/backend.Dockerfile
-    # ANTHROPIC_API_KEY and any other backend secrets live in backend/.env,
-    # not here. `required: false` because backend/.env doesn't exist yet
-    # (backend/ is still empty) — compose must still be able to boot today.
+      context: ..
+      dockerfile: infra/docker/backend.Dockerfile
+    # GIGACHAT_CREDENTIALS / GENERATION_PROVIDER and any other backend
+    # secrets live in backend/.env, not here.
     env_file:
       - path: ../backend/.env
         required: false
@@ -56,36 +54,12 @@ services:
       redis:
         condition: service_healthy
 
-  # TEMP: separate process from `backend` for the future arq worker — same
-  # placeholder image, different command, since the API and the worker have
-  # different lifecycles. Replace `command:` with the real
-  # `arq worker.WorkerSettings` entrypoint once backend/ has code.
-  worker:
-    build:
-      context: .
-      dockerfile: docker/backend.Dockerfile
-    command: ["tail", "-f", "/dev/null"]
-    # The image's HEALTHCHECK probes an HTTP server this command doesn't run.
-    healthcheck:
-      disable: true
-    env_file:
-      - path: ../backend/.env
-        required: false
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      REDIS_URL: redis://redis:6379/0
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  # TEMP: static nginx stub until the real React app lands in frontend/. See
-  # infra/docker/frontend.Dockerfile. No framework scaffolding here.
+  # Real React/Vite app (frontend/), built and served by nginx. Build context
+  # is the repo root so the Dockerfile can COPY frontend/.
   frontend:
     build:
-      context: .
-      dockerfile: docker/frontend.Dockerfile
+      context: ..
+      dockerfile: infra/docker/frontend.Dockerfile
     ports:
       - "${FRONTEND_PORT}:80"
     depends_on:

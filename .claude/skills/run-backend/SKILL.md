@@ -7,22 +7,23 @@ description: Run the backend application. Use when user wants to start the backe
 
 ## Prerequisite
 
-Ensure `.env` file exists. If not, run setup first:
-```bash
-infrastructure/scripts/setup-ports.sh
-```
+Ensure `infra/.env` and `backend/.env` exist (copy from their `.env.example` if not —
+there is no generator script; see `infra/architecture.md`).
 
 ## Action
 
-Run the backend script in background:
+Start the backend service via the real compose stack (all services are real, no
+placeholders — see `infra/architecture.md`):
 ```bash
-infrastructure/scripts/run-backend.sh
+docker compose -f infra/docker-compose.yml up -d --build backend
 ```
 
-Use `run_in_background: true` so the server keeps running.
+`backend` depends on `postgres`/`redis` reaching `service_healthy`, so compose brings
+those up first automatically. Use `run_in_background: true` if you additionally want to
+tail logs (`docker compose -f infra/docker-compose.yml logs -f backend`).
 
-The script loads port configuration from `infrastructure/.env` and starts the backend on the configured port.
+Port comes from `BACKEND_PORT` in `infra/.env` (default `8000`).
 
 ## Output
 
-Report startup status. Server runs at `http://localhost:{BACKEND_PORT}` (from .env)
+Report startup status. Server runs at `http://localhost:{BACKEND_PORT}` (from `infra/.env`).

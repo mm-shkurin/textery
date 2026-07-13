@@ -1,0 +1,64 @@
+name: backend-ci
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://textery:change-me@localhost:5432/textery
+      TEST_DATABASE_URL: postgresql://textery:change-me@localhost:5432/textery
+      REDIS_URL: redis://localhost:6379/0
+      GENERATION_PROVIDER: fake
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+
+      - name: Install postgres and redis
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql redis-server
+          sudo pg_ctlcluster 16 main start
+          sudo redis-server --daemonize yes --bind 127.0.0.1
+
+      - name: Wait for postgres and redis
+        run: |
+          for i in $(seq 1 30); do
+            pg_isready -h localhost -p 5432 && break
+            sleep 2
+          done
+          for i in $(seq 1 30); do
+            redis-cli -h localhost ping && break
+            sleep 2
+          done
+
+      - name: Create database and user
+        run: |
+          sudo -u postgres psql -c "CREATE USER textery WITH PASSWORD 'change-me' SUPERUSER;"
+          sudo -u postgres psql -c "CREATE DATABASE textery OWNER textery;"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run migrations
+        working-directory: adapters/db
+        run: alembic upgrade head
+
+      - name: Run tests with coverage
+        run: pytest --cov --cov-report=xml:coverage.xml
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: coverage.xml

@@ -14,6 +14,11 @@ a case you cannot verify through the UI, or whose intent is ambiguous, is a defe
 in the test model — fixed in the task `spec.md` — which is distinct from a product
 defect, which becomes a `/task bug`.
 
+**Prerequisite:** no prod-copy environment exists in this project yet (`infra/` has
+only the local-dev compose stack — see `infra/architecture.md`). This skill has no
+task to run against until one is created and a QA task exists; do not invent a
+target environment.
+
 ## Input
 
 - **target** (optional): QA task number/slug. If absent, infer the in-progress QA
@@ -34,7 +39,7 @@ defect, which becomes a `/task bug`.
   whole case into one scripted run — the point is for the tester to watch each step.
 - **Real integrations, real creds.** External-integration credentials (external-API
   sandbox key, payment-gateway sandbox shop, mail inbox) come from
-  `infrastructure/creds.txt` (gitignored — **NEVER commit**) and from the tester as
+  `infra/creds.txt` (gitignored — **NEVER commit**) and from the tester as
   each case needs them. Never echo a secret into a committed file or a screenshot name.
 - **Never block >30s** (CLAUDE.md Interaction Rules). Long waits (a scheduler tick,
   email delivery) run in the background with short, separate polls (≤30s each).
@@ -70,7 +75,7 @@ defect, which becomes a `/task bug`.
 
 - A failed case never becomes `[x]` — `[x]` means verified, `[ ]` means not-yet-verified
   or under investigation (see QA Task Sequence in `.claude/guidelines/workflow-detail.md`).
-- Never commit `infrastructure/creds.txt` or any secret.
+- Never commit `infra/creds.txt` or any secret.
 - Don't auto-advance past a failing case without the tester's acknowledgement.
 
 ## Templates

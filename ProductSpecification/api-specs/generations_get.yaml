@@ -49,13 +49,11 @@ components:
         created_at:
           type: string
           format: date-time
-        document:
-          type: object
+        content:
+          type: string
           nullable: true
           description: Present only when status is "completed"; escaped/sanitized text, never raw unescaped HTML.
-          properties:
-            content:
-              type: string
-            created_at:
-              type: string
-              format: date-time
+        error_message:
+          type: string
+          nullable: true
+          description: Present only when status is "failed".

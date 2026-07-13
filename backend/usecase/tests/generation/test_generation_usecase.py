@@ -24,7 +24,6 @@ class TestGenerationUsecase:
         generation_statements.assert_missing_topic_error_raised()
 
 
-@pytest.mark.skip(reason="RED: Generation.create has no volume_pages guard, falls through to NotImplementedError")
 class TestGenerationUsecaseVolumeRange:
     """Scenario 1.2: Reject request with out-of-range volume.
 
@@ -47,3 +46,23 @@ class TestGenerationUsecaseVolumeRange:
     def test_should_reject_out_of_range_volume(self, generation_statements: GenerationStatements, volume_pages):
         generation_statements.attempt_creating_generation_with_volume_pages(volume_pages)
         generation_statements.assert_out_of_range_volume_error_raised()
+
+
+class TestGenerationUsecaseHappyPath:
+    """Scenario 2.1: Valid request is accepted and queued without waiting on the LLM call.
+
+    Given a valid generation request for "доклад"
+    When the client submits the request
+    Then the response confirms the generation was created
+    And the generation's status is "pending"
+    And the response is returned without waiting for the document to be generated
+    """
+
+    async def test_should_return_pending_generation_and_enqueue_job(
+        self, generation_statements: GenerationStatements
+    ):
+        await generation_statements.submit_valid_generation_request()
+        generation_statements.assert_generation_accepted_and_pending()
+        generation_statements.assert_generation_persisted_exactly_once()
+        generation_statements.assert_generation_enqueued_exactly_once()
+        generation_statements.assert_save_happened_before_enqueue()
