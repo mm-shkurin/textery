@@ -5,7 +5,7 @@ export function RegisterForm() {
   return (
     <div className="auth-card register-card">
       <h1>Регистрация в Textery AI</h1>
-      <p className="register-subtitle">
+      <p className="auth-subtitle register-subtitle">
         Создайте аккаунт по email, чтобы начать генерировать документы
       </p>
       <form>
@@ -47,7 +47,7 @@ export function RegisterForm() {
           конфиденциальности и Обработкой персональных данных
         </p>
       </form>
-      <p className="register-footer-link">
+      <p className="auth-footer-link">
         Уже есть аккаунт? <a href="/login">Войти</a>
       </p>
     </div>

@@ -9,7 +9,7 @@ export function LoginForm() {
   return (
     <div className="auth-card login-card">
       <h1>Вход в Textery AI</h1>
-      <p className="login-subtitle">Введите свои данные для продолжения работы</p>
+      <p className="auth-subtitle login-subtitle">Введите свои данные для продолжения работы</p>
       <form onSubmit={handleSubmit}>
         <div className="auth-field">
           <label htmlFor="login-email">Email</label>
@@ -35,7 +35,7 @@ export function LoginForm() {
           Войти
         </button>
       </form>
-      <p className="login-footer-link">
+      <p className="auth-footer-link">
         Нет аккаунта? <a href="/register">Зарегистрироваться</a>
       </p>
     </div>

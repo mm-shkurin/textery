@@ -58,3 +58,21 @@
   margin-top: 8px;
   font-family: inherit;
 }
+
+.auth-subtitle {
+  color: #9a9ba3;
+  font-size: 14px;
+}
+
+.auth-footer-link {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 14px;
+  color: #9a9ba3;
+}
+
+.auth-footer-link a {
+  color: #f5f5f7;
+  font-weight: 500;
+  text-decoration: none;
+}
