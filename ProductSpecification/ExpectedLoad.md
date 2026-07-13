@@ -12,9 +12,11 @@
 
 **Throughput.** The dominant production risk is request *rate*, not per-user data
 volume, response-time SLOs, or batch/ETL processing: hundreds of concurrent users each
-submitting generation requests, with capacity-per-second (API request handling, `arq`
-queue depth, worker concurrency, downstream OpenRouter rate limits) as the binding
-constraint. Load scenarios for any story should assert sustained request rate, queue
+submitting generation requests, with capacity-per-second (API request handling, queue
+depth, worker concurrency, downstream GigaChat rate limits) as the binding constraint.
+Queue depth/worker concurrency currently mean the in-process `BackgroundTasks` queue, not
+`arq` — see `.memory-bank/tasks/known-debt.md` #13; revisit this profile's queue-specific
+assertions once `arq` actually lands. Load scenarios for any story should assert sustained request rate, queue
 depth bounds, and downstream rate-limit compliance — not full-table volume scale or
 p95/p99 latency SLOs (this product has no interactive-trading-style latency
 requirement) or batch-job duration (no ETL/batch pipeline exists).

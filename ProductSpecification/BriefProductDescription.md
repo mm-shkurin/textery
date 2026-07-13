@@ -13,7 +13,7 @@
      no real mail integration — plus Yandex ID and VK ID OAuth) → subscription (3 tariffs,
      differing by AI model tier and monthly generation quota; billing fully mocked, no
      real payment provider) → pick one of 4 document types (реферат/эссе/доклад/сочинение)
-     → generate via an external LLM API (Anthropic Claude) → edit in the built-in editor
+     → generate via an external LLM API (GigaChat, Sber — superseded the originally planned Anthropic Claude/OpenRouter 2026-07-09, known-debt #11) → edit in the built-in editor
      → save → export to Word/PDF (nice-to-have, not first priority) → browse history →
      come back and repeat.
    - Every step along the way emits a product-analytics event, stored and rolled up into
