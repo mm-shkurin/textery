@@ -19,6 +19,14 @@ Demo step skipped for all scenarios (visual-only, non-gating), same convention a
 - [S] demo (skipped per convention, see note above)
 
 ### 1.2: Login form displays email and password fields
+
+Known gaps (premortem on `fef125a`, not covered by any later scenario in this file —
+fold into green-frontend now since cheap, or track explicitly if deferred):
+- label association (`getByLabelText`) unasserted for email/password inputs
+- form must actually submit on Enter in password field, not just button click
+- inputs should carry `autoComplete="username"`/`"current-password"` for password managers
+(same 3 gaps apply retroactively to RegisterForm.tsx, scenario 1.1 — not fixed there either)
+
 - [x] red-selenium
 - [x] red-frontend
 - [~] green-frontend
