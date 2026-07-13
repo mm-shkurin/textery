@@ -27,3 +27,21 @@
 **Mistake:** First implementation of the auth router caught `ValidationException` locally and rebuilt the `{error_code, message}` JSON response inline, shadowing the shared handler instead of letting the exception propagate to it.
 **Why wrong:** Duplicates the exact mapping the shared handler already owns; if the two ever diverge nothing forces them back in sync, and the whole point of centralizing the handler (per the decision doc) is defeated.
 **Correct location/approach:** Let `ValidationException` propagate uncaught; rely on the app-level `validation_exception_handler`, matching `generation_router`'s convention.
+
+## green-acceptance (2026-07-13)
+
+**Quirk:** `green-adapter rest` wired the auth router's DI stub (`get_register_user_usecase`) but never registered `auth_router` on the FastAPI app itself (`backend/application/src/app/main.py`) — only `generation_router` was included, so the acceptance test 404'd until this step added `app.include_router(auth_router)` and a `create_register_user()` factory in `container.py`.
+**Where:** `backend/application/src/app/main.py`, `backend/application/src/app/container.py`.
+**Implication:** `adapters-discovery`'s ports/exceptions/response-shape checklist does not catch "router not mounted on the app" — future scenarios adding new routers must verify `main.py` wiring explicitly, not just the router module and its DI stub.
+
+## green-acceptance (2026-07-13)
+
+**Quirk:** The acceptance HTTP client (`acceptance/clients/application/application_client.py`) reads `BACKEND_PORT` from the shell environment, defaulting to 8000, but the docker-compose backend service maps to host port 8100 (`infra/.env`). Running pytest without `BACKEND_PORT=8100` set silently hits a non-existent/wrong service and produces a misleading 404.
+**Where:** `acceptance/clients/application/application_client.py`; port value in `infra/.env`.
+**Implication:** Any acceptance backend test run locally needs `BACKEND_PORT=8100` exported (or sourced from `infra/.env`) — otherwise a real 404 (route not mounted) is indistinguishable from a wrong-port 404.
+
+## green-acceptance (2026-07-13)
+
+**Decision:** Fixed the wording mismatch by changing the acceptance-layer expected message (`acceptance/statements/auth_statements.py`) from "Email address is not valid." to "The email address is not valid.", not the production usecase string.
+**Why:** The production wording was already pinned in three other test files (usecase, two rest-adapter tests); the acceptance Statements file was the sole outlier, so it was corrected to match instead of the production string being changed and breaking those three tests.
+**Where applied:** `acceptance/statements/auth_statements.py`.
