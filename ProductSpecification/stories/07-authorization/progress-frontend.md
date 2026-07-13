@@ -30,9 +30,9 @@ fold into green-frontend now since cheap, or track explicitly if deferred):
 - [x] red-selenium
 - [x] red-frontend
 - [x] green-frontend
-- [~] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
+- [S] red-frontend-api (no API call in this scenario — page-display only, per tests/02_UI_Tests.md §1 note)
+- [S] green-frontend-api (see above)
+- [~] align-design
 - [ ] green-selenium
 - [ ] demo
 
