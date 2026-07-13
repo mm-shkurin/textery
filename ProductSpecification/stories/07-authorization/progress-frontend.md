@@ -4,8 +4,8 @@
 
 ### 1.1: Registration form displays email, password, confirm password fields
 - [x] red-selenium
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
