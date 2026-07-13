@@ -15,7 +15,13 @@ import pytest
 
 from statements.generation_lifecycle_statements import GenerationLifecycleStatements
 from statements.generation_statements import GenerationStatements
+from statements.register_statements import RegisterStatements
 from statements.requeue_stale_generations_statements import RequeueStaleGenerationsStatements
+
+
+@pytest.fixture
+def register_statements():
+    return RegisterStatements()
 
 
 @pytest.fixture
