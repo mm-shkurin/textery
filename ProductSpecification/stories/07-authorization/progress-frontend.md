@@ -20,8 +20,8 @@ Demo step skipped for all scenarios (visual-only, non-gating), same convention a
 
 ### 1.2: Login form displays email and password fields
 - [x] red-selenium
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
