@@ -10,8 +10,8 @@
 
 ## Фаза 1 — синхронизация прогресса
 
-- [ ] `stories/01-auto-generate-doklad/progress.md`: сценарии 4.1/4.2/4.3 `[~]` → `[x]` (закрыты Task 3, коммит `2be8049`)
-- [ ] Пересчитать `ProductSpecification/stories.md` — колонка Tests/% для Story 1 (реально 10-13/74, не 6/74)
+- [x] `stories/01-auto-generate-doklad/progress.md`: сценарии 4.1/4.2 `[~]`→`[x]` (Task 3 Step 6 добавил реальный top-level acceptance-тест `test_generation_lifecycle_acceptance.py`, зелёный). 4.3 (not-found) оставлен `[~]` — этот кейс НЕ покрыт lifecycle-тестом, аудит ошибочно включил его в "закрыто"
+- [x] Пересчитан `ProductSpecification/stories.md` — Story 1 Tests: 6/74 (8%) → 12/74 (16%), точный подсчёт по чекбоксам (backend 1.1/1.2/2.1/4.1/4.2 + frontend 1.1/1.2/2.1/2.2/3.1/3.2/4.1 = 12 полностью закрытых сценариев)
 - [ ] Проверить почему `/continue` не обновлял `stories.md` 24+ раз — поправить skill если нужно
 
 ## Фаза 2 — провайдер/технологии (правда против документации)

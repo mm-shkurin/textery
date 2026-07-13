@@ -300,20 +300,20 @@ what's still deferred (CI, oxlint rules, git-config typo).
 - [ ] green-acceptance
 
 ### Scenario 4.1: A pending generation reports its status without document content
-- [S] red-acceptance — backfilled at usecase+rest layer only 2026-07-10, see below; no top-level `acceptance/` black-box test yet
+- [x] red-acceptance — Task 3 Step 6 (2026-07-11/12) added a real top-level `acceptance/tests/backend/auto_generate_doklad/test_generation_lifecycle_acceptance.py`, verified genuinely red first, covering the pending-status leg of the 2.1→4.1→4.2 lifecycle
 - [S] design — trivial pass-through (`GetGeneration.execute` already existed)
 - [x] red-usecase — `TestGetGenerationStatus`, verified red against `NotImplementedError` stub
 - [x] green-usecase — restored real implementation, 15/15 usecase suite green
 - [x] adapters-discovery — REST `GET /generations/{id}` backfilled 2026-07-10: `test_generation_get_router.py`, verified red against a `NotImplementedError` handler stub. DB storage adapter (`get`) already covered under P0-3's backfill note.
-- [~] green-acceptance — router-level HTTP coverage done (mocked usecase); a real top-level `acceptance/` black-box test against the running app is still missing
+- [x] green-acceptance — Task 3 Step 6: skip marker removed, full backend acceptance suite green (5 passed, 0 skipped) against the wired backend (fake provider, local Postgres)
 
 ### Scenario 4.2: A completed generation includes the document content
-- [S] red-acceptance — backfilled at usecase+rest layer only 2026-07-10, see below; no top-level `acceptance/` black-box test yet
+- [x] red-acceptance — same Task 3 Step 6 lifecycle test, covering the completed-with-content leg
 - [S] design — trivial pass-through
 - [x] red-usecase — `TestGetGenerationCompleted`, same backfill pass
 - [x] green-usecase — same backfill pass
 - [x] adapters-discovery — same REST backfill pass, `TestGetGenerationCompleted` (router)
-- [~] green-acceptance — same gap as 4.1
+- [x] green-acceptance — same Task 3 Step 6 green run as 4.1
 
 ### Scenario 4.3: Requesting a non-existent generation reports not found
 - [S] red-acceptance — backfilled at usecase+rest layer only 2026-07-10, see below; no top-level `acceptance/` black-box test yet
