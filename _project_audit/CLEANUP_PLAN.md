@@ -23,8 +23,8 @@
 
 ## Фаза 3 — API-спеки под факт
 
-- [ ] `stories/01-.../endpoints.md`: Idempotency-Key и `GET /generations` (список) → будущее время
-- [ ] `api-specs/generations_get.yaml`: убрать вложенность `document.content`, привести к плоской форме
+- [x] `stories/01-.../endpoints.md`: Idempotency-Key и `GET /generations` (список) → "planned, not yet implemented", со ссылкой на нереализованные сценарии 3.1/6.1-6.4
+- [x] `api-specs/generations_get.yaml`: убрана вложенность `document.content` → плоские top-level `content`/`error_message`, сверено с реальным `GenerationDetailDto` (`backend/adapters/rest/src/dto/generation/generation_response_dto.py`)
 
 ## Фаза 4 — архитектурное решение (обсудить перед правкой)
 
