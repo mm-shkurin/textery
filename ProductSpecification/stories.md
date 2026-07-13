@@ -6,6 +6,7 @@
 |----|-------------------------------|------|------|------|-----|-------|------|-------|-------|----|
 | 1  | Auto-generate: доклад          | ✅   | 🔧   | —    | 🔧   | —     | —    | —     | 12/74 | 16% |
 | 7  | Authorization (email+password w/ mocked code, Yandex ID, VK ID) | · | · | · | · | · | · | · | · | · |
+| 5  | Manual input mode (non-AI document creation) | 🔧 | · | · | · | · | · | · | · | · |
 
 # Backlog — Core sequence (build order, decided 2026-07-06)
 
@@ -19,7 +20,6 @@ types) may run in any order relative to each other and may interleave with #5–
 | 2  | Auto-generate: эссе                       |      |      |      |     |       |      |       |       |    |
 | 3  | Auto-generate: сочинение                  |      |      |      |     |       |      |       |       |    |
 | 4  | Auto-generate: реферат                    |      |      |      |     |       |      |       |       |    |
-| 5  | Manual input mode (non-AI document creation) |      |      |      |     |       |      |       |       |    |
 | 6  | Model switching (per-tariff AI model choice) |      |      |      |     |       |      |       |       |    |
 | 8  | Billing (tariffs + mocked subscription payment) |      |      |      |     |       |      |       |       |    |
 
