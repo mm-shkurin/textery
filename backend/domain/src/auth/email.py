@@ -2,8 +2,9 @@ import re
 
 MAX_EMAIL_LENGTH = 254
 
+_DOMAIN_LABEL = r"[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?"
 _EMAIL_PATTERN = re.compile(
-    r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"
+    rf"^[A-Za-z0-9._%+-]+@(?:{_DOMAIN_LABEL}\.)+[A-Za-z]{{2,}}$"
 )
 
 
@@ -26,10 +27,6 @@ class Email:
         if not isinstance(raw_value, str):
             return False
         if not raw_value or len(raw_value) > MAX_EMAIL_LENGTH:
-            return False
-        if " " in raw_value:
-            return False
-        if "@@" in raw_value:
             return False
         return bool(_EMAIL_PATTERN.fullmatch(raw_value))
 

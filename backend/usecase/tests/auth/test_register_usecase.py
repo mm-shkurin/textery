@@ -14,8 +14,28 @@ class TestRegisterUsecaseMalformedEmail:
 
     @pytest.mark.parametrize(
         "email",
-        ["not-an-email", "missing-at-sign.ru", "user@", "@example.ru", "user@@example.ru", "user@ example.ru"],
-        ids=["no_at_sign", "no_at_sign_dotted", "missing_domain", "missing_local_part", "double_at", "embedded_space"],
+        [
+            "not-an-email",
+            "missing-at-sign.ru",
+            "user@",
+            "@example.ru",
+            "user@@example.ru",
+            "user@ example.ru",
+            "user@example..ru",
+            "user@-example.com",
+            "user@example-.com",
+        ],
+        ids=[
+            "no_at_sign",
+            "no_at_sign_dotted",
+            "missing_domain",
+            "missing_local_part",
+            "double_at",
+            "embedded_space",
+            "consecutive_dots_in_domain",
+            "domain_label_leading_hyphen",
+            "domain_label_trailing_hyphen",
+        ],
     )
     async def test_should_reject_malformed_email(self, register_statements: RegisterStatements, email):
         await register_statements.attempt_registering_with_email(email)
