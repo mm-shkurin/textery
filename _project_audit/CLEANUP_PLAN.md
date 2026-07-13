@@ -12,7 +12,7 @@
 
 - [x] `stories/01-auto-generate-doklad/progress.md`: сценарии 4.1/4.2 `[~]`→`[x]` (Task 3 Step 6 добавил реальный top-level acceptance-тест `test_generation_lifecycle_acceptance.py`, зелёный). 4.3 (not-found) оставлен `[~]` — этот кейс НЕ покрыт lifecycle-тестом, аудит ошибочно включил его в "закрыто"
 - [x] Пересчитан `ProductSpecification/stories.md` — Story 1 Tests: 6/74 (8%) → 12/74 (16%), точный подсчёт по чекбоксам (backend 1.1/1.2/2.1/4.1/4.2 + frontend 1.1/1.2/2.1/2.2/3.1/3.2/4.1 = 12 полностью закрытых сценариев)
-- [ ] Проверить почему `/continue` не обновлял `stories.md` 24+ раз — поправить skill если нужно
+- [x] Причина найдена, не баг: `.claude/skills/continue/SKILL.md` (строки 143-163) корректно обновляет `stories.md` в одном коммите с `progress.md`. Дрейф вызван работой ВНЕ `/continue` (evening-demo спринт 2026-07-09, Task 1/2/3 backfill — явно помечены "built off-framework"/"no TDD ceremony" в самом progress.md), из-за чего шаг 10 просто не запускался. Ничего в skill'е менять не нужно — процессный риск, а не дефект инструмента.
 
 ## Фаза 2 — провайдер/технологии (правда против документации)
 
