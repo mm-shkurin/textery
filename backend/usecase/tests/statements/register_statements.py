@@ -13,13 +13,11 @@ class RegisterStatements:
         self.thrown_exception: Optional[Exception] = None
 
     async def attempt_registering_with_email(self, email: Optional[str]) -> None:
-        scope = RegisterRequestScope.builder(email=email)
-        await self._attempt_registering(scope)
+        await self._attempt_registering(RegisterRequestScope.builder(email=email))
 
     async def _attempt_registering(self, scope: RegisterRequestScope) -> None:
-        usecase = RegisterUser()
         try:
-            await usecase.execute(
+            await RegisterUser().execute(
                 email=scope.email,
                 password=scope.password,
                 confirm_password=scope.confirm_password,
