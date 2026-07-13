@@ -5,6 +5,7 @@
 | #  | Story                         | Spec | Back | Intg | Front | Sec | Load | Infra | Tests | %  |
 |----|-------------------------------|------|------|------|-----|-------|------|-------|-------|----|
 | 1  | Auto-generate: доклад          | ✅   | 🔧   | —    | 🔧   | —     | —    | —     | 12/74 | 16% |
+| 7  | Authorization (email+password w/ mocked code, Yandex ID, VK ID) | · | · | · | · | · | · | · | · | · |
 
 # Backlog — Core sequence (build order, decided 2026-07-06)
 
@@ -20,7 +21,6 @@ types) may run in any order relative to each other and may interleave with #5–
 | 4  | Auto-generate: реферат                    |      |      |      |     |       |      |       |       |    |
 | 5  | Manual input mode (non-AI document creation) |      |      |      |     |       |      |       |       |    |
 | 6  | Model switching (per-tariff AI model choice) |      |      |      |     |       |      |       |       |    |
-| 7  | Authorization (email+password w/ mocked code, Yandex ID, VK ID) |      |      |      |     |       |      |       |       |    |
 | 8  | Billing (tariffs + mocked subscription payment) |      |      |      |     |       |      |       |       |    |
 
 # Backlog — layered on top later (not yet ordered)
