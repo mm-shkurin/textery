@@ -7,13 +7,13 @@ description: Run acceptance tests (backend API, frontend UI, or load suite). Use
 
 ## Pre-Checks
 
-Read ports from `infrastructure/.env` and verify required services are up **before** running tests.
+Read ports from `infra/.env` and verify required services are up **before** running tests.
 
 ### Backend (always required)
 
 Check the health endpoint (see `technology.md` Conventions table for path):
 ```bash
-source infrastructure/.env && curl -s -o /dev/null -w "%{http_code}" http://localhost:$BACKEND_PORT{health_endpoint} 2>/dev/null || echo "UNAVAILABLE"
+source infra/.env && curl -s -o /dev/null -w "%{http_code}" http://localhost:$BACKEND_PORT{health_endpoint} 2>/dev/null || echo "UNAVAILABLE"
 ```
 
 - `200` → OK.
@@ -22,7 +22,7 @@ source infrastructure/.env && curl -s -o /dev/null -w "%{http_code}" http://loca
 ### Frontend (required when argument is `frontend` or a frontend test class)
 
 ```bash
-source infrastructure/.env && curl -s -o /dev/null -w "%{http_code}" http://localhost:$FRONTEND_PORT 2>/dev/null || echo "UNAVAILABLE"
+source infra/.env && curl -s -o /dev/null -w "%{http_code}" http://localhost:$FRONTEND_PORT 2>/dev/null || echo "UNAVAILABLE"
 ```
 
 - `200` → OK.
@@ -35,7 +35,7 @@ Load tests run only against a backend booted from the pre-baked Standard Load Ba
 **Step 1 — health check** (same path as Backend above):
 
 ```bash
-source infrastructure/.env && curl -s -o /dev/null -w "%{http_code}" http://localhost:$BACKEND_PORT{health_endpoint} 2>/dev/null || echo "UNAVAILABLE"
+source infra/.env && curl -s -o /dev/null -w "%{http_code}" http://localhost:$BACKEND_PORT{health_endpoint} 2>/dev/null || echo "UNAVAILABLE"
 ```
 
 - `200` → proceed to Step 2.
@@ -44,7 +44,7 @@ source infrastructure/.env && curl -s -o /dev/null -w "%{http_code}" http://loca
 **Step 2 — baked-baseline DB probe.** Confirm the running Postgres container for this repo instance is the baked baseline image. (A raw-curl login probe is unreliable: the application's CSRF filter blocks unauthenticated POSTs to `/api/v1/auth/login` with 403 before any DB lookup, so a login attempt cannot distinguish baked vs dev DB. Probe the DB container directly.)
 
 ```bash
-source infrastructure/.env && docker ps --filter "name=postgres-container-$REPO_INDEX" --format '{{.Image}}' 2>/dev/null
+source infra/.env && docker ps --filter "name=postgres-container-$REPO_INDEX" --format '{{.Image}}' 2>/dev/null
 ```
 
 - Output starts with the project's load-baseline image name (e.g., `load-baseline-postgres:`) → baked baseline DB confirmed, proceed to run the suite.

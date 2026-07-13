@@ -124,11 +124,11 @@ Derive the layer from the checkbox (e.g., `red-adapter h2` → layer `h2`, `gree
 
 **CHAINING: After each sub-step completes (Agent tool return), echo a 1-2 line status summary (agent name, outcome, pass/fail counts) to the user, then immediately dispatch the next sub-step. Do NOT wait for user input between sub-steps — the echo is informational only. (The two review passes are the exception: they dispatch together in one message, in the same batch as `/refactor`.)**
 
-**AGENT LOG: Before the first agent dispatch, clear the log: `> infrastructure/agent-progress.log`. The two review passes log too (they run in the `/refactor` batch, just before the final commit); after the final commit, include the log contents in the stop-and-report summary.**
+**AGENT LOG: Before the first agent dispatch, clear the log: `> infra/agent-progress.log`. The two review passes log too (they run in the `/refactor` batch, just before the final commit); after the final commit, include the log contents in the stop-and-report summary.**
 
 **LOG REMINDER: Every time you dispatch a sub-agent (Agent tool call), output this line immediately before the call:**
 ```
-> Dispatching {agent-name}. Live progress: tail -f infrastructure/agent-progress.log
+> Dispatching {agent-name}. Live progress: tail -f infra/agent-progress.log
 ```
 **This reminds the user where to watch. The line appears in conversation output before the agent starts, so the user can open a terminal and tail the log while the agent works.**
 

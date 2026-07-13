@@ -26,11 +26,18 @@
 - [x] `stories/01-.../endpoints.md`: Idempotency-Key и `GET /generations` (список) → "planned, not yet implemented", со ссылкой на нереализованные сценарии 3.1/6.1-6.4
 - [x] `api-specs/generations_get.yaml`: убрана вложенность `document.content` → плоские top-level `content`/`error_message`, сверено с реальным `GenerationDetailDto` (`backend/adapters/rest/src/dto/generation/generation_response_dto.py`)
 
-## Фаза 4 — архитектурное решение (обсудить перед правкой)
+## Фаза 4 — архитектурное решение
 
-- [ ] **`infrastructure/` vs `infra/`** — решить: (а) создать `infrastructure/`, перенести `infra/*`, или (б) переписать ссылки в `.claude/rules/infrastructure.md` + guidelines + skills (`/run-backend`, `/stop-backend`, `/test-acceptance`, `/demo`, `agent-logging.md`) на `infra/`
-- [ ] `/cleanup-chrome` skill: убрать `taskkill /IM chrome.exe /F`, заменить на убийство только процессов текущей сессии
-- [ ] Redis в `infra/docker-compose.yml`/CI — оставить как задел под `arq` или убрать
+Решено пользователем: (б) переписать ссылки `infrastructure/` → `infra/` во всех правилах/guidelines/skills, не переносить файлы физически.
+
+- [x] `.claude/rules/infrastructure.md` — путь исправлен на `infra/`, упрощено под реальный набор поддиректорий (нет terraform/nginx-templates/scripts)
+- [x] `.claude/guidelines/infrastructure-detail.md` — путь исправлен; **дополнительно найдено**: весь механизм per-instance port-isolation (`setup-ports.sh`, `infra/scripts/`, `infra/notes/local-dev-gotchas.md`) — generic-шаблон из фреймворка, реально не существует в этом проекте (`infra/.env` — фиксированные порты, без генератора). Задокументировано как есть, не выдумано
+- [x] `.claude/skills/run-backend/SKILL.md`, `run-frontend/SKILL.md`, `stop-backend/SKILL.md` — переписаны под реальный запуск через `docker compose -f infra/docker-compose.yml up/stop <service>` (сверено с `infra/architecture.md`), т.к. `infra/scripts/*.sh` не существуют
+- [x] `.claude/guidelines/agent-logging.md`, `.claude/skills/continue/SKILL.md` — путь лог-файла `infrastructure/agent-progress.log` → `infra/agent-progress.log`
+- [x] `.claude/guidelines/frontend-rules.md` — путь исправлен; **дополнительно найдено**: `notes/acceptance-test-gotchas.md` тоже никогда не был написан (ни в `infrastructure/`, ни в `infra/` нет `notes/`) — помечено честно, не сочинён контент
+- [x] `.claude/skills/test-acceptance/SKILL.md`, `demo/SKILL.md`, `qa-run/SKILL.md` — безопасная часть (`.env` путь) исправлена. **НЕ исправлено полностью**: эти три файла содержат более глубокий generic-шаблонный мусор — Gradle-синтаксис тестов (`backendTest --tests "*ClassName*"`, не соответствует реальному `pytest`/`vitest` стеку), ссылки на `infrastructure/scripts/test-acceptance.sh`/`run-backend.sh`/`stop-backend.sh` (не существуют), `infra/load-baseline/README.md` (не существует), `infrastructure/creds.txt` (не существует). Это не переименование путей, а нереализованный слой — нужна отдельная сессия, чтобы переписать эти три skill'а под реальные pytest/vitest команды и решить, нужен ли вообще load-baseline механизм для этого проекта
+- [x] `/cleanup-chrome` skill: убрал `taskkill /IM chrome.exe /F` (убивало все процессы в системе, включая чужие Selenium-сессии и браузер пользователя, прямое нарушение `infrastructure.md`) — заменил на поиск осиротевших процессов по дереву (родитель мёртв) и убийство по конкретному PID
+- [x] Redis в `infra/docker-compose.yml`/CI — решено оставить как задел под `arq` (known-debt #13)
 
 ## Фаза 5 — CI (исправлена трактовка аудита, не дубликат)
 

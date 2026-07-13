@@ -29,9 +29,9 @@ Read `.claude/tech/{backend}/templates/acceptance/` to find the UI test base cla
 
 ### 1. Load Port Configuration
 
-Read ports from `infrastructure/.env`:
+Read ports from `infra/.env`:
 ```bash
-source infrastructure/.env
+source infra/.env
 ```
 
 ### 2. Apply Demo Changes
