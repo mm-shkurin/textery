@@ -15,8 +15,10 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] red-acceptance
 - [x] design (see `decisions/register-validation-error-taxonomy-decision.md`)
 - [x] red-usecase
-- [~] green-usecase
-- [ ] adapters-discovery
+- [x] green-usecase
+- [x] red-usecase (coverage: Email constructor rejects non-string input) — test added already-green, existing isinstance guard covers it
+- [x] green-usecase (coverage: Email constructor rejects non-string input)
+- [~] adapters-discovery
 - [ ] green-acceptance
 
 ### Scenario 1.2: Reject email exceeding the length limit

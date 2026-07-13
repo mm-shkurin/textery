@@ -3,7 +3,6 @@ import pytest
 from statements.register_statements import RegisterStatements
 
 
-@pytest.mark.skip(reason="RED: AssertionError - expected ValidationException, got NotImplementedError (RegisterUser.execute not implemented)")
 class TestRegisterUsecaseMalformedEmail:
     """Scenario 1.1: Reject malformed email.
 
@@ -19,5 +18,14 @@ class TestRegisterUsecaseMalformedEmail:
         ids=["no_at_sign", "no_at_sign_dotted", "missing_domain", "missing_local_part", "double_at", "embedded_space"],
     )
     async def test_should_reject_malformed_email(self, register_statements: RegisterStatements, email):
+        await register_statements.attempt_registering_with_email(email)
+        register_statements.assert_invalid_email_error_raised()
+
+    @pytest.mark.parametrize(
+        "email",
+        [None, 12345],
+        ids=["none_value", "int_value"],
+    )
+    async def test_should_reject_non_string_email(self, register_statements: RegisterStatements, email):
         await register_statements.attempt_registering_with_email(email)
         register_statements.assert_invalid_email_error_raised()
