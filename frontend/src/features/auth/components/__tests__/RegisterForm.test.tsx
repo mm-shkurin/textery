@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { RegisterForm } from '../RegisterForm'
 
-describe.skip('RegisterForm', () => {
+describe('RegisterForm', () => {
   it('displays email, password, confirm password fields and submit button', () => {
     render(<RegisterForm />)
 
