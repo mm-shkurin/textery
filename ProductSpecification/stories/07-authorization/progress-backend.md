@@ -18,7 +18,9 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-usecase
 - [x] red-usecase (coverage: Email constructor rejects non-string input) — test added already-green, existing isinstance guard covers it
 - [x] green-usecase (coverage: Email constructor rejects non-string input)
-- [~] adapters-discovery
+- [x] adapters-discovery (Check 1 ports: [S] none — RegisterUser.execute takes no injected port for this scenario, no persistence on this path. Check 2 exceptions: ValidationException currently maps to {"detail": str(exc)} in exception_handlers.py, not the story's {"error_code","message"} shape → gap. Check 3 response shape: no /api/v1/auth/register endpoint exists yet (only generation router) → gap. Both gaps land in the same adapter module (rest), one pair.)
+- [~] red-adapter rest
+- [ ] green-adapter rest
 - [ ] green-acceptance
 
 ### Scenario 1.2: Reject email exceeding the length limit
