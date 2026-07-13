@@ -9,6 +9,7 @@ from selenium import webdriver as selenium_webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 
 from clients.application.application_client import ApplicationClient
+from statements.frontend.auth.register_page_statements import RegisterPageStatements
 from statements.frontend.landing_page_statements import LandingPageStatements
 from statements.frontend.generation.chat_workspace_statements import ChatWorkspaceStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
@@ -59,6 +60,11 @@ def mobile_webdriver():
 @pytest.fixture
 def landing_page_statements():
     return LandingPageStatements()
+
+
+@pytest.fixture
+def register_page_statements():
+    return RegisterPageStatements()
 
 
 @pytest.fixture
