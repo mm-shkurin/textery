@@ -1,0 +1,60 @@
+openapi: 3.0.3
+info:
+  title: Resend Verification Code
+  version: 1.0.0
+
+paths:
+  /api/v1/auth/resend-code:
+    post:
+      summary: Issue a new mocked verification code, invalidating the previous one
+      operationId: resendVerificationCode
+      tags:
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendCodeRequest'
+      responses:
+        '200':
+          description: >
+            New code issued; old code invalidated atomically with issuing the new one
+            (hazard-scan group 2 transaction-boundary guard). Cooldown/invalidation
+            updated via an atomic DB operation, not read-modify-write (hazard-scan
+            group 3 concurrency guard).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResendCodeResponse'
+        '409':
+          description: Account already verified — resend against a verified account is rejected.
+        '429':
+          description: >
+            Cooldown active — another resend was issued less than 60 seconds ago for
+            this account.
+        '500':
+          description: Internal server error — generic client-safe message only.
+
+components:
+  schemas:
+    ResendCodeRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+    ResendCodeResponse:
+      type: object
+      properties:
+        verification_code:
+          type: string
+          pattern: '^[0-9]{6}$'
+        code_expires_at:
+          type: string
+          format: date-time
+        resend_available_at:
+          type: string
+          format: date-time

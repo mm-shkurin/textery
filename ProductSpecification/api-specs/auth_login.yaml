@@ -1,0 +1,69 @@
+openapi: 3.0.3
+info:
+  title: Login
+  version: 1.0.0
+
+paths:
+  /api/v1/auth/login:
+    post:
+      summary: Authenticate with email+password, issue JWT access + refresh token pair
+      operationId: loginUser
+      tags:
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Credentials valid, account verified, not locked out.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: >
+            Invalid email or password — single generic message for both cases
+            (account-enumeration mitigation, 07_Authorization_Notes.md). Increments the
+            failed-attempt counter via an atomic DB operation (hazard-scan group 3
+            lost-update guard), never plain read-modify-write.
+        '403':
+          description: >
+            Account not verified (login rejected until /auth/verify succeeds), or
+            account locked out after N consecutive failures — distinct error_code per
+            case so the client can show the right message, but neither leaks which
+            failure caused it beyond that.
+        '500':
+          description: >
+            Internal server error. A failure/timeout reading lockout or verification
+            state fails closed — login denied, never silently allowed through
+            (hazard-scan group 5 fail-open guard).
+
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        access_token_expires_at:
+          type: string
+          format: date-time
+        refresh_token_expires_at:
+          type: string
+          format: date-time

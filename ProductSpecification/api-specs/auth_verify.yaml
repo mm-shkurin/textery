@@ -1,0 +1,58 @@
+openapi: 3.0.3
+info:
+  title: Verify Email Code
+  version: 1.0.0
+
+paths:
+  /api/v1/auth/verify:
+    post:
+      summary: Confirm the verification code and activate the account
+      operationId: verifyEmailCode
+      tags:
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyRequest'
+      responses:
+        '200':
+          description: >
+            Code accepted, is_verified=true. Re-submitting the same already-consumed
+            code again returns this same 200 (idempotent re-run — hazard-scan group 2
+            guard), not a duplicate state transition or an error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyResponse'
+        '400':
+          description: >
+            Code incorrect or expired (exact-expiry-instant treated as expired) —
+            generic client-safe error, does not reveal whether the email exists.
+        '409':
+          description: Account already verified — resend/verify against a verified account is rejected.
+        '500':
+          description: Internal server error — generic client-safe message only.
+
+components:
+  schemas:
+    VerifyRequest:
+      type: object
+      required:
+        - email
+        - code
+      properties:
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+          pattern: '^[0-9]{6}$'
+          description: Compared as a string, never coerced to an integer.
+    VerifyResponse:
+      type: object
+      properties:
+        is_verified:
+          type: boolean
+          enum: [true]
