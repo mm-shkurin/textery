@@ -3,10 +3,15 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from shared.exceptions import ValidationException
-from router.auth.auth_router import router as auth_router, get_register_user_usecase
+
+auth_router_module = pytest.importorskip(
+    "router.auth.auth_router",
+    reason="RED: router.auth.auth_router module does not exist (ModuleNotFoundError)",
+)
+auth_router = auth_router_module.router
+get_register_user_usecase = auth_router_module.get_register_user_usecase
 
 
-@pytest.mark.skip(reason="RED: router.auth.auth_router module does not exist (ModuleNotFoundError)")
 class TestRegisterPostRouterMalformedEmail:
     """Scenario 1.1: Reject malformed email.
 
