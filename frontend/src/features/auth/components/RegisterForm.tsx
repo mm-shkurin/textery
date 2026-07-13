@@ -1,14 +1,15 @@
+import './AuthForm.css'
 import './RegisterForm.css'
 
 export function RegisterForm() {
   return (
-    <div className="register-card">
+    <div className="auth-card register-card">
       <h1>Регистрация в Textery AI</h1>
       <p className="register-subtitle">
         Создайте аккаунт по email, чтобы начать генерировать документы
       </p>
       <form>
-        <div className="register-field">
+        <div className="auth-field">
           <label htmlFor="email">Email</label>
           <input
             id="email"
@@ -17,7 +18,7 @@ export function RegisterForm() {
             data-testid="register-email-input"
           />
         </div>
-        <div className="register-field">
+        <div className="auth-field">
           <label htmlFor="password">Пароль</label>
           <input
             id="password"
@@ -29,7 +30,7 @@ export function RegisterForm() {
             Минимум 8 символов, включая цифру, заглавную, строчную буквы и спецсимвол
           </div>
         </div>
-        <div className="register-field">
+        <div className="auth-field">
           <label htmlFor="confirm">Повторите пароль</label>
           <input
             id="confirm"
@@ -38,7 +39,7 @@ export function RegisterForm() {
             data-testid="register-confirm-password-input"
           />
         </div>
-        <button type="submit" className="register-submit" data-testid="register-submit-button">
+        <button type="submit" className="auth-submit" data-testid="register-submit-button">
           Зарегистрироваться
         </button>
         <p className="register-terms">

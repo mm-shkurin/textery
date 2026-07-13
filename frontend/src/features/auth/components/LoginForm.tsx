@@ -1,3 +1,4 @@
+import './AuthForm.css'
 import './LoginForm.css'
 
 export function LoginForm() {
@@ -6,10 +7,10 @@ export function LoginForm() {
   }
 
   return (
-    <div className="login-card">
+    <div className="auth-card login-card">
       <h1>Вход в Textery AI</h1>
       <form onSubmit={handleSubmit}>
-        <div className="login-field">
+        <div className="auth-field">
           <label htmlFor="login-email">Email</label>
           <input
             id="login-email"
@@ -19,7 +20,7 @@ export function LoginForm() {
             data-testid="login-email-input"
           />
         </div>
-        <div className="login-field">
+        <div className="auth-field">
           <label htmlFor="login-password">Пароль</label>
           <input
             id="login-password"
@@ -29,7 +30,7 @@ export function LoginForm() {
             data-testid="login-password-input"
           />
         </div>
-        <button type="submit" className="login-submit" data-testid="login-submit-button">
+        <button type="submit" className="auth-submit" data-testid="login-submit-button">
           Войти
         </button>
       </form>
