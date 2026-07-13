@@ -20,7 +20,19 @@ Each scenario type (backend, integration, frontend, security, load, infrastructu
 
 ## Progress Tracking
 
-Each story has a progress file at `ProductSpecification/stories/NN-story-name/progress.md`; each task at `ProductSpecification/tasks/{N}-{type}-{slug}/progress.md`. It is the single source of truth for **state** — which work unit runs next.
+Each task has a progress file at `ProductSpecification/tasks/{N}-{type}-{slug}/progress.md`.
+
+Each story's progress is split across up to three files under
+`ProductSpecification/stories/NN-story-name/` to let backend and frontend work proceed
+in parallel without both people editing the same file: `progress.md` (story-level
+narrative, decisions, and the Spec checklist — shared, edit only for context that
+doesn't belong to one layer), `progress-backend.md` (Backend + Integration + Security +
+Load + Infrastructure Scenarios — acceptance steps stay inline per scenario, they aren't
+a separable layer), and `progress-frontend.md` (Frontend Scenarios). A story bootstrapped
+before this split may still have everything in one `progress.md` — check which files
+exist before assuming the three-file layout. `ProductSpecification/stories.md` is the
+single cross-file rollup of overall story progress; each of the three files together are
+the source of truth for **state** — which work unit runs next within their scope.
 
 Status markers:
 

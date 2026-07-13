@@ -55,9 +55,16 @@
 
 ## Фаза 6 — разделение бек/фронт (запрос сокомандника)
 
-- [ ] Разбить `progress.md` истории на `progress-backend.md`/`progress-frontend.md`/`progress-acceptance.md`
-- [ ] Обновить `workflow.md`/`workflow-detail.md` под новую структуру progress-файлов
-- [ ] Зафиксировать правило владения файлами/слоями между двумя разработчиками в `CLAUDE.md`
+Решено: 2 файла-чеклиста (не 3 — acceptance-шаги вшиты внутрь backend-сценариев,
+не отделимы), плюс исходный `progress.md` остаётся нарративом/агрегатором.
+`stories.md` уже играет роль "целостной картины" — отдельный третий файл не нужен.
+
+- [x] `progress-backend.md` — Backend + Integration + Security + Load + Infrastructure Scenarios
+- [x] `progress-frontend.md` — Frontend Scenarios
+- [x] `progress.md` урезан до нарратива/decisions/Spec-чеклиста, добавлен указатель на новые файлы
+- [x] `.claude/rules/workflow.md` — "Progress Tracking" переписан под 2-файловую+narrative схему
+- [x] `.claude/skills/continue/SKILL.md` — резолюция аргумента (`/continue 1 backend`), чтение нужного файла, behavior commit только своего слоя, "Updating stories.md" под split-layout
+- [ ] Зафиксировать правило владения файлами/слоями между двумя разработчиками в `CLAUDE.md` (опционально, не обязательно — split-layout сам по себе уже минимизирует конфликты)
 
 ## Фаза 7 — верификация живым стеком (опционально, требует Postgres/браузер)
 

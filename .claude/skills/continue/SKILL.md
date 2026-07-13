@@ -9,15 +9,22 @@ description: Continue working on a story or task by reading progress.md, executi
 
 1. **Identify work item** from argument
 2. **Backlog promotion** -- if the story row is in the **Backlog** table in `ProductSpecification/stories.md`, move it to **In Progress** before proceeding
-3. **Read progress** file, bootstrap if missing (stories only)
-4. **Find next step** -- first `[~]` or `[ ]` entry
+3. **Read progress** file(s), bootstrap if missing (stories only). A story may have a
+   single `progress.md`, or the split layout: `progress.md` (narrative/Spec, shared) +
+   `progress-backend.md` + `progress-frontend.md` (per-layer scenario checklists). Check
+   which files exist (`find` the story folder) before assuming either layout. If the
+   argument or current git context makes clear which layer you're working (e.g. `/continue
+   1 backend`, or the most recent commits touched `backend/`), read only that layer's file
+   plus the shared `progress.md` -- don't load the other layer's file unless a step
+   references it.
+4. **Find next step** -- first `[~]` or `[ ]` entry in the relevant file
 5. **Read journey context** -- read `carryover.md` (story root, if it exists) and the current scenario's summary file (`summaries/{scenario-slug}.md`, if it exists). Treat both as additional context for the work unit -- they preserve predictions, decisions, surprises, and quirks from prior conversations. `/continue` only READS these files; it never writes them (the `/handoff` skill is the sole writer).
 6. **Load ADR context** -- check for `decisions/*-decision.md` files in the story directory. If any exist AND the current step references the ADR (via "see ADR" annotation or matching scenario), read it. ADRs contain architectural decisions, schema changes, edge cases, and implementation guidance that the work unit needs.
 7. **Execute one work unit** -- dispatch sub-skills per tables below
 8. **Discovery gates** -- when the next step is `[ ] adapters-discovery`, read usecase constructor to identify ports and map to adapters (see `.claude/guidelines/workflow-detail.md`). Mark `[x] adapters-discovery`, insert concrete steps below it, commit progress.md. The bug-task `[ ] steps discovery` gate resolves the same way via its Work Unit Dispatch row -- run its hazard-catalogue fan-out, then insert the TDD steps.
 9. **Update progress** -- mark completed, advance next
 10. **Update stories.md** -- for stories only, update the phase columns in `ProductSpecification/stories.md` (see below)
-11. **Behavior commit** -- commit the work unit's behavior change (include progress.md, and `ProductSpecification/stories.md` for stories). If ALL checkboxes are now `[x]` or `[S]` (no `[ ]` or `[~]` remaining), move the task folder to `ProductSpecification/tasks/done/` and include the move in this commit.
+11. **Behavior commit** -- commit the work unit's behavior change (include whichever progress file(s) you actually edited -- `progress-backend.md`/`progress-frontend.md` if the split layout exists and you worked one layer, or `progress.md` if the story predates the split; plus `ProductSpecification/stories.md` for stories). Never touch the other layer's progress file in this commit -- that's the point of the split. If ALL checkboxes are now `[x]` or `[S]` (no `[ ]` or `[~]` remaining) across every progress file that exists for the story/task, move the task folder to `ProductSpecification/tasks/done/` and include the move in this commit.
 12. **Refactor batch + pre-commit review passes** -- dispatch `/refactor` and the two review passes (`agent-review-agent` + `premortem-agent`) concurrently over the behavior commit (see "Pre-Commit Review Passes" below); the passes are non-gating -- collect their verdicts for the report. Then the refactor commit (`/refactor`'s changes only; skipped if it changed nothing). Skip both `/refactor` and the passes for a progress-only behavior commit. Fold the review verdicts into the stop-and-report.
 
 The high-level lifecycle, status markers, and atomic-unit rule are in `.claude/rules/workflow.md`; the detailed scenario sequences, adapter-discovery procedure, progress mechanics, and task sequences are in `.claude/guidelines/workflow-detail.md`. Progress file format examples are in `.claude/templates/workflow/progress-format.md`.
@@ -27,7 +34,8 @@ The high-level lifecycle, status markers, and atomic-unit rule are in `.claude/r
 | Argument | Resolution |
 |----------|------------|
 | `task N` | Find `ProductSpecification/tasks/N-*/progress.md` |
-| Bare number or name | Resolve story via `ProductSpecification/stories.md` then `ProductSpecification/stories/NN-story-name/progress.md` |
+| Bare number or name | Resolve story via `ProductSpecification/stories.md`, then read the story folder's progress file(s) -- `progress.md` alone, or `progress.md` + `progress-backend.md`/`progress-frontend.md` if the split layout exists |
+| Bare number + `backend`/`frontend` (e.g. `1 backend`) | Same story resolution, but read only that layer's `progress-{layer}.md` plus the shared `progress.md` |
 | No argument | Scan recent git log for `Story N` or `Task N` references; most recent wins |
 
 **File lookup:** Use `find` via Bash (not Glob) when searching for progress files or story folders. Glob is unreliable on Windows/MINGW with large `.gitignore` files. For story resolution, derive the folder name from `ProductSpecification/stories.md` (e.g., story 5 "Create a task" → `05-create-task`) and Read the progress file directly. Use `ls` or `find` via Bash only when the folder name is ambiguous.
@@ -142,9 +150,13 @@ Derive the layer from the checkbox (e.g., `red-adapter h2` → layer `h2`, `gree
 
 ## Updating stories.md
 
-After updating `progress.md` for a **story** (not tasks), update the story's row in `ProductSpecification/stories.md` to reflect current phase status. The file has columns: `Spec | Backend | Integration | Frontend | Security | Load | Infra | Status`.
+After updating progress for a **story** (not tasks), update the story's row in `ProductSpecification/stories.md` to reflect current phase status. The file has columns: `Spec | Backend | Integration | Frontend | Security | Load | Infra | Status`.
 
-**Phase column values** — derive from `progress.md` sections:
+**Phase column values** — derive from the relevant progress file's sections. If the
+story uses the split layout: `Spec` comes from `progress.md`; `Backend`/`Integration`/
+`Security`/`Load`/`Infra` come from `progress-backend.md`; `Frontend` comes from
+`progress-frontend.md`. If the story predates the split, all columns derive from the
+single `progress.md` as before.
 - `✅` — all checkboxes in that section are `[x]` or `[S]`
 - `🔧` — section has at least one `[~]` or `[ ]` checkbox (work in progress or next up within the current active lifecycle phase)
 - `—` — section exists but no work started yet (all `[ ]`)
