@@ -12,8 +12,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 ## Backend Scenarios (01_API_Tests.md)
 
 ### Scenario 1.1: Reject malformed email
-- [~] red-acceptance
-- [ ] design
+- [x] red-acceptance
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
