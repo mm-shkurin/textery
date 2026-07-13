@@ -153,3 +153,26 @@
     opacity: 1;
   }
 }
+
+@media (max-width: 768px) {
+  .cw-header {
+    padding: 16px 20px;
+  }
+
+  .cw-container {
+    padding: 24px 16px 64px;
+  }
+
+  .cw-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .doc-area {
+    order: 1;
+  }
+
+  .chat-panel {
+    order: 2;
+    padding: 16px;
+  }
+}

@@ -102,6 +102,16 @@ with no margin, `DEFAULT_VOLUME_PAGES` still hardcoded with no selector UI.
   `DocumentType` had, but nothing else currently references it — not unified since
   there's no second consumer yet (would be premature).
 
+## Closure (2026-07-13, docs cleanup session)
+
+No further remediation pass ran after the fifth (2026-07-10). Score stands at
+**2.5/3.0**, closed at that number — not re-audited a sixth time as part of this
+docs-cleanup session (re-running the external grading prompt is a separate exercise,
+not a documentation fix). Remaining known gaps, carried forward as-is: global error
+boundary, `App.tsx` state persistence across refresh, `ChatWorkspaceDoc.css` at the
+200-line cap with no margin, `DEFAULT_VOLUME_PAGES` hardcoded with no selector UI. A
+future remediation pass should start from this list rather than re-discovering it.
+
 ## Where this sits relative to the story
 
 The touched files (`ChatWorkspace.tsx`, `useGeneration.ts`, `generationApi.ts`,

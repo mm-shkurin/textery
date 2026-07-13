@@ -172,6 +172,27 @@ OpenRouter references in known-debt #3 and #5 to say GigaChat, once the slice is
 working and doc-churn time exists. Confirm where GigaChat creds live (`backend/.env`
 per #3) and that the TLS-cert handling is done properly, not disabled globally.
 
+## 13. Task queue is FastAPI `BackgroundTasks` + DB-sweep, not `arq` — `arq` is still the target
+Found by the 2026-07-13 project audit (`_project_audit/04_DOCUMENTATION_DRIFT.md` #2):
+`technology.md` and known-debt #6 describe the queue as `arq` (Redis-backed), but no code
+uses `arq` — `backend/requirements.txt` has no `arq` dependency, and generation actually
+runs via `NoOpGenerationQueue` + FastAPI `BackgroundTasks.add_task()` inline in the ASGI
+process, with a periodic DB-based sweep (`main.py` lifespan) reconciling stale/orphaned
+generations instead of a real broker-backed retry/redelivery mechanism. Redis is still
+provisioned in `infra/docker-compose.yml` and CI (`REDIS_URL` env var present) but nothing
+in the codebase connects to it — pure placeholder for the day this debt is paid off.
+This was a deliberate simplification under the Friday sprint-1 deadline (same root cause
+as #10's off-framework evening-demo slice), not a reversal of the #6 decision to use `arq`
+over Celery — `arq` is still the intended real implementation, just not built yet.
+**Resurfaces:** when picking up real task-queue work — implement `arq` worker
+(`backend/application/worker.py` + `WorkerSettings`), wire `REDIS_URL`, replace
+`NoOpGenerationQueue`/`BackgroundTasks` with a real `arq` producer, and only then update
+`technology.md`'s Task queue row back to describe `arq` as implemented (it currently
+already documents the interim `BackgroundTasks`+sweep reality, corrected 2026-07-13).
+Needed once: real worker redelivery/retry semantics (scenarios 3.2, 5.4-5.6), horizontal
+scaling of generation processing beyond one ASGI process, or removing the unused
+Redis service becomes worth doing instead of leaving it as a placeholder.
+
 ## 12. CLOSED 2026-07-10 — Landing page acceptance test red — `hero-subheading` testid no longer exists
 Found 2026-07-10 during scenario 4.1's premortem pass. `test_should_display_hero_and_primary_cta`
 (`acceptance/tests/frontend/landing/test_landing_page_acceptance.py`) times out on
