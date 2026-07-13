@@ -13,7 +13,7 @@ class AuthStatements:
     # ProductSpecification/stories/07-authorization/endpoints.md.
     EXPECTED_MALFORMED_EMAIL_ERROR: ClassVar[dict] = {
         "error_code": "INVALID_EMAIL",
-        "message": "Email address is not valid.",
+        "message": "The email address is not valid.",
     }
 
     def __init__(self, client: ApplicationClient):

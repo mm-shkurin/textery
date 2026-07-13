@@ -23,10 +23,10 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-adapter rest (must update the shared `validation_exception_handler` in `backend/adapters/rest/src/error_handling/exception_handlers.py` to emit `{error_code, message}` -- not a router-local shadow handler; the red test's isolated mini-FastAPI app doesn't exercise the shared handler, so nothing else forces this. Also add/update `test_exception_handlers.py` to pin the new shape.)
 - [x] red-adapter rest (coverage: get_register_user_usecase DI stub raises NotImplementedError) — test added already-green, existing stub's unconditional raise covers it
 - [S] green-adapter rest (coverage: get_register_user_usecase DI stub raises NotImplementedError) — no production change needed, stub already raises NotImplementedError
-- [ ] green-acceptance
+- [x] green-acceptance
 
 ### Scenario 1.2: Reject email exceeding the length limit
-- [ ] red-acceptance
+- [~] red-acceptance
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase

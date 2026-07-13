@@ -27,10 +27,13 @@ from fastapi import FastAPI
 from container import (
     create_generate_document,
     create_get_generation,
+    create_register_user,
     create_request_generation,
     run_stale_generation_sweep,
 )
 from error_handling.exception_handlers import unhandled_exception_handler, validation_exception_handler
+from router.auth.auth_router import get_register_user_usecase
+from router.auth.auth_router import router as auth_router
 from router.generation.generation_router import (
     get_generate_document_usecase,
     get_get_generation_usecase,
@@ -66,9 +69,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(generation_router)
+app.include_router(auth_router)
 app.add_exception_handler(ValidationException, validation_exception_handler)
 app.add_exception_handler(Exception, unhandled_exception_handler)
 
 app.dependency_overrides[get_request_generation_usecase] = create_request_generation
 app.dependency_overrides[get_get_generation_usecase] = create_get_generation
 app.dependency_overrides[get_generate_document_usecase] = create_generate_document
+app.dependency_overrides[get_register_user_usecase] = create_register_user

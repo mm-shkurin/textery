@@ -1,9 +1,6 @@
-import pytest
-
 from tests.backend.abstract_backend_test import AbstractBackendTest
 
 
-@pytest.mark.skip(reason="RED: POST /api/v1/auth/register not implemented (404 Not Found)")
 class TestRegisterAcceptance(AbstractBackendTest):
     """Scenario 1.1: Reject malformed email.
 

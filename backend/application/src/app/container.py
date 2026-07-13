@@ -4,6 +4,7 @@ from typing import AsyncIterator
 from uuid import UUID
 
 from access.generation.generation_storage import SqlAlchemyGenerationStorage
+from auth.register_user import RegisterUser
 from generation.generate_document import GenerateDocument
 from generation.get_generation import GetGeneration
 from generation.request_generation import RequestGeneration
@@ -75,6 +76,10 @@ async def create_get_generation() -> AsyncIterator[GetGeneration]:
         yield GetGeneration(storage=storage)
     finally:
         await session.close()
+
+
+def create_register_user() -> RegisterUser:
+    return RegisterUser()
 
 
 def _stale_after_minutes() -> int:
