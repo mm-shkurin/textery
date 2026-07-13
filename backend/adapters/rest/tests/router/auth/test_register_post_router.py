@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from shared.exceptions import ValidationException
+from error_handling.exception_handlers import validation_exception_handler
 
 auth_router_module = pytest.importorskip(
     "router.auth.auth_router",
@@ -23,6 +24,7 @@ class TestRegisterPostRouterMalformedEmail:
     async def test_should_return_400_with_error_code_and_message_for_malformed_email(self, mocker):
         app = FastAPI()
         app.include_router(auth_router)
+        app.add_exception_handler(ValidationException, validation_exception_handler)
 
         mock_usecase = mocker.Mock()
         mock_usecase.execute = mocker.AsyncMock(
