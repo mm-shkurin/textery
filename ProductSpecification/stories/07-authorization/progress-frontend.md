@@ -29,8 +29,8 @@ fold into green-frontend now since cheap, or track explicitly if deferred):
 
 - [x] red-selenium
 - [x] red-frontend
-- [~] green-frontend
-- [ ] red-frontend-api
+- [x] green-frontend
+- [~] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
 - [ ] green-selenium
