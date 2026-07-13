@@ -32,8 +32,8 @@ fold into green-frontend now since cheap, or track explicitly if deferred):
 - [x] green-frontend
 - [S] red-frontend-api (no API call in this scenario — page-display only, per tests/02_UI_Tests.md §1 note)
 - [S] green-frontend-api (see above)
-- [~] align-design
-- [ ] green-selenium
+- [x] align-design
+- [~] green-selenium
 - [ ] demo
 
 ### 1.3: Verification-code screen displays a 6-digit input and resend action
