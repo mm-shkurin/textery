@@ -9,3 +9,9 @@
 **Quirk:** The existing REST exception handler (`validation_exception_handler` in `backend/adapters/rest/src/error_handling/exception_handlers.py`) maps `ValidationException` to `{"detail": str(exc)}` — not the `{"error_code", "message"}` shape this story's endpoints.md requires.
 **Where:** `backend/adapters/rest/src/error_handling/exception_handlers.py`.
 **Implication:** Every auth scenario that raises `ValidationException` (all of 1.1-1.5 and beyond) needs this handler remapped before its `green-acceptance` can pass — fix once at `red-adapter rest`/`green-adapter rest` for 1.1, not per-scenario.
+
+## red-adapter rest (2026-07-13)
+
+**Mistake:** Disabled the new rest-adapter test with a class-level `@pytest.mark.skip` while the test module imported a not-yet-existing module (`router.auth.auth_router`) at file scope.
+**Why wrong:** `@pytest.mark.skip` only stops a *collected* test from running — it can't stop a `ModuleNotFoundError` raised during import, which happens before pytest evaluates the decorator. The whole `backend/adapters/rest` test module failed to collect, not just the new test (caught by agent-review, verdict BLOCK).
+**Correct location/approach:** `pytest.importorskip("router.auth.auth_router", reason=...)` at module scope, then read `router`/`get_register_user_usecase` off the returned module object — defers the import so it becomes a real skip instead of a collection error.
