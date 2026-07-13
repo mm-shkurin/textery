@@ -16,10 +16,10 @@
 
 ## Фаза 2 — провайдер/технологии (правда против документации)
 
-- [ ] `ProductSpecification/technology.md`: OpenRouter/`openai` → GigaChat; `arq`+Redis → `BackgroundTasks`+DB-sweep; MSW → `vi.mock()`; добавить `oxlint`; заполнить "Browser Testing" (ссылка на `.claude/guidelines/frontend-rules.md`)
-- [ ] `ProductSpecification/BriefProductDescription.md`, `ExpectedLoad.md` — провайдер GigaChat
-- [ ] `.memory-bank/tech-details/backend.md`, `infra/.memory-bank/index.md` — обновить или пометить "замороженный снимок на дату X"
-- [ ] `infra/.memory-bank/open-questions.md` — убрать "CI/CD platform: not chosen yet"
+- [x] `ProductSpecification/technology.md`: OpenRouter/`openai` → GigaChat; `arq`+Redis → `BackgroundTasks`+DB-sweep; MSW → `vi.mock()`; добавлен `oxlint`; заполнен "Browser Testing" (ссылка на `.claude/guidelines/frontend-rules.md`)
+- [x] `ProductSpecification/BriefProductDescription.md`, `ExpectedLoad.md` — провайдер GigaChat
+- [x] `.memory-bank/tech-details/backend.md` помечен "замороженный снимок 2026-07-08"; `infra/.memory-bank/index.md` обновлён на GigaChat env vars
+- [x] `infra/.memory-bank/open-questions.md` — "CI/CD platform: not chosen yet" закрыт (CI существует с 2026-07-10)
 
 ## Фаза 3 — API-спеки под факт
 
