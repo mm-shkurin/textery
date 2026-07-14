@@ -41,8 +41,7 @@ describe('LoginForm', () => {
     expect(submitEvent).toBe(false)
   })
 
-  // TDD Red Phase - Scenario 2.1: show-password toggle not implemented in LoginForm.tsx
-  it.skip('does not submit the form when the show-password toggle is clicked', () => {
+  it('does not submit the form when the show-password toggle is clicked', () => {
     render(
       <MemoryRouter>
         <LoginForm />
@@ -57,8 +56,7 @@ describe('LoginForm', () => {
     expect(submitHandler).not.toHaveBeenCalled()
   })
 
-  // TDD Red Phase - Scenario 2.1: show-password toggle not implemented in LoginForm.tsx
-  it.skip('reverts the password field back to masked when the toggle is clicked twice', () => {
+  it('reverts the password field back to masked when the toggle is clicked twice', () => {
     render(
       <MemoryRouter>
         <LoginForm />

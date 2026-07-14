@@ -84,10 +84,10 @@ scenarios) or a dedicated follow-up, not scope-crept into this step.
 ### 2.1: Password field visibility toggle
 - [x] red-selenium
 - [x] red-frontend
-- [~] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
+- [x] green-frontend
+- [S] red-frontend-api (no API call in this scenario — client-side visibility toggle only, per tests/02_UI_Tests.md §2.1)
+- [S] green-frontend-api (see above)
+- [~] align-design
 - [ ] green-selenium
 - [ ] demo
 
