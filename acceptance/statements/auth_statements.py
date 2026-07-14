@@ -49,6 +49,9 @@ class AuthStatements:
     async def given_registration_request_with_password_missing_uppercase(self) -> RegisterResponseDto:
         return await self._register_with_password("abcdefg1!")
 
+    async def given_registration_request_with_password_missing_lowercase(self) -> RegisterResponseDto:
+        return await self._register_with_password("ABCDEFG1!")
+
     async def given_registration_request_with_password_missing_special_character(
         self,
     ) -> RegisterResponseDto:

@@ -23,6 +23,10 @@ class TestRegisterPasswordPolicyAcceptance(AbstractBackendTest):
     When the client submits the request
     Then the response is a validation error
 
+    Given a registration request whose password has no lowercase letter
+    When the client submits the request
+    Then the response is a validation error
+
     Given a registration request whose password exceeds 128 characters
     When the client submits the request
     Then the response is a validation error
@@ -47,6 +51,11 @@ class TestRegisterPasswordPolicyAcceptance(AbstractBackendTest):
         response = (
             await auth_statements.given_registration_request_with_password_missing_special_character()
         )
+
+        auth_statements.assert_validation_error(response, auth_statements.EXPECTED_WEAK_PASSWORD_ERROR)
+
+    async def test_should_reject_password_missing_lowercase(self, auth_statements):
+        response = await auth_statements.given_registration_request_with_password_missing_lowercase()
 
         auth_statements.assert_validation_error(response, auth_statements.EXPECTED_WEAK_PASSWORD_ERROR)
 
