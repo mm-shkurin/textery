@@ -1,4 +1,6 @@
+from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
@@ -12,6 +14,8 @@ EDITOR_BREADCRUMB = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} [data-testid='e
 LOADING_SKELETON = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-loading-skeleton")
 CONTENT_PLACEHOLDER = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-placeholder")
 TOOLBAR_BUTTON = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-toolbar-btn")
+CONTENT_AREA = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-content-area")
+BOLD_TEXT = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-content-area strong")
 
 EXPECTED_DOKLAD_BREADCRUMB = "Доклад · Ручной режим"
 EXPECTED_PLACEHOLDER_TEXT = "Начните печатать…"
@@ -24,6 +28,10 @@ TOOLBAR_BUTTON_ARIA_LABELS = {
     "italic": ["Курсив"],
 }
 EXPECTED_TOOLBAR_BUTTON_COUNT = 7
+BOLD_BUTTON = (
+    By.CSS_SELECTOR,
+    f"{MANUAL_EDITOR_SELECTOR} .me-toolbar-btn[aria-label='{TOOLBAR_BUTTON_ARIA_LABELS['bold'][0]}']",
+)
 
 
 class ManualEditorStatements(BaseFrontendStatements):
@@ -75,3 +83,24 @@ class ManualEditorStatements(BaseFrontendStatements):
             f"expected exactly {EXPECTED_TOOLBAR_BUTTON_COUNT} toolbar controls, "
             f"found {len(toolbar_buttons)}"
         )
+
+    def type_text_in_editor(self, driver: WebDriver, text: str) -> None:
+        content_area = self._wait_for_visible(driver, CONTENT_AREA)
+        content_area.click()
+        content_area.send_keys(text)
+
+    def select_all_text_in_editor(self, driver: WebDriver) -> None:
+        content_area = self._wait_for_visible(driver, CONTENT_AREA)
+        content_area.click()
+        ActionChains(driver).key_down(Keys.CONTROL).send_keys("a").key_up(Keys.CONTROL).perform()
+
+    def apply_bold_formatting(self, driver: WebDriver) -> None:
+        self._wait_for_visible(driver, BOLD_BUTTON).click()
+
+    def assert_selected_text_is_bold(self, driver: WebDriver, expected_text: str) -> None:
+        self._assert_element_text_equals(driver, BOLD_TEXT, expected_text, "bold text")
+
+    def assert_bold_button_is_active(self, driver: WebDriver) -> None:
+        button = self._wait_for_visible(driver, BOLD_BUTTON)
+        pressed = button.get_attribute("aria-pressed")
+        assert pressed == "true", f"expected bold toolbar button to be aria-pressed='true', got '{pressed}'"
