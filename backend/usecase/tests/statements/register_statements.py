@@ -33,29 +33,25 @@ class RegisterStatements:
             self.thrown_exception = exc
 
     def assert_invalid_email_error_raised(self) -> None:
-        assert isinstance(self.thrown_exception, ValidationException), (
-            f"expected ValidationException to be raised, got "
-            f"{type(self.thrown_exception).__name__ if self.thrown_exception else 'no exception'}"
-        )
-        assert self.thrown_exception.error_code == self.EXPECTED_INVALID_EMAIL_ERROR_CODE, (
-            f"expected error_code '{self.EXPECTED_INVALID_EMAIL_ERROR_CODE}', "
-            f"got '{self.thrown_exception.error_code}'"
-        )
-        assert self.thrown_exception.message == self.EXPECTED_INVALID_EMAIL_MESSAGE, (
-            f"expected message '{self.EXPECTED_INVALID_EMAIL_MESSAGE}', "
-            f"got '{self.thrown_exception.message}'"
+        self._assert_validation_error_raised(
+            self.EXPECTED_INVALID_EMAIL_ERROR_CODE, self.EXPECTED_INVALID_EMAIL_MESSAGE
         )
 
     def assert_invalid_password_error_raised(self) -> None:
+        self._assert_validation_error_raised(
+            self.EXPECTED_INVALID_PASSWORD_ERROR_CODE, self.EXPECTED_INVALID_PASSWORD_MESSAGE
+        )
+
+    def _assert_validation_error_raised(self, expected_error_code: str, expected_message: str) -> None:
         assert isinstance(self.thrown_exception, ValidationException), (
             f"expected ValidationException to be raised, got "
             f"{type(self.thrown_exception).__name__ if self.thrown_exception else 'no exception'}"
         )
-        assert self.thrown_exception.error_code == self.EXPECTED_INVALID_PASSWORD_ERROR_CODE, (
-            f"expected error_code '{self.EXPECTED_INVALID_PASSWORD_ERROR_CODE}', "
+        assert self.thrown_exception.error_code == expected_error_code, (
+            f"expected error_code '{expected_error_code}', "
             f"got '{self.thrown_exception.error_code}'"
         )
-        assert self.thrown_exception.message == self.EXPECTED_INVALID_PASSWORD_MESSAGE, (
-            f"expected message '{self.EXPECTED_INVALID_PASSWORD_MESSAGE}', "
+        assert self.thrown_exception.message == expected_message, (
+            f"expected message '{expected_message}', "
             f"got '{self.thrown_exception.message}'"
         )
