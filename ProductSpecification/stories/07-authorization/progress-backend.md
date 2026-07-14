@@ -49,7 +49,7 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] red-acceptance
 - [x] design — usecase-level equality check in RegisterUser.execute after Password validates; raise ValidationException(error_code="PASSWORD_MISMATCH", message="The password confirmation does not match."), reusing existing exception mapping. No ADR (trivial, taxonomy already locked in register-validation-error-taxonomy-decision.md).
 - [x] red-usecase
-- [ ] green-usecase
+- [x] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
 

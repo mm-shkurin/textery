@@ -1,9 +1,6 @@
-import pytest
-
 from statements.register_statements import RegisterStatements
 
 
-@pytest.mark.skip(reason="RED: RegisterUser.execute does not compare password to confirm_password")
 class TestRegisterUsecasePasswordConfirmationMismatch:
     """Scenario 1.4: Reject password/confirm_password mismatch.
 

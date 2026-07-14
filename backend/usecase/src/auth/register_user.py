@@ -19,3 +19,8 @@ class RegisterUser:
                 error_code="INVALID_PASSWORD",
                 message="The password does not meet the password policy.",
             )
+        if password != confirm_password:
+            raise ValidationException(
+                error_code="PASSWORD_MISMATCH",
+                message="The password confirmation does not match.",
+            )
