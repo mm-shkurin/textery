@@ -22,3 +22,10 @@ Quirk and enduring-invariant entries promoted from completed scenario summaries.
 **Workaround used:** stopped the `infra-backend-1` container and ran the backend directly with local `uvicorn` (`DATABASE_URL=postgresql+asyncpg://textery:change-me@localhost:5432/textery`, `REDIS_URL=redis://localhost:6379/0`, pointed at the compose-exposed Postgres/Redis ports) to exercise `green-acceptance` against fresh code, then restarted the container afterward (still running the old image).
 **Implication:** Any `green-acceptance` step that needs a backend code change picked up will hit this until the container image is rebuilt. Either rebuild the image outside this checkout path (e.g. a non-OneDrive clone) or keep using the local-uvicorn workaround per scenario.
 **From:** scenario 1.3 (reject-password-failing-policy)
+
+## Quirk: `RegisterUser.execute` never compares confirm_password
+
+**Quirk:** `RegisterUser.execute` (`backend/usecase/src/auth/register_user.py`) accepts `confirm_password` as a parameter but never compares it against `password` — no code path enforces the match, and no scenario-1.3 fixture could catch a mismatch since they always set both fields equal.
+**Where:** `backend/usecase/src/auth/register_user.py`.
+**Implication:** Scenario 1.4's pending red-usecase/green-usecase steps must add the actual comparison. Any other usecase touching password fields should not assume unused constructor parameters are enforced elsewhere.
+**From:** scenario 1.3 (reject-password-failing-policy)
