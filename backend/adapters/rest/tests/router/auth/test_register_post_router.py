@@ -64,7 +64,6 @@ class TestRegisterPostRouterMalformedEmail:
         )
 
 
-@pytest.mark.skip(reason="RED: register() endpoint returns None with response_model=None, discarding the persisted Account")
 class TestRegisterPostRouterServerOwnedFields:
     """Scenario 1.5: Ignore server-owned fields in the request body.
 

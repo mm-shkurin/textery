@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import AsyncIterator
 from uuid import UUID
 
+from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.generation.generation_storage import SqlAlchemyGenerationStorage
 from auth.register_user import RegisterUser
 from generation.generate_document import GenerateDocument
@@ -78,8 +79,13 @@ async def create_get_generation() -> AsyncIterator[GetGeneration]:
         await session.close()
 
 
-def create_register_user() -> RegisterUser:
-    return RegisterUser()
+async def create_register_user() -> AsyncIterator[RegisterUser]:
+    session = _session_factory()
+    try:
+        repository = SqlAlchemyAccountRepository(session)
+        yield RegisterUser(account_repository=repository)
+    finally:
+        await session.close()
 
 
 def _stale_after_minutes() -> int:

@@ -62,8 +62,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] red-adapter db
 - [x] green-adapter db
 - [x] red-adapter rest
-- [~] green-adapter rest
-- [ ] green-acceptance
+- [x] green-adapter rest
+- [~] green-acceptance
 
 ### Scenario 2.1: Valid registration creates a pending account and returns a verification code
 - [ ] red-acceptance
