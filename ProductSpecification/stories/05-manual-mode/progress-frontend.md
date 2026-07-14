@@ -19,8 +19,8 @@ Owns: Frontend Scenarios. Narrative/decisions/Spec checklist live in `progress.m
 - [x] red-selenium
 - [x] red-frontend
 - [x] green-frontend
-- [ ] red-frontend (coverage: document create succeeds, editor shows draft-not-saved status)
-- [ ] green-frontend (coverage: document create succeeds, editor shows draft-not-saved status)
+- [S] red-frontend (coverage: document create succeeds, editor shows draft-not-saved status) — behavior already implemented in prior green-frontend; gap was a missing mock in App.test.tsx, not missing implementation. Closed by adding ManualEditor.test.tsx directly (passes immediately, no red phase).
+- [S] green-frontend (coverage: document create succeeds, editor shows draft-not-saved status) — no implementation needed, see above
 - [x] red-frontend-api
 - [x] green-frontend-api
 - [x] align-design
