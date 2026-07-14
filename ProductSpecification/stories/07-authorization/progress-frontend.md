@@ -124,15 +124,19 @@ so its red-frontend step must add the button first.
 
 - [x] red-selenium (login sub-case: test_login_submit_disabled_while_in_flight_acceptance.py, RED confirmed — `AssertionError: expected submit button to be disabled`)
 - [S] red-selenium (resend sub-case) — already implemented in Scenario 1.3, disabled={isResending} + try/finally reset already exist and are already covered by VerifyCodeForm.test.tsx; no new test needed
-- [~] red-frontend (login: add isSubmitting state to LoginForm.tsx, mirroring RegisterForm.tsx's Scenario 2.3 pattern)
+- [~] red-frontend (login: add isSubmitting state to LoginForm.tsx, mirroring RegisterForm.tsx's Scenario 2.3 pattern — premortem on fae4969 flagged that no test anywhere verifies the button re-enables after the request settles; use try/finally like RegisterForm.tsx's handleSubmit, and consider a unit test asserting re-enable)
 - [ ] green-frontend (login)
+- [S] red-frontend-api (login) — no real login API call exists yet, same scoping decision as Scenario 2.3's register test; deferred until a real endpoint lands
+- [S] green-frontend-api (login) — see above
 - [ ] red-frontend (confirm: add Confirm button + isSubmitting state to VerifyCodeForm.tsx — new UI element per mockup, not previously implemented)
 - [ ] green-frontend (confirm)
+- [S] red-frontend-api (confirm) — no real verify-confirm API call exists yet, same scoping decision as login/register
+- [S] green-frontend-api (confirm) — see above
 - [ ] red-selenium (confirm: once the button exists, add its own acceptance test)
 - [ ] green-selenium (confirm)
 - [S] red-frontend-api (resend, already implemented in Scenario 1.3)
 - [S] green-frontend-api (resend, already implemented in Scenario 1.3)
-- [ ] align-design
+- [ ] align-design (covers both LoginForm's new disabled-state styling and VerifyCodeForm's new Confirm button)
 - [ ] green-selenium (login)
 - [ ] demo
 
