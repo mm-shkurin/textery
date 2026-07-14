@@ -23,14 +23,14 @@ click-through tests but the components themselves already use the router primiti
 - [x] green-selenium (retry after routing lands)
 - [S] demo (skipped per convention, see note above)
 
-### 1.2: Login form displays email and password fields
+### 1.2: Login form displays email and password fields — CLOSED
 
-Known gaps (premortem on `fef125a`, not covered by any later scenario in this file —
-fold into green-frontend now since cheap, or track explicitly if deferred):
-- label association (`getByLabelText`) unasserted for email/password inputs
-- form must actually submit on Enter in password field, not just button click
-- inputs should carry `autoComplete="username"`/`"current-password"` for password managers
-(same 3 gaps apply retroactively to RegisterForm.tsx, scenario 1.1 — not fixed there either)
+RESOLVED (was "Known gaps" from premortem on `fef125a`): LoginForm.tsx (green-frontend,
+`f2a0f88`) fixed `htmlFor`/label association and `autoComplete` attributes; native
+`<form onSubmit>` covers Enter-to-submit. `getByLabelText` assertion itself was not
+added to LoginForm.test.tsx — component fix landed, test coverage for it did not.
+RegisterForm.tsx still lacks `autoComplete`/explicit `getByLabelText` coverage (label
+association itself is present via `htmlFor`) — untouched, not part of this scenario.
 
 - [x] red-selenium
 - [x] red-frontend
