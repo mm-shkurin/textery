@@ -70,7 +70,11 @@ scenarios) or a dedicated follow-up, not scope-crept into this step.
 - [x] green-frontend
 - [x] red-frontend-api
 - [x] green-frontend-api
-- [~] align-design
+- [ ] red-frontend (coverage: handleResend no-ops when email prop is missing)
+- [ ] green-frontend (coverage: handleResend no-ops when email prop is missing)
+- [ ] red-frontend-api (coverage: resendCode throws on non-ok HTTP response)
+- [ ] green-frontend-api (coverage: resendCode throws on non-ok HTTP response)
+- [x] align-design
 - [ ] green-selenium
 - [ ] demo
 
