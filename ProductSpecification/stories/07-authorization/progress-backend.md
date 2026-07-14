@@ -36,8 +36,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 ### Scenario 1.3: Reject password failing the policy
 - [x] red-acceptance
 - [x] design — Password value object in backend/domain, mirroring Email's constructor-validation pattern (min 8/max 128 chars, ≥1 digit, ≥1 uppercase, ≥1 lowercase, ≥1 special char per `07_Authorization.md` Validation Rules table); single INVALID_PASSWORD error code for all sub-violations, consistent with INVALID_EMAIL taxonomy. Closed a premortem gap first: red-acceptance was missing a 6th sub-case (missing-lowercase) despite it being a spec rule — added `given_registration_request_with_password_missing_lowercase` fixture + test (still skipped, 6 skipped confirmed) before this design locks scope for red-usecase.
-- [~] red-usecase
-- [ ] green-usecase
+- [x] red-usecase
+- [~] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
