@@ -3,7 +3,6 @@ import pytest
 from statements.register_statements import RegisterStatements
 
 
-@pytest.mark.skip(reason="RED: RegisterUser.execute does not accept account_repository/clock or persist an Account")
 class TestRegisterUsecasePersistsAccount:
     """Scenario 1.5: Ignore server-owned fields in the request body.
 
