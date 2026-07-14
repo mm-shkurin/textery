@@ -11,12 +11,6 @@ class TestLoginPageDisplayAcceptance(AbstractFrontendTest):
     And the submit button is visible
     """
 
-    @pytest.mark.skip(
-        reason="RED: selenium.common.exceptions.TimeoutException waiting on "
-        "[data-testid='login-email-input'] -- no /login route exists yet, "
-        "App.tsx falls through to the '/*' catch-all rendering the document-"
-        "generation landing flow instead of a login form"
-    )
     def test_should_display_login_form_fields(self, webdriver, app_url, login_page_statements):
         login_page_statements.navigate_to_login_page(webdriver, app_url)
 

@@ -41,11 +41,11 @@ fold into green-frontend now since cheap, or track explicitly if deferred):
 - [S] green-selenium (BLOCKED: no /login route in App.tsx, same gap class as Scenario 1.1's /register — green-agent stopped before touching anything, skip marker untouched; superseded by routing sub-cycle below)
 - [x] red-frontend (routing: wire /login route to render LoginForm)
 - [x] green-frontend (routing: minimal App.tsx wiring so /login renders LoginForm; also closed premortem gap from prior step by adding a catch-all regression guard test)
-- [~] green-selenium (retry after routing lands)
-- [ ] demo
+- [x] green-selenium (retry after routing lands)
+- [S] demo (skipped per convention, see note above)
 
 ### 1.3: Verification-code screen displays a 6-digit input and resend action
-- [ ] red-selenium
+- [~] red-selenium
 - [ ] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
