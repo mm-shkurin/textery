@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { resendCode } from '../api/authApi'
 import './AuthForm.css'
 import './VerifyCodeForm.css'
@@ -18,6 +18,20 @@ export interface VerifyCodeFormProps {
 export function VerifyCodeForm({ email }: VerifyCodeFormProps) {
   const [countdownSeconds] = useState(RESEND_COUNTDOWN_SECONDS)
   const [isResending, setIsResending] = useState(false)
+  const [digits, setDigits] = useState<string[]>(Array(6).fill(''))
+  const inputRefs = useRef<Array<HTMLInputElement | null>>([])
+
+  function handleDigitChange(index: number, value: string) {
+    setDigits((previous) => {
+      const next = [...previous]
+      next[index] = value
+      return next
+    })
+
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus()
+    }
+  }
 
   async function handleResend() {
     if (!email) return
@@ -38,9 +52,14 @@ export function VerifyCodeForm({ email }: VerifyCodeFormProps) {
         {Array.from({ length: 6 }, (_, index) => (
           <input
             key={index}
+            ref={(element) => {
+              inputRefs.current[index] = element
+            }}
             type="text"
             inputMode="numeric"
             maxLength={1}
+            value={digits[index]}
+            onChange={(event) => handleDigitChange(index, event.target.value)}
             data-testid={`verify-code-input-${index}`}
           />
         ))}

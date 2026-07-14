@@ -96,10 +96,10 @@ scenarios) or a dedicated follow-up, not scope-crept into this step.
 ### 2.2: Verification code input advances focus per digit
 - [x] red-selenium
 - [x] red-frontend
-- [~] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
+- [x] green-frontend
+- [S] red-frontend-api (no API call in this scenario — client-side focus-advance only, per tests/02_UI_Tests.md §2.2)
+- [S] green-frontend-api (see above)
+- [~] align-design
 - [ ] green-selenium
 - [ ] demo
 

@@ -48,7 +48,7 @@ describe('VerifyCodeForm', () => {
       }
     }
 
-    it.skip('advances focus to the next box and records the digit when a digit is typed', () => {
+    it('advances focus to the next box and records the digit when a digit is typed', () => {
       renderWithRouter(<VerifyCodeForm />)
 
       const firstInput = screen.getByTestId('verify-code-input-0') as HTMLInputElement
@@ -61,7 +61,7 @@ describe('VerifyCodeForm', () => {
       expectOtherBoxesEmpty(0)
     })
 
-    it.skip('keeps focus on the last box and records the digit when its value is typed', () => {
+    it('keeps focus on the last box and records the digit when its value is typed', () => {
       renderWithRouter(<VerifyCodeForm />)
 
       const lastInput = screen.getByTestId('verify-code-input-5') as HTMLInputElement
