@@ -2,6 +2,7 @@ from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
 
@@ -28,10 +29,13 @@ TOOLBAR_BUTTON_ARIA_LABELS = {
     "italic": ["Курсив"],
 }
 EXPECTED_TOOLBAR_BUTTON_COUNT = 7
-BOLD_BUTTON = (
-    By.CSS_SELECTOR,
-    f"{MANUAL_EDITOR_SELECTOR} .me-toolbar-btn[aria-label='{TOOLBAR_BUTTON_ARIA_LABELS['bold'][0]}']",
-)
+
+
+def _toolbar_button_locator(aria_label: str) -> tuple[str, str]:
+    return (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-toolbar-btn[aria-label='{aria_label}']")
+
+
+BOLD_BUTTON = _toolbar_button_locator(TOOLBAR_BUTTON_ARIA_LABELS["bold"][0])
 
 
 class ManualEditorStatements(BaseFrontendStatements):
@@ -71,8 +75,7 @@ class ManualEditorStatements(BaseFrontendStatements):
     def _assert_each_toolbar_button_is_enabled(self, driver: WebDriver) -> None:
         for control_name, aria_labels in TOOLBAR_BUTTON_ARIA_LABELS.items():
             for aria_label in aria_labels:
-                locator = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-toolbar-btn[aria-label='{aria_label}']")
-                button = self._wait_for_visible(driver, locator)
+                button = self._wait_for_visible(driver, _toolbar_button_locator(aria_label))
                 assert button.is_enabled(), (
                     f"expected {control_name} toolbar control '{aria_label}' to be enabled"
                 )
@@ -85,14 +88,16 @@ class ManualEditorStatements(BaseFrontendStatements):
         )
 
     def type_text_in_editor(self, driver: WebDriver, text: str) -> None:
-        content_area = self._wait_for_visible(driver, CONTENT_AREA)
-        content_area.click()
-        content_area.send_keys(text)
+        self._focus_content_area(driver).send_keys(text)
 
     def select_all_text_in_editor(self, driver: WebDriver) -> None:
+        self._focus_content_area(driver)
+        ActionChains(driver).key_down(Keys.CONTROL).send_keys("a").key_up(Keys.CONTROL).perform()
+
+    def _focus_content_area(self, driver: WebDriver) -> WebElement:
         content_area = self._wait_for_visible(driver, CONTENT_AREA)
         content_area.click()
-        ActionChains(driver).key_down(Keys.CONTROL).send_keys("a").key_up(Keys.CONTROL).perform()
+        return content_area
 
     def apply_bold_formatting(self, driver: WebDriver) -> None:
         self._wait_for_visible(driver, BOLD_BUTTON).click()
