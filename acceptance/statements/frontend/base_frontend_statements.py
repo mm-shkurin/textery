@@ -40,12 +40,14 @@ class BaseFrontendStatements:
         driver: WebDriver,
         locator: tuple[str, str],
         expected_text: str,
+        expected_type: str | None = "submit",
     ) -> None:
         element = self._wait_for_visible(driver, locator)
         assert element.is_displayed(), "expected submit button to be visible"
-        assert element.get_attribute("type") == "submit", (
-            f"expected submit button type 'submit', got '{element.get_attribute('type')}'"
-        )
+        if expected_type is not None:
+            assert element.get_attribute("type") == expected_type, (
+                f"expected submit button type '{expected_type}', got '{element.get_attribute('type')}'"
+            )
         assert element.text.strip() == expected_text, (
             f"expected submit button text '{expected_text}', got '{element.text}'"
         )
