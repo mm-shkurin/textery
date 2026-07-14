@@ -34,7 +34,13 @@ function App() {
     const documentTypeLabel = DOCUMENT_TYPE_LABELS[documentType]
 
     if (mode === 'manual') {
-      return <ManualEditor documentTypeLabel={documentTypeLabel} />
+      return (
+        <ManualEditor
+          documentType={documentType}
+          documentTypeLabel={documentTypeLabel}
+          onBack={closeToLanding}
+        />
+      )
     }
 
     return (

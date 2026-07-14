@@ -1,0 +1,166 @@
+.manual-editor-page {
+  min-height: 100vh;
+}
+
+.me-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 48px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.me-logo {
+  height: 28px;
+  width: auto;
+  display: block;
+}
+
+.me-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 96px;
+}
+
+.me-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.me-breadcrumb-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: inherit;
+  padding: 0;
+}
+
+.me-breadcrumb-chips {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+}
+
+.me-breadcrumb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  padding: 6px 14px;
+  border-radius: 999px;
+}
+
+.me-chip-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: var(--accent-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.me-chip-icon svg {
+  width: 12px;
+  height: 12px;
+  color: #fff;
+}
+
+.me-breadcrumb-sep {
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+
+.me-editor-shell {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.me-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface-raised);
+}
+
+.me-toolbar-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.me-toolbar-btn:hover {
+  background: var(--bg-surface);
+}
+
+.me-toolbar-status {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.me-save-status {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.me-save-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  background: #f5f5f7;
+  color: #111214;
+}
+
+.me-content-area {
+  padding: 48px 64px;
+  min-height: 420px;
+  position: relative;
+}
+
+.me-placeholder {
+  color: var(--text-muted);
+  font-size: 17px;
+}
+
+@media (max-width: 768px) {
+  .me-header {
+    padding: 16px 20px;
+  }
+
+  .me-container {
+    padding: 24px 16px 64px;
+  }
+
+  .me-content-area {
+    padding: 32px 20px;
+  }
+}

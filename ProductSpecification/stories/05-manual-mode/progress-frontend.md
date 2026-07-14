@@ -19,9 +19,11 @@ Owns: Frontend Scenarios. Narrative/decisions/Spec checklist live in `progress.m
 - [x] red-selenium
 - [x] red-frontend
 - [x] green-frontend
+- [ ] red-frontend (coverage: document create succeeds, editor shows draft-not-saved status)
+- [ ] green-frontend (coverage: document create succeeds, editor shows draft-not-saved status)
 - [x] red-frontend-api
 - [x] green-frontend-api
-- [~] align-design
+- [x] align-design
 - [ ] green-selenium
 - [ ] demo
 
