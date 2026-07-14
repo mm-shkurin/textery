@@ -1,9 +1,6 @@
-import pytest
-
 from statements.account_storage_statements import AccountStorageStatements
 
 
-@pytest.mark.skip(reason="RED: SqlAlchemyAccountRepository.save is not implemented yet")
 class TestSave:
     """Saving an account persists id, email, password_hash, is_verified=False,
     and created_at exactly as passed in, ignoring any server-owned fields."""

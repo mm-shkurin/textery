@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.account import Account
+from model.auth.account_model import AccountModel
 
 
 class SqlAlchemyAccountRepository:
@@ -8,4 +9,5 @@ class SqlAlchemyAccountRepository:
         self._session = session
 
     async def save(self, account: Account) -> None:
-        raise NotImplementedError()
+        self._session.add(AccountModel.from_domain(account))
+        await self._session.commit()
