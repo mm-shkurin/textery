@@ -4,9 +4,8 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
 
 from statements.frontend.base_frontend_statements import BaseFrontendStatements, WAIT_TIMEOUT_SECONDS
+from statements.frontend.generation.mode_modal_statements import MODE_CARD_MANUAL, MODE_MODAL
 
-MODE_MODAL = (By.CSS_SELECTOR, "[data-testid='mode-modal']")
-MODE_CARD_MANUAL = (By.CSS_SELECTOR, "[data-testid='mode-card-manual']")
 MANUAL_EDITOR = (By.CSS_SELECTOR, "[data-testid='manual-editor']")
 EDITOR_BREADCRUMB = (By.CSS_SELECTOR, "[data-testid='manual-editor'] [data-testid='editor-breadcrumb']")
 
