@@ -11,12 +11,19 @@ _EXPIRY_MINUTES = 10
 class VerificationCode(object):
     """Domain entity for a registration email-verification code."""
 
-    def __init__(self, id: UUID, account_id: UUID, code: str, expires_at: datetime) -> None:
+    def __init__(
+        self,
+        id: UUID,
+        account_id: UUID,
+        code: str,
+        expires_at: datetime,
+        consumed_at: Optional[datetime] = None,
+    ) -> None:
         self.id = id
         self.account_id = account_id
         self.code = code
         self.expires_at = expires_at
-        self._consumed_at: Optional[datetime] = None
+        self._consumed_at = consumed_at
 
     @property
     def consumed_at(self) -> Optional[datetime]:
@@ -41,14 +48,13 @@ class VerificationCode(object):
         consumed_at: Optional[datetime],
     ) -> "VerificationCode":
         """Rebuild a VerificationCode from storage, preserving consumed_at."""
-        instance = cls(
+        return cls(
             id=id,
             account_id=account_id,
             code=code,
             expires_at=expires_at,
+            consumed_at=consumed_at,
         )
-        instance._consumed_at = consumed_at
-        return instance
 
     @classmethod
     def generate(cls, id: UUID, account_id: UUID, created_at: datetime) -> "VerificationCode":
