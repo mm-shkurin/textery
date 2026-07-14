@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { VerifyCodeForm } from '../VerifyCodeForm'
 
@@ -45,6 +45,35 @@ describe('VerifyCodeForm', () => {
         'Письмо не пришло? Отправить код повторно',
       )
       expect(screen.getByTestId('verify-resend-countdown')).toHaveTextContent('01:00')
+    })
+  })
+
+  describe('resend action', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it.skip('calls the resend-code endpoint with the pending email when clicked', () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ code: '123456' }),
+      })
+      vi.stubGlobal('fetch', fetchMock)
+
+      render(
+        <MemoryRouter>
+          <VerifyCodeForm email="user@example.com" />
+        </MemoryRouter>,
+      )
+
+      fireEvent.click(screen.getByTestId('verify-resend-button'))
+
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      const [url, init] = fetchMock.mock.calls[0]
+      expect(url).toBe('/api/v1/auth/resend-code')
+      expect(init.method).toBe('POST')
+      expect(init.headers).toEqual({ 'Content-Type': 'application/json' })
+      expect(JSON.parse(init.body)).toEqual({ email: 'user@example.com' })
     })
   })
 })
