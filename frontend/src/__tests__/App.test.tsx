@@ -42,4 +42,21 @@ describe('App step transitions', () => {
 
     expect(screen.queryByTestId('type-modal')).not.toBeInTheDocument()
   })
+
+  // RED: TestingLibraryElementError: Unable to find an element by:
+  // [data-testid="manual-editor"] -- App.tsx routes 'manual' mode to the same
+  // ChatWorkspace as 'auto'; no dedicated manual editor view exists yet.
+  it.skip('selecting manual mode opens a dedicated empty editor with a document-type breadcrumb', () => {
+    render(<App />)
+
+    fireEvent.click(screen.getByTestId('features-primary-cta-button'))
+    fireEvent.click(screen.getByTestId('type-card-doklad'))
+    expect(screen.getByTestId('mode-modal')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('mode-card-manual'))
+
+    expect(screen.queryByTestId('mode-modal')).not.toBeInTheDocument()
+    expect(screen.getByTestId('manual-editor')).toBeInTheDocument()
+    expect(screen.getByTestId('editor-breadcrumb')).toHaveTextContent('Доклад · Ручной режим')
+  })
 })
