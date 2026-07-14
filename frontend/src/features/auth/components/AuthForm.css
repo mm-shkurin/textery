@@ -86,6 +86,11 @@
   font-family: inherit;
 }
 
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .auth-subtitle {
   color: #9a9ba3;
   font-size: 14px;
