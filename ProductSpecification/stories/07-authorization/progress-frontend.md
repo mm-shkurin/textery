@@ -49,8 +49,8 @@ association itself is present via `htmlFor`) — untouched, not part of this sce
 
 ### 1.3: Verification-code screen displays a 6-digit input and resend action
 - [x] red-selenium
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
