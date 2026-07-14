@@ -35,7 +35,7 @@ Owns: Frontend Scenarios. Narrative/decisions/Spec checklist live in `progress.m
 - [S] green-frontend-api — same reason
 - [S] align-design — content-area/toolbar/breadcrumb styling already aligned to mockup in scenario 1.2
 - [S] green-selenium — red-selenium test is already green; no marker to remove
-- [~] demo
+- [x] demo
 
 ### Scenario 3.1: Applying a format changes the content and highlights the active toolbar button
 - [x] red-selenium
