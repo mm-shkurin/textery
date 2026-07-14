@@ -86,7 +86,8 @@
   font-family: inherit;
 }
 
-.auth-submit:disabled {
+.auth-submit:disabled,
+.verify-resend button:disabled {
   opacity: 0.6;
   cursor: default;
 }

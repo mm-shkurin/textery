@@ -109,7 +109,7 @@ scenarios) or a dedicated follow-up, not scope-crept into this step.
 - [x] green-frontend
 - [S] red-frontend-api (no real API call in this scenario yet — placeholder Promise.resolve() boundary only; actual registration API lands in Scenario 3.1)
 - [S] green-frontend-api (see above)
-- [x] align-design (added shared .auth-submit:disabled style — opacity 0.6/cursor default, matching the existing verify-resend button convention; mockup has no explicit disabled state to match against. design-review PASS, test-coverage focus found no new in-scope gaps)
+- [x] align-design (added .auth-submit:disabled style — opacity 0.6/cursor default, matching the existing verify-resend button convention; mockup has no explicit disabled state to match against. Only RegisterForm currently wires disabled={isSubmitting}, so this rule is only live there today — LoginForm has no in-flight state yet (Scenario 2.3a) and VerifyCodeForm has no .auth-submit button. design-review PASS, test-coverage focus found no new in-scope gaps)
 - [~] green-selenium
 - [ ] demo
 
