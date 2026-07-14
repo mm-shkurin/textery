@@ -45,6 +45,24 @@ class VerifyCodePageStatements(BaseFrontendStatements):
                 f"got '{element.get_attribute('inputmode')}'"
             )
 
+    def type_digit_into_code_input(self, driver: WebDriver, index: int, digit: str) -> None:
+        element = self._wait_for_visible(driver, _code_input_locator(index))
+        element.send_keys(digit)
+
+    def assert_focus_is_on_code_input(self, driver: WebDriver, index: int) -> None:
+        active_element = driver.switch_to.active_element
+        expected_element = driver.find_element(*_code_input_locator(index))
+        assert active_element == expected_element, (
+            f"expected focus on code input {index}, but a different element is focused"
+        )
+
+    def assert_code_input_has_value(self, driver: WebDriver, index: int, value: str) -> None:
+        element = driver.find_element(*_code_input_locator(index))
+        actual = element.get_attribute("value")
+        assert actual == value, (
+            f"expected code input {index} value '{value}', got '{actual}'"
+        )
+
     def assert_resend_action_with_countdown_is_visible(self, driver: WebDriver) -> None:
         link = self._wait_for_visible(driver, RESEND_BUTTON)
         assert link.is_displayed(), "expected resend action to be visible"
