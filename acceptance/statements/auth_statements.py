@@ -1,20 +1,19 @@
-import re
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import ClassVar
 
 from clients.application.application_client import ApplicationClient
 from clients.application.dto.auth.register_response_dto import RegisterResponseDto
 from statements.auth_scope import RegisterScope
 from statements.response_assertions import assert_is_valid_uuid, assert_validation_error
+from statements.verification_code_assertions import (
+    assert_code_expiry_within_window,
+    assert_valid_verification_code,
+)
 
 MALFORMED_EMAIL = "not-an-email"
 OVERLONG_EMAIL_LOCAL_PART_LENGTH = 244
-VERIFICATION_CODE_TTL = timedelta(minutes=10)
-# Clock-skew allowance only: the valid window is already bracketed by the
-# request/response timestamps captured around the HTTP call, so this only
-# needs to cover drift between the test host clock and the server clock.
-CODE_EXPIRY_CLOCK_SKEW_TOLERANCE = timedelta(seconds=5)
+SECRET_RESPONSE_FIELDS = ("password", "confirm_password", "password_hash")
 
 
 class AuthStatements:
@@ -129,28 +128,35 @@ class AuthStatements:
             f"expected no user_id in response, but got body={response.body}"
         )
 
-    def assert_server_owned_fields_ignored(self, response: RegisterResponseDto) -> None:
+    def _assert_created_pending_account(self, response: RegisterResponseDto) -> dict:
         assert response.status_code == 201, (
             f"expected 201 Created, got status_code={response.status_code}, body={response.body}"
         )
         assert response.body is not None, (
-            "expected a response body containing the created account's is_verified and user_id, "
-            "got body=None"
+            "expected a response body for the created account, got body=None"
         )
         is_verified = response.body.get("is_verified")
         assert is_verified is False, (
-            f"expected created account is_verified=False (server-owned, ignoring attacker-supplied "
-            f"is_verified=true), got is_verified={is_verified!r}"
+            f"expected newly created account is_verified=False, got is_verified={is_verified!r}"
         )
+        leaked = [field for field in SECRET_RESPONSE_FIELDS if field in response.body]
+        assert not leaked, (
+            f"expected none of {SECRET_RESPONSE_FIELDS} in the response body, "
+            f"found {leaked} (body={response.body})"
+        )
+        return response.body
+
+    def assert_server_owned_fields_ignored(self, response: RegisterResponseDto) -> None:
+        body = self._assert_created_pending_account(response)
         # user_id is category 4 (truly opaque) per the determinism hierarchy: it is a
         # server-generated UUID with no setup-capturable exact value, so we assert
         # it is present and well-formed (not just "not equal to the attacker's id" —
         # that alone would pass on user_id=None, which is the exact defect this test
         # guards against) plus the scenario-specific inequality. Field name per
         # ProductSpecification/api-specs/auth_register.yaml's RegisterResponse schema.
-        account_id = response.body.get("user_id")
+        account_id = body.get("user_id")
         assert account_id is not None, (
-            f"expected a server-generated user_id, got user_id=None (body={response.body})"
+            f"expected a server-generated user_id, got user_id=None (body={body})"
         )
         assert_is_valid_uuid(account_id, field_name="user_id")
         assert account_id != self.ATTACKER_SUPPLIED_ID, (
@@ -161,48 +167,11 @@ class AuthStatements:
     def assert_pending_account_created_with_verification_code(
         self, response: RegisterResponseDto
     ) -> None:
-        assert response.status_code == 201, (
-            f"expected 201 Created, got status_code={response.status_code}, body={response.body}"
-        )
-        assert response.body is not None, (
-            "expected a response body containing is_verified, verification_code and "
-            "code_expires_at, got body=None"
-        )
-        is_verified = response.body.get("is_verified")
-        assert is_verified is False, (
-            f"expected newly created account is_verified=False, got is_verified={is_verified!r}"
-        )
-        verification_code = response.body.get("verification_code")
-        assert isinstance(verification_code, str), (
-            f"expected verification_code to be a string, got "
-            f"{type(verification_code).__name__} ({verification_code!r})"
-        )
-        assert re.fullmatch(r"[0-9]{6}", verification_code), (
-            f"expected verification_code to match ^[0-9]{{6}}$ (6-digit zero-padded string), "
-            f"got {verification_code!r}"
-        )
-        code_expires_at_raw = response.body.get("code_expires_at")
-        assert code_expires_at_raw is not None, (
-            f"expected code_expires_at in response body, got body={response.body}"
-        )
-        try:
-            code_expires_at = datetime.fromisoformat(str(code_expires_at_raw).replace("Z", "+00:00"))
-        except ValueError as error:
-            raise AssertionError(
-                f"expected code_expires_at to be an ISO-8601 timestamp, got {code_expires_at_raw!r}"
-            ) from error
-        if code_expires_at.tzinfo is None:
-            code_expires_at = code_expires_at.replace(tzinfo=timezone.utc)
+        body = self._assert_created_pending_account(response)
+        assert_valid_verification_code(body.get("verification_code"))
         assert self._last_request_window is not None, (
             "assert_pending_account_created_with_verification_code requires the response "
             "from given_valid_unique_registration_request, which records the request window"
         )
         sent_at, received_at = self._last_request_window
-        earliest_valid_expiry = sent_at + VERIFICATION_CODE_TTL - CODE_EXPIRY_CLOCK_SKEW_TOLERANCE
-        latest_valid_expiry = received_at + VERIFICATION_CODE_TTL + CODE_EXPIRY_CLOCK_SKEW_TOLERANCE
-        assert earliest_valid_expiry <= code_expires_at <= latest_valid_expiry, (
-            f"expected code_expires_at within [{earliest_valid_expiry.isoformat()}, "
-            f"{latest_valid_expiry.isoformat()}] (issuance time +/- request latency, "
-            f"{VERIFICATION_CODE_TTL} TTL, {CODE_EXPIRY_CLOCK_SKEW_TOLERANCE} clock-skew "
-            f"allowance), got {code_expires_at.isoformat()}"
-        )
+        assert_code_expiry_within_window(body.get("code_expires_at"), sent_at, received_at)
