@@ -11,6 +11,7 @@ from selenium.webdriver.chrome.options import Options as ChromeOptions
 from clients.application.application_client import ApplicationClient
 from statements.frontend.landing_page_statements import LandingPageStatements
 from statements.frontend.generation.chat_workspace_statements import ChatWorkspaceStatements
+from statements.frontend.generation.manual_editor_statements import ManualEditorStatements
 from statements.frontend.generation.mode_modal_statements import ModeModalStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
 from statements.generation_statements import GenerationStatements
@@ -75,3 +76,8 @@ def chat_workspace_statements():
 @pytest.fixture
 def mode_modal_statements():
     return ModeModalStatements()
+
+
+@pytest.fixture
+def manual_editor_statements():
+    return ManualEditorStatements()
