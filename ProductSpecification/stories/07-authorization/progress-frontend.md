@@ -78,8 +78,8 @@ scenarios) or a dedicated follow-up, not scope-crept into this step.
 - [S] green-selenium (BLOCKED: no /verify route in App.tsx, same gap class as Scenarios 1.1/1.2 — green-agent stopped before touching anything, skip marker restored; superseded by routing sub-cycle below)
 - [x] red-frontend (routing: install/wire /verify route to render VerifyCodeForm)
 - [x] green-frontend (routing: minimal App.tsx wiring so /verify renders VerifyCodeForm)
-- [~] green-selenium (retry after routing lands)
-- [ ] demo
+- [x] green-selenium (retry after routing lands)
+- [S] demo (skipped per convention, see note above)
 
 ### 2.1: Password field visibility toggle
 - [ ] red-selenium

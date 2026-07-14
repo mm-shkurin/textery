@@ -3,7 +3,6 @@ import pytest
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
-@pytest.mark.skip(reason="RED: /verify route not wired in App.tsx")
 class TestVerifyCodePageDisplayAcceptance(AbstractFrontendTest):
     """UI Test Scenario 1.3: Verification-code screen displays a 6-digit input and resend action.
 
