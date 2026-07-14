@@ -25,7 +25,7 @@ Owns: Frontend Scenarios. Narrative/decisions/Spec checklist live in `progress.m
 - [x] green-frontend-api
 - [x] align-design
 - [x] green-selenium
-- [ ] demo
+- [x] demo
 
 ### Scenario 2.1: A freshly created document shows an empty, ready-to-type editor
 - [ ] red-selenium
