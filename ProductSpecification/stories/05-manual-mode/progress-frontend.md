@@ -19,8 +19,8 @@ Owns: Frontend Scenarios. Narrative/decisions/Spec checklist live in `progress.m
 - [x] red-selenium
 - [x] red-frontend
 - [x] green-frontend
-- [~] red-frontend-api
-- [ ] green-frontend-api
+- [x] red-frontend-api
+- [~] green-frontend-api
 - [ ] align-design
 - [ ] green-selenium
 - [ ] demo
