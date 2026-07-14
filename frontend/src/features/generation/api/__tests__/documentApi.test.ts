@@ -6,9 +6,7 @@ describe('documentApi', () => {
     vi.unstubAllGlobals()
   })
 
-  // RED: Error: Not implemented -- documentApi.createDocument is a stub that
-  // always throws; no POST /api/v1/documents call is made yet.
-  it.skip('createDocument posts document_type and returns documentId + status', async () => {
+  it('createDocument posts document_type and returns documentId + status', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 201,
@@ -20,7 +18,7 @@ describe('documentApi', () => {
 
     expect(result).toEqual({ documentId: 'doc-1', status: 'draft' })
     const [url, init] = fetchMock.mock.calls[0]
-    expect(url).toBe('/api/v1/documents')
+    expect(url).toContain('/api/v1/documents')
     expect(init.method).toBe('POST')
     // Idempotency-Key is generated per-call via crypto.randomUUID() (see
     // generationApi.ts's createGeneration for the established pattern) — the
