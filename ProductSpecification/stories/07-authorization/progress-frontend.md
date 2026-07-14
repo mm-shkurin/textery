@@ -99,8 +99,8 @@ scenarios) or a dedicated follow-up, not scope-crept into this step.
 - [x] green-frontend
 - [S] red-frontend-api (no API call in this scenario — client-side focus-advance only, per tests/02_UI_Tests.md §2.2)
 - [S] green-frontend-api (see above)
-- [~] align-design
-- [ ] green-selenium
+- [x] align-design (no styling changes needed — CSS already aligned to mockup from Scenario 1.3; design-review PASS, no hardcoded placeholder data; test-coverage focus found no genuinely new in-scope gaps)
+- [~] green-selenium
 - [ ] demo
 
 ### 2.3: In-flight submit buttons are disabled to prevent duplicate submission
