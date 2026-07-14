@@ -40,6 +40,37 @@ describe('VerifyCodeForm', () => {
     })
   })
 
+  describe('digit auto-advance focus', () => {
+    it.skip('advances focus to the next box and records the digit when a digit is typed', () => {
+      renderWithRouter(<VerifyCodeForm />)
+
+      const firstInput = screen.getByTestId('verify-code-input-0') as HTMLInputElement
+      const secondInput = screen.getByTestId('verify-code-input-1')
+      firstInput.focus()
+      fireEvent.change(firstInput, { target: { value: '5' } })
+
+      expect(firstInput.value).toBe('5')
+      expect(document.activeElement).toBe(secondInput)
+      for (let index = 2; index < 6; index += 1) {
+        expect((screen.getByTestId(`verify-code-input-${index}`) as HTMLInputElement).value).toBe('')
+      }
+    })
+
+    it.skip('keeps focus on the last box and records the digit when its value is typed', () => {
+      renderWithRouter(<VerifyCodeForm />)
+
+      const lastInput = screen.getByTestId('verify-code-input-5') as HTMLInputElement
+      lastInput.focus()
+      fireEvent.change(lastInput, { target: { value: '9' } })
+
+      expect(lastInput.value).toBe('9')
+      expect(document.activeElement).toBe(lastInput)
+      for (let index = 0; index < 5; index += 1) {
+        expect((screen.getByTestId(`verify-code-input-${index}`) as HTMLInputElement).value).toBe('')
+      }
+    })
+  })
+
   describe('resend action', () => {
     afterEach(() => {
       vi.unstubAllGlobals()

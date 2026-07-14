@@ -95,8 +95,8 @@ scenarios) or a dedicated follow-up, not scope-crept into this step.
 
 ### 2.2: Verification code input advances focus per digit
 - [x] red-selenium
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
