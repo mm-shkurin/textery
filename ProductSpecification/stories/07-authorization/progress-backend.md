@@ -34,8 +34,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-acceptance
 
 ### Scenario 1.3: Reject password failing the policy
-- [~] red-acceptance
-- [ ] design
+- [x] red-acceptance
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery

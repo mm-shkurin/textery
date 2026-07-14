@@ -17,6 +17,10 @@ class AuthStatements:
         "message": "The email address is not valid.",
     }
     EXPECTED_OVERLONG_EMAIL_ERROR: ClassVar[dict] = EXPECTED_MALFORMED_EMAIL_ERROR
+    EXPECTED_WEAK_PASSWORD_ERROR: ClassVar[dict] = {
+        "error_code": "INVALID_PASSWORD",
+        "message": "The password does not meet the password policy.",
+    }
 
     def __init__(self, client: ApplicationClient):
         self._client = client
@@ -33,6 +37,32 @@ class AuthStatements:
             f"expected a 256-character email fixture, got {len(overlong_email)} chars"
         )
         scope = RegisterScope.builder(email=overlong_email)
+        request = scope.to_request_dto()
+        return await self._client.register(request)
+
+    async def given_registration_request_with_short_password(self) -> RegisterResponseDto:
+        return await self._register_with_password("Ab1!abc")
+
+    async def given_registration_request_with_password_missing_digit(self) -> RegisterResponseDto:
+        return await self._register_with_password("Abcdefgh!")
+
+    async def given_registration_request_with_password_missing_uppercase(self) -> RegisterResponseDto:
+        return await self._register_with_password("abcdefg1!")
+
+    async def given_registration_request_with_password_missing_special_character(
+        self,
+    ) -> RegisterResponseDto:
+        return await self._register_with_password("Abcdefg1")
+
+    async def given_registration_request_with_overlong_password(self) -> RegisterResponseDto:
+        password = "A1!" + "a" * 126
+        assert len(password) == 129, (
+            f"expected a 129-character password fixture, got {len(password)} chars"
+        )
+        return await self._register_with_password(password)
+
+    async def _register_with_password(self, password: str) -> RegisterResponseDto:
+        scope = RegisterScope.builder(password=password, confirm_password=password)
         request = scope.to_request_dto()
         return await self._client.register(request)
 
