@@ -3,7 +3,6 @@ import pytest
 from statements.register_statements import RegisterStatements
 
 
-@pytest.mark.skip(reason="RED: RegisterUser does not validate password policy yet")
 class TestRegisterUsecaseWeakPassword:
     """Scenario 1.3: Reject password failing the policy.
 
