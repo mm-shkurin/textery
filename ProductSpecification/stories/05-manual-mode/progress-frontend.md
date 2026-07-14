@@ -9,8 +9,8 @@ Owns: Frontend Scenarios. Narrative/decisions/Spec checklist live in `progress.m
 - [x] red-selenium
 - [x] red-frontend
 - [x] green-frontend
-- [~] red-frontend-api
-- [ ] green-frontend-api
+- [S] red-frontend-api — no API call: mode-modal availability is a static local flag, no backend endpoint involved
+- [S] green-frontend-api — same reason, covered by red-frontend/green-frontend component tests
 - [ ] align-design
 - [ ] green-selenium
 - [ ] demo
