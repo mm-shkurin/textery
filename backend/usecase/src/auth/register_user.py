@@ -49,11 +49,12 @@ class RegisterUser:
                 error_code="PASSWORD_MISMATCH",
                 message="The password confirmation does not match.",
             )
+        created_at = self.clock.now()
         account = Account.create(
             id=uuid4(),
             email=email,
             password_hash=password,
-            created_at=self.clock.now(),
+            created_at=created_at,
         )
         await self.account_repository.save(account)
         return account
