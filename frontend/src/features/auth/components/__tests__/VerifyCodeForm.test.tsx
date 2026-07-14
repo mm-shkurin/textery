@@ -1,15 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { fireEvent, screen } from '@testing-library/react'
+import { renderWithRouter } from '../../../../test/renderWithRouter'
 import { VerifyCodeForm } from '../VerifyCodeForm'
 
 describe('VerifyCodeForm', () => {
   it('displays six single-digit code inputs', () => {
-    render(
-      <MemoryRouter>
-        <VerifyCodeForm />
-      </MemoryRouter>,
-    )
+    renderWithRouter(<VerifyCodeForm />)
 
     for (let index = 0; index < 6; index += 1) {
       const input = screen.getByTestId(`verify-code-input-${index}`)
@@ -35,11 +31,7 @@ describe('VerifyCodeForm', () => {
     })
 
     it('displays a resend action with an initial countdown of 01:00', () => {
-      render(
-        <MemoryRouter>
-          <VerifyCodeForm />
-        </MemoryRouter>,
-      )
+      renderWithRouter(<VerifyCodeForm />)
 
       expect(screen.getByTestId('verify-resend-button')).toHaveTextContent(
         'Письмо не пришло? Отправить код повторно',
@@ -60,11 +52,7 @@ describe('VerifyCodeForm', () => {
       })
       vi.stubGlobal('fetch', fetchMock)
 
-      render(
-        <MemoryRouter>
-          <VerifyCodeForm email="user@example.com" />
-        </MemoryRouter>,
-      )
+      renderWithRouter(<VerifyCodeForm email="user@example.com" />)
 
       fireEvent.click(screen.getByTestId('verify-resend-button'))
 

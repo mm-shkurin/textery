@@ -1,15 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { screen } from '@testing-library/react'
+import { renderWithRouter } from '../../../../test/renderWithRouter'
 import { RegisterForm } from '../RegisterForm'
 
 describe('RegisterForm', () => {
   it('displays email, password, confirm password fields and submit button', () => {
-    render(
-      <MemoryRouter>
-        <RegisterForm />
-      </MemoryRouter>,
-    )
+    renderWithRouter(<RegisterForm />)
 
     expect(screen.getByTestId('register-email-input')).toHaveAttribute('type', 'email')
     expect(screen.getByTestId('register-password-input')).toHaveAttribute('type', 'password')
