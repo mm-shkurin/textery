@@ -46,6 +46,7 @@ export function VerifyCodeForm({ email }: VerifyCodeFormProps) {
         ))}
       </div>
       <p className="verify-resend">
+        <span data-testid="verify-resend-countdown">{formatCountdown(countdownSeconds)}</span>
         <button
           type="button"
           data-testid="verify-resend-button"
@@ -54,7 +55,6 @@ export function VerifyCodeForm({ email }: VerifyCodeFormProps) {
         >
           Письмо не пришло? Отправить код повторно
         </button>
-        <span data-testid="verify-resend-countdown">{formatCountdown(countdownSeconds)}</span>
       </p>
     </div>
   )
