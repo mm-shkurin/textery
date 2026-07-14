@@ -14,8 +14,7 @@ async function renderEditorWithDocumentCreated() {
 }
 
 describe('ManualEditor', () => {
-  // eslint-disable-next-line vitest/no-disabled-tests -- RED phase: see progress-frontend.md scenario 3.1
-  it.skip('applying bold to selected text wraps it in <strong> and marks the bold button active', async () => {
+  it('applying bold to selected text wraps it in <strong> and marks the bold button active', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')

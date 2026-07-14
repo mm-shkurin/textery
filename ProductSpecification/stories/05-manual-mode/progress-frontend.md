@@ -40,10 +40,10 @@ Owns: Frontend Scenarios. Narrative/decisions/Spec checklist live in `progress.m
 ### Scenario 3.1: Applying a format changes the content and highlights the active toolbar button
 - [x] red-selenium
 - [x] red-frontend
-- [~] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
+- [x] green-frontend
+- [S] red-frontend-api — no API call: bold formatting is client-side editor state only, no backend endpoint involved
+- [S] green-frontend-api — same reason
+- [~] align-design
 - [ ] green-selenium
 - [ ] demo
 
