@@ -3,11 +3,6 @@ import pytest
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
-@pytest.mark.skip(
-    reason="RED: TimeoutException waiting for [data-testid='manual-editor'] -- "
-    "App.tsx routes to ChatWorkspace for both 'manual' and 'auto' modes; no "
-    "dedicated manual editor view exists yet"
-)
 class TestManualEditorAcceptance(AbstractFrontendTest):
     """UI Test Scenario 1.2: Selecting Ручной режим opens the empty editor.
 
