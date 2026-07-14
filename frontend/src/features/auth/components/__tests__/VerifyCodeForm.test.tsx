@@ -41,6 +41,13 @@ describe('VerifyCodeForm', () => {
   })
 
   describe('digit auto-advance focus', () => {
+    const expectOtherBoxesEmpty = (exceptIndex: number) => {
+      for (let index = 0; index < 6; index += 1) {
+        if (index === exceptIndex) continue
+        expect((screen.getByTestId(`verify-code-input-${index}`) as HTMLInputElement).value).toBe('')
+      }
+    }
+
     it.skip('advances focus to the next box and records the digit when a digit is typed', () => {
       renderWithRouter(<VerifyCodeForm />)
 
@@ -51,9 +58,7 @@ describe('VerifyCodeForm', () => {
 
       expect(firstInput.value).toBe('5')
       expect(document.activeElement).toBe(secondInput)
-      for (let index = 2; index < 6; index += 1) {
-        expect((screen.getByTestId(`verify-code-input-${index}`) as HTMLInputElement).value).toBe('')
-      }
+      expectOtherBoxesEmpty(0)
     })
 
     it.skip('keeps focus on the last box and records the digit when its value is typed', () => {
@@ -65,9 +70,7 @@ describe('VerifyCodeForm', () => {
 
       expect(lastInput.value).toBe('9')
       expect(document.activeElement).toBe(lastInput)
-      for (let index = 0; index < 5; index += 1) {
-        expect((screen.getByTestId(`verify-code-input-${index}`) as HTMLInputElement).value).toBe('')
-      }
+      expectOtherBoxesEmpty(5)
     })
   })
 
