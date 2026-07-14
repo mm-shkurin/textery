@@ -1,0 +1,56 @@
+openapi: 3.0.3
+info:
+  title: Get Document
+  version: 1.0.0
+
+paths:
+  /api/v1/documents/{document_id}:
+    get:
+      summary: Fetch a document (reopen for continued manual editing)
+      operationId: getDocument
+      tags:
+        - documents
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '404':
+          description: No document with this id
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    DocumentResponse:
+      type: object
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        document_type:
+          type: string
+        status:
+          type: string
+          enum: [draft]
+        content:
+          type: string
+          description: Sanitized HTML; reflects the last successfully saved state (post-sanitization, not necessarily byte-identical to what was submitted).
+        version:
+          type: integer
+          description: Optimistic-concurrency token; required on subsequent PUT.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time

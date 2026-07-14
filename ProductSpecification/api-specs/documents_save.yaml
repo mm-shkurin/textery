@@ -1,0 +1,77 @@
+openapi: 3.0.3
+info:
+  title: Save Document Content
+  version: 1.0.0
+
+paths:
+  /api/v1/documents/{document_id}:
+    put:
+      summary: Save the full editor content for a manual document
+      operationId: saveDocument
+      tags:
+        - documents
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveDocumentRequest'
+      responses:
+        '200':
+          description: Saved — idempotent for identical (content, version); response reflects the sanitized, persisted content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '400':
+          description: content exceeds max length (200,000 chars) — rejected whole, never truncated
+        '404':
+          description: No document with this id
+        '409':
+          description: version does not match current state — another save landed first (lost-update guard); client must refetch and retry
+        '422':
+          description: Request body contains a server-owned field (document_type, id, status)
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    SaveDocumentRequest:
+      type: object
+      required:
+        - content
+        - version
+      properties:
+        content:
+          type: string
+          maxLength: 200000
+          description: Full document content (not a partial patch); sanitized server-side before persist.
+        version:
+          type: integer
+          description: Must match the document's current version; stale value returns 409.
+    DocumentResponse:
+      type: object
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        document_type:
+          type: string
+        status:
+          type: string
+          enum: [draft]
+        content:
+          type: string
+        version:
+          type: integer
+          description: Incremented on each successful save.
+        updated_at:
+          type: string
+          format: date-time

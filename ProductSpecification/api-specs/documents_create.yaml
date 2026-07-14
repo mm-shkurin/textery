@@ -1,0 +1,77 @@
+openapi: 3.0.3
+info:
+  title: Create Manual Document
+  version: 1.0.0
+
+paths:
+  /api/v1/documents:
+    post:
+      summary: Create an empty document for manual (non-AI) editing
+      operationId: createDocument
+      tags:
+        - documents
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: >
+            Client-generated key. Replaying the same key returns the existing
+            document (200) instead of creating a new one.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDocumentRequest'
+      responses:
+        '201':
+          description: Document created, empty, no Generation ever created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '200':
+          description: Idempotency-Key already seen — returns the existing document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '422':
+          description: Unsupported document_type, or a request body containing a server-owned field (status, id, content)
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    CreateDocumentRequest:
+      type: object
+      required:
+        - document_type
+      properties:
+        document_type:
+          type: string
+          enum: [доклад, эссе, сочинение, реферат]
+    DocumentResponse:
+      type: object
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        document_type:
+          type: string
+        status:
+          type: string
+          enum: [draft]
+        content:
+          type: string
+          description: Empty string on creation.
+        version:
+          type: integer
+          description: Optimistic-concurrency token; required on subsequent PUT.
+        created_at:
+          type: string
+          format: date-time
