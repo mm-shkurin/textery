@@ -4,6 +4,7 @@ import './AuthForm.css'
 import './VerifyCodeForm.css'
 
 const RESEND_COUNTDOWN_SECONDS = 60
+const CODE_LENGTH = 6
 
 function formatCountdown(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60)
@@ -18,7 +19,7 @@ export interface VerifyCodeFormProps {
 export function VerifyCodeForm({ email }: VerifyCodeFormProps) {
   const [countdownSeconds] = useState(RESEND_COUNTDOWN_SECONDS)
   const [isResending, setIsResending] = useState(false)
-  const [digits, setDigits] = useState<string[]>(Array(6).fill(''))
+  const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''))
   const inputRefs = useRef<Array<HTMLInputElement | null>>([])
 
   function handleDigitChange(index: number, value: string) {
@@ -28,7 +29,7 @@ export function VerifyCodeForm({ email }: VerifyCodeFormProps) {
       return next
     })
 
-    if (value && index < 5) {
+    if (value && index < CODE_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus()
     }
   }
@@ -49,7 +50,7 @@ export function VerifyCodeForm({ email }: VerifyCodeFormProps) {
     <div className="auth-card verify-code-card">
       <h1>Введите код подтверждения</h1>
       <div className="verify-code-inputs">
-        {Array.from({ length: 6 }, (_, index) => (
+        {Array.from({ length: CODE_LENGTH }, (_, index) => (
           <input
             key={index}
             ref={(element) => {
