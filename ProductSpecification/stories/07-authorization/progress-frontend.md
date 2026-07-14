@@ -48,6 +48,16 @@ association itself is present via `htmlFor`) — untouched, not part of this sce
 - [S] demo (skipped per convention, see note above)
 
 ### 1.3: Verification-code screen displays a 6-digit input and resend action
+
+SPEC GAP (premortem on `bfa2c52`, not code defects — no scenario anywhere in
+tests/02_UI_Tests.md covers these; flagged for test-spec review, not silently fixed here):
+- countdown display tick-down over time is never asserted by any scheduled scenario
+  (1.3/2.2/5.7/6.3 checked) — a static hardcoded "01:00" string would pass every planned
+  test
+- full 6-digit code paste into the box layout is not covered by any scheduled scenario —
+  current per-box `maxLength=1` contract will silently truncate a paste unless split-on-
+  paste logic is added, and nothing requires that logic to exist
+
 - [x] red-selenium
 - [x] red-frontend
 - [~] green-frontend
