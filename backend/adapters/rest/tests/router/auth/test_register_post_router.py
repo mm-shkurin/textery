@@ -1,7 +1,11 @@
+from datetime import datetime, timezone
+from uuid import uuid4
+
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
+from auth.account import Account
 from shared.exceptions import ValidationException
 from error_handling.exception_handlers import validation_exception_handler
 
@@ -57,6 +61,65 @@ class TestRegisterPostRouterMalformedEmail:
             email="not-an-email",
             password="Sup3rSecret!",
             confirm_password="Sup3rSecret!",
+        )
+
+
+@pytest.mark.skip(reason="RED: register() endpoint returns None with response_model=None, discarding the persisted Account")
+class TestRegisterPostRouterServerOwnedFields:
+    """Scenario 1.5: Ignore server-owned fields in the request body.
+
+    Given the usecase returns a persisted Account (server-generated id,
+    is_verified always False)
+    When the client submits POST /api/v1/auth/register
+    Then the response is 201 with a body containing id and is_verified
+    built from the domain Account, and password_hash is never present
+    """
+
+    async def test_should_return_201_with_id_and_is_verified_and_no_password_hash(self, mocker):
+        app = FastAPI()
+        app.include_router(auth_router)
+        app.add_exception_handler(ValidationException, validation_exception_handler)
+
+        created_account = Account.create(
+            id=uuid4(),
+            email="attacker@example.com",
+            password_hash="hashed-value",
+            created_at=datetime.now(timezone.utc),
+        )
+        mock_usecase = mocker.Mock()
+        mock_usecase.execute = mocker.AsyncMock(return_value=created_account)
+        app.dependency_overrides[get_register_user_usecase] = lambda: mock_usecase
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/auth/register",
+                json={
+                    "email": "attacker@example.com",
+                    "password": "Sup3rSecret!",
+                    "confirm_password": "Sup3rSecret!",
+                    "is_verified": True,
+                    "id": "11111111-1111-1111-1111-111111111111",
+                },
+            )
+
+        assert response.status_code == 201, (
+            f"expected 201 Created, got {response.status_code} with body {response.text}"
+        )
+        body = response.json()
+        assert body is not None, (
+            "expected a JSON body containing id and is_verified, got body=None"
+        )
+        assert body.get("user_id") == str(created_account.id), (
+            f"expected user_id={str(created_account.id)!r} from the persisted Account "
+            f"(field name per ProductSpecification/api-specs/auth_register.yaml "
+            f"RegisterResponse.user_id), got body={body}"
+        )
+        assert body.get("is_verified") is False, (
+            f"expected is_verified=False from the persisted Account, got body={body}"
+        )
+        assert "password_hash" not in body, (
+            f"expected password_hash to never be present in the response body, got body={body}"
         )
 
 
