@@ -1,0 +1,17 @@
+.verify-code-inputs {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.verify-code-inputs input {
+  width: 40px;
+  height: 48px;
+  text-align: center;
+  font-size: 1.25rem;
+}
+
+.verify-resend {
+  margin-top: 16px;
+  text-align: center;
+}

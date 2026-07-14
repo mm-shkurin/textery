@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { VerifyCodeForm } from '../VerifyCodeForm'
 
-describe.skip('VerifyCodeForm', () => {
+describe('VerifyCodeForm', () => {
   it('displays six single-digit code inputs', () => {
     render(
       <MemoryRouter>

@@ -60,8 +60,8 @@ tests/02_UI_Tests.md covers these; flagged for test-spec review, not silently fi
 
 - [x] red-selenium
 - [x] red-frontend
-- [~] green-frontend
-- [ ] red-frontend-api
+- [x] green-frontend
+- [~] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
 - [ ] green-selenium
