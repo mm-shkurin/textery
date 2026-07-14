@@ -83,8 +83,8 @@ scenarios) or a dedicated follow-up, not scope-crept into this step.
 
 ### 2.1: Password field visibility toggle
 - [x] red-selenium
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
