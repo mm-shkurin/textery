@@ -21,4 +21,4 @@ async def register(
         password=request.password,
         confirm_password=request.confirm_password,
     )
-    return RegisterResponseDto.from_domain(result.account)
+    return RegisterResponseDto.from_domain(result)

@@ -74,7 +74,7 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] red-adapter db
 - [x] green-adapter db — SqlAlchemyVerificationCodeRepository.save() implemented; also closed carried-forward consumed_at reconstruction gap via VerificationCode.reconstitute() (both agent-review and premortem flagged it in the owed review batch for red-adapter db). Test-coverage: clean, remaining uncovered lines are the not-yet-exercised reconstitute() read-back path, correctly out of scope until 3.x/4.x consume the codes.
 - [x] red-adapter rest — response-shape only (RegisterResponseDto missing email/verification_code/code_expires_at per api-specs/auth_register.yaml; `email` gap was missed at adapters-discovery time and independently caught by both agent-review and premortem, folded into this same red test before green-adapter rest locked scope); container.py null-object DI wiring gap deferred to green-adapter rest, not a separate red test
-- [~] green-adapter rest
+- [x] green-adapter rest — RegisterResponseDto.from_domain now built from full RegistrationResult (email/verification_code/code_expires_at added); auth_router.register() passes full result; container.py wires real SqlAlchemyVerificationCodeRepository, replacing null-object fallback. Test-coverage pass interrupted by user — owed before next work unit on this scenario proceeds.
 - [ ] green-acceptance
 
 ### Scenario 2.2: Duplicate email is rejected, verified or pending

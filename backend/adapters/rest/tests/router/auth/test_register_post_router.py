@@ -135,9 +135,6 @@ class TestRegisterPostRouterVerificationCode:
     code_expires_at built from the domain Account and VerificationCode
     """
 
-    @pytest.mark.skip(
-        reason="RED: RegisterResponseDto missing email/verification_code/code_expires_at"
-    )
     async def test_should_return_201_with_verification_code_and_code_expires_at(
         self, mocker, register_client
     ):

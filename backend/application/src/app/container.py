@@ -4,6 +4,7 @@ from typing import AsyncIterator
 from uuid import UUID
 
 from access.auth.account_storage import SqlAlchemyAccountRepository
+from access.auth.verification_code_storage import SqlAlchemyVerificationCodeRepository
 from access.generation.generation_storage import SqlAlchemyGenerationStorage
 from auth.register_user import RegisterUser
 from generation.generate_document import GenerateDocument
@@ -83,7 +84,11 @@ async def create_register_user() -> AsyncIterator[RegisterUser]:
     session = _session_factory()
     try:
         repository = SqlAlchemyAccountRepository(session)
-        yield RegisterUser(account_repository=repository)
+        verification_code_repository = SqlAlchemyVerificationCodeRepository(session)
+        yield RegisterUser(
+            account_repository=repository,
+            verification_code_repository=verification_code_repository,
+        )
     finally:
         await session.close()
 
