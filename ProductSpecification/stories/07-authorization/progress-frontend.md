@@ -105,8 +105,8 @@ scenarios) or a dedicated follow-up, not scope-crept into this step.
 
 ### 2.3: In-flight submit buttons are disabled to prevent duplicate submission
 - [x] red-selenium
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
