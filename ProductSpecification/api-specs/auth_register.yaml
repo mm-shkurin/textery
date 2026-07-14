@@ -21,6 +21,11 @@ paths:
           description: >
             Account created (is_verified=false). verification_code is the mocked code —
             returned here because no real email is sent (see 07_Authorization.md).
+            Server-owned fields (is_verified, user_id, created_at) sent in the request
+            body are silently ignored, never bound onto the created account — no 422,
+            no error (scenario 1.5, hazard-scan group 5 mass-assignment guard; the
+            request schema doesn't declare these fields at all, so they're dropped at
+            parse time).
           content:
             application/json:
               schema:
@@ -32,11 +37,6 @@ paths:
             confirm_password mismatch.
         '409':
           description: Email already registered (verified or pending) — duplicate.
-        '422':
-          description: >
-            Request body contains a server-owned field (is_verified, id, created_at) —
-            rejected rather than silently ignored (hazard-scan group 5 mass-assignment
-            guard).
         '500':
           description: Internal server error — generic client-safe message only.
 
