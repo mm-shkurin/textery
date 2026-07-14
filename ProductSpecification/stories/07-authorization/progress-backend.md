@@ -31,10 +31,10 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [S] red-usecase — Email constructor's existing length guard already rejects 256-char input; no new usecase behavior
 - [S] green-usecase — nothing to implement, guard pre-exists
 - [S] adapters-discovery — REST error mapping already wired for INVALID_EMAIL in Scenario 1.1; no new adapter surface
-- [~] green-acceptance
+- [x] green-acceptance
 
 ### Scenario 1.3: Reject password failing the policy
-- [ ] red-acceptance
+- [~] red-acceptance
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase
