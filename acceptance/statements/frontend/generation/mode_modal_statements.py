@@ -6,8 +6,6 @@ from selenium.webdriver.remote.webelement import WebElement
 
 from statements.frontend.base_frontend_statements import BaseFrontendStatements
 
-PRIMARY_CTA_BUTTON = (By.CSS_SELECTOR, "[data-testid='header-primary-cta-button']")
-TYPE_CARD_DOKLAD = (By.CSS_SELECTOR, "[data-testid='type-card-doklad']")
 MODE_MODAL = (By.CSS_SELECTOR, "[data-testid='mode-modal']")
 MODE_CARD_MANUAL = (By.CSS_SELECTOR, "[data-testid='mode-card-manual']")
 MODE_CARD_AUTO = (By.CSS_SELECTOR, "[data-testid='mode-card-auto']")
@@ -27,9 +25,7 @@ class ModeModalStatements(BaseFrontendStatements):
     EXPECTED_AUTO_MODE_NAME: ClassVar[str] = "Автоматический режим"
 
     def navigate_to_mode_modal(self, driver: WebDriver, app_url: str) -> None:
-        driver.get(app_url)
-        self._wait_for_visible(driver, PRIMARY_CTA_BUTTON).click()
-        self._wait_for_visible(driver, TYPE_CARD_DOKLAD).click()
+        self.navigate_to_doklad_type_modal(driver, app_url)
         self._wait_for_visible(driver, MODE_MODAL)
 
     def assert_manual_mode_card_is_available_and_selectable(self, driver: WebDriver) -> None:

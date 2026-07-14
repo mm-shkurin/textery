@@ -5,8 +5,6 @@ from selenium.webdriver.remote.webdriver import WebDriver
 
 from statements.frontend.base_frontend_statements import BaseFrontendStatements
 
-PRIMARY_CTA_BUTTON = (By.CSS_SELECTOR, "[data-testid='header-primary-cta-button']")
-TYPE_CARD_DOKLAD = (By.CSS_SELECTOR, "[data-testid='type-card-doklad']")
 MODE_CARD_AUTO = (By.CSS_SELECTOR, "[data-testid='mode-card-auto']")
 
 CHAT_PANEL = (By.CSS_SELECTOR, "[data-testid='chat-panel']")
@@ -27,9 +25,7 @@ class ChatWorkspaceStatements(BaseFrontendStatements):
     EXPECTED_SEND_BUTTON_TEXT: ClassVar[str] = "Сгенерировать"
 
     def navigate_to_chat_workspace_for_doklad(self, driver: WebDriver, app_url: str) -> None:
-        driver.get(app_url)
-        self._wait_for_visible(driver, PRIMARY_CTA_BUTTON).click()
-        self._wait_for_visible(driver, TYPE_CARD_DOKLAD).click()
+        self.navigate_to_doklad_type_modal(driver, app_url)
         self._wait_for_visible(driver, MODE_CARD_AUTO).click()
 
     def assert_chat_panel_is_visible(self, driver: WebDriver) -> None:
