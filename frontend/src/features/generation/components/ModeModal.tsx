@@ -4,7 +4,7 @@ import './Modal.css'
 export type GenerationMode = 'auto' | 'manual'
 
 const MODES: Array<{ id: GenerationMode; name: string; desc: string; available: boolean }> = [
-  { id: 'manual', name: 'Ручной режим', desc: 'Создайте документ самостоятельно, без ИИ', available: false },
+  { id: 'manual', name: 'Ручной режим', desc: 'Создайте документ самостоятельно, без ИИ', available: true },
   { id: 'auto', name: 'Автоматический режим', desc: 'ИИ сгенерирует текст по вашей теме и требованиям', available: true },
 ]
 

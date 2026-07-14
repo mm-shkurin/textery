@@ -8,8 +8,8 @@ Owns: Frontend Scenarios. Narrative/decisions/Spec checklist live in `progress.m
 ### Scenario 1.1: The mode modal now shows both modes as available
 - [x] red-selenium
 - [x] red-frontend
-- [~] green-frontend
-- [ ] red-frontend-api
+- [x] green-frontend
+- [~] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
 - [ ] green-selenium

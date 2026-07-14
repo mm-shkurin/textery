@@ -19,8 +19,7 @@ describe('ModeModal', () => {
   // mode available for every document type. The skipped test below is the
   // correct replacement specification for this card's behavior.
 
-  // TDD Red Phase - manual mode still marked unavailable in ModeModal
-  it.skip('selecting the available manual mode calls onSelect', () => {
+  it('selecting the available manual mode calls onSelect', () => {
     const onSelect = vi.fn()
     render(
       <ModeModal documentTypeLabel="Доклад" onSelect={onSelect} onBack={vi.fn()} onClose={vi.fn()} />,
