@@ -43,9 +43,7 @@ class ChatWorkspaceStatements(BaseFrontendStatements):
         assert value == "", f"expected topic input to start empty, got '{value}'"
 
     def assert_send_button_is_visible_and_disabled(self, driver: WebDriver) -> None:
-        element = self._wait_for_visible(driver, TOPIC_SEND_BUTTON)
-        assert element.is_displayed(), "expected send button to be visible"
-        assert element.text.strip() == self.EXPECTED_SEND_BUTTON_TEXT, (
-            f"expected send button text '{self.EXPECTED_SEND_BUTTON_TEXT}', got '{element.text}'"
+        element = self._assert_element_text_equals(
+            driver, TOPIC_SEND_BUTTON, self.EXPECTED_SEND_BUTTON_TEXT, "send button text"
         )
         assert not element.is_enabled(), "expected send button to be disabled before any text is entered"

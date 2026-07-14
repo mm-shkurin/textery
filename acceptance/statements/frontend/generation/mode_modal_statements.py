@@ -56,11 +56,7 @@ class ModeModalStatements(BaseFrontendStatements):
         self._assert_card_class_marks_it_available(card, label)
         assert card.is_enabled() is True, f"expected {label} to be enabled/selectable, was disabled"
 
-        name_element = self._wait_for_visible(driver, name_locator)
-        actual_name = name_element.text.strip()
-        assert actual_name == expected_name, (
-            f"expected {label} name to be '{expected_name}', got '{actual_name}'"
-        )
+        self._assert_element_text_equals(driver, name_locator, expected_name, f"{label} name")
 
     def _assert_card_class_marks_it_available(self, card: WebElement, label: str) -> None:
         actual_class = card.get_attribute("class")

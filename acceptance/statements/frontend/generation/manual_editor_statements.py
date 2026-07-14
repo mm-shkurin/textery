@@ -6,10 +6,24 @@ from selenium.webdriver.support.wait import WebDriverWait
 from statements.frontend.base_frontend_statements import BaseFrontendStatements, WAIT_TIMEOUT_SECONDS
 from statements.frontend.generation.mode_modal_statements import MODE_CARD_MANUAL, MODE_MODAL
 
-MANUAL_EDITOR = (By.CSS_SELECTOR, "[data-testid='manual-editor']")
-EDITOR_BREADCRUMB = (By.CSS_SELECTOR, "[data-testid='manual-editor'] [data-testid='editor-breadcrumb']")
+MANUAL_EDITOR_SELECTOR = "[data-testid='manual-editor']"
+MANUAL_EDITOR = (By.CSS_SELECTOR, MANUAL_EDITOR_SELECTOR)
+EDITOR_BREADCRUMB = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} [data-testid='editor-breadcrumb']")
+LOADING_SKELETON = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-loading-skeleton")
+CONTENT_PLACEHOLDER = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-placeholder")
+TOOLBAR_BUTTON = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-toolbar-btn")
 
 EXPECTED_DOKLAD_BREADCRUMB = "Доклад · Ручной режим"
+EXPECTED_PLACEHOLDER_TEXT = "Начните печатать…"
+
+TOOLBAR_BUTTON_ARIA_LABELS = {
+    "heading": ["Заголовок 1", "Заголовок 2"],
+    "paragraph": ["Абзац"],
+    "list": ["Маркированный список", "Нумерованный список"],
+    "bold": ["Жирный"],
+    "italic": ["Курсив"],
+}
+EXPECTED_TOOLBAR_BUTTON_COUNT = 7
 
 
 class ManualEditorStatements(BaseFrontendStatements):
@@ -24,9 +38,35 @@ class ManualEditorStatements(BaseFrontendStatements):
 
     def assert_manual_editor_is_open_for_doklad(self, driver: WebDriver) -> None:
         self._wait_for_visible(driver, MANUAL_EDITOR)
+        self._assert_element_text_equals(
+            driver, EDITOR_BREADCRUMB, EXPECTED_DOKLAD_BREADCRUMB, "editor breadcrumb"
+        )
 
-        breadcrumb = self._wait_for_visible(driver, EDITOR_BREADCRUMB)
-        actual_breadcrumb = breadcrumb.text.strip()
-        assert actual_breadcrumb == EXPECTED_DOKLAD_BREADCRUMB, (
-            f"expected editor breadcrumb '{EXPECTED_DOKLAD_BREADCRUMB}', got '{actual_breadcrumb}'"
+    def assert_no_loading_skeleton_is_shown(self, driver: WebDriver) -> None:
+        # Wait for the editor shell to mount before asserting absence, so the
+        # check can't pass vacuously by running before a skeleton would appear.
+        self._wait_for_visible(driver, MANUAL_EDITOR)
+        skeleton_elements = driver.find_elements(*LOADING_SKELETON)
+        assert not skeleton_elements, (
+            f"expected no loading skeleton, found {len(skeleton_elements)} element(s)"
+        )
+
+    def assert_content_placeholder_is_visible(self, driver: WebDriver) -> None:
+        self._assert_element_text_equals(
+            driver, CONTENT_PLACEHOLDER, EXPECTED_PLACEHOLDER_TEXT, "content placeholder text"
+        )
+
+    def assert_toolbar_controls_are_visible(self, driver: WebDriver) -> None:
+        for control_name, aria_labels in TOOLBAR_BUTTON_ARIA_LABELS.items():
+            for aria_label in aria_labels:
+                locator = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-toolbar-btn[aria-label='{aria_label}']")
+                button = self._wait_for_visible(driver, locator)
+                assert button.is_enabled(), (
+                    f"expected {control_name} toolbar control '{aria_label}' to be enabled"
+                )
+
+        toolbar_buttons = driver.find_elements(*TOOLBAR_BUTTON)
+        assert len(toolbar_buttons) == EXPECTED_TOOLBAR_BUTTON_COUNT, (
+            f"expected exactly {EXPECTED_TOOLBAR_BUTTON_COUNT} toolbar controls, "
+            f"found {len(toolbar_buttons)}"
         )

@@ -28,14 +28,14 @@ Owns: Frontend Scenarios. Narrative/decisions/Spec checklist live in `progress.m
 - [x] demo
 
 ### Scenario 2.1: A freshly created document shows an empty, ready-to-type editor
-- [ ] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
-- [ ] green-selenium
-- [ ] demo
+- [x] red-selenium — test added, already GREEN on first run: content placeholder, all 5 toolbar control groups, and no-skeleton were all built unconditionally by scenario 1.2's ManualEditor; no disable marker was needed since there was no red state.
+- [S] red-frontend — fully covered by scenario 1.2's ManualEditor build, no new component logic required
+- [S] green-frontend — same reason
+- [S] red-frontend-api — no new API call for this scenario (display-only, document already created in 1.2's flow)
+- [S] green-frontend-api — same reason
+- [S] align-design — content-area/toolbar/breadcrumb styling already aligned to mockup in scenario 1.2
+- [S] green-selenium — red-selenium test is already green; no marker to remove
+- [~] demo
 
 ### Scenario 3.1: Applying a format changes the content and highlights the active toolbar button
 - [ ] red-selenium

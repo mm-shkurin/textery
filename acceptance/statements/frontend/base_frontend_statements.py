@@ -16,6 +16,15 @@ class BaseFrontendStatements:
     def _wait_for_visible(self, driver: WebDriver, locator: tuple[str, str]) -> WebElement:
         return WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(ec.visibility_of_element_located(locator))
 
+    def _assert_element_text_equals(
+        self, driver: WebDriver, locator: tuple[str, str], expected: str, label: str
+    ) -> WebElement:
+        """Wait for the element, strip its text, and assert exact equality to `expected`."""
+        element = self._wait_for_visible(driver, locator)
+        actual = element.text.strip()
+        assert actual == expected, f"expected {label} to be '{expected}', got '{actual}'"
+        return element
+
     def navigate_to_doklad_type_modal(self, driver: WebDriver, app_url: str) -> None:
         """Navigate to the app, open the primary CTA, and select the 'doklad' type card.
 
