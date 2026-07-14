@@ -1,6 +1,9 @@
+from datetime import datetime, timezone
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.verification_code import VerificationCode
+from model.auth.verification_code_model import VerificationCodeModel
 
 
 class SqlAlchemyVerificationCodeRepository:
@@ -8,4 +11,5 @@ class SqlAlchemyVerificationCodeRepository:
         self._session = session
 
     async def save(self, code: VerificationCode) -> None:
-        raise NotImplementedError
+        self._session.add(VerificationCodeModel.from_domain(code, created_at=datetime.now(timezone.utc)))
+        await self._session.commit()

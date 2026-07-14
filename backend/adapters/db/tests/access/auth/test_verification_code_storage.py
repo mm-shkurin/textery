@@ -1,9 +1,6 @@
-import pytest
-
 from statements.verification_code_storage_statements import VerificationCodeStorageStatements
 
 
-@pytest.mark.skip(reason="RED: SqlAlchemyVerificationCodeRepository.save not implemented")
 class TestSave:
     """Saving a verification code persists id, account_id, code (byte-exact
     string), expires_at, and consumed_at=None exactly as passed in."""

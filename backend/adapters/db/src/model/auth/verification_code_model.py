@@ -34,9 +34,10 @@ class VerificationCodeModel(Base):
         )
 
     def to_domain(self) -> VerificationCode:
-        return VerificationCode(
+        return VerificationCode.reconstitute(
             id=self.id,
             account_id=self.account_id,
             code=self.code,
             expires_at=self.expires_at,
+            consumed_at=self.consumed_at,
         )

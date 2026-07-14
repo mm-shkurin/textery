@@ -32,6 +32,25 @@ class VerificationCode(object):
         )
 
     @classmethod
+    def reconstitute(
+        cls,
+        id: UUID,
+        account_id: UUID,
+        code: str,
+        expires_at: datetime,
+        consumed_at: Optional[datetime],
+    ) -> "VerificationCode":
+        """Rebuild a VerificationCode from storage, preserving consumed_at."""
+        instance = cls(
+            id=id,
+            account_id=account_id,
+            code=code,
+            expires_at=expires_at,
+        )
+        instance._consumed_at = consumed_at
+        return instance
+
+    @classmethod
     def generate(cls, id: UUID, account_id: UUID, created_at: datetime) -> "VerificationCode":
         """Issue a new code: a random 6-digit string expiring 10 minutes from `created_at`."""
         code = f"{secrets.randbelow(_CODE_MODULUS):0{_CODE_DIGITS}d}"
