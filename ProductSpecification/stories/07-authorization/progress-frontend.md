@@ -128,8 +128,8 @@ so its red-frontend step must add the button first.
 - [x] green-frontend (login)
 - [S] red-frontend-api (login) — no real login API call exists yet, same scoping decision as Scenario 2.3's register test; deferred until a real endpoint lands
 - [S] green-frontend-api (login) — see above
-- [ ] red-frontend (confirm: add Confirm button + isSubmitting state to VerifyCodeForm.tsx — new UI element per mockup, not previously implemented)
-- [ ] green-frontend (confirm)
+- [x] red-frontend (confirm: unit test asserts a verify-confirm-button exists and disables on click; RED confirmed — TestingLibraryElementError, element not found, since the button doesn't exist yet)
+- [~] green-frontend (confirm: add the Confirm button + wire useSubmitPlaceholder)
 - [S] red-frontend-api (confirm) — no real verify-confirm API call exists yet, same scoping decision as login/register
 - [S] green-frontend-api (confirm) — see above
 - [ ] red-selenium (confirm: once the button exists, add its own acceptance test)
