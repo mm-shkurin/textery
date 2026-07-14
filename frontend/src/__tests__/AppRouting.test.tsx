@@ -20,4 +20,20 @@ describe('App routing', () => {
     expect(screen.getByTestId('register-password-input')).toHaveAttribute('type', 'password')
     expect(screen.getByTestId('register-confirm-password-input')).toHaveAttribute('type', 'password')
   })
+
+  // RED: App.tsx has no /login route yet, only /* catch-all rendering
+  // DocumentGenerationFlow. Expect a Testing Library "unable to find element"
+  // failure, not an import-resolution error (react-router-dom is already used above).
+  it('renders LoginForm at /login', async () => {
+    const { MemoryRouter } = await import('react-router-dom')
+
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByTestId('login-email-input')).toHaveAttribute('type', 'email')
+    expect(screen.getByTestId('login-password-input')).toHaveAttribute('type', 'password')
+  })
 })
