@@ -1,15 +1,28 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import './AuthForm.css'
 import './RegisterForm.css'
 
 export function RegisterForm() {
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setIsSubmitting(true)
+    try {
+      await Promise.resolve()
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <div className="auth-card register-card">
       <h1>Регистрация в Textery AI</h1>
       <p className="auth-subtitle register-subtitle">
         Создайте аккаунт по email, чтобы начать генерировать документы
       </p>
-      <form>
+      <form onSubmit={handleSubmit}>
         <div className="auth-field">
           <label htmlFor="email">Email</label>
           <input
@@ -40,7 +53,12 @@ export function RegisterForm() {
             data-testid="register-confirm-password-input"
           />
         </div>
-        <button type="submit" className="auth-submit" data-testid="register-submit-button">
+        <button
+          type="submit"
+          className="auth-submit"
+          data-testid="register-submit-button"
+          disabled={isSubmitting}
+        >
           Зарегистрироваться
         </button>
         <p className="register-terms">

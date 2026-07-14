@@ -106,10 +106,10 @@ scenarios) or a dedicated follow-up, not scope-crept into this step.
 ### 2.3: In-flight submit buttons are disabled to prevent duplicate submission
 - [x] red-selenium
 - [x] red-frontend
-- [~] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
+- [x] green-frontend
+- [S] red-frontend-api (no real API call in this scenario yet — placeholder Promise.resolve() boundary only; actual registration API lands in Scenario 3.1)
+- [S] green-frontend-api (see above)
+- [~] align-design
 - [ ] green-selenium
 - [ ] demo
 

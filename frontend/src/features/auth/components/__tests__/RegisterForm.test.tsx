@@ -13,8 +13,7 @@ describe('RegisterForm', () => {
     expect(screen.getByRole('button', { name: 'Зарегистрироваться' })).toBeInTheDocument()
   })
 
-  // TDD Red Phase - RegisterForm has no onSubmit handler, disabled state never set
-  it.skip('disables the submit button immediately after it is clicked', () => {
+  it('disables the submit button immediately after it is clicked', () => {
     renderWithRouter(<RegisterForm />)
     const submitButton = screen.getByTestId('register-submit-button')
     expect(submitButton).not.toBeDisabled()
