@@ -44,3 +44,24 @@ class BaseFrontendStatements:
         assert element.text.strip() == expected_text, (
             f"expected submit button text '{expected_text}', got '{element.text}'"
         )
+
+    def _assert_disabled(self, driver: WebDriver, locator: tuple[str, str], label: str) -> None:
+        element = self._wait_for_visible(driver, locator)
+        assert not element.is_enabled(), f"expected {label} to be disabled"
+
+    def _count_requests_to(self, driver: WebDriver, path_substring: str) -> int:
+        """Counts Network.requestWillBeSent CDP events whose URL contains
+        `path_substring`. Requires the webdriver fixture to enable
+        `goog:loggingPrefs: {"performance": "ALL"}`.
+        """
+        import json
+
+        count = 0
+        for entry in driver.get_log("performance"):
+            message = json.loads(entry["message"])["message"]
+            if message.get("method") != "Network.requestWillBeSent":
+                continue
+            url = message.get("params", {}).get("request", {}).get("url", "")
+            if path_substring in url:
+                count += 1
+        return count

@@ -52,4 +52,4 @@ class ChatWorkspaceStatements(BaseFrontendStatements):
         assert element.text.strip() == self.EXPECTED_SEND_BUTTON_TEXT, (
             f"expected send button text '{self.EXPECTED_SEND_BUTTON_TEXT}', got '{element.text}'"
         )
-        assert not element.is_enabled(), "expected send button to be disabled before any text is entered"
+        self._assert_disabled(driver, TOPIC_SEND_BUTTON, "send button")

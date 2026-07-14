@@ -44,6 +44,10 @@ def webdriver():
     options = ChromeOptions()
     options.add_argument("--headless=new")
     options.add_argument("--window-size=1400,1000")
+    # Enables driver.get_log("performance") so Statements can assert on
+    # actual network traffic (e.g. duplicate-submission checks) instead of
+    # only on DOM state.
+    options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
     driver = selenium_webdriver.Chrome(options=options)
     yield driver
     driver.quit()
