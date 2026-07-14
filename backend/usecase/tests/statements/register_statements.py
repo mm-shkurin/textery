@@ -10,6 +10,8 @@ class RegisterStatements:
     EXPECTED_INVALID_EMAIL_MESSAGE = "The email address is not valid."
     EXPECTED_INVALID_PASSWORD_ERROR_CODE = "INVALID_PASSWORD"
     EXPECTED_INVALID_PASSWORD_MESSAGE = "The password does not meet the password policy."
+    EXPECTED_PASSWORD_MISMATCH_ERROR_CODE = "PASSWORD_MISMATCH"
+    EXPECTED_PASSWORD_MISMATCH_MESSAGE = "The password confirmation does not match."
 
     def __init__(self) -> None:
         self.thrown_exception: Optional[Exception] = None
@@ -20,6 +22,11 @@ class RegisterStatements:
     async def attempt_registering_with_password(self, password: Optional[str]) -> None:
         await self._attempt_registering(
             RegisterRequestScope.builder(password=password, confirm_password=password)
+        )
+
+    async def attempt_registering_with_mismatched_confirmation(self, confirm_password: str) -> None:
+        await self._attempt_registering(
+            RegisterRequestScope.builder(confirm_password=confirm_password)
         )
 
     async def _attempt_registering(self, scope: RegisterRequestScope) -> None:
@@ -40,6 +47,11 @@ class RegisterStatements:
     def assert_invalid_password_error_raised(self) -> None:
         self._assert_validation_error_raised(
             self.EXPECTED_INVALID_PASSWORD_ERROR_CODE, self.EXPECTED_INVALID_PASSWORD_MESSAGE
+        )
+
+    def assert_password_mismatch_error_raised(self) -> None:
+        self._assert_validation_error_raised(
+            self.EXPECTED_PASSWORD_MISMATCH_ERROR_CODE, self.EXPECTED_PASSWORD_MISMATCH_MESSAGE
         )
 
     def assert_registration_succeeded(self) -> None:
