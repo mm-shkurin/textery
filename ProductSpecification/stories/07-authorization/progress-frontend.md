@@ -100,8 +100,8 @@ scenarios) or a dedicated follow-up, not scope-crept into this step.
 - [S] red-frontend-api (no API call in this scenario — client-side focus-advance only, per tests/02_UI_Tests.md §2.2)
 - [S] green-frontend-api (see above)
 - [x] align-design (no styling changes needed — CSS already aligned to mockup from Scenario 1.3; design-review PASS, no hardcoded placeholder data; test-coverage focus found no genuinely new in-scope gaps)
-- [~] green-selenium
-- [ ] demo
+- [x] green-selenium (test already had no skip marker from red-selenium; GREEN confirmed after resetting a stale local Postgres migration-state mismatch — infra fix, not code)
+- [S] demo (skipped per convention, see note above)
 
 ### 2.3: In-flight submit buttons are disabled to prevent duplicate submission
 - [ ] red-selenium
