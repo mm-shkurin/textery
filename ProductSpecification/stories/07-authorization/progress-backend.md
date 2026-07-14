@@ -58,7 +58,11 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] design (see `decisions/account-persistence-design-decision.md`) — domain Account entity (is_verified pinned at construction, no setter), AccountRepository port, Clock port injected now (SystemClock adapter), SQLAlchemy accounts table+migration (email unique constraint deferred to 2.2, additive-safe), dedicated RegisterResponseDto (id/is_verified only, never password_hash), per-run-unique email fixture for the 1.5 acceptance test, DB-failure error mapping.
 - [x] red-usecase
 - [x] green-usecase
-- [~] adapters-discovery
+- [x] adapters-discovery (Check 1 ports: db — no SqlAlchemyAccountRepository/accounts table/migration exists → red-adapter db / green-adapter db needed. Check 1 ports: clock — [S] SystemClock already implemented inline in register_user.py, stdlib-only datetime.now(timezone.utc), no framework dependency, no separate adapter module needed. Check 2 exceptions: [S] — scenario 1.5's persistence is a bare insert with no uniqueness constraint yet (deferred to 2.2), so no new domain exception type is introduced by this scenario to map. Check 3 response shape: rest — auth_router.register() returns `None` with `response_model=None`, discarding RegisterUser.execute's returned Account; acceptance test expects a 201 body with `id`/`is_verified` → red-adapter rest / green-adapter rest needed, including container.py wiring a real AccountRepository into create_register_user() (currently `RegisterUser()` with no args, silently using the null-object fallback per the agent-review/premortem findings on the green-usecase commit).)
+- [ ] red-adapter db
+- [ ] green-adapter db
+- [ ] red-adapter rest
+- [ ] green-adapter rest
 - [ ] green-acceptance
 
 ### Scenario 2.1: Valid registration creates a pending account and returns a verification code
