@@ -15,3 +15,10 @@ Quirk and enduring-invariant entries promoted from completed scenario summaries.
 **Where:** `acceptance/clients/application/application_client.py`; port value in `infra/.env`.
 **Implication:** Any acceptance backend test run locally needs `BACKEND_PORT=8100` exported (or sourced from `infra/.env`) — otherwise a real 404 (route not mounted) is indistinguishable from a wrong-port 404.
 **From:** scenario 1.1 (reject-malformed-email)
+
+## Quirk: `docker compose build backend` fails with "invalid file request" on OneDrive-synced checkout
+
+**Quirk:** `docker compose build backend` (needed to pick up new backend code before `green-acceptance`) fails with `ERROR: invalid file request backend/adapters/generation_provider/certs/russiantrustedca.pem` during context transfer — reproduced with default builder, a fresh `docker buildx` builder, and after `docker builder prune`. Root cause: repo lives under OneDrive (`C:\Users\trape\OneDrive\Desktop\textery`), and OneDrive's cloud-file (Files On-Demand) reparse-point handling races with buildkit's context sync even when the file is fully hydrated/pinned locally.
+**Workaround used:** stopped the `infra-backend-1` container and ran the backend directly with local `uvicorn` (`DATABASE_URL=postgresql+asyncpg://textery:change-me@localhost:5432/textery`, `REDIS_URL=redis://localhost:6379/0`, pointed at the compose-exposed Postgres/Redis ports) to exercise `green-acceptance` against fresh code, then restarted the container afterward (still running the old image).
+**Implication:** Any `green-acceptance` step that needs a backend code change picked up will hit this until the container image is rebuilt. Either rebuild the image outside this checkout path (e.g. a non-OneDrive clone) or keep using the local-uvicorn workaround per scenario.
+**From:** scenario 1.3 (reject-password-failing-policy)

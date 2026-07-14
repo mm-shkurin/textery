@@ -43,7 +43,7 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] red-usecase (coverage: password at exact upper boundary (128 chars) satisfying all policy rules is accepted) — test added already-green; `Password._is_valid` uses `len(raw_value) > MAX_PASSWORD_LENGTH` (strict `>`), so 128 chars is correctly accepted, no off-by-one bug at the boundary
 - [S] green-usecase (coverage: password at exact upper boundary (128 chars) satisfying all policy rules is accepted) — no production change needed, boundary check already correct
 - [x] adapters-discovery (Check 1 ports: [S] none — RegisterUser.execute takes no injected port, no persistence on this scenario's path. Check 2 exceptions: [S] — validation_exception_handler maps any ValidationException generically to {"error_code","message"}, already covers INVALID_PASSWORD as of scenario 1.1's wiring. Check 3 response shape: [S] — /api/v1/auth/register endpoint already exists and already returns the generic error body; no new adapter surface needed.)
-- [ ] green-acceptance
+- [x] green-acceptance
 
 ### Scenario 1.4: Reject password/confirm_password mismatch
 - [ ] red-acceptance

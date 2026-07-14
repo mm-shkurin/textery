@@ -1,9 +1,6 @@
-import pytest
-
 from tests.backend.abstract_backend_test import AbstractBackendTest
 
 
-@pytest.mark.skip(reason="TDD Red Phase - Not yet implemented")
 class TestRegisterPasswordPolicyAcceptance(AbstractBackendTest):
     """Scenario 1.3: Reject password failing the policy.
 
