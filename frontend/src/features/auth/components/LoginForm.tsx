@@ -1,27 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useSubmitPlaceholder } from '../hooks/useSubmitPlaceholder'
 import './AuthForm.css'
 import './LoginForm.css'
 
-const SUBMIT_PLACEHOLDER_DELAY_MS = 500
-
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setIsSubmitting(true)
-    try {
-      // Placeholder in-flight boundary — no login API exists yet (backend
-      // endpoint is being built in a parallel session). A real delay is used
-      // instead of Promise.resolve() so the disabled window is long enough
-      // for Selenium to observe it in a real browser.
-      await new Promise((resolve) => setTimeout(resolve, SUBMIT_PLACEHOLDER_DELAY_MS))
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+  const { isSubmitting, handleSubmit } = useSubmitPlaceholder()
 
   function handleToggleShowPassword(event: React.MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
