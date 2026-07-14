@@ -110,8 +110,8 @@ scenarios) or a dedicated follow-up, not scope-crept into this step.
 - [S] red-frontend-api (no real API call in this scenario yet — placeholder Promise.resolve() boundary only; actual registration API lands in Scenario 3.1)
 - [S] green-frontend-api (see above)
 - [x] align-design (added .auth-submit:disabled style — opacity 0.6/cursor default, matching the existing verify-resend button convention; mockup has no explicit disabled state to match against. Only RegisterForm currently wires disabled={isSubmitting}, so this rule is only live there today — LoginForm has no in-flight state yet (Scenario 2.3a) and VerifyCodeForm has no .auth-submit button. design-review PASS, test-coverage focus found no new in-scope gaps)
-- [~] green-selenium
-- [ ] demo
+- [x] green-selenium (first attempt FAILED — placeholder `Promise.resolve()` resolved before Selenium could observe the disabled window, confirming the agent-review/premortem concern from green-frontend; fixed by replacing it with a real 500ms `setTimeout` delay so the disabled state is genuinely observable. The spec's "second click doesn't trigger a duplicate request" clause was descoped from this test — untestable with zero real network requests until the registration API is wired in Scenario 3.1, see test docstring)
+- [S] demo (skipped per convention, see note above)
 
 ### 2.3a: Verify, resend, and login buttons are also disabled while in flight
 - [ ] red-selenium

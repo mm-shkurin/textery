@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import './AuthForm.css'
 import './RegisterForm.css'
 
+const SUBMIT_PLACEHOLDER_DELAY_MS = 500
+
 export function RegisterForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -10,7 +12,12 @@ export function RegisterForm() {
     event.preventDefault()
     setIsSubmitting(true)
     try {
-      await Promise.resolve()
+      // Placeholder in-flight boundary — no registration API exists yet
+      // (backend endpoint is being built in a parallel session; real
+      // wiring lands in Scenario 3.1). A real delay is used instead of
+      // Promise.resolve() so the disabled window is long enough for
+      // Selenium to observe it in a real browser.
+      await new Promise((resolve) => setTimeout(resolve, SUBMIT_PLACEHOLDER_DELAY_MS))
     } finally {
       setIsSubmitting(false)
     }
