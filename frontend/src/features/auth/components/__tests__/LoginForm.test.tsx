@@ -16,6 +16,17 @@ describe('LoginForm', () => {
     expect(screen.getByTestId('login-submit-button')).toHaveTextContent('Войти')
   })
 
+  it('associates labels with the email and password inputs', () => {
+    render(
+      <MemoryRouter>
+        <LoginForm />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByLabelText('Email')).toBe(screen.getByTestId('login-email-input'))
+    expect(screen.getByLabelText('Пароль')).toBe(screen.getByTestId('login-password-input'))
+  })
+
   it('prevents native form navigation on submit (Enter-key or button)', () => {
     render(
       <MemoryRouter>

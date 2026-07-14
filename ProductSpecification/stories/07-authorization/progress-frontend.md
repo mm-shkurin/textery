@@ -25,10 +25,13 @@ click-through tests but the components themselves already use the router primiti
 
 ### 1.2: Login form displays email and password fields — CLOSED
 
-RESOLVED (was "Known gaps" from premortem on `fef125a`): LoginForm.tsx (green-frontend,
-`f2a0f88`) fixed `htmlFor`/label association and `autoComplete` attributes; native
-`<form onSubmit>` covers Enter-to-submit. `getByLabelText` assertion itself was not
-added to LoginForm.test.tsx — component fix landed, test coverage for it did not.
+RESOLVED (was "Known gaps" from premortem on `fef125a`, closed further per premortem on
+`7719c24`): LoginForm.tsx (green-frontend, `f2a0f88`) fixed `htmlFor`/label association
+and `autoComplete` attributes; `LoginForm.test.tsx` now asserts `getByLabelText` ties to
+the same elements as the testids. Enter-to-submit is native `<form onSubmit>` browser
+behavior that jsdom does not simulate (verified: a `fireEvent.keyDown` unit test does not
+trigger submit in jsdom) — that behavior is covered by the Selenium acceptance layer
+(real browser), not a unit test; no unit-level guard is possible or needed here.
 RegisterForm.tsx still lacks `autoComplete`/explicit `getByLabelText` coverage (label
 association itself is present via `htmlFor`) — untouched, not part of this scenario.
 
