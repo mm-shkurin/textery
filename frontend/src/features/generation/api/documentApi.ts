@@ -1,20 +1,9 @@
 // HTTP client for the manual-document API (POST create — synchronous, no LLM/polling).
-const API_BASE: string = import.meta.env.VITE_API_BASE_URL ?? ''
+import { API_BASE, readErrorMessage } from './httpClient'
 
 export interface CreateDocumentResult {
   documentId: string
   status: string
-}
-
-async function readErrorMessage(res: Response, fallback: string): Promise<string> {
-  try {
-    const body = await res.json()
-    const detail = body?.detail ?? body?.message
-    if (typeof detail === 'string' && detail.trim()) return detail
-  } catch {
-    // body isn't JSON or is empty — fall through to fallback
-  }
-  return `${fallback} (HTTP ${res.status})`
 }
 
 export async function createDocument(documentType: string): Promise<CreateDocumentResult> {

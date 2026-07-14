@@ -1,8 +1,7 @@
 // HTTP client for the generation API (POST create + GET status).
 // Base URL defaults to '' so requests go through the Vite dev proxy (/api → backend).
 import { DEFAULT_DOCUMENT_TYPE } from '../documentTypes'
-
-const API_BASE: string = import.meta.env.VITE_API_BASE_URL ?? ''
+import { API_BASE, readErrorMessage } from './httpClient'
 
 // No UI control exists yet for volume — every request asks for a fixed 5-page document
 // until the product adds a page-count selector.
@@ -21,17 +20,6 @@ export interface GenerationStatus {
   volumePages: number
   documentType: string
   createdAt: string
-}
-
-async function readErrorMessage(res: Response, fallback: string): Promise<string> {
-  try {
-    const body = await res.json()
-    const detail = body?.detail ?? body?.message
-    if (typeof detail === 'string' && detail.trim()) return detail
-  } catch {
-    // body isn't JSON or is empty — fall through to fallback
-  }
-  return `${fallback} (HTTP ${res.status})`
 }
 
 export async function createGeneration(topic: string): Promise<CreateGenerationResult> {
