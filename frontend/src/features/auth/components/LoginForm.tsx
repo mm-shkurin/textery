@@ -32,21 +32,24 @@ export function LoginForm() {
         </div>
         <div className="auth-field">
           <label htmlFor="login-password">Пароль</label>
-          <input
-            id="login-password"
-            type={showPassword ? 'text' : 'password'}
-            placeholder="Пароль"
-            autoComplete="current-password"
-            data-testid="login-password-input"
-          />
-          <button
-            type="button"
-            className="auth-password-toggle"
-            data-testid="login-password-toggle"
-            onClick={handleToggleShowPassword}
-          >
-            {showPassword ? 'Скрыть' : 'Показать'}
-          </button>
+          <div className="auth-field-wrap">
+            <input
+              id="login-password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Пароль"
+              autoComplete="current-password"
+              data-testid="login-password-input"
+            />
+            <button
+              type="button"
+              className="auth-password-toggle"
+              data-testid="login-password-toggle"
+              aria-pressed={showPassword}
+              onClick={handleToggleShowPassword}
+            >
+              {showPassword ? 'Скрыть' : 'Показать'}
+            </button>
+          </div>
         </div>
         <button type="submit" className="auth-submit" data-testid="login-submit-button">
           Войти

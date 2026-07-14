@@ -87,7 +87,9 @@ scenarios) or a dedicated follow-up, not scope-crept into this step.
 - [x] green-frontend
 - [S] red-frontend-api (no API call in this scenario — client-side visibility toggle only, per tests/02_UI_Tests.md §2.1)
 - [S] green-frontend-api (see above)
-- [~] align-design
+- [x] align-design
+- [~] red-frontend (coverage: toggle button aria-pressed reflects show/hide state) — flagged during align-design's test-coverage pass, `aria-pressed={showPassword}` added but unasserted
+- [ ] green-frontend (coverage: toggle button aria-pressed reflects show/hide state)
 - [ ] green-selenium
 - [ ] demo
 

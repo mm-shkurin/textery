@@ -45,6 +45,33 @@
   color: #6b6c74;
 }
 
+.auth-field-wrap {
+  position: relative;
+}
+
+.auth-field-wrap input {
+  padding-right: 72px;
+}
+
+.auth-password-toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #6b6c74;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.auth-password-toggle:hover {
+  color: #9a9ba3;
+}
+
 .auth-submit {
   width: 100%;
   background: #f5f5f7;
