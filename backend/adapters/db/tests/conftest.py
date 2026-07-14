@@ -20,6 +20,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from session import create_engine, create_session_factory
+from statements.account_storage_statements import AccountStorageStatements
 from statements.generation_storage_statements import GenerationStorageStatements
 
 TEST_DATABASE_URL_ENV_VAR = "TEST_DATABASE_URL"
@@ -37,6 +38,7 @@ async def db_session():
         await session.rollback()
     async with engine.connect() as cleanup_connection:
         await cleanup_connection.execute(text("TRUNCATE TABLE generations"))
+        await cleanup_connection.execute(text("TRUNCATE TABLE accounts"))
         await cleanup_connection.commit()
     await engine.dispose()
 
@@ -44,3 +46,8 @@ async def db_session():
 @pytest.fixture
 def generation_storage_statements(db_session: AsyncSession):
     return GenerationStorageStatements(db_session)
+
+
+@pytest.fixture
+def account_storage_statements(db_session: AsyncSession):
+    return AccountStorageStatements(db_session)
