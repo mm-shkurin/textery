@@ -16,8 +16,7 @@ describe('ModeModal', () => {
 
   // Removed: 'disabled manual mode does not call onSelect' asserted manual mode
   // was disabled — that contradicts Story 5 Scenario 1.1, which makes manual
-  // mode available for every document type. The skipped test below is the
-  // correct replacement specification for this card's behavior.
+  // mode available for every document type.
 
   it('selecting the available manual mode calls onSelect', () => {
     const onSelect = vi.fn()
