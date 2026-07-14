@@ -36,4 +36,18 @@ describe('App routing', () => {
     expect(screen.getByTestId('login-email-input')).toHaveAttribute('type', 'email')
     expect(screen.getByTestId('login-password-input')).toHaveAttribute('type', 'password')
   })
+
+  it('renders DocumentGenerationFlow landing content for an unmatched path', async () => {
+    const { MemoryRouter } = await import('react-router-dom')
+
+    render(
+      <MemoryRouter initialEntries={['/does-not-exist']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByTestId('features-primary-cta-button')).toBeInTheDocument()
+    expect(screen.queryByTestId('login-email-input')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('register-email-input')).not.toBeInTheDocument()
+  })
 })

@@ -7,6 +7,7 @@ import { ModeModal, type GenerationMode } from './features/generation/components
 import { ChatWorkspace } from './features/generation/components/ChatWorkspace'
 import { useGeneration } from './features/generation/hooks/useGeneration'
 import { RegisterForm } from './features/auth/components/RegisterForm'
+import { LoginForm } from './features/auth/components/LoginForm'
 
 type Step = 'landing' | 'type' | 'mode' | 'form'
 
@@ -79,6 +80,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/register" element={<RegisterForm />} />
+      <Route path="/login" element={<LoginForm />} />
       <Route path="/*" element={<DocumentGenerationFlow />} />
     </Routes>
   )
