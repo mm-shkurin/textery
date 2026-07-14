@@ -88,9 +88,9 @@ scenarios) or a dedicated follow-up, not scope-crept into this step.
 - [S] red-frontend-api (no API call in this scenario — client-side visibility toggle only, per tests/02_UI_Tests.md §2.1)
 - [S] green-frontend-api (see above)
 - [x] align-design
-- [~] red-frontend (coverage: toggle button aria-pressed reflects show/hide state) — flagged during align-design's test-coverage pass, `aria-pressed={showPassword}` added but unasserted
-- [ ] green-frontend (coverage: toggle button aria-pressed reflects show/hide state)
-- [ ] green-selenium
+- [x] red-frontend (coverage: toggle button aria-pressed reflects show/hide state) — flagged during align-design's test-coverage pass, `aria-pressed={showPassword}` added but unasserted; new assertion added to LoginForm.test.tsx (predicted PASS, no production change needed — attribute already wired in align-design commit `96fbf68`)
+- [S] green-frontend (coverage: toggle button aria-pressed reflects show/hide state) — see red step, nothing to implement
+- [~] green-selenium
 - [ ] demo
 
 ### 2.2: Verification code input advances focus per digit

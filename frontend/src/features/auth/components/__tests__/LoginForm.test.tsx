@@ -71,4 +71,21 @@ describe('LoginForm', () => {
     fireEvent.click(toggle)
     expect(passwordInput).toHaveAttribute('type', 'password')
   })
+
+  it('reflects the show/hide state on the toggle button aria-pressed attribute', () => {
+    render(
+      <MemoryRouter>
+        <LoginForm />
+      </MemoryRouter>,
+    )
+    const toggle = screen.getByTestId('login-password-toggle')
+
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+
+    fireEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+  })
 })
