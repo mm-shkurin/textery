@@ -7,5 +7,15 @@ export interface ResendCodeResult {
 }
 
 export async function resendCode(email: string): Promise<ResendCodeResult> {
-  throw new Error('Not implemented')
+  const res = await fetch(`${API_BASE}/api/v1/auth/resend-code`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  })
+  if (!res.ok) {
+    throw new Error(`Не удалось отправить код повторно (HTTP ${res.status})`)
+  }
+  return res.json()
 }

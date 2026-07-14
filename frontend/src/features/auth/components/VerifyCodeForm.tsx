@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { resendCode } from '../api/authApi'
 import './AuthForm.css'
 import './VerifyCodeForm.css'
 
@@ -10,8 +11,25 @@ function formatCountdown(totalSeconds: number): string {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 }
 
-export function VerifyCodeForm() {
+export interface VerifyCodeFormProps {
+  email?: string
+}
+
+export function VerifyCodeForm({ email }: VerifyCodeFormProps) {
   const [countdownSeconds] = useState(RESEND_COUNTDOWN_SECONDS)
+  const [isResending, setIsResending] = useState(false)
+
+  async function handleResend() {
+    if (!email) return
+    setIsResending(true)
+    try {
+      await resendCode(email)
+    } catch {
+      // Resend failures are non-fatal here; a dedicated error UI is out of scope for this step.
+    } finally {
+      setIsResending(false)
+    }
+  }
 
   return (
     <div className="auth-card verify-code-card">
@@ -28,7 +46,12 @@ export function VerifyCodeForm() {
         ))}
       </div>
       <p className="verify-resend">
-        <button type="button" data-testid="verify-resend-button">
+        <button
+          type="button"
+          data-testid="verify-resend-button"
+          disabled={isResending}
+          onClick={handleResend}
+        >
           Письмо не пришло? Отправить код повторно
         </button>
         <span data-testid="verify-resend-countdown">{formatCountdown(countdownSeconds)}</span>

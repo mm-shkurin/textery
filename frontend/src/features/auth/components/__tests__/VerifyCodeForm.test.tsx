@@ -53,7 +53,7 @@ describe('VerifyCodeForm', () => {
       vi.unstubAllGlobals()
     })
 
-    it.skip('calls the resend-code endpoint with the pending email when clicked', () => {
+    it('calls the resend-code endpoint with the pending email when clicked', () => {
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ code: '123456' }),

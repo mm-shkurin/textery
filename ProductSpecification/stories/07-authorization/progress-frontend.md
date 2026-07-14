@@ -58,12 +58,19 @@ tests/02_UI_Tests.md covers these; flagged for test-spec review, not silently fi
   current per-box `maxLength=1` contract will silently truncate a paste unless split-on-
   paste logic is added, and nothing requires that logic to exist
 
+green-frontend-api (`resendCode` wired, in-flight disable guard, swallow-only error catch)
+closed 2 of the 3 premortem follow-ups from red-frontend-api. Deferred: countdown-gated
+disable (`disabled={countdownSeconds > 0}`) — component has no ticking timer yet
+(`countdownSeconds` is static), so gating on it now would permanently disable the button;
+real fix needs a timer implementation, tracked for Scenario 2.2/5.7/6.3 (countdown-related
+scenarios) or a dedicated follow-up, not scope-crept into this step.
+
 - [x] red-selenium
 - [x] red-frontend
 - [x] green-frontend
 - [x] red-frontend-api
-- [~] green-frontend-api
-- [ ] align-design
+- [x] green-frontend-api
+- [~] align-design
 - [ ] green-selenium
 - [ ] demo
 
