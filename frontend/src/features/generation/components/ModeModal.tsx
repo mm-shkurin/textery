@@ -1,4 +1,4 @@
-import { SelectableCard } from './SelectableCard'
+import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
 import './Modal.css'
 
 export type GenerationMode = 'auto' | 'manual'
@@ -19,27 +19,33 @@ export function ModeModal({ documentTypeLabel, onSelect, onBack, onClose }: Mode
   return (
     <div className="modal-backdrop">
       <div className="modal modal-narrow" data-testid="mode-modal">
+        <button type="button" className="back-row" onClick={onBack} aria-label={`Назад к типу документа: ${documentTypeLabel}`}>
+          <span aria-hidden="true">←</span>
+          Тип документа: {documentTypeLabel}
+        </button>
         <div className="modal-header">
-          <button type="button" className="back-btn" onClick={onBack} aria-label={`Назад к типу документа: ${documentTypeLabel}`}>
-            ←
-          </button>
-          <h1>Создание документа</h1>
+          <h1>Как создаём?</h1>
           <button type="button" className="close-btn" onClick={onClose} aria-label="Закрыть">
             ×
           </button>
         </div>
-        <p className="modal-subtitle">Выберите тип работы который вы будете использовать</p>
+        <p className="modal-subtitle">Выберите режим работы с документом</p>
         <div className="mode-grid">
           {MODES.map((mode) => (
-            <SelectableCard
+            <button
               key={mode.id}
-              available={mode.available}
-              name={mode.name}
-              cardClassName="mode-card"
-              nameClassName="mode-name"
-              testId={`mode-card-${mode.id}`}
-              onSelect={() => onSelect(mode.id)}
-            />
+              type="button"
+              className={`mode-card${mode.available ? '' : ' disabled'}`}
+              disabled={!mode.available}
+              data-testid={`mode-card-${mode.id}`}
+              onClick={() => mode.available && onSelect(mode.id)}
+            >
+              <span className="icon-badge">
+                <PlaceholderImage className="mode-icon" />
+              </span>
+              <span className="mode-name">{mode.name}</span>
+              <span className="mode-desc">{mode.desc}</span>
+            </button>
           ))}
         </div>
       </div>
