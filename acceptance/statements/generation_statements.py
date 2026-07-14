@@ -1,12 +1,11 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import ClassVar
-from uuid import UUID
 
 from clients.application.application_client import ApplicationClient
 from clients.application.dto.generation.generation_response_dto import GenerationResponseDto
 from statements.generation_scope import GenerationScope
-from statements.response_assertions import assert_validation_error
+from statements.response_assertions import assert_is_valid_uuid, assert_validation_error
 from statements.test_data import TestData
 
 CREATED_AT_MAX_AGE = timedelta(minutes=1)
@@ -119,12 +118,7 @@ class GenerationStatements:
 
     def _assert_generation_id_is_valid_uuid(self, body: dict) -> None:
         assert "generation_id" in body, f"expected generation_id in response body, got body={body}"
-        try:
-            UUID(str(body["generation_id"]))
-        except (ValueError, AttributeError, TypeError) as error:
-            raise AssertionError(
-                f"expected generation_id to be a valid UUID, got {body['generation_id']!r}"
-            ) from error
+        assert_is_valid_uuid(body["generation_id"], field_name="generation_id")
 
     def _assert_created_at_is_recent(self, body: dict) -> None:
         assert "created_at" in body, f"expected created_at in response body, got body={body}"

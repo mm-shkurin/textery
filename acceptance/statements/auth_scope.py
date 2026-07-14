@@ -20,7 +20,8 @@ class RegisterScope:
 
     @classmethod
     def builder(cls, **overrides) -> "RegisterScope":
-        return cls(**{**cls.DEFAULTS, **overrides})
+        defaults = {**cls.DEFAULTS, "extra_fields": dict(cls.DEFAULTS["extra_fields"])}
+        return cls(**{**defaults, **overrides})
 
     def to_request_dto(self) -> RegisterRequestDto:
         return RegisterRequestDto(

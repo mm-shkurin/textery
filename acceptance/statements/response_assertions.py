@@ -1,4 +1,5 @@
 from typing import Protocol
+from uuid import UUID
 
 
 class HasStatusAndBody(Protocol):
@@ -14,3 +15,10 @@ def assert_validation_error(response: HasStatusAndBody, expected_error: dict) ->
     assert response.body == expected_error, (
         f"expected validation error body {expected_error}, got {response.body}"
     )
+
+
+def assert_is_valid_uuid(value: object, field_name: str) -> None:
+    try:
+        UUID(str(value))
+    except (ValueError, AttributeError, TypeError) as error:
+        raise AssertionError(f"expected {field_name} to be a valid UUID, got {value!r}") from error

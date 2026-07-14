@@ -1,10 +1,9 @@
 from typing import ClassVar
-from uuid import UUID
 
 from clients.application.application_client import ApplicationClient
 from clients.application.dto.auth.register_response_dto import RegisterResponseDto
 from statements.auth_scope import RegisterScope
-from statements.response_assertions import assert_validation_error
+from statements.response_assertions import assert_is_valid_uuid, assert_validation_error
 
 MALFORMED_EMAIL = "not-an-email"
 OVERLONG_EMAIL_LOCAL_PART_LENGTH = 244
@@ -115,25 +114,22 @@ class AuthStatements:
             "expected a response body containing the created account's is_verified and id, "
             "got body=None"
         )
-        assert response.body.get("is_verified") is False, (
+        is_verified = response.body.get("is_verified")
+        assert is_verified is False, (
             f"expected created account is_verified=False (server-owned, ignoring attacker-supplied "
-            f"is_verified=true), got is_verified={response.body.get('is_verified')!r}"
+            f"is_verified=true), got is_verified={is_verified!r}"
         )
         # id is category 4 (truly opaque) per the determinism hierarchy: it is a
         # server-generated UUID with no setup-capturable exact value, so we assert
         # it is present and well-formed (not just "not equal to the attacker's id" —
         # that alone would pass on id=None, which is the exact defect this test
         # guards against) plus the scenario-specific inequality.
-        assert response.body.get("id") is not None, (
+        account_id = response.body.get("id")
+        assert account_id is not None, (
             f"expected a server-generated id, got id=None (body={response.body})"
         )
-        try:
-            UUID(str(response.body.get("id")))
-        except (ValueError, AttributeError, TypeError) as error:
-            raise AssertionError(
-                f"expected id to be a valid UUID, got id={response.body.get('id')!r}"
-            ) from error
-        assert response.body.get("id") != self.ATTACKER_SUPPLIED_ID, (
+        assert_is_valid_uuid(account_id, field_name="id")
+        assert account_id != self.ATTACKER_SUPPLIED_ID, (
             f"expected a server-generated id, not the attacker-supplied id "
-            f"{self.ATTACKER_SUPPLIED_ID!r}, got id={response.body.get('id')!r}"
+            f"{self.ATTACKER_SUPPLIED_ID!r}, got id={account_id!r}"
         )
