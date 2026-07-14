@@ -11,6 +11,7 @@ from selenium.webdriver.chrome.options import Options as ChromeOptions
 from clients.application.application_client import ApplicationClient
 from statements.frontend.auth.login_page_statements import LoginPageStatements
 from statements.frontend.auth.register_page_statements import RegisterPageStatements
+from statements.frontend.auth.verify_code_page_statements import VerifyCodePageStatements
 from statements.frontend.landing_page_statements import LandingPageStatements
 from statements.frontend.generation.chat_workspace_statements import ChatWorkspaceStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
@@ -71,6 +72,11 @@ def register_page_statements():
 @pytest.fixture
 def login_page_statements():
     return LoginPageStatements()
+
+
+@pytest.fixture
+def verify_code_page_statements():
+    return VerifyCodePageStatements()
 
 
 @pytest.fixture

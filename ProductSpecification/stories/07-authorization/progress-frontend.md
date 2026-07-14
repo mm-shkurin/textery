@@ -48,8 +48,8 @@ association itself is present via `htmlFor`) — untouched, not part of this sce
 - [S] demo (skipped per convention, see note above)
 
 ### 1.3: Verification-code screen displays a 6-digit input and resend action
-- [~] red-selenium
-- [ ] red-frontend
+- [x] red-selenium
+- [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
