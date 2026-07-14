@@ -1,9 +1,6 @@
-import pytest
-
 from statements.register_statements import RegisterStatements
 
 
-@pytest.mark.skip(reason="RED: verification code generation not implemented")
 class TestRegisterUsecaseIssuesVerificationCode:
     """Scenario 2.1: Valid registration creates a pending account and returns a verification code.
 

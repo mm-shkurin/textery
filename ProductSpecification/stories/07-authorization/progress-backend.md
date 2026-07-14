@@ -69,8 +69,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] red-acceptance
 - [x] design (see `decisions/verification-code-design-decision.md`) — new VerificationCode domain entity + verification_codes table (consumed_at column added now, unused, for 3.x/4.x additive-safety), secrets.randbelow CSPRNG generation, code stored/compared as fixed-length string end-to-end. Atomic Account+VerificationCode write deferred to scenario 2.5 (its own named scenario); email-uniqueness/concurrency deferred to 2.2/2.4a (their own named scenarios) — both accepted, tracked gaps per hazard-scan groups 2/3, not silent.
 - [x] red-usecase
-- [~] green-usecase
-- [ ] adapters-discovery
+- [x] green-usecase
+- [~] adapters-discovery
 - [ ] green-acceptance
 
 ### Scenario 2.2: Duplicate email is rejected, verified or pending

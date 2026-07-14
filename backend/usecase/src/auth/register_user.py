@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+import secrets
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import uuid4
 
@@ -7,6 +8,7 @@ from auth.account_repository import AccountRepository
 from auth.email import Email
 from auth.password import Password
 from auth.registration_result import RegistrationResult
+from auth.verification_code import VerificationCode
 from auth.verification_code_repository import VerificationCodeRepository
 from shared.clock import Clock
 from shared.exceptions import ValidationException
@@ -68,4 +70,15 @@ class RegisterUser:
             created_at=created_at,
         )
         await self.account_repository.save(account)
-        return RegistrationResult(account=account, verification_code=None)
+
+        code = f"{secrets.randbelow(1_000_000):06d}"
+        expires_at = created_at + timedelta(minutes=10)
+        verification_code = VerificationCode.create(
+            id=uuid4(),
+            account_id=account.id,
+            code=code,
+            expires_at=expires_at,
+        )
+        await self.verification_code_repository.save(verification_code)
+
+        return RegistrationResult(account=account, verification_code=verification_code)
