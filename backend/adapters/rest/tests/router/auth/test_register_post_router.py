@@ -138,6 +138,68 @@ class TestRegisterPostRouterServerOwnedFields:
         )
 
 
+class TestRegisterPostRouterVerificationCode:
+    """Scenario 2.1: Valid registration creates a pending account and returns a verification code.
+
+    Given the usecase returns a RegistrationResult with a persisted Account and
+    a persisted VerificationCode
+    When the client submits POST /api/v1/auth/register
+    Then the response is 201 with a body containing verification_code and
+    code_expires_at built from the domain VerificationCode
+    """
+
+    @pytest.mark.skip(reason="RED: RegisterResponseDto missing verification_code/code_expires_at")
+    async def test_should_return_201_with_verification_code_and_code_expires_at(self, mocker):
+        app = FastAPI()
+        app.include_router(auth_router)
+        app.add_exception_handler(ValidationException, validation_exception_handler)
+
+        created_account = Account.create(
+            id=uuid4(),
+            email="new-user@example.com",
+            password_hash="hashed-value",
+            created_at=datetime.now(timezone.utc),
+        )
+        code_expires_at = datetime(2026, 7, 14, 12, 30, 0, tzinfo=timezone.utc)
+        created_verification_code = VerificationCode.create(
+            id=uuid4(),
+            account_id=created_account.id,
+            code="042917",
+            expires_at=code_expires_at,
+        )
+        registration_result = RegistrationResult(
+            account=created_account, verification_code=created_verification_code
+        )
+        mock_usecase = mocker.Mock()
+        mock_usecase.execute = mocker.AsyncMock(return_value=registration_result)
+        app.dependency_overrides[get_register_user_usecase] = lambda: mock_usecase
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/auth/register",
+                json={
+                    "email": "new-user@example.com",
+                    "password": "Sup3rSecret!",
+                    "confirm_password": "Sup3rSecret!",
+                },
+            )
+
+        assert response.status_code == 201, (
+            f"expected 201 Created, got {response.status_code} with body {response.text}"
+        )
+        body = response.json()
+        assert body.get("verification_code") == "042917", (
+            f"expected verification_code='042917' from the persisted VerificationCode "
+            f"(field name per ProductSpecification/api-specs/auth_register.yaml "
+            f"RegisterResponse.verification_code), got body={body}"
+        )
+        assert body.get("code_expires_at") == code_expires_at.isoformat(), (
+            f"expected code_expires_at={code_expires_at.isoformat()!r} from the persisted "
+            f"VerificationCode, got body={body}"
+        )
+
+
 class TestGetRegisterUserUsecaseDependencyStub:
     """Coverage: get_register_user_usecase DI stub raises NotImplementedError.
 
