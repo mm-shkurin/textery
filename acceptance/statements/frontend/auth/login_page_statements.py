@@ -50,3 +50,13 @@ class LoginPageStatements(BaseFrontendStatements):
         assert element.get_attribute("type") == "text", (
             f"expected password field type 'text', got '{element.get_attribute('type')}'"
         )
+
+    def fill_login_form(self, driver: WebDriver, email: str, password: str) -> None:
+        self._wait_for_visible(driver, EMAIL_INPUT).send_keys(email)
+        self._wait_for_visible(driver, PASSWORD_INPUT).send_keys(password)
+
+    def click_submit_button(self, driver: WebDriver) -> None:
+        self._wait_for_visible(driver, SUBMIT_BUTTON).click()
+
+    def assert_submit_button_is_disabled(self, driver: WebDriver) -> None:
+        self._assert_disabled(driver, SUBMIT_BUTTON, "submit button")
