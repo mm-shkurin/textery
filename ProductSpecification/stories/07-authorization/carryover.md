@@ -29,3 +29,38 @@ Quirk and enduring-invariant entries promoted from completed scenario summaries.
 **Where:** `backend/usecase/src/auth/register_user.py`.
 **Implication:** Scenario 1.4's pending red-usecase/green-usecase steps must add the actual comparison. Any other usecase touching password fields should not assume unused constructor parameters are enforced elsewhere.
 **From:** scenario 1.3 (reject-password-failing-policy)
+
+## Quirk: Account/AccountModel has no reconstruction path for a verified account
+
+**Quirk:** `Account.__init__` (`backend/domain/src/auth/account.py`) hardcodes `is_verified=False` with no constructor parameter and no setter — correct for *creating* a new account, but `AccountModel.to_domain()` (`backend/adapters/db/src/model/auth/account_model.py`) reuses this same constructor to *reconstruct* an account from a DB row, silently dropping the row's real `is_verified` value.
+**Where:** `backend/domain/src/auth/account.py`, `backend/adapters/db/src/model/auth/account_model.py`.
+**Implication:** Scenario 3.x (email verification) needs a domain-level way to represent a verified account on reconstruction (e.g. a `reconstitute` factory distinct from `create`), plus a round-trip test writing `is_verified=True` and asserting `to_domain().is_verified is True`.
+**From:** scenario 1.5 (ignore-server-owned-fields)
+
+## Quirk: SqlAlchemyAccountRepository.save() has no exception mapping
+
+**Quirk:** `save()` has no exception handling around `session.commit()` — a raw SQLAlchemy/DB-driver exception (connection failure, or a future unique-constraint violation once scenario 2.2 lands) propagates unmapped, even though the ADR commits to "persistence failure maps to a defined exception."
+**Where:** `backend/adapters/db/src/access/auth/account_storage.py`.
+**Implication:** A future step needs a test that stubs `commit()` to raise and asserts `save()` translates it into a defined `AccountRepository`-level exception, not a raw driver error.
+**From:** scenario 1.5 (ignore-server-owned-fields)
+
+## Quirk: container.py's session-scoped factories have zero dedicated test coverage
+
+**Quirk:** `create_register_user()`, `create_get_generation()`, and `create_request_generation()` in `backend/application/src/app/container.py` all share the same open-session/yield/finally-close shape, but `backend/application` has no `tests/` directory at all — none of these generators' commit-then-close or close-on-exception behavior is exercised by any unit test, only indirectly by acceptance tests.
+**Where:** `backend/application/src/app/container.py`.
+**Implication:** Worth a dedicated task to add `backend/application/tests/` covering session lifecycle for these factories — not scoped to story 7 alone, since two of the three affected factories predate it.
+**From:** scenario 1.5 (ignore-server-owned-fields)
+
+## Quirk: passwords are persisted as plaintext (hashing deferred to Security phase)
+
+**Quirk:** `RegisterUser.execute` passes the raw validated password straight to `Account.create(password_hash=password, ...)` — no hashing exists anywhere in the codebase. Before scenario 1.5's green-adapter rest step, the null-object repository fallback silently discarded every account, so this was inert; now that a real repository is wired, plaintext passwords are actually persisted.
+**Where:** `backend/usecase/src/auth/register_user.py`, `backend/domain/src/auth/password.py`.
+**Implication:** Deliberate, tracked deferral — password hashing is `05_Security_Tests.md` Scenario 1, sequenced after Backend/Integration/Frontend per this project's lifecycle. Rated BLOCK-severity by premortem since real rows now exist with plaintext credentials — prioritize the Security phase's password-hashing scenario before any shared/prod-like environment sees real user data.
+**From:** scenario 1.5 (ignore-server-owned-fields)
+
+## Quirk: server-owned-fields acceptance fixture uses a fixed email, not per-run-unique
+
+**Quirk:** `given_registration_request_with_server_owned_fields()` (`acceptance/statements/auth_statements.py`) uses a fixed email (`attacker@example.com`) instead of a per-run-unique one, despite the ADR calling for a per-run-unique fixture so reruns don't accumulate duplicate rows.
+**Where:** `acceptance/statements/auth_statements.py`.
+**Implication:** Reruns create additional `accounts` rows with the same email today (no unique constraint yet); once scenario 2.2 adds the constraint, reruns will start failing with a 409/conflict unless this fixture is made unique first.
+**From:** scenario 1.5 (ignore-server-owned-fields)
