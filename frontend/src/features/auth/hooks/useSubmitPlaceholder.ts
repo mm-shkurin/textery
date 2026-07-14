@@ -13,6 +13,7 @@ export function useSubmitPlaceholder() {
 
   async function submitWithPlaceholderDelay(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (isSubmitting) return
     setIsSubmitting(true)
     try {
       await new Promise((resolve) => setTimeout(resolve, SUBMIT_PLACEHOLDER_DELAY_MS))
