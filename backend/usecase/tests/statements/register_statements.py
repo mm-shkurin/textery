@@ -1,10 +1,12 @@
-from datetime import datetime, timezone
+import re
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID
 
 from auth.register_user import RegisterUser
 from fake.auth.fake_account_repository import FakeAccountRepository
 from fake.auth.fake_clock import FakeClock
+from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
 from scope.register_request_scope import RegisterRequestScope
 from shared.exceptions import ValidationException
 
@@ -22,7 +24,9 @@ class RegisterStatements:
         self.thrown_exception: Optional[Exception] = None
         self.account_repository = FakeAccountRepository()
         self.clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
+        self.verification_code_repository = FakeVerificationCodeRepository()
         self.returned_account = None
+        self.returned_verification_code = None
         self.registered_email: Optional[str] = None
 
     async def attempt_registering_with_email(self, email: Optional[str]) -> None:
@@ -42,13 +46,17 @@ class RegisterStatements:
         scope = RegisterRequestScope.builder()
         self.registered_email = scope.email
         try:
-            self.returned_account = await RegisterUser(
-                account_repository=self.account_repository, clock=self.clock
+            result = await RegisterUser(
+                account_repository=self.account_repository,
+                clock=self.clock,
+                verification_code_repository=self.verification_code_repository,
             ).execute(
                 email=scope.email,
                 password=scope.password,
                 confirm_password=scope.confirm_password,
             )
+            self.returned_account = result.account
+            self.returned_verification_code = result.verification_code
         except Exception as exc:
             self.thrown_exception = exc
 
@@ -103,6 +111,37 @@ class RegisterStatements:
         assert self.account_repository.saved_accounts == [self.returned_account], (
             f"expected exactly one Account persisted via AccountRepository.save equal to the returned Account, "
             f"got {self.account_repository.saved_accounts}"
+        )
+
+    def assert_verification_code_issued(self) -> None:
+        self.assert_registration_succeeded()
+        assert self.returned_account is not None, (
+            "expected RegisterUser.execute to return the persisted Account"
+        )
+        assert self.returned_verification_code is not None, (
+            "expected RegisterUser.execute to return a VerificationCode"
+        )
+        assert isinstance(self.returned_verification_code.id, UUID), (
+            f"expected VerificationCode.id to be a UUID, "
+            f"got {type(self.returned_verification_code.id).__name__}"
+        )
+        assert re.fullmatch(r"\d{6}", self.returned_verification_code.code), (
+            f"expected VerificationCode.code to be a 6-digit zero-padded string, "
+            f"got '{self.returned_verification_code.code}'"
+        )
+        expected_expires_at = self.clock.fixed_now + timedelta(minutes=10)
+        assert self.returned_verification_code.expires_at == expected_expires_at, (
+            f"expected VerificationCode.expires_at to be '{expected_expires_at}' "
+            f"(clock.now() + 10 minutes), got '{self.returned_verification_code.expires_at}'"
+        )
+        assert self.returned_verification_code.account_id == self.returned_account.id, (
+            f"expected VerificationCode.account_id to be '{self.returned_account.id}', "
+            f"got '{self.returned_verification_code.account_id}'"
+        )
+        assert self.verification_code_repository.saved_codes == [self.returned_verification_code], (
+            f"expected exactly one VerificationCode persisted via VerificationCodeRepository.save "
+            f"equal to the returned VerificationCode, "
+            f"got {self.verification_code_repository.saved_codes}"
         )
 
     def _assert_validation_error_raised(self, expected_error_code: str, expected_message: str) -> None:

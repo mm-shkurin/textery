@@ -6,6 +6,8 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from auth.account import Account
+from auth.registration_result import RegistrationResult
+from auth.verification_code import VerificationCode
 from shared.exceptions import ValidationException
 from error_handling.exception_handlers import validation_exception_handler
 
@@ -85,8 +87,17 @@ class TestRegisterPostRouterServerOwnedFields:
             password_hash="hashed-value",
             created_at=datetime.now(timezone.utc),
         )
+        created_verification_code = VerificationCode.create(
+            id=uuid4(),
+            account_id=created_account.id,
+            code="123456",
+            expires_at=datetime.now(timezone.utc),
+        )
+        registration_result = RegistrationResult(
+            account=created_account, verification_code=created_verification_code
+        )
         mock_usecase = mocker.Mock()
-        mock_usecase.execute = mocker.AsyncMock(return_value=created_account)
+        mock_usecase.execute = mocker.AsyncMock(return_value=registration_result)
         app.dependency_overrides[get_register_user_usecase] = lambda: mock_usecase
 
         transport = ASGITransport(app=app)

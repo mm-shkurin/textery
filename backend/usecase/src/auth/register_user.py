@@ -6,6 +6,8 @@ from auth.account import Account
 from auth.account_repository import AccountRepository
 from auth.email import Email
 from auth.password import Password
+from auth.registration_result import RegistrationResult
+from auth.verification_code_repository import VerificationCodeRepository
 from shared.clock import Clock
 from shared.exceptions import ValidationException
 
@@ -20,16 +22,25 @@ class _NullAccountRepository:
         return None
 
 
+class _NullVerificationCodeRepository:
+    async def save(self, code) -> None:
+        return None
+
+
 class RegisterUser:
     def __init__(
         self,
         account_repository: Optional[AccountRepository] = None,
         clock: Optional[Clock] = None,
+        verification_code_repository: Optional[VerificationCodeRepository] = None,
     ) -> None:
         self.account_repository = account_repository or _NullAccountRepository()
         self.clock = clock or _SystemClock()
+        self.verification_code_repository = (
+            verification_code_repository or _NullVerificationCodeRepository()
+        )
 
-    async def execute(self, email: str, password: str, confirm_password: str) -> Account:
+    async def execute(self, email: str, password: str, confirm_password: str) -> RegistrationResult:
         try:
             Email(email)
         except ValueError:
@@ -57,4 +68,4 @@ class RegisterUser:
             created_at=created_at,
         )
         await self.account_repository.save(account)
-        return account
+        return RegistrationResult(account=account, verification_code=None)
