@@ -38,8 +38,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] design — Password value object in backend/domain, mirroring Email's constructor-validation pattern (min 8/max 128 chars, ≥1 digit, ≥1 uppercase, ≥1 lowercase, ≥1 special char per `07_Authorization.md` Validation Rules table); single INVALID_PASSWORD error code for all sub-violations, consistent with INVALID_EMAIL taxonomy. Closed a premortem gap first: red-acceptance was missing a 6th sub-case (missing-lowercase) despite it being a spec rule — added `given_registration_request_with_password_missing_lowercase` fixture + test (still skipped, 6 skipped confirmed) before this design locks scope for red-usecase.
 - [x] red-usecase
 - [x] green-usecase
-- [~] red-usecase (coverage: Password constructor rejects non-string input) — mirrors Email's non-string guard from 1.1; isinstance check exists but untested
-- [ ] green-usecase (coverage: Password constructor rejects non-string input)
+- [x] red-usecase (coverage: Password constructor rejects non-string input) — test added already-green, existing isinstance guard covers it
+- [S] green-usecase (coverage: Password constructor rejects non-string input) — no production change needed, existing isinstance guard covers it
 - [ ] red-usecase (coverage: password at exact upper boundary (128 chars) satisfying all policy rules is accepted) — premortem-flagged gap; also exercises the valid-construction path (`Password.value`) untouched by any existing test in this scenario
 - [ ] green-usecase (coverage: password at exact upper boundary (128 chars) satisfying all policy rules is accepted)
 - [ ] adapters-discovery
