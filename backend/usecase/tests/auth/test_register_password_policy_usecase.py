@@ -43,3 +43,10 @@ class TestRegisterUsecaseWeakPassword:
     async def test_should_reject_non_string_password(self, register_statements: RegisterStatements, password):
         await register_statements.attempt_registering_with_password(password)
         register_statements.assert_invalid_password_error_raised()
+
+    async def test_should_accept_password_at_exact_upper_boundary(
+        self, register_statements: RegisterStatements
+    ):
+        password = "A1!" + "a" * 125
+        await register_statements.attempt_registering_with_password(password)
+        register_statements.assert_registration_succeeded()

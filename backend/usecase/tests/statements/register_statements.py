@@ -42,6 +42,12 @@ class RegisterStatements:
             self.EXPECTED_INVALID_PASSWORD_ERROR_CODE, self.EXPECTED_INVALID_PASSWORD_MESSAGE
         )
 
+    def assert_registration_succeeded(self) -> None:
+        assert self.thrown_exception is None, (
+            f"expected no exception to be raised, got "
+            f"{type(self.thrown_exception).__name__}: {self.thrown_exception}"
+        )
+
     def _assert_validation_error_raised(self, expected_error_code: str, expected_message: str) -> None:
         assert isinstance(self.thrown_exception, ValidationException), (
             f"expected ValidationException to be raised, got "

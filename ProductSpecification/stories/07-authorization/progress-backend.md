@@ -40,8 +40,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-usecase
 - [x] red-usecase (coverage: Password constructor rejects non-string input) — test added already-green, existing isinstance guard covers it
 - [S] green-usecase (coverage: Password constructor rejects non-string input) — no production change needed, existing isinstance guard covers it
-- [ ] red-usecase (coverage: password at exact upper boundary (128 chars) satisfying all policy rules is accepted) — premortem-flagged gap; also exercises the valid-construction path (`Password.value`) untouched by any existing test in this scenario
-- [ ] green-usecase (coverage: password at exact upper boundary (128 chars) satisfying all policy rules is accepted)
+- [x] red-usecase (coverage: password at exact upper boundary (128 chars) satisfying all policy rules is accepted) — test added already-green; `Password._is_valid` uses `len(raw_value) > MAX_PASSWORD_LENGTH` (strict `>`), so 128 chars is correctly accepted, no off-by-one bug at the boundary
+- [S] green-usecase (coverage: password at exact upper boundary (128 chars) satisfying all policy rules is accepted) — no production change needed, boundary check already correct
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
