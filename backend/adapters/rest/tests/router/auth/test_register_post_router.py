@@ -121,6 +121,11 @@ class TestRegisterPostRouterServerOwnedFields:
         assert "password_hash" not in body, (
             f"expected password_hash to never be present in the response body, got body={body}"
         )
+        mock_usecase.execute.assert_awaited_once_with(
+            email="attacker@example.com",
+            password="Sup3rSecret!",
+            confirm_password="Sup3rSecret!",
+        )
 
 
 class TestGetRegisterUserUsecaseDependencyStub:
