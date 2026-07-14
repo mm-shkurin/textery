@@ -30,14 +30,16 @@ function App() {
     setMode(null)
   }
 
-  if (step === 'form' && documentType && mode === 'manual') {
-    return <ManualEditor documentTypeLabel={DOCUMENT_TYPE_LABELS[documentType]} />
-  }
-
   if (step === 'form' && documentType && mode) {
+    const documentTypeLabel = DOCUMENT_TYPE_LABELS[documentType]
+
+    if (mode === 'manual') {
+      return <ManualEditor documentTypeLabel={documentTypeLabel} />
+    }
+
     return (
       <ChatWorkspace
-        documentTypeLabel={DOCUMENT_TYPE_LABELS[documentType]}
+        documentTypeLabel={documentTypeLabel}
         state={generation.state}
         content={generation.content}
         volumePages={generation.volumePages}
