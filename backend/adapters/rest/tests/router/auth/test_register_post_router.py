@@ -131,11 +131,13 @@ class TestRegisterPostRouterVerificationCode:
     Given the usecase returns a RegistrationResult with a persisted Account and
     a persisted VerificationCode
     When the client submits POST /api/v1/auth/register
-    Then the response is 201 with a body containing verification_code and
-    code_expires_at built from the domain VerificationCode
+    Then the response is 201 with a body containing email, verification_code and
+    code_expires_at built from the domain Account and VerificationCode
     """
 
-    @pytest.mark.skip(reason="RED: RegisterResponseDto missing verification_code/code_expires_at")
+    @pytest.mark.skip(
+        reason="RED: RegisterResponseDto missing email/verification_code/code_expires_at"
+    )
     async def test_should_return_201_with_verification_code_and_code_expires_at(
         self, mocker, register_client
     ):
@@ -172,6 +174,11 @@ class TestRegisterPostRouterVerificationCode:
             f"expected 201 Created, got {response.status_code} with body {response.text}"
         )
         body = response.json()
+        assert body.get("email") == "new-user@example.com", (
+            f"expected email='new-user@example.com' from the persisted Account "
+            f"(field name per ProductSpecification/api-specs/auth_register.yaml "
+            f"RegisterResponse.email), got body={body}"
+        )
         assert body.get("verification_code") == "042917", (
             f"expected verification_code='042917' from the persisted VerificationCode "
             f"(field name per ProductSpecification/api-specs/auth_register.yaml "
