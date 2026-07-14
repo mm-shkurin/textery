@@ -46,7 +46,7 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-acceptance
 
 ### Scenario 1.4: Reject password/confirm_password mismatch
-- [ ] red-acceptance
+- [x] red-acceptance
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase

@@ -21,6 +21,10 @@ class AuthStatements:
         "error_code": "INVALID_PASSWORD",
         "message": "The password does not meet the password policy.",
     }
+    EXPECTED_PASSWORD_MISMATCH_ERROR: ClassVar[dict] = {
+        "error_code": "PASSWORD_MISMATCH",
+        "message": "The password and confirm_password do not match.",
+    }
 
     def __init__(self, client: ApplicationClient):
         self._client = client
@@ -63,6 +67,13 @@ class AuthStatements:
             f"expected a 129-character password fixture, got {len(password)} chars"
         )
         return await self._register_with_password(password)
+
+    async def given_registration_request_with_mismatched_confirm_password(
+        self,
+    ) -> RegisterResponseDto:
+        scope = RegisterScope.builder(password="Str0ng!Pass", confirm_password="Different!9")
+        request = scope.to_request_dto()
+        return await self._client.register(request)
 
     async def _register_with_password(self, password: str) -> RegisterResponseDto:
         scope = RegisterScope.builder(password=password, confirm_password=password)
