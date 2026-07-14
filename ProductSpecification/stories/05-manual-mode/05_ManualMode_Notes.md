@@ -147,3 +147,38 @@ time/expiry in group 7; work-amplification/backpressure/retry-storm/pagination i
 6; compute-then-commit/external-call/timeout in group 2; async-delivery in group 3;
 absent-vs-null and default-branch in group 5) were dismissed per-class with a reason
 inline in each scan pass, not silently skipped.
+
+---
+
+## Hazard-Catalogue Scan — Test-Spec Level (8 groups, all dispatched, 2026-07-14)
+
+Re-scanned after `/test-spec` drafted the 6 test files + extended variants — this pass
+checks whether a *scenario* exists that would actually go red on each hazard, not just
+whether the spec names the requirement. Every GAP is folded into the matching test file
+as a critical-path scenario (never extended), per test-spec-format.md's rule.
+
+| Group | Verdict | GAPs folded |
+|-------|---------|-------------|
+| 1. Money/numbers/representation | GAPS | version-field validation (negative/non-integer); boundary×multibyte-grapheme intersection; astral-plane (surrogate-pair) round-trip; NFC/NFD normalization-equality on duplicate-save detection |
+| 2. Re-run safety/ordering/atomicity | GAPS | no-orphan-`Generation`-row assertion on a *failed* manual-document creation (previously only asserted on the happy path) |
+| 3. Concurrency/consistency/distribution | GAPS | deterministic same-instant interleave / atomic-CAS test for `PUT` — distinct from the already-covered sequential lost-update scenario |
+| 4. Data lifecycle & schema | GAPS | cross-story write-isolation: story #1's generation-completion path must never mutate a manual document's status |
+| 5. Request boundary & input | CLEAR | none — IDOR correctly left untested as an explicitly-accepted, story #7-deferred posture (seam flagged for story #7's own test-spec to close later) |
+| 6. Scale & resource limits | GAPS | concurrent-client retry-storm scenario after shared DB recovery; oversized-payload boundary tightened to accept-at-limit/reject-one-past (previously a vague "far larger than legitimate") |
+| 7. Time/operability/disclosure | GAPS | fail-fast-on-missing-DB-config startup scenario; DB-unavailable 5xx body held to the same generic-error-shape guard as 404/422/409 |
+| 8. Client/frontend | GAPS (1 fixed as inconsistency) | drafted `extended/02_UI_Tests_Extended.md` unsaved-nav-warning scenario contradicted the spec's own "accepted, no guard, deferred to story #10" posture — replaced with an explicit dismissal note instead of a scenario that would either fail by design or silently reverse a documented decision |
+
+**Seams reconciled:**
+- Group 8's finding was a genuine **artifact inconsistency**, not a missing scenario:
+  the drafted extended UI test asserted a confirm-guard the spec explicitly declined to
+  build. Resolved by dismissing the test, not by building the guard — the spec's
+  posture is the source of truth here, and story #10 owns that protection.
+- Group 3's gap is intentionally kept separate from the already-covered group 3
+  "lost update" scenario (01_API_Tests.md §6.3): lost-update tests two *sequential*
+  saves separated by a request round-trip; the new gap tests a *same-instant*
+  interleave — same group, two different classes, not one discharging the other.
+- Group 4's cross-story gap was folded into `extended/` (not critical-path) because it
+  exercises story #1's own code path, which may not exist yet at this story's
+  implementation time — flagged for whichever story lands second to pick up.
+
+No group was dismissed as a block.
