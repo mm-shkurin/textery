@@ -84,11 +84,7 @@ class RegisterStatements:
         )
 
     def assert_account_persisted_with_server_owned_fields(self) -> None:
-        assert self.thrown_exception is None, (
-            f"expected no exception to be raised, got "
-            f"{type(self.thrown_exception).__name__ if self.thrown_exception else 'no exception'}: "
-            f"{self.thrown_exception}"
-        )
+        self.assert_registration_succeeded()
         assert self.returned_account is not None, "expected RegisterUser.execute to return the persisted Account"
         assert self.returned_account.email == self.registered_email, (
             f"expected persisted Account.email to be '{self.registered_email}', "

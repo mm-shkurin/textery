@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Any
 from uuid import UUID
 
 
@@ -17,13 +16,17 @@ class Account:
         self.email = email
         self.password_hash = password_hash
         self.created_at = created_at
-        self.is_verified = False
+        self._is_verified = False
+
+    @property
+    def is_verified(self) -> bool:
+        return self._is_verified
 
     @classmethod
-    def create(cls, id: UUID, email: str, password_hash: str, clock: Any) -> "Account":
+    def create(cls, id: UUID, email: str, password_hash: str, created_at: datetime) -> "Account":
         return cls(
             id=id,
             email=email,
             password_hash=password_hash,
-            created_at=clock.now(),
+            created_at=created_at,
         )
