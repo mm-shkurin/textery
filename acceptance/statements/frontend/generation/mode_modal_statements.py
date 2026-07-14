@@ -4,11 +4,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 
-from statements.frontend.base_frontend_statements import BaseFrontendStatements
+from statements.frontend.base_frontend_statements import BaseFrontendStatements, MODE_CARD_AUTO
 
 MODE_MODAL = (By.CSS_SELECTOR, "[data-testid='mode-modal']")
 MODE_CARD_MANUAL = (By.CSS_SELECTOR, "[data-testid='mode-card-manual']")
-MODE_CARD_AUTO = (By.CSS_SELECTOR, "[data-testid='mode-card-auto']")
 MODE_NAME_MANUAL = (By.CSS_SELECTOR, "[data-testid='mode-card-manual'] .mode-name")
 MODE_NAME_AUTO = (By.CSS_SELECTOR, "[data-testid='mode-card-auto'] .mode-name")
 SOON_BADGE = (By.CSS_SELECTOR, ".soon-pill")

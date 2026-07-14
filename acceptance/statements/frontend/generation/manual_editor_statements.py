@@ -57,6 +57,10 @@ class ManualEditorStatements(BaseFrontendStatements):
         )
 
     def assert_toolbar_controls_are_visible(self, driver: WebDriver) -> None:
+        self._assert_each_toolbar_button_is_enabled(driver)
+        self._assert_toolbar_button_count(driver)
+
+    def _assert_each_toolbar_button_is_enabled(self, driver: WebDriver) -> None:
         for control_name, aria_labels in TOOLBAR_BUTTON_ARIA_LABELS.items():
             for aria_label in aria_labels:
                 locator = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-toolbar-btn[aria-label='{aria_label}']")
@@ -65,6 +69,7 @@ class ManualEditorStatements(BaseFrontendStatements):
                     f"expected {control_name} toolbar control '{aria_label}' to be enabled"
                 )
 
+    def _assert_toolbar_button_count(self, driver: WebDriver) -> None:
         toolbar_buttons = driver.find_elements(*TOOLBAR_BUTTON)
         assert len(toolbar_buttons) == EXPECTED_TOOLBAR_BUTTON_COUNT, (
             f"expected exactly {EXPECTED_TOOLBAR_BUTTON_COUNT} toolbar controls, "

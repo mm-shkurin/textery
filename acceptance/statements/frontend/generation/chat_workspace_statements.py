@@ -3,9 +3,7 @@ from typing import ClassVar
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 
-from statements.frontend.base_frontend_statements import BaseFrontendStatements
-
-MODE_CARD_AUTO = (By.CSS_SELECTOR, "[data-testid='mode-card-auto']")
+from statements.frontend.base_frontend_statements import BaseFrontendStatements, MODE_CARD_AUTO
 
 CHAT_PANEL = (By.CSS_SELECTOR, "[data-testid='chat-panel']")
 TOPIC_INPUT = (By.CSS_SELECTOR, "[data-testid='topic-input']")
