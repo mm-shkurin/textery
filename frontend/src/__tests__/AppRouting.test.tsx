@@ -37,6 +37,30 @@ describe('App routing', () => {
     expect(screen.getByTestId('login-password-input')).toHaveAttribute('type', 'password')
   })
 
+  // RED: App.tsx has no /verify route yet, only /* catch-all rendering
+  // DocumentGenerationFlow. Expect a Testing Library "unable to find element"
+  // failure, not an import-resolution error (react-router-dom is already used above).
+  // TDD Red Phase - /verify route not wired in App.tsx yet
+  it.skip('renders VerifyCodeForm at /verify', async () => {
+    const { MemoryRouter } = await import('react-router-dom')
+
+    render(
+      <MemoryRouter initialEntries={['/verify']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    for (let index = 0; index < 6; index += 1) {
+      const input = screen.getByTestId(`verify-code-input-${index}`)
+      expect(input).toHaveAttribute('type', 'text')
+      expect(input).toHaveAttribute('inputMode', 'numeric')
+      expect(input).toHaveAttribute('maxLength', '1')
+    }
+    expect(screen.getByTestId('verify-resend-button')).toHaveTextContent(
+      'Письмо не пришло? Отправить код повторно',
+    )
+  })
+
   it('renders DocumentGenerationFlow landing content for an unmatched path', async () => {
     const { MemoryRouter } = await import('react-router-dom')
 
