@@ -65,10 +65,7 @@ describe('LoginForm', () => {
     expect(toggle).toHaveAttribute('aria-pressed', 'false')
   })
 
-  // RED: LoginForm has no isSubmitting state yet — submit button never gets
-  // the disabled attribute. Actual failure: AssertionError, "Received element
-  // is not disabled" at the toBeDisabled() assertion right after click.
-  it.skip('disables the submit button immediately after click and re-enables it once the request settles', async () => {
+  it('disables the submit button immediately after click and re-enables it once the request settles', async () => {
     renderWithRouter(<LoginForm />)
     const submitButton = screen.getByTestId('login-submit-button')
     expect(submitButton).not.toBeDisabled()
