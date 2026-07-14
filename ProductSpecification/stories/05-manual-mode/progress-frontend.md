@@ -13,7 +13,7 @@ Owns: Frontend Scenarios. Narrative/decisions/Spec checklist live in `progress.m
 - [S] green-frontend-api — same reason, covered by red-frontend/green-frontend component tests
 - [x] align-design
 - [x] green-selenium
-- [ ] demo
+- [x] demo
 
 ### Scenario 1.2: Selecting Ручной режим opens the empty editor
 - [ ] red-selenium
