@@ -26,12 +26,12 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-acceptance
 
 ### Scenario 1.2: Reject email exceeding the length limit
-- [~] red-acceptance
-- [ ] design
-- [ ] red-usecase
-- [ ] green-usecase
-- [ ] adapters-discovery
-- [ ] green-acceptance
+- [x] red-acceptance
+- [S] design — no new design needed, existing Email value object (MAX_EMAIL_LENGTH=254, built for Scenario 1.1) already covers overlong emails
+- [S] red-usecase — Email constructor's existing length guard already rejects 256-char input; no new usecase behavior
+- [S] green-usecase — nothing to implement, guard pre-exists
+- [S] adapters-discovery — REST error mapping already wired for INVALID_EMAIL in Scenario 1.1; no new adapter surface
+- [~] green-acceptance
 
 ### Scenario 1.3: Reject password failing the policy
 - [ ] red-acceptance
