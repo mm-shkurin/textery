@@ -111,7 +111,7 @@ class AuthStatements:
             f"expected 201 Created, got status_code={response.status_code}, body={response.body}"
         )
         assert response.body is not None, (
-            "expected a response body containing the created account's is_verified and id, "
+            "expected a response body containing the created account's is_verified and user_id, "
             "got body=None"
         )
         is_verified = response.body.get("is_verified")
@@ -119,17 +119,18 @@ class AuthStatements:
             f"expected created account is_verified=False (server-owned, ignoring attacker-supplied "
             f"is_verified=true), got is_verified={is_verified!r}"
         )
-        # id is category 4 (truly opaque) per the determinism hierarchy: it is a
+        # user_id is category 4 (truly opaque) per the determinism hierarchy: it is a
         # server-generated UUID with no setup-capturable exact value, so we assert
         # it is present and well-formed (not just "not equal to the attacker's id" —
-        # that alone would pass on id=None, which is the exact defect this test
-        # guards against) plus the scenario-specific inequality.
-        account_id = response.body.get("id")
+        # that alone would pass on user_id=None, which is the exact defect this test
+        # guards against) plus the scenario-specific inequality. Field name per
+        # ProductSpecification/api-specs/auth_register.yaml's RegisterResponse schema.
+        account_id = response.body.get("user_id")
         assert account_id is not None, (
-            f"expected a server-generated id, got id=None (body={response.body})"
+            f"expected a server-generated user_id, got user_id=None (body={response.body})"
         )
-        assert_is_valid_uuid(account_id, field_name="id")
+        assert_is_valid_uuid(account_id, field_name="user_id")
         assert account_id != self.ATTACKER_SUPPLIED_ID, (
-            f"expected a server-generated id, not the attacker-supplied id "
-            f"{self.ATTACKER_SUPPLIED_ID!r}, got id={account_id!r}"
+            f"expected a server-generated user_id, not the attacker-supplied id "
+            f"{self.ATTACKER_SUPPLIED_ID!r}, got user_id={account_id!r}"
         )
