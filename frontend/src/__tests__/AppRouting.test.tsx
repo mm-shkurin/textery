@@ -40,8 +40,7 @@ describe('App routing', () => {
   // RED: App.tsx has no /verify route yet, only /* catch-all rendering
   // DocumentGenerationFlow. Expect a Testing Library "unable to find element"
   // failure, not an import-resolution error (react-router-dom is already used above).
-  // TDD Red Phase - /verify route not wired in App.tsx yet
-  it.skip('renders VerifyCodeForm at /verify', async () => {
+  it('renders VerifyCodeForm at /verify', async () => {
     const { MemoryRouter } = await import('react-router-dom')
 
     render(

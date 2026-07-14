@@ -8,6 +8,7 @@ import { ChatWorkspace } from './features/generation/components/ChatWorkspace'
 import { useGeneration } from './features/generation/hooks/useGeneration'
 import { RegisterForm } from './features/auth/components/RegisterForm'
 import { LoginForm } from './features/auth/components/LoginForm'
+import { VerifyCodeForm } from './features/auth/components/VerifyCodeForm'
 
 type Step = 'landing' | 'type' | 'mode' | 'form'
 
@@ -81,6 +82,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/register" element={<RegisterForm />} />
       <Route path="/login" element={<LoginForm />} />
+      <Route path="/verify" element={<VerifyCodeForm />} />
       <Route path="/*" element={<DocumentGenerationFlow />} />
     </Routes>
   )
