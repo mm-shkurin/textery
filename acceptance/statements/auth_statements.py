@@ -1,4 +1,5 @@
 from typing import ClassVar
+from uuid import UUID
 
 from clients.application.application_client import ApplicationClient
 from clients.application.dto.auth.register_response_dto import RegisterResponseDto
@@ -25,6 +26,7 @@ class AuthStatements:
         "error_code": "PASSWORD_MISMATCH",
         "message": "The password confirmation does not match.",
     }
+    ATTACKER_SUPPLIED_ID: ClassVar[str] = "11111111-1111-1111-1111-111111111111"
 
     def __init__(self, client: ApplicationClient):
         self._client = client
@@ -75,6 +77,16 @@ class AuthStatements:
         request = scope.to_request_dto()
         return await self._client.register(request)
 
+    async def given_registration_request_with_server_owned_fields(
+        self,
+    ) -> RegisterResponseDto:
+        scope = RegisterScope.builder(
+            email="attacker@example.com",
+            extra_fields={"is_verified": True, "id": self.ATTACKER_SUPPLIED_ID},
+        )
+        request = scope.to_request_dto()
+        return await self._client.register(request)
+
     async def _register_with_password(self, password: str) -> RegisterResponseDto:
         scope = RegisterScope.builder(password=password, confirm_password=password)
         request = scope.to_request_dto()
@@ -93,4 +105,35 @@ class AuthStatements:
         )
         assert "user_id" not in response.body, (
             f"expected no user_id in response, but got body={response.body}"
+        )
+
+    def assert_server_owned_fields_ignored(self, response: RegisterResponseDto) -> None:
+        assert response.status_code == 201, (
+            f"expected 201 Created, got status_code={response.status_code}, body={response.body}"
+        )
+        assert response.body is not None, (
+            "expected a response body containing the created account's is_verified and id, "
+            "got body=None"
+        )
+        assert response.body.get("is_verified") is False, (
+            f"expected created account is_verified=False (server-owned, ignoring attacker-supplied "
+            f"is_verified=true), got is_verified={response.body.get('is_verified')!r}"
+        )
+        # id is category 4 (truly opaque) per the determinism hierarchy: it is a
+        # server-generated UUID with no setup-capturable exact value, so we assert
+        # it is present and well-formed (not just "not equal to the attacker's id" —
+        # that alone would pass on id=None, which is the exact defect this test
+        # guards against) plus the scenario-specific inequality.
+        assert response.body.get("id") is not None, (
+            f"expected a server-generated id, got id=None (body={response.body})"
+        )
+        try:
+            UUID(str(response.body.get("id")))
+        except (ValueError, AttributeError, TypeError) as error:
+            raise AssertionError(
+                f"expected id to be a valid UUID, got id={response.body.get('id')!r}"
+            ) from error
+        assert response.body.get("id") != self.ATTACKER_SUPPLIED_ID, (
+            f"expected a server-generated id, not the attacker-supplied id "
+            f"{self.ATTACKER_SUPPLIED_ID!r}, got id={response.body.get('id')!r}"
         )

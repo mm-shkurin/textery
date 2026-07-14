@@ -9,11 +9,13 @@ class RegisterScope:
     email: str
     password: str
     confirm_password: str
+    extra_fields: dict
 
     DEFAULTS: ClassVar[dict] = {
         "email": "user@example.com",
         "password": "Str0ng!Pass",
         "confirm_password": "Str0ng!Pass",
+        "extra_fields": {},
     }
 
     @classmethod
@@ -25,4 +27,5 @@ class RegisterScope:
             email=self.email,
             password=self.password,
             confirm_password=self.confirm_password,
+            extra_fields=self.extra_fields,
         )
