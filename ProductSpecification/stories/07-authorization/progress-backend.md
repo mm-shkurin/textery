@@ -71,8 +71,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] red-usecase
 - [x] green-usecase
 - [x] adapters-discovery (Check 1 ports: db — no SqlAlchemyVerificationCodeRepository/verification_codes table/migration exists → red-adapter db / green-adapter db needed. AccountRepository/Clock: [S] already sufficient from scenario 1.5. Check 2 exceptions: [S] — no new domain exception type introduced (bare insert, same as 1.5). Check 3 response shape: rest — RegisterResponseDto only has user_id/is_verified, missing verification_code/code_expires_at that the response schema (api-specs/auth_register.yaml) and the acceptance test require → red-adapter rest / green-adapter rest needed, including container.py wiring a real VerificationCodeRepository into create_register_user() (currently silently using the null-object fallback per the premortem finding on the green-usecase commit).)
-- [ ] red-adapter db
-- [ ] green-adapter db
+- [x] red-adapter db
+- [~] green-adapter db
 - [ ] red-adapter rest
 - [ ] green-adapter rest
 - [ ] green-acceptance

@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from session import create_engine, create_session_factory
 from statements.account_storage_statements import AccountStorageStatements
 from statements.generation_storage_statements import GenerationStorageStatements
+from statements.verification_code_storage_statements import VerificationCodeStorageStatements
 
 TEST_DATABASE_URL_ENV_VAR = "TEST_DATABASE_URL"
 DEFAULT_TEST_DATABASE_URL = "postgresql://textery:change-me@localhost:5432/textery"
@@ -38,7 +39,7 @@ async def db_session():
         await session.rollback()
     async with engine.connect() as cleanup_connection:
         await cleanup_connection.execute(text("TRUNCATE TABLE generations"))
-        await cleanup_connection.execute(text("TRUNCATE TABLE accounts"))
+        await cleanup_connection.execute(text("TRUNCATE TABLE verification_codes, accounts"))
         await cleanup_connection.commit()
     await engine.dispose()
 
@@ -51,3 +52,8 @@ def generation_storage_statements(db_session: AsyncSession):
 @pytest.fixture
 def account_storage_statements(db_session: AsyncSession):
     return AccountStorageStatements(db_session)
+
+
+@pytest.fixture
+def verification_code_storage_statements(db_session: AsyncSession):
+    return VerificationCodeStorageStatements(db_session)
