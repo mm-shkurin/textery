@@ -1,12 +1,6 @@
-import pytest
-
 from tests.backend.abstract_backend_test import AbstractBackendTest
 
 
-@pytest.mark.skip(
-    reason="RED: registration has no persistence yet — router returns None/201, "
-    "body=None, so response.body is not None fails"
-)
 class TestRegisterServerOwnedFieldsAcceptance(AbstractBackendTest):
     """Scenario 1.5: Ignore server-owned fields in the request body.
 
