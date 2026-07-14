@@ -2,20 +2,6 @@
   min-height: 100vh;
 }
 
-.me-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 48px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.me-logo {
-  height: 28px;
-  width: auto;
-  display: block;
-}
-
 .me-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -152,10 +138,6 @@
 }
 
 @media (max-width: 768px) {
-  .me-header {
-    padding: 16px 20px;
-  }
-
   .me-container {
     padding: 24px 16px 64px;
   }

@@ -3,6 +3,7 @@ import './ManualEditor.css'
 import type { DocumentType } from '../documentTypes'
 import { createDocument } from '../api/documentApi'
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
+import { AppHeader } from '../../../shared/components/AppHeader'
 
 interface ManualEditorProps {
   documentType: DocumentType
@@ -29,8 +30,10 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
       .then((result) => {
         if (!cancelled) setDocumentId(result.documentId)
       })
-      .catch(() => {
-        // Error surfacing for a failed create is out of scope for this scenario.
+      .catch((error) => {
+        // Error surfacing (retry/UI state) is out of scope for this scenario;
+        // logging keeps the failure from being silently swallowed.
+        console.error('Failed to create document', error)
       })
     return () => {
       cancelled = true
@@ -39,9 +42,7 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
 
   return (
     <div className="manual-editor-page" data-testid="manual-editor">
-      <header className="me-header">
-        <img className="me-logo" src="/logo.svg" alt="Textery" />
-      </header>
+      <AppHeader />
       <div className="me-container">
         <div className="me-breadcrumb">
           <button type="button" className="me-breadcrumb-back" onClick={onBack} aria-label="Назад">

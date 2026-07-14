@@ -5,6 +5,7 @@ import type { GenerationUiState } from '../hooks/useGeneration'
 import { Composer, MAX_TOPIC_LENGTH } from './Composer'
 import { Progress } from './Progress'
 import { DocArea } from './DocArea'
+import { AppHeader } from '../../../shared/components/AppHeader'
 
 interface ChatWorkspaceProps {
   documentTypeLabel: string
@@ -36,9 +37,7 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
 
   return (
     <div className="chat-page">
-      <header className="cw-header">
-        <img className="cw-logo" src="/logo.svg" alt="Textery" />
-      </header>
+      <AppHeader />
       <div className="cw-container">
         <div className={`cw-badge cw-badge-${state}`}>
           <span className="cw-dot" />
