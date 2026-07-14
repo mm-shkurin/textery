@@ -8,6 +8,7 @@ from statements.frontend.base_frontend_statements import BaseFrontendStatements
 EMAIL_INPUT = (By.CSS_SELECTOR, "[data-testid='login-email-input']")
 PASSWORD_INPUT = (By.CSS_SELECTOR, "[data-testid='login-password-input']")
 SUBMIT_BUTTON = (By.CSS_SELECTOR, "[data-testid='login-submit-button']")
+PASSWORD_TOGGLE = (By.CSS_SELECTOR, "[data-testid='login-password-toggle']")
 
 
 class LoginPageStatements(BaseFrontendStatements):
@@ -33,3 +34,19 @@ class LoginPageStatements(BaseFrontendStatements):
 
     def assert_submit_button_is_visible(self, driver: WebDriver) -> None:
         self._assert_submit_button_visible(driver, SUBMIT_BUTTON, self.EXPECTED_SUBMIT_BUTTON_TEXT)
+
+    def assert_password_field_is_masked(self, driver: WebDriver) -> None:
+        element = self._wait_for_visible(driver, PASSWORD_INPUT)
+        assert element.get_attribute("type") == "password", (
+            f"expected password field type 'password', got '{element.get_attribute('type')}'"
+        )
+
+    def click_show_password_toggle(self, driver: WebDriver) -> None:
+        toggle = self._wait_for_visible(driver, PASSWORD_TOGGLE)
+        toggle.click()
+
+    def assert_password_field_is_plain_text(self, driver: WebDriver) -> None:
+        element = self._wait_for_visible(driver, PASSWORD_INPUT)
+        assert element.get_attribute("type") == "text", (
+            f"expected password field type 'text', got '{element.get_attribute('type')}'"
+        )
