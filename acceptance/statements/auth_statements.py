@@ -23,7 +23,7 @@ class AuthStatements:
     }
     EXPECTED_PASSWORD_MISMATCH_ERROR: ClassVar[dict] = {
         "error_code": "PASSWORD_MISMATCH",
-        "message": "The password and confirm_password do not match.",
+        "message": "The password confirmation does not match.",
     }
 
     def __init__(self, client: ApplicationClient):

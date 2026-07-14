@@ -51,7 +51,7 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] red-usecase
 - [x] green-usecase
 - [x] adapters-discovery (Check 1 ports: [S] none — RegisterUser.execute takes no injected port, no persistence on this scenario's path. Check 2 exceptions: [S] — validation_exception_handler already maps ValidationException generically to {"error_code","message"}, covers PASSWORD_MISMATCH as of scenario 1.1's wiring. Check 3 response shape: [S] — /api/v1/auth/register endpoint already exists and returns the generic error body; no new adapter surface needed.)
-- [ ] green-acceptance
+- [x] green-acceptance
 
 ### Scenario 1.5: Ignore server-owned fields in the request body
 - [ ] red-acceptance

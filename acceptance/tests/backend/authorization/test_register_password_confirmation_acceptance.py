@@ -1,9 +1,6 @@
-import pytest
-
 from tests.backend.abstract_backend_test import AbstractBackendTest
 
 
-@pytest.mark.skip(reason="RED: RegisterUser.execute never compares password to confirm_password")
 class TestRegisterPasswordConfirmationAcceptance(AbstractBackendTest):
     """Scenario 1.4: Reject password/confirm_password mismatch.
 
