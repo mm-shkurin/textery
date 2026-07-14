@@ -75,7 +75,10 @@ scenarios) or a dedicated follow-up, not scope-crept into this step.
 - [S] red-frontend-api (coverage: resendCode throws on non-ok HTTP response) — resendCode already throws descriptive error on non-ok HTTP response (authApi.ts:17-18), implemented in original green-frontend-api step for scenario 1.3
 - [S] green-frontend-api (coverage: resendCode throws on non-ok HTTP response) — see red step, nothing to implement
 - [x] align-design
-- [~] green-selenium
+- [S] green-selenium (BLOCKED: no /verify route in App.tsx, same gap class as Scenarios 1.1/1.2 — green-agent stopped before touching anything, skip marker restored; superseded by routing sub-cycle below)
+- [ ] red-frontend (routing: install/wire /verify route to render VerifyCodeForm)
+- [ ] green-frontend (routing: minimal App.tsx wiring so /verify renders VerifyCodeForm)
+- [ ] green-selenium (retry after routing lands)
 - [ ] demo
 
 ### 2.1: Password field visibility toggle
