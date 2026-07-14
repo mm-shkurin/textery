@@ -12,7 +12,7 @@ Owns: Frontend Scenarios. Narrative/decisions/Spec checklist live in `progress.m
 - [S] red-frontend-api — no API call: mode-modal availability is a static local flag, no backend endpoint involved
 - [S] green-frontend-api — same reason, covered by red-frontend/green-frontend component tests
 - [x] align-design
-- [ ] green-selenium
+- [x] green-selenium
 - [ ] demo
 
 ### Scenario 1.2: Selecting Ручной режим opens the empty editor

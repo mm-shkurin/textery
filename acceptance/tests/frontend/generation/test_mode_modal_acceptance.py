@@ -3,10 +3,6 @@ import pytest
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
-@pytest.mark.skip(
-    reason="RED: AssertionError: expected manual mode card to not have 'disabled' class "
-    "(ModeModal.tsx still marks 'manual' as available: false)"
-)
 class TestModeModalAcceptance(AbstractFrontendTest):
     """UI Test Scenario 1.1: The mode modal now shows both modes as available.
 
