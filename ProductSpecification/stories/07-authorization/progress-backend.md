@@ -55,8 +55,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 
 ### Scenario 1.5: Ignore server-owned fields in the request body
 - [x] red-acceptance
-- [ ] design
-- [ ] red-usecase
+- [x] design (see `decisions/account-persistence-design-decision.md`) — domain Account entity (is_verified pinned at construction, no setter), AccountRepository port, Clock port injected now (SystemClock adapter), SQLAlchemy accounts table+migration (email unique constraint deferred to 2.2, additive-safe), dedicated RegisterResponseDto (id/is_verified only, never password_hash), per-run-unique email fixture for the 1.5 acceptance test, DB-failure error mapping.
+- [~] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
