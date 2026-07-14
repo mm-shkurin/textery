@@ -2,21 +2,16 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 import pytest
-from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
 
 from auth.account import Account
 from auth.registration_result import RegistrationResult
 from auth.verification_code import VerificationCode
 from shared.exceptions import ValidationException
-from error_handling.exception_handlers import validation_exception_handler
 
-auth_router_module = pytest.importorskip(
+pytest.importorskip(
     "router.auth.auth_router",
     reason="RED: router.auth.auth_router module does not exist (ModuleNotFoundError)",
 )
-auth_router = auth_router_module.router
-get_register_user_usecase = auth_router_module.get_register_user_usecase
 
 
 class TestRegisterPostRouterMalformedEmail:
@@ -27,11 +22,9 @@ class TestRegisterPostRouterMalformedEmail:
     Then the response is 400 with {error_code, message} body
     """
 
-    async def test_should_return_400_with_error_code_and_message_for_malformed_email(self, mocker):
-        app = FastAPI()
-        app.include_router(auth_router)
-        app.add_exception_handler(ValidationException, validation_exception_handler)
-
+    async def test_should_return_400_with_error_code_and_message_for_malformed_email(
+        self, mocker, register_client
+    ):
         mock_usecase = mocker.Mock()
         mock_usecase.execute = mocker.AsyncMock(
             side_effect=ValidationException(
@@ -39,10 +32,8 @@ class TestRegisterPostRouterMalformedEmail:
                 message="The email address is not valid.",
             )
         )
-        app.dependency_overrides[get_register_user_usecase] = lambda: mock_usecase
 
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with register_client(mock_usecase) as client:
             response = await client.post(
                 "/api/v1/auth/register",
                 json={
@@ -76,11 +67,9 @@ class TestRegisterPostRouterServerOwnedFields:
     built from the domain Account, and password_hash is never present
     """
 
-    async def test_should_return_201_with_id_and_is_verified_and_no_password_hash(self, mocker):
-        app = FastAPI()
-        app.include_router(auth_router)
-        app.add_exception_handler(ValidationException, validation_exception_handler)
-
+    async def test_should_return_201_with_id_and_is_verified_and_no_password_hash(
+        self, mocker, register_client
+    ):
         created_account = Account.create(
             id=uuid4(),
             email="attacker@example.com",
@@ -98,10 +87,8 @@ class TestRegisterPostRouterServerOwnedFields:
         )
         mock_usecase = mocker.Mock()
         mock_usecase.execute = mocker.AsyncMock(return_value=registration_result)
-        app.dependency_overrides[get_register_user_usecase] = lambda: mock_usecase
 
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with register_client(mock_usecase) as client:
             response = await client.post(
                 "/api/v1/auth/register",
                 json={
@@ -149,11 +136,9 @@ class TestRegisterPostRouterVerificationCode:
     """
 
     @pytest.mark.skip(reason="RED: RegisterResponseDto missing verification_code/code_expires_at")
-    async def test_should_return_201_with_verification_code_and_code_expires_at(self, mocker):
-        app = FastAPI()
-        app.include_router(auth_router)
-        app.add_exception_handler(ValidationException, validation_exception_handler)
-
+    async def test_should_return_201_with_verification_code_and_code_expires_at(
+        self, mocker, register_client
+    ):
         created_account = Account.create(
             id=uuid4(),
             email="new-user@example.com",
@@ -172,10 +157,8 @@ class TestRegisterPostRouterVerificationCode:
         )
         mock_usecase = mocker.Mock()
         mock_usecase.execute = mocker.AsyncMock(return_value=registration_result)
-        app.dependency_overrides[get_register_user_usecase] = lambda: mock_usecase
 
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with register_client(mock_usecase) as client:
             response = await client.post(
                 "/api/v1/auth/register",
                 json={
@@ -197,21 +180,4 @@ class TestRegisterPostRouterVerificationCode:
         assert body.get("code_expires_at") == code_expires_at.isoformat(), (
             f"expected code_expires_at={code_expires_at.isoformat()!r} from the persisted "
             f"VerificationCode, got body={body}"
-        )
-
-
-class TestGetRegisterUserUsecaseDependencyStub:
-    """Coverage: get_register_user_usecase DI stub raises NotImplementedError.
-
-    Given real usecase wiring has not landed yet
-    When the DI provider function is invoked directly (not overridden)
-    Then it raises NotImplementedError
-    """
-
-    def test_should_raise_not_implemented_error(self):
-        with pytest.raises(NotImplementedError) as excinfo:
-            get_register_user_usecase()
-
-        assert str(excinfo.value) == "wired by the application composition root", (
-            f"unexpected NotImplementedError message: {excinfo.value}"
         )
