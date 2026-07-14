@@ -70,7 +70,11 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] design (see `decisions/verification-code-design-decision.md`) — new VerificationCode domain entity + verification_codes table (consumed_at column added now, unused, for 3.x/4.x additive-safety), secrets.randbelow CSPRNG generation, code stored/compared as fixed-length string end-to-end. Atomic Account+VerificationCode write deferred to scenario 2.5 (its own named scenario); email-uniqueness/concurrency deferred to 2.2/2.4a (their own named scenarios) — both accepted, tracked gaps per hazard-scan groups 2/3, not silent.
 - [x] red-usecase
 - [x] green-usecase
-- [~] adapters-discovery
+- [x] adapters-discovery (Check 1 ports: db — no SqlAlchemyVerificationCodeRepository/verification_codes table/migration exists → red-adapter db / green-adapter db needed. AccountRepository/Clock: [S] already sufficient from scenario 1.5. Check 2 exceptions: [S] — no new domain exception type introduced (bare insert, same as 1.5). Check 3 response shape: rest — RegisterResponseDto only has user_id/is_verified, missing verification_code/code_expires_at that the response schema (api-specs/auth_register.yaml) and the acceptance test require → red-adapter rest / green-adapter rest needed, including container.py wiring a real VerificationCodeRepository into create_register_user() (currently silently using the null-object fallback per the premortem finding on the green-usecase commit).)
+- [ ] red-adapter db
+- [ ] green-adapter db
+- [ ] red-adapter rest
+- [ ] green-adapter rest
 - [ ] green-acceptance
 
 ### Scenario 2.2: Duplicate email is rejected, verified or pending
