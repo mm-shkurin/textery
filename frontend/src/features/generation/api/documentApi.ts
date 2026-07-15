@@ -59,6 +59,18 @@ export interface GetDocumentResult {
   version: number
 }
 
-export async function getDocument(_documentId: string): Promise<GetDocumentResult> {
-  throw new Error('getDocument is not implemented yet')
+export async function getDocument(documentId: string): Promise<GetDocumentResult> {
+  const data = (await request(
+    `${API_BASE}/api/v1/documents/${documentId}`,
+    {
+      method: 'GET',
+    },
+    'Не удалось загрузить документ'
+  )) as { document_id: string; status: string; content: string; version: number }
+  return {
+    documentId: data.document_id,
+    status: data.status,
+    content: data.content,
+    version: data.version,
+  }
 }

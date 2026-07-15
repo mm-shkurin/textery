@@ -6,10 +6,7 @@ import * as documentApi from '../../api/documentApi'
 vi.mock('../../api/documentApi')
 
 describe('ManualEditor reopen flow', () => {
-  // RED (scenario 6.2): ManualEditor does not yet accept existingDocumentId
-  // or call getDocument; it always calls createDocument on mount. Enable in
-  // green-frontend once reopen support is implemented.
-  it.skip('reopening an existing document fetches it via getDocument and populates the editor with its saved content and version, without creating a new document', async () => {
+  it('reopening an existing document fetches it via getDocument and populates the editor with its saved content and version, without creating a new document', async () => {
     // Safety default so an erroneous createDocument call (current behavior,
     // which ignores existingDocumentId) resolves instead of crashing the
     // effect with "Cannot read properties of undefined (reading 'then')" —

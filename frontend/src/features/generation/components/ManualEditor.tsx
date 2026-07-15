@@ -5,7 +5,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Document from '@tiptap/extension-document'
 import './ManualEditor.css'
 import type { DocumentType } from '../documentTypes'
-import { createDocument, saveDocument } from '../api/documentApi'
+import { createDocument, getDocument, saveDocument } from '../api/documentApi'
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
 import { AppHeader } from '../../../shared/components/AppHeader'
 import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from './editorDomSync'
@@ -18,9 +18,15 @@ interface ManualEditorProps {
   documentType: DocumentType
   documentTypeLabel: string
   onBack: () => void
+  existingDocumentId?: string
 }
 
-export function ManualEditor({ documentType, documentTypeLabel, onBack }: ManualEditorProps) {
+export function ManualEditor({
+  documentType,
+  documentTypeLabel,
+  onBack,
+  existingDocumentId,
+}: ManualEditorProps) {
   const [documentId, setDocumentId] = useState<string | null>(null)
   const [version, setVersion] = useState(1)
   const [isSaving, setIsSaving] = useState(false)
@@ -111,19 +117,35 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
 
   useEffect(() => {
     let cancelled = false
-    createDocument(documentType)
-      .then((result) => {
-        if (!cancelled) setDocumentId(result.documentId)
-      })
-      .catch((error) => {
-        // Error surfacing (retry/UI state) is out of scope for this scenario;
-        // logging keeps the failure from being silently swallowed.
-        console.error('Failed to create document', error)
-      })
+    if (existingDocumentId) {
+      getDocument(existingDocumentId)
+        .then((result) => {
+          if (cancelled) return
+          setDocumentId(result.documentId)
+          setVersion(result.version)
+          editor?.commands.setContent(result.content)
+        })
+        .catch((error) => {
+          // Error surfacing (retry/UI state) is out of scope for this scenario;
+          // logging keeps the failure from being silently swallowed.
+          console.error('Failed to load document', error)
+        })
+    } else {
+      createDocument(documentType)
+        .then((result) => {
+          if (!cancelled) setDocumentId(result.documentId)
+        })
+        .catch((error) => {
+          // Error surfacing (retry/UI state) is out of scope for this scenario;
+          // logging keeps the failure from being silently swallowed.
+          console.error('Failed to create document', error)
+        })
+    }
     return () => {
       cancelled = true
     }
-  }, [documentType])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentType, existingDocumentId])
 
   return (
     <div className="manual-editor-page" data-testid="manual-editor">

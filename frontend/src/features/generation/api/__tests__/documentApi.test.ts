@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createDocument, saveDocument } from '../documentApi'
+import { createDocument, getDocument, saveDocument } from '../documentApi'
 import { API_BASE } from '../httpClient'
 
 describe('documentApi', () => {
@@ -68,5 +68,44 @@ describe('documentApi', () => {
     await expect(saveDocument('doc-1', '<p>Hello</p>', 1)).rejects.toThrow(
       'Версия документа устарела'
     )
+  })
+
+  it('getDocument GETs the document and returns documentId, status, content, version', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        document_id: 'doc-1',
+        status: 'draft',
+        content: '<p>Saved</p>',
+        version: 3,
+      }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await getDocument('doc-1')
+
+    expect(result).toEqual({
+      documentId: 'doc-1',
+      status: 'draft',
+      content: '<p>Saved</p>',
+      version: 3,
+    })
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toEqual(`${API_BASE}/api/v1/documents/doc-1`)
+    expect(init.method).toBe('GET')
+  })
+
+  it('getDocument rejects with server error detail on non-OK response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: async () => ({ detail: 'Документ не найден' }),
+      })
+    )
+
+    await expect(getDocument('doc-1')).rejects.toThrow('Документ не найден')
   })
 })

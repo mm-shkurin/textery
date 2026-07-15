@@ -121,9 +121,9 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 ### Scenario 6.2: Reopening a previously saved document shows its saved content
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [x] red-frontend — added `ManualEditor.reopen.test.tsx`. Design decision (recorded per interview scope note: no document-list/history UI in this story, that's story #12): reopen is scoped at the `ManualEditor` component level via a new optional prop `existingDocumentId?: string`. When present, the component should call a new `getDocument(documentId)` API function (returning `{ documentId, status, content, version }`, matching `GET /api/v1/documents/{document_id}`) instead of `createDocument`, populate the Tiptap editor with the fetched `content`, and set `version` from the response so a subsequent save PUTs against the correct base version. Added a minimal `getDocument` stub (throws "not implemented yet") to `documentApi.ts` purely as a mock target for `vi.mock` automocking — no real fetch logic yet, that's `green-frontend-api`. Predicted `waitFor` timeout on `expect(documentApi.getDocument).toHaveBeenCalledWith('doc-99')` (component ignores `existingDocumentId`, always calls `createDocument`); actual matched exactly (editor rendered empty, only `ProseMirror-trailingBreak`). `it.skip` added with reason comment.
-- [~] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
+- [x] green-frontend — implemented real `getDocument` in `documentApi.ts` (GET, mirrors `saveDocument`/`createDocument`'s `request()` pattern) and wired `ManualEditor`'s mount effect to branch on `existingDocumentId`: calls `getDocument` and populates Tiptap via `editor?.commands.setContent(result.content)` + sets `version`, else falls back to `createDocument`. App.tsx wiring left untouched (no entry point in this story's scope). Removed `it.skip`. Full suite: 50/50 passed. Typecheck: clean.
+- [x] red-frontend-api — added 2 tests to `documentApi.test.ts` for `getDocument` (success path + non-OK rejection), same pattern as `saveDocument`'s tests. No red state: `getDocument` was already implemented by green-frontend using the proven `request()` pattern, so both tests passed immediately (5/5 in file). No disable marker needed.
+- [S] green-frontend-api — no production gap: `getDocument`/`request()` already correctly implemented, see red-frontend-api note
 - [ ] align-design
 - [ ] green-selenium
 - [ ] demo
