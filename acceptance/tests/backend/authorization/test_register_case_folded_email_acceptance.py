@@ -1,14 +1,6 @@
-import pytest
-
 from tests.backend.abstract_backend_test import AbstractBackendTest
 
 
-@pytest.mark.skip(
-    reason="RED: the accounts.email uniqueness check is a case-sensitive DB UNIQUE "
-    "constraint with no normalization -- registering 'User@Example.ru' after "
-    "'user@example.ru' currently returns 201 with a new account instead of 409 "
-    "EMAIL_ALREADY_REGISTERED"
-)
 class TestRegisterCaseFoldedEmailAcceptance(AbstractBackendTest):
     """Scenario 2.3: Case-folded email uniqueness.
 
