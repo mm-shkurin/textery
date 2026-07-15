@@ -122,8 +122,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-acceptance — passes as-is (acceptance test committed in the red-acceptance step above), kept as a black-box regression pin alongside the domain-level red-usecase test that actually proves locale-invariance
 
 ### Scenario 2.4c: Unicode-normalization uniqueness for email
-- [ ] red-acceptance
-- [ ] design
+- [x] red-acceptance — test added skip-marked (true RED, needs production change): `given_unicode_normalized_duplicate_registration()` registers "josé@example.ru" (NFC) then attempts "josé@example.ru" (NFD, same visible email). Fails as predicted at the precondition step itself: `Email`'s regex (`_EMAIL_PATTERN` in `backend/domain/src/auth/email.py`) only accepts ASCII local-parts (`[A-Za-z0-9._%+-]+`), so the first (NFC) registration returns 400 INVALID_EMAIL instead of 201 — the scenario can't even reach the duplicate-check path yet. test-review: assertions already strict (exact 409/dict-equality reused from 2.2/2.3/2.4b), no changes needed.
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery

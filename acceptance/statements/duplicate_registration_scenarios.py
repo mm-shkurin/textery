@@ -81,6 +81,18 @@ async def given_duplicate_registration_with_different_case_under_turkish_locale(
         return await _register_with_email(client, cased_email)
 
 
+async def given_unicode_normalized_duplicate_registration(
+    client: ApplicationClient,
+) -> RegisterResponseDto:
+    nfc_local_part = "josé"
+    nfd_local_part = "josé"
+    domain = "example.ru"
+    first_response = await _register_with_email(client, f"{nfc_local_part}@{domain}")
+    if first_response.status_code != 201:
+        return first_response
+    return await _register_with_email(client, f"{nfd_local_part}@{domain}")
+
+
 async def given_two_concurrent_registrations_for_same_new_email(
     client: ApplicationClient,
 ) -> tuple[RegisterResponseDto, RegisterResponseDto]:

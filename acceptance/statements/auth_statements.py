@@ -131,6 +131,11 @@ class AuthStatements:
             )
         )
 
+    async def given_unicode_normalized_duplicate_registration(
+        self,
+    ) -> RegisterResponseDto:
+        return await dup_scenarios.given_unicode_normalized_duplicate_registration(self._client)
+
     async def given_two_concurrent_registrations_for_same_new_email(
         self,
     ) -> tuple[RegisterResponseDto, RegisterResponseDto]:
