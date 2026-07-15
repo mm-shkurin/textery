@@ -52,13 +52,28 @@ class RegisterUser:
         self.unit_of_work = unit_of_work or _NullUnitOfWork()
 
     async def execute(self, email: str, password: str, confirm_password: str) -> RegistrationResult:
+        email_value_object = self._validate_email(email)
+        self._validate_password(password, confirm_password)
+        created_at = self.clock.now()
+        account = await self._create_and_save_account(email_value_object, password, created_at)
+        verification_code = VerificationCode.generate(
+            id=uuid4(),
+            account_id=account.id,
+            created_at=created_at,
+        )
+        await self._save_verification_code_and_commit(verification_code)
+        return RegistrationResult(account=account, verification_code=verification_code)
+
+    def _validate_email(self, email: str) -> Email:
         try:
-            email_value_object = Email(email)
+            return Email(email)
         except ValueError:
             raise ValidationException(
                 error_code="INVALID_EMAIL",
                 message="The email address is not valid.",
             )
+
+    def _validate_password(self, password: str, confirm_password: str) -> None:
         try:
             Password(password)
         except ValueError:
@@ -71,7 +86,10 @@ class RegisterUser:
                 error_code="PASSWORD_MISMATCH",
                 message="The password confirmation does not match.",
             )
-        created_at = self.clock.now()
+
+    async def _create_and_save_account(
+        self, email_value_object: Email, password: str, created_at: datetime
+    ) -> Account:
         account = Account.create(
             id=uuid4(),
             email=email_value_object.value,
@@ -85,20 +103,18 @@ class RegisterUser:
                 error_code="EMAIL_ALREADY_REGISTERED",
                 message="An account with this email address already exists.",
             )
+        return account
 
-        verification_code = VerificationCode.generate(
-            id=uuid4(),
-            account_id=account.id,
-            created_at=created_at,
-        )
+    async def _save_verification_code_and_commit(self, verification_code: VerificationCode) -> None:
         try:
             await self.verification_code_repository.save(verification_code)
             await self.unit_of_work.commit()
         except Exception:
-            try:
-                await self.unit_of_work.rollback()
-            except Exception:
-                pass
+            await self._rollback_silently()
             raise RegistrationFailedException(message=self.REGISTRATION_FAILED_MESSAGE)
 
-        return RegistrationResult(account=account, verification_code=verification_code)
+    async def _rollback_silently(self) -> None:
+        try:
+            await self.unit_of_work.rollback()
+        except Exception:
+            pass
