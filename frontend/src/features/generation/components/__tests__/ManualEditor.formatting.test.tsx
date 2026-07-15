@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
-import * as documentApi from '../../api/documentApi'
 import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
 
 vi.mock('../../api/documentApi')
