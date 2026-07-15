@@ -39,10 +39,6 @@ class TestRegisterUsecaseAtomicWrite:
         await register_atomic_write_statements.attempt_registering_when_final_commit_fails()
         register_atomic_write_statements.assert_registration_failed_error_raised(expected_saved_codes_count=1)
 
-    @pytest.mark.skip(
-        reason="RED: RegisterUser._create_and_save_account only catches ConflictException "
-        "around account_repository.save; other exceptions propagate raw and unrolled-back"
-    )
     async def test_should_rollback_and_sanitize_when_account_save_fails_with_non_conflict_error(
         self, register_atomic_write_statements: RegisterAtomicWriteStatements
     ):

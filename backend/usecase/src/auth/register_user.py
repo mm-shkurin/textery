@@ -103,6 +103,9 @@ class RegisterUser:
                 error_code="EMAIL_ALREADY_REGISTERED",
                 message="An account with this email address already exists.",
             )
+        except Exception:
+            await self._rollback_silently()
+            raise RegistrationFailedException(message=self.REGISTRATION_FAILED_MESSAGE)
         return account
 
     async def _save_verification_code_and_commit(self, verification_code: VerificationCode) -> None:
