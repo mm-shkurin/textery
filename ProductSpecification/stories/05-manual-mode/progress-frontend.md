@@ -65,8 +65,8 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 - [S] red-frontend-api — no API call: cursor-driven toolbar state is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
 - [x] align-design — verify-only: no new markup/CSS for this scenario, reuses scenario 3.1's `.me-toolbar-btn[aria-pressed='true']` active-state styling already aligned to mockup 04-editor-content.html
-- [ ] green-selenium
-- [ ] demo
+- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. This is the deferred gap the premortem flagged (see red-frontend note above) — must run before 3.2 is fully verified.
+- [S] demo — same reason, no live backend to drive a visible Selenium run against
 
 ### Scenario 4.1: Saving shows a loading state and disables the save control
 - [ ] red-selenium

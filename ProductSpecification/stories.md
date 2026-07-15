@@ -6,7 +6,7 @@
 |----|-------------------------------|------|------|------|-----|-------|------|-------|-------|----|
 | 1  | Auto-generate: доклад          | ✅   | 🔧   | —    | 🔧   | —     | —    | —     | 12/74 | 16% |
 | 7  | Authorization (email+password w/ mocked code, Yandex ID, VK ID) | · | · | · | · | · | · | · | · | · |
-| 5  | Manual input mode (non-AI document creation) | ✅ | — | — | 🔧 | — | — | — | 4/11 | 36% |
+| 5  | Manual input mode (non-AI document creation) | ✅ | — | — | 🔧 | — | — | — | 5/11 | 45% |
 
 # Backlog — Core sequence (build order, decided 2026-07-06)
 
