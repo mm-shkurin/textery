@@ -3,6 +3,7 @@ from typing import Optional
 
 from auth.register_user import RegisterUser
 from auth.verify_account import VerifyAccount
+from shared.exceptions import VerificationFailedException
 from fake.auth.fake_account_repository import FakeAccountRepository
 from fake.auth.fake_clock import FakeClock
 from fake.auth.fake_unit_of_work import FakeUnitOfWork
@@ -60,6 +61,24 @@ class VerifyAccountStatements:
         except Exception as exc:
             self.thrown_exception = exc
 
+    async def verify_with_the_issued_code_when_final_commit_fails(self) -> None:
+        self.unit_of_work.raise_on_commit = RuntimeError("connection reset")
+        await self.verify_with_the_issued_code()
+
+    def assert_verification_failed_and_rolled_back(self) -> None:
+        assert isinstance(self.thrown_exception, VerificationFailedException), (
+            f"expected VerificationFailedException, got "
+            f"{type(self.thrown_exception).__name__ if self.thrown_exception else None}"
+        )
+        assert "connection reset" not in str(self.thrown_exception), (
+            "expected the raw driver/commit failure detail to be sanitized out of the "
+            f"raised exception message, got: {self.thrown_exception}"
+        )
+        assert self.unit_of_work.rollback_call_count == 1, (
+            f"expected unit_of_work.rollback() to be called exactly once on commit failure, "
+            f"got {self.unit_of_work.rollback_call_count}"
+        )
+
     def assert_account_is_verified(self) -> None:
         assert self.thrown_exception is None, (
             f"expected no exception to be raised, got "
@@ -94,4 +113,13 @@ class VerifyAccountStatements:
         assert verified_account.is_verified is True, (
             f"expected the persisted Account.is_verified to be True after verification, "
             f"got {verified_account.is_verified}"
+        )
+        verified_code = self.verification_code_repository.saved_codes[-1]
+        assert verified_code.consumed_at == self.FIXED_CLOCK_NOW, (
+            f"expected the matched VerificationCode.consumed_at to be set to the clock's "
+            f"current time on successful verification, got {verified_code.consumed_at}"
+        )
+        assert self.unit_of_work.commit_call_count == 1, (
+            f"expected unit_of_work.commit() to be called exactly once, "
+            f"got {self.unit_of_work.commit_call_count}"
         )
