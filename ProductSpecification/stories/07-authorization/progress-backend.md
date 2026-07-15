@@ -123,7 +123,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 
 ### Scenario 2.4c: Unicode-normalization uniqueness for email
 - [x] red-acceptance — test added skip-marked (true RED, needs production change): `given_unicode_normalized_duplicate_registration()` registers "josé@example.ru" (NFC) then attempts "josé@example.ru" (NFD, same visible email). Fails as predicted at the precondition step itself: `Email`'s regex (`_EMAIL_PATTERN` in `backend/domain/src/auth/email.py`) only accepts ASCII local-parts (`[A-Za-z0-9._%+-]+`), so the first (NFC) registration returns 400 INVALID_EMAIL instead of 201 — the scenario can't even reach the duplicate-check path yet. test-review: assertions already strict (exact 409/dict-equality reused from 2.2/2.3/2.4b), no changes needed.
-- [~] design
+- [x] design (see `decisions/unicode-email-normalization-decision.md`) — bounded Unicode local-part (Letter/Mark/Decimal_Number categories only, reject Cc/Cf/Zl/Zp/Zs), pipeline order length-cap → NFC-normalize → validate → case-fold, homograph pairs intentionally distinct. Hazard scan (groups 1,3,4,5,6,7; group 2 clear, group 8 dead) found gaps across encoding/locale, concurrency, rolling-deploy, injection, ReDoS, PII-disclosure — all folded into the ADR's edge-case table and 3 new extended-spec cases (07 control/bidi rejection, 08 homograph distinctness, 09 concurrent NFC/NFD race).
+- [~] red-usecase
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
