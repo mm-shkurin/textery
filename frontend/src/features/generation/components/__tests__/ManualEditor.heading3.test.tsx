@@ -30,5 +30,10 @@ describe('ManualEditor heading-3 toolbar', () => {
 
     expect(contentArea.innerHTML).toBe('<h3>hello world</h3>')
     expect(heading3Button).toHaveAttribute('aria-pressed', 'true')
+
+    const restoredSelection = window.getSelection()
+    expect(restoredSelection?.isCollapsed).toBe(true)
+    expect(restoredSelection?.anchorOffset).toBe(3)
+    expect(restoredSelection?.focusOffset).toBe(3)
   })
 })
