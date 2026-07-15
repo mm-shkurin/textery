@@ -93,10 +93,7 @@ describe('ManualEditor', () => {
     })
   })
 
-  // RED: expect(element).toBeDisabled() -- "Received element is not disabled" --
-  // the save button has no onClick handler yet, so clicking it never enters a
-  // loading/disabled state and documentApi.saveDocument is never invoked.
-  it.skip('clicking Сохранить shows a loading state, disables the button, and ignores a second click while in flight', async () => {
+  it('clicking Сохранить shows a loading state, disables the button, and ignores a second click while in flight', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')

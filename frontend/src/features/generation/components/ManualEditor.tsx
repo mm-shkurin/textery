@@ -5,7 +5,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Document from '@tiptap/extension-document'
 import './ManualEditor.css'
 import type { DocumentType } from '../documentTypes'
-import { createDocument } from '../api/documentApi'
+import { createDocument, saveDocument } from '../api/documentApi'
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
 import { AppHeader } from '../../../shared/components/AppHeader'
 import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from './editorDomSync'
@@ -19,6 +19,13 @@ interface ManualEditorProps {
 
 export function ManualEditor({ documentType, documentTypeLabel, onBack }: ManualEditorProps) {
   const [documentId, setDocumentId] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleSave = () => {
+    if (isSaving) return
+    setIsSaving(true)
+    saveDocument().finally(() => setIsSaving(false))
+  }
 
   const editor = useEditor({
     // Tiptap v3 does not re-render on every editor transaction by default;
@@ -111,7 +118,13 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
               <span className="me-save-status">
                 {documentId ? 'Черновик, ещё не сохранён' : 'Создание документа…'}
               </span>
-              <button type="button" className="me-save-btn">
+              <button
+                type="button"
+                className="me-save-btn"
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving && <span data-testid="save-spinner" className="me-save-spinner" aria-hidden="true" />}
                 Сохранить
               </button>
             </div>
