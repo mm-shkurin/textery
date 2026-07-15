@@ -10,6 +10,7 @@ export type ToolbarActionKey =
   | 'italic'
   | 'strike'
   | 'blockquote'
+  | 'horizontalRule'
 
 export interface ToolbarAction {
   key: ToolbarActionKey
@@ -105,5 +106,18 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     testId: 'toolbar-blockquote',
     run: (editor) => toggleBlockquote(editor),
     isActive: (editor) => editor.isActive('blockquote'),
+  },
+  {
+    key: 'horizontalRule',
+    label: '―',
+    ariaLabel: 'Горизонтальная линия',
+    testId: 'toolbar-horizontal-rule',
+    run: (editor) =>
+      editor
+        .chain()
+        .focus()
+        .insertContent({ type: 'horizontalRule', attrs: { marker: 'hr' } })
+        .run(),
+    isActive: () => false,
   },
 ]

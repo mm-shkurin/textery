@@ -4,8 +4,7 @@ import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
 
 vi.mock('../../api/documentApi')
 
-// RED: toolbar-horizontal-rule button does not exist yet (no horizontalRule entry in TOOLBAR_ACTIONS)
-describe.skip('ManualEditor horizontal rule toolbar', () => {
+describe('ManualEditor horizontal rule toolbar', () => {
   it('clicking the horizontal-rule toolbar button inserts a divider at the cursor position', async () => {
     await renderEditorWithDocumentCreated()
 
