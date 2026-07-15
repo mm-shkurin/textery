@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { renderWithRouter } from '../../../../test/renderWithRouter'
 import { RegisterForm } from '../RegisterForm'
 
@@ -23,13 +23,18 @@ describe('RegisterForm', () => {
     expect(submitButton).toBeDisabled()
   })
 
-  it('shows a loading indicator while submitting and not before', () => {
+  it('shows a visible loading indicator while submitting and removes it once settled', async () => {
     renderWithRouter(<RegisterForm />)
     const submitButton = screen.getByTestId('register-submit-button')
     expect(screen.queryByTestId('register-loading-indicator')).not.toBeInTheDocument()
 
     fireEvent.click(submitButton)
 
-    expect(screen.getByTestId('register-loading-indicator')).toBeInTheDocument()
+    const indicator = screen.getByTestId('register-loading-indicator')
+    expect(indicator).toHaveClass('auth-loading-indicator')
+    expect(indicator).toHaveAttribute('role', 'status')
+    expect(indicator).toHaveAttribute('aria-live', 'polite')
+
+    await waitFor(() => expect(screen.queryByTestId('register-loading-indicator')).not.toBeInTheDocument())
   })
 })

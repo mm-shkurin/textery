@@ -87,6 +87,8 @@ describe('LoginForm', () => {
 
     const indicator = screen.getByTestId('login-loading-indicator')
     expect(indicator).toHaveClass('auth-loading-indicator')
+    expect(indicator).toHaveAttribute('role', 'status')
+    expect(indicator).toHaveAttribute('aria-live', 'polite')
 
     await waitFor(() => expect(screen.queryByTestId('login-loading-indicator')).not.toBeInTheDocument())
   })
