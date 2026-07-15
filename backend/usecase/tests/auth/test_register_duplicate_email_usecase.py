@@ -3,7 +3,6 @@ import pytest
 from statements.register_statements import RegisterStatements
 
 
-@pytest.mark.skip(reason="RED: RegisterUser.execute does not translate repository ConflictException into EMAIL_ALREADY_REGISTERED")
 class TestRegisterUsecaseDuplicateEmail:
     """Scenario 2.2: Duplicate email is rejected, verified or pending.
 

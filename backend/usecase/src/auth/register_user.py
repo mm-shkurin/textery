@@ -10,7 +10,7 @@ from auth.registration_result import RegistrationResult
 from auth.verification_code import VerificationCode
 from auth.verification_code_repository import VerificationCodeRepository
 from shared.clock import Clock
-from shared.exceptions import ValidationException
+from shared.exceptions import ConflictException, ValidationException
 
 
 class _SystemClock:
@@ -63,7 +63,13 @@ class RegisterUser:
             password_hash=password,
             created_at=created_at,
         )
-        await self.account_repository.save(account)
+        try:
+            await self.account_repository.save(account)
+        except ConflictException:
+            raise ValidationException(
+                error_code="EMAIL_ALREADY_REGISTERED",
+                message="An account with this email address already exists.",
+            )
 
         verification_code = VerificationCode.generate(
             id=uuid4(),
