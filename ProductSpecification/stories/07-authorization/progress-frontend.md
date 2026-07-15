@@ -137,8 +137,8 @@ so its red-frontend step must add the button first.
 - [S] red-frontend-api (resend, already implemented in Scenario 1.3)
 - [S] green-frontend-api (resend, already implemented in Scenario 1.3)
 - [x] align-design (no styling changes needed — .auth-submit:disabled CSS and mockup colors/padding already shared via the AuthSubmitButton extraction from the prior refactor commit; both LoginForm and VerifyCodeForm's Confirm button inherit it. design-review PASS (no hardcoded placeholder data), test-coverage focus found no new in-scope gaps)
-- [~] green-selenium (login)
-- [ ] demo
+- [S] green-selenium (login) — backend developed in parallel (another session), local backend container fails to start (shared Postgres volume alembic revision mismatch: `Can't locate revision identified by 'e5f6a7b8c9d0'`, known quirk from Scenario 2.2). Deferred until backend lands/volume is reconciled — not a frontend defect.
+- [S] demo (skipped per convention, see note above)
 
 ### 3.1: Registration submission shows a loading state
 - [ ] red-selenium
