@@ -210,10 +210,10 @@ policy.
 ### Scenario 7.6: Applying an H3 heading changes the content and highlights the active toolbar button
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [x] red-frontend — new file `ManualEditor.heading3.test.tsx`: collapsed cursor (offset 3, "hello world", no selection) on `toolbar-h3` click, expect whole line wrapped `<h3>hello world</h3>`, `aria-pressed="true"`. Correctly scoped as cursor-only per spec (test-review verified: true collapsed range). Investigation: existing `heading1`/`heading2` entries in `TOOLBAR_ACTIONS` are untested dead stubs (no `testId`), likely hitting the same `inline*`-only schema conflict blockquote/codeBlock/horizontalRule did — out of scope for 7.6, not fixed here. Predicted `TestingLibraryElementError: Unable to find an element by: [data-testid="toolbar-h3"]`; actual matched exactly. test-review: strict `toBe`/`toHaveAttribute`, no change needed. **Proactive addition:** premortem flagged this is now a 2-for-2 pattern (7.2 blockquote and 7.4 code-block both needed dedicated corrective rounds for cursor-left-expanded-after-toggle) — added the selection-restore assertion (mirroring blockquote's) to the red test before green rather than waiting to rediscover it.
-- [~] green-frontend
+- [x] green-frontend — implemented `heading3` as a Tiptap `Mark` (`heading3Mark.ts`), mirroring blockquote's single-tag pattern (`<h3>...</h3>`, same shape as `<blockquote>...</blockquote>`). Reused the shared `toggleLineMark(editor, 'heading3')` helper (extracted during 7.4's refactor) unchanged — no new selection-restore logic written. Green on the first implementation attempt, no corrective round needed (the premortem-driven proactive fixes to the red test — selection-restore assertion, reusing the proven helper — paid off). `heading1`/`heading2` dead stubs left untouched, out of scope. Full suite: 69/69 passed, no regressions.
 - [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
-- [ ] align-design
+- [~] align-design
 - [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 

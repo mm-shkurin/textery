@@ -6,6 +6,7 @@ import Document from '@tiptap/extension-document'
 import { BlockquoteMark } from './blockquoteMark'
 import { HorizontalRuleNode } from './horizontalRuleNode'
 import { CodeBlockMark } from './codeBlockMark'
+import { Heading3Mark } from './heading3Mark'
 import './ManualEditor.css'
 import type { DocumentType } from '../documentTypes'
 import { saveDocument } from '../api/documentApi'
@@ -102,6 +103,7 @@ export function ManualEditor({
       BlockquoteMark,
       HorizontalRuleNode,
       CodeBlockMark,
+      Heading3Mark,
       Placeholder.configure({ placeholder: 'Начните печатать…' }),
     ],
     content: '',

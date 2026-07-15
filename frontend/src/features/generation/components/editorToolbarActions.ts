@@ -3,6 +3,7 @@ import type { Editor } from '@tiptap/react'
 export type ToolbarActionKey =
   | 'heading1'
   | 'heading2'
+  | 'heading3'
   | 'paragraph'
   | 'bulletList'
   | 'orderedList'
@@ -63,6 +64,14 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     ariaLabel: 'Заголовок 2',
     run: (editor) => editor.chain().focus().toggleHeading({ level: 2 }).run(),
     isActive: (editor) => editor.isActive('heading', { level: 2 }),
+  },
+  {
+    key: 'heading3',
+    label: 'H3',
+    ariaLabel: 'Заголовок 3',
+    testId: 'toolbar-h3',
+    run: (editor) => toggleLineMark(editor, 'heading3'),
+    isActive: (editor) => editor.isActive('heading3'),
   },
   {
     key: 'paragraph',

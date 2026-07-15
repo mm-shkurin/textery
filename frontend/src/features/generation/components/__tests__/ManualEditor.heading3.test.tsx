@@ -5,11 +5,7 @@ import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
 vi.mock('../../api/documentApi')
 
 describe('ManualEditor heading-3 toolbar', () => {
-  // TDD RED phase: fails with TestingLibraryElementError -- Unable to find
-  // an element by: [data-testid="toolbar-h3"]. No H3 toolbar button exists
-  // yet (only heading1/heading2 keys exist in editorToolbarActions.ts, and
-  // neither has a testId or is wired to the toolbar UI).
-  it.skip('applying an H3 heading with only a collapsed cursor on the line wraps the whole line in <h3>', async () => {
+  it('applying an H3 heading with only a collapsed cursor on the line wraps the whole line in <h3>', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')
