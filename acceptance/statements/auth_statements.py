@@ -4,23 +4,18 @@ from typing import ClassVar
 
 from clients.application.application_client import ApplicationClient
 from clients.application.dto.auth.register_response_dto import RegisterResponseDto
-from clients.application.dto.auth.verify_request_dto import VerifyRequestDto
-from statements import auth_errors
+from statements import auth_errors, duplicate_registration_scenarios as dup_scenarios
 from statements.auth_scope import RegisterScope
 from statements.response_assertions import (
     assert_duplicate_rejected,
-    assert_is_valid_uuid,
     assert_no_account_created,
+    assert_pending_account_created_with_verification_code,
+    assert_server_owned_fields_ignored,
     assert_validation_error,
-)
-from statements.verification_code_assertions import (
-    assert_code_expiry_within_window,
-    assert_valid_verification_code,
 )
 
 MALFORMED_EMAIL = "not-an-email"
 OVERLONG_EMAIL_LOCAL_PART_LENGTH = 244
-SECRET_RESPONSE_FIELDS = ("password", "confirm_password", "password_hash")
 
 
 class AuthStatements:
@@ -106,36 +101,40 @@ class AuthStatements:
     async def given_duplicate_registration_against_pending_account(
         self,
     ) -> RegisterResponseDto:
-        email = f"pending-dup-{uuid.uuid4()}@example.com"
-        await self._register_with_email(email)
-        return await self._register_with_email(email)
+        return await dup_scenarios.given_duplicate_registration_against_pending_account(
+            self._client
+        )
 
     async def given_duplicate_registration_against_verified_account(
         self,
     ) -> RegisterResponseDto:
-        email = f"verified-dup-{uuid.uuid4()}@example.com"
-        first_response = await self._register_with_email(email)
-        code = first_response.body.get("verification_code") if first_response.body else None
-        await self._client.verify(VerifyRequestDto(email=email, code=code))
-        return await self._register_with_email(email)
+        return await dup_scenarios.given_duplicate_registration_against_verified_account(
+            self._client
+        )
 
     async def given_identical_registration_request_retried(
         self,
     ) -> RegisterResponseDto:
-        email = f"retry-{uuid.uuid4()}@example.com"
-        scope = RegisterScope.builder(email=email)
-        request = scope.to_request_dto()
-        await self._client.register(request)
-        return await self._client.register(request)
+        return await dup_scenarios.given_identical_registration_request_retried(self._client)
 
     async def given_duplicate_registration_with_different_case(
         self,
     ) -> RegisterResponseDto:
-        local_part = uuid.uuid4().hex
-        original_email = f"user-{local_part}@example.ru"
-        cased_email = f"USER-{local_part}@Example.ru"
-        await self._register_with_email(original_email)
-        return await self._register_with_email(cased_email)
+        return await dup_scenarios.given_duplicate_registration_with_different_case(self._client)
+
+    async def given_two_concurrent_registrations_for_same_new_email(
+        self,
+    ) -> tuple[RegisterResponseDto, RegisterResponseDto]:
+        return await dup_scenarios.given_two_concurrent_registrations_for_same_new_email(
+            self._client
+        )
+
+    def assert_exactly_one_account_created(
+        self, responses: tuple[RegisterResponseDto, RegisterResponseDto]
+    ) -> None:
+        dup_scenarios.assert_exactly_one_account_created(
+            responses, self.EXPECTED_DUPLICATE_EMAIL_ERROR
+        )
 
     async def _register_with_email(self, email: str) -> RegisterResponseDto:
         scope = RegisterScope.builder(email=email)
@@ -156,50 +155,14 @@ class AuthStatements:
     def assert_rejected_as_duplicate(self, response: RegisterResponseDto) -> None:
         assert_duplicate_rejected(response, self.EXPECTED_DUPLICATE_EMAIL_ERROR)
 
-    def _assert_created_pending_account(self, response: RegisterResponseDto) -> dict:
-        assert response.status_code == 201, (
-            f"expected 201 Created, got status_code={response.status_code}, body={response.body}"
-        )
-        assert response.body is not None, (
-            "expected a response body for the created account, got body=None"
-        )
-        is_verified = response.body.get("is_verified")
-        assert is_verified is False, (
-            f"expected newly created account is_verified=False, got is_verified={is_verified!r}"
-        )
-        leaked = [field for field in SECRET_RESPONSE_FIELDS if field in response.body]
-        assert not leaked, (
-            f"expected none of {SECRET_RESPONSE_FIELDS} in the response body, "
-            f"found {leaked} (body={response.body})"
-        )
-        return response.body
-
     def assert_server_owned_fields_ignored(self, response: RegisterResponseDto) -> None:
-        body = self._assert_created_pending_account(response)
-        # user_id is category 4 (truly opaque) per the determinism hierarchy: it is a
-        # server-generated UUID with no setup-capturable exact value, so we assert
-        # it is present and well-formed (not just "not equal to the attacker's id" —
-        # that alone would pass on user_id=None, which is the exact defect this test
-        # guards against) plus the scenario-specific inequality. Field name per
-        # ProductSpecification/api-specs/auth_register.yaml's RegisterResponse schema.
-        account_id = body.get("user_id")
-        assert account_id is not None, (
-            f"expected a server-generated user_id, got user_id=None (body={body})"
-        )
-        assert_is_valid_uuid(account_id, field_name="user_id")
-        assert account_id != self.ATTACKER_SUPPLIED_ID, (
-            f"expected a server-generated user_id, not the attacker-supplied id "
-            f"{self.ATTACKER_SUPPLIED_ID!r}, got user_id={account_id!r}"
-        )
+        assert_server_owned_fields_ignored(response, self.ATTACKER_SUPPLIED_ID)
 
     def assert_pending_account_created_with_verification_code(
         self, response: RegisterResponseDto
     ) -> None:
-        body = self._assert_created_pending_account(response)
-        assert_valid_verification_code(body.get("verification_code"))
         assert self._last_request_window is not None, (
             "assert_pending_account_created_with_verification_code requires the response "
             "from given_valid_unique_registration_request, which records the request window"
         )
-        sent_at, received_at = self._last_request_window
-        assert_code_expiry_within_window(body.get("code_expires_at"), sent_at, received_at)
+        assert_pending_account_created_with_verification_code(response, self._last_request_window)

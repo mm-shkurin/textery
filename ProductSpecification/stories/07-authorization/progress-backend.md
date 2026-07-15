@@ -106,12 +106,12 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-acceptance — passes as-is (not skip-marked, stands as a normal regression test pinning already-shipped behavior). Note (agent-review): behaviorally near-identical to scenario 2.2's `given_duplicate_registration_against_pending_account` case -- adds no new production-code coverage, but is kept as its own scenario since 01_API_Tests.md documents it as a distinct spec requirement (retry-idempotency, not just duplicate-rejection) worth pinning by name.
 
 ### Scenario 2.4a: Concurrent registration for the same brand-new email creates exactly one account
-- [ ] red-acceptance
-- [ ] design
-- [ ] red-usecase
-- [ ] green-usecase
-- [ ] adapters-discovery
-- [ ] green-acceptance
+- [x] red-acceptance — test added already-green: `given_two_concurrent_registrations_for_same_new_email()` fires two identical registration requests for a brand-new email via `asyncio.gather` (submitted at the same instant, not sequentially), asserting exactly one 201 and exactly one 409 EMAIL_ALREADY_REGISTERED among the pair. Verified empirically, not assumed: ran 5 consecutive times against the live backend (`BACKEND_PORT=8100`), all 5 passed (1 passed each run). Scenario 2.2's DB-unique-constraint mechanism (chosen specifically over app-level check-then-insert to avoid this exact TOCTOU race, per 2.2's design note) is confirmed race-safe under real concurrent HTTP requests — the losing request's `IntegrityError` is caught by `SqlAlchemyAccountRepository.save()` and mapped to `ConflictException` → `EMAIL_ALREADY_REGISTERED` → 409, same as the sequential case. No RED phase occurred.
+- [S] design — no new design needed, 2.2's DB-constraint mechanism already satisfies this scenario (that was the whole point of choosing it in 2.2)
+- [S] red-usecase — no new usecase behavior; `RegisterUser.execute`'s existing try/except around `AccountRepository.save()` (from 2.2) is what makes the losing concurrent request translate `ConflictException` to `EMAIL_ALREADY_REGISTERED` regardless of whether the race was sequential or concurrent — the DB is the sole serialization point, not application code
+- [S] green-usecase — nothing to implement
+- [S] adapters-discovery — no new adapter surface, reuses 2.2's db unique-constraint + rest status-mapping wiring end-to-end
+- [x] green-acceptance — passes as-is (not skip-marked, stands as a normal regression test pinning already-shipped race-safety behavior under genuine concurrency, distinct from 2.4's sequential-retry case)
 
 ### Scenario 2.4b: Case-fold uniqueness is locale-invariant
 - [ ] red-acceptance
