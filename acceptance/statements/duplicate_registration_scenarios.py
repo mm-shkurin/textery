@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import locale
+import unicodedata
 import uuid
 
 import pytest
@@ -84,8 +85,8 @@ async def given_duplicate_registration_with_different_case_under_turkish_locale(
 async def given_unicode_normalized_duplicate_registration(
     client: ApplicationClient,
 ) -> RegisterResponseDto:
-    nfc_local_part = "josé"
-    nfd_local_part = "josé"
+    nfc_local_part = unicodedata.normalize("NFC", "josé")
+    nfd_local_part = unicodedata.normalize("NFD", nfc_local_part)
     domain = "example.ru"
     first_response = await _register_with_email(client, f"{nfc_local_part}@{domain}")
     if first_response.status_code != 201:
