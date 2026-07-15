@@ -133,6 +133,105 @@ Then the editor shows exactly the content and formatting that was last saved
 
 ---
 
+## 7. Extended formatting toolbar (ProductSpecification/plans/jazzy-stirring-key.md)
+
+No mockup exists for scenarios 7.1-7.9 — these extend the toolbar beyond what
+`ProductSpecification/stories/05-manual-mode/mockups/` specifies, per user
+direction outside the mockup process. `align-design` for these scenarios notes
+"no mockup; reuse `.me-toolbar-btn` styling unchanged" instead of comparing
+against a mockup file.
+
+### 7.1 Applying strikethrough changes the content and highlights the active toolbar button
+
+```gherkin
+Given the visitor has selected text in the editor
+When the visitor clicks the strikethrough toolbar button
+Then the selected text is struck through
+And the strikethrough toolbar button shows as active while the cursor is within struck-through text
+```
+
+### 7.2 Applying a blockquote changes the content and highlights the active toolbar button
+
+```gherkin
+Given the visitor's cursor is on a line of text in the editor
+When the visitor clicks the blockquote toolbar button
+Then the line is rendered as a blockquote
+And the blockquote toolbar button shows as active while the cursor is within a blockquote
+```
+
+### 7.3 Inserting a horizontal rule adds a divider at the cursor position
+
+```gherkin
+Given the visitor's cursor is at some position in the editor content
+When the visitor clicks the horizontal-rule toolbar button
+Then a horizontal divider is inserted at the cursor position
+```
+
+### 7.4 Applying inline code and code blocks changes the content and highlights the active toolbar button
+
+```gherkin
+Given the visitor has selected text in the editor
+When the visitor clicks the inline-code toolbar button
+Then the selected text is rendered as inline code
+And the inline-code toolbar button shows as active while the cursor is within inline code
+
+Given the visitor's cursor is on a line of text in the editor
+When the visitor clicks the code-block toolbar button
+Then the line is rendered as a code block
+And the code-block toolbar button shows as active while the cursor is within a code block
+```
+
+### 7.5 Undo and redo revert and reapply the last editor change, disabled when there is nothing to undo/redo
+
+```gherkin
+Given the visitor has just typed content into the editor
+When the visitor clicks the undo toolbar button
+Then the last change is reverted
+And the redo toolbar button becomes enabled
+
+Given the editor has no changes left to undo
+Then the undo toolbar button is disabled
+```
+
+### 7.6 Applying an H3 heading changes the content and highlights the active toolbar button
+
+```gherkin
+Given the visitor's cursor is on a line of text in the editor
+When the visitor clicks the "Heading 3" toolbar button
+Then the line is rendered as an H3 heading
+And the H3 toolbar button shows as active while the cursor is within an H3 heading
+```
+
+### 7.7 Applying underline changes the content and highlights the active toolbar button
+
+```gherkin
+Given the visitor has selected text in the editor
+When the visitor clicks the underline toolbar button
+Then the selected text is underlined
+And the underline toolbar button shows as active while the cursor is within underlined text
+```
+
+### 7.8 Applying text alignment changes the content and highlights the active toolbar button
+
+```gherkin
+Given the visitor's cursor is on a line of text in the editor
+When the visitor clicks the center-align toolbar button
+Then the line's text alignment becomes centered
+And the center-align toolbar button shows as active while the cursor is on that line
+And the same holds for left, right, and justify alignment
+```
+
+### 7.9 Applying a link changes the content and highlights the active toolbar button
+
+```gherkin
+Given the visitor has selected text in the editor
+When the visitor clicks the link toolbar button and provides a URL
+Then the selected text becomes a hyperlink to that URL
+And the link toolbar button shows as active while the cursor is within a link
+```
+
+---
+
 ## DSL Technical Reference
 
 | DSL Statement | Technical Implementation |

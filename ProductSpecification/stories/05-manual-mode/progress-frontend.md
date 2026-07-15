@@ -127,3 +127,105 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 - [x] align-design — verify-only: no new markup/CSS for this scenario, reopen only populates the existing Tiptap editor/toolbar via `editor.commands.setContent`, which already renders through scenario 1.2/3.1's aligned styling
 - [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
+
+## Extended formatting toolbar (07_UI_Tests.md § 7, plan: ProductSpecification/plans/jazzy-stirring-key.md)
+
+No mockup exists for scenarios 7.1-7.9 (extends past what the mockups spec) —
+`align-design` notes reuse of `.me-toolbar-btn` styling unchanged instead of a
+mockup comparison. All are client-side editor state, no backend involvement,
+so `red-frontend-api`/`green-frontend-api` are pre-marked `[S]` for 7.1-7.8
+(same pattern as scenario 1.1/3.1/3.2); 7.9 (Link) is left unmarked pending
+`/design-preview` on the URL-input interaction. `red-selenium`/`green-selenium`/
+`demo` are pre-marked `[S]` under this file's existing backend-unavailable
+policy.
+
+### Scenario 7.1: Applying strikethrough changes the content and highlights the active toolbar button
+- [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [ ] red-frontend
+- [ ] green-frontend
+- [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
+- [S] green-frontend-api — same reason
+- [ ] align-design
+- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [S] demo — same reason, no live backend to drive a visible Selenium run against
+
+### Scenario 7.2: Applying a blockquote changes the content and highlights the active toolbar button
+- [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [ ] red-frontend
+- [ ] green-frontend
+- [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
+- [S] green-frontend-api — same reason
+- [ ] align-design
+- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [S] demo — same reason, no live backend to drive a visible Selenium run against
+
+### Scenario 7.3: Inserting a horizontal rule adds a divider at the cursor position
+- [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [ ] red-frontend
+- [ ] green-frontend
+- [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
+- [S] green-frontend-api — same reason
+- [ ] align-design
+- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [S] demo — same reason, no live backend to drive a visible Selenium run against
+
+### Scenario 7.4: Applying inline code and code blocks changes the content and highlights the active toolbar button
+- [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [ ] red-frontend
+- [ ] green-frontend
+- [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
+- [S] green-frontend-api — same reason
+- [ ] align-design
+- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [S] demo — same reason, no live backend to drive a visible Selenium run against
+
+### Scenario 7.5: Undo and redo revert and reapply the last editor change, disabled when there is nothing to undo/redo
+- [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [ ] red-frontend
+- [ ] green-frontend
+- [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
+- [S] green-frontend-api — same reason
+- [ ] align-design
+- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [S] demo — same reason, no live backend to drive a visible Selenium run against
+
+### Scenario 7.6: Applying an H3 heading changes the content and highlights the active toolbar button
+- [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [ ] red-frontend
+- [ ] green-frontend
+- [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
+- [S] green-frontend-api — same reason
+- [ ] align-design
+- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [S] demo — same reason, no live backend to drive a visible Selenium run against
+
+### Scenario 7.7: Applying underline changes the content and highlights the active toolbar button
+- [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [ ] red-frontend
+- [ ] green-frontend
+- [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
+- [S] green-frontend-api — same reason
+- [ ] align-design
+- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [S] demo — same reason, no live backend to drive a visible Selenium run against
+
+### Scenario 7.8: Applying text alignment changes the content and highlights the active toolbar button
+- [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [ ] red-frontend
+- [ ] green-frontend
+- [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
+- [S] green-frontend-api — same reason
+- [ ] align-design
+- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [S] demo — same reason, no live backend to drive a visible Selenium run against
+
+### Scenario 7.9: Applying a link changes the content and highlights the active toolbar button
+- [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [ ] design — /design-preview: minimal URL-input interaction (window.prompt MVP vs inline popover), see plan jazzy-stirring-key.md § scenario 9
+- [ ] red-frontend
+- [ ] green-frontend
+- [ ] red-frontend-api
+- [ ] green-frontend-api
+- [ ] align-design
+- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [S] demo — same reason, no live backend to drive a visible Selenium run against
