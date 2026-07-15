@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
@@ -7,12 +7,32 @@ import { isPasswordCompliant, PASSWORD_POLICY_HINT } from '../utils/passwordPoli
 import './AuthForm.css'
 import './RegisterForm.css'
 
+const CONFIRM_MISMATCH_MESSAGE = 'Пароли не совпадают'
+
+function isConfirmMismatched(password: string, confirm: string): boolean {
+  return password.length > 0 && confirm.length > 0 && password !== confirm
+}
+
 export function RegisterForm() {
   const { isSubmitting, handleSubmit } = useSubmitPlaceholder()
   const [passwordError, setPasswordError] = useState(false)
+  const [confirmError, setConfirmError] = useState(false)
+  const confirmTouchedRef = useRef(false)
+  const passwordInputRef = useRef<HTMLInputElement>(null)
+  const confirmInputRef = useRef<HTMLInputElement>(null)
 
   function handlePasswordBlur(event: React.FocusEvent<HTMLInputElement>) {
-    setPasswordError(event.target.value.length > 0 && !isPasswordCompliant(event.target.value))
+    const password = event.target.value
+    setPasswordError(password.length > 0 && !isPasswordCompliant(password))
+
+    if (confirmTouchedRef.current) {
+      setConfirmError(isConfirmMismatched(password, confirmInputRef.current?.value ?? ''))
+    }
+  }
+
+  function handleConfirmBlur(event: React.FocusEvent<HTMLInputElement>) {
+    confirmTouchedRef.current = true
+    setConfirmError(isConfirmMismatched(passwordInputRef.current?.value ?? '', event.target.value))
   }
 
   return (
@@ -38,6 +58,7 @@ export function RegisterForm() {
             type="password"
             placeholder="Минимум 8 символов"
             data-testid="register-password-input"
+            ref={passwordInputRef}
             onBlur={handlePasswordBlur}
           />
           <div
@@ -54,7 +75,14 @@ export function RegisterForm() {
             type="password"
             placeholder="Повторите пароль"
             data-testid="register-confirm-password-input"
+            ref={confirmInputRef}
+            onBlur={handleConfirmBlur}
           />
+          {confirmError && (
+            <div className="register-hint register-hint-error" data-testid="register-confirm-error">
+              {CONFIRM_MISMATCH_MESSAGE}
+            </div>
+          )}
         </div>
         <AuthSubmitButton testId="register-submit-button" isSubmitting={isSubmitting}>
           Зарегистрироваться
