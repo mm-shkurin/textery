@@ -98,12 +98,12 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-acceptance — passes unskipped, no production change needed (email normalization already lands the DB unique constraint on the canonical value). Full authorization acceptance suite re-run for regression: 14 passed, 0 failed.
 
 ### Scenario 2.4: A retried identical registration request produces exactly one account
-- [ ] red-acceptance
-- [ ] design
-- [ ] red-usecase
-- [ ] green-usecase
-- [ ] adapters-discovery
-- [ ] green-acceptance
+- [x] red-acceptance — test added already-green: an identical retry (same email/password/confirm_password) is already rejected by scenario 2.2's duplicate-email mechanism (409 EMAIL_ALREADY_REGISTERED, DB unique constraint); passed on first run, no RED phase occurred
+- [S] design — no new design needed, 2.2's mechanism already satisfies this scenario
+- [S] red-usecase — no new usecase behavior; RegisterUser.execute generates the verification code only after account save succeeds, so a duplicate-rejected retry never reaches code generation either ("exactly one code" falls out of "exactly one account" for free)
+- [S] green-usecase — nothing to implement
+- [S] adapters-discovery — no new adapter surface, reuses 2.2's wiring end-to-end
+- [x] green-acceptance — passes as-is (not skip-marked, stands as a normal regression test pinning already-shipped behavior)
 
 ### Scenario 2.4a: Concurrent registration for the same brand-new email creates exactly one account
 - [ ] red-acceptance

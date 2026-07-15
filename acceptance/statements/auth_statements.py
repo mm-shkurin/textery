@@ -119,6 +119,15 @@ class AuthStatements:
         await self._client.verify(VerifyRequestDto(email=email, code=code))
         return await self._register_with_email(email)
 
+    async def given_identical_registration_request_retried(
+        self,
+    ) -> RegisterResponseDto:
+        email = f"retry-{uuid.uuid4()}@example.com"
+        scope = RegisterScope.builder(email=email)
+        request = scope.to_request_dto()
+        await self._client.register(request)
+        return await self._client.register(request)
+
     async def given_duplicate_registration_with_different_case(
         self,
     ) -> RegisterResponseDto:
