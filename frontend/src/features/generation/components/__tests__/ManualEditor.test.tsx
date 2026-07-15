@@ -115,7 +115,7 @@ describe('ManualEditor', () => {
     fireEvent.click(saveButton)
 
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenCalledWith()
+    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', 'hello world', 1)
 
     resolveSave({ status: 'saved', version: 2 })
   })

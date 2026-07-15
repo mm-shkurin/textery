@@ -34,8 +34,7 @@ describe('documentApi', () => {
     })
   })
 
-  // TODO-RED: disabled during red-frontend-api phase, see progress-frontend.md Scenario 4.1
-  it.skip('saveDocument PUTs content and version, returns saved status + version', async () => {
+  it('saveDocument PUTs content and version, returns saved status + version', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,

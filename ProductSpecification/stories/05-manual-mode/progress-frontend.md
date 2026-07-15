@@ -73,8 +73,8 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 - [x] red-frontend
 - [x] green-frontend
 - [x] red-frontend-api
-- [~] green-frontend-api
-- [ ] align-design
+- [x] green-frontend-api
+- [~] align-design
 - [ ] green-selenium
 - [ ] demo
 

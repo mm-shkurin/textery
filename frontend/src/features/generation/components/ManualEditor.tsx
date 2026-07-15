@@ -19,12 +19,15 @@ interface ManualEditorProps {
 
 export function ManualEditor({ documentType, documentTypeLabel, onBack }: ManualEditorProps) {
   const [documentId, setDocumentId] = useState<string | null>(null)
+  const [version, setVersion] = useState(1)
   const [isSaving, setIsSaving] = useState(false)
 
   const handleSave = () => {
-    if (isSaving) return
+    if (isSaving || !documentId || !editor) return
     setIsSaving(true)
-    saveDocument().finally(() => setIsSaving(false))
+    saveDocument(documentId, editor.getHTML(), version)
+      .then((result) => setVersion(result.version))
+      .finally(() => setIsSaving(false))
   }
 
   const editor = useEditor({

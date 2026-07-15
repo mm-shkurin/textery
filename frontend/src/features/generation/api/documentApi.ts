@@ -30,6 +30,24 @@ export interface SaveDocumentResult {
   version: number
 }
 
-export async function saveDocument(): Promise<SaveDocumentResult> {
-  throw new Error('Not implemented')
+export async function saveDocument(
+  documentId: string,
+  content: string,
+  version: number
+): Promise<SaveDocumentResult> {
+  const res = await fetch(`${API_BASE}/api/v1/documents/${documentId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      content,
+      version,
+    }),
+  })
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, 'Не удалось сохранить документ'))
+  }
+  const data = await res.json()
+  return { status: data.status, version: data.version }
 }
