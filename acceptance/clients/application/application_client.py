@@ -4,6 +4,8 @@ import httpx
 
 from clients.application.dto.auth.register_request_dto import RegisterRequestDto
 from clients.application.dto.auth.register_response_dto import RegisterResponseDto
+from clients.application.dto.auth.verify_request_dto import VerifyRequestDto
+from clients.application.dto.auth.verify_response_dto import VerifyResponseDto
 from clients.application.dto.generation.generation_request_dto import CreateGenerationRequestDto
 from clients.application.dto.generation.generation_response_dto import GenerationResponseDto
 
@@ -16,6 +18,10 @@ class ApplicationClient:
     async def register(self, request: RegisterRequestDto) -> RegisterResponseDto:
         response = await self._client.post("/api/v1/auth/register", json=request.to_json())
         return RegisterResponseDto(status_code=response.status_code, body=self._parsed_body(response))
+
+    async def verify(self, request: VerifyRequestDto) -> VerifyResponseDto:
+        response = await self._client.post("/api/v1/auth/verify", json=request.to_json())
+        return VerifyResponseDto(status_code=response.status_code, body=self._parsed_body(response))
 
     async def create_generation(
         self, request: CreateGenerationRequestDto, idempotency_key: str

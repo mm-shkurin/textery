@@ -4,8 +4,17 @@ from typing import ClassVar
 
 from clients.application.application_client import ApplicationClient
 from clients.application.dto.auth.register_response_dto import RegisterResponseDto
+from statements.auth_duplicate_fixtures import (
+    duplicate_registration_against_pending_account,
+    duplicate_registration_against_verified_account,
+)
 from statements.auth_scope import RegisterScope
-from statements.response_assertions import assert_is_valid_uuid, assert_validation_error
+from statements.response_assertions import (
+    assert_duplicate_rejected,
+    assert_is_valid_uuid,
+    assert_no_account_created,
+    assert_validation_error,
+)
 from statements.verification_code_assertions import (
     assert_code_expiry_within_window,
     assert_valid_verification_code,
@@ -31,6 +40,10 @@ class AuthStatements:
     EXPECTED_PASSWORD_MISMATCH_ERROR: ClassVar[dict] = {
         "error_code": "PASSWORD_MISMATCH",
         "message": "The password confirmation does not match.",
+    }
+    EXPECTED_DUPLICATE_EMAIL_ERROR: ClassVar[dict] = {
+        "error_code": "EMAIL_ALREADY_REGISTERED",
+        "message": "An account already exists for this email.",
     }
     ATTACKER_SUPPLIED_ID: ClassVar[str] = "11111111-1111-1111-1111-111111111111"
 
@@ -108,6 +121,16 @@ class AuthStatements:
         self._last_request_window = (sent_at, received_at)
         return response
 
+    async def given_duplicate_registration_against_pending_account(
+        self,
+    ) -> RegisterResponseDto:
+        return await duplicate_registration_against_pending_account(self._client)
+
+    async def given_duplicate_registration_against_verified_account(
+        self,
+    ) -> RegisterResponseDto:
+        return await duplicate_registration_against_verified_account(self._client)
+
     async def _register_with_password(self, password: str) -> RegisterResponseDto:
         scope = RegisterScope.builder(password=password, confirm_password=password)
         request = scope.to_request_dto()
@@ -117,16 +140,10 @@ class AuthStatements:
         assert_validation_error(response, expected_error)
 
     def assert_no_account_created(self, response: RegisterResponseDto) -> None:
-        assert response.status_code not in (200, 201), (
-            f"expected no account to be created (2xx would indicate creation), "
-            f"got status_code={response.status_code}"
-        )
-        assert response.body is not None, (
-            "expected an error body proving no account was created, got body=None"
-        )
-        assert "user_id" not in response.body, (
-            f"expected no user_id in response, but got body={response.body}"
-        )
+        assert_no_account_created(response)
+
+    def assert_rejected_as_duplicate(self, response: RegisterResponseDto) -> None:
+        assert_duplicate_rejected(response, self.EXPECTED_DUPLICATE_EMAIL_ERROR)
 
     def _assert_created_pending_account(self, response: RegisterResponseDto) -> dict:
         assert response.status_code == 201, (

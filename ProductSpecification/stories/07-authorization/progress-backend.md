@@ -78,8 +78,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-acceptance
 
 ### Scenario 2.2: Duplicate email is rejected, verified or pending
-- [ ] red-acceptance
-- [ ] design
+- [x] red-acceptance — two sub-cases (duplicate against verified account, duplicate against pending account); `/verify` endpoint doesn't exist yet so the "verified" setup calls the new `client.verify()` test-infra helper without asserting on it (404s silently today) — duplicate-rejection assertion fails identically either way since no duplicate check exists at all yet
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
