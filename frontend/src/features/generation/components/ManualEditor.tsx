@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -21,18 +21,41 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
   const [documentId, setDocumentId] = useState<string | null>(null)
   const [version, setVersion] = useState(1)
   const [isSaving, setIsSaving] = useState(false)
+  const saveAgainRequested = useRef(false)
 
   const handleSave = () => {
-    if (isSaving || !documentId || !editor) return
+    if (!documentId || !editor) return
+    if (isSaving) {
+      saveAgainRequested.current = true
+      return
+    }
+    performSave(version)
+  }
+
+  const performSave = (saveVersion: number) => {
+    if (!documentId || !editor) return
     setIsSaving(true)
-    saveDocument(documentId, editor.getHTML(), version)
-      .then((result) => setVersion(result.version))
+    saveDocument(documentId, editor.getHTML(), saveVersion)
+      .then((result) => {
+        setVersion(result.version)
+        if (saveAgainRequested.current) {
+          saveAgainRequested.current = false
+          performSave(result.version)
+        } else {
+          setIsSaving(false)
+        }
+      })
       .catch((error) => {
         // Error surfacing (retry/UI state) is out of scope for this scenario;
         // logging keeps the failure from being silently swallowed.
         console.error('Failed to save document', error)
+        // Don't auto-retry a queued edit after a real error (out of scope: that's
+        // autosave-retry behavior). Drop the queued flag so a stale retry doesn't
+        // fire later, but keep the user's latest content in the editor untouched
+        // so they can manually retry by clicking Save again.
+        saveAgainRequested.current = false
+        setIsSaving(false)
       })
-      .finally(() => setIsSaving(false))
   }
 
   const editor = useEditor({
@@ -126,15 +149,25 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
               <span className="me-save-status">
                 {documentId ? 'Черновик, ещё не сохранён' : 'Создание документа…'}
               </span>
-              <button
-                type="button"
-                className="me-save-btn"
-                onClick={handleSave}
-                disabled={isSaving}
-              >
-                {isSaving && <span data-testid="save-spinner" className="me-save-spinner" aria-hidden="true" />}
-                Сохранить
-              </button>
+              {/*
+                onClick lives on this wrapper, not the <button>, so a save
+                requested while the button is natively disabled (mid-flight)
+                still reaches handleSave. A disabled <button>'s own click
+                listener never fires (browser/React suppress it), but the
+                click event still bubbles to ancestor listeners, which lets
+                handleSave register the "save again" intent instead of the
+                click being silently lost.
+              */}
+              <span onClick={handleSave}>
+                <button
+                  type="button"
+                  className="me-save-btn"
+                  disabled={isSaving}
+                >
+                  {isSaving && <span data-testid="save-spinner" className="me-save-spinner" aria-hidden="true" />}
+                  Сохранить
+                </button>
+              </span>
             </div>
           </div>
           <div className="me-content-area">

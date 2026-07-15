@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { ManualEditor } from '../ManualEditor'
 import * as documentApi from '../../api/documentApi'
@@ -14,6 +14,14 @@ async function renderEditorWithDocumentCreated() {
 }
 
 describe('ManualEditor', () => {
+  // Each test sets up its own saveDocument/createDocument mock resolutions;
+  // without a per-test reset, call counts from prior tests in this file
+  // (e.g. how many times saveDocument was called) leak into the next test's
+  // toHaveBeenCalledTimes assertions.
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('applying bold to selected text wraps it in <strong> and marks the bold button active', async () => {
     await renderEditorWithDocumentCreated()
 
@@ -120,11 +128,7 @@ describe('ManualEditor', () => {
     resolveSave({ status: 'saved', version: 2 })
   })
 
-  // TDD Red Phase - handleSave has no saveAgainRequested mechanism yet: a save
-  // requested while one is in flight is silently dropped (isSaving guard early-returns),
-  // so saveDocument is never called a second time.
-  // Actual failure: AssertionError: expected "vi.fn()" to be called 2 times, but got 1 times
-  it.skip('a save requested while one is in flight auto-retriggers with the latest content once the first save resolves, and the button only re-enables after the second settles', async () => {
+  it('a save requested while one is in flight auto-retriggers with the latest content once the first save resolves, and the button only re-enables after the second settles', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')
@@ -170,5 +174,47 @@ describe('ManualEditor', () => {
       expect(saveButton).not.toBeDisabled()
     })
     expect(screen.queryByTestId('save-spinner')).not.toBeInTheDocument()
+  })
+
+  it('a save requested while one is in flight is dropped (not retried) if the in-flight save rejects, and the button re-enables for a manual retry', async () => {
+    await renderEditorWithDocumentCreated()
+
+    const contentArea = screen.getByTestId('editor-content-area')
+    contentArea.textContent = 'first content'
+    fireEvent.input(contentArea)
+
+    let rejectFirstSave: (error: Error) => void = () => {}
+    const firstSavePromise = new Promise<{ status: string; version: number }>((_resolve, reject) => {
+      rejectFirstSave = reject
+    })
+    vi.mocked(documentApi.saveDocument).mockReturnValueOnce(firstSavePromise)
+
+    const saveButton = screen.getByRole('button', { name: 'Сохранить' })
+    fireEvent.click(saveButton)
+
+    expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
+
+    contentArea.textContent = 'second content'
+    fireEvent.input(contentArea)
+    fireEvent.click(saveButton)
+
+    expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    rejectFirstSave(new Error('network error'))
+
+    await waitFor(() => {
+      expect(saveButton).not.toBeDisabled()
+    })
+    expect(screen.queryByTestId('save-spinner')).not.toBeInTheDocument()
+    expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1)
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save document', new Error('network error'))
+
+    fireEvent.click(saveButton)
+    expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', 'second content', 1)
+
+    consoleErrorSpy.mockRestore()
   })
 })
