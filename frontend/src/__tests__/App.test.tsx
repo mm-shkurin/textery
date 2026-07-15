@@ -57,4 +57,22 @@ describe('App step transitions', () => {
     expect(screen.getByTestId('manual-editor')).toBeInTheDocument()
     expect(screen.getByTestId('editor-breadcrumb')).toHaveTextContent('Доклад · Ручной режим')
   })
+
+  // RED (scenario 6.1): ManualEditor's onBack is wired to closeToLanding, which
+  // resets step to 'landing' and clears documentType/mode instead of returning
+  // to the mode modal. Predicted/actual: TestingLibraryElementError, unable to
+  // find [data-testid="mode-modal"] (rendered landing page instead).
+  it.skip('back button from the manual editor returns to the mode modal, document type still scoped', () => {
+    render(<App />)
+
+    openModeModalForDoklad()
+    fireEvent.click(screen.getByTestId('mode-card-manual'))
+    expect(screen.getByTestId('manual-editor')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('Назад'))
+
+    expect(screen.queryByTestId('manual-editor')).not.toBeInTheDocument()
+    expect(screen.getByTestId('mode-modal')).toBeInTheDocument()
+    expect(screen.getByLabelText('Назад к типу документа: Доклад')).toBeInTheDocument()
+  })
 })

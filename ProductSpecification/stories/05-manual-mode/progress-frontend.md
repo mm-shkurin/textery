@@ -109,9 +109,9 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
 ### Scenario 6.1: "Назад" from the editor returns to the mode modal
-- [ ] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
+- [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [x] red-frontend — added skipped test `App.test.tsx`: "back button from the manual editor returns to the mode modal, document type still scoped". Gap: existing `onBack` prop wired to `closeToLanding` (resets to landing, clears documentType/mode) instead of returning to mode modal with document type scoped. Predicted `TestingLibraryElementError: Unable to find [data-testid="mode-modal"]`; actual matched exactly (landing page rendered instead). test-review tightened aria-label assertion to exact string match. Suite: 4 passed, 1 skipped, 0 failed.
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
