@@ -9,9 +9,6 @@ from auth.account import Account
 from session import SqlAlchemyUnitOfWork
 from statements.account_row_lookup import fetch_account_row_on_new_connection
 
-
-
-
 class SqlAlchemyUnitOfWorkStatements:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
