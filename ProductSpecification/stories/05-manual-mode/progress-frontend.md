@@ -165,8 +165,8 @@ policy.
 
 ### Scenario 7.3: Inserting a horizontal rule adds a divider at the cursor position
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
-- [ ] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — new file `ManualEditor.horizontalRule.test.tsx` (per-scenario test file split pattern): horizontal-rule toolbar button (`data-testid="toolbar-horizontal-rule"`) not yet implemented, no `horizontalRule` entry in `TOOLBAR_ACTIONS`. One-shot insert, no toggle/active state (unlike bold/strike/blockquote) per spec wording. Predicted `TestingLibraryElementError: Unable to find an element by: [data-testid="toolbar-horizontal-rule"]`; actual matched exactly. test-review: tightened a `toContain('<hr>')` to exact `toBe('hello<hr>world')`, pinning insertion position.
+- [~] green-frontend
 - [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
 - [ ] align-design
