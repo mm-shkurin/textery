@@ -136,8 +136,8 @@ so its red-frontend step must add the button first.
 - [S] green-selenium (confirm) — test already passes, see red-selenium note above
 - [S] red-frontend-api (resend, already implemented in Scenario 1.3)
 - [S] green-frontend-api (resend, already implemented in Scenario 1.3)
-- [ ] align-design (covers both LoginForm's new disabled-state styling and VerifyCodeForm's new Confirm button)
-- [ ] green-selenium (login)
+- [x] align-design (no styling changes needed — .auth-submit:disabled CSS and mockup colors/padding already shared via the AuthSubmitButton extraction from the prior refactor commit; both LoginForm and VerifyCodeForm's Confirm button inherit it. design-review PASS (no hardcoded placeholder data), test-coverage focus found no new in-scope gaps)
+- [~] green-selenium (login)
 - [ ] demo
 
 ### 3.1: Registration submission shows a loading state
