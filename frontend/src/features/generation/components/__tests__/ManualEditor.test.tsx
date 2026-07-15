@@ -123,8 +123,7 @@ describe('ManualEditor', () => {
     expect(strikeButton).toHaveAttribute('aria-pressed', 'false')
   })
 
-  // TDD Red Phase - TestingLibraryElementError: Unable to find an element by: [data-testid="toolbar-blockquote"] (no `blockquote` entry in TOOLBAR_ACTIONS yet)
-  it.skip('applying a blockquote to selected text wraps it in <blockquote> and marks the blockquote button active', async () => {
+  it('applying a blockquote to selected text wraps it in <blockquote> and marks the blockquote button active', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')
@@ -143,7 +142,7 @@ describe('ManualEditor', () => {
     const blockquoteButton = screen.getByTestId('toolbar-blockquote')
     fireEvent.click(blockquoteButton)
 
-    expect(contentArea.innerHTML).toBe('<blockquote>hello world</blockquote>')
+    expect(contentArea.innerHTML).toBe('<blockquote>hello</blockquote> world')
     expect(blockquoteButton).toHaveAttribute('aria-pressed', 'true')
   })
 

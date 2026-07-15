@@ -3,6 +3,7 @@ import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Document from '@tiptap/extension-document'
+import { BlockquoteMark } from './blockquoteMark'
 import './ManualEditor.css'
 import type { DocumentType } from '../documentTypes'
 import { createDocument, getDocument, saveDocument } from '../api/documentApi'
@@ -87,8 +88,9 @@ export function ManualEditor({
       // the document itself holds inline content directly (no paragraph
       // wrapper), producing a stray <br> even for non-empty content. This
       // editor doesn't need hard breaks for the current scope.
-      StarterKit.configure({ document: false, hardBreak: false }),
+      StarterKit.configure({ document: false, hardBreak: false, blockquote: false }),
       Document.extend({ content: 'inline*' }),
+      BlockquoteMark,
       Placeholder.configure({ placeholder: 'Начните печатать…' }),
     ],
     content: '',

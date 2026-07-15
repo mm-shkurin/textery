@@ -9,6 +9,7 @@ export type ToolbarActionKey =
   | 'bold'
   | 'italic'
   | 'strike'
+  | 'blockquote'
 
 export interface ToolbarAction {
   key: ToolbarActionKey
@@ -79,5 +80,13 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     testId: 'toolbar-strike',
     run: (editor) => editor.chain().focus().toggleStrike().run(),
     isActive: (editor) => editor.isActive('strike'),
+  },
+  {
+    key: 'blockquote',
+    label: '"',
+    ariaLabel: 'Цитата',
+    testId: 'toolbar-blockquote',
+    run: (editor) => editor.chain().focus().toggleMark('blockquote').run(),
+    isActive: (editor) => editor.isActive('blockquote'),
   },
 ]

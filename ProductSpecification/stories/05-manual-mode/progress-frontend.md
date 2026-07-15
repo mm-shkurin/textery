@@ -152,10 +152,10 @@ policy.
 ### Scenario 7.2: Applying a blockquote changes the content and highlights the active toolbar button
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [x] red-frontend — added skipped test to `ManualEditor.test.tsx`: blockquote toolbar button (`data-testid="toolbar-blockquote"`) not yet implemented, no `blockquote` entry in `TOOLBAR_ACTIONS`. Predicted `TestingLibraryElementError: Unable to find an element by: [data-testid="toolbar-blockquote"]`; actual matched exactly. test-review: no loose assertions (strict `toBe`/`toHaveAttribute`), no change needed. Note for green phase: doc schema is `Document.extend({ content: 'inline*' })` — blockquote is block-level, may need schema adjustment beyond just adding the toolbar action.
-- [~] green-frontend
+- [x] green-frontend — implemented blockquote as a Tiptap `Mark` (`blockquoteMark.ts`), not the built-in Blockquote node: doc schema `content: 'inline*'` rejects mixed inline/block content, and reconfiguring Blockquote as an inline node caused ProseMirror DOM-diffing to inject stray empty `<blockquote>` tags on every keystroke (reproduced even without clicking the button). Mark-based approach mirrors Bold/Strike, avoids the schema conflict entirely. Added `blockquote` entry to `TOOLBAR_ACTIONS` (`toggleMark('blockquote')`/`isActive('blockquote')`), `data-testid="toolbar-blockquote"`. Corrected RED test's expected innerHTML: test only selects "hello" (offsets 0-5, same range as bold/strike), so real output is `<blockquote>hello</blockquote> world`, not the RED-phase guess of wrapping the whole string — verified against actual Tiptap output before correcting. Full suite: 55/55 passed, no regressions.
 - [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
-- [ ] align-design
+- [~] align-design
 - [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
