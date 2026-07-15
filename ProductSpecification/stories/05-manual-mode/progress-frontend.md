@@ -91,7 +91,7 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 ### Scenario 5.1: A successful save shows a lightweight confirmation, no full-page transition
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [x] red-frontend — predicted `waitFor` timeout looking for "Сохранено" text (no third save-status state exists yet, only draft/creating); actual matched exactly. Also strengthened via test-review to assert `onBack` never fires (real "no navigation" check) and post-save UI settles (aria-disabled=false, spinner gone).
-- [~] green-frontend
+- [~] green-frontend — **must not leave a stale "Сохранено" visible after a new edit** (premortem finding): a minimal `saved` boolean flipped true on save success and never reset would pass the pinned test but mislead the user into thinking a later unsaved edit is saved. Derive the "saved" display from a real dirty check (e.g. reset on the next `input`/content-change event) rather than a one-way flag, and add a test: save → edit again → assert status is no longer "Сохранено" before the next save completes.
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
