@@ -54,12 +54,14 @@ describe('RegisterForm', () => {
   it('does not render the static hint alongside the error (no duplicated message on screen)', () => {
     renderWithRouter(<RegisterForm />)
     const passwordInput = screen.getByTestId('register-password-input')
+    const hintText = 'Минимум 8 символов, включая цифру, заглавную, строчную буквы и спецсимвол'
+    expect(screen.getAllByText(hintText)).toHaveLength(1)
 
     fireEvent.change(passwordInput, { target: { value: 'weak' } })
     fireEvent.blur(passwordInput)
 
     expect(screen.getByTestId('register-password-error')).toBeInTheDocument()
-    expect(screen.queryByTestId('register-password-hint')).not.toBeInTheDocument()
+    expect(screen.getAllByText(hintText)).toHaveLength(1)
   })
 
   it.each([
@@ -104,6 +106,8 @@ describe('RegisterForm', () => {
     fireEvent.blur(passwordInput)
 
     expect(screen.queryByTestId('register-password-error')).not.toBeInTheDocument()
-    expect(screen.getByTestId('register-password-hint')).toBeInTheDocument()
+    expect(
+      screen.getAllByText('Минимум 8 символов, включая цифру, заглавную, строчную буквы и спецсимвол')
+    ).toHaveLength(1)
   })
 })
