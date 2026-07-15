@@ -179,8 +179,10 @@ policy.
 
 ### Scenario 7.4: Applying inline code and code blocks changes the content and highlights the active toolbar button
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
-- [ ] red-frontend
-- [ ] green-frontend
+- [~] red-frontend-inline-code — selection-based mark, mirrors bold/strike pattern (toggleMark, active state via isActive, both apply and deactivation cases).
+- [ ] green-frontend-inline-code
+- [ ] red-frontend-code-block — cursor-on-line, block-level, mirrors blockquote's pattern (7.2) INCLUDING its known gotchas: spec requires cursor-only (no selection) to apply to the whole line — do not let the RED test assert a selection-based mark shape; if Tiptap's stock CodeBlock node conflicts with the `content: 'inline*'` doc schema the way Blockquote/HorizontalRule did, resolve it the same way (custom node/mark investigation) before locking in the RED assertion's expected markup.
+- [ ] green-frontend-code-block
 - [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
 - [ ] align-design
