@@ -12,6 +12,10 @@
   margin-top: 6px;
 }
 
+.register-hint-error {
+  color: #ef4444;
+}
+
 .register-terms {
   font-size: 12px;
   color: #6b6c74;
