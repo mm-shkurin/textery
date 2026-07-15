@@ -147,7 +147,7 @@ so its red-frontend step must add the button first.
 - [S] red-frontend-api — no real register API call exists yet, same scoping decision as Scenario 2.3's register test and login/confirm (line 129/133): loading state is a pure client-side placeholder via useSubmitPlaceholder, no endpoint to test against
 - [S] green-frontend-api — see above
 - [x] align-design (mockup has no loading-state styling — new element was previously unstyled, defaulting to black text on dark card, invisible. Added shared `.auth-loading-indicator` class in AuthForm.css (14px, #9a9ba3, centered) so it reads like other muted auth-form text. design-review PASS (no hardcoded placeholder data), test-coverage focus PASS (100% on touched lines, no gaps))
-- [ ] green-selenium (deferred — no backend dependency, pure client-side useSubmitPlaceholder; blocker is the frontend container's docker build hitting a stale frontend/dist artifact — `invalid file request frontend/dist/assets/index-*.js` — clean the dist dir and retry frontend-only container build to unblock)
+- [ ] green-selenium (docker build blocker fixed 2026-07-15 and retested — but Scenario 5.1's green-frontend replaced RegisterForm's useSubmitPlaceholder with a real registerApi.register call, so this scenario is no longer client-side-only. Backend has no /api/v1/auth/register endpoint yet (404 in ~5ms), too fast for Selenium's poll to observe the loading indicator. TimeoutException confirmed live. Blocked on the backend endpoint landing, same as Scenario 5.1's red-selenium; skip marker restored on the test)
 - [ ] demo
 
 ### 3.2: Login submission shows a loading state

@@ -19,7 +19,13 @@ class TestRegisterSubmitLoadingIndicatorAcceptance(AbstractFrontendTest):
     enough for Selenium to observe the indicator before it settles.
     """
 
-    @pytest.mark.skip(reason="RED: register-loading-indicator does not exist yet in RegisterForm.tsx")
+    @pytest.mark.skip(
+        reason="Scenario 5.1 wired RegisterForm to a real registerApi.register call, "
+        "replacing the useSubmitPlaceholder 500ms window this test relied on. The "
+        "backend has no /api/v1/auth/register endpoint yet (404 in ~5ms), so the "
+        "in-flight window is too short for Selenium to observe. Blocked on the "
+        "backend endpoint landing, same as Scenario 5.1's red-selenium."
+    )
     def test_should_show_loading_indicator_while_submission_is_in_flight(
         self, webdriver, app_url, register_page_statements
     ):
