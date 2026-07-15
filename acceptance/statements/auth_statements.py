@@ -40,7 +40,7 @@ class AuthStatements:
     }
     EXPECTED_DUPLICATE_EMAIL_ERROR: ClassVar[dict] = {
         "error_code": "EMAIL_ALREADY_REGISTERED",
-        "message": "An account already exists for this email.",
+        "message": "An account with this email address already exists.",
     }
     ATTACKER_SUPPLIED_ID: ClassVar[str] = "11111111-1111-1111-1111-111111111111"
 

@@ -3,11 +3,6 @@ import pytest
 from tests.backend.abstract_backend_test import AbstractBackendTest
 
 
-@pytest.mark.skip(
-    reason="RED: RegisterUser.execute performs no duplicate-email check -- a second "
-    "registration for the same email currently returns 201 with a new account "
-    "instead of 409 EMAIL_ALREADY_REGISTERED"
-)
 class TestRegisterDuplicateEmailAcceptance(AbstractBackendTest):
     """Scenario 2.2: Duplicate email is rejected, verified or pending.
 
