@@ -69,3 +69,14 @@ class TestEmailUnicodeCharacterClassRejection:
         email = Email("joseा@example.ru")
 
         assert email.value == "joseा@example.ru"
+
+    def test_ascii_connector_punctuation_in_local_part_is_accepted(self):
+        email = Email("user-1234_5.6+7%8@example.com")
+
+        assert email.value == "user-1234_5.6+7%8@example.com"
+
+    def test_local_part_with_only_a_combining_mark_and_no_base_character_is_rejected(self):
+        with pytest.raises(ValueError) as exc_info:
+            Email("́@example.ru")
+
+        assert str(exc_info.value) == "Invalid email format."
