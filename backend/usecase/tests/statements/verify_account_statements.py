@@ -65,6 +65,11 @@ class VerifyAccountStatements:
         self.unit_of_work.raise_on_commit = RuntimeError("connection reset")
         await self.verify_with_the_issued_code()
 
+    async def verify_with_the_issued_code_when_rollback_itself_fails(self) -> None:
+        self.unit_of_work.raise_on_commit = RuntimeError("connection reset")
+        self.unit_of_work.raise_on_rollback = RuntimeError("rollback also failed")
+        await self.verify_with_the_issued_code()
+
     def assert_verification_failed_and_rolled_back(self) -> None:
         assert isinstance(self.thrown_exception, VerificationFailedException), (
             f"expected VerificationFailedException, got "
@@ -77,6 +82,16 @@ class VerifyAccountStatements:
         assert self.unit_of_work.rollback_call_count == 1, (
             f"expected unit_of_work.rollback() to be called exactly once on commit failure, "
             f"got {self.unit_of_work.rollback_call_count}"
+        )
+
+    def assert_verification_failed_when_rollback_also_fails(self) -> None:
+        assert isinstance(self.thrown_exception, VerificationFailedException), (
+            f"expected VerificationFailedException (not the secondary rollback exception) to "
+            f"surface, got {type(self.thrown_exception).__name__ if self.thrown_exception else None}"
+        )
+        assert "rollback also failed" not in str(self.thrown_exception), (
+            f"expected the secondary rollback exception to be swallowed, not surfaced, "
+            f"got: {self.thrown_exception}"
         )
 
     def assert_account_is_verified(self) -> None:
