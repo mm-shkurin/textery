@@ -50,6 +50,12 @@ class RegisterAtomicWriteStatements:
         )
         await self._execute_register()
 
+    async def attempt_registering_when_account_save_fails_with_non_conflict_error(self) -> None:
+        self.account_repository.raise_on_save = RuntimeError(
+            f"account insert failed: {self.RAW_DRIVER_ERROR_SENTINEL}"
+        )
+        await self._execute_register()
+
     async def attempt_registering_without_injected_unit_of_work(self) -> None:
         self.verification_code_repository.raise_on_save = RuntimeError(
             f"verification code insert failed: {self.RAW_DRIVER_ERROR_SENTINEL}"
@@ -106,7 +112,9 @@ class RegisterAtomicWriteStatements:
             f"got {len(self.verification_code_repository.saved_codes)}"
         )
 
-    def assert_registration_failed_error_raised(self, expected_saved_codes_count: int) -> None:
+    def assert_registration_failed_error_raised(
+        self, expected_saved_codes_count: int, expected_saved_accounts_count: int = 1
+    ) -> None:
         assert isinstance(self.thrown_exception, RegistrationFailedException), (
             f"expected RegistrationFailedException to be raised, got "
             f"{type(self.thrown_exception).__name__ if self.thrown_exception else 'no exception'}"
@@ -127,8 +135,8 @@ class RegisterAtomicWriteStatements:
             f"expected UnitOfWork.commit to never be called on this path, "
             f"got {self.unit_of_work.commit_call_count}"
         )
-        assert len(self.account_repository.saved_accounts) == 1, (
-            f"expected the account save to have already succeeded before rollback, "
+        assert len(self.account_repository.saved_accounts) == expected_saved_accounts_count, (
+            f"expected {expected_saved_accounts_count} account(s) saved, "
             f"got {len(self.account_repository.saved_accounts)}"
         )
         assert len(self.verification_code_repository.saved_codes) == expected_saved_codes_count, (
