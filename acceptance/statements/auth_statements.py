@@ -5,8 +5,10 @@ from typing import ClassVar
 from clients.application.application_client import ApplicationClient
 from clients.application.dto.auth.register_response_dto import RegisterResponseDto
 from statements import auth_errors, duplicate_registration_scenarios as dup_scenarios
+from statements import password_length_scenarios as pw_length_scenarios
 from statements.auth_scope import RegisterScope
 from statements.response_assertions import (
+    assert_created_pending_account,
     assert_duplicate_rejected,
     assert_no_account_created,
     assert_pending_account_created_with_verification_code,
@@ -66,6 +68,18 @@ class AuthStatements:
             f"expected a 129-character password fixture, got {len(password)} chars"
         )
         return await self._register_with_password(password)
+
+    async def given_registration_request_with_multibyte_password_at_length_limit(
+        self,
+    ) -> RegisterResponseDto:
+        fn = pw_length_scenarios.given_registration_request_with_multibyte_password_at_length_limit
+        return await fn(self._client)
+
+    async def given_registration_request_with_multibyte_password_over_length_limit(
+        self,
+    ) -> RegisterResponseDto:
+        fn = pw_length_scenarios.given_registration_request_with_multibyte_password_over_length_limit
+        return await fn(self._client)
 
     async def given_registration_request_with_mismatched_confirm_password(
         self,
@@ -162,6 +176,9 @@ class AuthStatements:
 
     def assert_validation_error(self, response: RegisterResponseDto, expected_error: dict) -> None:
         assert_validation_error(response, expected_error)
+
+    def assert_created_pending_account(self, response: RegisterResponseDto) -> None:
+        assert_created_pending_account(response)
 
     def assert_no_account_created(self, response: RegisterResponseDto) -> None:
         assert_no_account_created(response)

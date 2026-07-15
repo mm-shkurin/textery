@@ -133,12 +133,12 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-acceptance — un-skipped, passes: 500 first (accounts table missing, local uvicorn workaround skips the container's `alembic upgrade head` startup step) → ran `alembic upgrade head` against localhost:5432, then passed. Full authorization acceptance suite re-run for regression: 18 passed, 0 failed.
 
 ### Scenario 2.4d: Password length limit is measured in code points, not bytes
-- [ ] red-acceptance
-- [ ] design
-- [ ] red-usecase
-- [ ] green-usecase
-- [ ] adapters-discovery
-- [ ] green-acceptance
+- [x] red-acceptance — test added already-green (no RED phase): 128-code-point multibyte password (252 UTF-8 bytes) accepted (201), 129-code-point variant rejected (400 INVALID_PASSWORD). `Password._is_valid` uses `len(raw_value)` which counts Unicode code points in Python, never UTF-8 bytes — spec already satisfied, same "already-satisfied" pattern as scenarios 2.4/2.4a. test-review: assertions already strict; extracted scenario builders to new `acceptance/statements/password_length_scenarios.py` to keep `auth_statements.py` under the 200-line cap; fixed a fixture bug where the accept-path (128 cp) case reused a fixed email and would collide with EMAIL_ALREADY_REGISTERED on rerun — switched to a per-run-unique email.
+- [S] design — no new design needed, existing `Password` value object's `len()`-based check already measures code points
+- [S] red-usecase — no new usecase/domain behavior; `Password._is_valid`'s existing length guard already correct
+- [S] green-usecase — nothing to implement
+- [S] adapters-discovery — no new adapter surface, existing INVALID_PASSWORD error mapping (since scenario 1.3) covers the rejection case
+- [x] green-acceptance — passes as-is (not skip-marked, stands as a normal regression test pinning already-correct behavior, matching scenario 2.4a's pattern)
 
 ### Scenario 2.5: Registration writes the account and the verification code atomically
 - [ ] red-acceptance
