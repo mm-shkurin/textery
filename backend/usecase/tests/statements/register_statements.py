@@ -48,25 +48,19 @@ class RegisterStatements:
         self.account_repository.raise_on_save = ConflictException(
             "account with this email already exists"
         )
-        scope = RegisterRequestScope.builder()
-        try:
-            await RegisterUser(
-                account_repository=self.account_repository,
-                clock=self.clock,
-                verification_code_repository=self.verification_code_repository,
-            ).execute(
-                email=scope.email,
-                password=scope.password,
-                confirm_password=scope.confirm_password,
-            )
-        except Exception as exc:
-            self.thrown_exception = exc
+        await self._execute_register(RegisterRequestScope.builder())
 
     async def register_and_return_account(self) -> None:
         scope = RegisterRequestScope.builder()
         self.registered_email = scope.email
+        result = await self._execute_register(scope)
+        if result is not None:
+            self.returned_account = result.account
+            self.returned_verification_code = result.verification_code
+
+    async def _execute_register(self, scope: RegisterRequestScope):
         try:
-            result = await RegisterUser(
+            return await RegisterUser(
                 account_repository=self.account_repository,
                 clock=self.clock,
                 verification_code_repository=self.verification_code_repository,
@@ -75,10 +69,9 @@ class RegisterStatements:
                 password=scope.password,
                 confirm_password=scope.confirm_password,
             )
-            self.returned_account = result.account
-            self.returned_verification_code = result.verification_code
         except Exception as exc:
             self.thrown_exception = exc
+            return None
 
     async def _attempt_registering(self, scope: RegisterRequestScope) -> None:
         try:
