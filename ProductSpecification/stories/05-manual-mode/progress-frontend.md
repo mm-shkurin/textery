@@ -62,9 +62,9 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [x] red-frontend — added cursor-move regression test (bold→plain); already GREEN, zero production changes. Covered by scenario 3.1's cursor-driven `isActive` + `shouldRerenderOnTransaction` + `syncNativeSelectionToProseMirror`. **Premortem CONCERNS (not yet resolved):** the jsdom test hand-fires the `select` DOM event via `fireEvent.select`, proving the handler logic but not that a real browser dispatches `select` for a caret-only (non-drag) cursor move — the deferred `red-selenium` for this scenario is the only test type that can close that gap; do not treat 3.2 as fully verified until it runs.
 - [S] green-frontend — capability already provided by scenario 3.1, see red-frontend note
-- [~] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
+- [S] red-frontend-api — no API call: cursor-driven toolbar state is client-side editor state only, no backend endpoint involved
+- [S] green-frontend-api — same reason
+- [~] align-design
 - [ ] green-selenium
 - [ ] demo
 
