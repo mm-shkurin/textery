@@ -9,6 +9,8 @@ export interface ToolbarAction {
   isActive: (editor: Editor) => boolean
 }
 
+export const TOOLBAR_DIVIDER_BEFORE = new Set(['bulletList', 'bold'])
+
 export const TOOLBAR_ACTIONS: ToolbarAction[] = [
   {
     key: 'heading1',

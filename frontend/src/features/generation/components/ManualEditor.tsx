@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -9,7 +9,7 @@ import { createDocument } from '../api/documentApi'
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
 import { AppHeader } from '../../../shared/components/AppHeader'
 import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from './editorDomSync'
-import { TOOLBAR_ACTIONS } from './editorToolbarActions'
+import { TOOLBAR_ACTIONS, TOOLBAR_DIVIDER_BEFORE } from './editorToolbarActions'
 
 interface ManualEditorProps {
   documentType: DocumentType
@@ -91,17 +91,21 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
         <div className="me-editor-shell">
           <div className="me-toolbar">
             {TOOLBAR_ACTIONS.map((action) => (
-              <button
-                key={action.key}
-                type="button"
-                className="me-toolbar-btn"
-                aria-label={action.ariaLabel}
-                data-testid={action.testId}
-                onClick={() => editor && action.run(editor)}
-                aria-pressed={editor ? action.isActive(editor) : false}
-              >
-                {action.label}
-              </button>
+              <Fragment key={action.key}>
+                {TOOLBAR_DIVIDER_BEFORE.has(action.key) && (
+                  <div className="me-toolbar-divider" aria-hidden="true" />
+                )}
+                <button
+                  type="button"
+                  className="me-toolbar-btn"
+                  aria-label={action.ariaLabel}
+                  data-testid={action.testId}
+                  onClick={() => editor && action.run(editor)}
+                  aria-pressed={editor ? action.isActive(editor) : false}
+                >
+                  {action.label}
+                </button>
+              </Fragment>
             ))}
             <div className="me-toolbar-status">
               <span className="me-save-status">
