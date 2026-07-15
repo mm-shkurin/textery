@@ -21,7 +21,6 @@ class TestSaveDuplicateEmail:
     ConflictException instead of a raw database error or silent success,
     so RegisterUser.execute can translate it into EMAIL_ALREADY_REGISTERED."""
 
-    @pytest.mark.skip(reason="RED: no unique constraint or ConflictException mapping in SqlAlchemyAccountRepository.save() yet")
     async def test_should_raise_conflict_for_duplicate_email(
         self, account_storage_statements: AccountStorageStatements
     ):

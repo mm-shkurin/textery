@@ -84,8 +84,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-usecase — RegisterUser.execute wraps AccountRepository.save() in try/except ConflictException, translates to ValidationException(error_code="EMAIL_ALREADY_REGISTERED"); duplicate rejection happens before verification-code generation, so no orphan code on the reject path. usecase suite: 45 passed, 0 failed.
 - [x] adapters-discovery (Check 1 ports: db — `accounts.email` has no unique constraint/migration and `SqlAlchemyAccountRepository.save()` has no `IntegrityError`→`ConflictException` mapping → `red-adapter db` / `green-adapter db` needed. Check 2 exceptions: rest — `validation_exception_handler` maps every `ValidationException` to HTTP 400 uniformly, but `01_API_Tests.md` requires HTTP 409 for `EMAIL_ALREADY_REGISTERED` specifically (other error codes stay 400) → `red-adapter rest` / `green-adapter rest` needed for per-error-code status mapping. Check 3 response shape: [S] — endpoint already returns the generic `{error_code,message}` body; only the status code differs, covered by Check 2.)
 - [x] red-adapter db — asserts `SqlAlchemyAccountRepository.save()` raises `ConflictException` on duplicate email; fails with `AssertionError: expected ConflictException, got None` as predicted (no unique constraint, no exception mapping yet)
-- [ ] green-adapter db
-- [ ] red-adapter rest
+- [x] green-adapter db — added `accounts.email` unique-constraint migration; `save()` catches `IntegrityError`, rolls back, raises `ConflictException`. Coverage: `account_storage.py` 100% lines/branches (`--cov-branch`); db suite 10 passed, 0 failed. No gaps to close; migration DDL not meaningfully coverable by unit tests.
+- [~] red-adapter rest
 - [ ] green-adapter rest
 - [ ] green-acceptance
 
