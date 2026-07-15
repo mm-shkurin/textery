@@ -151,8 +151,8 @@ policy.
 
 ### Scenario 7.2: Applying a blockquote changes the content and highlights the active toolbar button
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
-- [ ] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — added skipped test to `ManualEditor.test.tsx`: blockquote toolbar button (`data-testid="toolbar-blockquote"`) not yet implemented, no `blockquote` entry in `TOOLBAR_ACTIONS`. Predicted `TestingLibraryElementError: Unable to find an element by: [data-testid="toolbar-blockquote"]`; actual matched exactly. test-review: no loose assertions (strict `toBe`/`toHaveAttribute`), no change needed. Note for green phase: doc schema is `Document.extend({ content: 'inline*' })` — blockquote is block-level, may need schema adjustment beyond just adding the toolbar action.
+- [~] green-frontend
 - [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
 - [ ] align-design
