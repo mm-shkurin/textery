@@ -270,7 +270,7 @@ so its red-frontend step must add the button first.
 - [S] green-frontend — see above, nothing to implement
 - [S] red-frontend-api — no API call in this scenario, pure client-side routing
 - [S] green-frontend-api — see above
-- [ ] align-design
+- [x] align-design (no changes needed — footer link (`.auth-footer-link`/`.auth-footer-link a`) already aligned to mockup's `.footer-link`/`.footer-link a` since Scenario 1.2's align-design; verified text-align/margin-top/font-size/color/font-weight all match `01-register.html`)
 - [ ] green-selenium
 - [ ] demo
 
