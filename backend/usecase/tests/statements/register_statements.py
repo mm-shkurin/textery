@@ -51,15 +51,14 @@ class RegisterStatements:
         await self._execute_register(RegisterRequestScope.builder())
 
     async def register_and_return_account(self) -> None:
-        scope = RegisterRequestScope.builder()
-        self.registered_email = scope.email
-        result = await self._execute_register(scope)
-        if result is not None:
-            self.returned_account = result.account
-            self.returned_verification_code = result.verification_code
+        await self._register_and_capture_result(RegisterRequestScope.builder())
 
     async def register_with_mixed_case_email_and_return_account(self) -> None:
-        scope = RegisterRequestScope.builder(email="User@Example.RU")
+        await self._register_and_capture_result(
+            RegisterRequestScope.builder(email="User@Example.RU")
+        )
+
+    async def _register_and_capture_result(self, scope: RegisterRequestScope) -> None:
         self.registered_email = scope.email
         result = await self._execute_register(scope)
         if result is not None:
