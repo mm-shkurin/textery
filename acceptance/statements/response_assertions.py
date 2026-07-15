@@ -95,3 +95,12 @@ def assert_pending_account_created_with_verification_code(
     assert_valid_verification_code(body.get("verification_code"))
     sent_at, received_at = request_window
     assert_code_expiry_within_window(body.get("code_expires_at"), sent_at, received_at)
+
+
+def assert_account_verified(response: HasStatusAndBody) -> None:
+    assert response.status_code == 200, (
+        f"expected 200 OK, got status_code={response.status_code}, body={response.body}"
+    )
+    assert response.body == {"is_verified": True}, (
+        f"expected body {{'is_verified': True}}, got body={response.body}"
+    )

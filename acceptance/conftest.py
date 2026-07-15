@@ -10,6 +10,7 @@ from selenium.webdriver.chrome.options import Options as ChromeOptions
 
 from clients.application.application_client import ApplicationClient
 from statements.auth_statements import AuthStatements
+from statements.verify_statements import VerifyStatements
 from statements.frontend.landing_page_statements import LandingPageStatements
 from statements.frontend.generation.chat_workspace_statements import ChatWorkspaceStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
@@ -35,6 +36,11 @@ def generation_statements(application_client):
 @pytest_asyncio.fixture
 def auth_statements(application_client):
     return AuthStatements(application_client)
+
+
+@pytest_asyncio.fixture
+def verify_statements(application_client):
+    return VerifyStatements(application_client)
 
 
 @pytest.fixture

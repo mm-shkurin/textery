@@ -175,7 +175,7 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-acceptance — no new acceptance test possible (per red-acceptance note: no `/login` endpoint exists to exercise the scenario's actual claim). Full authorization acceptance suite re-run for regression: 19 passed, 1 failed — the failure is `test_register_server_owned_fields_acceptance.py`, a pre-existing tracked flake (carryover.md: "server-owned-fields acceptance fixture uses a fixed email, not per-run-unique" — accumulates duplicate rows across local reruns against the same persistent DB, now hits scenario 2.2's unique constraint), unrelated to this scenario's password-normalization change. No regression introduced.
 
 ### Scenario 3.1: Correct code activates the account
-- [ ] red-acceptance
+- [x] red-acceptance — `POST /api/v1/auth/verify` doesn't exist yet (only `/register` wired). New `acceptance/statements/verify_statements.py` (own file, `auth_statements.py` already at 199 lines) registers a per-run-unique account, extracts the real verification_code from the register response, POSTs to `/verify`, asserts `200 {"is_verified": true}`. Fails with `404 Not Found` as predicted (exact match). test-review: clean, no changes needed — strict dict-equality assertion, proper DSL separation, per-run-unique email already used. Full authorization acceptance suite: 19 passed, 1 skipped (new), 1 failed (pre-existing tracked flake, unrelated — see carryover.md).
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase
