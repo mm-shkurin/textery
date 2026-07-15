@@ -1,15 +1,6 @@
-import pytest
-
 from tests.backend.abstract_backend_test import AbstractBackendTest
 
 
-@pytest.mark.skip(
-    reason=(
-        "RED: Email regex (backend/domain/src/auth/email.py) rejects non-ASCII "
-        "local-parts, so the NFC-form email fails registration with 400 "
-        "INVALID_EMAIL instead of establishing the duplicate-account precondition"
-    )
-)
 class TestRegisterUnicodeNormalizationEmailUniquenessAcceptance(AbstractBackendTest):
     """Scenario 2.4c: Unicode-normalization uniqueness for email.
 

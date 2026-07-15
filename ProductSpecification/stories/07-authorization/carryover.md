@@ -64,3 +64,10 @@ Quirk and enduring-invariant entries promoted from completed scenario summaries.
 **Where:** `acceptance/statements/auth_statements.py`.
 **Implication:** Reruns create additional `accounts` rows with the same email today (no unique constraint yet); once scenario 2.2 adds the constraint, reruns will start failing with a 409/conflict unless this fixture is made unique first.
 **From:** scenario 1.5 (ignore-server-owned-fields)
+
+## Quirk: local-uvicorn OneDrive workaround skips the container's alembic migration step
+
+**Quirk:** The documented OneDrive-build workaround (run `uvicorn app.main:app` directly instead of the `infra-backend-1` container) starts the app without running `alembic upgrade head` first — the container's entrypoint runs migrations as a `sh -c` prefix before `uvicorn`, but the bare `uvicorn` command doesn't. A fresh/reset local Postgres then 500s with `UndefinedTableError: relation "accounts" does not exist` on the first write.
+**Where:** workaround startup command (see `.claude/guidelines/infrastructure-detail.md` / prior scenario notes), migrations at `backend/adapters/db/alembic/`.
+**Implication:** Every time the local-uvicorn workaround is used against a Postgres that hasn't already been migrated (new container, `docker compose down -v`, etc.), run `alembic upgrade head` (with `DATABASE_URL` pointed at the same host/port the app uses) before the first acceptance test, not just before the first code-picking-up run.
+**From:** scenario 2.4c (unicode-normalization-email-uniqueness)
