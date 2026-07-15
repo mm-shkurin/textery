@@ -67,6 +67,30 @@ describe('ManualEditor', () => {
     expect(italicButton).toHaveAttribute('aria-pressed', 'false')
   })
 
+  // RED (scenario 7.1): strikethrough toolbar button does not exist yet
+  it.skip('applying strikethrough to selected text wraps it in <s> and marks the strikethrough button active', async () => {
+    await renderEditorWithDocumentCreated()
+
+    const contentArea = screen.getByTestId('editor-content-area')
+    contentArea.textContent = 'hello world'
+    fireEvent.input(contentArea)
+
+    const textNode = contentArea.firstChild as Node
+    const range = document.createRange()
+    range.setStart(textNode, 0)
+    range.setEnd(textNode, 5)
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+    fireEvent.select(contentArea)
+
+    const strikeButton = screen.getByTestId('toolbar-strike')
+    fireEvent.click(strikeButton)
+
+    expect(contentArea.innerHTML).toBe('<s>hello</s> world')
+    expect(strikeButton).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('creates the document on mount and flips save status once creation resolves', async () => {
     let resolveCreate: (value: { documentId: string; status: string }) => void = () => {}
     const createPromise = new Promise<{ documentId: string; status: string }>((resolve) => {
