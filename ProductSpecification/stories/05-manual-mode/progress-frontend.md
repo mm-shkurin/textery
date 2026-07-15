@@ -44,8 +44,8 @@ Owns: Frontend Scenarios. Narrative/decisions/Spec checklist live in `progress.m
 - [S] red-frontend-api — no API call: bold formatting is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
 - [x] align-design
-- [~] green-selenium
-- [ ] demo
+- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [~] demo
 
 ### Scenario 3.2: The toolbar reflects formatting state at the cursor position, not globally
 - [ ] red-selenium
