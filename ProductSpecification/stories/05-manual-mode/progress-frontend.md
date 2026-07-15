@@ -91,10 +91,10 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 ### Scenario 5.1: A successful save shows a lightweight confirmation, no full-page transition
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [x] red-frontend — predicted `waitFor` timeout looking for "Сохранено" text (no third save-status state exists yet, only draft/creating); actual matched exactly. Also strengthened via test-review to assert `onBack` never fires (real "no navigation" check) and post-save UI settles (aria-disabled=false, spinner gone).
-- [~] green-frontend — **must not leave a stale "Сохранено" visible after a new edit** (premortem finding): a minimal `saved` boolean flipped true on save success and never reset would pass the pinned test but mislead the user into thinking a later unsaved edit is saved. Derive the "saved" display from a real dirty check (e.g. reset on the next `input`/content-change event) rather than a one-way flag, and add a test: save → edit again → assert status is no longer "Сохранено" before the next save completes.
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
+- [x] green-frontend — implemented `hasUnsavedChanges` state (dirty check, not a one-way flag): true on any content edit, reset to false only when a save resolves with nothing queued. `.me-save-status` is now three-way: 'Создание документа…' / 'Сохранено' (doc + clean) / 'Черновик, ещё не сохранён' (doc + dirty). Added the required save→edit-again reversion test. Test file split (200-line limit): save-flow tests moved to new `ManualEditor.save.test.tsx`. Full suite: 44/44 passed. Typecheck: clean.
+- [S] red-frontend-api — no new API call: confirmation display is client-side derived from saveDocument's existing response (already implemented/tested in scenario 4.1), no backend contract change
+- [S] green-frontend-api — same reason
+- [~] align-design
 - [ ] green-selenium
 - [ ] demo
 

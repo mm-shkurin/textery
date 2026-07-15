@@ -21,6 +21,7 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
   const [documentId, setDocumentId] = useState<string | null>(null)
   const [version, setVersion] = useState(1)
   const [isSaving, setIsSaving] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(true)
   const saveAgainRequested = useRef(false)
 
   const handleSave = () => {
@@ -43,6 +44,7 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
           performSave(result.version)
         } else {
           setIsSaving(false)
+          setHasUnsavedChanges(false)
         }
       })
       .catch((error) => {
@@ -79,7 +81,10 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
         'data-testid': 'editor-content-area',
       },
       handleDOMEvents: {
-        input: flushDomObserverOnInput,
+        input: (view, event) => {
+          setHasUnsavedChanges(true)
+          return flushDomObserverOnInput(view, event)
+        },
         select: syncNativeSelectionToProseMirror,
       },
     },
@@ -147,7 +152,11 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
             ))}
             <div className="me-toolbar-status">
               <span className="me-save-status">
-                {documentId ? 'Черновик, ещё не сохранён' : 'Создание документа…'}
+                {!documentId
+                  ? 'Создание документа…'
+                  : hasUnsavedChanges
+                    ? 'Черновик, ещё не сохранён'
+                    : 'Сохранено'}
               </span>
               {/*
                 aria-disabled (not the native disabled attribute) so the
