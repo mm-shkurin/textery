@@ -161,9 +161,9 @@ so its red-frontend step must add the button first.
 - [ ] demo
 
 ### 4.1: Password policy hint shown inline
-- [ ] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
+- [ ] red-selenium (deferred — docker build blocker, not backend-dependent, same as 3.1/3.2)
+- [x] red-frontend (RegisterForm.test.tsx: "shows an inline validation message when the password does not meet the policy on blur" + "shows no inline validation message when the password meets the policy on blur"; RED confirmed on the first test — TestingLibraryElementError, no `register-password-error` element found after blur with a weak password; second test passes trivially now (no error ever renders), documents the compliant-password behavior for green. test-review tightened the assertion to exact `toHaveTextContent` using the mockup's existing hint copy — "Минимум 8 символов, включая цифру, заглавную, строчную буквы и спецсимвол" — as the authoritative error text, so green-frontend has an unambiguous target)
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design

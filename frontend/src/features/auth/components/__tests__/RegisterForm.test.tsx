@@ -37,4 +37,27 @@ describe('RegisterForm', () => {
 
     await waitFor(() => expect(screen.queryByTestId('register-loading-indicator')).not.toBeInTheDocument())
   })
+
+  it('shows an inline validation message when the password does not meet the policy on blur', () => {
+    renderWithRouter(<RegisterForm />)
+    const passwordInput = screen.getByTestId('register-password-input')
+    expect(screen.queryByTestId('register-password-error')).not.toBeInTheDocument()
+
+    fireEvent.change(passwordInput, { target: { value: 'weak' } })
+    fireEvent.blur(passwordInput)
+
+    expect(screen.getByTestId('register-password-error')).toHaveTextContent(
+      'Минимум 8 символов, включая цифру, заглавную, строчную буквы и спецсимвол'
+    )
+  })
+
+  it('shows no inline validation message when the password meets the policy on blur', () => {
+    renderWithRouter(<RegisterForm />)
+    const passwordInput = screen.getByTestId('register-password-input')
+
+    fireEvent.change(passwordInput, { target: { value: 'Str0ng!Pass' } })
+    fireEvent.blur(passwordInput)
+
+    expect(screen.queryByTestId('register-password-error')).not.toBeInTheDocument()
+  })
 })
