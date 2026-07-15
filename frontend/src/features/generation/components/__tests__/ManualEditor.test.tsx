@@ -117,7 +117,7 @@ describe('ManualEditor', () => {
     const saveButton = screen.getByRole('button', { name: 'Сохранить' })
     fireEvent.click(saveButton)
 
-    expect(saveButton).toBeDisabled()
+    expect(saveButton).toHaveAttribute('aria-disabled', 'true')
     expect(screen.getByTestId('save-spinner')).toBeInTheDocument()
 
     fireEvent.click(saveButton)
@@ -165,13 +165,13 @@ describe('ManualEditor', () => {
       expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
     })
     expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', 'second content', 2)
-    expect(saveButton).toBeDisabled()
+    expect(saveButton).toHaveAttribute('aria-disabled', 'true')
     expect(screen.getByTestId('save-spinner')).toBeInTheDocument()
 
     resolveSecondSave({ status: 'saved', version: 3 })
 
     await waitFor(() => {
-      expect(saveButton).not.toBeDisabled()
+      expect(saveButton).toHaveAttribute('aria-disabled', 'false')
     })
     expect(screen.queryByTestId('save-spinner')).not.toBeInTheDocument()
   })
@@ -204,7 +204,7 @@ describe('ManualEditor', () => {
     rejectFirstSave(new Error('network error'))
 
     await waitFor(() => {
-      expect(saveButton).not.toBeDisabled()
+      expect(saveButton).toHaveAttribute('aria-disabled', 'false')
     })
     expect(screen.queryByTestId('save-spinner')).not.toBeInTheDocument()
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)

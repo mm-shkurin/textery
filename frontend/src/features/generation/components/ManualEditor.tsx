@@ -150,24 +150,23 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
                 {documentId ? 'Черновик, ещё не сохранён' : 'Создание документа…'}
               </span>
               {/*
-                onClick lives on this wrapper, not the <button>, so a save
-                requested while the button is natively disabled (mid-flight)
-                still reaches handleSave. A disabled <button>'s own click
-                listener never fires (browser/React suppress it), but the
-                click event still bubbles to ancestor listeners, which lets
-                handleSave register the "save again" intent instead of the
-                click being silently lost.
+                aria-disabled (not the native disabled attribute) so the
+                button keeps receiving click/keyboard events while a save is
+                in flight. A natively disabled <button> never dispatches
+                click at all (not a jsdom quirk — that's spec behavior), so
+                a click during isSaving would be silently lost instead of
+                reaching handleSave's own in-flight guard, which is what
+                queues the "save again" intent.
               */}
-              <span onClick={handleSave}>
-                <button
-                  type="button"
-                  className="me-save-btn"
-                  disabled={isSaving}
-                >
-                  {isSaving && <span data-testid="save-spinner" className="me-save-spinner" aria-hidden="true" />}
-                  Сохранить
-                </button>
-              </span>
+              <button
+                type="button"
+                className="me-save-btn"
+                aria-disabled={isSaving}
+                onClick={handleSave}
+              >
+                {isSaving && <span data-testid="save-spinner" className="me-save-spinner" aria-hidden="true" />}
+                Сохранить
+              </button>
             </div>
           </div>
           <div className="me-content-area">
