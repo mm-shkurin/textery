@@ -15,5 +15,4 @@ class SqlAlchemyAccountRepository:
         try:
             await self._session.flush()
         except IntegrityError as error:
-            await self._session.rollback()
             raise ConflictException(f"account with email {account.email} already exists") from error

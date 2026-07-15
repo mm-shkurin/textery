@@ -2,13 +2,12 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from auth.account import Account
-from model.auth.account_model import AccountModel
-from session import SqlAlchemyUnitOfWork, create_engine
+from session import SqlAlchemyUnitOfWork
+from statements.account_row_lookup import fetch_account_row_on_new_connection
 
 
 class SqlAlchemyUnitOfWorkStatements:
@@ -34,13 +33,7 @@ class SqlAlchemyUnitOfWorkStatements:
         await self._unit_of_work.commit()
 
     async def assert_account_durable_on_new_connection(self) -> None:
-        engine = create_engine()
-        async with engine.connect() as connection:
-            result = await connection.execute(
-                select(AccountModel).where(AccountModel.id == self.saved_account.id)
-            )
-            row = result.first()
-        await engine.dispose()
+        row = await fetch_account_row_on_new_connection(self.saved_account.id)
         assert row is not None, (
             f"expected account {self.saved_account.id} to be committed via UnitOfWork, found none"
         )

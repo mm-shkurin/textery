@@ -99,6 +99,7 @@ class RegisterUser:
         try:
             await self.account_repository.save(account)
         except ConflictException:
+            await self._rollback_silently()
             raise ValidationException(
                 error_code="EMAIL_ALREADY_REGISTERED",
                 message="An account with this email address already exists.",
