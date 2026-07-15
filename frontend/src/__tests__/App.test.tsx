@@ -62,7 +62,7 @@ describe('App step transitions', () => {
   // resets step to 'landing' and clears documentType/mode instead of returning
   // to the mode modal. Predicted/actual: TestingLibraryElementError, unable to
   // find [data-testid="mode-modal"] (rendered landing page instead).
-  it.skip('back button from the manual editor returns to the mode modal, document type still scoped', () => {
+  it('back button from the manual editor returns to the mode modal, document type still scoped', () => {
     render(<App />)
 
     openModeModalForDoklad()

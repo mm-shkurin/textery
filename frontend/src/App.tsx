@@ -30,6 +30,11 @@ function App() {
     setMode(null)
   }
 
+  const backToModeModal = () => {
+    setStep('mode')
+    setMode(null)
+  }
+
   if (step === 'form' && documentType && mode) {
     const documentTypeLabel = DOCUMENT_TYPE_LABELS[documentType]
 
@@ -38,7 +43,7 @@ function App() {
         <ManualEditor
           documentType={documentType}
           documentTypeLabel={documentTypeLabel}
-          onBack={closeToLanding}
+          onBack={backToModeModal}
         />
       )
     }
