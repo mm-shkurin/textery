@@ -57,3 +57,10 @@ def account_storage_statements(db_session: AsyncSession):
 @pytest.fixture
 def verification_code_storage_statements(db_session: AsyncSession):
     return VerificationCodeStorageStatements(db_session)
+
+
+@pytest.fixture
+def sql_alchemy_unit_of_work_statements(db_session: AsyncSession):
+    from statements.sql_alchemy_unit_of_work_statements import SqlAlchemyUnitOfWorkStatements
+
+    return SqlAlchemyUnitOfWorkStatements(db_session)

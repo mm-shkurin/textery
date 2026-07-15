@@ -28,3 +28,19 @@ class TestSaveDuplicateEmail:
         await account_storage_statements.save_account(first)
         await account_storage_statements.save_account_with_duplicate_email("duplicate@example.com")
         account_storage_statements.assert_conflict_error_raised()
+
+
+class TestSaveDoesNotCommitInternally:
+    """Saving an account only flushes it onto the shared session — it stays
+    pending until the shared UnitOfWork commits. A rollback issued on the
+    session (as the UnitOfWork does on a later failure) discards it, so the
+    account never lands durably without an explicit UnitOfWork.commit()."""
+
+    @pytest.mark.skip(reason="RED: account_storage.save() still commits internally")
+    async def test_should_not_persist_account_when_session_is_rolled_back_before_commit(
+        self, account_storage_statements: AccountStorageStatements
+    ):
+        account = account_storage_statements.build_account(email="rollback@example.com")
+        await account_storage_statements.save_account(account)
+        await account_storage_statements.rollback_session()
+        await account_storage_statements.assert_account_absent_on_new_connection()

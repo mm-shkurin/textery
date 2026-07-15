@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from auth.account import Account
 from model.auth.account_model import AccountModel
+from session import create_engine
 from shared.exceptions import ConflictException
 
 
@@ -47,6 +48,21 @@ class AccountStorageStatements:
         stmt = select(AccountModel).where(AccountModel.id == self.saved_account.id)
         result = await self._session.execute(stmt)
         self.fetched_model = result.scalar_one_or_none()
+
+    async def rollback_session(self) -> None:
+        await self._session.rollback()
+
+    async def assert_account_absent_on_new_connection(self) -> None:
+        engine = create_engine()
+        async with engine.connect() as connection:
+            result = await connection.execute(
+                select(AccountModel).where(AccountModel.id == self.saved_account.id)
+            )
+            row = result.first()
+        await engine.dispose()
+        assert row is None, (
+            f"expected account {self.saved_account.id} absent after rollback, found a row"
+        )
 
     def assert_fetched_matches_saved(self) -> None:
         assert self.fetched_model is not None, "expected an accounts row, got None"
