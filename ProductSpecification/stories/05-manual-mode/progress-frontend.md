@@ -124,6 +124,6 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 - [x] green-frontend — implemented real `getDocument` in `documentApi.ts` (GET, mirrors `saveDocument`/`createDocument`'s `request()` pattern) and wired `ManualEditor`'s mount effect to branch on `existingDocumentId`: calls `getDocument` and populates Tiptap via `editor?.commands.setContent(result.content)` + sets `version`, else falls back to `createDocument`. App.tsx wiring left untouched (no entry point in this story's scope). Removed `it.skip`. Full suite: 50/50 passed. Typecheck: clean.
 - [x] red-frontend-api — added 2 tests to `documentApi.test.ts` for `getDocument` (success path + non-OK rejection), same pattern as `saveDocument`'s tests. No red state: `getDocument` was already implemented by green-frontend using the proven `request()` pattern, so both tests passed immediately (5/5 in file). No disable marker needed.
 - [S] green-frontend-api — no production gap: `getDocument`/`request()` already correctly implemented, see red-frontend-api note
-- [ ] align-design
-- [ ] green-selenium
-- [ ] demo
+- [x] align-design — verify-only: no new markup/CSS for this scenario, reopen only populates the existing Tiptap editor/toolbar via `editor.commands.setContent`, which already renders through scenario 1.2/3.1's aligned styling
+- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [S] demo — same reason, no live backend to drive a visible Selenium run against
