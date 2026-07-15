@@ -141,9 +141,9 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-acceptance — passes as-is (not skip-marked, stands as a normal regression test pinning already-correct behavior, matching scenario 2.4a's pattern)
 
 ### Scenario 2.5: Registration writes the account and the verification code atomically
-- [ ] red-acceptance
-- [ ] design
-- [ ] red-usecase
+- [S] red-acceptance — no HTTP-observable lever exists to force a failure between `AccountRepository.save()` and `VerificationCodeRepository.save()`: both IDs are server-generated (`uuid4()` inside `RegisterUser.execute`), never client-controllable, and the acceptance suite has no DB-level seam by design. The fault can only legitimately be injected at the usecase layer (a Fake `VerificationCodeRepository.save()` that raises). red-usecase owns this scenario's proof; scenario 2.1's existing happy-path acceptance test already covers the success case once the transactional wrapper lands, so no new acceptance test is added.
+- [x] design (see `decisions/atomic-registration-write-decision.md`) — new UnitOfWork port (usecase) with SqlAlchemyUnitOfWork adapter; account_storage.save() flushes only (no commit/rollback), verification_code_storage.save() adds only; RegisterUser.execute owns the single commit/rollback. Hazard scan (all groups 1-7, group 8 dead — usecase altitude, no client seam) found gaps in groups 2/3/4/5/6/7, folded into the ADR: final-commit-failure guard, single-owner rollback (no double-rollback), re-verify 2.4a's concurrent-registration race against the new flush-based code path, no raw SQL/IntegrityError leak in the failure exception message. Idempotent-retry gap dismissed (already covered by 2.2/2.4's duplicate-email mechanism); resource-pool-leak gap dismissed (container.py's existing finally: await session.close() already releases the connection on every exit path).
+- [~] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
