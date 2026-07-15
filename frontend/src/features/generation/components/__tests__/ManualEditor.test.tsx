@@ -123,6 +123,30 @@ describe('ManualEditor', () => {
     expect(strikeButton).toHaveAttribute('aria-pressed', 'false')
   })
 
+  // TDD Red Phase - TestingLibraryElementError: Unable to find an element by: [data-testid="toolbar-blockquote"] (no `blockquote` entry in TOOLBAR_ACTIONS yet)
+  it.skip('applying a blockquote to selected text wraps it in <blockquote> and marks the blockquote button active', async () => {
+    await renderEditorWithDocumentCreated()
+
+    const contentArea = screen.getByTestId('editor-content-area')
+    contentArea.textContent = 'hello world'
+    fireEvent.input(contentArea)
+
+    const textNode = contentArea.firstChild as Node
+    const range = document.createRange()
+    range.setStart(textNode, 0)
+    range.setEnd(textNode, 5)
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+    fireEvent.select(contentArea)
+
+    const blockquoteButton = screen.getByTestId('toolbar-blockquote')
+    fireEvent.click(blockquoteButton)
+
+    expect(contentArea.innerHTML).toBe('<blockquote>hello world</blockquote>')
+    expect(blockquoteButton).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('creates the document on mount and flips save status once creation resolves', async () => {
     let resolveCreate: (value: { documentId: string; status: string }) => void = () => {}
     const createPromise = new Promise<{ documentId: string; status: string }>((resolve) => {
