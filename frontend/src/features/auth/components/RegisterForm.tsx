@@ -47,6 +47,7 @@ export function RegisterForm() {
         <AuthSubmitButton testId="register-submit-button" isSubmitting={isSubmitting}>
           Зарегистрироваться
         </AuthSubmitButton>
+        {isSubmitting && <div data-testid="register-loading-indicator">Загрузка...</div>}
         <p className="register-terms">
           Создавая аккаунт, вы соглашаетесь с нашими Условиями использования, Политикой
           конфиденциальности и Обработкой персональных данных
