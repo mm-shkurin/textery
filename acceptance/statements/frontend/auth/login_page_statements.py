@@ -10,7 +10,7 @@ PASSWORD_INPUT = (By.CSS_SELECTOR, "[data-testid='login-password-input']")
 SUBMIT_BUTTON = (By.CSS_SELECTOR, "[data-testid='login-submit-button']")
 PASSWORD_TOGGLE = (By.CSS_SELECTOR, "[data-testid='login-password-toggle']")
 LOADING_INDICATOR = (By.CSS_SELECTOR, "[data-testid='login-loading-indicator']")
-REGISTER_LINK = (By.LINK_TEXT, "Зарегистрироваться")
+REGISTER_LINK = (By.CSS_SELECTOR, "[data-testid='login-register-link']")
 
 
 class LoginPageStatements(BaseFrontendStatements):

@@ -128,7 +128,7 @@ export function RegisterForm() {
         </p>
       </form>
       <p className="auth-footer-link">
-        Уже есть аккаунт? <Link to="/login">Войти</Link>
+        Уже есть аккаунт? <Link to="/login" data-testid="register-login-link">Войти</Link>
       </p>
     </div>
   )

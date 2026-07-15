@@ -13,7 +13,7 @@ SUBMIT_BUTTON = (By.CSS_SELECTOR, "[data-testid='register-submit-button']")
 LOADING_INDICATOR = (By.CSS_SELECTOR, "[data-testid='register-loading-indicator']")
 PASSWORD_ERROR = (By.CSS_SELECTOR, "[data-testid='register-password-error']")
 CONFIRM_ERROR = (By.CSS_SELECTOR, "[data-testid='register-confirm-error']")
-LOGIN_LINK = (By.LINK_TEXT, "Войти")
+LOGIN_LINK = (By.CSS_SELECTOR, "[data-testid='register-login-link']")
 REGISTER_REQUEST_PATH = "/api/v1/auth/register"
 
 

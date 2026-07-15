@@ -57,7 +57,7 @@ export function LoginForm() {
         {isSubmitting && <AuthLoadingIndicator testId="login-loading-indicator" />}
       </form>
       <p className="auth-footer-link">
-        Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
+        Нет аккаунта? <Link to="/register" data-testid="login-register-link">Зарегистрироваться</Link>
       </p>
     </div>
   )
