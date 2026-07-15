@@ -30,3 +30,12 @@ class Account:
             password_hash=password_hash,
             created_at=created_at,
         )
+
+    @classmethod
+    def reconstitute(
+        cls, id: UUID, email: str, password_hash: str, created_at: datetime, is_verified: bool
+    ) -> "Account":
+        raise NotImplementedError()
+
+    def verify(self) -> None:
+        raise NotImplementedError()

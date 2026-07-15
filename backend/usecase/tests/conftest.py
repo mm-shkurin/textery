@@ -18,6 +18,7 @@ from statements.generation_statements import GenerationStatements
 from statements.register_atomic_write_statements import RegisterAtomicWriteStatements
 from statements.register_statements import RegisterStatements
 from statements.requeue_stale_generations_statements import RequeueStaleGenerationsStatements
+from statements.verify_account_statements import VerifyAccountStatements
 
 
 @pytest.fixture
@@ -43,3 +44,8 @@ def generation_lifecycle_statements():
 @pytest.fixture
 def requeue_stale_generations_statements():
     return RequeueStaleGenerationsStatements()
+
+
+@pytest.fixture
+def verify_account_statements():
+    return VerifyAccountStatements()
