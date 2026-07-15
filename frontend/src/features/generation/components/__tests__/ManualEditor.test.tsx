@@ -119,4 +119,56 @@ describe('ManualEditor', () => {
 
     resolveSave({ status: 'saved', version: 2 })
   })
+
+  // TDD Red Phase - handleSave has no saveAgainRequested mechanism yet: a save
+  // requested while one is in flight is silently dropped (isSaving guard early-returns),
+  // so saveDocument is never called a second time.
+  // Actual failure: AssertionError: expected "vi.fn()" to be called 2 times, but got 1 times
+  it.skip('a save requested while one is in flight auto-retriggers with the latest content once the first save resolves, and the button only re-enables after the second settles', async () => {
+    await renderEditorWithDocumentCreated()
+
+    const contentArea = screen.getByTestId('editor-content-area')
+    contentArea.textContent = 'first content'
+    fireEvent.input(contentArea)
+
+    let resolveFirstSave: (value: { status: string; version: number }) => void = () => {}
+    const firstSavePromise = new Promise<{ status: string; version: number }>((resolve) => {
+      resolveFirstSave = resolve
+    })
+    let resolveSecondSave: (value: { status: string; version: number }) => void = () => {}
+    const secondSavePromise = new Promise<{ status: string; version: number }>((resolve) => {
+      resolveSecondSave = resolve
+    })
+    vi.mocked(documentApi.saveDocument)
+      .mockReturnValueOnce(firstSavePromise)
+      .mockReturnValueOnce(secondSavePromise)
+
+    const saveButton = screen.getByRole('button', { name: 'Сохранить' })
+    fireEvent.click(saveButton)
+
+    expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(1, 'doc-1', 'first content', 1)
+
+    contentArea.textContent = 'second content'
+    fireEvent.input(contentArea)
+    fireEvent.click(saveButton)
+
+    expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
+
+    resolveFirstSave({ status: 'saved', version: 2 })
+
+    await waitFor(() => {
+      expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
+    })
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', 'second content', 2)
+    expect(saveButton).toBeDisabled()
+    expect(screen.getByTestId('save-spinner')).toBeInTheDocument()
+
+    resolveSecondSave({ status: 'saved', version: 3 })
+
+    await waitFor(() => {
+      expect(saveButton).not.toBeDisabled()
+    })
+    expect(screen.queryByTestId('save-spinner')).not.toBeInTheDocument()
+  })
 })

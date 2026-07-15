@@ -79,9 +79,9 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
 ### Scenario 4.2: A save completing out of order still reflects the latest edit, not a stale response
-- [ ] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
+- [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [x] red-frontend — design decision (confirmed with user): out-of-order display is guarded by a queue/auto-retrigger mechanism, not a relaxed concurrent-save lock. Save button stays disabled while a save is in flight; a save requested during that window sets a "save again" flag, consumed automatically once the in-flight save settles, firing a new save with the then-current content and the version returned by the settled save. Saves stay strictly sequential (never more than one in flight), so no client-side sequence-number comparison is needed to resolve out-of-order responses.
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
