@@ -48,8 +48,8 @@ Owns: Frontend Scenarios. Narrative/decisions/Spec checklist live in `progress.m
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
 ### Scenario 3.2: The toolbar reflects formatting state at the cursor position, not globally
-- [ ] red-selenium
-- [ ] red-frontend
+- [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
