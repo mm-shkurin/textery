@@ -160,6 +160,7 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
           />
           {saveError && (
             <div className="me-error-banner" role="alert">
+              <PlaceholderImage className="me-error-banner-icon" />
               {saveError}
             </div>
           )}
