@@ -209,8 +209,8 @@ policy.
 
 ### Scenario 7.6: Applying an H3 heading changes the content and highlights the active toolbar button
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
-- [ ] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — new file `ManualEditor.heading3.test.tsx`: collapsed cursor (offset 3, "hello world", no selection) on `toolbar-h3` click, expect whole line wrapped `<h3>hello world</h3>`, `aria-pressed="true"`. Correctly scoped as cursor-only per spec (test-review verified: true collapsed range). Investigation: existing `heading1`/`heading2` entries in `TOOLBAR_ACTIONS` are untested dead stubs (no `testId`), likely hitting the same `inline*`-only schema conflict blockquote/codeBlock/horizontalRule did — out of scope for 7.6, not fixed here. Predicted `TestingLibraryElementError: Unable to find an element by: [data-testid="toolbar-h3"]`; actual matched exactly. test-review: strict `toBe`/`toHaveAttribute`, no change needed.
+- [~] green-frontend
 - [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
 - [ ] align-design
