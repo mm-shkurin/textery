@@ -64,7 +64,7 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 - [S] green-frontend — capability already provided by scenario 3.1, see red-frontend note
 - [S] red-frontend-api — no API call: cursor-driven toolbar state is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
-- [~] align-design
+- [x] align-design — verify-only: no new markup/CSS for this scenario, reuses scenario 3.1's `.me-toolbar-btn[aria-pressed='true']` active-state styling already aligned to mockup 04-editor-content.html
 - [ ] green-selenium
 - [ ] demo
 
