@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
+import { AuthLoadingIndicator } from './AuthLoadingIndicator'
 import { useSubmitPlaceholder } from '../hooks/useSubmitPlaceholder'
 import './AuthForm.css'
 import './RegisterForm.css'
@@ -47,16 +48,7 @@ export function RegisterForm() {
         <AuthSubmitButton testId="register-submit-button" isSubmitting={isSubmitting}>
           Зарегистрироваться
         </AuthSubmitButton>
-        {isSubmitting && (
-          <div
-            className="auth-loading-indicator"
-            data-testid="register-loading-indicator"
-            role="status"
-            aria-live="polite"
-          >
-            Загрузка...
-          </div>
-        )}
+        {isSubmitting && <AuthLoadingIndicator testId="register-loading-indicator" />}
         <p className="register-terms">
           Создавая аккаунт, вы соглашаетесь с нашими Условиями использования, Политикой
           конфиденциальности и Обработкой персональных данных

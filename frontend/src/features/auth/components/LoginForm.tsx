@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
+import { AuthLoadingIndicator } from './AuthLoadingIndicator'
 import { useSubmitPlaceholder } from '../hooks/useSubmitPlaceholder'
 import './AuthForm.css'
 import './LoginForm.css'
@@ -53,16 +54,7 @@ export function LoginForm() {
         <AuthSubmitButton testId="login-submit-button" isSubmitting={isSubmitting}>
           Войти
         </AuthSubmitButton>
-        {isSubmitting && (
-          <div
-            className="auth-loading-indicator"
-            data-testid="login-loading-indicator"
-            role="status"
-            aria-live="polite"
-          >
-            Загрузка...
-          </div>
-        )}
+        {isSubmitting && <AuthLoadingIndicator testId="login-loading-indicator" />}
       </form>
       <p className="auth-footer-link">
         Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
