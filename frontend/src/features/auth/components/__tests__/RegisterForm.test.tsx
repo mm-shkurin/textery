@@ -22,4 +22,14 @@ describe('RegisterForm', () => {
 
     expect(submitButton).toBeDisabled()
   })
+
+  it('shows a loading indicator while submitting and not before', () => {
+    renderWithRouter(<RegisterForm />)
+    const submitButton = screen.getByTestId('register-submit-button')
+    expect(screen.queryByTestId('register-loading-indicator')).not.toBeInTheDocument()
+
+    fireEvent.click(submitButton)
+
+    expect(screen.getByTestId('register-loading-indicator')).toBeInTheDocument()
+  })
 })
