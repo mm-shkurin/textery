@@ -79,7 +79,7 @@ class RegisterAtomicWriteStatements:
             f"got {len(self.verification_code_repository.saved_codes)}"
         )
 
-    def assert_registration_failed_error_raised(self) -> None:
+    def assert_registration_failed_error_raised(self, expected_saved_codes_count: int) -> None:
         assert isinstance(self.thrown_exception, RegistrationFailedException), (
             f"expected RegistrationFailedException to be raised, got "
             f"{type(self.thrown_exception).__name__ if self.thrown_exception else 'no exception'}"
@@ -103,4 +103,8 @@ class RegisterAtomicWriteStatements:
         assert len(self.account_repository.saved_accounts) == 1, (
             f"expected the account save to have already succeeded before rollback, "
             f"got {len(self.account_repository.saved_accounts)}"
+        )
+        assert len(self.verification_code_repository.saved_codes) == expected_saved_codes_count, (
+            f"expected {expected_saved_codes_count} verification code(s) saved before rollback, "
+            f"got {len(self.verification_code_repository.saved_codes)}"
         )

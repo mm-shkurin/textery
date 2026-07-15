@@ -32,10 +32,10 @@ class TestRegisterUsecaseAtomicWrite:
         self, register_atomic_write_statements: RegisterAtomicWriteStatements
     ):
         await register_atomic_write_statements.attempt_registering_when_verification_code_save_fails()
-        register_atomic_write_statements.assert_registration_failed_error_raised()
+        register_atomic_write_statements.assert_registration_failed_error_raised(expected_saved_codes_count=0)
 
     async def test_should_rollback_when_final_commit_fails(
         self, register_atomic_write_statements: RegisterAtomicWriteStatements
     ):
         await register_atomic_write_statements.attempt_registering_when_final_commit_fails()
-        register_atomic_write_statements.assert_registration_failed_error_raised()
+        register_atomic_write_statements.assert_registration_failed_error_raised(expected_saved_codes_count=1)
