@@ -91,8 +91,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 
 ### Scenario 2.3: Case-folded email uniqueness
 - [x] red-acceptance — registers `user-{uuid}@example.ru` then `USER-{uuid}@Example.ru` (same local part, different case); fails with `expected 409 Conflict (duplicate email), got status_code=201` as predicted (current unique constraint is case-sensitive, mixed-case duplicate slips through)
-- [~] design
-- [ ] red-usecase
+- [x] design (see `decisions/case-folded-email-uniqueness-decision.md`) — normalize email to lowercase inside the `Email` value object (`Email.value` returns the canonical form); `RegisterUser.execute` persists `Email(email).value` instead of the raw request casing. No new migration: scenario 2.2's `uq_accounts_email` constraint already enforces uniqueness once storage is canonical. Rejected app-level case-insensitive check-then-insert (reopens the 2.2 TOCTOU race) and a separate functional unique index (leaves the raw column un-normalized, breaks future case-insensitive login). Addresses both credible premortem incidents on the red-acceptance commit.
+- [~] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
