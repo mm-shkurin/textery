@@ -67,7 +67,7 @@ describe('RegisterForm', () => {
     ['missing an uppercase letter', 'nouppercase1!'],
     ['missing a lowercase letter', 'NOLOWERCASE1!'],
     ['missing a special character', 'NoSpecial123'],
-    ['too short', 'Sh0rt!'],
+    ['too short (7 chars)', 'Sh0rt!!'],
   ])('shows the inline validation message when the password is %s', (_label, value) => {
     renderWithRouter(<RegisterForm />)
     const passwordInput = screen.getByTestId('register-password-input')
@@ -78,23 +78,32 @@ describe('RegisterForm', () => {
     expect(screen.getByTestId('register-password-error')).toBeInTheDocument()
   })
 
-  it('shows no inline validation message when the password meets the policy on blur', () => {
+  it.each([
+    ['a compliant password', 'Str0ng!Pass'],
+    ['a second compliant password using a different special character', 'Valid#Pass9'],
+    ['a compliant password exactly at the 8-character minimum', 'Ab1!Ab1!'],
+  ])('shows no inline validation message for %s', (_label, value) => {
     renderWithRouter(<RegisterForm />)
     const passwordInput = screen.getByTestId('register-password-input')
 
-    fireEvent.change(passwordInput, { target: { value: 'Str0ng!Pass' } })
+    fireEvent.change(passwordInput, { target: { value } })
     fireEvent.blur(passwordInput)
 
     expect(screen.queryByTestId('register-password-error')).not.toBeInTheDocument()
   })
 
-  it('shows no inline validation message for a second compliant password using a different special character', () => {
+  it('clears the error and restores the hint once the password is corrected to a compliant value', () => {
     renderWithRouter(<RegisterForm />)
     const passwordInput = screen.getByTestId('register-password-input')
 
-    fireEvent.change(passwordInput, { target: { value: 'Valid#Pass9' } })
+    fireEvent.change(passwordInput, { target: { value: 'weak' } })
+    fireEvent.blur(passwordInput)
+    expect(screen.getByTestId('register-password-error')).toBeInTheDocument()
+
+    fireEvent.change(passwordInput, { target: { value: 'Str0ng!Pass' } })
     fireEvent.blur(passwordInput)
 
     expect(screen.queryByTestId('register-password-error')).not.toBeInTheDocument()
+    expect(screen.getByTestId('register-password-hint')).toBeInTheDocument()
   })
 })
