@@ -42,3 +42,9 @@ class TestRegisterUsecaseAtomicWrite:
     ):
         await register_atomic_write_statements.attempt_registering_without_injected_unit_of_work()
         register_atomic_write_statements.assert_registration_failed_error_raised_without_injected_unit_of_work()
+
+    async def test_should_propagate_registration_failed_when_rollback_itself_fails(
+        self, register_atomic_write_statements: RegisterAtomicWriteStatements
+    ):
+        await register_atomic_write_statements.attempt_registering_when_verification_code_save_and_rollback_both_fail()
+        register_atomic_write_statements.assert_registration_failed_error_raised(expected_saved_codes_count=0)

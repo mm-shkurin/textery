@@ -41,6 +41,15 @@ class RegisterAtomicWriteStatements:
         )
         await self._execute_register()
 
+    async def attempt_registering_when_verification_code_save_and_rollback_both_fail(self) -> None:
+        self.verification_code_repository.raise_on_save = RuntimeError(
+            f"verification code insert failed: {self.RAW_DRIVER_ERROR_SENTINEL}"
+        )
+        self.unit_of_work.raise_on_rollback = RuntimeError(
+            f"rollback failed: {self.RAW_DRIVER_ERROR_SENTINEL}"
+        )
+        await self._execute_register()
+
     async def attempt_registering_without_injected_unit_of_work(self) -> None:
         self.verification_code_repository.raise_on_save = RuntimeError(
             f"verification code insert failed: {self.RAW_DRIVER_ERROR_SENTINEL}"

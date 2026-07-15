@@ -6,6 +6,7 @@ class FakeUnitOfWork:
         self.commit_call_count = 0
         self.rollback_call_count = 0
         self.raise_on_commit: Optional[Exception] = None
+        self.raise_on_rollback: Optional[Exception] = None
 
     async def commit(self) -> None:
         if self.raise_on_commit is not None:
@@ -14,3 +15,5 @@ class FakeUnitOfWork:
 
     async def rollback(self) -> None:
         self.rollback_call_count += 1
+        if self.raise_on_rollback is not None:
+            raise self.raise_on_rollback
