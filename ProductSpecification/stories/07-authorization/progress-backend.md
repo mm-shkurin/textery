@@ -159,12 +159,12 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-acceptance — no new acceptance test (per red-acceptance note: no HTTP-observable lever exists to force a mid-registration failure; the atomicity guarantee is proven at red-usecase/red-adapter layers instead). Full authorization acceptance suite re-run for regression against the running local backend: 20 passed, 0 failed — scenario 2.1's happy-path registration test still succeeds with the new UnitOfWork transactional wrapper in place. (Note: this checkbox was accidentally dropped from the file during an earlier automated insert and is restored here alongside the actual green-acceptance work.)
 
 ### Scenario 2.6: Verification code round-trips with leading zeros preserved
-- [ ] red-acceptance
-- [ ] design
-- [ ] red-usecase
-- [ ] green-usecase
-- [ ] adapters-discovery
-- [ ] green-acceptance
+- [S] red-acceptance — capability already proven by scenario 2.1's `test_register_valid_acceptance.py`: `assert_valid_verification_code()` (`acceptance/statements/verification_code_assertions.py`) asserts `isinstance(str)` and `re.fullmatch(r"[0-9]{6}", ...)` on every registration's response, unconditionally — a lost leading zero would produce a 5-digit string and fail this regex on any run, not just a targeted one. Verified every layer treats the code as an opaque string: `VerificationCode.generate()` zero-pads via `f"{...:06d}"` (never int); `verification_code_model.py`'s `code` column is `String(6)`/VARCHAR, not Integer; `register_response_dto.py`'s `verification_code` field is `str`, no numeric cast anywhere in the chain.
+- [S] design — no gap, no new behavior
+- [S] red-usecase — no new usecase behavior, code generation already zero-pads to a fixed-width string
+- [S] green-usecase — nothing to implement
+- [S] adapters-discovery — DB column is String(6) not Integer, DTO field is str not int; no adapter gap
+- [S] green-acceptance — nothing to make green, already covered end-to-end by scenario 2.1
 
 ### Scenario 2.7: Password is NFC-normalized before hashing
 - [ ] red-acceptance

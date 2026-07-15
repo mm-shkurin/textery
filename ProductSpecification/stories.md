@@ -5,7 +5,7 @@
 | #  | Story                         | Spec | Back | Intg | Front | Sec | Load | Infra | Tests | %  |
 |----|-------------------------------|------|------|------|-----|-------|------|-------|-------|----|
 | 1  | Auto-generate: доклад          | ✅   | 🔧   | —    | 🔧   | —     | —    | —     | 12/74 | 16% |
-| 7  | Authorization (email+password w/ mocked code, Yandex ID, VK ID) | ✅ | 🔧 | — | · | —     | —    | —     | 14/63 | 22% |
+| 7  | Authorization (email+password w/ mocked code, Yandex ID, VK ID) | ✅ | 🔧 | — | · | —     | —    | —     | 15/63 | 24% |
 
 # Backlog — Core sequence (build order, decided 2026-07-06)
 
