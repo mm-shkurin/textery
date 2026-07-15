@@ -75,10 +75,7 @@ describe('VerifyCodeForm', () => {
   })
 
   describe('confirm button', () => {
-    // TDD Red Phase: VerifyCodeForm has no confirm/submit button yet.
-    // Actual failure: TestingLibraryElementError: Unable to find an element by:
-    // [data-testid="verify-confirm-button"] (thrown from screen.getByTestId)
-    it.skip('disables the confirm button immediately after click', () => {
+    it('disables the confirm button immediately after click', () => {
       renderWithRouter(<VerifyCodeForm />)
       const confirmButton = screen.getByTestId('verify-confirm-button')
       expect(confirmButton).toHaveTextContent('Подтвердить')

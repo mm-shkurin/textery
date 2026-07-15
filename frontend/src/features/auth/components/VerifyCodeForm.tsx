@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { resendCode } from '../api/authApi'
+import { useSubmitPlaceholder } from '../hooks/useSubmitPlaceholder'
 import './AuthForm.css'
 import './VerifyCodeForm.css'
 
@@ -21,6 +22,7 @@ export function VerifyCodeForm({ email }: VerifyCodeFormProps) {
   const [isResending, setIsResending] = useState(false)
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''))
   const inputRefs = useRef<Array<HTMLInputElement | null>>([])
+  const { isSubmitting, handleSubmit } = useSubmitPlaceholder()
 
   function handleDigitChange(index: number, value: string) {
     setDigits((previous) => {
@@ -49,22 +51,32 @@ export function VerifyCodeForm({ email }: VerifyCodeFormProps) {
   return (
     <div className="auth-card verify-code-card">
       <h1>Введите код подтверждения</h1>
-      <div className="verify-code-inputs">
-        {Array.from({ length: CODE_LENGTH }, (_, index) => (
-          <input
-            key={index}
-            ref={(element) => {
-              inputRefs.current[index] = element
-            }}
-            type="text"
-            inputMode="numeric"
-            maxLength={1}
-            value={digits[index]}
-            onChange={(event) => handleDigitChange(index, event.target.value)}
-            data-testid={`verify-code-input-${index}`}
-          />
-        ))}
-      </div>
+      <form onSubmit={handleSubmit}>
+        <div className="verify-code-inputs">
+          {Array.from({ length: CODE_LENGTH }, (_, index) => (
+            <input
+              key={index}
+              ref={(element) => {
+                inputRefs.current[index] = element
+              }}
+              type="text"
+              inputMode="numeric"
+              maxLength={1}
+              value={digits[index]}
+              onChange={(event) => handleDigitChange(index, event.target.value)}
+              data-testid={`verify-code-input-${index}`}
+            />
+          ))}
+        </div>
+        <button
+          type="submit"
+          className="auth-submit"
+          data-testid="verify-confirm-button"
+          disabled={isSubmitting}
+        >
+          Подтвердить
+        </button>
+      </form>
       <p className="verify-resend">
         <span data-testid="verify-resend-countdown">{formatCountdown(countdownSeconds)}</span>
         <button
