@@ -32,6 +32,10 @@
   color: var(--text-primary);
 }
 
+/* If a future action combines disabled + aria-pressed='true', add
+   background/color overrides here — same specificity as the pressed
+   rule above means source order wins, and the pressed highlight would
+   leak through at reduced opacity instead of reading as disabled. */
 .me-toolbar-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
