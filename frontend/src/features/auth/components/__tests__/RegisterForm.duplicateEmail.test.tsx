@@ -1,0 +1,96 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { renderWithRouter } from '../../../../test/renderWithRouter'
+import { RegisterForm } from '../RegisterForm'
+import * as api from '../../api/registerApi'
+
+vi.mock('../../api/registerApi', () => ({
+  register: vi.fn(),
+}))
+
+const VALID_EMAIL = 'user@example.com'
+const VALID_PASSWORD = 'Str0ng!Pass'
+const DUPLICATE_EMAIL_ERROR = {
+  errorCode: 'EMAIL_ALREADY_EXISTS',
+  message: 'Аккаунт с таким email уже существует',
+}
+
+function renderAndFill() {
+  renderWithRouter(<RegisterForm />)
+  const emailInput = screen.getByTestId('register-email-input')
+  const passwordInput = screen.getByTestId('register-password-input')
+  const confirmInput = screen.getByTestId('register-confirm-password-input')
+  fireEvent.change(emailInput, { target: { value: VALID_EMAIL } })
+  fireEvent.change(passwordInput, { target: { value: VALID_PASSWORD } })
+  fireEvent.change(confirmInput, { target: { value: VALID_PASSWORD } })
+  return { emailInput, submitButton: screen.getByTestId('register-submit-button') }
+}
+
+describe('RegisterForm duplicate-email error', () => {
+  afterEach(() => {
+    vi.mocked(api.register).mockReset()
+  })
+
+  it('calls registerApi.register with the entered email and password on submit', async () => {
+    vi.mocked(api.register).mockResolvedValue({ email: VALID_EMAIL })
+    const { submitButton } = renderAndFill()
+
+    fireEvent.click(submitButton)
+
+    await waitFor(() => expect(api.register).toHaveBeenCalledTimes(1))
+    expect(api.register).toHaveBeenCalledWith(VALID_EMAIL, VALID_PASSWORD)
+  })
+
+  it('displays the duplicate-email error near the email field when register rejects with EMAIL_ALREADY_EXISTS', async () => {
+    vi.mocked(api.register).mockRejectedValue(DUPLICATE_EMAIL_ERROR)
+    const { submitButton } = renderAndFill()
+
+    fireEvent.click(submitButton)
+
+    const error = await screen.findByTestId('register-email-error')
+    expect(error).toHaveTextContent(DUPLICATE_EMAIL_ERROR.message)
+  })
+
+  it('does not display an email error while the register call is still pending', async () => {
+    let resolveRegister: (value: { email: string }) => void = () => {}
+    vi.mocked(api.register).mockReturnValue(
+      new Promise((resolve) => {
+        resolveRegister = resolve
+      }),
+    )
+    const { submitButton } = renderAndFill()
+
+    fireEvent.click(submitButton)
+
+    await waitFor(() => expect(api.register).toHaveBeenCalledTimes(1))
+    expect(screen.queryByTestId('register-email-error')).not.toBeInTheDocument()
+
+    resolveRegister({ email: VALID_EMAIL })
+  })
+
+  it('does not display an email error after a successful registration', async () => {
+    vi.mocked(api.register).mockResolvedValue({ email: VALID_EMAIL })
+    const { submitButton } = renderAndFill()
+
+    fireEvent.click(submitButton)
+
+    await waitFor(() => expect(api.register).toHaveBeenCalledTimes(1))
+    expect(screen.queryByTestId('register-email-error')).not.toBeInTheDocument()
+  })
+
+  it('clears a previous duplicate-email error after a corrected resubmission succeeds', async () => {
+    vi.mocked(api.register).mockRejectedValueOnce(DUPLICATE_EMAIL_ERROR)
+    const { emailInput, submitButton } = renderAndFill()
+
+    fireEvent.click(submitButton)
+    await screen.findByTestId('register-email-error')
+
+    vi.mocked(api.register).mockResolvedValueOnce({ email: 'other@example.com' })
+    fireEvent.change(emailInput, { target: { value: 'other@example.com' } })
+    await waitFor(() => expect(submitButton).not.toBeDisabled())
+    fireEvent.click(submitButton)
+
+    await waitFor(() => expect(api.register).toHaveBeenCalledTimes(2))
+    expect(screen.queryByTestId('register-email-error')).not.toBeInTheDocument()
+  })
+})
