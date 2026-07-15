@@ -112,9 +112,7 @@ class RegisterAtomicWriteStatements:
             f"got {len(self.verification_code_repository.saved_codes)}"
         )
 
-    def assert_registration_failed_error_raised(
-        self, expected_saved_codes_count: int, expected_saved_accounts_count: int = 1
-    ) -> None:
+    def _assert_registration_failed_shape(self) -> None:
         assert isinstance(self.thrown_exception, RegistrationFailedException), (
             f"expected RegistrationFailedException to be raised, got "
             f"{type(self.thrown_exception).__name__ if self.thrown_exception else 'no exception'}"
@@ -127,6 +125,11 @@ class RegisterAtomicWriteStatements:
             f"expected raised exception message to exclude raw driver/SQL detail, "
             f"got '{self.thrown_exception.message}'"
         )
+
+    def assert_registration_failed_error_raised(
+        self, expected_saved_codes_count: int, expected_saved_accounts_count: int = 1
+    ) -> None:
+        self._assert_registration_failed_shape()
         assert self.unit_of_work.rollback_call_count == 1, (
             f"expected UnitOfWork.rollback to be called exactly once, "
             f"got {self.unit_of_work.rollback_call_count}"
@@ -145,18 +148,7 @@ class RegisterAtomicWriteStatements:
         )
 
     def assert_registration_failed_error_raised_without_injected_unit_of_work(self) -> None:
-        assert isinstance(self.thrown_exception, RegistrationFailedException), (
-            f"expected RegistrationFailedException to be raised, got "
-            f"{type(self.thrown_exception).__name__ if self.thrown_exception else 'no exception'}"
-        )
-        assert self.thrown_exception.message == self.EXPECTED_REGISTRATION_FAILED_MESSAGE, (
-            f"expected message '{self.EXPECTED_REGISTRATION_FAILED_MESSAGE}', "
-            f"got '{self.thrown_exception.message}'"
-        )
-        assert self.RAW_DRIVER_ERROR_SENTINEL not in self.thrown_exception.message, (
-            f"expected raised exception message to exclude raw driver/SQL detail, "
-            f"got '{self.thrown_exception.message}'"
-        )
+        self._assert_registration_failed_shape()
         assert self.unit_of_work.rollback_call_count == 0, (
             f"expected the injected fake UnitOfWork (unused by this scenario) to record no rollback calls, "
             f"got {self.unit_of_work.rollback_call_count}"
