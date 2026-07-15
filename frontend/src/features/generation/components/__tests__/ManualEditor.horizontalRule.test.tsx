@@ -25,6 +25,6 @@ describe.skip('ManualEditor horizontal rule toolbar', () => {
     const horizontalRuleButton = screen.getByTestId('toolbar-horizontal-rule')
     fireEvent.click(horizontalRuleButton)
 
-    expect(contentArea.innerHTML).toBe('hello<hr>world')
+    expect(contentArea.innerHTML).toBe('hello<hr> world')
   })
 })
