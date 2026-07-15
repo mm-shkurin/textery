@@ -24,3 +24,12 @@ export async function createDocument(documentType: string): Promise<CreateDocume
   const data = await res.json()
   return { documentId: data.document_id, status: data.status }
 }
+
+export interface SaveDocumentResult {
+  status: string
+  version: number
+}
+
+export async function saveDocument(): Promise<SaveDocumentResult> {
+  throw new Error('Not implemented')
+}

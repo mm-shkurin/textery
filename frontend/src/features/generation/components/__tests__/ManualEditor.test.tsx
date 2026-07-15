@@ -92,4 +92,34 @@ describe('ManualEditor', () => {
       expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
     })
   })
+
+  // RED: expect(element).toBeDisabled() -- "Received element is not disabled" --
+  // the save button has no onClick handler yet, so clicking it never enters a
+  // loading/disabled state and documentApi.saveDocument is never invoked.
+  it.skip('clicking Сохранить shows a loading state, disables the button, and ignores a second click while in flight', async () => {
+    await renderEditorWithDocumentCreated()
+
+    const contentArea = screen.getByTestId('editor-content-area')
+    contentArea.textContent = 'hello world'
+    fireEvent.input(contentArea)
+
+    let resolveSave: (value: { status: string; version: number }) => void = () => {}
+    const savePromise = new Promise<{ status: string; version: number }>((resolve) => {
+      resolveSave = resolve
+    })
+    vi.mocked(documentApi.saveDocument).mockReturnValue(savePromise)
+
+    const saveButton = screen.getByRole('button', { name: 'Сохранить' })
+    fireEvent.click(saveButton)
+
+    expect(saveButton).toBeDisabled()
+    expect(screen.getByTestId('save-spinner')).toBeInTheDocument()
+
+    fireEvent.click(saveButton)
+
+    expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
+    expect(documentApi.saveDocument).toHaveBeenCalledWith()
+
+    resolveSave({ status: 'saved', version: 2 })
+  })
 })
