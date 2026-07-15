@@ -151,14 +151,14 @@ so its red-frontend step must add the button first.
 - [ ] demo
 
 ### 3.2: Login submission shows a loading state
-- [ ] red-selenium (deferred — no backend dependency, same client-side useSubmitPlaceholder mechanism as Scenario 2.3a's login/confirm sub-cases which ran with no backend; blocker is the frontend container's docker build hitting a stale frontend/dist artifact, not backend, see progress.md note)
+- [x] red-selenium (docker build blocker resolved 2026-07-15; test passed on first run — feature already implemented via green-frontend commit 8cdce1f, no RED state achievable, same class as Scenario 2.3a's confirm sub-case. New test `test_login_submit_loading_indicator_acceptance.py` + `LoginPageStatements.assert_loading_indicator_is_visible`, test-review extracted shared `_assert_visible` helper into `BaseFrontendStatements` to dedupe against RegisterPageStatements. 1 passed)
 - [x] red-frontend (LoginForm.test.tsx "shows a visible loading indicator while submitting and removes it once settled"; RED confirmed live — TestingLibraryElementError, no login-loading-indicator element; asserts absence before, className on appearance, and disappearance after settle, closing the coverage gap premortem flagged on Scenario 3.1's register indicator; test-review found nothing to tighten)
 - [x] green-frontend (added login-loading-indicator element while isSubmitting, mirroring RegisterForm; also added `role="status"`/`aria-live="polite"` to both Login and Register indicators, addressing the missing-a11y-guard CONCERNS from Scenario 3.1's and this scenario's premortem passes. Refactor extracted shared AuthLoadingIndicator component (commit 8cdce1f). agent-review then flagged the a11y attrs and disappearance-after-settle behavior were unguarded by any test in either LoginForm.test.tsx or RegisterForm.test.tsx despite the commit message claiming coverage — retrofit both test files with role/aria-live/disappearance assertions to close that gap. 11 passed)
 - [S] red-frontend-api — no real login API call exists yet, same scoping decision as Scenario 2.3's login test (line 129) and register (line 147): loading state is a pure client-side placeholder via useSubmitPlaceholder, no endpoint to test against
 - [S] green-frontend-api — see above
 - [x] align-design (no styling changes needed — login mockup has no loading-state styling either, and LoginForm already reuses the shared AuthLoadingIndicator/.auth-loading-indicator aligned in Scenario 3.1. design-review PASS (no hardcoded placeholder data))
-- [ ] green-selenium (deferred — same reasoning as Scenario 3.1, docker build blocker, not backend-dependent)
-- [ ] demo
+- [S] green-selenium (test already passes, see red-selenium note above)
+- [S] demo (skipped per convention, see note above)
 
 ### 4.1: Password policy hint shown inline
 - [ ] red-selenium (deferred — docker build blocker, not backend-dependent, same as 3.1/3.2)

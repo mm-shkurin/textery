@@ -70,8 +70,7 @@ class RegisterPageStatements(BaseFrontendStatements):
         driver.execute_script("arguments[0].click();", element)
 
     def assert_loading_indicator_is_visible(self, driver: WebDriver) -> None:
-        element = self._wait_for_visible(driver, LOADING_INDICATOR)
-        assert element.is_displayed(), "expected loading indicator to be visible while submission is in flight"
+        self._assert_visible(driver, LOADING_INDICATOR, "loading indicator")
 
     def assert_no_duplicate_registration_request(self, driver: WebDriver) -> None:
         request_count = self._count_requests_to(driver, REGISTER_REQUEST_PATH)

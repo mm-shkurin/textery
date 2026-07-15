@@ -52,6 +52,10 @@ class BaseFrontendStatements:
             f"expected submit button text '{expected_text}', got '{element.text}'"
         )
 
+    def _assert_visible(self, driver: WebDriver, locator: tuple[str, str], label: str) -> None:
+        element = self._wait_for_visible(driver, locator)
+        assert element.is_displayed(), f"expected {label} to be visible"
+
     def _assert_disabled(self, driver: WebDriver, locator: tuple[str, str], label: str) -> None:
         element = self._wait_for_visible(driver, locator)
         try:

@@ -9,6 +9,7 @@ EMAIL_INPUT = (By.CSS_SELECTOR, "[data-testid='login-email-input']")
 PASSWORD_INPUT = (By.CSS_SELECTOR, "[data-testid='login-password-input']")
 SUBMIT_BUTTON = (By.CSS_SELECTOR, "[data-testid='login-submit-button']")
 PASSWORD_TOGGLE = (By.CSS_SELECTOR, "[data-testid='login-password-toggle']")
+LOADING_INDICATOR = (By.CSS_SELECTOR, "[data-testid='login-loading-indicator']")
 
 
 class LoginPageStatements(BaseFrontendStatements):
@@ -60,3 +61,6 @@ class LoginPageStatements(BaseFrontendStatements):
 
     def assert_submit_button_is_disabled(self, driver: WebDriver) -> None:
         self._assert_disabled(driver, SUBMIT_BUTTON, "submit button")
+
+    def assert_loading_indicator_is_visible(self, driver: WebDriver) -> None:
+        self._assert_visible(driver, LOADING_INDICATOR, "loading indicator")
