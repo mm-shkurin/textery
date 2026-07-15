@@ -93,8 +93,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] red-acceptance — registers `user-{uuid}@example.ru` then `USER-{uuid}@Example.ru` (same local part, different case); fails with `expected 409 Conflict (duplicate email), got status_code=201` as predicted (current unique constraint is case-sensitive, mixed-case duplicate slips through)
 - [x] design (see `decisions/case-folded-email-uniqueness-decision.md`) — normalize email to lowercase inside the `Email` value object (`Email.value` returns the canonical form); `RegisterUser.execute` persists `Email(email).value` instead of the raw request casing. No new migration: scenario 2.2's `uq_accounts_email` constraint already enforces uniqueness once storage is canonical. Rejected app-level case-insensitive check-then-insert (reopens the 2.2 TOCTOU race) and a separate functional unique index (leaves the raw column un-normalized, breaks future case-insensitive login). Addresses both credible premortem incidents on the red-acceptance commit.
 - [x] red-usecase — two tests: `Email("User@Example.RU").value` should return lowercased `"user@example.ru"` (fails: raw value unchanged); `RegisterUser.execute` should persist the normalized email (fails: raw casing persisted). Both fail as predicted. test-review strengthened the usecase assertion to cover full Account round-trip (id/is_verified/created_at, not just email) and deduplicated `register_statements.py` back under the 200-line limit.
-- [~] green-usecase
-- [ ] adapters-discovery
+- [x] green-usecase — `Email.__init__` now lowercases `raw_value` after validation; `RegisterUser.execute` uses `email_value_object.value` (normalized) instead of the raw email string. Coverage: `register_user.py` 100%; `email.py` 95% (one pre-existing uncovered branch from scenario 1.1's length guard, out of scope here). domain 11 passed, usecase 46 passed, no regressions.
+- [~] adapters-discovery
 - [ ] green-acceptance
 
 ### Scenario 2.4: A retried identical registration request produces exactly one account

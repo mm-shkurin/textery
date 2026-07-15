@@ -3,7 +3,6 @@ import pytest
 from statements.register_statements import RegisterStatements
 
 
-@pytest.mark.skip(reason="RED: RegisterUser.execute persists raw email casing 'User@Example.RU' instead of normalized 'user@example.ru'")
 class TestRegisterUsecaseEmailNormalization:
     """Scenario 2.3: Case-folded email uniqueness.
 

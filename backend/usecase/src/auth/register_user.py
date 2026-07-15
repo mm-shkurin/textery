@@ -38,7 +38,7 @@ class RegisterUser:
 
     async def execute(self, email: str, password: str, confirm_password: str) -> RegistrationResult:
         try:
-            Email(email)
+            email_value_object = Email(email)
         except ValueError:
             raise ValidationException(
                 error_code="INVALID_EMAIL",
@@ -59,7 +59,7 @@ class RegisterUser:
         created_at = self.clock.now()
         account = Account.create(
             id=uuid4(),
-            email=email,
+            email=email_value_object.value,
             password_hash=password,
             created_at=created_at,
         )

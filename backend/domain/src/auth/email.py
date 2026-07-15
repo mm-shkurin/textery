@@ -20,7 +20,7 @@ class Email:
     def __init__(self, raw_value: str) -> None:
         if not self._is_valid(raw_value):
             raise ValueError("Invalid email format.")
-        self._value = raw_value
+        self._value = raw_value.lower()
 
     @staticmethod
     def _is_valid(raw_value: str) -> bool:
