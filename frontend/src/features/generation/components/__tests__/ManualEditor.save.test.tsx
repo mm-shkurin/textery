@@ -177,4 +177,48 @@ describe('ManualEditor save flow', () => {
     expect(screen.queryByText('Сохранено')).not.toBeInTheDocument()
     expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
   })
+
+  it('editing content while a save is in flight, without clicking Сохранить again, still auto-retriggers and never shows a false "Сохранено"', async () => {
+    await renderEditorWithDocumentCreated()
+
+    const contentArea = screen.getByTestId('editor-content-area')
+    contentArea.textContent = 'first content'
+    fireEvent.input(contentArea)
+
+    let resolveFirstSave: (value: { status: string; version: number }) => void = () => {}
+    const firstSavePromise = new Promise<{ status: string; version: number }>((resolve) => {
+      resolveFirstSave = resolve
+    })
+    let resolveSecondSave: (value: { status: string; version: number }) => void = () => {}
+    const secondSavePromise = new Promise<{ status: string; version: number }>((resolve) => {
+      resolveSecondSave = resolve
+    })
+    vi.mocked(documentApi.saveDocument)
+      .mockReturnValueOnce(firstSavePromise)
+      .mockReturnValueOnce(secondSavePromise)
+
+    const saveButton = screen.getByRole('button', { name: 'Сохранить' })
+    fireEvent.click(saveButton)
+
+    expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
+
+    // Edit only, no second click, while the first save is still in flight.
+    contentArea.textContent = 'second content'
+    fireEvent.input(contentArea)
+
+    resolveFirstSave({ status: 'saved', version: 2 })
+
+    await waitFor(() => {
+      expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
+    })
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', 'second content', 2)
+    expect(screen.queryByText('Сохранено')).not.toBeInTheDocument()
+    expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
+
+    resolveSecondSave({ status: 'saved', version: 3 })
+
+    await waitFor(() => {
+      expect(screen.getByText('Сохранено')).toBeInTheDocument()
+    })
+  })
 })

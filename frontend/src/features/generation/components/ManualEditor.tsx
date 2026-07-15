@@ -22,11 +22,12 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
   const [version, setVersion] = useState(1)
   const [isSaving, setIsSaving] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(true)
+  const isSavingRef = useRef(false)
   const saveAgainRequested = useRef(false)
 
   const handleSave = () => {
     if (!documentId || !editor) return
-    if (isSaving) {
+    if (isSavingRef.current) {
       saveAgainRequested.current = true
       return
     }
@@ -35,7 +36,9 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
 
   const performSave = (saveVersion: number) => {
     if (!documentId || !editor) return
+    isSavingRef.current = true
     setIsSaving(true)
+    saveAgainRequested.current = false
     saveDocument(documentId, editor.getHTML(), saveVersion)
       .then((result) => {
         setVersion(result.version)
@@ -43,6 +46,7 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
           saveAgainRequested.current = false
           performSave(result.version)
         } else {
+          isSavingRef.current = false
           setIsSaving(false)
           setHasUnsavedChanges(false)
         }
@@ -56,6 +60,7 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
         // fire later, but keep the user's latest content in the editor untouched
         // so they can manually retry by clicking Save again.
         saveAgainRequested.current = false
+        isSavingRef.current = false
         setIsSaving(false)
       })
   }
@@ -83,6 +88,15 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
       handleDOMEvents: {
         input: (view, event) => {
           setHasUnsavedChanges(true)
+          // An edit that lands while a save is already in flight must queue a
+          // re-save even without an explicit second click on "Сохранить" —
+          // otherwise the in-flight save's resolve handler has no signal that
+          // newer, unsent content exists and would wrongly mark the document
+          // clean (see premortem/agent-review CONCERNS on scenario 5.1's
+          // green-frontend commit).
+          if (isSavingRef.current) {
+            saveAgainRequested.current = true
+          }
           return flushDomObserverOnInput(view, event)
         },
         select: syncNativeSelectionToProseMirror,
