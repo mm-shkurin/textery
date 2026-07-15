@@ -132,8 +132,8 @@ so its red-frontend step must add the button first.
 - [x] green-frontend (confirm: add the Confirm button + wire useSubmitPlaceholder)
 - [S] red-frontend-api (confirm) — no real verify-confirm API call exists yet, same scoping decision as login/register
 - [S] green-frontend-api (confirm) — see above
-- [~] red-selenium (confirm: once the button exists, add its own acceptance test)
-- [ ] green-selenium (confirm)
+- [x] red-selenium (confirm: test_verify_confirm_disabled_while_in_flight_acceptance.py — since green-frontend (confirm) already wired useSubmitPlaceholder with a genuine 500ms delay, predicted and confirmed PASS on first run, no RED state; not marked skip)
+- [S] green-selenium (confirm) — test already passes, see red-selenium note above
 - [S] red-frontend-api (resend, already implemented in Scenario 1.3)
 - [S] green-frontend-api (resend, already implemented in Scenario 1.3)
 - [ ] align-design (covers both LoginForm's new disabled-state styling and VerifyCodeForm's new Confirm button)

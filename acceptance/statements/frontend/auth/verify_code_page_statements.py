@@ -8,6 +8,7 @@ from statements.frontend.base_frontend_statements import BaseFrontendStatements
 CODE_INPUT_COUNT = 6
 RESEND_BUTTON = (By.CSS_SELECTOR, "[data-testid='verify-resend-button']")
 RESEND_COUNTDOWN = (By.CSS_SELECTOR, "[data-testid='verify-resend-countdown']")
+CONFIRM_BUTTON = (By.CSS_SELECTOR, "[data-testid='verify-confirm-button']")
 
 
 def _code_input_locator(index: int) -> tuple[str, str]:
@@ -76,3 +77,9 @@ class VerifyCodePageStatements(BaseFrontendStatements):
             f"expected resend countdown '{self.EXPECTED_INITIAL_COUNTDOWN_TEXT}', "
             f"got '{countdown.text}'"
         )
+
+    def click_confirm_button(self, driver: WebDriver) -> None:
+        self._wait_for_visible(driver, CONFIRM_BUTTON).click()
+
+    def assert_confirm_button_is_disabled(self, driver: WebDriver) -> None:
+        self._assert_disabled(driver, CONFIRM_BUTTON, "confirm button")
