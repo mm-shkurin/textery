@@ -1,9 +1,6 @@
-import pytest
-
 from statements.register_atomic_write_statements import RegisterAtomicWriteStatements
 
 
-@pytest.mark.skip(reason="RED: RegisterUser does not accept a unit_of_work dependency yet")
 class TestRegisterUsecaseAtomicWrite:
     """Scenario 2.5: Registration writes the account and the verification code atomically.
 

@@ -10,7 +10,8 @@ from auth.registration_result import RegistrationResult
 from auth.verification_code import VerificationCode
 from auth.verification_code_repository import VerificationCodeRepository
 from shared.clock import Clock
-from shared.exceptions import ConflictException, ValidationException
+from shared.exceptions import ConflictException, RegistrationFailedException, ValidationException
+from shared.unit_of_work import UnitOfWork
 
 
 class _SystemClock:
@@ -23,18 +24,32 @@ class _NullRepository:
         return None
 
 
+class _NullUnitOfWork:
+    async def commit(self) -> None:
+        return None
+
+    async def rollback(self) -> None:
+        return None
+
+
 class RegisterUser:
+    REGISTRATION_FAILED_MESSAGE = (
+        "Registration could not be completed due to an unexpected error. Please try again."
+    )
+
     def __init__(
         self,
         account_repository: Optional[AccountRepository] = None,
         clock: Optional[Clock] = None,
         verification_code_repository: Optional[VerificationCodeRepository] = None,
+        unit_of_work: Optional[UnitOfWork] = None,
     ) -> None:
         self.account_repository = account_repository or _NullRepository()
         self.clock = clock or _SystemClock()
         self.verification_code_repository = (
             verification_code_repository or _NullRepository()
         )
+        self.unit_of_work = unit_of_work or _NullUnitOfWork()
 
     async def execute(self, email: str, password: str, confirm_password: str) -> RegistrationResult:
         try:
@@ -76,6 +91,14 @@ class RegisterUser:
             account_id=account.id,
             created_at=created_at,
         )
-        await self.verification_code_repository.save(verification_code)
+        try:
+            await self.verification_code_repository.save(verification_code)
+            await self.unit_of_work.commit()
+        except Exception:
+            try:
+                await self.unit_of_work.rollback()
+            except Exception:
+                pass
+            raise RegistrationFailedException(message=self.REGISTRATION_FAILED_MESSAGE)
 
         return RegistrationResult(account=account, verification_code=verification_code)
