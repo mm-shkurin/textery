@@ -9,6 +9,7 @@ export type ToolbarActionKey =
   | 'bold'
   | 'italic'
   | 'strike'
+  | 'code'
   | 'blockquote'
   | 'horizontalRule'
 
@@ -98,6 +99,14 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     testId: 'toolbar-strike',
     run: (editor) => editor.chain().focus().toggleStrike().run(),
     isActive: (editor) => editor.isActive('strike'),
+  },
+  {
+    key: 'code',
+    label: '<>',
+    ariaLabel: 'Код',
+    testId: 'toolbar-code',
+    run: (editor) => editor.chain().focus().toggleCode().run(),
+    isActive: (editor) => editor.isActive('code'),
   },
   {
     key: 'blockquote',

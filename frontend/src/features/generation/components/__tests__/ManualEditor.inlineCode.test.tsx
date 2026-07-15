@@ -5,8 +5,7 @@ import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
 vi.mock('../../api/documentApi')
 
 describe('ManualEditor inline code toolbar', () => {
-  // RED (scenario 7.4): inline-code toolbar button does not exist yet
-  it.skip('applying inline code to selected text wraps it in <code> and marks the code button active', async () => {
+  it('applying inline code to selected text wraps it in <code> and marks the code button active', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')
@@ -31,8 +30,7 @@ describe('ManualEditor inline code toolbar', () => {
     expect(codeButton).toHaveAttribute('aria-pressed', 'true')
   })
 
-  // RED (scenario 7.4): inline-code toolbar button does not exist yet
-  it.skip('moving the cursor from inline code to non-code text deactivates the code toolbar button', async () => {
+  it('moving the cursor from inline code to non-code text deactivates the code toolbar button', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')
