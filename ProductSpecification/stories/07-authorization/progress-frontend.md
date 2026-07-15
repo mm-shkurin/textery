@@ -147,14 +147,14 @@ so its red-frontend step must add the button first.
 - [S] red-frontend-api — no real register API call exists yet, same scoping decision as Scenario 2.3's register test and login/confirm (line 129/133): loading state is a pure client-side placeholder via useSubmitPlaceholder, no endpoint to test against
 - [S] green-frontend-api — see above
 - [x] align-design (mockup has no loading-state styling — new element was previously unstyled, defaulting to black text on dark card, invisible. Added shared `.auth-loading-indicator` class in AuthForm.css (14px, #9a9ba3, centered) so it reads like other muted auth-form text. design-review PASS (no hardcoded placeholder data), test-coverage focus PASS (100% on touched lines, no gaps))
-- [ ] green-selenium (deferred — requires running backend+frontend containers, out of frontend session's file-ownership scope; resume once backend session/infra available)
+- [ ] green-selenium (deferred — no backend dependency, pure client-side useSubmitPlaceholder; blocker is the frontend container's docker build hitting a stale frontend/dist artifact — `invalid file request frontend/dist/assets/index-*.js` — clean the dist dir and retry frontend-only container build to unblock)
 - [ ] demo
 
 ### 3.2: Login submission shows a loading state
-- [ ] red-selenium (deferred — requires running backend+frontend containers, out of scope this session; will backfill after red-frontend/green-frontend land)
+- [ ] red-selenium (deferred — no backend dependency, same client-side useSubmitPlaceholder mechanism as Scenario 2.3a's login/confirm sub-cases which ran with no backend; blocker is the frontend container's docker build hitting a stale frontend/dist artifact, not backend, see progress.md note)
 - [x] red-frontend (LoginForm.test.tsx "shows a visible loading indicator while submitting and removes it once settled"; RED confirmed live — TestingLibraryElementError, no login-loading-indicator element; asserts absence before, className on appearance, and disappearance after settle, closing the coverage gap premortem flagged on Scenario 3.1's register indicator; test-review found nothing to tighten)
-- [~] green-frontend
-- [ ] red-frontend-api
+- [x] green-frontend (added login-loading-indicator element while isSubmitting, mirroring RegisterForm; also added `role="status"`/`aria-live="polite"` to both Login and Register indicators, addressing the missing-a11y-guard CONCERNS from Scenario 3.1's and this scenario's premortem passes. 11 passed)
+- [~] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
 - [ ] green-selenium

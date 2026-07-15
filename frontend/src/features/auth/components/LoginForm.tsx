@@ -53,6 +53,16 @@ export function LoginForm() {
         <AuthSubmitButton testId="login-submit-button" isSubmitting={isSubmitting}>
           Войти
         </AuthSubmitButton>
+        {isSubmitting && (
+          <div
+            className="auth-loading-indicator"
+            data-testid="login-loading-indicator"
+            role="status"
+            aria-live="polite"
+          >
+            Загрузка...
+          </div>
+        )}
       </form>
       <p className="auth-footer-link">
         Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>

@@ -48,7 +48,12 @@ export function RegisterForm() {
           Зарегистрироваться
         </AuthSubmitButton>
         {isSubmitting && (
-          <div className="auth-loading-indicator" data-testid="register-loading-indicator">
+          <div
+            className="auth-loading-indicator"
+            data-testid="register-loading-indicator"
+            role="status"
+            aria-live="polite"
+          >
             Загрузка...
           </div>
         )}
