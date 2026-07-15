@@ -12,6 +12,7 @@ CONFIRM_PASSWORD_INPUT = (By.CSS_SELECTOR, "[data-testid='register-confirm-passw
 SUBMIT_BUTTON = (By.CSS_SELECTOR, "[data-testid='register-submit-button']")
 LOADING_INDICATOR = (By.CSS_SELECTOR, "[data-testid='register-loading-indicator']")
 PASSWORD_ERROR = (By.CSS_SELECTOR, "[data-testid='register-password-error']")
+CONFIRM_ERROR = (By.CSS_SELECTOR, "[data-testid='register-confirm-error']")
 REGISTER_REQUEST_PATH = "/api/v1/auth/register"
 
 
@@ -90,6 +91,24 @@ class RegisterPageStatements(BaseFrontendStatements):
         )
         assert element.text.strip() == expected_text, (
             f"expected password policy error text '{expected_text}', got '{element.text}'"
+        )
+
+    def fill_confirm_password_field(self, driver: WebDriver, confirm: str) -> None:
+        self._wait_for_visible(driver, CONFIRM_PASSWORD_INPUT).send_keys(confirm)
+
+    def blur_confirm_password_field(self, driver: WebDriver) -> None:
+        self._wait_for_visible(driver, CONFIRM_PASSWORD_INPUT).send_keys(Keys.TAB)
+
+    def assert_confirm_mismatch_error_is_visible(self, driver: WebDriver, expected_text: str) -> None:
+        element = self._wait_for_visible(driver, CONFIRM_ERROR)
+        assert element.is_displayed(), "expected confirm mismatch error to be visible"
+        classes = element.get_attribute("class").split()
+        assert "register-hint-error" in classes, (
+            f"expected confirm mismatch error element's class list to contain 'register-hint-error', "
+            f"got {classes}"
+        )
+        assert element.text.strip() == expected_text, (
+            f"expected confirm mismatch error text '{expected_text}', got '{element.text}'"
         )
 
     def assert_no_duplicate_registration_request(self, driver: WebDriver) -> None:
