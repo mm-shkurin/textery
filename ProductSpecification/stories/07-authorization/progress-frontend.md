@@ -146,8 +146,8 @@ so its red-frontend step must add the button first.
 - [x] green-frontend (added `data-testid="register-loading-indicator"` element rendered while `isSubmitting`, mirroring the login flow's placeholder pattern. 3 passed)
 - [S] red-frontend-api — no real register API call exists yet, same scoping decision as Scenario 2.3's register test and login/confirm (line 129/133): loading state is a pure client-side placeholder via useSubmitPlaceholder, no endpoint to test against
 - [S] green-frontend-api — see above
-- [~] align-design
-- [ ] green-selenium
+- [x] align-design (mockup has no loading-state styling — new element was previously unstyled, defaulting to black text on dark card, invisible. Added shared `.auth-loading-indicator` class in AuthForm.css (14px, #9a9ba3, centered) so it reads like other muted auth-form text. design-review PASS (no hardcoded placeholder data), test-coverage focus PASS (100% on touched lines, no gaps))
+- [~] green-selenium
 - [ ] demo
 
 ### 3.2: Login submission shows a loading state

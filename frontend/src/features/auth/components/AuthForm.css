@@ -1,3 +1,10 @@
+.auth-loading-indicator {
+  font-size: 14px;
+  color: #9a9ba3;
+  text-align: center;
+  margin-top: 12px;
+}
+
 .auth-card {
   width: 420px;
   background: #1a1b1e;
