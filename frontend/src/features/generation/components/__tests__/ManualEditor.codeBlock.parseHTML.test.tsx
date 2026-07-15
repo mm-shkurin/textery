@@ -6,7 +6,7 @@ import * as documentApi from '../../api/documentApi'
 vi.mock('../../api/documentApi')
 
 describe('ManualEditor code block parseHTML', () => {
-  it.skip('loading a saved document containing an existing <pre><code> restores the code block in the editor', async () => {
+  it('loading a saved document containing an existing <pre><code> restores the code block in the editor', async () => {
     vi.mocked(documentApi.createDocument).mockResolvedValue({ documentId: 'doc-1', status: 'draft' })
     vi.mocked(documentApi.getDocument).mockResolvedValue({
       documentId: 'doc-99',

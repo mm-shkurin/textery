@@ -16,7 +16,13 @@ import { Mark, mergeAttributes } from '@tiptap/core'
 export const CodeBlockMark = Mark.create({
   name: 'codeBlock',
   parseHTML() {
-    return [{ tag: 'pre' }]
+    return [
+      {
+        tag: 'code',
+        priority: 60,
+        getAttrs: (dom) => ((dom as HTMLElement).parentElement?.tagName === 'PRE' ? {} : false),
+      },
+    ]
   },
   renderHTML({ HTMLAttributes }) {
     return ['pre', mergeAttributes(HTMLAttributes), ['code', 0]]
