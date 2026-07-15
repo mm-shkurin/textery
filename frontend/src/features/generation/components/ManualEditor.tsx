@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -9,8 +9,7 @@ import { createDocument, saveDocument } from '../api/documentApi'
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
 import { AppHeader } from '../../../shared/components/AppHeader'
 import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from './editorDomSync'
-import { TOOLBAR_ACTIONS, TOOLBAR_DIVIDER_BEFORE } from './editorToolbarActions'
-import { ManualEditorSaveStatus } from './ManualEditorSaveStatus'
+import { ManualEditorToolbar } from './ManualEditorToolbar'
 
 interface ManualEditorProps {
   documentType: DocumentType
@@ -23,6 +22,7 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
   const [version, setVersion] = useState(1)
   const [isSaving, setIsSaving] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(true)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const isSavingRef = useRef(false)
   const saveAgainRequested = useRef(false)
 
@@ -43,6 +43,7 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
     saveDocument(documentId, editor.getHTML(), saveVersion)
       .then((result) => {
         setVersion(result.version)
+        setSaveError(null)
         if (saveAgainRequested.current) {
           saveAgainRequested.current = false
           performSave(result.version)
@@ -53,7 +54,6 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
         }
       })
       .catch((error) => {
-        // Error surfacing (retry/UI state) is out of scope for this scenario;
         // logging keeps the failure from being silently swallowed.
         console.error('Failed to save document', error)
         // Don't auto-retry a queued edit after a real error (out of scope: that's
@@ -63,6 +63,9 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
         saveAgainRequested.current = false
         isSavingRef.current = false
         setIsSaving(false)
+        setSaveError(
+          'Не удалось сохранить документ. Проверьте соединение и попробуйте ещё раз — введённый текст сохранён локально в редакторе.',
+        )
       })
   }
 
@@ -147,46 +150,18 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
           </div>
         </div>
         <div className="me-editor-shell">
-          <div className="me-toolbar">
-            {TOOLBAR_ACTIONS.map((action) => (
-              <Fragment key={action.key}>
-                {TOOLBAR_DIVIDER_BEFORE.has(action.key) && (
-                  <div className="me-toolbar-divider" aria-hidden="true" />
-                )}
-                <button
-                  type="button"
-                  className="me-toolbar-btn"
-                  aria-label={action.ariaLabel}
-                  data-testid={action.testId}
-                  onClick={() => editor && action.run(editor)}
-                  aria-pressed={editor ? action.isActive(editor) : false}
-                >
-                  {action.label}
-                </button>
-              </Fragment>
-            ))}
-            <div className="me-toolbar-status">
-              <ManualEditorSaveStatus documentId={documentId} hasUnsavedChanges={hasUnsavedChanges} />
-              {/*
-                aria-disabled (not the native disabled attribute) so the
-                button keeps receiving click/keyboard events while a save is
-                in flight. A natively disabled <button> never dispatches
-                click at all (not a jsdom quirk — that's spec behavior), so
-                a click during isSaving would be silently lost instead of
-                reaching handleSave's own in-flight guard, which is what
-                queues the "save again" intent.
-              */}
-              <button
-                type="button"
-                className="me-save-btn"
-                aria-disabled={isSaving}
-                onClick={handleSave}
-              >
-                {isSaving && <span data-testid="save-spinner" className="me-save-spinner" aria-hidden="true" />}
-                Сохранить
-              </button>
+          <ManualEditorToolbar
+            editor={editor}
+            documentId={documentId}
+            hasUnsavedChanges={hasUnsavedChanges}
+            isSaving={isSaving}
+            onSave={handleSave}
+          />
+          {saveError && (
+            <div className="me-error-banner" role="alert">
+              {saveError}
             </div>
-          </div>
+          )}
           <div className="me-content-area">
             <EditorContent editor={editor} />
           </div>

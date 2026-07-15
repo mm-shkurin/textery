@@ -57,12 +57,7 @@ describe('ManualEditor save status', () => {
     expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
   })
 
-  // RED (scenario 5.2): a rejected save must show an inline error message and
-  // must never clear the editor's content. No error UI exists yet in
-  // ManualEditor — the reject path only logs to console and re-enables the
-  // button (see scenario 4.2's green-frontend), so the text below has no
-  // matching element in the DOM yet.
-  it.skip('a failed save shows an inline error message and keeps the typed content in the editor', async () => {
+  it('a failed save shows an inline error message and keeps the typed content in the editor', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')
@@ -89,6 +84,48 @@ describe('ManualEditor save status', () => {
       ).toBeInTheDocument()
     })
     expect(contentArea.textContent).toBe('hello world')
+
+    const errorBanner = screen.getByText(
+      'Не удалось сохранить документ. Проверьте соединение и попробуйте ещё раз — введённый текст сохранён локально в редакторе.',
+    )
+    expect(errorBanner).toHaveAttribute('role', 'alert')
+
+    consoleErrorSpy.mockRestore()
+  })
+
+  it('a stale error banner clears once a subsequent retry save succeeds', async () => {
+    await renderEditorWithDocumentCreated()
+
+    const contentArea = screen.getByTestId('editor-content-area')
+    contentArea.textContent = 'hello world'
+    fireEvent.input(contentArea)
+
+    let rejectSave: (error: Error) => void = () => {}
+    const failedSavePromise = new Promise<{ status: string; version: number }>((_resolve, reject) => {
+      rejectSave = reject
+    })
+    vi.mocked(documentApi.saveDocument).mockReturnValueOnce(failedSavePromise)
+
+    const saveButton = screen.getByRole('button', { name: 'Сохранить' })
+    fireEvent.click(saveButton)
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    rejectSave(new Error('network error'))
+
+    const errorMessage =
+      'Не удалось сохранить документ. Проверьте соединение и попробуйте ещё раз — введённый текст сохранён локально в редакторе.'
+
+    await waitFor(() => {
+      expect(screen.getByText(errorMessage)).toBeInTheDocument()
+    })
+
+    vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 2 })
+    fireEvent.click(saveButton)
+
+    await waitFor(() => {
+      expect(screen.getByText('Сохранено')).toBeInTheDocument()
+    })
+    expect(screen.queryByText(errorMessage)).not.toBeInTheDocument()
 
     consoleErrorSpy.mockRestore()
   })
