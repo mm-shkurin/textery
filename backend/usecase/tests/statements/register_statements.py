@@ -58,6 +58,14 @@ class RegisterStatements:
             self.returned_account = result.account
             self.returned_verification_code = result.verification_code
 
+    async def register_with_mixed_case_email_and_return_account(self) -> None:
+        scope = RegisterRequestScope.builder(email="User@Example.RU")
+        self.registered_email = scope.email
+        result = await self._execute_register(scope)
+        if result is not None:
+            self.returned_account = result.account
+            self.returned_verification_code = result.verification_code
+
     async def _execute_register(self, scope: RegisterRequestScope):
         try:
             return await RegisterUser(
@@ -119,10 +127,16 @@ class RegisterStatements:
         )
 
     def assert_account_persisted_with_server_owned_fields(self) -> None:
+        self._assert_account_persisted_with_email(self.registered_email)
+
+    def assert_account_persisted_with_normalized_email(self) -> None:
+        self._assert_account_persisted_with_email("user@example.ru")
+
+    def _assert_account_persisted_with_email(self, expected_email: Optional[str]) -> None:
         self.assert_registration_succeeded()
         assert self.returned_account is not None, "expected RegisterUser.execute to return the persisted Account"
-        assert self.returned_account.email == self.registered_email, (
-            f"expected persisted Account.email to be '{self.registered_email}', "
+        assert self.returned_account.email == expected_email, (
+            f"expected persisted Account.email to be '{expected_email}', "
             f"got '{self.returned_account.email}'"
         )
         assert isinstance(self.returned_account.id, UUID), (
