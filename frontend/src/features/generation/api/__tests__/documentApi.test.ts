@@ -54,4 +54,19 @@ describe('documentApi', () => {
       version: 1,
     })
   })
+
+  it('saveDocument rejects with server error detail on non-OK response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 409,
+        json: async () => ({ detail: 'Версия документа устарела' }),
+      })
+    )
+
+    await expect(saveDocument('doc-1', '<p>Hello</p>', 1)).rejects.toThrow(
+      'Версия документа устарела'
+    )
+  })
 })
