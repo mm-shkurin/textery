@@ -6,11 +6,17 @@ import { PASSWORD_POLICY_HINT } from '../../utils/passwordPolicy'
 
 const MISMATCH_MESSAGE = 'Пароли не совпадают'
 
+function renderRegisterForm() {
+  renderWithRouter(<RegisterForm />)
+  return {
+    passwordInput: screen.getByTestId('register-password-input'),
+    confirmInput: screen.getByTestId('register-confirm-password-input'),
+  }
+}
+
 describe('RegisterForm confirm password validation', () => {
   it('shows an inline validation message when confirm password does not match password on blur', () => {
-    renderWithRouter(<RegisterForm />)
-    const passwordInput = screen.getByTestId('register-password-input')
-    const confirmInput = screen.getByTestId('register-confirm-password-input')
+    const { passwordInput, confirmInput } = renderRegisterForm()
     expect(screen.queryByTestId('register-confirm-error')).not.toBeInTheDocument()
 
     fireEvent.change(passwordInput, { target: { value: 'Str0ng!Pass' } })
@@ -21,9 +27,7 @@ describe('RegisterForm confirm password validation', () => {
   })
 
   it('shows no inline validation message when confirm password matches password on blur', () => {
-    renderWithRouter(<RegisterForm />)
-    const passwordInput = screen.getByTestId('register-password-input')
-    const confirmInput = screen.getByTestId('register-confirm-password-input')
+    const { passwordInput, confirmInput } = renderRegisterForm()
 
     fireEvent.change(passwordInput, { target: { value: 'Str0ng!Pass' } })
     fireEvent.change(confirmInput, { target: { value: 'Str0ng!Pass' } })
@@ -33,9 +37,7 @@ describe('RegisterForm confirm password validation', () => {
   })
 
   it('shows no inline validation message when confirm password is blurred while empty', () => {
-    renderWithRouter(<RegisterForm />)
-    const passwordInput = screen.getByTestId('register-password-input')
-    const confirmInput = screen.getByTestId('register-confirm-password-input')
+    const { passwordInput, confirmInput } = renderRegisterForm()
 
     fireEvent.change(passwordInput, { target: { value: 'Str0ng!Pass' } })
     fireEvent.blur(confirmInput)
@@ -44,8 +46,7 @@ describe('RegisterForm confirm password validation', () => {
   })
 
   it('shows no inline validation message when both password and confirm password are empty on blur', () => {
-    renderWithRouter(<RegisterForm />)
-    const confirmInput = screen.getByTestId('register-confirm-password-input')
+    const { confirmInput } = renderRegisterForm()
 
     fireEvent.blur(confirmInput)
 
@@ -53,9 +54,7 @@ describe('RegisterForm confirm password validation', () => {
   })
 
   it('clears the mismatch error once the confirm password is corrected to match, on the same instance', () => {
-    renderWithRouter(<RegisterForm />)
-    const passwordInput = screen.getByTestId('register-password-input')
-    const confirmInput = screen.getByTestId('register-confirm-password-input')
+    const { passwordInput, confirmInput } = renderRegisterForm()
 
     fireEvent.change(passwordInput, { target: { value: 'Str0ng!Pass' } })
     fireEvent.change(confirmInput, { target: { value: 'Different1!' } })
@@ -69,9 +68,7 @@ describe('RegisterForm confirm password validation', () => {
   })
 
   it('shows both the password policy error and the confirm mismatch error when password is invalid and confirm does not match', () => {
-    renderWithRouter(<RegisterForm />)
-    const passwordInput = screen.getByTestId('register-password-input')
-    const confirmInput = screen.getByTestId('register-confirm-password-input')
+    const { passwordInput, confirmInput } = renderRegisterForm()
 
     fireEvent.change(passwordInput, { target: { value: 'weak' } })
     fireEvent.blur(passwordInput)
