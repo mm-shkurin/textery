@@ -1,4 +1,5 @@
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
+import './ManualEditorSaveStatus.css'
 
 interface ManualEditorSaveStatusProps {
   documentId: string | null

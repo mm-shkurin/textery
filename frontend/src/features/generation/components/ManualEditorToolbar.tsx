@@ -1,5 +1,6 @@
 import { Fragment } from 'react'
 import type { Editor } from '@tiptap/react'
+import './ManualEditorToolbar.css'
 import { TOOLBAR_ACTIONS, TOOLBAR_DIVIDER_BEFORE } from './editorToolbarActions'
 import { ManualEditorSaveStatus } from './ManualEditorSaveStatus'
 
