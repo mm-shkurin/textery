@@ -141,8 +141,8 @@ so its red-frontend step must add the button first.
 - [S] demo (skipped per convention, see note above)
 
 ### 3.1: Registration submission shows a loading state
-- [ ] red-selenium
-- [ ] red-frontend
+- [x] red-selenium (test_register_submit_loading_indicator_acceptance.py, RED confirmed — TimeoutException, no `[data-testid='register-loading-indicator']` element rendered)
+- [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api

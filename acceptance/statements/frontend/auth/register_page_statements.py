@@ -9,6 +9,7 @@ EMAIL_INPUT = (By.CSS_SELECTOR, "[data-testid='register-email-input']")
 PASSWORD_INPUT = (By.CSS_SELECTOR, "[data-testid='register-password-input']")
 CONFIRM_PASSWORD_INPUT = (By.CSS_SELECTOR, "[data-testid='register-confirm-password-input']")
 SUBMIT_BUTTON = (By.CSS_SELECTOR, "[data-testid='register-submit-button']")
+LOADING_INDICATOR = (By.CSS_SELECTOR, "[data-testid='register-loading-indicator']")
 REGISTER_REQUEST_PATH = "/api/v1/auth/register"
 
 
@@ -67,6 +68,10 @@ class RegisterPageStatements(BaseFrontendStatements):
         """
         element = self._wait_for_visible(driver, SUBMIT_BUTTON)
         driver.execute_script("arguments[0].click();", element)
+
+    def assert_loading_indicator_is_visible(self, driver: WebDriver) -> None:
+        element = self._wait_for_visible(driver, LOADING_INDICATOR)
+        assert element.is_displayed(), "expected loading indicator to be visible while submission is in flight"
 
     def assert_no_duplicate_registration_request(self, driver: WebDriver) -> None:
         request_count = self._count_requests_to(driver, REGISTER_REQUEST_PATH)
