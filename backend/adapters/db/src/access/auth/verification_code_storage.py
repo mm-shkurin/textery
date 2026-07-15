@@ -12,4 +12,3 @@ class SqlAlchemyVerificationCodeRepository:
 
     async def save(self, code: VerificationCode) -> None:
         self._session.add(VerificationCodeModel.from_domain(code, created_at=datetime.now(timezone.utc)))
-        await self._session.commit()

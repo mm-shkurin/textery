@@ -13,7 +13,7 @@ from generation.request_generation import RequestGeneration
 from generation.requeue_stale_generations import RequeueStaleGenerations
 from provider.fake_provider import FakeProvider
 from provider.gigachat_provider import GigaChatProvider
-from session import create_engine, create_session_factory
+from session import SqlAlchemyUnitOfWork, create_engine, create_session_factory
 
 GENERATION_PROVIDER_ENV_VAR = "GENERATION_PROVIDER"
 STALE_AFTER_MINUTES_ENV_VAR = "GENERATION_STALE_AFTER_MINUTES"
@@ -85,9 +85,11 @@ async def create_register_user() -> AsyncIterator[RegisterUser]:
     try:
         repository = SqlAlchemyAccountRepository(session)
         verification_code_repository = SqlAlchemyVerificationCodeRepository(session)
+        unit_of_work = SqlAlchemyUnitOfWork(session)
         yield RegisterUser(
             account_repository=repository,
             verification_code_repository=verification_code_repository,
+            unit_of_work=unit_of_work,
         )
     finally:
         await session.close()

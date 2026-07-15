@@ -9,7 +9,6 @@ class TestCommit:
     proving the adapter is a genuine wrapper around the session's transaction,
     not a no-op."""
 
-    @pytest.mark.skip(reason="RED: SqlAlchemyUnitOfWork adapter does not exist yet")
     async def test_should_persist_flushed_account_after_commit(
         self, sql_alchemy_unit_of_work_statements: SqlAlchemyUnitOfWorkStatements
     ):
