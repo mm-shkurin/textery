@@ -67,8 +67,7 @@ describe('ManualEditor', () => {
     expect(italicButton).toHaveAttribute('aria-pressed', 'false')
   })
 
-  // RED (scenario 7.1): strikethrough toolbar button does not exist yet
-  it.skip('applying strikethrough to selected text wraps it in <s> and marks the strikethrough button active', async () => {
+  it('applying strikethrough to selected text wraps it in <s> and marks the strikethrough button active', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')
@@ -89,6 +88,39 @@ describe('ManualEditor', () => {
 
     expect(contentArea.innerHTML).toBe('<s>hello</s> world')
     expect(strikeButton).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('moving the cursor from strikethrough text to non-strikethrough text deactivates the strikethrough toolbar button', async () => {
+    await renderEditorWithDocumentCreated()
+
+    const contentArea = screen.getByTestId('editor-content-area')
+    contentArea.textContent = 'struck plain'
+    fireEvent.input(contentArea)
+
+    const initialTextNode = contentArea.firstChild as Node
+    const strikeRange = document.createRange()
+    strikeRange.setStart(initialTextNode, 0)
+    strikeRange.setEnd(initialTextNode, 6)
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(strikeRange)
+    fireEvent.select(contentArea)
+
+    const strikeButton = screen.getByTestId('toolbar-strike')
+    fireEvent.click(strikeButton)
+
+    expect(contentArea.innerHTML).toBe('<s>struck</s> plain')
+    expect(strikeButton).toHaveAttribute('aria-pressed', 'true')
+
+    const plainTextNode = contentArea.lastChild as Node
+    const cursorRange = document.createRange()
+    cursorRange.setStart(plainTextNode, 1)
+    cursorRange.setEnd(plainTextNode, 1)
+    selection?.removeAllRanges()
+    selection?.addRange(cursorRange)
+    fireEvent.select(contentArea)
+
+    expect(strikeButton).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('creates the document on mount and flips save status once creation resolves', async () => {

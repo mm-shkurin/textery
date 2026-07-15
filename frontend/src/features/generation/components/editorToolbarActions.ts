@@ -8,6 +8,7 @@ export type ToolbarActionKey =
   | 'orderedList'
   | 'bold'
   | 'italic'
+  | 'strike'
 
 export interface ToolbarAction {
   key: ToolbarActionKey
@@ -70,5 +71,13 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     ariaLabel: 'Курсив',
     run: (editor) => editor.chain().focus().toggleItalic().run(),
     isActive: (editor) => editor.isActive('italic'),
+  },
+  {
+    key: 'strike',
+    label: 'S',
+    ariaLabel: 'Зачёркнутый',
+    testId: 'toolbar-strike',
+    run: (editor) => editor.chain().focus().toggleStrike().run(),
+    isActive: (editor) => editor.isActive('strike'),
   },
 ]

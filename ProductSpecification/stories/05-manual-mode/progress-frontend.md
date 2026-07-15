@@ -142,10 +142,10 @@ policy.
 ### Scenario 7.1: Applying strikethrough changes the content and highlights the active toolbar button
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [x] red-frontend — added skipped test to `ManualEditor.test.tsx`: strikethrough toolbar button (`data-testid="toolbar-strike"`) not yet implemented, no `strike` entry in `TOOLBAR_ACTIONS`. Predicted `TestingLibraryElementError: Unable to find an element by: [data-testid="toolbar-strike"]`; actual matched exactly. test-review: no loose assertions, no change needed.
-- [~] green-frontend
+- [x] green-frontend — added `strike` toolbar action to `editorToolbarActions.ts` (`toggleStrike()`/`isActive('strike')`, Tiptap StarterKit already bundles Strike extension), `data-testid="toolbar-strike"`. Removed `it.skip`. Also added a deactivation test (aria-pressed returns to false when cursor moves off struck text), mirroring bold/italic, closing the premortem gap flagged on the red commit. Full suite: 54/54 passed. Typecheck: clean.
 - [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
-- [ ] align-design
+- [~] align-design
 - [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
