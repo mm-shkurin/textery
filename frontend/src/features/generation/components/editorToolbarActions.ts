@@ -12,6 +12,7 @@ export type ToolbarActionKey =
   | 'code'
   | 'blockquote'
   | 'horizontalRule'
+  | 'codeBlock'
 
 export interface ToolbarAction {
   key: ToolbarActionKey
@@ -39,6 +40,23 @@ function toggleBlockquote(editor: Editor): void {
     return
   }
   editor.chain().focus().toggleMark('blockquote').run()
+}
+
+function toggleCodeBlock(editor: Editor): void {
+  const { selection } = editor.state
+  if (selection.empty) {
+    const { $from } = selection
+    const cursorPos = $from.pos
+    editor
+      .chain()
+      .focus()
+      .setTextSelection({ from: $from.start(), to: $from.end() })
+      .toggleMark('codeBlock')
+      .setTextSelection({ from: cursorPos, to: cursorPos })
+      .run()
+    return
+  }
+  editor.chain().focus().toggleMark('codeBlock').run()
 }
 
 export const TOOLBAR_ACTIONS: ToolbarAction[] = [
@@ -128,5 +146,13 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
         .insertContent({ type: 'horizontalRule', attrs: { marker: 'hr' } })
         .run(),
     isActive: () => false,
+  },
+  {
+    key: 'codeBlock',
+    label: '{}',
+    ariaLabel: 'Блок кода',
+    testId: 'toolbar-code-block',
+    run: (editor) => toggleCodeBlock(editor),
+    isActive: (editor) => editor.isActive('codeBlock'),
   },
 ]

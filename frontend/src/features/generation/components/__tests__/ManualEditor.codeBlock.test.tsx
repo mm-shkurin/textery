@@ -5,8 +5,7 @@ import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
 vi.mock('../../api/documentApi')
 
 describe('ManualEditor code-block toolbar', () => {
-  // TDD Red Phase - toolbar-code-block button not implemented
-  it.skip('applying a code block with only a collapsed cursor on the line wraps the whole line in <pre><code>', async () => {
+  it('applying a code block with only a collapsed cursor on the line wraps the whole line in <pre><code>', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')
