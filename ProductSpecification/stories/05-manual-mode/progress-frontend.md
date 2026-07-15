@@ -195,8 +195,8 @@ policy.
 
 ### Scenario 7.5: Undo and redo revert and reapply the last editor change, disabled when there is nothing to undo/redo
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
-- [ ] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — new file `ManualEditor.undoRedo.test.tsx`: undo/redo toolbar buttons (`data-testid="toolbar-undo"`/`"toolbar-redo"`), no entries yet in `TOOLBAR_ACTIONS`. Disabled-state pair (not toggleable mark): undo disabled on fresh empty editor; after typing, undo reverts content and enables redo. Predicted `TestingLibraryElementError: Unable to find an element by: [data-testid="toolbar-undo"]`; actual matched exactly for both tests. test-review: fixed one loose `not.toBeDisabled()` to exact `.disabled` boolean check.
+- [~] green-frontend
 - [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
 - [ ] align-design
