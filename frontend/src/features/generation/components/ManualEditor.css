@@ -137,6 +137,29 @@
   cursor: pointer;
   background: #f5f5f7;
   color: #111214;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.me-save-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.me-save-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(17, 18, 20, 0.35);
+  border-top-color: #111214;
+  animation: me-spin 0.7s linear infinite;
+}
+
+@keyframes me-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .me-content-area {

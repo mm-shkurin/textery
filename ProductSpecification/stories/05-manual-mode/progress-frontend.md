@@ -74,9 +74,9 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 - [x] green-frontend
 - [x] red-frontend-api
 - [x] green-frontend-api
-- [~] align-design
-- [ ] green-selenium
-- [ ] demo
+- [x] align-design
+- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [S] demo — same reason, no live backend to drive a visible Selenium run against
 
 ### Scenario 4.2: A save completing out of order still reflects the latest edit, not a stale response
 - [ ] red-selenium
