@@ -10,6 +10,8 @@ from session import SqlAlchemyUnitOfWork
 from statements.account_row_lookup import fetch_account_row_on_new_connection
 
 
+
+
 class SqlAlchemyUnitOfWorkStatements:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
@@ -32,6 +34,9 @@ class SqlAlchemyUnitOfWorkStatements:
     async def commit_unit_of_work(self) -> None:
         await self._unit_of_work.commit()
 
+    async def rollback_unit_of_work(self) -> None:
+        await self._unit_of_work.rollback()
+
     async def assert_account_durable_on_new_connection(self) -> None:
         row = await fetch_account_row_on_new_connection(self.saved_account.id)
         assert row is not None, (
@@ -46,3 +51,9 @@ class SqlAlchemyUnitOfWorkStatements:
             self.saved_account.created_at,
         )
         assert actual == expected, f"expected {expected}, got {actual}"
+
+    async def assert_account_absent_on_new_connection(self) -> None:
+        row = await fetch_account_row_on_new_connection(self.saved_account.id)
+        assert row is None, (
+            f"expected account {self.saved_account.id} to be discarded via UnitOfWork.rollback(), found {row}"
+        )
