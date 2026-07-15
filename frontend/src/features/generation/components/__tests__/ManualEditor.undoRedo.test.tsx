@@ -4,8 +4,7 @@ import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
 
 vi.mock('../../api/documentApi')
 
-// TDD Red Phase - toolbar-undo/toolbar-redo actions not implemented in TOOLBAR_ACTIONS
-describe.skip('ManualEditor undo/redo toolbar', () => {
+describe('ManualEditor undo/redo toolbar', () => {
   it('disables the undo button when the editor has no changes to undo', async () => {
     await renderEditorWithDocumentCreated()
 

@@ -13,6 +13,8 @@ export type ToolbarActionKey =
   | 'blockquote'
   | 'horizontalRule'
   | 'codeBlock'
+  | 'undo'
+  | 'redo'
 
 export interface ToolbarAction {
   key: ToolbarActionKey
@@ -21,6 +23,7 @@ export interface ToolbarAction {
   testId?: string
   run: (editor: Editor) => void
   isActive: (editor: Editor) => boolean
+  disabled?: (editor: Editor) => boolean
 }
 
 export const TOOLBAR_DIVIDER_BEFORE: Set<ToolbarActionKey> = new Set(['bulletList', 'bold'])
@@ -141,5 +144,23 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     testId: 'toolbar-code-block',
     run: (editor) => toggleLineMark(editor, 'codeBlock'),
     isActive: (editor) => editor.isActive('codeBlock'),
+  },
+  {
+    key: 'undo',
+    label: '↶',
+    ariaLabel: 'Отменить',
+    testId: 'toolbar-undo',
+    run: (editor) => editor.chain().focus().undo().run(),
+    isActive: () => false,
+    disabled: (editor) => !editor.can().undo(),
+  },
+  {
+    key: 'redo',
+    label: '↷',
+    ariaLabel: 'Повторить',
+    testId: 'toolbar-redo',
+    run: (editor) => editor.chain().focus().redo().run(),
+    isActive: () => false,
+    disabled: (editor) => !editor.can().redo(),
   },
 ]

@@ -196,10 +196,10 @@ policy.
 ### Scenario 7.5: Undo and redo revert and reapply the last editor change, disabled when there is nothing to undo/redo
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [x] red-frontend — new file `ManualEditor.undoRedo.test.tsx`: undo/redo toolbar buttons (`data-testid="toolbar-undo"`/`"toolbar-redo"`), no entries yet in `TOOLBAR_ACTIONS`. Disabled-state pair (not toggleable mark): both disabled on fresh empty editor; after typing, undo reverts content and enables redo; redo reapplies the change and disables itself again. Predicted `TestingLibraryElementError: Unable to find an element by: [data-testid="toolbar-undo"]`; actual matched exactly for all 3 tests. test-review: fixed one loose `not.toBeDisabled()` to exact `.disabled` boolean check. Both agent-review and premortem independently flagged that redo's actual effect was never exercised (only its disabled flag checked) — added the redo round-trip test and initial redo-disabled check before commit.
-- [~] green-frontend
+- [x] green-frontend — Tiptap's built-in History extension is bundled via StarterKit and wasn't disabled, so no extension changes needed. Extended `ToolbarAction` with an optional `disabled?: (editor) => boolean` predicate (first action type needing this — none of the toggleable marks are ever disabled); `ManualEditorToolbar.tsx` renders it via `action.disabled?.(editor) ?? false`. `undo`/`redo` entries use `editor.can().undo()/redo()` for the predicate, `editor.chain().undo()/redo().run()` for the action. Existing `shouldRerenderOnTransaction: true` reactivity (already used for `isActive`) covers the disabled state too, no new wiring needed. Full suite: 67/67 passed, no regressions.
 - [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
-- [ ] align-design
+- [~] align-design
 - [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 

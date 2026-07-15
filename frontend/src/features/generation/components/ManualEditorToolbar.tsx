@@ -31,6 +31,7 @@ export function ManualEditorToolbar({
             data-testid={action.testId}
             onClick={() => editor && action.run(editor)}
             aria-pressed={editor ? action.isActive(editor) : false}
+            disabled={editor ? action.disabled?.(editor) ?? false : true}
           >
             {action.label}
           </button>
