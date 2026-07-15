@@ -1,5 +1,6 @@
 import logging
 
+import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
@@ -27,6 +28,28 @@ class TestValidationExceptionHandler:
         assert response.json() == {
             "error_code": "INVALID_EMAIL",
             "message": "The email address is not valid.",
+        }, f"unexpected response body {response.json()}"
+
+    @pytest.mark.skip(reason="RED: validation_exception_handler always returns 400")
+    async def test_should_return_409_when_error_code_is_email_already_registered(self):
+        app = FastAPI()
+
+        @app.get("/duplicate")
+        async def duplicate() -> None:
+            raise ValidationException(
+                error_code="EMAIL_ALREADY_REGISTERED", message="This email is already registered."
+            )
+
+        app.add_exception_handler(ValidationException, validation_exception_handler)
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/duplicate")
+
+        assert response.status_code == 409, f"expected 409, got {response.status_code}"
+        assert response.json() == {
+            "error_code": "EMAIL_ALREADY_REGISTERED",
+            "message": "This email is already registered.",
         }, f"unexpected response body {response.json()}"
 
 
