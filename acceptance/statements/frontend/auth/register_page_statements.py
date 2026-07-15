@@ -1,6 +1,7 @@
 from typing import ClassVar
 
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 
 from statements.frontend.base_frontend_statements import BaseFrontendStatements
@@ -10,6 +11,7 @@ PASSWORD_INPUT = (By.CSS_SELECTOR, "[data-testid='register-password-input']")
 CONFIRM_PASSWORD_INPUT = (By.CSS_SELECTOR, "[data-testid='register-confirm-password-input']")
 SUBMIT_BUTTON = (By.CSS_SELECTOR, "[data-testid='register-submit-button']")
 LOADING_INDICATOR = (By.CSS_SELECTOR, "[data-testid='register-loading-indicator']")
+PASSWORD_ERROR = (By.CSS_SELECTOR, "[data-testid='register-password-error']")
 REGISTER_REQUEST_PATH = "/api/v1/auth/register"
 
 
@@ -71,6 +73,24 @@ class RegisterPageStatements(BaseFrontendStatements):
 
     def assert_loading_indicator_is_visible(self, driver: WebDriver) -> None:
         self._assert_visible(driver, LOADING_INDICATOR, "loading indicator")
+
+    def fill_password_field(self, driver: WebDriver, password: str) -> None:
+        self._wait_for_visible(driver, PASSWORD_INPUT).send_keys(password)
+
+    def blur_password_field(self, driver: WebDriver) -> None:
+        self._wait_for_visible(driver, PASSWORD_INPUT).send_keys(Keys.TAB)
+
+    def assert_password_policy_error_is_visible(self, driver: WebDriver, expected_text: str) -> None:
+        element = self._wait_for_visible(driver, PASSWORD_ERROR)
+        assert element.is_displayed(), "expected password policy error to be visible"
+        classes = element.get_attribute("class").split()
+        assert "register-hint-error" in classes, (
+            f"expected password error element's class list to contain 'register-hint-error', "
+            f"got {classes}"
+        )
+        assert element.text.strip() == expected_text, (
+            f"expected password policy error text '{expected_text}', got '{element.text}'"
+        )
 
     def assert_no_duplicate_registration_request(self, driver: WebDriver) -> None:
         request_count = self._count_requests_to(driver, REGISTER_REQUEST_PATH)
