@@ -3,15 +3,14 @@ import { Link } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
 import { useSubmitPlaceholder } from '../hooks/useSubmitPlaceholder'
-import { isPasswordCompliant, PASSWORD_POLICY_HINT } from '../utils/passwordPolicy'
+import {
+  CONFIRM_MISMATCH_MESSAGE,
+  isConfirmMismatched,
+  isPasswordCompliant,
+  PASSWORD_POLICY_HINT,
+} from '../utils/passwordPolicy'
 import './AuthForm.css'
 import './RegisterForm.css'
-
-const CONFIRM_MISMATCH_MESSAGE = 'Пароли не совпадают'
-
-function isConfirmMismatched(password: string, confirm: string): boolean {
-  return password.length > 0 && confirm.length > 0 && password !== confirm
-}
 
 export function RegisterForm() {
   const { isSubmitting, handleSubmit } = useSubmitPlaceholder()
