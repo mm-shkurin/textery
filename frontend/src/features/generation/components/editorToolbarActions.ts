@@ -22,6 +22,16 @@ export interface ToolbarAction {
 
 export const TOOLBAR_DIVIDER_BEFORE: Set<ToolbarActionKey> = new Set(['bulletList', 'bold'])
 
+function toggleBlockquote(editor: Editor): void {
+  const { selection } = editor.state
+  if (selection.empty) {
+    const { $from } = selection
+    editor.chain().focus().setTextSelection({ from: $from.start(), to: $from.end() }).toggleMark('blockquote').run()
+    return
+  }
+  editor.chain().focus().toggleMark('blockquote').run()
+}
+
 export const TOOLBAR_ACTIONS: ToolbarAction[] = [
   {
     key: 'heading1',
@@ -86,17 +96,7 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     label: '"',
     ariaLabel: 'Цитата',
     testId: 'toolbar-blockquote',
-    run: (editor) => {
-      const { selection } = editor.state
-      if (selection.empty) {
-        const { $from } = selection
-        const blockStart = $from.start()
-        const blockEnd = $from.end()
-        editor.chain().focus().setTextSelection({ from: blockStart, to: blockEnd }).toggleMark('blockquote').run()
-        return
-      }
-      editor.chain().focus().toggleMark('blockquote').run()
-    },
+    run: (editor) => toggleBlockquote(editor),
     isActive: (editor) => editor.isActive('blockquote'),
   },
 ]
