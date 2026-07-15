@@ -280,9 +280,9 @@ so its red-frontend step must add the button first.
 - [S] green-frontend — see above, nothing to implement
 - [S] red-frontend-api — no API call in this scenario, pure client-side routing
 - [S] green-frontend-api — see above
-- [ ] align-design
-- [ ] green-selenium
-- [ ] demo
+- [x] align-design (no changes needed — LoginForm's footer link uses the same shared `.auth-footer-link`/`.auth-footer-link a` classes aligned to mockup since Scenario 1.2, identical structure to mockup's `03-login.html` footer; verified against `01-register.html`'s equivalent `.footer-link` rules — match)
+- [S] green-selenium (test already passes, see red-selenium note above — 1 passed)
+- [S] demo (skipped per convention, see note at top of file)
 
 ### 6.3: "Resend code" link, after cooldown, re-issues a code
 - [ ] red-selenium
