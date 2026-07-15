@@ -51,11 +51,48 @@ describe('RegisterForm', () => {
     )
   })
 
+  it('does not render the static hint alongside the error (no duplicated message on screen)', () => {
+    renderWithRouter(<RegisterForm />)
+    const passwordInput = screen.getByTestId('register-password-input')
+
+    fireEvent.change(passwordInput, { target: { value: 'weak' } })
+    fireEvent.blur(passwordInput)
+
+    expect(screen.getByTestId('register-password-error')).toBeInTheDocument()
+    expect(screen.queryByTestId('register-password-hint')).not.toBeInTheDocument()
+  })
+
+  it.each([
+    ['missing a digit', 'NoDigitPass!'],
+    ['missing an uppercase letter', 'nouppercase1!'],
+    ['missing a lowercase letter', 'NOLOWERCASE1!'],
+    ['missing a special character', 'NoSpecial123'],
+    ['too short', 'Sh0rt!'],
+  ])('shows the inline validation message when the password is %s', (_label, value) => {
+    renderWithRouter(<RegisterForm />)
+    const passwordInput = screen.getByTestId('register-password-input')
+
+    fireEvent.change(passwordInput, { target: { value } })
+    fireEvent.blur(passwordInput)
+
+    expect(screen.getByTestId('register-password-error')).toBeInTheDocument()
+  })
+
   it('shows no inline validation message when the password meets the policy on blur', () => {
     renderWithRouter(<RegisterForm />)
     const passwordInput = screen.getByTestId('register-password-input')
 
     fireEvent.change(passwordInput, { target: { value: 'Str0ng!Pass' } })
+    fireEvent.blur(passwordInput)
+
+    expect(screen.queryByTestId('register-password-error')).not.toBeInTheDocument()
+  })
+
+  it('shows no inline validation message for a second compliant password using a different special character', () => {
+    renderWithRouter(<RegisterForm />)
+    const passwordInput = screen.getByTestId('register-password-input')
+
+    fireEvent.change(passwordInput, { target: { value: 'Valid#Pass9' } })
     fireEvent.blur(passwordInput)
 
     expect(screen.queryByTestId('register-password-error')).not.toBeInTheDocument()
