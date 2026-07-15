@@ -146,6 +146,35 @@ describe('ManualEditor', () => {
     expect(blockquoteButton).toHaveAttribute('aria-pressed', 'true')
   })
 
+  // RED prediction: toggleMark('blockquote') on a collapsed selection is a
+  // no-op in Tiptap (marks only apply to a non-empty range), so clicking
+  // the blockquote button with the cursor merely placed mid-word leaves
+  // the text unchanged - no <blockquote> tag is emitted.
+  // Expected failure: AssertionError: expected 'hello world' to be
+  // '<blockquote>hello world</blockquote>'
+  it.skip('applying a blockquote with only a collapsed cursor on the line wraps the whole line in <blockquote>', async () => {
+    await renderEditorWithDocumentCreated()
+
+    const contentArea = screen.getByTestId('editor-content-area')
+    contentArea.textContent = 'hello world'
+    fireEvent.input(contentArea)
+
+    const textNode = contentArea.firstChild as Node
+    const cursorRange = document.createRange()
+    cursorRange.setStart(textNode, 3)
+    cursorRange.setEnd(textNode, 3)
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(cursorRange)
+    fireEvent.select(contentArea)
+
+    const blockquoteButton = screen.getByTestId('toolbar-blockquote')
+    fireEvent.click(blockquoteButton)
+
+    expect(contentArea.innerHTML).toBe('<blockquote>hello world</blockquote>')
+    expect(blockquoteButton).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('creates the document on mount and flips save status once creation resolves', async () => {
     let resolveCreate: (value: { documentId: string; status: string }) => void = () => {}
     const createPromise = new Promise<{ documentId: string; status: string }>((resolve) => {
