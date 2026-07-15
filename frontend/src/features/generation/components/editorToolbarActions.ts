@@ -1,7 +1,16 @@
 import type { Editor } from '@tiptap/react'
 
+export type ToolbarActionKey =
+  | 'heading1'
+  | 'heading2'
+  | 'paragraph'
+  | 'bulletList'
+  | 'orderedList'
+  | 'bold'
+  | 'italic'
+
 export interface ToolbarAction {
-  key: string
+  key: ToolbarActionKey
   label: string
   ariaLabel: string
   testId?: string
@@ -9,7 +18,7 @@ export interface ToolbarAction {
   isActive: (editor: Editor) => boolean
 }
 
-export const TOOLBAR_DIVIDER_BEFORE = new Set(['bulletList', 'bold'])
+export const TOOLBAR_DIVIDER_BEFORE: Set<ToolbarActionKey> = new Set(['bulletList', 'bold'])
 
 export const TOOLBAR_ACTIONS: ToolbarAction[] = [
   {
