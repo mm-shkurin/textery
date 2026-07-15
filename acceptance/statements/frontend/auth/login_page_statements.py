@@ -1,4 +1,5 @@
 from typing import ClassVar
+from urllib.parse import urlparse
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -24,12 +25,27 @@ class LoginPageStatements(BaseFrontendStatements):
     def navigate_to_login_page(self, driver: WebDriver, app_url: str) -> None:
         driver.get(f"{app_url}/login")
 
+    _DEFAULT_PORTS: ClassVar[dict[str, str]] = {"http": "80", "https": "443"}
+
+    @classmethod
+    def _normalized_origin(cls, url: str) -> tuple[str, str]:
+        parsed = urlparse(url)
+        host = parsed.hostname or ""
+        port = str(parsed.port) if parsed.port else cls._DEFAULT_PORTS.get(parsed.scheme, "")
+        return parsed.scheme, f"{host}:{port}" if port else host
+
     def assert_url_is_login_page(self, driver: WebDriver, app_url: str) -> None:
+        expected_origin = self._normalized_origin(app_url)
+
+        def is_login_page(d: WebDriver) -> bool:
+            actual = urlparse(d.current_url)
+            return (
+                self._normalized_origin(d.current_url) == expected_origin
+                and actual.path.rstrip("/") == "/login"
+            )
+
         WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(
-            lambda d: d.current_url.rstrip("/").endswith("/login")
-        )
-        assert driver.current_url.rstrip("/").endswith("/login"), (
-            f"expected URL to end with '/login' (app_url='{app_url}'), got '{driver.current_url}'"
+            is_login_page, f"expected URL '{app_url}/login', got '{driver.current_url}'"
         )
 
     def assert_email_field_is_visible(self, driver: WebDriver) -> None:
