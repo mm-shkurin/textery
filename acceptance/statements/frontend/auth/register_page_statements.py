@@ -13,6 +13,7 @@ SUBMIT_BUTTON = (By.CSS_SELECTOR, "[data-testid='register-submit-button']")
 LOADING_INDICATOR = (By.CSS_SELECTOR, "[data-testid='register-loading-indicator']")
 PASSWORD_ERROR = (By.CSS_SELECTOR, "[data-testid='register-password-error']")
 CONFIRM_ERROR = (By.CSS_SELECTOR, "[data-testid='register-confirm-error']")
+LOGIN_LINK = (By.LINK_TEXT, "Войти")
 REGISTER_REQUEST_PATH = "/api/v1/auth/register"
 
 
@@ -92,6 +93,9 @@ class RegisterPageStatements(BaseFrontendStatements):
 
     def assert_confirm_mismatch_error_is_visible(self, driver: WebDriver, expected_text: str) -> None:
         self._assert_hint_error_visible(driver, CONFIRM_ERROR, expected_text, "confirm mismatch error")
+
+    def click_login_link(self, driver: WebDriver) -> None:
+        self._wait_for_visible(driver, LOGIN_LINK).click()
 
     def assert_no_duplicate_registration_request(self, driver: WebDriver) -> None:
         request_count = self._count_requests_to(driver, REGISTER_REQUEST_PATH)

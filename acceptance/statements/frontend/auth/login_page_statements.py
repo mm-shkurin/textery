@@ -2,8 +2,9 @@ from typing import ClassVar
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.support.wait import WebDriverWait
 
-from statements.frontend.base_frontend_statements import BaseFrontendStatements
+from statements.frontend.base_frontend_statements import WAIT_TIMEOUT_SECONDS, BaseFrontendStatements
 
 EMAIL_INPUT = (By.CSS_SELECTOR, "[data-testid='login-email-input']")
 PASSWORD_INPUT = (By.CSS_SELECTOR, "[data-testid='login-password-input']")
@@ -22,6 +23,14 @@ class LoginPageStatements(BaseFrontendStatements):
 
     def navigate_to_login_page(self, driver: WebDriver, app_url: str) -> None:
         driver.get(f"{app_url}/login")
+
+    def assert_url_is_login_page(self, driver: WebDriver, app_url: str) -> None:
+        WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(
+            lambda d: d.current_url.rstrip("/").endswith("/login")
+        )
+        assert driver.current_url.rstrip("/").endswith("/login"), (
+            f"expected URL to end with '/login' (app_url='{app_url}'), got '{driver.current_url}'"
+        )
 
     def assert_email_field_is_visible(self, driver: WebDriver) -> None:
         self._assert_field_visible(

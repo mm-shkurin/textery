@@ -265,11 +265,11 @@ so its red-frontend step must add the button first.
 - [ ] demo
 
 ### 6.1: "Already have an account? Log in" navigates to the login page
-- [ ] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
+- [x] red-selenium (test passed on first run — feature already implemented: RegisterForm's footer link is a real react-router `Link to="/login"` (established during 1.2's align-design), text "Войти". New test `test_register_login_link_navigation_acceptance.py` + `RegisterPageStatements.click_login_link` (locates by `By.LINK_TEXT`, no new testid needed since it's a plain `<a>` via router `Link`), landing assertion reuses existing `LoginPageStatements.assert_submit_button_is_visible`. No RED state achievable, same class as Scenarios 2.3a(confirm)/3.2/4.1/4.2. test-review flagged the landing assertion was shallower than the spec's "the login page loads" (button-visible alone doesn't prove navigation occurred) — added `LoginPageStatements.assert_url_is_login_page` called before the existing button-visible assertion — initial exact-URL-match version failed live (`app_url` omits the default port 80 that `driver.current_url` implicitly drops too, but string concatenation still produced a mismatched host segment), fixed to a normalized suffix check (`current_url.rstrip("/").endswith("/login")`), reconfirmed passing. 1 passed. Not marked skip — test remains enabled per convention)
+- [S] red-frontend — no logic to test: navigation is a router `Link` already rendered unconditionally, no branching/computation/transformation in RegisterForm; behavior fully covered by red-selenium above
+- [S] green-frontend — see above, nothing to implement
+- [S] red-frontend-api — no API call in this scenario, pure client-side routing
+- [S] green-frontend-api — see above
 - [ ] align-design
 - [ ] green-selenium
 - [ ] demo
