@@ -271,8 +271,8 @@ so its red-frontend step must add the button first.
 - [S] red-frontend-api — no API call in this scenario, pure client-side routing
 - [S] green-frontend-api — see above
 - [x] align-design (no changes needed — footer link (`.auth-footer-link`/`.auth-footer-link a`) already aligned to mockup's `.footer-link`/`.footer-link a` since Scenario 1.2's align-design; verified text-align/margin-top/font-size/color/font-weight all match `01-register.html`)
-- [ ] green-selenium
-- [ ] demo
+- [S] green-selenium (test already passes since red-selenium, reconfirmed after align-design/refactor — 1 passed)
+- [S] demo (skipped per convention, see note at top of file)
 
 ### 6.2: "Don't have an account? Register" navigates to the registration page
 - [ ] red-selenium
