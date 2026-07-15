@@ -12,6 +12,16 @@ import {
 import './AuthForm.css'
 import './RegisterForm.css'
 
+function applyRegisterError(error: unknown): string | null {
+  if (error && typeof error === 'object' && 'errorCode' in error) {
+    const apiError = error as RegisterApiError
+    if (apiError.errorCode === 'EMAIL_ALREADY_EXISTS') {
+      return apiError.message
+    }
+  }
+  return null
+}
+
 export function RegisterForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [emailError, setEmailError] = useState<string | null>(null)
@@ -30,11 +40,9 @@ export function RegisterForm() {
       await register(emailInputRef.current?.value ?? '', passwordInputRef.current?.value ?? '')
       setEmailError(null)
     } catch (error) {
-      if (error && typeof error === 'object' && 'errorCode' in error) {
-        const apiError = error as RegisterApiError
-        if (apiError.errorCode === 'EMAIL_ALREADY_EXISTS') {
-          setEmailError(apiError.message)
-        }
+      const message = applyRegisterError(error)
+      if (message) {
+        setEmailError(message)
       }
     } finally {
       setIsSubmitting(false)

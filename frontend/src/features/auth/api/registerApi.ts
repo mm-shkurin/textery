@@ -1,6 +1,5 @@
 // HTTP client for the registration API (POST create pending account).
-// Base URL defaults to '' so requests go through the Vite dev proxy (/api → backend).
-const API_BASE: string = import.meta.env.VITE_API_BASE_URL ?? ''
+import { postJson, type HttpError } from './httpClient'
 
 export interface RegisterResult {
   email: string
@@ -12,20 +11,14 @@ export interface RegisterApiError {
 }
 
 export async function register(email: string, password: string): Promise<RegisterResult> {
-  const res = await fetch(`${API_BASE}/api/v1/auth/register`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ email, password }),
-  })
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    const error: RegisterApiError = {
-      errorCode: body.error_code ?? 'UNKNOWN_ERROR',
-      message: body.message ?? 'Не удалось зарегистрироваться',
+  try {
+    return await postJson<RegisterResult>('/api/v1/auth/register', { email, password })
+  } catch (error) {
+    const httpError = error as HttpError
+    const apiError: RegisterApiError = {
+      errorCode: (httpError.body.error_code as string) ?? 'UNKNOWN_ERROR',
+      message: (httpError.body.message as string) ?? 'Не удалось зарегистрироваться',
     }
-    throw error
+    throw apiError
   }
-  return res.json()
 }
