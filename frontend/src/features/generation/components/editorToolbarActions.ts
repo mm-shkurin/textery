@@ -26,7 +26,14 @@ function toggleBlockquote(editor: Editor): void {
   const { selection } = editor.state
   if (selection.empty) {
     const { $from } = selection
-    editor.chain().focus().setTextSelection({ from: $from.start(), to: $from.end() }).toggleMark('blockquote').run()
+    const cursorPos = $from.pos
+    editor
+      .chain()
+      .focus()
+      .setTextSelection({ from: $from.start(), to: $from.end() })
+      .toggleMark('blockquote')
+      .setTextSelection({ from: cursorPos, to: cursorPos })
+      .run()
     return
   }
   editor.chain().focus().toggleMark('blockquote').run()

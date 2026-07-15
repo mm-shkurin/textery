@@ -52,7 +52,7 @@ describe('ManualEditor blockquote toolbar', () => {
     expect(blockquoteButton).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it.skip('applying a blockquote with a collapsed cursor restores the cursor to its original position instead of leaving the whole line selected', async () => {
+  it('applying a blockquote with a collapsed cursor restores the cursor to its original position instead of leaving the whole line selected', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')
