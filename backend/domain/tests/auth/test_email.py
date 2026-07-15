@@ -80,3 +80,17 @@ class TestEmailUnicodeCharacterClassRejection:
             Email("́@example.ru")
 
         assert str(exc_info.value) == "Invalid email format."
+
+
+class TestEmailMissingSeparatorRejection:
+    def test_value_with_no_at_separator_is_rejected(self):
+        with pytest.raises(ValueError) as exc_info:
+            Email("notanemail")
+
+        assert str(exc_info.value) == "Invalid email format."
+
+    def test_empty_local_part_before_at_separator_is_rejected(self):
+        with pytest.raises(ValueError) as exc_info:
+            Email("@example.ru")
+
+        assert str(exc_info.value) == "Invalid email format."
