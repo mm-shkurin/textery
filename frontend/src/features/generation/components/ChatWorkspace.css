@@ -1,7 +1,4 @@
 .chat-page {
-  --warning: #f59e0b;
-  --success: #22c55e;
-  --error: #ef4444;
   min-height: 100vh;
 }
 

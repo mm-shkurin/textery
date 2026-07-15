@@ -18,6 +18,9 @@
   --accent-start: #6366f1;
   --accent-end: #a855f7;
   --accent-gradient: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+  --warning: #f59e0b;
+  --success: #22c55e;
+  --error: #ef4444;
 }
 
 * {
