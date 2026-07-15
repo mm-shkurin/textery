@@ -4,10 +4,7 @@ from typing import ClassVar
 
 from clients.application.application_client import ApplicationClient
 from clients.application.dto.auth.register_response_dto import RegisterResponseDto
-from statements.auth_duplicate_fixtures import (
-    duplicate_registration_against_pending_account,
-    duplicate_registration_against_verified_account,
-)
+from clients.application.dto.auth.verify_request_dto import VerifyRequestDto
 from statements.auth_scope import RegisterScope
 from statements.response_assertions import (
     assert_duplicate_rejected,
@@ -52,9 +49,7 @@ class AuthStatements:
         self._last_request_window: tuple[datetime, datetime] | None = None
 
     async def given_registration_request_with_malformed_email(self) -> RegisterResponseDto:
-        scope = RegisterScope.builder(email=MALFORMED_EMAIL)
-        request = scope.to_request_dto()
-        return await self._client.register(request)
+        return await self._register_with_email(MALFORMED_EMAIL)
 
     async def given_registration_request_with_overlong_email(self) -> RegisterResponseDto:
         local_part = "a" * OVERLONG_EMAIL_LOCAL_PART_LENGTH
@@ -62,9 +57,7 @@ class AuthStatements:
         assert len(overlong_email) == 256, (
             f"expected a 256-character email fixture, got {len(overlong_email)} chars"
         )
-        scope = RegisterScope.builder(email=overlong_email)
-        request = scope.to_request_dto()
-        return await self._client.register(request)
+        return await self._register_with_email(overlong_email)
 
     async def given_registration_request_with_short_password(self) -> RegisterResponseDto:
         return await self._register_with_password("Ab1!abc")
@@ -124,12 +117,23 @@ class AuthStatements:
     async def given_duplicate_registration_against_pending_account(
         self,
     ) -> RegisterResponseDto:
-        return await duplicate_registration_against_pending_account(self._client)
+        email = f"pending-dup-{uuid.uuid4()}@example.com"
+        await self._register_with_email(email)
+        return await self._register_with_email(email)
 
     async def given_duplicate_registration_against_verified_account(
         self,
     ) -> RegisterResponseDto:
-        return await duplicate_registration_against_verified_account(self._client)
+        email = f"verified-dup-{uuid.uuid4()}@example.com"
+        first_response = await self._register_with_email(email)
+        code = first_response.body.get("verification_code") if first_response.body else None
+        await self._client.verify(VerifyRequestDto(email=email, code=code))
+        return await self._register_with_email(email)
+
+    async def _register_with_email(self, email: str) -> RegisterResponseDto:
+        scope = RegisterScope.builder(email=email)
+        request = scope.to_request_dto()
+        return await self._client.register(request)
 
     async def _register_with_password(self, password: str) -> RegisterResponseDto:
         scope = RegisterScope.builder(password=password, confirm_password=password)
