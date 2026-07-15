@@ -1,10 +1,33 @@
 import asyncio
+import contextlib
+import locale
 import uuid
+
+import pytest
 
 from clients.application.application_client import ApplicationClient
 from clients.application.dto.auth.register_response_dto import RegisterResponseDto
 from clients.application.dto.auth.verify_request_dto import VerifyRequestDto
 from statements.auth_scope import RegisterScope
+
+TURKISH_LOCALE_CANDIDATES = ("tr_TR.UTF-8", "tr_TR", "Turkish_Turkey.1254", "tr-TR")
+
+
+@contextlib.contextmanager
+def _forced_turkish_locale():
+    original = locale.setlocale(locale.LC_ALL)
+    applied = None
+    for candidate in TURKISH_LOCALE_CANDIDATES:
+        try:
+            locale.setlocale(locale.LC_ALL, candidate)
+            applied = candidate
+            break
+        except locale.Error:
+            continue
+    try:
+        yield applied
+    finally:
+        locale.setlocale(locale.LC_ALL, original)
 
 
 async def given_duplicate_registration_against_pending_account(
@@ -43,6 +66,19 @@ async def given_duplicate_registration_with_different_case(
     cased_email = f"USER-{local_part}@Example.ru"
     await _register_with_email(client, original_email)
     return await _register_with_email(client, cased_email)
+
+
+async def given_duplicate_registration_with_different_case_under_turkish_locale(
+    client: ApplicationClient,
+) -> RegisterResponseDto:
+    local_part = uuid.uuid4().hex
+    original_email = f"user-{local_part}@example.ru"
+    cased_email = f"USER-{local_part}@Example.ru"
+    await _register_with_email(client, original_email)
+    with _forced_turkish_locale() as applied:
+        if applied is None:
+            pytest.skip("No Turkish locale available on this test runner")
+        return await _register_with_email(client, cased_email)
 
 
 async def given_two_concurrent_registrations_for_same_new_email(

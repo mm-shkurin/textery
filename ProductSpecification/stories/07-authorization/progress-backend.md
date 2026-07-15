@@ -114,12 +114,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-acceptance — passes as-is (not skip-marked, stands as a normal regression test pinning already-shipped race-safety behavior under genuine concurrency, distinct from 2.4's sequential-retry case)
 
 ### Scenario 2.4b: Case-fold uniqueness is locale-invariant
-- [ ] red-acceptance
-- [ ] design
-- [ ] red-usecase
-- [ ] green-usecase
-- [ ] adapters-discovery
-- [ ] green-acceptance
+- [x] red-acceptance — test added already-green: `given_duplicate_registration_with_different_case_under_turkish_locale()` forces the process locale to `tr_TR.UTF-8` around a case-varied duplicate registration; Python's `str.lower()` is provably locale-invariant (confirmed empirically: `'I'.lower()` stays `'i'` under Turkish locale, not dotless `'ı'`), and scenario 2.3's normalize-then-unique-constraint mechanism already handles it — 409 EMAIL_ALREADY_REGISTERED on first run, no RED phase occurred. test-review: no loose assertions found, reuses scenario 2.2/2.3's exact-match `assert_duplicate_rejected`/`assert_no_account_created` Statements as-is.
+- [~] design
 
 ### Scenario 2.4c: Unicode-normalization uniqueness for email
 - [ ] red-acceptance

@@ -122,6 +122,15 @@ class AuthStatements:
     ) -> RegisterResponseDto:
         return await dup_scenarios.given_duplicate_registration_with_different_case(self._client)
 
+    async def given_duplicate_registration_with_different_case_under_turkish_locale(
+        self,
+    ) -> RegisterResponseDto:
+        return await (
+            dup_scenarios.given_duplicate_registration_with_different_case_under_turkish_locale(
+                self._client
+            )
+        )
+
     async def given_two_concurrent_registrations_for_same_new_email(
         self,
     ) -> tuple[RegisterResponseDto, RegisterResponseDto]:
