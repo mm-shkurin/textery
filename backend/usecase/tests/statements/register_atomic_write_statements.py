@@ -41,6 +41,24 @@ class RegisterAtomicWriteStatements:
         )
         await self._execute_register()
 
+    async def attempt_registering_without_injected_unit_of_work(self) -> None:
+        self.verification_code_repository.raise_on_save = RuntimeError(
+            f"verification code insert failed: {self.RAW_DRIVER_ERROR_SENTINEL}"
+        )
+        scope = RegisterRequestScope.builder()
+        try:
+            await RegisterUser(
+                account_repository=self.account_repository,
+                clock=self.clock,
+                verification_code_repository=self.verification_code_repository,
+            ).execute(
+                email=scope.email,
+                password=scope.password,
+                confirm_password=scope.confirm_password,
+            )
+        except Exception as exc:
+            self.thrown_exception = exc
+
     async def _execute_register(self) -> None:
         scope = RegisterRequestScope.builder()
         try:
@@ -106,5 +124,31 @@ class RegisterAtomicWriteStatements:
         )
         assert len(self.verification_code_repository.saved_codes) == expected_saved_codes_count, (
             f"expected {expected_saved_codes_count} verification code(s) saved before rollback, "
+            f"got {len(self.verification_code_repository.saved_codes)}"
+        )
+
+    def assert_registration_failed_error_raised_without_injected_unit_of_work(self) -> None:
+        assert isinstance(self.thrown_exception, RegistrationFailedException), (
+            f"expected RegistrationFailedException to be raised, got "
+            f"{type(self.thrown_exception).__name__ if self.thrown_exception else 'no exception'}"
+        )
+        assert self.thrown_exception.message == self.EXPECTED_REGISTRATION_FAILED_MESSAGE, (
+            f"expected message '{self.EXPECTED_REGISTRATION_FAILED_MESSAGE}', "
+            f"got '{self.thrown_exception.message}'"
+        )
+        assert self.RAW_DRIVER_ERROR_SENTINEL not in self.thrown_exception.message, (
+            f"expected raised exception message to exclude raw driver/SQL detail, "
+            f"got '{self.thrown_exception.message}'"
+        )
+        assert self.unit_of_work.rollback_call_count == 0, (
+            f"expected the injected fake UnitOfWork (unused by this scenario) to record no rollback calls, "
+            f"got {self.unit_of_work.rollback_call_count}"
+        )
+        assert len(self.account_repository.saved_accounts) == 1, (
+            f"expected the account save to have already succeeded before rollback, "
+            f"got {len(self.account_repository.saved_accounts)}"
+        )
+        assert len(self.verification_code_repository.saved_codes) == 0, (
+            f"expected 0 verification code(s) saved before rollback, "
             f"got {len(self.verification_code_repository.saved_codes)}"
         )

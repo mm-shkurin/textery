@@ -36,3 +36,9 @@ class TestRegisterUsecaseAtomicWrite:
     ):
         await register_atomic_write_statements.attempt_registering_when_final_commit_fails()
         register_atomic_write_statements.assert_registration_failed_error_raised(expected_saved_codes_count=1)
+
+    async def test_should_propagate_registration_failed_when_unit_of_work_is_not_injected(
+        self, register_atomic_write_statements: RegisterAtomicWriteStatements
+    ):
+        await register_atomic_write_statements.attempt_registering_without_injected_unit_of_work()
+        register_atomic_write_statements.assert_registration_failed_error_raised_without_injected_unit_of_work()
