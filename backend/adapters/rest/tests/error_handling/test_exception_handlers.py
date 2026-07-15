@@ -30,7 +30,6 @@ class TestValidationExceptionHandler:
             "message": "The email address is not valid.",
         }, f"unexpected response body {response.json()}"
 
-    @pytest.mark.skip(reason="RED: validation_exception_handler always returns 400")
     async def test_should_return_409_when_error_code_is_email_already_registered(self):
         app = FastAPI()
 

@@ -86,8 +86,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] red-adapter db — asserts `SqlAlchemyAccountRepository.save()` raises `ConflictException` on duplicate email; fails with `AssertionError: expected ConflictException, got None` as predicted (no unique constraint, no exception mapping yet)
 - [x] green-adapter db — added `accounts.email` unique-constraint migration; `save()` catches `IntegrityError`, rolls back, raises `ConflictException`. Coverage: `account_storage.py` 100% lines/branches (`--cov-branch`); db suite 10 passed, 0 failed. No gaps to close; migration DDL not meaningfully coverable by unit tests.
 - [x] red-adapter rest — asserts `validation_exception_handler` returns HTTP 409 for `EMAIL_ALREADY_REGISTERED`; fails with `assert 400 == 409` as predicted (handler currently maps every ValidationException to 400 uniformly); existing 400 test for other error codes still passes unchanged
-- [~] green-adapter rest
-- [ ] green-acceptance
+- [x] green-adapter rest — `validation_exception_handler` now maps status via an explicit `_ERROR_CODE_STATUS_MAP` dict (`EMAIL_ALREADY_REGISTERED` → 409, default 400), avoiding a silent-default if/else per premortem guidance on the red commit. Coverage: `exception_handlers.py` 100% lines/branches. rest suite: 15 passed, 0 failed.
+- [~] green-acceptance
 
 ### Scenario 2.3: Case-folded email uniqueness
 - [ ] red-acceptance

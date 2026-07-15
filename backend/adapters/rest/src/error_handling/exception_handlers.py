@@ -7,9 +7,14 @@ from shared.exceptions import ValidationException
 
 logger = logging.getLogger(__name__)
 
+_ERROR_CODE_STATUS_MAP = {
+    "EMAIL_ALREADY_REGISTERED": 409,
+}
+
 
 async def validation_exception_handler(request: Request, exc: ValidationException) -> JSONResponse:
-    return JSONResponse(status_code=400, content={"error_code": exc.error_code, "message": exc.message})
+    status_code = _ERROR_CODE_STATUS_MAP.get(exc.error_code, 400)
+    return JSONResponse(status_code=status_code, content={"error_code": exc.error_code, "message": exc.message})
 
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
