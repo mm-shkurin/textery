@@ -3,7 +3,6 @@ import pytest
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
-@pytest.mark.skip(reason="RED: LoginForm has no isSubmitting state, submit button is never disabled")
 class TestLoginSubmitDisabledWhileInFlightAcceptance(AbstractFrontendTest):
     """UI Test Scenario 2.3a: Verify, resend, and login buttons are also
     disabled while in flight (login sub-case).
