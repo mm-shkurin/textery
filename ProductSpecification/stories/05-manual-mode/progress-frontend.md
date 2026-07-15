@@ -156,8 +156,8 @@ policy.
 - [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
 - [x] red-frontend-cursor-fix — added skipped test: cursor placed collapsed mid-word ("hello world", offset 3), click `toolbar-blockquote`, expect whole line wrapped (`<blockquote>hello world</blockquote>`), `aria-pressed="true"`. Predicted `AssertionError: expected 'hello world' to be '<blockquote>hello world</blockquote>'` (toggleMark no-op on collapsed selection); actual matched exactly. test-review: no loose assertions (strict `toBe`/`toHaveAttribute`), no change needed.
-- [~] green-frontend-cursor-fix — expand selection to the current line before toggling the mark when the cursor is collapsed (mirror pattern: read `$from`/`$to` of current text block, extend selection to block boundaries before `toggleMark`).
-- [ ] align-design
+- [x] green-frontend-cursor-fix — `editorToolbarActions.ts` blockquote `run` handler now checks `editor.state.selection.empty`; when collapsed, resolves containing block start/end via `$from`, expands selection to block bounds with `setTextSelection`, then `toggleMark('blockquote')`. Ranged-selection path unchanged (other toolbar actions unaffected). Full suite: 56/56 passed, no regressions. Known open gaps (premortem, not covered by any test yet): cursor at line start/end boundaries, multi-line doc scoping, toggle-off via collapsed cursor on already-active blockquote.
+- [~] align-design
 - [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 

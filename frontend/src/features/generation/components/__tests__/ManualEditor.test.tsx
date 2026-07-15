@@ -146,13 +146,7 @@ describe('ManualEditor', () => {
     expect(blockquoteButton).toHaveAttribute('aria-pressed', 'true')
   })
 
-  // RED prediction: toggleMark('blockquote') on a collapsed selection is a
-  // no-op in Tiptap (marks only apply to a non-empty range), so clicking
-  // the blockquote button with the cursor merely placed mid-word leaves
-  // the text unchanged - no <blockquote> tag is emitted.
-  // Expected failure: AssertionError: expected 'hello world' to be
-  // '<blockquote>hello world</blockquote>'
-  it.skip('applying a blockquote with only a collapsed cursor on the line wraps the whole line in <blockquote>', async () => {
+  it('applying a blockquote with only a collapsed cursor on the line wraps the whole line in <blockquote>', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')

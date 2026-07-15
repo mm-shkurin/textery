@@ -86,7 +86,17 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     label: '"',
     ariaLabel: 'Цитата',
     testId: 'toolbar-blockquote',
-    run: (editor) => editor.chain().focus().toggleMark('blockquote').run(),
+    run: (editor) => {
+      const { selection } = editor.state
+      if (selection.empty) {
+        const { $from } = selection
+        const blockStart = $from.start()
+        const blockEnd = $from.end()
+        editor.chain().focus().setTextSelection({ from: blockStart, to: blockEnd }).toggleMark('blockquote').run()
+        return
+      }
+      editor.chain().focus().toggleMark('blockquote').run()
+    },
     isActive: (editor) => editor.isActive('blockquote'),
   },
 ]
