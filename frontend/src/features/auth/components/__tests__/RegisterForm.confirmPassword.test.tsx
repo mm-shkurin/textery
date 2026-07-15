@@ -23,7 +23,7 @@ describe('RegisterForm confirm password validation', () => {
     fireEvent.change(confirmInput, { target: { value: 'Different1!' } })
     fireEvent.blur(confirmInput)
 
-    expect(screen.getByTestId('register-confirm-error')).toHaveTextContent(MISMATCH_MESSAGE, { exact: true })
+    expect(screen.getByTestId('register-confirm-error').textContent).toBe(MISMATCH_MESSAGE)
   })
 
   it('shows no inline validation message when confirm password matches password on blur', () => {
@@ -59,7 +59,7 @@ describe('RegisterForm confirm password validation', () => {
     fireEvent.change(passwordInput, { target: { value: 'Str0ng!Pass' } })
     fireEvent.change(confirmInput, { target: { value: 'Different1!' } })
     fireEvent.blur(confirmInput)
-    expect(screen.getByTestId('register-confirm-error')).toHaveTextContent(MISMATCH_MESSAGE, { exact: true })
+    expect(screen.getByTestId('register-confirm-error').textContent).toBe(MISMATCH_MESSAGE)
 
     fireEvent.change(confirmInput, { target: { value: 'Str0ng!Pass' } })
     fireEvent.blur(confirmInput)
@@ -87,7 +87,7 @@ describe('RegisterForm confirm password validation', () => {
     fireEvent.change(passwordInput, { target: { value: 'Different1!' } })
     fireEvent.blur(passwordInput)
 
-    expect(screen.getByTestId('register-confirm-error')).toHaveTextContent(MISMATCH_MESSAGE, { exact: true })
+    expect(screen.getByTestId('register-confirm-error').textContent).toBe(MISMATCH_MESSAGE)
   })
 
   it('clears the confirm mismatch error when the password is changed to match an already-mismatched confirm', () => {
@@ -96,7 +96,7 @@ describe('RegisterForm confirm password validation', () => {
     fireEvent.change(passwordInput, { target: { value: 'Str0ng!Pass' } })
     fireEvent.change(confirmInput, { target: { value: 'Different1!' } })
     fireEvent.blur(confirmInput)
-    expect(screen.getByTestId('register-confirm-error')).toHaveTextContent(MISMATCH_MESSAGE, { exact: true })
+    expect(screen.getByTestId('register-confirm-error').textContent).toBe(MISMATCH_MESSAGE)
 
     fireEvent.change(passwordInput, { target: { value: 'Different1!' } })
     fireEvent.blur(passwordInput)
@@ -122,7 +122,7 @@ describe('RegisterForm confirm password validation', () => {
     fireEvent.change(confirmInput, { target: { value: 'Different1!' } })
     fireEvent.blur(confirmInput)
 
-    expect(screen.getByTestId('register-password-error')).toHaveTextContent(PASSWORD_POLICY_HINT, { exact: true })
-    expect(screen.getByTestId('register-confirm-error')).toHaveTextContent(MISMATCH_MESSAGE, { exact: true })
+    expect(screen.getByTestId('register-password-error').textContent).toBe(PASSWORD_POLICY_HINT)
+    expect(screen.getByTestId('register-confirm-error').textContent).toBe(MISMATCH_MESSAGE)
   })
 })
