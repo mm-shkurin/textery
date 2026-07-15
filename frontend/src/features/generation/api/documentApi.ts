@@ -51,3 +51,14 @@ export async function saveDocument(
   )) as { status: string; version: number }
   return { status: data.status, version: data.version }
 }
+
+export interface GetDocumentResult {
+  documentId: string
+  status: string
+  content: string
+  version: number
+}
+
+export async function getDocument(_documentId: string): Promise<GetDocumentResult> {
+  throw new Error('getDocument is not implemented yet')
+}

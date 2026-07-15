@@ -119,9 +119,9 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
 ### Scenario 6.2: Reopening a previously saved document shows its saved content
-- [ ] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
+- [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [x] red-frontend — added `ManualEditor.reopen.test.tsx`. Design decision (recorded per interview scope note: no document-list/history UI in this story, that's story #12): reopen is scoped at the `ManualEditor` component level via a new optional prop `existingDocumentId?: string`. When present, the component should call a new `getDocument(documentId)` API function (returning `{ documentId, status, content, version }`, matching `GET /api/v1/documents/{document_id}`) instead of `createDocument`, populate the Tiptap editor with the fetched `content`, and set `version` from the response so a subsequent save PUTs against the correct base version. Added a minimal `getDocument` stub (throws "not implemented yet") to `documentApi.ts` purely as a mock target for `vi.mock` automocking — no real fetch logic yet, that's `green-frontend-api`. Predicted `waitFor` timeout on `expect(documentApi.getDocument).toHaveBeenCalledWith('doc-99')` (component ignores `existingDocumentId`, always calls `createDocument`); actual matched exactly (editor rendered empty, only `ProseMirror-trailingBreak`). `it.skip` added with reason comment.
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
