@@ -175,6 +175,8 @@ policy.
 - [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
+**Deferred coverage gaps (premortem on both green-frontend and the parseHTML coverage commit; not blocking, no tracked follow-up steps yet — reversible client-side editor-state risks, not data loss):** (1) consecutive `<hr>` nodes untested (`a<hr><hr>b` round-trip through save); (2) undo/redo interaction with the `isRequired` schema-filler fix untested — undo/redo replays transactions through the same content-matching path that produced the original ghost-filler bug; (3) `<hr>` insertion/parse at document start/end/as-sole-content untested. If any of these surface as real bugs later, open a bug task rather than reopening this scenario.
+
 ### Scenario 7.4: Applying inline code and code blocks changes the content and highlights the active toolbar button
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [ ] red-frontend
