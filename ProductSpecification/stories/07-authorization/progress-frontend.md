@@ -275,11 +275,11 @@ so its red-frontend step must add the button first.
 - [S] demo (skipped per convention, see note at top of file)
 
 ### 6.2: "Don't have an account? Register" navigates to the registration page
-- [ ] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
+- [x] red-selenium (test passed on first run — footer link "Нет аккаунта? Зарегистрироваться" already a real react-router `Link to="/register"` on LoginForm.tsx, established during Scenario 1.2's align-design. New test `test_login_register_link_navigation_acceptance.py` + `LoginPageStatements.click_register_link`, landing assertion via `RegisterPageStatements.assert_url_is_register_page`. No RED state achievable, same class as Scenario 6.1. Origin-normalization logic (scheme+host+port, default-port-aware) reused from Scenario 6.1's `assert_url_is_login_page` rather than reimplemented — test-review's duplication detector still flagged `assert_url_is_login_page`/`assert_url_is_register_page` themselves as near-identical, so extracted a shared `BaseFrontendStatements._assert_url_path(driver, app_url, expected_path)` and both now delegate to it (dropped ~13 lines each). Full auth suite: 12 passed, 1 skipped, 1 failed (`test_register_submit_disabled_while_in_flight_acceptance.py`, Scenario 2.3 — pre-existing, unrelated, same root cause noted in Scenario 6.1's entry: 5.1's real API call responds too fast for Selenium to observe the disabled window). 1 passed. Not marked skip — test remains enabled per convention)
+- [S] red-frontend — no logic to test: navigation is a router `Link` already rendered unconditionally, no branching/computation/transformation in LoginForm; behavior fully covered by red-selenium above
+- [S] green-frontend — see above, nothing to implement
+- [S] red-frontend-api — no API call in this scenario, pure client-side routing
+- [S] green-frontend-api — see above
 - [ ] align-design
 - [ ] green-selenium
 - [ ] demo

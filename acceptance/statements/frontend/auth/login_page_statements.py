@@ -1,17 +1,16 @@
 from typing import ClassVar
-from urllib.parse import urlparse
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.support.wait import WebDriverWait
 
-from statements.frontend.base_frontend_statements import WAIT_TIMEOUT_SECONDS, BaseFrontendStatements
+from statements.frontend.base_frontend_statements import BaseFrontendStatements
 
 EMAIL_INPUT = (By.CSS_SELECTOR, "[data-testid='login-email-input']")
 PASSWORD_INPUT = (By.CSS_SELECTOR, "[data-testid='login-password-input']")
 SUBMIT_BUTTON = (By.CSS_SELECTOR, "[data-testid='login-submit-button']")
 PASSWORD_TOGGLE = (By.CSS_SELECTOR, "[data-testid='login-password-toggle']")
 LOADING_INDICATOR = (By.CSS_SELECTOR, "[data-testid='login-loading-indicator']")
+REGISTER_LINK = (By.LINK_TEXT, "Зарегистрироваться")
 
 
 class LoginPageStatements(BaseFrontendStatements):
@@ -25,28 +24,8 @@ class LoginPageStatements(BaseFrontendStatements):
     def navigate_to_login_page(self, driver: WebDriver, app_url: str) -> None:
         driver.get(f"{app_url}/login")
 
-    _DEFAULT_PORTS: ClassVar[dict[str, str]] = {"http": "80", "https": "443"}
-
-    @classmethod
-    def _normalized_origin(cls, url: str) -> tuple[str, str]:
-        parsed = urlparse(url)
-        host = parsed.hostname or ""
-        port = str(parsed.port) if parsed.port else cls._DEFAULT_PORTS.get(parsed.scheme, "")
-        return parsed.scheme, f"{host}:{port}" if port else host
-
     def assert_url_is_login_page(self, driver: WebDriver, app_url: str) -> None:
-        expected_origin = self._normalized_origin(app_url)
-
-        def is_login_page(d: WebDriver) -> bool:
-            actual = urlparse(d.current_url)
-            return (
-                self._normalized_origin(d.current_url) == expected_origin
-                and actual.path.rstrip("/") == "/login"
-            )
-
-        WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(
-            is_login_page, f"expected URL '{app_url}/login', got '{driver.current_url}'"
-        )
+        self._assert_url_path(driver, app_url, "/login")
 
     def assert_email_field_is_visible(self, driver: WebDriver) -> None:
         self._assert_field_visible(
@@ -89,3 +68,6 @@ class LoginPageStatements(BaseFrontendStatements):
 
     def assert_loading_indicator_is_visible(self, driver: WebDriver) -> None:
         self._assert_visible(driver, LOADING_INDICATOR, "loading indicator")
+
+    def click_register_link(self, driver: WebDriver) -> None:
+        self._wait_for_visible(driver, REGISTER_LINK).click()

@@ -1,5 +1,7 @@
 import json
 import time
+from typing import ClassVar
+from urllib.parse import urlparse
 
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -13,6 +15,29 @@ REQUEST_LOG_SETTLE_SECONDS = 1
 
 class BaseFrontendStatements:
     """Shared Selenium wait infrastructure for frontend Statements classes."""
+
+    _DEFAULT_PORTS: ClassVar[dict[str, str]] = {"http": "80", "https": "443"}
+
+    @classmethod
+    def _normalized_origin(cls, url: str) -> tuple[str, str]:
+        parsed = urlparse(url)
+        host = parsed.hostname or ""
+        port = str(parsed.port) if parsed.port else cls._DEFAULT_PORTS.get(parsed.scheme, "")
+        return parsed.scheme, f"{host}:{port}" if port else host
+
+    def _assert_url_path(self, driver: WebDriver, app_url: str, expected_path: str) -> None:
+        expected_origin = self._normalized_origin(app_url)
+
+        def is_expected_page(d: WebDriver) -> bool:
+            actual = urlparse(d.current_url)
+            return (
+                self._normalized_origin(d.current_url) == expected_origin
+                and actual.path.rstrip("/") == expected_path
+            )
+
+        WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(
+            is_expected_page, f"expected URL '{app_url}{expected_path}', got '{driver.current_url}'"
+        )
 
     def _wait_for_visible(self, driver: WebDriver, locator: tuple[str, str]) -> WebElement:
         return WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(ec.visibility_of_element_located(locator))

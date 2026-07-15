@@ -29,6 +29,9 @@ class RegisterPageStatements(BaseFrontendStatements):
     def navigate_to_register_page(self, driver: WebDriver, app_url: str) -> None:
         driver.get(f"{app_url}/register")
 
+    def assert_url_is_register_page(self, driver: WebDriver, app_url: str) -> None:
+        self._assert_url_path(driver, app_url, "/register")
+
     def assert_email_field_is_visible(self, driver: WebDriver) -> None:
         self._assert_field_visible(
             driver, EMAIL_INPUT, "email", self.EXPECTED_EMAIL_PLACEHOLDER, "email field"
