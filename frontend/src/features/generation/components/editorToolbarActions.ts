@@ -25,7 +25,11 @@ export interface ToolbarAction {
 
 export const TOOLBAR_DIVIDER_BEFORE: Set<ToolbarActionKey> = new Set(['bulletList', 'bold'])
 
-function toggleBlockquote(editor: Editor): void {
+// Shared by the blockquote and codeBlock toolbar actions: on an empty
+// selection, toggling a mark needs an explicit line-range selection first
+// (ProseMirror can't apply a mark to a collapsed selection), then the
+// cursor position is restored so typing continues where the user left off.
+function toggleLineMark(editor: Editor, markName: string): void {
   const { selection } = editor.state
   if (selection.empty) {
     const { $from } = selection
@@ -34,29 +38,12 @@ function toggleBlockquote(editor: Editor): void {
       .chain()
       .focus()
       .setTextSelection({ from: $from.start(), to: $from.end() })
-      .toggleMark('blockquote')
+      .toggleMark(markName)
       .setTextSelection({ from: cursorPos, to: cursorPos })
       .run()
     return
   }
-  editor.chain().focus().toggleMark('blockquote').run()
-}
-
-function toggleCodeBlock(editor: Editor): void {
-  const { selection } = editor.state
-  if (selection.empty) {
-    const { $from } = selection
-    const cursorPos = $from.pos
-    editor
-      .chain()
-      .focus()
-      .setTextSelection({ from: $from.start(), to: $from.end() })
-      .toggleMark('codeBlock')
-      .setTextSelection({ from: cursorPos, to: cursorPos })
-      .run()
-    return
-  }
-  editor.chain().focus().toggleMark('codeBlock').run()
+  editor.chain().focus().toggleMark(markName).run()
 }
 
 export const TOOLBAR_ACTIONS: ToolbarAction[] = [
@@ -131,7 +118,7 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     label: '"',
     ariaLabel: 'Цитата',
     testId: 'toolbar-blockquote',
-    run: (editor) => toggleBlockquote(editor),
+    run: (editor) => toggleLineMark(editor, 'blockquote'),
     isActive: (editor) => editor.isActive('blockquote'),
   },
   {
@@ -152,7 +139,7 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     label: '{}',
     ariaLabel: 'Блок кода',
     testId: 'toolbar-code-block',
-    run: (editor) => toggleCodeBlock(editor),
+    run: (editor) => toggleLineMark(editor, 'codeBlock'),
     isActive: (editor) => editor.isActive('codeBlock'),
   },
 ]

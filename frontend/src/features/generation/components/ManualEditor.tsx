@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -8,7 +8,8 @@ import { HorizontalRuleNode } from './horizontalRuleNode'
 import { CodeBlockMark } from './codeBlockMark'
 import './ManualEditor.css'
 import type { DocumentType } from '../documentTypes'
-import { createDocument, getDocument, saveDocument } from '../api/documentApi'
+import { saveDocument } from '../api/documentApi'
+import { useDocumentInit } from '../hooks/useDocumentInit'
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
 import { AppHeader } from '../../../shared/components/AppHeader'
 import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from './editorDomSync'
@@ -127,37 +128,7 @@ export function ManualEditor({
     },
   })
 
-  useEffect(() => {
-    let cancelled = false
-    if (existingDocumentId) {
-      getDocument(existingDocumentId)
-        .then((result) => {
-          if (cancelled) return
-          setDocumentId(result.documentId)
-          setVersion(result.version)
-          editor?.commands.setContent(result.content)
-        })
-        .catch((error) => {
-          // Error surfacing (retry/UI state) is out of scope for this scenario;
-          // logging keeps the failure from being silently swallowed.
-          console.error('Failed to load document', error)
-        })
-    } else {
-      createDocument(documentType)
-        .then((result) => {
-          if (!cancelled) setDocumentId(result.documentId)
-        })
-        .catch((error) => {
-          // Error surfacing (retry/UI state) is out of scope for this scenario;
-          // logging keeps the failure from being silently swallowed.
-          console.error('Failed to create document', error)
-        })
-    }
-    return () => {
-      cancelled = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [documentType, existingDocumentId])
+  useDocumentInit({ documentType, existingDocumentId, editor, setDocumentId, setVersion })
 
   return (
     <div className="manual-editor-page" data-testid="manual-editor">
