@@ -90,8 +90,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [x] green-acceptance — both sub-cases pass (2 passed). Fixed a stale literal along the way: acceptance fixture `EXPECTED_DUPLICATE_EMAIL_ERROR`'s message text ("An account already exists for this email.") never matched the usecase's already-committed message ("An account with this email address already exists.") — aligned the fixture to the usecase text rather than the reverse, since the usecase/rest message was locked first (red-usecase/green-usecase, red-adapter rest/green-adapter rest all already pinned it). Known gap carried from red-acceptance still open: the "verified account" sub-case can't actually verify yet (`/verify` doesn't exist until 3.x) — harmless here since duplicate rejection doesn't depend on verification status, but tracked, not newly introduced.
 
 ### Scenario 2.3: Case-folded email uniqueness
-- [ ] red-acceptance
-- [ ] design
+- [x] red-acceptance — registers `user-{uuid}@example.ru` then `USER-{uuid}@Example.ru` (same local part, different case); fails with `expected 409 Conflict (duplicate email), got status_code=201` as predicted (current unique constraint is case-sensitive, mixed-case duplicate slips through)
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery

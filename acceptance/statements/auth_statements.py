@@ -130,6 +130,15 @@ class AuthStatements:
         await self._client.verify(VerifyRequestDto(email=email, code=code))
         return await self._register_with_email(email)
 
+    async def given_duplicate_registration_with_different_case(
+        self,
+    ) -> RegisterResponseDto:
+        local_part = uuid.uuid4().hex
+        original_email = f"user-{local_part}@example.ru"
+        cased_email = f"USER-{local_part}@Example.ru"
+        await self._register_with_email(original_email)
+        return await self._register_with_email(cased_email)
+
     async def _register_with_email(self, email: str) -> RegisterResponseDto:
         scope = RegisterScope.builder(email=email)
         request = scope.to_request_dto()
