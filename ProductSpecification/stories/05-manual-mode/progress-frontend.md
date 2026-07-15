@@ -205,6 +205,8 @@ policy.
 - [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
+**Deferred coverage gaps (premortem; not blocking, no tracked follow-up steps yet — reversible client-side editor-state risks, not data loss):** (1) multi-step undo/redo unwind untested — only a single undo→redo round trip is exercised; (2) undo/redo interaction with the custom blockquote/codeBlock/horizontalRule marks/nodes untested — their compound cursor-restore transactions and custom `parseHTML` attrs are unverified territory for ProseMirror's history plugin; (3) `align-design`'s CSS specificity trap between `:disabled` and `[aria-pressed='true']` (currently unreachable, no action combines both). If any surface as real bugs, open a bug task rather than reopening this scenario.
+
 ### Scenario 7.6: Applying an H3 heading changes the content and highlights the active toolbar button
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [ ] red-frontend
