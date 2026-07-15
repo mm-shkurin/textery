@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from auth.account import Account
 from model.auth.account_model import AccountModel
+from shared.exceptions import ConflictException
 
 
 class AccountStorageStatements:
@@ -16,11 +17,12 @@ class AccountStorageStatements:
         self._session = session
         self.saved_account: Optional[Account] = None
         self.fetched_model: Optional[AccountModel] = None
+        self.raised_error: Optional[Exception] = None
 
-    def build_account(self) -> Account:
+    def build_account(self, email: str = "student@example.com") -> Account:
         return Account.create(
             id=uuid4(),
-            email="student@example.com",
+            email=email,
             password_hash="hashed-password-value",
             created_at=datetime.now(timezone.utc),
         )
@@ -28,6 +30,18 @@ class AccountStorageStatements:
     async def save_account(self, account: Account) -> None:
         self.saved_account = account
         await self._storage.save(account)
+
+    async def save_account_with_duplicate_email(self, email: str) -> None:
+        duplicate = self.build_account(email=email)
+        try:
+            await self._storage.save(duplicate)
+        except ConflictException as error:
+            self.raised_error = error
+
+    def assert_conflict_error_raised(self) -> None:
+        assert isinstance(self.raised_error, ConflictException), (
+            f"expected ConflictException, got {self.raised_error!r}"
+        )
 
     async def fetch_saved_account_row(self) -> None:
         stmt = select(AccountModel).where(AccountModel.id == self.saved_account.id)
