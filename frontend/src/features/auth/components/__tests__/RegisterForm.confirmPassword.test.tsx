@@ -104,6 +104,16 @@ describe('RegisterForm confirm password validation', () => {
     expect(screen.queryByTestId('register-confirm-error')).not.toBeInTheDocument()
   })
 
+  it('shows no inline validation message when password is blurred first, before confirm has ever been blurred, even though confirm is filled and mismatched', () => {
+    const { passwordInput, confirmInput } = renderRegisterForm()
+
+    fireEvent.change(passwordInput, { target: { value: 'Str0ng!Pass' } })
+    fireEvent.change(confirmInput, { target: { value: 'Different1!' } })
+    fireEvent.blur(passwordInput)
+
+    expect(screen.queryByTestId('register-confirm-error')).not.toBeInTheDocument()
+  })
+
   it('shows both the password policy error and the confirm mismatch error when password is invalid and confirm does not match', () => {
     const { passwordInput, confirmInput } = renderRegisterForm()
 
