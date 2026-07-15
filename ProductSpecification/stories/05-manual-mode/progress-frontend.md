@@ -89,9 +89,9 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
 ### Scenario 5.1: A successful save shows a lightweight confirmation, no full-page transition
-- [ ] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
+- [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [x] red-frontend — predicted `waitFor` timeout looking for "Сохранено" text (no third save-status state exists yet, only draft/creating); actual matched exactly. Also strengthened via test-review to assert `onBack` never fires (real "no navigation" check) and post-save UI settles (aria-disabled=false, spinner gone).
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design

@@ -5,12 +5,13 @@ import * as documentApi from '../../api/documentApi'
 
 vi.mock('../../api/documentApi')
 
-async function renderEditorWithDocumentCreated() {
+async function renderEditorWithDocumentCreated(onBack = vi.fn()) {
   vi.mocked(documentApi.createDocument).mockResolvedValue({ documentId: 'doc-1', status: 'draft' })
-  render(<ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={vi.fn()} />)
+  render(<ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={onBack} />)
   await waitFor(() => {
     expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
   })
+  return onBack
 }
 
 describe('ManualEditor', () => {
@@ -216,5 +217,30 @@ describe('ManualEditor', () => {
     expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', 'second content', 1)
 
     consoleErrorSpy.mockRestore()
+  })
+
+  // TDD Red Phase - save-status area has no "saved" state yet
+  it.skip('a successful save shows an inline "Сохранено" confirmation and stays on the same editor with no page navigation', async () => {
+    const onBack = await renderEditorWithDocumentCreated()
+
+    const contentArea = screen.getByTestId('editor-content-area')
+    contentArea.textContent = 'hello world'
+    fireEvent.input(contentArea)
+
+    vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 2 })
+
+    const saveButton = screen.getByRole('button', { name: 'Сохранить' })
+    fireEvent.click(saveButton)
+
+    expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
+    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', 'hello world', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('Сохранено')).toBeInTheDocument()
+    })
+    expect(saveButton).toHaveAttribute('aria-disabled', 'false')
+    expect(screen.queryByTestId('save-spinner')).not.toBeInTheDocument()
+    expect(screen.getByTestId('manual-editor')).toBeInTheDocument()
+    expect(onBack).not.toHaveBeenCalled()
   })
 })
