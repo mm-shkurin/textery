@@ -67,6 +67,43 @@ describe('RegisterForm confirm password validation', () => {
     expect(screen.queryByTestId('register-confirm-error')).not.toBeInTheDocument()
   })
 
+  it('shows no inline validation message when password is empty and confirm password is filled on blur', () => {
+    const { confirmInput } = renderRegisterForm()
+
+    fireEvent.change(confirmInput, { target: { value: 'Different1!' } })
+    fireEvent.blur(confirmInput)
+
+    expect(screen.queryByTestId('register-confirm-error')).not.toBeInTheDocument()
+  })
+
+  it('re-validates the confirm mismatch when the password is changed after confirm was already validated as matching', () => {
+    const { passwordInput, confirmInput } = renderRegisterForm()
+
+    fireEvent.change(passwordInput, { target: { value: 'Str0ng!Pass' } })
+    fireEvent.change(confirmInput, { target: { value: 'Str0ng!Pass' } })
+    fireEvent.blur(confirmInput)
+    expect(screen.queryByTestId('register-confirm-error')).not.toBeInTheDocument()
+
+    fireEvent.change(passwordInput, { target: { value: 'Different1!' } })
+    fireEvent.blur(passwordInput)
+
+    expect(screen.getByTestId('register-confirm-error')).toHaveTextContent(MISMATCH_MESSAGE, { exact: true })
+  })
+
+  it('clears the confirm mismatch error when the password is changed to match an already-mismatched confirm', () => {
+    const { passwordInput, confirmInput } = renderRegisterForm()
+
+    fireEvent.change(passwordInput, { target: { value: 'Str0ng!Pass' } })
+    fireEvent.change(confirmInput, { target: { value: 'Different1!' } })
+    fireEvent.blur(confirmInput)
+    expect(screen.getByTestId('register-confirm-error')).toHaveTextContent(MISMATCH_MESSAGE, { exact: true })
+
+    fireEvent.change(passwordInput, { target: { value: 'Different1!' } })
+    fireEvent.blur(passwordInput)
+
+    expect(screen.queryByTestId('register-confirm-error')).not.toBeInTheDocument()
+  })
+
   it('shows both the password policy error and the confirm mismatch error when password is invalid and confirm does not match', () => {
     const { passwordInput, confirmInput } = renderRegisterForm()
 
