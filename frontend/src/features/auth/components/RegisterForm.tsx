@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
 import { useSubmitPlaceholder } from '../hooks/useSubmitPlaceholder'
-import { isPasswordCompliant, PASSWORD_POLICY_HINT } from '../hooks/passwordPolicy'
+import { isPasswordCompliant, PASSWORD_POLICY_HINT } from '../utils/passwordPolicy'
 import './AuthForm.css'
 import './RegisterForm.css'
 
@@ -40,13 +40,12 @@ export function RegisterForm() {
             data-testid="register-password-input"
             onBlur={handlePasswordBlur}
           />
-          {passwordError ? (
-            <div className="register-hint register-hint-error" data-testid="register-password-error">
-              {PASSWORD_POLICY_HINT}
-            </div>
-          ) : (
-            <div className="register-hint">{PASSWORD_POLICY_HINT}</div>
-          )}
+          <div
+            className={passwordError ? 'register-hint register-hint-error' : 'register-hint'}
+            data-testid={passwordError ? 'register-password-error' : undefined}
+          >
+            {PASSWORD_POLICY_HINT}
+          </div>
         </div>
         <div className="auth-field">
           <label htmlFor="confirm">Повторите пароль</label>

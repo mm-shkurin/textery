@@ -69,6 +69,7 @@ describe('RegisterForm', () => {
     ['missing an uppercase letter', 'nouppercase1!'],
     ['missing a lowercase letter', 'NOLOWERCASE1!'],
     ['missing a special character', 'NoSpecial123'],
+    ['using only whitespace where a special character is required', 'Password1 '],
     ['too short (7 chars)', 'Sh0rt!!'],
   ])('shows the inline validation message when the password is %s', (_label, value) => {
     renderWithRouter(<RegisterForm />)

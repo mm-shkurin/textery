@@ -5,8 +5,8 @@ export function isPasswordCompliant(password: string): boolean {
   return (
     password.length >= 8 &&
     /\d/.test(password) &&
-    /[A-ZА-Я]/.test(password) &&
-    /[a-zа-я]/.test(password) &&
-    /[^A-Za-zА-Яа-я0-9]/.test(password)
+    /[A-ZА-ЯЁ]/.test(password) &&
+    /[a-zа-яё]/.test(password) &&
+    /[^A-Za-zА-Яа-яЁё0-9\s]/.test(password)
   )
 }
