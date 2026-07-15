@@ -151,9 +151,9 @@ so its red-frontend step must add the button first.
 - [ ] demo
 
 ### 3.2: Login submission shows a loading state
-- [ ] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
+- [ ] red-selenium (deferred — requires running backend+frontend containers, out of scope this session; will backfill after red-frontend/green-frontend land)
+- [x] red-frontend (LoginForm.test.tsx "shows a visible loading indicator while submitting and removes it once settled"; RED confirmed live — TestingLibraryElementError, no login-loading-indicator element; asserts absence before, className on appearance, and disappearance after settle, closing the coverage gap premortem flagged on Scenario 3.1's register indicator; test-review found nothing to tighten)
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design

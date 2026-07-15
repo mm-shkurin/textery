@@ -76,4 +76,18 @@ describe('LoginForm', () => {
 
     await waitFor(() => expect(submitButton).not.toBeDisabled())
   })
+
+  it('shows a visible loading indicator while submitting and removes it once settled', async () => {
+    renderWithRouter(<LoginForm />)
+    const submitButton = screen.getByTestId('login-submit-button')
+
+    expect(screen.queryByTestId('login-loading-indicator')).not.toBeInTheDocument()
+
+    fireEvent.click(submitButton)
+
+    const indicator = screen.getByTestId('login-loading-indicator')
+    expect(indicator).toHaveClass('auth-loading-indicator')
+
+    await waitFor(() => expect(screen.queryByTestId('login-loading-indicator')).not.toBeInTheDocument())
+  })
 })
