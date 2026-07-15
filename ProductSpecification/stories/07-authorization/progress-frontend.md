@@ -144,9 +144,9 @@ so its red-frontend step must add the button first.
 - [x] red-selenium (test_register_submit_loading_indicator_acceptance.py, RED confirmed — TimeoutException, no `[data-testid='register-loading-indicator']` element rendered)
 - [x] red-frontend (RegisterForm.test.tsx "shows a loading indicator while submitting and not before"; RED confirmed live, un-skipped by test-review since a RED test must actually run and fail — TestingLibraryElementError, no register-loading-indicator element)
 - [x] green-frontend (added `data-testid="register-loading-indicator"` element rendered while `isSubmitting`, mirroring the login flow's placeholder pattern. 3 passed)
-- [~] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
+- [S] red-frontend-api — no real register API call exists yet, same scoping decision as Scenario 2.3's register test and login/confirm (line 129/133): loading state is a pure client-side placeholder via useSubmitPlaceholder, no endpoint to test against
+- [S] green-frontend-api — see above
+- [~] align-design
 - [ ] green-selenium
 - [ ] demo
 
