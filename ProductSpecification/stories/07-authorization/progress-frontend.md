@@ -171,9 +171,9 @@ so its red-frontend step must add the button first.
 - [ ] demo
 
 ### 4.2: Password/confirm mismatch shown inline
-- [ ] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
+- [ ] red-selenium (deferred — docker build blocker, not backend-dependent, same as prior scenarios)
+- [x] red-frontend (new file `RegisterForm.confirmPassword.test.tsx`, kept separate from `RegisterForm.test.tsx` to respect the 200-line cap. Learned from 4.1's 4-review-round history and front-loaded coverage in this first commit: (1) basic mismatch shows `data-testid="register-confirm-error"` with text "Пароли не совпадают", (2) no error when matching, (3) duplicate-text guard skipped — RegisterForm's confirm field has no always-visible static hint to duplicate against (checked component structure first, unlike 4.1's vacuous-guard mistake), (4) transition test on one mounted instance: mismatch → blur (error shows) → corrected to match → blur (error clears), (5) edge case: confirm blurred while empty (both empty, or confirm empty/password filled) → no error, mirroring 4.1's empty-password decision, (6) simultaneous-errors case: password invalid AND confirm mismatched → both `register-password-error` and `register-confirm-error` show at once (independent per-field blur handlers, no precedence). RED confirmed: 3 failed / 3 passed — the 3 failures (basic mismatch, transition, simultaneous-errors) all threw `TestingLibraryElementError: Unable to find an element by: [data-testid="register-confirm-error"]` from `getByTestId`, exactly as predicted; the 3 passes (no-error-on-match, empty-confirm, both-empty) pass trivially since no error is rendered today, which already matches the intended behavior. The red-agent had marked the 3 failing tests with `it.skip` — corrected before commit, since this project's convention (established Scenario 1.1 onward) requires RED tests to actually run and fail, never skip-marked. test-review's sub-detectors then flagged real assertion-strictness gaps: two `toHaveTextContent` calls used default substring matching instead of `{ exact: true }`, the transition test's mid-flow assertion only checked presence not the mismatch text, and the simultaneous-errors test never asserted the password-policy error's actual content — all fixed, plus removed stray process-narration comments left in the test file. RED reconfirmed after fixes: 3 failed, 18 passed.)
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
