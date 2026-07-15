@@ -1,5 +1,5 @@
 // HTTP client for the manual-document API (POST create — synchronous, no LLM/polling).
-import { API_BASE, readErrorMessage } from './httpClient'
+import { API_BASE, request } from './httpClient'
 
 export interface CreateDocumentResult {
   documentId: string
@@ -7,21 +7,21 @@ export interface CreateDocumentResult {
 }
 
 export async function createDocument(documentType: string): Promise<CreateDocumentResult> {
-  const res = await fetch(`${API_BASE}/api/v1/documents`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Idempotency-Key': crypto.randomUUID(),
+  const data = (await request(
+    `${API_BASE}/api/v1/documents`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Idempotency-Key': crypto.randomUUID(),
+      },
+      body: JSON.stringify({
+        document_type: documentType,
+        content: '',
+      }),
     },
-    body: JSON.stringify({
-      document_type: documentType,
-      content: '',
-    }),
-  })
-  if (!res.ok) {
-    throw new Error(await readErrorMessage(res, 'Не удалось создать документ'))
-  }
-  const data = await res.json()
+    'Не удалось создать документ'
+  )) as { document_id: string; status: string }
   return { documentId: data.document_id, status: data.status }
 }
 
@@ -35,19 +35,19 @@ export async function saveDocument(
   content: string,
   version: number
 ): Promise<SaveDocumentResult> {
-  const res = await fetch(`${API_BASE}/api/v1/documents/${documentId}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
+  const data = (await request(
+    `${API_BASE}/api/v1/documents/${documentId}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        content,
+        version,
+      }),
     },
-    body: JSON.stringify({
-      content,
-      version,
-    }),
-  })
-  if (!res.ok) {
-    throw new Error(await readErrorMessage(res, 'Не удалось сохранить документ'))
-  }
-  const data = await res.json()
+    'Не удалось сохранить документ'
+  )) as { status: string; version: number }
   return { status: data.status, version: data.version }
 }

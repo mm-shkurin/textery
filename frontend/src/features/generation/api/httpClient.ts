@@ -11,3 +11,17 @@ export async function readErrorMessage(res: Response, fallback: string): Promise
   }
   return `${fallback} (HTTP ${res.status})`
 }
+
+// Shared fetch → error-check → JSON-parse skeleton used by every generation-feature
+// API client. Callers map the raw response body into their own typed result shape.
+export async function request(
+  url: string,
+  options: RequestInit,
+  errorFallback: string
+): Promise<unknown> {
+  const res = await fetch(url, options)
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, errorFallback))
+  }
+  return res.json()
+}

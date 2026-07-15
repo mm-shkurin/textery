@@ -27,6 +27,11 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
     setIsSaving(true)
     saveDocument(documentId, editor.getHTML(), version)
       .then((result) => setVersion(result.version))
+      .catch((error) => {
+        // Error surfacing (retry/UI state) is out of scope for this scenario;
+        // logging keeps the failure from being silently swallowed.
+        console.error('Failed to save document', error)
+      })
       .finally(() => setIsSaving(false))
   }
 
