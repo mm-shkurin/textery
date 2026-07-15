@@ -80,9 +80,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 ### Scenario 2.2: Duplicate email is rejected, verified or pending
 - [x] red-acceptance — two sub-cases (duplicate against verified account, duplicate against pending account); `/verify` endpoint doesn't exist yet so the "verified" setup calls the new `client.verify()` test-infra helper without asserting on it (404s silently today) — duplicate-rejection assertion fails identically either way since no duplicate check exists at all yet
 - [x] design — DB-level unique constraint/index on `accounts.email` (case-sensitive, exact-match; case-fold uniqueness deferred to Scenario 2.3, out of scope here). `SqlAlchemyAccountRepository.save()` catches the resulting `IntegrityError` and raises a defined exception (closes the "no exception mapping" gap logged in `carryover.md`). `RegisterUser.execute` lets it propagate; new error code `EMAIL_ALREADY_REGISTERED` → 409 via the existing generic exception mapping wired since 1.1. No new rest adapter surface needed. Chosen over app-level check-then-insert to avoid the TOCTOU race Scenario 2.4a will test. No ADR (mechanical, low-ambiguity, matches this story's existing 1.5/2.1 pattern). Known gap not fixed here: the already-committed red-acceptance test's "verified account" sub-case can't actually verify yet (`/verify` doesn't exist until 3.x) — flagged by both review passes on the red-acceptance commit, left deferred/tracked, not blocking.
-- [~] red-usecase
-- [ ] red-usecase
-- [ ] green-usecase
+- [x] red-usecase — mocks `AccountRepository.save()` to raise `ConflictException` (reused from `generation_storage.py`'s optimistic-concurrency use), asserts `RegisterUser.execute` translates it to `ValidationException(error_code="EMAIL_ALREADY_REGISTERED")`; test-review strengthened to also assert no account and no verification code are persisted on the duplicate path (closes the scenario docstring's "no second account is created" clause)
+- [~] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
 

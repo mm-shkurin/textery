@@ -8,7 +8,7 @@ from fake.auth.fake_account_repository import FakeAccountRepository
 from fake.auth.fake_clock import FakeClock
 from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
 from scope.register_request_scope import RegisterRequestScope
-from shared.exceptions import ValidationException
+from shared.exceptions import ConflictException, ValidationException
 
 
 class RegisterStatements:
@@ -18,6 +18,8 @@ class RegisterStatements:
     EXPECTED_INVALID_PASSWORD_MESSAGE = "The password does not meet the password policy."
     EXPECTED_PASSWORD_MISMATCH_ERROR_CODE = "PASSWORD_MISMATCH"
     EXPECTED_PASSWORD_MISMATCH_MESSAGE = "The password confirmation does not match."
+    EXPECTED_EMAIL_ALREADY_REGISTERED_ERROR_CODE = "EMAIL_ALREADY_REGISTERED"
+    EXPECTED_EMAIL_ALREADY_REGISTERED_MESSAGE = "An account with this email address already exists."
     FIXED_CLOCK_NOW = datetime(2026, 7, 14, 12, 0, 0, tzinfo=timezone.utc)
 
     def __init__(self) -> None:
@@ -41,6 +43,24 @@ class RegisterStatements:
         await self._attempt_registering(
             RegisterRequestScope.builder(confirm_password=confirm_password)
         )
+
+    async def attempt_registering_when_email_already_registered(self) -> None:
+        self.account_repository.raise_on_save = ConflictException(
+            "account with this email already exists"
+        )
+        scope = RegisterRequestScope.builder()
+        try:
+            await RegisterUser(
+                account_repository=self.account_repository,
+                clock=self.clock,
+                verification_code_repository=self.verification_code_repository,
+            ).execute(
+                email=scope.email,
+                password=scope.password,
+                confirm_password=scope.confirm_password,
+            )
+        except Exception as exc:
+            self.thrown_exception = exc
 
     async def register_and_return_account(self) -> None:
         scope = RegisterRequestScope.builder()
@@ -83,6 +103,20 @@ class RegisterStatements:
     def assert_password_mismatch_error_raised(self) -> None:
         self._assert_validation_error_raised(
             self.EXPECTED_PASSWORD_MISMATCH_ERROR_CODE, self.EXPECTED_PASSWORD_MISMATCH_MESSAGE
+        )
+
+    def assert_email_already_registered_error_raised(self) -> None:
+        self._assert_validation_error_raised(
+            self.EXPECTED_EMAIL_ALREADY_REGISTERED_ERROR_CODE,
+            self.EXPECTED_EMAIL_ALREADY_REGISTERED_MESSAGE,
+        )
+        assert self.verification_code_repository.saved_codes == [], (
+            f"expected no VerificationCode to be persisted when registration is rejected "
+            f"for a duplicate email, got {self.verification_code_repository.saved_codes}"
+        )
+        assert self.account_repository.saved_accounts == [], (
+            f"expected no Account to be persisted when registration is rejected "
+            f"for a duplicate email, got {self.account_repository.saved_accounts}"
         )
 
     def assert_registration_succeeded(self) -> None:
