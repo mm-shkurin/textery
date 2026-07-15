@@ -60,9 +60,9 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 
 ### Scenario 3.2: The toolbar reflects formatting state at the cursor position, not globally
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
-- [~] red-frontend
-- [ ] green-frontend
-- [ ] red-frontend-api
+- [x] red-frontend — added cursor-move regression test (bold→plain); already GREEN, zero production changes. Covered by scenario 3.1's cursor-driven `isActive` + `shouldRerenderOnTransaction` + `syncNativeSelectionToProseMirror`.
+- [S] green-frontend — capability already provided by scenario 3.1, see red-frontend note
+- [~] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
 - [ ] green-selenium
