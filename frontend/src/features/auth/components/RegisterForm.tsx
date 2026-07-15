@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
-import { useSubmitPlaceholder } from '../hooks/useSubmitPlaceholder'
+import { register, type RegisterApiError } from '../api/registerApi'
 import {
   CONFIRM_MISMATCH_MESSAGE,
   isConfirmMismatched,
@@ -13,12 +13,33 @@ import './AuthForm.css'
 import './RegisterForm.css'
 
 export function RegisterForm() {
-  const { isSubmitting, handleSubmit } = useSubmitPlaceholder()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [emailError, setEmailError] = useState<string | null>(null)
   const [passwordError, setPasswordError] = useState(false)
   const [confirmError, setConfirmError] = useState(false)
   const confirmTouchedRef = useRef(false)
+  const emailInputRef = useRef<HTMLInputElement>(null)
   const passwordInputRef = useRef<HTMLInputElement>(null)
   const confirmInputRef = useRef<HTMLInputElement>(null)
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      await register(emailInputRef.current?.value ?? '', passwordInputRef.current?.value ?? '')
+      setEmailError(null)
+    } catch (error) {
+      if (error && typeof error === 'object' && 'errorCode' in error) {
+        const apiError = error as RegisterApiError
+        if (apiError.errorCode === 'EMAIL_ALREADY_EXISTS') {
+          setEmailError(apiError.message)
+        }
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   function handlePasswordBlur(event: React.FocusEvent<HTMLInputElement>) {
     const password = event.target.value
@@ -48,7 +69,13 @@ export function RegisterForm() {
             type="email"
             placeholder="email@example.ru"
             data-testid="register-email-input"
+            ref={emailInputRef}
           />
+          {emailError && (
+            <div className="register-hint register-hint-error" data-testid="register-email-error">
+              {emailError}
+            </div>
+          )}
         </div>
         <div className="auth-field">
           <label htmlFor="password">Пароль</label>
