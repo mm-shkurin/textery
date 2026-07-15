@@ -3,6 +3,17 @@
 Owns: Frontend Scenarios. Narrative/decisions/Spec checklist live in `progress.md`;
 `ProductSpecification/stories.md` is the cross-file rollup.
 
+**Policy (2026-07-15):** backend is developed in a parallel branch/session and is
+unavailable on this branch. Every `red-selenium` / `green-selenium` / `demo` step
+requires a live app to drive Selenium against — until backend is available here,
+mark each as `[S]` with reason "backend unavailable on this branch (backend
+developed in parallel session/branch); no live app to drive Selenium against" (or,
+for `demo`, "same reason, no live backend to drive a visible Selenium run
+against") the moment it becomes the next step, then continue to the next
+backend-independent step (`red-frontend`, `green-frontend`, `red-frontend-api`,
+`green-frontend-api`, `align-design`). Revisit this policy once backend is
+reachable — the skipped scenarios' Selenium coverage still needs to run then.
+
 ## Frontend Scenarios (02_UI_Tests.md)
 
 ### Scenario 1.1: The mode modal now shows both modes as available
