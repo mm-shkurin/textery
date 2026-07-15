@@ -21,6 +21,7 @@ class VerifyAccountStatements:
         self.verification_code_repository = FakeVerificationCodeRepository()
         self.registered_email: Optional[str] = None
         self.issued_code: Optional[str] = None
+        self.original_account_snapshot = None
 
     async def given_pending_account_with_verification_code(self) -> None:
         scope = RegisterRequestScope.builder()
@@ -35,6 +36,16 @@ class VerifyAccountStatements:
         )
         self.registered_email = result.account.email
         self.issued_code = result.verification_code.code
+        # Snapshot field values (not the object itself) before verify() mutates
+        # it in place -- FakeAccountRepository shares object identity across
+        # saves/finds, so holding a reference would alias the post-verify state.
+        self.original_account_snapshot = {
+            "id": result.account.id,
+            "email": result.account.email,
+            "password_hash": result.account.password_hash,
+            "created_at": result.account.created_at,
+            "is_verified": result.account.is_verified,
+        }
 
     async def verify_with_the_issued_code(self) -> None:
         try:
@@ -55,27 +66,27 @@ class VerifyAccountStatements:
             f"expected the Account to be saved twice (once on register, once on verify), "
             f"got {len(self.account_repository.saved_accounts)} saves"
         )
-        original_account = self.account_repository.saved_accounts[0]
+        original = self.original_account_snapshot
         verified_account = self.account_repository.saved_accounts[-1]
-        assert verified_account.id == original_account.id, (
+        assert verified_account.id == original["id"], (
             f"expected the same Account.id to be re-persisted on verify, "
-            f"got '{verified_account.id}' vs original '{original_account.id}'"
+            f"got '{verified_account.id}' vs original '{original['id']}'"
         )
-        assert verified_account.email == original_account.email, (
+        assert verified_account.email == original["email"], (
             f"expected Account.email to be unchanged by verify, "
-            f"got '{verified_account.email}' vs original '{original_account.email}'"
+            f"got '{verified_account.email}' vs original '{original['email']}'"
         )
-        assert verified_account.password_hash == original_account.password_hash, (
+        assert verified_account.password_hash == original["password_hash"], (
             f"expected Account.password_hash to be unchanged by verify, "
-            f"got '{verified_account.password_hash}' vs original '{original_account.password_hash}'"
+            f"got '{verified_account.password_hash}' vs original '{original['password_hash']}'"
         )
-        assert verified_account.created_at == original_account.created_at, (
+        assert verified_account.created_at == original["created_at"], (
             f"expected Account.created_at to be unchanged by verify, "
-            f"got '{verified_account.created_at}' vs original '{original_account.created_at}'"
+            f"got '{verified_account.created_at}' vs original '{original['created_at']}'"
         )
-        assert original_account.is_verified is False, (
-            f"expected the first saved Account (from register) to be unverified, "
-            f"got {original_account.is_verified}"
+        assert original["is_verified"] is False, (
+            f"expected the Account to be unverified immediately after registration, "
+            f"got {original['is_verified']}"
         )
         assert verified_account.is_verified is True, (
             f"expected the persisted Account.is_verified to be True after verification, "

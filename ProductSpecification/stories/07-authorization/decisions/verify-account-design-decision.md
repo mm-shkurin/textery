@@ -30,8 +30,17 @@ a verified account after reconstruction (`carryover.md` quirk from scenario 1.5:
     1. `find_by_email(email)` — not found or already verified → domain-appropriate rejection (this scenario, 3.1, only needs the happy path; not-found/already-verified error codes are 3.5's scope, added there, not invented early).
     2. `find_active_by_account_id(account.id)` — no active code → rejection (3.2/3.3's scope).
     3. Compare `code` to the found code's `.code` as strings (never coerced to int, per `auth_verify.yaml`).
-    4. On match: `account.verify()`, persist via `account_repository.save()` (same `save()` method already used for insert — becomes an upsert/update at the adapter layer, decided at `adapters-discovery` when the real SQL adapter is touched, not here).
+    4. On match: `account.verify()`, persist via `account_repository.save()` (same `save()` method already used for insert — becomes an upsert/update at the adapter layer, decided at `adapters-discovery` when the real SQL adapter is touched, not here). Mark the matched code consumed (`verification_code.consume(consumed_at=clock.now())` domain method + `verification_code_repository.save()`) in the same step — see amendment below.
+    5. Commit the write via an injected `UnitOfWork` — see amendment below.
 - No new response DTO needed beyond what `auth_verify.yaml` already specifies (`{"is_verified": true}`) — deferred to `adapters-discovery`/`red-adapter rest`.
+
+## Amendment (2026-07-15, premortem on the red-usecase commit)
+
+Three gaps found before green-usecase locked scope, all folded in now rather than discovered later at 3.4/adapters-discovery time:
+
+1. **Durability**: `RegisterUser` takes an injected `unit_of_work: Optional[UnitOfWork]` and calls `commit()` after its writes (scenario 2.5's ADR). `VerifyAccount` must do the same — add `unit_of_work: Optional[UnitOfWork] = None` to its constructor (reusing the existing port, `_NullUnitOfWork` fallback mirroring `RegisterUser`'s pattern) and call `unit_of_work.commit()` after `account_repository.save()`. Without this, a real adapter with per-request commit semantics could silently lose the verify write.
+2. **Code consumption**: step 4 originally said only "`account.verify()`, persist via `account_repository.save()`" — it never marked the matched `VerificationCode` as consumed. Left as-is, scenario 3.4 ("replay of an already-consumed code") would have nothing to check against — the code would stay reusable forever. Fixed: `VerificationCode` gains a `consume(consumed_at: datetime) -> None` domain method (mirrors `Account.verify()`'s pattern — single controlled mutator, idempotent-safe for 3.4's replay case), called on match, persisted via `verification_code_repository.save()` in the same step as the account save.
+3. **Email lookup normalization**: `execute(email: str, code: str)` took the raw string straight into `find_by_email(email)`, unlike `RegisterUser` which routes through the `Email` value object (NFC-normalize + lowercase) before any repository call. A verify request whose email differs only in case/Unicode form from the registered (normalized, stored) email would silently 404/not-found. Fixed: `VerifyAccount.execute` constructs `Email(email).value` first and looks up by the normalized form, matching how the email is actually stored (scenario 2.3's normalization already lands the canonical form in the DB).
 
 ## Edge Cases (scoped to 3.1; later sub-scenarios own the rest, not duplicated here)
 
