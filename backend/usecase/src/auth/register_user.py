@@ -12,7 +12,7 @@ from auth.verification_code import VerificationCode
 from auth.verification_code_repository import VerificationCodeRepository
 from shared.clock import Clock
 from shared.exceptions import ConflictException, RegistrationFailedException, ValidationException
-from shared.unit_of_work import UnitOfWork
+from shared.unit_of_work import NullUnitOfWork, UnitOfWork
 
 
 class _SystemClock:
@@ -22,14 +22,6 @@ class _SystemClock:
 
 class _NullRepository:
     async def save(self, entity) -> None:
-        return None
-
-
-class _NullUnitOfWork:
-    async def commit(self) -> None:
-        return None
-
-    async def rollback(self) -> None:
         return None
 
 
@@ -50,7 +42,7 @@ class RegisterUser:
         self.verification_code_repository = (
             verification_code_repository or _NullRepository()
         )
-        self.unit_of_work = unit_of_work or _NullUnitOfWork()
+        self.unit_of_work = unit_of_work or NullUnitOfWork()
 
     async def execute(self, email: str, password: str, confirm_password: str) -> RegistrationResult:
         email_value_object = self._validate_email(email)

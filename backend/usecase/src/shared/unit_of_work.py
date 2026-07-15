@@ -7,3 +7,13 @@ class UnitOfWork(Protocol):
 
     async def rollback(self) -> None:
         ...
+
+
+class NullUnitOfWork:
+    """No-op UnitOfWork used when a usecase is constructed without one."""
+
+    async def commit(self) -> None:
+        return None
+
+    async def rollback(self) -> None:
+        return None

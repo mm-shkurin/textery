@@ -21,13 +21,20 @@ class VerificationCode(object):
     ) -> None:
         self.id = id
         self.account_id = account_id
-        self.code = code
+        self._code = code
         self.expires_at = expires_at
         self._consumed_at = consumed_at
 
     @property
+    def code(self) -> str:
+        return self._code
+
+    @property
     def consumed_at(self) -> Optional[datetime]:
         return self._consumed_at
+
+    def matches(self, code: str) -> bool:
+        return self._code == code
 
     def consume(self, consumed_at: datetime) -> None:
         self._consumed_at = consumed_at
