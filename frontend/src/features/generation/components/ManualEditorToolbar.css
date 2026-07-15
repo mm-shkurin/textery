@@ -32,6 +32,15 @@
   color: var(--text-primary);
 }
 
+.me-toolbar-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.me-toolbar-btn:disabled:hover {
+  background: transparent;
+}
+
 .me-toolbar-divider {
   width: 1px;
   height: 22px;
