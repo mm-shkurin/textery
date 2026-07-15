@@ -82,16 +82,7 @@ class RegisterPageStatements(BaseFrontendStatements):
         self._wait_for_visible(driver, PASSWORD_INPUT).send_keys(Keys.TAB)
 
     def assert_password_policy_error_is_visible(self, driver: WebDriver, expected_text: str) -> None:
-        element = self._wait_for_visible(driver, PASSWORD_ERROR)
-        assert element.is_displayed(), "expected password policy error to be visible"
-        classes = element.get_attribute("class").split()
-        assert "register-hint-error" in classes, (
-            f"expected password error element's class list to contain 'register-hint-error', "
-            f"got {classes}"
-        )
-        assert element.text.strip() == expected_text, (
-            f"expected password policy error text '{expected_text}', got '{element.text}'"
-        )
+        self._assert_hint_error_visible(driver, PASSWORD_ERROR, expected_text, "password policy error")
 
     def fill_confirm_password_field(self, driver: WebDriver, confirm: str) -> None:
         self._wait_for_visible(driver, CONFIRM_PASSWORD_INPUT).send_keys(confirm)
@@ -100,16 +91,7 @@ class RegisterPageStatements(BaseFrontendStatements):
         self._wait_for_visible(driver, CONFIRM_PASSWORD_INPUT).send_keys(Keys.TAB)
 
     def assert_confirm_mismatch_error_is_visible(self, driver: WebDriver, expected_text: str) -> None:
-        element = self._wait_for_visible(driver, CONFIRM_ERROR)
-        assert element.is_displayed(), "expected confirm mismatch error to be visible"
-        classes = element.get_attribute("class").split()
-        assert "register-hint-error" in classes, (
-            f"expected confirm mismatch error element's class list to contain 'register-hint-error', "
-            f"got {classes}"
-        )
-        assert element.text.strip() == expected_text, (
-            f"expected confirm mismatch error text '{expected_text}', got '{element.text}'"
-        )
+        self._assert_hint_error_visible(driver, CONFIRM_ERROR, expected_text, "confirm mismatch error")
 
     def assert_no_duplicate_registration_request(self, driver: WebDriver) -> None:
         request_count = self._count_requests_to(driver, REGISTER_REQUEST_PATH)

@@ -56,6 +56,24 @@ class BaseFrontendStatements:
         element = self._wait_for_visible(driver, locator)
         assert element.is_displayed(), f"expected {label} to be visible"
 
+    def _assert_hint_error_visible(
+        self,
+        driver: WebDriver,
+        locator: tuple[str, str],
+        expected_text: str,
+        label: str,
+        expected_class: str = "register-hint-error",
+    ) -> None:
+        element = self._wait_for_visible(driver, locator)
+        assert element.is_displayed(), f"expected {label} to be visible"
+        classes = element.get_attribute("class").split()
+        assert expected_class in classes, (
+            f"expected {label} element's class list to contain '{expected_class}', got {classes}"
+        )
+        assert element.text.strip() == expected_text, (
+            f"expected {label} text '{expected_text}', got '{element.text}'"
+        )
+
     def _assert_disabled(self, driver: WebDriver, locator: tuple[str, str], label: str) -> None:
         element = self._wait_for_visible(driver, locator)
         try:
