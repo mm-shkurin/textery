@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { AuthSubmitButton } from './AuthSubmitButton'
 import { useSubmitPlaceholder } from '../hooks/useSubmitPlaceholder'
 import './AuthForm.css'
 import './RegisterForm.css'
@@ -43,14 +44,9 @@ export function RegisterForm() {
             data-testid="register-confirm-password-input"
           />
         </div>
-        <button
-          type="submit"
-          className="auth-submit"
-          data-testid="register-submit-button"
-          disabled={isSubmitting}
-        >
+        <AuthSubmitButton testId="register-submit-button" isSubmitting={isSubmitting}>
           Зарегистрироваться
-        </button>
+        </AuthSubmitButton>
         <p className="register-terms">
           Создавая аккаунт, вы соглашаетесь с нашими Условиями использования, Политикой
           конфиденциальности и Обработкой персональных данных

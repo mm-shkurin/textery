@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { AuthSubmitButton } from './AuthSubmitButton'
 import { useSubmitPlaceholder } from '../hooks/useSubmitPlaceholder'
 import './AuthForm.css'
 import './LoginForm.css'
@@ -49,14 +50,9 @@ export function LoginForm() {
             </button>
           </div>
         </div>
-        <button
-          type="submit"
-          className="auth-submit"
-          data-testid="login-submit-button"
-          disabled={isSubmitting}
-        >
+        <AuthSubmitButton testId="login-submit-button" isSubmitting={isSubmitting}>
           Войти
-        </button>
+        </AuthSubmitButton>
       </form>
       <p className="auth-footer-link">
         Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>

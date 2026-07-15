@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { resendCode } from '../api/authApi'
+import { AuthSubmitButton } from './AuthSubmitButton'
 import { useSubmitPlaceholder } from '../hooks/useSubmitPlaceholder'
 import './AuthForm.css'
 import './VerifyCodeForm.css'
@@ -68,14 +69,9 @@ export function VerifyCodeForm({ email }: VerifyCodeFormProps) {
             />
           ))}
         </div>
-        <button
-          type="submit"
-          className="auth-submit"
-          data-testid="verify-confirm-button"
-          disabled={isSubmitting}
-        >
+        <AuthSubmitButton testId="verify-confirm-button" isSubmitting={isSubmitting}>
           Подтвердить
-        </button>
+        </AuthSubmitButton>
       </form>
       <p className="verify-resend">
         <span data-testid="verify-resend-countdown">{formatCountdown(countdownSeconds)}</span>
