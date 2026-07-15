@@ -99,9 +99,9 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
 ### Scenario 5.2: A failed save shows an inline error and keeps the content in the editor
-- [ ] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
+- [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [x] red-frontend — added failing test to new `ManualEditor.saveStatus.test.tsx` (split out of `ManualEditor.save.test.tsx` to stay under the 200-line limit): a rejected `saveDocument` call must render the mockup's exact inline error text (`06-editor-error.html`) and must not clear editor content. Predicted `TestingLibraryElementError: Unable to find an element with the text: ...` because the reject path only calls `console.error`/resets `isSaving` today with no error UI; actual failure matched exactly, and the DOM snapshot confirmed "hello world" stayed in `editor-content-area`. `it.skip` added with reason comment.
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
