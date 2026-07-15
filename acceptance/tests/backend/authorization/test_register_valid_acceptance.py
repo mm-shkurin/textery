@@ -1,12 +1,6 @@
-import pytest
-
 from tests.backend.abstract_backend_test import AbstractBackendTest
 
 
-@pytest.mark.skip(
-    reason="RED: verification_code missing from RegisterResponse - "
-    "expected verification_code to be a string, got NoneType (None)"
-)
 class TestRegisterValidAcceptance(AbstractBackendTest):
     """Scenario 2.1: Valid registration creates a pending account and returns a verification code.
 

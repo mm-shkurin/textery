@@ -22,3 +22,12 @@
 **From:** scenario 2.1 (valid-registration-verification-code), owed review batch.
 
 Minor/non-blocking (premortem, REMOTE — no reachable code path yet): no `ondelete` on the `verification_codes.account_id` FK (no account-deletion feature exists to trigger it); no index/unique constraint on `account_id` (no lookup-by-account method exists yet to need it). Not follow-up-worthy until those features exist.
+
+## test-coverage for green-adapter rest (2026-07-15)
+
+**Ran the owed `/test-coverage --focus` pass over commit `9b1fdf3`** (RegisterResponseDto.from_domain built from full RegistrationResult; auth_router.register() passes full result; container.py wires real SqlAlchemyVerificationCodeRepository).
+
+- `rest` module: `pytest --cov=adapters/rest/src adapters/rest/tests/` → 14 passed, 0 failed.
+- Focused classes: `register_response_dto.py` and `auth_router.py` — both 100% line and branch coverage. No gaps, no dead code.
+- `container.py` (application module DI wiring, also touched by the commit) has no unit-test target under this architecture (straight-line wiring, no branches) — exercised only via acceptance tests. Not a coverage gap.
+- No red/green follow-up steps needed. Scenario 2.1 backend work is clean through `green-adapter rest`; `green-acceptance` remains the next step.
