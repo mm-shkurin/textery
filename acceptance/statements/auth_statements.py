@@ -5,6 +5,7 @@ from typing import ClassVar
 from clients.application.application_client import ApplicationClient
 from clients.application.dto.auth.register_response_dto import RegisterResponseDto
 from clients.application.dto.auth.verify_request_dto import VerifyRequestDto
+from statements import auth_errors
 from statements.auth_scope import RegisterScope
 from statements.response_assertions import (
     assert_duplicate_rejected,
@@ -23,25 +24,13 @@ SECRET_RESPONSE_FIELDS = ("password", "confirm_password", "password_hash")
 
 
 class AuthStatements:
-    # Errors use the uniform { error_code, message } shape per
-    # ProductSpecification/stories/07-authorization/endpoints.md.
-    EXPECTED_MALFORMED_EMAIL_ERROR: ClassVar[dict] = {
-        "error_code": "INVALID_EMAIL",
-        "message": "The email address is not valid.",
-    }
-    EXPECTED_OVERLONG_EMAIL_ERROR: ClassVar[dict] = EXPECTED_MALFORMED_EMAIL_ERROR
-    EXPECTED_WEAK_PASSWORD_ERROR: ClassVar[dict] = {
-        "error_code": "INVALID_PASSWORD",
-        "message": "The password does not meet the password policy.",
-    }
-    EXPECTED_PASSWORD_MISMATCH_ERROR: ClassVar[dict] = {
-        "error_code": "PASSWORD_MISMATCH",
-        "message": "The password confirmation does not match.",
-    }
-    EXPECTED_DUPLICATE_EMAIL_ERROR: ClassVar[dict] = {
-        "error_code": "EMAIL_ALREADY_REGISTERED",
-        "message": "An account with this email address already exists.",
-    }
+    # Error dict literals live in auth_errors.py; kept accessible here as
+    # ClassVar aliases since tests reference them as auth_statements.EXPECTED_*.
+    EXPECTED_MALFORMED_EMAIL_ERROR: ClassVar[dict] = auth_errors.MALFORMED_EMAIL_ERROR
+    EXPECTED_OVERLONG_EMAIL_ERROR: ClassVar[dict] = auth_errors.MALFORMED_EMAIL_ERROR
+    EXPECTED_WEAK_PASSWORD_ERROR: ClassVar[dict] = auth_errors.WEAK_PASSWORD_ERROR
+    EXPECTED_PASSWORD_MISMATCH_ERROR: ClassVar[dict] = auth_errors.PASSWORD_MISMATCH_ERROR
+    EXPECTED_DUPLICATE_EMAIL_ERROR: ClassVar[dict] = auth_errors.DUPLICATE_EMAIL_ERROR
     ATTACKER_SUPPLIED_ID: ClassVar[str] = "11111111-1111-1111-1111-111111111111"
 
     def __init__(self, client: ApplicationClient):
