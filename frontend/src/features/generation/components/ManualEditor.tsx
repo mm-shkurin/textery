@@ -10,6 +10,7 @@ import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
 import { AppHeader } from '../../../shared/components/AppHeader'
 import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from './editorDomSync'
 import { TOOLBAR_ACTIONS, TOOLBAR_DIVIDER_BEFORE } from './editorToolbarActions'
+import { ManualEditorSaveStatus } from './ManualEditorSaveStatus'
 
 interface ManualEditorProps {
   documentType: DocumentType
@@ -165,26 +166,7 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
               </Fragment>
             ))}
             <div className="me-toolbar-status">
-              <span
-                className={
-                  !documentId
-                    ? 'me-save-status'
-                    : hasUnsavedChanges
-                      ? 'me-save-status me-save-status--dirty'
-                      : 'me-save-status me-save-status--saved'
-                }
-              >
-                {!documentId ? (
-                  'Создание документа…'
-                ) : hasUnsavedChanges ? (
-                  'Черновик, ещё не сохранён'
-                ) : (
-                  <>
-                    <PlaceholderImage />
-                    Сохранено
-                  </>
-                )}
-              </span>
+              <ManualEditorSaveStatus documentId={documentId} hasUnsavedChanges={hasUnsavedChanges} />
               {/*
                 aria-disabled (not the native disabled attribute) so the
                 button keeps receiving click/keyboard events while a save is
