@@ -24,3 +24,11 @@ class TestRegisterUsecasePasswordConfirmationNormalization:
             password=_NFD_ACCENTED_PASSWORD, confirm_password=_NFC_ACCENTED_PASSWORD
         )
         register_statements.assert_registration_succeeded()
+
+    async def test_should_persist_password_in_its_nfc_normalized_form(
+        self, register_statements: RegisterStatements
+    ):
+        await register_statements.register_with_differently_normalized_password_and_confirmation(
+            password=_NFD_ACCENTED_PASSWORD, confirm_password=_NFD_ACCENTED_PASSWORD
+        )
+        register_statements.assert_account_persisted_with_password_hash(_NFC_ACCENTED_PASSWORD)

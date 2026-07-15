@@ -54,9 +54,9 @@ class RegisterUser:
 
     async def execute(self, email: str, password: str, confirm_password: str) -> RegistrationResult:
         email_value_object = self._validate_email(email)
-        self._validate_password(password, confirm_password)
+        password_value_object = self._validate_password(password, confirm_password)
         created_at = self.clock.now()
-        account = await self._create_and_save_account(email_value_object, password, created_at)
+        account = await self._create_and_save_account(email_value_object, password_value_object, created_at)
         verification_code = VerificationCode.generate(
             id=uuid4(),
             account_id=account.id,
@@ -74,7 +74,7 @@ class RegisterUser:
                 message="The email address is not valid.",
             )
 
-    def _validate_password(self, password: str, confirm_password: str) -> None:
+    def _validate_password(self, password: str, confirm_password: str) -> Password:
         try:
             password_value_object = Password(password)
         except ValueError:
@@ -87,14 +87,15 @@ class RegisterUser:
                 error_code="PASSWORD_MISMATCH",
                 message="The password confirmation does not match.",
             )
+        return password_value_object
 
     async def _create_and_save_account(
-        self, email_value_object: Email, password: str, created_at: datetime
+        self, email_value_object: Email, password_value_object: Password, created_at: datetime
     ) -> Account:
         account = Account.create(
             id=uuid4(),
             email=email_value_object.value,
-            password_hash=password,
+            password_hash=password_value_object.value,
             created_at=created_at,
         )
         try:

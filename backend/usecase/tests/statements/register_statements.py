@@ -138,6 +138,14 @@ class RegisterStatements:
     def assert_account_persisted_with_normalized_email(self) -> None:
         self._assert_account_persisted_with_email("user@example.ru")
 
+    def assert_account_persisted_with_password_hash(self, expected_password_hash: str) -> None:
+        self.assert_registration_succeeded()
+        assert self.returned_account is not None, "expected RegisterUser.execute to return the persisted Account"
+        assert self.returned_account.password_hash == expected_password_hash, (
+            f"expected persisted Account.password_hash to be '{expected_password_hash}', "
+            f"got '{self.returned_account.password_hash}'"
+        )
+
     def _assert_account_persisted_with_email(self, expected_email: Optional[str]) -> None:
         self.assert_registration_succeeded()
         assert self.returned_account is not None, "expected RegisterUser.execute to return the persisted Account"
