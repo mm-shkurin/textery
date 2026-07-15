@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createDocument } from '../documentApi'
+import { createDocument, saveDocument } from '../documentApi'
+import { API_BASE } from '../httpClient'
 
 describe('documentApi', () => {
   afterEach(() => {
@@ -30,6 +31,28 @@ describe('documentApi', () => {
     expect(JSON.parse(init.body)).toEqual({
       document_type: 'doklad',
       content: '',
+    })
+  })
+
+  // TODO-RED: disabled during red-frontend-api phase, see progress-frontend.md Scenario 4.1
+  it.skip('saveDocument PUTs content and version, returns saved status + version', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ status: 'draft', version: 2 }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await saveDocument('doc-1', '<p>Hello</p>', 1)
+
+    expect(result).toEqual({ status: 'draft', version: 2 })
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toEqual(`${API_BASE}/api/v1/documents/doc-1`)
+    expect(init.method).toBe('PUT')
+    expect(init.headers).toEqual({ 'Content-Type': 'application/json' })
+    expect(JSON.parse(init.body)).toEqual({
+      content: '<p>Hello</p>',
+      version: 1,
     })
   })
 })
