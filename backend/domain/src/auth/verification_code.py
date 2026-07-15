@@ -29,6 +29,9 @@ class VerificationCode(object):
     def consumed_at(self) -> Optional[datetime]:
         return self._consumed_at
 
+    def consume(self, consumed_at: datetime) -> None:
+        self._consumed_at = consumed_at
+
     @classmethod
     def create(cls, id: UUID, account_id: UUID, code: str, expires_at: datetime) -> "VerificationCode":
         return cls(

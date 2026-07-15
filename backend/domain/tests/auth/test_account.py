@@ -29,7 +29,6 @@ def test_account_is_verified_has_no_public_setter():
         account.is_verified = True
 
 
-@pytest.mark.skip(reason="RED: Account.reconstitute is not implemented")
 def test_account_reconstitute_preserves_is_verified_true():
     account = Account.reconstitute(
         id=uuid4(),
@@ -42,7 +41,6 @@ def test_account_reconstitute_preserves_is_verified_true():
     assert account.is_verified is True
 
 
-@pytest.mark.skip(reason="RED: Account.verify is not implemented")
 def test_account_verify_sets_is_verified_true():
     account = Account(
         id=uuid4(),

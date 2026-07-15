@@ -35,7 +35,14 @@ class Account:
     def reconstitute(
         cls, id: UUID, email: str, password_hash: str, created_at: datetime, is_verified: bool
     ) -> "Account":
-        raise NotImplementedError()
+        account = cls(
+            id=id,
+            email=email,
+            password_hash=password_hash,
+            created_at=created_at,
+        )
+        account._is_verified = is_verified
+        return account
 
     def verify(self) -> None:
-        raise NotImplementedError()
+        self._is_verified = True

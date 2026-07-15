@@ -1,9 +1,6 @@
-import pytest
-
 from statements.verify_account_statements import VerifyAccountStatements
 
 
-@pytest.mark.skip(reason="RED: VerifyAccount.execute is not implemented")
 class TestVerifyAccountUsecase:
     """Scenario 3.1: Correct code activates the account.
 

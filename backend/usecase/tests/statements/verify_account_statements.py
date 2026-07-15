@@ -5,6 +5,7 @@ from auth.register_user import RegisterUser
 from auth.verify_account import VerifyAccount
 from fake.auth.fake_account_repository import FakeAccountRepository
 from fake.auth.fake_clock import FakeClock
+from fake.auth.fake_unit_of_work import FakeUnitOfWork
 from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
 from scope.register_request_scope import RegisterRequestScope
 
@@ -19,6 +20,7 @@ class VerifyAccountStatements:
         self.account_repository = FakeAccountRepository()
         self.clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
         self.verification_code_repository = FakeVerificationCodeRepository()
+        self.unit_of_work = FakeUnitOfWork()
         self.registered_email: Optional[str] = None
         self.issued_code: Optional[str] = None
         self.original_account_snapshot = None
@@ -53,6 +55,7 @@ class VerifyAccountStatements:
                 account_repository=self.account_repository,
                 verification_code_repository=self.verification_code_repository,
                 clock=self.clock,
+                unit_of_work=self.unit_of_work,
             ).execute(email=self.registered_email, code=self.issued_code)
         except Exception as exc:
             self.thrown_exception = exc
