@@ -156,8 +156,8 @@ so its red-frontend step must add the button first.
 - [x] green-frontend (added login-loading-indicator element while isSubmitting, mirroring RegisterForm; also added `role="status"`/`aria-live="polite"` to both Login and Register indicators, addressing the missing-a11y-guard CONCERNS from Scenario 3.1's and this scenario's premortem passes. Refactor extracted shared AuthLoadingIndicator component (commit 8cdce1f). agent-review then flagged the a11y attrs and disappearance-after-settle behavior were unguarded by any test in either LoginForm.test.tsx or RegisterForm.test.tsx despite the commit message claiming coverage — retrofit both test files with role/aria-live/disappearance assertions to close that gap. 11 passed)
 - [S] red-frontend-api — no real login API call exists yet, same scoping decision as Scenario 2.3's login test (line 129) and register (line 147): loading state is a pure client-side placeholder via useSubmitPlaceholder, no endpoint to test against
 - [S] green-frontend-api — see above
-- [~] align-design
-- [ ] green-selenium
+- [x] align-design (no styling changes needed — login mockup has no loading-state styling either, and LoginForm already reuses the shared AuthLoadingIndicator/.auth-loading-indicator aligned in Scenario 3.1. design-review PASS (no hardcoded placeholder data))
+- [ ] green-selenium (deferred — same reasoning as Scenario 3.1, docker build blocker, not backend-dependent)
 - [ ] demo
 
 ### 4.1: Password policy hint shown inline
