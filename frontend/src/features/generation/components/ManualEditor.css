@@ -125,6 +125,22 @@
 .me-save-status {
   font-size: 13px;
   color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.me-save-status--dirty {
+  color: var(--warning);
+}
+
+.me-save-status--saved {
+  color: var(--success);
+}
+
+.me-save-status--saved svg {
+  width: 14px;
+  height: 14px;
 }
 
 .me-save-btn {

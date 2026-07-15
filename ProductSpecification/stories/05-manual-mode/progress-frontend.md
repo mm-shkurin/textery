@@ -94,9 +94,9 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 - [x] green-frontend — implemented `hasUnsavedChanges` state (dirty check, not a one-way flag): true on any content edit, reset to false only when a save resolves with nothing queued. `.me-save-status` is now three-way: 'Создание документа…' / 'Сохранено' (doc + clean) / 'Черновик, ещё не сохранён' (doc + dirty). Added the required save→edit-again reversion test. Test file split (200-line limit): save-flow tests moved to new `ManualEditor.save.test.tsx`. Full suite: 44/44 passed. Typecheck: clean.
 - [S] red-frontend-api — no new API call: confirmation display is client-side derived from saveDocument's existing response (already implemented/tested in scenario 4.1), no backend contract change
 - [S] green-frontend-api — same reason
-- [~] align-design
-- [ ] green-selenium
-- [ ] demo
+- [x] align-design — aligned dirty/saved status styling to mockups (04-editor-content.html: `--warning` color for dirty; 05-editor-saved.html: `--success` color + icon for saved), added `PlaceholderImage` as the icon stand-in per this project's established convention (no icon library, same pattern as breadcrumb chips). design-review: PASS. Coverage: clean.
+- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [S] demo — same reason, no live backend to drive a visible Selenium run against
 
 ### Scenario 5.2: A failed save shows an inline error and keeps the content in the editor
 - [ ] red-selenium

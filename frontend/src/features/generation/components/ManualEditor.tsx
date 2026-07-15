@@ -165,12 +165,25 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
               </Fragment>
             ))}
             <div className="me-toolbar-status">
-              <span className="me-save-status">
-                {!documentId
-                  ? 'Создание документа…'
-                  : hasUnsavedChanges
-                    ? 'Черновик, ещё не сохранён'
-                    : 'Сохранено'}
+              <span
+                className={
+                  !documentId
+                    ? 'me-save-status'
+                    : hasUnsavedChanges
+                      ? 'me-save-status me-save-status--dirty'
+                      : 'me-save-status me-save-status--saved'
+                }
+              >
+                {!documentId ? (
+                  'Создание документа…'
+                ) : hasUnsavedChanges ? (
+                  'Черновик, ещё не сохранён'
+                ) : (
+                  <>
+                    <PlaceholderImage />
+                    Сохранено
+                  </>
+                )}
               </span>
               {/*
                 aria-disabled (not the native disabled attribute) so the
