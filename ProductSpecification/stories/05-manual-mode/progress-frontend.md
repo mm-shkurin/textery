@@ -145,7 +145,7 @@ policy.
 - [x] green-frontend — added `strike` toolbar action to `editorToolbarActions.ts` (`toggleStrike()`/`isActive('strike')`, Tiptap StarterKit already bundles Strike extension), `data-testid="toolbar-strike"`. Removed `it.skip`. Also added a deactivation test (aria-pressed returns to false when cursor moves off struck text), mirroring bold/italic, closing the premortem gap flagged on the red commit. Full suite: 54/54 passed. Typecheck: clean.
 - [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
-- [~] align-design
+- [x] align-design — verify-only: no new mockup/markup for scenario 7.x (per this section's header note); `ManualEditorToolbar.tsx` renders `TOOLBAR_ACTIONS` generically, strike button already uses shared `.me-toolbar-btn` styling. Build: clean.
 - [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
