@@ -70,8 +70,8 @@ reachable — the skipped scenarios' Selenium coverage still needs to run then.
 
 ### Scenario 4.1: Saving shows a loading state and disables the save control
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
