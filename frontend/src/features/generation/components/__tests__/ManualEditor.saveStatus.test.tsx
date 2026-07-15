@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
+import { SAVE_ERROR_MESSAGE } from '../ManualEditor'
 import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
 
 vi.mock('../../api/documentApi')
@@ -77,17 +78,11 @@ describe('ManualEditor save status', () => {
     rejectSave(new Error('network error'))
 
     await waitFor(() => {
-      expect(
-        screen.getByText(
-          'Не удалось сохранить документ. Проверьте соединение и попробуйте ещё раз — введённый текст сохранён локально в редакторе.',
-        ),
-      ).toBeInTheDocument()
+      expect(screen.getByText(SAVE_ERROR_MESSAGE)).toBeInTheDocument()
     })
     expect(contentArea.textContent).toBe('hello world')
 
-    const errorBanner = screen.getByText(
-      'Не удалось сохранить документ. Проверьте соединение и попробуйте ещё раз — введённый текст сохранён локально в редакторе.',
-    )
+    const errorBanner = screen.getByText(SAVE_ERROR_MESSAGE)
     expect(errorBanner).toHaveAttribute('role', 'alert')
 
     consoleErrorSpy.mockRestore()
@@ -112,11 +107,8 @@ describe('ManualEditor save status', () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     rejectSave(new Error('network error'))
 
-    const errorMessage =
-      'Не удалось сохранить документ. Проверьте соединение и попробуйте ещё раз — введённый текст сохранён локально в редакторе.'
-
     await waitFor(() => {
-      expect(screen.getByText(errorMessage)).toBeInTheDocument()
+      expect(screen.getByText(SAVE_ERROR_MESSAGE)).toBeInTheDocument()
     })
 
     vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 2 })
@@ -125,7 +117,7 @@ describe('ManualEditor save status', () => {
     await waitFor(() => {
       expect(screen.getByText('Сохранено')).toBeInTheDocument()
     })
-    expect(screen.queryByText(errorMessage)).not.toBeInTheDocument()
+    expect(screen.queryByText(SAVE_ERROR_MESSAGE)).not.toBeInTheDocument()
 
     consoleErrorSpy.mockRestore()
   })

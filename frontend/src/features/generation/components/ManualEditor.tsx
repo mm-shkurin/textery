@@ -11,6 +11,9 @@ import { AppHeader } from '../../../shared/components/AppHeader'
 import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from './editorDomSync'
 import { ManualEditorToolbar } from './ManualEditorToolbar'
 
+export const SAVE_ERROR_MESSAGE =
+  'Не удалось сохранить документ. Проверьте соединение и попробуйте ещё раз — введённый текст сохранён локально в редакторе.'
+
 interface ManualEditorProps {
   documentType: DocumentType
   documentTypeLabel: string
@@ -63,9 +66,7 @@ export function ManualEditor({ documentType, documentTypeLabel, onBack }: Manual
         saveAgainRequested.current = false
         isSavingRef.current = false
         setIsSaving(false)
-        setSaveError(
-          'Не удалось сохранить документ. Проверьте соединение и попробуйте ещё раз — введённый текст сохранён локально в редакторе.',
-        )
+        setSaveError(SAVE_ERROR_MESSAGE)
       })
   }
 
