@@ -1,3 +1,4 @@
+import unicodedata
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
@@ -75,13 +76,13 @@ class RegisterUser:
 
     def _validate_password(self, password: str, confirm_password: str) -> None:
         try:
-            Password(password)
+            password_value_object = Password(password)
         except ValueError:
             raise ValidationException(
                 error_code="INVALID_PASSWORD",
                 message="The password does not meet the password policy.",
             )
-        if password != confirm_password:
+        if password_value_object.value != unicodedata.normalize("NFC", confirm_password):
             raise ValidationException(
                 error_code="PASSWORD_MISMATCH",
                 message="The password confirmation does not match.",

@@ -44,6 +44,13 @@ class RegisterStatements:
             RegisterRequestScope.builder(confirm_password=confirm_password)
         )
 
+    async def register_with_differently_normalized_password_and_confirmation(
+        self, password: str, confirm_password: str
+    ) -> None:
+        await self._register_and_capture_result(
+            RegisterRequestScope.builder(password=password, confirm_password=confirm_password)
+        )
+
     async def attempt_registering_when_email_already_registered(self) -> None:
         self.account_repository.raise_on_save = ConflictException(
             "account with this email already exists"

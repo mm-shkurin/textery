@@ -1,4 +1,5 @@
 import re
+import unicodedata
 
 MIN_PASSWORD_LENGTH = 8
 MAX_PASSWORD_LENGTH = 128
@@ -14,27 +15,30 @@ class Password:
 
     Fail-closed: any input that does not satisfy every policy rule
     (length bounds, digit, uppercase, lowercase, special character) is
-    rejected rather than defaulted to valid.
+    rejected rather than defaulted to valid. Length is capped on the raw
+    input before normalization runs, mirroring Email's pipeline: length
+    cap -> NFC normalize -> character-class/content validation.
     """
 
     def __init__(self, raw_value: str) -> None:
-        if not self._is_valid(raw_value):
+        if not isinstance(raw_value, str) or len(raw_value) > MAX_PASSWORD_LENGTH:
             raise ValueError("Invalid password.")
-        self._value = raw_value
+        normalized_value = unicodedata.normalize("NFC", raw_value)
+        if not self._is_valid(normalized_value):
+            raise ValueError("Invalid password.")
+        self._value = normalized_value
 
     @staticmethod
-    def _is_valid(raw_value: str) -> bool:
-        if not isinstance(raw_value, str):
+    def _is_valid(normalized_value: str) -> bool:
+        if len(normalized_value) < MIN_PASSWORD_LENGTH or len(normalized_value) > MAX_PASSWORD_LENGTH:
             return False
-        if len(raw_value) < MIN_PASSWORD_LENGTH or len(raw_value) > MAX_PASSWORD_LENGTH:
+        if not _DIGIT_PATTERN.search(normalized_value):
             return False
-        if not _DIGIT_PATTERN.search(raw_value):
+        if not _UPPERCASE_PATTERN.search(normalized_value):
             return False
-        if not _UPPERCASE_PATTERN.search(raw_value):
+        if not _LOWERCASE_PATTERN.search(normalized_value):
             return False
-        if not _LOWERCASE_PATTERN.search(raw_value):
-            return False
-        if not _SPECIAL_CHAR_PATTERN.search(raw_value):
+        if not _SPECIAL_CHAR_PATTERN.search(normalized_value):
             return False
         return True
 
