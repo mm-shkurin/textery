@@ -1,18 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { ManualEditor } from '../ManualEditor'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
+import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
 
 vi.mock('../../api/documentApi')
-
-async function renderEditorWithDocumentCreated(onBack = vi.fn()) {
-  vi.mocked(documentApi.createDocument).mockResolvedValue({ documentId: 'doc-1', status: 'draft' })
-  render(<ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={onBack} />)
-  await waitFor(() => {
-    expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
-  })
-  return onBack
-}
 
 describe('ManualEditor save flow', () => {
   // Each test sets up its own saveDocument/createDocument mock resolutions;

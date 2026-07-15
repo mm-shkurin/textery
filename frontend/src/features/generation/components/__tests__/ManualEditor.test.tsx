@@ -2,17 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { ManualEditor } from '../ManualEditor'
 import * as documentApi from '../../api/documentApi'
+import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
 
 vi.mock('../../api/documentApi')
-
-async function renderEditorWithDocumentCreated(onBack = vi.fn()) {
-  vi.mocked(documentApi.createDocument).mockResolvedValue({ documentId: 'doc-1', status: 'draft' })
-  render(<ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={onBack} />)
-  await waitFor(() => {
-    expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
-  })
-  return onBack
-}
 
 describe('ManualEditor', () => {
   it('applying bold to selected text wraps it in <strong> and marks the bold button active', async () => {
