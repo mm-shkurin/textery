@@ -3,8 +3,8 @@ from datetime import datetime, timedelta
 from typing import Optional
 from uuid import UUID
 
-_CODE_DIGITS = 6
-_CODE_MODULUS = 10**_CODE_DIGITS
+from auth.verification_code_value import VerificationCodeValue
+
 _EXPIRY_MINUTES = 10
 
 
@@ -68,8 +68,17 @@ class VerificationCode(object):
 
     @classmethod
     def generate(cls, id: UUID, account_id: UUID, created_at: datetime) -> "VerificationCode":
-        """Issue a new code: a random 6-digit string expiring 10 minutes from `created_at`."""
-        code = f"{secrets.randbelow(_CODE_MODULUS):0{_CODE_DIGITS}d}"
+        """Issue a new code: a random 6-digit string expiring 10 minutes from `created_at`.
+
+        The draw is bounded by the full code space (10 ** DIGIT_COUNT), *not* by
+        DIGIT_COUNT itself -- the latter would silently collapse entropy to six
+        possible codes while still producing a well-shaped, zero-padded string.
+
+        `.value` is stored, never the value object: `matches()` compares against a
+        submitted `str`, so storing the object would fail every correct code.
+        """
+        digits = VerificationCodeValue.DIGIT_COUNT
+        code = VerificationCodeValue(f"{secrets.randbelow(10**digits):0{digits}d}").value
         expires_at = created_at + timedelta(minutes=_EXPIRY_MINUTES)
         return cls.create(
             id=id,

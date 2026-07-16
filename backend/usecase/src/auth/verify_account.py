@@ -3,8 +3,9 @@ from typing import Optional
 from auth.account_repository import AccountRepository
 from auth.email import Email
 from auth.verification_code_repository import VerificationCodeRepository
+from auth.verification_code_value import VerificationCodeValue
 from shared.clock import Clock
-from shared.exceptions import VerificationFailedException
+from shared.exceptions import ValidationException, VerificationFailedException
 from shared.unit_of_work import NullUnitOfWork, UnitOfWork
 
 
@@ -26,7 +27,11 @@ class VerifyAccount:
         self.unit_of_work = unit_of_work or NullUnitOfWork()
 
     async def execute(self, email: str, code: str) -> None:
-        normalized_email = Email(email).value
+        # Both shape checks run before any repository lookup, so a malformed
+        # request costs zero queries. Email is validated first: a request bad on
+        # both axes answers INVALID_EMAIL, matching RegisterUser's order.
+        normalized_email = self._validate_email(email).value
+        self._validate_code(code)
         account = await self.account_repository.find_by_email(normalized_email)
         verification_code = await self.verification_code_repository.find_active_by_account_id(account.id)
 
@@ -40,6 +45,24 @@ class VerifyAccount:
             except Exception:
                 await self._rollback_silently()
                 raise VerificationFailedException(message=self.VERIFICATION_FAILED_MESSAGE)
+
+    def _validate_email(self, email: str) -> Email:
+        try:
+            return Email(email)
+        except ValueError:
+            raise ValidationException(
+                error_code="INVALID_EMAIL",
+                message="The email address is not valid.",
+            )
+
+    def _validate_code(self, code: str) -> VerificationCodeValue:
+        try:
+            return VerificationCodeValue(code)
+        except ValueError:
+            raise ValidationException(
+                error_code="INVALID_CODE",
+                message="The verification code is not valid.",
+            )
 
     async def _rollback_silently(self) -> None:
         try:

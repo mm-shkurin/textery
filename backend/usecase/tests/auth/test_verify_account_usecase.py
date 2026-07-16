@@ -19,10 +19,6 @@ class TestVerifyAccountUsecase:
         await verify_account_statements.verify_with_the_issued_code()
         verify_account_statements.assert_account_is_verified()
 
-    @pytest.mark.skip(
-        reason="RED: VerifyAccount has no _validate_code -- a malformed code falls "
-        "through matches() and execute() returns None instead of ValidationException"
-    )
     async def test_should_reject_malformed_code_before_any_repository_lookup(
         self, verify_account_statements: VerifyAccountStatements
     ):
@@ -30,10 +26,6 @@ class TestVerifyAccountUsecase:
         await verify_account_statements.verify_with_a_malformed_code()
         verify_account_statements.assert_rejected_as_invalid_code_without_touching_repositories()
 
-    @pytest.mark.skip(
-        reason="RED: VerifyAccount.execute has a bare Email(email) call with no "
-        "_validate_email -- ValueError leaks out and answers 500, not 400 INVALID_EMAIL"
-    )
     async def test_should_reject_malformed_email_as_invalid_email(
         self, verify_account_statements: VerifyAccountStatements
     ):
@@ -41,10 +33,6 @@ class TestVerifyAccountUsecase:
         await verify_account_statements.verify_with_a_malformed_email()
         verify_account_statements.assert_rejected_as_invalid_email()
 
-    @pytest.mark.skip(
-        reason="RED: VerifyAccount has neither _validate_email nor _validate_code -- "
-        "a both-axes-malformed request leaks ValueError and answers 500"
-    )
     async def test_should_reject_malformed_email_first_when_code_is_also_malformed(
         self, verify_account_statements: VerifyAccountStatements
     ):

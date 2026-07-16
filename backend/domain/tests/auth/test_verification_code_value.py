@@ -6,7 +6,6 @@ _INVALID_MESSAGE = "Invalid verification code."
 _ARABIC_INDIC_SIX_DIGITS = "١٢٣٤٥٦"
 
 
-@pytest.mark.skip(reason="RED: VerificationCodeValue.__init__ raises NotImplementedError")
 class TestVerificationCodeValueNonStringRejection:
     @pytest.mark.parametrize("raw_input", [42917, None], ids=["int", "none"])
     def test_non_string_input_is_rejected(self, raw_input):
@@ -16,7 +15,6 @@ class TestVerificationCodeValueNonStringRejection:
         assert str(exc_info.value) == _INVALID_MESSAGE
 
 
-@pytest.mark.skip(reason="RED: VerificationCodeValue.__init__ raises NotImplementedError")
 class TestVerificationCodeValueLengthRejection:
     @pytest.mark.parametrize(
         "raw_input", ["12345", "1234567", ""], ids=["five_digits", "seven_digits", "empty"]
@@ -28,7 +26,6 @@ class TestVerificationCodeValueLengthRejection:
         assert str(exc_info.value) == _INVALID_MESSAGE
 
 
-@pytest.mark.skip(reason="RED: VerificationCodeValue.__init__ raises NotImplementedError")
 class TestVerificationCodeValueNonDigitRejection:
     @pytest.mark.parametrize("raw_input", ["12a456", "12 456"], ids=["letter", "whitespace"])
     def test_code_with_a_non_digit_is_rejected(self, raw_input):
@@ -38,7 +35,6 @@ class TestVerificationCodeValueNonDigitRejection:
         assert str(exc_info.value) == _INVALID_MESSAGE
 
 
-@pytest.mark.skip(reason="RED: VerificationCodeValue.__init__ raises NotImplementedError")
 class TestVerificationCodeValueTrailingNewlineRejection:
     """The rule is spelled `^[0-9]{6}$` throughout the ADR, but Python's `$`
     matches before a trailing newline -- `re.match(r"^[0-9]{6}$", "123456\\n")`
@@ -56,7 +52,6 @@ class TestVerificationCodeValueTrailingNewlineRejection:
         assert str(exc_info.value) == _INVALID_MESSAGE
 
 
-@pytest.mark.skip(reason="RED: VerificationCodeValue.__init__ raises NotImplementedError")
 class TestVerificationCodeValueUnicodeDigitRejection:
     """ASCII [0-9] only -- str.isdigit() accepts many Unicode digit
     categories and is the obvious wrong implementation here."""
@@ -68,7 +63,6 @@ class TestVerificationCodeValueUnicodeDigitRejection:
         assert str(exc_info.value) == _INVALID_MESSAGE
 
 
-@pytest.mark.skip(reason="RED: VerificationCodeValue.__init__ raises NotImplementedError")
 class TestVerificationCodeValueAcceptance:
     def test_six_digit_code_with_leading_zeros_is_accepted_intact(self):
         code = VerificationCodeValue("042917")
