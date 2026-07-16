@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
 import { register, type RegisterApiError } from '../api/registerApi'
@@ -12,10 +12,17 @@ import {
 import './AuthForm.css'
 import './RegisterForm.css'
 
+// 'EMAIL_ALREADY_REGISTERED' is what the backend actually sends on 409 — confirmed by curl
+// against the live stack on 2026-07-16. This branch previously matched 'EMAIL_ALREADY_EXISTS',
+// a code the backend never emits, so the duplicate-email message could never render. Every
+// unit test passed throughout, because they all mock registerApi and assert against the
+// invented code.
+const DUPLICATE_EMAIL_ERROR_CODE = 'EMAIL_ALREADY_REGISTERED'
+
 function applyRegisterError(error: unknown): string | null {
   if (error && typeof error === 'object' && 'errorCode' in error) {
     const apiError = error as RegisterApiError
-    if (apiError.errorCode === 'EMAIL_ALREADY_EXISTS') {
+    if (apiError.errorCode === DUPLICATE_EMAIL_ERROR_CODE) {
       return apiError.message
     }
   }
@@ -23,6 +30,7 @@ function applyRegisterError(error: unknown): string | null {
 }
 
 export function RegisterForm() {
+  const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [emailError, setEmailError] = useState<string | null>(null)
   const [passwordError, setPasswordError] = useState(false)
@@ -37,8 +45,20 @@ export function RegisterForm() {
     if (isSubmitting) return
     setIsSubmitting(true)
     try {
-      await register(emailInputRef.current?.value ?? '', passwordInputRef.current?.value ?? '')
+      const result = await register(
+        emailInputRef.current?.value ?? '',
+        passwordInputRef.current?.value ?? '',
+        confirmInputRef.current?.value ?? '',
+      )
       setEmailError(null)
+      // The mocked code is carried in router state, not the URL: a query string would land
+      // in browser history and server logs, and the notes require treating it as a real
+      // credential. `replace` keeps Back from returning to a form whose submit already
+      // consumed the email.
+      navigate('/verify', {
+        replace: true,
+        state: { email: result.email, verificationCode: result.verificationCode },
+      })
     } catch (error) {
       const message = applyRegisterError(error)
       if (message) {

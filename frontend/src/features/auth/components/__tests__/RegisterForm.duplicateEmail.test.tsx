@@ -10,9 +10,21 @@ vi.mock('../../api/registerApi', () => ({
 
 const VALID_EMAIL = 'user@example.com'
 const VALID_PASSWORD = 'Str0ng!Pass'
+// 'EMAIL_ALREADY_REGISTERED' is the code the backend actually sends on 409, confirmed by
+// curl against the live stack. These tests previously asserted 'EMAIL_ALREADY_EXISTS' — a
+// code nothing emits — and passed anyway, because the module under test is mocked here.
+// Mocking the api is what let the invented contract stay green.
 const DUPLICATE_EMAIL_ERROR = {
-  errorCode: 'EMAIL_ALREADY_EXISTS',
-  message: 'Аккаунт с таким email уже существует',
+  errorCode: 'EMAIL_ALREADY_REGISTERED',
+  message: 'An account with this email address already exists.',
+}
+
+const REGISTER_SUCCESS = {
+  userId: '00000000-0000-0000-0000-000000000001',
+  email: VALID_EMAIL,
+  isVerified: false,
+  verificationCode: '123456',
+  codeExpiresAt: '2026-07-16T18:00:00+00:00',
 }
 
 function renderAndFill() {
@@ -31,17 +43,17 @@ describe('RegisterForm duplicate-email error', () => {
     vi.mocked(api.register).mockReset()
   })
 
-  it('calls registerApi.register with the entered email and password on submit', async () => {
-    vi.mocked(api.register).mockResolvedValue({ email: VALID_EMAIL })
+  it('calls registerApi.register with the entered email, password and confirmation on submit', async () => {
+    vi.mocked(api.register).mockResolvedValue(REGISTER_SUCCESS)
     const { submitButton } = renderAndFill()
 
     fireEvent.click(submitButton)
 
     await waitFor(() => expect(api.register).toHaveBeenCalledTimes(1))
-    expect(api.register).toHaveBeenCalledWith(VALID_EMAIL, VALID_PASSWORD)
+    expect(api.register).toHaveBeenCalledWith(VALID_EMAIL, VALID_PASSWORD, VALID_PASSWORD)
   })
 
-  it('displays the duplicate-email error near the email field when register rejects with EMAIL_ALREADY_EXISTS', async () => {
+  it('displays the duplicate-email error near the email field when register rejects with EMAIL_ALREADY_REGISTERED', async () => {
     vi.mocked(api.register).mockRejectedValue(DUPLICATE_EMAIL_ERROR)
     const { submitButton } = renderAndFill()
 
@@ -69,7 +81,7 @@ describe('RegisterForm duplicate-email error', () => {
   })
 
   it('does not display an email error after a successful registration', async () => {
-    vi.mocked(api.register).mockResolvedValue({ email: VALID_EMAIL })
+    vi.mocked(api.register).mockResolvedValue(REGISTER_SUCCESS)
     const { submitButton } = renderAndFill()
 
     fireEvent.click(submitButton)

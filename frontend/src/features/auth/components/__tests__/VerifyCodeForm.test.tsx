@@ -2,6 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 import { renderWithRouter } from '../../../../test/renderWithRouter'
 import { VerifyCodeForm } from '../VerifyCodeForm'
+import * as verifyApi from '../../api/verifyApi'
+
+vi.mock('../../api/verifyApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof verifyApi>()
+  return { ...actual, verify: vi.fn() }
+})
 
 describe('VerifyCodeForm', () => {
   it('displays six single-digit code inputs', () => {
@@ -76,7 +82,12 @@ describe('VerifyCodeForm', () => {
 
   describe('confirm button', () => {
     it('disables the confirm button immediately after click', () => {
-      renderWithRouter(<VerifyCodeForm />)
+      // Needs a real call in flight to have an in-flight window at all: submit now returns
+      // early when no email is known, so the pre-integration version of this test — which
+      // rendered with no email — was asserting a disable driven by a placeholder's fake
+      // timer, not by a request. The pending promise is held open deliberately.
+      vi.mocked(verifyApi.verify).mockReturnValue(new Promise(() => {}))
+      renderWithRouter(<VerifyCodeForm email="user@example.com" />)
       const confirmButton = screen.getByTestId('verify-confirm-button')
       expect(confirmButton).toHaveTextContent('Подтвердить')
       expect(confirmButton).not.toBeDisabled()

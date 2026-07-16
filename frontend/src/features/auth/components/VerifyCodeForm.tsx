@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { resendCode } from '../api/authApi'
+import { verify, type VerifyApiError, GENERIC_VERIFY_FAILURE_MESSAGE } from '../api/verifyApi'
 import { AuthSubmitButton } from './AuthSubmitButton'
-import { useSubmitPlaceholder } from '../hooks/useSubmitPlaceholder'
 import './AuthForm.css'
 import './VerifyCodeForm.css'
 
@@ -18,12 +19,54 @@ export interface VerifyCodeFormProps {
   email?: string
 }
 
-export function VerifyCodeForm({ email }: VerifyCodeFormProps) {
+// Register hands the email and the mocked code over in router state (see RegisterForm).
+// The prop remains for tests and for direct composition.
+interface VerifyRouterState {
+  email?: string
+  verificationCode?: string
+}
+
+function applyVerifyError(error: unknown): string {
+  if (error && typeof error === 'object' && 'errorCode' in error) {
+    const apiError = error as VerifyApiError
+    if (typeof apiError.message === 'string' && apiError.message.trim()) {
+      return apiError.message
+    }
+  }
+  return GENERIC_VERIFY_FAILURE_MESSAGE
+}
+
+export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
+  const routerState = (useLocation().state ?? {}) as VerifyRouterState
+  const email = emailProp ?? routerState.email
+  const mockedCode = routerState.verificationCode
   const [countdownSeconds] = useState(RESEND_COUNTDOWN_SECONDS)
   const [isResending, setIsResending] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [isVerified, setIsVerified] = useState(false)
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''))
   const inputRefs = useRef<Array<HTMLInputElement | null>>([])
-  const { isSubmitting, handleSubmit } = useSubmitPlaceholder()
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (isSubmitting) return
+    if (!email) {
+      setFormError('Не найден email для подтверждения — начните регистрацию заново')
+      return
+    }
+    setIsSubmitting(true)
+    try {
+      const result = await verify(email, digits.join(''))
+      setFormError(null)
+      setIsVerified(result.isVerified)
+    } catch (error) {
+      setIsVerified(false)
+      setFormError(applyVerifyError(error))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   function handleDigitChange(index: number, value: string) {
     setDigits((previous) => {
@@ -52,6 +95,14 @@ export function VerifyCodeForm({ email }: VerifyCodeFormProps) {
   return (
     <div className="auth-card verify-code-card">
       <h1>Введите код подтверждения</h1>
+      {mockedCode && (
+        // Required by 07_Authorization_Notes.md: no email is sent, so the screen must show
+        // the code outright and say why, or testers are left with no way in. Shown, not
+        // pre-filled — the field still exercises the real input path.
+        <p className="verify-dev-code" data-testid="verify-dev-code">
+          Ваш код: <strong>{mockedCode}</strong> (dev-режим, письмо не отправляется)
+        </p>
+      )}
       <form onSubmit={handleSubmit}>
         <div className="verify-code-inputs">
           {Array.from({ length: CODE_LENGTH }, (_, index) => (
@@ -72,6 +123,16 @@ export function VerifyCodeForm({ email }: VerifyCodeFormProps) {
         <AuthSubmitButton testId="verify-confirm-button" isSubmitting={isSubmitting}>
           Подтвердить
         </AuthSubmitButton>
+        {formError && (
+          <div className="verify-form-error" data-testid="verify-form-error" role="alert">
+            {formError}
+          </div>
+        )}
+        {isVerified && (
+          <div className="verify-success" data-testid="verify-success" role="status">
+            Аккаунт подтверждён
+          </div>
+        )}
       </form>
       <p className="verify-resend">
         <span data-testid="verify-resend-countdown">{formatCountdown(countdownSeconds)}</span>
