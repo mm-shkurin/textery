@@ -1,5 +1,6 @@
 // HTTP client for the login API (POST authenticate).
 import { postJson, type HttpError } from './httpClient'
+import { GENERIC_LOGIN_FAILURE_MESSAGE } from '../utils/loginMessages'
 
 export interface LoginResult {
   accessToken: string
@@ -11,8 +12,6 @@ export interface LoginApiError {
   message: string
 }
 
-const GENERIC_LOGIN_FAILURE_MESSAGE = 'Не удалось войти'
-
 // A rejection only carries an error body when postJson built an HttpError from a
 // non-ok response. Transport failures (fetch rejects with a bodyless TypeError)
 // have no body — rethrow them untouched rather than reading `.body` off undefined,
@@ -22,9 +21,13 @@ function toLoginApiError(error: unknown): unknown {
   if (!body || typeof body !== 'object') {
     return error
   }
+  // Truthiness, not `??`: `??` fires only on null/undefined, so an empty-string message
+  // would survive verbatim and reach the form as '' — falsy at the form's render guard,
+  // i.e. silence on the INVALID_CREDENTIALS path itself.
+  const message = body.message
   const apiError: LoginApiError = {
-    errorCode: (body.error_code as string) ?? 'UNKNOWN_ERROR',
-    message: (body.message as string) ?? GENERIC_LOGIN_FAILURE_MESSAGE,
+    errorCode: (body.error_code as string) || 'UNKNOWN_ERROR',
+    message: typeof message === 'string' && message ? message : GENERIC_LOGIN_FAILURE_MESSAGE,
   }
   return apiError
 }

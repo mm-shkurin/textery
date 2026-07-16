@@ -3,21 +3,29 @@ import { Link } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
 import { login, type LoginApiError } from '../api/loginApi'
+import { GENERIC_LOGIN_FAILURE_MESSAGE } from '../utils/loginMessages'
 import './AuthForm.css'
 import './LoginForm.css'
 
-// Only a contract-shaped INVALID_CREDENTIALS error carrying a server-authored message
-// becomes user-facing text. Anything else (transport failure, unknown error code, a
-// contract error with no message) renders nothing — the login screen never displays a
-// string the backend's generic-message guarantee did not cover.
-function applyLoginError(error: unknown): string | null {
+// Every rejection resolves to user-facing text: silence is an illegal terminal state,
+// because the error element's mere PRESENCE is an account-enumeration oracle once 5.3
+// starts branching on UNVERIFIED. Only a contract-shaped INVALID_CREDENTIALS error
+// carrying a usable server-authored message is displayed verbatim — the backend's
+// generic-message guarantee covers exactly that string. Everything else (transport
+// failure, unknown error code, an empty or malformed message) falls back to the
+// client-owned generic constant, so the screen always says something and never says
+// something the backend's guarantee did not cover.
+//
+// Later scenarios (5.3 unverified, 5.4 lockout, 5.6 network) branch their distinct
+// messages ABOVE this fallback, not through it.
+function applyLoginError(error: unknown): string {
   if (error && typeof error === 'object' && 'errorCode' in error) {
     const apiError = error as LoginApiError
-    if (apiError.errorCode === 'INVALID_CREDENTIALS' && typeof apiError.message === 'string') {
+    if (apiError.errorCode === 'INVALID_CREDENTIALS' && typeof apiError.message === 'string' && apiError.message) {
       return apiError.message
     }
   }
-  return null
+  return GENERIC_LOGIN_FAILURE_MESSAGE
 }
 
 export function LoginForm() {
