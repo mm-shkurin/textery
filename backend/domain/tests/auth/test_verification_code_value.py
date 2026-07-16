@@ -39,6 +39,24 @@ class TestVerificationCodeValueNonDigitRejection:
 
 
 @pytest.mark.skip(reason="RED: VerificationCodeValue.__init__ raises NotImplementedError")
+class TestVerificationCodeValueTrailingNewlineRejection:
+    """The rule is spelled `^[0-9]{6}$` throughout the ADR, but Python's `$`
+    matches before a trailing newline -- `re.match(r"^[0-9]{6}$", "123456\\n")`
+    succeeds. The house pattern (Email._DOMAIN_PATTERN) uses fullmatch, which is
+    correct; this pins the anchor half of the rule so the wrong spelling can't
+    slip in. The length and digit halves are pinned above."""
+
+    @pytest.mark.parametrize(
+        "raw_input", ["123456\n", "123456\r\n"], ids=["newline", "crlf"]
+    )
+    def test_code_with_a_trailing_newline_is_rejected(self, raw_input):
+        with pytest.raises(ValueError) as exc_info:
+            VerificationCodeValue(raw_input)
+
+        assert str(exc_info.value) == _INVALID_MESSAGE
+
+
+@pytest.mark.skip(reason="RED: VerificationCodeValue.__init__ raises NotImplementedError")
 class TestVerificationCodeValueUnicodeDigitRejection:
     """ASCII [0-9] only -- str.isdigit() accepts many Unicode digit
     categories and is the obvious wrong implementation here."""

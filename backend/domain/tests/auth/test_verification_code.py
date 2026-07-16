@@ -37,10 +37,43 @@ class TestVerificationCodeGenerateShape:
             f"expected exactly six ASCII digits, got {generated.code!r}"
         )
 
-    def test_generated_code_matches_itself(self):
+    def test_generated_code_matches_an_equal_str_built_independently(self, monkeypatch):
+        # Compared against a separately-constructed literal, never against
+        # generated.code -- `matches(generated.code)` is `self._code == self._code`,
+        # true by identity for any type, including the value object this guards against.
+        monkeypatch.setattr(secrets, "randbelow", lambda _upper_bound: 42917)
+
         generated = _generate()
 
-        assert generated.matches(generated.code) is True
+        assert generated.matches("042917") is True
+
+
+class TestVerificationCodeGenerateEntropy:
+    """Guards the /register path: the random draw's upper bound must stay 10**6.
+
+    The shape guards above are all blind to this. green-usecase is instructed to
+    delete _CODE_MODULUS and import the digit count from VerificationCodeValue --
+    the natural typo, `randbelow(_CODE_DIGITS)`, draws 0-5 and formats to "000003",
+    which is a str, is six ASCII digits, matches, and round-trips through String(6).
+    Every existing guard passes while entropy collapses from 1,000,000 to 6.
+
+    The bound is restated as a literal rather than imported from the code under
+    test: importing it would make the assertion tautological, and this guard must
+    stay live (never skip-marked) through the very refactor it exists to catch.
+    """
+
+    def test_random_draw_is_bounded_by_the_full_six_digit_space(self, monkeypatch):
+        received_bounds = []
+
+        def _recording_randbelow(upper_bound: int) -> int:
+            received_bounds.append(upper_bound)
+            return 42917
+
+        monkeypatch.setattr(secrets, "randbelow", _recording_randbelow)
+
+        _generate()
+
+        assert received_bounds == [1_000_000]
 
 
 class TestVerificationCodeGenerateLeadingZeros:

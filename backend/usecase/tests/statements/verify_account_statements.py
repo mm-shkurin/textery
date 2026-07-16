@@ -78,6 +78,12 @@ class VerifyAccountStatements:
     async def verify_with_a_malformed_email(self) -> None:
         await self._execute_verify(self.MALFORMED_EMAIL, self.issued_code)
 
+    async def verify_with_both_a_malformed_email_and_a_malformed_code(self) -> None:
+        # The only statement that varies both axes at once. Every other one holds
+        # one valid, so they all stay green under either validation order -- this
+        # is what actually pins the ADR's email-first decision.
+        await self._execute_verify(self.MALFORMED_EMAIL, self.MALFORMED_CODE)
+
     async def verify_with_the_issued_code_when_final_commit_fails(self) -> None:
         self.unit_of_work.raise_on_commit = RuntimeError("connection reset")
         await self.verify_with_the_issued_code()
@@ -113,6 +119,12 @@ class VerifyAccountStatements:
         )
 
     def assert_rejected_as_invalid_email(self) -> None:
+        self._assert_validation_exception("INVALID_EMAIL", self.INVALID_EMAIL_MESSAGE)
+
+    def assert_rejected_as_invalid_email_not_invalid_code(self) -> None:
+        # Pins the ADR's validation-ordering decision (email before code) against a
+        # request that is bad on both axes -- the one input where the order is
+        # observable at all.
         self._assert_validation_exception("INVALID_EMAIL", self.INVALID_EMAIL_MESSAGE)
 
     def _assert_verification_failed_with_sanitized_message(self) -> None:

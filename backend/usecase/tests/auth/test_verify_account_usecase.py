@@ -41,6 +41,23 @@ class TestVerifyAccountUsecase:
         await verify_account_statements.verify_with_a_malformed_email()
         verify_account_statements.assert_rejected_as_invalid_email()
 
+    @pytest.mark.skip(
+        reason="RED: VerifyAccount has neither _validate_email nor _validate_code -- "
+        "a both-axes-malformed request leaks ValueError and answers 500"
+    )
+    async def test_should_reject_malformed_email_first_when_code_is_also_malformed(
+        self, verify_account_statements: VerifyAccountStatements
+    ):
+        """Pins the ADR's email-before-code validation order.
+
+        Every other rejection test holds one axis valid, so all of them stay green
+        under either order. Without this, green can put _validate_code first and
+        silently invert the decision the ADR settled.
+        """
+        await verify_account_statements.given_pending_account_with_verification_code()
+        await verify_account_statements.verify_with_both_a_malformed_email_and_a_malformed_code()
+        verify_account_statements.assert_rejected_as_invalid_email_not_invalid_code()
+
     async def test_should_rollback_and_raise_sanitized_error_when_final_commit_fails(
         self, verify_account_statements: VerifyAccountStatements
     ):
