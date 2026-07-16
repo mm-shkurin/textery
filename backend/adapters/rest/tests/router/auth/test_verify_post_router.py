@@ -1,11 +1,3 @@
-import pytest
-
-
-@pytest.mark.skip(
-    reason="RED: POST /api/v1/auth/verify route is not wired on auth_router, which "
-    "therefore exports no get_verify_account_usecase DI provider (AttributeError: "
-    "module 'router.auth.auth_router' has no attribute 'get_verify_account_usecase')"
-)
 class TestVerifyPostRouterCorrectCode:
     """Scenario 3.1: Correct code activates the account.
 

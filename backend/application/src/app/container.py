@@ -7,6 +7,7 @@ from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.auth.verification_code_storage import SqlAlchemyVerificationCodeRepository
 from access.generation.generation_storage import SqlAlchemyGenerationStorage
 from auth.register_user import RegisterUser
+from auth.verify_account import VerifyAccount
 from generation.generate_document import GenerateDocument
 from generation.get_generation import GetGeneration
 from generation.request_generation import RequestGeneration
@@ -89,6 +90,27 @@ async def create_register_user() -> AsyncIterator[RegisterUser]:
         yield RegisterUser(
             account_repository=repository,
             verification_code_repository=verification_code_repository,
+            unit_of_work=unit_of_work,
+        )
+    finally:
+        await session.close()
+
+
+class SystemClock:
+    def now(self) -> datetime:
+        return datetime.now(timezone.utc)
+
+
+async def create_verify_account() -> AsyncIterator[VerifyAccount]:
+    session = _session_factory()
+    try:
+        repository = SqlAlchemyAccountRepository(session)
+        verification_code_repository = SqlAlchemyVerificationCodeRepository(session)
+        unit_of_work = SqlAlchemyUnitOfWork(session)
+        yield VerifyAccount(
+            account_repository=repository,
+            verification_code_repository=verification_code_repository,
+            clock=SystemClock(),
             unit_of_work=unit_of_work,
         )
     finally:
