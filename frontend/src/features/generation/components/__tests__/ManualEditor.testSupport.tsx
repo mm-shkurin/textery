@@ -11,3 +11,12 @@ export async function renderEditorWithDocumentCreated(onBack = vi.fn()) {
   })
   return onBack
 }
+
+export function selectRange(node: Node, start: number, end: number) {
+  const range = document.createRange()
+  range.setStart(node, start)
+  range.setEnd(node, end)
+  const selection = window.getSelection()
+  selection?.removeAllRanges()
+  selection?.addRange(range)
+}

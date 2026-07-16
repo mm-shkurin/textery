@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
-import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
+import { renderEditorWithDocumentCreated, selectRange } from './ManualEditor.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -15,12 +15,7 @@ describe('ManualEditor formatting toolbar', () => {
     fireEvent.input(contentArea)
 
     const textNode = contentArea.firstChild as Node
-    const range = document.createRange()
-    range.setStart(textNode, 0)
-    range.setEnd(textNode, 5)
-    const selection = window.getSelection()
-    selection?.removeAllRanges()
-    selection?.addRange(range)
+    selectRange(textNode, 0, 5)
     fireEvent.select(contentArea)
 
     const boldButton = screen.getByTestId('toolbar-bold')
@@ -38,12 +33,7 @@ describe('ManualEditor formatting toolbar', () => {
     fireEvent.input(contentArea)
 
     const initialTextNode = contentArea.firstChild as Node
-    const boldRange = document.createRange()
-    boldRange.setStart(initialTextNode, 0)
-    boldRange.setEnd(initialTextNode, 4)
-    const selection = window.getSelection()
-    selection?.removeAllRanges()
-    selection?.addRange(boldRange)
+    selectRange(initialTextNode, 0, 4)
     fireEvent.select(contentArea)
 
     const boldButton = screen.getByTestId('toolbar-bold')
@@ -53,11 +43,7 @@ describe('ManualEditor formatting toolbar', () => {
     expect(boldButton).toHaveAttribute('aria-pressed', 'true')
 
     const plainTextNode = contentArea.lastChild as Node
-    const cursorRange = document.createRange()
-    cursorRange.setStart(plainTextNode, 1)
-    cursorRange.setEnd(plainTextNode, 1)
-    selection?.removeAllRanges()
-    selection?.addRange(cursorRange)
+    selectRange(plainTextNode, 1, 1)
     fireEvent.select(contentArea)
 
     expect(boldButton).toHaveAttribute('aria-pressed', 'false')
@@ -73,12 +59,7 @@ describe('ManualEditor formatting toolbar', () => {
     fireEvent.input(contentArea)
 
     const textNode = contentArea.firstChild as Node
-    const range = document.createRange()
-    range.setStart(textNode, 0)
-    range.setEnd(textNode, 5)
-    const selection = window.getSelection()
-    selection?.removeAllRanges()
-    selection?.addRange(range)
+    selectRange(textNode, 0, 5)
     fireEvent.select(contentArea)
 
     const strikeButton = screen.getByTestId('toolbar-strike')
@@ -96,12 +77,7 @@ describe('ManualEditor formatting toolbar', () => {
     fireEvent.input(contentArea)
 
     const initialTextNode = contentArea.firstChild as Node
-    const strikeRange = document.createRange()
-    strikeRange.setStart(initialTextNode, 0)
-    strikeRange.setEnd(initialTextNode, 6)
-    const selection = window.getSelection()
-    selection?.removeAllRanges()
-    selection?.addRange(strikeRange)
+    selectRange(initialTextNode, 0, 6)
     fireEvent.select(contentArea)
 
     const strikeButton = screen.getByTestId('toolbar-strike')
@@ -111,11 +87,7 @@ describe('ManualEditor formatting toolbar', () => {
     expect(strikeButton).toHaveAttribute('aria-pressed', 'true')
 
     const plainTextNode = contentArea.lastChild as Node
-    const cursorRange = document.createRange()
-    cursorRange.setStart(plainTextNode, 1)
-    cursorRange.setEnd(plainTextNode, 1)
-    selection?.removeAllRanges()
-    selection?.addRange(cursorRange)
+    selectRange(plainTextNode, 1, 1)
     fireEvent.select(contentArea)
 
     expect(strikeButton).toHaveAttribute('aria-pressed', 'false')
@@ -129,12 +101,7 @@ describe('ManualEditor formatting toolbar', () => {
     fireEvent.input(contentArea)
 
     const textNode = contentArea.firstChild as Node
-    const range = document.createRange()
-    range.setStart(textNode, 0)
-    range.setEnd(textNode, 5)
-    const selection = window.getSelection()
-    selection?.removeAllRanges()
-    selection?.addRange(range)
+    selectRange(textNode, 0, 5)
     fireEvent.select(contentArea)
 
     const underlineButton = screen.getByTestId('toolbar-underline')
@@ -152,12 +119,7 @@ describe('ManualEditor formatting toolbar', () => {
     fireEvent.input(contentArea)
 
     const initialTextNode = contentArea.firstChild as Node
-    const underlineRange = document.createRange()
-    underlineRange.setStart(initialTextNode, 0)
-    underlineRange.setEnd(initialTextNode, 5)
-    const selection = window.getSelection()
-    selection?.removeAllRanges()
-    selection?.addRange(underlineRange)
+    selectRange(initialTextNode, 0, 5)
     fireEvent.select(contentArea)
 
     const underlineButton = screen.getByTestId('toolbar-underline')
@@ -167,11 +129,7 @@ describe('ManualEditor formatting toolbar', () => {
     expect(underlineButton).toHaveAttribute('aria-pressed', 'true')
 
     const plainTextNode = contentArea.lastChild as Node
-    const cursorRange = document.createRange()
-    cursorRange.setStart(plainTextNode, 1)
-    cursorRange.setEnd(plainTextNode, 1)
-    selection?.removeAllRanges()
-    selection?.addRange(cursorRange)
+    selectRange(plainTextNode, 1, 1)
     fireEvent.select(contentArea)
 
     expect(underlineButton).toHaveAttribute('aria-pressed', 'false')
