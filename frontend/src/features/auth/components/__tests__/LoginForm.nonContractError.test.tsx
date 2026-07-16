@@ -55,8 +55,7 @@ describe('LoginForm non-contract rejections', () => {
     const { submitButton } = renderAndSubmit()
 
     await waitFor(() => expect(submitButton).not.toBeDisabled())
-    const formError = screen.getByTestId('login-form-error')
-    expect(formError.textContent).toBe(GENERIC_LOGIN_FAILURE_MESSAGE)
+    expect(screen.getByTestId('login-form-error').textContent).toBe(GENERIC_LOGIN_FAILURE_MESSAGE)
     expect(document.body.textContent).not.toContain(transportText)
   })
 
@@ -69,8 +68,7 @@ describe('LoginForm non-contract rejections', () => {
     const { submitButton } = renderAndSubmit()
 
     await waitFor(() => expect(submitButton).not.toBeDisabled())
-    const formError = screen.getByTestId('login-form-error')
-    expect(formError.textContent).toBe(GENERIC_LOGIN_FAILURE_MESSAGE)
+    expect(screen.getByTestId('login-form-error').textContent).toBe(GENERIC_LOGIN_FAILURE_MESSAGE)
     expect(document.body.textContent).not.toContain(serverText)
   })
 
@@ -111,8 +109,7 @@ describe('LoginForm non-contract rejections', () => {
     const { submitButton } = renderAndSubmit()
 
     await waitFor(() => expect(submitButton).not.toBeDisabled())
-    const formError = screen.getByTestId('login-form-error')
-    expect(formError.textContent).toBe(GENERIC_LOGIN_FAILURE_MESSAGE)
+    expect(screen.getByTestId('login-form-error').textContent).toBe(GENERIC_LOGIN_FAILURE_MESSAGE)
     expect(document.body.textContent).not.toContain(internalText)
   })
 
