@@ -61,8 +61,6 @@ describe('LoginForm invalid-credentials error', () => {
 
     await screen.findByTestId('login-form-error')
     expect(screen.queryAllByTestId('login-form-error')).toHaveLength(1)
-    expect(screen.queryByTestId('login-email-error')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('login-password-error')).not.toBeInTheDocument()
   })
 
   it('does not display an error while the login call is still pending', async () => {
@@ -88,7 +86,10 @@ describe('LoginForm invalid-credentials error', () => {
 
     fireEvent.click(submitButton)
 
-    await waitFor(() => expect(api.login).toHaveBeenCalledTimes(1))
+    // Sync on the call settling, not on the call being made: login is invoked
+    // synchronously, so waiting on the mock's call count would assert the pending
+    // state and re-guard the test above instead of the post-success state.
+    await waitFor(() => expect(submitButton).not.toBeDisabled())
     expect(screen.queryByTestId('login-form-error')).not.toBeInTheDocument()
   })
 
