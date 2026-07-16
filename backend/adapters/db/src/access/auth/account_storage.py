@@ -25,7 +25,22 @@ class SqlAlchemyAccountRepository:
         return model.to_domain() if model else None
 
     async def save(self, account: Account) -> None:
-        self._session.add(AccountModel.from_domain(account))
+        """Insert a new account, or update the one that already exists.
+
+        Insert-only (a bare session.add) is what this used to do, which was
+        invisible until /verify went live: registration always inserts, but
+        verifying an account saves an Account that already has a row, so add()
+        emitted a second INSERT with the same primary key and Postgres rejected it
+        with accounts_pkey. The usecase's broad except turned that into a 500. The
+        fakes append to a list, so no unit test could see it.
+        """
+        existing = await self._session.get(AccountModel, account.id)
+        if existing is None:
+            self._session.add(AccountModel.from_domain(account))
+        else:
+            existing.email = account.email
+            existing.password_hash = account.password_hash
+            existing.is_verified = account.is_verified
         try:
             await self._session.flush()
         except IntegrityError as error:
