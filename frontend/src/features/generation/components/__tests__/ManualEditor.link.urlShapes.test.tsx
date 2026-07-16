@@ -7,8 +7,13 @@ vi.mock('../../api/documentApi')
 // Renders a fresh editor, selects "hello" out of "hello world", opens the link
 // popover, types `url` and presses Применить. Returns the content area so each
 // test asserts on the resulting anchor. A helper rather than inline setup
-// because the five URL shapes below differ in exactly one value — the URL — and
-// that difference is the whole point of the file.
+// because the URL shapes below differ in exactly one value — the URL — and that
+// difference is the whole point of the file.
+//
+// Deliberately local to this file rather than in ManualEditor.testSupport:
+// ManualEditor.link.test.tsx drives the same popover but asserts *within* the
+// flow (the popover is in the document, the full attribute set, aria-pressed
+// toggling on cursor move), so it cannot be expressed as a call to this.
 async function applyLinkUrl(url: string) {
   await renderEditorWithDocumentCreated()
 
@@ -26,6 +31,25 @@ async function applyLinkUrl(url: string) {
   return contentArea
 }
 
+// Every shape below pins the same three invariants and differs only in the
+// expected href, so the href stays at the call site and the invariants live
+// here. Extracted from the assertion blocks, not from the setup: the varying
+// input is still one literal per test, and each test keeps its own body so the
+// reason it exists stays next to it.
+//
+// The absent alert is load-bearing rather than incidental: the defect is not
+// only "no link" — it is that the visitor is actively told a genuinely fine
+// address is bad. Pinning the absence of the rejection message is what
+// distinguishes these from a silent no-op.
+function expectSoleLink(contentArea: HTMLElement, href: string) {
+  const anchors = contentArea.querySelectorAll('a')
+  expect(anchors).toHaveLength(1)
+  expect(anchors[0].getAttribute('href')).toBe(href)
+  // The link wraps the selection, not the whole text.
+  expect(anchors[0].textContent).toBe('hello')
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+}
+
 describe('ManualEditor link URL shapes', () => {
   // RED (green-frontend-url-shapes owns the fix): normalizeHref's
   // HAS_SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:/ includes `.` in the class, so the
@@ -36,14 +60,7 @@ describe('ManualEditor link URL shapes', () => {
   it.skip('a host with a port and path is normalized to http:// rather than mistaken for a scheme', async () => {
     const contentArea = await applyLinkUrl('example.com:8080/path')
 
-    const anchors = contentArea.querySelectorAll('a')
-    expect(anchors).toHaveLength(1)
-    expect(anchors[0].getAttribute('href')).toBe('http://example.com:8080/path')
-    expect(anchors[0].textContent).toBe('hello')
-    // The defect is not only "no link" — it is that the visitor is actively
-    // told the address is wrong. Pinning the absence of the rejection message
-    // is what distinguishes this from a silent no-op.
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expectSoleLink(contentArea, 'http://example.com:8080/path')
   })
 
   // RED, same root cause as above: `localhost:` matches HAS_SCHEME.
@@ -53,11 +70,7 @@ describe('ManualEditor link URL shapes', () => {
   it.skip('a dotless host with a port is normalized to http:// rather than mistaken for a scheme', async () => {
     const contentArea = await applyLinkUrl('localhost:3000')
 
-    const anchors = contentArea.querySelectorAll('a')
-    expect(anchors).toHaveLength(1)
-    expect(anchors[0].getAttribute('href')).toBe('http://localhost:3000')
-    expect(anchors[0].textContent).toBe('hello')
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expectSoleLink(contentArea, 'http://localhost:3000')
   })
 
   // RED, same shape as `localhost:3000` and separate from it for the same
@@ -69,11 +82,7 @@ describe('ManualEditor link URL shapes', () => {
   it.skip('an arbitrary dotless host with a port is normalized to http://, not just the well-known localhost', async () => {
     const contentArea = await applyLinkUrl('myserver:8080')
 
-    const anchors = contentArea.querySelectorAll('a')
-    expect(anchors).toHaveLength(1)
-    expect(anchors[0].getAttribute('href')).toBe('http://myserver:8080')
-    expect(anchors[0].textContent).toBe('hello')
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expectSoleLink(contentArea, 'http://myserver:8080')
   })
 
   // RED: a bare email has no `:` at all, so HAS_SCHEME correctly reports "no
@@ -85,11 +94,7 @@ describe('ManualEditor link URL shapes', () => {
   it.skip('a bare email address is normalized to a mailto: link, not an http:// userinfo URL', async () => {
     const contentArea = await applyLinkUrl('user@example.com')
 
-    const anchors = contentArea.querySelectorAll('a')
-    expect(anchors).toHaveLength(1)
-    expect(anchors[0].getAttribute('href')).toBe('mailto:user@example.com')
-    expect(anchors[0].textContent).toBe('hello')
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expectSoleLink(contentArea, 'mailto:user@example.com')
   })
 
   // RED, same shape as above and separate for the same reason: a single email
@@ -100,11 +105,7 @@ describe('ManualEditor link URL shapes', () => {
   it.skip('a bare email on a subdomain with a multi-label TLD is also normalized to mailto:', async () => {
     const contentArea = await applyLinkUrl('admin@sub.example.co.uk')
 
-    const anchors = contentArea.querySelectorAll('a')
-    expect(anchors).toHaveLength(1)
-    expect(anchors[0].getAttribute('href')).toBe('mailto:admin@sub.example.co.uk')
-    expect(anchors[0].textContent).toBe('hello')
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expectSoleLink(contentArea, 'mailto:admin@sub.example.co.uk')
   })
 
   // Regression guards, GREEN today and required to stay green: the fix to
@@ -114,11 +115,7 @@ describe('ManualEditor link URL shapes', () => {
   it('an explicit https scheme passes through untouched', async () => {
     const contentArea = await applyLinkUrl('https://example.com/x')
 
-    const anchors = contentArea.querySelectorAll('a')
-    expect(anchors).toHaveLength(1)
-    expect(anchors[0].getAttribute('href')).toBe('https://example.com/x')
-    expect(anchors[0].textContent).toBe('hello')
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expectSoleLink(contentArea, 'https://example.com/x')
   })
 
   // The mailto case above makes this one load-bearing rather than incidental:
@@ -127,10 +124,6 @@ describe('ManualEditor link URL shapes', () => {
   it('an explicit mailto scheme passes through untouched', async () => {
     const contentArea = await applyLinkUrl('mailto:a@b.com')
 
-    const anchors = contentArea.querySelectorAll('a')
-    expect(anchors).toHaveLength(1)
-    expect(anchors[0].getAttribute('href')).toBe('mailto:a@b.com')
-    expect(anchors[0].textContent).toBe('hello')
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expectSoleLink(contentArea, 'mailto:a@b.com')
   })
 })
