@@ -1,3 +1,5 @@
+import pytest
+
 from statements.verify_account_statements import VerifyAccountStatements
 
 
@@ -16,6 +18,28 @@ class TestVerifyAccountUsecase:
         await verify_account_statements.given_pending_account_with_verification_code()
         await verify_account_statements.verify_with_the_issued_code()
         verify_account_statements.assert_account_is_verified()
+
+    @pytest.mark.skip(
+        reason="RED: VerifyAccount has no _validate_code -- a malformed code falls "
+        "through matches() and execute() returns None instead of ValidationException"
+    )
+    async def test_should_reject_malformed_code_before_any_repository_lookup(
+        self, verify_account_statements: VerifyAccountStatements
+    ):
+        await verify_account_statements.given_pending_account_with_verification_code()
+        await verify_account_statements.verify_with_a_malformed_code()
+        verify_account_statements.assert_rejected_as_invalid_code_without_touching_repositories()
+
+    @pytest.mark.skip(
+        reason="RED: VerifyAccount.execute has a bare Email(email) call with no "
+        "_validate_email -- ValueError leaks out and answers 500, not 400 INVALID_EMAIL"
+    )
+    async def test_should_reject_malformed_email_as_invalid_email(
+        self, verify_account_statements: VerifyAccountStatements
+    ):
+        await verify_account_statements.given_pending_account_with_verification_code()
+        await verify_account_statements.verify_with_a_malformed_email()
+        verify_account_statements.assert_rejected_as_invalid_email()
 
     async def test_should_rollback_and_raise_sanitized_error_when_final_commit_fails(
         self, verify_account_statements: VerifyAccountStatements

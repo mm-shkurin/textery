@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import uuid4
@@ -10,6 +11,8 @@ from access.auth.verification_code_storage import SqlAlchemyVerificationCodeRepo
 from auth.account import Account
 from auth.verification_code import VerificationCode
 from model.auth.verification_code_model import VerificationCodeModel
+
+_ASCII_SIX_DIGITS = re.compile(r"^[0-9]{6}$")
 
 
 class VerificationCodeStorageStatements:
@@ -36,6 +39,36 @@ class VerificationCodeStorageStatements:
             account_id=account.id,
             code="007123",
             expires_at=datetime.now(timezone.utc) + timedelta(minutes=10),
+        )
+
+    def build_generated_code_for_account(self, account: Account) -> VerificationCode:
+        return VerificationCode.generate(
+            id=uuid4(),
+            account_id=account.id,
+            created_at=datetime.now(timezone.utc),
+        )
+
+    def assert_fetched_code_is_the_generated_str(self) -> None:
+        assert self.fetched_model is not None, "expected a verification_codes row, got None"
+        # isinstance, not a regex/truthiness check: the failure guarded here is a
+        # value object being stored where a `str` belongs, and a VO whose __str__
+        # renders six digits would satisfy a pattern check while still breaking
+        # matches() and the String(6) column.
+        assert isinstance(self.fetched_model.code, str), (
+            f"expected the persisted code to be a str, got "
+            f"{type(self.fetched_model.code).__name__}"
+        )
+        assert _ASCII_SIX_DIGITS.fullmatch(self.fetched_model.code) is not None, (
+            f"expected the persisted generated code to be exactly six ASCII digits, "
+            f"got {self.fetched_model.code!r}"
+        )
+        assert self.fetched_model.code == self.saved_code.code, (
+            f"expected the generated code to survive the model round-trip unchanged, "
+            f"got '{self.fetched_model.code}' vs generated '{self.saved_code.code}'"
+        )
+        assert self.fetched_model.consumed_at is None, (
+            f"expected a freshly generated code to persist unconsumed, "
+            f"got consumed_at={self.fetched_model.consumed_at}"
         )
 
     async def save_code(self, code: VerificationCode) -> None:

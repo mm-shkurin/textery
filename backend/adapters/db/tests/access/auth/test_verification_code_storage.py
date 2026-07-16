@@ -13,3 +13,17 @@ class TestSave:
         await verification_code_storage_statements.save_code(code)
         await verification_code_storage_statements.fetch_saved_code_row()
         verification_code_storage_statements.assert_fetched_matches_saved()
+
+
+class TestSaveGeneratedCode:
+    """A code produced by VerificationCode.generate() -- the /register path --
+    reaches the String(6) column as a plain str and round-trips unchanged."""
+
+    async def test_should_round_trip_generated_verification_code(
+        self, verification_code_storage_statements: VerificationCodeStorageStatements
+    ):
+        account = await verification_code_storage_statements.given_saved_account()
+        code = verification_code_storage_statements.build_generated_code_for_account(account)
+        await verification_code_storage_statements.save_code(code)
+        await verification_code_storage_statements.fetch_saved_code_row()
+        verification_code_storage_statements.assert_fetched_code_is_the_generated_str()
