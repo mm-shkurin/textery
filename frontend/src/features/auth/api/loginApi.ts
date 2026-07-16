@@ -23,11 +23,18 @@ function toLoginApiError(error: unknown): unknown {
   }
   // Both fields fall back when the parsed value cannot serve, but the two tests are NOT the
   // same rule and must not be collapsed into one — what disqualifies a value differs by what
-  // the value is for. `message` is rendered to the user, so it must carry visible text:
-  // `isUsableMessage`, shared with LoginForm precisely so this module and the form cannot
-  // hold two different notions of "displayable". `errorCode` is only ever compared against
-  // known codes, never shown, so a non-empty string is enough; a blank-looking code is not
-  // a display hazard, it simply matches nothing and lands on the form's own fallback.
+  // the value is for. `errorCode` is only ever compared against known codes, never shown, so
+  // a non-empty string is enough; a blank-looking code is not a display hazard, it simply
+  // matches nothing and lands on the form's own fallback.
+  //
+  // `isUsableMessage` buys exactly ONE property here: the message is NON-BLANK. It is NOT a
+  // client-safety check, and this module performs NO sanitisation — any non-whitespace string
+  // passes through verbatim, `"NullPointerException at AuthService.line42"` included.
+  // Client-safety is the BACKEND's guarantee (endpoints.md:17-19 — `message` is always a
+  // generic, client-safe string). On this side, non-disclosure is enforced SOLELY by
+  // LoginForm's `errorCode === 'INVALID_CREDENTIALS'` check, which decides what reaches the
+  // screen. Consumers added later (5.3/5.4/5.6 each read `apiError.message`) must gate the
+  // text themselves: it does not arrive display-ready, whatever its type says.
   //
   // `??` is wrong for either field — it fires only on null/undefined, so an empty-string
   // message would survive verbatim and reach the form as '', silence on the
