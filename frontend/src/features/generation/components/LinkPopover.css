@@ -47,8 +47,8 @@
 }
 
 .me-link-apply {
-  background: #f5f5f7;
-  color: #111214;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
 }
 
 .me-link-cancel {

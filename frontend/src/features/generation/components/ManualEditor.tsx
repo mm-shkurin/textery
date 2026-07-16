@@ -16,6 +16,7 @@ import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
 import { AppHeader } from '../../../shared/components/AppHeader'
 import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from './editorDomSync'
 import { ManualEditorToolbar } from './ManualEditorToolbar'
+import { ManualEditorBreadcrumb } from './ManualEditorBreadcrumb'
 
 export const SAVE_ERROR_MESSAGE =
   'Не удалось сохранить документ. Проверьте соединение и попробуйте ещё раз — введённый текст сохранён локально в редакторе.'
@@ -146,27 +147,7 @@ export function ManualEditor({
     <div className="manual-editor-page" data-testid="manual-editor">
       <AppHeader />
       <div className="me-container">
-        <div className="me-breadcrumb">
-          <button type="button" className="me-breadcrumb-back" onClick={onBack} aria-label="Назад">
-            <span aria-hidden="true">←</span>
-            Назад
-          </button>
-          <div data-testid="editor-breadcrumb" className="me-breadcrumb-chips">
-            <span className="me-breadcrumb-chip">
-              <span className="me-chip-icon">
-                <PlaceholderImage />
-              </span>
-              {documentTypeLabel}
-            </span>
-            <span className="me-breadcrumb-sep"> · </span>
-            <span className="me-breadcrumb-chip">
-              <span className="me-chip-icon">
-                <PlaceholderImage />
-              </span>
-              Ручной режим
-            </span>
-          </div>
-        </div>
+        <ManualEditorBreadcrumb documentTypeLabel={documentTypeLabel} onBack={onBack} />
         <div className="me-editor-shell">
           <ManualEditorToolbar
             editor={editor}
