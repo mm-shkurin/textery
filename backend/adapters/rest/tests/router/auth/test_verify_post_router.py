@@ -1,19 +1,25 @@
 import pytest
-from httpx import ASGITransport, AsyncClient
 
 
-@pytest.mark.skip(reason="RED: POST /api/v1/auth/verify route is not wired on auth_router")
+@pytest.mark.skip(
+    reason="RED: POST /api/v1/auth/verify route is not wired on auth_router, which "
+    "therefore exports no get_verify_account_usecase DI provider (AttributeError: "
+    "module 'router.auth.auth_router' has no attribute 'get_verify_account_usecase')"
+)
 class TestVerifyPostRouterCorrectCode:
     """Scenario 3.1: Correct code activates the account.
 
-    Given a client submits a correct email/code pair
-    When the client submits POST /api/v1/auth/verify
+    Given a pending account with an active, unexpired verification code
+    When the client submits that code for that email via POST /api/v1/auth/verify
     Then the response is 200 with body {"is_verified": true}
+    And the usecase is awaited once with the submitted email and code
     """
 
-    async def test_should_return_200_with_is_verified_true(self, register_app):
-        transport = ASGITransport(app=register_app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async def test_should_return_200_with_is_verified_true(self, mocker, verify_client):
+        mock_usecase = mocker.Mock()
+        mock_usecase.execute = mocker.AsyncMock(return_value=None)
+
+        async with verify_client(mock_usecase) as client:
             response = await client.post(
                 "/api/v1/auth/verify",
                 json={
@@ -27,4 +33,8 @@ class TestVerifyPostRouterCorrectCode:
         )
         assert response.json() == {"is_verified": True}, (
             f"unexpected response body {response.json()}"
+        )
+        mock_usecase.execute.assert_awaited_once_with(
+            email="new-user@example.com",
+            code="042917",
         )
