@@ -74,17 +74,54 @@ describe('LoginForm non-contract rejections', () => {
     expect(document.body.textContent).not.toContain(serverText)
   })
 
-  // Fixture is `message: ''`, not an absent message. An ABSENT message is unreachable:
-  // `toLoginApiError` defaults it via `?? GENERIC_LOGIN_FAILURE_MESSAGE`, so loginApi can
-  // never hand the form a contract error without a message — asserting that shape would be
-  // a fifth vacuous guard in this scenario. An EMPTY message is reachable, because `??`
-  // catches null/undefined but NOT '': a body of `{"error_code":"INVALID_CREDENTIALS",
-  // "message":""}` survives toLoginApiError verbatim, applyLoginError returns '', and
-  // `{formError && ...}` treats '' as falsy — silence, on the INVALID_CREDENTIALS path
-  // itself. That is the enumeration oracle at its sharpest: the one outcome 5.2 already
-  // renders would go silent whenever the server sends an empty string.
+  // `LoginApiError` is an unenforced compile-time type and the form's catch takes
+  // `unknown`, so nothing at runtime holds loginApi to the declared shape. These three
+  // fixtures are defence-in-depth on the form's own guard rather than a claim about what
+  // loginApi emits today: each one names a distinct way a `message` can be present-but-
+  // unusable, and each must resolve to the client-owned constant rather than to silence
+  // or to raw server text.
   it('displays the generic message when a contract-shaped rejection carries an empty message', async () => {
     vi.mocked(api.login).mockRejectedValue({ errorCode: 'INVALID_CREDENTIALS', message: '' })
+    const { submitButton } = renderAndSubmit()
+
+    await waitFor(() => expect(submitButton).not.toBeDisabled())
+    expect(screen.getByTestId('login-form-error').textContent).toBe(GENERIC_LOGIN_FAILURE_MESSAGE)
+  })
+
+  // A non-string message satisfies `LoginApiError` at compile time only. This fixture
+  // guards the `typeof apiError.message === 'string'` clause specifically — it is the only
+  // test here that does; the empty-message fixture covers the truthiness clause instead.
+  //
+  // Read the failure honestly: deleting the typeof clause does NOT leak `internalText`.
+  // `{formError}` as a JSX child is not string-coerced — React refuses an object child and
+  // throws, so the render dies, the button never re-enables, and the `waitFor` below times
+  // out before the text assertions are reached. There is no `[object Object]` on screen and
+  // no path that puts the internal text there. So non-disclosure for this fixture is
+  // enforced by React, not by the form. What the form's typeof clause actually buys is the
+  // property asserted below: a non-string message resolves to the client-owned constant
+  // instead of taking the whole login form down. The `not.toContain` is kept as cheap
+  // insurance against a future implementation that stringifies the message itself
+  // (`JSON.stringify` would leak it) — it is not what makes this test bind today.
+  it('displays the generic message when a contract-shaped rejection carries an object message', async () => {
+    const internalText = 'NPE at AuthService.line42'
+    vi.mocked(api.login).mockRejectedValue({
+      errorCode: 'INVALID_CREDENTIALS',
+      message: { internal: internalText },
+    })
+    const { submitButton } = renderAndSubmit()
+
+    await waitFor(() => expect(submitButton).not.toBeDisabled())
+    const formError = screen.getByTestId('login-form-error')
+    expect(formError.textContent).toBe(GENERIC_LOGIN_FAILURE_MESSAGE)
+    expect(document.body.textContent).not.toContain(internalText)
+  })
+
+  // Whitespace-only is truthy, so it clears every guard the empty-string fix installed and
+  // is returned verbatim: the div is PRESENT (the presence-oracle stays closed) but renders
+  // a blank box. Silence by this scenario's own standard — the `''` fix stopped at
+  // truthiness where it needed to stop at "has visible text".
+  it('displays the generic message when a contract-shaped rejection carries a whitespace-only message', async () => {
+    vi.mocked(api.login).mockRejectedValue({ errorCode: 'INVALID_CREDENTIALS', message: '   ' })
     const { submitButton } = renderAndSubmit()
 
     await waitFor(() => expect(submitButton).not.toBeDisabled())
