@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from auth.register_user import RegisterUser
@@ -18,6 +18,9 @@ class VerifyAccountStatements:
     FIXED_CLOCK_NOW = datetime(2026, 7, 14, 12, 0, 0, tzinfo=timezone.utc)
     MALFORMED_CODE = "12345"
     MALFORMED_EMAIL = "not-an-email"
+    WRONG_CODE = "999999"
+    UNKNOWN_EMAIL = "nobody@example.ru"
+    INVALID_OR_EXPIRED_MESSAGE = "The verification code is invalid or has expired."
     UNCHANGED_BY_VERIFY_FIELDS = ("id", "email", "password_hash", "created_at")
     # Expected messages are spelled out here, not imported from the production
     # constants they pin -- importing VerifyAccount.VERIFICATION_FAILED_MESSAGE
@@ -86,6 +89,18 @@ class VerifyAccountStatements:
         # one valid, so they all stay green under either validation order -- this
         # is what actually pins the ADR's email-first decision.
         await self._execute_verify(self.MALFORMED_EMAIL, self.MALFORMED_CODE)
+
+    async def verify_with_a_wrong_but_well_formed_code(self) -> None:
+        await self._execute_verify(self.registered_email, self.WRONG_CODE)
+
+    async def verify_with_an_unknown_email(self) -> None:
+        await self._execute_verify(self.UNKNOWN_EMAIL, self.issued_code)
+
+    async def verify_with_the_issued_code_after_it_expired(self) -> None:
+        # The code expires 10 minutes after issuance; step exactly onto the expiry
+        # instant, which auth_verify.yaml treats as already expired.
+        self.clock.fixed_now = self.FIXED_CLOCK_NOW + timedelta(minutes=10)
+        await self.verify_with_the_issued_code()
 
     async def verify_with_the_issued_code_when_final_commit_fails(self) -> None:
         self.unit_of_work.raise_on_commit = RuntimeError("connection reset")
@@ -196,4 +211,31 @@ class VerifyAccountStatements:
         assert self.unit_of_work.commit_call_count == 1, (
             f"expected unit_of_work.commit() to be called exactly once, "
             f"got {self.unit_of_work.commit_call_count}"
+        )
+
+    def assert_rejected_as_invalid_or_expired(self) -> None:
+        """One generic rejection, and no state change.
+
+        The error code is asserted identical for a wrong code, an unknown email
+        and an expired code -- that sameness is the point, since a distinct code
+        (or a 500 from a None dereference) would reveal whether the email exists.
+        """
+        self._assert_validation_exception("INVALID_OR_EXPIRED_CODE", self.INVALID_OR_EXPIRED_MESSAGE)
+        assert len(self.account_repository.saved_accounts) == 1, (
+            f"expected no Account write on a rejected verify (only the register-time save), "
+            f"got {len(self.account_repository.saved_accounts)} saves"
+        )
+        assert self.account_repository.saved_accounts[0].is_verified is False, (
+            "expected the account to stay unverified after a rejected verify"
+        )
+        assert len(self.verification_code_repository.saved_codes) == 1, (
+            f"expected no VerificationCode write on a rejected verify, "
+            f"got {len(self.verification_code_repository.saved_codes)} saves"
+        )
+        assert self.verification_code_repository.saved_codes[0].consumed_at is None, (
+            "expected the code to stay unconsumed after a rejected verify -- a consumed "
+            "code could never be retried"
+        )
+        assert self.unit_of_work.commit_call_count == 0, (
+            f"expected no commit on a rejected verify, got {self.unit_of_work.commit_call_count}"
         )

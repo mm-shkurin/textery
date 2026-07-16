@@ -33,18 +33,25 @@ class VerifyAccount:
         normalized_email = self._validate_email(email).value
         self._validate_code(code)
         account = await self.account_repository.find_by_email(normalized_email)
+        if account is None:
+            raise self._invalid_or_expired()
         verification_code = await self.verification_code_repository.find_active_by_account_id(account.id)
+        if verification_code is None:
+            raise self._invalid_or_expired()
+        if not verification_code.matches(code):
+            raise self._invalid_or_expired()
+        if self.clock.now() >= verification_code.expires_at:
+            raise self._invalid_or_expired()
 
-        if verification_code.matches(code):
-            account.verify()
-            verification_code.consume(consumed_at=self.clock.now())
-            try:
-                await self.account_repository.save(account)
-                await self.verification_code_repository.save(verification_code)
-                await self.unit_of_work.commit()
-            except Exception:
-                await self._rollback_silently()
-                raise VerificationFailedException(message=self.VERIFICATION_FAILED_MESSAGE)
+        account.verify()
+        verification_code.consume(consumed_at=self.clock.now())
+        try:
+            await self.account_repository.save(account)
+            await self.verification_code_repository.save(verification_code)
+            await self.unit_of_work.commit()
+        except Exception:
+            await self._rollback_silently()
+            raise VerificationFailedException(message=self.VERIFICATION_FAILED_MESSAGE)
 
     def _validate_email(self, email: str) -> Email:
         try:
@@ -63,6 +70,27 @@ class VerifyAccount:
                 error_code="INVALID_CODE",
                 message="The verification code is not valid.",
             )
+
+    def _invalid_or_expired(self) -> ValidationException:
+        """One generic rejection for every failure that depends on stored state.
+
+        Wrong code, no such account, and no issued code all answer identically, on
+        purpose: auth_verify.yaml requires the 400 to be client-safe and to not
+        reveal whether the email exists. Giving the unknown-account case its own
+        code (or letting it 500 on a None dereference, which is what happened
+        before this) turns the status line into an account-existence oracle.
+
+        Distinct from INVALID_CODE, which is shape-only: that one is a pure
+        function of the submitted string and reveals nothing about any account.
+
+        Known gap, not closed here: the unknown-account branch returns after one
+        query while a wrong code costs two, so the paths are still
+        distinguishable by timing. Out of scope for this sprint.
+        """
+        return ValidationException(
+            error_code="INVALID_OR_EXPIRED_CODE",
+            message="The verification code is invalid or has expired.",
+        )
 
     async def _rollback_silently(self) -> None:
         try:

@@ -29,9 +29,14 @@ class AccountModel(Base):
         )
 
     def to_domain(self) -> Account:
-        return Account(
+        # reconstitute, not the constructor: the constructor hardcodes
+        # is_verified=False (correct for *creating* an account, wrong for reading
+        # one back), which would make every stored account read as unverified --
+        # no verified user could ever log in.
+        return Account.reconstitute(
             id=self.id,
             email=self.email,
             password_hash=self.password_hash,
             created_at=self.created_at,
+            is_verified=self.is_verified,
         )
