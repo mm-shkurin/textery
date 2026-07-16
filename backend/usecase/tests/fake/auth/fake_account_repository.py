@@ -16,7 +16,4 @@ class FakeAccountRepository:
 
     async def find_by_email(self, email: str) -> Optional[Account]:
         self.find_by_email_call_count += 1
-        for account in reversed(self.saved_accounts):
-            if account.email == email:
-                return account
-        return None
+        return next((a for a in reversed(self.saved_accounts) if a.email == email), None)

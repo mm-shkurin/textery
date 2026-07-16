@@ -15,6 +15,10 @@ from model.auth.verification_code_model import VerificationCodeModel
 _ASCII_SIX_DIGITS = re.compile(r"^[0-9]{6}$")
 
 
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
 class VerificationCodeStorageStatements:
     def __init__(self, session: AsyncSession) -> None:
         self._storage = SqlAlchemyVerificationCodeRepository(session)
@@ -28,7 +32,7 @@ class VerificationCodeStorageStatements:
             id=uuid4(),
             email="student@example.com",
             password_hash="hashed-password-value",
-            created_at=datetime.now(timezone.utc),
+            created_at=_now(),
         )
         await self._account_storage.save(account)
         return account
@@ -38,37 +42,40 @@ class VerificationCodeStorageStatements:
             id=uuid4(),
             account_id=account.id,
             code="007123",
-            expires_at=datetime.now(timezone.utc) + timedelta(minutes=10),
+            expires_at=_now() + timedelta(minutes=10),
         )
 
     def build_generated_code_for_account(self, account: Account) -> VerificationCode:
         return VerificationCode.generate(
             id=uuid4(),
             account_id=account.id,
-            created_at=datetime.now(timezone.utc),
+            created_at=_now(),
         )
 
-    def assert_fetched_code_is_the_generated_str(self) -> None:
+    def _require_fetched_row(self) -> VerificationCodeModel:
         assert self.fetched_model is not None, "expected a verification_codes row, got None"
+        return self.fetched_model
+
+    def assert_fetched_code_is_the_generated_str(self) -> None:
+        row = self._require_fetched_row()
         # isinstance, not a regex/truthiness check: the failure guarded here is a
         # value object being stored where a `str` belongs, and a VO whose __str__
         # renders six digits would satisfy a pattern check while still breaking
         # matches() and the String(6) column.
-        assert isinstance(self.fetched_model.code, str), (
-            f"expected the persisted code to be a str, got "
-            f"{type(self.fetched_model.code).__name__}"
+        assert isinstance(row.code, str), (
+            f"expected the persisted code to be a str, got {type(row.code).__name__}"
         )
-        assert _ASCII_SIX_DIGITS.fullmatch(self.fetched_model.code) is not None, (
+        assert _ASCII_SIX_DIGITS.fullmatch(row.code) is not None, (
             f"expected the persisted generated code to be exactly six ASCII digits, "
-            f"got {self.fetched_model.code!r}"
+            f"got {row.code!r}"
         )
-        assert self.fetched_model.code == self.saved_code.code, (
+        assert row.code == self.saved_code.code, (
             f"expected the generated code to survive the model round-trip unchanged, "
-            f"got '{self.fetched_model.code}' vs generated '{self.saved_code.code}'"
+            f"got '{row.code}' vs generated '{self.saved_code.code}'"
         )
-        assert self.fetched_model.consumed_at is None, (
+        assert row.consumed_at is None, (
             f"expected a freshly generated code to persist unconsumed, "
-            f"got consumed_at={self.fetched_model.consumed_at}"
+            f"got consumed_at={row.consumed_at}"
         )
 
     async def save_code(self, code: VerificationCode) -> None:
@@ -81,13 +88,13 @@ class VerificationCodeStorageStatements:
         self.fetched_model = result.scalar_one_or_none()
 
     def assert_fetched_matches_saved(self) -> None:
-        assert self.fetched_model is not None, "expected a verification_codes row, got None"
+        row = self._require_fetched_row()
         actual = (
-            self.fetched_model.id,
-            self.fetched_model.account_id,
-            self.fetched_model.code,
-            self.fetched_model.expires_at,
-            self.fetched_model.consumed_at,
+            row.id,
+            row.account_id,
+            row.code,
+            row.expires_at,
+            row.consumed_at,
         )
         expected = (
             self.saved_code.id,

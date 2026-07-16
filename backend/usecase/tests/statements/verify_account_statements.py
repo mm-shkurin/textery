@@ -17,6 +17,7 @@ class VerifyAccountStatements:
     FIXED_CLOCK_NOW = datetime(2026, 7, 14, 12, 0, 0, tzinfo=timezone.utc)
     MALFORMED_CODE = "12345"
     MALFORMED_EMAIL = "not-an-email"
+    UNCHANGED_BY_VERIFY_FIELDS = ("id", "email", "password_hash", "created_at")
     # Expected messages are spelled out here, not imported from the production
     # constants they pin -- importing VerifyAccount.VERIFICATION_FAILED_MESSAGE
     # would make the assertion tautological (it would pass for any edit to it).
@@ -53,11 +54,8 @@ class VerifyAccountStatements:
         # it in place -- FakeAccountRepository shares object identity across
         # saves/finds, so holding a reference would alias the post-verify state.
         self.original_account_snapshot = {
-            "id": result.account.id,
-            "email": result.account.email,
-            "password_hash": result.account.password_hash,
-            "created_at": result.account.created_at,
-            "is_verified": result.account.is_verified,
+            field: getattr(result.account, field)
+            for field in (*self.UNCHANGED_BY_VERIFY_FIELDS, "is_verified")
         }
 
     async def _execute_verify(self, email: str, code: str) -> None:
@@ -159,21 +157,13 @@ class VerifyAccountStatements:
         )
         original = self.original_account_snapshot
         verified_account = self.account_repository.saved_accounts[-1]
-        assert verified_account.id == original["id"], (
-            f"expected the same Account.id to be re-persisted on verify, "
-            f"got '{verified_account.id}' vs original '{original['id']}'"
-        )
-        assert verified_account.email == original["email"], (
-            f"expected Account.email to be unchanged by verify, "
-            f"got '{verified_account.email}' vs original '{original['email']}'"
-        )
-        assert verified_account.password_hash == original["password_hash"], (
-            f"expected Account.password_hash to be unchanged by verify, "
-            f"got '{verified_account.password_hash}' vs original '{original['password_hash']}'"
-        )
-        assert verified_account.created_at == original["created_at"], (
-            f"expected Account.created_at to be unchanged by verify, "
-            f"got '{verified_account.created_at}' vs original '{original['created_at']}'"
+        actual_unchanged = {
+            field: getattr(verified_account, field) for field in self.UNCHANGED_BY_VERIFY_FIELDS
+        }
+        expected_unchanged = {field: original[field] for field in self.UNCHANGED_BY_VERIFY_FIELDS}
+        assert actual_unchanged == expected_unchanged, (
+            f"expected verify to leave every field but is_verified unchanged, "
+            f"got {actual_unchanged} vs original {expected_unchanged}"
         )
         assert original["is_verified"] is False, (
             f"expected the Account to be unverified immediately after registration, "

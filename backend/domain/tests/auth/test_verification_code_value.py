@@ -8,51 +8,32 @@ _ARABIC_INDIC_SIX_DIGITS = "١٢٣٤٥٦"
 
 @pytest.mark.skip(reason="RED: VerificationCodeValue.__init__ raises NotImplementedError")
 class TestVerificationCodeValueNonStringRejection:
-    def test_int_input_is_rejected(self):
+    @pytest.mark.parametrize("raw_input", [42917, None], ids=["int", "none"])
+    def test_non_string_input_is_rejected(self, raw_input):
         with pytest.raises(ValueError) as exc_info:
-            VerificationCodeValue(42917)
-
-        assert str(exc_info.value) == _INVALID_MESSAGE
-
-    def test_none_input_is_rejected(self):
-        with pytest.raises(ValueError) as exc_info:
-            VerificationCodeValue(None)
+            VerificationCodeValue(raw_input)
 
         assert str(exc_info.value) == _INVALID_MESSAGE
 
 
 @pytest.mark.skip(reason="RED: VerificationCodeValue.__init__ raises NotImplementedError")
 class TestVerificationCodeValueLengthRejection:
-    def test_five_digit_code_is_rejected(self):
+    @pytest.mark.parametrize(
+        "raw_input", ["12345", "1234567", ""], ids=["five_digits", "seven_digits", "empty"]
+    )
+    def test_code_of_wrong_length_is_rejected(self, raw_input):
         with pytest.raises(ValueError) as exc_info:
-            VerificationCodeValue("12345")
-
-        assert str(exc_info.value) == _INVALID_MESSAGE
-
-    def test_seven_digit_code_is_rejected(self):
-        with pytest.raises(ValueError) as exc_info:
-            VerificationCodeValue("1234567")
-
-        assert str(exc_info.value) == _INVALID_MESSAGE
-
-    def test_empty_code_is_rejected(self):
-        with pytest.raises(ValueError) as exc_info:
-            VerificationCodeValue("")
+            VerificationCodeValue(raw_input)
 
         assert str(exc_info.value) == _INVALID_MESSAGE
 
 
 @pytest.mark.skip(reason="RED: VerificationCodeValue.__init__ raises NotImplementedError")
 class TestVerificationCodeValueNonDigitRejection:
-    def test_code_with_a_letter_is_rejected(self):
+    @pytest.mark.parametrize("raw_input", ["12a456", "12 456"], ids=["letter", "whitespace"])
+    def test_code_with_a_non_digit_is_rejected(self, raw_input):
         with pytest.raises(ValueError) as exc_info:
-            VerificationCodeValue("12a456")
-
-        assert str(exc_info.value) == _INVALID_MESSAGE
-
-    def test_code_with_whitespace_is_rejected(self):
-        with pytest.raises(ValueError) as exc_info:
-            VerificationCodeValue("12 456")
+            VerificationCodeValue(raw_input)
 
         assert str(exc_info.value) == _INVALID_MESSAGE
 
