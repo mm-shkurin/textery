@@ -93,7 +93,7 @@ describe('ManualEditor formatting toolbar', () => {
     expect(strikeButton).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it.skip('applying underline to selected text wraps it in <u> and marks the underline button active', async () => {
+  it('applying underline to selected text wraps it in <u> and marks the underline button active', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')
@@ -111,7 +111,7 @@ describe('ManualEditor formatting toolbar', () => {
     expect(underlineButton).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it.skip('moving the cursor from underlined text to non-underlined text deactivates the underline toolbar button', async () => {
+  it('moving the cursor from underlined text to non-underlined text deactivates the underline toolbar button', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')

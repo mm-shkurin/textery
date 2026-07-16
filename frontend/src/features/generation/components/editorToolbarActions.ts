@@ -10,6 +10,7 @@ export type ToolbarActionKey =
   | 'bold'
   | 'italic'
   | 'strike'
+  | 'underline'
   | 'code'
   | 'blockquote'
   | 'horizontalRule'
@@ -116,6 +117,14 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     testId: 'toolbar-strike',
     run: (editor) => editor.chain().focus().toggleStrike().run(),
     isActive: (editor) => editor.isActive('strike'),
+  },
+  {
+    key: 'underline',
+    label: 'U',
+    ariaLabel: 'Подчёркнутый',
+    testId: 'toolbar-underline',
+    run: (editor) => editor.chain().focus().toggleUnderline().run(),
+    isActive: (editor) => editor.isActive('underline'),
   },
   {
     key: 'code',

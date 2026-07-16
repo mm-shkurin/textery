@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import Underline from '@tiptap/extension-underline'
 import Document from '@tiptap/extension-document'
 import { BlockquoteMark } from './blockquoteMark'
 import { HorizontalRuleNode } from './horizontalRuleNode'
@@ -104,6 +105,7 @@ export function ManualEditor({
       HorizontalRuleNode,
       CodeBlockMark,
       Heading3Mark,
+      Underline,
       Placeholder.configure({ placeholder: 'Начните печатать…' }),
     ],
     content: '',
