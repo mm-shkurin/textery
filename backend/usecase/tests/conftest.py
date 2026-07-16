@@ -15,6 +15,8 @@ import pytest
 
 from statements.generation_lifecycle_statements import GenerationLifecycleStatements
 from statements.generation_statements import GenerationStatements
+from statements.login_statements import LoginStatements
+from statements.refresh_statements import RefreshStatements
 from statements.register_atomic_write_statements import RegisterAtomicWriteStatements
 from statements.register_statements import RegisterStatements
 from statements.requeue_stale_generations_statements import RequeueStaleGenerationsStatements
@@ -49,3 +51,13 @@ def requeue_stale_generations_statements():
 @pytest.fixture
 def verify_account_statements():
     return VerifyAccountStatements()
+
+
+@pytest.fixture
+def login_statements():
+    return LoginStatements()
+
+
+@pytest.fixture
+def refresh_statements():
+    return RefreshStatements()

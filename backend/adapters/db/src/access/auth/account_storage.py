@@ -1,4 +1,5 @@
 from typing import Optional
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -22,6 +23,10 @@ class SqlAlchemyAccountRepository:
             select(AccountModel).where(AccountModel.email == email)
         )
         model = result.scalar_one_or_none()
+        return model.to_domain() if model else None
+
+    async def find_by_id(self, account_id: UUID) -> Optional[Account]:
+        model = await self._session.get(AccountModel, account_id)
         return model.to_domain() if model else None
 
     async def save(self, account: Account) -> None:

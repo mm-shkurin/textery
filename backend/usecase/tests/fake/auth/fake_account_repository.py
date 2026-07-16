@@ -1,4 +1,5 @@
 from typing import Optional
+from uuid import UUID
 
 from auth.account import Account
 
@@ -17,3 +18,6 @@ class FakeAccountRepository:
     async def find_by_email(self, email: str) -> Optional[Account]:
         self.find_by_email_call_count += 1
         return next((a for a in reversed(self.saved_accounts) if a.email == email), None)
+
+    async def find_by_id(self, account_id: UUID) -> Optional[Account]:
+        return next((a for a in reversed(self.saved_accounts) if a.id == account_id), None)

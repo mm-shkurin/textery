@@ -273,20 +273,62 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
+> **Scenarios 5.1, 5.2, 6.1–6.4 landed out of TDD order — read this before trusting the
+> ticks below.** The whole login/JWT/refresh subsystem (`login_user.py`,
+> `refresh_access_token.py`, `token_service.py`, `token_pair.py`, `jwt_token_service.py`,
+> the three DTOs, `/login` + `/refresh` routes, `find_by_id` on the account port/adapter/fake,
+> the 401/403 codes) was written **before any test existed** and sat uncommitted in the
+> working tree. That skipped the one thing `decisions/trimmed-tdd-cycle-sprint-1-decision.md`
+> explicitly kept when it trimmed the cycle: *"Test first, and it must actually go RED."*
+>
+> The tests below were therefore written **against already-written code** and were green on
+> their first run. A test that never failed proves nothing on its own, so each one was instead
+> **verified by mutation**: a line in the production code was broken, the suite was re-run, and
+> the test that owns that behaviour had to go red. **14 mutants injected, 14 killed**, each by
+> exactly the intended test — recorded per-scenario below. That is the substitute for RED, and
+> it is a weaker one: mutation proves a test bites the defects *someone thought to inject*,
+> whereas a real RED phase proves it bites the defect that was actually in the way. The gap is
+> named here rather than discovered later.
+
 ### Scenario 5.1: Login rejected while account is unverified
-- [ ] red-acceptance
-- [ ] design
-- [ ] red-usecase
-- [ ] green-usecase
-- [ ] adapters-discovery
+- [S] red-acceptance — no acceptance test (trimmed cycle). Cannot be exercised over HTTP yet in
+  any case: `container.py`/`main.py` do not wire `/login`, so the route 500s on its DI stub —
+  see `adapters-discovery` below
+- [S] design — no ADR (trimmed cycle). The load-bearing choice is recorded in
+  `LoginUser.execute`'s comment: **is_verified is checked AFTER the password, deliberately**.
+  The other order answers UNVERIFIED to anyone who merely guessed an email, turning the 403 into
+  an account-existence oracle; answering it only once the password is already proven correct
+  tells the caller nothing they did not already know, while still letting 5.1 hand the client the
+  distinct code it needs to route to the verify screen
+- [x] red-usecase — **no RED phase occurred** (production code predates the test, see the note
+  above). `TestLoginUnverifiedAccount` (`backend/usecase/tests/auth/test_login_usecase.py`), 2
+  tests. **Mutation-verified:** moving the `is_verified` check ahead of the password check kills
+  `test_should_answer_invalid_credentials_when_the_password_is_also_wrong` and nothing else — it
+  is the only test that varies both axes, and therefore the only thing pinning the ordering
+  decision at all
+- [x] green-usecase — no production change; `LoginUser` already implemented
+- [ ] adapters-discovery — **real gap, not skippable**: `container.py` has no `create_login_user()`
+  factory and `main.py` does not override `get_login_user_usecase`, so `POST /login` exists on the
+  live app and answers **500** from its `raise NotImplementedError` stub. Same shape as 3.1's
+  withheld verify wiring, except here it was never written at all. Also unwired:
+  `JwtTokenService` needs a signing secret from config — its constructor refuses an empty one by
+  design, so wiring it without a real secret source fails loudly at startup rather than shipping a
+  forgeable key
 - [ ] green-acceptance
 
 ### Scenario 5.2: Invalid credentials return a single generic error
-- [ ] red-acceptance
-- [ ] design
-- [ ] red-usecase
-- [ ] green-usecase
-- [ ] adapters-discovery
+- [S] red-acceptance — no acceptance test (trimmed cycle); `/login` not wired live (see 5.1)
+- [S] design — no ADR (trimmed cycle); the generic-error choice is recorded in
+  `LoginUser._invalid_credentials`'s comment
+- [x] red-usecase — **no RED phase occurred** (see the note above). `TestLoginInvalidCredentials`,
+  3 tests: wrong password, unknown email, and **malformed email**, all asserting the *identical*
+  error code and message. The sameness is the requirement — registration answers INVALID_EMAIL for
+  a malformed address, login deliberately does not, since a distinct code there is a cheap probe
+  for which addresses the system considers. **Mutation-verified:** answering a distinct
+  `NO_SUCH_ACCOUNT` for an unknown email kills 2 tests; raising `INVALID_EMAIL` on a malformed
+  address kills the malformed-email test
+- [x] green-usecase — no production change; `LoginUser._invalid_credentials` already implemented
+- [ ] adapters-discovery — same wiring gap as 5.1
 - [ ] green-acceptance
 
 ### Scenario 5.3: Failed-attempt counter increments atomically across concurrent failures
@@ -346,11 +388,29 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [ ] green-acceptance
 
 ### Scenario 6.1: Valid credentials on a verified account issue a token pair
-- [ ] red-acceptance
-- [ ] design
-- [ ] red-usecase
-- [ ] green-usecase
-- [ ] adapters-discovery
+- [S] red-acceptance — no acceptance test (trimmed cycle); `/login` not wired live (see 5.1)
+- [S] design — no ADR (trimmed cycle). Two choices worth naming, both recorded in code comments:
+  (1) `LoginUser._normalized_password` runs NFC **only**, deliberately **not**
+  `Password(password).value` — the value object also enforces the policy, and re-validating at
+  login would lock out every account whose stored credential predates a policy change, since they
+  cannot re-register; (2) `JwtTokenService` is **stateless** — refresh tokens are not persisted,
+  so there is **no revocation**, and a leaked refresh token stays usable for its full 7 days.
+  Accepted under the sprint-1 deadline and recorded in the class docstring; closing it means a
+  `refresh_tokens` table, which is scenario 6.1a's job
+- [x] red-usecase — **no RED phase occurred** (see the note above). `TestLoginSuccess`, 4 tests:
+  token pair issued for the authenticated account, case-folded email accepted (registration stores
+  the folded form per 2.3, so login must fold identically or every "User@…" signup is locked out
+  of the address they typed), decomposed password accepted (the hash was computed from the NFC
+  form per 2.7), and a stored password that no longer satisfies the policy still logs in.
+  **Mutation-verified, 4 mutants, 4 killed, one test each:** dropping NFC normalization; routing
+  the password through `Password(...)`; dropping `Email(...)` case-folding; and the pair-issued
+  assertion (the fake token service mints account-id-bearing tokens, so a pair issued for the
+  wrong account fails — a constant-string double would have passed)
+- [x] green-usecase — no production change; `LoginUser` already implemented
+- [ ] adapters-discovery — same wiring gap as 5.1, plus: `LoginResponseDto.from_domain` and the
+  `/login` route are written but have **no rest-layer test at all** — no `test_login_post_router.py`
+  exists. 3.1 learned the hard way that a router test which does not override the DI dependency
+  cannot go green; whoever writes it should mirror `conftest.py`'s `verify_client` fixture
 - [ ] green-acceptance
 
 ### Scenario 6.1a: Failed-attempt-counter reset and refresh-token persistence commit as one unit
@@ -362,30 +422,69 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [ ] green-acceptance
 
 ### Scenario 6.2: Refresh returns a new access token for a valid refresh token
-- [ ] red-acceptance
-- [ ] design
-- [ ] red-usecase
-- [ ] green-usecase
-- [ ] adapters-discovery
+- [S] red-acceptance — no acceptance test (trimmed cycle); `/refresh` not wired live (see 5.1)
+- [S] design — no ADR (trimmed cycle). The choice worth naming is recorded in
+  `RefreshAccessToken.execute`'s comment: the account is **re-read** rather than trusted from the
+  token's claims, because a token outlives the state it was minted from — a deleted or
+  un-verified account must stop refreshing instead of riding a 7-day token
+- [x] red-usecase — **no RED phase occurred** (see the note above). `TestRefreshSuccess`
+  (`backend/usecase/tests/auth/test_refresh_access_token_usecase.py`), 1 test: a valid refresh
+  token issues a fresh pair for the token's account
+- [x] green-usecase — no production change; `RefreshAccessToken` already implemented
+- [ ] adapters-discovery — same wiring gap as 5.1: no `create_refresh_access_token()` factory,
+  `get_refresh_access_token_usecase` unwired, `/refresh` 500s live. No rest-layer test either
 - [ ] green-acceptance
 
 ### Scenario 6.3: Refresh rejects an expired or invalid refresh token
-- [ ] red-acceptance
-- [ ] design
-- [ ] red-usecase
-- [ ] green-usecase
-- [ ] adapters-discovery
+- [S] red-acceptance — no acceptance test (trimmed cycle); `/refresh` not wired live (see 5.1)
+- [S] design — no ADR (trimmed cycle). `InvalidTokenException` is deliberately **one** exception
+  for expired / tampered / wrong-key / wrong-type, and `RefreshAccessToken._invalid_refresh` maps
+  every cause plus unknown-account and unverified-account to one `INVALID_REFRESH_TOKEN` — both
+  recorded in their own comments. **Known hole, named not discovered:** 6.3's spec asks for a token
+  "that does not correspond to any issued token" to be rejected, which a stateless signature
+  **cannot** answer — a validly signed token always corresponds. What is actually enforced is
+  expiry, signature and type. Closing it needs 6.1a's `refresh_tokens` table
+- [x] red-usecase — **no RED phase occurred** (see the note above). `TestRefreshRejection`, 3
+  tests: token the service will not read, token naming a deleted account, token for an account
+  that is no longer verified — all asserting the identical error code and message.
+  **Mutation-verified, 2 mutants, 2 killed:** dropping `not account.is_verified` from the re-read
+  guard; re-raising `InvalidTokenException` instead of mapping it
+- [x] green-usecase — no production change; `RefreshAccessToken` already implemented
+- [x] red-adapter security — `backend/adapters/security/tests/tokens/test_jwt_token_service.py`,
+  16 tests against **real** PyJWT, no doubles. **No RED phase occurred**;
+  **mutation-verified, 6 mutants, 6 killed:** not checking the `type` claim (kills the
+  access-token-at-`/refresh` test — the tokens are signed by the same key, so nothing else
+  distinguishes them, and without the check a 15-minute credential silently becomes a 7-day one);
+  `verify_signature: False` (kills 4); `verify_exp: False`; letting claim-shape errors escape;
+  removing the empty-secret guard; giving access and refresh the same TTL. Covers the classic
+  `alg: none` forgery and a key-rotation rejection (Security scenario 9) too
+- [S] green-adapter security — no production change; `JwtTokenService` already implemented
+- [ ] adapters-discovery — same wiring gap as 6.2
 - [ ] green-acceptance
 
 ### Scenario 6.4: Refresh rejects a token whose claim shape no longer matches current code
-- [ ] red-acceptance
-- [ ] design
-- [ ] red-usecase
-- [ ] green-usecase
-- [ ] adapters-discovery
+- [S] red-acceptance — no acceptance test (trimmed cycle); `/refresh` not wired live (see 5.1)
+- [S] design — no ADR (trimmed cycle); the rule is `JwtTokenService.read_refresh_subject`'s
+  `except (KeyError, ValueError)` — a claim shape current code does not recognise is a clean
+  rejection, never an unhandled crash surfacing as a 500
+- [x] red-usecase — **no RED phase occurred**; covered by the `test_jwt_token_service.py` tests
+  above (`test_should_reject_a_validly_signed_token_with_no_subject`,
+  `…_whose_subject_is_not_a_uuid`, `…_with_no_type_claim`). All three are **validly signed** — the
+  signature is not the thing being tested, the claim shape is. **Mutation-verified:** deleting the
+  `except (KeyError, ValueError)` mapping kills the first two
+- [S] green-usecase — no production change; already implemented
+- [ ] adapters-discovery — same wiring gap as 6.2
 - [ ] green-acceptance
 
 ### Scenario 6.5: Access token is valid up to, not past, its exact expiry instant
+**Not covered by the login test batch, deliberately — do not read 6.1–6.4's ticks as covering it.**
+`test_should_expire_the_access_token_after_fifteen_minutes` pins the TTL *arithmetic* and
+`test_should_state_the_reported_expiry_in_the_token_itself` pins that the returned `expires_at`
+matches the `exp` claim the server enforces. Neither exercises the **boundary**: nothing anywhere
+reads an access token, so "valid up to, not past, the exact instant" has no test and no production
+code — `JwtTokenService` has no `read_access_subject`, and no route authenticates by access token
+yet. This is the same exact-instant boundary that 3.3 pinned for verification codes with a
+`FakeClock`, and it wants the same treatment once a protected route exists.
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase

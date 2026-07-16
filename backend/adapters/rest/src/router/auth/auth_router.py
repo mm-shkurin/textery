@@ -2,8 +2,13 @@ from fastapi import APIRouter, Depends
 
 from dto.auth.register_request_dto import RegisterRequestDto
 from dto.auth.register_response_dto import RegisterResponseDto
+from dto.auth.login_request_dto import LoginRequestDto
+from dto.auth.login_response_dto import LoginResponseDto
+from dto.auth.refresh_request_dto import RefreshRequestDto
 from dto.auth.verify_request_dto import VerifyRequestDto
 from dto.auth.verify_response_dto import VerifyResponseDto
+from auth.login_user import LoginUser
+from auth.refresh_access_token import RefreshAccessToken
 from auth.register_user import RegisterUser
 from auth.verify_account import VerifyAccount
 
@@ -15,6 +20,14 @@ def get_register_user_usecase() -> RegisterUser:
 
 
 def get_verify_account_usecase() -> VerifyAccount:
+    raise NotImplementedError("wired by the application composition root")
+
+
+def get_login_user_usecase() -> LoginUser:
+    raise NotImplementedError("wired by the application composition root")
+
+
+def get_refresh_access_token_usecase() -> RefreshAccessToken:
     raise NotImplementedError("wired by the application composition root")
 
 
@@ -38,3 +51,21 @@ async def verify(
 ) -> VerifyResponseDto:
     await usecase.execute(email=request.email, code=request.code)
     return VerifyResponseDto(is_verified=True)
+
+
+@router.post("/login", status_code=200, response_model=LoginResponseDto)
+async def login(
+    request: LoginRequestDto,
+    usecase: LoginUser = Depends(get_login_user_usecase),
+) -> LoginResponseDto:
+    pair = await usecase.execute(email=request.email, password=request.password)
+    return LoginResponseDto.from_domain(pair)
+
+
+@router.post("/refresh", status_code=200, response_model=LoginResponseDto)
+async def refresh(
+    request: RefreshRequestDto,
+    usecase: RefreshAccessToken = Depends(get_refresh_access_token_usecase),
+) -> LoginResponseDto:
+    pair = await usecase.execute(refresh_token=request.refresh_token)
+    return LoginResponseDto.from_domain(pair)
