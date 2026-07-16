@@ -5,6 +5,7 @@ from uuid import UUID
 
 from auth.register_user import RegisterUser
 from fake.auth.fake_account_repository import FakeAccountRepository
+from fake.auth.fake_password_hasher import FakePasswordHasher
 from fake.auth.fake_clock import FakeClock
 from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
 from scope.register_request_scope import RegisterRequestScope
@@ -25,6 +26,7 @@ class RegisterStatements:
     def __init__(self) -> None:
         self.thrown_exception: Optional[Exception] = None
         self.account_repository = FakeAccountRepository()
+        self.password_hasher = FakePasswordHasher()
         self.clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
         self.verification_code_repository = FakeVerificationCodeRepository()
         self.returned_account = None
@@ -75,6 +77,7 @@ class RegisterStatements:
     async def _execute_register(self, scope: RegisterRequestScope):
         try:
             return await RegisterUser(
+            password_hasher=self.password_hasher,
                 account_repository=self.account_repository,
                 clock=self.clock,
                 verification_code_repository=self.verification_code_repository,
@@ -89,7 +92,7 @@ class RegisterStatements:
 
     async def _attempt_registering(self, scope: RegisterRequestScope) -> None:
         try:
-            await RegisterUser().execute(
+            await RegisterUser(password_hasher=self.password_hasher).execute(
                 email=scope.email,
                 password=scope.password,
                 confirm_password=scope.confirm_password,
@@ -138,11 +141,28 @@ class RegisterStatements:
     def assert_account_persisted_with_normalized_email(self) -> None:
         self._assert_account_persisted_with_email("user@example.ru")
 
-    def assert_account_persisted_with_password_hash(self, expected_password_hash: str) -> None:
+    def assert_password_hashed_from_normalized_form(self, expected_normalized_password: str) -> None:
+        """Scenario 2.7's intent, carried over to hashed storage.
+
+        2.7 originally asserted the persisted value *was* the NFC form. Once
+        hashing landed (Security 1) that became false by design, so the claim it
+        actually protects is now: the hash is computed from the NFC form, never
+        the raw request string -- otherwise an NFD and an NFC submission of the
+        same password would produce different hashes and one of them could never
+        log in.
+        """
         self.assert_registration_succeeded()
         assert self.returned_account is not None, "expected RegisterUser.execute to return the persisted Account"
-        assert self.returned_account.password_hash == expected_password_hash, (
-            f"expected persisted Account.password_hash to be '{expected_password_hash}', "
+        assert self.password_hasher.hashed_values == [expected_normalized_password], (
+            f"expected the hasher to receive exactly the NFC-normalized password "
+            f"{[expected_normalized_password]}, got {self.password_hasher.hashed_values}"
+        )
+        assert self.returned_account.password_hash != expected_normalized_password, (
+            "expected the persisted password_hash to be a hash, but it is the plaintext password"
+        )
+        expected_hash = f"{FakePasswordHasher.PREFIX}{expected_normalized_password}"
+        assert self.returned_account.password_hash == expected_hash, (
+            f"expected the persisted password_hash to be the hasher's output for the NFC form, "
             f"got '{self.returned_account.password_hash}'"
         )
 

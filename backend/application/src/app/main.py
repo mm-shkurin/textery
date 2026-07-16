@@ -10,6 +10,7 @@ _DOMAIN_SRC = os.path.join(_BACKEND_DIR, "domain", "src")
 _USECASE_SRC = os.path.join(_BACKEND_DIR, "usecase", "src")
 _DB_SRC = os.path.join(_BACKEND_DIR, "adapters", "db", "src")
 _PROVIDER_SRC = os.path.join(_BACKEND_DIR, "adapters", "generation_provider", "src")
+_SECURITY_SRC = os.path.join(_BACKEND_DIR, "adapters", "security", "src")
 
 sys.path.insert(0, _APP_DIR)
 sys.path.insert(0, _REST_SRC)
@@ -17,6 +18,7 @@ sys.path.insert(0, _DOMAIN_SRC)
 sys.path.insert(0, _USECASE_SRC)
 sys.path.insert(0, _DB_SRC)
 sys.path.insert(0, _PROVIDER_SRC)
+sys.path.insert(0, _SECURITY_SRC)
 
 import asyncio
 import contextlib

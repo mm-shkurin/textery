@@ -8,6 +8,7 @@ from access.auth.verification_code_storage import SqlAlchemyVerificationCodeRepo
 from access.generation.generation_storage import SqlAlchemyGenerationStorage
 from auth.register_user import RegisterUser
 from auth.verify_account import VerifyAccount
+from hashing.bcrypt_password_hasher import BcryptPasswordHasher
 from generation.generate_document import GenerateDocument
 from generation.get_generation import GetGeneration
 from generation.request_generation import RequestGeneration
@@ -89,6 +90,7 @@ async def create_register_user() -> AsyncIterator[RegisterUser]:
         verification_code_repository = SqlAlchemyVerificationCodeRepository(session)
         unit_of_work = SqlAlchemyUnitOfWork(session)
         yield RegisterUser(
+            password_hasher=BcryptPasswordHasher(),
             account_repository=repository,
             verification_code_repository=verification_code_repository,
             unit_of_work=unit_of_work,

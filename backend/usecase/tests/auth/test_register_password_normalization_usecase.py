@@ -31,4 +31,4 @@ class TestRegisterUsecasePasswordConfirmationNormalization:
         await register_statements.register_with_differently_normalized_password_and_confirmation(
             password=_NFD_ACCENTED_PASSWORD, confirm_password=_NFD_ACCENTED_PASSWORD
         )
-        register_statements.assert_account_persisted_with_password_hash(_NFC_ACCENTED_PASSWORD)
+        register_statements.assert_password_hashed_from_normalized_form(_NFC_ACCENTED_PASSWORD)

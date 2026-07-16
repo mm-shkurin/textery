@@ -5,6 +5,7 @@ from auth.register_user import RegisterUser
 from auth.verify_account import VerifyAccount
 from shared.exceptions import ValidationException, VerificationFailedException
 from fake.auth.fake_account_repository import FakeAccountRepository
+from fake.auth.fake_password_hasher import FakePasswordHasher
 from fake.auth.fake_clock import FakeClock
 from fake.auth.fake_unit_of_work import FakeUnitOfWork
 from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
@@ -30,6 +31,7 @@ class VerifyAccountStatements:
     def __init__(self) -> None:
         self.thrown_exception: Optional[Exception] = None
         self.account_repository = FakeAccountRepository()
+        self.password_hasher = FakePasswordHasher()
         self.clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
         self.verification_code_repository = FakeVerificationCodeRepository()
         self.unit_of_work = FakeUnitOfWork()
@@ -40,6 +42,7 @@ class VerifyAccountStatements:
     async def given_pending_account_with_verification_code(self) -> None:
         scope = RegisterRequestScope.builder()
         result = await RegisterUser(
+            password_hasher=self.password_hasher,
             account_repository=self.account_repository,
             clock=self.clock,
             verification_code_repository=self.verification_code_repository,

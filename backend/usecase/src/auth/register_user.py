@@ -7,6 +7,7 @@ from auth.account import Account
 from auth.account_repository import AccountRepository
 from auth.email import Email
 from auth.password import Password
+from auth.password_hasher import PasswordHasher
 from auth.registration_result import RegistrationResult
 from auth.verification_code import VerificationCode
 from auth.verification_code_repository import VerificationCodeRepository
@@ -27,11 +28,16 @@ class RegisterUser:
 
     def __init__(
         self,
+        password_hasher: PasswordHasher,
         account_repository: Optional[AccountRepository] = None,
         clock: Optional[Clock] = None,
         verification_code_repository: Optional[VerificationCodeRepository] = None,
         unit_of_work: Optional[UnitOfWork] = None,
     ) -> None:
+        # Required, and deliberately without a null-object fallback: a default
+        # that returned the plaintext would persist real credentials in the clear
+        # and every existing test would still pass.
+        self.password_hasher = password_hasher
         self.account_repository = account_repository or _NullRepository()
         self.clock = clock or SystemClock()
         self.verification_code_repository = (
@@ -82,7 +88,7 @@ class RegisterUser:
         account = Account.create(
             id=uuid4(),
             email=email_value_object.value,
-            password_hash=password_value_object.value,
+            password_hash=self.password_hasher.hash(password_value_object.value),
             created_at=created_at,
         )
         try:

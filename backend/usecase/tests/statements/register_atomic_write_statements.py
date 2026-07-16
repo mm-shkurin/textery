@@ -3,6 +3,7 @@ from typing import Optional
 
 from auth.register_user import RegisterUser
 from fake.auth.fake_account_repository import FakeAccountRepository
+from fake.auth.fake_password_hasher import FakePasswordHasher
 from fake.auth.fake_clock import FakeClock
 from fake.auth.fake_unit_of_work import FakeUnitOfWork
 from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
@@ -22,6 +23,7 @@ class RegisterAtomicWriteStatements:
     def __init__(self) -> None:
         self.thrown_exception: Optional[Exception] = None
         self.account_repository = FakeAccountRepository()
+        self.password_hasher = FakePasswordHasher()
         self.clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
         self.verification_code_repository = FakeVerificationCodeRepository()
         self.unit_of_work = FakeUnitOfWork()
@@ -63,6 +65,7 @@ class RegisterAtomicWriteStatements:
         scope = RegisterRequestScope.builder()
         try:
             await RegisterUser(
+            password_hasher=self.password_hasher,
                 account_repository=self.account_repository,
                 clock=self.clock,
                 verification_code_repository=self.verification_code_repository,
@@ -78,6 +81,7 @@ class RegisterAtomicWriteStatements:
         scope = RegisterRequestScope.builder()
         try:
             await RegisterUser(
+            password_hasher=self.password_hasher,
                 account_repository=self.account_repository,
                 clock=self.clock,
                 verification_code_repository=self.verification_code_repository,
