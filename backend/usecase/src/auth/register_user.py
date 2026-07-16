@@ -1,5 +1,5 @@
 import unicodedata
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 from uuid import uuid4
 
@@ -10,14 +10,9 @@ from auth.password import Password
 from auth.registration_result import RegistrationResult
 from auth.verification_code import VerificationCode
 from auth.verification_code_repository import VerificationCodeRepository
-from shared.clock import Clock
+from shared.clock import Clock, SystemClock
 from shared.exceptions import ConflictException, RegistrationFailedException, ValidationException
 from shared.unit_of_work import NullUnitOfWork, UnitOfWork
-
-
-class _SystemClock:
-    def now(self) -> datetime:
-        return datetime.now(timezone.utc)
 
 
 class _NullRepository:
@@ -38,7 +33,7 @@ class RegisterUser:
         unit_of_work: Optional[UnitOfWork] = None,
     ) -> None:
         self.account_repository = account_repository or _NullRepository()
-        self.clock = clock or _SystemClock()
+        self.clock = clock or SystemClock()
         self.verification_code_repository = (
             verification_code_repository or _NullRepository()
         )

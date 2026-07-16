@@ -3,7 +3,12 @@ import pytest
 from tests.backend.abstract_backend_test import AbstractBackendTest
 
 
-@pytest.mark.skip(reason="RED: POST /api/v1/auth/verify does not exist, returns 404 Not Found")
+@pytest.mark.skip(
+    reason="RED: POST /api/v1/auth/verify is routed but not wired to a usecase, returns "
+    "500 (get_verify_account_usecase raises NotImplementedError; the composition-root "
+    "override in main.py is deliberately withheld until scenario 3.2 lands the "
+    "wrong-code rejection branch -- see progress-backend.md scenario 3.1 green-acceptance)"
+)
 class TestVerifyValidCodeAcceptance(AbstractBackendTest):
     """Scenario 3.1: Correct code activates the account.
 

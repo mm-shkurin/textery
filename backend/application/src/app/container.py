@@ -15,6 +15,7 @@ from generation.requeue_stale_generations import RequeueStaleGenerations
 from provider.fake_provider import FakeProvider
 from provider.gigachat_provider import GigaChatProvider
 from session import SqlAlchemyUnitOfWork, create_engine, create_session_factory
+from shared.clock import SystemClock
 
 GENERATION_PROVIDER_ENV_VAR = "GENERATION_PROVIDER"
 STALE_AFTER_MINUTES_ENV_VAR = "GENERATION_STALE_AFTER_MINUTES"
@@ -94,11 +95,6 @@ async def create_register_user() -> AsyncIterator[RegisterUser]:
         )
     finally:
         await session.close()
-
-
-class SystemClock:
-    def now(self) -> datetime:
-        return datetime.now(timezone.utc)
 
 
 async def create_verify_account() -> AsyncIterator[VerifyAccount]:
