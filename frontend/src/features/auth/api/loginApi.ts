@@ -21,12 +21,17 @@ function toLoginApiError(error: unknown): unknown {
   if (!body || typeof body !== 'object') {
     return error
   }
-  // Truthiness, not `??`: `??` fires only on null/undefined, so an empty-string message
-  // would survive verbatim and reach the form as '' — falsy at the form's render guard,
-  // i.e. silence on the INVALID_CREDENTIALS path itself.
+  // Both fields default by the same rule: keep the parsed value only if it is a non-empty
+  // string, otherwise fall back. `??` is wrong here — it fires only on null/undefined, so
+  // an empty-string message would survive verbatim and reach the form as '', falsy at the
+  // form's render guard, i.e. silence on the INVALID_CREDENTIALS path itself. `as string`
+  // is wrong for the same reason in the other direction: `body` is parsed JSON, so a
+  // non-string value satisfies the cast at compile time and lies about the field at run
+  // time. The typeof check earns the declared type instead of asserting it.
+  const errorCode = body.error_code
   const message = body.message
   const apiError: LoginApiError = {
-    errorCode: (body.error_code as string) || 'UNKNOWN_ERROR',
+    errorCode: typeof errorCode === 'string' && errorCode ? errorCode : 'UNKNOWN_ERROR',
     message: typeof message === 'string' && message ? message : GENERIC_LOGIN_FAILURE_MESSAGE,
   }
   return apiError
