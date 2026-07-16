@@ -38,7 +38,12 @@ describe('LoginForm invalid-credentials error', () => {
     expect(api.login).toHaveBeenCalledWith(EMAIL, PASSWORD)
   })
 
-  it('displays the generic error message when login rejects with INVALID_CREDENTIALS', async () => {
+  // Covers both obligations spec 5.2 places on the form: it displays the generic message,
+  // and it does not indicate whether the email exists. Genericness of the text itself is a
+  // backend guarantee (API test 5.2: identical error_code/message for unknown-email and
+  // wrong-password), so the form's entire share of both lines is verbatim pass-through —
+  // exact equality proves it appends no email and no existence hint of its own.
+  it('displays the server error message verbatim, adding no email-existence detail', async () => {
     vi.mocked(api.login).mockRejectedValue(INVALID_CREDENTIALS_ERROR)
     const { submitButton } = renderAndFill()
 
@@ -58,20 +63,6 @@ describe('LoginForm invalid-credentials error', () => {
     expect(screen.queryAllByTestId('login-form-error')).toHaveLength(1)
     expect(screen.queryByTestId('login-email-error')).not.toBeInTheDocument()
     expect(screen.queryByTestId('login-password-error')).not.toBeInTheDocument()
-  })
-
-  // Genericness of the text itself is a backend guarantee (API test 5.2: identical
-  // error_code/message for unknown-email and wrong-password). The form's own share of
-  // spec 5.2 is verbatim pass-through — exact equality proves it appends no email and
-  // no existence hint of its own.
-  it('renders the server message verbatim, adding no email-existence detail', async () => {
-    vi.mocked(api.login).mockRejectedValue(INVALID_CREDENTIALS_ERROR)
-    const { submitButton } = renderAndFill()
-
-    fireEvent.click(submitButton)
-
-    const error = await screen.findByTestId('login-form-error')
-    expect(error.textContent).toBe(INVALID_CREDENTIALS_ERROR.message)
   })
 
   it('does not display an error while the login call is still pending', async () => {
