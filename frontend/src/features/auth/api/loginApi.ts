@@ -71,8 +71,9 @@ function toLoginApiError(error: unknown): unknown {
 // `postJson` substitutes `{}` (httpClient.ts:19). That body is truthy, so it clears the
 // rethrow guard above and lands here with no `error_code` → `UNKNOWN_ERROR` + `''`. It stays
 // a LoginApiError: returning the raw HttpError instead would hand the form a `{status, body}`
-// no consumer reads, and no existing fixture would have caught it (all six supply a
-// well-formed code). LoginForm's non-INVALID_CREDENTIALS path renders the generic constant
+// no consumer reads. Only the codeless-body trap escapes the other fixtures — the broad form
+// ("return raw for any non-INVALID_CREDENTIALS code") is already caught by the UNVERIFIED
+// test. LoginForm's non-INVALID_CREDENTIALS path renders the generic constant
 // for it, so the screen is unchanged — the constant is now applied by the layer that OWNS
 // display, not forged by the layer that reports the wire.
 function fallbackMessageFor(errorCode: string): string {

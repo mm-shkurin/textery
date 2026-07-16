@@ -38,14 +38,13 @@ describe('loginApi', () => {
     vi.unstubAllGlobals()
   })
 
-  // (i) Transport-failure survival. BORN GREEN — the body-existence guard at loginApi.ts:21
-  // is already implemented; this pins it against a revert to registerApi's naive
+  // (i) Transport-failure survival. BORN GREEN — the body-existence guard at loginApi.ts:21 is
+  // already implemented; this pins it against a revert to registerApi's naive
   // `(error as HttpError).body.error_code`, which would throw a SECOND TypeError from inside
-  // the catch and lose the original. Identity (`toBe`) is what makes that distinction:
-  // a re-thrown TypeError would satisfy `toBeInstanceOf(TypeError)` just as well.
+  // the catch and lose the original. Identity (`toBe`) is what makes that distinction: a
+  // re-thrown TypeError would satisfy `toBeInstanceOf(TypeError)` just as well.
   // MUTATION-VERIFIED (test-review): guard replaced by the naive `(error as HttpError).body`,
-  // mutation confirmed present (and the guard confirmed absent) by grep before running.
-  // Baseline 1F/5P → 2F/4P; the one new failure is this test.
+  // confirmed present (and the guard absent) by grep. Baseline 1F/5P → 2F/4P, new failure = this.
   it('rethrows a bodyless transport failure as the very error fetch rejected with', async () => {
     const transportError = new TypeError('Failed to fetch')
     stubFetchRejecting(transportError)
@@ -56,12 +55,12 @@ describe('loginApi', () => {
   })
 
   // (iii) Wire key mapping. BORN GREEN — a characterization pin, not a guard this step
-  // established. The literal `body.error_code` at loginApi.ts:44 is asserted by nothing else
-  // in the suite; this is the only test that goes red if the backend renames the field or
-  // wraps it in an envelope. Body is the real wire shape from endpoints.md:17.
-  // MUTATION-VERIFIED (test-review): `body.error_code` → `body.errorCode`, mutation confirmed
-  // present in the file by grep before running. Baseline 1F/5P → 5F/1P. Four of those five
-  // are new (this test, (ii)×2, (v)); the fifth is (iv), already red at baseline.
+  // established. The literal `body.error_code` at loginApi.ts:44 is asserted by nothing else in
+  // the suite; this is the only test that goes red if the backend renames the field or wraps it
+  // in an envelope. Body is the real wire shape from endpoints.md:17.
+  // MUTATION-VERIFIED (test-review): `body.error_code` → `body.errorCode`, confirmed present by
+  // grep. Baseline 1F/5P → 5F/1P; four are new (this, (ii)×2, (v)), the fifth is (iv), already
+  // red at that baseline.
   it('maps the wire error_code/message body onto errorCode and a verbatim message', async () => {
     stubFetchErrorBody(401, {
       error_code: 'INVALID_CREDENTIALS',
@@ -78,16 +77,14 @@ describe('loginApi', () => {
 
   // (ii) Message fallback on the INVALID_CREDENTIALS path. BORN GREEN, AND NO RED IS
   // RECOVERABLE: this would have failed before commit e98b3d1, which replaced `?? GENERIC`
-  // with a truthiness guard and thereby deleted this step's only red before the step ran.
-  // Kept as a regression pin, not presented as a guard this step established.
+  // with a truthiness guard, deleting this step's only red before the step ran. A regression
+  // pin, not presented as a guard this step established.
   //
-  // MUTATION-VERIFIED (test-review): the fallback reverted to `message ?? GENERIC`, mutation
-  // confirmed present by grep before running. Baseline 1F/5P → 1F/5P — the SAME COUNT, and
-  // a count-only reading would call this mutant survived. It is not: the failing test CHANGES
-  // identity. 'message empty' goes red (`'' ?? GENERIC` → `''`, no fallback), while (iv) flips
-  // GREEN (`''` is not the GENERIC constant, so (iv)'s negative is satisfied). Compare tests,
-  // never totals. 'message absent' does NOT die under this mutant — `undefined ?? GENERIC`
-  // still yields GENERIC — so it is 'message empty' alone that pins the `??` regression.
+  // MUTATION-VERIFIED (test-review) against the CURRENT line: `serverMessage || fallbackMessageFor`
+  // → `??`, grep-confirmed present. Baseline 0F/7P → 2F/5P, killing BOTH cases below, nothing
+  // else: `serverMessage` is normalized to `''` before the operator, so `??` never fires. The
+  // prior record (a `message ?? GENERIC` line `9b556d9` DELETED, a dead 1F/5P baseline, "(iv)
+  // flips GREEN") was RE-DERIVED not patched — it claimed 'message absent' survives. It does not.
   //
   // The pair is also what scopes (iv): (ii) demands GENERIC under INVALID_CREDENTIALS + '',
   // (iv) forbids GENERIC under UNVERIFIED + ''. Together they force green to make the
@@ -109,33 +106,28 @@ describe('loginApi', () => {
     },
   )
 
-  // (iv) THE RED. loginApi.ts:48 applies the login-failure fallback under EVERY error_code,
-  // not only INVALID_CREDENTIALS, and endpoints.md:17 makes {error_code, message} uniform
-  // across all codes. So an UNVERIFIED error with a blank message is handed to the form as a
-  // login-failure display constant the server never sent, with provenance unrecoverable:
-  // 5.3's UNVERIFIED branch calls isUsableMessage on the forged constant, gets true, and
-  // renders "sign-in failed" to a user whose password was correct.
+  // (iv) THE RED THIS STEP ESTABLISHED — now FIXED. Read it as a regression pin, NOT as a
+  // description of shipped code: the bug below is gone, and this comment is in the past tense
+  // deliberately. `9b556d9` deleted it and renumbered; there is no "line 48 applies the
+  // fallback under every code" any more (line 48 today is `errorCode,`).
   //
-  // Was asserted as a negative (`not.toBe(GENERIC)`) on the grounds that what the api emits
-  // instead — an absent message, a per-code constant, or no display copy with the form owning
-  // all of it — is green's decision. test-review made it strict, for two reasons.
+  // What it pinned: the PARENT commit applied the login-failure fallback under EVERY
+  // error_code, and endpoints.md:17 makes {error_code, message} uniform across all codes. So
+  // an UNVERIFIED error with a blank message was handed to the form as a login-failure display
+  // constant the server never sent, provenance unrecoverable: 5.3's UNVERIFIED branch would
+  // call isUsableMessage on the forged constant, get true, and render "sign-in failed" to a
+  // user whose password was correct. `fallbackMessageFor` now scopes the fallback to the code
+  // it describes, which is what keeps this test green.
   //
-  // 1. The negative admitted values that are not a decision at all. `not.toBe` is satisfied by
-  //    `undefined`, `null`, and by a `message` field RENAMED out of existence — the unchecked
-  //    cast `(rejection as { message: unknown }).message` reads `undefined` and passes green
-  //    while the field it guards no longer exists.
-  // 2. "Green decides" is the deferral the No-Deferred-Assertions rule names outright. The
-  //    test is the specification; the value gets decided here, and green matches it.
+  // Asserted strictly rather than as a negative (`not.toBe(GENERIC)`), per test-review: the
+  // negative admitted values that are not a decision at all (`undefined`, `null`, a `message`
+  // field RENAMED out of existence all satisfy it), and "green decides" is the deferral the
+  // No-Deferred-Assertions rule names outright — the test is the specification.
   //
-  // `''` is not review inventing a fourth option — it is the third of the listed three, and
-  // it is the one the file's other pins ALREADY entail. (v) pins that server text passes
-  // through verbatim under a code the module does not special-case; `''` is server text, so
-  // verbatim of `''` is `''`. The rule this test asks green for is therefore not new
-  // behaviour, it is the REMOVAL of a special case: the login-failure fallback stops firing
-  // under codes that are not the login-failure code. Downstream this is exactly what 5.3
-  // needs — `isUsableMessage('')` is false, so the form owns the UNVERIFIED copy and no
-  // constant the server never sent reaches the screen. If green prefers "message absent", it
-  // must change (v) too, and that is the argument this strict form forces into the open.
+  // `''` is not review inventing a fourth option — (v) pins that server text passes through
+  // verbatim under a code the module does not special-case, and `''` is server text.
+  // Downstream this is what 5.3 needs: `isUsableMessage('')` is false, so the form owns the
+  // UNVERIFIED copy and no constant the server never sent reaches the screen.
   it('does not substitute the login-failure display constant under a non-login-failure code', async () => {
     stubFetchErrorBody(403, { error_code: 'UNVERIFIED', message: '' })
 
@@ -145,23 +137,31 @@ describe('loginApi', () => {
   })
 
   // (vii) THE `{}` BODY — the one error path that actually fires today, and the only one no
-  // fixture above reaches. All six supply a well-formed `error_code`; this one supplies no
-  // parseable body at all. `postJson` does `res.json().catch(() => ({}))` (httpClient.ts:19),
-  // so a 404 HTML page (the backend has no login endpoint yet) or a proxy's 502 arrives as
-  // `{}` — TRUTHY, so it clears `toLoginApiError`'s `!body` rethrow guard and is normalized.
+  // other fixture reaches. Of the six others, FIVE supply a well-formed `error_code`; (i)
+  // supplies no body at all and is stopped by the `!body` rethrow guard before the normalizer
+  // ever runs. This one supplies a body that is truthy but CODELESS: `postJson` does
+  // `res.json().catch(() => ({}))` (httpClient.ts:19), so a 404 HTML page (no login endpoint
+  // yet) or a proxy's 502 arrives as `{}` — truthy, so it clears the guard and is normalized.
   //
-  // Added by green because green CHANGED this path and nothing here observed it. The natural
-  // green — "apply the fallback only under INVALID_CREDENTIALS, otherwise return the error
-  // untouched" — would emit the raw `HttpError {status, body}` here instead of a
-  // LoginApiError, and the whole file would stay green while the form received a shape no
-  // consumer reads. The decision green made instead is asserted below: still a LoginApiError,
-  // code `UNKNOWN_ERROR`, message `''` (no server text, reported as absence). Not the
-  // login-failure constant — the code is not the login-failure code. LoginForm supplies the
-  // generic copy for it via applyLoginError's fallback, so the screen is unchanged.
+  // Added by green because green CHANGED this path and nothing here observed it. What it
+  // uniquely pins is NARROW — MUTATION-VERIFIED against a 0F/7P baseline, both mutants
+  // confirmed present by grep before running:
+  //   * Mutation C, the trap SCOPED TO THE CODELESS BODY — return the raw HttpError when
+  //     `body.error_code` is not a string = 1F/6P, killing THIS TEST ALONE. Its reason to exist.
+  //   * Mutation B, the BROAD form — return the raw error whenever the code is
+  //     non-INVALID_CREDENTIALS with no message = 2F/5P, killing (iv) AND this test. (iv)
+  //     already catches that one; this test is not what stands between it and green.
+  // An earlier revision justified the test by the BROAD form and claimed "the whole file would
+  // stay green" without it. False — 2F/5P, as above. The correction was written into
+  // progress.md the day the claim shipped, but the uncorrected claim was copied here in the
+  // same commit; a future reader opens the test, not the progress file.
   //
-  // Stub shape follows the sibling client's precedent at
-  // generation/api/__tests__/generationApi.test.ts:41-54 — `json` throws rather than resolving,
-  // which is what a non-JSON response really does. `stubFetchErrorBody` cannot express it.
+  // Asserted below: still a LoginApiError, code `UNKNOWN_ERROR`, message `''` (no server text,
+  // reported as absence). Not the login-failure constant — the code is not the login-failure
+  // code. LoginForm supplies the generic copy via applyLoginError's fallback; screen unchanged.
+  //
+  // Stub shape follows generation/api/__tests__/generationApi.test.ts:41-54 — `json` throws
+  // rather than resolving, as a non-JSON response really does. `stubFetchErrorBody` can't.
   it('normalizes an unparseable error body to UNKNOWN_ERROR with no server message', async () => {
     vi.stubGlobal(
       'fetch',
@@ -180,12 +180,12 @@ describe('loginApi', () => {
   })
 
   // (v) BORN GREEN — a characterization pin, not a guard this step established. It pins the
-  // ACTUAL contract, which is not the one loginApi's comment claimed: the api
-  // preserves whatever non-blank text the server sent, verbatim, including internal detail.
-  // It performs no sanitisation. endpoints.md:17-19 puts client-safety on the BACKEND, and
-  // non-disclosure on the client lives solely in LoginForm's errorCode === 'INVALID_CREDENTIALS'
-  // check. 5.3/5.4/5.6 will each add a consumer reading apiError.message; this test exists so
-  // none of them can inherit the belief that the api layer already gated it.
+  // ACTUAL contract, which is not the one loginApi's comment claimed: the api preserves
+  // whatever non-blank text the server sent, verbatim, including internal detail, and performs
+  // no sanitisation. endpoints.md:17-19 puts client-safety on the BACKEND; non-disclosure on
+  // the client lives solely in LoginForm's errorCode === 'INVALID_CREDENTIALS' check.
+  // 5.3/5.4/5.6 will each add a consumer reading apiError.message; this test exists so none of
+  // them can inherit the belief that the api layer already gated it.
   it('preserves server text verbatim under an unrecognised code, performing no sanitisation', async () => {
     const internalText = 'NullPointerException at AuthService.line42'
     stubFetchErrorBody(500, { error_code: 'INTERNAL_SERVER_ERROR', message: internalText })

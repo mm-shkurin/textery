@@ -86,25 +86,72 @@ describe('LoginForm non-contract rejections', () => {
     expect(screen.getByTestId('login-form-error').textContent).toBe(GENERIC_LOGIN_FAILURE_MESSAGE)
   })
 
-  // A non-string message satisfies `LoginApiError` at compile time only. This fixture
-  // guards the `typeof apiError.message === 'string'` clause specifically — it is the only
-  // test here that does; the empty-message fixture covers the truthiness clause instead.
+  // A non-string message satisfies `LoginApiError` at compile time only. This fixture and
+  // the array one below guard the `typeof message === 'string'` clause in `isUsableMessage`;
+  // the empty/whitespace fixtures cover its `/\S/` clause instead. The two non-string
+  // fixtures are NOT redundant — they fail by opposite mechanisms, and only one of them is
+  // a disclosure risk.
   //
-  // Read the failure honestly: deleting the typeof clause does NOT leak `internalText`.
-  // `{formError}` as a JSX child is not string-coerced — React refuses an object child and
-  // throws, so the render dies, the button never re-enables, and the `waitFor` below times
-  // out before the text assertions are reached. There is no `[object Object]` on screen and
-  // no path that puts the internal text there. So non-disclosure for this fixture is
-  // enforced by React, not by the form. What the form's typeof clause actually buys is the
-  // property asserted below: a non-string message resolves to the client-owned constant
-  // instead of taking the whole login form down. The `not.toContain` is kept as cheap
-  // insurance against a future implementation that stringifies the message itself
-  // (`JSON.stringify` would leak it) — it is not what makes this test bind today.
+  // Read THIS fixture's failure honestly: deleting the typeof clause does not leak
+  // `internalText` here. `{formError}` as a JSX child is not string-coerced — React refuses
+  // an OBJECT child and throws, so the render dies, the button never re-enables, and the
+  // `waitFor` below times out before the text assertions are reached. There is no
+  // `[object Object]` on screen. Non-disclosure for THIS fixture is enforced by React, and
+  // that is a fact about object children ONLY — it does not generalize to non-strings (see
+  // the array fixture, where React is no barrier at all). What the typeof clause buys here
+  // is the property asserted below: a non-string message resolves to the client-owned
+  // constant instead of taking the whole login form down.
+  //
+  // The `not.toContain` below is NOT insurance against a stringifying implementation, as it
+  // was once justified: the stricter `toBe` on the line above aborts the test first, so the
+  // very mutant invoked to justify it can never reach this line. Its only reachable niche is
+  // a leak landing elsewhere in `document.body` while the div still shows GENERIC. Kept for
+  // that niche alone — and that holds for EVERY `not.toContain` in this file, the array
+  // fixture's included. The argument is about assertion ORDER, not about which fixture it
+  // is, so no fixture here gets to claim its `not.toContain` is the one doing the catching.
   it('displays the generic message when a contract-shaped rejection carries an object message', async () => {
     const internalText = 'NPE at AuthService.line42'
     vi.mocked(api.login).mockRejectedValue({
       errorCode: 'INVALID_CREDENTIALS',
       message: { internal: internalText },
+    })
+    const { submitButton } = renderAndSubmit()
+
+    await waitFor(() => expect(submitButton).not.toBeDisabled())
+    expect(screen.getByTestId('login-form-error').textContent).toBe(GENERIC_LOGIN_FAILURE_MESSAGE)
+    expect(document.body.textContent).not.toContain(internalText)
+  })
+
+  // THE ARRAY MESSAGE — the one non-string fixture where the `typeof` clause is the ONLY
+  // barrier. What catches the leak is the `toBe` below, NOT the `not.toContain`, for exactly
+  // the ordering reason given above: under the mutant this test dies AT the `toBe`, and the
+  // `not.toContain` line never executes.
+  //
+  // MUTATION-VERIFIED (test-review), both mutants grep-confirmed present before running,
+  // against this file's 6P/0F baseline:
+  //   * `typeof s === 'string' || Array.isArray(s)` — let arrays through = 1F/5P, killing
+  //     THIS TEST ALONE. Received: 'NPE at AuthService.line42' where the GENERIC constant was
+  //     expected — the internal text rendered ON SCREEN. Its reason to exist.
+  //   * dropping the `typeof` clause entirely = 2F/4P, killing this AND the object fixture,
+  //     the latter via React's throw rather than a leak.
+  //
+  // React does not treat an array child the way it treats an object child. An ARRAY child is
+  // rendered — each element in turn, text verbatim, no throw. That is not an edge case, it is
+  // the mechanism every `.map()` in JSX relies on. So the "React refuses it" reasoning that
+  // makes the object fixture safe buys NOTHING here: with the typeof clause gone,
+  // `/\S/.test(['NPE at AuthService.line42'])` coerces the array to its string form, returns
+  // true, and the form renders the internal text into the error div verbatim. The failure is
+  // SILENT — a leak on screen, not a crash — which is the opposite of the object fixture's
+  // loud one.
+  //
+  // Nor is the fixture exotic. `message: ["Invalid credentials", "NPE at AuthService.line42"]`
+  // is stock Java message-list validation-error serialization; a backend that adds field-level
+  // errors emits exactly this shape without anyone deciding to change the contract.
+  it('displays the generic message, not the array text, when a contract-shaped rejection carries an array message', async () => {
+    const internalText = 'NPE at AuthService.line42'
+    vi.mocked(api.login).mockRejectedValue({
+      errorCode: 'INVALID_CREDENTIALS',
+      message: [internalText],
     })
     const { submitButton } = renderAndSubmit()
 
