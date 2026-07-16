@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
 import { login, type LoginApiError } from '../api/loginApi'
-import { GENERIC_LOGIN_FAILURE_MESSAGE } from '../utils/loginMessages'
+import { GENERIC_LOGIN_FAILURE_MESSAGE, isUsableMessage } from '../utils/loginMessages'
 import './AuthForm.css'
 import './LoginForm.css'
 
@@ -12,16 +12,20 @@ import './LoginForm.css'
 // starts branching on UNVERIFIED. Only a contract-shaped INVALID_CREDENTIALS error
 // carrying a usable server-authored message is displayed verbatim — the backend's
 // generic-message guarantee covers exactly that string. Everything else (transport
-// failure, unknown error code, an empty or malformed message) falls back to the
-// client-owned generic constant, so the screen always says something and never says
-// something the backend's guarantee did not cover.
+// failure, unknown error code, a malformed message, or one with no visible text) falls
+// back to the client-owned generic constant, so the screen always says something and never
+// says something the backend's guarantee did not cover.
+//
+// "Usable" is `isUsableMessage`, shared with loginApi rather than inlined here — a message
+// that renders as a blank box is silence just as surely as no element at all, and the two
+// layers must not disagree about which values those are.
 //
 // Later scenarios (5.3 unverified, 5.4 lockout, 5.6 network) branch their distinct
 // messages ABOVE this fallback, not through it.
 function applyLoginError(error: unknown): string {
   if (error && typeof error === 'object' && 'errorCode' in error) {
     const apiError = error as LoginApiError
-    if (apiError.errorCode === 'INVALID_CREDENTIALS' && typeof apiError.message === 'string' && apiError.message) {
+    if (apiError.errorCode === 'INVALID_CREDENTIALS' && isUsableMessage(apiError.message)) {
       return apiError.message
     }
   }

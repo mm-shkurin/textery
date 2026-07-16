@@ -1,6 +1,6 @@
 // HTTP client for the login API (POST authenticate).
 import { postJson, type HttpError } from './httpClient'
-import { GENERIC_LOGIN_FAILURE_MESSAGE } from '../utils/loginMessages'
+import { GENERIC_LOGIN_FAILURE_MESSAGE, isUsableMessage } from '../utils/loginMessages'
 
 export interface LoginResult {
   accessToken: string
@@ -21,18 +21,24 @@ function toLoginApiError(error: unknown): unknown {
   if (!body || typeof body !== 'object') {
     return error
   }
-  // Both fields default by the same rule: keep the parsed value only if it is a non-empty
-  // string, otherwise fall back. `??` is wrong here — it fires only on null/undefined, so
-  // an empty-string message would survive verbatim and reach the form as '', falsy at the
-  // form's render guard, i.e. silence on the INVALID_CREDENTIALS path itself. `as string`
-  // is wrong for the same reason in the other direction: `body` is parsed JSON, so a
-  // non-string value satisfies the cast at compile time and lies about the field at run
-  // time. The typeof check earns the declared type instead of asserting it.
+  // Both fields fall back when the parsed value cannot serve, but the two tests are NOT the
+  // same rule and must not be collapsed into one — what disqualifies a value differs by what
+  // the value is for. `message` is rendered to the user, so it must carry visible text:
+  // `isUsableMessage`, shared with LoginForm precisely so this module and the form cannot
+  // hold two different notions of "displayable". `errorCode` is only ever compared against
+  // known codes, never shown, so a non-empty string is enough; a blank-looking code is not
+  // a display hazard, it simply matches nothing and lands on the form's own fallback.
+  //
+  // `??` is wrong for either field — it fires only on null/undefined, so an empty-string
+  // message would survive verbatim and reach the form as '', silence on the
+  // INVALID_CREDENTIALS path itself. `as string` is wrong in the other direction: `body` is
+  // parsed JSON, so a non-string value satisfies the cast at compile time and lies about
+  // the field at run time. Both guards earn the declared type instead of asserting it.
   const errorCode = body.error_code
   const message = body.message
   const apiError: LoginApiError = {
     errorCode: typeof errorCode === 'string' && errorCode ? errorCode : 'UNKNOWN_ERROR',
-    message: typeof message === 'string' && message ? message : GENERIC_LOGIN_FAILURE_MESSAGE,
+    message: isUsableMessage(message) ? message : GENERIC_LOGIN_FAILURE_MESSAGE,
   }
   return apiError
 }
