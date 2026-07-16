@@ -15,6 +15,7 @@ export type ToolbarActionKey =
   | 'blockquote'
   | 'horizontalRule'
   | 'codeBlock'
+  | 'alignCenter'
   | 'undo'
   | 'redo'
 
@@ -148,6 +149,14 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     testId: 'toolbar-code-block',
     run: (editor) => toggleLineMark(editor, 'codeBlock'),
     isActive: (editor) => editor.isActive('codeBlock'),
+  },
+  {
+    key: 'alignCenter',
+    label: '↔',
+    ariaLabel: 'Выравнивание по центру',
+    testId: 'toolbar-align-center',
+    run: (editor) => toggleLineMark(editor, 'alignCenter'),
+    isActive: (editor) => editor.isActive('alignCenter'),
   },
   {
     key: 'undo',

@@ -5,8 +5,7 @@ import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
 vi.mock('../../api/documentApi')
 
 describe('ManualEditor text-align toolbar', () => {
-  // TDD Red Phase - toolbar-align-center not implemented
-  it.skip('applying center alignment with only a collapsed cursor on the line wraps the whole line with a centered style', async () => {
+  it('applying center alignment with only a collapsed cursor on the line wraps the whole line with a centered style', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')
