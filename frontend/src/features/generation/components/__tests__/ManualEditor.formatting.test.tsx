@@ -5,24 +5,28 @@ import { renderEditorWithDocumentCreated, selectRange } from './ManualEditor.tes
 vi.mock('../../api/documentApi')
 
 describe('ManualEditor formatting toolbar', () => {
-  it('applying bold to selected text wraps it in <strong> and marks the bold button active', async () => {
+  it.each([
+    { name: 'bold', testId: 'toolbar-bold', tag: 'strong', text: 'hello world', end: 5, expected: '<strong>hello</strong> world' },
+    { name: 'strikethrough', testId: 'toolbar-strike', tag: 's', text: 'hello world', end: 5, expected: '<s>hello</s> world' },
+    { name: 'underline', testId: 'toolbar-underline', tag: 'u', text: 'hello world', end: 5, expected: '<u>hello</u> world' },
+  ])('applying $name to selected text wraps it in <$tag> and marks the $name button active', async ({ testId, text, end, expected }) => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')
     expect(contentArea).toHaveAttribute('contenteditable', 'true')
 
-    contentArea.textContent = 'hello world'
+    contentArea.textContent = text
     fireEvent.input(contentArea)
 
     const textNode = contentArea.firstChild as Node
-    selectRange(textNode, 0, 5)
+    selectRange(textNode, 0, end)
     fireEvent.select(contentArea)
 
-    const boldButton = screen.getByTestId('toolbar-bold')
-    fireEvent.click(boldButton)
+    const button = screen.getByTestId(testId)
+    fireEvent.click(button)
 
-    expect(contentArea.innerHTML).toBe('<strong>hello</strong> world')
-    expect(boldButton).toHaveAttribute('aria-pressed', 'true')
+    expect(contentArea.innerHTML).toBe(expected)
+    expect(button).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('moving the cursor from bold text to non-bold text deactivates the bold toolbar button', async () => {
@@ -51,87 +55,30 @@ describe('ManualEditor formatting toolbar', () => {
     expect(italicButton).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('applying strikethrough to selected text wraps it in <s> and marks the strikethrough button active', async () => {
+  it.each([
+    { name: 'strikethrough', testId: 'toolbar-strike', text: 'struck plain', markLen: 6, tag: 's' },
+    { name: 'underline', testId: 'toolbar-underline', text: 'under plain', markLen: 5, tag: 'u' },
+  ])('moving the cursor from $name text to non-$name text deactivates the $name toolbar button', async ({ testId, text, markLen, tag }) => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')
-    contentArea.textContent = 'hello world'
-    fireEvent.input(contentArea)
-
-    const textNode = contentArea.firstChild as Node
-    selectRange(textNode, 0, 5)
-    fireEvent.select(contentArea)
-
-    const strikeButton = screen.getByTestId('toolbar-strike')
-    fireEvent.click(strikeButton)
-
-    expect(contentArea.innerHTML).toBe('<s>hello</s> world')
-    expect(strikeButton).toHaveAttribute('aria-pressed', 'true')
-  })
-
-  it('moving the cursor from strikethrough text to non-strikethrough text deactivates the strikethrough toolbar button', async () => {
-    await renderEditorWithDocumentCreated()
-
-    const contentArea = screen.getByTestId('editor-content-area')
-    contentArea.textContent = 'struck plain'
+    contentArea.textContent = text
     fireEvent.input(contentArea)
 
     const initialTextNode = contentArea.firstChild as Node
-    selectRange(initialTextNode, 0, 6)
+    selectRange(initialTextNode, 0, markLen)
     fireEvent.select(contentArea)
 
-    const strikeButton = screen.getByTestId('toolbar-strike')
-    fireEvent.click(strikeButton)
+    const button = screen.getByTestId(testId)
+    fireEvent.click(button)
 
-    expect(contentArea.innerHTML).toBe('<s>struck</s> plain')
-    expect(strikeButton).toHaveAttribute('aria-pressed', 'true')
+    expect(contentArea.innerHTML).toBe(`<${tag}>${text.slice(0, markLen)}</${tag}>${text.slice(markLen)}`)
+    expect(button).toHaveAttribute('aria-pressed', 'true')
 
     const plainTextNode = contentArea.lastChild as Node
     selectRange(plainTextNode, 1, 1)
     fireEvent.select(contentArea)
 
-    expect(strikeButton).toHaveAttribute('aria-pressed', 'false')
-  })
-
-  it('applying underline to selected text wraps it in <u> and marks the underline button active', async () => {
-    await renderEditorWithDocumentCreated()
-
-    const contentArea = screen.getByTestId('editor-content-area')
-    contentArea.textContent = 'hello world'
-    fireEvent.input(contentArea)
-
-    const textNode = contentArea.firstChild as Node
-    selectRange(textNode, 0, 5)
-    fireEvent.select(contentArea)
-
-    const underlineButton = screen.getByTestId('toolbar-underline')
-    fireEvent.click(underlineButton)
-
-    expect(contentArea.innerHTML).toBe('<u>hello</u> world')
-    expect(underlineButton).toHaveAttribute('aria-pressed', 'true')
-  })
-
-  it('moving the cursor from underlined text to non-underlined text deactivates the underline toolbar button', async () => {
-    await renderEditorWithDocumentCreated()
-
-    const contentArea = screen.getByTestId('editor-content-area')
-    contentArea.textContent = 'under plain'
-    fireEvent.input(contentArea)
-
-    const initialTextNode = contentArea.firstChild as Node
-    selectRange(initialTextNode, 0, 5)
-    fireEvent.select(contentArea)
-
-    const underlineButton = screen.getByTestId('toolbar-underline')
-    fireEvent.click(underlineButton)
-
-    expect(contentArea.innerHTML).toBe('<u>under</u> plain')
-    expect(underlineButton).toHaveAttribute('aria-pressed', 'true')
-
-    const plainTextNode = contentArea.lastChild as Node
-    selectRange(plainTextNode, 1, 1)
-    fireEvent.select(contentArea)
-
-    expect(underlineButton).toHaveAttribute('aria-pressed', 'false')
+    expect(button).toHaveAttribute('aria-pressed', 'false')
   })
 })

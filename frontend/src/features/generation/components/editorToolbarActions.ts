@@ -51,6 +51,26 @@ function toggleLineMark(editor: Editor, markName: string): void {
   editor.chain().focus().toggleMark(markName).run()
 }
 
+// Shared by bold/italic/strike/underline/code: each is a plain mark toggle
+// with no special selection handling, differing only in the mark name,
+// label, aria label and test id.
+function simpleMarkToggle(
+  key: ToolbarActionKey,
+  markName: string,
+  label: string,
+  ariaLabel: string,
+  testId?: string,
+): ToolbarAction {
+  return {
+    key,
+    label,
+    ariaLabel,
+    testId,
+    run: (editor) => editor.chain().focus().toggleMark(markName).run(),
+    isActive: (editor) => editor.isActive(markName),
+  }
+}
+
 export const TOOLBAR_ACTIONS: ToolbarAction[] = [
   {
     key: 'heading1',
@@ -95,45 +115,11 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     run: (editor) => editor.chain().focus().toggleOrderedList().run(),
     isActive: (editor) => editor.isActive('orderedList'),
   },
-  {
-    key: 'bold',
-    label: 'B',
-    ariaLabel: 'Жирный',
-    testId: 'toolbar-bold',
-    run: (editor) => editor.chain().focus().toggleBold().run(),
-    isActive: (editor) => editor.isActive('bold'),
-  },
-  {
-    key: 'italic',
-    label: 'I',
-    ariaLabel: 'Курсив',
-    run: (editor) => editor.chain().focus().toggleItalic().run(),
-    isActive: (editor) => editor.isActive('italic'),
-  },
-  {
-    key: 'strike',
-    label: 'S',
-    ariaLabel: 'Зачёркнутый',
-    testId: 'toolbar-strike',
-    run: (editor) => editor.chain().focus().toggleStrike().run(),
-    isActive: (editor) => editor.isActive('strike'),
-  },
-  {
-    key: 'underline',
-    label: 'U',
-    ariaLabel: 'Подчёркнутый',
-    testId: 'toolbar-underline',
-    run: (editor) => editor.chain().focus().toggleUnderline().run(),
-    isActive: (editor) => editor.isActive('underline'),
-  },
-  {
-    key: 'code',
-    label: '<>',
-    ariaLabel: 'Код',
-    testId: 'toolbar-code',
-    run: (editor) => editor.chain().focus().toggleCode().run(),
-    isActive: (editor) => editor.isActive('code'),
-  },
+  simpleMarkToggle('bold', 'bold', 'B', 'Жирный', 'toolbar-bold'),
+  simpleMarkToggle('italic', 'italic', 'I', 'Курсив'),
+  simpleMarkToggle('strike', 'strike', 'S', 'Зачёркнутый', 'toolbar-strike'),
+  simpleMarkToggle('underline', 'underline', 'U', 'Подчёркнутый', 'toolbar-underline'),
+  simpleMarkToggle('code', 'code', '<>', 'Код', 'toolbar-code'),
   {
     key: 'blockquote',
     label: '"',
