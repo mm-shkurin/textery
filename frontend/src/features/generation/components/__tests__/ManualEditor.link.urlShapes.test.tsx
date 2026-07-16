@@ -1,54 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen } from '@testing-library/react'
-import { renderEditorWithDocumentCreated, selectRange } from './ManualEditor.testSupport'
+import { describe, it, vi } from 'vitest'
+import { applyLinkUrl, expectSoleLink } from './ManualEditor.link.testSupport'
 
 vi.mock('../../api/documentApi')
-
-// Renders a fresh editor, selects "hello" out of "hello world", opens the link
-// popover, types `url` and presses Применить. Returns the content area so each
-// test asserts on the resulting anchor. A helper rather than inline setup
-// because the URL shapes below differ in exactly one value — the URL — and that
-// difference is the whole point of the file.
-//
-// Deliberately local to this file rather than in ManualEditor.testSupport:
-// ManualEditor.link.test.tsx drives the same popover but asserts *within* the
-// flow (the popover is in the document, the full attribute set, aria-pressed
-// toggling on cursor move), so it cannot be expressed as a call to this.
-async function applyLinkUrl(url: string) {
-  await renderEditorWithDocumentCreated()
-
-  const contentArea = screen.getByTestId('editor-content-area')
-  contentArea.textContent = 'hello world'
-  fireEvent.input(contentArea)
-
-  selectRange(contentArea.firstChild as Node, 0, 5)
-  fireEvent.select(contentArea)
-
-  fireEvent.click(screen.getByTestId('toolbar-link'))
-  fireEvent.change(screen.getByTestId('link-url-input'), { target: { value: url } })
-  fireEvent.click(screen.getByTestId('link-apply'))
-
-  return contentArea
-}
-
-// Every shape below pins the same three invariants and differs only in the
-// expected href, so the href stays at the call site and the invariants live
-// here. Extracted from the assertion blocks, not from the setup: the varying
-// input is still one literal per test, and each test keeps its own body so the
-// reason it exists stays next to it.
-//
-// The absent alert is load-bearing rather than incidental: the defect is not
-// only "no link" — it is that the visitor is actively told a genuinely fine
-// address is bad. Pinning the absence of the rejection message is what
-// distinguishes these from a silent no-op.
-function expectSoleLink(contentArea: HTMLElement, href: string) {
-  const anchors = contentArea.querySelectorAll('a')
-  expect(anchors).toHaveLength(1)
-  expect(anchors[0].getAttribute('href')).toBe(href)
-  // The link wraps the selection, not the whole text.
-  expect(anchors[0].textContent).toBe('hello')
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-}
 
 describe('ManualEditor link URL shapes', () => {
   // RED (green-frontend-url-shapes owns the fix): normalizeHref's
