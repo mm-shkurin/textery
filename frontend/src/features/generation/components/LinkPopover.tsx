@@ -11,8 +11,13 @@ export const LINK_INVALID_MESSAGE = 'Не удалось применить сс
 // a relative URL against our own origin, and is persisted that way forever.
 const HAS_SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:/
 
+const IS_EMAIL = /^[^\s@\/]+@[^\s@\/]+$/
+const HOST_SHAPE = /^[\p{L}\p{N}-]+(\.[\p{L}\p{N}-]+)*(:\d+)?([\/?#][\w\/%.-]*)?$/u
 function normalizeHref(url: string): string {
-  return HAS_SCHEME.test(url) ? url : `http://${url}`
+  if (HOST_SHAPE.test(url)) return `http://${url}`
+  if (HAS_SCHEME.test(url)) return url
+  if (IS_EMAIL.test(url)) return `mailto:${url}`
+  return url
 }
 
 interface LinkPopoverProps {

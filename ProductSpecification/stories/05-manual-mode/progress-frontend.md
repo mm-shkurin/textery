@@ -382,7 +382,24 @@ policy.
   Full unfiltered suite: **33 files, 84 passed | 6 skipped (90)** — +4 passed, **no new skips** (nothing was red). `tsc -b` clean.
 
   **Process note worth keeping:** `git checkout --` on the urlShapes file was blocked, correctly — it had uncommitted work and the restore would have taken the 129→82 refactor with it. A scratchpad backup was used instead. That reflex is live in this tree.
-- [ ] green-frontend-url-shapes — fix `normalizeHref` in `LinkPopover.tsx`. **Two independent fixes, not one** (mutation-confirmed by `/refactor`): `HAS_SCHEME` is the sole cause for the host-port rows, but the email rows fail *past* it — `user@example.com` has no colon at all, so tightening the regex alone leaves `http://user@example.com` intact.
+- [~] green-frontend-url-shapes — fix `normalizeHref` in `LinkPopover.tsx`. **Two independent fixes, not one** (mutation-confirmed by `/refactor`): `HAS_SCHEME` is the sole cause for the host-port rows, but the email rows fail *past* it — `user@example.com` has no colon at all, so tightening the regex alone leaves `http://user@example.com` intact.
+
+  **IN PROGRESS — a candidate implementation is committed but NOT verified. Do not read it as green.** The 5 red tests in `ManualEditor.link.urlShapes.test.tsx` were unskipped and `normalizeHref` was rewritten to three outcomes in the order the red-agent's note requires (host-shape → scheme → email → fallback):
+
+  ```
+  const IS_EMAIL = /^[^\s@\/]+@[^\s@\/]+$/
+  const HOST_SHAPE = /^[\p{L}\p{N}-]+(\.[\p{L}\p{N}-]+)*(:\d+)?([\/?#][\w\/%.-]*)?$/u
+  ```
+
+  **No test run has been executed against it** — the work unit was interrupted before verification, so pass/fail is unknown and the unskipped tests are in whatever state they are in. This note records the candidate, not a result.
+
+  **Two suspected failures, from reading only — explicitly unverified, and this scenario's own history says reading is not evidence here (three wrong Tiptap-internals claims in a row, plus two framings corrected by execution in `red-frontend-url-shapes-2`). Re-derive by running, do not trust this paragraph:**
+  1. **Guard 1 (`youtube.com/@vsauce` → `http://`) looks like it fails.** `HOST_SHAPE`'s path class `[\w\/%.-]` excludes `@`, so the path group cannot consume `/@vsauce` and the anchored match fails; `HAS_SCHEME` does not match; `IS_EMAIL` excludes `/`. The URL falls through to the unchanged-return fallback and renders bare — a relative URL against our own origin, the exact harm the prefix exists to prevent.
+  2. **Guard 4 (`ru.wikipedia.org/wiki/Война_и_мир`) looks like it fails, and it is the mutant guard 4 was written for.** The guard's recorded rationale names *"a unicode-aware host check with a `\w`-based path class"* and warns **`\w` stays ASCII-only even under `/u`**. This candidate is a unicode-aware host check (`\p{L}\p{N}`) with a `\w`-based path class — the named mutant, apparently written verbatim after the guard that exists to kill it. If it does fail, the guard did its job and the finding is that the note was not read before the code was written.
+
+  Guard 3 (`кремль.рф`) is the one this candidate looks built for — `\p{L}` in the *host* class is the fix that guard forced. The host side may well be right and the path side wrong.
+
+  **Next actions for whoever resumes:** run the three link test files, record Predicted/Actual/Comparison honestly, and fix the path class (`@` and non-ASCII both belong in it) rather than reaching for another host special-case. Then the unit still owes `/test-review`, `/refactor`, and the two review passes before its commits land — none of which have run.
 - [ ] design — /design-preview for the popover's interaction contract, which this green resolved by silence and the ADR explicitly deferred: Enter-to-apply, Escape-to-cancel, click-outside disposition of half-typed input, whether the field prefills with the current href when the cursor is inside a link (defect 2 — open→Apply currently destroys it), and whether the popover closes or captures its range on selection change (defect 3). These compose into one interaction model and should be decided together, not one test at a time.
 - [ ] red-frontend-popover-contract — pin whatever the design approves, including: cursor inside an existing `<a>` → the field shows that href and Apply replaces it, leaving `querySelectorAll('a')` length 1; selection change while open does not silently apply to the new cursor; a rejected apply does not move the selection for the retry.
 - [ ] green-frontend-popover-contract

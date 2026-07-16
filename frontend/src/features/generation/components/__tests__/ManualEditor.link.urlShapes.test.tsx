@@ -10,7 +10,7 @@ describe('ManualEditor link URL shapes', () => {
   // The URL is passed through unnormalized, isAllowedUri rejects scheme
   // `example.com`, setLink returns false, and the visitor is told a genuinely
   // fine address is bad.
-  it.skip('a host with a port and path is normalized to http:// rather than mistaken for a scheme', async () => {
+  it('a host with a port and path is normalized to http:// rather than mistaken for a scheme', async () => {
     const contentArea = await applyLinkUrl('example.com:8080/path')
 
     expectSoleLink(contentArea, 'http://example.com:8080/path')
@@ -20,7 +20,7 @@ describe('ManualEditor link URL shapes', () => {
   // Kept separate from the dotted-host case because it is a distinct shape —
   // no dot at all, so a fix that merely requires "no `.` before the `:`" would
   // pass the test above and still break this one.
-  it.skip('a dotless host with a port is normalized to http:// rather than mistaken for a scheme', async () => {
+  it('a dotless host with a port is normalized to http:// rather than mistaken for a scheme', async () => {
     const contentArea = await applyLinkUrl('localhost:3000')
 
     expectSoleLink(contentArea, 'http://localhost:3000')
@@ -32,7 +32,7 @@ describe('ManualEditor link URL shapes', () => {
   // string for green to special-case (`prefix === 'localhost'`) or to reach for
   // via a hostname allowlist. That green passes the test above and still breaks
   // every intranet host. The discriminator must be structural, not a name.
-  it.skip('an arbitrary dotless host with a port is normalized to http://, not just the well-known localhost', async () => {
+  it('an arbitrary dotless host with a port is normalized to http://, not just the well-known localhost', async () => {
     const contentArea = await applyLinkUrl('myserver:8080')
 
     expectSoleLink(contentArea, 'http://myserver:8080')
@@ -44,7 +44,7 @@ describe('ManualEditor link URL shapes', () => {
   // passes isAllowedUri, so it links successfully with no error: silently
   // wrong, which is worse than the rejection above. Disposition decided by the
   // user on 2026-07-16: mailto:, not a rejection and not the current http://.
-  it.skip('a bare email address is normalized to a mailto: link, not an http:// userinfo URL', async () => {
+  it('a bare email address is normalized to a mailto: link, not an http:// userinfo URL', async () => {
     const contentArea = await applyLinkUrl('user@example.com')
 
     expectSoleLink(contentArea, 'mailto:user@example.com')
@@ -55,7 +55,7 @@ describe('ManualEditor link URL shapes', () => {
   // mailto:" is only shown to generalize by a second, structurally different
   // address — subdomain plus multi-label TLD, so the local part and the host
   // both differ from the case above.
-  it.skip('a bare email on a subdomain with a multi-label TLD is also normalized to mailto:', async () => {
+  it('a bare email on a subdomain with a multi-label TLD is also normalized to mailto:', async () => {
     const contentArea = await applyLinkUrl('admin@sub.example.co.uk')
 
     expectSoleLink(contentArea, 'mailto:admin@sub.example.co.uk')
