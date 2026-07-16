@@ -26,18 +26,18 @@ def _client_factory(app, provider_name):
 
     The provider is resolved at call time rather than at import time. This module
     is a conftest, so an import-time lookup of a provider the router does not
-    export yet aborts collection for every test in this directory. Resolving on
-    call keeps a missing provider scoped to the test that actually needs it, and
-    surfaces it as an AttributeError naming the provider -- rather than as a
-    silently skipped override, which would let a route that never calls its
-    usecase still appear to pass.
+    export yet raises during collection and aborts every test in this directory,
+    not just the one that needs the provider (verified: 1 collection error, 0 of
+    16 tests run). Resolving on call keeps a not-yet-exported provider scoped to
+    the test that needs it, failing it with an AttributeError that names the
+    missing symbol. The constraint is only "not at conftest import time" -- the
+    lookup does not otherwise depend on being inside `_make`.
     """
 
     def _make(mock_usecase):
         provider = getattr(auth_router_module, provider_name)
         app.dependency_overrides[provider] = lambda: mock_usecase
-        transport = ASGITransport(app=app)
-        return AsyncClient(transport=transport, base_url="http://test")
+        return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
     return _make
 
