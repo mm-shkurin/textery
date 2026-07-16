@@ -227,8 +227,8 @@ policy.
 
 ### Scenario 7.7: Applying underline changes the content and highlights the active toolbar button
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
-- [ ] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — two `it.skip` tests added to `ManualEditor.formatting.test.tsx` (mirrors bold/strike): apply underline to selection → expect `<u>` wrap + `aria-pressed="true"`; move cursor off underlined text → button deactivates. Underline is an inline Mark (like bold/strike), not a line-wrap Mark. No stock `@tiptap/extension-underline` in package.json yet — green phase needs it added, or a custom Mark. Predicted `TestingLibraryElementError: Unable to find an element by: [data-testid="toolbar-underline"]`; actual matched exactly for both tests. test-review: strict exact-value assertions throughout, consistent with strike's sibling test (no cross-check on another button, matching strike not bold's pattern) — no changes needed.
+- [~] green-frontend
 - [S] red-frontend-api — no API call: formatting is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
 - [ ] align-design

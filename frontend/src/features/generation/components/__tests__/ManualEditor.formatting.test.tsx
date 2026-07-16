@@ -120,4 +120,60 @@ describe('ManualEditor formatting toolbar', () => {
 
     expect(strikeButton).toHaveAttribute('aria-pressed', 'false')
   })
+
+  it.skip('applying underline to selected text wraps it in <u> and marks the underline button active', async () => {
+    await renderEditorWithDocumentCreated()
+
+    const contentArea = screen.getByTestId('editor-content-area')
+    contentArea.textContent = 'hello world'
+    fireEvent.input(contentArea)
+
+    const textNode = contentArea.firstChild as Node
+    const range = document.createRange()
+    range.setStart(textNode, 0)
+    range.setEnd(textNode, 5)
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+    fireEvent.select(contentArea)
+
+    const underlineButton = screen.getByTestId('toolbar-underline')
+    fireEvent.click(underlineButton)
+
+    expect(contentArea.innerHTML).toBe('<u>hello</u> world')
+    expect(underlineButton).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it.skip('moving the cursor from underlined text to non-underlined text deactivates the underline toolbar button', async () => {
+    await renderEditorWithDocumentCreated()
+
+    const contentArea = screen.getByTestId('editor-content-area')
+    contentArea.textContent = 'under plain'
+    fireEvent.input(contentArea)
+
+    const initialTextNode = contentArea.firstChild as Node
+    const underlineRange = document.createRange()
+    underlineRange.setStart(initialTextNode, 0)
+    underlineRange.setEnd(initialTextNode, 5)
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(underlineRange)
+    fireEvent.select(contentArea)
+
+    const underlineButton = screen.getByTestId('toolbar-underline')
+    fireEvent.click(underlineButton)
+
+    expect(contentArea.innerHTML).toBe('<u>under</u> plain')
+    expect(underlineButton).toHaveAttribute('aria-pressed', 'true')
+
+    const plainTextNode = contentArea.lastChild as Node
+    const cursorRange = document.createRange()
+    cursorRange.setStart(plainTextNode, 1)
+    cursorRange.setEnd(plainTextNode, 1)
+    selection?.removeAllRanges()
+    selection?.addRange(cursorRange)
+    fireEvent.select(contentArea)
+
+    expect(underlineButton).toHaveAttribute('aria-pressed', 'false')
+  })
 })
