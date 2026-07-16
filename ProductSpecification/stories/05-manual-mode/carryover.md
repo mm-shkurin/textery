@@ -18,3 +18,17 @@
 **Where:** `frontend/src/features/generation/api/httpClient.ts`'s `request()`/`readErrorMessage()`, consumed by `documentApi.ts`'s `saveDocument`.
 **Implication:** `ManualEditor` cannot distinguish a 409 version-conflict from a network failure or a 500 today. Any scenario needing conflict-specific UX (reload-and-merge prompts, distinguishing retryable vs. fatal errors) must first extend `saveDocument`/`request()` to propagate a status/kind.
 **From:** scenario 5.2 (failed-save-inline-error)
+
+## Quirk: StarterKit's Heading node silently competes with Heading3Mark
+
+**Quirk:** StarterKit's built-in `Heading` node stays enabled, so its `parseHTML` competes with `Heading3Mark`'s rule for `<h3>`; neither declares a priority and both render byte-identical output.
+**Where:** `ManualEditor.tsx:95-102` (StarterKit config, `Document.extend({ content: 'inline*' })`), `lineWrapMark.ts:21`.
+**Implication:** The mark wins only because the `inline*` doc schema makes the block node unreachable — an implicit tiebreak that flips silently if the schema ever gains block content. The H1/H2 toolbar buttons are already inert for this reason. Any scenario adding block content to the doc, or wiring up H1/H2, must make the tiebreak explicit (disable `heading` in StarterKit, or declare a priority).
+**From:** scenario 7.6 (h3-heading-active-toolbar)
+
+## Quirk: line coverage cannot see a mark's parseHTML round-trip
+
+**Quirk:** A mark whose `parseHTML` returns a bare tag rule (`{ tag: 'h3' }`) reports 100% line/branch coverage while nothing verifies that saved content round-trips — the rule is declarative data, so its hits are schema-build time, not document-parse time.
+**Where:** `lineWrapMark.ts`-derived marks (`heading3Mark.ts`, `blockquoteMark.ts`); contrast `codeBlockMark.ts:23`, whose `getAttrs` arrow *is* code and so was correctly flagged uncovered in 7.4.
+**Implication:** Coverage numbers are not evidence for or against a round-trip — `<pre>` broke silently in 7.4 at 100%. Every mark needs an explicit `*.parseHTML.test.tsx` round-trip test. `blockquoteMark.ts` still has none (belongs to 7.2), and strike's is missing too (7.1).
+**From:** scenario 7.6 (h3-heading-active-toolbar)
