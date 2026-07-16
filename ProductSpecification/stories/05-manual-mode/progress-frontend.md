@@ -3,6 +3,10 @@
 Owns: Frontend Scenarios. Narrative/decisions/Spec checklist live in `progress.md`;
 `ProductSpecification/stories.md` is the cross-file rollup.
 
+This file tracks **which work units ran**. For **what a visitor can actually do** — prose,
+by feature, read from the code rather than from these checkboxes, and explicit about the
+capabilities that look shipped but aren't — see [`functionality.md`](functionality.md).
+
 **Policy (2026-07-15):** backend is developed in a parallel branch/session and is
 unavailable on this branch. Every `red-selenium` / `green-selenium` / `demo` step
 requires a live app to drive Selenium against — until backend is available here,
