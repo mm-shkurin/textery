@@ -144,6 +144,41 @@ describe('loginApi', () => {
     expect(rejection).toStrictEqual({ errorCode: 'UNVERIFIED', message: '' })
   })
 
+  // (vii) THE `{}` BODY — the one error path that actually fires today, and the only one no
+  // fixture above reaches. All six supply a well-formed `error_code`; this one supplies no
+  // parseable body at all. `postJson` does `res.json().catch(() => ({}))` (httpClient.ts:19),
+  // so a 404 HTML page (the backend has no login endpoint yet) or a proxy's 502 arrives as
+  // `{}` — TRUTHY, so it clears `toLoginApiError`'s `!body` rethrow guard and is normalized.
+  //
+  // Added by green because green CHANGED this path and nothing here observed it. The natural
+  // green — "apply the fallback only under INVALID_CREDENTIALS, otherwise return the error
+  // untouched" — would emit the raw `HttpError {status, body}` here instead of a
+  // LoginApiError, and the whole file would stay green while the form received a shape no
+  // consumer reads. The decision green made instead is asserted below: still a LoginApiError,
+  // code `UNKNOWN_ERROR`, message `''` (no server text, reported as absence). Not the
+  // login-failure constant — the code is not the login-failure code. LoginForm supplies the
+  // generic copy for it via applyLoginError's fallback, so the screen is unchanged.
+  //
+  // Stub shape follows the sibling client's precedent at
+  // generation/api/__tests__/generationApi.test.ts:41-54 — `json` throws rather than resolving,
+  // which is what a non-JSON response really does. `stubFetchErrorBody` cannot express it.
+  it('normalizes an unparseable error body to UNKNOWN_ERROR with no server message', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 502,
+        json: async () => {
+          throw new SyntaxError('Unexpected token <')
+        },
+      }),
+    )
+
+    const rejection = await rejectionOf(login(EMAIL, PASSWORD))
+
+    expect(rejection).toStrictEqual({ errorCode: 'UNKNOWN_ERROR', message: '' })
+  })
+
   // (v) BORN GREEN — a characterization pin, not a guard this step established. It pins the
   // ACTUAL contract, which is not the one loginApi's comment claimed: the api
   // preserves whatever non-blank text the server sent, verbatim, including internal detail.

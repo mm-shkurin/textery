@@ -41,13 +41,42 @@ function toLoginApiError(error: unknown): unknown {
   // INVALID_CREDENTIALS path itself. `as string` is wrong in the other direction: `body` is
   // parsed JSON, so a non-string value satisfies the cast at compile time and lies about
   // the field at run time. Both guards earn the declared type instead of asserting it.
-  const errorCode = body.error_code
-  const message = body.message
+  const rawCode = body.error_code
+  const errorCode = typeof rawCode === 'string' && rawCode ? rawCode : 'UNKNOWN_ERROR'
+  const serverMessage = isUsableMessage(body.message) ? body.message : ''
   const apiError: LoginApiError = {
-    errorCode: typeof errorCode === 'string' && errorCode ? errorCode : 'UNKNOWN_ERROR',
-    message: isUsableMessage(message) ? message : GENERIC_LOGIN_FAILURE_MESSAGE,
+    errorCode,
+    message: serverMessage || fallbackMessageFor(errorCode),
   }
   return apiError
+}
+
+// What this module may put in `message` when the server sent no usable text.
+//
+// GENERIC_LOGIN_FAILURE_MESSAGE is a DISPLAY constant owned by this client and specific to
+// ONE meaning: "sign-in failed". Stamping it onto an error whose code means something else
+// forges provenance that cannot be recovered downstream — a consumer reading such a message
+// through `isUsableMessage` sees a usable server string and renders login-failure copy for a
+// user whose password was right (exactly the trap 5.3's UNVERIFIED branch would fall into).
+// So the fallback is scoped to the code it describes; under every other code the absence of
+// server text is reported AS absence, `''`.
+//
+// `''` rather than omitting the field: `isUsableMessage('')` is false, so each consumer's
+// own guard fires and the form owns the copy for that code — which is what 5.3/5.4/5.6 need.
+// Keeping the field present also keeps `LoginApiError` one shape, so the `''` is a value the
+// type describes rather than a hole the type lies about.
+//
+// This is also the answer for the `{}` body, the one error path that fires today: the backend
+// has no login endpoint, so a 404 HTML page or a proxy's 502 makes `res.json()` throw and
+// `postJson` substitutes `{}` (httpClient.ts:19). That body is truthy, so it clears the
+// rethrow guard above and lands here with no `error_code` → `UNKNOWN_ERROR` + `''`. It stays
+// a LoginApiError: returning the raw HttpError instead would hand the form a `{status, body}`
+// no consumer reads, and no existing fixture would have caught it (all six supply a
+// well-formed code). LoginForm's non-INVALID_CREDENTIALS path renders the generic constant
+// for it, so the screen is unchanged — the constant is now applied by the layer that OWNS
+// display, not forged by the layer that reports the wire.
+function fallbackMessageFor(errorCode: string): string {
+  return errorCode === 'INVALID_CREDENTIALS' ? GENERIC_LOGIN_FAILURE_MESSAGE : ''
 }
 
 export async function login(email: string, password: string): Promise<LoginResult> {
