@@ -1,8 +1,10 @@
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 import './ManualEditorToolbar.css'
 import { TOOLBAR_ACTIONS, TOOLBAR_DIVIDER_BEFORE } from './editorToolbarActions'
+import type { ToolbarActionKey } from './editorToolbarActions'
 import { ManualEditorSaveStatus } from './ManualEditorSaveStatus'
+import { LinkPopover } from './LinkPopover'
 
 interface ManualEditorToolbarProps {
   editor: Editor | null
@@ -19,22 +21,43 @@ export function ManualEditorToolbar({
   isSaving,
   onSave,
 }: ManualEditorToolbarProps) {
+  // Which UI action's panel is open, if any. Conditional mount, not a hidden
+  // toggle — so the panel is absent from the DOM until asked for, and its own
+  // state (the typed URL, any error) is discarded on close rather than
+  // reappearing on the next open.
+  const [openUiKey, setOpenUiKey] = useState<ToolbarActionKey | null>(null)
+
+  const handleClick = (action: (typeof TOOLBAR_ACTIONS)[number]) => {
+    if (!editor) return
+    if (action.ui) {
+      setOpenUiKey(openUiKey === action.key ? null : action.key)
+      return
+    }
+    action.run(editor)
+  }
+
   return (
     <div className="me-toolbar">
       {TOOLBAR_ACTIONS.map((action) => (
         <Fragment key={action.key}>
           {TOOLBAR_DIVIDER_BEFORE.has(action.key) && <div className="me-toolbar-divider" aria-hidden="true" />}
-          <button
-            type="button"
-            className="me-toolbar-btn"
-            aria-label={action.ariaLabel}
-            data-testid={action.testId}
-            onClick={() => editor && action.run(editor)}
-            aria-pressed={editor ? action.isActive(editor) : false}
-            disabled={editor ? action.disabled?.(editor) ?? false : true}
-          >
-            {action.label}
-          </button>
+          <span className={action.ui ? 'me-link-popover-anchor' : undefined}>
+            <button
+              type="button"
+              className="me-toolbar-btn"
+              aria-label={action.ariaLabel}
+              data-testid={action.testId}
+              onClick={() => handleClick(action)}
+              aria-pressed={editor ? action.isActive(editor) : false}
+              aria-expanded={action.ui ? openUiKey === action.key : undefined}
+              disabled={editor ? action.disabled?.(editor) ?? false : true}
+            >
+              {action.label}
+            </button>
+            {editor && action.ui === 'link-popover' && openUiKey === action.key && (
+              <LinkPopover editor={editor} onClose={() => setOpenUiKey(null)} />
+            )}
+          </span>
         </Fragment>
       ))}
       <div className="me-toolbar-status">

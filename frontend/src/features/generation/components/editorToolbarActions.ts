@@ -1,33 +1,7 @@
 import type { Editor } from '@tiptap/react'
+import type { ToolbarAction, ToolbarActionKey, ToolbarRunAction } from './toolbarAction'
 
-export type ToolbarActionKey =
-  | 'heading1'
-  | 'heading2'
-  | 'heading3'
-  | 'paragraph'
-  | 'bulletList'
-  | 'orderedList'
-  | 'bold'
-  | 'italic'
-  | 'strike'
-  | 'underline'
-  | 'code'
-  | 'blockquote'
-  | 'horizontalRule'
-  | 'codeBlock'
-  | 'alignCenter'
-  | 'undo'
-  | 'redo'
-
-export interface ToolbarAction {
-  key: ToolbarActionKey
-  label: string
-  ariaLabel: string
-  testId?: string
-  run: (editor: Editor) => void
-  isActive: (editor: Editor) => boolean
-  disabled?: (editor: Editor) => boolean
-}
+export type { ToolbarAction, ToolbarActionKey, ToolbarRunAction, ToolbarUiAction } from './toolbarAction'
 
 export const TOOLBAR_DIVIDER_BEFORE: Set<ToolbarActionKey> = new Set(['bulletList', 'bold'])
 
@@ -61,7 +35,7 @@ function simpleMarkToggle(
   label: string,
   ariaLabel: string,
   testId?: string,
-): ToolbarAction {
+): ToolbarRunAction {
   return {
     key,
     label,
@@ -157,6 +131,14 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     testId: 'toolbar-align-center',
     run: (editor) => toggleLineMark(editor, 'alignCenter'),
     isActive: (editor) => editor.isActive('alignCenter'),
+  },
+  {
+    key: 'link',
+    label: '🔗',
+    ariaLabel: 'Ссылка',
+    testId: 'toolbar-link',
+    ui: 'link-popover',
+    isActive: (editor) => editor.isActive('link'),
   },
   {
     key: 'undo',

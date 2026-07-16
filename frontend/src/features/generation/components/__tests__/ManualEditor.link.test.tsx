@@ -5,10 +5,7 @@ import { renderEditorWithDocumentCreated, selectRange } from './ManualEditor.tes
 vi.mock('../../api/documentApi')
 
 describe('ManualEditor link toolbar', () => {
-  // RED (scenario 7.9): no `toolbar-link` action and no LinkPopover exist yet.
-  // Fails at getByTestId('toolbar-link') — TOOLBAR_ACTIONS has 17 entries, none
-  // of them the link entry. Unskip in green-frontend.
-  it.skip('applying a URL from the link popover turns the selected text into a hyperlink and marks the link button active', async () => {
+  it('applying a URL from the link popover turns the selected text into a hyperlink and marks the link button active', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')

@@ -99,6 +99,14 @@ export function ManualEditor({
         blockquote: false,
         horizontalRule: false,
         codeBlock: false,
+        // Link is already registered by StarterKit — configured, not
+        // re-registered. openOnClick: false is the sole barrier between an
+        // anchor click and total content loss (no beforeunload guard exists on
+        // this page). autolink/linkOnPaste off: both fire outside any explicit
+        // user intent — autolink runs on any docChanged and setContent does not
+        // set its preventAutolink meta, so a server-returned bare host would
+        // silently gain an href nobody typed and the next save would persist it.
+        link: { openOnClick: false, autolink: false, linkOnPaste: false },
       }),
       Document.extend({ content: 'inline*' }),
       BlockquoteMark,
