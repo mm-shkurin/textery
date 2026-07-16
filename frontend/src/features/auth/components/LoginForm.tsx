@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
-import { login, type LoginApiError } from '../api/loginApi'
+import { login } from '../api/loginApi'
 import { GENERIC_LOGIN_FAILURE_MESSAGE, isUsableMessage } from '../utils/loginMessages'
 import './AuthForm.css'
 import './LoginForm.css'
@@ -22,12 +22,17 @@ import './LoginForm.css'
 //
 // Later scenarios (5.3 unverified, 5.4 lockout, 5.6 network) branch their distinct
 // messages ABOVE this fallback, not through it.
+//
+// No `as LoginApiError`, for the reason loginApi no longer says `as string`: nothing at run
+// time holds a rejection to the declared shape, so the cast narrowed by promise rather than
+// by evidence. Each `in` earns the field it reads and `isUsableMessage` earns the string.
 function applyLoginError(error: unknown): string {
-  if (error && typeof error === 'object' && 'errorCode' in error) {
-    const apiError = error as LoginApiError
-    if (apiError.errorCode === 'INVALID_CREDENTIALS' && isUsableMessage(apiError.message)) {
-      return apiError.message
-    }
+  if (
+    error && typeof error === 'object' &&
+    'errorCode' in error && error.errorCode === 'INVALID_CREDENTIALS' &&
+    'message' in error && isUsableMessage(error.message)
+  ) {
+    return error.message
   }
   return GENERIC_LOGIN_FAILURE_MESSAGE
 }
