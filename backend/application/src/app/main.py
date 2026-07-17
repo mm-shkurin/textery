@@ -29,13 +29,20 @@ from fastapi import FastAPI
 from container import (
     create_generate_document,
     create_get_generation,
+    create_login_user,
+    create_refresh_access_token,
     create_register_user,
     create_verify_account,
     create_request_generation,
     run_stale_generation_sweep,
 )
 from error_handling.exception_handlers import unhandled_exception_handler, validation_exception_handler
-from router.auth.auth_router import get_register_user_usecase, get_verify_account_usecase
+from router.auth.auth_router import (
+    get_login_user_usecase,
+    get_refresh_access_token_usecase,
+    get_register_user_usecase,
+    get_verify_account_usecase,
+)
 from router.auth.auth_router import router as auth_router
 from router.generation.generation_router import (
     get_generate_document_usecase,
@@ -81,3 +88,5 @@ app.dependency_overrides[get_get_generation_usecase] = create_get_generation
 app.dependency_overrides[get_generate_document_usecase] = create_generate_document
 app.dependency_overrides[get_register_user_usecase] = create_register_user
 app.dependency_overrides[get_verify_account_usecase] = create_verify_account
+app.dependency_overrides[get_login_user_usecase] = create_login_user
+app.dependency_overrides[get_refresh_access_token_usecase] = create_refresh_access_token

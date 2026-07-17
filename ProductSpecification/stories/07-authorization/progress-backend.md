@@ -307,14 +307,21 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
   is the only test that varies both axes, and therefore the only thing pinning the ordering
   decision at all
 - [x] green-usecase — no production change; `LoginUser` already implemented
-- [ ] adapters-discovery — **real gap, not skippable**: `container.py` has no `create_login_user()`
-  factory and `main.py` does not override `get_login_user_usecase`, so `POST /login` exists on the
-  live app and answers **500** from its `raise NotImplementedError` stub. Same shape as 3.1's
+- [x] adapters-discovery — was a **real gap, now closed**: `container.py` had no `create_login_user()`
+  factory and `main.py` did not override `get_login_user_usecase`, so `POST /login` existed on the
+  live app and answered **500** from its `raise NotImplementedError` stub. Same shape as 3.1's
   withheld verify wiring, except here it was never written at all. Also unwired:
   `JwtTokenService` needs a signing secret from config — its constructor refuses an empty one by
   design, so wiring it without a real secret source fails loudly at startup rather than shipping a
-  forgeable key
-- [ ] green-acceptance
+  forgeable key. Closed by the wiring commit: `create_login_user()`/`create_refresh_access_token()`
+  factories, `JWT_SECRET` env var (documented in `backend/.env.example`, flows into the container
+  via docker-compose's existing `env_file: backend/.env`), `_token_service` built once at **import**
+  so a missing secret fails at boot rather than 500-ing every `/login` while the container reports
+  healthy
+- [x] green-acceptance — no acceptance test (trimmed cycle); **proven live** against the compose
+  stack (`BACKEND_PORT=8100`): login on a pending account returns
+  `403 {"error_code": "UNVERIFIED"}`, exactly the distinct code the client routes to the verify
+  screen on, not the generic 401
 
 ### Scenario 5.2: Invalid credentials return a single generic error
 - [S] red-acceptance — no acceptance test (trimmed cycle); `/login` not wired live (see 5.1)
@@ -328,8 +335,11 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
   `NO_SUCH_ACCOUNT` for an unknown email kills 2 tests; raising `INVALID_EMAIL` on a malformed
   address kills the malformed-email test
 - [x] green-usecase — no production change; `LoginUser._invalid_credentials` already implemented
-- [ ] adapters-discovery — same wiring gap as 5.1
-- [ ] green-acceptance
+- [x] adapters-discovery — same wiring gap as 5.1, closed by the same commit. Rest-layer test added
+  (`test_login_post_router.py`), mutation-verified: dropping the `INVALID_CREDENTIALS -> 401` row
+  from `_ERROR_CODE_STATUS_MAP` kills it and nothing else
+- [x] green-acceptance — no acceptance test (trimmed cycle); proven live: a wrong password returns
+  `401 {"error_code": "INVALID_CREDENTIALS"}`
 
 ### Scenario 5.3: Failed-attempt counter increments atomically across concurrent failures
 - [ ] red-acceptance
@@ -407,11 +417,32 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
   assertion (the fake token service mints account-id-bearing tokens, so a pair issued for the
   wrong account fails — a constant-string double would have passed)
 - [x] green-usecase — no production change; `LoginUser` already implemented
-- [ ] adapters-discovery — same wiring gap as 5.1, plus: `LoginResponseDto.from_domain` and the
-  `/login` route are written but have **no rest-layer test at all** — no `test_login_post_router.py`
-  exists. 3.1 learned the hard way that a router test which does not override the DI dependency
-  cannot go green; whoever writes it should mirror `conftest.py`'s `verify_client` fixture
-- [ ] green-acceptance
+- [x] adapters-discovery — same wiring gap as 5.1, plus `LoginResponseDto.from_domain` and the
+  `/login` route had **no rest-layer test at all**. Both closed: `test_login_post_router.py` added
+  with a `login_client` fixture mirroring `verify_client` (3.1 learned the hard way that a router
+  test which does not override the DI dependency cannot go green). Mutation-verified: swapping
+  access/refresh in `from_domain`, and copying the access expiry onto the refresh field, each kill
+  the 200 test — the fixture's pair carries distinct values per field so those cannot pass on
+  symmetric placeholders
+- [x] green-acceptance — no acceptance test (trimmed cycle); proven live end-to-end:
+  register -> verify -> login returns `200` with a real HS256 pair, both tokens decoding to the
+  registered account's id and email.
+  **Two live findings the green usecase/rest tests are structurally blind to — both real, neither
+  fixed here (out of this work unit's scope, named rather than left to be discovered later):**
+  (1) **`/refresh` returns a byte-identical access token when called twice within the same integer
+  second.** JWT `iat`/`exp` are NumericDate (whole seconds), so two issues in one second produce
+  identical claims and therefore an identical signature. Measured, not theorized: 12 back-to-back
+  refreshes returned **2 distinct tokens** (7x and 5x). Normal stateless-JWT behaviour, no security
+  impact — the token is valid and its expiry is correct — but 6.2's title says refresh returns a
+  *new* access token, and it does not. Closing it means a `jti` claim. The usecase test cannot see
+  this: it asserts against a fake token service. **A frontend test asserting `newToken !== oldToken`
+  will flake ~50% of the time.**
+  (2) **`code_expires_at` and `access_token_expires_at` serialize in two different formats on the
+  same auth surface** — `2026-07-17T07:48:12.459208+00:00` vs `2026-07-17T07:53:14.343092Z`.
+  Cause: `RegisterResponseDto.code_expires_at` is typed `str` and built with `.isoformat()`, while
+  `LoginResponseDto`'s expiries are typed `datetime` and serialized by pydantic. Both parse in JS
+  `new Date()`, so no client breaks today. Also: the DTO expiry carries microseconds the JWT's own
+  `exp` claim (whole seconds) does not.
 
 ### Scenario 6.1a: Failed-attempt-counter reset and refresh-token persistence commit as one unit
 - [ ] red-acceptance
@@ -431,9 +462,13 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
   (`backend/usecase/tests/auth/test_refresh_access_token_usecase.py`), 1 test: a valid refresh
   token issues a fresh pair for the token's account
 - [x] green-usecase — no production change; `RefreshAccessToken` already implemented
-- [ ] adapters-discovery — same wiring gap as 5.1: no `create_refresh_access_token()` factory,
-  `get_refresh_access_token_usecase` unwired, `/refresh` 500s live. No rest-layer test either
-- [ ] green-acceptance
+- [x] adapters-discovery — same wiring gap as 5.1, closed by the same commit:
+  `create_refresh_access_token()` factory added, `get_refresh_access_token_usecase` overridden in
+  `main.py`. Rest-layer test added (`test_refresh_post_router.py`), mutation-verified: a route that
+  discards the submitted `refresh_token` kills the 200 test
+- [x] green-acceptance — no acceptance test (trimmed cycle); proven live: a refresh token from a
+  real login exchanges for a fresh `200` pair. See 6.1's green-acceptance for the same-second
+  identical-token finding, which lands on this scenario's stated behaviour
 
 ### Scenario 6.3: Refresh rejects an expired or invalid refresh token
 - [S] red-acceptance — no acceptance test (trimmed cycle); `/refresh` not wired live (see 5.1)
@@ -459,8 +494,11 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
   removing the empty-secret guard; giving access and refresh the same TTL. Covers the classic
   `alg: none` forgery and a key-rotation rejection (Security scenario 9) too
 - [S] green-adapter security — no production change; `JwtTokenService` already implemented
-- [ ] adapters-discovery — same wiring gap as 6.2
-- [ ] green-acceptance
+- [x] adapters-discovery — same wiring gap as 6.2, closed by the same commit; the rejection path's
+  401 mapping is pinned by `test_refresh_post_router.py`, mutation-verified (dropping the
+  `INVALID_REFRESH_TOKEN -> 401` row kills it and nothing else)
+- [x] green-acceptance — no acceptance test (trimmed cycle); `/refresh` is live and its rejection
+  path answers `401 {"error_code": "INVALID_REFRESH_TOKEN"}`
 
 ### Scenario 6.4: Refresh rejects a token whose claim shape no longer matches current code
 - [S] red-acceptance — no acceptance test (trimmed cycle); `/refresh` not wired live (see 5.1)
@@ -473,8 +511,11 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
   signature is not the thing being tested, the claim shape is. **Mutation-verified:** deleting the
   `except (KeyError, ValueError)` mapping kills the first two
 - [S] green-usecase — no production change; already implemented
-- [ ] adapters-discovery — same wiring gap as 6.2
-- [ ] green-acceptance
+- [x] adapters-discovery — same wiring gap as 6.2, closed by the same commit; the rejection path's
+  401 mapping is pinned by `test_refresh_post_router.py`, mutation-verified (dropping the
+  `INVALID_REFRESH_TOKEN -> 401` row kills it and nothing else)
+- [x] green-acceptance — no acceptance test (trimmed cycle); `/refresh` is live and its rejection
+  path answers `401 {"error_code": "INVALID_REFRESH_TOKEN"}`
 
 ### Scenario 6.5: Access token is valid up to, not past, its exact expiry instant
 **Not covered by the login test batch, deliberately — do not read 6.1–6.4's ticks as covering it.**

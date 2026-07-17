@@ -6,9 +6,12 @@ from uuid import UUID
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.auth.verification_code_storage import SqlAlchemyVerificationCodeRepository
 from access.generation.generation_storage import SqlAlchemyGenerationStorage
+from auth.login_user import LoginUser
+from auth.refresh_access_token import RefreshAccessToken
 from auth.register_user import RegisterUser
 from auth.verify_account import VerifyAccount
 from hashing.bcrypt_password_hasher import BcryptPasswordHasher
+from tokens.jwt_token_service import JwtTokenService
 from generation.generate_document import GenerateDocument
 from generation.get_generation import GetGeneration
 from generation.request_generation import RequestGeneration
@@ -21,6 +24,7 @@ from shared.clock import SystemClock
 GENERATION_PROVIDER_ENV_VAR = "GENERATION_PROVIDER"
 STALE_AFTER_MINUTES_ENV_VAR = "GENERATION_STALE_AFTER_MINUTES"
 DEFAULT_STALE_AFTER_MINUTES = 10
+JWT_SECRET_ENV_VAR = "JWT_SECRET"
 
 _engine = create_engine()
 _session_factory = create_session_factory(_engine)
@@ -94,6 +98,42 @@ async def create_register_user() -> AsyncIterator[RegisterUser]:
             account_repository=repository,
             verification_code_repository=verification_code_repository,
             unit_of_work=unit_of_work,
+        )
+    finally:
+        await session.close()
+
+
+def _create_token_service() -> JwtTokenService:
+    # Built once at import, not per request: JwtTokenService refuses an empty
+    # secret, so a misconfigured deployment fails at boot with a named error
+    # instead of answering 500 on every /login while looking healthy. Same
+    # module-level contract `_engine` already follows for DATABASE_URL.
+    return JwtTokenService(secret=os.environ.get(JWT_SECRET_ENV_VAR, ""))
+
+
+_token_service = _create_token_service()
+
+
+async def create_login_user() -> AsyncIterator[LoginUser]:
+    session = _session_factory()
+    try:
+        repository = SqlAlchemyAccountRepository(session)
+        yield LoginUser(
+            account_repository=repository,
+            password_hasher=BcryptPasswordHasher(),
+            token_service=_token_service,
+        )
+    finally:
+        await session.close()
+
+
+async def create_refresh_access_token() -> AsyncIterator[RefreshAccessToken]:
+    session = _session_factory()
+    try:
+        repository = SqlAlchemyAccountRepository(session)
+        yield RefreshAccessToken(
+            account_repository=repository,
+            token_service=_token_service,
         )
     finally:
         await session.close()
