@@ -9,7 +9,10 @@ describe('RegisterForm', () => {
 
     expect(screen.getByTestId('register-email-input')).toHaveAttribute('type', 'email')
     expect(screen.getByTestId('register-password-input')).toHaveAttribute('type', 'password')
-    expect(screen.getByTestId('register-confirm-password-input')).toHaveAttribute('type', 'password')
+    expect(screen.getByTestId('register-confirm-password-input')).toHaveAttribute(
+      'type',
+      'password',
+    )
     expect(screen.getByRole('button', { name: 'Зарегистрироваться' })).toBeInTheDocument()
   })
 
@@ -35,7 +38,9 @@ describe('RegisterForm', () => {
     expect(indicator).toHaveAttribute('role', 'status')
     expect(indicator).toHaveAttribute('aria-live', 'polite')
 
-    await waitFor(() => expect(screen.queryByTestId('register-loading-indicator')).not.toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.queryByTestId('register-loading-indicator')).not.toBeInTheDocument(),
+    )
   })
 
   it('shows an inline validation message when the password does not meet the policy on blur', () => {
@@ -47,7 +52,7 @@ describe('RegisterForm', () => {
     fireEvent.blur(passwordInput)
 
     expect(screen.getByTestId('register-password-error')).toHaveTextContent(
-      'Минимум 8 символов, включая цифру, заглавную, строчную буквы и спецсимвол'
+      'Минимум 8 символов, включая цифру, заглавную, строчную буквы и спецсимвол',
     )
   })
 
@@ -108,7 +113,9 @@ describe('RegisterForm', () => {
 
     expect(screen.queryByTestId('register-password-error')).not.toBeInTheDocument()
     expect(
-      screen.getAllByText('Минимум 8 символов, включая цифру, заглавную, строчную буквы и спецсимвол')
+      screen.getAllByText(
+        'Минимум 8 символов, включая цифру, заглавную, строчную буквы и спецсимвол',
+      ),
     ).toHaveLength(1)
   })
 })

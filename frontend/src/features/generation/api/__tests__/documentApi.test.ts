@@ -50,7 +50,7 @@ describe('documentApi', () => {
   //
   // The key-set assertion stays anyway, on a narrower claim: a request should say what it means,
   // and a field the server discards is a claim about ownership that is not the client's to make.
-  it('createDocument sends document_type as the request body\'s only field', async () => {
+  it("createDocument sends document_type as the request body's only field", async () => {
     const fetchMock = stubCreateFetch()
 
     await createDocument('doklad', 'key-1')
@@ -84,7 +84,7 @@ describe('documentApi', () => {
   // header's presence and the spec's shape constraint (required, minLength 1, maxLength 128).
   // Deliberately NOT a UUID-shape assertion: the spec says "client-generated key", not "UUID",
   // and the old uuid regex here pinned the very per-call randomUUID() that caused the defect.
-  it('createDocument sends the caller\'s Idempotency-Key and the session token', async () => {
+  it("createDocument sends the caller's Idempotency-Key and the session token", async () => {
     const fetchMock = stubCreateFetch()
 
     await createDocument('doklad', 'key-abc')
@@ -140,11 +140,11 @@ describe('documentApi', () => {
         ok: false,
         status: 500,
         json: async () => ({ message: 'Внутренняя ошибка сервера' }),
-      })
+      }),
     )
 
     await expect(saveDocument('doc-1', '<p>Hello</p>', 1)).rejects.toThrow(
-      'Внутренняя ошибка сервера'
+      'Внутренняя ошибка сервера',
     )
   })
 
@@ -184,7 +184,7 @@ describe('documentApi', () => {
         ok: false,
         status: 404,
         json: async () => ({ detail: 'Документ не найден' }),
-      })
+      }),
     )
 
     await expect(getDocument('doc-1')).rejects.toThrow('Документ не найден')

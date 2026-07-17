@@ -1,7 +1,12 @@
 import type { Editor } from '@tiptap/react'
 import type { ToolbarAction, ToolbarActionKey, ToolbarRunAction } from './toolbarAction'
 
-export type { ToolbarAction, ToolbarActionKey, ToolbarRunAction, ToolbarUiAction } from './toolbarAction'
+export type {
+  ToolbarAction,
+  ToolbarActionKey,
+  ToolbarRunAction,
+  ToolbarUiAction,
+} from './toolbarAction'
 
 export const TOOLBAR_DIVIDER_BEFORE: Set<ToolbarActionKey> = new Set(['bulletList', 'bold'])
 

@@ -7,7 +7,11 @@ import { selectRange } from './ManualEditor.testSupport'
 vi.mock('../../api/documentApi')
 
 function renderReopenedEditor(content: string) {
-  vi.mocked(documentApi.createDocument).mockResolvedValue({ documentId: 'doc-1', status: 'draft', version: 7 })
+  vi.mocked(documentApi.createDocument).mockResolvedValue({
+    documentId: 'doc-1',
+    status: 'draft',
+    version: 7,
+  })
   vi.mocked(documentApi.getDocument).mockResolvedValue({
     documentId: 'doc-99',
     status: 'draft',
@@ -21,7 +25,7 @@ function renderReopenedEditor(content: string) {
       documentTypeLabel="Доклад"
       onBack={vi.fn()}
       existingDocumentId="doc-99"
-    />
+    />,
   )
 }
 
@@ -43,7 +47,7 @@ describe('ManualEditor alignCenter parseHTML', () => {
     const contentArea = await screen.findByTestId('editor-content-area')
     await waitFor(() => {
       expect(contentArea.innerHTML).toBe(
-        'before<div style="text-align: center">hello world</div>after'
+        'before<div style="text-align: center">hello world</div>after',
       )
     })
 

@@ -42,9 +42,7 @@ export function DocumentGenerationFlow() {
   // Below the isAuthenticated gate on purpose: history is owner-scoped by construction (both
   // endpoints 401 without a token), so it never renders for a signed-out visitor.
   if (step === 'history') {
-    return (
-      <HistoryPage onOpenDocument={flow.openDocumentFromHistory} onBack={flow.backToLanding} />
-    )
+    return <HistoryPage onOpenDocument={flow.openDocumentFromHistory} onBack={flow.backToLanding} />
   }
 
   if (step === 'form' && documentType && mode) {

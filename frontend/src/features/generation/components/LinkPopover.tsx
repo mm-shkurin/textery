@@ -88,7 +88,12 @@ export function LinkPopover({ editor, onClose }: LinkPopoverProps) {
         <button type="button" className="me-link-apply" data-testid="link-apply" onClick={apply}>
           Применить
         </button>
-        <button type="button" className="me-link-cancel" data-testid="link-cancel" onClick={onClose}>
+        <button
+          type="button"
+          className="me-link-cancel"
+          data-testid="link-cancel"
+          onClick={onClose}
+        >
           Отмена
         </button>
       </div>

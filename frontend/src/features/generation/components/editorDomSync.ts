@@ -5,7 +5,9 @@ import type { EditorView } from '@tiptap/pm/view'
 // reconciler. It isn't part of the public prosemirror-view type
 // definitions, but it's a real runtime property we need to force-flush
 // synchronously (see `flushDomObserverOnInput` below).
-function asEditorViewWithDomObserver(view: EditorView): EditorView & { domObserver: { flush: () => void } } {
+function asEditorViewWithDomObserver(
+  view: EditorView,
+): EditorView & { domObserver: { flush: () => void } } {
   return view as EditorView & { domObserver: { flush: () => void } }
 }
 

@@ -7,7 +7,11 @@ vi.mock('../../api/documentApi')
 
 describe('ManualEditor heading 3 parseHTML', () => {
   it('loading a saved document containing an existing <h3> restores it as the heading3 mark, not a Heading node', async () => {
-    vi.mocked(documentApi.createDocument).mockResolvedValue({ documentId: 'doc-1', status: 'draft', version: 7 })
+    vi.mocked(documentApi.createDocument).mockResolvedValue({
+      documentId: 'doc-1',
+      status: 'draft',
+      version: 7,
+    })
     vi.mocked(documentApi.getDocument).mockResolvedValue({
       documentId: 'doc-99',
       status: 'draft',
@@ -21,7 +25,7 @@ describe('ManualEditor heading 3 parseHTML', () => {
         documentTypeLabel="Доклад"
         onBack={vi.fn()}
         existingDocumentId="doc-99"
-      />
+      />,
     )
 
     await waitFor(() => {

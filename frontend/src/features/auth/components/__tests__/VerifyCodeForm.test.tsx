@@ -51,7 +51,9 @@ describe('VerifyCodeForm', () => {
     const expectOtherBoxesEmpty = (exceptIndex: number) => {
       for (let index = 0; index < 6; index += 1) {
         if (index === exceptIndex) continue
-        expect((screen.getByTestId(`verify-code-input-${index}`) as HTMLInputElement).value).toBe('')
+        expect((screen.getByTestId(`verify-code-input-${index}`) as HTMLInputElement).value).toBe(
+          '',
+        )
       }
     }
 

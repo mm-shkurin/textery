@@ -6,7 +6,12 @@ describe('ModeModal', () => {
   it('selecting the available auto mode calls onSelect', () => {
     const onSelect = vi.fn()
     render(
-      <ModeModal documentTypeLabel="Доклад" onSelect={onSelect} onBack={vi.fn()} onClose={vi.fn()} />,
+      <ModeModal
+        documentTypeLabel="Доклад"
+        onSelect={onSelect}
+        onBack={vi.fn()}
+        onClose={vi.fn()}
+      />,
     )
 
     fireEvent.click(screen.getByTestId('mode-card-auto'))
@@ -21,7 +26,12 @@ describe('ModeModal', () => {
   it('selecting the available manual mode calls onSelect', () => {
     const onSelect = vi.fn()
     render(
-      <ModeModal documentTypeLabel="Доклад" onSelect={onSelect} onBack={vi.fn()} onClose={vi.fn()} />,
+      <ModeModal
+        documentTypeLabel="Доклад"
+        onSelect={onSelect}
+        onBack={vi.fn()}
+        onClose={vi.fn()}
+      />,
     )
 
     const manualCard = screen.getByTestId('mode-card-manual')

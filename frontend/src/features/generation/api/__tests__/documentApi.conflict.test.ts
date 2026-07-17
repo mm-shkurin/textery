@@ -87,7 +87,7 @@ describe('documentApi save version conflict', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(saveDocument('doc-1', '<p>ours</p>', 1)).rejects.toThrow(
-      'Документ был изменён другим сохранением.'
+      'Документ был изменён другим сохранением.',
     )
     expect(fetchMock).toHaveBeenCalledTimes(3)
   })

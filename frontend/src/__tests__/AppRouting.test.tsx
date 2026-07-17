@@ -18,7 +18,10 @@ describe('App routing', () => {
 
     expect(screen.getByTestId('register-email-input')).toHaveAttribute('type', 'email')
     expect(screen.getByTestId('register-password-input')).toHaveAttribute('type', 'password')
-    expect(screen.getByTestId('register-confirm-password-input')).toHaveAttribute('type', 'password')
+    expect(screen.getByTestId('register-confirm-password-input')).toHaveAttribute(
+      'type',
+      'password',
+    )
   })
 
   // RED: App.tsx has no /login route yet, only /* catch-all rendering

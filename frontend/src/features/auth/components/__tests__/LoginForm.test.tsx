@@ -129,7 +129,9 @@ describe('LoginForm', () => {
     expect(indicator).toHaveAttribute('aria-live', 'polite')
 
     finishLogin()
-    await waitFor(() => expect(screen.queryByTestId('login-loading-indicator')).not.toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.queryByTestId('login-loading-indicator')).not.toBeInTheDocument(),
+    )
   })
 
   // A second submit reaching the server would double-count failed attempts and trip

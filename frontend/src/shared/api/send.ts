@@ -43,11 +43,7 @@ export function describeFailure(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback
 }
 
-export async function send<T>(
-  path: string,
-  options: RequestOptions,
-  fallback: string,
-): Promise<T> {
+export async function send<T>(path: string, options: RequestOptions, fallback: string): Promise<T> {
   try {
     return await authorizedRequest<T>(path, options)
   } catch (error) {

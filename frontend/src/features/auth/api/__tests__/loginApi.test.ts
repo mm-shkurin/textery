@@ -101,19 +101,16 @@ describe('loginApi', () => {
   it.each([
     ['message absent', { error_code: 'INVALID_CREDENTIALS' }],
     ['message empty', { error_code: 'INVALID_CREDENTIALS', message: '' }],
-  ])(
-    'falls back to the generic login-failure message when %s',
-    async (_case, body) => {
-      stubFetchErrorBody(401, body)
+  ])('falls back to the generic login-failure message when %s', async (_case, body) => {
+    stubFetchErrorBody(401, body)
 
-      const rejection = await rejectionOf(login(EMAIL, PASSWORD))
+    const rejection = await rejectionOf(login(EMAIL, PASSWORD))
 
-      expect(rejection).toStrictEqual({
-        errorCode: 'INVALID_CREDENTIALS',
-        message: GENERIC_LOGIN_FAILURE_MESSAGE,
-      })
-    },
-  )
+    expect(rejection).toStrictEqual({
+      errorCode: 'INVALID_CREDENTIALS',
+      message: GENERIC_LOGIN_FAILURE_MESSAGE,
+    })
+  })
 
   // (iv) THE RED THIS STEP ESTABLISHED — now FIXED. A regression pin, NOT a description of
   // shipped code: `9b556d9` deleted the bug and renumbered (line 48 today is `errorCode,`).

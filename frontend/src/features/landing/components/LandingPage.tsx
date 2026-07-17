@@ -68,7 +68,9 @@ export function LandingPage({
 
       <section className="features">
         <h2>Редактор нового поколения</h2>
-        <p className="features-subtitle">Доклады только по вашим правилам: они будут выглядеть, как нужно</p>
+        <p className="features-subtitle">
+          Доклады только по вашим правилам: они будут выглядеть, как нужно
+        </p>
 
         <div className="features-panel">
           <div className="feature-cards">

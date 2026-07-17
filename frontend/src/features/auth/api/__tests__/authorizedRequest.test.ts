@@ -128,9 +128,7 @@ describe('authorizedRequest', () => {
       return okOnce({ ok: true })
     })
     // Both original calls 401 before either refresh completes.
-    fetchMock
-      .mockResolvedValueOnce(unauthorized())
-      .mockResolvedValueOnce(unauthorized())
+    fetchMock.mockResolvedValueOnce(unauthorized()).mockResolvedValueOnce(unauthorized())
     vi.stubGlobal('fetch', fetchMock)
 
     await Promise.all([
@@ -147,11 +145,14 @@ describe('authorizedRequest', () => {
   it('clears the session and reports expiry when the refresh token is rejected', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValueOnce(unauthorized()).mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        json: async () => ({ error_code: 'INVALID_REFRESH_TOKEN', message: 'expired' }),
-      }),
+      vi
+        .fn()
+        .mockResolvedValueOnce(unauthorized())
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 401,
+          json: async () => ({ error_code: 'INVALID_REFRESH_TOKEN', message: 'expired' }),
+        }),
     )
 
     await expect(authorizedRequest('/api/v1/generations/gen-1')).rejects.toBeInstanceOf(

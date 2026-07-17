@@ -33,6 +33,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # Formatting is checked, not merely configured: a .prettierrc nobody runs is a preference,
+      # not a convention. This step is what makes it one.
+      - name: Format check
+        run: npm run format:check
+
       - name: Typecheck
         run: npm run typecheck
 

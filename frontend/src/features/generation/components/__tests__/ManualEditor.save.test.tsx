@@ -122,7 +122,10 @@ describe('ManualEditor save flow', () => {
     expect(screen.queryByTestId('save-spinner')).not.toBeInTheDocument()
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
     expect(consoleErrorSpy).toHaveBeenCalledTimes(1)
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save document', new Error('network error'))
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Failed to save document',
+      new Error('network error'),
+    )
 
     fireEvent.click(saveButton)
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
@@ -130,5 +133,4 @@ describe('ManualEditor save flow', () => {
 
     consoleErrorSpy.mockRestore()
   })
-
 })

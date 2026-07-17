@@ -39,8 +39,13 @@ import './LoginForm.css'
 const UNVERIFIED_MESSAGE = 'Аккаунт не подтверждён. Введите код подтверждения из письма.'
 
 function hasErrorCode(error: unknown, code: string): boolean {
-  return Boolean(error) && typeof error === 'object' && error !== null &&
-    'errorCode' in error && error.errorCode === code
+  return (
+    Boolean(error) &&
+    typeof error === 'object' &&
+    error !== null &&
+    'errorCode' in error &&
+    error.errorCode === code
+  )
 }
 
 function applyLoginError(error: unknown): string {
@@ -49,8 +54,10 @@ function applyLoginError(error: unknown): string {
   }
   if (
     hasErrorCode(error, 'INVALID_CREDENTIALS') &&
-    error && typeof error === 'object' &&
-    'message' in error && isUsableMessage(error.message)
+    error &&
+    typeof error === 'object' &&
+    'message' in error &&
+    isUsableMessage(error.message)
   ) {
     return error.message
   }
@@ -167,7 +174,10 @@ export function LoginForm() {
         {isSubmitting && <AuthLoadingIndicator testId="login-loading-indicator" />}
       </form>
       <p className="auth-footer-link">
-        Нет аккаунта? <Link to="/register" data-testid="login-register-link">Зарегистрироваться</Link>
+        Нет аккаунта?{' '}
+        <Link to="/register" data-testid="login-register-link">
+          Зарегистрироваться
+        </Link>
       </p>
     </div>
   )

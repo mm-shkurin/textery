@@ -71,6 +71,9 @@ describe('HistoryPage tabs — the ARIA pattern the tablist promises', () => {
     fireEvent.click(screen.getByTestId('history-tab-generations'))
 
     const panel = screen.getByRole('tabpanel')
-    expect(panel).toHaveAttribute('aria-labelledby', screen.getByTestId('history-tab-generations').id)
+    expect(panel).toHaveAttribute(
+      'aria-labelledby',
+      screen.getByTestId('history-tab-generations').id,
+    )
   })
 })

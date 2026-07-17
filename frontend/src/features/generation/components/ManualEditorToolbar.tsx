@@ -42,7 +42,9 @@ export function ManualEditorToolbar({
     <div className="me-toolbar">
       {TOOLBAR_ACTIONS.map((action) => (
         <Fragment key={action.key}>
-          {TOOLBAR_DIVIDER_BEFORE.has(action.key) && <div className="me-toolbar-divider" aria-hidden="true" />}
+          {TOOLBAR_DIVIDER_BEFORE.has(action.key) && (
+            <div className="me-toolbar-divider" aria-hidden="true" />
+          )}
           <span className={action.ui ? 'me-link-popover-anchor' : undefined}>
             <button
               type="button"
@@ -52,7 +54,7 @@ export function ManualEditorToolbar({
               onClick={() => handleClick(action)}
               aria-pressed={editor ? action.isActive(editor) : false}
               aria-expanded={action.ui ? openUiKey === action.key : undefined}
-              disabled={editor ? action.disabled?.(editor) ?? false : true}
+              disabled={editor ? (action.disabled?.(editor) ?? false) : true}
             >
               {action.label}
             </button>
@@ -78,7 +80,9 @@ export function ManualEditorToolbar({
           queues the "save again" intent.
         */}
         <button type="button" className="me-save-btn" aria-disabled={isSaving} onClick={onSave}>
-          {isSaving && <span data-testid="save-spinner" className="me-save-spinner" aria-hidden="true" />}
+          {isSaving && (
+            <span data-testid="save-spinner" className="me-save-spinner" aria-hidden="true" />
+          )}
           Сохранить
         </button>
       </div>

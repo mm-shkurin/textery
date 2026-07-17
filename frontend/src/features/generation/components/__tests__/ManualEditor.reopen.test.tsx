@@ -11,7 +11,11 @@ describe('ManualEditor reopen flow', () => {
     // which ignores existingDocumentId) resolves instead of crashing the
     // effect with "Cannot read properties of undefined (reading 'then')" —
     // that would mask the actual assertion under test.
-    vi.mocked(documentApi.createDocument).mockResolvedValue({ documentId: 'doc-1', status: 'draft', version: 7 })
+    vi.mocked(documentApi.createDocument).mockResolvedValue({
+      documentId: 'doc-1',
+      status: 'draft',
+      version: 7,
+    })
     vi.mocked(documentApi.getDocument).mockResolvedValue({
       documentId: 'doc-99',
       status: 'draft',
@@ -25,7 +29,7 @@ describe('ManualEditor reopen flow', () => {
         documentTypeLabel="Доклад"
         onBack={vi.fn()}
         existingDocumentId="doc-99"
-      />
+      />,
     )
 
     await waitFor(() => {
@@ -38,12 +42,20 @@ describe('ManualEditor reopen flow', () => {
       expect(contentArea.innerHTML).toBe('<strong>Saved</strong> content')
     })
 
-    vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 4, content: '<strong>Saved</strong> content' })
+    vi.mocked(documentApi.saveDocument).mockResolvedValue({
+      status: 'saved',
+      version: 4,
+      content: '<strong>Saved</strong> content',
+    })
     const saveButton = screen.getByRole('button', { name: 'Сохранить' })
     saveButton.click()
 
     await waitFor(() => {
-      expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-99', '<strong>Saved</strong> content', 3)
+      expect(documentApi.saveDocument).toHaveBeenCalledWith(
+        'doc-99',
+        '<strong>Saved</strong> content',
+        3,
+      )
     })
   })
 })

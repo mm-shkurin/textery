@@ -6,8 +6,18 @@ import './ModeModal.css'
 export type GenerationMode = 'auto' | 'manual'
 
 const MODES: Array<{ id: GenerationMode; name: string; desc: string; available: boolean }> = [
-  { id: 'manual', name: 'Ручной режим', desc: 'Создайте документ самостоятельно, без ИИ', available: true },
-  { id: 'auto', name: 'Автоматический режим', desc: 'ИИ сгенерирует текст по вашей теме и требованиям', available: true },
+  {
+    id: 'manual',
+    name: 'Ручной режим',
+    desc: 'Создайте документ самостоятельно, без ИИ',
+    available: true,
+  },
+  {
+    id: 'auto',
+    name: 'Автоматический режим',
+    desc: 'ИИ сгенерирует текст по вашей теме и требованиям',
+    available: true,
+  },
 ]
 
 interface ModeModalProps {
@@ -21,7 +31,12 @@ export function ModeModal({ documentTypeLabel, onSelect, onBack, onClose }: Mode
   return (
     <div className="modal-backdrop">
       <div className="modal modal-narrow" data-testid="mode-modal">
-        <button type="button" className="back-row" onClick={onBack} aria-label={`Назад к типу документа: ${documentTypeLabel}`}>
+        <button
+          type="button"
+          className="back-row"
+          onClick={onBack}
+          aria-label={`Назад к типу документа: ${documentTypeLabel}`}
+        >
           <span aria-hidden="true">←</span>
           Тип документа: {documentTypeLabel}
         </button>

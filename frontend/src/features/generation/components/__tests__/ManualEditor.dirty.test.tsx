@@ -25,7 +25,11 @@ describe('ManualEditor dirty flag', () => {
     contentArea.textContent = 'hello world'
     fireEvent.input(contentArea)
 
-    vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 2, content: 'hello world' })
+    vi.mocked(documentApi.saveDocument).mockResolvedValue({
+      status: 'saved',
+      version: 2,
+      content: 'hello world',
+    })
 
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 

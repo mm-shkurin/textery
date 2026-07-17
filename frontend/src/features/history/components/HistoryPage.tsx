@@ -26,12 +26,7 @@ export function HistoryPage({ onOpenDocument, onBack }: HistoryPageProps) {
   return (
     <div className="history-page" data-testid="history-page">
       <div className="history-head">
-        <button
-          type="button"
-          className="history-back"
-          data-testid="history-back"
-          onClick={onBack}
-        >
+        <button type="button" className="history-back" data-testid="history-back" onClick={onBack}>
           ← Назад
         </button>
         <h1 className="history-title">Мои работы</h1>

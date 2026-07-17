@@ -101,7 +101,10 @@ describe('RegisterForm duplicate-email error', () => {
     fireEvent.click(submitButton)
     await screen.findByTestId('register-email-error')
 
-    vi.mocked(api.register).mockResolvedValueOnce({ ...REGISTER_SUCCESS, email: 'other@example.com' })
+    vi.mocked(api.register).mockResolvedValueOnce({
+      ...REGISTER_SUCCESS,
+      email: 'other@example.com',
+    })
     fireEvent.change(emailInput, { target: { value: 'other@example.com' } })
     await waitFor(() => expect(submitButton).not.toBeDisabled())
     fireEvent.click(submitButton)

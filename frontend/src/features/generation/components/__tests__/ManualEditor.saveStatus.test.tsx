@@ -18,7 +18,11 @@ describe('ManualEditor save status', () => {
     contentArea.textContent = 'hello world'
     fireEvent.input(contentArea)
 
-    vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 2, content: 'hello world' })
+    vi.mocked(documentApi.saveDocument).mockResolvedValue({
+      status: 'saved',
+      version: 2,
+      content: 'hello world',
+    })
 
     const saveButton = screen.getByRole('button', { name: 'Сохранить' })
     fireEvent.click(saveButton)
@@ -42,7 +46,11 @@ describe('ManualEditor save status', () => {
     contentArea.textContent = 'hello world'
     fireEvent.input(contentArea)
 
-    vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 2, content: 'hello world' })
+    vi.mocked(documentApi.saveDocument).mockResolvedValue({
+      status: 'saved',
+      version: 2,
+      content: 'hello world',
+    })
 
     const saveButton = screen.getByRole('button', { name: 'Сохранить' })
     fireEvent.click(saveButton)
@@ -111,7 +119,11 @@ describe('ManualEditor save status', () => {
       expect(screen.getByText(SAVE_ERROR_MESSAGE)).toBeInTheDocument()
     })
 
-    vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 2, content: 'hello world' })
+    vi.mocked(documentApi.saveDocument).mockResolvedValue({
+      status: 'saved',
+      version: 2,
+      content: 'hello world',
+    })
     fireEvent.click(saveButton)
 
     await waitFor(() => {

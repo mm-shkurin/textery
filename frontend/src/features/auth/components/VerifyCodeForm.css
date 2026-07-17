@@ -43,7 +43,7 @@
   cursor: pointer;
 }
 
-.verify-resend [data-testid="verify-resend-countdown"] {
+.verify-resend [data-testid='verify-resend-countdown'] {
   color: #f5f5f7;
   font-weight: 500;
 }

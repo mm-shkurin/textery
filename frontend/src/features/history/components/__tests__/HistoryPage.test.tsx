@@ -77,7 +77,9 @@ describe('HistoryPage', () => {
   // have no documents" when the truth is "we could not ask" invites them to recreate work that
   // already exists.
   it('shows an error, not an empty state, when the list fails to load', async () => {
-    vi.mocked(historyApi.listDocuments).mockRejectedValue(new Error('Не удалось загрузить документы'))
+    vi.mocked(historyApi.listDocuments).mockRejectedValue(
+      new Error('Не удалось загрузить документы'),
+    )
 
     renderPage()
 
