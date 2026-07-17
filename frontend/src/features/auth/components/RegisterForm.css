@@ -1,0 +1,24 @@
+.register-card h1 {
+  margin-bottom: 8px;
+}
+
+.register-subtitle {
+  margin-bottom: 32px;
+}
+
+.register-hint {
+  font-size: 12px;
+  color: #6b6c74;
+  margin-top: 6px;
+}
+
+.register-hint-error {
+  color: #ef4444;
+}
+
+.register-terms {
+  font-size: 12px;
+  color: #6b6c74;
+  margin-top: 20px;
+  line-height: 1.5;
+}

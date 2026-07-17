@@ -11,8 +11,13 @@ from selenium.webdriver.chrome.options import Options as ChromeOptions
 from clients.application.application_client import ApplicationClient
 from statements.auth_statements import AuthStatements
 from statements.verify_statements import VerifyStatements
+from statements.frontend.auth.login_page_statements import LoginPageStatements
+from statements.frontend.auth.register_page_statements import RegisterPageStatements
+from statements.frontend.auth.verify_code_page_statements import VerifyCodePageStatements
 from statements.frontend.landing_page_statements import LandingPageStatements
 from statements.frontend.generation.chat_workspace_statements import ChatWorkspaceStatements
+from statements.frontend.generation.manual_editor_statements import ManualEditorStatements
+from statements.frontend.generation.mode_modal_statements import ModeModalStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
 from statements.generation_statements import GenerationStatements
 
@@ -53,6 +58,10 @@ def webdriver():
     options = ChromeOptions()
     options.add_argument("--headless=new")
     options.add_argument("--window-size=1400,1000")
+    # Enables driver.get_log("performance") so Statements can assert on
+    # actual network traffic (e.g. duplicate-submission checks) instead of
+    # only on DOM state.
+    options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
     driver = selenium_webdriver.Chrome(options=options)
     yield driver
     driver.quit()
@@ -74,6 +83,21 @@ def landing_page_statements():
 
 
 @pytest.fixture
+def register_page_statements():
+    return RegisterPageStatements()
+
+
+@pytest.fixture
+def login_page_statements():
+    return LoginPageStatements()
+
+
+@pytest.fixture
+def verify_code_page_statements():
+    return VerifyCodePageStatements()
+
+
+@pytest.fixture
 def responsive_statements():
     return ResponsiveStatements()
 
@@ -81,3 +105,13 @@ def responsive_statements():
 @pytest.fixture
 def chat_workspace_statements():
     return ChatWorkspaceStatements()
+
+
+@pytest.fixture
+def mode_modal_statements():
+    return ModeModalStatements()
+
+
+@pytest.fixture
+def manual_editor_statements():
+    return ManualEditorStatements()

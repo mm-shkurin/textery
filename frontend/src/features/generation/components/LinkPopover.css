@@ -1,0 +1,96 @@
+.me-link-popover-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.me-link-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 20;
+  width: 260px;
+  padding: 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-surface-raised);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.me-link-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.me-link-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.me-link-apply,
+.me-link-cancel {
+  border: none;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.me-link-apply {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+}
+
+.me-link-cancel {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.me-link-error {
+  font-size: 12px;
+  color: var(--error);
+}
+
+/* The popover is a fixed 260px anchored to the link button's left edge. On a 375px screen the
+   button can sit far enough right that 260px runs off the viewport — and the popover cannot be
+   scrolled to, because `.me-editor-shell` clips it (`overflow: hidden`, ManualEditor.css).
+   Clamping the width to the viewport keeps the URL field and both actions reachable.
+   `min()` rather than a media query alone: the constraint is the viewport's width, not a device
+   class, so it should hold at every size. */
+.me-link-popover {
+  width: min(260px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+}
+
+@media (max-width: 768px) {
+  /* Anchored right on narrow screens: the link button lives in a toolbar that now wraps, so it
+     is as likely to be near the right edge as the left, and `left: 0` would open the popover
+     off-screen from there. */
+  .me-link-popover {
+    left: auto;
+    right: 0;
+  }
+
+  /* 44px touch targets — the desktop buttons are sized for a cursor. Apply/Отмена sit next to
+     each other, and mis-tapping Отмена discards a typed URL. */
+  .me-link-apply,
+  .me-link-cancel {
+    min-height: 44px;
+  }
+
+  /* 16px stops iOS Safari zooming the whole page on focus — below 16px it treats the field as
+     too small to read and rescales, which then leaves the popover half off-screen. */
+  .me-link-input {
+    font-size: 16px;
+  }
+}

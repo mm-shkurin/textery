@@ -6,7 +6,12 @@ describe('ModeModal', () => {
   it('selecting the available auto mode calls onSelect', () => {
     const onSelect = vi.fn()
     render(
-      <ModeModal documentTypeLabel="Доклад" onSelect={onSelect} onBack={vi.fn()} onClose={vi.fn()} />,
+      <ModeModal
+        documentTypeLabel="Доклад"
+        onSelect={onSelect}
+        onBack={vi.fn()}
+        onClose={vi.fn()}
+      />,
     )
 
     fireEvent.click(screen.getByTestId('mode-card-auto'))
@@ -14,18 +19,27 @@ describe('ModeModal', () => {
     expect(onSelect).toHaveBeenCalledWith('auto')
   })
 
-  it('disabled manual mode does not call onSelect', () => {
+  // Removed: 'disabled manual mode does not call onSelect' asserted manual mode
+  // was disabled — that contradicts Story 5 Scenario 1.1, which makes manual
+  // mode available for every document type.
+
+  it('selecting the available manual mode calls onSelect', () => {
     const onSelect = vi.fn()
     render(
-      <ModeModal documentTypeLabel="Доклад" onSelect={onSelect} onBack={vi.fn()} onClose={vi.fn()} />,
+      <ModeModal
+        documentTypeLabel="Доклад"
+        onSelect={onSelect}
+        onBack={vi.fn()}
+        onClose={vi.fn()}
+      />,
     )
 
     const manualCard = screen.getByTestId('mode-card-manual')
-    expect(manualCard).toBeDisabled()
+    expect(manualCard).not.toBeDisabled()
 
     fireEvent.click(manualCard)
 
-    expect(onSelect).not.toHaveBeenCalled()
+    expect(onSelect).toHaveBeenCalledWith('manual')
   })
 
   it('onBack fires when back button is clicked', () => {

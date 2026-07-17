@@ -12,7 +12,12 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8000',
+        // A fallback, not the truth: the published backend port is per-checkout, lives in
+        // infra/.env's BACKEND_PORT, and reaches here via VITE_API_PROXY_TARGET. Set that.
+        // The one constraint on the fallback is that it must not be 8000 — another service
+        // occupies that port on this host, so forgetting the env var would not fail loudly, it
+        // would silently proxy to someone else's app.
+        target: process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8100',
         changeOrigin: true,
       },
     },

@@ -53,6 +53,18 @@
     display: none;
   }
 
+  /* The rule above drops secondary marketing links on a narrow screen, which is fine for a
+     link and wrong for these two. Signing out is the only way to end a session, and a phone
+     is exactly where a borrowed device gets left signed in. Signing in is how every returning
+     user gets back to their work — hiding it on mobile leaves them with "start over" as the
+     only visible action. Shrink both, hide neither. */
+  .header-logout,
+  .header-login {
+    display: inline-block;
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+
   .btn-light {
     padding: 10px 14px;
     font-size: 13px;

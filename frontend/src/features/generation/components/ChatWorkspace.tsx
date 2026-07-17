@@ -5,6 +5,7 @@ import type { GenerationUiState } from '../hooks/useGeneration'
 import { Composer, MAX_TOPIC_LENGTH } from './Composer'
 import { Progress } from './Progress'
 import { DocArea } from './DocArea'
+import { AppHeader } from '../../../shared/components/AppHeader'
 
 interface ChatWorkspaceProps {
   documentTypeLabel: string
@@ -15,6 +16,10 @@ interface ChatWorkspaceProps {
   error: string | null
   onSubmit: (topic: string) => void
   onReset: () => void
+  // The workspace is where a signed-in user actually spends their time, and it replaces the
+  // landing entirely — so without a sign-out here, the only way out of a session on a shared
+  // machine is closing the tab.
+  onLogoutClick?: () => void
 }
 
 const BADGE: Record<GenerationUiState, string> = {
@@ -27,6 +32,7 @@ const BADGE: Record<GenerationUiState, string> = {
 export function ChatWorkspace(props: ChatWorkspaceProps) {
   const { documentTypeLabel, state, content, volumePages, createdAt, error, onSubmit, onReset } =
     props
+  const { onLogoutClick } = props
   const [topic, setTopic] = useState('')
 
   const send = () => {
@@ -36,9 +42,7 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
 
   return (
     <div className="chat-page">
-      <header className="cw-header">
-        <img className="cw-logo" src="/logo.svg" alt="Textery" />
-      </header>
+      <AppHeader onLogoutClick={onLogoutClick} />
       <div className="cw-container">
         <div className={`cw-badge cw-badge-${state}`}>
           <span className="cw-dot" />

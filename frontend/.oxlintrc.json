@@ -6,7 +6,11 @@
     "react/exhaustive-deps": "warn",
     "react/only-export-components": ["warn", { "allowConstantExport": true }],
     "no-unused-vars": "error",
-    "no-console": "warn",
+    // console.log/debug/info are debugging leftovers and stay banned. error/warn are not: this
+    // app has no reporting sink, so they are the only diagnostics a failed save or a dropped
+    // request leaves behind, and a blanket ban would delete the trace rather than route it
+    // somewhere better. Revisit if a real sink is ever wired up.
+    "no-console": ["error", { "allow": ["error", "warn"] }],
     "jsx-a11y/alt-text": "error",
     "jsx-a11y/anchor-is-valid": "error"
   }

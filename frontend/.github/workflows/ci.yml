@@ -1,3 +1,18 @@
+# The STANDALONE copy (added deliberately in 3c6442e, "ci: add standalone workflow copies inside
+# frontend/ and backend/"). It looks dead in this monorepo — GitHub reads workflows only from the
+# repo root, so nothing here ever fires, and the job that runs on GitHub is the root
+# .github/workflows/frontend-ci.yml.
+#
+# It is not dead. `frontend/` is split to the ROOT of a separate frontend-only repo
+# (gitverse.ru/studentlabs/slide_frontend), where this file lands at .github/workflows/ci.yml and
+# is that repo's only CI. Hence the differences from the root workflow, which are correct rather
+# than drift: no `paths:` filter and no `working-directory` (everything there IS the frontend),
+# `cache-dependency-path: package-lock.json` (root, not frontend/), and branches [main, dev] —
+# gitverse's own branches, which is where its pushes land.
+#
+# I deleted this file in 81f3999 believing it was a decoy, and restored it here. Deleting it
+# removes CI from the gitverse repo entirely. Keep the two in step by hand: they are two
+# pipelines for two repository shapes, not one file duplicated.
 name: frontend-ci
 
 on:
@@ -22,6 +37,10 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      # Mirrors the root workflow: a .prettierrc nobody runs is a preference, not a convention.
+      - name: Format check
+        run: npm run format:check
 
       - name: Typecheck
         run: npm run typecheck

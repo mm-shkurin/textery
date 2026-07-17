@@ -1,0 +1,54 @@
+/* border/padding/margin are reset because <fieldset> ships with a default border and inline
+   padding of its own — the element is here for its grouping semantics, not its chrome. */
+.verify-code-inputs {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+
+.verify-code-inputs input {
+  width: 52px;
+  height: 60px;
+  background: #232428;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: #f5f5f7;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.verify-code-inputs input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.verify-resend {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+  font-size: 14px;
+  color: #9a9ba3;
+}
+
+.verify-resend button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #6b6c74;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.verify-resend [data-testid='verify-resend-countdown'] {
+  color: #f5f5f7;
+  font-weight: 500;
+}

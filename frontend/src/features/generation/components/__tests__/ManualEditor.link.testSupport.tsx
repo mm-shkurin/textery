@@ -1,0 +1,52 @@
+import { expect } from 'vitest'
+import { fireEvent, screen } from '@testing-library/react'
+import { renderEditorWithDocumentCreated, selectRange } from './ManualEditor.testSupport'
+
+// Renders a fresh editor, selects "hello" out of "hello world", opens the link
+// popover, types `url` and presses Применить. Returns the content area so each
+// test asserts on the resulting anchor. A helper rather than inline setup
+// because the URL shapes differ in exactly one value — the URL — and that
+// difference is the whole point of the files that use it.
+//
+// Promoted here from ManualEditor.link.urlShapes.test.tsx (where a comment
+// recorded it as deliberately local) once red-frontend-url-shapes-2 added a
+// second consumer. That comment's reason still holds for the file it named:
+// ManualEditor.link.test.tsx drives the same popover but asserts *within* the
+// flow (popover in the document, full attribute set, aria-pressed toggling on
+// cursor move), so it still cannot be expressed as a call to this.
+export async function applyLinkUrl(url: string) {
+  await renderEditorWithDocumentCreated()
+
+  const contentArea = screen.getByTestId('editor-content-area')
+  contentArea.textContent = 'hello world'
+  fireEvent.input(contentArea)
+
+  selectRange(contentArea.firstChild as Node, 0, 5)
+  fireEvent.select(contentArea)
+
+  fireEvent.click(screen.getByTestId('toolbar-link'))
+  fireEvent.change(screen.getByTestId('link-url-input'), { target: { value: url } })
+  fireEvent.click(screen.getByTestId('link-apply'))
+
+  return contentArea
+}
+
+// Every shape pins the same three invariants and differs only in the expected
+// href, so the href stays at the call site and the invariants live here.
+//
+// The absent alert is load-bearing rather than incidental: the defect is not
+// only "no link" — it is that the visitor is actively told a genuinely fine
+// address is bad. Pinning the absence of the rejection message is what
+// distinguishes these from a silent no-op.
+export function expectSoleLink(contentArea: HTMLElement, href: string) {
+  const anchors = contentArea.querySelectorAll('a')
+  expect(anchors).toHaveLength(1)
+  expect(anchors[0].getAttribute('href')).toBe(href)
+  // The link wraps the selection, not the whole text.
+  expect(anchors[0].textContent).toBe('hello')
+  // The rest of the document survives. Without this, normalization that
+  // linked correctly but dropped the unselected " world" would pass every
+  // caller — the anchor is right, so nothing else here would notice.
+  expect(contentArea.textContent).toBe('hello world')
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+}

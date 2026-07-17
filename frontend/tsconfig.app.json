@@ -17,6 +17,12 @@
     "jsx": "react-jsx",
 
     /* Linting */
+    // Declared, not inherited. Strict mode is TypeScript 6's default, so this codebase's
+    // pervasive `Editor | null` / `string | null` discipline was being enforced by a toolchain
+    // default rather than by anything written down — a downgrade, or a future default flipping
+    // back, would silently switch off the checks that discipline depends on and every existing
+    // null guard would become decoration. Stating it costs one line and removes the assumption.
+    "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,

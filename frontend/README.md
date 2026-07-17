@@ -6,22 +6,58 @@
 
 ## Структура
 
+- `src/app` — сборка приложения: роутинг и навигация по флоу (`useFlowNavigation`).
 - `src/features/landing` — маркетинговая посадочная страница.
+- `src/features/auth` — регистрация, подтверждение кода, вход, сессия.
 - `src/features/generation` — процесс генерации документа: модалки выбора
-  типа/режима, чат-подобное рабочее пространство, хук поллинга
-  (`useGeneration`) и HTTP-клиент (`generationApi`).
-- `src/shared` — компоненты, общие для разных фич.
+  типа/режима, чат-подобное рабочее пространство, ручной редактор (`ManualEditor`
+  на Tiptap), хук поллинга (`useGeneration`) и HTTP-клиенты.
+- `src/features/history` — «Мои работы»: два списка с keyset-пагинацией.
+- `src/shared` — то, что принадлежит не одной фиче: транспорт (`api/`),
+  словарь типов документов (`documentTypes.ts`), общие компоненты.
+
+### Слои HTTP
+
+```
+shared/api/httpClient  — транспорт; про авторизацию не знает ничего
+features/auth/api/authorizedRequest — токен, обновление сессии, повтор запроса
+shared/api/send        — httpClient + сессия + читаемый текст ошибки
+features/*/api/*Api    — конкретные эндпоинты, перевод wire ⇄ приложение
+```
+
+`httpClient` намеренно не знает про токены: клиент, добавляющий токен, импортировал бы
+сессию, а клиент `/auth/refresh` тогда импортировал бы клиент, который обновляет токен —
+цикл. Поэтому авторизация живёт ровно на слой выше. `auth` здесь не «соседняя фича», а
+слой сессии: `generation`, `history` и `documents` стоят на нём, обратных импортов нет.
 
 ## Установка и запуск
 
 ```bash
 npm install
-npm run dev      # запуск dev-сервера (проксирует /api на бэкенд)
-npm run build    # проверка типов + production-сборка
-npm run lint      # oxlint
-npm run test      # разовый запуск тестов
+npm run dev           # запуск dev-сервера (проксирует /api на бэкенд)
+npm run build         # проверка типов + production-сборка
+npm run lint          # oxlint
+npm run format        # prettier --write
+npm run format:check  # prettier --check (этот шаг выполняется в CI)
+npm run test          # разовый запуск тестов
 npm run test:watch
 ```
+
+## CI
+
+Пайплайнов **два**, и это не дублирование — это две формы репозитория:
+
+- `.github/workflows/frontend-ci.yml` **в корне монорепо** — то, что выполняется на GitHub
+  (workflow-файлы читаются только из корня). Отсюда `paths:`-фильтр на `frontend/**`,
+  `working-directory: frontend` и сборка docker-образа.
+- `frontend/.github/workflows/ci.yml` — standalone-копия. В монорепо она не запускается
+  никогда, и выглядит мёртвой. Но `frontend/` выкладывается **в корень** отдельного
+  фронтенд-репозитория (`gitverse.ru/studentlabs/slide_frontend`), где этот файл становится
+  `.github/workflows/ci.yml` и является там единственным CI. Поэтому в нём нет `paths:` и
+  `working-directory`, а `cache-dependency-path` указывает на корневой `package-lock.json`.
+
+Оба выполняют `lint` → `format:check` → `typecheck` → `test` → `build`. Синхронизируются
+руками: удаление «мёртвой» копии выключает CI в gitverse целиком.
 
 ## Переменные окружения
 

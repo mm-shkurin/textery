@@ -1,0 +1,58 @@
+/* Owned by ModeModal.tsx. Imports Modal.css + SelectableCard.css for the shared parts. */
+.mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.mode-card {
+  width: 100%;
+  background: var(--bg-surface-raised);
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
+  position: relative;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0;
+  padding: 28px 24px;
+}
+.mode-card.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.icon-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: var(--accent-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.mode-icon {
+  width: 28px;
+  height: 28px;
+  color: #fff;
+}
+.mode-name {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.mode-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 640px) {
+  .mode-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}

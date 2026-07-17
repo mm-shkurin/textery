@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1400">
+<title>Textery — Ручной ввод</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root{
+    --bg-page:#111214; --bg-surface:#1a1b1e; --bg-surface-raised:#232428;
+    --border-subtle:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.16);
+    --text-primary:#f5f5f7; --text-secondary:#9a9ba3; --text-muted:#6b6c74;
+    --accent-start:#6366f1; --accent-end:#a855f7;
+    --accent-gradient:linear-gradient(135deg,var(--accent-start),var(--accent-end));
+    --warning:#f59e0b; --success:#22c55e; --error:#ef4444;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg-page); color:var(--text-primary); font-family:'Inter',sans-serif; line-height:1.5;}
+  .header{display:flex; align-items:center; justify-content:space-between; padding:20px 48px; border-bottom:1px solid var(--border-subtle);}
+  .logo{display:flex; align-items:center; gap:10px; font-weight:700; font-size:18px;}
+  .logo-mark{width:32px; height:32px; border-radius:9px; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff;}
+  .header-actions{display:flex; align-items:center; gap:12px;}
+  .btn{border:none; border-radius:10px; padding:12px 22px; font-family:inherit; font-weight:600; font-size:14px; cursor:pointer;}
+  .btn-secondary{background:transparent; color:var(--text-secondary); border:1px solid var(--border-subtle);}
+  .btn-primary{background:#f5f5f7; color:#111214;}
+  .container{max-width:1200px; margin:0 auto; padding:32px 24px 96px;}
+  .breadcrumb{display:flex; align-items:center; gap:10px; margin-bottom:20px;}
+  .breadcrumb-back{display:flex; align-items:center; gap:6px; color:var(--text-muted); font-size:13px; cursor:pointer;}
+  .breadcrumb-back i{width:14px; height:14px;}
+  .breadcrumb-chip{display:flex; align-items:center; gap:8px; background:var(--bg-surface-raised); border:1px solid var(--border-subtle); padding:6px 14px; border-radius:999px; font-size:13px;}
+  .breadcrumb-chip .icon-badge{width:20px; height:20px; border-radius:6px; margin:0;}
+  .breadcrumb-chip .icon-badge i{width:12px; height:12px;}
+  .icon-badge{background:var(--accent-gradient); display:flex; align-items:center; justify-content:center;}
+  .icon-badge i{color:#fff;}
+  .editor-shell{background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:16px; overflow:hidden;}
+  .toolbar{display:flex; align-items:center; gap:4px; padding:12px 20px; border-bottom:1px solid var(--border-subtle); background:var(--bg-surface-raised);}
+  .toolbar-btn{width:34px; height:34px; border-radius:8px; border:none; background:transparent; color:var(--text-secondary); display:flex; align-items:center; justify-content:center; cursor:pointer;}
+  .toolbar-btn.active{background:var(--bg-surface); color:var(--text-primary);}
+  .toolbar-btn i{width:17px; height:17px;}
+  .toolbar-btn:hover{background:var(--bg-surface);}
+  .toolbar-divider{width:1px; height:22px; background:var(--border-subtle); margin:0 8px;}
+  .toolbar-status{margin-left:auto; display:flex; align-items:center; gap:12px;}
+  .save-status{font-size:13px; color:var(--warning);}
+  .content-area{padding:48px 64px; min-height:420px; font-size:16px;}
+  .content-area h2{font-size:26px; font-weight:700; margin-bottom:16px; letter-spacing:-0.01em;}
+  .content-area p{margin-bottom:16px; color:var(--text-primary);}
+  .content-area ul{margin:0 0 16px 22px;}
+  .content-area li{margin-bottom:8px;}
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo"><div class="logo-mark">T</div>Textery</div>
+    <div class="header-actions">
+      <button class="btn btn-secondary">Вход</button>
+      <button class="btn btn-primary">Попробовать бесплатно</button>
+    </div>
+  </div>
+  <div class="container">
+    <div class="breadcrumb">
+      <div class="breadcrumb-back"><i data-lucide="arrow-left"></i>Назад</div>
+      <div class="breadcrumb-chip"><div class="icon-badge"><i data-lucide="presentation"></i></div>Доклад</div>
+      <div class="breadcrumb-chip"><div class="icon-badge"><i data-lucide="pencil"></i></div>Ручной режим</div>
+    </div>
+    <div class="editor-shell">
+      <div class="toolbar">
+        <button class="toolbar-btn"><i data-lucide="heading-1"></i></button>
+        <button class="toolbar-btn active"><i data-lucide="heading-2"></i></button>
+        <button class="toolbar-btn"><i data-lucide="pilcrow"></i></button>
+        <div class="toolbar-divider"></div>
+        <button class="toolbar-btn"><i data-lucide="list"></i></button>
+        <button class="toolbar-btn"><i data-lucide="list-ordered"></i></button>
+        <div class="toolbar-divider"></div>
+        <button class="toolbar-btn active"><i data-lucide="bold"></i></button>
+        <button class="toolbar-btn"><i data-lucide="italic"></i></button>
+        <div class="toolbar-status">
+          <span class="save-status">Есть несохранённые изменения</span>
+          <button class="btn btn-primary" style="padding:10px 20px;">Сохранить</button>
+        </div>
+      </div>
+      <div class="content-area">
+        <h2>Влияние искусственного интеллекта на образование</h2>
+        <p>Современные технологии <b>искусственного интеллекта</b> постепенно меняют подход к обучению. Они позволяют персонализировать программу под каждого ученика.</p>
+        <p>Ключевые направления применения:</p>
+        <ul>
+          <li>Автоматическая проверка домашних заданий</li>
+          <li>Адаптивные учебные траектории</li>
+          <li><i>Интеллектуальные</i> репетиторы и чат-боты</li>
+        </ul>
+        <p>Несмотря на преимущества, остаются вопросы этики и доступности технологий для всех учащихся.</p>
+      </div>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

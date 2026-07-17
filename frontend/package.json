@@ -7,15 +7,23 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --noEmit",
-    "lint": "oxlint",
+    "lint": "oxlint --max-warnings=0",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@tiptap/extension-document": "^3.27.4",
+    "@tiptap/extension-placeholder": "^3.27.4",
+    "@tiptap/pm": "^3.27.4",
+    "@tiptap/react": "^3.27.4",
+    "@tiptap/starter-kit": "^3.27.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-markdown": "^10.1.0"
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^6.30.4"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
@@ -27,6 +35,7 @@
     "@vitest/coverage-v8": "^4.1.10",
     "jsdom": "^29.1.1",
     "oxlint": "^1.71.0",
+    "prettier": "^3.9.5",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
     "vitest": "^4.1.10"

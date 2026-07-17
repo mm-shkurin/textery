@@ -1,8 +1,12 @@
 name: frontend-ci
 
+# Every branch, not just [main, dev]: this project lands commits directly on the working branch
+# and does not use pull requests (.claude/rules/workflow.md), so a main/dev + pull_request trigger
+# fired on neither the branch the work happens on nor a PR that never opens — the pipeline was
+# green because it had never run. That is the same failure as the decoy frontend/.github/workflows
+# deleted in 81f3999, one layer up: a config that looks like a gate and gates nothing.
 on:
   push:
-    branches: [main, dev]
     paths:
       - 'frontend/**'
       - '.github/workflows/frontend-ci.yml'
@@ -32,6 +36,11 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      # Formatting is checked, not merely configured: a .prettierrc nobody runs is a preference,
+      # not a convention. This step is what makes it one.
+      - name: Format check
+        run: npm run format:check
 
       - name: Typecheck
         run: npm run typecheck
