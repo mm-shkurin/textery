@@ -72,7 +72,14 @@ class TestUnhandledExceptionHandler:
                 response = await client.get("/boom")
 
         assert response.status_code == 500, f"expected 500, got {response.status_code}"
-        assert response.json() == {"detail": "internal server error"}, f"unexpected body {response.json()}"
+        assert response.json() == {
+            "error_code": "INTERNAL_ERROR",
+            "message": "An unexpected error occurred. Please try again.",
+        }, f"unexpected body {response.json()}"
+        assert "unexpected failure" not in response.text, (
+            "the raised exception's own message must not reach the client -- it is "
+            f"an arbitrary internal string. Got {response.text}"
+        )
         assert any("unexpected failure" in record.message for record in caplog.records), (
             f"expected logged exception message to mention 'unexpected failure', got {[r.message for r in caplog.records]}"
         )

@@ -4,16 +4,21 @@ from uuid import UUID, uuid4
 
 from shared.exceptions import ValidationException
 
-MISSING_TOPIC_MESSAGE = "topic is required"
-OUT_OF_RANGE_VOLUME_MESSAGE = "volume_pages must be between 1 and 10"
-TOPIC_TOO_LONG_MESSAGE = "topic must be at most 500 characters"
-REQUIREMENTS_TOO_LONG_MESSAGE = "requirements must be at most 2000 characters"
-EXTRA_WISHES_TOO_LONG_MESSAGE = "extra_wishes must be at most 2000 characters"
 MIN_VOLUME_PAGES = 1
 MAX_VOLUME_PAGES = 10
 MAX_TOPIC_LENGTH = 500
 MAX_REQUIREMENTS_LENGTH = 2000
 MAX_EXTRA_WISHES_LENGTH = 2000
+
+# Declared after the bounds and interpolated from them. These messages used to
+# restate each number as a literal five lines from the constant it described, so
+# changing a bound left the message quoting the old one -- the one place the
+# discrepancy is guaranteed to be seen, by the user who just tripped the rule.
+MISSING_TOPIC_MESSAGE = "topic is required"
+OUT_OF_RANGE_VOLUME_MESSAGE = f"volume_pages must be between {MIN_VOLUME_PAGES} and {MAX_VOLUME_PAGES}"
+TOPIC_TOO_LONG_MESSAGE = f"topic must be at most {MAX_TOPIC_LENGTH} characters"
+REQUIREMENTS_TOO_LONG_MESSAGE = f"requirements must be at most {MAX_REQUIREMENTS_LENGTH} characters"
+EXTRA_WISHES_TOO_LONG_MESSAGE = f"extra_wishes must be at most {MAX_EXTRA_WISHES_LENGTH} characters"
 PENDING_STATUS = "pending"
 IN_PROGRESS_STATUS = "in_progress"
 COMPLETED_STATUS = "completed"

@@ -4,10 +4,13 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from error_handling.exception_handlers import validation_exception_handler
+from error_handling.exception_handlers import (
+    not_found_exception_handler,
+    validation_exception_handler,
+)
 from router.generation import generation_router as generation_router_module
 from security.current_owner import get_current_owner_id, get_token_service
-from shared.exceptions import InvalidTokenException, ValidationException
+from shared.exceptions import InvalidTokenException, NotFoundException, ValidationException
 
 OWNER_ID = uuid4()
 
@@ -16,8 +19,8 @@ OWNER_ID = uuid4()
 def owner_id():
     """The account id the overridden Bearer dependency resolves to.
 
-    Exposed as a fixture rather than imported by tests: four conftest.py files sit
-    on this suite's sys.path, so `from conftest import OWNER_ID` resolves to
+    Exposed as a fixture rather than imported by tests: several conftest.py files
+    sit on this suite's import path, so `from conftest import OWNER_ID` resolves to
     whichever one landed there first -- silently binding a different constant than
     the fixture uses, and turning owner assertions into confusing false failures.
     """
@@ -29,6 +32,11 @@ def generation_app():
     app = FastAPI()
     app.include_router(generation_router_module.router)
     app.add_exception_handler(ValidationException, validation_exception_handler)
+    # Registered because the router raises NotFoundException for an unknown id.
+    # Without it the exception escapes to Starlette and the 404 test sees a 500 --
+    # the app under test has to carry the same handler set the real one does, or
+    # the test is asserting against an app that does not exist.
+    app.add_exception_handler(NotFoundException, not_found_exception_handler)
     # A stand-in token service is always wired, even for the "no token" tests.
     # FastAPI resolves Depends(get_token_service) BEFORE running
     # get_current_owner_id, so leaving the composition-root stub in place makes

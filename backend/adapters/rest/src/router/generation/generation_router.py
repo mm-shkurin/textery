@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends
 
 from dto.generation.generation_request_dto import GenerationRequestDto
 from dto.generation.generation_response_dto import (
@@ -14,6 +14,7 @@ from generation.get_generation import GetGeneration
 from generation.list_generations import ListGenerations
 from generation.request_generation import RequestGeneration
 from security.current_owner import get_current_owner_id
+from shared.exceptions import NotFoundException
 from shared.page import DEFAULT_LIMIT
 
 router = APIRouter(prefix="/api/v1/generations", tags=["generations"])
@@ -86,5 +87,12 @@ async def get_generation(
     if generation is None:
         # Absent and foreign are the same answer. The usecase's storage filters on
         # owner_id in SQL, so this branch cannot tell them apart.
-        raise HTTPException(status_code=404, detail="generation not found")
+        #
+        # NotFoundException, not HTTPException: this used to raise the latter and
+        # answer {"detail": "generation not found"}, while the identical branch in
+        # document_router answered {error_code, message}. One endpoint disagreeing
+        # with the rest of the API about the shape of an error is a client-side
+        # bug waiting to happen -- and the literal detail string leaked the
+        # resource kind, which the shared handler deliberately does not.
+        raise NotFoundException(f"generation {generation_id} not found")
     return GenerationDetailDto.from_domain(generation)

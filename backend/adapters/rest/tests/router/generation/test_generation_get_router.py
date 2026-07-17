@@ -89,6 +89,9 @@ class TestGetGenerationNotFound:
         assert response.status_code == 404, (
             f"expected 404 Not Found, got {response.status_code} with body {response.text}"
         )
-        assert response.json() == {"detail": "generation not found"}, (
-            f"unexpected error body {response.json()}"
-        )
+        # The canonical {error_code, message} shape every other endpoint answers,
+        # and a message that names no resource kind: the id is logged, not echoed.
+        assert response.json() == {
+            "error_code": "NOT_FOUND",
+            "message": "The requested resource was not found.",
+        }, f"unexpected error body {response.json()}"

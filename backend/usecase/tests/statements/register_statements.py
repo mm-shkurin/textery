@@ -92,7 +92,11 @@ class RegisterStatements:
 
     async def _attempt_registering(self, scope: RegisterRequestScope) -> None:
         try:
-            await RegisterUser(password_hasher=self.password_hasher).execute(
+            await RegisterUser(
+                password_hasher=self.password_hasher,
+                account_repository=self.account_repository,
+                verification_code_repository=self.verification_code_repository,
+            ).execute(
                 email=scope.email,
                 password=scope.password,
                 confirm_password=scope.confirm_password,

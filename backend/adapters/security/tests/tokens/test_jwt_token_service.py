@@ -5,7 +5,7 @@ import jwt
 import pytest
 
 from shared.exceptions import InvalidTokenException
-from tokens.jwt_token_service import JwtTokenService
+from tokens.jwt_token_service import MIN_SECRET_BYTES, JwtTokenService
 
 # 32+ bytes: below that PyJWT warns the HMAC key is too short for SHA-256, and a
 # suite that emits warnings trains everyone to ignore them.
@@ -38,6 +38,24 @@ class TestJwtTokenServiceConstruction:
         # repo. The constructor is the only place that can prevent it.
         with pytest.raises(ValueError):
             JwtTokenService(secret="")
+
+    def test_should_refuse_a_secret_shorter_than_the_hash_output(self):
+        # 31 bytes: one short of RFC 7518 §3.2's floor for HS256. A key this size
+        # is brute-forceable offline from a single captured token, and PyJWT only
+        # warns. Rejecting at construction makes it a boot failure instead of a
+        # silently weak deployment.
+        with pytest.raises(ValueError, match="at least 32 bytes"):
+            JwtTokenService(secret="a" * (MIN_SECRET_BYTES - 1))
+
+    def test_should_accept_a_secret_at_exactly_the_minimum(self):
+        # The boundary is inclusive -- exactly 32 bytes is compliant, and an
+        # off-by-one here would reject a correctly generated key.
+        assert JwtTokenService(secret="a" * MIN_SECRET_BYTES) is not None
+
+    def test_should_measure_the_secret_in_bytes_not_characters(self):
+        # 31 astral-plane characters are 124 UTF-8 bytes. len(str) would reject
+        # this key; len(bytes) is what RFC 7518 actually specifies.
+        assert JwtTokenService(secret="𝔞" * (MIN_SECRET_BYTES - 1)) is not None
 
 
 class TestIssuePair:

@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from document.document import Document
-from document.document_content import DocumentContent
+from document.document_content import MAX_CONTENT_LENGTH, DocumentContent
 from document.document_repository import DocumentRepository
 from document.html_sanitizer import HtmlSanitizer
 from shared.clock import Clock
@@ -14,7 +14,11 @@ MIN_VERSION = 1
 class SaveDocument:
     """Save the full editor content, guarded by the version token."""
 
-    CONTENT_TOO_LONG_MESSAGE = "The content exceeds the maximum length of 200000 characters."
+    # Interpolated, not spelled out: the literal used to read "200000 characters"
+    # while the rule it describes lives in DocumentContent. Raise the cap there and
+    # the hardcoded message keeps quoting the old number -- a lie the type checker
+    # and the tests both wave through, told only to the user who hit the limit.
+    CONTENT_TOO_LONG_MESSAGE = f"The content exceeds the maximum length of {MAX_CONTENT_LENGTH} characters."
     INVALID_VERSION_MESSAGE = "The version must be a positive integer."
 
     def __init__(
