@@ -6,11 +6,17 @@ from uuid import UUID
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.auth.verification_code_storage import SqlAlchemyVerificationCodeRepository
 from access.generation.generation_storage import SqlAlchemyGenerationStorage
+from access.document.document_storage import SqlAlchemyDocumentStorage
 from auth.login_user import LoginUser
 from auth.refresh_access_token import RefreshAccessToken
 from auth.register_user import RegisterUser
+from auth.token_service import TokenService
 from auth.verify_account import VerifyAccount
+from document.create_document import CreateDocument
+from document.get_document import GetDocument
+from document.save_document import SaveDocument
 from hashing.bcrypt_password_hasher import BcryptPasswordHasher
+from sanitization.nh3_html_sanitizer import Nh3HtmlSanitizer
 from tokens.jwt_token_service import JwtTokenService
 from generation.generate_document import GenerateDocument
 from generation.get_generation import GetGeneration
@@ -150,6 +156,52 @@ async def create_verify_account() -> AsyncIterator[VerifyAccount]:
             verification_code_repository=verification_code_repository,
             clock=SystemClock(),
             unit_of_work=unit_of_work,
+        )
+    finally:
+        await session.close()
+
+
+def create_token_service() -> TokenService:
+    """The already-built JWT service, for the rest layer's Bearer dependency.
+
+    Shares `_token_service` with login/refresh rather than building a second one:
+    two instances reading the same env var would still agree, but only by luck --
+    and a future per-request build would re-raise the empty-secret ValueError on
+    the request path instead of at boot.
+    """
+    return _token_service
+
+
+async def create_create_document() -> AsyncIterator[CreateDocument]:
+    session = _session_factory()
+    try:
+        yield CreateDocument(
+            document_repository=SqlAlchemyDocumentStorage(session),
+            clock=SystemClock(),
+            unit_of_work=SqlAlchemyUnitOfWork(session),
+        )
+    finally:
+        await session.close()
+
+
+async def create_get_document() -> AsyncIterator[GetDocument]:
+    session = _session_factory()
+    try:
+        yield GetDocument(document_repository=SqlAlchemyDocumentStorage(session))
+    finally:
+        await session.close()
+
+
+async def create_save_document() -> AsyncIterator[SaveDocument]:
+    session = _session_factory()
+    try:
+        yield SaveDocument(
+            document_repository=SqlAlchemyDocumentStorage(session),
+            html_sanitizer=Nh3HtmlSanitizer(),
+            clock=SystemClock(),
+            # One session across the repository and the unit of work, so the
+            # usecase's commit is what makes the CAS durable.
+            unit_of_work=SqlAlchemyUnitOfWork(session),
         )
     finally:
         await session.close()

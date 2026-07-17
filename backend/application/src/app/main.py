@@ -27,16 +27,25 @@ import logging
 from fastapi import FastAPI
 
 from container import (
+    create_create_document,
     create_generate_document,
+    create_get_document,
     create_get_generation,
     create_login_user,
     create_refresh_access_token,
     create_register_user,
+    create_save_document,
+    create_token_service,
     create_verify_account,
     create_request_generation,
     run_stale_generation_sweep,
 )
-from error_handling.exception_handlers import unhandled_exception_handler, validation_exception_handler
+from error_handling.exception_handlers import (
+    conflict_exception_handler,
+    not_found_exception_handler,
+    unhandled_exception_handler,
+    validation_exception_handler,
+)
 from router.auth.auth_router import (
     get_login_user_usecase,
     get_refresh_access_token_usecase,
@@ -49,8 +58,15 @@ from router.generation.generation_router import (
     get_get_generation_usecase,
     get_request_generation_usecase,
 )
+from router.document.document_router import (
+    get_create_document_usecase,
+    get_get_document_usecase,
+    get_save_document_usecase,
+)
+from router.document.document_router import router as document_router
 from router.generation.generation_router import router as generation_router
-from shared.exceptions import ValidationException
+from security.current_owner import get_token_service
+from shared.exceptions import ConflictException, NotFoundException, ValidationException
 
 SWEEP_INTERVAL_SECONDS = 60
 
@@ -80,7 +96,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(generation_router)
 app.include_router(auth_router)
+app.include_router(document_router)
 app.add_exception_handler(ValidationException, validation_exception_handler)
+app.add_exception_handler(NotFoundException, not_found_exception_handler)
+app.add_exception_handler(ConflictException, conflict_exception_handler)
 app.add_exception_handler(Exception, unhandled_exception_handler)
 
 app.dependency_overrides[get_request_generation_usecase] = create_request_generation
@@ -90,3 +109,7 @@ app.dependency_overrides[get_register_user_usecase] = create_register_user
 app.dependency_overrides[get_verify_account_usecase] = create_verify_account
 app.dependency_overrides[get_login_user_usecase] = create_login_user
 app.dependency_overrides[get_refresh_access_token_usecase] = create_refresh_access_token
+app.dependency_overrides[get_create_document_usecase] = create_create_document
+app.dependency_overrides[get_get_document_usecase] = create_get_document
+app.dependency_overrides[get_save_document_usecase] = create_save_document
+app.dependency_overrides[get_token_service] = create_token_service
