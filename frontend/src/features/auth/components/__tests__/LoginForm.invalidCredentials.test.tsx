@@ -23,6 +23,18 @@ function renderAndFill() {
   return { submitButton: screen.getByTestId('login-submit-button') }
 }
 
+// Holds the next `login` call in flight so the pending window can be asserted, and returns
+// the settle handle. `Once`, so a test may queue an earlier outcome ahead of it.
+function mockPendingLogin(): () => void {
+  let resolveLogin: (value: typeof SESSION) => void = () => {}
+  vi.mocked(api.login).mockReturnValueOnce(
+    new Promise((resolve) => {
+      resolveLogin = resolve
+    }),
+  )
+  return () => resolveLogin(SESSION)
+}
+
 describe('LoginForm invalid-credentials error', () => {
   afterEach(() => {
     vi.mocked(api.login).mockReset()
@@ -63,13 +75,11 @@ describe('LoginForm invalid-credentials error', () => {
     expect(screen.queryAllByTestId('login-form-error')).toHaveLength(1)
   })
 
+  // Scoped to a FIRST submit with no prior error: it pins that the form does not invent an
+  // error mid-flight. It cannot bind the retry window, where the error is already on screen
+  // and the question is whether entry CLEARS it — see the stale-error test below.
   it('does not display an error while the login call is still pending', async () => {
-    let resolveLogin: (value: typeof SESSION) => void = () => {}
-    vi.mocked(api.login).mockReturnValue(
-      new Promise((resolve) => {
-        resolveLogin = resolve
-      }),
-    )
+    const resolvePendingLogin = mockPendingLogin()
     const { submitButton } = renderAndFill()
 
     fireEvent.click(submitButton)
@@ -77,7 +87,7 @@ describe('LoginForm invalid-credentials error', () => {
     await waitFor(() => expect(api.login).toHaveBeenCalledTimes(1))
     expect(screen.queryByTestId('login-form-error')).not.toBeInTheDocument()
 
-    resolveLogin(SESSION)
+    resolvePendingLogin()
   })
 
   it('does not display an error after a successful login', async () => {
@@ -106,5 +116,28 @@ describe('LoginForm invalid-credentials error', () => {
 
     await waitFor(() => expect(api.login).toHaveBeenCalledTimes(2))
     expect(screen.queryByTestId('login-form-error')).not.toBeInTheDocument()
+  })
+
+  // The RETRY WINDOW, which the test above cannot reach: it settles the second call, so a
+  // form that clears the error only on settle satisfies it. Here the second call is held
+  // pending, which isolates entry from settle — the error must be gone the moment the retry
+  // starts, not when it finishes. Otherwise the user corrects the password, clicks, and the
+  // spinner runs with `Неверный email или пароль` still on screen: a stale verdict rendered
+  // over an in-flight attempt, contradicted by the very submit it sits next to.
+  it('clears the previous error while a corrected resubmission is still pending', async () => {
+    vi.mocked(api.login).mockRejectedValueOnce(INVALID_CREDENTIALS_ERROR)
+    const { submitButton } = renderAndFill()
+
+    fireEvent.click(submitButton)
+    await screen.findByTestId('login-form-error')
+    await waitFor(() => expect(submitButton).not.toBeDisabled())
+
+    const resolvePendingLogin = mockPendingLogin()
+    fireEvent.click(submitButton)
+
+    await waitFor(() => expect(api.login).toHaveBeenCalledTimes(2))
+    expect(screen.queryByTestId('login-form-error')).not.toBeInTheDocument()
+
+    resolvePendingLogin()
   })
 })
