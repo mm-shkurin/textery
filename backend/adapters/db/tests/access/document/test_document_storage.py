@@ -32,7 +32,9 @@ class TestOwnerScoping:
         other_owner_id = await document_storage_statements.given_an_account()
         document = await document_storage_statements.given_a_saved_document(owner_id)
 
-        fetched = await document_storage_statements.find_by_id_and_owner(document.id, other_owner_id)
+        fetched = await document_storage_statements.find_by_id_and_owner(
+            document.id, other_owner_id
+        )
 
         assert fetched is None, "another owner's document must read as absent, never returned"
 
@@ -56,7 +58,9 @@ class TestIdempotencyKeyUniqueness:
         await document_storage_statements.given_a_saved_document(owner_id, idempotency_key="key-1")
 
         with pytest.raises(ConflictException):
-            await document_storage_statements.given_a_saved_document(owner_id, idempotency_key="key-1")
+            await document_storage_statements.given_a_saved_document(
+                owner_id, idempotency_key="key-1"
+            )
 
     async def test_should_allow_two_owners_to_use_the_same_key(self, document_storage_statements):
         # Security 7.3: the key is scoped per owner. A global namespace would let one
@@ -66,7 +70,9 @@ class TestIdempotencyKeyUniqueness:
         second_owner = await document_storage_statements.given_an_account()
 
         first = await document_storage_statements.given_a_saved_document(first_owner, "shared-key")
-        second = await document_storage_statements.given_a_saved_document(second_owner, "shared-key")
+        second = await document_storage_statements.given_a_saved_document(
+            second_owner, "shared-key"
+        )
 
         assert first.id != second.id, "the same key from two owners must yield two documents"
 
@@ -129,6 +135,8 @@ class TestSaveContentCompareAndSwap:
             document.id, other_owner_id, "<p>hijack</p>", expected_version=1
         )
 
-        assert refused is None, "a foreign document must not be writable even with a correct version"
+        assert refused is None, (
+            "a foreign document must not be writable even with a correct version"
+        )
         current = await document_storage_statements.find_by_id_and_owner(document.id, owner_id)
         assert current.content == "", "the owner's content must be untouched"

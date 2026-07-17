@@ -1,14 +1,16 @@
 from dataclasses import dataclass
-from typing import ClassVar, Optional
+from typing import ClassVar
+from uuid import UUID, uuid4
 
 
 @dataclass(frozen=True)
 class GenerationRequestScope:
     document_type: str
-    topic: Optional[str]
-    volume_pages: Optional[int]
-    requirements: Optional[str]
-    extra_wishes: Optional[str]
+    topic: str | None
+    volume_pages: int | None
+    requirements: str | None
+    extra_wishes: str | None
+    owner_id: UUID
 
     DEFAULTS: ClassVar[dict] = {
         "document_type": "доклад",
@@ -20,4 +22,7 @@ class GenerationRequestScope:
 
     @classmethod
     def builder(cls, **overrides) -> "GenerationRequestScope":
-        return cls(**{**cls.DEFAULTS, **overrides})
+        # owner_id defaults to a fresh uuid per scope rather than a shared constant:
+        # a module-level default would make every scope in a test share one owner, so
+        # a cross-owner test that forgot to override it would pass vacuously.
+        return cls(**{"owner_id": uuid4(), **cls.DEFAULTS, **overrides})

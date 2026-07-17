@@ -1,7 +1,16 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -26,10 +35,18 @@ class DocumentModel(Base):
         CheckConstraint(f"status IN ({_ALLOWED_STATUSES_SQL})", name="ck_documents_status"),
         CheckConstraint("version >= 1", name="ck_documents_version_positive"),
         UniqueConstraint("owner_id", "idempotency_key", name="uq_documents_owner_idempotency_key"),
+        # Same shape as generations: owner_id then the keyset pair, DESC. Leads with
+        # owner_id, so it covers plain by-owner lookups too -- hence no index=True.
+        Index(
+            "ix_documents_owner_history",
+            "owner_id",
+            text("created_at DESC"),
+            text("id DESC"),
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    owner_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    owner_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     document_type: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False, default="")

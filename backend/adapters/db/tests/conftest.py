@@ -1,18 +1,4 @@
 import os
-import sys
-
-_TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
-_DB_DIR = os.path.dirname(_TESTS_DIR)
-_ADAPTERS_DIR = os.path.dirname(_DB_DIR)
-_BACKEND_DIR = os.path.dirname(_ADAPTERS_DIR)
-_DB_SRC = os.path.join(_DB_DIR, "src")
-_DOMAIN_SRC = os.path.join(_BACKEND_DIR, "domain", "src")
-_USECASE_SRC = os.path.join(_BACKEND_DIR, "usecase", "src")
-
-sys.path.insert(0, _TESTS_DIR)
-sys.path.insert(0, _DB_SRC)
-sys.path.insert(0, _DOMAIN_SRC)
-sys.path.insert(0, _USECASE_SRC)
 
 import pytest
 import pytest_asyncio
@@ -38,12 +24,14 @@ async def db_session():
         yield session
         await session.rollback()
     async with engine.connect() as cleanup_connection:
-        await cleanup_connection.execute(text("TRUNCATE TABLE generations"))
-        # One statement: documents.owner_id references accounts.id, so truncating
-        # accounts on its own fails with "cannot truncate a table referenced in a
-        # foreign key constraint". Postgres only allows it when every referencing
-        # table is truncated in the same command.
-        await cleanup_connection.execute(text("TRUNCATE TABLE documents, verification_codes, accounts"))
+        # One statement: documents.owner_id and generations.owner_id both reference
+        # accounts.id, so truncating accounts on its own fails with "cannot truncate
+        # a table referenced in a foreign key constraint". Postgres only allows it
+        # when every referencing table is truncated in the same command -- which is
+        # why generations moved in here rather than staying a separate TRUNCATE.
+        await cleanup_connection.execute(
+            text("TRUNCATE TABLE generations, documents, verification_codes, accounts")
+        )
         await cleanup_connection.commit()
     await engine.dispose()
 
@@ -75,3 +63,10 @@ def document_storage_statements(db_session: AsyncSession):
     from statements.document_storage_statements import DocumentStorageStatements
 
     return DocumentStorageStatements(db_session)
+
+
+@pytest.fixture
+def history_paging_statements(db_session: AsyncSession):
+    from statements.history_paging_statements import HistoryPagingStatements
+
+    return HistoryPagingStatements(db_session)

@@ -1,8 +1,7 @@
-from typing import Optional
 from uuid import UUID
 
 from document.document import Document
-from document.document_content import DocumentContent
+from document.document_content import MAX_CONTENT_LENGTH, DocumentContent
 from document.document_repository import DocumentRepository
 from document.html_sanitizer import HtmlSanitizer
 from shared.clock import Clock
@@ -15,7 +14,12 @@ MIN_VERSION = 1
 class SaveDocument:
     """Save the full editor content, guarded by the version token."""
 
-    CONTENT_TOO_LONG_MESSAGE = "The content exceeds the maximum length of 200000 characters."
+    # Interpolated from the constant that owns the rule. Spelled out, the message
+    # keeps quoting the old number when the cap moves -- a lie nothing checks, told
+    # only to the user who hit the limit.
+    CONTENT_TOO_LONG_MESSAGE = (
+        f"The content exceeds the maximum length of {MAX_CONTENT_LENGTH} characters."
+    )
     INVALID_VERSION_MESSAGE = "The version must be a positive integer."
 
     def __init__(
@@ -23,14 +27,16 @@ class SaveDocument:
         document_repository: DocumentRepository,
         html_sanitizer: HtmlSanitizer,
         clock: Clock,
-        unit_of_work: Optional[UnitOfWork] = None,
+        unit_of_work: UnitOfWork | None = None,
     ) -> None:
         self.document_repository = document_repository
         self.html_sanitizer = html_sanitizer
         self.clock = clock
         self.unit_of_work = unit_of_work or NullUnitOfWork()
 
-    async def execute(self, document_id: UUID, owner_id: UUID, content: str, version: int) -> Document:
+    async def execute(
+        self, document_id: UUID, owner_id: UUID, content: str, version: int
+    ) -> Document:
         self._validate_version(version)
         # Length is checked here, before sanitizing: sanitizing first would make the
         # parser chew through an adversarial payload before we decline it, and the

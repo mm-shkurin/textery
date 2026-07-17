@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from uuid import UUID
 
 import jwt
@@ -12,6 +12,9 @@ _ACCESS_TTL = timedelta(minutes=15)
 _REFRESH_TTL = timedelta(days=7)
 _ACCESS_TYPE = "access"
 _REFRESH_TYPE = "refresh"
+
+# RFC 7518 §3.2: an HS256 key must be at least as long as the SHA-256 output.
+MIN_SECRET_BYTES = 32
 
 
 class JwtTokenService:
@@ -30,8 +33,20 @@ class JwtTokenService:
         # No default secret, deliberately: a fallback here would ship a signing key
         # that is public in the git history, and every token in production would be
         # forgeable by anyone who read the repo.
-        if not secret:
-            raise ValueError("JWT signing secret must not be empty")
+        #
+        # Length is checked too, not just emptiness. HS256's security rests
+        # entirely on the key being unguessable, and RFC 7518 §3.2 requires a key
+        # at least as long as the hash output -- 32 bytes for SHA-256. A shorter
+        # one is brute-forceable offline from a single captured token, which
+        # yields forged access *and* refresh tokens for any account. The check
+        # runs at boot (see container/runtime.py), so a deployment configured with
+        # `JWT_SECRET=change-me` fails immediately and loudly rather than serving
+        # traffic that looks fine and isn't.
+        if len(secret.encode("utf-8")) < MIN_SECRET_BYTES:
+            raise ValueError(
+                f"JWT signing secret must be at least {MIN_SECRET_BYTES} bytes "
+                f"(RFC 7518 §3.2 for {_ALGORITHM}); generate one with: openssl rand -hex 32"
+            )
         self._secret = secret
         self._clock = clock or SystemClock()
 
@@ -73,7 +88,14 @@ class JwtTokenService:
             # clean rejection, never an unhandled crash (scenario 6.4).
             raise InvalidTokenException(failure_message) from error
 
-    def _encode(self, account_id, email, token_type, issued_at, expires_at) -> str:
+    def _encode(
+        self,
+        account_id: UUID,
+        email: str,
+        token_type: str,
+        issued_at: datetime,
+        expires_at: datetime,
+    ) -> str:
         return jwt.encode(
             {
                 "sub": str(account_id),

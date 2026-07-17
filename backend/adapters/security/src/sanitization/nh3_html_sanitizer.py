@@ -12,7 +12,18 @@ _ALLOWED_ATTRIBUTES = {"a": {"href", "title"}}
 # allowlist). A server list narrower than the client's is a data-loss bug that
 # only shows up on reload: the user creates a link, sees it render, saves, comes
 # back, and it is gone. `javascript:` is in neither list.
-_ALLOWED_URL_SCHEMES = {"http", "https", "mailto", "tel", "ftp", "ftps", "callto", "sms", "cid", "xmpp"}
+_ALLOWED_URL_SCHEMES = {
+    "http",
+    "https",
+    "mailto",
+    "tel",
+    "ftp",
+    "ftps",
+    "callto",
+    "sms",
+    "cid",
+    "xmpp",
+}
 
 # Removed WITH their contents, not just unwrapped. Dropping only the tag would
 # leave `alert(1)` sitting in the document as text -- technically "stripped",

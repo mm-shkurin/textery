@@ -31,13 +31,15 @@ from container import (
     create_generate_document,
     create_get_document,
     create_get_generation,
+    create_list_documents,
+    create_list_generations,
     create_login_user,
     create_refresh_access_token,
     create_register_user,
+    create_request_generation,
     create_save_document,
     create_token_service,
     create_verify_account,
-    create_request_generation,
     run_stale_generation_sweep,
 )
 from error_handling.exception_handlers import (
@@ -53,17 +55,19 @@ from router.auth.auth_router import (
     get_verify_account_usecase,
 )
 from router.auth.auth_router import router as auth_router
-from router.generation.generation_router import (
-    get_generate_document_usecase,
-    get_get_generation_usecase,
-    get_request_generation_usecase,
-)
 from router.document.document_router import (
     get_create_document_usecase,
     get_get_document_usecase,
+    get_list_documents_usecase,
     get_save_document_usecase,
 )
 from router.document.document_router import router as document_router
+from router.generation.generation_router import (
+    get_generate_document_usecase,
+    get_get_generation_usecase,
+    get_list_generations_usecase,
+    get_request_generation_usecase,
+)
 from router.generation.generation_router import router as generation_router
 from security.current_owner import get_token_service
 from shared.exceptions import ConflictException, NotFoundException, ValidationException
@@ -104,6 +108,7 @@ app.add_exception_handler(Exception, unhandled_exception_handler)
 
 app.dependency_overrides[get_request_generation_usecase] = create_request_generation
 app.dependency_overrides[get_get_generation_usecase] = create_get_generation
+app.dependency_overrides[get_list_generations_usecase] = create_list_generations
 app.dependency_overrides[get_generate_document_usecase] = create_generate_document
 app.dependency_overrides[get_register_user_usecase] = create_register_user
 app.dependency_overrides[get_verify_account_usecase] = create_verify_account
@@ -111,5 +116,6 @@ app.dependency_overrides[get_login_user_usecase] = create_login_user
 app.dependency_overrides[get_refresh_access_token_usecase] = create_refresh_access_token
 app.dependency_overrides[get_create_document_usecase] = create_create_document
 app.dependency_overrides[get_get_document_usecase] = create_get_document
+app.dependency_overrides[get_list_documents_usecase] = create_list_documents
 app.dependency_overrides[get_save_document_usecase] = create_save_document
 app.dependency_overrides[get_token_service] = create_token_service

@@ -55,7 +55,9 @@ class TestSaveHappyPath:
 
         assert saved.content == "<p>привет</p>"
         assert saved.version == 2, "a successful save advances the version by one"
-        assert statements.sanitizer.sanitized == ["<p>привет</p>"], "content must go through the sanitizer"
+        assert statements.sanitizer.sanitized == ["<p>привет</p>"], (
+            "content must go through the sanitizer"
+        )
         assert statements.unit_of_work.commit_call_count == 1
 
     async def test_should_return_what_was_stored_not_what_was_submitted(self, statements):

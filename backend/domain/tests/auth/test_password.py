@@ -1,7 +1,5 @@
 import unicodedata
 
-import pytest
-
 from auth.password import Password
 
 _BASE_PASSWORD = "Passw0rd1!"

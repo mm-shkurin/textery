@@ -1,5 +1,5 @@
 import inspect
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from document.document import DRAFT_STATUS, Document
@@ -15,7 +15,7 @@ class TestDocumentCreate:
 
     def test_should_create_an_empty_draft_at_version_one(self):
         owner_id = uuid4()
-        created_at = datetime(2026, 7, 17, 12, 0, tzinfo=timezone.utc)
+        created_at = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
 
         document = Document.create(
             owner_id=owner_id,
@@ -24,7 +24,9 @@ class TestDocumentCreate:
             created_at=created_at,
         )
 
-        assert isinstance(document.id, UUID), f"id must be a server-generated UUID, got {document.id!r}"
+        assert isinstance(document.id, UUID), (
+            f"id must be a server-generated UUID, got {document.id!r}"
+        )
         assert document.owner_id == owner_id
         assert document.document_type == "эссе"
         assert document.status == DRAFT_STATUS
@@ -41,7 +43,7 @@ class TestDocumentCreate:
                 owner_id=uuid4(),
                 document_type="доклад",
                 idempotency_key=f"key-{index}",
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             ).id
             for index in range(50)
         }
@@ -67,7 +69,8 @@ class TestDocumentMassAssignmentIsImpossibleBySignature:
         parameters = set(inspect.signature(Document.create).parameters)
 
         assert parameters == {"owner_id", "document_type", "idempotency_key", "created_at"}, (
-            f"Document.create must expose only client-supplied and injected values; got {parameters}"
+            f"Document.create must expose only client-supplied and injected values; "
+            f"got {parameters}"
         )
 
     def test_create_should_not_accept_an_id(self):

@@ -1,0 +1,121 @@
+openapi: 3.0.3
+info:
+  title: List Documents
+  version: 1.0.0
+
+paths:
+  /api/v1/documents:
+    get:
+      summary: The caller's own document history, newest first. Keyset-paginated.
+      description: >
+        Scoped to the Bearer token's account — `owner_id` is a query predicate, never a
+        parameter, so a caller cannot ask for someone else's history.
+
+
+        Ordered by `created_at DESC, id DESC` — newest *created*, not newest *edited*.
+        That is deliberate and not a shortcut: a keyset anchor must be immutable. Sorting
+        on `updated_at` would let a row move across the cursor while a client pages, so
+        the same document is served twice or never. `created_at` cannot move. The
+        `id` tiebreak is load-bearing too: `created_at` alone is not unique, and a page
+        boundary between two rows sharing a timestamp would drop or repeat one.
+      operationId: listDocuments
+      tags:
+        - documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          required: false
+          description: >
+            Opaque cursor from a previous response's next_cursor. Omit for the first page.
+            Opaque by contract, not by protection: it is decodable and forgeable, which is
+            harmless — it only moves the window within the caller's own rows, because the
+            owner predicate is a separate AND and is never read from the cursor.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentListResponse'
+        '400':
+          description: >-
+            Malformed cursor (INVALID_CURSOR), or limit outside 1..100 (INVALID_LIMIT).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing, malformed, expired, or non-access token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+    DocumentListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentSummary'
+        next_cursor:
+          type: string
+          nullable: true
+          description: >
+            Pass as `cursor` to fetch the next page; null when there are no more results —
+            that null is the stop condition. There is deliberately no `total`: counting the
+            owner's full history per page is the scan the keyset cursor exists to avoid.
+    DocumentSummary:
+      type: object
+      description: >-
+        Summary projection. Carries no `content`, and not as a size micro-optimisation:
+        documents_save.yaml caps content at 200,000 characters, so a 20-item page of full
+        documents is a multi-megabyte response for a screen that renders titles. Fetch the
+        one document you open via GET /documents/{id}.
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        document_type:
+          type: string
+          enum: [доклад, эссе, сочинение, реферат]
+        status:
+          type: string
+          enum: [draft]
+        version:
+          type: integer
+          description: Pass as the CAS token to PUT /documents/{id}.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
@@ -74,13 +74,13 @@ class TestRegisterPostRouterServerOwnedFields:
             id=uuid4(),
             email="attacker@example.com",
             password_hash="hashed-value",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         created_verification_code = VerificationCode.create(
             id=uuid4(),
             account_id=created_account.id,
             code="123456",
-            expires_at=datetime.now(timezone.utc),
+            expires_at=datetime.now(UTC),
         )
         registration_result = RegistrationResult(
             account=created_account, verification_code=created_verification_code
@@ -104,9 +104,7 @@ class TestRegisterPostRouterServerOwnedFields:
             f"expected 201 Created, got {response.status_code} with body {response.text}"
         )
         body = response.json()
-        assert body is not None, (
-            "expected a JSON body containing id and is_verified, got body=None"
-        )
+        assert body is not None, "expected a JSON body containing id and is_verified, got body=None"
         assert body.get("user_id") == str(created_account.id), (
             f"expected user_id={str(created_account.id)!r} from the persisted Account "
             f"(field name per ProductSpecification/api-specs/auth_register.yaml "
@@ -142,9 +140,9 @@ class TestRegisterPostRouterVerificationCode:
             id=uuid4(),
             email="new-user@example.com",
             password_hash="hashed-value",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
-        code_expires_at = datetime(2026, 7, 14, 12, 30, 0, tzinfo=timezone.utc)
+        code_expires_at = datetime(2026, 7, 14, 12, 30, 0, tzinfo=UTC)
         created_verification_code = VerificationCode.create(
             id=uuid4(),
             account_id=created_account.id,

@@ -12,7 +12,9 @@ class LoginUser:
     """Scenario 5.1/5.2/6.1: authenticate an account and issue a token pair."""
 
     INVALID_CREDENTIALS_MESSAGE = "The email address or password is incorrect."
-    UNVERIFIED_MESSAGE = "This account has not been verified yet. Please confirm the code sent to your email."
+    UNVERIFIED_MESSAGE = (
+        "This account has not been verified yet. Please confirm the code sent to your email."
+    )
 
     def __init__(
         self,
@@ -28,7 +30,9 @@ class LoginUser:
         account = await self.account_repository.find_by_email(self._normalized_email(email))
         if account is None:
             raise self._invalid_credentials()
-        if not self.password_hasher.verify(self._normalized_password(password), account.password_hash):
+        if not self.password_hasher.verify(
+            self._normalized_password(password), account.password_hash
+        ):
             raise self._invalid_credentials()
         # Verified is checked AFTER the password, deliberately. The other order
         # would answer UNVERIFIED to anyone who merely guessed the email, turning

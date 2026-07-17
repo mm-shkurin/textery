@@ -1,5 +1,4 @@
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import UUID
 
 from document.document import Document
@@ -28,13 +27,15 @@ class FakeDocumentRepository:
             raise ConflictException("document with this idempotency key already exists")
         self.documents.append(document)
 
-    async def find_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> Optional[Document]:
+    async def find_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> Document | None:
         return next(
             (d for d in self.documents if d.id == document_id and d.owner_id == owner_id),
             None,
         )
 
-    async def find_by_idempotency_key(self, owner_id: UUID, idempotency_key: str) -> Optional[Document]:
+    async def find_by_idempotency_key(
+        self, owner_id: UUID, idempotency_key: str
+    ) -> Document | None:
         return next(
             (
                 d
@@ -51,7 +52,7 @@ class FakeDocumentRepository:
         content: str,
         expected_version: int,
         updated_at: datetime,
-    ) -> Optional[Document]:
+    ) -> Document | None:
         stored = await self.find_by_id_and_owner(document_id, owner_id)
         if stored is None or stored.version != expected_version:
             return None
@@ -78,8 +79,8 @@ class FakeHtmlSanitizer:
 
 
 class FakeClock:
-    def __init__(self, now: Optional[datetime] = None) -> None:
-        self._now = now or datetime(2026, 7, 17, 12, 0, tzinfo=timezone.utc)
+    def __init__(self, now: datetime | None = None) -> None:
+        self._now = now or datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
 
     def now(self) -> datetime:
         return self._now

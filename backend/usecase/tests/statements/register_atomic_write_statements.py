@@ -1,47 +1,32 @@
-from datetime import datetime, timezone
-from typing import Optional
+from scope.register_request_scope import RegisterRequestScope
 
 from auth.register_user import RegisterUser
-from fake.auth.fake_account_repository import FakeAccountRepository
-from fake.auth.fake_password_hasher import FakePasswordHasher
-from fake.auth.fake_clock import FakeClock
-from fake.auth.fake_unit_of_work import FakeUnitOfWork
-from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
-from scope.register_request_scope import RegisterRequestScope
 from shared.exceptions import RegistrationFailedException
+from statements.register_base import RegisterStatementsBase
 
 
-class RegisterAtomicWriteStatements:
+class RegisterAtomicWriteStatements(RegisterStatementsBase):
     """Scenario 2.5: Registration writes the account and the verification code atomically."""
 
     EXPECTED_REGISTRATION_FAILED_MESSAGE = (
         "Registration could not be completed due to an unexpected error. Please try again."
     )
     RAW_DRIVER_ERROR_SENTINEL = "SQLSTATE 08006 connection reset by peer"
-    FIXED_CLOCK_NOW = datetime(2026, 7, 14, 12, 0, 0, tzinfo=timezone.utc)
-
-    def __init__(self) -> None:
-        self.thrown_exception: Optional[Exception] = None
-        self.account_repository = FakeAccountRepository()
-        self.password_hasher = FakePasswordHasher()
-        self.clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
-        self.verification_code_repository = FakeVerificationCodeRepository()
-        self.unit_of_work = FakeUnitOfWork()
 
     async def register_with_both_saves_succeeding(self) -> None:
-        await self._execute_register()
+        await self._run_register(RegisterRequestScope.builder())
 
     async def attempt_registering_when_verification_code_save_fails(self) -> None:
         self.verification_code_repository.raise_on_save = RuntimeError(
             f"verification code insert failed: {self.RAW_DRIVER_ERROR_SENTINEL}"
         )
-        await self._execute_register()
+        await self._run_register(RegisterRequestScope.builder())
 
     async def attempt_registering_when_final_commit_fails(self) -> None:
         self.unit_of_work.raise_on_commit = RuntimeError(
             f"commit failed: {self.RAW_DRIVER_ERROR_SENTINEL}"
         )
-        await self._execute_register()
+        await self._run_register(RegisterRequestScope.builder())
 
     async def attempt_registering_when_verification_code_save_and_rollback_both_fail(self) -> None:
         self.verification_code_repository.raise_on_save = RuntimeError(
@@ -50,42 +35,32 @@ class RegisterAtomicWriteStatements:
         self.unit_of_work.raise_on_rollback = RuntimeError(
             f"rollback failed: {self.RAW_DRIVER_ERROR_SENTINEL}"
         )
-        await self._execute_register()
+        await self._run_register(RegisterRequestScope.builder())
 
     async def attempt_registering_when_account_save_fails_with_non_conflict_error(self) -> None:
         self.account_repository.raise_on_save = RuntimeError(
             f"account insert failed: {self.RAW_DRIVER_ERROR_SENTINEL}"
         )
-        await self._execute_register()
+        await self._run_register(RegisterRequestScope.builder())
 
     async def attempt_registering_without_injected_unit_of_work(self) -> None:
+        """The one statement that cannot use the base's usecase builder.
+
+        The point under test is RegisterUser's NullUnitOfWork default -- that a
+        failed write still raises the sanitized error when there is no unit of
+        work to roll back. Handing it the base's FakeUnitOfWork would test the
+        opposite of what the name says.
+        """
         self.verification_code_repository.raise_on_save = RuntimeError(
             f"verification code insert failed: {self.RAW_DRIVER_ERROR_SENTINEL}"
         )
         scope = RegisterRequestScope.builder()
         try:
             await RegisterUser(
-            password_hasher=self.password_hasher,
+                password_hasher=self.password_hasher,
                 account_repository=self.account_repository,
                 clock=self.clock,
                 verification_code_repository=self.verification_code_repository,
-            ).execute(
-                email=scope.email,
-                password=scope.password,
-                confirm_password=scope.confirm_password,
-            )
-        except Exception as exc:
-            self.thrown_exception = exc
-
-    async def _execute_register(self) -> None:
-        scope = RegisterRequestScope.builder()
-        try:
-            await RegisterUser(
-            password_hasher=self.password_hasher,
-                account_repository=self.account_repository,
-                clock=self.clock,
-                verification_code_repository=self.verification_code_repository,
-                unit_of_work=self.unit_of_work,
             ).execute(
                 email=scope.email,
                 password=scope.password,
@@ -154,7 +129,8 @@ class RegisterAtomicWriteStatements:
     def assert_registration_failed_error_raised_without_injected_unit_of_work(self) -> None:
         self._assert_registration_failed_shape()
         assert self.unit_of_work.rollback_call_count == 0, (
-            f"expected the injected fake UnitOfWork (unused by this scenario) to record no rollback calls, "
+            f"expected the injected fake UnitOfWork (unused by this scenario) "
+            f"to record no rollback calls, "
             f"got {self.unit_of_work.rollback_call_count}"
         )
         assert len(self.account_repository.saved_accounts) == 1, (

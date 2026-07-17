@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import event, text
@@ -34,7 +34,9 @@ class TestSaveIsASingleCompareAndSwapStatement:
     """
 
     async def test_should_emit_one_update_and_never_read_first(self):
-        os.environ.setdefault("TEST_DATABASE_URL", "postgresql://textery:change-me@localhost:5432/textery")
+        os.environ.setdefault(
+            "TEST_DATABASE_URL", "postgresql://textery:change-me@localhost:5432/textery"
+        )
         os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
         engine = create_engine()
         session_factory = create_session_factory(engine)
@@ -44,14 +46,14 @@ class TestSaveIsASingleCompareAndSwapStatement:
                 id=uuid4(),
                 email=f"shape-{uuid4()}@example.com",
                 password_hash="hash",
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
             await SqlAlchemyAccountRepository(setup).save(account)
             document = Document.create(
                 owner_id=account.id,
                 document_type="эссе",
                 idempotency_key=f"key-{uuid4()}",
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
             await SqlAlchemyDocumentStorage(setup).save_new(document)
             await setup.commit()
@@ -71,7 +73,7 @@ class TestSaveIsASingleCompareAndSwapStatement:
                         owner_id=account.id,
                         content="<p>x</p>",
                         expected_version=1,
-                        updated_at=datetime.now(timezone.utc),
+                        updated_at=datetime.now(UTC),
                     )
                 finally:
                     event.remove(engine.sync_engine, "before_cursor_execute", record)
@@ -95,6 +97,8 @@ class TestSaveIsASingleCompareAndSwapStatement:
             )
         finally:
             async with engine.connect() as cleanup:
-                await cleanup.execute(text("TRUNCATE TABLE documents, verification_codes, accounts"))
+                await cleanup.execute(
+                    text("TRUNCATE TABLE generations, documents, verification_codes, accounts")
+                )
                 await cleanup.commit()
             await engine.dispose()

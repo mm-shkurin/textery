@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from shared.exceptions import ConfigurationException
+
 DATABASE_URL_ENV_VAR = "DATABASE_URL"
 
 
@@ -17,7 +19,17 @@ def to_async_database_url(database_url: str) -> str:
 
 
 def create_engine() -> AsyncEngine:
+    # container/runtime builds the engine at module level, so this runs at import
+    # and its message is the whole diagnosis a misconfigured deployment gets.
+    # Unchecked, an unset URL surfaces as an AttributeError on None that names
+    # neither the variable nor configuration as the problem. Same contract
+    # JwtTokenService applies to JWT_SECRET.
     database_url = os.environ.get(DATABASE_URL_ENV_VAR)
+    if not database_url:
+        raise ConfigurationException(
+            f"{DATABASE_URL_ENV_VAR} is not set. Expected a PostgreSQL connection string, "
+            "e.g. postgresql+asyncpg://user:password@host:5432/db"
+        )
     return create_async_engine(to_async_database_url(database_url))
 
 

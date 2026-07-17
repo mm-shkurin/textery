@@ -6,9 +6,20 @@ info:
 paths:
   /api/v1/generations:
     get:
-      summary: >
-        List all generations (temporary, unscoped stand-in for history — no auth exists
-        yet; see known-debt.md #4). Keyset-paginated, never offset/limit.
+      summary: The caller's own generation history, newest first. Keyset-paginated.
+      description: >
+        Scoped to the Bearer token's account — `owner_id` is a query predicate, never
+        a parameter, so a caller cannot ask for someone else's history. This spec was
+        originally written as an unscoped stand-in ("no auth exists yet"); that premise
+        expired on 2026-07-17 when story 7 shipped /login and task 4 gave generations an
+        owner, and the endpoint was implemented scoped. See known-debt.md #4.
+
+
+        Ordered by `created_at DESC, id DESC`. The `id` tiebreak is load-bearing:
+        `created_at` alone is not unique, and a page boundary between two rows sharing a
+        timestamp would drop or repeat one.
+      security:
+        - bearerAuth: []
       operationId: listGenerations
       tags:
         - generations
@@ -24,7 +35,11 @@ paths:
         - name: cursor
           in: query
           required: false
-          description: Opaque cursor from a previous response's next_cursor. Omit for the first page.
+          description: >
+            Opaque cursor from a previous response's next_cursor. Omit for the first page.
+            Opaque by contract, not by protection: it is decodable and forgeable, which is
+            harmless — it only moves the window within the caller's own rows, because the
+            owner predicate is a separate AND and is never read from the cursor.
           schema:
             type: string
       responses:
@@ -34,11 +49,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenerationListResponse'
+        '400':
+          description: >-
+            Malformed cursor (INVALID_CURSOR), or limit outside 1..100 (INVALID_LIMIT).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing, malformed, expired, or non-access token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Internal server error
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
     GenerationListResponse:
       type: object
       properties:
@@ -49,9 +89,15 @@ components:
         next_cursor:
           type: string
           nullable: true
-          description: Pass as `cursor` to fetch the next page; null when there are no more results.
+          description: >
+            Pass as `cursor` to fetch the next page; null when there are no more results —
+            that null is the stop condition. There is deliberately no `total`: counting the
+            owner's full history per page is the scan the keyset cursor exists to avoid.
     GenerationResponse:
       type: object
+      description: >-
+        Summary projection — the same schema generations_create.yaml returns. Carries no
+        `content`: fetch the one generation you open via GET /generations/{id}.
       properties:
         generation_id:
           type: string

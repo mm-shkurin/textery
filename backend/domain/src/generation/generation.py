@@ -1,20 +1,30 @@
 import unicodedata
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+from document.document_type import SUPPORTED_DOCUMENT_TYPES, DocumentType
 from shared.exceptions import ValidationException
 
-MISSING_TOPIC_MESSAGE = "topic is required"
-OUT_OF_RANGE_VOLUME_MESSAGE = "volume_pages must be between 1 and 10"
-TOPIC_TOO_LONG_MESSAGE = "topic must be at most 500 characters"
-REQUIREMENTS_TOO_LONG_MESSAGE = "requirements must be at most 2000 characters"
-EXTRA_WISHES_TOO_LONG_MESSAGE = "extra_wishes must be at most 2000 characters"
 MIN_VOLUME_PAGES = 1
 MAX_VOLUME_PAGES = 10
 MAX_TOPIC_LENGTH = 500
 MAX_REQUIREMENTS_LENGTH = 2000
 MAX_EXTRA_WISHES_LENGTH = 2000
+
+# Declared after the bounds and interpolated from them. These messages used to
+# restate each number as a literal five lines from the constant it described, so
+# changing a bound left the message quoting the old one -- the one place the
+# discrepancy is guaranteed to be seen, by the user who just tripped the rule.
+MISSING_TOPIC_MESSAGE = "topic is required"
+OUT_OF_RANGE_VOLUME_MESSAGE = (
+    f"volume_pages must be between {MIN_VOLUME_PAGES} and {MAX_VOLUME_PAGES}"
+)
+TOPIC_TOO_LONG_MESSAGE = f"topic must be at most {MAX_TOPIC_LENGTH} characters"
+REQUIREMENTS_TOO_LONG_MESSAGE = f"requirements must be at most {MAX_REQUIREMENTS_LENGTH} characters"
+EXTRA_WISHES_TOO_LONG_MESSAGE = f"extra_wishes must be at most {MAX_EXTRA_WISHES_LENGTH} characters"
+INVALID_DOCUMENT_TYPE_MESSAGE = (
+    f"document_type must be one of: {', '.join(SUPPORTED_DOCUMENT_TYPES)}"
+)
 PENDING_STATUS = "pending"
 IN_PROGRESS_STATUS = "in_progress"
 COMPLETED_STATUS = "completed"
@@ -25,18 +35,23 @@ class Generation:
     def __init__(
         self,
         id: UUID,
+        owner_id: UUID,
         status: str,
         created_at: datetime,
-        topic: Optional[str],
-        volume_pages: Optional[int],
-        requirements: Optional[str],
-        extra_wishes: Optional[str],
+        topic: str | None,
+        volume_pages: int | None,
+        requirements: str | None,
+        extra_wishes: str | None,
         document_type: str,
-        content: Optional[str] = None,
-        error_message: Optional[str] = None,
+        content: str | None = None,
+        error_message: str | None = None,
         version: int = 1,
     ) -> None:
         self.id = id
+        # Required positionally, with no default: a default would let a caller that
+        # forgot the owner construct an unowned generation and only fail later at the
+        # NOT NULL column, far from the mistake.
+        self.owner_id = owner_id
         self.status = status
         self.created_at = created_at
         self.version = version
@@ -65,10 +80,11 @@ class Generation:
     @classmethod
     def create(
         cls,
-        topic: Optional[str],
-        volume_pages: Optional[int],
-        requirements: Optional[str],
-        extra_wishes: Optional[str],
+        owner_id: UUID,
+        topic: str | None,
+        volume_pages: int | None,
+        requirements: str | None,
+        extra_wishes: str | None,
         document_type: str,
     ) -> "Generation":
         if cls._is_blank_topic(topic):
@@ -83,30 +99,56 @@ class Generation:
             raise ValidationException(EXTRA_WISHES_TOO_LONG_MESSAGE)
         return cls(
             id=uuid4(),
+            owner_id=owner_id,
             status=PENDING_STATUS,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             topic=topic,
             volume_pages=volume_pages,
             requirements=requirements,
             extra_wishes=extra_wishes,
-            document_type=document_type,
+            document_type=cls._validate_document_type(document_type),
         )
 
     @staticmethod
-    def _is_out_of_range_volume(volume_pages: Optional[int]) -> bool:
+    def _validate_document_type(document_type: str) -> str:
+        """Reject anything outside the four supported types.
+
+        Load-bearing, not cosmetic: GigaChatProvider interpolates this value
+        straight into the prompt ("{document_type} на тему: {topic}"), so an
+        unvalidated string here reaches the model. The generations table carries
+        no CHECK on the column either -- unlike documents -- which makes this the
+        only guard.
+
+        DocumentType is reused rather than reimplemented so the allowlist stays
+        one tuple, shared with Document.create and the documents CHECK constraint.
+        """
+        try:
+            return DocumentType(document_type).value
+        except ValueError as error:
+            # error_code="INVALID_DOCUMENT_TYPE", matching CreateDocument, rather
+            # than the bare VALIDATION_ERROR this factory's other rules raise. It
+            # is the same field under the same allowlist, so a client that learned
+            # to handle the code from /documents handles it here unchanged -- and
+            # the shared handler already maps it to 422.
+            raise ValidationException(
+                error_code="INVALID_DOCUMENT_TYPE",
+                message=INVALID_DOCUMENT_TYPE_MESSAGE,
+            ) from error
+
+    @staticmethod
+    def _is_out_of_range_volume(volume_pages: int | None) -> bool:
         if volume_pages is None:
             return True
         return not (MIN_VOLUME_PAGES <= volume_pages <= MAX_VOLUME_PAGES)
 
     @staticmethod
-    def _is_blank_topic(topic: Optional[str]) -> bool:
+    def _is_blank_topic(topic: str | None) -> bool:
         if topic is None:
             return True
         # str.strip() only removes Unicode whitespace (category Zs/Zl/Zp), not
         # format characters like U+200B ZERO WIDTH SPACE (category Cf). Strip
         # both ordinary whitespace and format characters before checking emptiness.
         visible_chars = [
-            char for char in topic
-            if not char.isspace() and unicodedata.category(char) != "Cf"
+            char for char in topic if not char.isspace() and unicodedata.category(char) != "Cf"
         ]
         return len(visible_chars) == 0

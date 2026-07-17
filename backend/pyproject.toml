@@ -1,0 +1,92 @@
+[project]
+name = "textery-backend"
+version = "0.1.0"
+description = "Textery backend — FastAPI, Clean Architecture (domain → usecase → adapters → application)."
+requires-python = ">=3.12"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+# --- Test runner -------------------------------------------------------------
+# `pythonpath` replaces the hand-rolled `sys.path.insert` bootstrap every
+# conftest used to carry. The layer roots are listed inner-first, which is also
+# the dependency direction: a module can only import what is genuinely below it.
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = [
+    "domain/src",
+    "usecase/src",
+    "adapters/rest/src",
+    "adapters/db/src",
+    "adapters/security/src",
+    "adapters/generation_provider/src",
+    "application/src/app",
+    # Test-support roots, for the `statements` test-DSL packages. The two
+    # `statements` directories carry no `__init__.py`, so they merge into one
+    # implicit namespace package rather than shadowing each other.
+    "domain/tests",
+    "usecase/tests",
+    "adapters/db/tests",
+    "adapters/rest/tests",
+    "adapters/security/tests",
+    "adapters/generation_provider/tests",
+    "adapters/generation_provider/tests/provider",
+]
+
+# --- Linter / formatter ------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["adapters/db/migrations/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "C4", "SIM", "UP", "ARG"]
+ignore = [
+    # FastAPI's whole dependency-injection idiom is a call in a default argument
+    # (`Depends(...)`, `Header(...)`). B008 exists for mutable defaults; these are
+    # neither mutable nor evaluated per request in a way that surprises anyone.
+    "B008",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# The composition root imports only after it has put the layer roots on sys.path.
+# ARG001: the lifespan callback's `app` parameter is Starlette's signature, not ours.
+"application/src/app/main.py" = ["E402", "ARG001"]
+# ARG001: `request` is Starlette's exception-handler signature. The handlers that
+# only log the method and path still have to accept the whole object.
+"adapters/rest/src/error_handling/exception_handlers.py" = ["ARG001"]
+# ARG002: FakeProvider implements the GenerationProvider port. Ignoring the
+# generation it is handed is exactly what makes it a fake.
+"adapters/generation_provider/src/provider/fake_provider.py" = ["ARG002"]
+# Test doubles implement production ports, and SQLAlchemy event hooks have a
+# fixed five-argument shape; an unused argument in either is the signature doing
+# its job, not an oversight.
+"**/tests/**" = ["ARG001", "ARG002"]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "access",
+    "auth",
+    "container",
+    "document",
+    "dto",
+    "error_handling",
+    "fake",
+    "generation",
+    "gigachat_fixtures",
+    "hashing",
+    "model",
+    "provider",
+    "router",
+    "sanitization",
+    "security",
+    "session",
+    "shared",
+    "statements",
+    "tokens",
+]

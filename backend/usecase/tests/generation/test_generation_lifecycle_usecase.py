@@ -1,6 +1,4 @@
-import pytest
-
-from adapters.generation_provider import ProviderError
+from generation.generation_provider import ProviderError
 from statements.generation_lifecycle_statements import GenerationLifecycleStatements
 
 
@@ -48,16 +46,41 @@ class TestGenerateDocumentSuccess:
         )
         generation_lifecycle_statements.assert_generation_completed_with_content("Готовый доклад")
         generation_lifecycle_statements.assert_generation_marked_in_progress_before_final_update()
+        # A first-try success must not pay the backoff.
+        generation_lifecycle_statements.assert_never_waited()
+
+
+class TestGenerateDocumentMissingGeneration:
+    """A generation that is gone by the time the background task runs is a no-op.
+
+    The storage port returns Optional, and this usecase runs inside a
+    BackgroundTask where an AttributeError on None has nobody to answer to: it
+    would surface only as a row stuck pending until the sweep, far from the cause.
+    """
+
+    async def test_should_do_nothing_when_the_generation_does_not_exist(
+        self, generation_lifecycle_statements: GenerationLifecycleStatements
+    ):
+        await generation_lifecycle_statements.process_a_generation_that_is_gone()
+
+        # Returning quietly is the whole behaviour, so the assertions are about
+        # what must NOT happen: no write against a row that is not there, and no
+        # provider call, which would cost a paid request for a discarded result.
+        generation_lifecycle_statements.assert_no_generation_was_written()
+        generation_lifecycle_statements.assert_provider_was_not_called()
 
 
 class TestGenerateDocumentProviderFailure:
-    """Evening-demo slice: a provider error fails the generation with a generic, sanitized reason."""
+    """Evening-demo slice: a provider error fails the generation with a
+    generic, sanitized reason."""
 
     async def test_should_fail_generation_with_generic_reason(
         self, generation_lifecycle_statements: GenerationLifecycleStatements
     ):
         await generation_lifecycle_statements.process_pending_generation_with_provider_error(
-            ProviderError("https://gigachat.devices.sberbank.ru/api/v1/chat/completions: connection refused")
+            ProviderError(
+                "https://gigachat.devices.sberbank.ru/api/v1/chat/completions: connection refused"
+            )
         )
         generation_lifecycle_statements.assert_generation_failed_with_generic_reason()
         generation_lifecycle_statements.assert_generation_marked_in_progress_before_final_update()
@@ -69,6 +92,7 @@ class TestGenerateDocumentProviderFailure:
             ProviderError("provider unavailable")
         )
         generation_lifecycle_statements.assert_provider_call_count(2)
+        generation_lifecycle_statements.assert_waited_before_retrying()
 
 
 class TestGenerateDocumentTransientProviderFailure:
@@ -77,7 +101,8 @@ class TestGenerateDocumentTransientProviderFailure:
     async def test_should_complete_generation_after_one_transient_failure(
         self, generation_lifecycle_statements: GenerationLifecycleStatements
     ):
-        await generation_lifecycle_statements.process_pending_generation_with_transient_provider_error(
+        statements = generation_lifecycle_statements
+        await statements.process_pending_generation_with_transient_provider_error(
             ProviderError("temporary blip"), fail_times=1, content="Готовый доклад"
         )
         generation_lifecycle_statements.assert_generation_completed_with_content("Готовый доклад")

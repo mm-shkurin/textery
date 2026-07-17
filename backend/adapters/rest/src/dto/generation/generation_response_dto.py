@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -10,8 +9,8 @@ class GenerationCreatedDto(BaseModel):
     generation_id: str
     status: str
     created_at: datetime
-    topic: Optional[str]
-    volume_pages: Optional[int]
+    topic: str | None
+    volume_pages: int | None
     document_type: str
 
     @classmethod
@@ -26,15 +25,22 @@ class GenerationCreatedDto(BaseModel):
         )
 
 
+# The create and list responses are the same projection: generations_create.yaml and
+# generations_list.yaml both name the schema GenerationResponse, with the same fields.
+# One class rather than an identical twin, so the two cannot drift apart; the alias
+# just makes the list router read honestly.
+GenerationSummaryDto = GenerationCreatedDto
+
+
 class GenerationDetailDto(BaseModel):
     generation_id: str
     status: str
     created_at: datetime
-    topic: Optional[str]
-    volume_pages: Optional[int]
+    topic: str | None
+    volume_pages: int | None
     document_type: str
-    content: Optional[str]
-    error_message: Optional[str]
+    content: str | None
+    error_message: str | None
 
     @classmethod
     def from_domain(cls, generation: Generation) -> "GenerationDetailDto":

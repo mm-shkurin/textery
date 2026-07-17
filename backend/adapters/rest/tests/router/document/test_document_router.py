@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from conftest import OWNER_ID
@@ -6,7 +6,7 @@ from conftest import OWNER_ID
 from document.document import Document
 from document.document_creation_result import DocumentCreationResult
 
-CREATED_AT = datetime(2026, 7, 17, 12, 0, tzinfo=timezone.utc)
+CREATED_AT = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
 
 
 def a_document(content: str = "", version: int = 1) -> Document:
@@ -26,7 +26,9 @@ def a_document(content: str = "", version: int = 1) -> Document:
 class TestCreateDocumentRoute:
     """Scenario 2.1 / 3.1: 201 on create, 200 on a replayed key."""
 
-    async def test_should_return_201_and_the_document_on_a_fresh_create(self, mocker, create_client):
+    async def test_should_return_201_and_the_document_on_a_fresh_create(
+        self, mocker, create_client
+    ):
         document = a_document()
         usecase = mocker.Mock()
         usecase.execute = mocker.AsyncMock(
@@ -92,7 +94,9 @@ class TestCreateDocumentRoute:
                 headers={"Idempotency-Key": "key-1"},
             )
 
-        assert response.status_code == 201, f"extra fields are dropped, not rejected: {response.text}"
+        assert response.status_code == 201, (
+            f"extra fields are dropped, not rejected: {response.text}"
+        )
         usecase.execute.assert_awaited_once_with(
             owner_id=OWNER_ID, document_type="эссе", idempotency_key="key-1"
         )

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
@@ -11,7 +11,7 @@ def test_account_is_verified_is_false_at_construction():
         id=uuid4(),
         email="user@example.com",
         password_hash="hashed",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
     assert account.is_verified is False
@@ -22,7 +22,7 @@ def test_account_is_verified_has_no_public_setter():
         id=uuid4(),
         email="user@example.com",
         password_hash="hashed",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
     with pytest.raises(AttributeError):
@@ -34,7 +34,7 @@ def test_account_reconstitute_preserves_is_verified_true():
         id=uuid4(),
         email="user@example.com",
         password_hash="hashed",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
         is_verified=True,
     )
 
@@ -46,7 +46,7 @@ def test_account_verify_sets_is_verified_true():
         id=uuid4(),
         email="user@example.com",
         password_hash="hashed",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
     account.verify()

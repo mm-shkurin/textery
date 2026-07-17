@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 from document.document import Document
@@ -22,7 +21,7 @@ class CreateDocument:
         self,
         document_repository: DocumentRepository,
         clock: Clock,
-        unit_of_work: Optional[UnitOfWork] = None,
+        unit_of_work: UnitOfWork | None = None,
     ) -> None:
         self.document_repository = document_repository
         self.clock = clock

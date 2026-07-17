@@ -1,30 +1,29 @@
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from auth.account import Account
 from auth.refresh_access_token import RefreshAccessToken
-from shared.exceptions import InvalidTokenException, ValidationException
 from fake.auth.fake_account_repository import FakeAccountRepository
 from fake.auth.fake_password_hasher import FakePasswordHasher
 from fake.auth.fake_token_service import FakeTokenService
+from shared.exceptions import InvalidTokenException, ValidationException
 
 
 class RefreshStatements:
     """Scenarios 6.2 and 6.3: exchanging a refresh token for a fresh pair."""
 
-    FIXED_NOW = datetime(2026, 7, 16, 12, 0, 0, tzinfo=timezone.utc)
+    FIXED_NOW = datetime(2026, 7, 16, 12, 0, 0, tzinfo=UTC)
     SUBMITTED_TOKEN = "some-refresh-token"
     # Spelled out rather than imported from RefreshAccessToken -- importing the
     # constant under test would make the assertion pass for any edit to it.
     INVALID_REFRESH_MESSAGE = "The refresh token is invalid or has expired."
 
     def __init__(self) -> None:
-        self.thrown_exception: Optional[Exception] = None
+        self.thrown_exception: Exception | None = None
         self.account_repository = FakeAccountRepository()
         self.password_hasher = FakePasswordHasher()
         self.token_service = FakeTokenService()
-        self.account: Optional[Account] = None
+        self.account: Account | None = None
         self.issued_pair = None
 
     async def _given_account(self, is_verified: bool) -> Account:

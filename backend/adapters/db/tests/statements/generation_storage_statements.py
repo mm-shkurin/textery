@@ -1,10 +1,11 @@
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.generation.generation_storage import SqlAlchemyGenerationStorage
+from auth.account import Account
 from generation.generation import Generation
 from shared.exceptions import ConflictException, NotFoundException
 
@@ -12,19 +13,37 @@ from shared.exceptions import ConflictException, NotFoundException
 class GenerationStorageStatements:
     def __init__(self, session: AsyncSession) -> None:
         self._storage = SqlAlchemyGenerationStorage(session)
+        self._accounts = SqlAlchemyAccountRepository(session)
         self._session = session
-        self.saved_generation: Optional[Generation] = None
-        self.fetched_generation: Optional[Generation] = None
-        self.raised_error: Optional[Exception] = None
+        self._owner_id: UUID | None = None
+        self.saved_generation: Generation | None = None
+        self.fetched_generation: Generation | None = None
+        self.raised_error: Exception | None = None
         self.stale_generations: list[Generation] = []
 
+    async def given_an_account(self) -> UUID:
+        # generations.owner_id is a real FK, so a generation needs a real account row.
+        account = Account.create(
+            id=uuid4(),
+            email=f"owner-{uuid4()}@example.com",
+            password_hash="hash",
+            created_at=datetime.now(UTC),
+        )
+        await self._accounts.save(account)
+        self._owner_id = account.id
+        return account.id
+
     def build_pending_generation(
-        self, generation_id: Optional[UUID] = None, created_at: Optional[datetime] = None
+        self,
+        generation_id: UUID | None = None,
+        created_at: datetime | None = None,
+        owner_id: UUID | None = None,
     ) -> Generation:
         return Generation(
             id=generation_id or uuid4(),
+            owner_id=owner_id or self._owner_id,
             status="pending",
-            created_at=created_at or datetime.now(timezone.utc),
+            created_at=created_at or datetime.now(UTC),
             topic="Как работает фотосинтез",
             volume_pages=3,
             requirements=None,
@@ -37,8 +56,10 @@ class GenerationStorageStatements:
         self.saved_generation = generation
         await self._storage.save(generation)
 
-    async def fetch_generation(self, generation_id: UUID) -> None:
-        self.fetched_generation = await self._storage.get(generation_id)
+    async def fetch_generation(self, generation_id: UUID, owner_id: UUID | None = None) -> None:
+        self.fetched_generation = await self._storage.get_by_id_and_owner(
+            generation_id, owner_id or self._owner_id
+        )
 
     async def update_generation(self, generation: Generation) -> None:
         await self._storage.update(generation)
@@ -62,10 +83,21 @@ class GenerationStorageStatements:
     async def fetch_unknown_generation(self) -> None:
         await self.fetch_generation(uuid4())
 
+    async def fetch_saved_generation_as_another_owner(self) -> None:
+        """Read a generation that exists, presenting a different account's id. Proves
+        the WHERE clause is what withholds it -- an assertion `fetch_unknown_generation`
+        cannot make, since there the row is absent anyway.
+        """
+        other_owner_id = await self.given_an_account()
+        self.fetched_generation = await self._storage.get_by_id_and_owner(
+            self.saved_generation.id, other_owner_id
+        )
+
     def assert_fetched_matches_saved(self) -> None:
         assert self.fetched_generation is not None, "expected a Generation, got None"
         actual = (
             self.fetched_generation.id,
+            self.fetched_generation.owner_id,
             self.fetched_generation.status,
             self.fetched_generation.topic,
             self.fetched_generation.volume_pages,
@@ -76,6 +108,7 @@ class GenerationStorageStatements:
         )
         expected = (
             self.saved_generation.id,
+            self.saved_generation.owner_id,
             self.saved_generation.status,
             self.saved_generation.topic,
             self.saved_generation.volume_pages,
@@ -100,17 +133,19 @@ class GenerationStorageStatements:
         )
 
     async def save_stale_pending_generation(self) -> Generation:
-        generation = self.build_pending_generation(created_at=datetime.now(timezone.utc) - timedelta(minutes=30))
+        generation = self.build_pending_generation(
+            created_at=datetime.now(UTC) - timedelta(minutes=30)
+        )
         await self._storage.save(generation)
         return generation
 
     async def save_fresh_pending_generation(self) -> Generation:
-        generation = self.build_pending_generation(created_at=datetime.now(timezone.utc))
+        generation = self.build_pending_generation(created_at=datetime.now(UTC))
         await self._storage.save(generation)
         return generation
 
     async def list_stale_generations(self, older_than_minutes: int = 10) -> None:
-        threshold = datetime.now(timezone.utc) - timedelta(minutes=older_than_minutes)
+        threshold = datetime.now(UTC) - timedelta(minutes=older_than_minutes)
         self.stale_generations = await self._storage.list_stale(threshold)
 
     def assert_stale_generations_include(self, generation: Generation) -> None:
@@ -119,9 +154,13 @@ class GenerationStorageStatements:
 
     def assert_stale_generations_exclude(self, generation: Generation) -> None:
         stale_ids = {g.id for g in self.stale_generations}
-        assert generation.id not in stale_ids, f"expected {generation.id} not in stale results {stale_ids}"
+        assert generation.id not in stale_ids, (
+            f"expected {generation.id} not in stale results {stale_ids}"
+        )
 
-    def assert_fetched_status_and_content(self, expected_status: str, expected_content: Optional[str]) -> None:
+    def assert_fetched_status_and_content(
+        self, expected_status: str, expected_content: str | None
+    ) -> None:
         assert self.fetched_generation.status == expected_status, (
             f"expected status '{expected_status}', got '{self.fetched_generation.status}'"
         )

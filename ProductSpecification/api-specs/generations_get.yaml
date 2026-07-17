@@ -10,6 +10,8 @@ paths:
       operationId: getGeneration
       tags:
         - generations
+      security:
+        - bearerAuth: []
       parameters:
         - name: generation_id
           in: path
@@ -24,12 +26,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenerationDetailResponse'
+        '401':
+          description: Missing, malformed, expired, or non-access token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: No generation with this id
+          description: >-
+            No generation with this id, OR the generation belongs to another
+            account. The two are deliberately indistinguishable: a 403 would
+            confirm the id exists.
         '500':
           description: Internal server error
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     GenerationDetailResponse:
       type: object
@@ -57,3 +73,10 @@ components:
           type: string
           nullable: true
           description: Present only when status is "failed".
+    ErrorResponse:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string

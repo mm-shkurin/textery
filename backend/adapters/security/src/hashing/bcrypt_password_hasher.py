@@ -27,7 +27,9 @@ class BcryptPasswordHasher:
     _ROUNDS = 12
 
     def hash(self, plain_password: str) -> str:
-        return bcrypt.hashpw(self._prepare(plain_password), bcrypt.gensalt(rounds=self._ROUNDS)).decode("utf-8")
+        return bcrypt.hashpw(
+            self._prepare(plain_password), bcrypt.gensalt(rounds=self._ROUNDS)
+        ).decode("utf-8")
 
     def verify(self, plain_password: str, hashed_password: str) -> bool:
         return bcrypt.checkpw(self._prepare(plain_password), hashed_password.encode("utf-8"))

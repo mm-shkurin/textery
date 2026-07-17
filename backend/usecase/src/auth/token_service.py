@@ -7,8 +7,7 @@ from auth.token_pair import TokenPair
 class TokenService(Protocol):
     """Port for issuing and reading auth tokens."""
 
-    def issue_pair(self, account_id: UUID, email: str) -> TokenPair:
-        ...
+    def issue_pair(self, account_id: UUID, email: str) -> TokenPair: ...
 
     def read_refresh_subject(self, refresh_token: str) -> UUID:
         """Return the account id carried by a valid refresh token.

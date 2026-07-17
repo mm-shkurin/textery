@@ -81,7 +81,10 @@ class TestLoginPostRouterUnverifiedAccount:
         mock_usecase.execute = mocker.AsyncMock(
             side_effect=ValidationException(
                 error_code="UNVERIFIED",
-                message="This account has not been verified yet. Please confirm the code sent to your email.",
+                message=(
+                    "This account has not been verified yet. "
+                    "Please confirm the code sent to your email."
+                ),
             )
         )
 
@@ -96,5 +99,8 @@ class TestLoginPostRouterUnverifiedAccount:
         )
         assert response.json() == {
             "error_code": "UNVERIFIED",
-            "message": "This account has not been verified yet. Please confirm the code sent to your email.",
+            "message": (
+                "This account has not been verified yet. "
+                "Please confirm the code sent to your email."
+            ),
         }, f"unexpected response body {response.json()}"

@@ -48,3 +48,41 @@ class TestSkipCompleted:
         requeue_stale_generations_statements.given_completed_generation()
         await requeue_stale_generations_statements.sweep_stale_generations()
         requeue_stale_generations_statements.assert_nothing_requeued()
+
+
+class TestSweepSurvivesContention:
+    """A row lost to another replica must not abort the batch.
+
+    The sweep runs in every replica's lifespan and claims rows through a
+    compare-and-swap, so exactly one instance wins each contested row and the
+    others are told they lost. That is the design working, not a failure -- but
+    an escaping exception aborted the whole loop at the first contested row,
+    stranding every later one for another interval and surfacing as "stale
+    generation sweep failed" in the lifespan logger.
+    """
+
+    async def test_should_requeue_the_rest_when_one_row_is_claimed_by_another_replica(
+        self, requeue_stale_generations_statements: RequeueStaleGenerationsStatements
+    ):
+        lost = requeue_stale_generations_statements.given_stale_pending_generation()
+        still_ours = requeue_stale_generations_statements.given_stale_pending_generation()
+        requeue_stale_generations_statements.given_row_already_claimed_by_another_replica(lost)
+
+        await requeue_stale_generations_statements.sweep_stale_generations()
+
+        # The contested row is not reported as requeued -- the application layer
+        # re-triggers generation for whatever comes back, and re-triggering a row
+        # another replica already owns is the duplicate paid LLM call the CAS
+        # exists to prevent.
+        requeue_stale_generations_statements.assert_requeued(still_ours)
+
+    async def test_should_requeue_the_rest_when_one_row_was_deleted(
+        self, requeue_stale_generations_statements: RequeueStaleGenerationsStatements
+    ):
+        gone = requeue_stale_generations_statements.given_stale_pending_generation()
+        still_ours = requeue_stale_generations_statements.given_stale_pending_generation()
+        requeue_stale_generations_statements.given_row_deleted_before_the_sweep_reached_it(gone)
+
+        await requeue_stale_generations_statements.sweep_stale_generations()
+
+        requeue_stale_generations_statements.assert_requeued(still_ours)

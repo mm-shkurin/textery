@@ -1,6 +1,5 @@
 import secrets
 from datetime import datetime, timedelta
-from typing import Optional
 from uuid import UUID
 
 from auth.verification_code_value import VerificationCodeValue
@@ -8,7 +7,7 @@ from auth.verification_code_value import VerificationCodeValue
 _EXPIRY_MINUTES = 10
 
 
-class VerificationCode(object):
+class VerificationCode:
     """Domain entity for a registration email-verification code."""
 
     def __init__(
@@ -17,7 +16,7 @@ class VerificationCode(object):
         account_id: UUID,
         code: str,
         expires_at: datetime,
-        consumed_at: Optional[datetime] = None,
+        consumed_at: datetime | None = None,
     ) -> None:
         self.id = id
         self.account_id = account_id
@@ -30,17 +29,25 @@ class VerificationCode(object):
         return self._code
 
     @property
-    def consumed_at(self) -> Optional[datetime]:
+    def consumed_at(self) -> datetime | None:
         return self._consumed_at
 
     def matches(self, code: str) -> bool:
-        return self._code == code
+        # compare_digest, not ==: `==` on str short-circuits at the first differing
+        # character, so the time it takes to answer leaks how many leading digits
+        # were right. That turns a 10**6 code space into ~10*6 guesses for a
+        # caller who can measure. The code is a secret with a 10-minute life, and
+        # VerifyAccount is deliberately careful elsewhere about not answering
+        # differently for different failures -- a timing oracle would undo that.
+        return secrets.compare_digest(self._code, code)
 
     def consume(self, consumed_at: datetime) -> None:
         self._consumed_at = consumed_at
 
     @classmethod
-    def create(cls, id: UUID, account_id: UUID, code: str, expires_at: datetime) -> "VerificationCode":
+    def create(
+        cls, id: UUID, account_id: UUID, code: str, expires_at: datetime
+    ) -> "VerificationCode":
         return cls(
             id=id,
             account_id=account_id,
@@ -55,7 +62,7 @@ class VerificationCode(object):
         account_id: UUID,
         code: str,
         expires_at: datetime,
-        consumed_at: Optional[datetime],
+        consumed_at: datetime | None,
     ) -> "VerificationCode":
         """Rebuild a VerificationCode from storage, preserving consumed_at."""
         return cls(

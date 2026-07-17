@@ -86,6 +86,23 @@ def save_client(document_app):
 
 
 @pytest.fixture
+def list_client(document_app):
+    return _client_factory(document_app, "get_list_documents_usecase")
+
+
+@pytest.fixture
+def unauthenticated_list_client(document_app):
+    """No owner override — the real Bearer dependency runs."""
+    return _client_factory(document_app, "get_list_documents_usecase", override_owner=False)
+
+
+@pytest.fixture
+def owner_id():
+    """The account id the overridden Bearer dependency resolves to."""
+    return OWNER_ID
+
+
+@pytest.fixture
 def unauthenticated_create_client(document_app):
     """No owner override — the real Bearer dependency runs."""
     return _client_factory(document_app, "get_create_document_usecase", override_owner=False)

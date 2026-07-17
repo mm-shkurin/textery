@@ -94,6 +94,30 @@ migration/rework to attach ownership — accepted as a deliberate later-story co
 exchange for not guessing the User shape now. Flag this tradeoff in story 7's interview
 and design-preview.
 
+**SUPERSEDED 2026-07-17 — the rework above has landed. Nothing is anonymous now.**
+Product rule, stated by the product owner 2026-07-17: *creating a document — manual mode
+or AI generation — is only possible with a token.* There is no anonymous authoring path;
+an unowned row is not a lesser mode, it is a state that must not exist.
+
+- `Authorization: Bearer <access_token>` is **required** on every `/api/v1/documents` and
+  `/api/v1/generations` endpoint. Missing, malformed, expired, or a refresh token
+  presented as an access token → one identical `401 {error_code: UNAUTHORIZED}`.
+- `documents.owner_id` and `generations.owner_id` are `UUID NOT NULL`, FK → `accounts.id`.
+- **Ownership is a query predicate, never a post-read `if`.** Storages expose no
+  unscoped by-id read (`find_by_id`/`get(id)` were *replaced*, not joined, by
+  `find_by_id_and_owner`/`get_by_id_and_owner`) — so a foreign row falls out as `None`
+  structurally and no caller can forget the check.
+- A row owned by someone else answers **404, not 403**: a 403 confirms the id exists,
+  turning the endpoint into an existence oracle. Same reasoning as `INVALID_CREDENTIALS`.
+- The anonymous generation rows that predated this were **deleted** in migration
+  `b8c9d0e1f2a3`, not backfilled — no account could honestly own them.
+
+The delay cost what the tradeoff predicted and then some: the generation slice kept the
+anonymous shape for a full sprint after `/login` shipped, because nothing re-read this
+note. See `ProductSpecification/stories/05-manual-mode/decisions/document-ownership-decision.md`
+(the reasoning, written for documents) and `ProductSpecification/tasks/done/4-bug-generations-auth/`
+(the generation half, found by a frontend session probing prod with curl).
+
 ## Open
 - Docx/PDF generation library (python-docx + a PDF renderer, or a different approach) —
   low priority, needed around story 5 at the earliest.

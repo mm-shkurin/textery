@@ -13,3 +13,8 @@ pytest==9.1.1
 pytest-asyncio==1.4.0
 pytest-mock==3.15.1
 pytest-cov==7.1.0
+# Linter and formatter, configured in pyproject.toml. Pinned exactly, like
+# everything else here: ruff ships new rules in patch releases, so an unpinned
+# version turns "CI went red" into a question about which ruff the runner drew
+# rather than about the commit.
+ruff==0.15.22

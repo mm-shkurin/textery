@@ -1,5 +1,4 @@
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,7 +23,7 @@ class DocumentStorageStatements:
             id=uuid4(),
             email=f"owner-{uuid4()}@example.com",
             password_hash="hash",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         await self._accounts.save(account)
         return account.id
@@ -34,7 +33,7 @@ class DocumentStorageStatements:
             owner_id=owner_id,
             document_type="эссе",
             idempotency_key=idempotency_key or f"key-{uuid4()}",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         await self._storage.save_new(document)
         await self._session.commit()
@@ -43,21 +42,21 @@ class DocumentStorageStatements:
     async def save_new(self, document: Document) -> None:
         await self._storage.save_new(document)
 
-    async def find_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> Optional[Document]:
+    async def find_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> Document | None:
         return await self._storage.find_by_id_and_owner(document_id, owner_id)
 
-    async def find_by_idempotency_key(self, owner_id: UUID, key: str) -> Optional[Document]:
+    async def find_by_idempotency_key(self, owner_id: UUID, key: str) -> Document | None:
         return await self._storage.find_by_idempotency_key(owner_id, key)
 
     async def save_content_if_version_matches(
         self, document_id: UUID, owner_id: UUID, content: str, expected_version: int
-    ) -> Optional[Document]:
+    ) -> Document | None:
         return await self._storage.save_content_if_version_matches(
             document_id=document_id,
             owner_id=owner_id,
             content=content,
             expected_version=expected_version,
-            updated_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(UTC),
         )
 
     async def rollback(self) -> None:
@@ -66,7 +65,7 @@ class DocumentStorageStatements:
     async def commit(self) -> None:
         await self._session.commit()
 
-    def assert_documents_match(self, actual: Optional[Document], expected: Document) -> None:
+    def assert_documents_match(self, actual: Document | None, expected: Document) -> None:
         assert actual is not None, "expected a document, got None"
         assert (
             actual.id,

@@ -1,10 +1,10 @@
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from fake.generation.fake_generation_storage import FakeGenerationStorage
 from generation.generation import Generation
 from generation.requeue_stale_generations import RequeueStaleGenerations
+from shared.exceptions import ConflictException, NotFoundException
 
 STALE_AFTER = timedelta(minutes=10)
 
@@ -12,8 +12,8 @@ STALE_AFTER = timedelta(minutes=10)
 class RequeueStaleGenerationsStatements:
     def __init__(self) -> None:
         self._storage = FakeGenerationStorage(call_order=[])
-        self._now = datetime.now(timezone.utc)
-        self.requeued_ids: list[UUID] = []
+        self._now = datetime.now(UTC)
+        self.requeued: list[tuple[UUID, UUID]] = []
 
     def given_stale_pending_generation(self) -> Generation:
         return self._seed(status="pending", age=STALE_AFTER + timedelta(minutes=1))
@@ -30,6 +30,7 @@ class RequeueStaleGenerationsStatements:
     def _seed(self, status: str, age: timedelta) -> Generation:
         generation = Generation(
             id=uuid4(),
+            owner_id=uuid4(),
             status=status,
             created_at=self._now - age,
             topic="Как работает фотосинтез",
@@ -42,14 +43,33 @@ class RequeueStaleGenerationsStatements:
         self._storage.seed(generation)
         return generation
 
+    def given_row_already_claimed_by_another_replica(self, generation: Generation) -> None:
+        """Stage the CAS loss a competing sweep causes.
+
+        The sweep runs in every replica's lifespan, so two instances routinely
+        list the same stale row and race to claim it. The storage's compare-and-swap
+        makes exactly one win; the loser gets this.
+        """
+        self._storage.raise_on_update_for[generation.id] = ConflictException(
+            f"generation {generation.id} was concurrently modified"
+        )
+
+    def given_row_deleted_before_the_sweep_reached_it(self, generation: Generation) -> None:
+        self._storage.raise_on_update_for[generation.id] = NotFoundException(
+            f"generation {generation.id} not found"
+        )
+
     async def sweep_stale_generations(self) -> None:
         usecase = RequeueStaleGenerations(storage=self._storage)
-        self.requeued_ids = await usecase.execute(older_than=self._now - STALE_AFTER)
+        self.requeued = await usecase.execute(older_than=self._now - STALE_AFTER)
 
     def assert_requeued(self, *expected: Generation) -> None:
-        expected_ids = {generation.id for generation in expected}
-        assert set(self.requeued_ids) == expected_ids, (
-            f"expected requeued ids {expected_ids}, got {set(self.requeued_ids)}"
+        # The owner is asserted alongside the id, not dropped: the sweep's return
+        # value is what the re-trigger uses to locate the row again, and an id
+        # paired with the wrong owner would find nothing and silently never run.
+        expected_pairs = {(generation.id, generation.owner_id) for generation in expected}
+        assert set(self.requeued) == expected_pairs, (
+            f"expected requeued (id, owner_id) pairs {expected_pairs}, got {set(self.requeued)}"
         )
 
     def assert_status_reset_to_pending(self, generation: Generation) -> None:
@@ -58,4 +78,4 @@ class RequeueStaleGenerationsStatements:
         assert stored.status == "pending", f"expected status 'pending', got '{stored.status}'"
 
     def assert_nothing_requeued(self) -> None:
-        assert self.requeued_ids == [], f"expected no requeued ids, got {self.requeued_ids}"
+        assert self.requeued == [], f"expected nothing requeued, got {self.requeued}"

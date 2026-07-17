@@ -1,6 +1,6 @@
 import asyncio
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import text
@@ -42,7 +42,9 @@ class TestConcurrentSavesResolveAtomically:
     """
 
     async def test_exactly_one_of_two_same_version_saves_wins(self):
-        os.environ.setdefault("TEST_DATABASE_URL", "postgresql://textery:change-me@localhost:5432/textery")
+        os.environ.setdefault(
+            "TEST_DATABASE_URL", "postgresql://textery:change-me@localhost:5432/textery"
+        )
         os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
         engine = create_engine()
         session_factory = create_session_factory(engine)
@@ -52,14 +54,14 @@ class TestConcurrentSavesResolveAtomically:
                 id=uuid4(),
                 email=f"race-{uuid4()}@example.com",
                 password_hash="hash",
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
             await SqlAlchemyAccountRepository(setup_session).save(account)
             document = Document.create(
                 owner_id=account.id,
                 document_type="эссе",
                 idempotency_key=f"key-{uuid4()}",
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
             await SqlAlchemyDocumentStorage(setup_session).save_new(document)
             await setup_session.commit()
@@ -71,7 +73,7 @@ class TestConcurrentSavesResolveAtomically:
                     owner_id=account.id,
                     content=content,
                     expected_version=1,
-                    updated_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(UTC),
                 )
                 await session.commit()
                 return result
@@ -93,11 +95,14 @@ class TestConcurrentSavesResolveAtomically:
                 )
             assert stored.version == 2, "the row must land at version 2, never 3"
             assert stored.content == winners[0].content, (
-                "the stored content must be exactly the winner's — never the loser's, never interleaved"
+                "the stored content must be exactly the winner's — never the loser's, "
+                "never interleaved"
             )
             assert stored.content in ("<p>alpha</p>", "<p>beta</p>")
         finally:
             async with engine.connect() as cleanup:
-                await cleanup.execute(text("TRUNCATE TABLE documents, verification_codes, accounts"))
+                await cleanup.execute(
+                    text("TRUNCATE TABLE generations, documents, verification_codes, accounts")
+                )
                 await cleanup.commit()
             await engine.dispose()

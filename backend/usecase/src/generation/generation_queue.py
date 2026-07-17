@@ -3,5 +3,4 @@ from uuid import UUID
 
 
 class GenerationQueue(Protocol):
-    async def enqueue(self, generation_id: UUID) -> None:
-        ...
+    async def enqueue(self, generation_id: UUID) -> None: ...

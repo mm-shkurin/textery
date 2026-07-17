@@ -1,28 +1,20 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
-from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
-
 from generation.generation import Generation
-from router.generation.generation_router import (
-    router as generation_router,
-    get_generate_document_usecase,
-    get_request_generation_usecase,
-)
 
 
 class TestCreateGenerationHappyPath:
     """Scenario 2.1: Valid request is accepted and queued without waiting on the LLM call."""
 
-    async def test_should_return_201_with_pending_generation_and_enqueue_background_task(self, mocker):
-        app = FastAPI()
-        app.include_router(generation_router)
-
+    async def test_should_return_201_with_pending_generation_and_enqueue_background_task(
+        self, mocker, create_client, owner_id
+    ):
         generation = Generation(
             id=uuid4(),
+            owner_id=owner_id,
             status="pending",
-            created_at=datetime(2026, 7, 10, 12, 0, 0, tzinfo=timezone.utc),
+            created_at=datetime(2026, 7, 10, 12, 0, 0, tzinfo=UTC),
             topic="Как работает фотосинтез",
             volume_pages=3,
             requirements=None,
@@ -34,11 +26,8 @@ class TestCreateGenerationHappyPath:
         mock_request_usecase.execute = mocker.AsyncMock(return_value=generation)
         mock_generate_document = mocker.Mock()
         mock_generate_document.execute = mocker.AsyncMock()
-        app.dependency_overrides[get_request_generation_usecase] = lambda: mock_request_usecase
-        app.dependency_overrides[get_generate_document_usecase] = lambda: mock_generate_document
 
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with create_client(mock_request_usecase, mock_generate_document) as client:
             response = await client.post(
                 "/api/v1/generations",
                 json={
@@ -60,11 +49,17 @@ class TestCreateGenerationHappyPath:
             "volume_pages": 3,
             "document_type": "доклад",
         }, f"unexpected response body {response.json()}"
+        # owner_id comes from the token, never the body -- a client that sent one
+        # would have it ignored by Pydantic's extra="ignore".
         mock_request_usecase.execute.assert_awaited_once_with(
+            owner_id=owner_id,
             topic="Как работает фотосинтез",
             volume_pages=3,
             requirements=None,
             extra_wishes=None,
             document_type="доклад",
         )
-        mock_generate_document.execute.assert_awaited_once_with(generation.id)
+        # The background task carries the owner too: it re-reads through the
+        # owner-filtered query, so an id alone would find nothing and the generation
+        # would sit pending forever.
+        mock_generate_document.execute.assert_awaited_once_with(generation.id, owner_id)

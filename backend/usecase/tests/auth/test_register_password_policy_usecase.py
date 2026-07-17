@@ -31,7 +31,9 @@ class TestRegisterUsecaseWeakPassword:
             "too_long",
         ],
     )
-    async def test_should_reject_weak_password(self, register_statements: RegisterStatements, password):
+    async def test_should_reject_weak_password(
+        self, register_statements: RegisterStatements, password
+    ):
         await register_statements.attempt_registering_with_password(password)
         register_statements.assert_invalid_password_error_raised()
 
@@ -40,7 +42,9 @@ class TestRegisterUsecaseWeakPassword:
         [None, 12345],
         ids=["none_value", "int_value"],
     )
-    async def test_should_reject_non_string_password(self, register_statements: RegisterStatements, password):
+    async def test_should_reject_non_string_password(
+        self, register_statements: RegisterStatements, password
+    ):
         await register_statements.attempt_registering_with_password(password)
         register_statements.assert_invalid_password_error_raised()
 

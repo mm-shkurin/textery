@@ -8,5 +8,4 @@ class ProviderError(Exception):
 
 
 class GenerationProvider(Protocol):
-    async def generate(self, generation: Generation) -> str:
-        ...
+    async def generate(self, generation: Generation) -> str: ...

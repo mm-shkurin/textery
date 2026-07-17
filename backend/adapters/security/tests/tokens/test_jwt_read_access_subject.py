@@ -5,7 +5,8 @@ import pytest
 from shared.exceptions import InvalidTokenException
 from tokens.jwt_token_service import JwtTokenService
 
-SECRET = "test-signing-secret"
+# At least 32 bytes: JwtTokenService enforces RFC 7518 §3.2 for HS256.
+SECRET = "test-signing-secret-padded-to-32-bytes"
 
 
 class TestReadAccessSubject:
@@ -36,9 +37,9 @@ class TestReadAccessSubject:
             service.read_access_subject(pair.refresh_token)
 
     def test_should_reject_a_token_signed_with_a_different_key(self):
-        issued_elsewhere = JwtTokenService(secret="another-secret").issue_pair(
-            account_id=uuid4(), email="user@example.com"
-        )
+        issued_elsewhere = JwtTokenService(
+            secret="another-signing-secret-padded-to-32-bytes"
+        ).issue_pair(account_id=uuid4(), email="user@example.com")
 
         with pytest.raises(InvalidTokenException):
             JwtTokenService(secret=SECRET).read_access_subject(issued_elsewhere.access_token)

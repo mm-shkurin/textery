@@ -33,10 +33,27 @@ types) may run in any order relative to each other and may interleave with #5–
 | 9  | Landing & Marketing                    |      |      |      |     |       |      |       |       |    |
 | 10 | Text Editor polish (formatting, autosave) |      |      |      |     |       |      |       |       |    |
 | 11 | Document Management (rename/delete/duplicate) |      |      |      |     |       |      |       |       |    |
-| 12 | History (list/search/filter)           |      |      |      |     |       |      |       |       |    |
+| 12 | History (list/search/filter) — see note |      |      |      |     |       |      |       |       |    |
 | 13 | Profile management                     |      |      |      |     |       |      |       |       |    |
 | 14 | Analytics Event Tracking                |      |      |      |     |       |      |       |       |    |
 | 15 | Funnels & Reports (CSV export)          |      |      |      |     |       |      |       |       |    |
+
+**Note on #12 (History).** Its row stays all-blank — there is no story folder, no
+interview, no spec, no test-spec — but part of its backend already exists, shipped
+2026-07-17 outside the story lifecycle at the user's direction
+(`feat: owner-scoped history for generations and documents`):
+
+- `GET /api/v1/generations` and `GET /api/v1/documents` — the caller's own history,
+  Bearer-required, owner-scoped in SQL, keyset-paginated, summary projection (no
+  content). Contracts: `api-specs/generations_list.yaml`, `api-specs/documents_list.yaml`.
+- Covered by unit, adapter and DB-level tests, and verified end to end against the
+  running container. Not covered by an acceptance test — see the same gap named in
+  `tasks/done/4-bug-generations-auth/progress.md`.
+
+What #12 still owns: search, filter, titles, and whatever the interview decides. The row
+is blank rather than 🔧 deliberately — blank means "no story work has started", which is
+true; the endpoints arrived as feature plumbing, not as story #12's backend phase, and
+marking them 🔧 would claim a spec and scenarios that do not exist.
 
 # Done
 

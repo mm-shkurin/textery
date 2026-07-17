@@ -2,8 +2,8 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from shared.exceptions import ValidationException
 from error_handling.exception_handlers import validation_exception_handler
+from shared.exceptions import ValidationException
 
 auth_router_module = pytest.importorskip(
     "router.auth.auth_router",

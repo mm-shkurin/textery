@@ -1,20 +1,20 @@
 import asyncio
 import os
-import sys
 from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "domain", "src"))
-
-from model.auth.account_model import AccountModel  # noqa: E402,F401
-from model.auth.verification_code_model import VerificationCodeModel  # noqa: E402,F401
-from model.base import Base  # noqa: E402
-from model.document.document_model import DocumentModel  # noqa: E402,F401
-from model.generation.generation_model import GenerationModel  # noqa: E402,F401
-from session import create_engine  # noqa: E402
+# The layer roots come from `prepend_sys_path` in alembic.ini, so these are
+# ordinary top-level imports. The model imports are unused by name and kept for
+# their side effect: each registers its table on Base.metadata, which is what
+# autogenerate diffs against. Drop one and Alembic proposes dropping its table.
+from model.auth.account_model import AccountModel  # noqa: F401
+from model.auth.verification_code_model import VerificationCodeModel  # noqa: F401
+from model.base import Base
+from model.document.document_model import DocumentModel  # noqa: F401
+from model.generation.generation_model import GenerationModel  # noqa: F401
+from session import create_engine
 
 config = context.config
 

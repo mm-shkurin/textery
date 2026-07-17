@@ -4,6 +4,7 @@ import pytest
 # guard -- it must fail loudly if router.auth.auth_router stops importing, not skip
 # and let the suite report green. The module exists as of the /verify route landing.
 from router.auth import auth_router as auth_router_module
+
 get_verify_account_usecase = auth_router_module.get_verify_account_usecase
 
 

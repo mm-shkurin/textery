@@ -28,11 +28,14 @@ _ERROR_CODE_STATUS_MAP = {
 # leak. The detail is logged instead.
 NOT_FOUND_MESSAGE = "The requested resource was not found."
 CONFLICT_MESSAGE = "The document was modified by another save. Refetch and retry."
+INTERNAL_ERROR_MESSAGE = "An unexpected error occurred. Please try again."
 
 
 async def validation_exception_handler(request: Request, exc: ValidationException) -> JSONResponse:
     status_code = _ERROR_CODE_STATUS_MAP.get(exc.error_code, 400)
-    return JSONResponse(status_code=status_code, content={"error_code": exc.error_code, "message": exc.message})
+    return JSONResponse(
+        status_code=status_code, content={"error_code": exc.error_code, "message": exc.message}
+    )
 
 
 async def not_found_exception_handler(request: Request, exc: NotFoundException) -> JSONResponse:
@@ -55,5 +58,17 @@ async def conflict_exception_handler(request: Request, exc: ConflictException) -
 
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    logger.error("unhandled exception on %s %s: %s", request.method, request.url.path, exc, exc_info=exc)
-    return JSONResponse(status_code=500, content={"detail": "internal server error"})
+    """500 in the canonical {error_code, message} shape, like every handler here.
+
+    The message is fixed and generic for the same reason the 404's is: this
+    catches exceptions nobody predicted, so str(exc) is an arbitrary internal
+    string -- a driver error naming a table, a stack-shaped repr -- and echoing it
+    hands that to the client. The detail goes to the log with its traceback.
+    """
+    logger.error(
+        "unhandled exception on %s %s: %s", request.method, request.url.path, exc, exc_info=exc
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"error_code": "INTERNAL_ERROR", "message": INTERNAL_ERROR_MESSAGE},
+    )

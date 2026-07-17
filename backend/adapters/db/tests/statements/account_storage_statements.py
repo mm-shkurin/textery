@@ -1,5 +1,4 @@
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import select
@@ -16,16 +15,16 @@ class AccountStorageStatements:
     def __init__(self, session: AsyncSession) -> None:
         self._storage = SqlAlchemyAccountRepository(session)
         self._session = session
-        self.saved_account: Optional[Account] = None
-        self.fetched_model: Optional[AccountModel] = None
-        self.raised_error: Optional[Exception] = None
+        self.saved_account: Account | None = None
+        self.fetched_model: AccountModel | None = None
+        self.raised_error: Exception | None = None
 
     def build_account(self, email: str = "student@example.com") -> Account:
         return Account.create(
             id=uuid4(),
             email=email,
             password_hash="hashed-password-value",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
     async def save_account(self, account: Account) -> None:

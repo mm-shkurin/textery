@@ -1,5 +1,4 @@
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,19 +8,20 @@ from auth.account import Account
 from session import SqlAlchemyUnitOfWork
 from statements.account_row_lookup import fetch_account_row_on_new_connection
 
+
 class SqlAlchemyUnitOfWorkStatements:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
         self._account_storage = SqlAlchemyAccountRepository(session)
         self._unit_of_work = SqlAlchemyUnitOfWork(session)
-        self.saved_account: Optional[Account] = None
+        self.saved_account: Account | None = None
 
     def build_account(self, email: str = "uow-student@example.com") -> Account:
         return Account.create(
             id=uuid4(),
             email=email,
             password_hash="hashed-password-value",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
     async def flush_account(self, account: Account) -> None:
@@ -52,5 +52,6 @@ class SqlAlchemyUnitOfWorkStatements:
     async def assert_account_absent_on_new_connection(self) -> None:
         row = await fetch_account_row_on_new_connection(self.saved_account.id)
         assert row is None, (
-            f"expected account {self.saved_account.id} to be discarded via UnitOfWork.rollback(), found {row}"
+            f"expected account {self.saved_account.id} to be discarded via "
+            f"UnitOfWork.rollback(), found {row}"
         )
