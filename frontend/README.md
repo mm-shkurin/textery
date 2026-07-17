@@ -45,13 +45,19 @@ npm run test:watch
 
 ## CI
 
-Пайплайн описан в `.github/workflows/frontend-ci.yml` **в корне репозитория** — GitHub
-читает workflow-файлы только оттуда. Раньше рядом лежала копия в `frontend/.github/`,
-которая не запускалась никогда и успела разойтись с настоящей: выглядела как источник
-правды, но ни на что не влияла. Копия удалена; правьте корневой файл.
+Пайплайнов **два**, и это не дублирование — это две формы репозитория:
 
-CI выполняет: `lint` → `format:check` → `typecheck` → `test` → `build`, затем сборку
-docker-образа.
+- `.github/workflows/frontend-ci.yml` **в корне монорепо** — то, что выполняется на GitHub
+  (workflow-файлы читаются только из корня). Отсюда `paths:`-фильтр на `frontend/**`,
+  `working-directory: frontend` и сборка docker-образа.
+- `frontend/.github/workflows/ci.yml` — standalone-копия. В монорепо она не запускается
+  никогда, и выглядит мёртвой. Но `frontend/` выкладывается **в корень** отдельного
+  фронтенд-репозитория (`gitverse.ru/studentlabs/slide_frontend`), где этот файл становится
+  `.github/workflows/ci.yml` и является там единственным CI. Поэтому в нём нет `paths:` и
+  `working-directory`, а `cache-dependency-path` указывает на корневой `package-lock.json`.
+
+Оба выполняют `lint` → `format:check` → `typecheck` → `test` → `build`. Синхронизируются
+руками: удаление «мёртвой» копии выключает CI в gitverse целиком.
 
 ## Переменные окружения
 
