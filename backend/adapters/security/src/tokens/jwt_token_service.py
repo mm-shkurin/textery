@@ -47,23 +47,31 @@ class JwtTokenService:
         )
 
     def read_refresh_subject(self, refresh_token: str) -> UUID:
+        return self._read_subject(refresh_token, _REFRESH_TYPE, "refresh token is not valid")
+
+    def read_access_subject(self, access_token: str) -> UUID:
+        return self._read_subject(access_token, _ACCESS_TYPE, "access token is not valid")
+
+    def _read_subject(self, token: str, expected_type: str, failure_message: str) -> UUID:
         try:
-            claims = jwt.decode(refresh_token, self._secret, algorithms=[_ALGORITHM])
+            claims = jwt.decode(token, self._secret, algorithms=[_ALGORITHM])
         except jwt.PyJWTError as error:
             # Covers expiry, bad signature, a key rotated out from under it, and
             # malformed input alike -- all the same answer to the client.
-            raise InvalidTokenException("refresh token is not valid") from error
-        # An access token is signed by the same key, so without this check it would
-        # be accepted at /refresh and a 15-minute credential would silently become
-        # a 7-day one.
-        if claims.get("type") != _REFRESH_TYPE:
-            raise InvalidTokenException("refresh token is not valid")
+            raise InvalidTokenException(failure_message) from error
+        # Both tokens are signed with the same key, so the type claim is the only
+        # thing separating them. Without this check each is accepted where the
+        # other belongs: a 15-minute access token would become a 7-day one at
+        # /refresh, and a 7-day refresh token would become a document credential
+        # at /documents.
+        if claims.get("type") != expected_type:
+            raise InvalidTokenException(failure_message)
         try:
             return UUID(claims["sub"])
         except (KeyError, ValueError) as error:
             # A token whose claim shape no longer matches current code must be a
             # clean rejection, never an unhandled crash (scenario 6.4).
-            raise InvalidTokenException("refresh token is not valid") from error
+            raise InvalidTokenException(failure_message) from error
 
     def _encode(self, account_id, email, token_type, issued_at, expires_at) -> str:
         return jwt.encode(

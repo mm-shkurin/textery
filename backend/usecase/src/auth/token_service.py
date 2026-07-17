@@ -19,3 +19,18 @@ class TokenService(Protocol):
         caller never has to tell them apart.
         """
         ...
+
+    def read_access_subject(self, access_token: str) -> UUID:
+        """Return the account id carried by a valid access token.
+
+        Added, not modified: `read_refresh_subject` rejects access tokens by
+        design, so before this there was no way to identify the caller behind an
+        `Authorization: Bearer` header, and no route read one.
+
+        Same failure contract as its refresh twin -- one `InvalidTokenException`
+        for expired, tampered, wrong-key, wrong-type, and malformed alike. The
+        wrong-type half matters most here: both tokens are signed with the same
+        key, so without a `type` check a 7-day refresh token would be accepted as
+        a document credential.
+        """
+        ...
