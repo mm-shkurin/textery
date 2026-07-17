@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
 import { login } from '../api/loginApi'
+import { saveSession } from '../utils/authSession'
 import { GENERIC_LOGIN_FAILURE_MESSAGE, isUsableMessage } from '../utils/loginMessages'
 import './AuthForm.css'
 import './LoginForm.css'
@@ -26,10 +27,29 @@ import './LoginForm.css'
 // No `as LoginApiError`, for the reason loginApi no longer says `as string`: nothing at run
 // time holds a rejection to the declared shape, so the cast narrowed by promise rather than
 // by evidence. Each `in` earns the field it reads and `isUsableMessage` earns the string.
+// UNVERIFIED is a DIFFERENT action for the user, not a different wording of "sign-in failed":
+// their password was right and they must go confirm the code. Rendering the generic constant
+// here told them the one thing that is not true. Confirmed live 2026-07-16: an unverified
+// account gets 403 `{"error_code":"UNVERIFIED", message}`.
+//
+// This is deliberately NOT an enumeration leak to be closed: `01_API_Tests.md` 5.1/5.2 have the
+// backend answer "not verified" distinctly by design, and UI spec 5.3 requires a distinct
+// message. The product intends to distinguish unverified accounts; the client only has to stop
+// hiding what the server already said.
+const UNVERIFIED_MESSAGE = 'Аккаунт не подтверждён. Введите код подтверждения из письма.'
+
+function hasErrorCode(error: unknown, code: string): boolean {
+  return Boolean(error) && typeof error === 'object' && error !== null &&
+    'errorCode' in error && error.errorCode === code
+}
+
 function applyLoginError(error: unknown): string {
+  if (hasErrorCode(error, 'UNVERIFIED')) {
+    return UNVERIFIED_MESSAGE
+  }
   if (
+    hasErrorCode(error, 'INVALID_CREDENTIALS') &&
     error && typeof error === 'object' &&
-    'errorCode' in error && error.errorCode === 'INVALID_CREDENTIALS' &&
     'message' in error && isUsableMessage(error.message)
   ) {
     return error.message
@@ -38,6 +58,7 @@ function applyLoginError(error: unknown): string {
 }
 
 export function LoginForm() {
+  const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -48,9 +69,26 @@ export function LoginForm() {
     event.preventDefault()
     if (isSubmitting) return
     setIsSubmitting(true)
+    setFormError(null)
     try {
-      await login(emailInputRef.current?.value ?? '', passwordInputRef.current?.value ?? '')
-      setFormError(null)
+      const session = await login(
+        emailInputRef.current?.value ?? '',
+        passwordInputRef.current?.value ?? '',
+      )
+      // A 200 with no usable token is a broken contract, not a successful login. Navigating on
+      // it would drop the user into the app with no credential and fail later, somewhere that
+      // cannot explain itself.
+      if (!session.accessToken) {
+        setFormError(GENERIC_LOGIN_FAILURE_MESSAGE)
+        return
+      }
+      if (!saveSession(session)) {
+        // Storage refused (private mode, embedded webview). Say so rather than navigating into
+        // an app that will behave as if signed out.
+        setFormError('Не удалось сохранить сессию — проверьте настройки браузера')
+        return
+      }
+      navigate('/', { replace: true })
     } catch (error) {
       setFormError(applyLoginError(error))
     } finally {

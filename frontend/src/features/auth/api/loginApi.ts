@@ -2,9 +2,17 @@
 import { postJson, type HttpError } from './httpClient'
 import { GENERIC_LOGIN_FAILURE_MESSAGE, isUsableMessage } from '../utils/loginMessages'
 
+// The wire is snake_case — verified by curl against the live backend 2026-07-16:
+//   200 → {access_token, refresh_token, access_token_expires_at, refresh_token_expires_at}
+// This interface previously declared camelCase and nothing mapped to it, so every field was
+// silently `undefined`. It never surfaced because LoginForm discarded the result entirely and
+// every component test mocks this module. The mapping below is the boundary; the rest of the
+// app sees camelCase.
 export interface LoginResult {
   accessToken: string
   refreshToken: string
+  accessTokenExpiresAt: string
+  refreshTokenExpiresAt: string
 }
 
 export interface LoginApiError {
@@ -66,9 +74,9 @@ function toLoginApiError(error: unknown): unknown {
 // Keeping the field present also keeps `LoginApiError` one shape, so the `''` is a value the
 // type describes rather than a hole the type lies about.
 //
-// This is also the answer for the `{}` body, the one error path that fires today: the backend
-// has no login endpoint, so a 404 HTML page or a proxy's 502 makes `res.json()` throw and
-// `postJson` substitutes `{}` (httpClient.ts:19). That body is truthy, so it clears the
+// This is also the answer for the `{}` body: a proxy's 502 or any non-JSON error page makes
+// `res.json()` throw and `postJson` substitutes `{}` (httpClient.ts:19). That body is truthy,
+// so it clears the
 // rethrow guard above and lands here with no `error_code` → `UNKNOWN_ERROR` + `''`. It stays
 // a LoginApiError: returning the raw HttpError instead would hand the form a `{status, body}`
 // no consumer reads. Only the codeless-body trap escapes the other fixtures — the broad form
@@ -82,7 +90,13 @@ function fallbackMessageFor(errorCode: string): string {
 
 export async function login(email: string, password: string): Promise<LoginResult> {
   try {
-    return await postJson<LoginResult>('/api/v1/auth/login', { email, password })
+    const body = await postJson<Record<string, unknown>>('/api/v1/auth/login', { email, password })
+    return {
+      accessToken: String(body.access_token ?? ''),
+      refreshToken: String(body.refresh_token ?? ''),
+      accessTokenExpiresAt: String(body.access_token_expires_at ?? ''),
+      refreshTokenExpiresAt: String(body.refresh_token_expires_at ?? ''),
+    }
   } catch (error) {
     throw toLoginApiError(error)
   }

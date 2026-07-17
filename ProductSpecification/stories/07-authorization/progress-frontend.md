@@ -81,6 +81,66 @@ NOT browser-verified** — curl proves the backend returns 409 with the right co
 tests now assert that code, but the end-to-end render of that message was never observed
 against a stable database. Re-run it when the other session is idle.
 
+## Live login wired, 2026-07-16 — DELIBERATELY OUTSIDE THE TDD FRAMEWORK
+
+User's call: skip the red/green ceremony for speed, but not the quality or the security. So
+this landed as one change verified in a real browser, not as scenario steps. The scenario rows
+below are NOT ticked by it — 5.3 (unverified) still owns its own tests, and there is still no
+scenario for a successful login.
+
+**My earlier "login is 404" was WRONG, and the way it was wrong is worth keeping.** I probed a
+STALE CONTAINER and concluded the route did not exist in the project. "Not in the image" and
+"not in the code" are different claims and I substituted one for the other — the same defect
+class this scenario spent nine rounds cataloguing. Rebuilt, `GET /login` → 405 (route exists,
+wrong method) and `openapi.json` lists `/login` and `/refresh`. RULE: on a 404/500 from an auth
+route, `docker compose up -d --build backend` FIRST, conclude second.
+
+**Live contract, curl-verified today:** register 201 + code → login before verify **403
+`UNVERIFIED`** → verify 200 → login after verify **200** `{access_token, refresh_token,
+access_token_expires_at, refresh_token_expires_at}` (snake_case). Wrong password / unknown
+email / malformed email all give ONE 401 `INVALID_CREDENTIALS`. `resend-code` is still a real
+404.
+
+**Three defects, all observed in the browser before and after:**
+1. `LoginResult` declared camelCase and NOTHING mapped to it — every field was silently
+   `undefined`. Invisible because `LoginForm` discarded the result and every component test
+   mocks the module. Now mapped at the boundary; the app still sees camelCase.
+2. A correct password did NOTHING: url stayed `/login`, `localStorage {}`, `sessionStorage {}`,
+   no cookies. The user could never get in. This is premortem's round-2 CREDIBLE 2 ("Correct
+   credentials, and the app does nothing. No scenario owns the fix") — a hypothesis on mocks
+   then, observed live now.
+3. An unverified account was told "Не удалось войти" — the one thing that is not true; their
+   password was right. That is 5.3's total-fallback finding, also observed live.
+
+**TOKEN STORAGE — decided WITH the user, not for them.** The backend returns tokens in the
+response BODY, so the client must store them and NO XSS-proof option exists — only a choice of
+blast radius. Chose **sessionStorage** (`frontend/src/features/auth/utils/authSession.ts`): a
+stolen token dies with the tab rather than outliving the browser, it survives F5, and it needs
+no refresh logic — less code, fewer places to get it wrong while moving fast. The real fix is
+httpOnly+SameSite cookies set by the backend; until then this is a DOCUMENTED ACCEPTED RISK,
+not an oversight. XSS surface is small but not zero: React escapes by default and there is no
+`dangerouslySetInnerHTML` anywhere (verified). Tokens are never logged and never placed in a
+URL, per 07_Authorization_Notes.md.
+
+**Guards that are not decoration:** a 200 carrying no usable token sets an error instead of
+navigating (a broken contract is not a successful login, and navigating would strand the user
+in the app with no credential, failing later somewhere that cannot explain itself); a storage
+write that is refused (private mode, embedded webview) also errors rather than navigating into
+an app that would behave as signed-out.
+
+**Browser-verified, all three cases** (headless Chrome, live stack): correct password → `/`
+with both JWTs in sessionStorage (`type:access` ~15min, `type:refresh` ~7d), localStorage
+empty, no cookies; wrong password → stays on `/login` with the server's message; unverified →
+stays with the new distinct message. Suite 102/102, tsc clean.
+
+**A side effect worth naming:** `setFormError(null)` on submit entry is exactly the fix the
+RED test from `a5a4561` demanded, so that test went green as part of this change rather than
+via its own green step.
+
+**NOT DONE, and not pretended:** nothing enforces auth — `/` renders the app whether or not a
+token exists, so this is a session, not access control. No logout. No `/refresh` wiring (the
+access token simply expires in ~15 min). `resend-code` is still 404.
+
 ## Frontend Scenarios (tests/02_UI_Tests.md)
 
 ### 1.1: Registration form displays email, password, confirm password fields
