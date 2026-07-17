@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { renderWithRouter } from '../../../../test/renderWithRouter'
 import { RegisterForm } from '../RegisterForm'
 import * as api from '../../api/registerApi'
+import type { RegisterResult } from '../../api/registerApi'
 
 vi.mock('../../api/registerApi', () => ({
   register: vi.fn(),
@@ -19,7 +20,10 @@ const DUPLICATE_EMAIL_ERROR = {
   message: 'An account with this email address already exists.',
 }
 
-const REGISTER_SUCCESS = {
+// Annotated with the API's own type rather than left to inference: an inferred fixture keeps
+// compiling when RegisterResult gains a field, and silently stops standing for what register
+// returns. That is exactly how the `{ email }` shapes below drifted.
+const REGISTER_SUCCESS: RegisterResult = {
   userId: '00000000-0000-0000-0000-000000000001',
   email: VALID_EMAIL,
   isVerified: false,
@@ -64,7 +68,7 @@ describe('RegisterForm duplicate-email error', () => {
   })
 
   it('does not display an email error while the register call is still pending', async () => {
-    let resolveRegister: (value: { email: string }) => void = () => {}
+    let resolveRegister: (value: RegisterResult) => void = () => {}
     vi.mocked(api.register).mockReturnValue(
       new Promise((resolve) => {
         resolveRegister = resolve
@@ -77,7 +81,7 @@ describe('RegisterForm duplicate-email error', () => {
     await waitFor(() => expect(api.register).toHaveBeenCalledTimes(1))
     expect(screen.queryByTestId('register-email-error')).not.toBeInTheDocument()
 
-    resolveRegister({ email: VALID_EMAIL })
+    resolveRegister(REGISTER_SUCCESS)
   })
 
   it('does not display an email error after a successful registration', async () => {
@@ -97,7 +101,7 @@ describe('RegisterForm duplicate-email error', () => {
     fireEvent.click(submitButton)
     await screen.findByTestId('register-email-error')
 
-    vi.mocked(api.register).mockResolvedValueOnce({ email: 'other@example.com' })
+    vi.mocked(api.register).mockResolvedValueOnce({ ...REGISTER_SUCCESS, email: 'other@example.com' })
     fireEvent.change(emailInput, { target: { value: 'other@example.com' } })
     await waitFor(() => expect(submitButton).not.toBeDisabled())
     fireEvent.click(submitButton)

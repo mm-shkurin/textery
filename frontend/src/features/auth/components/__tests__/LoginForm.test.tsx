@@ -3,12 +3,22 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { renderWithRouter } from '../../../../test/renderWithRouter'
 import { LoginForm } from '../LoginForm'
 import * as api from '../../api/loginApi'
+import type { LoginResult } from '../../api/loginApi'
 
 vi.mock('../../api/loginApi', () => ({
   login: vi.fn(),
 }))
 
-const SESSION = { accessToken: 'access-token', refreshToken: 'refresh-token' }
+// Annotated with the API's own type rather than left to inference. Inferred, this fixture was
+// `{ accessToken, refreshToken }` and kept compiling after LoginResult gained the two expiry
+// fields — the mock silently stopped standing for what login actually returns. The annotation
+// is what makes the next contract change a compile error here instead of a surprise later.
+const SESSION: LoginResult = {
+  accessToken: 'access-token',
+  refreshToken: 'refresh-token',
+  accessTokenExpiresAt: '2026-07-16T18:15:00+00:00',
+  refreshTokenExpiresAt: '2026-07-23T18:00:00+00:00',
+}
 
 // Hands back the resolve handle so a test can hold the login call in flight and assert
 // the in-flight window deliberately, rather than racing an already-settled promise.

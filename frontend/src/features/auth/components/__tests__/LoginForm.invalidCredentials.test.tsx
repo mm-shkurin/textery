@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { renderWithRouter } from '../../../../test/renderWithRouter'
 import { LoginForm } from '../LoginForm'
 import * as api from '../../api/loginApi'
+import type { LoginResult } from '../../api/loginApi'
 
 vi.mock('../../api/loginApi', () => ({
   login: vi.fn(),
@@ -10,7 +11,15 @@ vi.mock('../../api/loginApi', () => ({
 
 const EMAIL = 'user@example.com'
 const PASSWORD = 'Str0ng!Pass'
-const SESSION = { accessToken: 'access-token', refreshToken: 'refresh-token' }
+// Annotated with the API's own type rather than left to inference — see LoginForm.test.tsx's
+// copy of this fixture for why: inferred, it kept compiling after LoginResult gained the expiry
+// fields, so the mock no longer stood for what login returns.
+const SESSION: LoginResult = {
+  accessToken: 'access-token',
+  refreshToken: 'refresh-token',
+  accessTokenExpiresAt: '2026-07-16T18:15:00+00:00',
+  refreshTokenExpiresAt: '2026-07-23T18:00:00+00:00',
+}
 const INVALID_CREDENTIALS_ERROR = {
   errorCode: 'INVALID_CREDENTIALS',
   message: 'Неверный email или пароль',
