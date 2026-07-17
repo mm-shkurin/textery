@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { Editor } from '@tiptap/react'
 import { createDocument, getDocument } from '../api/documentApi'
 import type { DocumentType } from '../documentTypes'
@@ -21,6 +21,22 @@ export function useDocumentInit({
   setDocumentId,
   setVersion,
 }: UseDocumentInitParams): void {
+  // One key per mounted editor, minted once and kept across re-runs of the effect. This is what
+  // makes "the same logical create" something the backend can actually recognise.
+  //
+  // Load-bearing under StrictMode (main.tsx:7), which double-invokes effects in dev: `cancelled`
+  // below suppresses the second run's setState but NOT its fetch, so the POST genuinely fires
+  // twice. With the key minted inside createDocument those were two distinct keys and the
+  // backend created two documents; with one key they are a request and its replay, and the
+  // spec's 200 branch collapses them onto one.
+  //
+  // A ref, not state: it must survive the effect's two invocations without re-rendering, and
+  // that window is exactly what it exists to cover.
+  const idempotencyKeyRef = useRef<string>('')
+  if (!idempotencyKeyRef.current) {
+    idempotencyKeyRef.current = crypto.randomUUID()
+  }
+
   useEffect(() => {
     let cancelled = false
     if (existingDocumentId) {
@@ -37,9 +53,14 @@ export function useDocumentInit({
           console.error('Failed to load document', error)
         })
     } else {
-      createDocument(documentType)
+      createDocument(documentType, idempotencyKeyRef.current)
         .then((result) => {
-          if (!cancelled) setDocumentId(result.documentId)
+          if (cancelled) return
+          setDocumentId(result.documentId)
+          // The server's version, not a guess. Omitting this is what left ManualEditor's
+          // `useState(1)` to ship on the first PUT and collect a 409 blaming a concurrent save
+          // that never happened.
+          setVersion(result.version)
         })
         .catch((error) => {
           // Error surfacing (retry/UI state) is out of scope for this scenario;

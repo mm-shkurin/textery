@@ -32,7 +32,7 @@ describe('ManualEditor dirty flag', () => {
     // Pins what the server now holds: the clean status below is only meaningful if
     // the save that produced it carried the pre-format content at the known version.
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', 'hello world', 1)
+    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', 'hello world', 7)
 
     // The document must be observed clean BEFORE the toolbar click: hasUnsavedChanges
     // initialises to true, so without a settled save the final assertion would pass
@@ -83,7 +83,7 @@ describe('ManualEditor dirty flag', () => {
     // an early return in handleSave would leave the document dirty by never having
     // saved at all, and the assertions below would pass for the wrong reason.
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', 'hello world', 1)
+    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', 'hello world', 7)
 
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const saveError = new Error('network error')

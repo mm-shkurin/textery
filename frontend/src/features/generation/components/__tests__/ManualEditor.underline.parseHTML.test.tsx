@@ -8,7 +8,7 @@ vi.mock('../../api/documentApi')
 
 describe('ManualEditor underline parseHTML', () => {
   it('loading a saved document containing an existing <u> restores it as the underline mark', async () => {
-    vi.mocked(documentApi.createDocument).mockResolvedValue({ documentId: 'doc-1', status: 'draft' })
+    vi.mocked(documentApi.createDocument).mockResolvedValue({ documentId: 'doc-1', status: 'draft', version: 7 })
     vi.mocked(documentApi.getDocument).mockResolvedValue({
       documentId: 'doc-99',
       status: 'draft',

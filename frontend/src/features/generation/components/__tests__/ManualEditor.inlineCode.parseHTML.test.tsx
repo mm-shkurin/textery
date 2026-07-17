@@ -7,7 +7,7 @@ vi.mock('../../api/documentApi')
 
 describe('ManualEditor inline code parseHTML', () => {
   it('loading a saved document containing a bare <code> outside <pre> restores it as inline code, not a code block', async () => {
-    vi.mocked(documentApi.createDocument).mockResolvedValue({ documentId: 'doc-1', status: 'draft' })
+    vi.mocked(documentApi.createDocument).mockResolvedValue({ documentId: 'doc-1', status: 'draft', version: 7 })
     vi.mocked(documentApi.getDocument).mockResolvedValue({
       documentId: 'doc-99',
       status: 'draft',

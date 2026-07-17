@@ -36,7 +36,7 @@ describe('ManualEditor save flow', () => {
     fireEvent.click(saveButton)
 
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', 'hello world', 1)
+    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', 'hello world', 7)
 
     resolveSave({ status: 'saved', version: 2 })
   })
@@ -64,7 +64,7 @@ describe('ManualEditor save flow', () => {
     fireEvent.click(saveButton)
 
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(1, 'doc-1', 'first content', 1)
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(1, 'doc-1', 'first content', 7)
 
     contentArea.textContent = 'second content'
     fireEvent.input(contentArea)
@@ -126,7 +126,7 @@ describe('ManualEditor save flow', () => {
 
     fireEvent.click(saveButton)
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', 'second content', 1)
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', 'second content', 7)
 
     consoleErrorSpy.mockRestore()
   })

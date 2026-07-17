@@ -7,7 +7,7 @@ import { selectRange } from './ManualEditor.testSupport'
 vi.mock('../../api/documentApi')
 
 function renderReopenedEditor(content: string) {
-  vi.mocked(documentApi.createDocument).mockResolvedValue({ documentId: 'doc-1', status: 'draft' })
+  vi.mocked(documentApi.createDocument).mockResolvedValue({ documentId: 'doc-1', status: 'draft', version: 7 })
   vi.mocked(documentApi.getDocument).mockResolvedValue({
     documentId: 'doc-99',
     status: 'draft',

@@ -24,7 +24,7 @@ describe('ManualEditor save status', () => {
     fireEvent.click(saveButton)
 
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', 'hello world', 1)
+    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', 'hello world', 7)
 
     await waitFor(() => {
       expect(screen.getByText('Сохранено')).toBeInTheDocument()

@@ -11,7 +11,7 @@ describe('ManualEditor reopen flow', () => {
     // which ignores existingDocumentId) resolves instead of crashing the
     // effect with "Cannot read properties of undefined (reading 'then')" —
     // that would mask the actual assertion under test.
-    vi.mocked(documentApi.createDocument).mockResolvedValue({ documentId: 'doc-1', status: 'draft' })
+    vi.mocked(documentApi.createDocument).mockResolvedValue({ documentId: 'doc-1', status: 'draft', version: 7 })
     vi.mocked(documentApi.getDocument).mockResolvedValue({
       documentId: 'doc-99',
       status: 'draft',

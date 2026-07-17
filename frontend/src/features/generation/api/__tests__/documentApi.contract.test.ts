@@ -1,32 +1,36 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDocument } from '../documentApi'
+import { clearSession, saveSession } from '../../../auth/utils/authSession'
 
-// Defect B (documents_create.yaml): the Idempotency-Key is `required: true` and
-// "Replaying the same key returns the existing document (200) instead of creating a new
-// one" — a documented response distinct from 201. documentApi.ts:16 calls
-// crypto.randomUUID() *inside* createDocument, so every call mints a fresh key and that
-// 200 branch is unreachable by construction: the header is required, present,
-// well-formed, and inert. main.tsx:7's StrictMode double-invokes effects and
-// useDocumentInit's `cancelled` guard suppresses setState, not the fetch — two calls,
-// two keys, two documents, on every dev mount.
+// Defect B (documents_create.yaml): the Idempotency-Key is `required: true` and "Replaying the
+// same key returns the existing document (200) instead of creating a new one" — a documented
+// response distinct from 201. createDocument used to call crypto.randomUUID() *inside* itself,
+// so every call minted a fresh key and that 200 branch was unreachable by construction: the
+// header was required, present, well-formed, and inert. main.tsx:7's StrictMode double-invokes
+// effects and useDocumentInit's `cancelled` guard suppresses setState, not the fetch — two
+// calls, two keys, two documents, on every dev mount.
 //
-// These tests pin the observable property, not a mechanism: retries of the SAME logical
-// create send the SAME key; genuinely DIFFERENT creates send DIFFERENT keys.
+// These tests pin the observable property, not a mechanism: retries of the SAME logical create
+// send the SAME key; genuinely DIFFERENT creates send DIFFERENT keys.
 //
-// They are a matched pair, and this is the executed matrix, not a reasoned claim (the
-// mutation notes this comment used to cite did not exist — test-review ran them instead):
+// They are a matched pair, and this is the executed matrix, not a reasoned claim (the mutation
+// notes this comment used to cite did not exist — test-review ran them instead):
 //
 //   key expression                       | retry-same | different
 //   -------------------------------------|------------|----------
-//   crypto.randomUUID()      (today)     | FAIL       | PASS
+//   crypto.randomUUID()      (was)       | FAIL       | PASS
 //   'fixed-key'              (constant)  | PASS       | FAIL
-//   key ?? crypto.randomUUID() (correct) | PASS       | PASS
+//   key ?? crypto.randomUUID()           | PASS       | PASS
 //
-// So neither test is redundant: each uniquely kills a trivial impl the other admits.
-// NOTE what the matrix's top row means for the live test below: `different` passes TODAY,
-// on the defective code, because per-call randomUUID trivially differs. It carries ZERO
-// red signal against defect B — it is a guard on GREEN over-correcting to a constant key,
-// not evidence that idempotency works. Its green is not a green for B.
+// So neither test is redundant: each uniquely kills a trivial impl the other admits. Note what
+// the matrix's top row meant while the defect was live: `different` passed on the DEFECTIVE
+// code, because per-call randomUUID trivially differs. It never carried red signal against B —
+// it guards against over-correcting to a constant key. Its green was never a green for B.
+//
+// The key is now a required parameter, so the `??` fallback row cannot be written at all: there
+// is no in-function source to fall back TO. That is the point — an optional key was the escape
+// hatch that let the keyless call site in useDocumentInit compile indefinitely while both these
+// tests passed.
 //
 // Why the assertions are relational (`toBe`/`not.toBe`) rather than exact key values, per
 // determinism-hierarchy's "truly opaque" category, which requires this justification
@@ -37,16 +41,14 @@ import { createDocument } from '../documentApi'
 // that namespaces or derives the key (e.g. `doc-create:${key}`), which the contract
 // permits. The relation is the specification; the value is not.
 describe('documentApi create idempotency contract', () => {
-  let uuidCounter = 0
-
+  // Signing in is setup, not subject: createDocument goes through `authorizedRequest`, so
+  // without a session it fails before fetch is reached.
   beforeEach(() => {
-    uuidCounter = 0
-    // Removes randomness from the failure message only; nothing here asserts that
-    // randomUUID is the key's source, so this stays valid if green changes the source.
-    vi.stubGlobal('crypto', { randomUUID: () => `uuid-${++uuidCounter}` })
+    saveSession({ accessToken: 'access-1', refreshToken: 'refresh-1' })
   })
 
   afterEach(() => {
+    clearSession()
     vi.unstubAllGlobals()
   })
 
@@ -64,9 +66,7 @@ describe('documentApi create idempotency contract', () => {
     return fetchMock.mock.calls.map(([, init]) => init.headers['Idempotency-Key'])
   }
 
-  // RED: createDocument accepts `idempotencyKey` (plumbing) but still mints a fresh
-  // crypto.randomUUID() per call, so retries never replay — green-frontend-api-contract.
-  it.skip('retrying the same logical create sends the same Idempotency-Key', async () => {
+  it('retrying the same logical create sends the same Idempotency-Key', async () => {
     const fetchMock = stubFetchOk()
 
     await createDocument('doklad', 'create-abc')

@@ -4,7 +4,7 @@ import { ManualEditor } from '../ManualEditor'
 import * as documentApi from '../../api/documentApi'
 
 export async function renderEditorWithDocumentCreated(onBack = vi.fn()) {
-  vi.mocked(documentApi.createDocument).mockResolvedValue({ documentId: 'doc-1', status: 'draft' })
+  vi.mocked(documentApi.createDocument).mockResolvedValue({ documentId: 'doc-1', status: 'draft', version: 7 })
   render(<ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={onBack} />)
   await waitFor(() => {
     expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
