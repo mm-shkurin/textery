@@ -83,17 +83,23 @@ export function ManualEditor({
       Placeholder.configure({ placeholder: 'Начните печатать…' }),
     ],
     content: '',
+    // Every change to the document, however it was made — not just typing. The dirty flag used to
+    // hang off the DOM `input` event, which a keystroke fires and a toolbar button does not:
+    // bold/H3/link dispatch programmatic ProseMirror transactions straight to the state. So
+    // formatting a paragraph after a save left the status reading "Сохранено" over unsent
+    // markup, and the user closed a tab believing their work was persisted. `onUpdate` is the
+    // one hook that sees both paths.
+    //
+    // `setContent` from our own save handler does NOT reach here: Tiptap treats a programmatic
+    // setContent as emitUpdate: false by default, so adopting the server's sanitized HTML does
+    // not re-dirty the document it just cleaned.
+    onUpdate: () => noteEditRef.current(),
     editorProps: {
       attributes: {
         'data-testid': 'editor-content-area',
       },
       handleDOMEvents: {
-        input: (view, event) => {
-          // Marks the document dirty AND queues a re-save if one is already in flight — see
-          // useDocumentSave.noteEdit for why the second half is not optional.
-          noteEditRef.current()
-          return flushDomObserverOnInput(view, event)
-        },
+        input: (view, event) => flushDomObserverOnInput(view, event),
         select: syncNativeSelectionToProseMirror,
       },
     },

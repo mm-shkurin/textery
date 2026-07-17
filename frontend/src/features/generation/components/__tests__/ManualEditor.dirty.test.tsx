@@ -15,10 +15,11 @@ describe('ManualEditor dirty flag', () => {
     vi.clearAllMocks()
   })
 
-  // RED: toolbar actions dispatch programmatic ProseMirror transactions, which emit no
-  // DOM `input` event — the only call site of setHasUnsavedChanges(true). Enable in
-  // green-frontend, once the flag moves to Tiptap's `onUpdate`.
-  it.skip('applying a toolbar format after a successful save marks the document unsaved again', async () => {
+  // Toolbar actions dispatch programmatic ProseMirror transactions, which emit no DOM `input`
+  // event. While the dirty flag hung off `input`, this was a live bug parked behind it.skip:
+  // formatting a paragraph after a save left the status reading "Сохранено" over unsent markup.
+  // The flag now lives on Tiptap's `onUpdate`, which sees typing and programmatic changes alike.
+  it('applying a toolbar format after a successful save marks the document unsaved again', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')

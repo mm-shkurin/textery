@@ -53,7 +53,18 @@ export async function send<T>(path: string, options: RequestOptions, fallback: s
     if (error instanceof SessionExpiredError) {
       throw error
     }
-    if (isHttpError(error) && error.status === 409) {
+    // The CODE, not the bare status. 409 means "conflict", which is not one thing: PUT
+    // /documents/{id} sends VERSION_CONFLICT for a stale version, but POST /documents carries an
+    // Idempotency-Key and can 409 over the key itself — an operation that has no version at all.
+    // Matching on the status alone told a user whose create collided "Документ был изменён
+    // другим сохранением": a lost-update message for a document that was never saved once, and
+    // one that sends them to reopen a document that does not exist. Any other 409 keeps the
+    // caller's fallback text, which at least names the operation that actually failed.
+    if (
+      isHttpError(error) &&
+      error.status === 409 &&
+      error.body.error_code === 'VERSION_CONFLICT'
+    ) {
       throw new VersionConflictError()
     }
     throw new Error(describeFailure(error, fallback))
