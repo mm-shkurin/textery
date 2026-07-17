@@ -13,13 +13,8 @@ from selenium.webdriver.support.wait import WebDriverWait
 WAIT_TIMEOUT_SECONDS = 5
 REQUEST_LOG_SETTLE_SECONDS = 1
 
-# The full, literal class list an inline hint-error renders with (RegisterForm.tsx
-# renders className="register-hint register-hint-error" for every field error).
-# Asserted exactly, not by containment: the error styling is the pair, so a
-# component that dropped "register-hint" or added a stray class must fail.
-EXPECTED_HINT_ERROR_CLASSES = ("register-hint", "register-hint-error")
-
 # The container each form field (label + input + inline error) is wrapped in.
+# Shared across auth pages (both LoginForm.tsx and RegisterForm.tsx render it).
 # Proximity assertions resolve it via Element.closest().
 FIELD_CONTAINER_CLASS = "auth-field"
 
@@ -109,8 +104,14 @@ class BaseFrontendStatements:
         locator: tuple[str, str],
         expected_text: str,
         label: str,
-        expected_classes: tuple[str, ...] = EXPECTED_HINT_ERROR_CLASSES,
+        expected_classes: tuple[str, ...],
     ) -> None:
+        """Asserts an inline hint-error's full display state in one compare.
+
+        `expected_classes` is the caller's to supply — the hint-error class list
+        is page-owned markup, so a shared default here would let a page that
+        renders different classes silently assert another page's.
+        """
         element = self._wait_for_visible(driver, locator)
         actual = HintErrorSnapshot(
             displayed=element.is_displayed(),

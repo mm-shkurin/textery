@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { resendCode } from '../api/authApi'
 import { verify, type VerifyApiError, GENERIC_VERIFY_FAILURE_MESSAGE } from '../api/verifyApi'
 import { AuthSubmitButton } from './AuthSubmitButton'
+import { signInAfterVerification } from '../utils/postVerifySignIn'
 import './AuthForm.css'
 import './VerifyCodeForm.css'
 
@@ -39,6 +40,7 @@ function applyVerifyError(error: unknown): string {
 }
 
 export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
+  const navigate = useNavigate()
   const routerState = (useLocation().state ?? {}) as VerifyRouterState
   const email = emailProp ?? routerState.email
   const mockedCode = routerState.verificationCode
@@ -62,6 +64,17 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
       const result = await verify(email, digits.join(''))
       setFormError(null)
       setIsVerified(result.isVerified)
+      // A 200 that says `is_verified: false` is not a success to navigate on. The backend has
+      // never sent one, but the field only means something if we read it — treating any 200 as
+      // "verified" would make the flag decoration.
+      if (!result.isVerified) {
+        setFormError(GENERIC_VERIFY_FAILURE_MESSAGE)
+        return
+      }
+      // Verification does not mint a session, so getting into the app is a separate step that
+      // can land in two places. Whatever it decides, the user leaves this screen: staying put
+      // after a successful confirm is what made this form look hung.
+      navigate(await signInAfterVerification(email), { replace: true })
     } catch (error) {
       setIsVerified(false)
       setFormError(applyVerifyError(error))

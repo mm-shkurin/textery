@@ -27,6 +27,11 @@ class RegisterPageStatements(BaseFrontendStatements):
     EXPECTED_PASSWORD_PLACEHOLDER: ClassVar[str] = "Минимум 8 символов"
     EXPECTED_CONFIRM_PASSWORD_PLACEHOLDER: ClassVar[str] = "Повторите пароль"
     EXPECTED_SUBMIT_BUTTON_TEXT: ClassVar[str] = "Зарегистрироваться"
+    # The full, literal class list an inline hint-error renders with (RegisterForm.tsx
+    # renders className="register-hint register-hint-error" for every field error).
+    # Asserted exactly, not by containment: the error styling is the pair, so a
+    # component that dropped "register-hint" or added a stray class must fail.
+    EXPECTED_HINT_ERROR_CLASSES: ClassVar[tuple[str, ...]] = ("register-hint", "register-hint-error")
     # Satisfies the password policy (see utils/passwordPolicy.ts) so the client-side
     # guard never masks the server's duplicate-email response.
     REGISTERED_ACCOUNT_PASSWORD: ClassVar[str] = "Str0ng!Pass"
@@ -99,7 +104,9 @@ class RegisterPageStatements(BaseFrontendStatements):
         self._wait_for_visible(driver, PASSWORD_INPUT).send_keys(Keys.TAB)
 
     def assert_password_policy_error_is_visible(self, driver: WebDriver, expected_text: str) -> None:
-        self._assert_hint_error_visible(driver, PASSWORD_ERROR, expected_text, "password policy error")
+        self._assert_hint_error_visible(
+            driver, PASSWORD_ERROR, expected_text, "password policy error", self.EXPECTED_HINT_ERROR_CLASSES
+        )
 
     def fill_confirm_password_field(self, driver: WebDriver, confirm: str) -> None:
         self._wait_for_visible(driver, CONFIRM_PASSWORD_INPUT).send_keys(confirm)
@@ -108,7 +115,9 @@ class RegisterPageStatements(BaseFrontendStatements):
         self._wait_for_visible(driver, CONFIRM_PASSWORD_INPUT).send_keys(Keys.TAB)
 
     def assert_confirm_mismatch_error_is_visible(self, driver: WebDriver, expected_text: str) -> None:
-        self._assert_hint_error_visible(driver, CONFIRM_ERROR, expected_text, "confirm mismatch error")
+        self._assert_hint_error_visible(
+            driver, CONFIRM_ERROR, expected_text, "confirm mismatch error", self.EXPECTED_HINT_ERROR_CLASSES
+        )
 
     def given_an_account_already_registered(self, driver: WebDriver, app_url: str) -> str:
         """Registers a brand-new account through the UI and returns its email.
@@ -142,7 +151,11 @@ class RegisterPageStatements(BaseFrontendStatements):
         landed against the email field rather than somewhere else on the page.
         """
         self._assert_hint_error_visible(
-            driver, EMAIL_ERROR, self.EXPECTED_DUPLICATE_EMAIL_MESSAGE, "duplicate email error"
+            driver,
+            EMAIL_ERROR,
+            self.EXPECTED_DUPLICATE_EMAIL_MESSAGE,
+            "duplicate email error",
+            self.EXPECTED_HINT_ERROR_CLASSES,
         )
         self._assert_error_shares_field_container_with_input(
             driver, EMAIL_ERROR, EMAIL_INPUT, "duplicate email error"

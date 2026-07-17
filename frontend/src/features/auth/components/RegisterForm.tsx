@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
 import { register, type RegisterApiError } from '../api/registerApi'
+import { rememberRegistration } from '../utils/registrationHandoff'
 import {
   CONFIRM_MISMATCH_MESSAGE,
   isConfirmMismatched,
@@ -44,13 +45,18 @@ export function RegisterForm() {
     event.preventDefault()
     if (isSubmitting) return
     setIsSubmitting(true)
+    const password = passwordInputRef.current?.value ?? ''
     try {
       const result = await register(
         emailInputRef.current?.value ?? '',
-        passwordInputRef.current?.value ?? '',
+        password,
         confirmInputRef.current?.value ?? '',
       )
       setEmailError(null)
+      // Hand the password to /verify so a verified account lands signed in. In memory only, and
+      // deliberately NOT in the router state below — see registrationHandoff for why that
+      // distinction is the whole point.
+      rememberRegistration(result.email, password)
       // The mocked code is carried in router state, not the URL: a query string would land
       // in browser history and server logs, and the notes require treating it as a real
       // credential. `replace` keeps Back from returning to a form whose submit already
