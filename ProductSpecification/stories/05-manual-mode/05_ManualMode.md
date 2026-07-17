@@ -87,8 +87,13 @@ into an empty document in the built-in editor to write and format the text by ha
   type; a manual document must remain eligible for future AI-assisted editing (per
   interview.md cross-story note) — i.e. no schema/field that hardcodes "no LLM ever" on
   the row itself.
-- No `User`/auth concept in this story's domain model (anonymous, same as story #1;
-  story #7 dependency doesn't block).
+- ~~No `User`/auth concept in this story's domain model (anonymous, same as story #1;
+  story #7 dependency doesn't block).~~ **SUPERSEDED 2026-07-17 — see
+  `decisions/document-ownership-decision.md`.** This rested on story #7 not existing;
+  its `/login` has since landed and was verified live. A `Document` now has a NOT NULL
+  `owner_id`, all three endpoints require a Bearer access token, and a document owned by
+  another account answers 404 (never 403, which would confirm the id exists). Without an
+  owner the endpoints are an IDOR: anyone holding a UUID reads and overwrites the row.
 - Editor formatting output is structured content (e.g. sanitized HTML or a documented
   block-based JSON), never free-text with embedded formatting markers the client must
   regex-parse.
@@ -98,9 +103,17 @@ into an empty document in the built-in editor to write and format the text by ha
   `generation_id` convention.
 - Save is a plain synchronous request/response — no queue, no polling, no `Generation`
   status machine reused for this path.
-- `Document.generation_id` (or equivalent link field) is nullable — a manual `Document`
+- ~~`Document.generation_id` (or equivalent link field) is nullable — a manual `Document`
   has no `Generation` row, and story #1's existing `Document`-reading code paths must
-  tolerate a null link without error (regression risk on a shared model).
+  tolerate a null link without error (regression risk on a shared model).~~
+  **CORRECTED 2026-07-17 — the premise is false.** Story #1 never built a `Document`: it
+  has no such entity, no `documents` table, and `endpoints.md` records "No separate 'get
+  document' endpoint — the completed document's content is returned" via `Generation`.
+  So there is no shared model, no existing `Document`-reading code path, and nothing to
+  keep null-tolerant. `generation_id` is therefore **omitted**, not nullable — scenario
+  2.1's "no Generation is created or linked" is satisfied more strongly by the column's
+  absence than by a null in it, and `tdd-rules.md` forbids preemptive fields. Adding the
+  column later is additive and unblocked.
 - A manual `Document` has no additional status machine beyond `draft` in this story's
   scope (no `completed`/`failed` — those are generation-only states); `PUT` never gates
   on status for a manual document. Broader lifecycle/transition rules stay story #1's

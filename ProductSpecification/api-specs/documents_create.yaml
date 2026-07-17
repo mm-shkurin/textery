@@ -10,6 +10,8 @@ paths:
       operationId: createDocument
       tags:
         - documents
+      security:
+        - bearerAuth: []
       parameters:
         - name: Idempotency-Key
           in: header
@@ -35,18 +37,58 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentResponse'
         '200':
-          description: Idempotency-Key already seen — returns the existing document
+          description: >
+            Idempotency-Key already seen for this owner — returns the existing document.
+            The key is scoped to the owner, so the same key from a different account
+            creates a separate document rather than disclosing this one.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentResponse'
+        '401':
+          description: >
+            Missing, malformed, expired, or non-access Bearer token. A refresh token
+            presented here is rejected like any other invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '422':
-          description: Unsupported document_type, or a request body containing a server-owned field (status, id, content)
+          description: >
+            Unsupported document_type, or Idempotency-Key outside 1-128 characters.
+            Server-owned fields (status, id, content) in the body are IGNORED, not
+            rejected — see decisions/server-owned-fields-ignored-decision.md.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
-          description: Internal server error
+          description: Internal server error — generic client-safe message only.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Access token from POST /api/v1/auth/login. Documents are owned; see
+        decisions/document-ownership-decision.md.
   schemas:
+    Error:
+      type: object
+      required:
+        - error_code
+        - message
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
     CreateDocumentRequest:
       type: object
       required:
@@ -75,3 +117,10 @@ components:
         created_at:
           type: string
           format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          description: >
+            Equals created_at on creation. Present on every DocumentResponse — this
+            endpoint previously omitted it while documents_save.yaml returned it, so
+            one shape was documented two ways.

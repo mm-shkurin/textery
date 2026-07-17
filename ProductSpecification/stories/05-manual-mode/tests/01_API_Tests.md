@@ -6,9 +6,13 @@
 > existing), then save validation, then save happy-path/concurrency, then save security
 > guards.
 
-No prerequisite-resource guards apply to this story — `POST /documents` has no parent
-resource that must exist first; the only "guard" is field-level `document_type`
-validation, covered in section 1.
+**Amended 2026-07-17** — see `decisions/document-ownership-decision.md`. The original text
+read: *"No prerequisite-resource guards apply to this story — `POST /documents` has no
+parent resource that must exist first"*. That is no longer true. Every scenario below now
+runs as an **authenticated owner**: each endpoint requires `Authorization: Bearer
+<access_token>`, so every test's Given implies a register → verify → login bootstrap, and
+the account is `POST /documents`'s parent resource. Ownership scenarios are in section 9;
+the 401 and cross-account cases live in `05_Security_Tests.md` section 7.
 
 ---
 
@@ -201,12 +205,23 @@ Then the save is handled consistently — either recognized as the same content 
 
 ### 6.7 Same-instant concurrent saves against one document resolve atomically, exactly one wins
 
+> **Fixture amended 2026-07-17 — the two requests must carry DISTINCT content.** As
+> originally written this scenario was mutually unsatisfiable with 6.2. 6.2 requires an
+> identical `(content, version)` resubmit to answer **200** with no version advance, which
+> forces the save path to treat "the stored content already equals mine and the version
+> advanced by exactly one" as a replay rather than a conflict. If 6.7's two concurrent
+> requests carried *identical* content, the loser would match that very rule and get 200 —
+> while 6.7 demands a conflict. Distinct content separates the two: the loser's content
+> does not match what landed, so it is a genuine conflict. Without this the implementation
+> must fail one scenario or the other, whichever is written second.
+
 ```gherkin
 Given a manual document exists at a known version
-When two save requests using that same version are released to execute at the same
-  instant against the same document
+When two save requests carrying different content, both using that same version, are
+  released to execute at the same instant against the same document
 Then exactly one save succeeds and advances the version
 And the other observes a version conflict, never a silently lost or corrupted write
+And the stored content is exactly the winner's, never interleaved or partially applied
 And this holds even when the two requests are handled by different backend instances
 ```
 
@@ -248,6 +263,35 @@ When the client saves content containing disallowed tags or attributes that get
   stripped by sanitization
 Then the save response and a subsequent read both show the sanitized version
 And neither response looks identical to the raw, unsanitized submission
+```
+
+---
+
+## 9. Document Ownership
+
+> Added 2026-07-17 — see `decisions/document-ownership-decision.md`. The cross-account and
+> missing-token cases live in `05_Security_Tests.md` section 7; these are the owner-scoping
+> rules the happy paths depend on.
+
+### 9.1 A created document belongs to the authenticated account
+
+```gherkin
+Given an authenticated account
+When the client creates a manual document
+Then the document is owned by that account
+And the owner is taken from the access token, never from the request body
+```
+
+### 9.2 A fetch returns only the authenticated account's own document
+
+```gherkin
+Given an authenticated account owning a document
+When that account fetches the document
+Then the response returns it
+
+Given a second authenticated account
+When the second account fetches the first account's document id
+Then the response reports not found
 ```
 
 ---

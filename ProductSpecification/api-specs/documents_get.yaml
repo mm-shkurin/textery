@@ -10,6 +10,8 @@ paths:
       operationId: getDocument
       tags:
         - documents
+      security:
+        - bearerAuth: []
       parameters:
         - name: document_id
           in: path
@@ -24,13 +26,47 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentResponse'
+        '401':
+          description: Missing, malformed, expired, or non-access Bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
-          description: No document with this id
+          description: >
+            No document with this id FOR THIS OWNER. A document owned by another
+            account is indistinguishable from one that does not exist — never 403,
+            which would confirm the id exists. See
+            decisions/document-ownership-decision.md.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
-          description: Internal server error
+          description: Internal server error — generic client-safe message only.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token from POST /api/v1/auth/login.
   schemas:
+    Error:
+      type: object
+      required:
+        - error_code
+        - message
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
     DocumentResponse:
       type: object
       properties:

@@ -10,6 +10,8 @@ paths:
       operationId: saveDocument
       tags:
         - documents
+      security:
+        - bearerAuth: []
       parameters:
         - name: document_id
           in: path
@@ -31,18 +33,73 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentResponse'
         '400':
-          description: content exceeds max length (200,000 chars) — rejected whole, never truncated
+          description: >
+            content exceeds max length (200,000 characters) — rejected whole, never
+            truncated. Measured on the NFC-normalized string in Unicode code points,
+            BEFORE sanitization: sanitizing first would parse an adversarial payload
+            before rejecting it, and escaping (< becomes &lt;) can push a legitimate
+            200,000-character input over a post-sanitize limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing, malformed, expired, or non-access Bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
-          description: No document with this id
+          description: >
+            No document with this id FOR THIS OWNER. A document owned by another
+            account is indistinguishable from one that does not exist — never 403,
+            which would confirm the id exists. Takes precedence over 409: a foreign
+            document never reaches the version check, so the response cannot disclose
+            that the submitted version was correct.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: version does not match current state — another save landed first (lost-update guard); client must refetch and retry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '422':
-          description: Request body contains a server-owned field (document_type, id, status)
+          description: >
+            version is absent or not an integer. Server-owned fields (document_type,
+            id, status) in the body are IGNORED, not rejected — see
+            decisions/server-owned-fields-ignored-decision.md.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
-          description: Internal server error
+          description: Internal server error — generic client-safe message only.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token from POST /api/v1/auth/login.
   schemas:
+    Error:
+      type: object
+      required:
+        - error_code
+        - message
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
     SaveDocumentRequest:
       type: object
       required:
