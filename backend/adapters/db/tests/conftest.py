@@ -39,7 +39,11 @@ async def db_session():
         await session.rollback()
     async with engine.connect() as cleanup_connection:
         await cleanup_connection.execute(text("TRUNCATE TABLE generations"))
-        await cleanup_connection.execute(text("TRUNCATE TABLE verification_codes, accounts"))
+        # One statement: documents.owner_id references accounts.id, so truncating
+        # accounts on its own fails with "cannot truncate a table referenced in a
+        # foreign key constraint". Postgres only allows it when every referencing
+        # table is truncated in the same command.
+        await cleanup_connection.execute(text("TRUNCATE TABLE documents, verification_codes, accounts"))
         await cleanup_connection.commit()
     await engine.dispose()
 
@@ -64,3 +68,10 @@ def sql_alchemy_unit_of_work_statements(db_session: AsyncSession):
     from statements.sql_alchemy_unit_of_work_statements import SqlAlchemyUnitOfWorkStatements
 
     return SqlAlchemyUnitOfWorkStatements(db_session)
+
+
+@pytest.fixture
+def document_storage_statements(db_session: AsyncSession):
+    from statements.document_storage_statements import DocumentStorageStatements
+
+    return DocumentStorageStatements(db_session)

@@ -10,7 +10,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "domain", "src"))
 
 from model.auth.account_model import AccountModel  # noqa: E402,F401
+from model.auth.verification_code_model import VerificationCodeModel  # noqa: E402,F401
 from model.base import Base  # noqa: E402
+from model.document.document_model import DocumentModel  # noqa: E402,F401
 from model.generation.generation_model import GenerationModel  # noqa: E402,F401
 from session import create_engine  # noqa: E402
 
