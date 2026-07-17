@@ -48,19 +48,61 @@ class GigaChatProvider:
                     },
                 )
                 response.raise_for_status()
-                return response.json()["choices"][0]["message"]["content"]
+                return self._read_content(response)
         except httpx.HTTPError as error:
             raise ProviderError(str(error)) from error
 
+    @staticmethod
+    def _read_content(response: httpx.Response) -> str:
+        """Pull the completion text out of the response body.
+
+        Every way the body can disappoint us is a ProviderError, because that is
+        what the GenerationProvider port promises its callers. Only httpx.HTTPError
+        was caught before, so a 200 carrying an unexpected shape -- an error
+        envelope, a truncated body, a proxy's HTML -- raised KeyError, IndexError,
+        or JSONDecodeError straight through the port's contract and out of the
+        BackgroundTask, stranding the row in in_progress.
+
+        This is the remote edge of the system: the one place where the shape of
+        the data is somebody else's decision and can change without warning.
+        """
+        try:
+            payload = response.json()
+        except ValueError as error:
+            raise ProviderError(f"provider returned a body that is not JSON: {error}") from error
+        try:
+            return payload["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as error:
+            raise ProviderError(
+                f"provider returned JSON without a completion at "
+                f"choices[0].message.content: {error}"
+            ) from error
+
     async def _fetch_token(self) -> str:
-        async with httpx.AsyncClient(verify=self._verify, timeout=30) as client:
-            response = await client.post(
-                TOKEN_URL,
-                headers={
-                    "Authorization": f"Basic {self._credentials}",
-                    "RqUID": str(uuid.uuid4()),
-                },
-                data={"scope": SCOPE},
-            )
-            response.raise_for_status()
+        try:
+            async with httpx.AsyncClient(verify=self._verify, timeout=30) as client:
+                response = await client.post(
+                    TOKEN_URL,
+                    headers={
+                        "Authorization": f"Basic {self._credentials}",
+                        "RqUID": str(uuid.uuid4()),
+                    },
+                    data={"scope": SCOPE},
+                )
+                response.raise_for_status()
+                return self._read_access_token(response)
+        except httpx.HTTPError as error:
+            raise ProviderError(str(error)) from error
+
+    @staticmethod
+    def _read_access_token(response: httpx.Response) -> str:
+        try:
             return response.json()["access_token"]
+        except ValueError as error:
+            raise ProviderError(
+                f"token endpoint returned a body that is not JSON: {error}"
+            ) from error
+        except (KeyError, TypeError) as error:
+            raise ProviderError(
+                f"token endpoint returned JSON without access_token: {error}"
+            ) from error

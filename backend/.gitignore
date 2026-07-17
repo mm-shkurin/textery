@@ -1,0 +1,49 @@
+# This directory is published as its own repository root (the gitverse-backend
+# remote), where the monorepo's top-level .gitignore does not exist. Until this
+# file, everything below was excluded only by that parent -- which is to say, by
+# a file that does not ship with the code it was protecting.
+#
+# The `.env` rule is the one that mattered: backend/.env holds real GigaChat
+# credentials and the JWT signing key, and standalone the next `git add -A` would
+# have committed them. It never happened -- `.env` appears in no commit on any
+# branch -- but nothing was preventing it.
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+
+# Test and coverage output
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+coverage_*.xml
+htmlcov/
+htmlcov_*/
+.mypy_cache/
+.ruff_cache/
+
+# Local database fallback
+*.sqlite3
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini

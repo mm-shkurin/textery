@@ -117,6 +117,29 @@ class GenerationLifecycleStatements:
         usecase = GenerateDocument(storage=self._storage, provider=self._provider)
         await usecase.execute(self._seeded_generation.id, self._seeded_generation.owner_id)
 
+    async def process_a_generation_that_is_gone(self) -> None:
+        """Run GenerateDocument against an id the storage does not hold.
+
+        Reachable without a bug: the sweep re-triggers execution from a list read
+        taken earlier, so the row can be deleted between that read and this call.
+        """
+        self.given_no_generation()
+        self._provider = FakeGenerationProvider()
+        usecase = GenerateDocument(storage=self._storage, provider=self._provider)
+        await usecase.execute(self._looked_up_id, self._looked_up_owner_id)
+
+    def assert_no_generation_was_written(self) -> None:
+        assert self._storage.updated_generations == [], (
+            "expected no write for a generation that does not exist, got "
+            f"{self._storage.updated_generations}"
+        )
+
+    def assert_provider_was_not_called(self) -> None:
+        assert self._provider.call_count == 0, (
+            "expected the provider not to be called for a generation that does not "
+            f"exist, got {self._provider.call_count} calls"
+        )
+
     def assert_provider_call_count(self, expected_count: int) -> None:
         assert self._provider.call_count == expected_count, (
             f"expected provider called {expected_count} times, got {self._provider.call_count}"

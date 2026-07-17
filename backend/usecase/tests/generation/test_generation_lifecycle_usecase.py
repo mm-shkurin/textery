@@ -48,6 +48,26 @@ class TestGenerateDocumentSuccess:
         generation_lifecycle_statements.assert_generation_marked_in_progress_before_final_update()
 
 
+class TestGenerateDocumentMissingGeneration:
+    """A generation that is gone by the time the background task runs is a no-op.
+
+    The storage port returns Optional, and this usecase runs inside a
+    BackgroundTask where an AttributeError on None has nobody to answer to: it
+    would surface only as a row stuck pending until the sweep, far from the cause.
+    """
+
+    async def test_should_do_nothing_when_the_generation_does_not_exist(
+        self, generation_lifecycle_statements: GenerationLifecycleStatements
+    ):
+        await generation_lifecycle_statements.process_a_generation_that_is_gone()
+
+        # Returning quietly is the whole behaviour, so the assertions are about
+        # what must NOT happen: no write against a row that is not there, and no
+        # provider call, which would cost a paid request for a discarded result.
+        generation_lifecycle_statements.assert_no_generation_was_written()
+        generation_lifecycle_statements.assert_provider_was_not_called()
+
+
 class TestGenerateDocumentProviderFailure:
     """Evening-demo slice: a provider error fails the generation with a
     generic, sanitized reason."""
