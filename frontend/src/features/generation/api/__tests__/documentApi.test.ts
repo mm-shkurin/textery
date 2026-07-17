@@ -7,6 +7,19 @@ describe('documentApi', () => {
     vi.unstubAllGlobals()
   })
 
+  // The 201 body every create test stubs. `version` is the only literal any of them varies
+  // (defect A's test needs a value other than ManualEditor's useState(1) guess to prove the
+  // server's is taken), so it is the only parameter.
+  function stubCreateFetch(version = 1): ReturnType<typeof vi.fn> {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({ document_id: 'doc-1', status: 'draft', content: '', version }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    return fetchMock
+  }
+
   // Defect A (documents_create.yaml, DocumentResponse.version: "Optimistic-concurrency
   // token; required on subsequent PUT"). documentApi.ts:19 parses the response
   // `as { document_id, status }`, so version is discarded and ManualEditor.tsx:38 falls
@@ -14,12 +27,7 @@ describe('documentApi', () => {
   // is anything but 1.
   // RED: documentApi.ts drops `version` on the create path — green-frontend-api-contract.
   it.skip('createDocument returns the version the server assigned on create', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 201,
-      json: async () => ({ document_id: 'doc-1', status: 'draft', content: '', version: 7 }),
-    })
-    vi.stubGlobal('fetch', fetchMock)
+    stubCreateFetch(7)
 
     const result = await createDocument('doklad')
 
@@ -55,12 +63,7 @@ describe('documentApi', () => {
   // test's own argument (tdd-rules:18's trivial gate). The key-set claim this test exists
   // to make does not need it. When NEW-4 is decided, pin the wire value in its own test.
   it.skip('createDocument sends document_type as the request body\'s only field', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 201,
-      json: async () => ({ document_id: 'doc-1', status: 'draft', content: '', version: 1 }),
-    })
-    vi.stubGlobal('fetch', fetchMock)
+    const fetchMock = stubCreateFetch()
 
     await createDocument('doklad')
 
@@ -77,12 +80,7 @@ describe('documentApi', () => {
   // says "client-generated key", not "UUID", and the old uuid regex here pinned the
   // per-call crypto.randomUUID() that makes the documented 200-replay branch unreachable.
   it('createDocument sends a Content-Type and a spec-shaped Idempotency-Key header', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 201,
-      json: async () => ({ document_id: 'doc-1', status: 'draft', content: '', version: 1 }),
-    })
-    vi.stubGlobal('fetch', fetchMock)
+    const fetchMock = stubCreateFetch()
 
     await createDocument('doklad')
 
