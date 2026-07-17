@@ -3,7 +3,11 @@ from uuid import UUID, uuid4
 
 from fake.generation.fake_generation_provider import FakeGenerationProvider
 from fake.generation.fake_generation_storage import FakeGenerationStorage
-from generation.generate_document import GENERIC_FAILURE_MESSAGE, GenerateDocument
+from generation.generate_document import (
+    _RETRY_BASE_DELAY_SECONDS,
+    GENERIC_FAILURE_MESSAGE,
+    GenerateDocument,
+)
 from generation.generation import Generation
 from generation.get_generation import GetGeneration
 
@@ -16,6 +20,9 @@ class GenerationLifecycleStatements:
         self._looked_up_id: UUID | None = None
         self._looked_up_owner_id: UUID | None = None
         self.result: Generation | None = None
+        # Retry backoff is real time; record what was asked for instead of
+        # sleeping it, so the retry tests stay instant and can assert the wait.
+        self.slept_for: list[float] = []
 
     def given_pending_generation(self) -> None:
         self._seed(status="pending", content=None)
@@ -95,14 +102,18 @@ class GenerationLifecycleStatements:
         self.given_pending_generation()
         self._provider = FakeGenerationProvider()
         self._provider.content_to_return = content
-        usecase = GenerateDocument(storage=self._storage, provider=self._provider)
+        usecase = GenerateDocument(
+            storage=self._storage, provider=self._provider, sleep=self._record_sleep
+        )
         await usecase.execute(self._seeded_generation.id, self._seeded_generation.owner_id)
 
     async def process_pending_generation_with_provider_error(self, error: Exception) -> None:
         self.given_pending_generation()
         self._provider = FakeGenerationProvider()
         self._provider.error_to_raise = error
-        usecase = GenerateDocument(storage=self._storage, provider=self._provider)
+        usecase = GenerateDocument(
+            storage=self._storage, provider=self._provider, sleep=self._record_sleep
+        )
         await usecase.execute(self._seeded_generation.id, self._seeded_generation.owner_id)
 
     async def process_pending_generation_with_transient_provider_error(
@@ -113,7 +124,9 @@ class GenerationLifecycleStatements:
         self._provider.error_to_raise = error
         self._provider.fail_times = fail_times
         self._provider.content_to_return = content
-        usecase = GenerateDocument(storage=self._storage, provider=self._provider)
+        usecase = GenerateDocument(
+            storage=self._storage, provider=self._provider, sleep=self._record_sleep
+        )
         await usecase.execute(self._seeded_generation.id, self._seeded_generation.owner_id)
 
     async def process_a_generation_that_is_gone(self) -> None:
@@ -124,7 +137,9 @@ class GenerationLifecycleStatements:
         """
         self.given_no_generation()
         self._provider = FakeGenerationProvider()
-        usecase = GenerateDocument(storage=self._storage, provider=self._provider)
+        usecase = GenerateDocument(
+            storage=self._storage, provider=self._provider, sleep=self._record_sleep
+        )
         await usecase.execute(self._looked_up_id, self._looked_up_owner_id)
 
     def assert_no_generation_was_written(self) -> None:
@@ -138,6 +153,22 @@ class GenerationLifecycleStatements:
             "expected the provider not to be called for a generation that does not "
             f"exist, got {self._provider.call_count} calls"
         )
+
+    async def _record_sleep(self, seconds: float) -> None:
+        self.slept_for.append(seconds)
+
+    def assert_waited_before_retrying(self) -> None:
+        """A retry that fires instantly re-hits whatever was still broken."""
+        assert len(self.slept_for) == 1, (
+            f"expected exactly one backoff between two attempts, got {self.slept_for}"
+        )
+        assert self.slept_for[0] >= _RETRY_BASE_DELAY_SECONDS, (
+            f"expected to wait at least the base delay, got {self.slept_for[0]}s"
+        )
+
+    def assert_never_waited(self) -> None:
+        """No backoff after the final attempt: nothing is left to wait for."""
+        assert self.slept_for == [], f"expected no backoff, got {self.slept_for}"
 
     def assert_provider_call_count(self, expected_count: int) -> None:
         assert self._provider.call_count == expected_count, (

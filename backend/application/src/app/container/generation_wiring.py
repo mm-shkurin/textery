@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from access.generation.generation_storage import SqlAlchemyGenerationStorage
-from container.runtime import create_provider, session_factory, stale_after_minutes
+from container.runtime import provider, session_factory, stale_after_minutes
 from generation.document_generator import DocumentGenerator
 from generation.generate_document import GenerateDocument
 from generation.get_generation import GetGeneration
@@ -44,7 +44,7 @@ class _BackgroundGenerateDocument:
         session = session_factory()
         try:
             storage = SqlAlchemyGenerationStorage(session)
-            usecase = GenerateDocument(storage=storage, provider=create_provider())
+            usecase = GenerateDocument(storage=storage, provider=provider)
             await usecase.execute(generation_id, owner_id)
         finally:
             await session.close()

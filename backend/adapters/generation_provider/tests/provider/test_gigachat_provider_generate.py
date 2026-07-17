@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from unittest.mock import AsyncMock, MagicMock
 
@@ -7,6 +8,7 @@ import pytest
 from generation.generation import Generation
 from generation.generation_provider import ProviderError
 from provider.gigachat_provider import (
+    _TOKEN_TTL_SECONDS,
     CA_BUNDLE_ENV_VAR,
     COMPLETIONS_URL,
     CREDENTIALS_ENV_VAR,
@@ -186,3 +188,86 @@ class TestGenerateProviderError:
 
         assert type(exc_info.value) is ProviderError
         assert str(exc_info.value) == str(http_error)
+
+
+class TestTokenCaching:
+    """The OAuth token is minted once and reused until it nears expiry.
+
+    The provider is built once per process (container/runtime), so a token good
+    for ~30 minutes should not be re-fetched per generation -- that doubled the
+    request count and the latency of every generate().
+    """
+
+    async def test_should_mint_the_token_once_across_two_generations(self, monkeypatch, mocker):
+        _set_credentials(monkeypatch)
+        client = _patch_async_client(
+            mocker,
+            [
+                _json_response(_token_payload()),
+                _json_response(_completions_payload()),
+                _json_response(_completions_payload()),
+            ],
+        )
+        provider = GigaChatProvider()
+
+        await provider.generate(_build_generation())
+        await provider.generate(_build_generation())
+
+        # Three posts, not four: one token + two completions.
+        assert client.post.await_count == 3, (
+            f"expected the token to be reused, got {client.post.await_count} requests"
+        )
+        assert [call.args[0] for call in client.post.await_args_list] == [
+            TOKEN_URL,
+            COMPLETIONS_URL,
+            COMPLETIONS_URL,
+        ]
+
+    async def test_should_mint_a_fresh_token_once_the_cached_one_expires(self, monkeypatch, mocker):
+        _set_credentials(monkeypatch)
+        client = _patch_async_client(
+            mocker,
+            [
+                _json_response(_token_payload()),
+                _json_response(_completions_payload()),
+                _json_response(_token_payload()),
+                _json_response(_completions_payload()),
+            ],
+        )
+        now = [1000.0]
+        provider = GigaChatProvider(clock=lambda: now[0])
+
+        await provider.generate(_build_generation())
+        now[0] += _TOKEN_TTL_SECONDS  # past the cached token's margin-adjusted expiry
+        await provider.generate(_build_generation())
+
+        assert [call.args[0] for call in client.post.await_args_list] == [
+            TOKEN_URL,
+            COMPLETIONS_URL,
+            TOKEN_URL,
+            COMPLETIONS_URL,
+        ], "an expired token must be re-minted, not reused"
+
+    async def test_should_mint_once_when_two_generations_race_on_a_cold_cache(
+        self, monkeypatch, mocker
+    ):
+        _set_credentials(monkeypatch)
+        client = _patch_async_client(
+            mocker,
+            [
+                _json_response(_token_payload()),
+                _json_response(_completions_payload()),
+                _json_response(_completions_payload()),
+            ],
+        )
+        provider = GigaChatProvider()
+
+        await asyncio.gather(
+            provider.generate(_build_generation()), provider.generate(_build_generation())
+        )
+
+        token_calls = [c for c in client.post.await_args_list if c.args[0] == TOKEN_URL]
+        assert len(token_calls) == 1, (
+            f"a burst on a cold cache must mint one token, got {len(token_calls)}. "
+            "Without the lock each concurrent generation mints its own."
+        )

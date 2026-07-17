@@ -1,5 +1,8 @@
+import asyncio
 import os
+import time
 import uuid
+from collections.abc import Callable
 
 import httpx
 
@@ -8,6 +11,10 @@ from generation.generation_provider import ProviderError
 from shared.exceptions import ConfigurationException
 
 MISSING_CREDENTIALS_MESSAGE = "GIGACHAT_CREDENTIALS environment variable is not set"
+# GigaChat's OAuth tokens last ~30 minutes. The margin is subtracted so the cache
+# expires before the server's copy does.
+_TOKEN_TTL_SECONDS = 30 * 60
+_TOKEN_EXPIRY_MARGIN_SECONDS = 60
 TOKEN_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
 COMPLETIONS_URL = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions"
 SCOPE = "GIGACHAT_API_PERS"
@@ -24,12 +31,19 @@ _DEFAULT_CA_BUNDLE = os.path.join(
 
 
 class GigaChatProvider:
-    def __init__(self) -> None:
+    def __init__(self, clock: Callable[[], float] | None = None) -> None:
         credentials = os.environ.get(CREDENTIALS_ENV_VAR)
         if not credentials:
             raise ConfigurationException(MISSING_CREDENTIALS_MESSAGE)
         self._credentials = credentials
         self._verify = os.environ.get(CA_BUNDLE_ENV_VAR, _DEFAULT_CA_BUNDLE)
+        # monotonic, not wall-clock: an NTP correction must not make a cached
+        # token look older or younger than it is. Injectable so the cache's expiry
+        # is testable without sleeping for half an hour.
+        self._clock = clock or time.monotonic
+        self._token: str | None = None
+        self._token_expires_at: float = 0.0
+        self._token_lock = asyncio.Lock()
 
     async def generate(self, generation: Generation) -> str:
         try:
@@ -79,6 +93,24 @@ class GigaChatProvider:
             ) from error
 
     async def _fetch_token(self) -> str:
+        """Return a valid OAuth token, minting one only when there isn't one.
+
+        The token is good for ~30 minutes, and this provider now lives for the
+        life of the process (container/runtime builds it once), so caching it
+        turns two HTTP round-trips per generation into one. Every generate() used
+        to pay the OAuth handshake before it could even ask for a completion.
+
+        The lock keeps a burst of concurrent generations from each minting their
+        own token on a cold cache. The second waiter re-checks inside the lock and
+        finds the first one's token.
+        """
+        async with self._token_lock:
+            if self._token is not None and self._clock() < self._token_expires_at:
+                return self._token
+            self._token, self._token_expires_at = await self._mint_token()
+            return self._token
+
+    async def _mint_token(self) -> tuple[str, float]:
         try:
             async with httpx.AsyncClient(verify=self._verify, timeout=30) as client:
                 response = await client.post(
@@ -90,9 +122,16 @@ class GigaChatProvider:
                     data={"scope": SCOPE},
                 )
                 response.raise_for_status()
-                return self._read_access_token(response)
+                token = self._read_access_token(response)
         except httpx.HTTPError as error:
             raise ProviderError(str(error)) from error
+        # Expiry comes from our own clock plus a conservative TTL, not from the
+        # response's expires_at: that is a remote value in remote units, and
+        # trusting it means a clock skew or a format change silently produces a
+        # token we consider valid and the server does not. The margin makes the
+        # cache give up slightly early, which costs one extra handshake and never
+        # an auth failure mid-generation.
+        return token, self._clock() + _TOKEN_TTL_SECONDS - _TOKEN_EXPIRY_MARGIN_SECONDS
 
     @staticmethod
     def _read_access_token(response: httpx.Response) -> str:

@@ -46,6 +46,8 @@ class TestGenerateDocumentSuccess:
         )
         generation_lifecycle_statements.assert_generation_completed_with_content("Готовый доклад")
         generation_lifecycle_statements.assert_generation_marked_in_progress_before_final_update()
+        # A first-try success must not pay the backoff.
+        generation_lifecycle_statements.assert_never_waited()
 
 
 class TestGenerateDocumentMissingGeneration:
@@ -90,6 +92,7 @@ class TestGenerateDocumentProviderFailure:
             ProviderError("provider unavailable")
         )
         generation_lifecycle_statements.assert_provider_call_count(2)
+        generation_lifecycle_statements.assert_waited_before_retrying()
 
 
 class TestGenerateDocumentTransientProviderFailure:

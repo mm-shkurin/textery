@@ -1,4 +1,7 @@
+import asyncio
 import logging
+import random
+from collections.abc import Awaitable, Callable
 from uuid import UUID
 
 from generation.generation_provider import GenerationProvider
@@ -7,13 +10,29 @@ from generation.generation_storage import GenerationStorage
 MAX_PROVIDER_ATTEMPTS = 2
 GENERIC_FAILURE_MESSAGE = "Не удалось сгенерировать документ. Попробуйте позже."
 
+# Waited between provider attempts, doubling per retry. Without it the retry
+# fires microseconds after the failure and, against a rate-limited or briefly-down
+# provider, fails for the identical reason -- two attempts spending one attempt's
+# worth of luck. The jitter keeps a batch of generations that all failed at once
+# (a provider blip, or the sweep re-triggering a backlog) from retrying in a
+# synchronised wave.
+_RETRY_BASE_DELAY_SECONDS = 1.0
+_RETRY_JITTER_SECONDS = 0.5
+
 logger = logging.getLogger(__name__)
 
 
 class GenerateDocument:
-    def __init__(self, storage: GenerationStorage, provider: GenerationProvider) -> None:
+    def __init__(
+        self,
+        storage: GenerationStorage,
+        provider: GenerationProvider,
+        sleep: Callable[[float], Awaitable[None]] | None = None,
+    ) -> None:
         self._storage = storage
         self._provider = provider
+        # Injectable so the retry tests do not spend real seconds asleep.
+        self._sleep = sleep or asyncio.sleep
 
     async def execute(self, generation_id: UUID, owner_id: UUID) -> None:
         # The owner is threaded through rather than looked up, so that the storage
@@ -54,6 +73,8 @@ class GenerateDocument:
                     MAX_PROVIDER_ATTEMPTS,
                     error,
                 )
+                if attempt < MAX_PROVIDER_ATTEMPTS:
+                    await self._sleep(self._backoff_for(attempt))
                 continue
             generation.complete(content)
             await self._storage.update(generation)
@@ -67,3 +88,12 @@ class GenerateDocument:
         )
         generation.fail(GENERIC_FAILURE_MESSAGE)
         await self._storage.update(generation)
+
+    @staticmethod
+    def _backoff_for(attempt: int) -> float:
+        # Exponential in the attempt, plus jitter. Never waited after the last
+        # attempt -- there is nothing left to wait for, and the caller is a
+        # BackgroundTask whose time is the user's.
+        return _RETRY_BASE_DELAY_SECONDS * (2 ** (attempt - 1)) + random.uniform(
+            0, _RETRY_JITTER_SECONDS
+        )
