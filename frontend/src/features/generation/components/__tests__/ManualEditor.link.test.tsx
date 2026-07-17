@@ -12,8 +12,7 @@ describe('ManualEditor link toolbar', () => {
     contentArea.textContent = 'hello world'
     fireEvent.input(contentArea)
 
-    const textNode = contentArea.firstChild as Node
-    selectRange(textNode, 0, 5)
+    selectRange(contentArea.firstChild as Node, 0, 5)
     fireEvent.select(contentArea)
 
     const linkButton = screen.getByTestId('toolbar-link')
@@ -58,8 +57,7 @@ describe('ManualEditor link toolbar', () => {
     // link* — the assertion above alone is satisfied by a hardcoded
     // `isActive: () => true`. Moving the cursor out is what gives the clause
     // teeth, mirroring the bold/strike/underline deactivation tests.
-    const trailingTextNode = contentArea.lastChild as Node
-    selectRange(trailingTextNode, 3, 3)
+    selectRange(contentArea.lastChild as Node, 3, 3)
     fireEvent.select(contentArea)
 
     expect(linkButton).toHaveAttribute('aria-pressed', 'false')

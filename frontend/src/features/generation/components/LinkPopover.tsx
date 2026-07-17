@@ -13,9 +13,18 @@ const HAS_SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:/
 
 const IS_EMAIL = /^[^\s@\/]+@[^\s@\/]+$/
 // The path class is `\S*`, deliberately: a path ends at whitespace and nowhere
-// else. Enumerating its characters is what breaks — `\w` stays ASCII-only even
-// under `/u` (dropping `Война_и_мир`) and excludes `@` (dropping `/@vsauce`),
-// which is the mutant `ManualEditor.link.urlShapes.guards.test.tsx` exists to kill.
+// else, and `apply()` trims before calling. Enumerating its characters is what
+// breaks — `\w` stays ASCII-only even under `/u` (dropping `Война_и_мир`) and
+// excludes `@` (dropping `/@vsauce`). That `\w`-path mutant is what guard 4 of
+// `ManualEditor.link.urlShapes.guards.test.tsx` names verbatim and exists to
+// kill; guard 1 caught it too, but only incidentally — its own kill target is
+// the email-branch candidate. Do not re-enumerate this class: no test forbids
+// it (an enumeration passes the whole suite), only this comment does.
+//
+// Note what this branch cannot do: everything matching HOST_SHAPE is prefixed
+// `http://`, so the scheme is `http` by construction, and `isAllowedUri` — the
+// one downstream validator — vets the scheme only. This branch is therefore
+// unrejectable, and widening it widens what ships unvalidated.
 const HOST_SHAPE = /^[\p{L}\p{N}-]+(\.[\p{L}\p{N}-]+)*(:\d+)?([\/?#]\S*)?$/u
 function normalizeHref(url: string): string {
   if (HOST_SHAPE.test(url)) return `http://${url}`
