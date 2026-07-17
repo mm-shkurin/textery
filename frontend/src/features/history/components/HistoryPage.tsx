@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react'
-import { listDocuments, listGenerations } from '../../generation/api/historyApi'
+import { listDocuments, listGenerations } from '../api/historyApi'
 import { useHistoryList } from '../hooks/useHistoryList'
 import { HistoryRows } from './HistoryRows'
+import { documentTypeLabelFromWire } from '../../../shared/documentTypes'
 import './HistoryPage.css'
 
 type Tab = 'documents' | 'generations'
@@ -36,22 +37,39 @@ export function HistoryPage({ onOpenDocument, onBack }: HistoryPageProps) {
         <h1 className="history-title">Мои работы</h1>
       </div>
 
-      <div className="history-tabs" role="tablist">
+      <div className="history-tabs" role="tablist" aria-label="Разделы истории">
         <TabButton id="documents" active={tab} onSelect={setTab} label="Мои документы" />
         <TabButton id="generations" active={tab} onSelect={setTab} label="Генерации" />
       </div>
 
       {/* Keyed so switching tabs remounts the list: the hook owns cursor + items, and carrying
-          one tab's cursor into the other's fetcher would page the wrong list. */}
-      {tab === 'documents' ? (
-        <DocumentsTab key="documents" onOpenDocument={onOpenDocument} />
-      ) : (
-        <GenerationsTab key="generations" />
-      )}
+          one tab's cursor into the other's fetcher would page the wrong list.
+
+          The panel carries the tabpanel half of the pattern the tablist above promises. Declaring
+          role="tab" without it announces a widget whose content has no stated relationship to the
+          tabs — the reader is told "tab 1 of 2, selected" and then has to guess what it selected. */}
+      <div
+        role="tabpanel"
+        id={`history-panel-${tab}`}
+        aria-labelledby={`history-tab-${tab}`}
+        tabIndex={0}
+      >
+        {tab === 'documents' ? (
+          <DocumentsTab key="documents" onOpenDocument={onOpenDocument} />
+        ) : (
+          <GenerationsTab key="generations" />
+        )}
+      </div>
     </div>
   )
 }
 
+const TABS: Tab[] = ['documents', 'generations']
+
+// The tab half of the tablist/tabpanel pair. `role="tab"` is a promise about keyboard behaviour,
+// not a styling hook: a reader who meets it expects arrow keys to move between tabs and Tab to
+// leave the list. Previously it made the promise and delivered none of it — no ids, no
+// aria-controls, and every tab in the tab order.
 function TabButton({
   id,
   active,
@@ -63,14 +81,29 @@ function TabButton({
   onSelect: (t: Tab) => void
   label: string
 }) {
+  const isActive = active === id
+
+  // Roving tabindex: the tablist is ONE tab stop, and the arrows move within it.
+  function handleKeyDown(event: React.KeyboardEvent<HTMLButtonElement>) {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
+    event.preventDefault()
+    const step = event.key === 'ArrowRight' ? 1 : -1
+    // Wraps, per the APG pattern: the ends of a tablist are not walls.
+    onSelect(TABS[(TABS.indexOf(id) + step + TABS.length) % TABS.length])
+  }
+
   return (
     <button
       type="button"
       role="tab"
-      aria-selected={active === id}
+      id={`history-tab-${id}`}
+      aria-selected={isActive}
+      aria-controls={`history-panel-${id}`}
+      tabIndex={isActive ? 0 : -1}
       className="history-tab"
       data-testid={`history-tab-${id}`}
       onClick={() => onSelect(id)}
+      onKeyDown={handleKeyDown}
     >
       {label}
     </button>
@@ -83,7 +116,11 @@ function DocumentsTab({
   onOpenDocument: (id: string, documentType: string) => void
 }) {
   // useCallback so the hook's effect does not see a new fetcher on every render.
-  const fetchPage = useCallback((cursor?: string) => listDocuments(20, cursor), [])
+  //
+  // No explicit page size: `listDocuments` defaults to the server's own default (20), so passing
+  // it here was a third copy of one number — restating a value this component has no opinion
+  // about, in a place that would not be updated if the server's changed.
+  const fetchPage = useCallback((cursor?: string) => listDocuments(undefined, cursor), [])
   const { items, isLoading, error, hasMore, loadMore } = useHistoryList(fetchPage)
 
   return (
@@ -104,7 +141,7 @@ function DocumentsTab({
           data-testid="history-document-row"
           onClick={() => onOpenDocument(d.documentId, d.documentType)}
         >
-          <span className="history-row-title">{d.documentType}</span>
+          <span className="history-row-title">{documentTypeLabelFromWire(d.documentType)}</span>
           <span className="history-row-meta">{formatDate(d.updatedAt)}</span>
         </button>
       ))}
@@ -116,7 +153,7 @@ function DocumentsTab({
 // manual editor. Wiring it would be inventing a flow Story 5 never specified — the list is
 // honest about what it can do rather than offering a dead click.
 function GenerationsTab() {
-  const fetchPage = useCallback((cursor?: string) => listGenerations(20, cursor), [])
+  const fetchPage = useCallback((cursor?: string) => listGenerations(undefined, cursor), [])
   const { items, isLoading, error, hasMore, loadMore } = useHistoryList(fetchPage)
 
   return (

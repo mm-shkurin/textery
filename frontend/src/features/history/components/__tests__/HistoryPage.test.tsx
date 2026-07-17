@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HistoryPage } from '../HistoryPage'
-import * as historyApi from '../../../generation/api/historyApi'
+import * as historyApi from '../../api/historyApi'
 
-vi.mock('../../../generation/api/historyApi')
+vi.mock('../../api/historyApi')
 
 const DOC = {
   documentId: 'doc-1',
@@ -28,12 +28,30 @@ describe('HistoryPage', () => {
     vi.clearAllMocks()
   })
 
-  it('lists the documents the server returned', async () => {
+  // The row shows the LABEL, not the wire value. `document_type` arrives as the backend's
+  // Cyrillic 'доклад'; every other surface (the type modal that created it, the editor's
+  // breadcrumb) says 'Доклад'. The list used to render the raw field, so one document was named
+  // two ways depending on where you looked at it.
+  it('labels a document row the way the rest of the app names that type', async () => {
     vi.mocked(historyApi.listDocuments).mockResolvedValue({ items: [DOC], nextCursor: null })
 
     renderPage()
 
-    expect(await screen.findByTestId('history-document-row')).toHaveTextContent('доклад')
+    expect(await screen.findByTestId('history-document-row')).toHaveTextContent('Доклад')
+  })
+
+  // The server owns this value and can add a type before the client knows it. The row falls back
+  // to the wire string rather than a placeholder — for an unknown type that string is the most
+  // informative thing available, and it must not crash the whole list either.
+  it('falls back to the wire value for a document type it does not know', async () => {
+    vi.mocked(historyApi.listDocuments).mockResolvedValue({
+      items: [{ ...DOC, documentType: 'диссертация' }],
+      nextCursor: null,
+    })
+
+    renderPage()
+
+    expect(await screen.findByTestId('history-document-row')).toHaveTextContent('диссертация')
   })
 
   it('opens a document by id AND wire type — the type is what labels the editor', async () => {
@@ -79,7 +97,9 @@ describe('HistoryPage', () => {
     fireEvent.click(await screen.findByTestId('history-documents-more'))
 
     await waitFor(() => expect(screen.getAllByTestId('history-document-row')).toHaveLength(2))
-    expect(historyApi.listDocuments).toHaveBeenNthCalledWith(2, 20, 'cur-1')
+    // The page size is left to the client's own default (which is the server's): this component
+    // has no opinion about it, and stating 20 here made a third copy of one number.
+    expect(historyApi.listDocuments).toHaveBeenNthCalledWith(2, undefined, 'cur-1')
     // The cursor is null now, so the control must be gone — not merely disabled. Asserting the
     // row count alone would pass on a list that keeps offering a page that does not exist.
     expect(screen.queryByTestId('history-documents-more')).not.toBeInTheDocument()

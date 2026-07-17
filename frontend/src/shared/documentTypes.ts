@@ -60,3 +60,17 @@ const APP_DOCUMENT_TYPE = Object.fromEntries(
 export function documentTypeFromWire(wire: string): DocumentType | null {
   return APP_DOCUMENT_TYPE[wire] ?? null
 }
+
+// The display label for a value that came off the wire. The history list rendered
+// `document_type` RAW, so its rows said 'доклад' while the modal that created them and the
+// editor's breadcrumb both said 'Доклад' — the same document, named two ways, because the list
+// reached for the wire value when the label was one lookup away.
+//
+// An unrecognised type falls back to the server's own string rather than to a placeholder: for a
+// type this client has never heard of, the wire value is the most informative thing available,
+// and 'Неизвестный тип' would be strictly less true. Same reasoning as documentTypeFromWire's
+// null — the row stays useful, it just cannot be opened.
+export function documentTypeLabelFromWire(wire: string): string {
+  const appType = documentTypeFromWire(wire)
+  return appType ? DOCUMENT_TYPE_LABELS[appType] : wire
+}

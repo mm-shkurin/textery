@@ -1,10 +1,18 @@
-// The shared send-and-describe used by every generation-feature API client (generations,
-// documents). Extracted when documentApi migrated onto `authorizedRequest`: both clients need
-// the identical "attach the session, map a refusal to something a person can read, but never
-// flatten an expired session into a generic failure" behaviour, and a second copy of it would
-// have been a second place to get the SessionExpiredError carve-out wrong.
-import { isHttpError, type RequestOptions } from '../../../shared/api/httpClient'
-import { authorizedRequest, SessionExpiredError } from '../../auth/api/authorizedRequest'
+// The send-and-describe used by every authenticated API client (generations, documents,
+// history). Every caller needs the identical "attach the session, map a refusal to something a
+// person can read, but never flatten an expired session into a generic failure" behaviour, and a
+// second copy is a second place to get the SessionExpiredError carve-out wrong — which is
+// exactly what happened while generationApi kept its own: the copy never grew the 409 branch.
+//
+// LAYERING, and why this file imports a feature while its neighbour `httpClient` refuses to:
+// `auth` is not a peer feature here, it is the app's session layer — `documents`, `generations`
+// and `history` all sit on top of it, and none of them is imported back. `httpClient` stays
+// auth-free for a different and still-live reason (a token-attaching transport would make the
+// /auth/refresh client import a client that refreshes — a cycle), so the two layers are:
+//   httpClient      — transport, knows nothing
+//   send            — transport + session + human-readable refusal
+import { isHttpError, type RequestOptions } from './httpClient'
+import { authorizedRequest, SessionExpiredError } from '../../features/auth/api/authorizedRequest'
 
 // A stale `version` on PUT — the lost-update guard firing (409 VERSION_CONFLICT). Kept as its
 // own type for the same reason as SessionExpiredError: it is not a failure of the save, it is

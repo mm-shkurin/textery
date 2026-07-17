@@ -153,7 +153,13 @@ export function LoginForm() {
           </div>
         </div>
         {formError && (
-          <div data-testid="login-form-error">{formError}</div>
+          // role="alert" because this text is the whole point of the submit failing: a sighted
+          // user sees it appear, and without the live region a screen-reader user gets nothing
+          // but a button that re-enabled. The one error the module comments most insist must
+          // reach the user was the one not announced.
+          <div className="auth-form-error" data-testid="login-form-error" role="alert">
+            {formError}
+          </div>
         )}
         <AuthSubmitButton testId="login-submit-button" isSubmitting={isSubmitting}>
           Войти

@@ -1,4 +1,4 @@
-import { DOCUMENT_TYPE_LABELS } from '../features/generation/documentTypes'
+import { DOCUMENT_TYPE_LABELS } from '../shared/documentTypes'
 import { HistoryPage } from '../features/history/components/HistoryPage'
 import { LandingPage } from '../features/landing/components/LandingPage'
 import { ChatWorkspace } from '../features/generation/components/ChatWorkspace'

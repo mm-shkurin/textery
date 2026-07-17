@@ -9,7 +9,7 @@ import { CodeBlockMark } from './codeBlockMark'
 import { Heading3Mark } from './heading3Mark'
 import { AlignCenterMark } from './alignCenterMark'
 import './ManualEditor.css'
-import type { DocumentType } from '../documentTypes'
+import type { DocumentType } from '../../../shared/documentTypes'
 import { saveDocument } from '../api/documentApi'
 import { useDocumentInit } from '../hooks/useDocumentInit'
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
@@ -39,6 +39,11 @@ export function ManualEditor({
   const [isSaving, setIsSaving] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(true)
   const [saveError, setSaveError] = useState<string | null>(null)
+  // Init failing is worse than a save failing and must not be quieter: with no documentId there
+  // is nothing to save TO, so the button below is inert and the text the user types has nowhere
+  // to go. Kept separate from `saveError` because they can both be true and they say different
+  // things — one means "this attempt failed, try again", the other "this editor cannot persist".
+  const [initError, setInitError] = useState<string | null>(null)
   const isSavingRef = useRef(false)
   const saveAgainRequested = useRef(false)
 
@@ -155,7 +160,14 @@ export function ManualEditor({
     },
   })
 
-  useDocumentInit({ documentType, existingDocumentId, editor, setDocumentId, setVersion })
+  useDocumentInit({
+    documentType,
+    existingDocumentId,
+    editor,
+    setDocumentId,
+    setVersion,
+    onError: setInitError,
+  })
 
   return (
     <div className="manual-editor-page" data-testid="manual-editor">
@@ -168,10 +180,17 @@ export function ManualEditor({
             documentId={documentId}
             hasUnsavedChanges={hasUnsavedChanges}
             isSaving={isSaving}
+            hasFailedToInitialize={Boolean(initError)}
             onSave={handleSave}
           />
+          {initError && (
+            <div className="me-error-banner" role="alert" data-testid="me-init-error">
+              <PlaceholderImage className="me-error-banner-icon" />
+              {initError}
+            </div>
+          )}
           {saveError && (
-            <div className="me-error-banner" role="alert">
+            <div className="me-error-banner" role="alert" data-testid="me-save-error">
               <PlaceholderImage className="me-error-banner-icon" />
               {saveError}
             </div>

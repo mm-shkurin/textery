@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Page } from '../../generation/api/historyApi'
+import type { Page } from '../api/historyApi'
 
 interface HistoryList<T> {
   items: T[]

@@ -9,7 +9,7 @@
 //   ?cursor=garbage                        -> 400 {"error_code":"INVALID_CURSOR"}
 //   ?limit=0 and ?limit=999                -> 400   (bounds enforced; 20 is the server default)
 //   no token                               -> 401 {"error_code":"UNAUTHORIZED"}
-import { send } from './send'
+import { send } from '../../../shared/api/send'
 
 // One page of either list. `nextCursor === null` means the end — not an error, and not an empty
 // page: the last page carries items AND a null cursor, so paging must stop on the cursor, never

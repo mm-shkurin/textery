@@ -1,21 +1,14 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { resendCode } from '../api/authApi'
 import { verify, type VerifyApiError } from '../api/verifyApi'
 import { AuthSubmitButton } from './AuthSubmitButton'
+import { CODE_LENGTH, VerifyCodeInputs } from './VerifyCodeInputs'
+import { useResendCountdown } from '../hooks/useResendCountdown'
 import { signInAfterVerification } from '../utils/postVerifySignIn'
 import { GENERIC_VERIFY_FAILURE_MESSAGE, isUsableMessage } from '../utils/authMessages'
 import './AuthForm.css'
 import './VerifyCodeForm.css'
-
-const RESEND_COUNTDOWN_SECONDS = 60
-const CODE_LENGTH = 6
-
-function formatCountdown(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-}
 
 export interface VerifyCodeFormProps {
   email?: string
@@ -29,6 +22,7 @@ interface VerifyRouterState {
 }
 
 const RESEND_FAILURE_MESSAGE = 'Не удалось отправить код повторно. Попробуйте ещё раз позже.'
+const MISSING_EMAIL_MESSAGE = 'Не найден email для подтверждения — начните регистрацию заново'
 
 function applyVerifyError(error: unknown): string {
   if (error && typeof error === 'object' && 'errorCode' in error) {
@@ -45,19 +39,18 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
   const routerState = (useLocation().state ?? {}) as VerifyRouterState
   const email = emailProp ?? routerState.email
   const mockedCode = routerState.verificationCode
-  const [countdownSeconds] = useState(RESEND_COUNTDOWN_SECONDS)
+  const countdown = useResendCountdown()
   const [isResending, setIsResending] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [isVerified, setIsVerified] = useState(false)
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''))
-  const inputRefs = useRef<Array<HTMLInputElement | null>>([])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (isSubmitting) return
     if (!email) {
-      setFormError('Не найден email для подтверждения — начните регистрацию заново')
+      setFormError(MISSING_EMAIL_MESSAGE)
       return
     }
     setIsSubmitting(true)
@@ -84,24 +77,15 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
     }
   }
 
-  function handleDigitChange(index: number, value: string) {
-    setDigits((previous) => {
-      const next = [...previous]
-      next[index] = value
-      return next
-    })
-
-    if (value && index < CODE_LENGTH - 1) {
-      inputRefs.current[index + 1]?.focus()
-    }
-  }
-
   async function handleResend() {
-    if (!email) return
+    if (!email || !countdown.isElapsed) return
     setIsResending(true)
     setFormError(null)
     try {
       await resendCode(email)
+      // Only a resend that actually happened restarts the wait. Restarting on a failure would
+      // lock the user out of retrying for a minute over a request the server never accepted.
+      countdown.restart()
     } catch {
       // Swallowing this made the button a no-op that LOOKS like it worked: the user waits for a
       // code that was never issued, and blames the mail that never arrives. Saying "it failed"
@@ -132,42 +116,27 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
         </p>
       )}
       <form onSubmit={handleSubmit}>
-        <div className="verify-code-inputs">
-          {Array.from({ length: CODE_LENGTH }, (_, index) => (
-            <input
-              key={index}
-              ref={(element) => {
-                inputRefs.current[index] = element
-              }}
-              type="text"
-              inputMode="numeric"
-              maxLength={1}
-              value={digits[index]}
-              onChange={(event) => handleDigitChange(index, event.target.value)}
-              data-testid={`verify-code-input-${index}`}
-            />
-          ))}
-        </div>
+        <VerifyCodeInputs digits={digits} onChange={setDigits} />
         <AuthSubmitButton testId="verify-confirm-button" isSubmitting={isSubmitting}>
           Подтвердить
         </AuthSubmitButton>
         {formError && (
-          <div className="verify-form-error" data-testid="verify-form-error" role="alert">
+          <div className="auth-form-error" data-testid="verify-form-error" role="alert">
             {formError}
           </div>
         )}
         {isVerified && (
-          <div className="verify-success" data-testid="verify-success" role="status">
+          <div className="auth-form-success" data-testid="verify-success" role="status">
             Аккаунт подтверждён
           </div>
         )}
       </form>
       <p className="verify-resend">
-        <span data-testid="verify-resend-countdown">{formatCountdown(countdownSeconds)}</span>
+        <span data-testid="verify-resend-countdown">{countdown.formatted}</span>
         <button
           type="button"
           data-testid="verify-resend-button"
-          disabled={isResending}
+          disabled={isResending || !countdown.isElapsed}
           onClick={handleResend}
         >
           Письмо не пришло? Отправить код повторно

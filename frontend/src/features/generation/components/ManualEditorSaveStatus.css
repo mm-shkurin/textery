@@ -14,6 +14,10 @@
   color: var(--success);
 }
 
+.me-save-status--failed {
+  color: var(--error);
+}
+
 .me-save-status--saved svg {
   width: 14px;
   height: 14px;

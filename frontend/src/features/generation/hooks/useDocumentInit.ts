@@ -1,7 +1,12 @@
 import { useEffect, useRef } from 'react'
 import type { Editor } from '@tiptap/react'
 import { createDocument, getDocument } from '../api/documentApi'
-import type { DocumentType } from '../documentTypes'
+import type { DocumentType } from '../../../shared/documentTypes'
+
+export const CREATE_FAILED_MESSAGE =
+  'Не удалось создать документ. Проверьте соединение и обновите страницу — до этого сохранение недоступно.'
+export const LOAD_FAILED_MESSAGE =
+  'Не удалось загрузить документ. Проверьте соединение и обновите страницу — до этого сохранение недоступно.'
 
 interface UseDocumentInitParams {
   documentType: DocumentType
@@ -9,6 +14,15 @@ interface UseDocumentInitParams {
   editor: Editor | null
   setDocumentId: (id: string) => void
   setVersion: (version: number) => void
+  // Called with user-facing text when init fails, and with `null` when it succeeds.
+  //
+  // Not optional, and not defaulted: without a documentId, ManualEditor's `handleSave` returns
+  // on its first line, so the Save button becomes a permanent no-op and the status line sits on
+  // "Создание документа…" forever. Both failures used to end at a `console.error` marked "error
+  // surfacing is out of scope for this scenario" — which meant the user typed a whole document
+  // into a page that could never persist it and was never told. A required parameter makes a
+  // future caller decide what to do rather than inherit silence.
+  onError: (message: string | null) => void
 }
 
 // Loads an existing document (edit mode) or creates a new one (fresh mode)
@@ -20,6 +34,7 @@ export function useDocumentInit({
   editor,
   setDocumentId,
   setVersion,
+  onError,
 }: UseDocumentInitParams): void {
   // One key per mounted editor, minted once and kept across re-runs of the effect. This is what
   // makes "the same logical create" something the backend can actually recognise.
@@ -46,11 +61,14 @@ export function useDocumentInit({
           setDocumentId(result.documentId)
           setVersion(result.version)
           editor?.commands.setContent(result.content)
+          onError(null)
         })
         .catch((error) => {
-          // Error surfacing (retry/UI state) is out of scope for this scenario;
-          // logging keeps the failure from being silently swallowed.
-          console.error('Failed to load document', error)
+          if (cancelled) return
+          // `documentApi` already built text a person can read; the message is only replaced when
+          // it did not (a transport failure carries none). Either way the user learns that this
+          // editor cannot save, which is the fact that matters — they are about to type into it.
+          onError(error instanceof Error && error.message ? error.message : LOAD_FAILED_MESSAGE)
         })
     } else {
       createDocument(documentType, idempotencyKeyRef.current)
@@ -61,11 +79,11 @@ export function useDocumentInit({
           // `useState(1)` to ship on the first PUT and collect a 409 blaming a concurrent save
           // that never happened.
           setVersion(result.version)
+          onError(null)
         })
         .catch((error) => {
-          // Error surfacing (retry/UI state) is out of scope for this scenario;
-          // logging keeps the failure from being silently swallowed.
-          console.error('Failed to create document', error)
+          if (cancelled) return
+          onError(error instanceof Error && error.message ? error.message : CREATE_FAILED_MESSAGE)
         })
     }
     return () => {

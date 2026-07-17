@@ -4,6 +4,7 @@ import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
 import { register, type RegisterApiError } from '../api/registerApi'
 import { rememberRegistration } from '../utils/registrationHandoff'
+import { GENERIC_REGISTER_FAILURE_MESSAGE, isUsableMessage } from '../utils/authMessages'
 import {
   CONFIRM_MISMATCH_MESSAGE,
   isConfirmMismatched,
@@ -20,14 +21,23 @@ import './RegisterForm.css'
 // invented code.
 const DUPLICATE_EMAIL_ERROR_CODE = 'EMAIL_ALREADY_REGISTERED'
 
-function applyRegisterError(error: unknown): string | null {
+// Every rejection resolves to user-facing text — silence is an illegal terminal state, the rule
+// LoginForm already states and this form was missing. It returned `null` for anything but a
+// duplicate email, and the caller's `if (message)` then set nothing: a 500, a dropped connection
+// or an INVALID_PASSWORD left the button springing back with no explanation at all, which reads
+// as "the click did nothing" and earns a second identical submit.
+//
+// The duplicate-email message is the server's own (the backend's `message` guarantee covers it,
+// and it is the one code whose text is worth quoting). Every other code — including a body that
+// arrived without one — falls back to the client-owned generic constant rather than to nothing.
+function applyRegisterError(error: unknown): string {
   if (error && typeof error === 'object' && 'errorCode' in error) {
     const apiError = error as RegisterApiError
-    if (apiError.errorCode === DUPLICATE_EMAIL_ERROR_CODE) {
+    if (apiError.errorCode === DUPLICATE_EMAIL_ERROR_CODE && isUsableMessage(apiError.message)) {
       return apiError.message
     }
   }
-  return null
+  return GENERIC_REGISTER_FAILURE_MESSAGE
 }
 
 export function RegisterForm() {
@@ -66,10 +76,7 @@ export function RegisterForm() {
         state: { email: result.email, verificationCode: result.verificationCode },
       })
     } catch (error) {
-      const message = applyRegisterError(error)
-      if (message) {
-        setEmailError(message)
-      }
+      setEmailError(applyRegisterError(error))
     } finally {
       setIsSubmitting(false)
     }
@@ -106,7 +113,11 @@ export function RegisterForm() {
             ref={emailInputRef}
           />
           {emailError && (
-            <div className="register-hint register-hint-error" data-testid="register-email-error">
+            <div
+              className="register-hint register-hint-error"
+              data-testid="register-email-error"
+              role="alert"
+            >
               {emailError}
             </div>
           )}

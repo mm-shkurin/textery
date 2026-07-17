@@ -4,8 +4,8 @@
 // renews the session and replays rather than surfacing as a document failure the user did not
 // cause. Manual mode is behind a session by product decision (2026-07-17): an unauthorized
 // visitor can neither generate nor write.
-import { send, VersionConflictError } from './send'
-import { WIRE_DOCUMENT_TYPE, type DocumentType } from '../documentTypes'
+import { send, VersionConflictError } from '../../../shared/api/send'
+import { WIRE_DOCUMENT_TYPE, type DocumentType } from '../../../shared/documentTypes'
 
 interface DocumentWire {
   document_id: string

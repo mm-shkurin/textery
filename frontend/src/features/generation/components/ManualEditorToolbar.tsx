@@ -11,6 +11,7 @@ interface ManualEditorToolbarProps {
   documentId: string | null
   hasUnsavedChanges: boolean
   isSaving: boolean
+  hasFailedToInitialize?: boolean
   onSave: () => void
 }
 
@@ -19,6 +20,7 @@ export function ManualEditorToolbar({
   documentId,
   hasUnsavedChanges,
   isSaving,
+  hasFailedToInitialize = false,
   onSave,
 }: ManualEditorToolbarProps) {
   // Which UI action's panel is open, if any. Conditional mount, not a hidden
@@ -61,7 +63,11 @@ export function ManualEditorToolbar({
         </Fragment>
       ))}
       <div className="me-toolbar-status">
-        <ManualEditorSaveStatus documentId={documentId} hasUnsavedChanges={hasUnsavedChanges} />
+        <ManualEditorSaveStatus
+          documentId={documentId}
+          hasUnsavedChanges={hasUnsavedChanges}
+          hasFailedToInitialize={hasFailedToInitialize}
+        />
         {/*
           aria-disabled (not the native disabled attribute) so the
           button keeps receiving click/keyboard events while a save is

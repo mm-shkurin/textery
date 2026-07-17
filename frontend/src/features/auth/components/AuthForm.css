@@ -104,6 +104,25 @@
   font-size: 14px;
 }
 
+/* Every auth form's failure text. Declared once here rather than per form: login's error had no
+   class at all and rendered as unstyled body copy, and verify's `.verify-form-error` was a class
+   name with no rule behind it — so the two screens that must show a failure showed it in the
+   same colour as the labels. `.register-hint-error` already used this red; this is that colour
+   promoted to the shared sheet rather than a fourth opinion about it. */
+.auth-form-error {
+  color: #ef4444;
+  font-size: 14px;
+  margin-top: 12px;
+  text-align: center;
+}
+
+.auth-form-success {
+  color: #4ade80;
+  font-size: 14px;
+  margin-top: 12px;
+  text-align: center;
+}
+
 .auth-footer-link {
   text-align: center;
   margin-top: 24px;

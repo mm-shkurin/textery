@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { logout } from '../features/auth/utils/authSession'
 import { useAuthSession } from '../features/auth/hooks/useAuthSession'
-import { documentTypeFromWire, type DocumentType } from '../features/generation/documentTypes'
+import { documentTypeFromWire, type DocumentType } from '../shared/documentTypes'
 import type { GenerationMode } from '../features/generation/components/ModeModal'
 import { useGeneration } from '../features/generation/hooks/useGeneration'
 

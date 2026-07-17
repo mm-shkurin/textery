@@ -3,8 +3,8 @@
 // Both calls go through `send`, and therefore `authorizedRequest`, so every request carries the
 // access token and a 401 renews the session and replays it, instead of surfacing as a generation
 // failure the user did nothing to cause.
-import { send } from './send'
-import { DEFAULT_DOCUMENT_TYPE } from '../documentTypes'
+import { send } from '../../../shared/api/send'
+import { DEFAULT_DOCUMENT_TYPE } from '../../../shared/documentTypes'
 
 // No UI control exists yet for volume — every request asks for a fixed 5-page document
 // until the product adds a page-count selector.
