@@ -1,13 +1,13 @@
 from datetime import UTC, datetime
 
+from scope.register_request_scope import RegisterRequestScope
+
+from auth.register_user import RegisterUser
 from fake.auth.fake_account_repository import FakeAccountRepository
 from fake.auth.fake_clock import FakeClock
 from fake.auth.fake_password_hasher import FakePasswordHasher
 from fake.auth.fake_unit_of_work import FakeUnitOfWork
 from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
-from scope.register_request_scope import RegisterRequestScope
-
-from auth.register_user import RegisterUser
 from shared.exceptions import RegistrationFailedException
 
 

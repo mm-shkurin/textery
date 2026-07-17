@@ -3,8 +3,8 @@ import uuid
 
 import httpx
 
-from adapters.generation_provider import ProviderError
 from generation.generation import Generation
+from generation.generation_provider import ProviderError
 from shared.exceptions import ConfigurationException
 
 MISSING_CREDENTIALS_MESSAGE = "GIGACHAT_CREDENTIALS environment variable is not set"

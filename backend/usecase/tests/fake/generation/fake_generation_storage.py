@@ -3,7 +3,6 @@ from datetime import datetime
 from uuid import UUID
 
 from fake.generation.call_order_recording_fake import CallOrderRecordingFake
-
 from generation.generation import Generation
 
 CALL_SAVE = "save"

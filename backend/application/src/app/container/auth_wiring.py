@@ -1,7 +1,5 @@
 from collections.abc import AsyncIterator
 
-from hashing.bcrypt_password_hasher import BcryptPasswordHasher
-
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.auth.verification_code_storage import SqlAlchemyVerificationCodeRepository
 from auth.login_user import LoginUser
@@ -10,6 +8,7 @@ from auth.register_user import RegisterUser
 from auth.token_service import TokenService
 from auth.verify_account import VerifyAccount
 from container.runtime import session_factory, token_service
+from hashing.bcrypt_password_hasher import BcryptPasswordHasher
 from session import SqlAlchemyUnitOfWork
 from shared.clock import SystemClock
 

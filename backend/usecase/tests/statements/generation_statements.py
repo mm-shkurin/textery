@@ -1,10 +1,10 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from fake.generation.fake_generation_queue import CALL_ENQUEUE, FakeGenerationQueue
-from fake.generation.fake_generation_storage import CALL_SAVE, FakeGenerationStorage
 from scope.generation_request_scope import GenerationRequestScope
 
+from fake.generation.fake_generation_queue import CALL_ENQUEUE, FakeGenerationQueue
+from fake.generation.fake_generation_storage import CALL_SAVE, FakeGenerationStorage
 from generation.generation import Generation
 from generation.request_generation import RequestGeneration
 from shared.exceptions import ValidationException

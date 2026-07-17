@@ -1,8 +1,7 @@
 from uuid import UUID
 
-from adapters.generation_storage import GenerationStorage
-
 from generation.generation import Generation
+from generation.generation_storage import GenerationStorage
 
 
 class GetGeneration:

@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 
-from adapters.generation_provider import ProviderError
 from generation.generation import Generation
+from generation.generation_provider import ProviderError
 from provider.gigachat_provider import (
     CA_BUNDLE_ENV_VAR,
     COMPLETIONS_URL,

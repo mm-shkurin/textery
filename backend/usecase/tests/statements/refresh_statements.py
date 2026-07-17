@@ -1,12 +1,11 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
+from auth.account import Account
+from auth.refresh_access_token import RefreshAccessToken
 from fake.auth.fake_account_repository import FakeAccountRepository
 from fake.auth.fake_password_hasher import FakePasswordHasher
 from fake.auth.fake_token_service import FakeTokenService
-
-from auth.account import Account
-from auth.refresh_access_token import RefreshAccessToken
 from shared.exceptions import InvalidTokenException, ValidationException
 
 

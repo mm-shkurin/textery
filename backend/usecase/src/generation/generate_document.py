@@ -1,9 +1,8 @@
 import logging
 from uuid import UUID
 
-from adapters.generation_storage import GenerationStorage
-
-from adapters.generation_provider import GenerationProvider
+from generation.generation_provider import GenerationProvider
+from generation.generation_storage import GenerationStorage
 
 MAX_PROVIDER_ATTEMPTS = 2
 GENERIC_FAILURE_MESSAGE = "Не удалось сгенерировать документ. Попробуйте позже."

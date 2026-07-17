@@ -2,7 +2,6 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from fake.generation.fake_generation_storage import FakeGenerationStorage
-
 from generation.generation import Generation
 from generation.requeue_stale_generations import RequeueStaleGenerations
 

@@ -1,4 +1,4 @@
-from adapters.generation_provider import ProviderError
+from generation.generation_provider import ProviderError
 from statements.generation_lifecycle_statements import GenerationLifecycleStatements
 
 

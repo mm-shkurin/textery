@@ -3,7 +3,6 @@ from uuid import UUID, uuid4
 
 from fake.generation.fake_generation_provider import FakeGenerationProvider
 from fake.generation.fake_generation_storage import FakeGenerationStorage
-
 from generation.generate_document import GENERIC_FAILURE_MESSAGE, GenerateDocument
 from generation.generation import Generation
 from generation.get_generation import GetGeneration

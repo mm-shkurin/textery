@@ -1,7 +1,6 @@
 from uuid import UUID
 
-from adapters.generation_storage import GenerationStorage
-
+from generation.generation_storage import GenerationStorage
 from shared.page import DEFAULT_LIMIT, Page, PageRequest
 
 
