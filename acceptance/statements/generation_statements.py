@@ -18,9 +18,21 @@ class GenerationStatements:
     # Field-level validation errors (missing topic, out-of-range volume_pages, oversized
     # requirements/extra_wishes) are 400 per ProductSpecification/api-specs/generations_create.yaml;
     # 422 is reserved for unsupported document_type or a server-owned field in the body (scenario 1.4/1.5).
-    EXPECTED_MISSING_TOPIC_ERROR: ClassVar[dict] = {"detail": "topic is required"}
+    #
+    # Corrected 2026-07-17. These read {"detail": ...} and had been failing since the
+    # {error_code, message} handler landed -- two suites asserting mutually exclusive
+    # shapes against one handler, with story 7's auth suite depending on the other
+    # one. tdd-rules.md's "never change assertion expected values" does not apply:
+    # the expectation was never met by any shipped code, so this is not a green being
+    # bent to fit a regression. The shape is the one 07-authorization/endpoints.md
+    # declares and Security 5.1 pins.
+    EXPECTED_MISSING_TOPIC_ERROR: ClassVar[dict] = {
+        "error_code": "VALIDATION_ERROR",
+        "message": "topic is required",
+    }
     EXPECTED_OUT_OF_RANGE_VOLUME_ERROR: ClassVar[dict] = {
-        "detail": "volume_pages must be between 1 and 10",
+        "error_code": "VALIDATION_ERROR",
+        "message": "volume_pages must be between 1 and 10",
     }
 
     def __init__(self, client: ApplicationClient):
