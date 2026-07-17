@@ -52,3 +52,15 @@ def register_client(auth_app):
 def verify_client(auth_app):
     """Factory: `async with verify_client(mock_usecase) as client:`"""
     return _client_factory(auth_app, "get_verify_account_usecase")
+
+
+@pytest.fixture
+def login_client(auth_app):
+    """Factory: `async with login_client(mock_usecase) as client:`"""
+    return _client_factory(auth_app, "get_login_user_usecase")
+
+
+@pytest.fixture
+def refresh_client(auth_app):
+    """Factory: `async with refresh_client(mock_usecase) as client:`"""
+    return _client_factory(auth_app, "get_refresh_access_token_usecase")
