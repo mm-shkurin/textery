@@ -1,17 +1,22 @@
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Response
 
 from document.create_document import CreateDocument
 from document.get_document import GetDocument
+from document.list_documents import ListDocuments
 from document.save_document import SaveDocument
 from dto.document.document_dtos import (
     CreateDocumentRequestDto,
     DocumentResponseDto,
+    DocumentSummaryDto,
     SaveDocumentRequestDto,
 )
+from dto.shared.page_dto import PageDto
 from security.current_owner import get_current_owner_id
 from shared.exceptions import NotFoundException
+from shared.page import DEFAULT_LIMIT
 
 router = APIRouter(prefix="/api/v1/documents", tags=["documents"])
 
@@ -26,6 +31,30 @@ def get_get_document_usecase() -> GetDocument:
 
 def get_save_document_usecase() -> SaveDocument:
     raise NotImplementedError("wired by the application composition root")
+
+
+def get_list_documents_usecase() -> ListDocuments:
+    raise NotImplementedError("wired by the application composition root")
+
+
+@router.get("", response_model=PageDto[DocumentSummaryDto])
+async def list_documents(
+    limit: int = DEFAULT_LIMIT,
+    cursor: Optional[str] = None,
+    owner_id: UUID = Depends(get_current_owner_id),
+    usecase: ListDocuments = Depends(get_list_documents_usecase),
+) -> PageDto[DocumentSummaryDto]:
+    """The caller's own document history, newest first.
+
+    Declared before GET /{document_id} so the two cannot race: "" and "/{id}" are
+    distinct paths to Starlette, but keeping the literal above the parameterised
+    one is the habit that stops a future /documents/recent from being swallowed.
+    """
+    page = await usecase.execute(owner_id=owner_id, limit=limit, cursor=cursor)
+    return PageDto[DocumentSummaryDto](
+        items=[DocumentSummaryDto.from_domain(document) for document in page.items],
+        next_cursor=page.next_cursor,
+    )
 
 
 @router.post("", response_model=DocumentResponseDto)

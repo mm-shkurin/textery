@@ -26,6 +26,13 @@ class GenerationCreatedDto(BaseModel):
         )
 
 
+# The create and list responses are the same projection: generations_create.yaml and
+# generations_list.yaml both name the schema GenerationResponse, with the same fields.
+# One class rather than an identical twin, so the two cannot drift apart; the alias
+# just makes the list router read honestly.
+GenerationSummaryDto = GenerationCreatedDto
+
+
 class GenerationDetailDto(BaseModel):
     generation_id: str
     status: str

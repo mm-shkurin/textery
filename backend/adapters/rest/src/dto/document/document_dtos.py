@@ -23,6 +23,34 @@ class SaveDocumentRequestDto(BaseModel):
     version: StrictInt
 
 
+class DocumentSummaryDto(BaseModel):
+    """A document as it appears in the history list.
+
+    Carries no `content`, deliberately -- and this is not a size micro-optimisation.
+    documents_save.yaml caps content at 200,000 characters, so a 20-item page of
+    full documents is a multi-megabyte response for a screen that renders titles.
+    The editor fetches the one document it opens via GET /documents/{id}.
+    """
+
+    document_id: str
+    document_type: str
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    @classmethod
+    def from_domain(cls, document: Document) -> "DocumentSummaryDto":
+        return cls(
+            document_id=str(document.id),
+            document_type=document.document_type,
+            status=document.status,
+            version=document.version,
+            created_at=document.created_at,
+            updated_at=document.updated_at,
+        )
+
+
 class DocumentResponseDto(BaseModel):
     document_id: str
     document_type: str

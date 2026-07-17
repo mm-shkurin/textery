@@ -3,6 +3,7 @@ from typing import Optional, Protocol
 from uuid import UUID
 
 from generation.generation import Generation
+from shared.keyset_cursor import KeysetCursor
 
 
 class GenerationStorage(Protocol):
@@ -18,4 +19,14 @@ class GenerationStorage(Protocol):
         ...
 
     async def list_stale(self, older_than: datetime) -> list[Generation]:
+        ...
+
+    async def list_by_owner(
+        self, owner_id: UUID, limit: int, cursor: Optional[KeysetCursor]
+    ) -> list[Generation]:
+        """The owner's generations, newest first, starting after `cursor`.
+
+        Unlike `list_stale` -- the cross-owner sweep -- this is a caller-facing
+        read, so `owner_id` is a predicate, not a hint.
+        """
         ...

@@ -1,28 +1,28 @@
 openapi: 3.0.3
 info:
-  title: List Generations
+  title: List Documents
   version: 1.0.0
 
 paths:
-  /api/v1/generations:
+  /api/v1/documents:
     get:
-      summary: The caller's own generation history, newest first. Keyset-paginated.
+      summary: The caller's own document history, newest first. Keyset-paginated.
       description: >
-        Scoped to the Bearer token's account — `owner_id` is a query predicate, never
-        a parameter, so a caller cannot ask for someone else's history. This spec was
-        originally written as an unscoped stand-in ("no auth exists yet"); that premise
-        expired on 2026-07-17 when story 7 shipped /login and task 4 gave generations an
-        owner, and the endpoint was implemented scoped. See known-debt.md #4.
+        Scoped to the Bearer token's account — `owner_id` is a query predicate, never a
+        parameter, so a caller cannot ask for someone else's history.
 
 
-        Ordered by `created_at DESC, id DESC`. The `id` tiebreak is load-bearing:
-        `created_at` alone is not unique, and a page boundary between two rows sharing a
-        timestamp would drop or repeat one.
+        Ordered by `created_at DESC, id DESC` — newest *created*, not newest *edited*.
+        That is deliberate and not a shortcut: a keyset anchor must be immutable. Sorting
+        on `updated_at` would let a row move across the cursor while a client pages, so
+        the same document is served twice or never. `created_at` cannot move. The
+        `id` tiebreak is load-bearing too: `created_at` alone is not unique, and a page
+        boundary between two rows sharing a timestamp would drop or repeat one.
+      operationId: listDocuments
+      tags:
+        - documents
       security:
         - bearerAuth: []
-      operationId: listGenerations
-      tags:
-        - generations
       parameters:
         - name: limit
           in: query
@@ -48,7 +48,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenerationListResponse'
+                $ref: '#/components/schemas/DocumentListResponse'
         '400':
           description: >-
             Malformed cursor (INVALID_CURSOR), or limit outside 1..100 (INVALID_LIMIT).
@@ -79,13 +79,13 @@ components:
           type: string
         message:
           type: string
-    GenerationListResponse:
+    DocumentListResponse:
       type: object
       properties:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/GenerationResponse'
+            $ref: '#/components/schemas/DocumentSummary'
         next_cursor:
           type: string
           nullable: true
@@ -93,24 +93,29 @@ components:
             Pass as `cursor` to fetch the next page; null when there are no more results —
             that null is the stop condition. There is deliberately no `total`: counting the
             owner's full history per page is the scan the keyset cursor exists to avoid.
-    GenerationResponse:
+    DocumentSummary:
       type: object
       description: >-
-        Summary projection — the same schema generations_create.yaml returns. Carries no
-        `content`: fetch the one generation you open via GET /generations/{id}.
+        Summary projection. Carries no `content`, and not as a size micro-optimisation:
+        documents_save.yaml caps content at 200,000 characters, so a 20-item page of full
+        documents is a multi-megabyte response for a screen that renders titles. Fetch the
+        one document you open via GET /documents/{id}.
       properties:
-        generation_id:
+        document_id:
           type: string
           format: uuid
-        status:
-          type: string
-          enum: [pending, in_progress, completed, failed]
         document_type:
           type: string
-        topic:
+          enum: [доклад, эссе, сочинение, реферат]
+        status:
           type: string
-        volume_pages:
+          enum: [draft]
+        version:
           type: integer
+          description: Pass as the CAS token to PUT /documents/{id}.
         created_at:
+          type: string
+          format: date-time
+        updated_at:
           type: string
           format: date-time

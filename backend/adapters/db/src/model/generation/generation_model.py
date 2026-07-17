@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Integer, String, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -26,6 +26,16 @@ class GenerationModel(Base):
             f"status IN ({_ALLOWED_STATUSES_SQL})",
             name="ck_generations_status",
         ),
+        # Serves the owner-scoped history keyset: equality on owner_id, then the
+        # (created_at, id) pair the cursor seeks on, DESC to match ORDER BY. Leads
+        # with owner_id, so it also covers every plain by-owner lookup -- which is
+        # why there is no separate index=True on the column.
+        Index(
+            "ix_generations_owner_history",
+            "owner_id",
+            text("created_at DESC"),
+            text("id DESC"),
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
@@ -33,7 +43,6 @@ class GenerationModel(Base):
         UUID(as_uuid=True),
         ForeignKey("accounts.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
     status: Mapped[str] = mapped_column(String, nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

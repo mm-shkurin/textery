@@ -86,6 +86,7 @@ def _returning(mock_usecase):
 
 _POST_PROVIDERS = ("get_request_generation_usecase", "get_generate_document_usecase")
 _GET_PROVIDERS = ("get_get_generation_usecase",)
+_LIST_PROVIDERS = ("get_list_generations_usecase",)
 
 
 @pytest.fixture
@@ -96,6 +97,17 @@ def create_client(generation_app):
 @pytest.fixture
 def get_client(generation_app):
     return _client_factory(generation_app, _GET_PROVIDERS)
+
+
+@pytest.fixture
+def list_client(generation_app):
+    return _client_factory(generation_app, _LIST_PROVIDERS)
+
+
+@pytest.fixture
+def unauthenticated_list_client(generation_app):
+    """No owner override — the real Bearer dependency runs."""
+    return _client_factory(generation_app, _LIST_PROVIDERS, override_owner=False)
 
 
 @pytest.fixture

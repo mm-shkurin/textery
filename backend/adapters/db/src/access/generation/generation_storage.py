@@ -5,9 +5,11 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access.keyset_pagination import paginate_by_owner
 from generation.generation import IN_PROGRESS_STATUS, PENDING_STATUS, Generation
 from model.generation.generation_model import GenerationModel
 from shared.exceptions import ConflictException, NotFoundException
+from shared.keyset_cursor import KeysetCursor
 
 
 class SqlAlchemyGenerationStorage:
@@ -52,6 +54,16 @@ class SqlAlchemyGenerationStorage:
         model.version += 1
         await self._session.commit()
         generation.version = model.version
+
+    async def list_by_owner(
+        self, owner_id: UUID, limit: int, cursor: Optional[KeysetCursor]
+    ) -> list[Generation]:
+        return [
+            model.to_domain()
+            for model in await paginate_by_owner(
+                self._session, GenerationModel, owner_id, limit, cursor
+            )
+        ]
 
     async def list_stale(self, older_than: datetime) -> list[Generation]:
         stmt = select(GenerationModel).where(

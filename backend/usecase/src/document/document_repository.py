@@ -3,6 +3,7 @@ from typing import Optional, Protocol
 from uuid import UUID
 
 from document.document import Document
+from shared.keyset_cursor import KeysetCursor
 
 
 class DocumentRepository(Protocol):
@@ -28,6 +29,12 @@ class DocumentRepository(Protocol):
         ...
 
     async def find_by_idempotency_key(self, owner_id: UUID, idempotency_key: str) -> Optional[Document]:
+        ...
+
+    async def list_by_owner(
+        self, owner_id: UUID, limit: int, cursor: Optional[KeysetCursor]
+    ) -> list[Document]:
+        """The owner's documents, newest first, starting after `cursor`."""
         ...
 
     async def save_content_if_version_matches(

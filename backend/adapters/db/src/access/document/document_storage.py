@@ -6,9 +6,11 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access.keyset_pagination import paginate_by_owner
 from document.document import Document
 from model.document.document_model import DocumentModel
 from shared.exceptions import ConflictException
+from shared.keyset_cursor import KeysetCursor
 
 
 class SqlAlchemyDocumentStorage:
@@ -64,6 +66,16 @@ class SqlAlchemyDocumentStorage:
         )
         model = result.scalar_one_or_none()
         return model.to_domain() if model else None
+
+    async def list_by_owner(
+        self, owner_id: UUID, limit: int, cursor: Optional[KeysetCursor]
+    ) -> list[Document]:
+        return [
+            model.to_domain()
+            for model in await paginate_by_owner(
+                self._session, DocumentModel, owner_id, limit, cursor
+            )
+        ]
 
     async def save_content_if_version_matches(
         self,
