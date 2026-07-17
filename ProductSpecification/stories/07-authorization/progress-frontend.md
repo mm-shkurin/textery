@@ -250,6 +250,25 @@ Suite: 119/119 unit, production build clean. `tsc` reports 7 errors, all pre-exi
 files not touched here (partial `LoginResult`/`RegisterResult` mocks); baselined by stash.
 Acceptance not re-run — unchanged from the 14/3/1 baseline recorded above.
 
+## I did the thing this file keeps warning about, 2026-07-17
+
+Commit `89c6aef` closed 3.1 by proving a blocker was stale. Its own closing line said two
+sibling blockers "cite the same false 404 premise and should be re-probed rather than
+believed" — naming 5.1's red-selenium and **5.7**.
+
+**5.7 cites nothing.** Its block is eight bare checkboxes. And 5.7 is the *resend-on-refresh*
+scenario, so the only 404 near it is `POST /api/v1/auth/resend-code` — which is **real, open,
+and recorded twelve lines above in this same file**. So I labelled a live backend gap a "false
+premise" and instructed the next session to disbelieve it. In a commit whose entire thesis is
+that unverified claims in this file rot into lies. Caught by the agent-review pass, not by me;
+n=1 got inflated to n=2 because two sounded more like a pattern.
+
+Corrected above. The lesson is not "check citations" — it is that **the failure mode survives
+knowing about it.** I had just spent a session proving two claims false by probing, wrote a
+commit about exactly that, and shipped a fresh unprobed claim inside it. The only thing that
+caught either was running a probe. Prose in this file is unguarded by construction; treat every
+uncited claim here — including this paragraph — as a hypothesis with a date on it.
+
 ## Frontend Scenarios (tests/02_UI_Tests.md)
 
 ### 1.1: Registration form displays email, password, confirm password fields
@@ -389,7 +408,7 @@ so its red-frontend step must add the button first.
 - [S] red-frontend-api — no real register API call exists yet, same scoping decision as Scenario 2.3's register test and login/confirm (line 129/133): loading state is a pure client-side placeholder via useSubmitPlaceholder, no endpoint to test against
 - [S] green-frontend-api — see above
 - [x] align-design (mockup has no loading-state styling — new element was previously unstyled, defaulting to black text on dark card, invisible. Added shared `.auth-loading-indicator` class in AuthForm.css (14px, #9a9ba3, centered) so it reads like other muted auth-form text. design-review PASS (no hardcoded placeholder data), test-coverage focus PASS (100% on touched lines, no gaps))
-- [x] green-selenium (**the blocker was stale, and only a probe showed it.** The skip reason claimed `POST /api/v1/auth/register` returns 404 in ~5ms, too fast to observe — as of 2026-07-17 that endpoint returns **201**, verified directly and through the vite proxy. Un-skipped, nothing else touched: **1 passed in 28.60s**. The open question going in was whether the real round-trip is slow enough for Selenium where the 404 was not; it is, so the `useSubmitPlaceholder` 500ms crutch is not needed here. Ran against this worktree's own vite on port 5199 with `FRONTEND_PORT=5199` — the fixture defaults to 5173, which is stale/absent on this host, so a default-port run would have "passed" against nothing. Also fixed the class docstring, which still described the placeholder mechanism as live — it had gone from stale to outright false, and dropped the now-unused `import pytest`. **Note the test is insensitive to WHICH response returns:** it asserts only the in-flight state, so a duplicate-email rejection and a fresh 201 look identical to it. That is what 3.1 specifies, not a gap. Two sibling blockers (5.1's red-selenium, 5.7) cite the same false 404 premise and should be re-probed rather than believed)
+- [x] green-selenium (**the blocker was stale, and only a probe showed it.** The skip reason claimed `POST /api/v1/auth/register` returns 404 in ~5ms, too fast to observe — as of 2026-07-17 that endpoint returns **201**, verified directly and through the vite proxy. Un-skipped, nothing else touched: **1 passed in 28.60s**. The open question going in was whether the real round-trip is slow enough for Selenium where the 404 was not; it is, so the `useSubmitPlaceholder` 500ms crutch is not needed here. Ran against this worktree's own vite on port 5199 with `FRONTEND_PORT=5199` — the fixture defaults to 5173, which is stale/absent on this host, so a default-port run would have "passed" against nothing. Also fixed the class docstring, which still described the placeholder mechanism as live — it had gone from stale to outright false, and dropped the now-unused `import pytest`. **Note the test is insensitive to WHICH response returns:** it asserts only the in-flight state, so a duplicate-email rejection and a fresh 201 look identical to it. That is what 3.1 specifies, not a gap — and it is safe only because both paths are wide enough to observe, so that was measured, not assumed: 201 ~0.96s, 409 ~0.77-1.04s, versus ~5ms for the old 404. Both were exercised green (the first run created the hardcoded `newuser@example.ru` and took the 201 path; the re-run after the docstring fix took the 409). **One sibling blocker — 5.1's red-selenium — cites the same false 404 premise and should be re-probed rather than believed.**)
 - [S] demo (skipped per convention, see note above)
 
 ### 3.2: Login submission shows a loading state
