@@ -4,7 +4,7 @@ import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
 import { login } from '../api/loginApi'
 import { saveSession } from '../utils/authSession'
-import { GENERIC_LOGIN_FAILURE_MESSAGE, isUsableMessage } from '../utils/loginMessages'
+import { GENERIC_LOGIN_FAILURE_MESSAGE, isUsableMessage } from '../utils/authMessages'
 import './AuthForm.css'
 import './LoginForm.css'
 

@@ -1,6 +1,7 @@
 // HTTP client for the login API (POST authenticate).
-import { postJson, type HttpError } from '../../../shared/api/httpClient'
-import { GENERIC_LOGIN_FAILURE_MESSAGE, isUsableMessage } from '../utils/loginMessages'
+import { postJson } from '../../../shared/api/httpClient'
+import { toAuthApiError, type AuthApiError } from './apiError'
+import { GENERIC_LOGIN_FAILURE_MESSAGE } from '../utils/authMessages'
 
 // The wire is snake_case — verified by curl against the live backend 2026-07-16:
 //   200 → {access_token, refresh_token, access_token_expires_at, refresh_token_expires_at}
@@ -15,48 +16,21 @@ export interface LoginResult {
   refreshTokenExpiresAt: string
 }
 
-export interface LoginApiError {
-  errorCode: string
-  message: string
-}
+export type LoginApiError = AuthApiError
 
-// A rejection only carries an error body when postJson built an HttpError from a
-// non-ok response. Transport failures (fetch rejects with a bodyless TypeError)
-// have no body — rethrow them untouched rather than reading `.body` off undefined,
-// so no internal error text can reach the login screen.
+// The body-shape rule (rethrow bodyless transport failures, guard each field on its own terms)
+// is `toAuthApiError`'s and shared with register/verify. What is specific to login is the
+// fallback below — so that is all this module passes in.
+//
+// NOTE on what does NOT happen here: this module performs NO sanitisation. Any non-whitespace
+// string passes through verbatim, `"NullPointerException at AuthService.line42"` included.
+// Client-safety is the BACKEND's guarantee (endpoints.md:17-19 — `message` is always a generic,
+// client-safe string). On this side, non-disclosure is enforced SOLELY by LoginForm's
+// `errorCode === 'INVALID_CREDENTIALS'` check, which decides what reaches the screen. Consumers
+// added later (5.3/5.4/5.6 each read `apiError.message`) must gate the text themselves: it does
+// not arrive display-ready, whatever its type says.
 function toLoginApiError(error: unknown): unknown {
-  const body = (error as HttpError | undefined)?.body
-  if (!body || typeof body !== 'object') {
-    return error
-  }
-  // Both fields fall back when the parsed value cannot serve, but the two tests are NOT the
-  // same rule and must not be collapsed into one — what disqualifies a value differs by what
-  // the value is for. `errorCode` is only ever compared against known codes, never shown, so
-  // a non-empty string is enough; a blank-looking code is not a display hazard, it simply
-  // matches nothing and lands on the form's own fallback.
-  //
-  // `isUsableMessage` buys exactly ONE property here: the message is NON-BLANK. It is NOT a
-  // client-safety check, and this module performs NO sanitisation — any non-whitespace string
-  // passes through verbatim, `"NullPointerException at AuthService.line42"` included.
-  // Client-safety is the BACKEND's guarantee (endpoints.md:17-19 — `message` is always a
-  // generic, client-safe string). On this side, non-disclosure is enforced SOLELY by
-  // LoginForm's `errorCode === 'INVALID_CREDENTIALS'` check, which decides what reaches the
-  // screen. Consumers added later (5.3/5.4/5.6 each read `apiError.message`) must gate the
-  // text themselves: it does not arrive display-ready, whatever its type says.
-  //
-  // `??` is wrong for either field — it fires only on null/undefined, so an empty-string
-  // message would survive verbatim and reach the form as '', silence on the
-  // INVALID_CREDENTIALS path itself. `as string` is wrong in the other direction: `body` is
-  // parsed JSON, so a non-string value satisfies the cast at compile time and lies about
-  // the field at run time. Both guards earn the declared type instead of asserting it.
-  const rawCode = body.error_code
-  const errorCode = typeof rawCode === 'string' && rawCode ? rawCode : 'UNKNOWN_ERROR'
-  const serverMessage = isUsableMessage(body.message) ? body.message : ''
-  const apiError: LoginApiError = {
-    errorCode,
-    message: serverMessage || fallbackMessageFor(errorCode),
-  }
-  return apiError
+  return toAuthApiError(error, fallbackMessageFor)
 }
 
 // What this module may put in `message` when the server sent no usable text.

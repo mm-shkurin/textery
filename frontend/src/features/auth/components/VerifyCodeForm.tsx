@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { resendCode } from '../api/authApi'
-import { verify, type VerifyApiError, GENERIC_VERIFY_FAILURE_MESSAGE } from '../api/verifyApi'
+import { verify, type VerifyApiError } from '../api/verifyApi'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { signInAfterVerification } from '../utils/postVerifySignIn'
+import { GENERIC_VERIFY_FAILURE_MESSAGE, isUsableMessage } from '../utils/authMessages'
 import './AuthForm.css'
 import './VerifyCodeForm.css'
 
@@ -32,7 +33,7 @@ const RESEND_FAILURE_MESSAGE = 'Не удалось отправить код п
 function applyVerifyError(error: unknown): string {
   if (error && typeof error === 'object' && 'errorCode' in error) {
     const apiError = error as VerifyApiError
-    if (typeof apiError.message === 'string' && apiError.message.trim()) {
+    if (isUsableMessage(apiError.message)) {
       return apiError.message
     }
   }

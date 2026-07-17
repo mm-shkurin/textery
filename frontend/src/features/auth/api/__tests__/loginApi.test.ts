@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { login } from '../loginApi'
-import { GENERIC_LOGIN_FAILURE_MESSAGE } from '../../utils/loginMessages'
+import { GENERIC_LOGIN_FAILURE_MESSAGE } from '../../utils/authMessages'
 
 // Real-fetch tests: `fetch` is stubbed, `loginApi` is NOT mocked. Every LoginForm test file
 // does `vi.mock('../../api/loginApi')`, so `toLoginApiError` and `postJson` are unreachable

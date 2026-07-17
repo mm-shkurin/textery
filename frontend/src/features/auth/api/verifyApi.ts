@@ -10,32 +10,18 @@
 //         to tell them apart here, and do not surface a distinction the server refused to
 //         make — that would be the account-enumeration oracle this story exists to avoid.
 //   500 → {detail: "internal server error"} — no `error_code`, lands on the fallback.
-import { postJson, type HttpError } from '../../../shared/api/httpClient'
+import { postJson } from '../../../shared/api/httpClient'
+import { toAuthApiError, type AuthApiError } from './apiError'
+import { GENERIC_VERIFY_FAILURE_MESSAGE } from '../utils/authMessages'
 
 export interface VerifyResult {
   isVerified: boolean
 }
 
-export interface VerifyApiError {
-  errorCode: string
-  message: string
-}
-
-export const GENERIC_VERIFY_FAILURE_MESSAGE = 'Не удалось подтвердить код'
+export type VerifyApiError = AuthApiError
 
 function toVerifyApiError(error: unknown): unknown {
-  const body = (error as HttpError | undefined)?.body
-  if (!body || typeof body !== 'object') {
-    return error
-  }
-  const errorCode = body.error_code
-  const message = body.message
-  const apiError: VerifyApiError = {
-    errorCode: typeof errorCode === 'string' && errorCode ? errorCode : 'UNKNOWN_ERROR',
-    message:
-      typeof message === 'string' && message.trim() ? message : GENERIC_VERIFY_FAILURE_MESSAGE,
-  }
-  return apiError
+  return toAuthApiError(error, () => GENERIC_VERIFY_FAILURE_MESSAGE)
 }
 
 export async function verify(email: string, code: string): Promise<VerifyResult> {

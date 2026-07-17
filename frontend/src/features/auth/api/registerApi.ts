@@ -12,7 +12,9 @@
 // `confirm_password` is REQUIRED by the backend. Omitting it was a real shipped bug:
 // registration returned 422 and could never succeed, and no unit test caught it because
 // they all mock this module.
-import { postJson, type HttpError } from '../../../shared/api/httpClient'
+import { postJson } from '../../../shared/api/httpClient'
+import { toAuthApiError, type AuthApiError } from './apiError'
+import { GENERIC_REGISTER_FAILURE_MESSAGE } from '../utils/authMessages'
 
 export interface RegisterResult {
   userId: string
@@ -25,26 +27,13 @@ export interface RegisterResult {
   codeExpiresAt: string
 }
 
-export interface RegisterApiError {
-  errorCode: string
-  message: string
-}
+export type RegisterApiError = AuthApiError
 
-const GENERIC_REGISTER_FAILURE_MESSAGE = 'Не удалось зарегистрироваться'
-
+// Registration has no code whose message the form supplies itself, so every code falls back to
+// the one generic string. Unlike login, there is no branch here that must be told "the server
+// said nothing" apart from "the server said it failed".
 function toRegisterApiError(error: unknown): unknown {
-  const body = (error as HttpError | undefined)?.body
-  if (!body || typeof body !== 'object') {
-    return error
-  }
-  const errorCode = body.error_code
-  const message = body.message
-  const apiError: RegisterApiError = {
-    errorCode: typeof errorCode === 'string' && errorCode ? errorCode : 'UNKNOWN_ERROR',
-    message:
-      typeof message === 'string' && message.trim() ? message : GENERIC_REGISTER_FAILURE_MESSAGE,
-  }
-  return apiError
+  return toAuthApiError(error, () => GENERIC_REGISTER_FAILURE_MESSAGE)
 }
 
 export async function register(
