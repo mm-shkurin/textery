@@ -1,5 +1,3 @@
-import pytest
-
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
@@ -10,22 +8,18 @@ class TestRegisterSubmitLoadingIndicatorAcceptance(AbstractFrontendTest):
     When the user submits the form
     Then a loading indicator is shown until the response arrives
 
-    NOTE: RegisterForm.tsx currently only disables the submit button while
-    in flight (Scenario 2.3) but renders no visible loading indicator
-    (spinner, text change, etc.). This test targets that gap. No real
-    registration API call is wired in yet (backend endpoint under parallel
-    development); the in-flight window is produced by
-    useSubmitPlaceholder's 500ms setTimeout placeholder, which is long
-    enough for Selenium to observe the indicator before it settles.
+    The in-flight window is a REAL `POST /api/v1/auth/register` round-trip
+    (Scenario 5.1 replaced the useSubmitPlaceholder 500ms crutch with the
+    live call), and it is wide enough for Selenium to catch the indicator
+    before the response settles.
+
+    The assertion inspects only the in-flight state, so it does not care
+    which response is on its way back — a fresh 201 and a duplicate-email
+    rejection produce the same observable window. That is what Scenario 3.1
+    specifies, not an oversight: the indicator's job is to say "waiting",
+    and it has the same job either way.
     """
 
-    @pytest.mark.skip(
-        reason="Scenario 5.1 wired RegisterForm to a real registerApi.register call, "
-        "replacing the useSubmitPlaceholder 500ms window this test relied on. The "
-        "backend has no /api/v1/auth/register endpoint yet (404 in ~5ms), so the "
-        "in-flight window is too short for Selenium to observe. Blocked on the "
-        "backend endpoint landing, same as Scenario 5.1's red-selenium."
-    )
     def test_should_show_loading_indicator_while_submission_is_in_flight(
         self, webdriver, app_url, register_page_statements
     ):
