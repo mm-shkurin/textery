@@ -17,6 +17,9 @@ class FakeGenerationStorage(CallOrderRecordingFake):
         self.saved_generations: list[Generation] = []
         self.updated_generations: list[Generation] = []
         self._by_id: dict[UUID, Generation] = {}
+        # id -> exception update() should raise once for that row, letting a test
+        # stage a lost CAS race without needing two real sessions.
+        self.raise_on_update_for: dict[UUID, Exception] = {}
 
     async def save(self, generation: Generation) -> None:
         self._record(CALL_SAVE, generation)
@@ -35,6 +38,13 @@ class FakeGenerationStorage(CallOrderRecordingFake):
 
     async def update(self, generation: Generation) -> None:
         self._record(CALL_UPDATE, generation)
+        # Mirrors the real adapter's CAS: it raises when another writer already
+        # claimed the row (ConflictException) or the row is gone
+        # (NotFoundException). Both are outcomes a caller must handle, so the fake
+        # has to be able to produce them.
+        error = self.raise_on_update_for.pop(generation.id, None)
+        if error is not None:
+            raise error
         # generation is mutated in place by the usecase after each update() call
         # (mark_in_progress -> update -> complete/fail -> update); snapshot the
         # status at call time so assertions can see the intermediate state.

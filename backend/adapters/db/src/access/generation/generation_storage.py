@@ -43,32 +43,24 @@ class SqlAlchemyGenerationStorage:
         """Compare-and-swap the generation's state on its version.
 
         **One statement.** The version is compared in the WHERE clause and the
-        increment computed in SQL, with RETURNING handing back the new row.
-
-        This was a read-compare-write: `session.get`, compare `model.version` to
-        `generation.version` in Python, then assign and commit. That check cannot
-        hold under READ COMMITTED -- two sessions both read version=1, both pass
-        the comparison, and both write version=2, so one update is silently lost
-        and the ConflictException it should have raised never fires. It matters
-        here specifically because the stale sweep runs in every replica's
-        lifespan: two instances sweeping the same stranded row both reached this
-        method, and the guard that was supposed to stop the second one was the
-        broken one.
-
-        `SqlAlchemyDocumentStorage.save_content_if_version_matches` already does
-        it this way and its docstring names this method as the counter-example.
-        This closes that gap rather than leaving the two adapters disagreeing
-        about how optimistic locking works.
+        increment computed in SQL; RETURNING hands back the new row. Comparing the
+        version in Python and then writing would let two sessions both read
+        version=1, both pass the check, and both write version=2 -- a silently
+        lost update under READ COMMITTED. The stale sweep runs in every replica,
+        so two instances do reach this method for the same row.
 
         Why it holds across processes: the loser blocks on the row lock, and when
         the winner commits Postgres re-evaluates the WHERE against the updated
         row, sees the bumped version, and matches zero rows. The database is the
         arbiter, so the instance count is irrelevant.
 
-        Zero rows matched is ambiguous on its own -- absent or version-mismatched
-        -- so the caller's two distinct exceptions need one follow-up read to tell
-        which. That read is off the happy path and only runs when the write has
-        already failed.
+        Zero rows matched is ambiguous -- absent or version-mismatched -- and
+        callers need those as different exceptions, so one follow-up read decides
+        which. It runs only when the write has already failed.
+
+        Same shape as `SqlAlchemyDocumentStorage.save_content_if_version_matches`;
+        `test_generation_storage_cas_shape.py` pins it, since a concurrency test
+        cannot (see that file).
         """
         result = await self._session.execute(
             update(GenerationModel)

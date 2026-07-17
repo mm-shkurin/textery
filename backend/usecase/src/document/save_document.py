@@ -14,10 +14,9 @@ MIN_VERSION = 1
 class SaveDocument:
     """Save the full editor content, guarded by the version token."""
 
-    # Interpolated, not spelled out: the literal used to read "200000 characters"
-    # while the rule it describes lives in DocumentContent. Raise the cap there and
-    # the hardcoded message keeps quoting the old number -- a lie the type checker
-    # and the tests both wave through, told only to the user who hit the limit.
+    # Interpolated from the constant that owns the rule. Spelled out, the message
+    # keeps quoting the old number when the cap moves -- a lie nothing checks, told
+    # only to the user who hit the limit.
     CONTENT_TOO_LONG_MESSAGE = (
         f"The content exceeds the maximum length of {MAX_CONTENT_LENGTH} characters."
     )

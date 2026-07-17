@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from fake.generation.fake_generation_storage import FakeGenerationStorage
 from generation.generation import Generation
 from generation.requeue_stale_generations import RequeueStaleGenerations
+from shared.exceptions import ConflictException, NotFoundException
 
 STALE_AFTER = timedelta(minutes=10)
 
@@ -41,6 +42,22 @@ class RequeueStaleGenerationsStatements:
         )
         self._storage.seed(generation)
         return generation
+
+    def given_row_already_claimed_by_another_replica(self, generation: Generation) -> None:
+        """Stage the CAS loss a competing sweep causes.
+
+        The sweep runs in every replica's lifespan, so two instances routinely
+        list the same stale row and race to claim it. The storage's compare-and-swap
+        makes exactly one win; the loser gets this.
+        """
+        self._storage.raise_on_update_for[generation.id] = ConflictException(
+            f"generation {generation.id} was concurrently modified"
+        )
+
+    def given_row_deleted_before_the_sweep_reached_it(self, generation: Generation) -> None:
+        self._storage.raise_on_update_for[generation.id] = NotFoundException(
+            f"generation {generation.id} not found"
+        )
 
     async def sweep_stale_generations(self) -> None:
         usecase = RequeueStaleGenerations(storage=self._storage)

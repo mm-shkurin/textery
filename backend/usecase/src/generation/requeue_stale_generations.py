@@ -1,7 +1,11 @@
+import logging
 from datetime import datetime
 from uuid import UUID
 
 from generation.generation_storage import GenerationStorage
+from shared.exceptions import ConflictException, NotFoundException
+
+logger = logging.getLogger(__name__)
 
 
 class RequeueStaleGenerations:
@@ -25,6 +29,27 @@ class RequeueStaleGenerations:
         requeued: list[tuple[UUID, UUID]] = []
         for generation in stale:
             generation.requeue()
-            await self._storage.update(generation)
+            try:
+                await self._storage.update(generation)
+            except (ConflictException, NotFoundException):
+                # Losing a row is the normal outcome, not an error. The sweep runs
+                # in every replica's lifespan, so two instances routinely list the
+                # same stale row and race to claim it; the CAS in the storage is
+                # what makes exactly one win, and this is the loser being told so.
+                # A row deleted between the list and the update reads the same way.
+                #
+                # Caught per row rather than around the loop, because the loop is a
+                # batch of independent claims. Letting it propagate aborted the
+                # whole sweep at the first contested row and left every later one
+                # stranded for another interval -- and with several replicas, an
+                # early conflict is likely, so the sweep would rarely finish. It
+                # surfaced only as "stale generation sweep failed" in the lifespan
+                # logger, which reads like a malfunction rather than two instances
+                # doing exactly what they should.
+                logger.debug(
+                    "generation %s already claimed by another sweep or gone; skipping",
+                    generation.id,
+                )
+                continue
             requeued.append((generation.id, generation.owner_id))
         return requeued

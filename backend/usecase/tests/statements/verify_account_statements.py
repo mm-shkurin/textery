@@ -1,7 +1,9 @@
 from datetime import UTC, datetime, timedelta
+from uuid import uuid4
 
 from scope.register_request_scope import RegisterRequestScope
 
+from auth.account import Account
 from auth.register_user import RegisterUser
 from auth.verify_account import VerifyAccount
 from fake.auth.fake_account_repository import FakeAccountRepository
@@ -63,6 +65,48 @@ class VerifyAccountStatements:
             field: getattr(result.account, field)
             for field in (*self.UNCHANGED_BY_VERIFY_FIELDS, "is_verified")
         }
+
+    async def given_account_with_no_verification_code_ever_issued(self) -> None:
+        """An account row with nothing in the code repository behind it.
+
+        Reachable: registration writes the account and the code in that order, so
+        a failure between the two -- or any later cleanup of codes -- leaves this
+        state. It is the one branch in VerifyAccount that no test reached.
+        """
+        account = Account.create(
+            id=uuid4(),
+            email="user@example.ru",
+            password_hash="hash",
+            created_at=self.FIXED_CLOCK_NOW,
+        )
+        await self.account_repository.save(account)
+        self.registered_email = account.email
+
+    async def verify_an_account_that_has_no_code(self) -> None:
+        await self._execute_verify(self.registered_email, "123456")
+
+    def assert_rejected_as_invalid_or_expired_with_no_code_to_look_at(self) -> None:
+        """The account exists, the lookup ran, and the answer is still generic.
+
+        A separate assertion from `assert_rejected_as_invalid_or_expired` because
+        that one requires a code to have been issued -- and the whole premise here
+        is that none was. The lookup count is what pins the branch: without it the
+        test would pass even if the account had not been found, which is a
+        different branch that answers the same way on purpose.
+        """
+        self._assert_validation_exception(
+            "INVALID_OR_EXPIRED_CODE", self.INVALID_OR_EXPIRED_MESSAGE
+        )
+        assert self.verification_code_repository.find_active_by_account_id_call_count == 1, (
+            "expected the account to be found and its code looked up exactly once, got "
+            f"{self.verification_code_repository.find_active_by_account_id_call_count} call(s)"
+        )
+        assert self.account_repository.saved_accounts[0].is_verified is False, (
+            "expected the account to stay unverified"
+        )
+        assert self.unit_of_work.commit_call_count == 0, (
+            f"expected no commit, got {self.unit_of_work.commit_call_count}"
+        )
 
     async def _execute_verify(self, email: str, code: str) -> None:
         try:

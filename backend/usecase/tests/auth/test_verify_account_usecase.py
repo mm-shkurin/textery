@@ -57,3 +57,19 @@ class TestVerifyAccountUsecase:
         await verify_account_statements.given_pending_account_with_verification_code()
         await verify_account_statements.verify_with_the_issued_code_when_rollback_itself_fails()
         verify_account_statements.assert_verification_failed_when_rollback_also_fails()
+
+    async def test_should_reject_generically_when_the_account_has_no_issued_code(
+        self, verify_account_statements: VerifyAccountStatements
+    ):
+        """An account with no code answers exactly like an unknown account.
+
+        This branch had no test. It matters because it is the one place where a
+        real, existing account takes the rejection path: if it ever answered
+        differently from the unknown-email case, the difference would confirm the
+        address is registered, which is the account-existence oracle
+        _invalid_or_expired exists to prevent.
+        """
+        await verify_account_statements.given_account_with_no_verification_code_ever_issued()
+        await verify_account_statements.verify_an_account_that_has_no_code()
+
+        verify_account_statements.assert_rejected_as_invalid_or_expired_with_no_code_to_look_at()

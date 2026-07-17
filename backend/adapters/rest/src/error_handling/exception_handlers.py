@@ -58,17 +58,12 @@ async def conflict_exception_handler(request: Request, exc: ConflictException) -
 
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """500 in the canonical shape.
+    """500 in the canonical {error_code, message} shape, like every handler here.
 
-    This was the last handler answering {"detail": ...}. A client parsing errors
-    had to special-case the 500 to find out what went wrong, which is precisely
-    the request where error handling is least likely to have been exercised.
-    Every handler in this module now emits {error_code, message}.
-
-    The message stays fixed and generic for the same reason the 404's does: this
-    catches exceptions nobody predicted, so str(exc) here is an arbitrary internal
-    string -- a driver error naming a table, a stack-shaped repr -- going straight
-    to the client. The detail is logged with its traceback instead.
+    The message is fixed and generic for the same reason the 404's is: this
+    catches exceptions nobody predicted, so str(exc) is an arbitrary internal
+    string -- a driver error naming a table, a stack-shaped repr -- and echoing it
+    hands that to the client. The detail goes to the log with its traceback.
     """
     logger.error(
         "unhandled exception on %s %s: %s", request.method, request.url.path, exc, exc_info=exc

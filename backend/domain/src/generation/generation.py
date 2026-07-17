@@ -113,20 +113,14 @@ class Generation:
     def _validate_document_type(document_type: str) -> str:
         """Reject anything outside the four supported types.
 
-        This factory validated topic, volume, requirements and extra_wishes and
-        passed document_type straight through -- while Document.create ran the
-        identical field through this same value object. So POST /documents
-        rejected "реферат "; POST /generations accepted any string at all.
+        Load-bearing, not cosmetic: GigaChatProvider interpolates this value
+        straight into the prompt ("{document_type} на тему: {topic}"), so an
+        unvalidated string here reaches the model. The generations table carries
+        no CHECK on the column either -- unlike documents -- which makes this the
+        only guard.
 
-        It is not only an inconsistency. Unlike documents, the generations table
-        carries no CHECK constraint on this column, so nothing downstream caught
-        it either; and GigaChatProvider interpolates the value straight into the
-        prompt ("{document_type} на тему: {topic}"). An unvalidated field that
-        reaches an LLM prompt is an injection surface, and this one was the first
-        word of it.
-
-        DocumentType is reused rather than reimplemented: the allowlist is one
-        tuple, and a second copy here would be the drift this commit is removing.
+        DocumentType is reused rather than reimplemented so the allowlist stays
+        one tuple, shared with Document.create and the documents CHECK constraint.
         """
         try:
             return DocumentType(document_type).value

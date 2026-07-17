@@ -33,15 +33,11 @@ class RegisterUser:
         clock: Clock | None = None,
         unit_of_work: UnitOfWork | None = None,
     ) -> None:
-        # All three collaborators are required, and deliberately without a
-        # null-object fallback. The hasher never had one: a default returning the
-        # plaintext would persist real credentials in the clear and every existing
-        # test would still pass. The two repositories used to default to a
-        # _NullRepository whose save() dropped the entity on the floor, which is
-        # the same failure with a slower fuse -- register would answer 201 with a
-        # verification code for an account that was never written. Only one caller
-        # relied on it (a validation-error test that never reaches a repository),
-        # so the fallback was buying nothing but the bug.
+        # All three collaborators are required, deliberately without a null-object
+        # fallback. A defaulted hasher would persist credentials in the clear; a
+        # defaulted repository would drop the entity and let register answer 201,
+        # with a verification code, for an account that was never written. Both
+        # failures pass every test that does not check storage.
         self.password_hasher = password_hasher
         self.account_repository = account_repository
         self.verification_code_repository = verification_code_repository

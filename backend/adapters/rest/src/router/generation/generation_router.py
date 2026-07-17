@@ -88,11 +88,9 @@ async def get_generation(
         # Absent and foreign are the same answer. The usecase's storage filters on
         # owner_id in SQL, so this branch cannot tell them apart.
         #
-        # NotFoundException, not HTTPException: this used to raise the latter and
-        # answer {"detail": "generation not found"}, while the identical branch in
-        # document_router answered {error_code, message}. One endpoint disagreeing
-        # with the rest of the API about the shape of an error is a client-side
-        # bug waiting to happen -- and the literal detail string leaked the
-        # resource kind, which the shared handler deliberately does not.
+        # NotFoundException, not HTTPException: the shared handler is what keeps
+        # this in the API's {error_code, message} shape and keeps the resource kind
+        # out of the body. Raising HTTPException here would opt this one endpoint
+        # out of both.
         raise NotFoundException(f"generation {generation_id} not found")
     return GenerationDetailDto.from_domain(generation)
