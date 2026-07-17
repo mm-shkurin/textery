@@ -3,6 +3,7 @@ import { listDocuments, listGenerations } from '../api/historyApi'
 import { useHistoryList } from '../hooks/useHistoryList'
 import { HistoryRows } from './HistoryRows'
 import { documentTypeLabelFromWire } from '../../../shared/documentTypes'
+import { TabButton } from './HistoryTabButton'
 import './HistoryPage.css'
 
 type Tab = 'documents' | 'generations'
@@ -20,6 +21,8 @@ interface HistoryPageProps {
 // mis-order rows at page boundaries or require reading both lists to the end before showing
 // anything. A single feed needs one server-side endpoint; until then, two honest lists beat one
 // list that lies about order.
+export type { Tab }
+
 export function HistoryPage({ onOpenDocument, onBack }: HistoryPageProps) {
   const [tab, setTab] = useState<Tab>('documents')
 
@@ -56,52 +59,6 @@ export function HistoryPage({ onOpenDocument, onBack }: HistoryPageProps) {
         )}
       </div>
     </div>
-  )
-}
-
-const TABS: Tab[] = ['documents', 'generations']
-
-// The tab half of the tablist/tabpanel pair. `role="tab"` is a promise about keyboard behaviour,
-// not a styling hook: a reader who meets it expects arrow keys to move between tabs and Tab to
-// leave the list. Previously it made the promise and delivered none of it — no ids, no
-// aria-controls, and every tab in the tab order.
-function TabButton({
-  id,
-  active,
-  onSelect,
-  label,
-}: {
-  id: Tab
-  active: Tab
-  onSelect: (t: Tab) => void
-  label: string
-}) {
-  const isActive = active === id
-
-  // Roving tabindex: the tablist is ONE tab stop, and the arrows move within it.
-  function handleKeyDown(event: React.KeyboardEvent<HTMLButtonElement>) {
-    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
-    event.preventDefault()
-    const step = event.key === 'ArrowRight' ? 1 : -1
-    // Wraps, per the APG pattern: the ends of a tablist are not walls.
-    onSelect(TABS[(TABS.indexOf(id) + step + TABS.length) % TABS.length])
-  }
-
-  return (
-    <button
-      type="button"
-      role="tab"
-      id={`history-tab-${id}`}
-      aria-selected={isActive}
-      aria-controls={`history-panel-${id}`}
-      tabIndex={isActive ? 0 : -1}
-      className="history-tab"
-      data-testid={`history-tab-${id}`}
-      onClick={() => onSelect(id)}
-      onKeyDown={handleKeyDown}
-    >
-      {label}
-    </button>
   )
 }
 

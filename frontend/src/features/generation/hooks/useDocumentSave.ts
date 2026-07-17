@@ -2,9 +2,16 @@ import { useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 import { saveDocument } from '../api/documentApi'
 import { SessionExpiredError } from '../../auth/api/authorizedRequest'
+import { VersionConflictError } from '../../../shared/api/send'
 
 export const SAVE_ERROR_MESSAGE =
   'Не удалось сохранить документ. Проверьте соединение и попробуйте ещё раз — введённый текст сохранён локально в редакторе.'
+
+// Deliberately does NOT say "попробуйте ещё раз": retrying is what just failed. Reopening is the
+// only action that can succeed, and it costs the text in this editor — so the message says that
+// outright rather than letting the user discover it by losing the paragraph twice.
+export const CONFLICT_ERROR_MESSAGE =
+  'Документ был изменён другим сохранением. Откройте его заново, чтобы увидеть актуальную версию — текст в этом редакторе не сохранён.'
 
 // What a failed save says. The default blames the connection and reassures ("текст сохранён
 // локально в редакторе") — true and useful for a network blip, and actively misleading for the
@@ -16,8 +23,17 @@ export const SAVE_ERROR_MESSAGE =
 // carve-out was unconsumed machinery and this catch flattened it right back into "check your
 // connection", telling a signed-out user to retry a button that cannot work until they sign in.
 // Its own message ("Сессия истекла. Войдите снова.") is the accurate thing to show.
+//
+// A VersionConflictError reaching here is the same mistake one branch over. `saveDocument` already
+// answers the FIRST 409 by refetching the version and retrying, so anything that arrives here has
+// survived that — a second writer landed during the retry, or the refetch itself failed. The
+// connection is not the problem, and "текст сохранён локально в редакторе" is a promise this
+// branch cannot keep: another save holds the document, and the next click re-enters the same race.
+// Saying so lets the user reopen the document instead of clicking a button that will lose again.
 function describeSaveFailure(error: unknown): string {
-  return error instanceof SessionExpiredError ? error.message : SAVE_ERROR_MESSAGE
+  if (error instanceof SessionExpiredError) return error.message
+  if (error instanceof VersionConflictError) return CONFLICT_ERROR_MESSAGE
+  return SAVE_ERROR_MESSAGE
 }
 
 interface UseDocumentSaveParams {

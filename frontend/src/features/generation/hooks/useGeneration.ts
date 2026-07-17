@@ -1,10 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createGeneration, getGeneration } from '../api/generationApi'
+import { SessionExpiredError } from '../../auth/api/authorizedRequest'
 
 export type GenerationUiState = 'idle' | 'pending' | 'completed' | 'failed'
 
 const POLL_INTERVAL_MS = 5000
 const MAX_POLL_ATTEMPTS = 60 // ~5 minutes at POLL_INTERVAL_MS
+
+// How many CONSECUTIVE failed status checks are tolerated before the generation is called lost.
+//
+// Not zero, which is what this was: a single rejection stopped the poll and declared `failed`. The
+// generation runs on the server for minutes, and one 502 from the proxy or one dropped packet
+// anywhere in that window would throw away work that was still running and completed fine — the
+// user is told it failed while the document is being written. Over ~5 minutes of polling, one
+// transient error is likely rather than exceptional, so treating it as fatal made the failure
+// mode routine.
+//
+// Three because it must be small: a status endpoint that is genuinely down should be reported
+// promptly, not after a minute of silent retrying. Three misses is ~15s of tolerance.
+const MAX_CONSECUTIVE_POLL_FAILURES = 3
 
 export interface UseGeneration {
   state: GenerationUiState
@@ -24,6 +38,9 @@ export function useGeneration(): UseGeneration {
   const [error, setError] = useState<string | null>(null)
   const intervalRef = useRef<number | null>(null)
   const attemptsRef = useRef(0)
+  // Consecutive, not total: reset by any successful check, so a poll that misses once every
+  // couple of minutes rides out the whole generation instead of accumulating toward a limit.
+  const consecutiveFailuresRef = useRef(0)
 
   const stopPolling = useCallback(() => {
     if (intervalRef.current !== null) {
@@ -43,6 +60,7 @@ export function useGeneration(): UseGeneration {
       }
       try {
         const res = await getGeneration(id)
+        consecutiveFailuresRef.current = 0
         if (res.status === 'completed') {
           stopPolling()
           setContent(res.content)
@@ -56,9 +74,22 @@ export function useGeneration(): UseGeneration {
         }
         // pending / in_progress → keep polling
       } catch (e) {
-        stopPolling()
-        setError(e instanceof Error ? e.message : 'Ошибка сети')
-        setState('failed')
+        // An expired session will not fix itself by asking again, and every further attempt is a
+        // guaranteed 401. It ends the poll immediately, carrying its own message.
+        if (e instanceof SessionExpiredError) {
+          stopPolling()
+          setError(e.message)
+          setState('failed')
+          return
+        }
+        // Anything else may be transient. The generation is still running on the server, so a
+        // missed status check is not a failed generation — only giving up on it is.
+        consecutiveFailuresRef.current += 1
+        if (consecutiveFailuresRef.current >= MAX_CONSECUTIVE_POLL_FAILURES) {
+          stopPolling()
+          setError(e instanceof Error ? e.message : 'Ошибка сети')
+          setState('failed')
+        }
       }
     },
     [stopPolling],
@@ -73,6 +104,7 @@ export function useGeneration(): UseGeneration {
       setError(null)
       stopPolling()
       attemptsRef.current = 0
+      consecutiveFailuresRef.current = 0
       try {
         const { generationId } = await createGeneration(topic)
         void poll(generationId) // immediate first check

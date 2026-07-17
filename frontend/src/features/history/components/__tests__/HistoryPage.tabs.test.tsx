@@ -45,6 +45,8 @@ describe('HistoryPage tabs — the ARIA pattern the tablist promises', () => {
   it('moves between tabs with the arrow keys, and wraps at the ends', () => {
     renderPage()
 
+    screen.getByTestId('history-tab-documents').focus()
+
     fireEvent.keyDown(screen.getByTestId('history-tab-documents'), { key: 'ArrowRight' })
     expect(screen.getByTestId('history-tab-generations')).toHaveAttribute('aria-selected', 'true')
 
@@ -54,6 +56,31 @@ describe('HistoryPage tabs — the ARIA pattern the tablist promises', () => {
 
     fireEvent.keyDown(screen.getByTestId('history-tab-documents'), { key: 'ArrowLeft' })
     expect(screen.getByTestId('history-tab-generations')).toHaveAttribute('aria-selected', 'true')
+  })
+
+  // Selection without focus is the half that silently did not exist. Roving tabindex hands the
+  // selected tab `tabIndex={0}` and every other `-1`, so an arrow press that moved only
+  // `aria-selected` left the keyboard on a button that had just become unreachable: nothing
+  // announced, and the next Tab departing from a -1 element. The earlier version of this suite
+  // asserted the attributes and nothing else, so it pinned the working half and locked in the gap.
+  it('moves focus to the tab it selects, so the keyboard follows the selection', () => {
+    renderPage()
+
+    const documents = screen.getByTestId('history-tab-documents')
+    const generations = screen.getByTestId('history-tab-generations')
+    documents.focus()
+
+    fireEvent.keyDown(documents, { key: 'ArrowRight' })
+
+    expect(document.activeElement).toBe(generations)
+    expect(generations).toHaveAttribute('tabindex', '0')
+  })
+
+  // The flip side: mounting must not snatch the caret out of whatever the user was doing.
+  it('does not grab focus on mount', () => {
+    renderPage()
+
+    expect(document.activeElement).toBe(document.body)
   })
 
   it('leaves other keys to the browser', () => {
