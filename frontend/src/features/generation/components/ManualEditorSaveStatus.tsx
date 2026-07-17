@@ -17,11 +17,9 @@ export function ManualEditorSaveStatus({
 }: ManualEditorSaveStatusProps) {
   if (!documentId) {
     if (hasFailedToInitialize) {
-      return (
-        <span className="me-save-status me-save-status--failed" role="status">
-          Документ не создан
-        </span>
-      )
+      // <output> rather than a span with role="status": it has the role implicitly, and this
+      // line replaces "Создание документа…" in place, so it must be announced when it swaps in.
+      return <output className="me-save-status me-save-status--failed">Документ не создан</output>
     }
     return <span className="me-save-status">Создание документа…</span>
   }

@@ -125,7 +125,11 @@ describe('LoginForm', () => {
 
     const indicator = screen.getByTestId('login-loading-indicator')
     expect(indicator).toHaveClass('auth-loading-indicator')
-    expect(indicator).toHaveAttribute('role', 'status')
+    // The ROLE, not a role attribute: the indicator is an <output>, which carries role="status"
+    // implicitly, and what must hold is that assistive tech computes that role — not that one
+    // particular spelling of it appears in the markup. Asserting the attribute pinned the
+    // implementation and would have failed this element for being MORE semantic, not less.
+    expect(screen.getByRole('status')).toBe(indicator)
     expect(indicator).toHaveAttribute('aria-live', 'polite')
 
     finishLogin()

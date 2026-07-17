@@ -1,4 +1,7 @@
+/* display:block because <output> is inline by default — text-align and margin-top below both
+   depend on it being a block. */
 .auth-loading-indicator {
+  display: block;
   font-size: 14px;
   color: #9a9ba3;
   text-align: center;
@@ -116,7 +119,9 @@
   text-align: center;
 }
 
+/* display:block for the same reason as .auth-loading-indicator: <output> is inline. */
 .auth-form-success {
+  display: block;
   color: #4ade80;
   font-size: 14px;
   margin-top: 12px;

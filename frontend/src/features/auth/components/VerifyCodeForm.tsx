@@ -126,9 +126,10 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
           </div>
         )}
         {isVerified && (
-          <div className="auth-form-success" data-testid="verify-success" role="status">
+          // <output> carries role="status" implicitly — the markup says what it is.
+          <output className="auth-form-success" data-testid="verify-success">
             Аккаунт подтверждён
-          </div>
+          </output>
         )}
       </form>
       <p className="verify-resend">

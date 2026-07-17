@@ -1,8 +1,13 @@
+/* border/padding/margin are reset because <fieldset> ships with a default border and inline
+   padding of its own — the element is here for its grouping semantics, not its chrome. */
 .verify-code-inputs {
   display: flex;
   gap: 10px;
   justify-content: center;
-  margin-bottom: 16px;
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
 }
 
 .verify-code-inputs input {

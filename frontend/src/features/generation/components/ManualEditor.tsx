@@ -10,16 +10,17 @@ import { Heading3Mark } from './heading3Mark'
 import { AlignCenterMark } from './alignCenterMark'
 import './ManualEditor.css'
 import type { DocumentType } from '../../../shared/documentTypes'
-import { saveDocument } from '../api/documentApi'
 import { useDocumentInit } from '../hooks/useDocumentInit'
+import { useDocumentSave } from '../hooks/useDocumentSave'
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
 import { AppHeader } from '../../../shared/components/AppHeader'
 import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from './editorDomSync'
 import { ManualEditorToolbar } from './ManualEditorToolbar'
 import { ManualEditorBreadcrumb } from './ManualEditorBreadcrumb'
 
-export const SAVE_ERROR_MESSAGE =
-  'Не удалось сохранить документ. Проверьте соединение и попробуйте ещё раз — введённый текст сохранён локально в редакторе.'
+// Re-exported: this was the message's home before the save machinery moved to useDocumentSave,
+// and tests and callers import it from here.
+export { SAVE_ERROR_MESSAGE } from '../hooks/useDocumentSave'
 
 interface ManualEditorProps {
   documentType: DocumentType
@@ -35,72 +36,17 @@ export function ManualEditor({
   existingDocumentId,
 }: ManualEditorProps) {
   const [documentId, setDocumentId] = useState<string | null>(null)
-  const [version, setVersion] = useState(1)
-  const [isSaving, setIsSaving] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(true)
-  const [saveError, setSaveError] = useState<string | null>(null)
   // Init failing is worse than a save failing and must not be quieter: with no documentId there
   // is nothing to save TO, so the button below is inert and the text the user types has nowhere
   // to go. Kept separate from `saveError` because they can both be true and they say different
   // things — one means "this attempt failed, try again", the other "this editor cannot persist".
   const [initError, setInitError] = useState<string | null>(null)
-  const isSavingRef = useRef(false)
-  const saveAgainRequested = useRef(false)
 
-  const handleSave = () => {
-    if (!documentId || !editor) return
-    if (isSavingRef.current) {
-      saveAgainRequested.current = true
-      return
-    }
-    performSave(version)
-  }
-
-  const performSave = (saveVersion: number) => {
-    if (!documentId || !editor) return
-    isSavingRef.current = true
-    setIsSaving(true)
-    saveAgainRequested.current = false
-    // Captured before the round trip: the response's content is the SANITIZED persisted form,
-    // and telling whether to adopt it requires knowing what we actually sent.
-    const sent = editor.getHTML()
-    saveDocument(documentId, sent, saveVersion)
-      .then((result) => {
-        // The server's content is the source of truth — it strips <script> with its contents and
-        // normalises void tags (`<br />` -> `<br>`), measured 2026-07-17. Keeping ours would
-        // render markup the server does not have and re-send it on every later save.
-        //
-        // But adopt ONLY if the editor still holds exactly what we sent. Typing continues while
-        // the request is in flight, and setContent would delete those keystrokes — the worst
-        // possible trade for cosmetic agreement. If it changed, the next save re-sanitizes
-        // anyway, so nothing is lost by skipping.
-        if (result.content !== sent && editor.getHTML() === sent) {
-          editor.commands.setContent(result.content)
-        }
-        setVersion(result.version)
-        setSaveError(null)
-        if (saveAgainRequested.current) {
-          saveAgainRequested.current = false
-          performSave(result.version)
-        } else {
-          isSavingRef.current = false
-          setIsSaving(false)
-          setHasUnsavedChanges(false)
-        }
-      })
-      .catch((error) => {
-        // logging keeps the failure from being silently swallowed.
-        console.error('Failed to save document', error)
-        // Don't auto-retry a queued edit after a real error (out of scope: that's
-        // autosave-retry behavior). Drop the queued flag so a stale retry doesn't
-        // fire later, but keep the user's latest content in the editor untouched
-        // so they can manually retry by clicking Save again.
-        saveAgainRequested.current = false
-        isSavingRef.current = false
-        setIsSaving(false)
-        setSaveError(SAVE_ERROR_MESSAGE)
-      })
-  }
+  // useEditor's handleDOMEvents needs `noteEdit`, and useDocumentSave needs the `editor` that
+  // useEditor returns — a cycle in source order only. The ref breaks it: the input handler reads
+  // it when an edit happens, which is long after the assignment below has run.
+  const noteEditRef = useRef<() => void>(() => {})
 
   const editor = useEditor({
     // Tiptap v3 does not re-render on every editor transaction by default;
@@ -143,22 +89,23 @@ export function ManualEditor({
       },
       handleDOMEvents: {
         input: (view, event) => {
-          setHasUnsavedChanges(true)
-          // An edit that lands while a save is already in flight must queue a
-          // re-save even without an explicit second click on "Сохранить" —
-          // otherwise the in-flight save's resolve handler has no signal that
-          // newer, unsent content exists and would wrongly mark the document
-          // clean (see premortem/agent-review CONCERNS on scenario 5.1's
-          // green-frontend commit).
-          if (isSavingRef.current) {
-            saveAgainRequested.current = true
-          }
+          // Marks the document dirty AND queues a re-save if one is already in flight — see
+          // useDocumentSave.noteEdit for why the second half is not optional.
+          noteEditRef.current()
           return flushDomObserverOnInput(view, event)
         },
         select: syncNativeSelectionToProseMirror,
       },
     },
   })
+
+  const { isSaving, saveError, setVersion, noteEdit, save } = useDocumentSave({
+    documentId,
+    editor,
+    onSaved: () => setHasUnsavedChanges(false),
+    onDirty: () => setHasUnsavedChanges(true),
+  })
+  noteEditRef.current = noteEdit
 
   useDocumentInit({
     documentType,
@@ -181,7 +128,7 @@ export function ManualEditor({
             hasUnsavedChanges={hasUnsavedChanges}
             isSaving={isSaving}
             hasFailedToInitialize={Boolean(initError)}
-            onSave={handleSave}
+            onSave={save}
           />
           {initError && (
             <div className="me-error-banner" role="alert" data-testid="me-init-error">

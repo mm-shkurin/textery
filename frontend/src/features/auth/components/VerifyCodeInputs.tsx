@@ -57,7 +57,12 @@ export function VerifyCodeInputs({ digits, onChange }: VerifyCodeInputsProps) {
   return (
     // Grouped and named: six separate boxes are six anonymous text fields to a screen reader,
     // which cannot tell they are one code, nor which position it is on.
-    <div className="verify-code-inputs" role="group" aria-label="Код подтверждения">
+    //
+    // <fieldset> rather than a div with role="group" — it is the element that means this, and
+    // grouping form controls is the entire job it exists for. Named with aria-label instead of a
+    // <legend>: a legend would render the words "Код подтверждения" a second time directly under
+    // the h1 that already says them. The name is for the people who cannot see that h1.
+    <fieldset className="verify-code-inputs" aria-label="Код подтверждения">
       {Array.from({ length: CODE_LENGTH }, (_, index) => (
         <input
           key={index}
@@ -78,6 +83,6 @@ export function VerifyCodeInputs({ digits, onChange }: VerifyCodeInputsProps) {
           data-testid={`verify-code-input-${index}`}
         />
       ))}
-    </div>
+    </fieldset>
   )
 }

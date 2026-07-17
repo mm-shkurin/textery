@@ -35,7 +35,9 @@ describe('RegisterForm', () => {
 
     const indicator = screen.getByTestId('register-loading-indicator')
     expect(indicator).toHaveClass('auth-loading-indicator')
-    expect(indicator).toHaveAttribute('role', 'status')
+    // The computed role, not a role attribute — see LoginForm.test.tsx for why. <output> has
+    // role="status" implicitly.
+    expect(screen.getByRole('status')).toBe(indicator)
     expect(indicator).toHaveAttribute('aria-live', 'polite')
 
     await waitFor(() =>

@@ -11,7 +11,7 @@ export const LINK_INVALID_MESSAGE = 'Не удалось применить сс
 // a relative URL against our own origin, and is persisted that way forever.
 const HAS_SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:/
 
-const IS_EMAIL = /^[^\s@\/]+@[^\s@\/]+$/
+const IS_EMAIL = /^[^\s@/]+@[^\s@/]+$/
 // The path class is `\S*`, deliberately: a path ends at whitespace and nowhere
 // else, and `apply()` trims before calling. Enumerating its characters is what
 // breaks — `\w` stays ASCII-only even under `/u` (dropping `Война_и_мир`) and
@@ -25,7 +25,7 @@ const IS_EMAIL = /^[^\s@\/]+@[^\s@\/]+$/
 // `http://`, so the scheme is `http` by construction, and `isAllowedUri` — the
 // one downstream validator — vets the scheme only. This branch is therefore
 // unrejectable, and widening it widens what ships unvalidated.
-const HOST_SHAPE = /^[\p{L}\p{N}-]+(\.[\p{L}\p{N}-]+)*(:\d+)?([\/?#]\S*)?$/u
+const HOST_SHAPE = /^[\p{L}\p{N}-]+(\.[\p{L}\p{N}-]+)*(:\d+)?([/?#]\S*)?$/u
 function normalizeHref(url: string): string {
   if (HOST_SHAPE.test(url)) return `http://${url}`
   if (HAS_SCHEME.test(url)) return url
