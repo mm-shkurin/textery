@@ -1,3 +1,4 @@
+from statements.verify_account_failure_statements import VerifyAccountFailureStatements
 from statements.verify_account_statements import VerifyAccountStatements
 
 
@@ -44,20 +45,6 @@ class TestVerifyAccountUsecase:
         await verify_account_statements.verify_with_both_a_malformed_email_and_a_malformed_code()
         verify_account_statements.assert_rejected_as_invalid_email_not_invalid_code()
 
-    async def test_should_rollback_and_raise_sanitized_error_when_final_commit_fails(
-        self, verify_account_statements: VerifyAccountStatements
-    ):
-        await verify_account_statements.given_pending_account_with_verification_code()
-        await verify_account_statements.verify_with_the_issued_code_when_final_commit_fails()
-        verify_account_statements.assert_verification_failed_and_rolled_back()
-
-    async def test_should_surface_verification_failed_not_secondary_when_rollback_itself_fails(
-        self, verify_account_statements: VerifyAccountStatements
-    ):
-        await verify_account_statements.given_pending_account_with_verification_code()
-        await verify_account_statements.verify_with_the_issued_code_when_rollback_itself_fails()
-        verify_account_statements.assert_verification_failed_when_rollback_also_fails()
-
     async def test_should_reject_generically_when_the_account_has_no_issued_code(
         self, verify_account_statements: VerifyAccountStatements
     ):
@@ -73,3 +60,24 @@ class TestVerifyAccountUsecase:
         await verify_account_statements.verify_an_account_that_has_no_code()
 
         verify_account_statements.assert_rejected_as_invalid_or_expired_with_no_code_to_look_at()
+
+
+class TestVerifyAccountWriteFailure:
+    """The write fails, not the request: the client must learn nothing about why."""
+
+    async def test_should_rollback_and_raise_sanitized_error_when_final_commit_fails(
+        self, verify_account_failure_statements: VerifyAccountFailureStatements
+    ):
+        await verify_account_failure_statements.given_pending_account_with_verification_code()
+        await (
+            verify_account_failure_statements.verify_with_the_issued_code_when_final_commit_fails()
+        )
+        verify_account_failure_statements.assert_verification_failed_and_rolled_back()
+
+    async def test_should_surface_verification_failed_not_secondary_when_rollback_itself_fails(
+        self, verify_account_failure_statements: VerifyAccountFailureStatements
+    ):
+        await verify_account_failure_statements.given_pending_account_with_verification_code()
+        statements = verify_account_failure_statements
+        await statements.verify_with_the_issued_code_when_rollback_itself_fails()
+        verify_account_failure_statements.assert_verification_failed_when_rollback_also_fails()

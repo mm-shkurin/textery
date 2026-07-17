@@ -7,6 +7,7 @@ from statements.refresh_statements import RefreshStatements
 from statements.register_atomic_write_statements import RegisterAtomicWriteStatements
 from statements.register_statements import RegisterStatements
 from statements.requeue_stale_generations_statements import RequeueStaleGenerationsStatements
+from statements.verify_account_failure_statements import VerifyAccountFailureStatements
 from statements.verify_account_statements import VerifyAccountStatements
 
 
@@ -48,3 +49,8 @@ def login_statements():
 @pytest.fixture
 def refresh_statements():
     return RefreshStatements()
+
+
+@pytest.fixture
+def verify_account_failure_statements():
+    return VerifyAccountFailureStatements()

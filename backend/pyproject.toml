@@ -35,6 +35,7 @@ pythonpath = [
     "adapters/rest/tests",
     "adapters/security/tests",
     "adapters/generation_provider/tests",
+    "adapters/generation_provider/tests/provider",
 ]
 
 # --- Linter / formatter ------------------------------------------------------
@@ -77,6 +78,7 @@ known-first-party = [
     "error_handling",
     "fake",
     "generation",
+    "gigachat_fixtures",
     "hashing",
     "model",
     "provider",

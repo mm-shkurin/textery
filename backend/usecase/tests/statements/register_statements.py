@@ -1,18 +1,15 @@
 import re
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from uuid import UUID
 
 from scope.register_request_scope import RegisterRequestScope
 
-from auth.register_user import RegisterUser
-from fake.auth.fake_account_repository import FakeAccountRepository
-from fake.auth.fake_clock import FakeClock
 from fake.auth.fake_password_hasher import FakePasswordHasher
-from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
-from shared.exceptions import ConflictException, ValidationException
+from shared.exceptions import ConflictException
+from statements.register_base import RegisterStatementsBase
 
 
-class RegisterStatements:
+class RegisterStatements(RegisterStatementsBase):
     EXPECTED_INVALID_EMAIL_ERROR_CODE = "INVALID_EMAIL"
     EXPECTED_INVALID_EMAIL_MESSAGE = "The email address is not valid."
     EXPECTED_INVALID_PASSWORD_ERROR_CODE = "INVALID_PASSWORD"
@@ -21,14 +18,9 @@ class RegisterStatements:
     EXPECTED_PASSWORD_MISMATCH_MESSAGE = "The password confirmation does not match."
     EXPECTED_EMAIL_ALREADY_REGISTERED_ERROR_CODE = "EMAIL_ALREADY_REGISTERED"
     EXPECTED_EMAIL_ALREADY_REGISTERED_MESSAGE = "An account with this email address already exists."
-    FIXED_CLOCK_NOW = datetime(2026, 7, 14, 12, 0, 0, tzinfo=UTC)
 
     def __init__(self) -> None:
-        self.thrown_exception: Exception | None = None
-        self.account_repository = FakeAccountRepository()
-        self.password_hasher = FakePasswordHasher()
-        self.clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
-        self.verification_code_repository = FakeVerificationCodeRepository()
+        super().__init__()
         self.returned_account = None
         self.returned_verification_code = None
         self.registered_email: str | None = None
@@ -57,7 +49,7 @@ class RegisterStatements:
         self.account_repository.raise_on_save = ConflictException(
             "account with this email already exists"
         )
-        await self._execute_register(RegisterRequestScope.builder())
+        await self._register_and_capture_result(RegisterRequestScope.builder())
 
     async def register_and_return_account(self) -> None:
         await self._register_and_capture_result(RegisterRequestScope.builder())
@@ -66,43 +58,6 @@ class RegisterStatements:
         await self._register_and_capture_result(
             RegisterRequestScope.builder(email="User@Example.RU")
         )
-
-    async def _register_and_capture_result(self, scope: RegisterRequestScope) -> None:
-        self.registered_email = scope.email
-        result = await self._execute_register(scope)
-        if result is not None:
-            self.returned_account = result.account
-            self.returned_verification_code = result.verification_code
-
-    async def _execute_register(self, scope: RegisterRequestScope):
-        try:
-            return await RegisterUser(
-                password_hasher=self.password_hasher,
-                account_repository=self.account_repository,
-                clock=self.clock,
-                verification_code_repository=self.verification_code_repository,
-            ).execute(
-                email=scope.email,
-                password=scope.password,
-                confirm_password=scope.confirm_password,
-            )
-        except Exception as exc:
-            self.thrown_exception = exc
-            return None
-
-    async def _attempt_registering(self, scope: RegisterRequestScope) -> None:
-        try:
-            await RegisterUser(
-                password_hasher=self.password_hasher,
-                account_repository=self.account_repository,
-                verification_code_repository=self.verification_code_repository,
-            ).execute(
-                email=scope.email,
-                password=scope.password,
-                confirm_password=scope.confirm_password,
-            )
-        except Exception as exc:
-            self.thrown_exception = exc
 
     def assert_invalid_email_error_raised(self) -> None:
         self._assert_validation_error_raised(
@@ -131,12 +86,6 @@ class RegisterStatements:
         assert self.account_repository.saved_accounts == [], (
             f"expected no Account to be persisted when registration is rejected "
             f"for a duplicate email, got {self.account_repository.saved_accounts}"
-        )
-
-    def assert_registration_succeeded(self) -> None:
-        assert self.thrown_exception is None, (
-            f"expected no exception to be raised, got "
-            f"{type(self.thrown_exception).__name__}: {self.thrown_exception}"
         )
 
     def assert_account_persisted_with_server_owned_fields(self) -> None:
@@ -233,16 +182,12 @@ class RegisterStatements:
             f"got {self.verification_code_repository.saved_codes}"
         )
 
-    def _assert_validation_error_raised(
-        self, expected_error_code: str, expected_message: str
-    ) -> None:
-        assert isinstance(self.thrown_exception, ValidationException), (
-            f"expected ValidationException to be raised, got "
-            f"{type(self.thrown_exception).__name__ if self.thrown_exception else 'no exception'}"
-        )
-        assert self.thrown_exception.error_code == expected_error_code, (
-            f"expected error_code '{expected_error_code}', got '{self.thrown_exception.error_code}'"
-        )
-        assert self.thrown_exception.message == expected_message, (
-            f"expected message '{expected_message}', got '{self.thrown_exception.message}'"
-        )
+    async def _register_and_capture_result(self, scope: RegisterRequestScope) -> None:
+        self.registered_email = scope.email
+        result = await self._run_register(scope)
+        if result is not None:
+            self.returned_account = result.account
+            self.returned_verification_code = result.verification_code
+
+    async def _attempt_registering(self, scope: RegisterRequestScope) -> None:
+        await self._run_register(scope)
