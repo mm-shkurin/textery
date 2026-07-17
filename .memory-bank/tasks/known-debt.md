@@ -47,12 +47,22 @@ to authorize against yet — so the mitigation is scope/lifecycle, not a guard.
 of the real history feature) no later than story #7 (Authorization) — never let this
 endpoint keep returning cross-user data once a `User` concept exists.
 
-**Status 2026-07-17:** the premise expired — story 7 shipped `/login`, and task 4 gave
-`generations` an `owner_id`, so a principal to authorize against now exists. The list
-endpoint itself was never implemented: `generations_list.yaml` is a spec with no route
-behind it, so there is nothing live to gate. The debt is now "do not implement this
-unscoped", recorded in that spec's own description. The sibling hole that WAS live —
-anonymous `POST /generations` and by-id cross-account read — is closed (task 4).
+**CLOSED 2026-07-17.** The premise expired the same day: story 7 shipped `/login`, task 4
+gave `generations` an `owner_id`, and `GET /api/v1/generations` was then implemented
+**scoped** — Bearer required, `owner_id` a query predicate, keyset-paginated
+(`feat: owner-scoped history for generations and documents`). It never shipped unscoped:
+until that commit the route did not exist at all, only `generations_list.yaml` did. The
+sibling hole that WAS live — anonymous `POST /generations` and the by-id cross-account
+read — is closed by task 4 (`ProductSpecification/tasks/done/4-bug-generations-auth/`).
+
+`GET /api/v1/documents` landed in the same commit with the same shape.
+
+The remaining shape of this debt is narrower: the endpoints are the **stand-in for
+history**, not the real history feature (story #12 — no list/search/filter, no titles,
+no rename/delete). Whoever builds #12 inherits working owner-scoped paging rather than
+a blank page. Ordering is `created_at DESC, id DESC` — deliberately not `updated_at`,
+because a keyset anchor must be immutable; a "recently edited" sort needs a different
+mechanism, not a swapped ORDER BY.
 
 ## 5. Generation progress UI is a fake/simple loading state, not real streaming
 Decided 2026-07-07: while a generation is `pending`/`in_progress` (can be 10-60+
