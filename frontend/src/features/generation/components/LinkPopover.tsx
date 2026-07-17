@@ -12,7 +12,11 @@ export const LINK_INVALID_MESSAGE = 'Не удалось применить сс
 const HAS_SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:/
 
 const IS_EMAIL = /^[^\s@\/]+@[^\s@\/]+$/
-const HOST_SHAPE = /^[\p{L}\p{N}-]+(\.[\p{L}\p{N}-]+)*(:\d+)?([\/?#][\w\/%.-]*)?$/u
+// The path class is `\S*`, deliberately: a path ends at whitespace and nowhere
+// else. Enumerating its characters is what breaks — `\w` stays ASCII-only even
+// under `/u` (dropping `Война_и_мир`) and excludes `@` (dropping `/@vsauce`),
+// which is the mutant `ManualEditor.link.urlShapes.guards.test.tsx` exists to kill.
+const HOST_SHAPE = /^[\p{L}\p{N}-]+(\.[\p{L}\p{N}-]+)*(:\d+)?([\/?#]\S*)?$/u
 function normalizeHref(url: string): string {
   if (HOST_SHAPE.test(url)) return `http://${url}`
   if (HAS_SCHEME.test(url)) return url
