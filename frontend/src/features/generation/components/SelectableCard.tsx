@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
+import './SelectableCard.css'
 
 interface SelectableCardProps {
   available: boolean

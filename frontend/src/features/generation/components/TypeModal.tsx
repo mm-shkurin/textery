@@ -1,6 +1,8 @@
 import { SelectableCard } from './SelectableCard'
 import { DOCUMENT_TYPES, type DocumentType } from '../documentTypes'
 import './Modal.css'
+import './SelectableCard.css'
+import './TypeModal.css'
 
 interface TypeModalProps {
   onSelect: (type: DocumentType) => void

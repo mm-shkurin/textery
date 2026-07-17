@@ -93,3 +93,36 @@
     transform: rotate(360deg);
   }
 }
+
+/* 768px matches the breakpoint ManualEditor.css already uses — the editor is one surface and
+   splitting it across two breakpoints would make the padding step at a different width than the
+   toolbar reflows. */
+@media (max-width: 768px) {
+  /* WRAP, not scroll. Seventeen 34px buttons plus dividers, the status text and the save button
+     are ~700px of content; at 375px they would push the toolbar's own width out and take the
+     page's horizontal scrollbar with them. The mobile mockup (04-editor-content.html:33) settles
+     this: `flex-wrap:wrap; gap:2px; padding:10px 12px`. Matched here rather than reinvented —
+     a horizontal-scroll toolbar would hide controls behind a gesture nobody is told about. */
+  .me-toolbar {
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 10px 12px;
+  }
+
+  /* `margin-left: auto` pushes the status to the far right on one line; once the toolbar wraps,
+     that same rule strands it alone on a line with the save button jammed against the edge.
+     Giving the block the full row instead keeps Сохранить reachable with a thumb and stops the
+     save status from being clipped mid-word. */
+  .me-toolbar-status {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+    padding-top: 6px;
+  }
+
+  /* 44px is the minimum comfortable touch target; the desktop button is a 34px mouse target and
+     the save action is the one control in this toolbar that loses work when mis-tapped. */
+  .me-save-btn {
+    min-height: 44px;
+  }
+}

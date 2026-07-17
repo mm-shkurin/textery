@@ -60,3 +60,37 @@
   font-size: 12px;
   color: var(--error);
 }
+
+/* The popover is a fixed 260px anchored to the link button's left edge. On a 375px screen the
+   button can sit far enough right that 260px runs off the viewport — and the popover cannot be
+   scrolled to, because `.me-editor-shell` clips it (`overflow: hidden`, ManualEditor.css).
+   Clamping the width to the viewport keeps the URL field and both actions reachable.
+   `min()` rather than a media query alone: the constraint is the viewport's width, not a device
+   class, so it should hold at every size. */
+.me-link-popover {
+  width: min(260px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+}
+
+@media (max-width: 768px) {
+  /* Anchored right on narrow screens: the link button lives in a toolbar that now wraps, so it
+     is as likely to be near the right edge as the left, and `left: 0` would open the popover
+     off-screen from there. */
+  .me-link-popover {
+    left: auto;
+    right: 0;
+  }
+
+  /* 44px touch targets — the desktop buttons are sized for a cursor. Apply/Отмена sit next to
+     each other, and mis-tapping Отмена discards a typed URL. */
+  .me-link-apply,
+  .me-link-cancel {
+    min-height: 44px;
+  }
+
+  /* 16px stops iOS Safari zooming the whole page on focus — below 16px it treats the field as
+     too small to read and rescales, which then leaves the popover half off-screen. */
+  .me-link-input {
+    font-size: 16px;
+  }
+}

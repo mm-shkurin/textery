@@ -56,3 +56,16 @@
   color: var(--text-muted);
   padding: 0 4px;
 }
+
+/* Mobile mockup 04-editor-content.html:26 — `flex-wrap:wrap` on the breadcrumb. The row is
+   "← Назад" plus a chip carrying the document type, and the type is a server-owned string:
+   'сочинение' is already 10 characters and nothing stops a longer one arriving. Without wrap
+   the chip is squeezed or pushes the row past the viewport; with it, the chip drops to its own
+   line and stays readable. */
+@media (max-width: 768px) {
+  .me-breadcrumb {
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+}

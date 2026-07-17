@@ -1,7 +1,7 @@
 import { BrowserRouter, Route, Routes, useInRouterContext } from 'react-router-dom'
-import { RegisterForm } from './features/auth/components/RegisterForm'
-import { LoginForm } from './features/auth/components/LoginForm'
-import { VerifyCodeForm } from './features/auth/components/VerifyCodeForm'
+import { RegisterForm } from '../features/auth/components/RegisterForm'
+import { LoginForm } from '../features/auth/components/LoginForm'
+import { VerifyCodeForm } from '../features/auth/components/VerifyCodeForm'
 import { DocumentGenerationFlow } from './DocumentGenerationFlow'
 
 function AppRoutes() {

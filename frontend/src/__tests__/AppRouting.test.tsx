@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import App from '../App'
+import App from '../app/App'
 
 describe('App routing', () => {
   // RED: react-router-dom is not installed yet and App has no router/routes.

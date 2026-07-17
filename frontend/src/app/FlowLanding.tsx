@@ -1,7 +1,7 @@
-import { LandingPage } from './features/landing/components/LandingPage'
-import { TypeModal } from './features/generation/components/TypeModal'
-import { ModeModal, type GenerationMode } from './features/generation/components/ModeModal'
-import { DOCUMENT_TYPE_LABELS, type DocumentType } from './features/generation/documentTypes'
+import { LandingPage } from '../features/landing/components/LandingPage'
+import { TypeModal } from '../features/generation/components/TypeModal'
+import { ModeModal, type GenerationMode } from '../features/generation/components/ModeModal'
+import { DOCUMENT_TYPE_LABELS, type DocumentType } from '../features/generation/documentTypes'
 
 interface FlowLandingProps {
   step: 'landing' | 'type' | 'mode'
