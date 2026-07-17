@@ -11,7 +11,7 @@ def _build_generation():
         volume_pages=3,
         requirements=None,
         extra_wishes=None,
-        document_type="Доклад",
+        document_type="доклад",
     )
 
 

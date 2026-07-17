@@ -2,6 +2,7 @@ import unicodedata
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+from document.document_type import SUPPORTED_DOCUMENT_TYPES, DocumentType
 from shared.exceptions import ValidationException
 
 MIN_VOLUME_PAGES = 1
@@ -21,6 +22,9 @@ OUT_OF_RANGE_VOLUME_MESSAGE = (
 TOPIC_TOO_LONG_MESSAGE = f"topic must be at most {MAX_TOPIC_LENGTH} characters"
 REQUIREMENTS_TOO_LONG_MESSAGE = f"requirements must be at most {MAX_REQUIREMENTS_LENGTH} characters"
 EXTRA_WISHES_TOO_LONG_MESSAGE = f"extra_wishes must be at most {MAX_EXTRA_WISHES_LENGTH} characters"
+INVALID_DOCUMENT_TYPE_MESSAGE = (
+    f"document_type must be one of: {', '.join(SUPPORTED_DOCUMENT_TYPES)}"
+)
 PENDING_STATUS = "pending"
 IN_PROGRESS_STATUS = "in_progress"
 COMPLETED_STATUS = "completed"
@@ -102,8 +106,40 @@ class Generation:
             volume_pages=volume_pages,
             requirements=requirements,
             extra_wishes=extra_wishes,
-            document_type=document_type,
+            document_type=cls._validate_document_type(document_type),
         )
+
+    @staticmethod
+    def _validate_document_type(document_type: str) -> str:
+        """Reject anything outside the four supported types.
+
+        This factory validated topic, volume, requirements and extra_wishes and
+        passed document_type straight through -- while Document.create ran the
+        identical field through this same value object. So POST /documents
+        rejected "реферат "; POST /generations accepted any string at all.
+
+        It is not only an inconsistency. Unlike documents, the generations table
+        carries no CHECK constraint on this column, so nothing downstream caught
+        it either; and GigaChatProvider interpolates the value straight into the
+        prompt ("{document_type} на тему: {topic}"). An unvalidated field that
+        reaches an LLM prompt is an injection surface, and this one was the first
+        word of it.
+
+        DocumentType is reused rather than reimplemented: the allowlist is one
+        tuple, and a second copy here would be the drift this commit is removing.
+        """
+        try:
+            return DocumentType(document_type).value
+        except ValueError as error:
+            # error_code="INVALID_DOCUMENT_TYPE", matching CreateDocument, rather
+            # than the bare VALIDATION_ERROR this factory's other rules raise. It
+            # is the same field under the same allowlist, so a client that learned
+            # to handle the code from /documents handles it here unchanged -- and
+            # the shared handler already maps it to 422.
+            raise ValidationException(
+                error_code="INVALID_DOCUMENT_TYPE",
+                message=INVALID_DOCUMENT_TYPE_MESSAGE,
+            ) from error
 
     @staticmethod
     def _is_out_of_range_volume(volume_pages: int | None) -> bool:

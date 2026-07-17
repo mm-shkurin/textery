@@ -55,7 +55,7 @@ def _build_generation():
         volume_pages=3,
         requirements=None,
         extra_wishes=None,
-        document_type="Доклад",
+        document_type="доклад",
     )
 
 
@@ -93,7 +93,7 @@ class TestGenerateHappyPath:
 
         assert completions_call.args[0] == COMPLETIONS_URL
         assert completions_call.kwargs["headers"] == {"Authorization": f"Bearer {ACCESS_TOKEN}"}
-        expected_prompt = "Доклад на тему: Космос (3 стр.)"
+        expected_prompt = "доклад на тему: Космос (3 стр.)"
         assert completions_call.kwargs["json"] == {
             "model": "GigaChat",
             "messages": [{"role": "user", "content": expected_prompt}],
