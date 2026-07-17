@@ -32,3 +32,45 @@
 **Where:** `lineWrapMark.ts`-derived marks (`heading3Mark.ts`, `blockquoteMark.ts`); contrast `codeBlockMark.ts:23`, whose `getAttrs` arrow *is* code and so was correctly flagged uncovered in 7.4.
 **Implication:** Coverage numbers are not evidence for or against a round-trip — `<pre>` broke silently in 7.4 at 100%. Every mark needs an explicit `*.parseHTML.test.tsx` round-trip test. `blockquoteMark.ts` still has none (belongs to 7.2), and strike's is missing too (7.1).
 **From:** scenario 7.6 (h3-heading-active-toolbar)
+
+## Quirk: `tsc --noEmit` checks NOTHING in this repo
+
+**Quirk:** The root `tsconfig.json` is `{ "files": [], "references": [...] }`. Without `-b`, the compiler resolves **zero files** and exits 0. Every "tsc clean" claim made with `npx tsc --noEmit` is vacuous — including several recorded in `progress-frontend.md` above.
+**Where:** `frontend/tsconfig.json`. The correct commands already exist and are correct: `npm run typecheck` (`tsc -b --noEmit`) and `npm run build` (`tsc -b && vite build`). The tooling was never the problem; bypassing it was.
+**Implication:** Never invoke `tsc` directly. Vitest sees no type errors either (esbuild strips types without checking), so a broken build is invisible from both directions. This hid 7 real errors that made `npm run build` exit 2 on a merged branch.
+**From:** the Story 7 auth merge (2026-07-17)
+
+## Quirk: CI never runs on feature branches
+
+**Quirk:** `frontend-ci.yml` triggers on `push` to `[main, dev]` and on `pull_request`. Feature branches are neither, and `.claude/rules/workflow.md` says the project does **not** use PRs — so the four gates (lint / typecheck / test / build) fire for nobody until something reaches main.
+**Where:** `.github/workflows/frontend-ci.yml`.
+**Implication:** A broken build can ride a feature branch indefinitely and surface only at merge. The gates are correct and complete; only the trigger is unreachable. Proposed and not yet done: add `feature/**` to the push trigger.
+**From:** repairing the merged branch's build (2026-07-17)
+
+## Quirk: a dead vite leaves a fully working app in the tab
+
+**Quirk:** A tab loaded from one worktree's dev server keeps working after that server dies — React lives in memory, so clicking through modals is pure client state and needs no network. API calls still succeed (the backend is a separate process), so the app looks healthy while rendering a bundle from another branch entirely.
+**Where:** Cost a full diagnostic round. Symptom: the user saw `Создание документа` with a "скоро" pill on Ручной режим — copy that exists on `feature/07-authorization-frontend` and **in no revision of this branch**, while the backend log showed their logins and generations succeeding.
+**Implication:** When a reported UI contradicts the code, grep the reported *strings* against the tree before theorising about caches. A string that exists in no revision of your branch identifies the other worktree immediately. `git log -S "<their string>" --all` is the decisive command.
+**From:** the first live-build hand-off (2026-07-17)
+
+## Quirk: Windows shell mangles Cyrillic and appends \r — three near-miss bug reports
+
+**Quirk:** Three separate false backend defects were nearly filed, all shell artifacts: (1) `python -c "print(...)"` appends `\r`, so a verification code piped through it reaches the API as `120358\r` → `INVALID_OR_EXPIRED_CODE`; (2) Cyrillic in a `curl -d '...'` argument is mangled → 400 "error parsing the body"; (3) `python -m json.tool` reads stdin as cp1251, rendering a correct UTF-8 `доклад` as `РґРѕРєР»Р°Рґ`.
+**Where:** Every curl probe against the live stack from Git Bash on Windows.
+**Implication:** Send non-ASCII bodies from a **file** (`--data-binary "@file.json"` written via Python's `.encode('utf-8')`), pipe through `tr -d '\r'`, and check raw bytes with `od -c` before believing an encoding bug. All three read exactly like backend defects.
+**From:** docking to the live backend (2026-07-17)
+
+## Quirk: sessionStorage is per-tab — a new tab is an anonymous visitor
+
+**Quirk:** The session lives in `sessionStorage` (a recorded 2026-07-16 decision: a stolen token dies with the tab). The cost is that opening the app in a **new tab** signs you out — no "Мои работы", and the CTA routes to `/register`.
+**Where:** `features/auth/utils/authSession.ts`.
+**Implication:** Not a bug, but the first thing to check when someone reports "the signed-in UI is missing". Anyone handed a link must log in **in that tab**. Revisit if the sign-in friction outweighs the token-lifetime argument — that trade is the product owner's, not the code's.
+**From:** the first live-build hand-off (2026-07-17)
+
+## Quirk: a green suite is not evidence — the measured examples
+
+**Quirk:** Three times this story a fully green suite coexisted with the live defect it was supposed to guard. (1) The minimal green for the docking work passed **93/93** with both defects shipping, because the contract tests supply the idempotency key themselves and nothing constrained the caller. (2) With that fixed, replacing the key ref with an inline `crypto.randomUUID()` still passed **190/190** — the required parameter closes the keyless call structurally but cannot stop a fresh key at the call site. (3) `jsdom` reports every CSS rule as working; it has no layout engine.
+**Where:** `useDocumentInit.strictMode.test.tsx` exists solely to close (2), and kills that mutant with `expected 2 to be 1`.
+**Implication:** For anything with a live surface, the order is: mutate the fix and watch the tests fail, then drive the real thing. Neither step is ceremony. Both caught defects here that the suite could not.
+**From:** docking + history + mobile (2026-07-17)

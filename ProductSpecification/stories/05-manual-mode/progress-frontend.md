@@ -7,16 +7,25 @@ This file tracks **which work units ran**. For **what a visitor can actually do*
 by feature, read from the code rather than from these checkboxes, and explicit about the
 capabilities that look shipped but aren't — see [`functionality.md`](functionality.md).
 
-**Policy (2026-07-15):** backend is developed in a parallel branch/session and is
-unavailable on this branch. Every `red-selenium` / `green-selenium` / `demo` step
-requires a live app to drive Selenium against — until backend is available here,
-mark each as `[S]` with reason "backend unavailable on this branch (backend
-developed in parallel session/branch); no live app to drive Selenium against" (or,
-for `demo`, "same reason, no live backend to drive a visible Selenium run
-against") the moment it becomes the next step, then continue to the next
-backend-independent step (`red-frontend`, `green-frontend`, `red-frontend-api`,
-`green-frontend-api`, `align-design`). Revisit this policy once backend is
-reachable — the skipped scenarios' Selenium coverage still needs to run then.
+**~~Policy (2026-07-15)~~ — OBSOLETE as of 2026-07-17. Do not apply it to new work.**
+It said: the backend is unavailable on this branch, so mark every `red-selenium` /
+`green-selenium` / `demo` step `[S]` and carry on with the backend-independent steps.
+It also said "revisit this policy once backend is reachable — the skipped scenarios'
+Selenium coverage still needs to run then." **The backend is now reachable** (`docker
+compose up backend` in `../textery/infra`, port 8100 per `infra/.env`; Selenium 4.45
+and Chrome are installed and were driven against it today). The 34 `[S]` rows below
+carrying "backend unavailable on this branch" are **historical records, not standing
+decisions** — every one of them is now an owed debt rather than a justified skip.
+
+**This is the single largest gap in the story.** Everything below was proven in jsdom,
+which has no layout engine and no real browser semantics. Three defects this session
+were invisible to a green suite and only a real browser or a real server found them
+(see `carryover.md`, "a green suite is not evidence"). The specific things still owed
+to Selenium, each named by the scenario that deferred it: **7.9's link popover almost
+certainly clips** under `.me-editor-shell`'s `overflow: hidden` (a `z-index` cannot
+escape an ancestor's clip; jsdom cannot see it); **3.2's** caret-only `select` event
+was hand-fired via `fireEvent` and never proven to fire in a browser; **4.2's** save
+queue was never exercised through a real click dispatch.
 
 ## Frontend Scenarios (02_UI_Tests.md)
 
@@ -283,6 +292,94 @@ policy.
 **Reachable gap — genuine, and it is 7.8's:** unlike 7.6's `heading3Mark` (where a bare `{ tag: 'h3' }` rule is declarative data that coverage structurally cannot see), `alignCenterMark.ts:17`'s `getAttrs` **is executable code** — so coverage can and does see it, and reports it fully unhit, both branches. This is 7.8's exact analogue of 7.4's `codeBlockMark.ts:23` finding. `ManualEditor.textAlign.test.tsx` only drives the toolbar-click path, which exercises `renderHTML`; nothing loads a `<div style="text-align: center">` back through `existingDocumentId`, so the parse side is unverified. Both branches are reachable by any document reload/paste/undo path. Direct throwaway probe: `before<div style="text-align: center">hello world</div>after` round-trips **byte-exact** (true branch), and `before<div>hello world</div>after` yields `beforehello worldafter` — the plain div is unwrapped with no mark applied (false branch, correct fall-through). So this is **untested-but-working**, not a live bug; `red-frontend-parseHTML`/`green-frontend-parseHTML` steps inserted above to lock both branches.
 
 **Weakens the blockTags theory further (carry to 7.9+):** 7.4 attributed `<pre>`'s dropped wrapper to ProseMirror's hardcoded `blockTags` list, and 7.6 already narrowed that to "matching a *wrapper* tag with no corresponding rule, not blockTags membership as such." `div` is also in `blockTags` (`prosemirror-model/dist/index.js:2683`) and is likewise a wrapper — yet it parses correctly here. The operative difference is the `getAttrs` rule, not the tag's blockTags membership. Treat any future "tag X is in blockTags, so its mark rule won't fire" prediction as unproven until probed.
+
+## Owner-scoped history + mobile (2026-07-17, after docking)
+
+Both landed outside the TDD ceremony by explicit instruction ("отойти от фреймворка, торопимся"),
+so there are no red/green rows for them. What replaced the ceremony was **mutation checks and
+live-stack verification** — the parts of the discipline that produce evidence, kept; the parts
+that produce paperwork, dropped. Recorded here so the absence of `[x]` rows is not read as an
+absence of work or of proof.
+
+### History — `GET /documents|generations?limit&cursor`
+
+Entry point: a **Мои работы** action in the header, rendered only when signed in (both endpoints
+401 without a token). Two tabs, keyset paging, rows reopen a document in the editor.
+
+**Contract measured by curl before any code was written** — the endpoints did not exist on the
+running instance when first asked for (405 Method Not Allowed; the container predated the
+backend's commit), so this waited on a rebuild:
+
+```
+GET /api/v1/documents?limit=2          -> {"items":[…2], "next_cursor":"<base64 timestamp|uuid>"}
+GET /api/v1/documents?limit=2&cursor=… -> {"items":[…1], "next_cursor":null}   <- null = end
+GET /api/v1/documents (new user)       -> {"items":[], "next_cursor":null}
+?cursor=garbage                        -> 400 {"error_code":"INVALID_CURSOR"}
+?limit=0 / ?limit=999                  -> 400   (bounds enforced; 20 is the default)
+no token                               -> 401
+```
+
+List items carry metadata only — **no `content`** — so opening a row still costs a
+`GET /documents/{id}`. Right for a list.
+
+**Two tabs, not one merged feed, and the reason is the contract rather than taste:** the two
+endpoints paginate on independent keyset cursors, so interleaving them by date would either
+mis-order rows at page boundaries or require reading both lists to the end before rendering
+anything. A single feed needs one server-side endpoint. Raised with the user; two tabs chosen.
+
+**`hasMore` derives from the CURSOR, never `items.length === limit`** — the backend's last page
+carries items *and* a null cursor, so a length check would fire a pointless request on every list
+whose size divides evenly by the limit, and would keep "показать ещё" on screen after the list had
+visibly ended. **Error beats empty** in `HistoryRows`: a failed fetch also leaves items empty, and
+telling someone "you have no documents" when the truth is "we could not ask" invites them to
+recreate work that already exists.
+
+**Mutation-checked, four candidates, all killed:** `hasMore` from `items.length` → 2 failed;
+paging replaces instead of appending → 1 failed; open passes only the id and drops the wire type →
+1 failed; error swallowed into the empty state → 1 failed. Then verified against the live stack
+through the real components: empty state on a real new account, a real row rendering
+`доклад 17 июля 2026 г.`, and a click yielding the real `documentId|доклад`.
+
+**This finally wired `existingDocumentId`** — built in scenario 6.2 and left unconnected because
+until history existed there was no entry point. Reopening needs the wire's Cyrillic type back as
+the app's own, so `documentTypeFromWire` inverts `WIRE_DOCUMENT_TYPE` (derived from it, not a
+second hand-kept table). Back from a history-opened editor returns to history, not to the mode
+modal, which would offer to pick a mode for a document that already has one.
+
+**Generation rows are deliberately inert.** Opening one means the chat workspace, which this story
+does not own; a dead click is worse than an honest absence.
+
+### Mobile
+
+Verified in a true 375×812 viewport: `scrollWidth === clientWidth === 375` on landing, history,
+both modals and the editor; toolbar wraps to 179px tall; **0 of 18 toolbar buttons past the right
+edge**. Toolbar **wraps rather than scrolls**, per the mobile mockup
+(`04-editor-content.html:33`) — ~700px of controls behind a horizontal-scroll gesture nobody is
+told about would hide half of them. `LinkPopover` was a fixed 260px anchored `left: 0`; on 375px
+it could run off-viewport **and could not be scrolled to**, because `.me-editor-shell` clips it —
+now `width: min(260px, calc(100vw - 32px))`, a `min()` rather than a media query alone, because
+the constraint is the viewport rather than a device class.
+
+**Tooling trap worth keeping: `--window-size=375` in headless Chrome yields a 489px viewport** —
+the flag counts browser chrome. The first run of this check silently measured the wrong width and
+reported success. CDP `Emulation.setDeviceMetricsOverride` is the honest lever.
+
+### Structure, forced by the 200-line limit and worth recording
+
+`App.tsx` reached 247 lines; the first fix shaved it to **199**, which is not "under the limit" but
+"breaks on the next edit" — the user called that out, correctly. The real seam was that the file
+held a state machine *and* its renderer: transitions moved to `useFlowNavigation`, and the flow
+files moved out of the project root (where they belonged to neither `features/` nor `shared/`)
+into `src/app/`. Now `App.tsx` 35, `DocumentGenerationFlow.tsx` 98, `FlowLanding.tsx` 60,
+`useFlowNavigation.ts` 128.
+
+The same pass surfaced a real duplication: `DOCUMENT_TYPE_LABELS` was a **second hand-maintained
+copy** of `DOCUMENT_TYPES[].name` — now derived, so renaming a modal card renames the editor's
+breadcrumb. And `Modal.css` (229 lines, flagged "pre-existing, out of scope" twice and never
+fixed) split **by owner** rather than by line count: its classes belonged to three different
+components while both modals imported all of it. Now `Modal.css` 75 (chrome only),
+`SelectableCard.css` 48, `TypeModal.css` 37, `ModeModal.css` 58. **No file in `src/` exceeds 200
+lines.**
 
 ## DOCKED — the editor works against the live backend (2026-07-17)
 

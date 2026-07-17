@@ -9,9 +9,41 @@ remains the spec of record — but it names three places where those specs are n
 wrong or incomplete, and one decision (auth) taken by the product owner on 2026-07-17 that the
 specs do not yet reflect.
 
-> **Status: the frontend does NOT work against these contracts today.** Five blockers, all
-> verified by execution, are listed at the bottom. Do not read "the frontend is done" from
-> `progress-frontend.md`'s checkboxes — no call in this story has ever reached a real server.
+> **STATUS 2026-07-17 (end of day): DOCKED AND WORKING.** Everything below was written while the
+> frontend could not create a single document; it is kept as the record of what was asked and
+> what the answers turned out to be. The corrections are collected here at the top — read these
+> first, because in three places the document below is now **wrong**, and it was wrong in the
+> direction of trusting a spec over a measurement.
+>
+> **1. Auth: asked for, and delivered.** All three document endpoints now require a Bearer token.
+> Measured: anonymous → 401, `Bearer garbage` → 401, on documents and generations alike. The
+> earlier finding that `POST /generations` served anonymous callers is **closed**.
+>
+> **2. `document_type`: the ask was declined, and the fallback is live.** This document asked for
+> Latin on the wire. The backend kept Cyrillic (`доклад | эссе | сочинение | реферат`), which was
+> always the stated alternative, so the client now translates at the API boundary
+> (`WIRE_DOCUMENT_TYPE` in `documentTypes.ts`). Measured: `"doklad"` → 422 INVALID_DOCUMENT_TYPE,
+> `"доклад"` → 201. **This was the real blocker** — the one that stopped every create — and the
+> section below misidentified it as secondary.
+>
+> **3. Server-owned fields are IGNORED, not rejected — the spec lied.** Section 5 below calls the
+> client's `content: ''` a defect on the grounds that `documents_create.yaml` promises a 422.
+> Measured: POST with `{"status":"completed","content":"<p>x</p>"}` returns **201**,
+> `status="draft"`, `content=""`. That "defect" was never real. `content` is still omitted — a
+> request should say what it means — but for hygiene, not fear.
+>
+> **4. Sanitization and 409 behave exactly as this document asked**, and both are now handled:
+> `PUT` returns the sanitized content (`<script>` stripped with its contents, `<br />` → `<br>`)
+> and the client adopts it; a stale version with *different* content returns 409 VERSION_CONFLICT
+> and the client refetches and retries once. Note the subtlety that nearly became a false bug
+> report: a stale version with *identical* content returns **200**, correctly, as an idempotent
+> replay — so a naive 409 probe measures nothing.
+>
+> **5. New since: two history endpoints.** `GET /api/v1/documents|generations?limit&cursor` →
+> `{items, next_cursor}` with keyset paging, both owner-scoped and 401 without a token. Wired and
+> live; see `functionality.md`'s History section. The one open ask: they paginate on **independent
+> cursors**, so a single merged "my work" feed is not honestly buildable client-side. If that feed
+> is wanted, it needs one server-side endpoint.
 
 ---
 
@@ -146,7 +178,13 @@ the server does not have.
 sanitized `content` in the `PUT` 200 as the spec already says. The frontend owes the other half —
 adopting it.
 
-## 5. The frontend's five blockers — all measured, none fixed
+## 5. ~~The frontend's five blockers — all measured, none fixed~~ (HISTORICAL — all resolved)
+
+> **Every item in this section is closed.** See the corrections at the top of this file for what
+> each one turned out to be — two were real and fixed, one (auth) the backend delivered, one
+> (`content: ''`) was never a defect because the spec misdescribed the server, and one
+> (`document_type`) was the actual blocker and settled by translating at the client's boundary.
+> Kept unedited below as the record of what was believed on the morning of 2026-07-17.
 
 Ordered by what bites first on docking.
 

@@ -6,40 +6,93 @@ This is the complement to [`progress-frontend.md`](progress-frontend.md): that f
 what looks finished but isn't. Where the two disagree, the code wins — everything below was
 read from the source, not from the checkboxes.
 
-Scope note: the backend is developed on a parallel branch and is unreachable here. Every
-Selenium and demo step in this story is `[S]`, so **nothing below has ever run in a real
-browser against a real server**. The evidence is jsdom component tests.
+Scope note, corrected 2026-07-17: the backend is reachable and this story is docked to it.
+Everything below marked "measured" was driven against the running stack. What is still only
+jsdom-deep is called out where it matters — the distinction is the whole point of this file.
 
-## Docking readiness: not ready — five blockers (2026-07-17)
+## Docking status: WORKING (2026-07-17)
 
-**Read this before anything below.** Everything in this document describes behaviour verified
-*in jsdom against mocks the tests themselves wrote*. Measured against the real contracts in
-`api-specs/documents_*.yaml`, **the editor does not currently create, load, or save a single
-document.** Full detail and the backend's side: [`docking-requirements.md`](docking-requirements.md).
+The editor creates, loads and saves against the live backend, and Story 7's auth is merged, so
+manual mode sits behind a session. Verified through the real client with no mocks in the path:
 
-1. **No authentication anywhere.** `Authorization`/`Bearer`/`access_token` — zero hits across
-   `frontend/src`. No token storage, no auth files; `generationApi.ts` (story #1) is the same.
-   Auth lives on the unmerged `feature/07-authorization-frontend`. The product decision of
-   2026-07-17 — *a visitor who is not authorized can neither generate nor write* — means every
-   call in this story currently fails at the door.
-2. **`POST` sends `content: ''`**, a server-owned field the spec answers with `422`. No document
-   is created, so nothing downstream of creation happens at all.
-3. **`document_type` is Latin (`doklad`) against the spec's Cyrillic enum (`доклад`)** — the
-   *other* `422`, independent of (2). Fixing either alone still creates nothing.
-4. **`version` is dropped on create**, so the first save ships `useState(1)`, a client-side
-   guess, and earns a `409` blaming a concurrent save that never happened.
-5. **`Idempotency-Key` is minted per call**, making the spec's replay branch unreachable; with
-   `StrictMode`'s double-invoked effects that is two documents per dev mount (measured:
-   `fetch count = 2, distinct keys = 2`).
+```
+CREATE   -> {"documentId":"cb4cdb8b-…","status":"draft","version":1}
+SENT     -> <p>Живой текст</p><script>alert(1)</script><br />
+SAVE     -> {"version":2,"content":"<p>Живой текст</p><br>"}   <- script stripped, <br /> normalised
+GET      -> content:"<p>Живой текст</p><br>"                    <- reopen matches
+CONFLICT -> {"version":3,"content":"<p>two</p>"}                <- 409 refetched and retried itself
+```
 
-(2), (4) and (5) have a red phase committed; it is knowingly incomplete — see
-`progress-frontend.md`'s "Backend-docking contract gaps".
+Database, the backend session's own acceptance check (`owner_id` null would mean the token never
+arrived):
+
+```
+ document_type | status | version |        content         | has_owner
+ доклад        | draft  |       3 | <p>two</p>             | t
+ доклад        | draft  |       2 | <p>Живой текст</p><br> | t
+```
+
+**This section previously listed five blockers. Four are resolved and the fifth was never real** —
+recorded rather than quietly deleted, because the reasons matter more than the outcome:
+
+1. ~~No authentication anywhere~~ — Story 7's merge brought `authorizedRequest` (Bearer, one
+   renewal per expiry burst, replay). `documentApi` was the last caller of the old auth-free
+   client; it now routes through `send` → `authorizedRequest`, so all three calls carry the token.
+2. ~~`POST` sends `content: ''` → 422~~ — **the spec was wrong, not the client.** Measured: a POST
+   carrying `{"status":"completed","content":"<p>x</p>"}` returns **201** with `status="draft"`,
+   `content=""`. Server-owned fields are **ignored, not rejected**. `content` is still not sent,
+   but for hygiene — a request should say what it means — not from fear of a 422 that never fires.
+3. **`document_type` Latin vs Cyrillic — this was the real blocker, and it settled against us.**
+   `docking-requirements.md` asked the backend for Latin; the backend kept Cyrillic. Measured:
+   `{"document_type":"doklad"}` → **422 INVALID_DOCUMENT_TYPE**, `{"document_type":"доклад"}` →
+   201. `WIRE_DOCUMENT_TYPE` now translates at the API boundary.
+4. ~~`version` dropped on create~~ — threaded from the create response and made **required, not
+   optional**: an optional field would let `result.version ?? 1` keep the guess alive under a
+   green suite, which is exactly what the premortem measured.
+5. ~~`Idempotency-Key` minted per call~~ — the caller owns it now (`useDocumentInit` mints one per
+   mount into a `useRef`), so StrictMode's double-invoked effect is a replay rather than a second
+   document.
 
 **How this stayed invisible:** every `red-frontend-api` step was `[S]`'d as *"no API call:
 formatting is client-side editor state only"*. True of toggling marks, false of the payload —
-`ManualEditor.tsx:56` sends `editor.getHTML()` over the wire. 7.9's premortem named that
+`ManualEditor.tsx` sends `editor.getHTML()` over the wire. 7.9's premortem named that
 misclassification and it was recorded, not acted on. The specs were the only contract and nobody
-had read them against the client.
+had read them against the client until they were curl'd.
+
+## History — "Мои работы"
+
+A signed-in visitor gets a **Мои работы** action in the header (absent when signed out, because
+both list endpoints 401 without a token). It opens a screen with two tabs: **Мои документы** and
+**Генерации**, each paging on `GET /api/v1/documents|generations?limit&cursor`.
+
+**Two tabs rather than one merged feed, and the reason is the contract, not taste:** the two
+endpoints paginate on independent keyset cursors, so interleaving them by date would either
+mis-order rows at page boundaries or require reading both lists to the end before showing
+anything. A single feed needs one server-side endpoint.
+
+Clicking a document row reopens it in the manual editor with its saved content — this is what
+finally wired `ManualEditor`'s `existingDocumentId`, built back in scenario 6.2 and left
+unconnected because until history existed there was no entry point. Back from a history-opened
+editor returns to history, not to the mode modal (which would offer to pick a mode for a document
+that already has one). **Generation rows are deliberately not clickable**: opening one means the
+chat workspace, which this story does not own, and a dead click is worse than an honest absence.
+
+`hasMore` derives from the **cursor**, never `items.length === limit` — the backend's last page
+carries items *and* a null cursor. Error beats empty in the row renderer: a failed fetch also
+leaves the list empty, and telling someone "you have no documents" when the truth is "we could
+not ask" invites them to recreate work that already exists.
+
+## Mobile
+
+The editor and the history screen have real mobile layouts, verified in a 375×812 viewport
+(`scrollWidth === clientWidth === 375` on every screen; 0 of 18 toolbar buttons past the right
+edge). The toolbar **wraps** rather than scrolling, per the mobile mockup — a horizontal-scroll
+toolbar would hide controls behind a gesture nobody is told about. History rows stack so the
+document type is not truncated by an ellipsis competing with the date.
+
+Note for anyone re-measuring: `--window-size=375` in headless Chrome yields a **489px** viewport,
+because the flag counts browser chrome. Use CDP `Emulation.setDeviceMetricsOverride`. The first
+run of this check silently tested the wrong width.
 
 ## Getting into the editor
 
@@ -49,12 +102,16 @@ placeholder text, the full formatting toolbar, a breadcrumb carrying the documen
 status line reading *Черновик, ещё не сохранён*. There is no intermediate loading skeleton — the
 editor is built unconditionally, so it appears at once.
 
-**The editor appears whether or not the `POST` succeeded.** The create failure path only
-`console.error`s (`useDocumentInit.ts:41-45`), so against a real backend today — where the call
-`422`s for two independent reasons — the visitor gets a working-looking editor with no
-`documentId`. Typing works; saving silently no-ops on `ManualEditor.tsx`'s `if (!documentId)`
-guard. Nothing tells them. The status line still reads *Черновик, ещё не сохранён*, which is
-true, and misleading about why.
+**The editor appears whether or not the `POST` succeeded — still true, and still a real gap.**
+The create failure path only `console.error`s (`useDocumentInit.ts`), so a create that fails for
+any reason (network, 500, an expired session on a stale tab) leaves the visitor with a
+working-looking editor holding no `documentId`. Typing works; saving silently no-ops on
+`ManualEditor.tsx`'s `if (!documentId || !editor) return` guard. Nothing tells them. The status
+line still reads *Черновик, ещё не сохранён* — true, and misleading about why.
+
+The 422s that used to make this fire on *every* create are fixed, so it is now a rare path rather
+than the default one. That makes it less visible, not less real: it is the one failure mode where
+the editor lies by looking healthy.
 
 "Назад" returns to the mode modal with the document type still scoped, rather than resetting to
 the landing page.
