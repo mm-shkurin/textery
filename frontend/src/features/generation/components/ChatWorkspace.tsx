@@ -15,6 +15,10 @@ interface ChatWorkspaceProps {
   error: string | null
   onSubmit: (topic: string) => void
   onReset: () => void
+  // The workspace is where a signed-in user actually spends their time, and it replaces the
+  // landing entirely — so without a sign-out here, the only way out of a session on a shared
+  // machine is closing the tab.
+  onLogoutClick?: () => void
 }
 
 const BADGE: Record<GenerationUiState, string> = {
@@ -27,6 +31,7 @@ const BADGE: Record<GenerationUiState, string> = {
 export function ChatWorkspace(props: ChatWorkspaceProps) {
   const { documentTypeLabel, state, content, volumePages, createdAt, error, onSubmit, onReset } =
     props
+  const { onLogoutClick } = props
   const [topic, setTopic] = useState('')
 
   const send = () => {
@@ -38,6 +43,16 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
     <div className="chat-page">
       <header className="cw-header">
         <img className="cw-logo" src="/logo.svg" alt="Textery" />
+        {onLogoutClick && (
+          <button
+            type="button"
+            className="cw-logout"
+            data-testid="workspace-logout-button"
+            onClick={onLogoutClick}
+          >
+            Выйти
+          </button>
+        )}
       </header>
       <div className="cw-container">
         <div className={`cw-badge cw-badge-${state}`}>

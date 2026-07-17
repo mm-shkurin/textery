@@ -194,6 +194,62 @@ rather than quietly skipped.
 
 Suite: 104/104 unit, tsc clean. Acceptance frontend: 14 passed, 3 failed (above), 1 skipped.
 
+## Session actually wired, 2026-07-17 — DELIBERATELY OUTSIDE THE TDD FRAMEWORK
+
+User's call, same reason as the live-login block above: closing known gaps under time pressure,
+so no red→green ceremony. Tests were written alongside, not before.
+
+Five gaps were named. **Three are frontend and are now closed; two are backend and are NOT.**
+Do not read this section as "auth is done".
+
+**Closed here:**
+
+1. **`Authorization` was never sent.** `httpClient` moved to `shared/api/` as pure transport and
+   a new `features/auth/api/authorizedRequest.ts` owns the token. `generationApi` (which used
+   raw `fetch`) now goes through it, so both generation calls carry `Bearer`.
+2. **No logout.** `logout()` in `authSession`, plus a "Выйти" button in the landing header and in
+   the workspace header — the workspace replaces the landing, so without one there the only exit
+   was closing the tab. Sign-out unwinds the flow (stops the poll) as well as dropping tokens.
+3. **No refresh.** A 401 renews once via `POST /auth/refresh` and replays the request, sharing
+   one in-flight renewal across concurrent 401s and reusing the original `Idempotency-Key` so a
+   replay is not a second generation. Exactly one retry.
+
+Also: `useAuthSession` (`useSyncExternalStore`) makes the gate SUBSCRIBE to the session instead
+of sampling it at render — a session dying mid-poll now collapses the UI by itself. And
+`handleResend` no longer swallows its failure; the button was a silent no-op.
+
+**A PROBE CONTRADICTED WHAT I HAD WRITTEN, AND THE CODE'S COMMENTS WERE THE BUG.** I wrote the
+refresh logic asserting the backend rotates and revokes refresh tokens, and justified
+single-flight by "a duplicate refresh spends a token the first already invalidated". Then I
+probed it: **replaying a spent refresh token returns 200.** These are stateless JWTs and the
+backend keeps no token store — nothing can revoke an issued token before its own expiry. The
+code was fine; every "why" around it was false. Comments corrected against the probe, and
+single-flight re-justified on what it actually buys (one auth call per expiry, single-valued
+storage). Consequences worth carrying: **`logout` cannot revoke anything** even once a route
+exists — that needs a denylist, not a route; and each refresh issues a refresh token expiring 7
+days from *now*, so storing both halves is what slides the window (drop it and every session
+dies 7 days after first login, mid-use, with nothing to explain it).
+
+**STILL OPEN — BACKEND, and out of this session's file ownership** (`backend/` is another
+worktree; this branch has no auth router at all):
+
+- **`POST /api/v1/generations` is unprotected.** Probed 2026-07-17: **201 anonymous, and 201
+  with the literal token `"garbage"`.** No security scheme in its OpenAPI document; the header
+  is not read. The client now sends the token and refuses to send a request without a session,
+  so it no longer walks through the hole — but the hole is open to anyone with curl. Generation
+  is still, in fact, free to everyone. **The gate remains product routing, not access control.**
+- **`POST /api/v1/auth/resend-code` is 404.** Specified in `endpoints.md`, absent from the
+  running backend. The button now says it failed instead of pretending it worked; it cannot
+  start working until the route ships.
+
+Earlier claims corrected while here: the 2026-07-16 note above says anonymous generation gets
+"400, not 401". The 400 was a malformed probe body — with a valid body it is **201**. Open, not
+merely unenforced.
+
+Suite: 119/119 unit, production build clean. `tsc` reports 7 errors, all pre-existing in test
+files not touched here (partial `LoginResult`/`RegisterResult` mocks); baselined by stash.
+Acceptance not re-run — unchanged from the 14/3/1 baseline recorded above.
+
 ## Frontend Scenarios (tests/02_UI_Tests.md)
 
 ### 1.1: Registration form displays email, password, confirm password fields

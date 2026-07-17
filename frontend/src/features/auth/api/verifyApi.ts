@@ -10,7 +10,7 @@
 //         to tell them apart here, and do not surface a distinction the server refused to
 //         make — that would be the account-enumeration oracle this story exists to avoid.
 //   500 → {detail: "internal server error"} — no `error_code`, lands on the fallback.
-import { postJson, type HttpError } from './httpClient'
+import { postJson, type HttpError } from '../../../shared/api/httpClient'
 
 export interface VerifyResult {
   isVerified: boolean

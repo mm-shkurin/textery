@@ -53,6 +53,15 @@
     display: none;
   }
 
+  /* The rule above drops secondary marketing links on a narrow screen, which is fine for a
+     link and wrong for this: signing out is the only way to end a session, and a phone is
+     exactly where a borrowed device gets left signed in. Shrink it, never hide it. */
+  .header-logout {
+    display: inline-block;
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+
   .btn-light {
     padding: 10px 14px;
     font-size: 13px;

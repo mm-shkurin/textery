@@ -26,6 +26,8 @@ interface VerifyRouterState {
   verificationCode?: string
 }
 
+const RESEND_FAILURE_MESSAGE = 'Не удалось отправить код повторно. Попробуйте ещё раз позже.'
+
 function applyVerifyError(error: unknown): string {
   if (error && typeof error === 'object' && 'errorCode' in error) {
     const apiError = error as VerifyApiError
@@ -83,10 +85,22 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
   async function handleResend() {
     if (!email) return
     setIsResending(true)
+    setFormError(null)
     try {
       await resendCode(email)
     } catch {
-      // Resend failures are non-fatal here; a dedicated error UI is out of scope for this step.
+      // Swallowing this made the button a no-op that LOOKS like it worked: the user waits for a
+      // code that was never issued, and blames the mail that never arrives. Saying "it failed"
+      // is worth more than a tidy screen — they can retry, or go back and register again.
+      //
+      // Today it always fails: `POST /api/v1/auth/resend-code` is 404, the route does not exist
+      // on the backend (verified 2026-07-17 — its OpenAPI document lists register/verify/login/
+      // refresh and nothing else) even though endpoints.md specifies it. This makes that gap
+      // visible instead of hiding it behind a spinner that resolves to nothing.
+      //
+      // The status code stays out of the copy on purpose — "HTTP 404" is a fact about our
+      // deployment, not a thing the user can act on.
+      setFormError(RESEND_FAILURE_MESSAGE)
     } finally {
       setIsResending(false)
     }

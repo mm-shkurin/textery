@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import App from '../App'
 import * as api from '../features/generation/api/generationApi'
-import { saveSession, clearSession } from '../features/auth/utils/authSession'
+import { saveSession, clearSession, getAccessToken } from '../features/auth/utils/authSession'
 
 vi.mock('../features/generation/api/generationApi')
 
@@ -75,5 +75,35 @@ describe('App step transitions', () => {
     fireEvent.click(screen.getByLabelText('Закрыть'))
 
     expect(screen.queryByTestId('type-modal')).not.toBeInTheDocument()
+  })
+
+  // Before this, the only way out of a session was closing the tab.
+  it('offers sign-out only to a signed-in visitor', () => {
+    clearSession()
+    const { unmount } = render(<App />)
+    expect(screen.queryByTestId('header-logout-button')).not.toBeInTheDocument()
+    unmount()
+
+    saveSession({ accessToken: 'test-access-token', refreshToken: 'test-refresh-token' })
+    render(<App />)
+
+    expect(screen.getByTestId('header-logout-button')).toBeInTheDocument()
+  })
+
+  // Signing out from inside the workspace must both drop the tokens AND unwind the flow. Asserting
+  // only the tokens would pass while leaving the user's document on screen behind an ended
+  // session; asserting only the screen would pass while leaving the tokens in storage.
+  it('signing out from the workspace clears the session and returns to the landing', () => {
+    render(<App />)
+    fireEvent.click(screen.getByTestId('features-primary-cta-button'))
+    fireEvent.click(screen.getByTestId('type-card-doklad'))
+    fireEvent.click(screen.getByTestId('mode-card-auto'))
+    expect(screen.getByTestId('chat-panel')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('workspace-logout-button'))
+
+    expect(getAccessToken()).toBeNull()
+    expect(screen.queryByTestId('chat-panel')).not.toBeInTheDocument()
+    expect(screen.getByTestId('features-primary-cta-button')).toBeInTheDocument()
   })
 })

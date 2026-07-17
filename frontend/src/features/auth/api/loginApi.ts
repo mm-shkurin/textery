@@ -1,5 +1,5 @@
 // HTTP client for the login API (POST authenticate).
-import { postJson, type HttpError } from './httpClient'
+import { postJson, type HttpError } from '../../../shared/api/httpClient'
 import { GENERIC_LOGIN_FAILURE_MESSAGE, isUsableMessage } from '../utils/loginMessages'
 
 // The wire is snake_case — verified by curl against the live backend 2026-07-16:
@@ -75,7 +75,7 @@ function toLoginApiError(error: unknown): unknown {
 // type describes rather than a hole the type lies about.
 //
 // This is also the answer for the `{}` body: a proxy's 502 or any non-JSON error page makes
-// `res.json()` throw and `postJson` substitutes `{}` (httpClient.ts:19). That body is truthy,
+// `res.json()` throw and `postJson` substitutes `{}` (shared/api/httpClient.ts). That body is truthy,
 // so it clears the
 // rethrow guard above and lands here with no `error_code` → `UNKNOWN_ERROR` + `''`. It stays
 // a LoginApiError: returning the raw HttpError instead would hand the form a `{status, body}`

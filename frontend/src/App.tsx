@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BrowserRouter, Route, Routes, useInRouterContext, useNavigate } from 'react-router-dom'
-import { isAuthenticated } from './features/auth/utils/authSession'
+import { logout } from './features/auth/utils/authSession'
+import { useAuthSession } from './features/auth/hooks/useAuthSession'
 import { LandingPage } from './features/landing/components/LandingPage'
 import { TypeModal } from './features/generation/components/TypeModal'
 import type { DocumentType } from './features/generation/documentTypes'
@@ -28,11 +29,17 @@ const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
 // in and gating the CTA closes the reachable path. But a user who edits their own memory, or
 // simply calls the API directly, walks straight past it. Real protection is the backend
 // refusing requests without a token; today `POST /api/v1/generations` still serves anonymous
-// callers (verified 2026-07-16: 400 for a malformed body, not 401). Until that changes and the
-// client sends `Authorization`, this is a product gate, not a security boundary — do not read
-// it as one.
+// callers — re-verified 2026-07-17 against the running backend's OpenAPI document, which
+// declares no security scheme for it at all. The client now sends `Authorization` on every
+// generation call and refuses to send one without a session, so it no longer walks through the
+// hole itself; the hole is still open to anyone who skips the client. This remains a product
+// gate, not a security boundary — do not read it as one until the backend answers 401.
 function DocumentGenerationFlow() {
   const navigate = useNavigate()
+  // Subscribed, not sampled: a session that dies mid-flow (a refresh that failed while polling)
+  // now re-renders this component by itself, instead of leaving a workspace on screen until the
+  // user clicks something that no longer works.
+  const isAuthenticated = useAuthSession()
   const [step, setStep] = useState<Step>('landing')
   const [documentType, setDocumentType] = useState<DocumentType | null>(null)
   // `mode` is UI-only: backend has no mode parameter yet, only 'auto' is selectable today.
@@ -47,7 +54,7 @@ function DocumentGenerationFlow() {
   }
 
   const startFlow = () => {
-    if (!isAuthenticated()) {
+    if (!isAuthenticated) {
       // `from` so login returns them to what they were trying to do, instead of dropping them
       // on the landing to hunt for the button again.
       navigate('/login', { state: { from: '/' } })
@@ -56,11 +63,19 @@ function DocumentGenerationFlow() {
     setStep('type')
   }
 
+  // Signing out has to unwind the flow, not just the header: leaving `step` at 'form' would
+  // keep an in-flight generation polling and drop the user back into the workspace the moment
+  // anyone signs in again. `closeToLanding` already stops the poll and clears the selections.
+  const handleLogout = () => {
+    logout()
+    closeToLanding()
+  }
+
   // Belt and braces: the CTA is the only path that sets a non-landing step, but a session can
-  // end mid-flow (tab storage cleared, another tab logging out). Re-checking at render means an
-  // expired session collapses to the landing rather than leaving a workspace on screen that
-  // every request will refuse.
-  if (step !== 'landing' && !isAuthenticated()) {
+  // end mid-flow (storage cleared, a refresh that failed). Re-checking here means an expired
+  // session collapses to the landing rather than leaving a workspace on screen that every
+  // request will refuse.
+  if (step !== 'landing' && !isAuthenticated) {
     return <LandingPage onPrimaryCtaClick={startFlow} />
   }
 
@@ -75,13 +90,18 @@ function DocumentGenerationFlow() {
         error={generation.error}
         onSubmit={generation.submit}
         onReset={generation.reset}
+        onLogoutClick={handleLogout}
       />
     )
   }
 
   return (
     <>
-      <LandingPage onPrimaryCtaClick={startFlow} />
+      <LandingPage
+        onPrimaryCtaClick={startFlow}
+        isAuthenticated={isAuthenticated}
+        onLogoutClick={handleLogout}
+      />
 
       {step === 'type' && (
         <TypeModal

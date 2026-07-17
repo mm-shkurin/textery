@@ -121,5 +121,28 @@ describe('VerifyCodeForm', () => {
       expect(init.headers).toEqual({ 'Content-Type': 'application/json' })
       expect(JSON.parse(init.body)).toEqual({ email: 'user@example.com' })
     })
+
+    // 404 is the LIVE behaviour, not a hypothetical: the route is specified but not deployed
+    // (verified 2026-07-17). A swallowed failure leaves the user waiting for a code that was
+    // never issued and blaming the mail — the worst outcome available, because it looks like
+    // success. This pins that the failure reaches the screen.
+    it('shows an error when the resend request fails', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 404,
+          json: async () => ({ detail: 'Not Found' }),
+        }),
+      )
+
+      renderWithRouter(<VerifyCodeForm email="user@example.com" />)
+
+      fireEvent.click(screen.getByTestId('verify-resend-button'))
+
+      expect(await screen.findByTestId('verify-form-error')).toHaveTextContent(
+        'Не удалось отправить код повторно. Попробуйте ещё раз позже.',
+      )
+    })
   })
 })

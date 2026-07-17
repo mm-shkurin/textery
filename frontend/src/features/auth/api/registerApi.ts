@@ -12,7 +12,7 @@
 // `confirm_password` is REQUIRED by the backend. Omitting it was a real shipped bug:
 // registration returned 422 and could never succeed, and no unit test caught it because
 // they all mock this module.
-import { postJson, type HttpError } from './httpClient'
+import { postJson, type HttpError } from '../../../shared/api/httpClient'
 
 export interface RegisterResult {
   userId: string

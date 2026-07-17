@@ -142,7 +142,7 @@ describe('loginApi', () => {
   // other fixture reaches. Of the six others, FIVE supply a well-formed `error_code`; (i)
   // supplies no body at all and is stopped by the `!body` rethrow guard before the normalizer
   // ever runs. This one supplies a body that is truthy but CODELESS: `postJson` does
-  // `res.json().catch(() => ({}))` (httpClient.ts:19), so a 404 HTML page (no login endpoint
+  // `res.json().catch(() => ({}))` (shared/api/httpClient.ts), so a 404 HTML page (no login endpoint
   // yet) or a proxy's 502 arrives as `{}` — truthy, so it clears the guard and is normalized.
   //
   // Added by green because green CHANGED this path and nothing here observed it. What it
