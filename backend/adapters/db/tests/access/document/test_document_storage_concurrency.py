@@ -1,6 +1,6 @@
 import asyncio
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import text
@@ -52,14 +52,14 @@ class TestConcurrentSavesResolveAtomically:
                 id=uuid4(),
                 email=f"race-{uuid4()}@example.com",
                 password_hash="hash",
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
             await SqlAlchemyAccountRepository(setup_session).save(account)
             document = Document.create(
                 owner_id=account.id,
                 document_type="эссе",
                 idempotency_key=f"key-{uuid4()}",
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
             await SqlAlchemyDocumentStorage(setup_session).save_new(document)
             await setup_session.commit()
@@ -71,7 +71,7 @@ class TestConcurrentSavesResolveAtomically:
                     owner_id=account.id,
                     content=content,
                     expected_version=1,
-                    updated_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(UTC),
                 )
                 await session.commit()
                 return result

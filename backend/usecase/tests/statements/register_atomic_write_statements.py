@@ -1,13 +1,13 @@
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
-from auth.register_user import RegisterUser
 from fake.auth.fake_account_repository import FakeAccountRepository
-from fake.auth.fake_password_hasher import FakePasswordHasher
 from fake.auth.fake_clock import FakeClock
+from fake.auth.fake_password_hasher import FakePasswordHasher
 from fake.auth.fake_unit_of_work import FakeUnitOfWork
 from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
 from scope.register_request_scope import RegisterRequestScope
+
+from auth.register_user import RegisterUser
 from shared.exceptions import RegistrationFailedException
 
 
@@ -18,10 +18,10 @@ class RegisterAtomicWriteStatements:
         "Registration could not be completed due to an unexpected error. Please try again."
     )
     RAW_DRIVER_ERROR_SENTINEL = "SQLSTATE 08006 connection reset by peer"
-    FIXED_CLOCK_NOW = datetime(2026, 7, 14, 12, 0, 0, tzinfo=timezone.utc)
+    FIXED_CLOCK_NOW = datetime(2026, 7, 14, 12, 0, 0, tzinfo=UTC)
 
     def __init__(self) -> None:
-        self.thrown_exception: Optional[Exception] = None
+        self.thrown_exception: Exception | None = None
         self.account_repository = FakeAccountRepository()
         self.password_hasher = FakePasswordHasher()
         self.clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)

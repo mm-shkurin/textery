@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from conftest import OWNER_ID
@@ -6,7 +6,7 @@ from conftest import OWNER_ID
 from document.document import Document
 from document.document_creation_result import DocumentCreationResult
 
-CREATED_AT = datetime(2026, 7, 17, 12, 0, tzinfo=timezone.utc)
+CREATED_AT = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
 
 
 def a_document(content: str = "", version: int = 1) -> Document:

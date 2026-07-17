@@ -1,4 +1,3 @@
-import pytest
 
 from statements.sql_alchemy_unit_of_work_statements import SqlAlchemyUnitOfWorkStatements
 

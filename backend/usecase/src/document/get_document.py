@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 from document.document import Document
@@ -11,7 +10,7 @@ class GetDocument:
     def __init__(self, document_repository: DocumentRepository) -> None:
         self.document_repository = document_repository
 
-    async def execute(self, document_id: UUID, owner_id: UUID) -> Optional[Document]:
+    async def execute(self, document_id: UUID, owner_id: UUID) -> Document | None:
         # Returns None rather than raising, matching GetGeneration: the router turns
         # it into a 404. Absent and foreign collapse into the same None here because
         # the repository filters on owner_id in SQL -- there is no branch that could

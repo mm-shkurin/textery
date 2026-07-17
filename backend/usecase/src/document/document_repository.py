@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Protocol
+from typing import Protocol
 from uuid import UUID
 
 from document.document import Document
@@ -25,14 +25,14 @@ class DocumentRepository(Protocol):
         """
         ...
 
-    async def find_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> Optional[Document]:
+    async def find_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> Document | None:
         ...
 
-    async def find_by_idempotency_key(self, owner_id: UUID, idempotency_key: str) -> Optional[Document]:
+    async def find_by_idempotency_key(self, owner_id: UUID, idempotency_key: str) -> Document | None:
         ...
 
     async def list_by_owner(
-        self, owner_id: UUID, limit: int, cursor: Optional[KeysetCursor]
+        self, owner_id: UUID, limit: int, cursor: KeysetCursor | None
     ) -> list[Document]:
         """The owner's documents, newest first, starting after `cursor`."""
         ...
@@ -44,7 +44,7 @@ class DocumentRepository(Protocol):
         content: str,
         expected_version: int,
         updated_at: datetime,
-    ) -> Optional[Document]:
+    ) -> Document | None:
         """Compare-and-swap the content, returning the new state.
 
         Returns `None` when nothing matched -- which conflates "absent",

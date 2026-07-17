@@ -1,5 +1,5 @@
 import base64
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
@@ -11,7 +11,7 @@ class TestRoundTrip:
     """A cursor survives encode/decode with both halves of the key intact."""
 
     def test_should_restore_created_at_and_id(self):
-        created_at = datetime(2026, 7, 17, 12, 30, 45, 123456, tzinfo=timezone.utc)
+        created_at = datetime(2026, 7, 17, 12, 30, 45, 123456, tzinfo=UTC)
         id = uuid4()
 
         restored = KeysetCursor.decode(KeysetCursor(created_at, id).encode())
@@ -24,7 +24,7 @@ class TestRoundTrip:
         # Not a redundant round-trip test: the whole point of pairing created_at
         # with id is sub-second collisions, so a cursor that silently truncated
         # microseconds would seek to the wrong row and skip or repeat one.
-        created_at = datetime(2026, 7, 17, 12, 30, 45, 999999, tzinfo=timezone.utc)
+        created_at = datetime(2026, 7, 17, 12, 30, 45, 999999, tzinfo=UTC)
 
         restored = KeysetCursor.decode(KeysetCursor(created_at, uuid4()).encode())
 
@@ -33,7 +33,7 @@ class TestRoundTrip:
         )
 
     def test_should_preserve_timezone(self):
-        created_at = datetime(2026, 7, 17, 12, 30, 45, tzinfo=timezone.utc)
+        created_at = datetime(2026, 7, 17, 12, 30, 45, tzinfo=UTC)
 
         restored = KeysetCursor.decode(KeysetCursor(created_at, uuid4()).encode())
 
@@ -51,7 +51,7 @@ class TestOf:
     def test_should_anchor_on_an_entity(self):
         class _Row:
             id = uuid4()
-            created_at = datetime(2026, 7, 17, tzinfo=timezone.utc)
+            created_at = datetime(2026, 7, 17, tzinfo=UTC)
 
         cursor = KeysetCursor.of(_Row())
 

@@ -1,4 +1,3 @@
-import pytest
 
 from statements.register_atomic_write_statements import RegisterAtomicWriteStatements
 

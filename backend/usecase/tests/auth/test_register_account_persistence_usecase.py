@@ -1,4 +1,3 @@
-import pytest
 
 from statements.register_statements import RegisterStatements
 

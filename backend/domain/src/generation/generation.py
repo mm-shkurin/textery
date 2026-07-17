@@ -1,6 +1,5 @@
 import unicodedata
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from shared.exceptions import ValidationException
@@ -28,13 +27,13 @@ class Generation:
         owner_id: UUID,
         status: str,
         created_at: datetime,
-        topic: Optional[str],
-        volume_pages: Optional[int],
-        requirements: Optional[str],
-        extra_wishes: Optional[str],
+        topic: str | None,
+        volume_pages: int | None,
+        requirements: str | None,
+        extra_wishes: str | None,
         document_type: str,
-        content: Optional[str] = None,
-        error_message: Optional[str] = None,
+        content: str | None = None,
+        error_message: str | None = None,
         version: int = 1,
     ) -> None:
         self.id = id
@@ -71,10 +70,10 @@ class Generation:
     def create(
         cls,
         owner_id: UUID,
-        topic: Optional[str],
-        volume_pages: Optional[int],
-        requirements: Optional[str],
-        extra_wishes: Optional[str],
+        topic: str | None,
+        volume_pages: int | None,
+        requirements: str | None,
+        extra_wishes: str | None,
         document_type: str,
     ) -> "Generation":
         if cls._is_blank_topic(topic):
@@ -91,7 +90,7 @@ class Generation:
             id=uuid4(),
             owner_id=owner_id,
             status=PENDING_STATUS,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             topic=topic,
             volume_pages=volume_pages,
             requirements=requirements,
@@ -100,13 +99,13 @@ class Generation:
         )
 
     @staticmethod
-    def _is_out_of_range_volume(volume_pages: Optional[int]) -> bool:
+    def _is_out_of_range_volume(volume_pages: int | None) -> bool:
         if volume_pages is None:
             return True
         return not (MIN_VOLUME_PAGES <= volume_pages <= MAX_VOLUME_PAGES)
 
     @staticmethod
-    def _is_blank_topic(topic: Optional[str]) -> bool:
+    def _is_blank_topic(topic: str | None) -> bool:
         if topic is None:
             return True
         # str.strip() only removes Unicode whitespace (category Zs/Zl/Zp), not

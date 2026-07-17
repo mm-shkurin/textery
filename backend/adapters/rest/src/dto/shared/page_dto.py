@@ -1,4 +1,4 @@
-from typing import Generic, Optional, TypeVar
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
@@ -17,4 +17,4 @@ class PageDto(BaseModel, Generic[_Item]):
     """
 
     items: list[_Item]
-    next_cursor: Optional[str]
+    next_cursor: str | None

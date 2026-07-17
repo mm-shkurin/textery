@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Response
@@ -40,7 +39,7 @@ def get_list_documents_usecase() -> ListDocuments:
 @router.get("", response_model=PageDto[DocumentSummaryDto])
 async def list_documents(
     limit: int = DEFAULT_LIMIT,
-    cursor: Optional[str] = None,
+    cursor: str | None = None,
     owner_id: UUID = Depends(get_current_owner_id),
     usecase: ListDocuments = Depends(get_list_documents_usecase),
 ) -> PageDto[DocumentSummaryDto]:

@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 from fastapi import Depends, Header
@@ -16,7 +15,7 @@ def get_token_service() -> TokenService:
 
 
 def get_current_owner_id(
-    authorization: Optional[str] = Header(default=None),
+    authorization: str | None = Header(default=None),
     token_service: TokenService = Depends(get_token_service),
 ) -> UUID:
     """Resolve the caller's account id from the Authorization header.

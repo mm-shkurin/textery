@@ -1,5 +1,4 @@
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import select
@@ -13,7 +12,7 @@ class SqlAlchemyVerificationCodeRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def find_active_by_account_id(self, account_id: UUID) -> Optional[VerificationCode]:
+    async def find_active_by_account_id(self, account_id: UUID) -> VerificationCode | None:
         """Return the most recently issued code for the account, or None.
 
         Neither expiry nor consumption is filtered here, deliberately. The
@@ -49,7 +48,7 @@ class SqlAlchemyVerificationCodeRepository:
         """
         existing = await self._session.get(VerificationCodeModel, code.id)
         if existing is None:
-            self._session.add(VerificationCodeModel.from_domain(code, created_at=datetime.now(timezone.utc)))
+            self._session.add(VerificationCodeModel.from_domain(code, created_at=datetime.now(UTC)))
         else:
             existing.consumed_at = code.consumed_at
         await self._session.flush()

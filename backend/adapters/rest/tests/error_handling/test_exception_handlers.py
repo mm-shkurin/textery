@@ -1,10 +1,12 @@
 import logging
 
-import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from error_handling.exception_handlers import unhandled_exception_handler, validation_exception_handler
+from error_handling.exception_handlers import (
+    unhandled_exception_handler,
+    validation_exception_handler,
+)
 from shared.exceptions import ValidationException
 
 

@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
@@ -39,7 +38,7 @@ def get_list_generations_usecase() -> ListGenerations:
 @router.get("", response_model=PageDto[GenerationSummaryDto])
 async def list_generations(
     limit: int = DEFAULT_LIMIT,
-    cursor: Optional[str] = None,
+    cursor: str | None = None,
     owner_id: UUID = Depends(get_current_owner_id),
     usecase: ListGenerations = Depends(get_list_generations_usecase),
 ) -> PageDto[GenerationSummaryDto]:

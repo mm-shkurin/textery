@@ -1,4 +1,6 @@
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
+
+from hashing.bcrypt_password_hasher import BcryptPasswordHasher
 
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.auth.verification_code_storage import SqlAlchemyVerificationCodeRepository
@@ -7,11 +9,9 @@ from auth.refresh_access_token import RefreshAccessToken
 from auth.register_user import RegisterUser
 from auth.token_service import TokenService
 from auth.verify_account import VerifyAccount
-from hashing.bcrypt_password_hasher import BcryptPasswordHasher
+from container.runtime import session_factory, token_service
 from session import SqlAlchemyUnitOfWork
 from shared.clock import SystemClock
-
-from container.runtime import session_factory, token_service
 
 
 async def create_register_user() -> AsyncIterator[RegisterUser]:

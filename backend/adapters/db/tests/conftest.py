@@ -1,18 +1,4 @@
 import os
-import sys
-
-_TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
-_DB_DIR = os.path.dirname(_TESTS_DIR)
-_ADAPTERS_DIR = os.path.dirname(_DB_DIR)
-_BACKEND_DIR = os.path.dirname(_ADAPTERS_DIR)
-_DB_SRC = os.path.join(_DB_DIR, "src")
-_DOMAIN_SRC = os.path.join(_BACKEND_DIR, "domain", "src")
-_USECASE_SRC = os.path.join(_BACKEND_DIR, "usecase", "src")
-
-sys.path.insert(0, _TESTS_DIR)
-sys.path.insert(0, _DB_SRC)
-sys.path.insert(0, _DOMAIN_SRC)
-sys.path.insert(0, _USECASE_SRC)
 
 import pytest
 import pytest_asyncio

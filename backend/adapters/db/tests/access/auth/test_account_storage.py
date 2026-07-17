@@ -1,4 +1,3 @@
-import pytest
 
 from statements.account_storage_statements import AccountStorageStatements
 

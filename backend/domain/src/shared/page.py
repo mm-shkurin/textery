@@ -1,4 +1,3 @@
-from typing import Optional
 
 from shared.exceptions import ValidationException
 from shared.keyset_cursor import INVALID_CURSOR_MESSAGE, KeysetCursor
@@ -19,7 +18,7 @@ class PageRequest:
     by every history list so the bounds cannot drift between them.
     """
 
-    def __init__(self, limit: int = DEFAULT_LIMIT, cursor: Optional[str] = None) -> None:
+    def __init__(self, limit: int = DEFAULT_LIMIT, cursor: str | None = None) -> None:
         self.limit = self._validated_limit(limit)
         self.cursor = self._decoded(cursor)
 
@@ -44,7 +43,7 @@ class PageRequest:
         return limit
 
     @staticmethod
-    def _decoded(cursor: Optional[str]) -> Optional[KeysetCursor]:
+    def _decoded(cursor: str | None) -> KeysetCursor | None:
         if cursor is None:
             return None
         try:
@@ -58,7 +57,7 @@ class PageRequest:
 class Page:
     """One page of history plus the anchor for the next, if any."""
 
-    def __init__(self, items: list, next_cursor: Optional[str]) -> None:
+    def __init__(self, items: list, next_cursor: str | None) -> None:
         self.items = items
         self.next_cursor = next_cursor
 

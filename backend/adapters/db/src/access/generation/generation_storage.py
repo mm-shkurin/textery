@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import select
@@ -32,7 +31,7 @@ class SqlAlchemyGenerationStorage:
 
     async def get_by_id_and_owner(
         self, generation_id: UUID, owner_id: UUID
-    ) -> Optional[Generation]:
+    ) -> Generation | None:
         result = await self._session.execute(
             select(GenerationModel).where(
                 GenerationModel.id == generation_id,
@@ -56,7 +55,7 @@ class SqlAlchemyGenerationStorage:
         generation.version = model.version
 
     async def list_by_owner(
-        self, owner_id: UUID, limit: int, cursor: Optional[KeysetCursor]
+        self, owner_id: UUID, limit: int, cursor: KeysetCursor | None
     ) -> list[Generation]:
         return [
             model.to_domain()

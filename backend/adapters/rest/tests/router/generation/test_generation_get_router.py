@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from generation.generation import Generation
@@ -9,7 +9,7 @@ def _build_generation(status: str, content: str | None, owner_id) -> Generation:
         id=uuid4(),
         owner_id=owner_id,
         status=status,
-        created_at=datetime(2026, 7, 10, 12, 0, 0, tzinfo=timezone.utc),
+        created_at=datetime(2026, 7, 10, 12, 0, 0, tzinfo=UTC),
         topic="Как работает фотосинтез",
         volume_pages=3,
         requirements=None,

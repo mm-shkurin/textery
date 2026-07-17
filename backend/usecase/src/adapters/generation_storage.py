@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Protocol
+from typing import Protocol
 from uuid import UUID
 
 from generation.generation import Generation
@@ -12,7 +12,7 @@ class GenerationStorage(Protocol):
 
     async def get_by_id_and_owner(
         self, generation_id: UUID, owner_id: UUID
-    ) -> Optional[Generation]:
+    ) -> Generation | None:
         ...
 
     async def update(self, generation: Generation) -> None:
@@ -22,7 +22,7 @@ class GenerationStorage(Protocol):
         ...
 
     async def list_by_owner(
-        self, owner_id: UUID, limit: int, cursor: Optional[KeysetCursor]
+        self, owner_id: UUID, limit: int, cursor: KeysetCursor | None
     ) -> list[Generation]:
         """The owner's generations, newest first, starting after `cursor`.
 

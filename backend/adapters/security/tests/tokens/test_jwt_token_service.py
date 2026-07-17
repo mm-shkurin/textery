@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta, timezone
-from uuid import UUID, uuid4
+from datetime import UTC, datetime, timedelta
+from uuid import uuid4
 
 import jwt
 import pytest
@@ -28,7 +28,7 @@ def _service(clock=None) -> JwtTokenService:
 
 
 def _real_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class TestJwtTokenServiceConstruction:

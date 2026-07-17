@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import select
@@ -14,7 +13,7 @@ class SqlAlchemyAccountRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def find_by_email(self, email: str) -> Optional[Account]:
+    async def find_by_email(self, email: str) -> Account | None:
         # Exact match: callers pass Email(...).value, which is already
         # lowercased/NFC-normalized, and the uq_accounts_email constraint is on
         # that same canonical value. A case-insensitive query here would not
@@ -25,7 +24,7 @@ class SqlAlchemyAccountRepository:
         model = result.scalar_one_or_none()
         return model.to_domain() if model else None
 
-    async def find_by_id(self, account_id: UUID) -> Optional[Account]:
+    async def find_by_id(self, account_id: UUID) -> Account | None:
         model = await self._session.get(AccountModel, account_id)
         return model.to_domain() if model else None
 

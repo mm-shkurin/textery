@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import select, tuple_
@@ -12,7 +11,7 @@ async def paginate_by_owner(
     model,
     owner_id: UUID,
     limit: int,
-    cursor: Optional[KeysetCursor],
+    cursor: KeysetCursor | None,
 ) -> list:
     """One page of `model` rows owned by `owner_id`, newest first.
 

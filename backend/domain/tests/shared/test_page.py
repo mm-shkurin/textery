@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -7,7 +7,7 @@ from shared.exceptions import ValidationException
 from shared.keyset_cursor import KeysetCursor
 from shared.page import DEFAULT_LIMIT, MAX_LIMIT, MIN_LIMIT, Page, PageRequest
 
-_BASE_TIME = datetime(2026, 7, 17, 12, 0, 0, tzinfo=timezone.utc)
+_BASE_TIME = datetime(2026, 7, 17, 12, 0, 0, tzinfo=UTC)
 
 
 class _Row:

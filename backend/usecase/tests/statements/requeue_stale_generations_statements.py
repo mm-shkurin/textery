@@ -1,8 +1,8 @@
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from fake.generation.fake_generation_storage import FakeGenerationStorage
+
 from generation.generation import Generation
 from generation.requeue_stale_generations import RequeueStaleGenerations
 
@@ -12,7 +12,7 @@ STALE_AFTER = timedelta(minutes=10)
 class RequeueStaleGenerationsStatements:
     def __init__(self) -> None:
         self._storage = FakeGenerationStorage(call_order=[])
-        self._now = datetime.now(timezone.utc)
+        self._now = datetime.now(UTC)
         self.requeued: list[tuple[UUID, UUID]] = []
 
     def given_stale_pending_generation(self) -> Generation:

@@ -1,5 +1,5 @@
 import inspect
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from document.document import DRAFT_STATUS, Document
@@ -15,7 +15,7 @@ class TestDocumentCreate:
 
     def test_should_create_an_empty_draft_at_version_one(self):
         owner_id = uuid4()
-        created_at = datetime(2026, 7, 17, 12, 0, tzinfo=timezone.utc)
+        created_at = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
 
         document = Document.create(
             owner_id=owner_id,
@@ -41,7 +41,7 @@ class TestDocumentCreate:
                 owner_id=uuid4(),
                 document_type="доклад",
                 idempotency_key=f"key-{index}",
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             ).id
             for index in range(50)
         }

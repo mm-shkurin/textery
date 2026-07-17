@@ -1,6 +1,5 @@
 import secrets
 from datetime import datetime, timedelta
-from typing import Optional
 from uuid import UUID
 
 from auth.verification_code_value import VerificationCodeValue
@@ -8,7 +7,7 @@ from auth.verification_code_value import VerificationCodeValue
 _EXPIRY_MINUTES = 10
 
 
-class VerificationCode(object):
+class VerificationCode:
     """Domain entity for a registration email-verification code."""
 
     def __init__(
@@ -17,7 +16,7 @@ class VerificationCode(object):
         account_id: UUID,
         code: str,
         expires_at: datetime,
-        consumed_at: Optional[datetime] = None,
+        consumed_at: datetime | None = None,
     ) -> None:
         self.id = id
         self.account_id = account_id
@@ -30,7 +29,7 @@ class VerificationCode(object):
         return self._code
 
     @property
-    def consumed_at(self) -> Optional[datetime]:
+    def consumed_at(self) -> datetime | None:
         return self._consumed_at
 
     def matches(self, code: str) -> bool:
@@ -55,7 +54,7 @@ class VerificationCode(object):
         account_id: UUID,
         code: str,
         expires_at: datetime,
-        consumed_at: Optional[datetime],
+        consumed_at: datetime | None,
     ) -> "VerificationCode":
         """Rebuild a VerificationCode from storage, preserving consumed_at."""
         return cls(

@@ -1,9 +1,9 @@
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from fake.generation.fake_generation_provider import FakeGenerationProvider
 from fake.generation.fake_generation_storage import FakeGenerationStorage
+
 from generation.generate_document import GENERIC_FAILURE_MESSAGE, GenerateDocument
 from generation.generation import Generation
 from generation.get_generation import GetGeneration
@@ -11,12 +11,12 @@ from generation.get_generation import GetGeneration
 
 class GenerationLifecycleStatements:
     def __init__(self) -> None:
-        self._storage: Optional[FakeGenerationStorage] = None
-        self._provider: Optional[FakeGenerationProvider] = None
-        self._seeded_generation: Optional[Generation] = None
-        self._looked_up_id: Optional[UUID] = None
-        self._looked_up_owner_id: Optional[UUID] = None
-        self.result: Optional[Generation] = None
+        self._storage: FakeGenerationStorage | None = None
+        self._provider: FakeGenerationProvider | None = None
+        self._seeded_generation: Generation | None = None
+        self._looked_up_id: UUID | None = None
+        self._looked_up_owner_id: UUID | None = None
+        self.result: Generation | None = None
 
     def given_pending_generation(self) -> None:
         self._seed(status="pending", content=None)
@@ -40,13 +40,13 @@ class GenerationLifecycleStatements:
         self._seed(status="completed", content="Чужой доклад")
         self._looked_up_owner_id = uuid4()
 
-    def _seed(self, status: str, content: Optional[str]) -> None:
+    def _seed(self, status: str, content: str | None) -> None:
         self._storage = FakeGenerationStorage(call_order=[])
         self._seeded_generation = Generation(
             id=uuid4(),
             owner_id=uuid4(),
             status=status,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             topic="Как работает фотосинтез",
             volume_pages=3,
             requirements=None,

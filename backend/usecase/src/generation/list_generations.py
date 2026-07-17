@@ -1,7 +1,7 @@
-from typing import Optional
 from uuid import UUID
 
 from adapters.generation_storage import GenerationStorage
+
 from shared.page import DEFAULT_LIMIT, Page, PageRequest
 
 
@@ -17,7 +17,7 @@ class ListGenerations:
         self._storage = storage
 
     async def execute(
-        self, owner_id: UUID, limit: int = DEFAULT_LIMIT, cursor: Optional[str] = None
+        self, owner_id: UUID, limit: int = DEFAULT_LIMIT, cursor: str | None = None
     ) -> Page:
         request = PageRequest(limit=limit, cursor=cursor)
         rows = await self._storage.list_by_owner(owner_id, request.fetch_size, request.cursor)

@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,10 +15,10 @@ class GenerationStorageStatements:
         self._storage = SqlAlchemyGenerationStorage(session)
         self._accounts = SqlAlchemyAccountRepository(session)
         self._session = session
-        self._owner_id: Optional[UUID] = None
-        self.saved_generation: Optional[Generation] = None
-        self.fetched_generation: Optional[Generation] = None
-        self.raised_error: Optional[Exception] = None
+        self._owner_id: UUID | None = None
+        self.saved_generation: Generation | None = None
+        self.fetched_generation: Generation | None = None
+        self.raised_error: Exception | None = None
         self.stale_generations: list[Generation] = []
 
     async def given_an_account(self) -> UUID:
@@ -28,7 +27,7 @@ class GenerationStorageStatements:
             id=uuid4(),
             email=f"owner-{uuid4()}@example.com",
             password_hash="hash",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         await self._accounts.save(account)
         self._owner_id = account.id
@@ -36,15 +35,15 @@ class GenerationStorageStatements:
 
     def build_pending_generation(
         self,
-        generation_id: Optional[UUID] = None,
-        created_at: Optional[datetime] = None,
-        owner_id: Optional[UUID] = None,
+        generation_id: UUID | None = None,
+        created_at: datetime | None = None,
+        owner_id: UUID | None = None,
     ) -> Generation:
         return Generation(
             id=generation_id or uuid4(),
             owner_id=owner_id or self._owner_id,
             status="pending",
-            created_at=created_at or datetime.now(timezone.utc),
+            created_at=created_at or datetime.now(UTC),
             topic="Как работает фотосинтез",
             volume_pages=3,
             requirements=None,
@@ -57,7 +56,7 @@ class GenerationStorageStatements:
         self.saved_generation = generation
         await self._storage.save(generation)
 
-    async def fetch_generation(self, generation_id: UUID, owner_id: Optional[UUID] = None) -> None:
+    async def fetch_generation(self, generation_id: UUID, owner_id: UUID | None = None) -> None:
         self.fetched_generation = await self._storage.get_by_id_and_owner(
             generation_id, owner_id or self._owner_id
         )
@@ -134,17 +133,17 @@ class GenerationStorageStatements:
         )
 
     async def save_stale_pending_generation(self) -> Generation:
-        generation = self.build_pending_generation(created_at=datetime.now(timezone.utc) - timedelta(minutes=30))
+        generation = self.build_pending_generation(created_at=datetime.now(UTC) - timedelta(minutes=30))
         await self._storage.save(generation)
         return generation
 
     async def save_fresh_pending_generation(self) -> Generation:
-        generation = self.build_pending_generation(created_at=datetime.now(timezone.utc))
+        generation = self.build_pending_generation(created_at=datetime.now(UTC))
         await self._storage.save(generation)
         return generation
 
     async def list_stale_generations(self, older_than_minutes: int = 10) -> None:
-        threshold = datetime.now(timezone.utc) - timedelta(minutes=older_than_minutes)
+        threshold = datetime.now(UTC) - timedelta(minutes=older_than_minutes)
         self.stale_generations = await self._storage.list_stale(threshold)
 
     def assert_stale_generations_include(self, generation: Generation) -> None:
@@ -155,7 +154,7 @@ class GenerationStorageStatements:
         stale_ids = {g.id for g in self.stale_generations}
         assert generation.id not in stale_ids, f"expected {generation.id} not in stale results {stale_ids}"
 
-    def assert_fetched_status_and_content(self, expected_status: str, expected_content: Optional[str]) -> None:
+    def assert_fetched_status_and_content(self, expected_status: str, expected_content: str | None) -> None:
         assert self.fetched_generation.status == expected_status, (
             f"expected status '{expected_status}', got '{self.fetched_generation.status}'"
         )

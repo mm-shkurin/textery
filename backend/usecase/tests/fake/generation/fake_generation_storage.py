@@ -1,9 +1,9 @@
 import copy
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from fake.generation.call_order_recording_fake import CallOrderRecordingFake
+
 from generation.generation import Generation
 
 CALL_SAVE = "save"
@@ -26,7 +26,7 @@ class FakeGenerationStorage(CallOrderRecordingFake):
 
     async def get_by_id_and_owner(
         self, generation_id: UUID, owner_id: UUID
-    ) -> Optional[Generation]:
+    ) -> Generation | None:
         self._record(CALL_GET, generation_id)
         # The owner predicate is mirrored, not ignored: a fake that returned the row
         # on id alone would keep every ownership test green against a storage that

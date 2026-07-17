@@ -1,15 +1,14 @@
-from datetime import datetime, timedelta, timezone
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from access.generation.generation_storage import SqlAlchemyGenerationStorage
+from container.runtime import create_provider, session_factory, stale_after_minutes
 from generation.generate_document import GenerateDocument
 from generation.get_generation import GetGeneration
 from generation.list_generations import ListGenerations
 from generation.request_generation import RequestGeneration
 from generation.requeue_stale_generations import RequeueStaleGenerations
-
-from container.runtime import create_provider, session_factory, stale_after_minutes
 
 
 class NoOpGenerationQueue:
@@ -82,7 +81,7 @@ async def run_stale_generation_sweep() -> None:
     try:
         storage = SqlAlchemyGenerationStorage(session)
         usecase = RequeueStaleGenerations(storage=storage)
-        older_than = datetime.now(timezone.utc) - timedelta(minutes=stale_after_minutes())
+        older_than = datetime.now(UTC) - timedelta(minutes=stale_after_minutes())
         requeued = await usecase.execute(older_than=older_than)
     finally:
         await session.close()

@@ -1,12 +1,12 @@
 import re
 import secrets
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from auth.verification_code import VerificationCode
 
 _ASCII_SIX_DIGITS = re.compile(r"^[0-9]{6}$")
-_CREATED_AT = datetime(2026, 7, 14, 12, 0, 0, tzinfo=timezone.utc)
+_CREATED_AT = datetime(2026, 7, 14, 12, 0, 0, tzinfo=UTC)
 
 
 def _generate() -> VerificationCode:

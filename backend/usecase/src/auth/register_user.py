@@ -1,6 +1,5 @@
 import unicodedata
 from datetime import datetime
-from typing import Optional
 from uuid import uuid4
 
 from auth.account import Account
@@ -29,10 +28,10 @@ class RegisterUser:
     def __init__(
         self,
         password_hasher: PasswordHasher,
-        account_repository: Optional[AccountRepository] = None,
-        clock: Optional[Clock] = None,
-        verification_code_repository: Optional[VerificationCodeRepository] = None,
-        unit_of_work: Optional[UnitOfWork] = None,
+        account_repository: AccountRepository | None = None,
+        clock: Clock | None = None,
+        verification_code_repository: VerificationCodeRepository | None = None,
+        unit_of_work: UnitOfWork | None = None,
     ) -> None:
         # Required, and deliberately without a null-object fallback: a default
         # that returned the plaintext would persist real credentials in the clear

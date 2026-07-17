@@ -1,14 +1,14 @@
 import re
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from auth.register_user import RegisterUser
 from fake.auth.fake_account_repository import FakeAccountRepository
-from fake.auth.fake_password_hasher import FakePasswordHasher
 from fake.auth.fake_clock import FakeClock
+from fake.auth.fake_password_hasher import FakePasswordHasher
 from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
 from scope.register_request_scope import RegisterRequestScope
+
+from auth.register_user import RegisterUser
 from shared.exceptions import ConflictException, ValidationException
 
 
@@ -21,22 +21,22 @@ class RegisterStatements:
     EXPECTED_PASSWORD_MISMATCH_MESSAGE = "The password confirmation does not match."
     EXPECTED_EMAIL_ALREADY_REGISTERED_ERROR_CODE = "EMAIL_ALREADY_REGISTERED"
     EXPECTED_EMAIL_ALREADY_REGISTERED_MESSAGE = "An account with this email address already exists."
-    FIXED_CLOCK_NOW = datetime(2026, 7, 14, 12, 0, 0, tzinfo=timezone.utc)
+    FIXED_CLOCK_NOW = datetime(2026, 7, 14, 12, 0, 0, tzinfo=UTC)
 
     def __init__(self) -> None:
-        self.thrown_exception: Optional[Exception] = None
+        self.thrown_exception: Exception | None = None
         self.account_repository = FakeAccountRepository()
         self.password_hasher = FakePasswordHasher()
         self.clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
         self.verification_code_repository = FakeVerificationCodeRepository()
         self.returned_account = None
         self.returned_verification_code = None
-        self.registered_email: Optional[str] = None
+        self.registered_email: str | None = None
 
-    async def attempt_registering_with_email(self, email: Optional[str]) -> None:
+    async def attempt_registering_with_email(self, email: str | None) -> None:
         await self._attempt_registering(RegisterRequestScope.builder(email=email))
 
-    async def attempt_registering_with_password(self, password: Optional[str]) -> None:
+    async def attempt_registering_with_password(self, password: str | None) -> None:
         await self._attempt_registering(
             RegisterRequestScope.builder(password=password, confirm_password=password)
         )
@@ -166,7 +166,7 @@ class RegisterStatements:
             f"got '{self.returned_account.password_hash}'"
         )
 
-    def _assert_account_persisted_with_email(self, expected_email: Optional[str]) -> None:
+    def _assert_account_persisted_with_email(self, expected_email: str | None) -> None:
         self.assert_registration_succeeded()
         assert self.returned_account is not None, "expected RegisterUser.execute to return the persisted Account"
         assert self.returned_account.email == expected_email, (

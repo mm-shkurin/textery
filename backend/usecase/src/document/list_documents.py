@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 from document.document_repository import DocumentRepository
@@ -17,7 +16,7 @@ class ListDocuments:
         self._document_repository = document_repository
 
     async def execute(
-        self, owner_id: UUID, limit: int = DEFAULT_LIMIT, cursor: Optional[str] = None
+        self, owner_id: UUID, limit: int = DEFAULT_LIMIT, cursor: str | None = None
     ) -> Page:
         request = PageRequest(limit=limit, cursor=cursor)
         rows = await self._document_repository.list_by_owner(

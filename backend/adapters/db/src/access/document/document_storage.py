@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -47,7 +46,7 @@ class SqlAlchemyDocumentStorage:
                 f"document with idempotency key {document.idempotency_key} already exists"
             ) from error
 
-    async def find_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> Optional[Document]:
+    async def find_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> Document | None:
         result = await self._session.execute(
             select(DocumentModel).where(
                 DocumentModel.id == document_id,
@@ -57,7 +56,7 @@ class SqlAlchemyDocumentStorage:
         model = result.scalar_one_or_none()
         return model.to_domain() if model else None
 
-    async def find_by_idempotency_key(self, owner_id: UUID, idempotency_key: str) -> Optional[Document]:
+    async def find_by_idempotency_key(self, owner_id: UUID, idempotency_key: str) -> Document | None:
         result = await self._session.execute(
             select(DocumentModel).where(
                 DocumentModel.owner_id == owner_id,
@@ -68,7 +67,7 @@ class SqlAlchemyDocumentStorage:
         return model.to_domain() if model else None
 
     async def list_by_owner(
-        self, owner_id: UUID, limit: int, cursor: Optional[KeysetCursor]
+        self, owner_id: UUID, limit: int, cursor: KeysetCursor | None
     ) -> list[Document]:
         return [
             model.to_domain()
@@ -84,7 +83,7 @@ class SqlAlchemyDocumentStorage:
         content: str,
         expected_version: int,
         updated_at: datetime,
-    ) -> Optional[Document]:
+    ) -> Document | None:
         """Compare-and-swap the content. Returns the new state, or None if the
         version did not match (or the document is absent/foreign).
 

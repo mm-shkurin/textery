@@ -1,15 +1,15 @@
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
+
+from sanitization.nh3_html_sanitizer import Nh3HtmlSanitizer
 
 from access.document.document_storage import SqlAlchemyDocumentStorage
+from container.runtime import session_factory
 from document.create_document import CreateDocument
 from document.get_document import GetDocument
 from document.list_documents import ListDocuments
 from document.save_document import SaveDocument
-from sanitization.nh3_html_sanitizer import Nh3HtmlSanitizer
 from session import SqlAlchemyUnitOfWork
 from shared.clock import SystemClock
-
-from container.runtime import session_factory
 
 
 async def create_create_document() -> AsyncIterator[CreateDocument]:

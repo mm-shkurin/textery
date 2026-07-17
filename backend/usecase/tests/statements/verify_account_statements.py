@@ -1,21 +1,21 @@
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
+
+from fake.auth.fake_account_repository import FakeAccountRepository
+from fake.auth.fake_clock import FakeClock
+from fake.auth.fake_password_hasher import FakePasswordHasher
+from fake.auth.fake_unit_of_work import FakeUnitOfWork
+from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
+from scope.register_request_scope import RegisterRequestScope
 
 from auth.register_user import RegisterUser
 from auth.verify_account import VerifyAccount
 from shared.exceptions import ValidationException, VerificationFailedException
-from fake.auth.fake_account_repository import FakeAccountRepository
-from fake.auth.fake_password_hasher import FakePasswordHasher
-from fake.auth.fake_clock import FakeClock
-from fake.auth.fake_unit_of_work import FakeUnitOfWork
-from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
-from scope.register_request_scope import RegisterRequestScope
 
 
 class VerifyAccountStatements:
     """Scenario 3.1: Correct code activates the account."""
 
-    FIXED_CLOCK_NOW = datetime(2026, 7, 14, 12, 0, 0, tzinfo=timezone.utc)
+    FIXED_CLOCK_NOW = datetime(2026, 7, 14, 12, 0, 0, tzinfo=UTC)
     MALFORMED_CODE = "12345"
     MALFORMED_EMAIL = "not-an-email"
     WRONG_CODE = "999999"
@@ -32,14 +32,14 @@ class VerifyAccountStatements:
     )
 
     def __init__(self) -> None:
-        self.thrown_exception: Optional[Exception] = None
+        self.thrown_exception: Exception | None = None
         self.account_repository = FakeAccountRepository()
         self.password_hasher = FakePasswordHasher()
         self.clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
         self.verification_code_repository = FakeVerificationCodeRepository()
         self.unit_of_work = FakeUnitOfWork()
-        self.registered_email: Optional[str] = None
-        self.issued_code: Optional[str] = None
+        self.registered_email: str | None = None
+        self.issued_code: str | None = None
         self.original_account_snapshot = None
 
     async def given_pending_account_with_verification_code(self) -> None:

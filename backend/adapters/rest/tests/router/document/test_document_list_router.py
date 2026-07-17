@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from document.document import Document
@@ -8,7 +8,7 @@ _LONG_CONTENT = "<p>" + ("x" * 1000) + "</p>"
 
 
 def _document(owner_id) -> Document:
-    stamp = datetime(2026, 7, 17, 12, 0, 0, tzinfo=timezone.utc)
+    stamp = datetime(2026, 7, 17, 12, 0, 0, tzinfo=UTC)
     return Document(
         id=uuid4(),
         owner_id=owner_id,

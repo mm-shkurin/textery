@@ -1,13 +1,7 @@
 import unicodedata
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import uuid4
 
-from auth.account import Account
-from auth.login_user import LoginUser
-from auth.register_user import RegisterUser
-from auth.verify_account import VerifyAccount
-from shared.exceptions import ValidationException
 from fake.auth.fake_account_repository import FakeAccountRepository
 from fake.auth.fake_clock import FakeClock
 from fake.auth.fake_password_hasher import FakePasswordHasher
@@ -16,11 +10,17 @@ from fake.auth.fake_unit_of_work import FakeUnitOfWork
 from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
 from scope.register_request_scope import RegisterRequestScope
 
+from auth.account import Account
+from auth.login_user import LoginUser
+from auth.register_user import RegisterUser
+from auth.verify_account import VerifyAccount
+from shared.exceptions import ValidationException
+
 
 class LoginStatements:
     """Scenarios 5.1, 5.2 and 6.1: authenticating an account and issuing tokens."""
 
-    FIXED_CLOCK_NOW = datetime(2026, 7, 16, 12, 0, 0, tzinfo=timezone.utc)
+    FIXED_CLOCK_NOW = datetime(2026, 7, 16, 12, 0, 0, tzinfo=UTC)
     WRONG_PASSWORD = "Wr0ng!Pass"
     UNKNOWN_EMAIL = "nobody@example.ru"
     MALFORMED_EMAIL = "not-an-email"
@@ -39,15 +39,15 @@ class LoginStatements:
     )
 
     def __init__(self) -> None:
-        self.thrown_exception: Optional[Exception] = None
+        self.thrown_exception: Exception | None = None
         self.account_repository = FakeAccountRepository()
         self.password_hasher = FakePasswordHasher()
         self.token_service = FakeTokenService()
         self.clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
         self.verification_code_repository = FakeVerificationCodeRepository()
         self.unit_of_work = FakeUnitOfWork()
-        self.account_email: Optional[str] = None
-        self.account_password: Optional[str] = None
+        self.account_email: str | None = None
+        self.account_password: str | None = None
         self.account_id = None
         self.issued_pair = None
 

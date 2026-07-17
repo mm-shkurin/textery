@@ -1,12 +1,12 @@
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fake.generation.fake_generation_queue import CALL_ENQUEUE, FakeGenerationQueue
 from fake.generation.fake_generation_storage import CALL_SAVE, FakeGenerationStorage
+from scope.generation_request_scope import GenerationRequestScope
+
 from generation.generation import Generation
 from generation.request_generation import RequestGeneration
-from scope.generation_request_scope import GenerationRequestScope
 from shared.exceptions import ValidationException
 
 
@@ -15,23 +15,23 @@ class GenerationStatements:
     EXPECTED_OUT_OF_RANGE_VOLUME_MESSAGE = "volume_pages must be between 1 and 10"
 
     def __init__(self) -> None:
-        self.thrown_exception: Optional[Exception] = None
-        self.generation: Optional[Generation] = None
-        self._scope: Optional[GenerationRequestScope] = None
-        self._call_order: Optional[list[tuple[str, object]]] = None
-        self._storage: Optional[FakeGenerationStorage] = None
-        self._queue: Optional[FakeGenerationQueue] = None
-        self._before_submit: Optional[datetime] = None
-        self._after_submit: Optional[datetime] = None
+        self.thrown_exception: Exception | None = None
+        self.generation: Generation | None = None
+        self._scope: GenerationRequestScope | None = None
+        self._call_order: list[tuple[str, object]] | None = None
+        self._storage: FakeGenerationStorage | None = None
+        self._queue: FakeGenerationQueue | None = None
+        self._before_submit: datetime | None = None
+        self._after_submit: datetime | None = None
 
-    def attempt_creating_generation_with_topic(self, topic: Optional[str]) -> None:
+    def attempt_creating_generation_with_topic(self, topic: str | None) -> None:
         scope = GenerationRequestScope.builder(topic=topic)
         self._attempt_creating_generation(scope)
 
     def assert_missing_topic_error_raised(self) -> None:
         self._assert_validation_error_raised(self.EXPECTED_MISSING_TOPIC_MESSAGE)
 
-    def attempt_creating_generation_with_volume_pages(self, volume_pages: Optional[int]) -> None:
+    def attempt_creating_generation_with_volume_pages(self, volume_pages: int | None) -> None:
         scope = GenerationRequestScope.builder(volume_pages=volume_pages)
         self._attempt_creating_generation(scope)
 
@@ -67,7 +67,7 @@ class GenerationStatements:
         self._storage = FakeGenerationStorage(self._call_order)
         self._queue = FakeGenerationQueue(self._call_order)
         usecase = RequestGeneration(storage=self._storage, queue=self._queue)
-        self._before_submit = datetime.now(timezone.utc)
+        self._before_submit = datetime.now(UTC)
         self.generation = await usecase.execute(
             owner_id=self._scope.owner_id,
             topic=self._scope.topic,
@@ -76,7 +76,7 @@ class GenerationStatements:
             extra_wishes=self._scope.extra_wishes,
             document_type=self._scope.document_type,
         )
-        self._after_submit = datetime.now(timezone.utc)
+        self._after_submit = datetime.now(UTC)
 
     def assert_generation_accepted_and_pending(self) -> None:
         assert self.generation.status == "pending", (

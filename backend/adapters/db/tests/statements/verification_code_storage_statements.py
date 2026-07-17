@@ -1,6 +1,5 @@
 import re
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from sqlalchemy import select
@@ -16,7 +15,7 @@ _ASCII_SIX_DIGITS = re.compile(r"^[0-9]{6}$")
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class VerificationCodeStorageStatements:
@@ -24,8 +23,8 @@ class VerificationCodeStorageStatements:
         self._storage = SqlAlchemyVerificationCodeRepository(session)
         self._account_storage = SqlAlchemyAccountRepository(session)
         self._session = session
-        self.saved_code: Optional[VerificationCode] = None
-        self.fetched_model: Optional[VerificationCodeModel] = None
+        self.saved_code: VerificationCode | None = None
+        self.fetched_model: VerificationCodeModel | None = None
 
     async def given_saved_account(self) -> Account:
         account = Account.create(

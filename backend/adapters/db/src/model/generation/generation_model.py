@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Integer, String, text
 from sqlalchemy.dialects.postgresql import UUID
@@ -49,11 +48,11 @@ class GenerationModel(Base):
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     topic: Mapped[str] = mapped_column(String, nullable=False)
     volume_pages: Mapped[int] = mapped_column(Integer, nullable=False)
-    requirements: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    extra_wishes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    requirements: Mapped[str | None] = mapped_column(String, nullable=True)
+    extra_wishes: Mapped[str | None] = mapped_column(String, nullable=True)
     document_type: Mapped[str] = mapped_column(String, nullable=False)
-    content: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    error_message: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    content: Mapped[str | None] = mapped_column(String, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(String, nullable=True)
 
     @classmethod
     def from_domain(cls, generation: Generation) -> "GenerationModel":

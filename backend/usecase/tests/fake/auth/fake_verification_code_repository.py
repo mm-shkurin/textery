@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 from auth.verification_code import VerificationCode
@@ -7,7 +6,7 @@ from auth.verification_code import VerificationCode
 class FakeVerificationCodeRepository:
     def __init__(self) -> None:
         self.saved_codes: list[VerificationCode] = []
-        self.raise_on_save: Optional[Exception] = None
+        self.raise_on_save: Exception | None = None
         self.find_active_by_account_id_call_count = 0
 
     async def save(self, code: VerificationCode) -> None:
@@ -15,7 +14,7 @@ class FakeVerificationCodeRepository:
             raise self.raise_on_save
         self.saved_codes.append(code)
 
-    async def find_active_by_account_id(self, account_id: UUID) -> Optional[VerificationCode]:
+    async def find_active_by_account_id(self, account_id: UUID) -> VerificationCode | None:
         # Mirrors SqlAlchemyVerificationCodeRepository: the most recently issued
         # code for the account, with neither expiry nor consumption filtered out.
         # Filtering consumed_at here (as this fake used to) would diverge from the

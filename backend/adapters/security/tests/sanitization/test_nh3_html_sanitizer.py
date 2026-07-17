@@ -1,5 +1,4 @@
 import pytest
-
 from sanitization.nh3_html_sanitizer import Nh3HtmlSanitizer
 
 

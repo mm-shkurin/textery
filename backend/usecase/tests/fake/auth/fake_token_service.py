@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from auth.token_pair import TokenPair
@@ -16,12 +15,12 @@ class FakeTokenService:
     `read_refresh_subject` down either branch without minting a real token.
     """
 
-    ISSUED_AT = datetime(2026, 7, 16, 12, 0, 0, tzinfo=timezone.utc)
+    ISSUED_AT = datetime(2026, 7, 16, 12, 0, 0, tzinfo=UTC)
 
     def __init__(self) -> None:
         self.issued_for: list[tuple[UUID, str]] = []
-        self.refresh_subject: Optional[UUID] = None
-        self.raise_on_read_refresh_subject: Optional[Exception] = None
+        self.refresh_subject: UUID | None = None
+        self.raise_on_read_refresh_subject: Exception | None = None
         self.read_refresh_subject_call_count = 0
 
     def issue_pair(self, account_id: UUID, email: str) -> TokenPair:

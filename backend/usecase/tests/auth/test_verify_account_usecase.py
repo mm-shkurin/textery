@@ -1,4 +1,3 @@
-import pytest
 
 from statements.verify_account_statements import VerifyAccountStatements
 

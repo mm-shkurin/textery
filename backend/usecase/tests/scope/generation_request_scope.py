@@ -1,15 +1,15 @@
 from dataclasses import dataclass
-from typing import ClassVar, Optional
+from typing import ClassVar
 from uuid import UUID, uuid4
 
 
 @dataclass(frozen=True)
 class GenerationRequestScope:
     document_type: str
-    topic: Optional[str]
-    volume_pages: Optional[int]
-    requirements: Optional[str]
-    extra_wishes: Optional[str]
+    topic: str | None
+    volume_pages: int | None
+    requirements: str | None
+    extra_wishes: str | None
     owner_id: UUID
 
     DEFAULTS: ClassVar[dict] = {

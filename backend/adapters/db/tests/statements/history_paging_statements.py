@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +11,7 @@ from document.document import Document
 from generation.generation import Generation
 from shared.keyset_cursor import KeysetCursor
 
-BASE_TIME = datetime(2026, 7, 17, 12, 0, 0, tzinfo=timezone.utc)
+BASE_TIME = datetime(2026, 7, 17, 12, 0, 0, tzinfo=UTC)
 
 
 class HistoryPagingStatements:
@@ -36,19 +35,19 @@ class HistoryPagingStatements:
             id=uuid4(),
             email=f"owner-{uuid4()}@example.com",
             password_hash="hash",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         await self._accounts.save(account)
         return account.id
 
     async def given_a_generation(
-        self, owner_id: UUID, created_at: Optional[datetime] = None
+        self, owner_id: UUID, created_at: datetime | None = None
     ) -> Generation:
         generation = Generation(
             id=uuid4(),
             owner_id=owner_id,
             status="completed",
-            created_at=created_at or datetime.now(timezone.utc),
+            created_at=created_at or datetime.now(UTC),
             topic="Как работает фотосинтез",
             volume_pages=3,
             requirements=None,
@@ -60,9 +59,9 @@ class HistoryPagingStatements:
         return generation
 
     async def given_a_document(
-        self, owner_id: UUID, created_at: Optional[datetime] = None
+        self, owner_id: UUID, created_at: datetime | None = None
     ) -> Document:
-        stamp = created_at or datetime.now(timezone.utc)
+        stamp = created_at or datetime.now(UTC)
         document = Document(
             id=uuid4(),
             owner_id=owner_id,
@@ -91,12 +90,12 @@ class HistoryPagingStatements:
         ]
 
     async def list_generations(
-        self, owner_id: UUID, limit: int, cursor: Optional[KeysetCursor] = None
+        self, owner_id: UUID, limit: int, cursor: KeysetCursor | None = None
     ) -> None:
         self.page = await self._generations.list_by_owner(owner_id, limit, cursor)
 
     async def list_documents(
-        self, owner_id: UUID, limit: int, cursor: Optional[KeysetCursor] = None
+        self, owner_id: UUID, limit: int, cursor: KeysetCursor | None = None
     ) -> None:
         self.page = await self._documents.list_by_owner(owner_id, limit, cursor)
 

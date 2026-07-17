@@ -1,4 +1,3 @@
-from typing import Optional
 
 from auth.account_repository import AccountRepository
 from auth.email import Email
@@ -19,7 +18,7 @@ class VerifyAccount:
         account_repository: AccountRepository,
         verification_code_repository: VerificationCodeRepository,
         clock: Clock,
-        unit_of_work: Optional[UnitOfWork] = None,
+        unit_of_work: UnitOfWork | None = None,
     ) -> None:
         self.account_repository = account_repository
         self.verification_code_repository = verification_code_repository
