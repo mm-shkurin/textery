@@ -47,6 +47,13 @@ to authorize against yet — so the mitigation is scope/lifecycle, not a guard.
 of the real history feature) no later than story #7 (Authorization) — never let this
 endpoint keep returning cross-user data once a `User` concept exists.
 
+**Status 2026-07-17:** the premise expired — story 7 shipped `/login`, and task 4 gave
+`generations` an `owner_id`, so a principal to authorize against now exists. The list
+endpoint itself was never implemented: `generations_list.yaml` is a spec with no route
+behind it, so there is nothing live to gate. The debt is now "do not implement this
+unscoped", recorded in that spec's own description. The sibling hole that WAS live —
+anonymous `POST /generations` and by-id cross-account read — is closed (task 4).
+
 ## 5. Generation progress UI is a fake/simple loading state, not real streaming
 Decided 2026-07-07: while a generation is `pending`/`in_progress` (can be 10-60+
 seconds), the "chat" screen shows a plain loading indicator (e.g. "ИИ пишет...") and

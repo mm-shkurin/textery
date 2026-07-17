@@ -13,7 +13,7 @@ class RequeueStaleGenerationsStatements:
     def __init__(self) -> None:
         self._storage = FakeGenerationStorage(call_order=[])
         self._now = datetime.now(timezone.utc)
-        self.requeued_ids: list[UUID] = []
+        self.requeued: list[tuple[UUID, UUID]] = []
 
     def given_stale_pending_generation(self) -> Generation:
         return self._seed(status="pending", age=STALE_AFTER + timedelta(minutes=1))
@@ -30,6 +30,7 @@ class RequeueStaleGenerationsStatements:
     def _seed(self, status: str, age: timedelta) -> Generation:
         generation = Generation(
             id=uuid4(),
+            owner_id=uuid4(),
             status=status,
             created_at=self._now - age,
             topic="Как работает фотосинтез",
@@ -44,12 +45,15 @@ class RequeueStaleGenerationsStatements:
 
     async def sweep_stale_generations(self) -> None:
         usecase = RequeueStaleGenerations(storage=self._storage)
-        self.requeued_ids = await usecase.execute(older_than=self._now - STALE_AFTER)
+        self.requeued = await usecase.execute(older_than=self._now - STALE_AFTER)
 
     def assert_requeued(self, *expected: Generation) -> None:
-        expected_ids = {generation.id for generation in expected}
-        assert set(self.requeued_ids) == expected_ids, (
-            f"expected requeued ids {expected_ids}, got {set(self.requeued_ids)}"
+        # The owner is asserted alongside the id, not dropped: the sweep's return
+        # value is what the re-trigger uses to locate the row again, and an id
+        # paired with the wrong owner would find nothing and silently never run.
+        expected_pairs = {(generation.id, generation.owner_id) for generation in expected}
+        assert set(self.requeued) == expected_pairs, (
+            f"expected requeued (id, owner_id) pairs {expected_pairs}, got {set(self.requeued)}"
         )
 
     def assert_status_reset_to_pending(self, generation: Generation) -> None:
@@ -58,4 +62,4 @@ class RequeueStaleGenerationsStatements:
         assert stored.status == "pending", f"expected status 'pending', got '{stored.status}'"
 
     def assert_nothing_requeued(self) -> None:
-        assert self.requeued_ids == [], f"expected no requeued ids, got {self.requeued_ids}"
+        assert self.requeued == [], f"expected nothing requeued, got {self.requeued}"

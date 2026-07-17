@@ -1,19 +1,13 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
-
 from generation.generation import Generation
-from router.generation.generation_router import (
-    router as generation_router,
-    get_get_generation_usecase,
-)
 
 
-def _build_generation(status: str, content: str | None) -> Generation:
+def _build_generation(status: str, content: str | None, owner_id) -> Generation:
     return Generation(
         id=uuid4(),
+        owner_id=owner_id,
         status=status,
         created_at=datetime(2026, 7, 10, 12, 0, 0, tzinfo=timezone.utc),
         topic="Как работает фотосинтез",
@@ -25,24 +19,16 @@ def _build_generation(status: str, content: str | None) -> Generation:
     )
 
 
-async def _get(app: FastAPI, generation_id):
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        return await client.get(f"/api/v1/generations/{generation_id}")
-
-
 class TestGetGenerationPending:
     """Scenario 4.1: A pending generation reports its status without document content."""
 
-    async def test_should_return_200_with_no_content_field(self, mocker):
-        app = FastAPI()
-        app.include_router(generation_router)
-        generation = _build_generation(status="pending", content=None)
+    async def test_should_return_200_with_no_content_field(self, mocker, get_client, owner_id):
+        generation = _build_generation(status="pending", content=None, owner_id=owner_id)
         mock_usecase = mocker.Mock()
         mock_usecase.execute = mocker.AsyncMock(return_value=generation)
-        app.dependency_overrides[get_get_generation_usecase] = lambda: mock_usecase
 
-        response = await _get(app, generation.id)
+        async with get_client(mock_usecase) as client:
+            response = await client.get(f"/api/v1/generations/{generation.id}")
 
         assert response.status_code == 200, (
             f"expected 200 OK, got {response.status_code} with body {response.text}"
@@ -57,20 +43,22 @@ class TestGetGenerationPending:
             "content": None,
             "error_message": None,
         }, f"unexpected response body {response.json()}"
+        # The owner reaches the usecase: without it the read would be by id alone,
+        # which is the IDOR this task closes. The response deliberately carries no
+        # owner field -- you can only ever read your own.
+        mock_usecase.execute.assert_awaited_once_with(generation.id, owner_id)
 
 
 class TestGetGenerationCompleted:
     """Scenario 4.2: A completed generation includes the document content."""
 
-    async def test_should_return_200_with_content(self, mocker):
-        app = FastAPI()
-        app.include_router(generation_router)
-        generation = _build_generation(status="completed", content="Готовый доклад")
+    async def test_should_return_200_with_content(self, mocker, get_client, owner_id):
+        generation = _build_generation(status="completed", content="Готовый доклад", owner_id=owner_id)
         mock_usecase = mocker.Mock()
         mock_usecase.execute = mocker.AsyncMock(return_value=generation)
-        app.dependency_overrides[get_get_generation_usecase] = lambda: mock_usecase
 
-        response = await _get(app, generation.id)
+        async with get_client(mock_usecase) as client:
+            response = await client.get(f"/api/v1/generations/{generation.id}")
 
         assert response.status_code == 200, (
             f"expected 200 OK, got {response.status_code} with body {response.text}"
@@ -84,16 +72,19 @@ class TestGetGenerationCompleted:
 
 
 class TestGetGenerationNotFound:
-    """Scenario 4.3: Requesting a non-existent generation reports not found."""
+    """Scenario 4.3: Requesting a non-existent generation reports not found.
 
-    async def test_should_return_404_for_unknown_id(self, mocker):
-        app = FastAPI()
-        app.include_router(generation_router)
+    A generation owned by someone else takes this same branch: the usecase filters
+    on owner_id in SQL and answers None either way, so absent and foreign are
+    indistinguishable from outside. A 403 would confirm the id exists.
+    """
+
+    async def test_should_return_404_for_unknown_id(self, mocker, get_client):
         mock_usecase = mocker.Mock()
         mock_usecase.execute = mocker.AsyncMock(return_value=None)
-        app.dependency_overrides[get_get_generation_usecase] = lambda: mock_usecase
 
-        response = await _get(app, uuid4())
+        async with get_client(mock_usecase) as client:
+            response = await client.get(f"/api/v1/generations/{uuid4()}")
 
         assert response.status_code == 404, (
             f"expected 404 Not Found, got {response.status_code} with body {response.text}"

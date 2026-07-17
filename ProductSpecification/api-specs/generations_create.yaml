@@ -10,6 +10,8 @@ paths:
       operationId: createGeneration
       tags:
         - generations
+      security:
+        - bearerAuth: []
       parameters:
         - name: Idempotency-Key
           in: header
@@ -40,6 +42,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenerationResponse'
+        '401':
+          description: >-
+            Missing, malformed, expired, or non-access token. Creating a
+            generation requires a token — there is no anonymous authoring path.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '400':
           description: Validation error — missing topic, out-of-range volume_pages, or field over max length
         '422':
@@ -48,9 +58,17 @@ paths:
           description: Internal server error
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     CreateGenerationRequest:
       type: object
+      description: >-
+        The owner is taken from the Bearer token, never from this body. A
+        client-supplied owner field is ignored.
       required:
         - document_type
         - topic
@@ -93,3 +111,10 @@ components:
         created_at:
           type: string
           format: date-time
+    ErrorResponse:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string

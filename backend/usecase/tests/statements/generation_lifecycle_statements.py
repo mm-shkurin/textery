@@ -15,6 +15,7 @@ class GenerationLifecycleStatements:
         self._provider: Optional[FakeGenerationProvider] = None
         self._seeded_generation: Optional[Generation] = None
         self._looked_up_id: Optional[UUID] = None
+        self._looked_up_owner_id: Optional[UUID] = None
         self.result: Optional[Generation] = None
 
     def given_pending_generation(self) -> None:
@@ -29,11 +30,21 @@ class GenerationLifecycleStatements:
     def given_no_generation(self) -> None:
         self._storage = FakeGenerationStorage(call_order=[])
         self._looked_up_id = uuid4()
+        self._looked_up_owner_id = uuid4()
+
+    def given_generation_owned_by_someone_else(self) -> None:
+        """A generation that exists, seeded under a different owner than the one the
+        lookup will present. Distinct from `given_no_generation`: this proves the
+        owner predicate is what withholds the row, not the row's absence.
+        """
+        self._seed(status="completed", content="Чужой доклад")
+        self._looked_up_owner_id = uuid4()
 
     def _seed(self, status: str, content: Optional[str]) -> None:
         self._storage = FakeGenerationStorage(call_order=[])
         self._seeded_generation = Generation(
             id=uuid4(),
+            owner_id=uuid4(),
             status=status,
             created_at=datetime.now(timezone.utc),
             topic="Как работает фотосинтез",
@@ -45,10 +56,11 @@ class GenerationLifecycleStatements:
         )
         self._storage.seed(self._seeded_generation)
         self._looked_up_id = self._seeded_generation.id
+        self._looked_up_owner_id = self._seeded_generation.owner_id
 
     async def look_up_generation_status(self) -> None:
         usecase = GetGeneration(storage=self._storage)
-        self.result = await usecase.execute(self._looked_up_id)
+        self.result = await usecase.execute(self._looked_up_id, self._looked_up_owner_id)
 
     def assert_status_pending_without_content(self) -> None:
         assert self.result is not None, "expected a Generation to be returned, got None"
@@ -65,19 +77,28 @@ class GenerationLifecycleStatements:
     def assert_generation_not_found(self) -> None:
         assert self.result is None, f"expected None for unknown id, got {self.result}"
 
+    def assert_foreign_generation_withheld(self) -> None:
+        """Same assertion as `assert_generation_not_found`, named separately: the
+        point under test is that a foreign generation is indistinguishable from an
+        absent one, so the two must produce the identical result.
+        """
+        assert self.result is None, (
+            f"expected a foreign generation to be withheld as None, got {self.result}"
+        )
+
     async def process_pending_generation_with_provider_success(self, content: str = "Готовый доклад") -> None:
         self.given_pending_generation()
         self._provider = FakeGenerationProvider()
         self._provider.content_to_return = content
         usecase = GenerateDocument(storage=self._storage, provider=self._provider)
-        await usecase.execute(self._seeded_generation.id)
+        await usecase.execute(self._seeded_generation.id, self._seeded_generation.owner_id)
 
     async def process_pending_generation_with_provider_error(self, error: Exception) -> None:
         self.given_pending_generation()
         self._provider = FakeGenerationProvider()
         self._provider.error_to_raise = error
         usecase = GenerateDocument(storage=self._storage, provider=self._provider)
-        await usecase.execute(self._seeded_generation.id)
+        await usecase.execute(self._seeded_generation.id, self._seeded_generation.owner_id)
 
     async def process_pending_generation_with_transient_provider_error(
         self, error: Exception, fail_times: int, content: str = "Готовый доклад"
@@ -88,7 +109,7 @@ class GenerationLifecycleStatements:
         self._provider.fail_times = fail_times
         self._provider.content_to_return = content
         usecase = GenerateDocument(storage=self._storage, provider=self._provider)
-        await usecase.execute(self._seeded_generation.id)
+        await usecase.execute(self._seeded_generation.id, self._seeded_generation.owner_id)
 
     def assert_provider_call_count(self, expected_count: int) -> None:
         assert self._provider.call_count == expected_count, (

@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 
 from generation.generation import (
@@ -16,6 +18,7 @@ from shared.exceptions import ValidationException
 
 def _create(**overrides):
     fields = {
+        "owner_id": uuid4(),
         "topic": "Как работает фотосинтез",
         "volume_pages": 3,
         "requirements": None,

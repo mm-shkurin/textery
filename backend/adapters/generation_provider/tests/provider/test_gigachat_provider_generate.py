@@ -50,6 +50,7 @@ def _patch_async_client(mocker, post_side_effect):
 
 def _build_generation():
     return Generation.create(
+        owner_id=uuid.uuid4(),
         topic="Космос",
         volume_pages=3,
         requirements=None,

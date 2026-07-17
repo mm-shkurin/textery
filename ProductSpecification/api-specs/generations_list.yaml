@@ -7,8 +7,15 @@ paths:
   /api/v1/generations:
     get:
       summary: >
-        List all generations (temporary, unscoped stand-in for history — no auth exists
-        yet; see known-debt.md #4). Keyset-paginated, never offset/limit.
+        List generations (stand-in for history). Keyset-paginated, never offset/limit.
+        NOT IMPLEMENTED — no route backs this spec today.
+      description: >
+        The "no auth exists yet" premise this spec was written under expired on
+        2026-07-17: story 7 shipped /login, and task 4 gave generations an owner.
+        Whoever implements this MUST require `Authorization: Bearer` and scope the
+        result to the caller's own generations — an unscoped list would re-open the
+        cross-account read that task 4 closed on GET /generations/{id}. See
+        known-debt.md #4.
       operationId: listGenerations
       tags:
         - generations

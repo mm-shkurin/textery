@@ -70,12 +70,12 @@ class _BackgroundGenerateDocument:
     sent, so it cannot be reused here.
     """
 
-    async def execute(self, generation_id: UUID) -> None:
+    async def execute(self, generation_id: UUID, owner_id: UUID) -> None:
         session = _session_factory()
         try:
             storage = SqlAlchemyGenerationStorage(session)
             usecase = GenerateDocument(storage=storage, provider=_create_provider())
-            await usecase.execute(generation_id)
+            await usecase.execute(generation_id, owner_id)
         finally:
             await session.close()
 
@@ -222,10 +222,10 @@ async def run_stale_generation_sweep() -> None:
         storage = SqlAlchemyGenerationStorage(session)
         usecase = RequeueStaleGenerations(storage=storage)
         older_than = datetime.now(timezone.utc) - timedelta(minutes=_stale_after_minutes())
-        requeued_ids = await usecase.execute(older_than=older_than)
+        requeued = await usecase.execute(older_than=older_than)
     finally:
         await session.close()
 
     generate_document = create_generate_document()
-    for generation_id in requeued_ids:
-        await generate_document.execute(generation_id)
+    for generation_id, owner_id in requeued:
+        await generate_document.execute(generation_id, owner_id)

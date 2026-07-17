@@ -1,4 +1,5 @@
 from typing import Optional
+from uuid import UUID
 
 from adapters.generation_queue import GenerationQueue
 from adapters.generation_storage import GenerationStorage
@@ -22,6 +23,7 @@ class RequestGeneration:
 
     async def execute(
         self,
+        owner_id: UUID,
         topic: Optional[str],
         volume_pages: Optional[int],
         requirements: Optional[str],
@@ -29,6 +31,7 @@ class RequestGeneration:
         document_type: str,
     ) -> Generation:
         generation = Generation.create(
+            owner_id=owner_id,
             topic=topic,
             volume_pages=volume_pages,
             requirements=requirements,

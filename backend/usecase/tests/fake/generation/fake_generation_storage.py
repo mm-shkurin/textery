@@ -7,7 +7,7 @@ from fake.generation.call_order_recording_fake import CallOrderRecordingFake
 from generation.generation import Generation
 
 CALL_SAVE = "save"
-CALL_GET = "get"
+CALL_GET = "get_by_id_and_owner"
 CALL_UPDATE = "update"
 CALL_LIST_STALE = "list_stale"
 
@@ -24,9 +24,17 @@ class FakeGenerationStorage(CallOrderRecordingFake):
         self.saved_generations.append(generation)
         self._by_id[generation.id] = generation
 
-    async def get(self, generation_id: UUID) -> Optional[Generation]:
+    async def get_by_id_and_owner(
+        self, generation_id: UUID, owner_id: UUID
+    ) -> Optional[Generation]:
         self._record(CALL_GET, generation_id)
-        return self._by_id.get(generation_id)
+        # The owner predicate is mirrored, not ignored: a fake that returned the row
+        # on id alone would keep every ownership test green against a storage that
+        # had lost its WHERE clause -- the exact bug this whole change closes.
+        generation = self._by_id.get(generation_id)
+        if generation is None or generation.owner_id != owner_id:
+            return None
+        return generation
 
     async def update(self, generation: Generation) -> None:
         self._record(CALL_UPDATE, generation)

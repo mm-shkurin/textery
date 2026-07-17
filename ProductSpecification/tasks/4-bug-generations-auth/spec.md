@@ -39,6 +39,35 @@ was built in story 1, when no login existed and a request had no name to record.
 `ProductSpecification/stories/05-manual-mode/decisions/document-ownership-decision.md`, whose
 `Consequences` section names the generation endpoints as still open.
 
+## Root Cause
+
+Recorded 2026-07-17, from reading the code — not from the `/rca` step, which was
+skipped along with the rest of the TDD ceremony at the user's direction (see
+`progress.md`). The mechanism is structural and needed no hypothesis testing.
+
+`generation_router.py` declared no owner dependency, and `Generation` /
+`GenerationModel` / the `generations` table had no owner column at all — `git grep
+owner` over the generation slice returned nothing. The slice was built in story 1,
+when no login existed and a request had no principal to record. Story 7's `/login`
+landed 2026-07-17, and story 5 closed the identical hole for documents; the
+generation slice was simply never revisited.
+
+Two callers of the unguarded `storage.get(id)` made this more than a one-line fix:
+`GetGeneration` (the API read path, needs the owner) and `GenerateDocument` (the
+BackgroundTasks path, which knew only the id). `run_stale_generation_sweep` fed the
+latter from `RequeueStaleGenerations`, which returned bare ids.
+
+## Key Files
+
+- `backend/adapters/rest/src/router/generation/generation_router.py` — the missing guard
+- `backend/domain/src/generation/generation.py` — no `owner_id` field
+- `backend/adapters/db/src/model/generation/generation_model.py` — no `owner_id` column
+- `backend/adapters/db/src/access/generation/generation_storage.py` — unguarded `get(id)`
+- `backend/usecase/src/generation/get_generation.py` — API read path
+- `backend/usecase/src/generation/generate_document.py` — background read path
+- `backend/usecase/src/generation/requeue_stale_generations.py` — sweep, returned bare ids
+- `backend/application/src/app/container.py` — background + sweep wiring
+
 ## Reproduction
 
 Against a running backend with the generation slice wired (story-1 surface — present on `main`):

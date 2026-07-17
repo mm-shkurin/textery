@@ -38,12 +38,14 @@ async def db_session():
         yield session
         await session.rollback()
     async with engine.connect() as cleanup_connection:
-        await cleanup_connection.execute(text("TRUNCATE TABLE generations"))
-        # One statement: documents.owner_id references accounts.id, so truncating
-        # accounts on its own fails with "cannot truncate a table referenced in a
-        # foreign key constraint". Postgres only allows it when every referencing
-        # table is truncated in the same command.
-        await cleanup_connection.execute(text("TRUNCATE TABLE documents, verification_codes, accounts"))
+        # One statement: documents.owner_id and generations.owner_id both reference
+        # accounts.id, so truncating accounts on its own fails with "cannot truncate
+        # a table referenced in a foreign key constraint". Postgres only allows it
+        # when every referencing table is truncated in the same command -- which is
+        # why generations moved in here rather than staying a separate TRUNCATE.
+        await cleanup_connection.execute(
+            text("TRUNCATE TABLE generations, documents, verification_codes, accounts")
+        )
         await cleanup_connection.commit()
     await engine.dispose()
 

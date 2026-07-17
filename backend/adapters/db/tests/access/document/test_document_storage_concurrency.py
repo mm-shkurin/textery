@@ -98,6 +98,6 @@ class TestConcurrentSavesResolveAtomically:
             assert stored.content in ("<p>alpha</p>", "<p>beta</p>")
         finally:
             async with engine.connect() as cleanup:
-                await cleanup.execute(text("TRUNCATE TABLE documents, verification_codes, accounts"))
+                await cleanup.execute(text("TRUNCATE TABLE generations, documents, verification_codes, accounts"))
                 await cleanup.commit()
             await engine.dispose()

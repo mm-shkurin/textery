@@ -16,8 +16,12 @@ class GenerateDocument:
         self._storage = storage
         self._provider = provider
 
-    async def execute(self, generation_id: UUID) -> None:
-        generation = await self._storage.get(generation_id)
+    async def execute(self, generation_id: UUID, owner_id: UUID) -> None:
+        # The owner is threaded through rather than looked up, so that the storage
+        # can expose exactly one by-id read and it is the owner-filtered one. This is
+        # not an authorization check -- this path is internal and already trusted; the
+        # pair is simply the locator. Callers pass the generation's own owner.
+        generation = await self._storage.get_by_id_and_owner(generation_id, owner_id)
         generation.mark_in_progress()
         await self._storage.update(generation)
 

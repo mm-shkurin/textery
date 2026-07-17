@@ -25,6 +25,7 @@ class Generation:
     def __init__(
         self,
         id: UUID,
+        owner_id: UUID,
         status: str,
         created_at: datetime,
         topic: Optional[str],
@@ -37,6 +38,10 @@ class Generation:
         version: int = 1,
     ) -> None:
         self.id = id
+        # Required positionally, with no default: a default would let a caller that
+        # forgot the owner construct an unowned generation and only fail later at the
+        # NOT NULL column, far from the mistake.
+        self.owner_id = owner_id
         self.status = status
         self.created_at = created_at
         self.version = version
@@ -65,6 +70,7 @@ class Generation:
     @classmethod
     def create(
         cls,
+        owner_id: UUID,
         topic: Optional[str],
         volume_pages: Optional[int],
         requirements: Optional[str],
@@ -83,6 +89,7 @@ class Generation:
             raise ValidationException(EXTRA_WISHES_TOO_LONG_MESSAGE)
         return cls(
             id=uuid4(),
+            owner_id=owner_id,
             status=PENDING_STATUS,
             created_at=datetime.now(timezone.utc),
             topic=topic,

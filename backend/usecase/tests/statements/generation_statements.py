@@ -41,6 +41,7 @@ class GenerationStatements:
     def _attempt_creating_generation(self, scope: GenerationRequestScope) -> None:
         try:
             Generation.create(
+                owner_id=scope.owner_id,
                 topic=scope.topic,
                 volume_pages=scope.volume_pages,
                 requirements=scope.requirements,
@@ -68,6 +69,7 @@ class GenerationStatements:
         usecase = RequestGeneration(storage=self._storage, queue=self._queue)
         self._before_submit = datetime.now(timezone.utc)
         self.generation = await usecase.execute(
+            owner_id=self._scope.owner_id,
             topic=self._scope.topic,
             volume_pages=self._scope.volume_pages,
             requirements=self._scope.requirements,
@@ -96,6 +98,11 @@ class GenerationStatements:
             self.generation.requirements,
             self.generation.extra_wishes,
             self.generation.document_type,
+            # Not a request field: the owner comes from the token, never the body.
+            # Asserted alongside them so a usecase that dropped it on the floor --
+            # or stamped someone else's id -- fails here rather than at the NOT NULL
+            # column with a constraint error.
+            self.generation.owner_id,
         )
         expected_request_fields = (
             self._scope.topic,
@@ -103,6 +110,7 @@ class GenerationStatements:
             self._scope.requirements,
             self._scope.extra_wishes,
             self._scope.document_type,
+            self._scope.owner_id,
         )
         assert actual_request_fields == expected_request_fields, (
             f"expected request fields {expected_request_fields}, "

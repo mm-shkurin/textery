@@ -11,6 +11,16 @@ from shared.exceptions import ConflictException, NotFoundException
 
 
 class SqlAlchemyGenerationStorage:
+    """Storage adapter for generations.
+
+    There is deliberately no `get(id)`: the only by-id read filters on `owner_id`
+    **in SQL**, so a foreign generation falls out as `None` structurally rather
+    than relying on every caller remembering an ownership `if`. A `get(id)` sitting
+    alongside `get_by_id_and_owner` would be one autocomplete away from undoing
+    that -- the same reasoning as `SqlAlchemyDocumentStorage`, see
+    decisions/document-ownership-decision.md.
+    """
+
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
@@ -18,8 +28,16 @@ class SqlAlchemyGenerationStorage:
         self._session.add(GenerationModel.from_domain(generation))
         await self._session.commit()
 
-    async def get(self, generation_id: UUID) -> Optional[Generation]:
-        model = await self._session.get(GenerationModel, generation_id)
+    async def get_by_id_and_owner(
+        self, generation_id: UUID, owner_id: UUID
+    ) -> Optional[Generation]:
+        result = await self._session.execute(
+            select(GenerationModel).where(
+                GenerationModel.id == generation_id,
+                GenerationModel.owner_id == owner_id,
+            )
+        )
+        model = result.scalar_one_or_none()
         return model.to_domain() if model is not None else None
 
     async def update(self, generation: Generation) -> None:

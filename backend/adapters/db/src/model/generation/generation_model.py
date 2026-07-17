@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import CheckConstraint, DateTime, Integer, String
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -29,6 +29,12 @@ class GenerationModel(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("accounts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     status: Mapped[str] = mapped_column(String, nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
@@ -44,6 +50,7 @@ class GenerationModel(Base):
     def from_domain(cls, generation: Generation) -> "GenerationModel":
         return cls(
             id=generation.id,
+            owner_id=generation.owner_id,
             status=generation.status,
             created_at=generation.created_at,
             version=generation.version,
@@ -59,6 +66,7 @@ class GenerationModel(Base):
     def to_domain(self) -> Generation:
         return Generation(
             id=self.id,
+            owner_id=self.owner_id,
             status=self.status,
             created_at=self.created_at,
             version=self.version,

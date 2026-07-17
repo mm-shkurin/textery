@@ -10,16 +10,21 @@ class RequeueStaleGenerations:
     worker crash/restart, since BackgroundTasks is not durable across process
     boundaries. The application layer re-triggers execution for the returned
     ids; this usecase only owns the storage-state transition.
+
+    The sweep is cross-owner by nature -- it recovers every stuck row regardless of
+    who requested it -- so it reads through `list_stale`, not the owner-filtered
+    by-id read. It returns `(id, owner_id)` pairs because the re-trigger it feeds
+    does need the owner to locate the row again.
     """
 
     def __init__(self, storage: GenerationStorage) -> None:
         self._storage = storage
 
-    async def execute(self, older_than: datetime) -> list[UUID]:
+    async def execute(self, older_than: datetime) -> list[tuple[UUID, UUID]]:
         stale = await self._storage.list_stale(older_than)
-        requeued_ids: list[UUID] = []
+        requeued: list[tuple[UUID, UUID]] = []
         for generation in stale:
             generation.requeue()
             await self._storage.update(generation)
-            requeued_ids.append(generation.id)
-        return requeued_ids
+            requeued.append((generation.id, generation.owner_id))
+        return requeued
