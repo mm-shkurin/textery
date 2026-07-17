@@ -1,0 +1,132 @@
+/* Tokens come from index.css — no literals, so this screen follows a theme change like the rest. */
+.history-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+.history-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.history-back {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 0;
+}
+
+.history-back:hover {
+  color: var(--text-primary);
+}
+
+.history-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.history-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.history-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 10px 14px;
+}
+
+.history-tab[aria-selected='true'] {
+  border-bottom-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* A button for documents, a div for generations — the shared look must not depend on the tag,
+   since only one of them is clickable today. */
+.history-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 16px 4px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+button.history-row {
+  cursor: pointer;
+}
+
+button.history-row:hover {
+  background: var(--surface-hover, rgba(255, 255, 255, 0.04));
+}
+
+.history-row-title {
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-row-meta {
+  color: var(--text-secondary);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.history-empty,
+.history-loading {
+  color: var(--text-secondary);
+  font-size: 14px;
+  padding: 40px 4px;
+  text-align: center;
+}
+
+.history-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: var(--error);
+  font-size: 13px;
+  margin-top: 16px;
+  padding: 12px 16px;
+}
+
+.history-more {
+  align-self: center;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 24px;
+  padding: 8px 20px;
+}
+
+.history-more:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

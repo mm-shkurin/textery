@@ -8,6 +8,7 @@ interface HeaderProps {
   isAuthenticated?: boolean
   onLogoutClick?: () => void
   onLoginClick?: () => void
+  onHistoryClick?: () => void
 }
 
 export function Header({
@@ -15,6 +16,7 @@ export function Header({
   isAuthenticated,
   onLogoutClick,
   onLoginClick,
+  onHistoryClick,
 }: HeaderProps) {
   return (
     <header className="site-header">
@@ -31,6 +33,19 @@ export function Header({
             onClick={onLoginClick}
           >
             Войти
+          </button>
+        )}
+        {isAuthenticated && (
+          // Both history endpoints 401 without a token, so this is the one entry point to work
+          // that only exists once you are signed in. Signed-out visitors are not shown a door
+          // to an empty room.
+          <button
+            type="button"
+            className="btn-ghost header-history"
+            data-testid="header-history-button"
+            onClick={onHistoryClick}
+          >
+            Мои работы
           </button>
         )}
         {isAuthenticated && (

@@ -15,6 +15,14 @@ export const DOCUMENT_TYPES: DocumentTypeOption[] = [
 
 export const DEFAULT_DOCUMENT_TYPE: DocumentType = 'doklad'
 
+// Display labels, derived from DOCUMENT_TYPES rather than written out again. App.tsx used to
+// carry its own copy of these four strings — a second hand-maintained table of the same facts,
+// which is the arrangement this file already warns against for the wire values below. Renaming
+// a card in the modal now renames it in the editor's breadcrumb, because there is one source.
+export const DOCUMENT_TYPE_LABELS = Object.fromEntries(
+  DOCUMENT_TYPES.map((t) => [t.id, t.name]),
+) as Record<DocumentType, string>
+
 // The wire values the backend actually accepts — measured by curl against the live stack
 // 2026-07-17, not read from a spec:
 //   {"document_type":"doklad"} -> 422 {"error_code":"INVALID_DOCUMENT_TYPE"}
@@ -36,4 +44,19 @@ export const WIRE_DOCUMENT_TYPE: Record<DocumentType, string> = {
   essay: 'эссе',
   sochinenie: 'сочинение',
   referat: 'реферат',
+}
+
+// The inverse, for values coming BACK from the wire — the history list returns
+// `document_type: "доклад"`, and reopening its rows needs the app's own DocumentType again.
+// Derived from the map above rather than written out a second time: two hand-maintained tables
+// are two chances to disagree, and the disagreement would be silent.
+const APP_DOCUMENT_TYPE = Object.fromEntries(
+  Object.entries(WIRE_DOCUMENT_TYPE).map(([app, wire]) => [wire, app]),
+) as Record<string, DocumentType | undefined>
+
+// Returns null for anything unrecognised rather than asserting. The server owns this value and
+// can add a type before the client knows about it; crashing a whole history list over one
+// unfamiliar row would be a worse answer than showing the row and declining to open it.
+export function documentTypeFromWire(wire: string): DocumentType | null {
+  return APP_DOCUMENT_TYPE[wire] ?? null
 }

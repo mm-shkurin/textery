@@ -80,14 +80,20 @@ async function performRenewal(): Promise<boolean> {
 export async function authorizedRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const token = getAccessToken()
   // No token, no request. This endpoint needs a session; sending anonymously would ask the
-  // backend a question we already know the answer to — and today's backend answers it WRONG.
-  // Probed 2026-07-17 against the running instance: `POST /api/v1/generations` returns 201 to
-  // an anonymous caller AND 201 to one holding the literal token "garbage". It declares no
-  // security scheme and does not read the header at all.
+  // backend a question we already know the answer to.
   //
-  // So this guard is the client declining to walk through a hole it can see. It is NOT a fix
-  // for that hole — anyone with curl skips this code entirely, as the probe just did. The fix
-  // is the backend rejecting a request with no valid token, and it is still owed.
+  // HISTORY, because the reasoning here changed and the change matters: an earlier probe found
+  // `POST /api/v1/generations` returning 201 to an anonymous caller AND to one holding the
+  // literal token "garbage" — it read no header at all, so this guard was the client declining
+  // to walk through a hole it could see, and explicitly NOT a fix for it.
+  //
+  // Re-measured 2026-07-17 against the running stack: that hole is CLOSED. Anonymous and
+  // "Bearer garbage" both now return 401 UNAUTHORIZED, on generations and documents alike.
+  //
+  // This guard's job is therefore narrower now, and worth keeping for that narrower job: it
+  // turns a certain 401 into a SessionExpiredError without a round trip, so the UI says "you
+  // are signed out" instead of blaming the button. It is not the security boundary — the 401
+  // is — and it should not be mistaken for one again in either direction.
   if (!token) {
     throw new SessionExpiredError()
   }

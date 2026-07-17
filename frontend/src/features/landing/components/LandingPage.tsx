@@ -8,6 +8,7 @@ interface LandingPageProps {
   isAuthenticated?: boolean
   onLogoutClick?: () => void
   onLoginClick?: () => void
+  onHistoryClick?: () => void
 }
 
 const TRUST_AVATAR_COUNT = 4
@@ -36,6 +37,7 @@ export function LandingPage({
   isAuthenticated,
   onLogoutClick,
   onLoginClick,
+  onHistoryClick,
 }: LandingPageProps) {
   return (
     <div className="landing">
@@ -44,6 +46,7 @@ export function LandingPage({
         isAuthenticated={isAuthenticated}
         onLogoutClick={onLogoutClick}
         onLoginClick={onLoginClick}
+        onHistoryClick={onHistoryClick}
       />
 
       <div className="hero">
