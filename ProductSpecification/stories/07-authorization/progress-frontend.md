@@ -141,6 +141,59 @@ via its own green step.
 token exists, so this is a session, not access control. No logout. No `/refresh` wiring (the
 access token simply expires in ~15 min). `resend-code` is still 404.
 
+## Generation put behind a session, 2026-07-16 — product decision, client-side gate
+
+User's call, in their words: an unauthenticated visitor sees the landing; an authenticated one
+can generate, use manual mode and so on. So the landing stays public (gating a shopfront would
+be gating marketing) and everything behind it — type → mode → workspace — needs an account.
+
+**THIS IS A PRODUCT GATE, NOT A SECURITY BOUNDARY.** It decides what UI renders and protects
+nothing by itself. The workspace has no URL of its own (it is internal state), so the CTA is the
+only door and gating it closes the reachable path — but anyone editing their own memory, or
+calling the API directly, walks straight past. Real protection is the backend refusing requests
+without a token. Verified 2026-07-16: `POST /api/v1/generations` still serves anonymous callers
+(400 on a malformed body, not 401), and `httpClient` sends no `Authorization` header, so nothing
+would even be checked yet. Read this as UI routing, not access control. Written into `App.tsx`
+next to the gate so the next reader cannot mistake it.
+
+Belt and braces: the step is re-checked at render, not only at the CTA, so a session ending
+mid-flow (storage cleared, another tab) collapses to the landing instead of leaving a workspace
+on screen that every request would refuse. Verified live.
+
+Redirect target is validated (`safeRedirectTarget`): only an in-app absolute path is honoured.
+`location.state` is reachable from a crafted link, and taking a redirect target from it unchecked
+is how open-redirect bugs get in.
+
+**Browser-verified, live stack:** anonymous → landing CTA visible, sessionStorage empty → click →
+`/login`, no type modal; after sign-in → `/` → click → type modal opens; session cleared mid-flow
+→ next click does not advance, landing returns.
+
+**Test fallout, measured rather than assumed.** 3 unit tests encoded "anonymous can generate" —
+true until this decision, false after; they now sign in as setup. Added two tests pinning the
+gate itself (anonymous CTA → login; landing still public), because the gate is the only reachable
+path and deleting it would otherwise break nothing visible. One of those introduced a real
+isolation bug I had to fix: `App` renders its own `BrowserRouter` and jsdom's location SURVIVES
+between tests, so the gate test's navigation leaked into every later render — the URL is now reset
+in `beforeEach`, not just the session.
+
+Acceptance: the generation and landing-mobile scenarios reach the flow through the CTA, so both
+needed a session. Seeded directly rather than driven through register→verify→login: those
+scenarios are about the chat panel and about viewport overflow, and routing them through three
+auth screens would make them fail whenever auth breaks, hiding which layer is at fault. The gate
+checks only that a token is PRESENT, so a placeholder satisfies it honestly — and the comment
+records that this stops being true the day the backend requires `Authorization`.
+
+**3 acceptance tests still fail, and they are NOT this change.** I baselined by stashing: they
+fail identically without any of it. `login_submit_disabled_while_in_flight`,
+`login_submit_loading_indicator`, `verify_confirm_disabled_while_in_flight` — all three assert a
+UI state DURING a request, and the real APIs answer in milliseconds where the removed
+`useSubmitPlaceholder` used to hold a 500ms window open. Same class already blocking scenario
+3.1's green-selenium. They need a controllable delay (a stubbed slow response) or they are
+unobservable by construction; deleting them would lose the requirement. Left failing and named
+rather than quietly skipped.
+
+Suite: 104/104 unit, tsc clean. Acceptance frontend: 14 passed, 3 failed (above), 1 skipped.
+
 ## Frontend Scenarios (tests/02_UI_Tests.md)
 
 ### 1.1: Registration form displays email, password, confirm password fields

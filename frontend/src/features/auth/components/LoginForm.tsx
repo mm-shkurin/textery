@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
 import { login } from '../api/loginApi'
@@ -57,8 +57,21 @@ function applyLoginError(error: unknown): string {
   return GENERIC_LOGIN_FAILURE_MESSAGE
 }
 
+// Where to land after a successful sign-in. The gate that bounced the user here puts the page
+// they wanted in router state; only an in-app absolute path is honoured — taking a redirect
+// target from anything a caller controls is how open-redirect bugs get in, and `state` is
+// reachable from a crafted link.
+function safeRedirectTarget(from: unknown): string {
+  if (typeof from === 'string' && from.startsWith('/') && !from.startsWith('//')) {
+    return from
+  }
+  return '/'
+}
+
 export function LoginForm() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const redirectTo = safeRedirectTarget((location.state as { from?: unknown } | null)?.from)
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -88,7 +101,7 @@ export function LoginForm() {
         setFormError('Не удалось сохранить сессию — проверьте настройки браузера')
         return
       }
-      navigate('/', { replace: true })
+      navigate(redirectTo, { replace: true })
     } catch (error) {
       setFormError(applyLoginError(error))
     } finally {
