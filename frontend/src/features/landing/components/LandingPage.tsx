@@ -5,6 +5,9 @@ import './LandingPageFeatures.css'
 
 interface LandingPageProps {
   onPrimaryCtaClick?: () => void
+  isAuthenticated?: boolean
+  onLogoutClick?: () => void
+  onLoginClick?: () => void
 }
 
 const TRUST_AVATAR_COUNT = 4
@@ -28,10 +31,20 @@ const FEATURES = [
   },
 ]
 
-export function LandingPage({ onPrimaryCtaClick }: LandingPageProps) {
+export function LandingPage({
+  onPrimaryCtaClick,
+  isAuthenticated,
+  onLogoutClick,
+  onLoginClick,
+}: LandingPageProps) {
   return (
     <div className="landing">
-      <Header onPrimaryCtaClick={onPrimaryCtaClick} />
+      <Header
+        onPrimaryCtaClick={onPrimaryCtaClick}
+        isAuthenticated={isAuthenticated}
+        onLogoutClick={onLogoutClick}
+        onLoginClick={onLoginClick}
+      />
 
       <div className="hero">
         <h1 data-testid="hero-heading">Word онлайн</h1>

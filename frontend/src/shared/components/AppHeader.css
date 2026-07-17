@@ -12,6 +12,23 @@
   display: block;
 }
 
+/* Muted on purpose: signing out must be findable but must not compete with the work on the
+   page for attention — it is an exit, not a call to action. Matches the landing header's
+   .btn-ghost treatment so the same action looks the same on every screen. */
+.app-logout {
+  border: none;
+  background: none;
+  font-family: inherit;
+  color: var(--text-muted);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 8px 12px;
+}
+
+.app-logout:hover {
+  color: var(--text-primary);
+}
+
 @media (max-width: 768px) {
   .app-header {
     padding: 16px 20px;

@@ -9,6 +9,9 @@ from selenium import webdriver as selenium_webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 
 from clients.application.application_client import ApplicationClient
+from statements.frontend.auth.login_page_statements import LoginPageStatements
+from statements.frontend.auth.register_page_statements import RegisterPageStatements
+from statements.frontend.auth.verify_code_page_statements import VerifyCodePageStatements
 from statements.frontend.landing_page_statements import LandingPageStatements
 from statements.frontend.generation.chat_workspace_statements import ChatWorkspaceStatements
 from statements.frontend.generation.manual_editor_statements import ManualEditorStatements
@@ -43,6 +46,10 @@ def webdriver():
     options = ChromeOptions()
     options.add_argument("--headless=new")
     options.add_argument("--window-size=1400,1000")
+    # Enables driver.get_log("performance") so Statements can assert on
+    # actual network traffic (e.g. duplicate-submission checks) instead of
+    # only on DOM state.
+    options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
     driver = selenium_webdriver.Chrome(options=options)
     yield driver
     driver.quit()
@@ -61,6 +68,21 @@ def mobile_webdriver():
 @pytest.fixture
 def landing_page_statements():
     return LandingPageStatements()
+
+
+@pytest.fixture
+def register_page_statements():
+    return RegisterPageStatements()
+
+
+@pytest.fixture
+def login_page_statements():
+    return LoginPageStatements()
+
+
+@pytest.fixture
+def verify_code_page_statements():
+    return VerifyCodePageStatements()
 
 
 @pytest.fixture
