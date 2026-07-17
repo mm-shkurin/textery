@@ -53,14 +53,26 @@ function DocumentGenerationFlow() {
     setMode(null)
   }
 
+  // The CTA sends a signed-out visitor to REGISTER, not to sign in. Someone clicking "create a
+  // generation" on a public landing is overwhelmingly a new visitor — the mockup calls this
+  // button "Попробовать бесплатно" (01-landing.html:47), and answering "try it free" with a
+  // password prompt asks for a password they do not have yet. Returning users have their own
+  // door now: the "Войти" action in the header.
+  //
+  // Registration lands them back here signed in (see postVerifySignIn), so the CTA still leads
+  // where it says it does — just via the one screen a new user can actually complete.
   const startFlow = () => {
     if (!isAuthenticated) {
-      // `from` so login returns them to what they were trying to do, instead of dropping them
-      // on the landing to hunt for the button again.
-      navigate('/login', { state: { from: '/' } })
+      navigate('/register')
       return
     }
     setStep('type')
+  }
+
+  // `from` so signing in returns them to what they were doing, instead of dropping them on the
+  // landing to hunt for the button again.
+  const goToLogin = () => {
+    navigate('/login', { state: { from: '/' } })
   }
 
   // Signing out has to unwind the flow, not just the header: leaving `step` at 'form' would
@@ -76,7 +88,7 @@ function DocumentGenerationFlow() {
   // session collapses to the landing rather than leaving a workspace on screen that every
   // request will refuse.
   if (step !== 'landing' && !isAuthenticated) {
-    return <LandingPage onPrimaryCtaClick={startFlow} />
+    return <LandingPage onPrimaryCtaClick={startFlow} onLoginClick={goToLogin} />
   }
 
   if (step === 'form' && documentType && mode) {
@@ -101,6 +113,7 @@ function DocumentGenerationFlow() {
         onPrimaryCtaClick={startFlow}
         isAuthenticated={isAuthenticated}
         onLogoutClick={handleLogout}
+        onLoginClick={goToLogin}
       />
 
       {step === 'type' && (

@@ -7,13 +7,32 @@ interface HeaderProps {
   // reader means one place to be wrong.
   isAuthenticated?: boolean
   onLogoutClick?: () => void
+  onLoginClick?: () => void
 }
 
-export function Header({ onPrimaryCtaClick, isAuthenticated, onLogoutClick }: HeaderProps) {
+export function Header({
+  onPrimaryCtaClick,
+  isAuthenticated,
+  onLogoutClick,
+  onLoginClick,
+}: HeaderProps) {
   return (
     <header className="site-header">
       <img className="brand-logo" src="/logo.svg" alt="Textery" />
       <div className="header-actions">
+        {!isAuthenticated && (
+          // The mockup's second header action for a signed-out visitor (01-landing.html:46,
+          // "Вход", secondary next to the primary CTA). Returning users need a door that is
+          // not "start something new" — without it, signing in meant knowing to type /login.
+          <button
+            type="button"
+            className="btn-ghost header-login"
+            data-testid="header-login-button"
+            onClick={onLoginClick}
+          >
+            Войти
+          </button>
+        )}
         {isAuthenticated && (
           // Shown only to a signed-in user: a "Выйти" button on the public landing offers to
           // end a session that does not exist. The mockup (05-authenticated.html) draws a user

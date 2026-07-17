@@ -7,6 +7,7 @@ interface LandingPageProps {
   onPrimaryCtaClick?: () => void
   isAuthenticated?: boolean
   onLogoutClick?: () => void
+  onLoginClick?: () => void
 }
 
 const TRUST_AVATAR_COUNT = 4
@@ -30,13 +31,19 @@ const FEATURES = [
   },
 ]
 
-export function LandingPage({ onPrimaryCtaClick, isAuthenticated, onLogoutClick }: LandingPageProps) {
+export function LandingPage({
+  onPrimaryCtaClick,
+  isAuthenticated,
+  onLogoutClick,
+  onLoginClick,
+}: LandingPageProps) {
   return (
     <div className="landing">
       <Header
         onPrimaryCtaClick={onPrimaryCtaClick}
         isAuthenticated={isAuthenticated}
         onLogoutClick={onLogoutClick}
+        onLoginClick={onLoginClick}
       />
 
       <div className="hero">

@@ -25,16 +25,41 @@ describe('App step transitions', () => {
     clearSession()
   })
 
-  it('sends an anonymous visitor to the login page instead of opening the flow', () => {
-    // The gate this pins is the ONLY reachable path into the workspace: it has no URL of its
-    // own, so the CTA is the door. Without this test, deleting the gate breaks nothing visible.
+  // The gate this pins is the ONLY reachable path into the workspace: it has no URL of its own,
+  // so the CTA is the door. Without this test, deleting the gate breaks nothing visible.
+  //
+  // It sends them to REGISTER, not to sign in. This test previously asserted /login and was
+  // right to until the destination changed by decision: someone clicking "create a generation"
+  // on a public landing is overwhelmingly a new visitor, and answering them with a password
+  // prompt asks for a password they do not have yet.
+  it('sends an anonymous visitor to the registration page instead of opening the flow', () => {
     clearSession()
     render(<App />)
 
     fireEvent.click(screen.getByTestId('features-primary-cta-button'))
 
     expect(screen.queryByTestId('type-modal')).not.toBeInTheDocument()
+    expect(screen.getByTestId('register-submit-button')).toBeInTheDocument()
+  })
+
+  // Returning users are not new users. Without a door of their own, signing in meant knowing to
+  // type /login — the CTA now leads to registration, which is the wrong screen for them.
+  it('offers a signed-out visitor a way to sign in', () => {
+    clearSession()
+    render(<App />)
+
+    fireEvent.click(screen.getByTestId('header-login-button'))
+
     expect(screen.getByTestId('login-submit-button')).toBeInTheDocument()
+  })
+
+  // The two doors are mutually exclusive: "Войти" on a signed-in header offers to start a
+  // session that already exists, and it is where the sign-out action now sits instead.
+  it('hides the sign-in action once a session exists', () => {
+    render(<App />)
+
+    expect(screen.queryByTestId('header-login-button')).not.toBeInTheDocument()
+    expect(screen.getByTestId('header-logout-button')).toBeInTheDocument()
   })
 
   it('keeps the landing itself open to an anonymous visitor', () => {
