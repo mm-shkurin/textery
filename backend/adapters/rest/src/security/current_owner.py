@@ -37,7 +37,7 @@ def get_current_owner_id(
     """
     if not authorization or not authorization.lower().startswith(_BEARER_PREFIX):
         raise _unauthorized()
-    token = authorization[len(_BEARER_PREFIX):].strip()
+    token = authorization[len(_BEARER_PREFIX) :].strip()
     if not token:
         raise _unauthorized()
     try:

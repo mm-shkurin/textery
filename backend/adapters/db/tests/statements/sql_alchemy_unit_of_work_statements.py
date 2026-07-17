@@ -52,5 +52,6 @@ class SqlAlchemyUnitOfWorkStatements:
     async def assert_account_absent_on_new_connection(self) -> None:
         row = await fetch_account_row_on_new_connection(self.saved_account.id)
         assert row is None, (
-            f"expected account {self.saved_account.id} to be discarded via UnitOfWork.rollback(), found {row}"
+            f"expected account {self.saved_account.id} to be discarded via "
+            f"UnitOfWork.rollback(), found {row}"
         )

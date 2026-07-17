@@ -24,7 +24,9 @@ def app():
 
     @application.get("/conflict")
     async def raise_conflict():
-        raise ConflictException("document 3f1b0c9e-1111-2222-3333-444455556666 was modified concurrently")
+        raise ConflictException(
+            "document 3f1b0c9e-1111-2222-3333-444455556666 was modified concurrently"
+        )
 
     @application.get("/unauthorized")
     async def raise_unauthorized():

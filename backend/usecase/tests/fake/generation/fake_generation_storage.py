@@ -24,9 +24,7 @@ class FakeGenerationStorage(CallOrderRecordingFake):
         self.saved_generations.append(generation)
         self._by_id[generation.id] = generation
 
-    async def get_by_id_and_owner(
-        self, generation_id: UUID, owner_id: UUID
-    ) -> Generation | None:
+    async def get_by_id_and_owner(self, generation_id: UUID, owner_id: UUID) -> Generation | None:
         self._record(CALL_GET, generation_id)
         # The owner predicate is mirrored, not ignored: a fake that returned the row
         # on id alone would keep every ownership test green against a storage that
@@ -52,5 +50,6 @@ class FakeGenerationStorage(CallOrderRecordingFake):
         return [
             generation
             for generation in self._by_id.values()
-            if generation.status in ("pending", "in_progress") and generation.created_at < older_than
+            if generation.status in ("pending", "in_progress")
+            and generation.created_at < older_than
         ]

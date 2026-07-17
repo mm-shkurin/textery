@@ -75,7 +75,15 @@ class TestDecodeRejectsGarbage:
             base64.urlsafe_b64encode(b"|").decode(),
             base64.urlsafe_b64encode(b"\xff\xfe").decode(),
         ],
-        ids=["empty", "not-base64", "no-separator", "bad-date", "bad-uuid", "both-empty", "bad-utf8"],
+        ids=[
+            "empty",
+            "not-base64",
+            "no-separator",
+            "bad-date",
+            "bad-uuid",
+            "both-empty",
+            "bad-utf8",
+        ],
     )
     def test_should_raise_value_error(self, raw):
         with pytest.raises(ValueError):

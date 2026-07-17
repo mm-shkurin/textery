@@ -18,7 +18,9 @@ class TestValidationExceptionHandler:
 
         @app.get("/invalid")
         async def invalid() -> None:
-            raise ValidationException(error_code="INVALID_EMAIL", message="The email address is not valid.")
+            raise ValidationException(
+                error_code="INVALID_EMAIL", message="The email address is not valid."
+            )
 
         app.add_exception_handler(ValidationException, validation_exception_handler)
 
@@ -81,6 +83,9 @@ class TestUnhandledExceptionHandler:
             f"an arbitrary internal string. Got {response.text}"
         )
         assert any("unexpected failure" in record.message for record in caplog.records), (
-            f"expected logged exception message to mention 'unexpected failure', got {[r.message for r in caplog.records]}"
+            f"expected logged exception message to mention 'unexpected failure', "
+            f"got {[r.message for r in caplog.records]}"
         )
-        assert any(record.exc_info for record in caplog.records), "expected traceback to be logged via exc_info"
+        assert any(record.exc_info for record in caplog.records), (
+            "expected traceback to be logged via exc_info"
+        )

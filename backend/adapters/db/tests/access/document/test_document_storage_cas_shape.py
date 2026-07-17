@@ -34,7 +34,9 @@ class TestSaveIsASingleCompareAndSwapStatement:
     """
 
     async def test_should_emit_one_update_and_never_read_first(self):
-        os.environ.setdefault("TEST_DATABASE_URL", "postgresql://textery:change-me@localhost:5432/textery")
+        os.environ.setdefault(
+            "TEST_DATABASE_URL", "postgresql://textery:change-me@localhost:5432/textery"
+        )
         os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
         engine = create_engine()
         session_factory = create_session_factory(engine)
@@ -95,6 +97,8 @@ class TestSaveIsASingleCompareAndSwapStatement:
             )
         finally:
             async with engine.connect() as cleanup:
-                await cleanup.execute(text("TRUNCATE TABLE generations, documents, verification_codes, accounts"))
+                await cleanup.execute(
+                    text("TRUNCATE TABLE generations, documents, verification_codes, accounts")
+                )
                 await cleanup.commit()
             await engine.dispose()

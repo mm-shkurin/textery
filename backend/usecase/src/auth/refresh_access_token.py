@@ -20,8 +20,8 @@ class RefreshAccessToken:
     async def execute(self, refresh_token: str) -> TokenPair:
         try:
             account_id = self.token_service.read_refresh_subject(refresh_token)
-        except InvalidTokenException:
-            raise self._invalid_refresh()
+        except InvalidTokenException as error:
+            raise self._invalid_refresh() from error
         account = await self.account_repository.find_by_id(account_id)
         # The account is re-read rather than trusted from the claims: a token
         # outlives the state it was minted from, so a deleted or un-verified

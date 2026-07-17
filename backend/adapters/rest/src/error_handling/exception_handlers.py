@@ -33,7 +33,9 @@ INTERNAL_ERROR_MESSAGE = "An unexpected error occurred. Please try again."
 
 async def validation_exception_handler(request: Request, exc: ValidationException) -> JSONResponse:
     status_code = _ERROR_CODE_STATUS_MAP.get(exc.error_code, 400)
-    return JSONResponse(status_code=status_code, content={"error_code": exc.error_code, "message": exc.message})
+    return JSONResponse(
+        status_code=status_code, content={"error_code": exc.error_code, "message": exc.message}
+    )
 
 
 async def not_found_exception_handler(request: Request, exc: NotFoundException) -> JSONResponse:
@@ -68,7 +70,9 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     string -- a driver error naming a table, a stack-shaped repr -- going straight
     to the client. The detail is logged with its traceback instead.
     """
-    logger.error("unhandled exception on %s %s: %s", request.method, request.url.path, exc, exc_info=exc)
+    logger.error(
+        "unhandled exception on %s %s: %s", request.method, request.url.path, exc, exc_info=exc
+    )
     return JSONResponse(
         status_code=500,
         content={"error_code": "INTERNAL_ERROR", "message": INTERNAL_ERROR_MESSAGE},

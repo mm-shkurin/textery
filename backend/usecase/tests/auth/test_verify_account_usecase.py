@@ -1,4 +1,3 @@
-
 from statements.verify_account_statements import VerifyAccountStatements
 
 
@@ -52,7 +51,7 @@ class TestVerifyAccountUsecase:
         await verify_account_statements.verify_with_the_issued_code_when_final_commit_fails()
         verify_account_statements.assert_verification_failed_and_rolled_back()
 
-    async def test_should_surface_verification_failed_not_secondary_exception_when_rollback_itself_fails(
+    async def test_should_surface_verification_failed_not_secondary_when_rollback_itself_fails(
         self, verify_account_statements: VerifyAccountStatements
     ):
         await verify_account_statements.given_pending_account_with_verification_code()

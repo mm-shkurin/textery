@@ -49,9 +49,7 @@ class TestDocumentContentLengthBoundary:
         with pytest.raises(ValueError) as excinfo:
             DocumentContent("a" * (MAX_CONTENT_LENGTH + 1))
 
-        assert str(excinfo.value) == "Invalid content.", (
-            f"unexpected message: {excinfo.value}"
-        )
+        assert str(excinfo.value) == "Invalid content.", f"unexpected message: {excinfo.value}"
 
     def test_should_accept_empty_content(self):
         assert DocumentContent("").value == "", "empty content is valid — a new document has none"
@@ -92,7 +90,7 @@ class TestDocumentContentAstralPlane:
     """
 
     def test_should_count_an_astral_emoji_as_one_character(self):
-        raw = "\U0001F600" * MAX_CONTENT_LENGTH  # 200_000 code points, 800_000 bytes
+        raw = "\U0001f600" * MAX_CONTENT_LENGTH  # 200_000 code points, 800_000 bytes
 
         assert DocumentContent(raw).value == raw, (
             "astral content at the cap must round-trip byte-for-byte"
@@ -100,7 +98,7 @@ class TestDocumentContentAstralPlane:
 
     def test_should_reject_one_astral_character_past_the_maximum(self):
         with pytest.raises(ValueError):
-            DocumentContent("\U0001F600" * (MAX_CONTENT_LENGTH + 1))
+            DocumentContent("\U0001f600" * (MAX_CONTENT_LENGTH + 1))
 
 
 class TestIdempotencyKey:

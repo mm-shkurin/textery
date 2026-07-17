@@ -23,4 +23,6 @@ async def rollback_quietly(unit_of_work: UnitOfWork) -> None:
     try:
         await unit_of_work.rollback()
     except Exception:
-        logger.warning("rollback failed; the session may be left in a poisoned state", exc_info=True)
+        logger.warning(
+            "rollback failed; the session may be left in a poisoned state", exc_info=True
+        )

@@ -43,7 +43,9 @@ class TestGenerationUsecaseVolumeRange:
         [0, 11, None, -1, 999999999999],
         ids=["zero", "eleven", "omitted_null", "negative", "extreme_out_of_range"],
     )
-    def test_should_reject_out_of_range_volume(self, generation_statements: GenerationStatements, volume_pages):
+    def test_should_reject_out_of_range_volume(
+        self, generation_statements: GenerationStatements, volume_pages
+    ):
         generation_statements.attempt_creating_generation_with_volume_pages(volume_pages)
         generation_statements.assert_out_of_range_volume_error_raised()
 

@@ -104,9 +104,7 @@ class TestRegisterPostRouterServerOwnedFields:
             f"expected 201 Created, got {response.status_code} with body {response.text}"
         )
         body = response.json()
-        assert body is not None, (
-            "expected a JSON body containing id and is_verified, got body=None"
-        )
+        assert body is not None, "expected a JSON body containing id and is_verified, got body=None"
         assert body.get("user_id") == str(created_account.id), (
             f"expected user_id={str(created_account.id)!r} from the persisted Account "
             f"(field name per ProductSpecification/api-specs/auth_register.yaml "

@@ -113,8 +113,7 @@ class GenerationStatements:
             self._scope.owner_id,
         )
         assert actual_request_fields == expected_request_fields, (
-            f"expected request fields {expected_request_fields}, "
-            f"got {actual_request_fields}"
+            f"expected request fields {expected_request_fields}, got {actual_request_fields}"
         )
 
     def assert_generation_persisted_exactly_once(self) -> None:

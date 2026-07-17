@@ -29,9 +29,7 @@ class SqlAlchemyGenerationStorage:
         self._session.add(GenerationModel.from_domain(generation))
         await self._session.commit()
 
-    async def get_by_id_and_owner(
-        self, generation_id: UUID, owner_id: UUID
-    ) -> Generation | None:
+    async def get_by_id_and_owner(self, generation_id: UUID, owner_id: UUID) -> Generation | None:
         result = await self._session.execute(
             select(GenerationModel).where(
                 GenerationModel.id == generation_id,

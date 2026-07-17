@@ -53,7 +53,9 @@ class TestGetGenerationCompleted:
     """Scenario 4.2: A completed generation includes the document content."""
 
     async def test_should_return_200_with_content(self, mocker, get_client, owner_id):
-        generation = _build_generation(status="completed", content="Готовый доклад", owner_id=owner_id)
+        generation = _build_generation(
+            status="completed", content="Готовый доклад", owner_id=owner_id
+        )
         mock_usecase = mocker.Mock()
         mock_usecase.execute = mocker.AsyncMock(return_value=generation)
 

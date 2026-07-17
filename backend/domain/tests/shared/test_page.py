@@ -24,11 +24,15 @@ class TestLimitBounds:
     """limit is validated in the domain, so a violation carries this project's
     error_code rather than Pydantic's envelope."""
 
-    @pytest.mark.parametrize("limit", [MIN_LIMIT, DEFAULT_LIMIT, MAX_LIMIT], ids=["min", "default", "max"])
+    @pytest.mark.parametrize(
+        "limit", [MIN_LIMIT, DEFAULT_LIMIT, MAX_LIMIT], ids=["min", "default", "max"]
+    )
     def test_should_accept_a_limit_in_range(self, limit):
         assert PageRequest(limit=limit).limit == limit, f"limit {limit} must be accepted"
 
-    @pytest.mark.parametrize("limit", [0, -1, MAX_LIMIT + 1, 1000], ids=["zero", "negative", "over-max", "far-over"])
+    @pytest.mark.parametrize(
+        "limit", [0, -1, MAX_LIMIT + 1, 1000], ids=["zero", "negative", "over-max", "far-over"]
+    )
     def test_should_reject_a_limit_out_of_range(self, limit):
         with pytest.raises(ValidationException) as error:
             PageRequest(limit=limit)
@@ -57,9 +61,7 @@ class TestLimitBounds:
 
 class TestCursorDecoding:
     def test_should_leave_cursor_none_when_absent(self):
-        assert PageRequest(limit=10, cursor=None).cursor is None, (
-            "the first page has no anchor"
-        )
+        assert PageRequest(limit=10, cursor=None).cursor is None, "the first page has no anchor"
 
     def test_should_decode_a_valid_cursor(self):
         row = _Row(offset_seconds=0)

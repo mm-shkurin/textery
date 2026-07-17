@@ -53,13 +53,19 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# The composition root and the Alembic env import only after they have put the
-# layer roots on sys.path — they are the one place that cannot import at top.
-"application/src/app/main.py" = ["E402"]
-"adapters/db/migrations/env.py" = ["E402"]
-# Test doubles implement production ports; an unused argument there is the point
-# of the signature, not an oversight.
-"**/tests/**" = ["ARG002"]
+# The composition root imports only after it has put the layer roots on sys.path.
+# ARG001: the lifespan callback's `app` parameter is Starlette's signature, not ours.
+"application/src/app/main.py" = ["E402", "ARG001"]
+# ARG001: `request` is Starlette's exception-handler signature. The handlers that
+# only log the method and path still have to accept the whole object.
+"adapters/rest/src/error_handling/exception_handlers.py" = ["ARG001"]
+# ARG002: FakeProvider implements the GenerationProvider port. Ignoring the
+# generation it is handed is exactly what makes it a fake.
+"adapters/generation_provider/src/provider/fake_provider.py" = ["ARG002"]
+# Test doubles implement production ports, and SQLAlchemy event hooks have a
+# fixed five-argument shape; an unused argument in either is the signature doing
+# its job, not an oversight.
+"**/tests/**" = ["ARG001", "ARG002"]
 
 [tool.ruff.lint.isort]
 known-first-party = [

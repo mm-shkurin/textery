@@ -33,7 +33,9 @@ class FakeDocumentRepository:
             None,
         )
 
-    async def find_by_idempotency_key(self, owner_id: UUID, idempotency_key: str) -> Document | None:
+    async def find_by_idempotency_key(
+        self, owner_id: UUID, idempotency_key: str
+    ) -> Document | None:
         return next(
             (
                 d

@@ -33,6 +33,7 @@ class TestCreateGenerationRouter:
             "error_code": "VALIDATION_ERROR",
             "message": EXPECTED_MISSING_TOPIC_MESSAGE,
         }, (
-            f"expected error body {{'error_code': 'VALIDATION_ERROR', 'message': '{EXPECTED_MISSING_TOPIC_MESSAGE}'}}, "
+            f"expected error body {{'error_code': 'VALIDATION_ERROR', "
+            f"'message': '{EXPECTED_MISSING_TOPIC_MESSAGE}'}}, "
             f"got {response.json()}"
         )

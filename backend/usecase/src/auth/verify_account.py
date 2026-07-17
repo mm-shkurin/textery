@@ -38,7 +38,9 @@ class VerifyAccount:
         account = await self.account_repository.find_by_email(normalized_email)
         if account is None:
             raise self._invalid_or_expired()
-        verification_code = await self.verification_code_repository.find_active_by_account_id(account.id)
+        verification_code = await self.verification_code_repository.find_active_by_account_id(
+            account.id
+        )
         if verification_code is None:
             raise self._invalid_or_expired()
         if not verification_code.matches(code):

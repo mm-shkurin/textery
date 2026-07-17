@@ -33,6 +33,5 @@ class TestGenerationProviderFailFast:
             provider()
 
         assert str(excinfo.value) == EXPECTED_UNWIRED_MESSAGE, (
-            f"expected fail-fast message '{EXPECTED_UNWIRED_MESSAGE}', "
-            f"got '{excinfo.value}'"
+            f"expected fail-fast message '{EXPECTED_UNWIRED_MESSAGE}', got '{excinfo.value}'"
         )

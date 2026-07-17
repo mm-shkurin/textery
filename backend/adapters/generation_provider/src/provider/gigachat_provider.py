@@ -34,7 +34,10 @@ class GigaChatProvider:
     async def generate(self, generation: Generation) -> str:
         try:
             token = await self._fetch_token()
-            prompt = f"{generation.document_type} на тему: {generation.topic} ({generation.volume_pages} стр.)"
+            prompt = (
+                f"{generation.document_type} на тему: {generation.topic} "
+                f"({generation.volume_pages} стр.)"
+            )
             async with httpx.AsyncClient(verify=self._verify, timeout=30) as client:
                 response = await client.post(
                     COMPLETIONS_URL,

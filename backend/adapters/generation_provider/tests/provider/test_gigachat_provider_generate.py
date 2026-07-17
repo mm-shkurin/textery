@@ -65,7 +65,8 @@ def _set_credentials(monkeypatch):
 
 
 class TestGenerateHappyPath:
-    """generate() fetches a token then returns the completion content over the two-step HTTP flow."""
+    """generate() fetches a token then returns the completion content
+    over the two-step HTTP flow."""
 
     async def test_should_return_completion_content_and_authorize_with_fetched_token(
         self, monkeypatch, mocker
@@ -91,9 +92,7 @@ class TestGenerateHappyPath:
         assert token_call.kwargs["data"] == {"scope": SCOPE}
 
         assert completions_call.args[0] == COMPLETIONS_URL
-        assert completions_call.kwargs["headers"] == {
-            "Authorization": f"Bearer {ACCESS_TOKEN}"
-        }
+        assert completions_call.kwargs["headers"] == {"Authorization": f"Bearer {ACCESS_TOKEN}"}
         expected_prompt = "Доклад на тему: Космос (3 стр.)"
         assert completions_call.kwargs["json"] == {
             "model": "GigaChat",
@@ -104,9 +103,7 @@ class TestGenerateHappyPath:
 class TestGenerateProviderError:
     """An httpx failure on the completions call surfaces as ProviderError carrying str(error)."""
 
-    async def test_should_raise_provider_error_with_http_error_message(
-        self, monkeypatch, mocker
-    ):
+    async def test_should_raise_provider_error_with_http_error_message(self, monkeypatch, mocker):
         _set_credentials(monkeypatch)
         http_error = httpx.HTTPError("simulated http failure")
         _patch_async_client(

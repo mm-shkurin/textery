@@ -12,5 +12,4 @@ class HtmlSanitizer(Protocol):
     the request.
     """
 
-    def sanitize(self, content: str) -> str:
-        ...
+    def sanitize(self, content: str) -> str: ...

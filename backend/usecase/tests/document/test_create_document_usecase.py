@@ -28,7 +28,9 @@ class TestCreateDocumentHappyPath:
         )
 
         assert result.is_replay is False, "a first create is not a replay"
-        assert result.document.owner_id == owner_id, "the owner comes from the caller, never the body"
+        assert result.document.owner_id == owner_id, (
+            "the owner comes from the caller, never the body"
+        )
         assert result.document.document_type == "эссе"
         assert result.document.status == DRAFT_STATUS
         assert result.document.content == ""
@@ -79,12 +81,18 @@ class TestCreateDocumentIdempotency:
         repository = FakeDocumentRepository()
         owner_id = uuid4()
         usecase = build(repository)
-        first = await usecase.execute(owner_id=owner_id, document_type="эссе", idempotency_key="key-1")
+        first = await usecase.execute(
+            owner_id=owner_id, document_type="эссе", idempotency_key="key-1"
+        )
 
-        replay = await usecase.execute(owner_id=owner_id, document_type="эссе", idempotency_key="key-1")
+        replay = await usecase.execute(
+            owner_id=owner_id, document_type="эссе", idempotency_key="key-1"
+        )
 
         assert replay.is_replay is True, "the router needs this to answer 200 rather than 201"
-        assert replay.document.id == first.document.id, "the replay must refer to the original document"
+        assert replay.document.id == first.document.id, (
+            "the replay must refer to the original document"
+        )
         assert len(repository.documents) == 1, "exactly one document exists for that key"
 
     async def test_should_return_the_original_even_when_the_replay_asks_for_another_type(self):
@@ -94,14 +102,18 @@ class TestCreateDocumentIdempotency:
         repository = FakeDocumentRepository()
         owner_id = uuid4()
         usecase = build(repository)
-        first = await usecase.execute(owner_id=owner_id, document_type="эссе", idempotency_key="key-1")
+        first = await usecase.execute(
+            owner_id=owner_id, document_type="эссе", idempotency_key="key-1"
+        )
 
         replay = await usecase.execute(
             owner_id=owner_id, document_type="реферат", idempotency_key="key-1"
         )
 
         assert replay.document.id == first.document.id
-        assert replay.document.document_type == "эссе", "the original type wins; the replay does not mutate"
+        assert replay.document.document_type == "эссе", (
+            "the original type wins; the replay does not mutate"
+        )
         assert len(repository.documents) == 1
 
     async def test_should_give_two_owners_separate_documents_for_the_same_key(self):
@@ -110,8 +122,12 @@ class TestCreateDocumentIdempotency:
         repository = FakeDocumentRepository()
         usecase = build(repository)
 
-        first = await usecase.execute(owner_id=uuid4(), document_type="эссе", idempotency_key="shared")
-        second = await usecase.execute(owner_id=uuid4(), document_type="эссе", idempotency_key="shared")
+        first = await usecase.execute(
+            owner_id=uuid4(), document_type="эссе", idempotency_key="shared"
+        )
+        second = await usecase.execute(
+            owner_id=uuid4(), document_type="эссе", idempotency_key="shared"
+        )
 
         assert first.document.id != second.document.id
         assert second.is_replay is False, "another owner's key is not a replay"

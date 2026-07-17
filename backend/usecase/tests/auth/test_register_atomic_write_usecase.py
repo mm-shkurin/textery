@@ -1,4 +1,3 @@
-
 from statements.register_atomic_write_statements import RegisterAtomicWriteStatements
 
 
@@ -29,19 +28,26 @@ class TestRegisterUsecaseAtomicWrite:
     async def test_should_rollback_and_never_commit_when_verification_code_save_fails(
         self, register_atomic_write_statements: RegisterAtomicWriteStatements
     ):
-        await register_atomic_write_statements.attempt_registering_when_verification_code_save_fails()
-        register_atomic_write_statements.assert_registration_failed_error_raised(expected_saved_codes_count=0)
+        await (
+            register_atomic_write_statements.attempt_registering_when_verification_code_save_fails()
+        )
+        register_atomic_write_statements.assert_registration_failed_error_raised(
+            expected_saved_codes_count=0
+        )
 
     async def test_should_rollback_when_final_commit_fails(
         self, register_atomic_write_statements: RegisterAtomicWriteStatements
     ):
         await register_atomic_write_statements.attempt_registering_when_final_commit_fails()
-        register_atomic_write_statements.assert_registration_failed_error_raised(expected_saved_codes_count=1)
+        register_atomic_write_statements.assert_registration_failed_error_raised(
+            expected_saved_codes_count=1
+        )
 
     async def test_should_rollback_and_sanitize_when_account_save_fails_with_non_conflict_error(
         self, register_atomic_write_statements: RegisterAtomicWriteStatements
     ):
-        await register_atomic_write_statements.attempt_registering_when_account_save_fails_with_non_conflict_error()
+        statements = register_atomic_write_statements
+        await statements.attempt_registering_when_account_save_fails_with_non_conflict_error()
         register_atomic_write_statements.assert_registration_failed_error_raised(
             expected_saved_codes_count=0, expected_saved_accounts_count=0
         )
@@ -55,5 +61,8 @@ class TestRegisterUsecaseAtomicWrite:
     async def test_should_propagate_registration_failed_when_rollback_itself_fails(
         self, register_atomic_write_statements: RegisterAtomicWriteStatements
     ):
-        await register_atomic_write_statements.attempt_registering_when_verification_code_save_and_rollback_both_fail()
-        register_atomic_write_statements.assert_registration_failed_error_raised(expected_saved_codes_count=0)
+        statements = register_atomic_write_statements
+        await statements.attempt_registering_when_verification_code_save_and_rollback_both_fail()
+        register_atomic_write_statements.assert_registration_failed_error_raised(
+            expected_saved_codes_count=0
+        )

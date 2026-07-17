@@ -70,7 +70,11 @@ def _client_factory(app, provider_names, override_owner=True):
     """
 
     def _make(*mock_usecases):
-        for provider_name, mock_usecase in zip(provider_names, mock_usecases):
+        # strict=True: a caller passing fewer mocks than the endpoint has
+        # providers would otherwise leave the tail wired to the composition-root
+        # stub and fail deep inside FastAPI with a NotImplementedError instead of
+        # here, where the mistake is.
+        for provider_name, mock_usecase in zip(provider_names, mock_usecases, strict=True):
             provider = getattr(generation_router_module, provider_name)
             app.dependency_overrides[provider] = _returning(mock_usecase)
         if override_owner:

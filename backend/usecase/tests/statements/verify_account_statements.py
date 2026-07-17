@@ -220,7 +220,9 @@ class VerifyAccountStatements:
         and an expired code -- that sameness is the point, since a distinct code
         (or a 500 from a None dereference) would reveal whether the email exists.
         """
-        self._assert_validation_exception("INVALID_OR_EXPIRED_CODE", self.INVALID_OR_EXPIRED_MESSAGE)
+        self._assert_validation_exception(
+            "INVALID_OR_EXPIRED_CODE", self.INVALID_OR_EXPIRED_MESSAGE
+        )
         assert len(self.account_repository.saved_accounts) == 1, (
             f"expected no Account write on a rejected verify (only the register-time save), "
             f"got {len(self.account_repository.saved_accounts)} saves"

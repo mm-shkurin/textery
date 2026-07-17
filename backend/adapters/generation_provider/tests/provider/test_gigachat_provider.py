@@ -5,7 +5,8 @@ from shared.exceptions import ConfigurationException
 
 
 class TestMissingCredentials:
-    """Constructing the provider without GIGACHAT_CREDENTIALS fails fast instead of sending 'Basic None'."""
+    """Constructing the provider without GIGACHAT_CREDENTIALS fails fast
+    instead of sending 'Basic None'."""
 
     def test_should_raise_configuration_exception_when_credentials_unset(self, monkeypatch):
         monkeypatch.delenv(CREDENTIALS_ENV_VAR, raising=False)

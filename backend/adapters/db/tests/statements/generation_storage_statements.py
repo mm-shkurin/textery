@@ -133,7 +133,9 @@ class GenerationStorageStatements:
         )
 
     async def save_stale_pending_generation(self) -> Generation:
-        generation = self.build_pending_generation(created_at=datetime.now(UTC) - timedelta(minutes=30))
+        generation = self.build_pending_generation(
+            created_at=datetime.now(UTC) - timedelta(minutes=30)
+        )
         await self._storage.save(generation)
         return generation
 
@@ -152,9 +154,13 @@ class GenerationStorageStatements:
 
     def assert_stale_generations_exclude(self, generation: Generation) -> None:
         stale_ids = {g.id for g in self.stale_generations}
-        assert generation.id not in stale_ids, f"expected {generation.id} not in stale results {stale_ids}"
+        assert generation.id not in stale_ids, (
+            f"expected {generation.id} not in stale results {stale_ids}"
+        )
 
-    def assert_fetched_status_and_content(self, expected_status: str, expected_content: str | None) -> None:
+    def assert_fetched_status_and_content(
+        self, expected_status: str, expected_content: str | None
+    ) -> None:
         assert self.fetched_generation.status == expected_status, (
             f"expected status '{expected_status}', got '{self.fetched_generation.status}'"
         )

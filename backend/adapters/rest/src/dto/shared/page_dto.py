@@ -1,11 +1,7 @@
-from typing import Generic, TypeVar
-
 from pydantic import BaseModel
 
-_Item = TypeVar("_Item")
 
-
-class PageDto(BaseModel, Generic[_Item]):
+class PageDto[ItemT](BaseModel):
     """`{items, next_cursor}` -- the envelope every history list answers with.
 
     Generic over the item DTO so generations and documents share one shape: a
@@ -16,5 +12,5 @@ class PageDto(BaseModel, Generic[_Item]):
     scan the keyset cursor exists to avoid, and no screen needs the number.
     """
 
-    items: list[_Item]
+    items: list[ItemT]
     next_cursor: str | None

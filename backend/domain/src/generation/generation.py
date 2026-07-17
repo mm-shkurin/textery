@@ -15,7 +15,9 @@ MAX_EXTRA_WISHES_LENGTH = 2000
 # changing a bound left the message quoting the old one -- the one place the
 # discrepancy is guaranteed to be seen, by the user who just tripped the rule.
 MISSING_TOPIC_MESSAGE = "topic is required"
-OUT_OF_RANGE_VOLUME_MESSAGE = f"volume_pages must be between {MIN_VOLUME_PAGES} and {MAX_VOLUME_PAGES}"
+OUT_OF_RANGE_VOLUME_MESSAGE = (
+    f"volume_pages must be between {MIN_VOLUME_PAGES} and {MAX_VOLUME_PAGES}"
+)
 TOPIC_TOO_LONG_MESSAGE = f"topic must be at most {MAX_TOPIC_LENGTH} characters"
 REQUIREMENTS_TOO_LONG_MESSAGE = f"requirements must be at most {MAX_REQUIREMENTS_LENGTH} characters"
 EXTRA_WISHES_TOO_LONG_MESSAGE = f"extra_wishes must be at most {MAX_EXTRA_WISHES_LENGTH} characters"
@@ -117,7 +119,6 @@ class Generation:
         # format characters like U+200B ZERO WIDTH SPACE (category Cf). Strip
         # both ordinary whitespace and format characters before checking emptiness.
         visible_chars = [
-            char for char in topic
-            if not char.isspace() and unicodedata.category(char) != "Cf"
+            char for char in topic if not char.isspace() and unicodedata.category(char) != "Cf"
         ]
         return len(visible_chars) == 0

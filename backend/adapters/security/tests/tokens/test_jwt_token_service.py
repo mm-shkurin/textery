@@ -133,9 +133,7 @@ class TestReadRefreshSubject:
     def test_should_reject_a_token_signed_with_another_key(self):
         # Scenario 9: after a signing-key rotation, tokens minted under the old
         # key must stop working rather than be honoured by the new deployment.
-        foreign = JwtTokenService(secret=_OTHER_SECRET).issue_pair(
-            account_id=uuid4(), email=_EMAIL
-        )
+        foreign = JwtTokenService(secret=_OTHER_SECRET).issue_pair(account_id=uuid4(), email=_EMAIL)
 
         with pytest.raises(InvalidTokenException):
             _service().read_refresh_subject(foreign.refresh_token)

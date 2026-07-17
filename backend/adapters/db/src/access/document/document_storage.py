@@ -56,7 +56,9 @@ class SqlAlchemyDocumentStorage:
         model = result.scalar_one_or_none()
         return model.to_domain() if model else None
 
-    async def find_by_idempotency_key(self, owner_id: UUID, idempotency_key: str) -> Document | None:
+    async def find_by_idempotency_key(
+        self, owner_id: UUID, idempotency_key: str
+    ) -> Document | None:
         result = await self._session.execute(
             select(DocumentModel).where(
                 DocumentModel.owner_id == owner_id,

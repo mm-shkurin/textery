@@ -52,7 +52,9 @@ class RegisterUser:
         email_value_object = validate_email(email)
         password_value_object = self._validate_password(password, confirm_password)
         created_at = self.clock.now()
-        account = await self._create_and_save_account(email_value_object, password_value_object, created_at)
+        account = await self._create_and_save_account(
+            email_value_object, password_value_object, created_at
+        )
         verification_code = VerificationCode.generate(
             id=uuid4(),
             account_id=account.id,

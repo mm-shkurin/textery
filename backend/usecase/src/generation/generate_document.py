@@ -1,8 +1,9 @@
 import logging
 from uuid import UUID
 
-from adapters.generation_provider import GenerationProvider
 from adapters.generation_storage import GenerationStorage
+
+from adapters.generation_provider import GenerationProvider
 
 MAX_PROVIDER_ATTEMPTS = 2
 GENERIC_FAILURE_MESSAGE = "Не удалось сгенерировать документ. Попробуйте позже."
@@ -27,7 +28,9 @@ class GenerateDocument:
             # answers for it, so it would surface only as a row stuck pending until
             # the sweep. Reachable without a bug -- the row can be gone by the time
             # the task runs, and the sweep re-triggers from a list read earlier.
-            logger.warning("generation %s not found for owner %s; nothing to do", generation_id, owner_id)
+            logger.warning(
+                "generation %s not found for owner %s; nothing to do", generation_id, owner_id
+            )
             return
 
         generation.mark_in_progress()
@@ -47,13 +50,21 @@ class GenerateDocument:
                 last_error = error
                 logger.warning(
                     "generation %s provider attempt %d/%d failed: %s",
-                    generation.id, attempt, MAX_PROVIDER_ATTEMPTS, error,
+                    generation.id,
+                    attempt,
+                    MAX_PROVIDER_ATTEMPTS,
+                    error,
                 )
                 continue
             generation.complete(content)
             await self._storage.update(generation)
             return
 
-        logger.error("generation %s failed after %d attempts: %s", generation.id, MAX_PROVIDER_ATTEMPTS, last_error)
+        logger.error(
+            "generation %s failed after %d attempts: %s",
+            generation.id,
+            MAX_PROVIDER_ATTEMPTS,
+            last_error,
+        )
         generation.fail(GENERIC_FAILURE_MESSAGE)
         await self._storage.update(generation)

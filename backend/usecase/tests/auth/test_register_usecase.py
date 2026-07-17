@@ -37,7 +37,9 @@ class TestRegisterUsecaseMalformedEmail:
             "domain_label_trailing_hyphen",
         ],
     )
-    async def test_should_reject_malformed_email(self, register_statements: RegisterStatements, email):
+    async def test_should_reject_malformed_email(
+        self, register_statements: RegisterStatements, email
+    ):
         await register_statements.attempt_registering_with_email(email)
         register_statements.assert_invalid_email_error_raised()
 
@@ -46,6 +48,8 @@ class TestRegisterUsecaseMalformedEmail:
         [None, 12345],
         ids=["none_value", "int_value"],
     )
-    async def test_should_reject_non_string_email(self, register_statements: RegisterStatements, email):
+    async def test_should_reject_non_string_email(
+        self, register_statements: RegisterStatements, email
+    ):
         await register_statements.attempt_registering_with_email(email)
         register_statements.assert_invalid_email_error_raised()

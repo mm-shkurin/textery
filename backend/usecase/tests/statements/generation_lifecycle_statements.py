@@ -64,12 +64,16 @@ class GenerationLifecycleStatements:
 
     def assert_status_pending_without_content(self) -> None:
         assert self.result is not None, "expected a Generation to be returned, got None"
-        assert self.result.status == "pending", f"expected status 'pending', got '{self.result.status}'"
+        assert self.result.status == "pending", (
+            f"expected status 'pending', got '{self.result.status}'"
+        )
         assert self.result.content is None, f"expected content None, got '{self.result.content}'"
 
     def assert_status_completed_with_content(self, expected_content: str) -> None:
         assert self.result is not None, "expected a Generation to be returned, got None"
-        assert self.result.status == "completed", f"expected status 'completed', got '{self.result.status}'"
+        assert self.result.status == "completed", (
+            f"expected status 'completed', got '{self.result.status}'"
+        )
         assert self.result.content == expected_content, (
             f"expected content '{expected_content}', got '{self.result.content}'"
         )
@@ -86,7 +90,9 @@ class GenerationLifecycleStatements:
             f"expected a foreign generation to be withheld as None, got {self.result}"
         )
 
-    async def process_pending_generation_with_provider_success(self, content: str = "Готовый доклад") -> None:
+    async def process_pending_generation_with_provider_success(
+        self, content: str = "Готовый доклад"
+    ) -> None:
         self.given_pending_generation()
         self._provider = FakeGenerationProvider()
         self._provider.content_to_return = content

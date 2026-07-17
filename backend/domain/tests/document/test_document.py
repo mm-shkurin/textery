@@ -24,7 +24,9 @@ class TestDocumentCreate:
             created_at=created_at,
         )
 
-        assert isinstance(document.id, UUID), f"id must be a server-generated UUID, got {document.id!r}"
+        assert isinstance(document.id, UUID), (
+            f"id must be a server-generated UUID, got {document.id!r}"
+        )
         assert document.owner_id == owner_id
         assert document.document_type == "эссе"
         assert document.status == DRAFT_STATUS
@@ -67,7 +69,8 @@ class TestDocumentMassAssignmentIsImpossibleBySignature:
         parameters = set(inspect.signature(Document.create).parameters)
 
         assert parameters == {"owner_id", "document_type", "idempotency_key", "created_at"}, (
-            f"Document.create must expose only client-supplied and injected values; got {parameters}"
+            f"Document.create must expose only client-supplied and injected values; "
+            f"got {parameters}"
         )
 
     def test_create_should_not_accept_an_id(self):

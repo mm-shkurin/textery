@@ -77,7 +77,7 @@ class RegisterStatements:
     async def _execute_register(self, scope: RegisterRequestScope):
         try:
             return await RegisterUser(
-            password_hasher=self.password_hasher,
+                password_hasher=self.password_hasher,
                 account_repository=self.account_repository,
                 clock=self.clock,
                 verification_code_repository=self.verification_code_repository,
@@ -145,7 +145,9 @@ class RegisterStatements:
     def assert_account_persisted_with_normalized_email(self) -> None:
         self._assert_account_persisted_with_email("user@example.ru")
 
-    def assert_password_hashed_from_normalized_form(self, expected_normalized_password: str) -> None:
+    def assert_password_hashed_from_normalized_form(
+        self, expected_normalized_password: str
+    ) -> None:
         """Scenario 2.7's intent, carried over to hashed storage.
 
         2.7 originally asserted the persisted value *was* the NFC form. Once
@@ -156,7 +158,9 @@ class RegisterStatements:
         log in.
         """
         self.assert_registration_succeeded()
-        assert self.returned_account is not None, "expected RegisterUser.execute to return the persisted Account"
+        assert self.returned_account is not None, (
+            "expected RegisterUser.execute to return the persisted Account"
+        )
         assert self.password_hasher.hashed_values == [expected_normalized_password], (
             f"expected the hasher to receive exactly the NFC-normalized password "
             f"{[expected_normalized_password]}, got {self.password_hasher.hashed_values}"
@@ -172,23 +176,29 @@ class RegisterStatements:
 
     def _assert_account_persisted_with_email(self, expected_email: str | None) -> None:
         self.assert_registration_succeeded()
-        assert self.returned_account is not None, "expected RegisterUser.execute to return the persisted Account"
+        assert self.returned_account is not None, (
+            "expected RegisterUser.execute to return the persisted Account"
+        )
         assert self.returned_account.email == expected_email, (
             f"expected persisted Account.email to be '{expected_email}', "
             f"got '{self.returned_account.email}'"
         )
         assert isinstance(self.returned_account.id, UUID), (
-            f"expected returned Account.id to be a UUID, got {type(self.returned_account.id).__name__}"
+            f"expected returned Account.id to be a UUID, "
+            f"got {type(self.returned_account.id).__name__}"
         )
         assert self.returned_account.is_verified is False, (
-            f"expected returned Account.is_verified to be False, got {self.returned_account.is_verified}"
+            f"expected returned Account.is_verified to be False, "
+            f"got {self.returned_account.is_verified}"
         )
         assert self.returned_account.created_at == self.clock.fixed_now, (
-            f"expected Account.created_at '{self.clock.fixed_now}' to come from the injected Clock, "
+            f"expected Account.created_at '{self.clock.fixed_now}' to come from "
+            f"the injected Clock, "
             f"got '{self.returned_account.created_at}'"
         )
         assert self.account_repository.saved_accounts == [self.returned_account], (
-            f"expected exactly one Account persisted via AccountRepository.save equal to the returned Account, "
+            f"expected exactly one Account persisted via AccountRepository.save "
+            f"equal to the returned Account, "
             f"got {self.account_repository.saved_accounts}"
         )
 
@@ -223,16 +233,16 @@ class RegisterStatements:
             f"got {self.verification_code_repository.saved_codes}"
         )
 
-    def _assert_validation_error_raised(self, expected_error_code: str, expected_message: str) -> None:
+    def _assert_validation_error_raised(
+        self, expected_error_code: str, expected_message: str
+    ) -> None:
         assert isinstance(self.thrown_exception, ValidationException), (
             f"expected ValidationException to be raised, got "
             f"{type(self.thrown_exception).__name__ if self.thrown_exception else 'no exception'}"
         )
         assert self.thrown_exception.error_code == expected_error_code, (
-            f"expected error_code '{expected_error_code}', "
-            f"got '{self.thrown_exception.error_code}'"
+            f"expected error_code '{expected_error_code}', got '{self.thrown_exception.error_code}'"
         )
         assert self.thrown_exception.message == expected_message, (
-            f"expected message '{expected_message}', "
-            f"got '{self.thrown_exception.message}'"
+            f"expected message '{expected_message}', got '{self.thrown_exception.message}'"
         )

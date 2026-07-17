@@ -65,7 +65,7 @@ class RegisterAtomicWriteStatements:
         scope = RegisterRequestScope.builder()
         try:
             await RegisterUser(
-            password_hasher=self.password_hasher,
+                password_hasher=self.password_hasher,
                 account_repository=self.account_repository,
                 clock=self.clock,
                 verification_code_repository=self.verification_code_repository,
@@ -81,7 +81,7 @@ class RegisterAtomicWriteStatements:
         scope = RegisterRequestScope.builder()
         try:
             await RegisterUser(
-            password_hasher=self.password_hasher,
+                password_hasher=self.password_hasher,
                 account_repository=self.account_repository,
                 clock=self.clock,
                 verification_code_repository=self.verification_code_repository,
@@ -154,7 +154,8 @@ class RegisterAtomicWriteStatements:
     def assert_registration_failed_error_raised_without_injected_unit_of_work(self) -> None:
         self._assert_registration_failed_shape()
         assert self.unit_of_work.rollback_call_count == 0, (
-            f"expected the injected fake UnitOfWork (unused by this scenario) to record no rollback calls, "
+            f"expected the injected fake UnitOfWork (unused by this scenario) "
+            f"to record no rollback calls, "
             f"got {self.unit_of_work.rollback_call_count}"
         )
         assert len(self.account_repository.saved_accounts) == 1, (

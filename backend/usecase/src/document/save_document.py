@@ -18,7 +18,9 @@ class SaveDocument:
     # while the rule it describes lives in DocumentContent. Raise the cap there and
     # the hardcoded message keeps quoting the old number -- a lie the type checker
     # and the tests both wave through, told only to the user who hit the limit.
-    CONTENT_TOO_LONG_MESSAGE = f"The content exceeds the maximum length of {MAX_CONTENT_LENGTH} characters."
+    CONTENT_TOO_LONG_MESSAGE = (
+        f"The content exceeds the maximum length of {MAX_CONTENT_LENGTH} characters."
+    )
     INVALID_VERSION_MESSAGE = "The version must be a positive integer."
 
     def __init__(
@@ -33,7 +35,9 @@ class SaveDocument:
         self.clock = clock
         self.unit_of_work = unit_of_work or NullUnitOfWork()
 
-    async def execute(self, document_id: UUID, owner_id: UUID, content: str, version: int) -> Document:
+    async def execute(
+        self, document_id: UUID, owner_id: UUID, content: str, version: int
+    ) -> Document:
         self._validate_version(version)
         # Length is checked here, before sanitizing: sanitizing first would make the
         # parser chew through an adversarial payload before we decline it, and the

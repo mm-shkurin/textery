@@ -52,7 +52,9 @@ class TestUpdate:
         generation.complete("Готовый доклад")
         await generation_storage_statements.update_generation(generation)
         await generation_storage_statements.fetch_by_saved_id()
-        generation_storage_statements.assert_fetched_status_and_content("completed", "Готовый доклад")
+        generation_storage_statements.assert_fetched_status_and_content(
+            "completed", "Готовый доклад"
+        )
 
 
 class TestUpdateUnknownId:

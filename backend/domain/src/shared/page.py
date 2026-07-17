@@ -1,4 +1,3 @@
-
 from shared.exceptions import ValidationException
 from shared.keyset_cursor import INVALID_CURSOR_MESSAGE, KeysetCursor
 

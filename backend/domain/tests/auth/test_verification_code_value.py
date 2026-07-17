@@ -42,9 +42,7 @@ class TestVerificationCodeValueTrailingNewlineRejection:
     correct; this pins the anchor half of the rule so the wrong spelling can't
     slip in. The length and digit halves are pinned above."""
 
-    @pytest.mark.parametrize(
-        "raw_input", ["123456\n", "123456\r\n"], ids=["newline", "crlf"]
-    )
+    @pytest.mark.parametrize("raw_input", ["123456\n", "123456\r\n"], ids=["newline", "crlf"])
     def test_code_with_a_trailing_newline_is_rejected(self, raw_input):
         with pytest.raises(ValueError) as exc_info:
             VerificationCodeValue(raw_input)

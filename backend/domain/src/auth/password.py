@@ -30,7 +30,10 @@ class Password:
 
     @staticmethod
     def _is_valid(normalized_value: str) -> bool:
-        if len(normalized_value) < MIN_PASSWORD_LENGTH or len(normalized_value) > MAX_PASSWORD_LENGTH:
+        if (
+            len(normalized_value) < MIN_PASSWORD_LENGTH
+            or len(normalized_value) > MAX_PASSWORD_LENGTH
+        ):
             return False
         if not _DIGIT_PATTERN.search(normalized_value):
             return False
@@ -38,9 +41,7 @@ class Password:
             return False
         if not _LOWERCASE_PATTERN.search(normalized_value):
             return False
-        if not _SPECIAL_CHAR_PATTERN.search(normalized_value):
-            return False
-        return True
+        return bool(_SPECIAL_CHAR_PATTERN.search(normalized_value))
 
     @property
     def value(self) -> str:
