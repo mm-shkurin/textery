@@ -35,6 +35,10 @@ class GenerationModel(Base):
             text("created_at DESC"),
             text("id DESC"),
         ),
+        # The stale sweep's exact predicate. Leads with status so the scan never
+        # touches completed/failed rows, which are most of the table and are
+        # never sweepable.
+        Index("ix_generations_sweep", "status", "updated_at"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
@@ -43,8 +47,16 @@ class GenerationModel(Base):
         ForeignKey("accounts.id", ondelete="CASCADE"),
         nullable=False,
     )
-    status: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    # index=False: ix_generations_sweep above leads with status and serves
+    # every query that a status-only index would.
+    status: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    # Storage-owned, like DocumentModel.updated_at: the domain has no such
+    # field and does not need one. It exists so the sweep can ask "has this
+    # row made progress recently", which created_at cannot answer -- it never
+    # changes, so a requeued row stayed stale forever and was re-triggered on
+    # every sweep.
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     topic: Mapped[str] = mapped_column(String, nullable=False)
     volume_pages: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -61,6 +73,9 @@ class GenerationModel(Base):
             owner_id=generation.owner_id,
             status=generation.status,
             created_at=generation.created_at,
+            # A brand-new row's last progress is its creation. Subsequent
+            # transitions bump it in SQL (see SqlAlchemyGenerationStorage.update).
+            updated_at=generation.created_at,
             version=generation.version,
             topic=generation.topic,
             volume_pages=generation.volume_pages,

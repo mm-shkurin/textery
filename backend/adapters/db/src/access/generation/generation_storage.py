@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from access.keyset_pagination import paginate_by_owner
@@ -73,6 +73,10 @@ class SqlAlchemyGenerationStorage:
                 content=generation.content,
                 error_message=generation.error_message,
                 version=GenerationModel.version + 1,
+                # Every transition marks progress. This is what makes a requeued
+                # row stop being stale: the sweep asks when the row last moved,
+                # and created_at could never answer that.
+                updated_at=func.now(),
             )
             .returning(GenerationModel)
         )
@@ -103,9 +107,17 @@ class SqlAlchemyGenerationStorage:
         ]
 
     async def list_stale(self, older_than: datetime) -> list[Generation]:
+        """Rows that have made no progress since `older_than`.
+
+        On updated_at, not created_at. created_at never changes, so requeueing a
+        stale row left it stale: it matched again on the next sweep, and every
+        sweep after that, each one re-triggering a paid provider call. Measured
+        against a real database, three consecutive sweeps requeued the same row
+        three times.
+        """
         stmt = select(GenerationModel).where(
             GenerationModel.status.in_((PENDING_STATUS, IN_PROGRESS_STATUS)),
-            GenerationModel.created_at < older_than,
+            GenerationModel.updated_at < older_than,
         )
         result = await self._session.execute(stmt)
         return [model.to_domain() for model in result.scalars().all()]
