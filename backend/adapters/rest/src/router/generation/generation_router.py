@@ -9,7 +9,7 @@ from dto.generation.generation_response_dto import (
     GenerationSummaryDto,
 )
 from dto.shared.page_dto import PageDto
-from generation.generate_document import GenerateDocument
+from generation.document_generator import DocumentGenerator
 from generation.get_generation import GetGeneration
 from generation.list_generations import ListGenerations
 from generation.request_generation import RequestGeneration
@@ -28,7 +28,7 @@ def get_get_generation_usecase() -> GetGeneration:
     raise NotImplementedError("wired by the application composition root")
 
 
-def get_generate_document_usecase() -> GenerateDocument:
+def get_generate_document_usecase() -> DocumentGenerator:
     raise NotImplementedError("wired by the application composition root")
 
 
@@ -63,7 +63,7 @@ async def create_generation(
     background_tasks: BackgroundTasks,
     owner_id: UUID = Depends(get_current_owner_id),
     usecase: RequestGeneration = Depends(get_request_generation_usecase),
-    generate_document: GenerateDocument = Depends(get_generate_document_usecase),
+    generate_document: DocumentGenerator = Depends(get_generate_document_usecase),
 ) -> GenerationCreatedDto:
     generation = await usecase.execute(
         owner_id=owner_id,

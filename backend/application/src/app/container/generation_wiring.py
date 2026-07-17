@@ -4,6 +4,7 @@ from uuid import UUID
 
 from access.generation.generation_storage import SqlAlchemyGenerationStorage
 from container.runtime import create_provider, session_factory, stale_after_minutes
+from generation.document_generator import DocumentGenerator
 from generation.generate_document import GenerateDocument
 from generation.get_generation import GetGeneration
 from generation.list_generations import ListGenerations
@@ -49,7 +50,7 @@ class _BackgroundGenerateDocument:
             await session.close()
 
 
-def create_generate_document() -> GenerateDocument:
+def create_generate_document() -> DocumentGenerator:
     return _BackgroundGenerateDocument()
 
 
