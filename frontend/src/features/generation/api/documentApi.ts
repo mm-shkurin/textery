@@ -6,7 +6,13 @@ export interface CreateDocumentResult {
   status: string
 }
 
-export async function createDocument(documentType: string): Promise<CreateDocumentResult> {
+// RED plumbing only: `idempotencyKey` identifies the logical create so retries can replay
+// it (documents_create.yaml's 200 branch). Accepted but deliberately unused — wiring it to
+// the header is GREEN's job. See documentApi.contract.test.ts.
+export async function createDocument(
+  documentType: string,
+  _idempotencyKey?: string
+): Promise<CreateDocumentResult> {
   const data = (await request(
     `${API_BASE}/api/v1/documents`,
     {

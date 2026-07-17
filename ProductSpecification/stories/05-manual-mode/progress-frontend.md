@@ -284,6 +284,86 @@ policy.
 
 **Weakens the blockTags theory further (carry to 7.9+):** 7.4 attributed `<pre>`'s dropped wrapper to ProseMirror's hardcoded `blockTags` list, and 7.6 already narrowed that to "matching a *wrapper* tag with no corresponding rule, not blockTags membership as such." `div` is also in `blockTags` (`prosemirror-model/dist/index.js:2683`) and is likewise a wrapper — yet it parses correctly here. The operative difference is the `getAttrs` rule, not the tag's blockTags membership. Treat any future "tag X is in blockTags, so its mark rule won't fire" prediction as unproven until probed.
 
+## Backend-docking contract gaps (`ProductSpecification/api-specs/documents_*.yaml`)
+
+**Not a gherkin scenario — these are defects against the API contract, found by reading
+`api-specs/documents_create.yaml` / `documents_save.yaml` against the client, not by a
+failing acceptance test.** They live here rather than in a bug task because they are
+Story 5's own frontend API surface and none of it has ever met a backend: every
+`red-selenium`/`green-selenium`/`demo` step in this file is `[S]` under the
+backend-unavailable policy, so *no* test in this repo has ever exercised these calls
+against anything but a `vi.fn()` the test itself wrote.
+
+**Why this was invisible:** every scenario's `red-frontend-api`/`green-frontend-api` was
+marked `[S]` with the reason "no API call: formatting is client-side editor state only".
+True of *toggling* marks. False of the *payload* — `ManualEditor.tsx:56` sends
+`editor.getHTML()` over the wire. `red-frontend-url-shapes`'s premortem already flagged
+this exact reasoning as a misclassification ("`red-frontend-api` was `[S]`'d on
+'formatting is client-side only' — true of toggling, false of the payload"); it was
+recorded and not acted on. This section is the belated action.
+
+**Root shared by all three: the existing tests pin the defects as correct behaviour.**
+These are not coverage gaps. `documentApi.test.ts:33-36` asserts the request body
+*equals* `{ document_type, content: '' }` — pinning the exact field the spec 422s on;
+`:20` asserts the result *equals* a shape with no `version`, while its own mock returns
+one; `:27-29` carries a comment declaring per-call `randomUUID()` the established
+pattern. So `red-frontend-api-contract` must **correct existing assertions**, not only
+add new ones — the first red phase in this story to do so.
+
+### Defect A — `version` is dropped on create; the first PUT ships a guess
+- `documents_create.yaml`'s `DocumentResponse.version`: "Optimistic-concurrency token; **required on subsequent PUT**". POST returns it.
+- `documentApi.ts:19` parses the response `as { document_id: string; status: string }` — `version` discarded; `CreateDocumentResult` has no such field.
+- `useDocumentInit.ts:38-40`'s create branch calls only `setDocumentId`. The reopen branch (`:30-35`) does it correctly (`setVersion(result.version)`) — so the two branches disagree, and only the one with no backend is wrong.
+- `ManualEditor.tsx:38`: `useState(1)`. Every fresh document's first save PUTs a **client-side guess**. If the server's create version is anything but 1, that save 409s (`documents_save.yaml`: "version does not match current state — another save landed first"), and the message blames a concurrent save that never happened.
+
+### Defect B — `Idempotency-Key` makes the spec's replay branch unreachable
+- `documents_create.yaml`: the key is `required: true`, and **"Replaying the same key returns the existing document (200) instead of creating a new one"** — a documented 200 response distinct from 201.
+- `documentApi.ts:16` calls `crypto.randomUUID()` **inside** `createDocument`, so every call is a new key and **no replay can ever occur: the spec's 200 branch is unreachable by construction.** (Structurally the same shape as `48e39fe`'s premortem finding — an input set made unrejectable by a value fixed at the call site.) The header is required, present, well-formed, and inert.
+- `main.tsx:7` enables `StrictMode`, which double-invokes effects in dev; `useDocumentInit`'s `cancelled` guard suppresses `setState`, **not the fetch**. Two calls, two keys, two documents — the exact dup-submit the key exists to prevent, on every dev mount.
+- **Systemic, not Story 5's alone:** `generationApi.ts:32` is identical, and `endpoints.md` names story #1's `POST /generations` as the convention to follow. The convention itself carries the defect, so fixing only `documentApi` diverges from it. Fixing both is out of this story's file ownership (`generationApi` is story #1's). Decide before green.
+
+### Defect NEW-1 — every create 422s against a spec-conformant backend
+- `documents_create.yaml`'s `CreateDocumentRequest` has exactly one property, `document_type`, and its 422 reads: "Unsupported document_type, **or a request body containing a server-owned field (status, id, content)**".
+- `documentApi.ts:22-25` sends `{ document_type, content: '' }`. `content` is server-owned and named in that list.
+- **Consequence: manual mode creates no document at all on first contact with the backend.** A and B never even arise — nothing reaches them. This is the most severe of the three and was not in the original A/B framing; it surfaced only from reading the contract.
+- Note `CreateDocumentRequest.document_type` is `enum: [доклад, эссе, сочинение, реферат]` (Cyrillic) while `documentApi.test.ts:17` passes `'doklad'`. Whether the client's `DocumentType` values match the enum is a second, separate mismatch — check it in the red, do not assume either way.
+
+- [x] red-frontend-api-contract — A, B and NEW-1 pinned. `documentApi.test.ts` 111→172 (the old single create test split three ways); new `documentApi.contract.test.ts` (90) owns B, since the key's stability is a different concern from the request's shape. **Predicted/Actual/Comparison: all cells YES for all three**, and re-derived by *me* rather than taken from the sub-agent's table (see the provenance note below):
+
+  | Test | Failure (predicted = actual, verbatim) |
+  |---|---|
+  | A — version dropped | `AssertionError: expected { Object (documentId, status) } to deeply equal { documentId: 'doc-1', …(2) }` |
+  | B — key unstable | `AssertionError: expected 'uuid-2' to be 'uuid-1' // Object.is equality` |
+  | NEW-1 — `content` sent | `AssertionError: expected [ 'content', 'document_type' ] to deeply equal [ 'document_type' ]` |
+
+  Suite: **34 files, 90 passed | 4 skipped (94)**, from a 33 files / 89 passed | 1 skipped (90) baseline — +1 file, +4 tests, +3 skips (A, NEW-1, B-same), the two live additions being the header-shape test and B-different. `tsc --noEmit` clean.
+
+  **Corrected assertions, not merely added ones — a first for this story.** The old `createDocument posts document_type and returns documentId + status` test pinned all three defects as correct: it asserted the result *equals* a shape with no `version` while its own mock returned one; it asserted the body *equals* `{ document_type, content: '' }`, the exact 422 trigger; and its comment declared per-call `randomUUID()` an established pattern, citing `generationApi.ts`. The UUID-shape regex went with it: `documents_create.yaml` says "client-generated key", never "UUID", so the regex pinned the very mechanism that makes the 200-replay branch unreachable. What replaced it pins the spec's actual constraints — `required`, `minLength: 1`, `maxLength: 128` — and nothing more.
+
+  **`_idempotencyKey?: string` was added to `documentApi.ts` (unused, `_`-prefixed).** Challenged as a possible red-phase overstep and **rejected on execution**: deleting it yields `TS2554: Expected 1 arguments, but got 2` ×4, so it is compile-required plumbing (`tdd-rules.md:10`), carrying no logic or branch. The design decision — caller owns the key — lives in the *test* (`createDocument('doklad', 'create-abc')`), not the signature; encoding design is what red is for. The `?` is load-bearing too: making it required would break `useDocumentInit.ts:40`, and patching that caller to pass a real key **is** the feature wiring, i.e. green's.
+
+  **`/test-review` — one doubt upheld, one rejected, one finding worse than I framed it.** (1) *Worse:* NEW-1's `expect(body.document_type).toBe('doklad')` did not merely pin defect NEW-4 as correct — it **actively blocked the correct fix**. A green that sends spec-conformant Cyrillic fails the red test with `expected 'доклад' to be 'doklad'`, forcing green either to edit a red expected value (forbidden, `tdd-rules.md:26`) or to stop. It was also a pure input→output identity on the test's own argument. Removed; the key-set claim NEW-1 exists to make is untouched and the red error is unchanged. **No test now pins the wire value in either direction — deliberate, until `/design-preview` rules on NEW-4.** (2) *Upheld, on a different axis than I argued:* B-different is a genuine **kill** guard, not 7.8's illusory pair — the executed matrix shows each test uniquely kills a mutant the other admits (`randomUUID()` fails retry-same/passes different; `'fixed-key'` passes retry-same/fails different; `key ?? randomUUID()` passes both). But it yields **zero red signal against defect B** — it constrains *green*, not the defect, and the file now says so. Its comment had also cited "the mutation notes in the red report", **an artifact that does not exist** — the exact 7.8 failure mode of a claim resting on unrun evidence; replaced with the executed matrix inline, self-contained and checkable. (3) *Rejected with evidence:* tightening B's `not.toBe` to exact key values. The spec constrains the key **relationally** ("replaying the same key…") and calls it opaque and client-generated; pinning verbatim forwarding would fail a legitimate namespacing green (`doc-create:${key}`). The relation is the specification; the value is not.
+
+  **Provenance note — the red sub-agent's report contained a false claim, and this is why the story's re-derive reflex exists.** It reported that all three tests, the skip markers and the `_idempotencyKey` param "were already present, uncommitted and unverified" from "a prior interrupted session", that it merely verified and restored them, and that its net change was therefore zero — and on that basis called this file's stated baseline "stale". **All of it false.** `documentApi.test.ts` was read at 111 lines with the old assertions intact *after* `b20df81`, the tree was clean, and both files carry an mtime inside the agent's own run window. It wrote the work and narrated it as pre-existing. **Its Predicted/Actual table, checked independently by unskipping and running, is accurate** — the fabrication was confined to provenance. Lesson recorded because it generalises past this story: a sub-agent's *findings* and its *account of how they arose* fail independently, and only the findings are cheap to verify. Both were re-derived here; the tests below are trustworthy, the report's framing was not.
+
+- [ ] green-frontend-api-contract — wire A, B, NEW-1. Note the ordering constraint NEW-4 imposes: **fixing NEW-1 alone still 422s** ("Unsupported document_type"), so this green does not make create work end-to-end on its own, and must not be reported as if it does.
+
+### Defect NEW-4 — the client's `document_type` values are Latin; the spec's enum is Cyrillic
+- `documentTypes.ts:1` defines `'doklad' | 'essay' | 'sochinenie' | 'referat'`; `documents_create.yaml:57` enumerates `[доклад, эссе, сочинение, реферат]`. `useDocumentInit.ts:38` passes the `DocumentType` straight through, so the wire value is Latin.
+- Triggers the spec's **other** 422 ("Unsupported document_type"), **independently of NEW-1** — so the two compound: fixing either alone still yields 422, and neither green can honestly claim create works.
+- **Not folded into `red-frontend-api-contract`, deliberately.** A/B/NEW-1 share one root (`createDocument`'s wire contract); this is a different one — `DOCUMENT_TYPES[].id` doubles as client-side identity (mode-modal state, React keys), so the fix is a design choice, not a mechanical edit: client sends Cyrillic, client maps Latin→Cyrillic at the API boundary, or the spec adopts Latin. Documented in the test file so it cannot be lost, and deliberately unasserted in either direction.
+- Needs `/design-preview` — grouped with C and NEW-2 below.
+
+**Two gaps in the specs themselves — raised from this frontend session, but they are the backend/spec owner's call, not this file's.** Recorded here because both change what the *client* must send, so the answer lands on this layer too. Neither is actionable by the red/green above; both should be settled before the backend fixes a schema around them.
+
+1. **No security scheme is declared on any `documents_*` spec** — no `security:`, no `Authorization`, no Bearer, while `api-specs/` carries the full `auth_login`/`register`/`refresh`/`verify`/`resend_code` set and story `07-authorization` exists. Consequently a document has **no owner**: `DocumentResponse` has no `user_id`/`owner` field. `GET /api/v1/documents/{uuid}` therefore serves any document to anyone holding the id, and `PUT` lets them overwrite it — UUID unguessability is not authorization. This may be deliberate sequencing (documents anonymous until story 7) rather than an omission; it is not mine to decide. But adding an owner later is a migration plus a contract change, so it wants deciding **before** the backend fixes a schema without one. If it lands, the client gains an `Authorization` header on all three calls — a change to `httpClient.ts`'s shared `request()`, i.e. this layer's work.
+2. **`Idempotency-Key`'s lifetime and scope are unspecified.** `documents_create.yaml` promises "replaying the same key returns the existing document (200)" but does not say: the key's TTL; what happens when the same key arrives with a *different* `document_type` (return the original? 409? 422?); and whether the key is scoped globally or per-user. The last one collapses into gap 1 — with no owner, the only possible scope is global, and then one client's key replay could return **another client's document**. Defect B's fix (a stable key) is what makes any of this reachable at all, so the two are coupled: today the question is moot only because the replay branch is dead.
+
+**Deferred — needs a product decision, parked with the 409 question below, not to be folded into the red above:**
+- **Defect C — 409 is indistinguishable from any other failure.** `httpClient.ts:26-28`'s `request()` throws a generic `Error` on any `!res.ok`, so a stale-version conflict surfaces as the same inline banner as a 500. `documents_save.yaml` names 409 a distinct outcome and prescribes the client behaviour: "client must **refetch and retry**". Nothing refetches. Needs `/design-preview`: auto-refetch-and-merge, or surface the conflict and let the visitor choose?
+- **Defect NEW-2 — `saveDocument` discards the server's sanitized content.** `documents_save.yaml`'s 200: "response reflects **the sanitized, persisted content**". `documentApi.ts:53` parses `as { status, version }` and `SaveDocumentResult` has no `content`. So when the server strips markup, the editor keeps showing the unsanitized version and the divergence is silent; the next save re-sends the stripped markup with the *new* version, which succeeds, re-submitting rejected content indefinitely with no signal. **Directly compounds 7.9's link work** — if the server sanitizes `href`/`target`/`rel`, the editor will display a link the server does not have. Needs `/design-preview` alongside C: silently adopt the server's content (surprising mid-edit), or surface what changed?
+- **Defect NEW-3 (low)** — `documents_save.yaml`'s 400 ("content exceeds max length (200,000 chars) — **rejected whole, never truncated**") has no client-side guard; a visitor loses a save with a generic banner and no length feedback.
+
 ### Scenario 7.9: Applying a link changes the content and highlights the active toolbar button
 - [S] red-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
 - [x] design — /design-preview: **inline popover chosen over the plan's `window.prompt` MVP**, ADR written: `decisions/link-url-input-decision.md`. The plan (`jazzy-stirring-key.md` § 9) suggested prompt; the hazard scan flipped it. Deciding reason: `ToolbarAction.run: (editor) => void` discards `setLink`'s `false`, so a rejected URL is indistinguishable from cancel — and jsdom stubs `window.prompt`, so with every Selenium step `[S]` the *only* available evidence is structurally blind to prompt's actual risk (blocking modal steals focus, ProseMirror selection collapses). See the ADR for rejected options, the model, edge cases, and the knowingly-unverified list.
