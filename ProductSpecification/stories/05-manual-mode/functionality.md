@@ -8,15 +8,53 @@ read from the source, not from the checkboxes.
 
 Scope note: the backend is developed on a parallel branch and is unreachable here. Every
 Selenium and demo step in this story is `[S]`, so **nothing below has ever run in a real
-browser against a real server**. The evidence is 76 jsdom component tests.
+browser against a real server**. The evidence is jsdom component tests.
+
+## Docking readiness: not ready — five blockers (2026-07-17)
+
+**Read this before anything below.** Everything in this document describes behaviour verified
+*in jsdom against mocks the tests themselves wrote*. Measured against the real contracts in
+`api-specs/documents_*.yaml`, **the editor does not currently create, load, or save a single
+document.** Full detail and the backend's side: [`docking-requirements.md`](docking-requirements.md).
+
+1. **No authentication anywhere.** `Authorization`/`Bearer`/`access_token` — zero hits across
+   `frontend/src`. No token storage, no auth files; `generationApi.ts` (story #1) is the same.
+   Auth lives on the unmerged `feature/07-authorization-frontend`. The product decision of
+   2026-07-17 — *a visitor who is not authorized can neither generate nor write* — means every
+   call in this story currently fails at the door.
+2. **`POST` sends `content: ''`**, a server-owned field the spec answers with `422`. No document
+   is created, so nothing downstream of creation happens at all.
+3. **`document_type` is Latin (`doklad`) against the spec's Cyrillic enum (`доклад`)** — the
+   *other* `422`, independent of (2). Fixing either alone still creates nothing.
+4. **`version` is dropped on create**, so the first save ships `useState(1)`, a client-side
+   guess, and earns a `409` blaming a concurrent save that never happened.
+5. **`Idempotency-Key` is minted per call**, making the spec's replay branch unreachable; with
+   `StrictMode`'s double-invoked effects that is two documents per dev mount (measured:
+   `fetch count = 2, distinct keys = 2`).
+
+(2), (4) and (5) have a red phase committed; it is knowingly incomplete — see
+`progress-frontend.md`'s "Backend-docking contract gaps".
+
+**How this stayed invisible:** every `red-frontend-api` step was `[S]`'d as *"no API call:
+formatting is client-side editor state only"*. True of toggling marks, false of the payload —
+`ManualEditor.tsx:56` sends `editor.getHTML()` over the wire. 7.9's premortem named that
+misclassification and it was recorded, not acted on. The specs were the only contract and nobody
+had read them against the client.
 
 ## Getting into the editor
 
 Manual mode is offered alongside AI generation on the mode modal — both cards are live, neither
-carries a "скоро" badge. Choosing it creates a document immediately (`POST`) and drops the
-visitor into an empty editor: placeholder text, the full formatting toolbar, a breadcrumb
-carrying the document type, and a status line reading *Черновик, ещё не сохранён*. There is no
-intermediate loading skeleton — the editor is built unconditionally, so it appears at once.
+carries a "скоро" badge. Choosing it fires a `POST` and drops the visitor into an empty editor:
+placeholder text, the full formatting toolbar, a breadcrumb carrying the document type, and a
+status line reading *Черновик, ещё не сохранён*. There is no intermediate loading skeleton — the
+editor is built unconditionally, so it appears at once.
+
+**The editor appears whether or not the `POST` succeeded.** The create failure path only
+`console.error`s (`useDocumentInit.ts:41-45`), so against a real backend today — where the call
+`422`s for two independent reasons — the visitor gets a working-looking editor with no
+`documentId`. Typing works; saving silently no-ops on `ManualEditor.tsx`'s `if (!documentId)`
+guard. Nothing tells them. The status line still reads *Черновик, ещё не сохранён*, which is
+true, and misleading about why.
 
 "Назад" returns to the mode modal with the document type still scoped, rather than resetting to
 the landing page.
