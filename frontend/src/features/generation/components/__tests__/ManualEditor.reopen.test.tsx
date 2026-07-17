@@ -38,7 +38,7 @@ describe('ManualEditor reopen flow', () => {
       expect(contentArea.innerHTML).toBe('<strong>Saved</strong> content')
     })
 
-    vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 4 })
+    vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 4, content: '<strong>Saved</strong> content' })
     const saveButton = screen.getByRole('button', { name: 'Сохранить' })
     saveButton.click()
 

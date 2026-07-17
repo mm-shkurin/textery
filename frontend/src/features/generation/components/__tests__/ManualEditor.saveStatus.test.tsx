@@ -18,7 +18,7 @@ describe('ManualEditor save status', () => {
     contentArea.textContent = 'hello world'
     fireEvent.input(contentArea)
 
-    vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 2 })
+    vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 2, content: 'hello world' })
 
     const saveButton = screen.getByRole('button', { name: 'Сохранить' })
     fireEvent.click(saveButton)
@@ -42,7 +42,7 @@ describe('ManualEditor save status', () => {
     contentArea.textContent = 'hello world'
     fireEvent.input(contentArea)
 
-    vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 2 })
+    vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 2, content: 'hello world' })
 
     const saveButton = screen.getByRole('button', { name: 'Сохранить' })
     fireEvent.click(saveButton)
@@ -66,7 +66,7 @@ describe('ManualEditor save status', () => {
     fireEvent.input(contentArea)
 
     let rejectSave: (error: Error) => void = () => {}
-    const savePromise = new Promise<{ status: string; version: number }>((_resolve, reject) => {
+    const savePromise = new Promise<documentApi.SaveDocumentResult>((_resolve, reject) => {
       rejectSave = reject
     })
     vi.mocked(documentApi.saveDocument).mockReturnValueOnce(savePromise)
@@ -96,7 +96,7 @@ describe('ManualEditor save status', () => {
     fireEvent.input(contentArea)
 
     let rejectSave: (error: Error) => void = () => {}
-    const failedSavePromise = new Promise<{ status: string; version: number }>((_resolve, reject) => {
+    const failedSavePromise = new Promise<documentApi.SaveDocumentResult>((_resolve, reject) => {
       rejectSave = reject
     })
     vi.mocked(documentApi.saveDocument).mockReturnValueOnce(failedSavePromise)
@@ -111,7 +111,7 @@ describe('ManualEditor save status', () => {
       expect(screen.getByText(SAVE_ERROR_MESSAGE)).toBeInTheDocument()
     })
 
-    vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 2 })
+    vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 2, content: 'hello world' })
     fireEvent.click(saveButton)
 
     await waitFor(() => {
@@ -129,12 +129,12 @@ describe('ManualEditor save status', () => {
     contentArea.textContent = 'first content'
     fireEvent.input(contentArea)
 
-    let resolveFirstSave: (value: { status: string; version: number }) => void = () => {}
-    const firstSavePromise = new Promise<{ status: string; version: number }>((resolve) => {
+    let resolveFirstSave: (value: documentApi.SaveDocumentResult) => void = () => {}
+    const firstSavePromise = new Promise<documentApi.SaveDocumentResult>((resolve) => {
       resolveFirstSave = resolve
     })
-    let resolveSecondSave: (value: { status: string; version: number }) => void = () => {}
-    const secondSavePromise = new Promise<{ status: string; version: number }>((resolve) => {
+    let resolveSecondSave: (value: documentApi.SaveDocumentResult) => void = () => {}
+    const secondSavePromise = new Promise<documentApi.SaveDocumentResult>((resolve) => {
       resolveSecondSave = resolve
     })
     vi.mocked(documentApi.saveDocument)
@@ -150,7 +150,7 @@ describe('ManualEditor save status', () => {
     contentArea.textContent = 'second content'
     fireEvent.input(contentArea)
 
-    resolveFirstSave({ status: 'saved', version: 2 })
+    resolveFirstSave({ status: 'saved', version: 2, content: 'first content' })
 
     await waitFor(() => {
       expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
@@ -159,7 +159,7 @@ describe('ManualEditor save status', () => {
     expect(screen.queryByText('Сохранено')).not.toBeInTheDocument()
     expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
 
-    resolveSecondSave({ status: 'saved', version: 3 })
+    resolveSecondSave({ status: 'saved', version: 3, content: 'second content' })
 
     await waitFor(() => {
       expect(screen.getByText('Сохранено')).toBeInTheDocument()

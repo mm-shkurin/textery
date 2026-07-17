@@ -21,8 +21,8 @@ describe('ManualEditor save flow', () => {
     contentArea.textContent = 'hello world'
     fireEvent.input(contentArea)
 
-    let resolveSave: (value: { status: string; version: number }) => void = () => {}
-    const savePromise = new Promise<{ status: string; version: number }>((resolve) => {
+    let resolveSave: (value: documentApi.SaveDocumentResult) => void = () => {}
+    const savePromise = new Promise<documentApi.SaveDocumentResult>((resolve) => {
       resolveSave = resolve
     })
     vi.mocked(documentApi.saveDocument).mockReturnValue(savePromise)
@@ -38,7 +38,7 @@ describe('ManualEditor save flow', () => {
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
     expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', 'hello world', 7)
 
-    resolveSave({ status: 'saved', version: 2 })
+    resolveSave({ status: 'saved', version: 2, content: 'hello world' })
   })
 
   it('a save requested while one is in flight auto-retriggers with the latest content once the first save resolves, and the button only re-enables after the second settles', async () => {
@@ -48,12 +48,12 @@ describe('ManualEditor save flow', () => {
     contentArea.textContent = 'first content'
     fireEvent.input(contentArea)
 
-    let resolveFirstSave: (value: { status: string; version: number }) => void = () => {}
-    const firstSavePromise = new Promise<{ status: string; version: number }>((resolve) => {
+    let resolveFirstSave: (value: documentApi.SaveDocumentResult) => void = () => {}
+    const firstSavePromise = new Promise<documentApi.SaveDocumentResult>((resolve) => {
       resolveFirstSave = resolve
     })
-    let resolveSecondSave: (value: { status: string; version: number }) => void = () => {}
-    const secondSavePromise = new Promise<{ status: string; version: number }>((resolve) => {
+    let resolveSecondSave: (value: documentApi.SaveDocumentResult) => void = () => {}
+    const secondSavePromise = new Promise<documentApi.SaveDocumentResult>((resolve) => {
       resolveSecondSave = resolve
     })
     vi.mocked(documentApi.saveDocument)
@@ -72,7 +72,7 @@ describe('ManualEditor save flow', () => {
 
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
 
-    resolveFirstSave({ status: 'saved', version: 2 })
+    resolveFirstSave({ status: 'saved', version: 2, content: 'first content' })
 
     await waitFor(() => {
       expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
@@ -81,7 +81,7 @@ describe('ManualEditor save flow', () => {
     expect(saveButton).toHaveAttribute('aria-disabled', 'true')
     expect(screen.getByTestId('save-spinner')).toBeInTheDocument()
 
-    resolveSecondSave({ status: 'saved', version: 3 })
+    resolveSecondSave({ status: 'saved', version: 3, content: 'second content' })
 
     await waitFor(() => {
       expect(saveButton).toHaveAttribute('aria-disabled', 'false')
@@ -97,7 +97,7 @@ describe('ManualEditor save flow', () => {
     fireEvent.input(contentArea)
 
     let rejectFirstSave: (error: Error) => void = () => {}
-    const firstSavePromise = new Promise<{ status: string; version: number }>((_resolve, reject) => {
+    const firstSavePromise = new Promise<documentApi.SaveDocumentResult>((_resolve, reject) => {
       rejectFirstSave = reject
     })
     vi.mocked(documentApi.saveDocument).mockReturnValueOnce(firstSavePromise)

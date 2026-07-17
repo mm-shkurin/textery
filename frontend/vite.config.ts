@@ -12,7 +12,11 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8000',
+        // 8100 matches infra/.env's BACKEND_PORT — the port the stack actually publishes
+        // (`docker compose up backend` -> 0.0.0.0:8100->8000/tcp). The old 8000 default was not
+        // merely stale: another service occupies 8000 on this host, so a dev who forgot the env
+        // var did not get a connection error, they got someone else's app answering.
+        target: process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8100',
         changeOrigin: true,
       },
     },

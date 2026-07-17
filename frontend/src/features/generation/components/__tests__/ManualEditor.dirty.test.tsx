@@ -25,7 +25,7 @@ describe('ManualEditor dirty flag', () => {
     contentArea.textContent = 'hello world'
     fireEvent.input(contentArea)
 
-    vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 2 })
+    vi.mocked(documentApi.saveDocument).mockResolvedValue({ status: 'saved', version: 2, content: 'hello world' })
 
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
@@ -72,7 +72,7 @@ describe('ManualEditor dirty flag', () => {
     fireEvent.input(contentArea)
 
     let rejectSave: (error: Error) => void = () => {}
-    const savePromise = new Promise<{ status: string; version: number }>((_resolve, reject) => {
+    const savePromise = new Promise<documentApi.SaveDocumentResult>((_resolve, reject) => {
       rejectSave = reject
     })
     vi.mocked(documentApi.saveDocument).mockReturnValueOnce(savePromise)

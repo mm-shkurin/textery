@@ -284,6 +284,80 @@ policy.
 
 **Weakens the blockTags theory further (carry to 7.9+):** 7.4 attributed `<pre>`'s dropped wrapper to ProseMirror's hardcoded `blockTags` list, and 7.6 already narrowed that to "matching a *wrapper* tag with no corresponding rule, not blockTags membership as such." `div` is also in `blockTags` (`prosemirror-model/dist/index.js:2683`) and is likewise a wrapper — yet it parses correctly here. The operative difference is the `getAttrs` rule, not the tag's blockTags membership. Treat any future "tag X is in blockTags, so its mark rule won't fire" prediction as unproven until probed.
 
+## DOCKED — the editor works against the live backend (2026-07-17)
+
+**Verified end-to-end through the real client against the running stack, no mocks anywhere in
+the path.** Everything below this heading is the archaeology; this is the outcome.
+
+```
+CREATE   -> {"documentId":"cb4cdb8b-…","status":"draft","version":1}
+SENT     -> <p>Живой текст</p><script>alert(1)</script><br />
+SAVE     -> {"version":2,"content":"<p>Живой текст</p><br>"}   <- script stripped, <br /> normalised
+GET      -> content:"<p>Живой текст</p><br>"                    <- reopen matches
+CONFLICT -> {"version":3,"content":"<p>two</p>"}                <- 409 refetched and retried itself
+```
+
+Database, the backend session's own acceptance check (`owner_id` null means the token never
+arrived):
+
+```
+ document_type | status | version |        content         | has_owner
+ доклад        | draft  |       3 | <p>two</p>             | t
+ доклад        | draft  |       2 | <p>Живой текст</p><br> | t
+```
+
+**The spec was wrong about the thing this section was named after.** Measured by curl 2026-07-17:
+a POST carrying `{"status":"completed","content":"<p>x</p>"}` returns **201** with
+`status="draft"`, `content=""` — server-owned fields are **ignored, not rejected**. So NEW-1 was
+a defect against a contract nobody implemented. `content` is still not sent (a request should
+say what it means), but the reason is hygiene, not a 422. The measured contract now lives in
+[`docking-requirements.md`](docking-requirements.md).
+
+**NEW-4 settled the other way, and it was the real blocker all along.** The backend kept
+Cyrillic; `docking-requirements.md` asked for Latin and was not taken up. Measured:
+`{"document_type":"doklad"}` → **422 INVALID_DOCUMENT_TYPE**, `{"document_type":"доклад"}` → 201.
+So `WIRE_DOCUMENT_TYPE` in `documentTypes.ts` translates at the boundary — the fallback this
+file offered. Deliberately not `name.toLowerCase()`, though it yields the same four strings:
+`name` is a display label, and deriving the wire value from it would mean relabelling a modal
+card silently breaks document creation. Pinned by a test, because **every other test in the
+suite mocks fetch, so the wire value is asserted in exactly one place.**
+
+**NEW-2 (`saveDocument` discarding the server's content) closed, with the trap named.** The
+naive fix — adopt the response's content unconditionally — deletes whatever the user typed while
+the request was in flight. `ManualEditor` now captures what it sent and adopts only if the editor
+still holds exactly that; otherwise the next save re-sanitizes anyway, so nothing is lost.
+
+**Defect C (409) closed by encoding the protocol the backend prescribes** ("Refetch and retry"),
+in `saveDocument`, for the same reason `authorizedRequest` owns the 401 renewal. Exactly one
+retry — a second conflict means the just-fetched version went stale within a round trip, which a
+loop cannot fix and would only hammer the endpoint. **Trade-off stated rather than hidden:** the
+retry sends OUR content against the refetched version, i.e. last-writer-wins. Documents are
+single-owner, so the realistic conflict is the same person in a second tab — and silently
+discarding one tab's paragraph is still a real loss. Surfacing it needs UI this story lacks.
+
+**A measurement that nearly became a false bug report.** A stale version returned **200**, not
+the promised 409, and it looked like the lost-update guard was broken. It was not: the retry sent
+*identical* content, which the backend correctly treats as an idempotent replay. Re-measured with
+*different* content: **409 VERSION_CONFLICT**, stored document untouched. The guard is right; the
+first measurement was incomplete. Checked before writing it up, which is the only reason it did
+not become the fifth false claim in this file's ledger.
+
+**Two live-stack traps worth keeping.** (1) `vite.config.ts`'s proxy defaulted to `127.0.0.1:8000`
+while `infra/.env` publishes `BACKEND_PORT=8100` — and **another service occupies 8000 on this
+host**, so a dev who forgot the env var did not get a connection error, they got someone else's
+app answering. Default corrected to 8100. (2) Windows `python -c "print(...)"` appends `\r`, so a
+verification code piped through it reaches the API as `120358\r` and returns
+`INVALID_OR_EXPIRED_CODE` — a shell artifact that reads exactly like a backend bug.
+
+**Route guard (their task 2) needed no work:** `App.tsx:99`'s `if (step !== 'landing' &&
+!isAuthenticated)` already sits above the editor branch, so an unauthenticated visitor collapses
+to the landing. Story 7's merge had done it.
+
+**Their brief's premise about this branch was stale**, worth recording because it cost a
+round trip: it pointed at worktree `textery-frontend` (which is `feature/07-authorization-frontend`)
+and reported `git grep -lniE "authorization|bearer|access_token" -- frontend/src` returning
+nothing. In this worktree that grep returns ten-plus files; auth had already landed in `abffb8b`.
+
 ## Backend-docking contract gaps (`ProductSpecification/api-specs/documents_*.yaml`)
 
 **Not a gherkin scenario — these are defects against the API contract, found by reading

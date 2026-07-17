@@ -42,19 +42,14 @@ describe('documentApi', () => {
     expect(result).toEqual({ documentId: 'doc-1', status: 'draft', version: 7 })
   })
 
-  // Defect NEW-1 (documents_create.yaml, 422: "a request body containing a server-owned field
-  // (status, id, content)"). The old client sent `content: ''`, so every create 422'd against a
-  // conformant backend. CreateDocumentRequest has exactly one property — the KEY SET, not merely
-  // the absence of `content`, is the contract, so a future server-owned field cannot be added
-  // without failing here.
+  // CORRECTION (measured by curl against the live backend 2026-07-17, superseding the spec and
+  // this comment's earlier version): server-owned fields are IGNORED, not rejected. POST with
+  // {"status":"completed","content":"<p>x</p>"} returns 201 with status="draft", content="" —
+  // so the old client's `content: ''` was never the 422 the spec threatened, and NEW-1 as
+  // originally written was a defect against a contract nobody implemented.
   //
-  // Asserts nothing about document_type's VALUE, deliberately. NEW-4: the client's values are
-  // Latin (`documentTypes.ts:1`), the spec's enum is Cyrillic — a distinct defect, still
-  // undecided (see docking-requirements.md, which asks the backend for Latin). An earlier draft
-  // asserted `'doklad'`; test-review removed it on executed evidence — against a mutant sending
-  // the spec-conformant `'доклад'` it failed with `expected 'доклад' to be 'doklad'`, i.e. it
-  // would have BLOCKED the correct fix rather than merely pinned the defect. When NEW-4 is
-  // settled, pin the wire value in its own test.
+  // The key-set assertion stays anyway, on a narrower claim: a request should say what it means,
+  // and a field the server discards is a claim about ownership that is not the client's to make.
   it('createDocument sends document_type as the request body\'s only field', async () => {
     const fetchMock = stubCreateFetch()
 
@@ -64,6 +59,23 @@ describe('documentApi', () => {
     expect(url).toContain('/api/v1/documents')
     expect(init.method).toBe('POST')
     expect(Object.keys(JSON.parse(init.body)).sort()).toEqual(['document_type'])
+  })
+
+  // NEW-4, now SETTLED and pinned — this is the assertion test-review deliberately removed while
+  // the question was open, restored because a measurement closed it. The backend kept Cyrillic
+  // (docking-requirements.md asked for Latin and was not taken up), so the app's Latin
+  // DocumentType is translated at this boundary. Measured, not read from a spec:
+  //   {"document_type":"doklad"} -> 422 {"error_code":"INVALID_DOCUMENT_TYPE"}
+  //   {"document_type":"доклад"} -> 201
+  // Without this the editor creates nothing at all, and no other test in the suite would notice:
+  // every one of them mocks fetch, so the wire value is only ever asserted here.
+  it('createDocument translates the Latin DocumentType to the Cyrillic wire value', async () => {
+    const fetchMock = stubCreateFetch()
+
+    await createDocument('doklad', 'key-1')
+
+    const [, init] = fetchMock.mock.calls[0]
+    expect(JSON.parse(init.body).document_type).toBe('доклад')
   })
 
   // Defect B: the key used to be minted inside createDocument, so every call sent a fresh one
@@ -90,17 +102,21 @@ describe('documentApi', () => {
     expect(init.headers.Authorization).toBe('Bearer access-1')
   })
 
-  it('saveDocument PUTs content and version, returns saved status + version', async () => {
+  // The returned `content` is the SANITIZED persisted form, not the string sent — measured
+  // 2026-07-17: `<p>Привет</p><script>alert(1)</script><br />` came back as `<p>Привет</p><br>`.
+  // The mock mirrors that (script stripped, `<br />` normalised) rather than echoing the input,
+  // because echoing would let a client that drops `content` pass this test.
+  it('saveDocument PUTs content and version, returns the sanitized content the server stored', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ status: 'draft', version: 2 }),
+      json: async () => ({ status: 'draft', version: 2, content: '<p>Hello</p><br>' }),
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await saveDocument('doc-1', '<p>Hello</p>', 1)
+    const result = await saveDocument('doc-1', '<p>Hello</p><script>x</script><br />', 1)
 
-    expect(result).toEqual({ status: 'draft', version: 2 })
+    expect(result).toEqual({ status: 'draft', version: 2, content: '<p>Hello</p><br>' })
     const [url, init] = fetchMock.mock.calls[0]
     expect(url).toContain('/api/v1/documents/doc-1')
     expect(init.method).toBe('PUT')
@@ -108,21 +124,27 @@ describe('documentApi', () => {
       'Content-Type': 'application/json',
       Authorization: 'Bearer access-1',
     })
-    expect(JSON.parse(init.body)).toEqual({ content: '<p>Hello</p>', version: 1 })
+    expect(JSON.parse(init.body)).toEqual({
+      content: '<p>Hello</p><script>x</script><br />',
+      version: 1,
+    })
   })
 
-  it('saveDocument rejects with server error detail on non-OK response', async () => {
+  // Deliberately 500, not 409: 409 is no longer a refusal to report but a protocol step the
+  // client recovers from (see the conflict test below). Using it here would assert the message
+  // of an error the user is never shown.
+  it('saveDocument rejects with the server error message on a non-OK response', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
         ok: false,
-        status: 409,
-        json: async () => ({ detail: 'Версия документа устарела' }),
+        status: 500,
+        json: async () => ({ message: 'Внутренняя ошибка сервера' }),
       })
     )
 
     await expect(saveDocument('doc-1', '<p>Hello</p>', 1)).rejects.toThrow(
-      'Версия документа устарела'
+      'Внутренняя ошибка сервера'
     )
   })
 

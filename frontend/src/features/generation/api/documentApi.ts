@@ -4,7 +4,8 @@
 // renews the session and replays rather than surfacing as a document failure the user did not
 // cause. Manual mode is behind a session by product decision (2026-07-17): an unauthorized
 // visitor can neither generate nor write.
-import { send } from './send'
+import { send, VersionConflictError } from './send'
+import { WIRE_DOCUMENT_TYPE, type DocumentType } from '../documentTypes'
 
 interface DocumentWire {
   document_id: string
@@ -31,7 +32,7 @@ export interface CreateDocumentResult {
 // same logical create" means — see useDocumentInit, where one mount must survive StrictMode's
 // double-invoked effect as ONE document.
 export async function createDocument(
-  documentType: string,
+  documentType: DocumentType,
   idempotencyKey: string,
 ): Promise<CreateDocumentResult> {
   const data = await send<DocumentWire>(
@@ -39,10 +40,14 @@ export async function createDocument(
     {
       method: 'POST',
       headers: { 'Idempotency-Key': idempotencyKey },
-      // document_type is the ONLY field. `content` is server-owned; sending it is a 422
-      // ("a request body containing a server-owned field"), which is why no document was ever
-      // created against a conformant backend.
-      body: { document_type: documentType },
+      // Translated at the boundary: the wire wants Cyrillic, the app's DocumentType is Latin.
+      // Sending the Latin id is a 422 INVALID_DOCUMENT_TYPE — measured, not assumed.
+      //
+      // `content` is deliberately absent, though the backend turned out to IGNORE server-owned
+      // fields rather than reject them (so sending it was never the 422 the spec threatened).
+      // Omitting it is still right: the request should say what it means, and a field the
+      // server discards is a claim about ownership that is not ours to make.
+      body: { document_type: WIRE_DOCUMENT_TYPE[documentType] },
     },
     'Не удалось создать документ',
   )
@@ -52,9 +57,16 @@ export async function createDocument(
 export interface SaveDocumentResult {
   status: string
   version: number
+  // The SANITIZED content, as persisted — not the string that was sent. Measured 2026-07-17:
+  //   sent  <p>Привет</p><script>alert(1)</script><br />
+  //   got   <p>Привет</p><br>
+  // The server strips <script> with its contents and normalises void tags. Whoever holds the
+  // editor state must adopt this, or the editor keeps rendering markup the server does not
+  // have and re-sends it on every subsequent save.
+  content: string
 }
 
-export async function saveDocument(
+async function putDocument(
   documentId: string,
   content: string,
   version: number,
@@ -67,7 +79,38 @@ export async function saveDocument(
     },
     'Не удалось сохранить документ',
   )
-  return { status: data.status, version: data.version }
+  return { status: data.status, version: data.version, content: data.content }
+}
+
+// On 409 the backend prescribes the recovery itself ("Refetch and retry"), so it is encoded
+// here rather than pushed onto every caller — the same reason authorizedRequest owns the 401
+// renewal. Measured 2026-07-17: a stale version with DIFFERENT content returns
+// 409 VERSION_CONFLICT and the stored document is untouched; a stale version with IDENTICAL
+// content returns 200 as an idempotent replay, so this path only runs on a real divergence.
+//
+// EXACTLY ONE retry. A second 409 means the version we just fetched went stale within one
+// round trip, which a loop would not fix — it would just hammer the endpoint.
+//
+// TRADE-OFF, stated because it is a product decision and not obviously right: the retry sends
+// OUR content against the refetched version, i.e. last-writer-wins — the other save's text is
+// overwritten. Documents are single-owner (no sharing exists), so the realistic source of a
+// conflict is the same person in a second tab, and silently discarding one tab's paragraph is
+// still a real loss. The alternative is surfacing the conflict and letting them choose, which
+// needs UI this story does not have. Revisit when it does.
+export async function saveDocument(
+  documentId: string,
+  content: string,
+  version: number,
+): Promise<SaveDocumentResult> {
+  try {
+    return await putDocument(documentId, content, version)
+  } catch (error) {
+    if (!(error instanceof VersionConflictError)) {
+      throw error
+    }
+    const current = await getDocument(documentId)
+    return await putDocument(documentId, content, current.version)
+  }
 }
 
 export interface GetDocumentResult {

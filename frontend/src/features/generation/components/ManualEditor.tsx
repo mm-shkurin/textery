@@ -56,8 +56,22 @@ export function ManualEditor({
     isSavingRef.current = true
     setIsSaving(true)
     saveAgainRequested.current = false
-    saveDocument(documentId, editor.getHTML(), saveVersion)
+    // Captured before the round trip: the response's content is the SANITIZED persisted form,
+    // and telling whether to adopt it requires knowing what we actually sent.
+    const sent = editor.getHTML()
+    saveDocument(documentId, sent, saveVersion)
       .then((result) => {
+        // The server's content is the source of truth — it strips <script> with its contents and
+        // normalises void tags (`<br />` -> `<br>`), measured 2026-07-17. Keeping ours would
+        // render markup the server does not have and re-send it on every later save.
+        //
+        // But adopt ONLY if the editor still holds exactly what we sent. Typing continues while
+        // the request is in flight, and setContent would delete those keystrokes — the worst
+        // possible trade for cosmetic agreement. If it changed, the next save re-sanitizes
+        // anyway, so nothing is lost by skipping.
+        if (result.content !== sent && editor.getHTML() === sent) {
+          editor.commands.setContent(result.content)
+        }
         setVersion(result.version)
         setSaveError(null)
         if (saveAgainRequested.current) {
