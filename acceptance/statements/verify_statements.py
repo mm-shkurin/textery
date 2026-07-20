@@ -11,7 +11,7 @@ class VerifyStatements:
     def __init__(self, client: ApplicationClient):
         self._client = client
 
-    async def given_correct_code_submitted_for_pending_account(self) -> VerifyResponseDto:
+    async def _register_pending_account_and_build_verify_request(self) -> VerifyRequestDto:
         email = f"user-{uuid.uuid4()}@example.com"
         register_request = RegisterRequestDto(
             email=email,
@@ -24,25 +24,16 @@ class VerifyStatements:
             f"expected registration to return a verification_code, got body="
             f"{register_response.body}"
         )
-        verify_request = VerifyRequestDto(email=email, code=code)
+        return VerifyRequestDto(email=email, code=code)
+
+    async def given_correct_code_submitted_for_pending_account(self) -> VerifyResponseDto:
+        verify_request = await self._register_pending_account_and_build_verify_request()
         return await self._client.verify(verify_request)
 
     async def given_same_code_submitted_twice_for_pending_account(
         self,
     ) -> tuple[VerifyResponseDto, VerifyResponseDto]:
-        email = f"user-{uuid.uuid4()}@example.com"
-        register_request = RegisterRequestDto(
-            email=email,
-            password="Str0ng!Pass",
-            confirm_password="Str0ng!Pass",
-        )
-        register_response = await self._client.register(register_request)
-        code = register_response.body.get("verification_code")
-        assert code is not None, (
-            f"expected registration to return a verification_code, got body="
-            f"{register_response.body}"
-        )
-        verify_request = VerifyRequestDto(email=email, code=code)
+        verify_request = await self._register_pending_account_and_build_verify_request()
         first = await self._client.verify(verify_request)
         second = await self._client.verify(verify_request)
         return first, second
