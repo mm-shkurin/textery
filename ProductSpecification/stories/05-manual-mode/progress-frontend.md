@@ -746,13 +746,13 @@ Direction fixed by ADR `decisions/line-break-in-inline-doc-decision.md` (**A′*
 pinned and committed (`d12f4a2`), currently `describe.skip` in `ManualEditor.lineBreak.test.tsx`
 (`d17eac6`) pending this decision.
 
-- [~] red-frontend-line-break — un-skip `ManualEditor.lineBreak.test.tsx`; confirm it fails
-  RED against baseline (`<br>` dropped). Add a second assertion pinning the ADR's core
-  edge case via the save path: a mid-content break survives `editor.getHTML()` as `a<br>b`
-  with **no** trailing `<br>`, and a break typed at doc-end is stripped (getHTML has no
-  trailing `<br>`). Assert against `getHTML()` output, not only live DOM, since getHTML is
-  the persisted payload (`useDocumentSave.ts:84`).
-- [ ] green-frontend-line-break — remove `hardBreak: false` from `StarterKit.configure`
+- [x] red-frontend-line-break — RED pinned in `ManualEditor.lineBreak.test.tsx`: captures the
+  save payload via the `saveDocument` mock (`calls[0][1]` = the `content` arg = `getHTML()`,
+  `useDocumentSave.ts:84`) and asserts `line one<br>line two` round-trips exactly — one `<br>`,
+  no trailing `<br>`. Verified RED: with `hardBreak: false` the `<br>` is dropped by schema
+  reconciliation, payload collapses to `line one line two` (break → space), round-trip assert
+  fails. test-review: PASS (strict `toBe`, argument-not-mock-return confirmed).
+- [~] green-frontend-line-break — remove `hardBreak: false` from `StarterKit.configure`
   (`ManualEditor.tsx`); add the `stripTrailingHardBreak` extension (`appendTransaction`
   deleting a `hardBreak` node at the document's end). Full `src/features/generation` suite
   green (the 32 formatting/dirty/etc. live-DOM tests must stay green — the strip removes the
