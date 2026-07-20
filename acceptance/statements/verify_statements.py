@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 from clients.application.application_client import ApplicationClient
@@ -39,6 +40,16 @@ class VerifyStatements:
         verify_request = await self._register_pending_account_and_build_verify_request()
         first = await self._client.verify(verify_request)
         second = await self._client.verify(verify_request)
+        return first, second
+
+    async def given_two_concurrent_verifies_with_the_same_code(
+        self,
+    ) -> tuple[VerifyResponseDto, VerifyResponseDto]:
+        verify_request = await self._register_pending_account_and_build_verify_request()
+        first, second = await asyncio.gather(
+            self._client.verify(verify_request),
+            self._client.verify(verify_request),
+        )
         return first, second
 
     async def given_verified_account_then_verify_with_a_different_code(
