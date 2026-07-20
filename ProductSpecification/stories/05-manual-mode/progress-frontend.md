@@ -799,4 +799,16 @@ pinned and committed (`d12f4a2`), currently `describe.skip` in `ManualEditor.lin
 - [ ] green-selenium — [S] deferred: same "live app to drive Selenium" gap as the rest of
   this file (see RECONCILE_05); real-browser Enter keystroke bypasses the domObserver path
   that the unit test exercises, so a live run is the only proof the in-browser Enter produces
-  exactly one `<br>`. Owe it when the stack runs.
+  exactly one `<br>`. Owe it when the stack runs. **Owe-list (review passes on `cffedc7`):**
+  (i) single Enter → exactly one `<br>` (no double-insert from ProseMirror's own contenteditable
+  handler, which jsdom cannot exercise); (ii) **≥2 consecutive Enters at end-of-content** —
+  premortem CREDIBLE: in jsdom two Enters collapse to zero breaks (`foo`+2×Enter → `foo`). Likely a
+  jsdom fake-caret artifact (2nd keyDown doesn't reposition the caret), but could be a real
+  multi-trailing bug — a live browser is the only place to tell; pin the intended behavior there;
+  (iii) the saved `<br>` actually renders as a visual line break.
+
+**Cleanup follow-up (agent-review on `cffedc7`, non-gating):** `ManualEditor.lineBreak.coverage.test.tsx:80`
+`expect(sent).not.toContain('ProseMirror-trailingBreak')` is a dead assertion — `getHTML()` serializes
+from the model and never emits that view-only cursor-helper class, so it is always-true. The real stray
+guard is the trailing-`<br>` regex on the next line. Delete line 80 or repoint it at the live view DOM
+on the next touch of this file.
