@@ -104,3 +104,16 @@ def assert_account_verified(response: HasStatusAndBody) -> None:
     assert response.body == {"is_verified": True}, (
         f"expected body {{'is_verified': True}}, got body={response.body}"
     )
+
+
+def assert_already_verified_rejected(response: HasStatusAndBody) -> None:
+    # Status is asserted, not just the error_code: a 400 response still carries
+    # error_code=ALREADY_VERIFIED, so a body-only check would pass on the exact
+    # 409->400 map regression this test exists to catch (auth_verify.yaml mandates 409).
+    assert response.status_code == 409, (
+        f"expected 409 Conflict, got status_code={response.status_code}, body={response.body}"
+    )
+    assert response.body == {
+        "error_code": "ALREADY_VERIFIED",
+        "message": "The account is already verified.",
+    }, f"expected the already-verified rejection body, got body={response.body}"
