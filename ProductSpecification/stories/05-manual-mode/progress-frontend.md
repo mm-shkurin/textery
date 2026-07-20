@@ -792,10 +792,12 @@ pinned and committed (`d12f4a2`), currently `describe.skip` in `ManualEditor.lin
        no parse error (load/paste path, required-`marker` supplied by the attr's parseHTML). Live-
        browser proof of no-double-insert + real trailing behavior is owed by the deferred
        green-selenium step below.
-- [~] refactor — original intent (extract `stripTrailingHardBreak` to its own file) is **moot**:
-  green abandoned the strip extension; the fix already ships as two dedicated per-extension files
-  (`hardBreakNode.ts` 42, `hardBreakKeymap.ts` 26 — both ≤200, matching `horizontalRuleNode.ts`
-  layout). Likely `[S]` unless a cross-file smell surfaces.
+- [S] refactor — original intent (extract `stripTrailingHardBreak`) moot (green abandoned the strip
+  extension). The fix ships as two dedicated per-extension files (`hardBreakNode.ts` 42,
+  `hardBreakKeymap.ts` 26 — both ≤200, matching `horizontalRuleNode.ts` layout). refactor-agent
+  already scanned these exact files in the green batch (`5a1c1b2`): verdict NO ACTION (naming clear;
+  marker-attr overlap with `horizontalRuleNode.ts` is the intentional one-customization-per-file
+  convention, extraction would add indirection). No cross-file smell — nothing to refactor.
 - [ ] green-selenium — [S] deferred: same "live app to drive Selenium" gap as the rest of
   this file (see RECONCILE_05); real-browser Enter keystroke bypasses the domObserver path
   that the unit test exercises, so a live run is the only proof the in-browser Enter produces
