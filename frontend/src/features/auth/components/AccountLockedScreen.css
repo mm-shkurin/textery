@@ -4,6 +4,19 @@
   text-align: center;
 }
 
+/* Vertical rhythm from mockup 04-account-locked.html (h1 mb 12, subtitle mb 24). Scoped to this
+   card so the shared .auth-card h1 (used by login/register, which sit above form fields with their
+   own spacing) is unaffected. h1 size stays the app-standard 28px (shared) rather than the mockup's
+   24px, for cross-auth-screen consistency — the same call taken on 5.1/5.2. */
+.account-locked-card h1 {
+  margin-bottom: 12px;
+}
+
+.al-subtitle {
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
 .al-icon-badge {
   width: 56px;
   height: 56px;
@@ -19,10 +32,6 @@
 .al-icon {
   width: 26px;
   height: 26px;
-}
-
-.al-subtitle {
-  line-height: 1.5;
 }
 
 .al-timer-pill {
