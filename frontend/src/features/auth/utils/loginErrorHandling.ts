@@ -10,14 +10,15 @@ import { GENERIC_LOGIN_FAILURE_MESSAGE, isUsableMessage } from './authMessages'
 // 403 { error_code: "UNVERIFIED", message }.
 export const UNVERIFIED_MESSAGE = 'Аккаунт не подтверждён. Введите код подтверждения из письма.'
 
+// One narrowing guard for "this unknown rejection carries field K", so each reader below tests a
+// field without re-spelling the object/null dance and without an `as` cast — a match narrows the
+// type so `error[key]` is reachable.
+function hasProp<K extends string>(error: unknown, key: K): error is Record<K, unknown> {
+  return typeof error === 'object' && error !== null && key in error
+}
+
 export function hasErrorCode(error: unknown, code: string): boolean {
-  return (
-    Boolean(error) &&
-    typeof error === 'object' &&
-    error !== null &&
-    'errorCode' in error &&
-    error.errorCode === code
-  )
+  return hasProp(error, 'errorCode') && error.errorCode === code
 }
 
 export function isAccountLocked(error: unknown): boolean {
@@ -29,8 +30,8 @@ export function isAccountLocked(error: unknown): boolean {
 // is absent or not a number, so the screen falls back to its default window rather than rendering
 // "NaN:NaN" — the field is best-effort, the lock is not.
 export function readLockoutRetrySeconds(error: unknown): number {
-  if (error && typeof error === 'object' && 'retryAfterSeconds' in error) {
-    const value = (error as { retryAfterSeconds: unknown }).retryAfterSeconds
+  if (hasProp(error, 'retryAfterSeconds')) {
+    const value = error.retryAfterSeconds
     return typeof value === 'number' ? value : NaN
   }
   return NaN
@@ -44,9 +45,7 @@ export function loginErrorMessage(error: unknown): string {
   }
   if (
     hasErrorCode(error, 'INVALID_CREDENTIALS') &&
-    error &&
-    typeof error === 'object' &&
-    'message' in error &&
+    hasProp(error, 'message') &&
     isUsableMessage(error.message)
   ) {
     return error.message
