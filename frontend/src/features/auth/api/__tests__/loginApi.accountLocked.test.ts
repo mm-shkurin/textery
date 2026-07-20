@@ -39,7 +39,7 @@ async function rejectionOf(promise: Promise<unknown>): Promise<unknown> {
   throw new Error('expected login() to reject, but it resolved')
 }
 
-describe.skip('loginApi account-locked', () => {
+describe('loginApi account-locked', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
   })
@@ -62,5 +62,38 @@ describe.skip('loginApi account-locked', () => {
     const rejection = await rejectionOf(login(EMAIL, PASSWORD))
 
     expect(rejection).toStrictEqual({ errorCode: 'UNVERIFIED', message: '' })
+  })
+
+  // Header-driven, NOT code-driven (agent-review/premortem on the red commit): a green that keyed
+  // attachment on errorCode==='ACCOUNT_LOCKED' would pass the first test yet DROP a Retry-After on
+  // a 429 rate-limit (a non-lockout code). This pins attachment to the header's presence, and the
+  // 60 (≠ the other test's 292) forces a real string→number parse rather than a hardcoded constant.
+  it('surfaces Retry-After for a NON-lockout code too (attachment is header-driven)', async () => {
+    stubFetchLockout(429, '60', { error_code: 'RATE_LIMITED', message: '' })
+
+    const rejection = await rejectionOf(login(EMAIL, PASSWORD))
+
+    expect(rejection).toStrictEqual({ errorCode: 'RATE_LIMITED', message: '', retryAfterSeconds: 60 })
+  })
+
+  // The converse: ACCOUNT_LOCKED WITHOUT a header must NOT gain the key (a code-driven green would
+  // wrongly attach it, likely as NaN). Proves omission is driven by header-absence, not the code.
+  it('omits retryAfterSeconds for ACCOUNT_LOCKED when the header is absent', async () => {
+    stubFetchLockout(403, null, { error_code: 'ACCOUNT_LOCKED', message: '' })
+
+    const rejection = await rejectionOf(login(EMAIL, PASSWORD))
+
+    expect(rejection).toStrictEqual({ errorCode: 'ACCOUNT_LOCKED', message: '' })
+  })
+
+  // Retry-After may be an HTTP-date (RFC 9110), not delta-seconds — or garbage from a proxy.
+  // parseInt/Number would yield NaN; the api must OMIT the key rather than attach NaN (a value the
+  // `number` type permits and downstream readers without the form's triple-defense would trust).
+  it('omits retryAfterSeconds when Retry-After is a non-numeric (HTTP-date) value, never NaN', async () => {
+    stubFetchLockout(403, 'Wed, 21 Oct 2026 07:28:00 GMT', { error_code: 'ACCOUNT_LOCKED', message: '' })
+
+    const rejection = await rejectionOf(login(EMAIL, PASSWORD))
+
+    expect(rejection).toStrictEqual({ errorCode: 'ACCOUNT_LOCKED', message: '' })
   })
 })

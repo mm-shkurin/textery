@@ -13,6 +13,25 @@ const API_BASE: string = import.meta.env.VITE_API_BASE_URL ?? ''
 export interface HttpError {
   status: number
   body: Record<string, unknown>
+  // Present ONLY when the response carried a parseable `Retry-After` delta-seconds header (5.4
+  // lockout / any 429). Absent otherwise — never NaN — so a reader can trust `typeof === 'number'`.
+  retryAfterSeconds?: number
+}
+
+// Retry-After as delta-seconds → a finite non-negative integer, or undefined. RFC 9110 also allows
+// an HTTP-date form; we deliberately do NOT support it (our backend sends seconds), and a date or
+// any garbage yields undefined rather than NaN — the field is best-effort, absence is meaningful.
+function parseRetryAfterSeconds(headers: Headers | undefined): number | undefined {
+  const raw = headers?.get('Retry-After') ?? null
+  if (raw === null) {
+    return undefined
+  }
+  const trimmed = raw.trim()
+  if (trimmed === '') {
+    return undefined
+  }
+  const seconds = Number(trimmed)
+  return Number.isFinite(seconds) && seconds >= 0 ? Math.floor(seconds) : undefined
 }
 
 export interface RequestOptions {
@@ -50,6 +69,12 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     // 401 from 500 — which is the one fact the body was never going to give them.
     const parsedBody = await res.json().catch(() => ({}))
     const error: HttpError = { status: res.status, body: parsedBody }
+    // Preserve the cooldown the 5.4 account-locked screen counts down. Header-driven: attached only
+    // when a parseable value is present, on ANY non-ok response — not scoped to a specific code.
+    const retryAfterSeconds = parseRetryAfterSeconds(res.headers)
+    if (retryAfterSeconds !== undefined) {
+      error.retryAfterSeconds = retryAfterSeconds
+    }
     throw error
   }
   return res.json()

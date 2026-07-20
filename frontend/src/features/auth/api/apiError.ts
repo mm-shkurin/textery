@@ -9,6 +9,10 @@ import { isUsableMessage } from '../utils/authMessages'
 export interface AuthApiError {
   errorCode: string
   message: string
+  // Carried through from the response's Retry-After header (httpClient) when present. Shared by
+  // every auth client, but today only login's account-locked screen reads it; a register/verify
+  // 429 would surface it too, harmlessly (no consumer there). Absent when no header — never NaN.
+  retryAfterSeconds?: number
 }
 
 // The code stamped on a body that carried no usable `error_code`: a 422 from Pydantic, or a
@@ -43,6 +47,13 @@ export function toAuthApiError(
   const apiError: AuthApiError = {
     errorCode,
     message: serverMessage || fallbackMessageFor(errorCode),
+  }
+  // Header-driven pass-through: attach only when httpClient parsed a finite Retry-After, so the key
+  // is present for a lockout/429 and absent otherwise. Guards NaN out — httpClient never sets it to
+  // NaN, and this re-checks finiteness so a hand-built HttpError can't smuggle one in.
+  const retryAfterSeconds = (error as HttpError | undefined)?.retryAfterSeconds
+  if (typeof retryAfterSeconds === 'number' && Number.isFinite(retryAfterSeconds)) {
+    apiError.retryAfterSeconds = retryAfterSeconds
   }
   return apiError
 }
