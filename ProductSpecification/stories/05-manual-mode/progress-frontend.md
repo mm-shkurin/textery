@@ -756,7 +756,11 @@ pinned and committed (`d12f4a2`), currently `describe.skip` in `ManualEditor.lin
   (`ManualEditor.tsx`); add the `stripTrailingHardBreak` extension (`appendTransaction`
   deleting a `hardBreak` node at the document's end). Full `src/features/generation` suite
   green (the 32 formatting/dirty/etc. live-DOM tests must stay green — the strip removes the
-  helper cascade that broke them under a naive enable).
+  helper cascade that broke them under a naive enable). **Un-skip `ManualEditor.lineBreak.test.tsx`.**
+  **Premortem follow-ups (commit `10921ef`, CONCERNS — must be pinned in this green's added coverage, the RED alone does not cover them):**
+    1. *Real Enter keystroke, not just programmatic `<br>`.* The RED only writes `innerHTML`+`fireEvent.input` (domObserver path). StarterKit hardBreak binds **Shift-Enter/Mod-Enter**, plain Enter has no paragraph to split in an `inline*` doc → could stay a no-op. Add a test firing the actual key event the product treats as "line break" and assert `getHTML()` gains one `<br>` at the caret. If plain Enter must work, add a keymap binding Enter→setHardBreak.
+    2. *Trailing-strip actually fires (the only novel A′ code).* RED break is interior (`line one<br>line two`), so the strip is never exercised. Add: content ending in a break `line one<br>` → getHTML `line one` (zero `<br>`); multiple trailing `a<br><br>` → `a`; legacy-reopen self-heal (init a saved doc ending in `<br>`, first transaction strips it) — all three from the ADR edge table.
+    3. *No over-strip of an interior break + live-DOM render.* Mixed case `line one<br>line two<br>` → getHTML exactly `line one<br>line two` (interior survives, only trailing removed). Also assert the live content area renders two visual lines, not only the getHTML string (guard getHTML/DOM divergence).
 - [ ] test-coverage — verify the new extension's branch (trailing-hardBreak present vs absent)
   is covered; add the empty-doc no-op and multiple-trailing-Enter cases from the ADR edge table.
 - [ ] refactor — extract `stripTrailingHardBreak` to its own file (≤200 lines, coding-rules),
