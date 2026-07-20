@@ -8,6 +8,8 @@ import { HorizontalRuleNode } from './horizontalRuleNode'
 import { CodeBlockMark } from './codeBlockMark'
 import { Heading3Mark } from './heading3Mark'
 import { AlignCenterMark } from './alignCenterMark'
+import { HardBreakKeymap } from './hardBreakKeymap'
+import { HardBreakNode } from './hardBreakNode'
 import './ManualEditor.css'
 import type { DocumentType } from '../../../shared/documentTypes'
 import { useDocumentInit } from '../hooks/useDocumentInit'
@@ -54,11 +56,10 @@ export function ManualEditor({
     // in sync with the editor's current selection/marks.
     shouldRerenderOnTransaction: true,
     extensions: [
-      // hardBreak is disabled: its schema node interacts badly with
-      // ProseMirror's contenteditable "trailing break" cursor helper when
-      // the document itself holds inline content directly (no paragraph
-      // wrapper), producing a stray <br> even for non-empty content. This
-      // editor doesn't need hard breaks for the current scope.
+      // hardBreak is disabled here only so HardBreakNode (below) can replace it
+      // with a parse-rule override: line breaks ARE enabled for this editor
+      // (scenario 3.3, approach A′), just via the dedicated node that also drops
+      // ProseMirror's stray trailing-break cursor helper. See hardBreakNode.ts.
       StarterKit.configure({
         document: false,
         hardBreak: false,
@@ -80,6 +81,8 @@ export function ManualEditor({
       CodeBlockMark,
       Heading3Mark,
       AlignCenterMark,
+      HardBreakNode,
+      HardBreakKeymap,
       Placeholder.configure({ placeholder: 'Начните печатать…' }),
     ],
     content: '',

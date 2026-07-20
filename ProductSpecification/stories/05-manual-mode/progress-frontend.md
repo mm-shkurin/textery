@@ -752,17 +752,27 @@ pinned and committed (`d12f4a2`), currently `describe.skip` in `ManualEditor.lin
   no trailing `<br>`. Verified RED: with `hardBreak: false` the `<br>` is dropped by schema
   reconciliation, payload collapses to `line one line two` (break → space), round-trip assert
   fails. test-review: PASS (strict `toBe`, argument-not-mock-return confirmed).
-- [~] green-frontend-line-break — remove `hardBreak: false` from `StarterKit.configure`
-  (`ManualEditor.tsx`); add the `stripTrailingHardBreak` extension (`appendTransaction`
-  deleting a `hardBreak` node at the document's end). Full `src/features/generation` suite
-  green (the 32 formatting/dirty/etc. live-DOM tests must stay green — the strip removes the
-  helper cascade that broke them under a naive enable). **Un-skip `ManualEditor.lineBreak.test.tsx`.**
-  **Premortem follow-ups (commit `10921ef`, CONCERNS — must be pinned in this green's added coverage, the RED alone does not cover them):**
-    1. *Real Enter keystroke, not just programmatic `<br>`.* The RED only writes `innerHTML`+`fireEvent.input` (domObserver path). StarterKit hardBreak binds **Shift-Enter/Mod-Enter**, plain Enter has no paragraph to split in an `inline*` doc → could stay a no-op. Add a test firing the actual key event the product treats as "line break" and assert `getHTML()` gains one `<br>` at the caret. If plain Enter must work, add a keymap binding Enter→setHardBreak.
-    2. *Trailing-strip actually fires (the only novel A′ code).* RED break is interior (`line one<br>line two`), so the strip is never exercised. Add: content ending in a break `line one<br>` → getHTML `line one` (zero `<br>`); multiple trailing `a<br><br>` → `a`; legacy-reopen self-heal (init a saved doc ending in `<br>`, first transaction strips it) — all three from the ADR edge table.
-    3. *No over-strip of an interior break + live-DOM render.* Mixed case `line one<br>line two<br>` → getHTML exactly `line one<br>line two` (interior survives, only trailing removed). Also assert the live content area renders two visual lines, not only the getHTML string (guard getHTML/DOM divergence).
-- [ ] test-coverage — verify the new extension's branch (trailing-hardBreak present vs absent)
-  is covered; add the empty-doc no-op and multiple-trailing-Enter cases from the ADR edge table.
+- [x] green-frontend-line-break — done, **106/106** `src/features/generation` green, tsc clean,
+  `ManualEditor.lineBreak.test.tsx` un-skipped and passing. **Mechanism deviated from the ADR's
+  first draft** (ADR updated to match): the planned `appendTransaction` delete-strip is unviable —
+  its delete re-renders the trailing-break helper which `domObserver.flush()` reparses into a new
+  hardBreak in the same dispatch → OOM strip↔reparse loop. Fix removes both trailing-`<br>` sources
+  at origin instead: `hardBreakNode.ts` (required `marker` attr disqualifies hardBreak from the
+  `inline*` schema `defaultType` ghost-filler + parse-rule ignores `br.ProseMirror-trailingBreak`
+  cursor helper) and `hardBreakKeymap.ts` (plain Enter + Shift-Enter → insert hardBreak). Files 42 +
+  26 lines. `StarterKit hardBreak:false` kept only to avoid a schema-name collision with the custom
+  node. See ADR Implementation note.
+- [~] test-coverage — add the premortem (commit `10921ef`, CONCERNS) + ADR edge cases the RED
+  does not cover:
+    1. *Real Enter keystroke, not just programmatic `<br>`.* Fire the actual Enter key event on
+       the editor and assert `getHTML()` gains one `<br>` at the caret (validates the green keymap;
+       RED only exercised the `innerHTML`+`fireEvent.input` domObserver path).
+    2. *Trailing-strip actually fires.* Content ending in a break `line one<br>` → getHTML
+       `line one` (zero `<br>`); multiple trailing `a<br><br>` → `a`; legacy-reopen self-heal (init a
+       saved doc ending in `<br>`, first transaction strips it) — ADR edge table. Plus empty-doc no-op.
+    3. *No over-strip of an interior break + live-DOM render.* Mixed `line one<br>line two<br>` →
+       getHTML exactly `line one<br>line two` (interior survives, only trailing removed); assert the
+       live content area renders two visual lines (guard getHTML/DOM divergence).
 - [ ] refactor — extract `stripTrailingHardBreak` to its own file (≤200 lines, coding-rules),
   matching the existing per-extension file layout (`horizontalRuleNode.ts`, `codeBlockMark.ts`).
 - [ ] green-selenium — [S] deferred: same "live app to drive Selenium" gap as the rest of

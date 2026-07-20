@@ -25,7 +25,7 @@ vi.mock('../../api/documentApi')
 // save payload is 'line one line two' (break collapsed to a space) instead of
 // 'line one<br>line two'. Un-skip in GREEN once approach A′ (re-enable hardBreak +
 // strip trailing break) is implemented.
-describe.skip('ManualEditor line break', () => {
+describe('ManualEditor line break', () => {
   it('persists a hard line break between two lines with no stray trailing break', async () => {
     await renderEditorWithDocumentCreated()
 
