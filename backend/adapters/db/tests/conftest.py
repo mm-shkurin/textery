@@ -46,6 +46,23 @@ def account_storage_statements(db_session: AsyncSession):
     return AccountStorageStatements(db_session)
 
 
+@pytest_asyncio.fixture
+async def account_concurrency_statements():
+    from statements.account_concurrency_statements import AccountConcurrencyStatements
+
+    os.environ.setdefault(TEST_DATABASE_URL_ENV_VAR, DEFAULT_TEST_DATABASE_URL)
+    os.environ["DATABASE_URL"] = os.environ[TEST_DATABASE_URL_ENV_VAR]
+    engine = create_engine()
+    session_factory = create_session_factory(engine)
+    yield AccountConcurrencyStatements(session_factory)
+    async with engine.connect() as cleanup_connection:
+        await cleanup_connection.execute(
+            text("TRUNCATE TABLE generations, documents, verification_codes, accounts")
+        )
+        await cleanup_connection.commit()
+    await engine.dispose()
+
+
 @pytest.fixture
 def verification_code_storage_statements(db_session: AsyncSession):
     return VerificationCodeStorageStatements(db_session)
