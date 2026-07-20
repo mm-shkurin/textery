@@ -26,3 +26,15 @@ class TestVerifyAccountIdempotentReplay:
         await statements.given_account_already_verified_once_with_its_code()
         await statements.resubmit_the_same_already_consumed_code()
         statements.assert_replay_was_a_no_op()
+
+    @pytest.mark.skip(
+        reason="RED 2026-07-20: expiry check currently precedes the is_verified/matches "
+        "idempotent-return; green-usecase 3.4/3.5 reorders per ADR"
+    )
+    async def test_should_stay_idempotent_when_matching_code_replayed_after_expiry(
+        self, verify_account_idempotency_statements: VerifyAccountIdempotencyStatements
+    ):
+        statements = verify_account_idempotency_statements
+        await statements.given_account_already_verified_once_with_its_code()
+        await statements.resubmit_the_same_code_after_it_expired()
+        statements.assert_replay_was_a_no_op()

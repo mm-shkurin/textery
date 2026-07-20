@@ -37,6 +37,17 @@ class VerifyAccountIdempotencyStatements(VerifyAccountStatementsBase):
         self.clock.fixed_now = self.REPLAY_CLOCK_NOW
         await self._execute_verify(self.registered_email, self.issued_code)
 
+    async def resubmit_the_same_code_after_it_expired(self) -> None:
+        # Push the clock PAST the code's 10-minute validity window before the
+        # replay. Per the ADR, the is_verified/matches idempotent-return sits
+        # BEFORE the expiry guard, so a verified account re-clicking the same link
+        # after the TTL must STILL answer success -- the expiry check must not get
+        # a chance to reject it. One minute past expiry is enough to trip a guard
+        # that was ordered ahead of the is_verified block.
+        expires_at = self.verification_code_repository.saved_codes[-1].expires_at
+        self.clock.fixed_now = expires_at + timedelta(minutes=1)
+        await self._execute_verify(self.registered_email, self.issued_code)
+
     def assert_replay_was_a_no_op(self) -> None:
         assert self.thrown_exception is None, (
             f"expected the idempotent replay to succeed silently, got "
