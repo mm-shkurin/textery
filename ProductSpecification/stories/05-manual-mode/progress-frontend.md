@@ -773,6 +773,21 @@ pinned and committed (`d12f4a2`), currently `describe.skip` in `ManualEditor.lin
     3. *No over-strip of an interior break + live-DOM render.* Mixed `line one<br>line two<br>` →
        getHTML exactly `line one<br>line two` (interior survives, only trailing removed); assert the
        live content area renders two visual lines (guard getHTML/DOM divergence).
+    4. *Keymap path has ZERO coverage (agent-review CONCERNS, commit `5a1c1b2`).* The RED/green only
+       exercised the DOM-parse path (`innerHTML`+`fireEvent.input`); `hardBreakKeymap.ts` and its
+       `insertContent({type:'hardBreak', attrs:{marker:'br'}})` are never executed by the suite. If
+       the `marker` attr is renamed/made optional or the keymap drifts to `setHardBreak()` (throws on
+       the required attr), Enter breaks silently and the suite stays green. Fire an Enter keydown in
+       the editor, assert exactly ONE `<br>` lands in the save payload (count assertion, not "a break
+       appears" — guards premortem #2 double-insert).
+    5. *Resolve ADR-vs-impl divergence on the intentional trailing break (premortem #1).* The impl
+       strips only the STRAY break (ghost-filler disqualified + `ProseMirror-trailingBreak` helper
+       parse-ignored) — a REAL bare trailing `<br>` (user presses Enter at end, or legacy/pasted
+       content ending in `<br>`) is KEPT, which contradicts the ADR edge table's "Enter at doc-end →
+       stripped". Decide the intended behavior (keep the intentional one is likely correct UX), pin it
+       with a keymap-Enter-at-end test AND a `setContent('foo<br>')`→`getHTML()` round-trip (load/paste
+       path), and reconcile the ADR edge table wording to match. Live-browser proof of the no-double-
+       insert + real trailing behavior is owed by the deferred green-selenium step below.
 - [ ] refactor — extract `stripTrailingHardBreak` to its own file (≤200 lines, coding-rules),
   matching the existing per-extension file layout (`horizontalRuleNode.ts`, `codeBlockMark.ts`).
 - [ ] green-selenium — [S] deferred: same "live app to drive Selenium" gap as the rest of
