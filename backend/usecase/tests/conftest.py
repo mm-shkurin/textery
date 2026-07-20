@@ -7,6 +7,9 @@ from statements.refresh_statements import RefreshStatements
 from statements.register_atomic_write_statements import RegisterAtomicWriteStatements
 from statements.register_statements import RegisterStatements
 from statements.requeue_stale_generations_statements import RequeueStaleGenerationsStatements
+from statements.verify_account_already_verified_statements import (
+    VerifyAccountAlreadyVerifiedStatements,
+)
 from statements.verify_account_failure_statements import VerifyAccountFailureStatements
 from statements.verify_account_idempotency_statements import (
     VerifyAccountIdempotencyStatements,
@@ -47,6 +50,11 @@ def verify_account_statements():
 @pytest.fixture
 def verify_account_idempotency_statements():
     return VerifyAccountIdempotencyStatements()
+
+
+@pytest.fixture
+def verify_account_already_verified_statements():
+    return VerifyAccountAlreadyVerifiedStatements()
 
 
 @pytest.fixture
