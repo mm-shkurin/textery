@@ -615,6 +615,7 @@ so its red-frontend step must add the button first.
 - [ ] green-frontend-api
 - [ ] align-design
 - [ ] green-selenium
+  **CARRIED FOLLOW-UPS (premortem CONCERNS on green commit `3df70b5`, 2026-07-20):** (1) **a11y (CREDIBLE)** — `AccountLockedScreen` replaces the entire form but carries no `role`/`aria-live` and moves no focus, so a screen-reader/keyboard user is told nothing when the lockout screen appears (same class as 5.3's role=alert finding, larger event — the whole form is swapped). Add an `aria-live`/`role="alert"` region (or focus the heading on mount) and a guard test/axe check when this selenium leg runs. Cheap production fix; deferred here only to keep the green unit bounded. (2) **countdown drift (CREDIBLE-lower)** — the countdown is tick-counted (`setInterval` decrement), not derived from a wall-clock deadline, so a backgrounded tab (throttled `setInterval`) drifts from the real Retry-After. Server remains the gate on re-submit so it's display-only, but consider deriving remaining from `Date.now()` vs an absolute deadline; a real-timer/system-time test is the guard (fake timers can't catch throttling).
 - [ ] demo
 
 ### 5.5: Wrong-code error displayed on the verification screen
