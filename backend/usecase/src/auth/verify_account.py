@@ -1,7 +1,9 @@
 import logging
 
+from auth.account import Account
 from auth.account_repository import AccountRepository
 from auth.email_validation import validate_email
+from auth.verification_code import VerificationCode
 from auth.verification_code_repository import VerificationCodeRepository
 from auth.verification_code_value import VerificationCodeValue
 from shared.clock import Clock
@@ -59,6 +61,11 @@ class VerifyAccount:
         if self.clock.now() >= verification_code.expires_at:
             raise self._invalid_or_expired()
 
+        await self._apply_verification(account, verification_code)
+
+    async def _apply_verification(
+        self, account: Account, verification_code: VerificationCode
+    ) -> None:
         account.verify()
         verification_code.consume(consumed_at=self.clock.now())
         try:
