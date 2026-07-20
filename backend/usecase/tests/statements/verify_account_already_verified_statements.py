@@ -18,19 +18,6 @@ class VerifyAccountAlreadyVerifiedStatements(VerifyAccountStatementsBase):
     ALREADY_VERIFIED_ERROR_CODE = "ALREADY_VERIFIED"
     ALREADY_VERIFIED_MESSAGE = "The account is already verified."
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.account_saves_after_first_verify = 0
-        self.code_saves_after_first_verify = 0
-        self.commits_after_first_verify = 0
-
-    async def given_account_already_verified_once_with_its_code(self) -> None:
-        await self.given_pending_account_with_verification_code()
-        await self._execute_verify(self.registered_email, self.issued_code)
-        self.account_saves_after_first_verify = len(self.account_repository.saved_accounts)
-        self.code_saves_after_first_verify = len(self.verification_code_repository.saved_codes)
-        self.commits_after_first_verify = self.unit_of_work.commit_call_count
-
     def _a_non_matching_code(self) -> str:
         # Flip the last digit so the code is guaranteed to differ from the one that
         # verified the account while staying a valid 6-digit shape (so it is not

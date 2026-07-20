@@ -44,6 +44,9 @@ class VerifyAccountStatementsBase:
         self.registered_email: str | None = None
         self.issued_code: str | None = None
         self.original_account_snapshot = None
+        self.account_saves_after_first_verify = 0
+        self.code_saves_after_first_verify = 0
+        self.commits_after_first_verify = 0
 
     async def given_pending_account_with_verification_code(self) -> None:
         scope = RegisterRequestScope.builder()
@@ -66,6 +69,18 @@ class VerifyAccountStatementsBase:
             field: getattr(result.account, field)
             for field in (*self.UNCHANGED_BY_VERIFY_FIELDS, "is_verified")
         }
+
+    async def given_account_already_verified_once_with_its_code(self) -> None:
+        """Register a pending account, verify it once with its issued code, then
+        snapshot the persist/commit counts left by that first verify. Both the
+        already-verified rejection (3.5) and the idempotent replay (3.4) build on
+        this same arrangement; each subclass adds only its own extra snapshot.
+        """
+        await self.given_pending_account_with_verification_code()
+        await self._execute_verify(self.registered_email, self.issued_code)
+        self.account_saves_after_first_verify = len(self.account_repository.saved_accounts)
+        self.code_saves_after_first_verify = len(self.verification_code_repository.saved_codes)
+        self.commits_after_first_verify = self.unit_of_work.commit_call_count
 
     async def _execute_verify(self, email: str, code: str) -> None:
         try:

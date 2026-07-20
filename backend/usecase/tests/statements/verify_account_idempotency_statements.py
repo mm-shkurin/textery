@@ -23,20 +23,13 @@ class VerifyAccountIdempotencyStatements(VerifyAccountStatementsBase):
     def __init__(self) -> None:
         super().__init__()
         self.first_consumed_at = None
-        self.account_saves_after_first_verify = 0
-        self.code_saves_after_first_verify = 0
-        self.commits_after_first_verify = 0
 
     async def given_account_already_verified_once_with_its_code(self) -> None:
-        await self.given_pending_account_with_verification_code()
-        await self._execute_verify(self.registered_email, self.issued_code)
+        await super().given_account_already_verified_once_with_its_code()
         # Snapshot the FIRST consume time as a value (datetime is immutable): the
         # Fake shares object identity across saves, so a later re-consume would
         # otherwise mutate this in place and hide the overwrite.
         self.first_consumed_at = self.verification_code_repository.saved_codes[-1].consumed_at
-        self.account_saves_after_first_verify = len(self.account_repository.saved_accounts)
-        self.code_saves_after_first_verify = len(self.verification_code_repository.saved_codes)
-        self.commits_after_first_verify = self.unit_of_work.commit_call_count
 
     async def resubmit_the_same_already_consumed_code(self) -> None:
         # Advance the clock so any re-consume would stamp a DIFFERENT time than the
