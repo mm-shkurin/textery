@@ -43,6 +43,17 @@ class VerifyAccount:
         )
         if verification_code is None:
             raise self._invalid_or_expired()
+
+        if account.is_verified:
+            # Already verified: the transition already happened. Do NOT run the
+            # consume/save/commit tail again (no duplicate state transition,
+            # scenario 3.4). This sits BEFORE the expiry check on purpose:
+            # re-clicking the verify link with the same code after the TTL is
+            # still idempotent success, not a 400.
+            if verification_code.matches(code):
+                return
+            raise self._already_verified()
+
         if not verification_code.matches(code):
             raise self._invalid_or_expired()
         if self.clock.now() >= verification_code.expires_at:
@@ -69,6 +80,19 @@ class VerifyAccount:
                 error_code="INVALID_CODE",
                 message="The verification code is not valid.",
             ) from error
+
+    def _already_verified(self) -> ValidationException:
+        """The account is already verified and a NON-matching code was submitted.
+
+        Distinct from _invalid_or_expired: on an already-verified account the
+        transition is done, so a code that is not the one that verified it is a
+        genuine conflict, not a state-hiding oracle. The matching code takes the
+        idempotent-success path above and never reaches here.
+        """
+        return ValidationException(
+            error_code="ALREADY_VERIFIED",
+            message="The account is already verified.",
+        )
 
     def _invalid_or_expired(self) -> ValidationException:
         """One generic rejection for every failure that depends on stored state.

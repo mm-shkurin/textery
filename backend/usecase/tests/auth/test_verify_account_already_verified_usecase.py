@@ -1,5 +1,3 @@
-import pytest
-
 from statements.verify_account_already_verified_statements import (
     VerifyAccountAlreadyVerifiedStatements,
 )
@@ -14,12 +12,6 @@ class TestVerifyAccountAlreadyVerifiedRejection:
     persisted -- no Account save, no VerificationCode save, no commit.
     """
 
-    @pytest.mark.skip(
-        reason="RED 2026-07-20: no is_verified/ALREADY_VERIFIED branch yet; a "
-        "non-matching code on a verified account currently answers "
-        "INVALID_OR_EXPIRED_CODE via the not-matches branch; green-usecase 3.4/3.5 "
-        "lands the fork"
-    )
     async def test_should_reject_non_matching_code_on_verified_account(
         self,
         verify_account_already_verified_statements: VerifyAccountAlreadyVerifiedStatements,
