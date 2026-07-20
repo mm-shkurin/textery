@@ -735,3 +735,33 @@ add new ones — the first red phase in this story to do so.
 - [ ] align-design
 - [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. **This is the step that owes 7.9 its real verification**: the popover's clipping under `.me-editor-shell`'s `overflow: hidden`, its placement on a narrow viewport, and real-browser focus behaviour are all invisible to jsdom by construction. The ADR chose the popover partly for jsdom reachability; that argument covers the rejection signal only.
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
+
+---
+
+## Bug: line break in Ручной режим (sprint criterion, 2026-07-20)
+
+Text prints on a single line only — Enter has nowhere to go in the `inline*` document.
+Direction fixed by ADR `decisions/line-break-in-inline-doc-decision.md` (**A′**: enable
+`hardBreak` + `appendTransaction` stripping the trailing hardBreak node). RED already
+pinned and committed (`d12f4a2`), currently `describe.skip` in `ManualEditor.lineBreak.test.tsx`
+(`d17eac6`) pending this decision.
+
+- [~] red-frontend-line-break — un-skip `ManualEditor.lineBreak.test.tsx`; confirm it fails
+  RED against baseline (`<br>` dropped). Add a second assertion pinning the ADR's core
+  edge case via the save path: a mid-content break survives `editor.getHTML()` as `a<br>b`
+  with **no** trailing `<br>`, and a break typed at doc-end is stripped (getHTML has no
+  trailing `<br>`). Assert against `getHTML()` output, not only live DOM, since getHTML is
+  the persisted payload (`useDocumentSave.ts:84`).
+- [ ] green-frontend-line-break — remove `hardBreak: false` from `StarterKit.configure`
+  (`ManualEditor.tsx`); add the `stripTrailingHardBreak` extension (`appendTransaction`
+  deleting a `hardBreak` node at the document's end). Full `src/features/generation` suite
+  green (the 32 formatting/dirty/etc. live-DOM tests must stay green — the strip removes the
+  helper cascade that broke them under a naive enable).
+- [ ] test-coverage — verify the new extension's branch (trailing-hardBreak present vs absent)
+  is covered; add the empty-doc no-op and multiple-trailing-Enter cases from the ADR edge table.
+- [ ] refactor — extract `stripTrailingHardBreak` to its own file (≤200 lines, coding-rules),
+  matching the existing per-extension file layout (`horizontalRuleNode.ts`, `codeBlockMark.ts`).
+- [ ] green-selenium — [S] deferred: same "live app to drive Selenium" gap as the rest of
+  this file (see RECONCILE_05); real-browser Enter keystroke bypasses the domObserver path
+  that the unit test exercises, so a live run is the only proof the in-browser Enter produces
+  exactly one `<br>`. Owe it when the stack runs.
