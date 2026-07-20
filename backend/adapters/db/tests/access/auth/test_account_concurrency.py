@@ -1,5 +1,3 @@
-import pytest
-
 from statements.account_concurrency_statements import AccountConcurrencyStatements
 
 
@@ -11,9 +9,6 @@ class TestConcurrentTransitionToVerified:
     loser resolves to the verified state -- the idempotent-observation outcome
     scenario 3.6 requires."""
 
-    @pytest.mark.skip(
-        reason="RED 2026-07-20: transition_to_verified not implemented; green-adapter db 3.6 adds the conditional UPDATE"
-    )
     async def test_should_transition_exactly_once_under_concurrent_verify(
         self, account_concurrency_statements: AccountConcurrencyStatements
     ):

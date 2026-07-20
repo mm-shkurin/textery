@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,6 +27,23 @@ class SqlAlchemyAccountRepository:
     async def find_by_id(self, account_id: UUID) -> Account | None:
         model = await self._session.get(AccountModel, account_id)
         return model.to_domain() if model else None
+
+    async def transition_to_verified(self, account_id: UUID) -> bool:
+        """Atomically flip is_verified false->true for exactly one caller.
+
+        Conditional single-row UPDATE (``WHERE is_verified = false``): the winning
+        racer affects one row (``rowcount == 1`` -> True); every later racer sees the
+        row already verified and affects zero rows (``rowcount == 0`` -> False). Zero
+        rows is idempotent success, NOT an error (inverts generation_storage.py's
+        zero-row->raise): the loser resolves to the already-verified state, no
+        exception. No commit here -- the caller owns the transaction boundary.
+        """
+        result = await self._session.execute(
+            update(AccountModel)
+            .where(AccountModel.id == account_id, AccountModel.is_verified.is_(False))
+            .values(is_verified=True)
+        )
+        return result.rowcount == 1
 
     async def save(self, account: Account) -> None:
         """Insert a new account, or update the one that already exists.
