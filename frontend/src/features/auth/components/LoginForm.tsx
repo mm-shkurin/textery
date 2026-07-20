@@ -1,68 +1,19 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
+import { AccountLockedScreen } from './AccountLockedScreen'
 import { login } from '../api/loginApi'
 import { saveSession } from '../utils/authSession'
-import { GENERIC_LOGIN_FAILURE_MESSAGE, isUsableMessage } from '../utils/authMessages'
+import { GENERIC_LOGIN_FAILURE_MESSAGE } from '../utils/authMessages'
+import { isAccountLocked, loginErrorMessage, readLockoutRetrySeconds } from '../utils/loginErrorHandling'
 import './AuthForm.css'
 import './LoginForm.css'
 
-// Every rejection resolves to user-facing text: silence is an illegal terminal state,
-// because the error element's mere PRESENCE is an account-enumeration oracle once 5.3
-// starts branching on UNVERIFIED. Only a contract-shaped INVALID_CREDENTIALS error
-// carrying a usable server-authored message is displayed verbatim — the backend's
-// generic-message guarantee covers exactly that string. Everything else (transport
-// failure, unknown error code, a malformed message, or one with no visible text) falls
-// back to the client-owned generic constant, so the screen always says something and never
-// says something the backend's guarantee did not cover.
-//
-// "Usable" is `isUsableMessage`, shared with loginApi rather than inlined here — a message
-// that renders as a blank box is silence just as surely as no element at all, and the two
-// layers must not disagree about which values those are.
-//
-// Later scenarios (5.3 unverified, 5.4 lockout, 5.6 network) branch their distinct
-// messages ABOVE this fallback, not through it.
-//
-// No `as LoginApiError`, for the reason loginApi no longer says `as string`: nothing at run
-// time holds a rejection to the declared shape, so the cast narrowed by promise rather than
-// by evidence. Each `in` earns the field it reads and `isUsableMessage` earns the string.
-// UNVERIFIED is a DIFFERENT action for the user, not a different wording of "sign-in failed":
-// their password was right and they must go confirm the code. Rendering the generic constant
-// here told them the one thing that is not true. Confirmed live 2026-07-16: an unverified
-// account gets 403 `{"error_code":"UNVERIFIED", message}`.
-//
-// This is deliberately NOT an enumeration leak to be closed: `01_API_Tests.md` 5.1/5.2 have the
-// backend answer "not verified" distinctly by design, and UI spec 5.3 requires a distinct
-// message. The product intends to distinguish unverified accounts; the client only has to stop
-// hiding what the server already said.
-const UNVERIFIED_MESSAGE = 'Аккаунт не подтверждён. Введите код подтверждения из письма.'
-
-function hasErrorCode(error: unknown, code: string): boolean {
-  return (
-    Boolean(error) &&
-    typeof error === 'object' &&
-    error !== null &&
-    'errorCode' in error &&
-    error.errorCode === code
-  )
-}
-
-function applyLoginError(error: unknown): string {
-  if (hasErrorCode(error, 'UNVERIFIED')) {
-    return UNVERIFIED_MESSAGE
-  }
-  if (
-    hasErrorCode(error, 'INVALID_CREDENTIALS') &&
-    error &&
-    typeof error === 'object' &&
-    'message' in error &&
-    isUsableMessage(error.message)
-  ) {
-    return error.message
-  }
-  return GENERIC_LOGIN_FAILURE_MESSAGE
-}
+// Login-rejection interpretation (UNVERIFIED distinct message, INVALID_CREDENTIALS pass-through,
+// lockout detection, Retry-After extraction) lives in ../utils/loginErrorHandling so this
+// component stays under the 200-line cap and the branching has one testable home. Lockout is NOT
+// one of the message branches: it swaps the whole screen, handled separately below.
 
 // Where to land after a successful sign-in. The gate that bounced the user here puts the page
 // they wanted in router state; only an in-app absolute path is honoured — taking a redirect
@@ -82,8 +33,15 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  // Non-null once the server reports a lockout: the seconds it wants us to wait. Its presence,
+  // not a message, is what swaps the whole screen for the account-locked one below.
+  const [lockoutSeconds, setLockoutSeconds] = useState<number | null>(null)
   const emailInputRef = useRef<HTMLInputElement>(null)
   const passwordInputRef = useRef<HTMLInputElement>(null)
+
+  // Both the countdown elapsing and the user clicking "back to login" return to the form, so both
+  // just clear the lockout. Stable identity so the screen's expiry effect doesn't re-run per tick.
+  const dismissLockout = useCallback(() => setLockoutSeconds(null), [])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -110,7 +68,13 @@ export function LoginForm() {
       }
       navigate(redirectTo, { replace: true })
     } catch (error) {
-      setFormError(applyLoginError(error))
+      // Lockout is not a message on the form — it replaces the form. Branch it out before the
+      // message path so the account-locked screen owns the display (message stays '' from the api).
+      if (isAccountLocked(error)) {
+        setLockoutSeconds(readLockoutRetrySeconds(error))
+        return
+      }
+      setFormError(loginErrorMessage(error))
     } finally {
       setIsSubmitting(false)
     }
@@ -119,6 +83,10 @@ export function LoginForm() {
   function handleToggleShowPassword(event: React.MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
     setShowPassword((current) => !current)
+  }
+
+  if (lockoutSeconds !== null) {
+    return <AccountLockedScreen retryAfterSeconds={lockoutSeconds} onDismiss={dismissLockout} />
   }
 
   return (

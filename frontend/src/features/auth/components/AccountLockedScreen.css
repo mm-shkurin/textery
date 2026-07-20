@@ -1,0 +1,49 @@
+/* Account-locked screen. Values sourced from mockup 04-account-locked.html; the card itself
+   reuses .auth-card (shared auth shell). align-design refines any remaining gaps. */
+.account-locked-card {
+  text-align: center;
+}
+
+.al-icon-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.al-icon {
+  width: 26px;
+  height: 26px;
+}
+
+.al-subtitle {
+  line-height: 1.5;
+}
+
+.al-timer-pill {
+  display: inline-block;
+  background: #232428;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 28px;
+}
+
+.al-back-button {
+  width: 100%;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #9a9ba3;
+  border-radius: 10px;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}

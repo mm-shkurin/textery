@@ -39,12 +39,12 @@ async function renderRejectAndSubmit() {
   })
 }
 
-// RED 2026-07-20 (scenario 5.4): LoginForm has NO ACCOUNT_LOCKED branch and no locked screen — on
-// this rejection it currently renders GENERIC_LOGIN_FAILURE_MESSAGE ("Не удалось войти") inline in
-// login-form-error and keeps the login form. All four cases fail with TestingLibraryElementError:
-// "Unable to find an element by: [data-testid='account-locked-screen' | 'account-locked-countdown' |
-// 'account-locked-back-to-login']". Un-skip in green-frontend.
-describe.skip('LoginForm account-locked screen', () => {
+// GREEN 2026-07-20 (scenario 5.4): LoginForm now branches on ACCOUNT_LOCKED and renders
+// AccountLockedScreen. The four happy-path cases below are joined by three edge guards
+// (expiry, timer cleanup, missing-Retry-After fallback) that the red-commit review passes named —
+// without them a naive green passes while counting into negative garbage, leaking a timer, or
+// bricking the expired-lockout user on a screen with no way back.
+describe('LoginForm account-locked screen', () => {
   // Fixed system clock: the countdown is a live timer derived from a deadline, so asserting its
   // text against real wall-clock time is a race. Fake timers pin "now" so the initial render value
   // is deterministic and advancing by exactly 1s is the only thing that moves it.
@@ -105,5 +105,49 @@ describe.skip('LoginForm account-locked screen', () => {
 
     expect(screen.getByTestId('login-submit-button')).toBeInTheDocument()
     expect(screen.queryByTestId('account-locked-screen')).not.toBeInTheDocument()
+  })
+
+  // EXPIRY GUARD (premortem/agent-review, red commit c064332): the RED spec only advanced one
+  // second, so a countdown that decrements once then freezes — or one that counts into "-1:59"
+  // garbage — passed. When the full cooldown elapses the lock is over: the screen must return the
+  // user to the login form (the submit affordance, deliberately removed during lockout, comes
+  // back) rather than stranding them on a dead 00:00 with no way to retry.
+  it('returns to the login form when the countdown reaches zero', async () => {
+    await renderRejectAndSubmit()
+
+    await act(async () => {
+      vi.advanceTimersByTime(RETRY_AFTER_SECONDS * 1000)
+    })
+
+    expect(screen.getByTestId('login-submit-button')).toBeInTheDocument()
+    expect(screen.queryByTestId('account-locked-screen')).not.toBeInTheDocument()
+  })
+
+  // CLEANUP GUARD: the countdown is a live setInterval. If back-to-login (or unmount) does not
+  // clear it, it keeps firing for the life of the tab — a leak and a state-update-after-unmount
+  // warning. After dismissing, no fake timer may remain.
+  it('clears the countdown timer after returning to the login form', async () => {
+    await renderRejectAndSubmit()
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('account-locked-back-to-login'))
+    })
+
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  // FALLBACK GUARD: Retry-After is best-effort — the backend may omit it. A missing value must
+  // NOT render "NaN:NaN"; the screen falls back to its default window (300s → 05:00) and keeps the
+  // lock rather than dropping it.
+  it('falls back to a default window (05:00), not NaN, when retryAfterSeconds is absent', async () => {
+    vi.mocked(api.login).mockRejectedValue({ errorCode: 'ACCOUNT_LOCKED', message: '' })
+    renderWithRouter(<LoginForm />)
+    fireEvent.change(screen.getByTestId('login-email-input'), { target: { value: EMAIL } })
+    fireEvent.change(screen.getByTestId('login-password-input'), { target: { value: PASSWORD } })
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('login-submit-button'))
+    })
+
+    expect(screen.getByTestId('account-locked-countdown').textContent).toBe('05:00')
   })
 })
