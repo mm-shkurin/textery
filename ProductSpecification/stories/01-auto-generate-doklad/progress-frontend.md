@@ -94,7 +94,7 @@ is the cross-file rollup.
 - [S] red-frontend-api — no backend call at this step (submit happens in scenario 6.1).
 - [S] green-frontend-api — see red-frontend-api skip reason.
 - [S] align-design — already matches Figma (2026-07-10 pass).
-- [x] green-selenium — same run as red-selenium above; test passes, nothing to implement.
+- [x] green-selenium — same run as red-selenium above; test passes, nothing to implement. **Backfill reconcile 2026-07-20 (`FRAMEWORK_BACKFILL_PLAN.md`):** this had been silently broken since Story 7 (2026-07-16) — the auth gate routes the CTA to `/register` for an unauthenticated visitor, so `navigate_to_doklad_type_modal` timed out on the CTA click and this "passing" `[x]` was false (re-verified failing live before the fix). Restored by adding a logged-in precondition (seeded session) to the shared navigation helper in `base_frontend_statements.py`; valid here because the workspace's initial-state screen makes no authenticated API call. Re-verified GREEN live 2026-07-20 (`1 passed`).
 - [S] demo — ceremony trim (2026-07-09 decision), visual-only, non-gating.
 
 ### Scenario 5.1: The submit button is disabled until required fields are filled

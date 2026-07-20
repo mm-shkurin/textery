@@ -36,7 +36,7 @@ queue was never exercised through a real click dispatch.
 - [S] red-frontend-api — no API call: mode-modal availability is a static local flag, no backend endpoint involved
 - [S] green-frontend-api — same reason, covered by red-frontend/green-frontend component tests
 - [x] align-design
-- [x] green-selenium
+- [x] green-selenium — **Backfill reconcile 2026-07-20 (`FRAMEWORK_BACKFILL_PLAN.md`):** silently broken since Story 7 (2026-07-16) — the auth gate routes the CTA to `/register` for an unauthenticated visitor, so `navigate_to_mode_modal` (→ `navigate_to_doklad_type_modal`) timed out on the CTA click and this `[x]` was false (re-verified failing live before the fix). Restored by a logged-in precondition (seeded session) in the shared navigation helper; valid here because the mode modal is a static local-flag screen with no authenticated API call. Re-verified GREEN live 2026-07-20 (`1 passed`).
 - [x] demo
 
 ### Scenario 1.2: Selecting Ручной режим opens the empty editor
