@@ -7,6 +7,13 @@ Integration + Security + Load + Infrastructure Scenarios) and `progress-frontend
 narrative, decisions, and the Spec checklist. `ProductSpecification/stories.md` is the
 cross-file rollup.
 
+> **`progress-backend.md` is not yet created** (as of 2026-07-20). Only
+> `progress-frontend.md` exists so far — the backend/integration/security scenario
+> checklist still needs to be bootstrapped from `tests/01_API_Tests.md`,
+> `tests/05_Security_Tests.md` and `tests/06_Integration_Tests.md` before backend work is
+> tracked here. The `Back`/`Sec` = 🔧 markers for Story 5 in `stories.md` are therefore
+> ahead of any tracked state.
+
 ## Spec
 - [x] interview
 - [x] story

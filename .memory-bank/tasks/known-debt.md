@@ -29,8 +29,9 @@ mandatory starting sprint 1 — user has an existing server/VM, so sprint 1 depl
 `infra/docker-compose.yml` there by hand (reverse proxy / opened port), not via
 Terraform. The `terraform-yandex` agent is installed (came with labs-harness) but
 **still dormant** — its Yandex-specific conventions (Lockbox, Object Storage state
-bucket) do not apply until a cloud/IaC decision is actually made. Anthropic-equivalent
-secret (now OpenRouter's `OPENROUTER_API_KEY`, see `tech-details/backend.md`) lives in
+bucket) do not apply until a cloud/IaC decision is actually made. The generation-provider
+secret (GigaChat's `GIGACHAT_CREDENTIALS` / `GIGACHAT_CA_BUNDLE` — superseded the
+originally-planned OpenRouter/Anthropic key 2026-07-09, see #11) lives in
 `backend/.env` on that server for now, not a cloud secret store.
 **Resurfaces:** if/when manual deploy-by-hand becomes painful enough to automate (repeat
 manual steps across many sprints, multiple environments needed, etc.) — confirm the
@@ -69,7 +70,8 @@ Decided 2026-07-07: while a generation is `pending`/`in_progress` (can be 10-60+
 seconds), the "chat" screen shows a plain loading indicator (e.g. "ИИ пишет...") and
 reveals the finished text once `GET /generations/{id}` reports `completed` — a
 client-side-only animation at most, not real token-by-token content. The backend's
-async contract (single non-streaming OpenRouter call inside the `arq` worker, client
+async contract (single non-streaming GigaChat call — see #11 — run via
+`BackgroundTasks`+DB-sweep, not the originally-planned `arq` worker, see #13; client
 polls for status) is **unchanged** — this is a deliberate simplification to hit the
 Friday deadline, not a backend rework.
 **Resurfaces:** explicitly planned to be replaced with real token-by-token streaming

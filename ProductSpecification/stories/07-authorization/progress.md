@@ -75,22 +75,22 @@ and treated as an opaque string end to end (VARCHAR column, `str` DTO field, no 
 coercion anywhere) so leading zeros survive. The response returns the account id, email,
 verification status, the code and its expiry — never the password.
 
-**Verification exists but is deliberately not reachable.** `VerifyAccount` normalizes and
+**Verification, login and refresh are now wired and live.** `VerifyAccount` normalizes and
 validates the email, validates the submitted code's shape, looks up the account and its
 active code, and on a match verifies the account, consumes the code and commits — with the
-same rollback-and-sanitize discipline as registration. `POST /api/v1/auth/verify` is
-routed on the auth router and unit-tested, but **is not wired into `main.py`, on purpose**.
-The reason is that `matches()` currently has no `else` branch, so a wrong code would fall
-through and the route would answer `200 {"is_verified": true}` against a still-pending
-account. Withholding the composition-root wiring is what keeps that unreachable until
-scenario 3.2 lands the rejection branch; the endpoint currently 500s rather than being an
-auth bypass. Scenarios 3.2–3.6 (wrong code, expired, replay, already-verified) are the
-remaining work, and `find_by_email`/`find_active_by_account_id` both return `Optional` but
-are dereferenced unconditionally, so an unknown email 500s today — a named, deliberate
-deferral to those scenarios rather than an unnoticed bug.
+same rollback-and-sanitize discipline as registration. `POST /api/v1/auth/verify`,
+`/login` and `/refresh` are all routed on the auth router **and wired into the composition
+root** (`main.py` `dependency_overrides` for `get_verify_account_usecase`,
+`get_login_user_usecase`, `get_refresh_access_token_usecase`) — the earlier "verify held
+back until scenario 3.2" state no longer holds. Remaining hardening lives in the still-open
+scenarios: `find_by_email`/`find_active_by_account_id` return `Optional` and some paths
+dereference unconditionally, so edge cases (unknown email, wrong/expired/replayed code —
+scenarios 3.2–3.6) still need their rejection branches. Consult `progress-backend.md` for
+exactly which scenarios are green.
 
-**Known gaps that outlive this scenario.** Passwords are persisted as plaintext: no hashing
-exists anywhere in the codebase, and it is sequenced into the Security phase
-(`05_Security_Tests.md` Scenario 1). Real rows now carry real credentials, so this is the
-highest-priority item before any shared or production-like environment sees user data. See
-`carryover.md` for the full quirk list.
+**Passwords are hashed with bcrypt.** `BcryptPasswordHasher`
+(`backend/adapters/security/src/hashing/bcrypt_password_hasher.py`) implements the
+`PasswordHasher` port, which is a required (no-fallback) constructor argument;
+`register_user.py` hashes on the way in and `login_user.py` verifies on the way out. The
+earlier "plaintext, no hashing anywhere" note is superseded — hashing shipped. See
+`carryover.md` for the remaining quirk list.
