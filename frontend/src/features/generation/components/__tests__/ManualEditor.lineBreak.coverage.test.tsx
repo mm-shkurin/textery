@@ -42,13 +42,18 @@ async function saveAndGetPayload() {
   return sentPayload()
 }
 
+// Every editing test renders a created-document editor and then targets its content area.
+async function renderAndGetContentArea() {
+  await renderEditorWithDocumentCreated()
+  return screen.getByTestId('editor-content-area')
+}
+
 describe('ManualEditor line break — keymap and parse coverage', () => {
   // Case 1: a real Enter keystroke drives the hardBreakKeymap (zero coverage before this).
   // ProseMirror binds its keymap plugin to the editable element's keydown; @testing-library's
   // fireEvent.keyDown dispatches a real KeyboardEvent that the plugin's handleKeyDown reads.
   it('a real Enter keystroke inserts exactly one <br>', async () => {
-    await renderEditorWithDocumentCreated()
-    const contentArea = screen.getByTestId('editor-content-area')
+    const contentArea = await renderAndGetContentArea()
 
     fireEvent.keyDown(contentArea, { key: 'Enter' })
 
@@ -57,8 +62,7 @@ describe('ManualEditor line break — keymap and parse coverage', () => {
   })
 
   it('a Shift-Enter keystroke inserts exactly one <br>', async () => {
-    await renderEditorWithDocumentCreated()
-    const contentArea = screen.getByTestId('editor-content-area')
+    const contentArea = await renderAndGetContentArea()
 
     fireEvent.keyDown(contentArea, { key: 'Enter', shiftKey: true })
 
@@ -70,8 +74,7 @@ describe('ManualEditor line break — keymap and parse coverage', () => {
   // strip (hardBreakNode.ts) must keep the save payload free of any trailing <br> and of the
   // ProseMirror-trailingBreak helper class.
   it('typed content produces no stray trailing <br> in the save payload', async () => {
-    await renderEditorWithDocumentCreated()
-    const contentArea = screen.getByTestId('editor-content-area')
+    const contentArea = await renderAndGetContentArea()
     contentArea.textContent = 'just one line'
     fireEvent.input(contentArea)
 
@@ -86,8 +89,7 @@ describe('ManualEditor line break — keymap and parse coverage', () => {
   // into the save payload. Driven through the real keymap (fireEvent.keyDown), which jsdom
   // dispatches to ProseMirror's keydown handler — the same path a browser keystroke takes.
   it('an intentional Enter at the end of typed content keeps the trailing <br>', async () => {
-    await renderEditorWithDocumentCreated()
-    const contentArea = screen.getByTestId('editor-content-area')
+    const contentArea = await renderAndGetContentArea()
     contentArea.textContent = 'foo'
     fireEvent.input(contentArea)
     fireEvent.keyDown(contentArea, { key: 'Enter' })
@@ -99,8 +101,7 @@ describe('ManualEditor line break — keymap and parse coverage', () => {
 
   // Case 4: an interior break is not over-stripped — only the stray TRAILING break dies.
   it('an interior <br> between two lines survives', async () => {
-    await renderEditorWithDocumentCreated()
-    const contentArea = screen.getByTestId('editor-content-area')
+    const contentArea = await renderAndGetContentArea()
     contentArea.innerHTML = 'line one<br>line two'
     fireEvent.input(contentArea)
 
