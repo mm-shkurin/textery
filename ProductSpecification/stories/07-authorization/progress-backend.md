@@ -210,7 +210,7 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [S] green-acceptance — no acceptance test (trimmed cycle); same generic 400 as 3.2
 
 ### Scenario 3.4: Re-submitting an already-consumed code is idempotent
-- [ ] red-acceptance
+- [S] red-acceptance — already-green (2026-07-20 backfill), kept as a black-box regression pin. New `test_verify_idempotent_code_acceptance.py` registers a fresh account, verifies once (200 `{"is_verified": true}`), then POSTs `/verify` again with the **same** email+code and asserts the second response is byte-identical to the first. It passes on first run against the live stack (`BACKEND_PORT=8100`, 1 passed): `find_active_by_account_id` deliberately does not filter consumed codes, so the replayed code is still found and `matches()`; `account.verify()` and `verification_code.consume()` are both idempotent no-ops, so the second call re-returns 200. No RED phase occurred at the HTTP boundary. **Limitation this leg cannot prove:** the spec's "no duplicate state transition occurs" clause is not HTTP-observable — a real idempotent no-op and an accidental duplicate write both answer `200 {is_verified:true}` — so that invariant is pinned at the usecase layer in red-usecase below (count `save`/`verify`/`consume` on a Fake). test-review added an explicit `second == first` idempotency-equality assertion (was only entailed, now asserted). Full authorization backend acceptance suite still green.
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase
