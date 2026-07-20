@@ -1,6 +1,5 @@
 import logging
 
-import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
@@ -56,10 +55,6 @@ class TestValidationExceptionHandler:
             "message": "This email is already registered.",
         }, f"unexpected response body {response.json()}"
 
-    @pytest.mark.skip(
-        reason="RED 2026-07-20: _ERROR_CODE_STATUS_MAP has no ALREADY_VERIFIED entry, "
-        "maps to 400 default; green-adapter rest 3.5 adds ALREADY_VERIFIED->409"
-    )
     async def test_should_return_409_when_error_code_is_already_verified(self):
         app = FastAPI()
 

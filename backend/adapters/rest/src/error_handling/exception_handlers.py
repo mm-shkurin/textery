@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 # a silently-wrong status the easy mistake; a dict makes each choice visible.
 _ERROR_CODE_STATUS_MAP = {
     "EMAIL_ALREADY_REGISTERED": 409,
+    "ALREADY_VERIFIED": 409,
     "INVALID_CREDENTIALS": 401,
     "INVALID_REFRESH_TOKEN": 401,
     "UNVERIFIED": 403,
