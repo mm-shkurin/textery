@@ -565,7 +565,12 @@ add new ones — the first red phase in this story to do so.
   3. **Force the required-vs-optional decision on `version`.** Update the 9 files' mocks (red owns tests; green does not) so `CreateDocumentResult.version` can be non-optional, closing the `result.version ?? 1` escape that keeps defect A alive under a green suite.
 
   Mutation-check each: the minimal green (`?? crypto.randomUUID()`, callers untouched) **must fail**. That is the bar this red missed and the one measurement that says these tests have teeth.
-- [ ] green-frontend-api-contract — wire A, B, NEW-1. **Do not start before `red-frontend-api-contract-2`** — measured twice, the current constraints admit a green that passes 93 tests with every defect live. Note the ordering constraint NEW-4 imposes as well: **fixing NEW-1 alone still 422s** ("Unsupported document_type"), so this green does not make create work end-to-end on its own, and must not be reported as if it does.
+- [x] green-frontend-api-contract — **DUPLICATE of the completed entry above (line ~544); this was the
+  original planning stub, left behind when the green was reordered to fold in `red-frontend-api-contract-2`.**
+  The work landed in `07d8cd5` (dock to live backend: `content` sanitized = NEW-1, Cyrillic wire type =
+  NEW-4, 409 recovery + server `version` threaded = defect A) plus the `useDocumentInit.strictMode.test.tsx`
+  guard = defect B. Suite was 191 passed at completion. No work pending here — see the `[x]` entry above for
+  the full record. (Reconciled 2026-07-20.)
 
 ### Defect NEW-4 — the client's `document_type` values are Latin; the spec's enum is Cyrillic
 - `documentTypes.ts:1` defines `'doklad' | 'essay' | 'sochinenie' | 'referat'`; `documents_create.yaml:57` enumerates `[доклад, эссе, сочинение, реферат]`. `useDocumentInit.ts:38` passes the `DocumentType` straight through, so the wire value is Latin.
