@@ -8,6 +8,9 @@ from statements.register_atomic_write_statements import RegisterAtomicWriteState
 from statements.register_statements import RegisterStatements
 from statements.requeue_stale_generations_statements import RequeueStaleGenerationsStatements
 from statements.verify_account_failure_statements import VerifyAccountFailureStatements
+from statements.verify_account_idempotency_statements import (
+    VerifyAccountIdempotencyStatements,
+)
 from statements.verify_account_statements import VerifyAccountStatements
 
 
@@ -39,6 +42,11 @@ def requeue_stale_generations_statements():
 @pytest.fixture
 def verify_account_statements():
     return VerifyAccountStatements()
+
+
+@pytest.fixture
+def verify_account_idempotency_statements():
+    return VerifyAccountIdempotencyStatements()
 
 
 @pytest.fixture
