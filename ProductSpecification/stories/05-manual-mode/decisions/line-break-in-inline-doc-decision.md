@@ -22,10 +22,18 @@ Why: sprint criterion requires a line break in Ручной режим, but the 
 
 ## Edge Cases
 
+The shipped mechanism distinguishes **stray** breaks (ProseMirror's auto ghost-filler + the
+`ProseMirror-trailingBreak` cursor helper — never wanted) from **intentional** breaks (a user
+keystroke, or a bare `<br>` in loaded content). Only stray breaks are prevented; an intentional
+trailing break is KEPT — pressing Enter to leave a blank last line is legitimate content, and the
+original "no stray break for non-empty content" invariant was only ever about the auto/helper break,
+not a deliberate one. (This refines the first draft, which said trailing breaks are stripped
+wholesale via the now-abandoned `appendTransaction`.)
+
 | Case | Behavior |
 |------|----------|
 | Enter between two lines of text | `<br>` inserted and preserved; `getHTML()` = `a<br>b`. |
-| Enter at the very end of content | Trailing hardBreak stripped by `appendTransaction`; no stray `<br>` persisted (matches the pre-existing "no stray break for non-empty content" invariant). |
-| Multiple consecutive Enters at end | All trailing hardBreaks collapse away (only trailing ones; interior blanks between text are kept). |
-| Empty document | No hardBreak node exists; strip is a no-op; placeholder still shown. |
-| Reopen a saved document ending in `<br>` (legacy) | Init parses it; if it lands as a trailing hardBreak, first transaction strips it — self-healing, no persisted growth. |
+| Stray trailing break (auto ghost-filler / cursor helper, no keystroke) | Never enters the doc: required-`marker` attr disqualifies the ghost-filler `defaultType`, and the helper `<br class="ProseMirror-trailingBreak">` is parse-ignored. `getHTML()` on typed non-empty content has no trailing `<br>`. |
+| Intentional Enter at the very end of content | KEPT — renders as a bare `<br>` (no helper class), survives to `getHTML()`. A user's explicit trailing blank line is preserved, not silently dropped. |
+| Empty document | No hardBreak node; placeholder shown. |
+| Reopen / paste content ending in a bare `<br>` (legacy) | Init `setContent` parses it via `{tag:'br'}`; the attribute's `parseHTML: () => 'br'` supplies the required `marker`, so no parse error and no data loss — the break round-trips. |

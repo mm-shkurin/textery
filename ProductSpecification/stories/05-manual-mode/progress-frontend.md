@@ -762,8 +762,11 @@ pinned and committed (`d12f4a2`), currently `describe.skip` in `ManualEditor.lin
   cursor helper) and `hardBreakKeymap.ts` (plain Enter + Shift-Enter → insert hardBreak). Files 42 +
   26 lines. `StarterKit hardBreak:false` kept only to avoid a schema-name collision with the custom
   node. See ADR Implementation note.
-- [~] test-coverage — add the premortem (commit `10921ef`, CONCERNS) + ADR edge cases the RED
-  does not cover:
+- [x] test-coverage — done, **6 tests** added in `ManualEditor.lineBreak.coverage.test.tsx` (150
+  lines), suite **112/112** green, tsc clean, no production change, no defect surfaced. Keymap Enter
+  path drove via `fireEvent.keyDown` in jsdom (real coverage, not deferred). Covered: real
+  Enter/Shift-Enter (count = 1, guards double-insert), stray-trailing prevented, intentional trailing
+  KEPT, interior not over-stripped, load/paste `<br>` round-trip (no marker parse error). The cases:
     1. *Real Enter keystroke, not just programmatic `<br>`.* Fire the actual Enter key event on
        the editor and assert `getHTML()` gains one `<br>` at the caret (validates the green keymap;
        RED only exercised the `innerHTML`+`fireEvent.input` domObserver path).
@@ -780,16 +783,19 @@ pinned and committed (`d12f4a2`), currently `describe.skip` in `ManualEditor.lin
        the required attr), Enter breaks silently and the suite stays green. Fire an Enter keydown in
        the editor, assert exactly ONE `<br>` lands in the save payload (count assertion, not "a break
        appears" — guards premortem #2 double-insert).
-    5. *Resolve ADR-vs-impl divergence on the intentional trailing break (premortem #1).* The impl
-       strips only the STRAY break (ghost-filler disqualified + `ProseMirror-trailingBreak` helper
-       parse-ignored) — a REAL bare trailing `<br>` (user presses Enter at end, or legacy/pasted
-       content ending in `<br>`) is KEPT, which contradicts the ADR edge table's "Enter at doc-end →
-       stripped". Decide the intended behavior (keep the intentional one is likely correct UX), pin it
-       with a keymap-Enter-at-end test AND a `setContent('foo<br>')`→`getHTML()` round-trip (load/paste
-       path), and reconcile the ADR edge table wording to match. Live-browser proof of the no-double-
-       insert + real trailing behavior is owed by the deferred green-selenium step below.
-- [ ] refactor — extract `stripTrailingHardBreak` to its own file (≤200 lines, coding-rules),
-  matching the existing per-extension file layout (`horizontalRuleNode.ts`, `codeBlockMark.ts`).
+    5. *Pin the decided trailing-break behavior (premortem #1; ADR edge table already reconciled
+       2026-07-20).* Decision: STRAY breaks are prevented, an INTENTIONAL trailing break is KEPT.
+       Pin both sides: (a) typed non-empty content has no stray trailing `<br>` in `getHTML()` (stray
+       side — already covered by the RED for interior content, extend to the ghost-filler/helper
+       path); (b) a keymap Enter at end-of-content → the `<br>` IS present in the save payload
+       (intentional side); (c) `setContent('foo<br>')`→`getHTML()` round-trip preserves the break with
+       no parse error (load/paste path, required-`marker` supplied by the attr's parseHTML). Live-
+       browser proof of no-double-insert + real trailing behavior is owed by the deferred
+       green-selenium step below.
+- [~] refactor — original intent (extract `stripTrailingHardBreak` to its own file) is **moot**:
+  green abandoned the strip extension; the fix already ships as two dedicated per-extension files
+  (`hardBreakNode.ts` 42, `hardBreakKeymap.ts` 26 — both ≤200, matching `horizontalRuleNode.ts`
+  layout). Likely `[S]` unless a cross-file smell surfaces.
 - [ ] green-selenium — [S] deferred: same "live app to drive Selenium" gap as the rest of
   this file (see RECONCILE_05); real-browser Enter keystroke bypasses the domObserver path
   that the unit test exercises, so a live run is the only proof the in-browser Enter produces
