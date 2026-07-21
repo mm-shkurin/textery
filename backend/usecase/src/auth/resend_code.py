@@ -50,6 +50,16 @@ class ResendCode:
             # generic rejection the verify path uses, per the resend ADR.
             raise self._invalid_or_expired()
 
+        # Re-read the account under SELECT ... FOR UPDATE so the db serialization
+        # proven by the db-adapter race test is exercised in production (scenario 4.4).
+        # Acquired AFTER resolving the id via find_by_email and BEFORE the cooldown
+        # read, and threaded forward so ALL downstream work uses the LOCKED row.
+        account = await self.account_repository.lock_for_update(account.id)
+        if account is None:
+            # Defensive (premortem REMOTE): no delete path exists today, but if the row
+            # vanished between find_by_email and the lock, answer with the same rejection.
+            raise self._invalid_or_expired()
+
         newest = await self.verification_code_repository.find_active_by_account_id(account.id)
         if newest is not None:
             self._enforce_cooldown(newest)

@@ -1,12 +1,6 @@
-import pytest
-
 from statements.resend_code_lock_statements import ResendCodeLockStatements
 
 
-@pytest.mark.skip(
-    reason="RED: 4.4 green-usecase wires lock_for_update into ResendCode.execute "
-    "(lock before the cooldown read; thread the POST-lock account forward)."
-)
 class TestResendCodeLockUsecase:
     """Scenario 4.4: ResendCode.execute wires the account row lock into the
     critical section so the db serialization (SELECT ... FOR UPDATE proven by the
