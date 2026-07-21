@@ -1,5 +1,4 @@
-import { describe, expect, it } from 'vitest'
-import { vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
 
