@@ -71,3 +71,9 @@ Quirk and enduring-invariant entries promoted from completed scenario summaries.
 **Where:** workaround startup command (see `.claude/guidelines/infrastructure-detail.md` / prior scenario notes), migrations at `backend/adapters/db/alembic/`.
 **Implication:** Every time the local-uvicorn workaround is used against a Postgres that hasn't already been migrated (new container, `docker compose down -v`, etc.), run `alembic upgrade head` (with `DATABASE_URL` pointed at the same host/port the app uses) before the first acceptance test, not just before the first code-picking-up run.
 **From:** scenario 2.4c (unicode-normalization-email-uniqueness)
+
+## Quirk: find_active_by_account_id returns consumed/expired codes
+**Quirk:** `SqlAlchemyVerificationCodeRepository.find_active_by_account_id` returns the most-recently-issued code for an account regardless of whether it is consumed or expired — "active" means "the current one", with validity judged by the caller.
+**Where:** `backend/adapters/db/src/access/auth/verification_code_storage.py`.
+**Implication:** The `is_verified` idempotent-replay fork and the 3.6 code-consume guard both depend on this (a consumed code is still found, so a replay is distinguishable from an unknown one); any future "tidy" that filters `consumed_at IS NULL`/expiry in the query would silently break idempotency (3.4) with all usecase tests still green, and would need the expiry/consumption checks that currently live in `VerifyAccount.execute` re-homed.
+**From:** scenario 3.4 (idempotent-consumed-code)
