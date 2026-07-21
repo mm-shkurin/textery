@@ -28,6 +28,21 @@ class SqlAlchemyAccountRepository:
         model = await self._session.get(AccountModel, account_id)
         return model.to_domain() if model else None
 
+    async def lock_for_update(self, account_id: UUID) -> Account | None:
+        """Row-lock the account (SELECT ... FOR UPDATE) to serialize concurrent resends.
+
+        Racing resends on the same account each take this lock before reading the
+        active code and deciding whether to insert; the winner holds it, later racers
+        block here until the winner commits, then observe the winner's fresh code and
+        skip on cooldown. The lock is held until the caller's transaction
+        commits/rolls back -- the caller owns the transaction boundary; no commit here.
+        """
+        result = await self._session.execute(
+            select(AccountModel).where(AccountModel.id == account_id).with_for_update()
+        )
+        model = result.scalar_one_or_none()
+        return model.to_domain() if model else None
+
     async def transition_to_verified(self, account_id: UUID) -> bool:
         """Atomically flip is_verified false->true for exactly one caller.
 

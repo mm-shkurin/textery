@@ -1,23 +1,18 @@
-import pytest
-
 from statements.resend_concurrency_statements import ResendConcurrencyStatements
 
 
-class TestConcurrentResendSerialization:
-    """Two racing sessions run the resend critical section (lock_for_update ->
-    find_active -> insert -> commit) on the SAME eligible account. The account-row
-    FOR UPDATE lock serializes them: the loser blocks until the winner commits,
-    then its post-lock read reflects the winner's committed insert -- it does NOT
-    read the stale pre-race state concurrently. This pins the serialization that
-    scenario 4.4's exactly-one-resend guarantee is built on."""
+class TestConcurrentResendSingleWriter:
+    """Two racing sessions run the FULL resend critical section (lock_for_update ->
+    find_active -> cooldown gate -> insert-if-eligible -> commit) on the SAME
+    eligible account. The account-row FOR UPDATE lock serializes them: the winner
+    reads the 90s-old seeded code (eligible) and inserts; the loser blocks until the
+    winner commits, then reads the winner's fresh code (inside the 60s cooldown) and
+    skips. Net: seed + exactly one new code. This pins the ADR's exactly-one-writer
+    guarantee -- a no-op lock would let both racers insert (three rows) and fail."""
 
-    @pytest.mark.skip(
-        reason="RED: SqlAlchemyAccountRepository.lock_for_update does not exist yet; "
-        "green-adapter db adds SELECT ... FOR UPDATE to serialize concurrent resends."
-    )
-    async def test_should_serialize_resend_reads_under_concurrent_lock(
+    async def test_should_issue_exactly_one_code_under_concurrent_resend(
         self, resend_concurrency_statements: ResendConcurrencyStatements
     ):
         await resend_concurrency_statements.insert_eligible_account()
         await resend_concurrency_statements.race_two_resends()
-        resend_concurrency_statements.assert_reads_were_serialized()
+        resend_concurrency_statements.assert_exactly_one_new_code_issued()

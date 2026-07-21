@@ -1,5 +1,3 @@
-import pytest
-
 from statements.resend_ordering_statements import ResendOrderingStatements
 
 
@@ -11,11 +9,6 @@ class TestTiedCreatedAtDeterminism:
     ', id DESC' secondary sort, at which point this becomes a deterministic GREEN
     pin (max-id row always returned)."""
 
-    @pytest.mark.skip(
-        reason="RED: ', id DESC' tiebreak not implemented; on equal created_at "
-        "postgres row order is undefined (would be flaky). Becomes a clean GREEN "
-        "pin once find_active_by_account_id adds the secondary id DESC sort."
-    )
     async def test_should_return_greater_id_code_on_equal_created_at(
         self, resend_ordering_statements: ResendOrderingStatements
     ):

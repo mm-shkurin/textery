@@ -28,7 +28,7 @@ class SqlAlchemyVerificationCodeRepository:
         result = await self._session.execute(
             select(VerificationCodeModel)
             .where(VerificationCodeModel.account_id == account_id)
-            .order_by(VerificationCodeModel.created_at.desc())
+            .order_by(VerificationCodeModel.created_at.desc(), VerificationCodeModel.id.desc())
             .limit(1)
         )
         model = result.scalar_one_or_none()
