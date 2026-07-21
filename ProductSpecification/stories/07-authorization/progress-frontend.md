@@ -705,7 +705,7 @@ so its red-frontend step must add the button first.
 - [S] demo — SKIPPED (visual-only, non-gating; demo skipped for all scenarios in this story, see top-of-file note).
 
 ### 6.4: Successful verification navigates to the authenticated app shell
-- [ ] red-selenium
+- [S] red-selenium — DEFERRED 2026-07-21: backend-gated, batched for the full-stack selenium pass (see 5.1 green-selenium note). Component legs below carry the real coverage this session.
 - [ ] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
