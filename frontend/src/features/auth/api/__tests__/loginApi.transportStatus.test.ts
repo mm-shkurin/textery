@@ -40,10 +40,7 @@ function stubFetchCodelessBody(status: number, body: unknown): void {
   )
 }
 
-// RED (5.6 red-frontend-api): skipped until green-frontend-api threads `status` through
-// HttpError → toAuthApiError → AuthApiError. Un-skip at green, same convention as scenario 5.6's
-// LoginForm.networkError.test.tsx (describe.skip during red, un-skipped at green-frontend).
-describe.skip('loginApi transport status', () => {
+describe('loginApi transport status', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
   })
