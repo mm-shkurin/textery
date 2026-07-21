@@ -50,3 +50,15 @@ export function expectSoleLink(contentArea: HTMLElement, href: string) {
   expect(contentArea.textContent).toBe('hello world')
   expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 }
+
+// The counterpart to expectSoleLink: the input was refused. Asserts NO anchor
+// was produced AND the rejection message is shown — not a silent no-op. Both
+// halves matter: a green that dropped the anchor but showed nothing would
+// leave the visitor with a swallowed link and no signal, and a green that
+// showed the alert but still linked would be a live dead/deceptive href. The
+// alert presence is the ADR's whole reason for choosing the popover over
+// window.prompt (a visible rejection signal), so pinning it here is on-contract.
+export function expectRejected(contentArea: HTMLElement) {
+  expect(contentArea.querySelectorAll('a')).toHaveLength(0)
+  expect(screen.queryByRole('alert')).toBeInTheDocument()
+}
