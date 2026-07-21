@@ -4,6 +4,7 @@ import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
 import { register, type RegisterApiError } from '../api/registerApi'
 import { rememberRegistration } from '../utils/registrationHandoff'
+import { useUnsavedGuard } from '../utils/useUnsavedGuard'
 import { GENERIC_REGISTER_FAILURE_MESSAGE, isUsableMessage } from '../utils/authMessages'
 import {
   CONFIRM_MISMATCH_MESSAGE,
@@ -47,6 +48,7 @@ export function RegisterForm() {
   const [passwordError, setPasswordError] = useState(false)
   const [confirmError, setConfirmError] = useState(false)
   const confirmTouchedRef = useRef(false)
+  const { markDirty, markClean, confirmLeave } = useUnsavedGuard()
   const emailInputRef = useRef<HTMLInputElement>(null)
   const passwordInputRef = useRef<HTMLInputElement>(null)
   const confirmInputRef = useRef<HTMLInputElement>(null)
@@ -63,6 +65,10 @@ export function RegisterForm() {
         confirmInputRef.current?.value ?? '',
       )
       setEmailError(null)
+      // The input has been sent — it is no longer unsaved, so release the guard BEFORE the
+      // navigation below. A failed submit skips this (we never reach here on throw), keeping
+      // the still-unsaved data guarded — scenario 5.8 case 4.
+      markClean()
       // Hand the password to /verify so a verified account lands signed in. In memory only, and
       // deliberately NOT in the router state below — see registrationHandoff for why that
       // distinction is the whole point.
@@ -96,6 +102,15 @@ export function RegisterForm() {
     setConfirmError(isConfirmMismatched(passwordInputRef.current?.value ?? '', event.target.value))
   }
 
+  // In-app react-router navigation does not raise `beforeunload`, so guard the footer login
+  // link at its own click seam: cancel the navigation unless the form is pristine or the user
+  // confirms leaving.
+  function handleLeaveClick(event: React.MouseEvent<HTMLAnchorElement>) {
+    if (!confirmLeave()) {
+      event.preventDefault()
+    }
+  }
+
   return (
     <div className="auth-card register-card">
       <h1>Регистрация в Textery AI</h1>
@@ -111,6 +126,7 @@ export function RegisterForm() {
             placeholder="email@example.ru"
             data-testid="register-email-input"
             ref={emailInputRef}
+            onChange={markDirty}
           />
           {emailError && (
             <div
@@ -130,6 +146,7 @@ export function RegisterForm() {
             placeholder="Минимум 8 символов"
             data-testid="register-password-input"
             ref={passwordInputRef}
+            onChange={markDirty}
             onBlur={handlePasswordBlur}
           />
           <div
@@ -147,6 +164,7 @@ export function RegisterForm() {
             placeholder="Повторите пароль"
             data-testid="register-confirm-password-input"
             ref={confirmInputRef}
+            onChange={markDirty}
             onBlur={handleConfirmBlur}
           />
           {confirmError && (
@@ -166,7 +184,7 @@ export function RegisterForm() {
       </form>
       <p className="auth-footer-link">
         Уже есть аккаунт?{' '}
-        <Link to="/login" data-testid="register-login-link">
+        <Link to="/login" data-testid="register-login-link" onClick={handleLeaveClick}>
           Войти
         </Link>
       </p>

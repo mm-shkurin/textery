@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { renderWithRouter } from '../../../../test/renderWithRouter'
 import { RegisterForm } from '../RegisterForm'
 import * as api from '../../api/registerApi'
@@ -39,9 +40,23 @@ function fillAllFields() {
   fireEvent.change(screen.getByTestId('register-confirm-password-input'), { target: { value: VALID_PASSWORD } })
 }
 
-afterEach(() => vi.mocked(api.register).mockReset())
+function renderWithRoutes() {
+  return render(
+    <MemoryRouter initialEntries={['/register']}>
+      <Routes>
+        <Route path="/register" element={<RegisterForm />} />
+        <Route path="/login" element={<div data-testid="login-route-marker" />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+}
 
-describe.skip('RegisterForm unsaved-input navigation guard', () => {
+afterEach(() => {
+  vi.mocked(api.register).mockReset()
+  vi.restoreAllMocks()
+})
+
+describe('RegisterForm unsaved-input navigation guard', () => {
   it('arms a beforeunload confirm guard once a field has been typed into', () => {
     renderWithRouter(<RegisterForm />)
 
@@ -84,5 +99,47 @@ describe.skip('RegisterForm unsaved-input navigation guard', () => {
     const event = dispatchBeforeUnload()
 
     expect(event.defaultPrevented).toBe(true)
+  })
+
+  // beforeunload does NOT fire on in-app react-router navigation — the footer login <Link> is
+  // the primary §5.8 "navigates away" case and needs its own confirm at the click seam.
+  it('confirms before an in-app nav to /login while the form holds unsaved input', () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    renderWithRoutes()
+
+    fireEvent.change(screen.getByTestId('register-email-input'), {
+      target: { value: 'partial@example.ru' },
+    })
+    fireEvent.click(screen.getByTestId('register-login-link'))
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1)
+    // Cancelled at the prompt — navigation blocked, still on the register route.
+    expect(screen.queryByTestId('login-route-marker')).toBeNull()
+    expect(screen.getByTestId('register-email-input')).toBeInTheDocument()
+  })
+
+  it('does not confirm on an in-app nav to /login while the form is pristine', () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    renderWithRoutes()
+
+    fireEvent.click(screen.getByTestId('register-login-link'))
+
+    expect(confirmSpy).not.toHaveBeenCalled()
+    // Nothing to protect, so the navigation proceeds.
+    expect(screen.getByTestId('login-route-marker')).toBeInTheDocument()
+  })
+
+  // The effect must return removeEventListener and keep isDirty component-scoped: after unmount
+  // no handler survives to warn on other pages' refreshes.
+  it('removes the beforeunload guard on unmount — no leak past the form', () => {
+    const { unmount } = renderWithRouter(<RegisterForm />)
+
+    fireEvent.change(screen.getByTestId('register-email-input'), {
+      target: { value: 'partial@example.ru' },
+    })
+    unmount()
+    const event = dispatchBeforeUnload()
+
+    expect(event.defaultPrevented).toBe(false)
   })
 })
