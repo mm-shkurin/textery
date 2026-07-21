@@ -135,46 +135,13 @@ describe('loginApi', () => {
     expect(rejection).toStrictEqual({ errorCode: 'UNVERIFIED', message: '' })
   })
 
-  // (vii) THE `{}` BODY — the one error path that actually fires today, and the only one no
-  // other fixture reaches. Of the six others, FIVE supply a well-formed `error_code`; (i)
-  // supplies no body at all and is stopped by the `!body` rethrow guard before the normalizer
-  // ever runs. This one supplies a body that is truthy but CODELESS: `postJson` does
-  // `res.json().catch(() => ({}))` (shared/api/httpClient.ts), so a 404 HTML page (no login endpoint
-  // yet) or a proxy's 502 arrives as `{}` — truthy, so it clears the guard and is normalized.
-  //
-  // Added by green because green CHANGED this path and nothing here observed it. What it
-  // uniquely pins is NARROW — MUTATION-VERIFIED against a 0F/7P baseline, both mutants
-  // confirmed present by grep before running:
-  //   * Mutation C, the trap SCOPED TO THE CODELESS BODY — return the raw HttpError when
-  //     `body.error_code` is not a string = 1F/6P, killing THIS TEST ALONE. Its reason to exist.
-  //   * Mutation B, the BROAD form — return the raw error whenever the code is
-  //     non-INVALID_CREDENTIALS with no message = 2F/5P, killing (iv) AND this test. (iv)
-  //     already catches that one; this test is not what stands between it and green.
-  // An earlier revision justified the test by the BROAD form and claimed "the whole file would
-  // stay green" without it. False — 2F/5P, as above.
-  //
-  // Asserted below: still a LoginApiError, code `UNKNOWN_ERROR`, message `''` (no server text,
-  // reported as absence). Not the login-failure constant — the code is not the login-failure
-  // code. LoginForm supplies the generic copy via applyLoginError's fallback; screen unchanged.
-  //
-  // Stub shape follows generation/api/__tests__/generationApi.test.ts:41-54 — `json` throws
-  // rather than resolving, as a non-JSON response really does. `stubFetchErrorBody` can't.
-  it('normalizes an unparseable error body to UNKNOWN_ERROR with no server message', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 502,
-        json: async () => {
-          throw new SyntaxError('Unexpected token <')
-        },
-      }),
-    )
-
-    const rejection = await rejectionOf(login(EMAIL, PASSWORD))
-
-    expect(rejection).toStrictEqual({ errorCode: 'UNKNOWN_ERROR', message: '' })
-  })
+  // (vii) THE `{}` / UNPARSEABLE BODY — relocated and UPGRADED to loginApi.transportStatus.test.ts
+  // by 5.6's red-frontend-api. It previously asserted `toStrictEqual({errorCode:'UNKNOWN_ERROR',
+  // message:''})`, which PINNED THE STATUS-LOSS this scenario fixes: the mapper drops the HTTP
+  // status, so a 502 gateway failure and a codeless business error collapse to one value and
+  // green-frontend's `status>=500` network branch is inert in production. The sibling now pins the
+  // opposite — status SURVIVES onto the codeless AuthApiError — so keeping this test here would
+  // contradict the new contract. Moving it also keeps this file under the 200-line cap.
 
   // (v) BORN GREEN — a characterization pin, not a guard this step established. It pins the
   // ACTUAL contract, which is not the one loginApi's comment claimed: the api preserves
