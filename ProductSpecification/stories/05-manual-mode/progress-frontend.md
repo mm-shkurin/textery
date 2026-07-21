@@ -959,8 +959,36 @@ add new ones — the first red phase in this story to do so.
   API cannot cross the boundary the concern is about). Recorded in the ADR "Knowingly unverified" section.
 - [S] green-frontend-api — no production gap, see red-frontend-api: `saveDocument`/`getHTML()` already carry the
   href; nothing new to implement at the api layer.
-- [~] align-design
-- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. **This is the step that owes 7.9 its real verification**: the popover's clipping under `.me-editor-shell`'s `overflow: hidden`, its placement on a narrow viewport, and real-browser focus behaviour are all invisible to jsdom by construction. The ADR chose the popover partly for jsdom reachability; that argument covers the rejection signal only.
+- [x] align-design — verify-only (7.9 has NO mockup — the popover extends past the mockup set, so no pixel
+  alignment; `LinkPopover.css`/`ManualEditorToolbar.css` already styled). **design-review: PASS** — zero
+  placeholder-data findings across `LinkPopover.tsx`/`.css`, `normalizeHref.ts`, `ManualEditorToolbar.tsx`/`.css`;
+  the `https://example.com` input placeholder + Russian UI copy + error string are intentional static UI copy,
+  not user-specific data; the only URL-shaped literals in `normalizeHref.ts` are comment-only examples.
+  **test-coverage --focus:** `normalizeHref.ts` 100% line / 92.9% branch; `ManualEditorToolbar.tsx` 100% line /
+  92% branch; `LinkPopover.tsx` 90.9% line / 78.3% branch. Found **3 reachable gaps in 7.9's own code** →
+  follow-up coverage steps inserted below. No code change (verify-only) → progress-only commit, no /refactor.
+  **Owed to `green-selenium` (premortem CREDIBLE on `2929d74`):** the `.me-toolbar-btn[aria-expanded='true']`
+  highlight rule has NO automated guard (jsdom applies no CSS) — a Selenium assertion that opening the popover
+  with the cursor OUTSIDE a link highlights `toolbar-link` is the only thing that can pin it. Folded into the
+  green-selenium owe-list below.
+- [~] red-frontend-coverage-empty-apply — pin the empty/whitespace-apply → remove-link path (`LinkPopover.tsx:37-46`,
+  branch `if (!trimmed)` never taken today): open the popover inside an existing anchor, clear the input to empty
+  (or type only spaces), apply → assert the link mark is removed (`querySelectorAll('a')` length 0) and the
+  popover closes. Mutation-check: the assertion must fail if `unsetLink` is replaced by a no-op.
+- [ ] green-frontend-coverage-empty-apply — likely no production change (path already implemented); if green, it is
+  a characterization test un-skip, no code.
+- [ ] red-frontend-coverage-click-inside — pin the click-inside-does-not-apply guard (`LinkPopover.tsx:99-104`,
+  early-return never taken today; this is ALSO premortem CREDIBLE 2 from `dee4260` — wrong-target apply): open the
+  popover, dispatch `mousedown` on the editor content DOM (and on `.me-toolbar` / a sibling toolbar button) →
+  assert the popover stays open and NO link is applied. Discriminates the three "inside" exclusions.
+- [ ] green-frontend-coverage-click-inside
+- [ ] red-frontend-coverage-control-char — pin `normalizeHref`'s control-char rejection on the HOST_SHAPE path
+  (`normalizeHref.ts:50`, `if (/\p{C}/u.test(href)) return false`, branch never taken today): `example.com/pa​th`
+  matches HOST_SHAPE, gets `http://`-prefixed, then `isUsable` must reject it → `unsafe:rejected` → alert. Assert
+  `expectRejected`. (Distinct from url-shapes-3's G2, which reached the fallback via a soft-hyphen HOST; this is the
+  in-path control char through the HOST_SHAPE branch.)
+- [ ] green-frontend-coverage-control-char
+- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. **This is the step that owes 7.9 its real verification**: the popover's clipping under `.me-editor-shell`'s `overflow: hidden`, its placement on a narrow viewport, and real-browser focus behaviour are all invisible to jsdom by construction. The ADR chose the popover partly for jsdom reachability; that argument covers the rejection signal only. **Owe-list (align-design premortem on `2929d74`):** opening the popover with the cursor OUTSIDE a link must render the active-highlight background on `toolbar-link` via `.me-toolbar-btn[aria-expanded='true']` — jsdom applies no CSS so this rule is entirely unguarded; a real-browser computed-style assertion is the only thing that can pin it.
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
 ---
