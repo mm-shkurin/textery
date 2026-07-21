@@ -20,12 +20,13 @@ class FailedAttemptConcurrencyStatements:
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self._session_factory = session_factory
         self.account_id = None
+        self.bystander_account_id = None
         self.final_failed_attempt_count: int | None = None
+        self.bystander_failed_attempt_count: int | None = None
 
-    async def insert_verified_account(self) -> None:
-        self.account_id = uuid4()
-        account = Account.reconstitute(
-            id=self.account_id,
+    def _new_verified_account(self, account_id):
+        return Account.reconstitute(
+            id=account_id,
             # Per-run-unique: uq_accounts_email would make a fixed literal collide
             # (ConflictException) on reruns against the persistent test postgres.
             email=f"fail-{uuid4()}@example.com",
@@ -33,8 +34,19 @@ class FailedAttemptConcurrencyStatements:
             created_at=datetime.now(UTC),
             is_verified=True,
         )
+
+    async def insert_verified_account(self) -> None:
+        self.account_id = uuid4()
+        self.bystander_account_id = uuid4()
+        # Bystander is the targeting guard: race_two_increments touches ONLY
+        # account_id. A green whose UPDATE omits `WHERE id = :account_id` bumps
+        # every row, so the bystander would read 2 and fail assert_bystander_untouched.
+        target = self._new_verified_account(self.account_id)
+        bystander = self._new_verified_account(self.bystander_account_id)
         async with self._session_factory() as session:
-            await SqlAlchemyAccountRepository(session).save(account)
+            repository = SqlAlchemyAccountRepository(session)
+            await repository.save(target)
+            await repository.save(bystander)
             await session.commit()
 
     async def _increment_in_own_session(self) -> None:
@@ -56,6 +68,10 @@ class FailedAttemptConcurrencyStatements:
             self.final_failed_attempt_count = (
                 model.failed_attempt_count if model else None
             )
+            bystander = await session.get(AccountModel, self.bystander_account_id)
+            self.bystander_failed_attempt_count = (
+                bystander.failed_attempt_count if bystander else None
+            )
 
     def assert_final_count_is_two(self) -> None:
         # Load-bearing falsification guard: DB-side `SET count = count + 1`
@@ -66,4 +82,14 @@ class FailedAttemptConcurrencyStatements:
         assert self.final_failed_attempt_count == 2, (
             f"expected final failed_attempt_count=2 (both atomic increments landed), "
             f"got {self.final_failed_attempt_count!r}"
+        )
+
+    def assert_bystander_untouched(self) -> None:
+        # Targeting guard: race_two_increments incremented ONLY account_id. A green
+        # UPDATE missing `WHERE id = :account_id` would bump every row, so the
+        # bystander would read 2 here. Exact == 0 catches that lost WHERE, exactly
+        # as assert_final_count_is_two catches a lost-update non-atomic increment.
+        assert self.bystander_failed_attempt_count == 0, (
+            f"expected bystander failed_attempt_count=0 (increment targeted only the "
+            f"racing account), got {self.bystander_failed_attempt_count!r}"
         )

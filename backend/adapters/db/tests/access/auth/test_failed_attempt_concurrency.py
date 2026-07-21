@@ -1,13 +1,8 @@
-import pytest
-
 from statements.failed_attempt_concurrency_statements import (
     FailedAttemptConcurrencyStatements,
 )
 
 
-@pytest.mark.skip(
-    reason="RED 5.3: increment_failed_attempts + failed_attempt_count column are green work"
-)
 class TestConcurrentIncrementFailedAttempts:
     """Two racing sessions call increment_failed_attempts on the SAME account
     row, each in its own AsyncSession/transaction. Both increments must land, so
@@ -26,3 +21,4 @@ class TestConcurrentIncrementFailedAttempts:
         await failed_attempt_concurrency_statements.race_two_increments()
         await failed_attempt_concurrency_statements.fetch_final_failed_attempt_count()
         failed_attempt_concurrency_statements.assert_final_count_is_two()
+        failed_attempt_concurrency_statements.assert_bystander_untouched()

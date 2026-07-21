@@ -60,6 +60,21 @@ class SqlAlchemyAccountRepository:
         )
         return result.rowcount == 1
 
+    async def increment_failed_attempts(self, account_id: UUID) -> None:
+        """Atomically bump this account's failed_attempt_count by one.
+
+        DB-side ``SET failed_attempt_count = failed_attempt_count + 1`` serializes
+        on the row lock, so concurrent increments on the same row both land (no
+        lost update). The ``WHERE id = :account_id`` targets exactly one row --
+        bystander accounts are untouched. No commit here -- the caller owns the
+        transaction boundary.
+        """
+        await self._session.execute(
+            update(AccountModel)
+            .where(AccountModel.id == account_id)
+            .values(failed_attempt_count=AccountModel.failed_attempt_count + 1)
+        )
+
     async def save(self, account: Account) -> None:
         """Insert a new account, or update the one that already exists.
 

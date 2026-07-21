@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Boolean, DateTime, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -17,6 +17,9 @@ class AccountModel(Base):
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    failed_attempt_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0", default=0
+    )
 
     @classmethod
     def from_domain(cls, account: Account) -> "AccountModel":
