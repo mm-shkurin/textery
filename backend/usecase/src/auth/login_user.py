@@ -6,6 +6,7 @@ from auth.password_hasher import PasswordHasher
 from auth.token_pair import TokenPair
 from auth.token_service import TokenService
 from shared.exceptions import ValidationException
+from shared.unit_of_work import NullUnitOfWork, UnitOfWork
 
 
 class LoginUser:
@@ -21,10 +22,14 @@ class LoginUser:
         account_repository: AccountRepository,
         password_hasher: PasswordHasher,
         token_service: TokenService,
+        unit_of_work: UnitOfWork | None = None,
     ) -> None:
         self.account_repository = account_repository
         self.password_hasher = password_hasher
         self.token_service = token_service
+        # Accepted but not yet used (scenario 5.3 red-usecase): the wrong-password
+        # branch will increment-then-commit the failed-attempt counter in green.
+        self.unit_of_work = unit_of_work or NullUnitOfWork()
 
     async def execute(self, email: str, password: str) -> TokenPair:
         account = await self.account_repository.find_by_email(self._normalized_email(email))

@@ -4,11 +4,17 @@ class FakeUnitOfWork:
         self.rollback_call_count = 0
         self.raise_on_commit: Exception | None = None
         self.raise_on_rollback: Exception | None = None
+        # Shared with a Fake repo (both assigned the same list) so a test can pin
+        # the RELATIVE order of a repo write vs the commit (scenario 5.3:
+        # increment -> commit -> raise). Left None so existing Statements pay nothing.
+        self.call_log: list[str] | None = None
 
     async def commit(self) -> None:
         if self.raise_on_commit is not None:
             raise self.raise_on_commit
         self.commit_call_count += 1
+        if self.call_log is not None:
+            self.call_log.append("commit")
 
     async def rollback(self) -> None:
         self.rollback_call_count += 1

@@ -2,6 +2,7 @@ import pytest
 
 from statements.generation_lifecycle_statements import GenerationLifecycleStatements
 from statements.generation_statements import GenerationStatements
+from statements.login_failed_attempt_statements import LoginFailedAttemptStatements
 from statements.login_statements import LoginStatements
 from statements.refresh_statements import RefreshStatements
 from statements.register_atomic_write_statements import RegisterAtomicWriteStatements
@@ -86,6 +87,11 @@ def resend_verified_statements():
 @pytest.fixture
 def login_statements():
     return LoginStatements()
+
+
+@pytest.fixture
+def login_failed_attempt_statements():
+    return LoginFailedAttemptStatements()
 
 
 @pytest.fixture
