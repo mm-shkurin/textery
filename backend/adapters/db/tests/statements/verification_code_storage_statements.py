@@ -54,14 +54,28 @@ class VerificationCodeStorageStatements:
         )
 
     def build_code_with_created_at(
-        self, account: Account, created_at: datetime
+        self, account: Account, created_at: datetime, code: str = "007123"
     ) -> VerificationCode:
         return VerificationCode.create(
             id=uuid4(),
             account_id=account.id,
-            code="007123",
+            code=code,
             expires_at=created_at + timedelta(minutes=10),
             created_at=created_at,
+        )
+
+    def assert_reloaded_is_the_newest_code(self, expected: VerificationCode) -> None:
+        # The point of this pin: find_active_by_account_id's ORDER BY created_at
+        # DESC LIMIT 1 must return the NEWEST of several active rows -- the only db
+        # test that saves more than one row for an account. Compare the whole
+        # identity (id, code, created_at), not existence: a returned-None or a
+        # returned-older (reversed/dropped ORDER BY) must fail here.
+        reloaded = self.reloaded_code
+        assert reloaded is not None, "expected the newest active code, got None"
+        actual = (reloaded.id, reloaded.code, reloaded.created_at)
+        wanted = (expected.id, expected.code, expected.created_at)
+        assert actual == wanted, (
+            f"expected find_active to return the newest code {wanted}, got {actual}"
         )
 
     async def reload_active_code(self, account_id: UUID) -> None:

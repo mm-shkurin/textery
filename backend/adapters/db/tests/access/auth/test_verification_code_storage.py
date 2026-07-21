@@ -4,6 +4,8 @@ from statements.verification_code_storage_statements import VerificationCodeStor
 
 _KNOWN_PAST_CREATED_AT = datetime(2020, 1, 1, tzinfo=UTC)
 _KNOWN_CONSUMED_AT = datetime(2020, 1, 1, 0, 5, tzinfo=UTC)
+_OLDER_CREATED_AT = datetime(2020, 1, 1, tzinfo=UTC)
+_NEWER_CREATED_AT = datetime(2020, 1, 1, 0, 1, 1, tzinfo=UTC)
 
 
 class TestSave:
@@ -85,3 +87,29 @@ class TestSavePreservesCreatedAtOnUpdate:
         verification_code_storage_statements.assert_created_at_survived_update(
             _KNOWN_PAST_CREATED_AT, _KNOWN_CONSUMED_AT
         )
+
+
+class TestFindActiveReturnsNewestOfMultiple:
+    """The ONLY test crossing find_active_by_account_id's real ORDER BY created_at
+    DESC LIMIT 1 with MULTIPLE active rows for one account. Every layer above uses
+    a single-row Fake/save, so a reversed or dropped ORDER BY would go undetected.
+    This proves scenario 4.3's "the account is left with exactly one active code
+    (the newest), never zero" at the layer where the ordering is real. Regression
+    pin: goes RED only if the ORDER BY is later reversed, dropped, or its filter
+    widened. Save an OLDER (T0) and a NEWER (T0+61s) un-consumed code with distinct
+    ids/codes, then assert find_active returns the newer one by exact identity."""
+
+    async def test_should_return_newest_of_multiple_active_codes(
+        self, verification_code_storage_statements: VerificationCodeStorageStatements
+    ):
+        account = await verification_code_storage_statements.given_saved_account()
+        older = verification_code_storage_statements.build_code_with_created_at(
+            account, _OLDER_CREATED_AT, "111111"
+        )
+        newer = verification_code_storage_statements.build_code_with_created_at(
+            account, _NEWER_CREATED_AT, "222222"
+        )
+        await verification_code_storage_statements.save_code(older)
+        await verification_code_storage_statements.save_code(newer)
+        await verification_code_storage_statements.reload_active_code(account.id)
+        verification_code_storage_statements.assert_reloaded_is_the_newest_code(newer)
