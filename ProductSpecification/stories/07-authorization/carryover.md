@@ -71,3 +71,24 @@ Quirk and enduring-invariant entries promoted from completed scenario summaries.
 **Where:** workaround startup command (see `.claude/guidelines/infrastructure-detail.md` / prior scenario notes), migrations at `backend/adapters/db/alembic/`.
 **Implication:** Every time the local-uvicorn workaround is used against a Postgres that hasn't already been migrated (new container, `docker compose down -v`, etc.), run `alembic upgrade head` (with `DATABASE_URL` pointed at the same host/port the app uses) before the first acceptance test, not just before the first code-picking-up run.
 **From:** scenario 2.4c (unicode-normalization-email-uniqueness)
+
+## Quirk: a client-side 25s timeout now wraps EVERY httpClient request
+
+**Quirk:** `httpClient.request` (`frontend/src/shared/api/httpClient.ts`) wraps every call — GET and POST, all flows (login/register/verify/resend/refresh + future generation) — in `withTimeout(..., REQUEST_TIMEOUT_MS=25_000)`, a reject-only `Promise.race` against a self-rejecting timer (deliberately not signal-based, so a black-holed connection still rejects). It does NOT abort or auto-retry — a hung request surfaces as a `RequestTimeoutError` (bodyless, no `status`/`errorCode`), giving a retry affordance without silently replaying a mutating POST.
+**Where:** `frontend/src/shared/api/httpClient.ts`.
+**Implication:** Only `LoginForm` maps a transport-shaped rejection to a network-error state; `VerifyCodeForm`/`RegisterForm` currently render a `RequestTimeoutError` as a wrong-code / email-field error (a correct code told "invalid"). Any flow legitimately slower than 25s hard-fails — a real generation POST must carry an Idempotency-Key (login/register do not yet). Future verify/register network-error work must route no-`errorCode`/timeout rejections to a distinct network state, not the field-error path.
+**From:** scenario 5.6 (network-timeout-vs-validation)
+
+## Quirk: AuthApiError.status is attached ONLY on the codeless (UNKNOWN_ERROR) path
+
+**Quirk:** `toAuthApiError` (`frontend/src/features/auth/api/apiError.ts`) threads `HttpError.status` onto `AuthApiError` only when the body carries no usable `error_code` (the `!hasUsableCode` branch); a coded error keeps its exact 2-field `{errorCode, message}` shape. So the login `status>=500` network branch can fire only for a CODELESS 5xx — a coded 5xx (`INTERNAL_SERVER_ERROR` with a body) keeps generic copy, never the retry state.
+**Where:** `frontend/src/features/auth/api/apiError.ts`.
+**Implication:** The existing coded-error `toStrictEqual` tests (loginApi/accountLocked) are the guard forcing this conditional — attaching `status` to every AuthApiError breaks them. Future api-layer work must preserve the codeless-only attach; if all 5xx should be retry-capable, that is a new scenario.
+**From:** scenario 5.6 (network-timeout-vs-validation)
+
+## Decision: the app is a plain BrowserRouter — no useBlocker available
+
+**Decision:** In-app navigation guards must be implemented at the click seam (a `Link`'s `onClick` + `window.confirm`) or via `beforeunload`, NOT react-router's `useBlocker`/data-router APIs.
+**Why:** `App.tsx` uses a plain `<BrowserRouter>` (not `createBrowserRouter`), so `useBlocker` throws; migrating to a data router is a cross-cutting change out of scope for a single scenario.
+**Where applied:** `frontend/src/app/App.tsx`; the 5.8 unsaved-input guard (`useUnsavedGuard` + the register→login `Link` onClick). Consequence: a browser Back/history-pop nav-away is UNGUARDED until a data-router migration — any future nav-interception scenario inherits this limit.
+**From:** scenario 5.8 (unsaved-registration-input)
