@@ -695,7 +695,7 @@ so its red-frontend step must add the button first.
 - [S] demo (skipped per convention, see note at top of file)
 
 ### 6.3: "Resend code" link, after cooldown, re-issues a code
-- [ ] red-selenium
+- [S] red-selenium — DEFERRED 2026-07-21: backend-gated, batched for the full-stack selenium pass (see 5.1 green-selenium note). Component legs below carry the real coverage this session.
 - [ ] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
