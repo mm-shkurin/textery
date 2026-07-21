@@ -92,7 +92,11 @@ class AuthStatements:
         self,
     ) -> RegisterResponseDto:
         scope = RegisterScope.builder(
-            email="attacker@example.com",
+            # Per-run-unique: a fixed literal 409s on reruns against the persistent
+            # test postgres once scenario 2.2's uq_accounts_email constraint exists
+            # (the collision carryover.md predicted). The test asserts server-owned
+            # fields are ignored, not the email value, so uniqueness is free here.
+            email=f"attacker-{uuid.uuid4()}@example.com",
             extra_fields={"is_verified": True, "id": self.ATTACKER_SUPPLIED_ID},
         )
         request = scope.to_request_dto()
