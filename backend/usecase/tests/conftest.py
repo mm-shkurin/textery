@@ -6,6 +6,7 @@ from statements.login_statements import LoginStatements
 from statements.refresh_statements import RefreshStatements
 from statements.register_atomic_write_statements import RegisterAtomicWriteStatements
 from statements.register_statements import RegisterStatements
+from statements.resend_code_statements import ResendCodeStatements
 from statements.requeue_stale_generations_statements import RequeueStaleGenerationsStatements
 from statements.verify_account_already_verified_statements import (
     VerifyAccountAlreadyVerifiedStatements,
@@ -63,6 +64,11 @@ def verify_account_already_verified_statements():
 @pytest.fixture
 def verify_account_atomic_transition_statements():
     return VerifyAccountAtomicTransitionStatements()
+
+
+@pytest.fixture
+def resend_code_statements():
+    return ResendCodeStatements()
 
 
 @pytest.fixture
