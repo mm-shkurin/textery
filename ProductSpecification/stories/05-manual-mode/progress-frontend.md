@@ -883,7 +883,20 @@ add new ones — the first red phase in this story to do so.
   - *(agent-review minor)* the Отмена button wires `onClick={onClose}` directly, bypassing `cancel()`'s
     `editor.chain().focus().run()` — so Escape restores editor focus but the Cancel button leaves it blurred.
     Low severity, unpinned. Fold into red-2 or the aria step.
-- [~] red-frontend-aria — pin defect (6): the disclosure state must be visible and non-conflicting. Whatever the fix (separate the concerns, or drop `aria-pressed` from UI actions), assert `aria-expanded` toggles and that the open popover is visually distinguishable. Also fold defect (7): render the anchor `<span>` only for `action.ui`.
+- [x] red-frontend-aria — DONE. New `ManualEditorToolbar.aria.test.tsx` (70 lines): 2 `it.skip` RED + 3 live
+  regression guards. Discovery: the toolbar ALREADY has `aria-expanded` (line 56) and a conditional anchor-span
+  CLASS (line 48) — so two sub-points came back green and were converted to live guards, not faked reds.
+  **RED (skip):** (6b) the link/UI button must NOT carry `aria-pressed` — today line 55 sets it on EVERY button:
+  predicted `not.toHaveAttribute('aria-pressed')` → received `aria-pressed="false"`, matched. (7) a non-UI button
+  (`toolbar-bold`) must sit directly in `.me-toolbar`, not a bare `<span>` — today line 48 wraps all 17 buttons:
+  predicted parent `'SPAN'` must be `'DIV'`+`me-toolbar` class, matched. **Live guards:** aria-expanded toggles
+  false→true→false; bold keeps `aria-pressed='false'`; link stays wrapped in `me-link-popover-anchor` span
+  (positioning context). test-review tightened: exact `aria-pressed='false'` (not presence-only) and the parent
+  discriminator (`DIV`+`me-toolbar`, not vague "not SPAN"). Suite **254 passed | 2 skipped**, tsc clean.
+  **Green note:** two changes in `ManualEditorToolbar.tsx` — (1) line 55 `aria-pressed={action.ui ? undefined :
+  (editor ? action.isActive(editor) : false)}`; (2) line 48 render the `me-link-popover-anchor` span ONLY when
+  `action.ui`, else the button directly in the Fragment.
+- [~] green-frontend-aria — pin defect (6): the disclosure state must be visible and non-conflicting. Whatever the fix (separate the concerns, or drop `aria-pressed` from UI actions), assert `aria-expanded` toggles and that the open popover is visually distinguishable. Also fold defect (7): render the anchor `<span>` only for `action.ui`.
 - [ ] green-frontend-aria
 - [ ] red-frontend-api
 - [ ] green-frontend-api
