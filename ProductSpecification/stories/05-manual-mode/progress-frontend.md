@@ -949,11 +949,17 @@ add new ones — the first red phase in this story to do so.
   - *(premortem, design note not incident)* cursor-in-link and popover-open paint the SAME highlight — one visual
     bit for two orthogonal states. Distinct for assistive tech (separate aria attributes, pinned independent);
     visual distinctness was never required (only that popover-open be visible at all). Noted, not a defect.
-- [~] red-frontend-api — pin defect (6): the disclosure state must be visible and non-conflicting. Whatever the fix (separate the concerns, or drop `aria-pressed` from UI actions), assert `aria-expanded` toggles and that the open popover is visually distinguishable. Also fold defect (7): render the anchor `<span>` only for `action.ui`.
-- [ ] green-frontend-aria
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
+- [S] red-frontend-api — no new API call: the link popover, `normalizeHref`, and the aria/disclosure work are all
+  client-side editor state. A link's href reaches the server only inside the EXISTING `saveDocument` PUT
+  `/api/v1/documents/{id}` `content` field via `editor.getHTML()` (contract already pinned in scenarios 4.1/5.2 +
+  the `documentApi.test.ts` failure-path tests) — no new endpoint, request shape, or response shape to pin. Same
+  disposition as 7.1-7.8's api steps. The end-to-end "does the link markup survive the real server round-trip"
+  question is a live-backend gap (server may sanitize `href`/`target`/`rel`), owed to the deferred `green-selenium`
+  and the `@pytest.mark.skip`ped acceptance test — NOT a mocked-`documentApi` frontend-api unit test (mocking the
+  API cannot cross the boundary the concern is about). Recorded in the ADR "Knowingly unverified" section.
+- [S] green-frontend-api — no production gap, see red-frontend-api: `saveDocument`/`getHTML()` already carry the
+  href; nothing new to implement at the api layer.
+- [~] align-design
 - [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. **This is the step that owes 7.9 its real verification**: the popover's clipping under `.me-editor-shell`'s `overflow: hidden`, its placement on a narrow viewport, and real-browser focus behaviour are all invisible to jsdom by construction. The ADR chose the popover partly for jsdom reachability; that argument covers the rejection signal only.
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
