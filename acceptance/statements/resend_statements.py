@@ -5,6 +5,11 @@ from clients.application.application_client import ApplicationClient
 from clients.application.dto.auth.register_request_dto import RegisterRequestDto
 from clients.application.dto.auth.resend_request_dto import ResendRequestDto
 from clients.application.dto.auth.resend_response_dto import ResendResponseDto
+from clients.application.dto.auth.verify_request_dto import VerifyRequestDto
+from statements.response_assertions import (
+    assert_account_verified,
+    assert_already_verified_rejected,
+)
 
 
 @dataclass(frozen=True)
@@ -43,6 +48,24 @@ class ResendStatements:
         resend_response = await self._client.resend_code(ResendRequestDto(email=context.email))
         return resend_response, context
 
+    async def given_resend_for_a_verified_account(self) -> ResendResponseDto:
+        email = f"user-{uuid.uuid4()}@example.com"
+        register_response = await self._client.register(
+            RegisterRequestDto(
+                email=email,
+                password="Str0ng!Pass",
+                confirm_password="Str0ng!Pass",
+            )
+        )
+        code = register_response.body.get("verification_code")
+        assert code is not None, (
+            f"setup: expected registration to issue a verification_code, got body="
+            f"{register_response.body}"
+        )
+        verify_response = await self._client.verify(VerifyRequestDto(email=email, code=code))
+        assert_account_verified(verify_response)  # setup precondition: account is verified
+        return await self._client.resend_code(ResendRequestDto(email=email))
+
     def assert_resend_rejected_as_cooldown_active(
         self, resend_response: ResendResponseDto
     ) -> None:
@@ -63,3 +86,16 @@ class ResendStatements:
             f"expected the cooldown-active rejection body {COOLDOWN_ACTIVE_REJECTION}, "
             f"got body={resend_response.body}"
         )
+
+    def assert_resend_rejected_as_already_verified(
+        self, resend_response: ResendResponseDto
+    ) -> None:
+        # Scenario 4.5: a resend against an already-verified account is rejected
+        # 409 ALREADY_VERIFIED (reusing 3.5's taxonomy/message via the canonical
+        # assert_already_verified_rejected helper, which pins status 409 AND the full
+        # {error_code, message} body). Status is load-bearing, not just the error_code:
+        # the is_verified gate must sit BEFORE the cooldown check, so a just-verified
+        # account (whose registration code is <60s old) answers 409, NOT the 429
+        # RESEND_COOLDOWN_ACTIVE it falls through to today. A body-only check would pass
+        # on a wrong status carrying the right code.
+        assert_already_verified_rejected(resend_response)

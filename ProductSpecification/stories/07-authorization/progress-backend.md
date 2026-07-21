@@ -287,8 +287,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 
 ### Scenario 4.5: Resend against an already-verified account is rejected
 > **premortem CREDIBLE (carried from 7aa72f3, 4.4):** when this scenario adds the `if account.is_verified: reject (ALREADY_VERIFIED/409)` gate to `ResendCode.execute`, it MUST read the account returned by `lock_for_update` (the post-FOR-UPDATE re-read), NOT the pre-lock one from `find_by_email` — otherwise a verify that commits during 4.4's lock-contention window is invisible and the resend reissues a code on an already-verified account under concurrency. Add a usecase test where the Fake's `find_by_email` returns unverified but `lock_for_update` returns verified (simulating a concurrent verify), asserting the resend is rejected. Reuse the `ALREADY_VERIFIED`/409 taxonomy from 3.5.
-- [ ] red-acceptance
-- [ ] design
+- [x] red-acceptance — new `test_resend_rejected_when_already_verified_acceptance.py` + `given_resend_for_a_verified_account` (register → verify with the returned code → resend) + `assert_resend_rejected_as_already_verified` (strict 409 + exact `ALREADY_VERIFIED` body; test-review deduped to the shared `assert_account_verified`/`assert_already_verified_rejected` helpers, 101 lines). **Genuine RED** (HTTP-observable): expected **409 ALREADY_VERIFIED**, actual **429 RESEND_COOLDOWN_ACTIVE** — `assert 429 == 409`. Matched. `ResendCode.execute` has no `is_verified` gate, so a just-verified account's immediate resend falls through to the cooldown (registration code <60s old) → 429. The status pin (not error_code alone) is load-bearing: green must place the `is_verified` gate BEFORE the cooldown check. Skip-marked; the 4.5 file is green-with-skip (6 passed / 1 skipped). NOTE: the full auth suite shows an UNRELATED pre-existing failure — `given_registration_request_with_server_owned_fields` (`auth_statements.py`) uses a fixed `attacker@example.com` that 409s on DB reruns (the carryover-predicted flake); fixed separately.
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
