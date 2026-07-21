@@ -931,6 +931,24 @@ add new ones — the first red phase in this story to do so.
   Suite **256 passed | 0 skipped | 0 failed**, tsc clean. All guards + `ManualEditor.link.test.tsx:54/63` green.
   Minor doc-staleness left for refactor: the aria-test comments at lines 48-50/59-63 still reference the old
   "strip aria-pressed" framing — inaccurate now (nothing strips it), cosmetic.
+
+  **Review-pass verdicts on `2929d74` (green): agent-review PASS, premortem CONCERNS (1 credible, non-gating).
+  `/refactor` fixed the 3 stale "strip aria-pressed" comment blocks in the aria test (toolbar NO ACTION — the
+  `<button>` is already built once as a `const` and wrapped conditionally, no markup duplication). agent-review
+  PASS: no CSS collision (`[aria-pressed='true']` and `[aria-expanded='true']` have identical specificity AND
+  identical declarations, so last-wins is moot); divider Fragment/key placement correct both branches; bare
+  non-UI button loses no focus/layout (`.me-link-popover-anchor` was `inline-flex` shrink-wrapping the 34px
+  button — identical flex box).**
+  - *(premortem CREDIBLE — owed to align-design / green-selenium)* the `.me-toolbar-btn[aria-expanded='true']`
+    highlight rule (the one net-new visual behavior of this unit, added to satisfy the prior premortem) has
+    **zero automated guard** — jsdom applies no CSS-file rules and the aria tests assert DOM attributes only.
+    Delete the rule and all 256 tests stay green; the popover-open highlight silently vanishes. Guard belongs in
+    the visual layer: a Selenium assertion that opening the popover with the cursor OUTSIDE a link highlights
+    `toolbar-link`, OR an `align-design` check pinning the rule's declarations against the mockup. Low severity
+    (cosmetic a11y affordance), reversible. Fold into `align-design` below (and the deferred `green-selenium`).
+  - *(premortem, design note not incident)* cursor-in-link and popover-open paint the SAME highlight — one visual
+    bit for two orthogonal states. Distinct for assistive tech (separate aria attributes, pinned independent);
+    visual distinctness was never required (only that popover-open be visible at all). Noted, not a defect.
 - [~] red-frontend-api — pin defect (6): the disclosure state must be visible and non-conflicting. Whatever the fix (separate the concerns, or drop `aria-pressed` from UI actions), assert `aria-expanded` toggles and that the open popover is visually distinguishable. Also fold defect (7): render the anchor `<span>` only for `action.ui`.
 - [ ] green-frontend-aria
 - [ ] red-frontend-api

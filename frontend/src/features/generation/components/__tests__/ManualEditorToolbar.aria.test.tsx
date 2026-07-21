@@ -5,9 +5,9 @@ import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
 vi.mock('../../api/documentApi')
 
 describe('ManualEditorToolbar disclosure semantics (link button)', () => {
-  // GREEN today (line 56 already toggles aria-expanded from openUiKey). Kept as a
-  // live regression guard so the "drop aria-pressed for UI actions" fix cannot
-  // also strip the disclosure state the popover button must expose.
+  // GREEN today (the toolbar toggles aria-expanded from openUiKey). Kept as a
+  // live regression guard: the link button must keep exposing disclosure state
+  // (aria-expanded) that opens false→true→false as the popover opens and closes.
   it('the link button exposes aria-expanded that toggles false→true→false as the popover opens and closes', async () => {
     await renderEditorWithDocumentCreated()
 
@@ -45,9 +45,9 @@ describe('ManualEditorToolbar disclosure semantics (link button)', () => {
     expect(link).toHaveAttribute('aria-pressed', 'false')
   })
 
-  // GREEN today — regression guard. The fix must strip aria-pressed from the UI
-  // button ONLY, never from the 16 formatting buttons whose pressed state is
-  // their whole purpose.
+  // GREEN today — regression guard. Per the "keep both" decision, aria-pressed
+  // stays on every button and nothing strips it. This pins that a non-UI
+  // formatting button keeps aria-pressed reflecting its active/inactive state.
   it('a non-UI formatting button keeps aria-pressed reflecting its inactive state on an empty doc', async () => {
     await renderEditorWithDocumentCreated()
 
@@ -56,12 +56,9 @@ describe('ManualEditorToolbar disclosure semantics (link button)', () => {
 })
 
 describe('ManualEditorToolbar anchor-span wrapper (only for UI actions)', () => {
-  // RED 2026-07-21 (green-frontend-aria owns the fix): line 48 wraps EVERY button
-  // in a <span>, an unnecessary DOM wrapper around all 17 buttons. Only the UI
-  // (link) button needs the positioning-context span for its popover. After the
-  // fix a non-UI button renders bare, so its DOM parent is the toolbar row itself
-  // (the .me-toolbar DIV), not any span. Actual: expected 'SPAN' to be 'DIV' —
-  // bold's parent is currently a bare span.
+  // GREEN today — regression guard. Only the UI (link) button is wrapped in the
+  // positioning-context span its popover needs; non-UI buttons render bare, so a
+  // formatting button's DOM parent is the toolbar row itself (the .me-toolbar DIV).
   it('a non-UI button sits directly in the me-toolbar row (parent is the DIV, no span wrapper)', async () => {
     await renderEditorWithDocumentCreated()
 
