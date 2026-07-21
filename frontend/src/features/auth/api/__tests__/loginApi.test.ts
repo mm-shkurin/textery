@@ -1,13 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { login } from '../loginApi'
 import { GENERIC_LOGIN_FAILURE_MESSAGE } from '../../utils/authMessages'
+import { EMAIL, PASSWORD, rejectionOf } from './loginApiTestUtils'
 
 // Real-fetch tests: `fetch` is stubbed, `loginApi` is NOT mocked. Every LoginForm test file
 // does `vi.mock('../../api/loginApi')`, so `toLoginApiError` and `postJson` are unreachable
 // from the component layer — this file is the only place their behavior is executed.
-
-const EMAIL = 'user@example.com'
-const PASSWORD = 'correct-horse'
 
 function stubFetchRejecting(error: unknown): void {
   vi.stubGlobal('fetch', vi.fn().mockRejectedValue(error))
@@ -22,15 +20,6 @@ function stubFetchErrorBody(status: number, body: unknown): void {
       json: async () => body,
     }),
   )
-}
-
-async function rejectionOf(promise: Promise<unknown>): Promise<unknown> {
-  try {
-    await promise
-  } catch (error) {
-    return error
-  }
-  throw new Error('expected login() to reject, but it resolved')
 }
 
 describe('loginApi', () => {

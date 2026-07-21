@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { login } from '../loginApi'
+import { EMAIL, PASSWORD, rejectionOf } from './loginApiTestUtils'
 
 // Real-fetch tests (fetch stubbed, loginApi NOT mocked, no backend). Sibling of loginApi.test.ts,
 // which is at the 200-line ceiling. This file pins the API-layer half of the 5.4 lockout contract:
@@ -13,9 +14,6 @@ import { login } from '../loginApi'
 // Round-8 premortem seam: `message` stays '' — the api mapper must NOT stamp client copy for
 // ACCOUNT_LOCKED (display copy lives in the form). toStrictEqual below pins message:''.
 
-const EMAIL = 'user@example.com'
-const PASSWORD = 'correct-horse'
-
 function stubFetchLockout(status: number, retryAfter: string | null, body: unknown): void {
   vi.stubGlobal(
     'fetch',
@@ -28,15 +26,6 @@ function stubFetchLockout(status: number, retryAfter: string | null, body: unkno
       json: async () => body,
     }),
   )
-}
-
-async function rejectionOf(promise: Promise<unknown>): Promise<unknown> {
-  try {
-    await promise
-  } catch (error) {
-    return error
-  }
-  throw new Error('expected login() to reject, but it resolved')
 }
 
 describe('loginApi account-locked', () => {

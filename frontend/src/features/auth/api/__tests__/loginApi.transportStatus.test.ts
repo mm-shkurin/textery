@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { login } from '../loginApi'
+import { EMAIL, PASSWORD, rejectionOf } from './loginApiTestUtils'
 
 // Real-fetch tests (fetch stubbed, loginApi NOT mocked, no backend). Third sibling of
 // loginApi.test.ts (at the 200-line ceiling) and loginApi.accountLocked.test.ts. This file pins
@@ -14,9 +15,6 @@ import { login } from '../loginApi'
 // coded-error toStrictEqual tests, which must stay green. Those existing tests ARE the guard that
 // forces the attach to be conditional; green cannot thread status onto every error without
 // breaking them, and green-agent is tests-read-only.
-
-const EMAIL = 'user@example.com'
-const PASSWORD = 'correct-horse'
 
 function stubFetchUnparseable(status: number): void {
   vi.stubGlobal(
@@ -40,15 +38,6 @@ function stubFetchCodelessBody(status: number, body: unknown): void {
       json: async () => body,
     }),
   )
-}
-
-async function rejectionOf(promise: Promise<unknown>): Promise<unknown> {
-  try {
-    await promise
-  } catch (error) {
-    return error
-  }
-  throw new Error('expected login() to reject, but it resolved')
 }
 
 // RED (5.6 red-frontend-api): skipped until green-frontend-api threads `status` through
