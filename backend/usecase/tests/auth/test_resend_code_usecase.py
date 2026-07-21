@@ -55,6 +55,19 @@ class TestResendCodeUsecase:
         await resend_code_statements.resend_past_cooldown_then_again_shortly_after_the_second_code()
         resend_code_statements.assert_rejected_as_cooldown_active_with_no_new_code()
 
+    async def test_should_return_the_same_code_it_persisted(
+        self, resend_code_statements: ResendCodeStatements
+    ):
+        """Pull-forward (premortem CREDIBLE, commit e682f74): green-adapter rest will
+        make the route return execute's result to the client, so execute must RETURN
+        the exact VerificationCode it persisted. A green that returns a second
+        generate() or the old `newest` would ship a code that never verifies. The
+        route test stubs the usecase (can't catch this) and the other usecase tests
+        read saved_codes[-1] (never the return value), so nothing else pins this."""
+        await resend_code_statements.given_pending_account_with_a_code_issued_at_t0()
+        await resend_code_statements.resend_and_capture_result()
+        resend_code_statements.assert_returned_code_is_the_persisted_one()
+
     async def test_should_reissue_a_code_with_a_strictly_greater_timestamp_than_the_superseded_one(
         self, resend_code_statements: ResendCodeStatements
     ):

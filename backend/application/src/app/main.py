@@ -37,6 +37,7 @@ from container import (
     create_refresh_access_token,
     create_register_user,
     create_request_generation,
+    create_resend_code,
     create_save_document,
     create_token_service,
     create_verify_account,
@@ -52,6 +53,7 @@ from router.auth.auth_router import (
     get_login_user_usecase,
     get_refresh_access_token_usecase,
     get_register_user_usecase,
+    get_resend_code_usecase,
     get_verify_account_usecase,
 )
 from router.auth.auth_router import router as auth_router
@@ -112,6 +114,7 @@ app.dependency_overrides[get_list_generations_usecase] = create_list_generations
 app.dependency_overrides[get_generate_document_usecase] = create_generate_document
 app.dependency_overrides[get_register_user_usecase] = create_register_user
 app.dependency_overrides[get_verify_account_usecase] = create_verify_account
+app.dependency_overrides[get_resend_code_usecase] = create_resend_code
 app.dependency_overrides[get_login_user_usecase] = create_login_user
 app.dependency_overrides[get_refresh_access_token_usecase] = create_refresh_access_token
 app.dependency_overrides[get_create_document_usecase] = create_create_document

@@ -18,6 +18,7 @@ from container.auth_wiring import (
     create_login_user,
     create_refresh_access_token,
     create_register_user,
+    create_resend_code,
     create_token_service,
     create_verify_account,
 )
@@ -60,6 +61,7 @@ __all__ = [
     "create_request_generation",
     "create_save_document",
     "create_token_service",
+    "create_resend_code",
     "create_verify_account",
     "run_stale_generation_sweep",
 ]

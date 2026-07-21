@@ -1,12 +1,9 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-import pytest
-
 from auth.verification_code import VerificationCode
 
 
-@pytest.mark.skip(reason="RED: POST /api/v1/auth/resend-code route not implemented -> 404, not 200")
 class TestResendPostRouterNewCode:
     """Scenario 4.1: Resend issues a new verification code.
 

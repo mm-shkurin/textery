@@ -10,6 +10,8 @@ from dto.auth.login_response_dto import LoginResponseDto
 from dto.auth.refresh_request_dto import RefreshRequestDto
 from dto.auth.register_request_dto import RegisterRequestDto
 from dto.auth.register_response_dto import RegisterResponseDto
+from dto.auth.resend_request_dto import ResendRequestDto
+from dto.auth.resend_response_dto import ResendResponseDto
 from dto.auth.verify_request_dto import VerifyRequestDto
 from dto.auth.verify_response_dto import VerifyResponseDto
 
@@ -74,3 +76,12 @@ async def refresh(
 ) -> LoginResponseDto:
     pair = await usecase.execute(refresh_token=request.refresh_token)
     return LoginResponseDto.from_domain(pair)
+
+
+@router.post("/resend-code", status_code=200, response_model=ResendResponseDto)
+async def resend_code(
+    request: ResendRequestDto,
+    usecase: ResendCode = Depends(get_resend_code_usecase),
+) -> ResendResponseDto:
+    result = await usecase.execute(email=request.email)
+    return ResendResponseDto.from_domain(result)

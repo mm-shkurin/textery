@@ -23,6 +23,7 @@ class ResendCodeAssertions:
     old_code: str | None
     new_code: str | None
     old_code_entity: VerificationCode | None
+    returned_code: VerificationCode | None
     old_code_verify_exception: Exception | None
     new_code_verify_exception: Exception | None
 
@@ -85,6 +86,24 @@ class ResendCodeAssertions:
         assert self.new_code != self.old_code, (
             f"expected the reissued code to differ from the superseded one, both were "
             f"{self.new_code!r}"
+        )
+
+    def assert_returned_code_is_the_persisted_one(self) -> None:
+        # execute must return the SAME object it handed to save(), not a second
+        # generate() nor the old registration code. Identity is exact here: the
+        # usecase persists one object and (post-green) returns that same instance.
+        persisted = self.verification_code_repository.saved_codes[-1]
+        assert self.returned_code is persisted, (
+            f"expected execute to return the persisted code, got {self.returned_code!r}"
+        )
+        assert (
+            self.old_code_entity is not None
+            and self.returned_code is not None
+            and self.returned_code.id != self.old_code_entity.id
+        ), (
+            f"expected the returned code to be the freshly-issued one, not the old "
+            f"registration code, got returned.id="
+            f"{self.returned_code.id if self.returned_code else None}"
         )
 
     def _assert_is_invalid_or_expired(self, exc: Exception | None) -> None:

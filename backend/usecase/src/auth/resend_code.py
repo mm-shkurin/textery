@@ -42,7 +42,7 @@ class ResendCode:
         self.clock = clock
         self.unit_of_work = unit_of_work or NullUnitOfWork()
 
-    async def execute(self, email: str) -> None:
+    async def execute(self, email: str) -> VerificationCode:
         normalized_email = validate_email(email).value
         account = await self.account_repository.find_by_email(normalized_email)
         if account is None:
@@ -54,7 +54,7 @@ class ResendCode:
         if newest is not None:
             self._enforce_cooldown(newest)
 
-        await self._issue_new_code(account.id)
+        return await self._issue_new_code(account.id)
 
     def _enforce_cooldown(self, newest: VerificationCode) -> None:
         # Cooldown is measured from the NEWEST code's created_at (max(created_at)),
@@ -66,7 +66,7 @@ class ResendCode:
                 message=self.COOLDOWN_MESSAGE,
             )
 
-    async def _issue_new_code(self, account_id) -> None:
+    async def _issue_new_code(self, account_id) -> VerificationCode:
         # Insert-only supersession: a fresh code is persisted, no old row deleted or
         # mutated. find_active_by_account_id returns most-recent-wins, so the old
         # code stops verifying. A legal resend is always >=60s later, giving the new
@@ -83,6 +83,7 @@ class ResendCode:
             logger.exception("resend failed while saving the verification code")
             await rollback_quietly(self.unit_of_work)
             raise
+        return verification_code
 
     def _invalid_or_expired(self) -> ValidationException:
         return ValidationException(

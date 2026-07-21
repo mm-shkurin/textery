@@ -1,6 +1,5 @@
 import logging
 
-import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
@@ -77,7 +76,6 @@ class TestValidationExceptionHandler:
             "message": "The account is already verified.",
         }, f"unexpected response body {response.json()}"
 
-    @pytest.mark.skip(reason="RED: RESEND_COOLDOWN_ACTIVE absent from _ERROR_CODE_STATUS_MAP -> 400 default, not 429")
     async def test_should_return_429_when_error_code_is_resend_cooldown_active(self):
         app = FastAPI()
 

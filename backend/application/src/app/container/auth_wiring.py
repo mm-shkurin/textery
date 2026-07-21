@@ -5,6 +5,7 @@ from access.auth.verification_code_storage import SqlAlchemyVerificationCodeRepo
 from auth.login_user import LoginUser
 from auth.refresh_access_token import RefreshAccessToken
 from auth.register_user import RegisterUser
+from auth.resend_code import ResendCode
 from auth.token_service import TokenService
 from auth.verify_account import VerifyAccount
 from container.runtime import session_factory, token_service
@@ -53,6 +54,19 @@ async def create_verify_account() -> AsyncIterator[VerifyAccount]:
     session = session_factory()
     try:
         yield VerifyAccount(
+            account_repository=SqlAlchemyAccountRepository(session),
+            verification_code_repository=SqlAlchemyVerificationCodeRepository(session),
+            clock=SystemClock(),
+            unit_of_work=SqlAlchemyUnitOfWork(session),
+        )
+    finally:
+        await session.close()
+
+
+async def create_resend_code() -> AsyncIterator[ResendCode]:
+    session = session_factory()
+    try:
+        yield ResendCode(
             account_repository=SqlAlchemyAccountRepository(session),
             verification_code_repository=SqlAlchemyVerificationCodeRepository(session),
             clock=SystemClock(),
