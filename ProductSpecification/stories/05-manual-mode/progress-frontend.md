@@ -984,6 +984,20 @@ add new ones — the first red phase in this story to do so.
   tsc clean.
 - [S] green-frontend-coverage-empty-apply — no production change: the remove-link path already exists, the red is
   a live characterization test (see mutation-check above). Nothing to implement or un-skip.
+
+  **Review-pass verdicts on `a9e2979` (red): agent-review PASS, premortem CONCERNS (1 credible), `/refactor`
+  collapsed the two tests into `it.each` (32→29, established codebase pattern). agent-review confirmed the setup
+  helper `openLinkPopoverInsideExistingLink` throws if no anchor was created, so `expectLinkRemoved` discriminates
+  "removed" from "never applied"; the absent-alert assertion separates remove from reject.**
+  - *(premortem CREDIBLE — owed to a follow-up coverage step)* **stored-mark lingering after `unsetLink`.** The
+    empty-branch ends `extendMarkRange('link').unsetLink().run()` — the *apply* branch two lines below documents
+    the mirror hazard (`setLink` writes a stored mark, next typed char becomes a second link). Nothing proves
+    `unsetLink` clears the stored mark: `expectLinkRemoved` only snapshots the post-apply state, never types after.
+    Named guard: after empty-apply, fire one input char at the caret, assert `querySelectorAll('a')` still length 0
+    (the typed char is NOT inside an anchor). Add as a third case in `ManualEditor.link.popoverRemove.test.tsx`.
+  - *(premortem minor/REMOTE)* empty-apply when the caret is NOT inside a link runs `unsetLink` on a non-link
+    range (never exercised — the helper always seeds an anchor). Almost certainly a harmless no-op close; optional
+    follow-up (open popover on plain selection, apply empty, assert 0 anchors / no throw).
 - [~] red-frontend-coverage-click-inside — pin the click-inside-does-not-apply guard (`LinkPopover.tsx:99-104`,
   early-return never taken today; this is ALSO premortem CREDIBLE 2 from `dee4260` — wrong-target apply): open the
   popover, dispatch `mousedown` on the editor content DOM (and on `.me-toolbar` / a sibling toolbar button) →
