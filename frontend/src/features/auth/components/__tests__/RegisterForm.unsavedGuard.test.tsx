@@ -34,6 +34,12 @@ function dispatchBeforeUnload() {
   return event
 }
 
+function typePartialEmail() {
+  fireEvent.change(screen.getByTestId('register-email-input'), {
+    target: { value: 'partial@example.ru' },
+  })
+}
+
 function fillAllFields() {
   fireEvent.change(screen.getByTestId('register-email-input'), { target: { value: VALID_EMAIL } })
   fireEvent.change(screen.getByTestId('register-password-input'), { target: { value: VALID_PASSWORD } })
@@ -60,9 +66,7 @@ describe('RegisterForm unsaved-input navigation guard', () => {
   it('arms a beforeunload confirm guard once a field has been typed into', () => {
     renderWithRouter(<RegisterForm />)
 
-    fireEvent.change(screen.getByTestId('register-email-input'), {
-      target: { value: 'partial@example.ru' },
-    })
+    typePartialEmail()
     const event = dispatchBeforeUnload()
 
     expect(event.defaultPrevented).toBe(true)
@@ -107,9 +111,7 @@ describe('RegisterForm unsaved-input navigation guard', () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
     renderWithRoutes()
 
-    fireEvent.change(screen.getByTestId('register-email-input'), {
-      target: { value: 'partial@example.ru' },
-    })
+    typePartialEmail()
     fireEvent.click(screen.getByTestId('register-login-link'))
 
     expect(confirmSpy).toHaveBeenCalledTimes(1)
@@ -134,9 +136,7 @@ describe('RegisterForm unsaved-input navigation guard', () => {
   it('removes the beforeunload guard on unmount — no leak past the form', () => {
     const { unmount } = renderWithRouter(<RegisterForm />)
 
-    fireEvent.change(screen.getByTestId('register-email-input'), {
-      target: { value: 'partial@example.ru' },
-    })
+    typePartialEmail()
     unmount()
     const event = dispatchBeforeUnload()
 
