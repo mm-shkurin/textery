@@ -10,6 +10,9 @@ class FakeVerificationCodeRepository:
         self.raise_on_save: Exception | None = None
         self.find_active_by_account_id_call_count = 0
         self.transition_to_consumed_calls: list[tuple[UUID, datetime]] = []
+        # Shared ordering log (see FakeAccountRepository.call_log): lets a test assert
+        # the cooldown read happens AFTER lock_for_update. None by default.
+        self.call_log: list[str] | None = None
 
     async def save(self, code: VerificationCode) -> None:
         if self.raise_on_save is not None:
@@ -23,6 +26,8 @@ class FakeVerificationCodeRepository:
         # real adapter and hide a replayed code behind the same None the
         # unknown-account path returns.
         self.find_active_by_account_id_call_count += 1
+        if self.call_log is not None:
+            self.call_log.append("find_active_by_account_id")
         return next((c for c in reversed(self.saved_codes) if c.account_id == account_id), None)
 
     async def transition_to_consumed(self, code_id: UUID, now: datetime) -> bool:
