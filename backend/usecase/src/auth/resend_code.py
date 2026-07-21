@@ -60,6 +60,14 @@ class ResendCode:
             # vanished between find_by_email and the lock, answer with the same rejection.
             raise self._invalid_or_expired()
 
+        if account.is_verified:
+            # Gate on the POST-lock account (lock_for_update's re-read), BEFORE the
+            # cooldown read: a verified account answers ALREADY_VERIFIED (3.5's 409
+            # taxonomy), never RESEND_COOLDOWN_ACTIVE, and issues no new code. Placed
+            # here so a verify that committed inside the lock window is still caught
+            # (scenario 4.5).
+            raise self._already_verified()
+
         newest = await self.verification_code_repository.find_active_by_account_id(account.id)
         if newest is not None:
             self._enforce_cooldown(newest)
@@ -94,6 +102,15 @@ class ResendCode:
             await rollback_quietly(self.unit_of_work)
             raise
         return verification_code
+
+    def _already_verified(self) -> ValidationException:
+        # Mirrors VerifyAccount._already_verified (scenario 3.5): the account has
+        # already transitioned, so a resend is a genuine 409 conflict, not the
+        # generic state-hiding rejection.
+        return ValidationException(
+            error_code="ALREADY_VERIFIED",
+            message="The account is already verified.",
+        )
 
     def _invalid_or_expired(self) -> ValidationException:
         return ValidationException(

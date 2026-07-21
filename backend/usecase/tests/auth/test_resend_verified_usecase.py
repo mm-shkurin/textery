@@ -1,9 +1,6 @@
-import pytest
-
 from statements.resend_verified_statements import ResendVerifiedStatements
 
 
-@pytest.mark.skip(reason="RED: 4.5 is_verified gate not implemented in ResendCode.execute yet")
 class TestResendVerifiedUsecase:
     """Scenario 4.5: a resend against an already-verified account is rejected with
     ALREADY_VERIFIED (409 taxonomy from 3.5), and no new code is issued.
