@@ -1,4 +1,6 @@
+import logging
 import unicodedata
+from uuid import UUID
 
 from auth.account_repository import AccountRepository
 from auth.email import Email
@@ -6,7 +8,10 @@ from auth.password_hasher import PasswordHasher
 from auth.token_pair import TokenPair
 from auth.token_service import TokenService
 from shared.exceptions import ValidationException
+from shared.rollback import rollback_quietly
 from shared.unit_of_work import NullUnitOfWork, UnitOfWork
+
+logger = logging.getLogger(__name__)
 
 
 class LoginUser:
@@ -38,6 +43,7 @@ class LoginUser:
         if not self.password_hasher.verify(
             self._normalized_password(password), account.password_hash
         ):
+            await self._record_failed_attempt(account.id)
             raise self._invalid_credentials()
         # Verified is checked AFTER the password, deliberately. The other order
         # would answer UNVERIFIED to anyone who merely guessed the email, turning
@@ -48,6 +54,21 @@ class LoginUser:
         if not account.is_verified:
             raise ValidationException(error_code="UNVERIFIED", message=self.UNVERIFIED_MESSAGE)
         return self.token_service.issue_pair(account_id=account.id, email=account.email)
+
+    async def _record_failed_attempt(self, account_id: UUID) -> None:
+        # Increment-then-commit BEFORE the caller raises INVALID_CREDENTIALS, so
+        # the count survives the failed login (5.3). Wrapped like VerifyAccount's
+        # persist tail: a commit failure (serialization/deadlock/dropped
+        # connection) must NOT surface as a 5xx on this previously un-failable read
+        # path. Swallow it, roll back the poisoned txn, and let execute() raise the
+        # SAME generic INVALID_CREDENTIALS -- the client learns nothing new, and a
+        # dropped increment is acceptable next to leaking the real error.
+        try:
+            await self.account_repository.increment_failed_attempts(account_id)
+            await self.unit_of_work.commit()
+        except Exception:
+            logger.exception("failed to persist the failed-attempt counter")
+            await rollback_quietly(self.unit_of_work)
 
     def _normalized_email(self, email: str) -> str:
         try:

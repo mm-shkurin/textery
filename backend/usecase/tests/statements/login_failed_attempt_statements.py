@@ -58,6 +58,23 @@ class LoginFailedAttemptStatements(LoginStatements):
         # from 5.2 -- reuse the base assertion rather than re-encoding it.
         self.assert_rejected_as_invalid_credentials()
 
+    async def login_with_a_wrong_password_while_the_commit_fails(self) -> None:
+        # Premortem #2: a bare increment -> commit() -> raise turns a commit
+        # failure (serialization/deadlock/dropped connection) into a leaked 5xx on
+        # what used to be an un-failable read path. Arm the shared UoW to blow up
+        # on commit, then drive the same wrong-password branch.
+        self.unit_of_work.raise_on_commit = RuntimeError("commit failed")
+        await self.login_with_a_wrong_password()
+
+    def assert_rejected_as_invalid_credentials_and_rolled_back(self) -> None:
+        # The client still gets the generic 5.2 rejection -- never the raw
+        # commit/RuntimeError -- and the poisoned txn was rolled back.
+        self.assert_rejected_as_invalid_credentials()
+        assert self.unit_of_work.rollback_call_count == 1, (
+            f"expected exactly one rollback after the commit failure, got "
+            f"{self.unit_of_work.rollback_call_count}"
+        )
+
     def assert_did_not_count_any_attempt(self) -> None:
         assert self.account_repository.increment_failed_attempts_calls == [], (
             f"expected no failed-attempt increment on this branch, got "

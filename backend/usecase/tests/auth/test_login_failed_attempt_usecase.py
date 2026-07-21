@@ -3,10 +3,6 @@ import pytest
 from statements.login_failed_attempt_statements import LoginFailedAttemptStatements
 
 
-@pytest.mark.skip(
-    reason="RED: LoginUser does not yet increment-then-commit the failed-attempt "
-    "counter on the wrong-password branch (green-usecase 5.3)"
-)
 class TestLoginFailedAttemptCounter:
     """Scenario 5.3: a wrong-password login on a found account is counted.
 
@@ -23,6 +19,13 @@ class TestLoginFailedAttemptCounter:
         await login_failed_attempt_statements.given_verified_account()
         await login_failed_attempt_statements.login_with_a_wrong_password()
         login_failed_attempt_statements.assert_counted_the_failed_attempt_then_rejected()
+
+    async def test_should_reject_generically_and_rollback_when_the_commit_fails(
+        self, login_failed_attempt_statements: LoginFailedAttemptStatements
+    ):
+        await login_failed_attempt_statements.given_verified_account()
+        await login_failed_attempt_statements.login_with_a_wrong_password_while_the_commit_fails()
+        login_failed_attempt_statements.assert_rejected_as_invalid_credentials_and_rolled_back()
 
     async def test_should_not_count_an_unknown_email(
         self, login_failed_attempt_statements: LoginFailedAttemptStatements
