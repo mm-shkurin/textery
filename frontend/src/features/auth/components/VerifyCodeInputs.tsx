@@ -5,6 +5,9 @@ export const CODE_LENGTH = 6
 interface VerifyCodeInputsProps {
   digits: string[]
   onChange: (digits: string[]) => void
+  // A rejected code paints every box with the error border (mockup 02-verify-code `.code-box.error`).
+  // The form owns WHEN (it saw the rejection); this component owns how the boxes look.
+  hasError?: boolean
 }
 
 // The six code boxes and everything that makes them behave like ONE field: advance on entry,
@@ -13,7 +16,7 @@ interface VerifyCodeInputsProps {
 // Split out of VerifyCodeForm, which was over the 200-line limit and mixed this input-behaviour
 // state machine with submit orchestration and layout. The form now owns the code as a value; how
 // six boxes conspire to produce it is this component's business.
-export function VerifyCodeInputs({ digits, onChange }: VerifyCodeInputsProps) {
+export function VerifyCodeInputs({ digits, onChange, hasError = false }: VerifyCodeInputsProps) {
   const inputRefs = useRef<Array<HTMLInputElement | null>>([])
 
   // `inputMode="numeric"` is a keyboard HINT, not a constraint — a physical keyboard, an
@@ -70,6 +73,7 @@ export function VerifyCodeInputs({ digits, onChange }: VerifyCodeInputsProps) {
             inputRefs.current[index] = element
           }}
           type="text"
+          className={hasError ? 'error' : undefined}
           inputMode="numeric"
           // Only the first box claims the OTP: naming all six makes a browser offer to fill the
           // whole code into each one.

@@ -38,7 +38,15 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [isVerified, setIsVerified] = useState(false)
+  const [codeError, setCodeError] = useState(false)
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''))
+
+  // Editing the code clears the error paint — the boxes no longer show the value the server
+  // rejected, so keeping them red would accuse input the user has already changed.
+  function handleDigitsChange(next: string[]) {
+    setDigits(next)
+    if (codeError) setCodeError(false)
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -51,12 +59,14 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
     try {
       const result = await verify(email, digits.join(''))
       setFormError(null)
+      setCodeError(false)
       setIsVerified(result.isVerified)
       // A 200 that says `is_verified: false` is not a success to navigate on. The backend has
       // never sent one, but the field only means something if we read it — treating any 200 as
       // "verified" would make the flag decoration.
       if (!result.isVerified) {
         setFormError(GENERIC_VERIFY_FAILURE_MESSAGE)
+        setCodeError(true)
         return
       }
       // Verification does not mint a session, so getting into the app is a separate step that
@@ -66,6 +76,7 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
     } catch (error) {
       setIsVerified(false)
       setFormError(verifyErrorMessage(error))
+      setCodeError(true)
     } finally {
       setIsSubmitting(false)
     }
@@ -110,7 +121,7 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
         </p>
       )}
       <form onSubmit={handleSubmit}>
-        <VerifyCodeInputs digits={digits} onChange={setDigits} />
+        <VerifyCodeInputs digits={digits} onChange={handleDigitsChange} hasError={codeError} />
         <AuthSubmitButton testId="verify-confirm-button" isSubmitting={isSubmitting}>
           Подтвердить
         </AuthSubmitButton>
