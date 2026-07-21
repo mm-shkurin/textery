@@ -89,3 +89,14 @@ export function expectRejected(contentArea: HTMLElement) {
   expect(contentArea.querySelectorAll('a')).toHaveLength(0)
   expect(screen.queryByRole('alert')).toBeInTheDocument()
 }
+
+// The empty/whitespace-apply outcome: the link mark is removed but the text it
+// wrapped survives, the popover closes, and — unlike expectRejected — NO alert
+// is shown. Clearing the field is a deliberate "remove the link", not a refused
+// address, so the absent alert is what distinguishes this from a rejection.
+export function expectLinkRemoved(contentArea: HTMLElement) {
+  expect(contentArea.querySelectorAll('a')).toHaveLength(0)
+  expect(contentArea.textContent).toBe('hello world')
+  expect(screen.queryByTestId('link-popover')).not.toBeInTheDocument()
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+}

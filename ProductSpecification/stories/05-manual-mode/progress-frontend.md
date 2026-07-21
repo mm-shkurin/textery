@@ -971,13 +971,20 @@ add new ones — the first red phase in this story to do so.
   highlight rule has NO automated guard (jsdom applies no CSS) — a Selenium assertion that opening the popover
   with the cursor OUTSIDE a link highlights `toolbar-link` is the only thing that can pin it. Folded into the
   green-selenium owe-list below.
-- [~] red-frontend-coverage-empty-apply — pin the empty/whitespace-apply → remove-link path (`LinkPopover.tsx:37-46`,
-  branch `if (!trimmed)` never taken today): open the popover inside an existing anchor, clear the input to empty
-  (or type only spaces), apply → assert the link mark is removed (`querySelectorAll('a')` length 0) and the
-  popover closes. Mutation-check: the assertion must fail if `unsetLink` is replaced by a no-op.
-- [ ] green-frontend-coverage-empty-apply — likely no production change (path already implemented); if green, it is
-  a characterization test un-skip, no code.
-- [ ] red-frontend-coverage-click-inside — pin the click-inside-does-not-apply guard (`LinkPopover.tsx:99-104`,
+- [x] red-frontend-coverage-empty-apply — DONE (characterization, LIVE — path already implemented). New
+  `ManualEditor.link.popoverRemove.test.tsx` (33 lines, 2 tests) + `expectLinkRemoved` helper in
+  `ManualEditor.link.testSupport.tsx` (103 lines). Empty input AND whitespace-only both open the popover inside an
+  existing link, clear the field, click Применить → `querySelectorAll('a')` length 0, `textContent` exactly
+  `'hello world'`, popover closed, NO alert (removal, not rejection). **Predicted: passes (characterization);
+  Actual: passes; Comparison: match** — coverage gap, not missing behavior, so kept LIVE, no `it.skip`.
+  Mutation-check (teeth): removing `.unsetLink()` from the empty-branch chain → both fail
+  (`expected <a> length +0 but got 1`); production restored. Covers `LinkPopover.tsx:37-46` (the `if (!trimmed)`
+  true-branch + `setTextSelection → extendMarkRange('link') → unsetLink()` chain). test-review: PASS (all exact,
+  the absent-alert assertion is load-bearing — separates remove from reject). Suite **258 passed | 0 skipped**,
+  tsc clean.
+- [S] green-frontend-coverage-empty-apply — no production change: the remove-link path already exists, the red is
+  a live characterization test (see mutation-check above). Nothing to implement or un-skip.
+- [~] red-frontend-coverage-click-inside — pin the click-inside-does-not-apply guard (`LinkPopover.tsx:99-104`,
   early-return never taken today; this is ALSO premortem CREDIBLE 2 from `dee4260` — wrong-target apply): open the
   popover, dispatch `mousedown` on the editor content DOM (and on `.me-toolbar` / a sibling toolbar button) →
   assert the popover stays open and NO link is applied. Discriminates the three "inside" exclusions.
