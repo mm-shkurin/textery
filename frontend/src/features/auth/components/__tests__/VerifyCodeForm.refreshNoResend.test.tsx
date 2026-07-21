@@ -22,6 +22,8 @@ vi.mock('../../api/authApi', async (importOriginal) => {
   return { ...actual, resendCode: vi.fn() }
 })
 
+const EMAIL = 'user@example.com'
+
 describe('VerifyCodeForm refresh does not resend', () => {
   afterEach(() => {
     vi.mocked(authApi.resendCode).mockReset()
@@ -29,9 +31,7 @@ describe('VerifyCodeForm refresh does not resend', () => {
   })
 
   it('does not call resendCode when the screen first mounts', () => {
-    vi.mocked(authApi.resendCode).mockResolvedValue({ code: '123456' })
-
-    renderWithRouter(<VerifyCodeForm email="user@example.com" />)
+    renderWithRouter(<VerifyCodeForm email={EMAIL} />)
 
     // The resend is a user action, not a mount side effect. Nothing has been clicked, so the
     // endpoint must be untouched and the button must sit in its initial cooldown (disabled),
@@ -41,13 +41,11 @@ describe('VerifyCodeForm refresh does not resend', () => {
   })
 
   it('does not call resendCode when the screen is re-mounted, as a page refresh would', () => {
-    vi.mocked(authApi.resendCode).mockResolvedValue({ code: '123456' })
-
     // A real browser refresh tears the component down and mounts it fresh. Simulate exactly that:
     // unmount, then render again. Fresh state (countdown back to full) must still issue no resend.
-    const { unmount } = renderWithRouter(<VerifyCodeForm email="user@example.com" />)
+    const { unmount } = renderWithRouter(<VerifyCodeForm email={EMAIL} />)
     unmount()
-    renderWithRouter(<VerifyCodeForm email="user@example.com" />)
+    renderWithRouter(<VerifyCodeForm email={EMAIL} />)
 
     expect(authApi.resendCode).not.toHaveBeenCalled()
     expect(screen.getByTestId('verify-resend-countdown')).toHaveTextContent('01:00')
@@ -57,7 +55,7 @@ describe('VerifyCodeForm refresh does not resend', () => {
     vi.useFakeTimers()
     vi.mocked(authApi.resendCode).mockResolvedValue({ code: '123456' })
 
-    renderWithRouter(<VerifyCodeForm email="user@example.com" />)
+    renderWithRouter(<VerifyCodeForm email={EMAIL} />)
 
     // Still nothing while the cooldown runs — the button is disabled and the handler refuses.
     expect(authApi.resendCode).not.toHaveBeenCalled()
@@ -73,6 +71,6 @@ describe('VerifyCodeForm refresh does not resend', () => {
     // The pin is not vacuous: resend fires on the deliberate action, and exactly once per click —
     // the mount/refresh assertions above mean "zero resends", not "resend is unreachable".
     expect(authApi.resendCode).toHaveBeenCalledTimes(1)
-    expect(authApi.resendCode).toHaveBeenCalledWith('user@example.com')
+    expect(authApi.resendCode).toHaveBeenCalledWith(EMAIL)
   })
 })
