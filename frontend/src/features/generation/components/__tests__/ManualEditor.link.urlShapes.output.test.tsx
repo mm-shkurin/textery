@@ -28,7 +28,7 @@ describe('ManualEditor link URL shapes — normalized output', () => {
   // Rule pinned: a HOST_SHAPE-matched input whose normalized href does not
   // new URL()-parse must be REJECTED. Kills a green that keeps the blind
   // `http://` prefix without a post-normalization parse check.
-  it.skip('RED: a host with an out-of-range port is rejected, not linked to a dead http:// href', async () => {
+  it('RED: a host with an out-of-range port is rejected, not linked to a dead http:// href', async () => {
     const contentArea = await applyLinkUrl('example.com:99999999999')
 
     expectRejected(contentArea)
@@ -54,7 +54,7 @@ describe('ManualEditor link URL shapes — normalized output', () => {
   // Implication for green: the character screen must sit on the OUTPUT / fallback
   // path (or on every branch), NOT only inside HOST_SHAPE — a green that screens
   // chars only in the host branch leaves this vector open.
-  it.skip('RED: a host containing an invisible soft-hyphen is rejected, not linked as a deceptive http:// href', async () => {
+  it('RED: a host containing an invisible soft-hyphen is rejected, not linked as a deceptive http:// href', async () => {
     const contentArea = await applyLinkUrl('exa­mple.com')
 
     expectRejected(contentArea)
@@ -67,7 +67,7 @@ describe('ManualEditor link URL shapes — normalized output', () => {
   // HOSTS in urlShapes.test.tsx; `tel:` must stay a SCHEME. Today HOST_SHAPE
   // matches `tel:79001234567` → `http://tel:79001234567` (links). RED: the href
   // must be EXACTLY the untouched input.
-  it.skip('RED: a tel: URL with a plain number passes through unchanged, not prefixed http://', async () => {
+  it('RED: a tel: URL with a plain number passes through unchanged, not prefixed http://', async () => {
     const contentArea = await applyLinkUrl('tel:79001234567')
 
     expectSoleLink(contentArea, 'tel:79001234567')
@@ -79,7 +79,7 @@ describe('ManualEditor link URL shapes — normalized output', () => {
   // ftp, ftps, mailto, tel, callto, sms, cid, xmpp). Today → `http://sms:...`
   // (links). RED: must pass through as `sms:79001234567`. A green that special-
   // cases the string `tel` passes the row above and fails this one.
-  it.skip('RED: an sms: URL with a plain number also passes through unchanged, proving the scheme set is not hardcoded to tel', async () => {
+  it('RED: an sms: URL with a plain number also passes through unchanged, proving the scheme set is not hardcoded to tel', async () => {
     const contentArea = await applyLinkUrl('sms:79001234567')
 
     expectSoleLink(contentArea, 'sms:79001234567')
@@ -103,19 +103,19 @@ describe('ManualEditor link URL shapes — normalized output', () => {
   // alternative admits a leading `/`, `#` or `?`, so all three LINK today.
   // RED: each must be REJECTED. Three separate rows — a fixture for one is
   // defeated by a green that special-cases that single leading character.
-  it.skip('RED: a bare relative path /docs is rejected, not linked against our own origin', async () => {
+  it('RED: a bare relative path /docs is rejected, not linked against our own origin', async () => {
     const contentArea = await applyLinkUrl('/docs')
 
     expectRejected(contentArea)
   })
 
-  it.skip('RED: a bare fragment #anchor is rejected, not linked against our own origin', async () => {
+  it('RED: a bare fragment #anchor is rejected, not linked against our own origin', async () => {
     const contentArea = await applyLinkUrl('#anchor')
 
     expectRejected(contentArea)
   })
 
-  it.skip('RED: a bare query ?q=1 is rejected, not linked against our own origin', async () => {
+  it('RED: a bare query ?q=1 is rejected, not linked against our own origin', async () => {
     const contentArea = await applyLinkUrl('?q=1')
 
     expectRejected(contentArea)

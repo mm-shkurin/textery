@@ -742,7 +742,18 @@ add new ones — the first red phase in this story to do so.
 
   Mutation-check every fixture against the candidate green it targets, per this scenario's standing practice.
   </details>
-- [~] green-frontend-url-shapes-3 — fix `normalizeHref` so the 7 RED tests un-skip and pass, the 2 GREEN
+- [x] green-frontend-url-shapes-3 — DONE. Rewrote `normalizeHref` (`LinkPopover.tsx`, 155 lines): keyed on
+  a known-scheme SET (`http,https,ftp,ftps,mailto,tel,callto,sms,cid,xmpp`) checked BEFORE HOST_SHAPE, so
+  `tel:`/`sms:` pass through and `localhost:3000`/`myserver:8080` still fall to `http://`; added `isUsable`
+  screen (`new URL()` parse + `\p{C}` reject) applied on the HOST_SHAPE output AND the fallback — G2 soft
+  hyphen (Cf) flows through the fallback so a HOST_SHAPE-only screen would miss it; bare fallback (`/docs`,
+  `#anchor`, `?q=1`) returns a `REJECT` sentinel (`unsafe:rejected`, unknown scheme → isAllowedUri refuses →
+  setLink false → alert). `\S*` not re-enumerated; emoji/Cyrillic stay green. Suite 237p|7skip → **244 passed
+  | 0 skipped | 0 failed**; all 7 REDs un-skipped, both live guards green; tsc clean. Rejection mechanism
+  verified against `extension-link/src/link.ts:376-384`, not assumed. Mutation-checked: `{tel}`-only special
+  case fails the `sms:` row; HOST_SHAPE-only char screen fails the soft-hyphen G2 row.
+  <details><summary>original planning text</summary>
+  fix `normalizeHref` so the 7 RED tests un-skip and pass, the 2 GREEN
   guards + whole suite stay green. Per the RED's green-note: (a) recognize a known-scheme SET before
   HOST_SHAPE so `tel:`/`sms:` (and the isAllowedUri set) pass through, while `javascript:` stays rejected;
   (b) add a post-normalization usability screen — reject when the resulting href fails `new URL()` (G1 port
@@ -758,7 +769,8 @@ add new ones — the first red phase in this story to do so.
     false), not the host branch — so the char screen must sit on the OUTPUT/fallback path (or every branch),
     NOT only inside HOST_SHAPE. Keep the emoji + Cyrillic (`кремль.рф`, `Война_и_мир`) guards green: the screen
     must reject `\p{C}` (control/format) but NOT legitimate `\p{L}`/`\p{So}`.
-- [ ] design — /design-preview for the popover's interaction contract, which this green resolved by silence and the ADR explicitly deferred: Enter-to-apply, Escape-to-cancel, click-outside disposition of half-typed input, whether the field prefills with the current href when the cursor is inside a link (defect 2 — open→Apply currently destroys it), and whether the popover closes or captures its range on selection change (defect 3). These compose into one interaction model and should be decided together, not one test at a time.
+  </details>
+- [~] design — /design-preview for the popover's interaction contract, which this green resolved by silence and the ADR explicitly deferred: Enter-to-apply, Escape-to-cancel, click-outside disposition of half-typed input, whether the field prefills with the current href when the cursor is inside a link (defect 2 — open→Apply currently destroys it), and whether the popover closes or captures its range on selection change (defect 3). These compose into one interaction model and should be decided together, not one test at a time.
 - [ ] red-frontend-popover-contract — pin whatever the design approves, including: cursor inside an existing `<a>` → the field shows that href and Apply replaces it, leaving `querySelectorAll('a')` length 1; selection change while open does not silently apply to the new cursor; a rejected apply does not move the selection for the retry.
 - [ ] green-frontend-popover-contract
 - [ ] red-frontend-aria — pin defect (6): the disclosure state must be visible and non-conflicting. Whatever the fix (separate the concerns, or drop `aria-pressed` from UI actions), assert `aria-expanded` toggles and that the open popover is visually distinguishable. Also fold defect (7): render the anchor `<span>` only for `action.ui`.
