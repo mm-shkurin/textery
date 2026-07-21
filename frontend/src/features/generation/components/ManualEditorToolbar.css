@@ -32,6 +32,14 @@
   color: var(--text-primary);
 }
 
+/* aria-expanded='true' highlights the link button while its popover is OPEN,
+   an orthogonal state from aria-pressed (cursor-in-link). Mirrors the pressed
+   declarations so an open popover reads as active even outside a link. */
+.me-toolbar-btn[aria-expanded='true'] {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
 /* If a future action combines disabled + aria-pressed='true', add
    background/color overrides here — same specificity as the pressed
    rule above means source order wins, and the pressed highlight would

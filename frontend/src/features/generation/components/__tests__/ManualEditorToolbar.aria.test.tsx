@@ -62,7 +62,7 @@ describe('ManualEditorToolbar anchor-span wrapper (only for UI actions)', () => 
   // fix a non-UI button renders bare, so its DOM parent is the toolbar row itself
   // (the .me-toolbar DIV), not any span. Actual: expected 'SPAN' to be 'DIV' —
   // bold's parent is currently a bare span.
-  it.skip('a non-UI button sits directly in the me-toolbar row (parent is the DIV, no span wrapper)', async () => {
+  it('a non-UI button sits directly in the me-toolbar row (parent is the DIV, no span wrapper)', async () => {
     await renderEditorWithDocumentCreated()
 
     const parent = screen.getByTestId('toolbar-bold').parentElement

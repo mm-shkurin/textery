@@ -922,12 +922,16 @@ add new ones — the first red phase in this story to do so.
   `aria-expanded` WITHOUT touching `aria-pressed`, both present throughout (passes today, both attrs already
   exist). Defect-7 (span only for `action.ui`) stays the sole RED. File 4 passed | 1 skipped, tsc clean.
   `ManualEditor.link.test.tsx` left untouched (its assertions are correct). Red-correction commit.
-- [~] green-frontend-aria — SCOPE NARROWED (aria-pressed STAYS per "keep both"). Implement only: (1) defect 7 —
-  render the `me-link-popover-anchor` span ONLY for `action.ui`, other buttons bare in the Fragment; un-skip the
-  defect-7 test. (2) Add `.me-toolbar-btn[aria-expanded='true']` CSS rule mirroring `[aria-pressed='true']`
-  (premortem CREDIBLE) so the popover-open state highlights even when the cursor isn't in a link. Do NOT touch
-  aria-pressed (it stays on all buttons including the link button — the coexistence guard + ManualEditor.link.test.tsx
-  both pin it). Expect 256 passed | 0 skipped. — pin defect (6): the disclosure state must be visible and non-conflicting. Whatever the fix (separate the concerns, or drop `aria-pressed` from UI actions), assert `aria-expanded` toggles and that the open popover is visually distinguishable. Also fold defect (7): render the anchor `<span>` only for `action.ui`.
+- [x] green-frontend-aria — DONE (narrowed scope, aria-pressed KEPT). `ManualEditorToolbar.tsx` (103 lines): the
+  toolbar map wraps the `<button>` in `me-link-popover-anchor` span ONLY when `action.ui`; non-UI buttons render
+  bare in the Fragment, so `toolbar-bold`'s parent is now the `.me-toolbar` DIV (defect 7). aria-pressed unchanged
+  on all buttons; aria-expanded only on the UI button. `ManualEditorToolbar.css` (136 lines): added
+  `.me-toolbar-btn[aria-expanded='true']` mirroring the `[aria-pressed='true']` rule (premortem CREDIBLE) — the
+  link button now highlights on popover-open independent of cursor-in-link. Un-skipped the defect-7 test only.
+  Suite **256 passed | 0 skipped | 0 failed**, tsc clean. All guards + `ManualEditor.link.test.tsx:54/63` green.
+  Minor doc-staleness left for refactor: the aria-test comments at lines 48-50/59-63 still reference the old
+  "strip aria-pressed" framing — inaccurate now (nothing strips it), cosmetic.
+- [~] red-frontend-api — pin defect (6): the disclosure state must be visible and non-conflicting. Whatever the fix (separate the concerns, or drop `aria-pressed` from UI actions), assert `aria-expanded` toggles and that the open popover is visually distinguishable. Also fold defect (7): render the anchor `<span>` only for `action.ui`.
 - [ ] green-frontend-aria
 - [ ] red-frontend-api
 - [ ] green-frontend-api
