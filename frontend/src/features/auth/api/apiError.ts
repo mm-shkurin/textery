@@ -27,6 +27,14 @@ export interface AuthApiError {
 // side rather than something to explain to a user.
 export const UNKNOWN_ERROR_CODE = 'UNKNOWN_ERROR'
 
+// A real numeric value, or nothing. Both transport pass-throughs below (status, retryAfterSeconds)
+// attach ONLY a finite number: httpClient never sets either to NaN, and re-checking finiteness here
+// keeps a hand-built HttpError from smuggling one in. The two call sites differ in WHEN they attach
+// (status is codeless-path-only), not in what counts as usable — so that shared rule lives here once.
+function finiteNumberOrUndefined(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+}
+
 // Map a rejection to an AuthApiError, or return it untouched when it is not one.
 //
 // A rejection only carries a body when `postJson` built an HttpError from a non-ok response.
@@ -59,19 +67,17 @@ export function toAuthApiError(
   // discriminator of its own, so preserve the transport status (read off HttpError just as `.body`
   // is above) — this is the ONLY bit that lets green-frontend tell a 5xx gateway failure from a
   // codeless business error. NOT attached on the coded path: a coded error is distinguished by its
-  // errorCode and must keep its exact two-field shape (coded-error toStrictEqual tests are the
-  // guard). Finite-guard mirrors retryAfterSeconds below: only a real numeric status is attached.
+  // errorCode and must keep its exact two-field shape (coded-error toStrictEqual tests are the guard).
   if (!hasUsableCode) {
-    const status = (error as HttpError | undefined)?.status
-    if (typeof status === 'number' && Number.isFinite(status)) {
+    const status = finiteNumberOrUndefined((error as HttpError | undefined)?.status)
+    if (status !== undefined) {
       apiError.status = status
     }
   }
   // Header-driven pass-through: attach only when httpClient parsed a finite Retry-After, so the key
-  // is present for a lockout/429 and absent otherwise. Guards NaN out — httpClient never sets it to
-  // NaN, and this re-checks finiteness so a hand-built HttpError can't smuggle one in.
-  const retryAfterSeconds = (error as HttpError | undefined)?.retryAfterSeconds
-  if (typeof retryAfterSeconds === 'number' && Number.isFinite(retryAfterSeconds)) {
+  // is present for a lockout/429 and absent otherwise.
+  const retryAfterSeconds = finiteNumberOrUndefined((error as HttpError | undefined)?.retryAfterSeconds)
+  if (retryAfterSeconds !== undefined) {
     apiError.retryAfterSeconds = retryAfterSeconds
   }
   return apiError
