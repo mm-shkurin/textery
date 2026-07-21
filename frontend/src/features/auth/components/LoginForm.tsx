@@ -5,8 +5,13 @@ import { AuthLoadingIndicator } from './AuthLoadingIndicator'
 import { AccountLockedScreen } from './AccountLockedScreen'
 import { login } from '../api/loginApi'
 import { saveSession } from '../utils/authSession'
-import { GENERIC_LOGIN_FAILURE_MESSAGE } from '../utils/authMessages'
-import { isAccountLocked, loginErrorMessage, readLockoutRetrySeconds } from '../utils/loginErrorHandling'
+import { GENERIC_LOGIN_FAILURE_MESSAGE, NETWORK_LOGIN_FAILURE_MESSAGE } from '../utils/authMessages'
+import {
+  isAccountLocked,
+  isLoginNetworkError,
+  loginErrorMessage,
+  readLockoutRetrySeconds,
+} from '../utils/loginErrorHandling'
 import './AuthForm.css'
 import './LoginForm.css'
 
@@ -33,6 +38,10 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  // A network/transport failure is a DIFFERENT state from a rejected credential: it renders its own
+  // retry-capable element, visually distinct from the field-level validation error, so the user is
+  // told the connection dropped rather than that their password was wrong.
+  const [networkError, setNetworkError] = useState(false)
   // Non-null once the server reports a lockout: the seconds it wants us to wait. Its presence,
   // not a message, is what swaps the whole screen for the account-locked one below.
   const [lockoutSeconds, setLockoutSeconds] = useState<number | null>(null)
@@ -48,6 +57,7 @@ export function LoginForm() {
     if (isSubmitting) return
     setIsSubmitting(true)
     setFormError(null)
+    setNetworkError(false)
     try {
       const session = await login(
         emailInputRef.current?.value ?? '',
@@ -72,6 +82,12 @@ export function LoginForm() {
       // message path so the account-locked screen owns the display (message stays '' from the api).
       if (isAccountLocked(error)) {
         setLockoutSeconds(readLockoutRetrySeconds(error))
+        return
+      }
+      // A transport failure or a gateway 5xx is a connection problem, not a bad credential — it
+      // gets the distinct, retry-capable network-error state instead of the form-error message.
+      if (isLoginNetworkError(error)) {
+        setNetworkError(true)
         return
       }
       setFormError(loginErrorMessage(error))
@@ -134,6 +150,15 @@ export function LoginForm() {
           // reach the user was the one not announced.
           <div className="auth-form-error" data-testid="login-form-error" role="alert">
             {formError}
+          </div>
+        )}
+        {networkError && (
+          // A distinct element (own class, own testid) from the validation error above: this is a
+          // connection problem, not a rejected credential, so it must not be mistaken for either
+          // one by a sighted or a screen-reader user. role="alert" announces it; the copy invites a
+          // retry, and the submit button re-enables (finally clears isSubmitting) so the user can.
+          <div className="auth-network-error" data-testid="login-network-error" role="alert">
+            {NETWORK_LOGIN_FAILURE_MESSAGE}
           </div>
         )}
         <AuthSubmitButton testId="login-submit-button" isSubmitting={isSubmitting}>

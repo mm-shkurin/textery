@@ -31,6 +31,11 @@ const PASSWORD = 'Str0ng!Pass'
 const TRANSPORT_FAILURE = new TypeError('Failed to fetch')
 const GATEWAY_502 = { errorCode: 'UNKNOWN_ERROR', message: '', status: 502 }
 const CODELESS_BUSINESS_400 = { errorCode: 'UNKNOWN_ERROR', message: '', status: 400 }
+// Status-ABSENT codeless business error — the shape a real codeless business error has IN PRODUCTION
+// today, where the api layer drops `status` (green-frontend-api threads it through later). The (d)
+// fixture bakes in status:400 and so cannot catch a `status===undefined → network` slip; this one
+// pins that a status-less rejection carrying an errorCode STAYS on login-form-error.
+const CODELESS_BUSINESS_NO_STATUS = { errorCode: 'UNKNOWN_ERROR', message: '' }
 const INVALID_CREDENTIALS = { errorCode: 'INVALID_CREDENTIALS', message: 'Неверный email или пароль' }
 
 async function submitRejectingWith(rejection: unknown) {
@@ -43,9 +48,7 @@ async function submitRejectingWith(rejection: unknown) {
   })
 }
 
-// RED (5.6, 2026-07-21): skipped so the red commit's suite stays green — (a) and (c) fail today
-// (no `login-network-error` state exists yet). green-frontend un-skips after building the state.
-describe.skip('LoginForm network/transport error', () => {
+describe('LoginForm network/transport error', () => {
   afterEach(() => {
     vi.mocked(api.login).mockReset()
   })
@@ -106,6 +109,19 @@ describe.skip('LoginForm network/transport error', () => {
   // a real client-side 4xx behind a "check your connection" message.
   it('keeps a codeless 4xx business error in the form-error element', async () => {
     await submitRejectingWith(CODELESS_BUSINESS_400)
+
+    await waitFor(() =>
+      expect(screen.getByTestId('login-form-error').textContent).toBe(GENERIC_LOGIN_FAILURE_MESSAGE),
+    )
+    expect(screen.queryByTestId('login-network-error')).not.toBeInTheDocument()
+  })
+
+  // (e) THE STATUS-ABSENT CONVERSE — pins the discriminator to `status >= 500` ONLY, never
+  // `status === undefined || status >= 500`. A codeless business error arrives status-less in
+  // production (the api drops status); it must STAY in login-form-error, not leak to the network
+  // state behind a "check your connection" message. (d) can't catch this — it bakes in status:400.
+  it('keeps a status-less codeless business error in the form-error element', async () => {
+    await submitRejectingWith(CODELESS_BUSINESS_NO_STATUS)
 
     await waitFor(() =>
       expect(screen.getByTestId('login-form-error').textContent).toBe(GENERIC_LOGIN_FAILURE_MESSAGE),

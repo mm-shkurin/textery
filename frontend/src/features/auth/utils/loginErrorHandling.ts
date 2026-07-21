@@ -15,6 +15,27 @@ export function isAccountLocked(error: unknown): boolean {
   return hasErrorCode(error, 'ACCOUNT_LOCKED')
 }
 
+// Is this rejection a network/transport failure rather than a business/validation response? Two
+// shapes qualify, and merely-absent status is NOT one of them:
+//   * TRANSPORT-SHAPED — the rejection is not an object carrying an `errorCode` (a bare
+//     `TypeError('Failed to fetch')`, a bodyless connection drop). This is live regardless of
+//     status, since a transport failure has no body to carry one.
+//   * GATEWAY 5xx — a codeless `UNKNOWN_ERROR` body wearing a `status >= 500` (a proxy 502 during a
+//     deploy). It is told from a GENUINE codeless business error ONLY by that 5xx status.
+// Deliberately `status >= 500` only, never `status === undefined || status >= 500`: a status-less
+// rejection that DOES carry an errorCode is a real client-side business error (production currently
+// drops status), and must stay on the form-error path — routing it to "check your connection"
+// would strand a 4xx behind the wrong message.
+export function isLoginNetworkError(error: unknown): boolean {
+  if (!hasProp(error, 'errorCode')) {
+    return true
+  }
+  if (hasProp(error, 'status')) {
+    return typeof error.status === 'number' && error.status >= 500
+  }
+  return false
+}
+
 // The cooldown the account-locked screen counts down. Sourced from the Retry-After header, which
 // loginApi surfaces as `retryAfterSeconds` (deferred red-frontend-api). Returns NaN when the field
 // is absent or not a number, so the screen falls back to its default window rather than rendering

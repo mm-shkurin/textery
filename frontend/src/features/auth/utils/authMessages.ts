@@ -8,6 +8,12 @@
 // Each constant is the fallback for ONE meaning, and they are not interchangeable: stamping the
 // login constant onto a registration failure forges provenance a consumer cannot recover.
 export const GENERIC_LOGIN_FAILURE_MESSAGE = 'Не удалось войти'
+// Network/transport failure copy — a connection problem, not a rejected credential. Kept DISTINCT
+// from the generic login-failure text so the form can tell the user their password may be fine and
+// to retry, rather than implying it was wrong. Form-owned (display seam): the api mapper never sees
+// this, so a fixture carrying no network text still renders it.
+export const NETWORK_LOGIN_FAILURE_MESSAGE =
+  'Не удалось связаться с сервером. Проверьте подключение и попробуйте снова.'
 export const GENERIC_REGISTER_FAILURE_MESSAGE = 'Не удалось зарегистрироваться'
 export const GENERIC_VERIFY_FAILURE_MESSAGE = 'Не удалось подтвердить код'
 
