@@ -7,6 +7,7 @@ from clients.application.dto.auth.resend_request_dto import ResendRequestDto
 from clients.application.dto.auth.resend_response_dto import ResendResponseDto
 from clients.application.dto.auth.verify_request_dto import VerifyRequestDto
 from clients.application.dto.auth.verify_response_dto import VerifyResponseDto
+from statements.response_assertions import assert_account_verified
 from statements.verification_code_assertions import assert_valid_verification_code
 
 
@@ -91,11 +92,7 @@ class ResendStatements:
         )
 
     def assert_new_code_verifies(self, new_verify: VerifyResponseDto) -> None:
-        assert new_verify.status_code == 200, (
-            f"expected the newly issued code to verify the account (200), got "
-            f"status_code={new_verify.status_code}, body={new_verify.body}"
-        )
-        assert new_verify.body == {"is_verified": True}, (
-            f"expected body {{'is_verified': True}} from verifying the new code, "
-            f"got body={new_verify.body}"
-        )
+        # The verified end-state (200 + {"is_verified": True}) is the shared
+        # /verify success contract owned by assert_account_verified — reuse it
+        # rather than re-encoding it, exactly as VerifyStatements does.
+        assert_account_verified(new_verify)
