@@ -67,6 +67,34 @@ class VerificationCodeStorageStatements:
     async def reload_active_code(self, account_id: UUID) -> None:
         self.reloaded_code = await self._storage.find_active_by_account_id(account_id)
 
+    async def consume_and_resave_reloaded_code(self, consumed_at: datetime) -> None:
+        # Drive save()'s UPDATE branch: the reloaded code already has a row, so
+        # stamping consumed_at and saving the same id takes the `existing is not
+        # None` path (existing.consumed_at = code.consumed_at), not a fresh INSERT.
+        code = self.reloaded_code
+        assert code is not None, "expected a reloaded code to consume, got None"
+        code.consume(consumed_at)
+        self.saved_code = code
+        await self._storage.save(code)
+
+    def assert_created_at_survived_update(
+        self, expected_created_at: datetime, expected_consumed_at: datetime
+    ) -> None:
+        # The write-once invariant: the consume/update path must leave created_at
+        # untouched (find_active orders by it -> a rewritten created_at would let a
+        # consumed code jump a newer resend). consumed_at is asserted set too, so a
+        # no-op save that changed nothing cannot pass this by leaving created_at be.
+        reloaded = self.reloaded_code
+        assert reloaded is not None, "expected an active code to reload, got None"
+        assert reloaded.created_at == expected_created_at, (
+            f"expected created_at to survive the consume/update unchanged, "
+            f"reloaded created_at {reloaded.created_at!r}, issued {expected_created_at!r}"
+        )
+        assert reloaded.consumed_at == expected_consumed_at, (
+            f"expected the update to have stamped consumed_at, "
+            f"got {reloaded.consumed_at!r}, expected {expected_consumed_at!r}"
+        )
+
     def assert_reloaded_code_matches_saved(self, expected_created_at: datetime) -> None:
         # Assert the WHOLE object rebuilt by find_active_by_account_id -> to_domain,
         # not just created_at: this is the only test that exercises the to_domain

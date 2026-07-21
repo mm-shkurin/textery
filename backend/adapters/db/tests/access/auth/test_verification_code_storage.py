@@ -1,10 +1,9 @@
 from datetime import UTC, datetime
 
-import pytest
-
 from statements.verification_code_storage_statements import VerificationCodeStorageStatements
 
 _KNOWN_PAST_CREATED_AT = datetime(2020, 1, 1, tzinfo=UTC)
+_KNOWN_CONSUMED_AT = datetime(2020, 1, 1, 0, 5, tzinfo=UTC)
 
 
 class TestSave:
@@ -35,10 +34,6 @@ class TestSaveGeneratedCode:
         verification_code_storage_statements.assert_fetched_code_is_the_generated_str()
 
 
-@pytest.mark.skip(
-    reason="RED: save() stamps datetime.now(UTC) at insert, discarding code.created_at "
-    "(verification_code_storage.py:69 / from_domain created_at param). Story 7 4.1 green-adapter."
-)
 class TestSavePersistsDomainCreatedAt:
     """save() must persist the domain object's own created_at (the instant issued
     from the injected Clock), not a wall-clock stamp. The resend-cooldown gate
@@ -58,4 +53,35 @@ class TestSavePersistsDomainCreatedAt:
         await verification_code_storage_statements.reload_active_code(account.id)
         verification_code_storage_statements.assert_reloaded_code_matches_saved(
             _KNOWN_PAST_CREATED_AT
+        )
+
+
+class TestSavePreservesCreatedAtOnUpdate:
+    """save()'s UPDATE branch (consume) must never rewrite created_at.
+
+    find_active_by_account_id orders by created_at desc, so supersession and the
+    resend cooldown (scenario 4.1) depend on created_at staying the code's real
+    issuance instant. save() has two paths -- insert (new row) and update (stamp
+    consumed_at on an existing row). The insert test above guards the insert path;
+    this guards that consuming a code and re-saving it (the update path) leaves
+    created_at at the value it was issued with, while proving the update really
+    happened (consumed_at now set). Issue a code with a known past created_at,
+    reload it, consume-and-resave through the update branch, reload again, and
+    assert created_at is still T0 and consumed_at is set."""
+
+    async def test_should_preserve_created_at_through_consume_update(
+        self, verification_code_storage_statements: VerificationCodeStorageStatements
+    ):
+        account = await verification_code_storage_statements.given_saved_account()
+        code = verification_code_storage_statements.build_code_with_created_at(
+            account, _KNOWN_PAST_CREATED_AT
+        )
+        await verification_code_storage_statements.save_code(code)
+        await verification_code_storage_statements.reload_active_code(account.id)
+        await verification_code_storage_statements.consume_and_resave_reloaded_code(
+            _KNOWN_CONSUMED_AT
+        )
+        await verification_code_storage_statements.reload_active_code(account.id)
+        verification_code_storage_statements.assert_created_at_survived_update(
+            _KNOWN_PAST_CREATED_AT, _KNOWN_CONSUMED_AT
         )

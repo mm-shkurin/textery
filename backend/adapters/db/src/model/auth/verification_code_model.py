@@ -22,14 +22,14 @@ class VerificationCodeModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     @classmethod
-    def from_domain(cls, code: VerificationCode, created_at: datetime) -> "VerificationCodeModel":
+    def from_domain(cls, code: VerificationCode) -> "VerificationCodeModel":
         return cls(
             id=code.id,
             account_id=code.account_id,
             code=code.code,
             expires_at=code.expires_at,
             consumed_at=code.consumed_at,
-            created_at=created_at,
+            created_at=code.created_at,
         )
 
     def to_domain(self) -> VerificationCode:

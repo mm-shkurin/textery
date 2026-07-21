@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -66,7 +66,7 @@ class SqlAlchemyVerificationCodeRepository:
         """
         existing = await self._session.get(VerificationCodeModel, code.id)
         if existing is None:
-            self._session.add(VerificationCodeModel.from_domain(code, created_at=datetime.now(UTC)))
+            self._session.add(VerificationCodeModel.from_domain(code))
         else:
             existing.consumed_at = code.consumed_at
         await self._session.flush()
