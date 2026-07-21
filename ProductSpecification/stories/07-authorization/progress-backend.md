@@ -362,8 +362,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
   `401 {"error_code": "INVALID_CREDENTIALS"}`
 
 ### Scenario 5.3: Failed-attempt counter increments atomically across concurrent failures
-- [ ] red-acceptance
-- [ ] design
+- [S] red-acceptance — not HTTP-observable, no RED possible here. Two concurrent wrong-password logins for the same verified account both answer an **identical generic 401** (5.2's generic-credentials taxonomy — same error_code/message for unknown-email and wrong-password), so no HTTP assertion can distinguish "counter reflects both failures" from "one increment lost to a race." The failed-attempt counter is **not exposed in any response**, and the only thing that would make it observable — lockout at N — is **Scenario 5.4**, not yet built. The real invariant (two racing `UPDATE … SET failed_attempt_count = failed_attempt_count + 1` both land, vs an ORM load-then-save losing one) must be pinned one layer down at the **DB adapter** with a real two-racing-session test (owned by design + red-adapter db / green-adapter db below). A concurrent-both-401 HTTP pin was considered and REJECTED as valueless: both-401 is already covered by 5.2's generic-credentials behavior and exercises none of the atomic-increment path. Mirrors 3.6/4.4 `[S] red-acceptance`. **Note: 5.3 INTRODUCES the `failed_attempt_count` counter + its atomic increment; 5.4 (lockout after N) builds on it.**
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
