@@ -27,9 +27,15 @@ to a race"). The DSL note is explicit: *"DB column updated via atomic increment
 ### 1. New column `failed_attempt_count` on `accounts`
 
 `failed_attempt_count INTEGER NOT NULL DEFAULT 0`. Additive, safe for existing
-rows (they default to 0). New alembic migration chained off the current head
-(`f6a7b8c9d0e1`, accounts_email_unique) — verify the head with `alembic heads` at
-green-adapter db time.
+rows (they default to 0). New alembic migration chained off the current head — which is
+**`e1f2a3b4c5d6`** (generations_updated_at), confirmed by `alembic heads`. (An
+earlier draft of this ADR said `f6a7b8c9d0e1`; that is STALE — it already has a
+child `a7b8c9d0e1f2`, so basing the new migration on it would create a second
+head and break `alembic upgrade head`. Re-verify with `alembic heads` returning
+exactly one line at green time.) The column must carry a **`server_default="0"`**
+(not just an ORM-side `default=0`) so `op.add_column` backfills existing
+`accounts` rows — a `NOT NULL` add with no server default fails on a populated
+production table.
 
 ### 2. Atomic increment via a single DB-side UPDATE (never ORM load-then-save)
 
