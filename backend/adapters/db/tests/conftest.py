@@ -64,6 +64,25 @@ async def account_concurrency_statements():
 
 
 @pytest_asyncio.fixture
+async def failed_attempt_concurrency_statements():
+    from statements.failed_attempt_concurrency_statements import (
+        FailedAttemptConcurrencyStatements,
+    )
+
+    os.environ.setdefault(TEST_DATABASE_URL_ENV_VAR, DEFAULT_TEST_DATABASE_URL)
+    os.environ["DATABASE_URL"] = os.environ[TEST_DATABASE_URL_ENV_VAR]
+    engine = create_engine()
+    session_factory = create_session_factory(engine)
+    yield FailedAttemptConcurrencyStatements(session_factory)
+    async with engine.connect() as cleanup_connection:
+        await cleanup_connection.execute(
+            text("TRUNCATE TABLE generations, documents, verification_codes, accounts")
+        )
+        await cleanup_connection.commit()
+    await engine.dispose()
+
+
+@pytest_asyncio.fixture
 async def verification_code_concurrency_statements():
     from statements.verification_code_concurrency_statements import (
         VerificationCodeConcurrencyStatements,
