@@ -118,22 +118,35 @@ class ResendCodeStatements:
         return None
 
     def assert_rejected_as_cooldown_active_with_no_new_code(self) -> None:
-        assert isinstance(self.thrown_exception, ValidationException), (
-            f"expected ValidationException('{self.COOLDOWN_ERROR_CODE}'), got "
-            f"{type(self.thrown_exception).__name__ if self.thrown_exception else None}: "
-            f"{self.thrown_exception}"
+        self._assert_validation_exception(
+            self.thrown_exception, self.COOLDOWN_ERROR_CODE, self.COOLDOWN_MESSAGE
         )
-        actual = (self.thrown_exception.error_code, self.thrown_exception.message)
-        expected = (self.COOLDOWN_ERROR_CODE, self.COOLDOWN_MESSAGE)
-        assert actual == expected, f"expected {expected}, got {actual}"
         assert len(self.verification_code_repository.saved_codes) == self.codes_before_resend, (
             f"expected an in-cooldown resend to issue NO new code, saved_codes went from "
             f"{self.codes_before_resend} to {len(self.verification_code_repository.saved_codes)}"
         )
 
     def assert_new_code_issued_and_supersedes_the_old_one(self) -> None:
+        self._assert_fresh_code_issued()
+        self._assert_is_invalid_or_expired(self.old_code_verify_exception)
+        assert self.new_code_verify_exception is None, (
+            f"expected the NEW code to verify the account, got "
+            f"{type(self.new_code_verify_exception).__name__}: {self.new_code_verify_exception}"
+        )
+        assert self.account_repository.saved_accounts[-1].is_verified is True, (
+            "expected the account to be verified by the NEW code after supersession"
+        )
+
+    def assert_a_new_code_was_issued_at_the_boundary(self) -> None:
+        # The boundary's intent (resend AT exactly 60s must SUCCEED, per the ADR's
+        # `now - max(created_at) >= 60s`) lives in the test method's docstring; the
+        # observable outcome is identical to any successful resend, so it shares the
+        # same fresh-code assertion.
+        self._assert_fresh_code_issued()
+
+    def _assert_fresh_code_issued(self) -> None:
         assert self.thrown_exception is None, (
-            f"expected a past-cooldown resend to succeed, got "
+            f"expected the resend to succeed, got "
             f"{type(self.thrown_exception).__name__}: {self.thrown_exception}"
         )
         assert len(self.verification_code_repository.saved_codes) == self.codes_before_resend + 1, (
@@ -147,39 +160,19 @@ class ResendCodeStatements:
             f"expected the reissued code to differ from the superseded one, both were "
             f"{self.new_code!r}"
         )
-        self._assert_is_invalid_or_expired(self.old_code_verify_exception)
-        assert self.new_code_verify_exception is None, (
-            f"expected the NEW code to verify the account, got "
-            f"{type(self.new_code_verify_exception).__name__}: {self.new_code_verify_exception}"
-        )
-        assert self.account_repository.saved_accounts[-1].is_verified is True, (
-            "expected the account to be verified by the NEW code after supersession"
-        )
-
-    def assert_a_new_code_was_issued_at_the_boundary(self) -> None:
-        assert self.thrown_exception is None, (
-            f"expected a resend at exactly the 60s boundary to SUCCEED (ADR: "
-            f"now - max(created_at) >= 60s), got "
-            f"{type(self.thrown_exception).__name__}: {self.thrown_exception}"
-        )
-        assert len(self.verification_code_repository.saved_codes) == self.codes_before_resend + 1, (
-            f"expected exactly one NEW code persisted at the boundary, saved_codes went from "
-            f"{self.codes_before_resend} to {len(self.verification_code_repository.saved_codes)}"
-        )
-        assert self.new_code is not None and len(self.new_code) == 6 and self.new_code.isdigit(), (
-            f"expected a fresh 6-digit code at the boundary, got {self.new_code!r}"
-        )
-        assert self.new_code != self.old_code, (
-            f"expected the boundary-reissued code to differ from the superseded one, both were "
-            f"{self.new_code!r}"
-        )
 
     def _assert_is_invalid_or_expired(self, exc: Exception | None) -> None:
+        self._assert_validation_exception(
+            exc, self.INVALID_OR_EXPIRED_CODE, self.INVALID_OR_EXPIRED_MESSAGE
+        )
+
+    def _assert_validation_exception(
+        self, exc: Exception | None, expected_error_code: str, expected_message: str
+    ) -> None:
         assert isinstance(exc, ValidationException), (
-            f"expected the superseded OLD code to be rejected as "
-            f"ValidationException('{self.INVALID_OR_EXPIRED_CODE}'), got "
+            f"expected ValidationException('{expected_error_code}'), got "
             f"{type(exc).__name__ if exc else None}: {exc}"
         )
         actual = (exc.error_code, exc.message)
-        expected = (self.INVALID_OR_EXPIRED_CODE, self.INVALID_OR_EXPIRED_MESSAGE)
+        expected = (expected_error_code, expected_message)
         assert actual == expected, f"expected {expected}, got {actual}"
