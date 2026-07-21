@@ -20,6 +20,7 @@ from statements.frontend.generation.manual_editor_statements import ManualEditor
 from statements.frontend.generation.mode_modal_statements import ModeModalStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
 from statements.generation_statements import GenerationStatements
+from statements.resend_statements import ResendStatements
 
 # iPhone 12/13-class viewport — the smallest common real-device width the
 # "design for phone" scenarios must not horizontally overflow at.
@@ -46,6 +47,11 @@ def auth_statements(application_client):
 @pytest_asyncio.fixture
 def verify_statements(application_client):
     return VerifyStatements(application_client)
+
+
+@pytest_asyncio.fixture
+def resend_statements(application_client):
+    return ResendStatements(application_client)
 
 
 @pytest.fixture

@@ -242,8 +242,8 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [S] green-acceptance — HTTP idempotent-success leg already landed in the red-acceptance step above (`test_verify_concurrent_acceptance.py`, both-200); the exactly-one-transition invariant is pinned at the db-adapter steps, not here (not HTTP-observable)
 
 ### Scenario 4.1: Resend issues a new code and invalidates the previous one
-- [ ] red-acceptance
-- [ ] design
+- [x] red-acceptance — new `test_resend_supersedes_previous_code_acceptance.py` + `ResendStatements` DSL + `resend_code()` client helper + resend request/response DTOs + `resend_statements` conftest fixture. Pins only the HTTP-observable end-state (no server-clock lever at this layer): resend returns a fresh 6-digit code ≠ old; the OLD code no longer verifies; the NEW code verifies. **Genuine RED** — `POST /api/v1/auth/resend-code` is unmounted: predicted `AssertionError: expected 200 OK from resend, got status_code=404`; actual `...got status_code=404, body={'detail': 'Not Found'}` — matched. Skip-marked; acceptance auth suite 24 passed / 1 skipped / 0 failed. test-review strengthened `assert_old_code_no_longer_verifies` from loose `!=200`/`!={...}` to strict `status_code == 400` + exact body `{"error_code":"INVALID_OR_EXPIRED_CODE","message":"The verification code is invalid or has expired."}` (a 500/409/other-400 would otherwise pass for the wrong reason). Files 47/101 lines (under cap). **Design-step preconditions flagged (in the test docstring):** (1) cooldown ">60s" boundary is not HTTP-observable without a real wait — prove it at the usecase layer with FakeClock (mirrors 3.6/2.4b/3.4), not here; (2) first-resend-inside-cooldown — a fresh registration's immediate first resend may fall inside the cooldown if measured from last issuance; design must decide (e.g. registration issuance doesn't start the cooldown).
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
