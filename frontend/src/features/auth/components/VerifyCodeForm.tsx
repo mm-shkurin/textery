@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { resendCode } from '../api/authApi'
-import { verify, type VerifyApiError } from '../api/verifyApi'
+import { verify } from '../api/verifyApi'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { CODE_LENGTH, VerifyCodeInputs } from './VerifyCodeInputs'
 import { useResendCountdown } from '../hooks/useResendCountdown'
 import { signInAfterVerification } from '../utils/postVerifySignIn'
-import { GENERIC_VERIFY_FAILURE_MESSAGE, isUsableMessage } from '../utils/authMessages'
+import { GENERIC_VERIFY_FAILURE_MESSAGE } from '../utils/authMessages'
+import { verifyErrorMessage } from '../utils/verifyErrorHandling'
 import './AuthForm.css'
 import './VerifyCodeForm.css'
 
@@ -24,16 +25,9 @@ interface VerifyRouterState {
 const RESEND_FAILURE_MESSAGE = 'Не удалось отправить код повторно. Попробуйте ещё раз позже.'
 const MISSING_EMAIL_MESSAGE = 'Не найден email для подтверждения — начните регистрацию заново'
 
-function applyVerifyError(error: unknown): string {
-  if (error && typeof error === 'object' && 'errorCode' in error) {
-    const apiError = error as VerifyApiError
-    if (isUsableMessage(apiError.message)) {
-      return apiError.message
-    }
-  }
-  return GENERIC_VERIFY_FAILURE_MESSAGE
-}
-
+// Rejection interpretation (wrong-code distinct message, usable-server-message pass-through,
+// generic fallback) lives in ../utils/verifyErrorHandling so this component stays under the
+// 200-line cap and mirrors login's loginErrorHandling.
 export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
   const navigate = useNavigate()
   const routerState = (useLocation().state ?? {}) as VerifyRouterState
@@ -71,7 +65,7 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
       navigate(await signInAfterVerification(email), { replace: true })
     } catch (error) {
       setIsVerified(false)
-      setFormError(applyVerifyError(error))
+      setFormError(verifyErrorMessage(error))
     } finally {
       setIsSubmitting(false)
     }

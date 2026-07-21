@@ -23,11 +23,7 @@ vi.mock('../../api/verifyApi', async (importOriginal) => {
   return { ...actual, verify: vi.fn() }
 })
 
-// RED (Scenario 5.5): un-skip in green-frontend. Fails today because applyVerifyError has no
-// errorCode-keyed wrong-code branch — an INVALID_OR_EXPIRED_CODE with no server message falls
-// through to GENERIC_VERIFY_FAILURE_MESSAGE ('Не удалось подтвердить код') instead of the distinct
-// wrong-code copy. Confirmed: expected wrong-code text, received the generic fallback.
-describe.skip('VerifyCodeForm wrong code', () => {
+describe('VerifyCodeForm wrong code', () => {
   it('shows a distinct wrong-code message when the server rejects the submitted code', async () => {
     vi.mocked(verifyApi.verify).mockRejectedValue({
       errorCode: 'INVALID_OR_EXPIRED_CODE',
@@ -41,6 +37,43 @@ describe.skip('VerifyCodeForm wrong code', () => {
     // generic fallback. Without this, green could collapse the two strings and the exact-match
     // below would still pass on the generic text.
     expect(WRONG_CODE_MESSAGE).not.toBe(GENERIC_VERIFY_FAILURE_MESSAGE)
+
+    const error = await screen.findByTestId('verify-form-error')
+    expect(error.textContent).toBe(WRONG_CODE_MESSAGE)
+  })
+
+  // Premortem guard (a11y): for a sighted user "the message reached them" means the text is on
+  // screen, but for a screen-reader user it means the live region ANNOUNCED it. VerifyCodeForm's
+  // error carries role="alert" deliberately; a refactor dropping or renaming it would leave the
+  // text present-but-unannounced and stay green under the testid query above. Query by role and
+  // assert the SAME element carries the Selenium testid + the exact copy — mirrors
+  // LoginForm.unverified.test.tsx:59-61.
+  it('announces the wrong-code message via role=alert on the same element that carries the testid', async () => {
+    vi.mocked(verifyApi.verify).mockRejectedValue({
+      errorCode: 'INVALID_OR_EXPIRED_CODE',
+      message: '',
+    })
+    renderWithRouter(<VerifyCodeForm email="user@example.com" />)
+
+    fireEvent.click(screen.getByTestId('verify-confirm-button'))
+
+    const error = await screen.findByRole('alert')
+    expect(error).toHaveAttribute('data-testid', 'verify-form-error')
+    expect(error.textContent).toBe(WRONG_CODE_MESSAGE)
+  })
+
+  // Premortem guard (INVALID_CODE): the malformed-code 400 is a DISTINCT backend code, but it gives
+  // the user the same action — re-check the code — so the client shows the SAME wrong-code message
+  // rather than surfacing a cause distinction they cannot act on (consistent with the enumeration
+  // oracle). Pins that decision so INVALID_CODE cannot silently drift to the generic fallback.
+  it('shows the same wrong-code message for a malformed-code INVALID_CODE rejection', async () => {
+    vi.mocked(verifyApi.verify).mockRejectedValue({
+      errorCode: 'INVALID_CODE',
+      message: '',
+    })
+    renderWithRouter(<VerifyCodeForm email="user@example.com" />)
+
+    fireEvent.click(screen.getByTestId('verify-confirm-button'))
 
     const error = await screen.findByTestId('verify-form-error')
     expect(error.textContent).toBe(WRONG_CODE_MESSAGE)
