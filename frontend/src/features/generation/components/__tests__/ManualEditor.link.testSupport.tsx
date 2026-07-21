@@ -15,16 +15,8 @@ import { renderEditorWithDocumentCreated, selectRange } from './ManualEditor.tes
 // flow (popover in the document, full attribute set, aria-pressed toggling on
 // cursor move), so it still cannot be expressed as a call to this.
 export async function applyLinkUrl(url: string) {
-  await renderEditorWithDocumentCreated()
+  const contentArea = await openLinkPopover()
 
-  const contentArea = screen.getByTestId('editor-content-area')
-  contentArea.textContent = 'hello world'
-  fireEvent.input(contentArea)
-
-  selectRange(contentArea.firstChild as Node, 0, 5)
-  fireEvent.select(contentArea)
-
-  fireEvent.click(screen.getByTestId('toolbar-link'))
   fireEvent.change(screen.getByTestId('link-url-input'), { target: { value: url } })
   fireEvent.click(screen.getByTestId('link-apply'))
 

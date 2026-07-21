@@ -813,7 +813,43 @@ add new ones — the first red phase in this story to do so.
   document-level `mousedown` listener treating a target not inside the popover as "outside"; green needs
   captured-range state at open + href prefill from `editor.getAttributes('link')` + `onKeyDown` (Enter→apply,
   Escape→cancel) + the mousedown handler (close on success, stay-open-with-alert on rejection).
-- [~] green-frontend-popover-contract
+  **Review-pass verdicts on `c04626f` (red): agent-review CONCERNS, premortem CONCERNS — non-gating, commit
+  stands. `/refactor` applied one dedup (`applyLinkUrl` composes `openLinkPopover`, testSupport 99→91). The
+  reds pin the happy paths but leave dangerous edges unpinned; green must implement the guards defensively AND
+  a follow-up `red-frontend-popover-contract-2` should pin them (a green built to satisfy only the 7 current
+  tests ships several ways broken while green):**
+  - *(agent-review CONCERNS)* **click-outside path does NOT discriminate tension 1.** The click-outside test
+    never moves the caret before `mouseDown(document.body)`, so live selection == captured range — a green
+    applying to the LIVE caret passes identically. The Apply-BUTTON path IS discriminated (moves caret to 8,8).
+    Follow-up red: move the caret after open, assert click-outside still lands the link on "hello".
+  - *(agent-review minor)* click-outside+rejected test omits `querySelectorAll('a')` length 0 — add it (or reuse
+    `expectRejected`) so "no anchor silently created on the captured range" is pinned, not left to `javascript:`'s
+    inherent rejection.
+  - *(premortem CREDIBLE 1)* **leaked document listener.** Green wires `document.addEventListener('mousedown')`;
+    popover unmounts on every close, so a missing `useEffect` cleanup leaves a stale listener over the old
+    editor+range → next mousedown re-applies on a torn-down editor. No red fires a second document mousedown
+    AFTER close/unmount. Follow-up red: open → close (Escape/Cancel) → `mouseDown(document.body)` → assert anchor
+    count unchanged + no throw.
+  - *(premortem CREDIBLE 2)* **wrong-target apply.** Only `mouseDown(document.body)` is tested; `toolbar-link` is
+    a SIBLING of the popover (inside `me-link-popover-anchor`), so a naive `popoverRef.contains(target)` treats
+    the link button AND the other 16 toolbar buttons AND editor content as "outside" → each becomes an
+    unintended apply (and the link button re-opens an empty popover via `handleClick`). Follow-up red: mousedown
+    on `toolbar-link` → toggles closed, no anchor; mousedown on `toolbar-bold` → bold runs, no link applied.
+  - *(premortem CREDIBLE 3)* **Enter mid-IME composition.** Green adds `onKeyDown` Enter→apply; without an
+    `event.isComposing`/`keyCode===229` guard, Enter-to-commit-composition misfires as submit — and this editor
+    is Russian/IDN-first, the exact population using composition input. Follow-up red:
+    `keyDown(input,{key:'Enter',isComposing:true})` → no anchor, popover stays open.
+  - *(premortem lower)* captured range stored as raw ProseMirror positions goes stale across a `setContent`
+    (save handler) while open — map through intervening transactions or it lands wrong/throws; and Escape does
+    not restore focus to the editor (ADR left focus disposition to red; jsdom passes either way). Both named,
+    not surprises.
+- [~] green-frontend-popover-contract — implement: captured-range state at open (map positions through
+  transactions, not raw absolute), href prefill from `editor.getAttributes('link').href`, `onKeyDown`
+  (Enter→apply guarded by `!event.isComposing`, Escape→cancel + restore editor focus), and a document-level
+  `mousedown` listener (with `useEffect` CLEANUP) that treats a target not inside the popover as outside →
+  apply the captured range, EXCLUDING the toolbar buttons/link button/editor from "outside", close on success,
+  stay-open-with-alert on rejection. The 7 current reds gate the happy paths; implement the premortem guards
+  above defensively even though no red forces them yet (a follow-up red will pin them).
 - [ ] red-frontend-aria — pin defect (6): the disclosure state must be visible and non-conflicting. Whatever the fix (separate the concerns, or drop `aria-pressed` from UI actions), assert `aria-expanded` toggles and that the open popover is visually distinguishable. Also fold defect (7): render the anchor `<span>` only for `action.ui`.
 - [ ] green-frontend-aria
 - [ ] red-frontend-api
