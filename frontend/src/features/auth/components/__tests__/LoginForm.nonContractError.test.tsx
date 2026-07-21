@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { renderWithRouter } from '../../../../test/renderWithRouter'
 import { LoginForm } from '../LoginForm'
+import { GENERIC_LOGIN_FAILURE_MESSAGE } from '../../utils/authMessages'
 import * as api from '../../api/loginApi'
 
 vi.mock('../../api/loginApi', () => ({
@@ -33,8 +34,9 @@ function renderAndSubmit() {
 //
 // So every non-contract outcome resolves to a client-owned generic constant. 5.3/5.4/5.6 will
 // branch distinct messages ABOVE this fallback; INTERNAL_SERVER_ERROR is used here precisely
-// because no planned scenario branches on it.
-const GENERIC_LOGIN_FAILURE_MESSAGE = 'Не удалось войти'
+// because no planned scenario branches on it. The constant itself is the canonical
+// GENERIC_LOGIN_FAILURE_MESSAGE from utils/authMessages (single source of truth, shared with the
+// sibling networkError test and the form's own render guard) — imported, not re-declared.
 
 describe('LoginForm non-contract rejections', () => {
   afterEach(() => {
