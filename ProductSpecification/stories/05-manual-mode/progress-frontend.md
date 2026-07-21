@@ -752,6 +752,28 @@ add new ones — the first red phase in this story to do so.
   | 0 skipped | 0 failed**; all 7 REDs un-skipped, both live guards green; tsc clean. Rejection mechanism
   verified against `extension-link/src/link.ts:376-384`, not assumed. Mutation-checked: `{tel}`-only special
   case fails the `sms:` row; HOST_SHAPE-only char screen fails the soft-hyphen G2 row.
+
+  **Review-pass verdicts on `1d9994b` (green): agent-review CONCERNS, premortem CONCERNS — both non-gating,
+  commits stand (behavior `1d9994b`, refactor `5d5933b` extracted `normalizeHref.ts` per the humble-object
+  rule). Both passes converge on ONE credible gap plus premortem adds a second — feed these into the next red
+  (a `url-shapes-4` or the popover-contract slice), NOT reopened here:**
+  - *(agent-review + premortem, CREDIBLE — same root)* **The `isUsable` screen is bypassed on the known-scheme
+    passthrough** (`normalizeHref`, `if (scheme && ALLOWED_SCHEMES.has(scheme)) return url` — returns unscreened).
+    So the SCHEMED twins of the exact vectors this step closed still link: `http://example.com:99999999999`
+    (dead port, `new URL()` throws) and `http://exa­mple.com` (soft-hyphen U+00AD). The schemeless forms the 7
+    REDs pin go through HOST_SHAPE/fallback and ARE rejected, so the suite is green — the security property is
+    only half-enforced (holds for bare-host shape, fails for explicit-scheme shape). Not a regression (the prior
+    `HAS_SCHEME` branch also passed schemed URLs through). Fix: run `isUsable` on the passthrough result too;
+    missing guard = two rejected-rows for `http://…:99999999999` and `http://exa­mple.com` in
+    `ManualEditor.link.urlShapes.output.test.tsx`.
+  - *(premortem, CREDIBLE — lower severity)* **ZWJ emoji path over-rejected.** `isUsable`'s `/\p{C}/u` rejects
+    U+200D (ZERO WIDTH JOINER, category Cf), so `http://example.com/👨‍👩‍👧` (family emoji) → REJECT — contradicting
+    the "emoji stays green" claim. The line-132 guard uses a SINGLE emoji (U+1F600, no ZWJ) so it's invisible to
+    the suite. If the product wants multi-codepoint emoji linked, `isUsable` must exempt U+200D (and likely the
+    U+FE0F variation selector, also Cf). Missing guard = an `expectSoleLink` row for a ZWJ-joined sequence.
+  - *(both, cleared on inspection)* REJECT sentinel `unsafe:rejected` correctly fails `isAllowedUri` → setLink
+    false → alert (verified against `extension-link/src/link.ts:167-179,370-384`); `javascript:` stays rejected;
+    single-emoji + Cyrillic stay green.
   <details><summary>original planning text</summary>
   fix `normalizeHref` so the 7 RED tests un-skip and pass, the 2 GREEN
   guards + whole suite stay green. Per the RED's green-note: (a) recognize a known-scheme SET before
