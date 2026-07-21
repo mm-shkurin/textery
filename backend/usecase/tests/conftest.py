@@ -8,6 +8,7 @@ from statements.register_atomic_write_statements import RegisterAtomicWriteState
 from statements.register_statements import RegisterStatements
 from statements.resend_code_lock_statements import ResendCodeLockStatements
 from statements.resend_code_statements import ResendCodeStatements
+from statements.resend_verified_statements import ResendVerifiedStatements
 from statements.requeue_stale_generations_statements import RequeueStaleGenerationsStatements
 from statements.verify_account_already_verified_statements import (
     VerifyAccountAlreadyVerifiedStatements,
@@ -75,6 +76,11 @@ def resend_code_statements():
 @pytest.fixture
 def resend_code_lock_statements():
     return ResendCodeLockStatements()
+
+
+@pytest.fixture
+def resend_verified_statements():
+    return ResendVerifiedStatements()
 
 
 @pytest.fixture
