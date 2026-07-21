@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from auth.login_user import LoginUser
 from auth.refresh_access_token import RefreshAccessToken
 from auth.register_user import RegisterUser
+from auth.resend_code import ResendCode
 from auth.verify_account import VerifyAccount
 from dto.auth.login_request_dto import LoginRequestDto
 from dto.auth.login_response_dto import LoginResponseDto
@@ -28,6 +29,10 @@ def get_login_user_usecase() -> LoginUser:
 
 
 def get_refresh_access_token_usecase() -> RefreshAccessToken:
+    raise NotImplementedError("wired by the application composition root")
+
+
+def get_resend_code_usecase() -> ResendCode:
     raise NotImplementedError("wired by the application composition root")
 
 

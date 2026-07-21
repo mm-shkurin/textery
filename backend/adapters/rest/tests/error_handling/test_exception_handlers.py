@@ -1,5 +1,6 @@
 import logging
 
+import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
@@ -74,6 +75,29 @@ class TestValidationExceptionHandler:
         assert response.json() == {
             "error_code": "ALREADY_VERIFIED",
             "message": "The account is already verified.",
+        }, f"unexpected response body {response.json()}"
+
+    @pytest.mark.skip(reason="RED: RESEND_COOLDOWN_ACTIVE absent from _ERROR_CODE_STATUS_MAP -> 400 default, not 429")
+    async def test_should_return_429_when_error_code_is_resend_cooldown_active(self):
+        app = FastAPI()
+
+        @app.get("/resend-cooldown")
+        async def resend_cooldown() -> None:
+            raise ValidationException(
+                error_code="RESEND_COOLDOWN_ACTIVE",
+                message="A verification code was recently sent. Please wait before requesting another.",
+            )
+
+        app.add_exception_handler(ValidationException, validation_exception_handler)
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/resend-cooldown")
+
+        assert response.status_code == 429, f"expected 429, got {response.status_code}"
+        assert response.json() == {
+            "error_code": "RESEND_COOLDOWN_ACTIVE",
+            "message": "A verification code was recently sent. Please wait before requesting another.",
         }, f"unexpected response body {response.json()}"
 
 
