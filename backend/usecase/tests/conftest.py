@@ -10,6 +10,9 @@ from statements.requeue_stale_generations_statements import RequeueStaleGenerati
 from statements.verify_account_already_verified_statements import (
     VerifyAccountAlreadyVerifiedStatements,
 )
+from statements.verify_account_atomic_transition_statements import (
+    VerifyAccountAtomicTransitionStatements,
+)
 from statements.verify_account_failure_statements import VerifyAccountFailureStatements
 from statements.verify_account_idempotency_statements import (
     VerifyAccountIdempotencyStatements,
@@ -55,6 +58,11 @@ def verify_account_idempotency_statements():
 @pytest.fixture
 def verify_account_already_verified_statements():
     return VerifyAccountAlreadyVerifiedStatements()
+
+
+@pytest.fixture
+def verify_account_atomic_transition_statements():
+    return VerifyAccountAtomicTransitionStatements()
 
 
 @pytest.fixture
