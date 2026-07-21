@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { renderWithRouter } from '../../../../test/renderWithRouter'
 import { LoginForm } from '../LoginForm'
-import { NETWORK_LOGIN_FAILURE_MESSAGE } from '../../utils/authMessages'
+import { GENERIC_LOGIN_FAILURE_MESSAGE, NETWORK_LOGIN_FAILURE_MESSAGE } from '../../utils/authMessages'
 import * as api from '../../api/loginApi'
 import { saveSession } from '../../utils/authSession'
 
@@ -36,7 +36,7 @@ async function submit() {
   })
 }
 
-describe.skip('LoginForm submit-path error handling', () => {
+describe('LoginForm submit-path error handling', () => {
   afterEach(() => {
     vi.mocked(api.login).mockReset()
     vi.mocked(saveSession).mockReset()
@@ -61,6 +61,11 @@ describe.skip('LoginForm submit-path error handling', () => {
     await waitFor(() => expect(screen.getByTestId('login-submit-button')).not.toBeDisabled())
     expect(screen.queryByTestId('login-network-error')).not.toBeInTheDocument()
     expect(document.body.textContent).not.toContain(NETWORK_LOGIN_FAILURE_MESSAGE)
+    // (E) The user gets FEEDBACK, not a silent swallow: a post-login fault shows the generic
+    // login-failure message on the form-error element (never the network banner). A green that
+    // simply swallowed the throw — no banner AND no message — would pass the two lines above but
+    // strand the user on a login page that did nothing; this pins that it does not.
+    expect(screen.getByTestId('login-form-error')).toHaveTextContent(GENERIC_LOGIN_FAILURE_MESSAGE)
   })
 
   // (2) STALE-BANNER TWO-SUBMIT — born-green regression guard (PASSES on current code, which

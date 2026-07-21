@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
 import { AccountLockedScreen } from './AccountLockedScreen'
-import { login } from '../api/loginApi'
+import { login, type LoginResult } from '../api/loginApi'
 import { saveSession } from '../utils/authSession'
 import { GENERIC_LOGIN_FAILURE_MESSAGE, NETWORK_LOGIN_FAILURE_MESSAGE } from '../utils/authMessages'
 import {
@@ -12,6 +12,7 @@ import {
   loginErrorMessage,
   readLockoutRetrySeconds,
 } from '../utils/loginErrorHandling'
+import { safeRedirectTarget } from '../utils/safeRedirectTarget'
 import './AuthForm.css'
 import './LoginForm.css'
 
@@ -19,17 +20,6 @@ import './LoginForm.css'
 // lockout detection, Retry-After extraction) lives in ../utils/loginErrorHandling so this
 // component stays under the 200-line cap and the branching has one testable home. Lockout is NOT
 // one of the message branches: it swaps the whole screen, handled separately below.
-
-// Where to land after a successful sign-in. The gate that bounced the user here puts the page
-// they wanted in router state; only an in-app absolute path is honoured — taking a redirect
-// target from anything a caller controls is how open-redirect bugs get in, and `state` is
-// reachable from a crafted link.
-function safeRedirectTarget(from: unknown): string {
-  if (typeof from === 'string' && from.startsWith('/') && !from.startsWith('//')) {
-    return from
-  }
-  return '/'
-}
 
 export function LoginForm() {
   const navigate = useNavigate()
@@ -52,45 +42,71 @@ export function LoginForm() {
   // just clear the lockout. Stable identity so the screen's expiry effect doesn't re-run per tick.
   const dismissLockout = useCallback(() => setLockoutSeconds(null), [])
 
+  // ONLY login()'s own rejection may reach here: lockout, transport/network, or a message
+  // rejection. A throw from the post-login steps is a LOCAL fault (storage, routing), not a
+  // transport failure, and must never be misread as "check your connection" — so it is kept out
+  // of this classifier entirely (see handleSubmit's split trys below).
+  function applyLoginFailure(error: unknown) {
+    // Lockout is not a message on the form — it replaces the form. Branch it out before the
+    // message path so the account-locked screen owns the display (message stays '' from the api).
+    if (isAccountLocked(error)) {
+      setLockoutSeconds(readLockoutRetrySeconds(error))
+      return
+    }
+    // A transport failure, a client-side timeout (a hung request), or a gateway 5xx is a
+    // connection problem, not a bad credential — it gets the distinct, retry-capable
+    // network-error state instead of the form-error message.
+    if (isLoginNetworkError(error)) {
+      setNetworkError(true)
+      return
+    }
+    setFormError(loginErrorMessage(error))
+  }
+
+  function finishSignIn(session: LoginResult) {
+    // A 200 with no usable token is a broken contract, not a successful login. Navigating on it
+    // would drop the user into the app with no credential and fail later, somewhere that cannot
+    // explain itself.
+    if (!session.accessToken) {
+      setFormError(GENERIC_LOGIN_FAILURE_MESSAGE)
+      return
+    }
+    if (!saveSession(session)) {
+      // Storage refused (private mode, embedded webview). Say so rather than navigating into an
+      // app that will behave as if signed out.
+      setFormError('Не удалось сохранить сессию — проверьте настройки браузера')
+      return
+    }
+    navigate(redirectTo, { replace: true })
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (isSubmitting) return
     setIsSubmitting(true)
     setFormError(null)
     setNetworkError(false)
+    // Wide finally: isSubmitting resets on EVERY exit path — a login rejection, a post-login
+    // throw, or success — so the spinner never strands and the submit button always re-enables.
     try {
-      const session = await login(
-        emailInputRef.current?.value ?? '',
-        passwordInputRef.current?.value ?? '',
-      )
-      // A 200 with no usable token is a broken contract, not a successful login. Navigating on
-      // it would drop the user into the app with no credential and fail later, somewhere that
-      // cannot explain itself.
-      if (!session.accessToken) {
+      let session: LoginResult
+      try {
+        session = await login(
+          emailInputRef.current?.value ?? '',
+          passwordInputRef.current?.value ?? '',
+        )
+      } catch (error) {
+        applyLoginFailure(error)
+        return
+      }
+      // Post-login is a SEPARATE concern from login()'s transport outcome: a throw here
+      // (saveSession/navigate faulting) is a local bug, so it earns the generic login-failure
+      // message — user feedback, not a silent swallow — and never the network banner.
+      try {
+        finishSignIn(session)
+      } catch {
         setFormError(GENERIC_LOGIN_FAILURE_MESSAGE)
-        return
       }
-      if (!saveSession(session)) {
-        // Storage refused (private mode, embedded webview). Say so rather than navigating into
-        // an app that will behave as if signed out.
-        setFormError('Не удалось сохранить сессию — проверьте настройки браузера')
-        return
-      }
-      navigate(redirectTo, { replace: true })
-    } catch (error) {
-      // Lockout is not a message on the form — it replaces the form. Branch it out before the
-      // message path so the account-locked screen owns the display (message stays '' from the api).
-      if (isAccountLocked(error)) {
-        setLockoutSeconds(readLockoutRetrySeconds(error))
-        return
-      }
-      // A transport failure or a gateway 5xx is a connection problem, not a bad credential — it
-      // gets the distinct, retry-capable network-error state instead of the form-error message.
-      if (isLoginNetworkError(error)) {
-        setNetworkError(true)
-        return
-      }
-      setFormError(loginErrorMessage(error))
     } finally {
       setIsSubmitting(false)
     }

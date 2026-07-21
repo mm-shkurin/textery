@@ -28,7 +28,7 @@ const PASSWORD = 'Str0ng!Pass'
 // The black-holed request: fetch's promise stays pending forever.
 const NEVER_SETTLES = (): Promise<Response> => new Promise<Response>(() => {})
 
-describe.skip('LoginForm indefinite-spinner / hung request', () => {
+describe('LoginForm indefinite-spinner / hung request', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.stubGlobal('fetch', vi.fn(NEVER_SETTLES))

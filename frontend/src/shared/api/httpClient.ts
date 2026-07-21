@@ -40,6 +40,49 @@ export interface RequestOptions {
   body?: unknown
 }
 
+// Client-side timeout for a single request. Its job is to stop a HUNG request (a proxy that
+// black-holes the POST, a dropped SYN) from spinning forever with no catch and no finally ever
+// running — the fetch promise would otherwise stay pending and the caller's submitting state
+// never resets. See LoginForm.indefiniteSpinner.test.tsx.
+//
+// The bound is deliberately GENEROUS, not tight: this transport is SHARED by every flow —
+// register/verify/refresh AND a real document generation, which the backend can take ~20s+ to
+// answer. A short bound would abort a slow-but-valid generation and show a false connection
+// error. So the floor is the slowest legitimate flow's budget (pinned ≥ 20s by
+// httpClient.timeout.test.ts), and this value clears it with margin while still capping a
+// genuine hang well inside a human's patience.
+export const REQUEST_TIMEOUT_MS = 25_000
+
+// A timeout is a TRANSPORT failure, not an HTTP response: it carries no `status` and no `body`,
+// so `isHttpError` is false and `toAuthApiError` rethrows it untouched — which is exactly what
+// routes it to the form's `login-network-error` / retry-capable state (the `!errorCode`
+// transport branch), never to a field-level validation message.
+export class RequestTimeoutError extends Error {
+  constructor() {
+    super('Request timed out')
+    this.name = 'RequestTimeoutError'
+  }
+}
+
+// Race the real work against a timer that REJECTS on its own — independently of whether the
+// transport observes any abort signal. A signal-only fix (fetch({signal})) is not enough: a
+// black-holed connection may never honour the abort, leaving the fetch pending forever; the
+// timer rejecting is what converts the hang into a rejection regardless.
+//
+// This does NOT abort the underlying request, and DELIBERATELY does not retry it. A client that
+// stops waiting has not undone a mutating POST the server may already be processing — silently
+// replaying it would risk a DUPLICATE registration/generation. So a timeout surfaces as an
+// error with a retry AFFORDANCE (the form re-enables its submit button); the actual retry is the
+// user's explicit choice, never an automatic replay. Generation's POST additionally carries an
+// Idempotency-Key, so even a user-driven retry collapses server-side rather than duplicating.
+function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new RequestTimeoutError()), ms)
+  })
+  return Promise.race([work, timeout]).finally(() => clearTimeout(timer))
+}
+
 // Rejections reach callers as `unknown`, and only SOME of them are HttpError: a transport
 // failure rejects with a bodyless TypeError from fetch itself. Callers that read `.status` or
 // `.body` must narrow first — reading them off a TypeError yields `undefined` and turns a
@@ -55,6 +98,13 @@ export function isHttpError(error: unknown): error is HttpError {
 }
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  // Every call — GET and mutating POST alike — is bounded: a hung POST is the one this scenario
+  // exists for (login), and the bound is reject-only with no auto-retry, so bounding a POST is
+  // safe against duplicates (see withTimeout).
+  return withTimeout(performRequest<T>(path, options), REQUEST_TIMEOUT_MS)
+}
+
+async function performRequest<T>(path: string, options: RequestOptions): Promise<T> {
   const { method = 'GET', headers = {}, body } = options
   const res = await fetch(`${API_BASE}${path}`, {
     method,
