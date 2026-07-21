@@ -2,16 +2,14 @@ from tests.backend.abstract_backend_test import AbstractBackendTest
 
 
 class TestResendCooldownActiveAcceptance(AbstractBackendTest):
-    """Scenario 4.1: Resend issues a new code and invalidates the previous one.
+    """Scenario 4.1 (HTTP-observable slice): the resend endpoint is live and the
+    cooldown is enforced, so an immediate resend is rejected 429
+    RESEND_COOLDOWN_ACTIVE.
 
-    Given a pending account with an active verification code
-    When the client requests a resend, more than 60 seconds after the previous issuance
-    Then a new 6-digit code is returned
-    And the previous code no longer verifies the account
-
-    HTTP-observable scope. The scenario's success path ("more than 60 seconds
-    after the previous issuance -> a new code is returned, the old one no longer
-    verifies") is NOT observable at the acceptance layer: the resend cooldown is
+    This test does NOT assert the scenario's success path — "a resend more than 60
+    seconds after the previous issuance returns a new 6-digit code and the old one
+    no longer verifies". That success path is NOT observable at the acceptance
+    layer: the resend cooldown is
     measured from the last issuance (registration counts, per
     decisions/resend-code-cooldown-and-supersession-decision.md), and there is no
     server-clock lever over HTTP to advance past the 60s window without a real

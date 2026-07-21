@@ -262,6 +262,7 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [ ] green-acceptance
 
 ### Scenario 4.3: Resend invalidates the old code and issues the new one atomically
+> **premortem CREDIBLE (carried from fbb5cb7, 4.1 green-acceptance):** the `find_active_by_account_id` `ORDER BY created_at DESC LIMIT 1` (verification_code_storage.py:31) that supersession AND the cooldown-from-newest depend on is crossed by NO test with MULTIPLE real rows — the usecase tests use a Python-ordered Fake, and the db tests + the 4.1 acceptance test each save exactly ONE code. A regression that reverses/drops the `ORDER BY` (or widens the filter) would leave every layer green while supersession silently returns the OLD code. This scenario writes ≥2 codes per account, so its db step is the natural home: add a db-adapter test saving two codes (`created_at` T0 and T0+Δ), calling `find_active_by_account_id`, and asserting the NEWEST (T0+Δ) is returned — the test that goes RED on a broken `ORDER BY created_at DESC`.
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase
