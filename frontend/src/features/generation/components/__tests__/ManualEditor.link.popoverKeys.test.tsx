@@ -13,7 +13,7 @@ describe('ManualEditor link popover — keyboard and click-outside', () => {
   // RED 2026-07-21 (green-frontend-popover-contract owns the fix): the URL input
   // has no onKeyDown, so Enter does nothing. Actual: expected the anchor set to
   // have length 1 but got 0.
-  it.skip('pressing Enter in the URL field applies the link, same as clicking Применить', async () => {
+  it('pressing Enter in the URL field applies the link, same as clicking Применить', async () => {
     const contentArea = await openLinkPopover()
 
     const input = screen.getByTestId('link-url-input')
@@ -25,7 +25,7 @@ describe('ManualEditor link popover — keyboard and click-outside', () => {
 
   // RED 2026-07-21: no Escape handler, so the popover stays mounted. Actual:
   // expected document not to contain element, found the popover <div>.
-  it.skip('pressing Escape cancels: the popover closes and an existing link is left untouched', async () => {
+  it('pressing Escape cancels: the popover closes and an existing link is left untouched', async () => {
     const contentArea = await openLinkPopoverInsideExistingLink('https://keep.example.com')
 
     fireEvent.keyDown(screen.getByTestId('link-url-input'), { key: 'Escape' })
@@ -39,7 +39,7 @@ describe('ManualEditor link popover — keyboard and click-outside', () => {
 
   // RED 2026-07-21: no click-outside listener, so the popover neither closes nor
   // applies. Actual: expected document not to contain element, found the popover.
-  it.skip('clicking outside the popover closes it and applies the captured range', async () => {
+  it('clicking outside the popover closes it and applies the captured range', async () => {
     const contentArea = await openLinkPopover()
 
     fireEvent.change(screen.getByTestId('link-url-input'), {
@@ -54,7 +54,7 @@ describe('ManualEditor link popover — keyboard and click-outside', () => {
   // RED 2026-07-21 (ADR tension 2, leaning (b): close on success, stay-open-with-
   // alert on rejection): no click-outside handler runs apply(), so no alert
   // appears. Actual: unable to find an accessible element with the role "alert".
-  it.skip('clicking outside with a rejected href keeps the popover open and shows the inline alert rather than swallowing the rejection', async () => {
+  it('clicking outside with a rejected href keeps the popover open and shows the inline alert rather than swallowing the rejection', async () => {
     await openLinkPopover()
 
     fireEvent.change(screen.getByTestId('link-url-input'), {

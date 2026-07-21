@@ -843,14 +843,20 @@ add new ones — the first red phase in this story to do so.
     (save handler) while open — map through intervening transactions or it lands wrong/throws; and Escape does
     not restore focus to the editor (ADR left focus disposition to red; jsdom passes either way). Both named,
     not surprises.
-- [~] green-frontend-popover-contract — implement: captured-range state at open (map positions through
-  transactions, not raw absolute), href prefill from `editor.getAttributes('link').href`, `onKeyDown`
-  (Enter→apply guarded by `!event.isComposing`, Escape→cancel + restore editor focus), and a document-level
-  `mousedown` listener (with `useEffect` CLEANUP) that treats a target not inside the popover as outside →
-  apply the captured range, EXCLUDING the toolbar buttons/link button/editor from "outside", close on success,
-  stay-open-with-alert on rejection. The 7 current reds gate the happy paths; implement the premortem guards
-  above defensively even though no red forces them yet (a follow-up red will pin them).
-- [ ] red-frontend-aria — pin defect (6): the disclosure state must be visible and non-conflicting. Whatever the fix (separate the concerns, or drop `aria-pressed` from UI actions), assert `aria-expanded` toggles and that the open popover is visually distinguishable. Also fold defect (7): render the anchor `<span>` only for `action.ui`.
+- [x] green-frontend-popover-contract — DONE. Un-skipped the 7 reds; suite **251 passed | 0 skipped | 0
+  failed**, tsc clean. `LinkPopover.tsx` 150 lines (no hook extraction needed). Impl: captured range at open
+  (`useState(() => editor.state.selection {from,to})`, every apply does `.setTextSelection(captured).extendMarkRange('link').setLink(…)`);
+  prefill from `editor.getAttributes('link').href ?? ''`; `onKeyDown` Enter→apply / Escape→cancel; document
+  `mousedown` click-outside listener → apply captured range, close on success / stay-open-with-alert on reject.
+  **All premortem defensive guards landed** (even though no current red forces them — the follow-up
+  red-…-2 will): `useEffect` cleanup `removeEventListener` (re-binds on `url` change); "outside" excludes
+  `popover.contains` + `.me-toolbar` + `editor.view.dom` (covers sibling link button, other toolbar buttons,
+  editor content); IME guard (`isComposing || keyCode===229`); Escape `editor.chain().focus().run()`. No other
+  component changed; all prior tests green. **Owed to a follow-up red-frontend-popover-contract-2** (guards
+  implemented but unpinned): post-close/unmount document mousedown = no re-apply; mousedown on
+  toolbar-link/toolbar-bold = toggle/bold not link-apply; Enter mid-IME = no apply; captured-range stale across
+  a mid-open `setContent`.
+- [~] red-frontend-aria — pin defect (6): the disclosure state must be visible and non-conflicting. Whatever the fix (separate the concerns, or drop `aria-pressed` from UI actions), assert `aria-expanded` toggles and that the open popover is visually distinguishable. Also fold defect (7): render the anchor `<span>` only for `action.ui`.
 - [ ] green-frontend-aria
 - [ ] red-frontend-api
 - [ ] green-frontend-api
