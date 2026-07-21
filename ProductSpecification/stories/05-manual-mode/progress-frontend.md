@@ -911,9 +911,23 @@ add new ones — the first red phase in this story to do so.
   - *(premortem, pre-existing, out of scope)* the button has `aria-expanded` but no `aria-controls`/`id` linking it
     to the popover — a real disclosure-wiring gap, but present today (line 56) and not introduced by this unit.
     Flag if the aria scope is meant to fully wire the disclosure; else defer.
-- [~] green-frontend-aria — apply the two `ManualEditorToolbar.tsx` changes (aria-pressed only for `!action.ui`;
-  anchor span only for `action.ui`) AND add the `.me-toolbar-btn[aria-expanded='true']` CSS rule (premortem
-  CREDIBLE above) so the link button keeps a visible active/open state after aria-pressed is dropped. — pin defect (6): the disclosure state must be visible and non-conflicting. Whatever the fix (separate the concerns, or drop `aria-pressed` from UI actions), assert `aria-expanded` toggles and that the open popover is visually distinguishable. Also fold defect (7): render the anchor `<span>` only for `action.ui`.
+  **RED CORRECTION (2026-07-21, design decision — "keep both") — defect-6b premise was WRONG.** `green-frontend-aria`
+  hit a hard contradiction: the committed `ManualEditor.link.test.tsx:54/63` pins `aria-pressed='true'/'false'` on
+  the link button (scenario 7.9's Gherkin — "button active while cursor is within a link"), which defect-6b's
+  "drop aria-pressed" would delete. The green-agent correctly refused to edit an out-of-scope test and stopped.
+  Resolution (user): **keep BOTH** — `aria-pressed` = cursor-in-link (isActive), `aria-expanded` = popover open;
+  they encode ORTHOGONAL states, ARIA permits both, no conflict. The "drop aria-pressed" premise deleted a
+  separate required indicator. Corrected `ManualEditorToolbar.aria.test.tsx`: replaced the defect-6b `it.skip`
+  (`not.toHaveAttribute('aria-pressed')`) with a LIVE guard pinning independence — opening the popover flips
+  `aria-expanded` WITHOUT touching `aria-pressed`, both present throughout (passes today, both attrs already
+  exist). Defect-7 (span only for `action.ui`) stays the sole RED. File 4 passed | 1 skipped, tsc clean.
+  `ManualEditor.link.test.tsx` left untouched (its assertions are correct). Red-correction commit.
+- [~] green-frontend-aria — SCOPE NARROWED (aria-pressed STAYS per "keep both"). Implement only: (1) defect 7 —
+  render the `me-link-popover-anchor` span ONLY for `action.ui`, other buttons bare in the Fragment; un-skip the
+  defect-7 test. (2) Add `.me-toolbar-btn[aria-expanded='true']` CSS rule mirroring `[aria-pressed='true']`
+  (premortem CREDIBLE) so the popover-open state highlights even when the cursor isn't in a link. Do NOT touch
+  aria-pressed (it stays on all buttons including the link button — the coexistence guard + ManualEditor.link.test.tsx
+  both pin it). Expect 256 passed | 0 skipped. — pin defect (6): the disclosure state must be visible and non-conflicting. Whatever the fix (separate the concerns, or drop `aria-pressed` from UI actions), assert `aria-expanded` toggles and that the open popover is visually distinguishable. Also fold defect (7): render the anchor `<span>` only for `action.ui`.
 - [ ] green-frontend-aria
 - [ ] red-frontend-api
 - [ ] green-frontend-api

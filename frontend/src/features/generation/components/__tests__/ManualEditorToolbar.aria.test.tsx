@@ -21,15 +21,28 @@ describe('ManualEditorToolbar disclosure semantics (link button)', () => {
     expect(link).toHaveAttribute('aria-expanded', 'false')
   })
 
-  // RED 2026-07-21 (green-frontend-aria owns the fix): line 55 sets aria-pressed
-  // on EVERY button, including the link (UI/disclosure) button. A disclosure
-  // control must expose aria-expanded only — carrying both is two competing
-  // state semantics on one control. Actual: expected element not to have
-  // attribute aria-pressed, received aria-pressed="false".
-  it.skip('the link button does NOT carry aria-pressed (disclosure state is aria-expanded, not pressed)', async () => {
+  // Defect 6 RESOLVED (design decision 2026-07-21, "keep both"): the link button
+  // carries BOTH aria-pressed and aria-expanded because they encode ORTHOGONAL
+  // states — aria-pressed = the cursor is inside an existing link (isActive,
+  // scenario 7.9's Gherkin, pinned in ManualEditor.link.test.tsx:54/63);
+  // aria-expanded = the popover is open. ARIA permits both on one control and
+  // they are not in conflict. The original "drop aria-pressed" premise was wrong:
+  // it would delete the cursor-in-link indicator, a separate requirement. This
+  // guard pins independence — opening the popover flips aria-expanded WITHOUT
+  // touching aria-pressed, and both are present throughout.
+  it('the link button carries aria-pressed and aria-expanded as independent states', async () => {
     await renderEditorWithDocumentCreated()
 
-    expect(screen.getByTestId('toolbar-link')).not.toHaveAttribute('aria-pressed')
+    const link = screen.getByTestId('toolbar-link')
+    // Selection is plain "hello" (not a link) and the popover is closed.
+    expect(link).toHaveAttribute('aria-pressed', 'false')
+    expect(link).toHaveAttribute('aria-expanded', 'false')
+
+    // Opening the disclosure flips aria-expanded only; aria-pressed is orthogonal
+    // (the selection is still not inside a link) and must stay 'false'.
+    fireEvent.click(link)
+    expect(link).toHaveAttribute('aria-expanded', 'true')
+    expect(link).toHaveAttribute('aria-pressed', 'false')
   })
 
   // GREEN today — regression guard. The fix must strip aria-pressed from the UI
