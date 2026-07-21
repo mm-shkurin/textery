@@ -1,6 +1,6 @@
 import re
 from datetime import UTC, datetime, timedelta
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,6 +25,7 @@ class VerificationCodeStorageStatements:
         self._session = session
         self.saved_code: VerificationCode | None = None
         self.fetched_model: VerificationCodeModel | None = None
+        self.reloaded_code: VerificationCode | None = None
 
     async def given_saved_account(self) -> Account:
         account = Account.create(
@@ -50,6 +51,51 @@ class VerificationCodeStorageStatements:
             id=uuid4(),
             account_id=account.id,
             created_at=_now(),
+        )
+
+    def build_code_with_created_at(
+        self, account: Account, created_at: datetime
+    ) -> VerificationCode:
+        return VerificationCode.create(
+            id=uuid4(),
+            account_id=account.id,
+            code="007123",
+            expires_at=created_at + timedelta(minutes=10),
+            created_at=created_at,
+        )
+
+    async def reload_active_code(self, account_id: UUID) -> None:
+        self.reloaded_code = await self._storage.find_active_by_account_id(account_id)
+
+    def assert_reloaded_code_matches_saved(self, expected_created_at: datetime) -> None:
+        # Assert the WHOLE object rebuilt by find_active_by_account_id -> to_domain,
+        # not just created_at: this is the only test that exercises the to_domain
+        # reload path (TestSave reads the raw model row instead), so every field
+        # that path reconstitutes is pinned here. created_at is checked against the
+        # known past instant -- the behavior under test; the rest against the code
+        # that was saved.
+        reloaded = self.reloaded_code
+        assert reloaded is not None, "expected an active code to reload, got None"
+        assert reloaded.created_at == expected_created_at, (
+            f"expected the domain-issued created_at to survive the db round-trip, "
+            f"reloaded created_at {reloaded.created_at!r}, issued {expected_created_at!r}"
+        )
+        actual = (
+            reloaded.id,
+            reloaded.account_id,
+            reloaded.code,
+            reloaded.expires_at,
+            reloaded.consumed_at,
+        )
+        expected = (
+            self.saved_code.id,
+            self.saved_code.account_id,
+            self.saved_code.code,
+            self.saved_code.expires_at,
+            None,
+        )
+        assert actual == expected, (
+            f"expected the reloaded code to round-trip unchanged, expected {expected}, got {actual}"
         )
 
     def _require_fetched_row(self) -> VerificationCodeModel:
