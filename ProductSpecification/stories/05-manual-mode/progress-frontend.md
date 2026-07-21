@@ -792,8 +792,14 @@ add new ones — the first red phase in this story to do so.
     NOT only inside HOST_SHAPE. Keep the emoji + Cyrillic (`кремль.рф`, `Война_и_мир`) guards green: the screen
     must reject `\p{C}` (control/format) but NOT legitimate `\p{L}`/`\p{So}`.
   </details>
-- [~] design — /design-preview for the popover's interaction contract, which this green resolved by silence and the ADR explicitly deferred: Enter-to-apply, Escape-to-cancel, click-outside disposition of half-typed input, whether the field prefills with the current href when the cursor is inside a link (defect 2 — open→Apply currently destroys it), and whether the popover closes or captures its range on selection change (defect 3). These compose into one interaction model and should be decided together, not one test at a time.
-- [ ] red-frontend-popover-contract — pin whatever the design approves, including: cursor inside an existing `<a>` → the field shows that href and Apply replaces it, leaving `querySelectorAll('a')` length 1; selection change while open does not silently apply to the new cursor; a rejected apply does not move the selection for the retry.
+- [x] design — DONE (2026-07-21, `/design-preview` with the user). Interaction contract decided and recorded
+  in `decisions/link-url-input-decision.md` (new "Interaction contract" section): Enter=apply, Escape=cancel,
+  **click-outside=close AND apply the captured range**, cursor-inside-link **prefills href + replaces** (fixes
+  defect 2), selection-change **captures the original range** (fixes defect 3). Two tensions flagged for red to
+  pin explicitly: (1) click-outside applies to the CAPTURED range not the live caret (else defect 3 returns);
+  (2) click-outside + invalid URL vs the visible-rejection signal — leaning "close on success, stay open with
+  the alert on rejection". No `/architecture` escalation (trade-off narrow, one control). ADR-update commit.
+- [~] red-frontend-popover-contract — pin the contract above, including: cursor inside an existing `<a>` → the field shows that href and Apply replaces it, leaving `querySelectorAll('a')` length 1; selection change while open does not silently apply to the new cursor (Apply acts on the captured range); a rejected apply does not move the selection for the retry; Enter=apply / Escape=cancel; click-outside applies the captured range, and on a rejected href keeps the popover open with the alert.
 - [ ] green-frontend-popover-contract
 - [ ] red-frontend-aria — pin defect (6): the disclosure state must be visible and non-conflicting. Whatever the fix (separate the concerns, or drop `aria-pressed` from UI actions), assert `aria-expanded` toggles and that the open popover is visually distinguishable. Also fold defect (7): render the anchor `<span>` only for `action.ui`.
 - [ ] green-frontend-aria
