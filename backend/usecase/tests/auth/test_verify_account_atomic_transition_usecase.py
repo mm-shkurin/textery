@@ -1,5 +1,3 @@
-import pytest
-
 from statements.verify_account_atomic_transition_statements import (
     VerifyAccountAtomicTransitionStatements,
 )
@@ -15,7 +13,6 @@ class TestVerifyAccountAtomicTransition:
          (not the lock-free verify()+save() / consume()+save() pair)
     """
 
-    @pytest.mark.skip(reason="RED: _apply_verification still calls verify()+save()/consume()+save()")
     async def test_should_drive_atomic_transitions_on_happy_path(
         self,
         verify_account_atomic_transition_statements: VerifyAccountAtomicTransitionStatements,

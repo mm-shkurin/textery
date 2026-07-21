@@ -113,9 +113,10 @@ class VerifyAccountStatements(VerifyAccountStatementsBase):
             f"expected no exception to be raised, got "
             f"{type(self.thrown_exception).__name__}: {self.thrown_exception}"
         )
-        assert len(self.account_repository.saved_accounts) == 2, (
-            f"expected the Account to be saved twice (once on register, once on verify), "
-            f"got {len(self.account_repository.saved_accounts)} saves"
+        assert len(self.account_repository.saved_accounts) == 1, (
+            f"expected the Account to be written once (at register); verify now transitions "
+            f"it in place via the atomic conditional UPDATE (transition_to_verified), not a "
+            f"second save, got {len(self.account_repository.saved_accounts)} saves"
         )
         original = self.original_account_snapshot
         verified_account = self.account_repository.saved_accounts[-1]

@@ -66,11 +66,24 @@ class VerifyAccount:
     async def _apply_verification(
         self, account: Account, verification_code: VerificationCode
     ) -> None:
-        account.verify()
-        verification_code.consume(consumed_at=self.clock.now())
+        # Persist via the atomic conditional-UPDATE port methods, not the
+        # lock-free verify()+save() / consume()+save() pair: the DB does the
+        # single-row transition so exactly one concurrent verify wins (the loser
+        # resolves to idempotent success — both True/False are success here, no
+        # branch needed). The commit stays: the atomic methods carry no internal
+        # commit (caller owns the txn).
+        #
+        # Latent-divergence note: unlike the Fakes, production's bulk UPDATE does
+        # NOT mutate the in-memory account/verification_code. Nothing downstream
+        # of this call reads is_verified/consumed_at in the same txn today. A
+        # future verify side-effect (welcome email/token/credit) must re-read the
+        # rows or synchronize_session rather than trust these stale in-memory
+        # objects.
         try:
-            await self.account_repository.save(account)
-            await self.verification_code_repository.save(verification_code)
+            await self.account_repository.transition_to_verified(account.id)
+            await self.verification_code_repository.transition_to_consumed(
+                verification_code.id, self.clock.now()
+            )
             await self.unit_of_work.commit()
         except Exception as error:
             # See RegisterUser: the client's answer is deliberately vague, so the
