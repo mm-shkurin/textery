@@ -31,6 +31,41 @@ export async function applyLinkUrl(url: string) {
   return contentArea
 }
 
+// Renders a fresh editor, selects "hello" out of "hello world", and opens the
+// link popover WITHOUT applying — the seam applyLinkUrl stops short of, for the
+// interaction-contract tests that drive the popover's own keys, click-outside,
+// and captured range rather than the resulting anchor.
+export async function openLinkPopover() {
+  await renderEditorWithDocumentCreated()
+
+  const contentArea = screen.getByTestId('editor-content-area')
+  contentArea.textContent = 'hello world'
+  fireEvent.input(contentArea)
+
+  selectRange(contentArea.firstChild as Node, 0, 5)
+  fireEvent.select(contentArea)
+
+  fireEvent.click(screen.getByTestId('toolbar-link'))
+
+  return contentArea
+}
+
+// Applies a link to "hello", then places a collapsed caret inside that anchor
+// and re-opens the popover — the "cursor inside an existing link" starting
+// state for the prefill/replace and Escape-preserves-link cases.
+export async function openLinkPopoverInsideExistingLink(href: string) {
+  const contentArea = await applyLinkUrl(href)
+
+  const anchor = contentArea.querySelector('a')
+  if (!anchor) throw new Error('setup: expected an existing link on "hello"')
+  selectRange(anchor.firstChild as Node, 2, 2)
+  fireEvent.select(contentArea)
+
+  fireEvent.click(screen.getByTestId('toolbar-link'))
+
+  return contentArea
+}
+
 // Every shape pins the same three invariants and differs only in the expected
 // href, so the href stays at the call site and the invariants live here.
 //

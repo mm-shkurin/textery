@@ -799,8 +799,21 @@ add new ones — the first red phase in this story to do so.
   pin explicitly: (1) click-outside applies to the CAPTURED range not the live caret (else defect 3 returns);
   (2) click-outside + invalid URL vs the visible-rejection signal — leaning "close on success, stay open with
   the alert on rejection". No `/architecture` escalation (trade-off narrow, one control). ADR-update commit.
-- [~] red-frontend-popover-contract — pin the contract above, including: cursor inside an existing `<a>` → the field shows that href and Apply replaces it, leaving `querySelectorAll('a')` length 1; selection change while open does not silently apply to the new cursor (Apply acts on the captured range); a rejected apply does not move the selection for the retry; Enter=apply / Escape=cancel; click-outside applies the captured range, and on a rejected href keeps the popover open with the alert.
-- [ ] green-frontend-popover-contract
+- [x] red-frontend-popover-contract — DONE. Two new files: `ManualEditor.link.popoverContract.test.tsx`
+  (points 1/2/7 — prefill+replace, captured-range apply, rejected-apply keeps range) and
+  `ManualEditor.link.popoverKeys.test.tsx` (points 3-6 — Enter=apply, Escape=cancel, click-outside applies
+  captured range, click-outside+rejected keeps alert). Two shared helpers added to `ManualEditor.link.testSupport.tsx`
+  (`openLinkPopover`, `openLinkPopoverInsideExistingLink(href)`). All 7 points genuinely RED, predictions matched
+  verbatim (prefill: `expected '' to be 'https://old.example.com'`; captured-range/Enter: `length 1 but got 0`;
+  Escape/click-outside: `document not to contain <popover>`; click-outside+rejected: `Unable to find role "alert"`).
+  None came back green — the "replace in place" half of point 1 already works (`extendMarkRange('link').setLink`),
+  the defect is the missing **prefill**, asserted first. `it.skip` on each (dated reason) so the 244-green suite
+  holds. test-review: tightened point 6's alert to exact `toHaveTextContent(LINK_INVALID_MESSAGE)`; rest already
+  strict. Suite 244 passed | **7 skipped** | 0 failed; tsc clean. **Green note:** click-outside handler must be a
+  document-level `mousedown` listener treating a target not inside the popover as "outside"; green needs
+  captured-range state at open + href prefill from `editor.getAttributes('link')` + `onKeyDown` (Enter→apply,
+  Escape→cancel) + the mousedown handler (close on success, stay-open-with-alert on rejection).
+- [~] green-frontend-popover-contract
 - [ ] red-frontend-aria — pin defect (6): the disclosure state must be visible and non-conflicting. Whatever the fix (separate the concerns, or drop `aria-pressed` from UI actions), assert `aria-expanded` toggles and that the open popover is visually distinguishable. Also fold defect (7): render the anchor `<span>` only for `action.ui`.
 - [ ] green-frontend-aria
 - [ ] red-frontend-api
