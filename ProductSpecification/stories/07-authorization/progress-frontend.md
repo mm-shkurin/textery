@@ -717,10 +717,10 @@ so its red-frontend step must add the button first.
 
 ### 6.5: "Back to login" from the account-locked screen navigates to the login page
 - [S] red-selenium — DEFERRED 2026-07-21: backend-gated, batched for the full-stack selenium pass (see 5.1 green-selenium note). Component legs below carry the real coverage this session.
-- [ ] red-frontend
-- [ ] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
-- [ ] green-selenium
-- [ ] demo
+- [S] red-frontend — ALREADY-COVERED 2026-07-21 (no real RED achievable). 6.5's entire component-layer behavior is pinned verbatim by 5.4's `LoginForm.accountLocked.test.tsx` test #4, "returns to the login form when the back-to-login control is used" (lines 96-108): renders the account-locked screen, clicks `account-locked-back-to-login`, asserts `login-submit-button` is back AND `account-locked-screen` is gone. That IS 6.5's Given/When/Then at this layer — the account-locked screen is in-place state within `LoginForm` at the `/login` route (`lockoutSeconds!==null` early-return), so `onDismiss`→`dismissLockout`→`setLockoutSeconds(null)` re-renders the login form; there is no route to navigate to. 5.4 test #4's own comment already scopes it: "the deferred selenium (6.5) closes the full navigation leg." Writing a component test here would be a byte-for-byte duplicate. The real `/login`-route load ("the login page loads") is the SELENIUM concern — red-selenium above is `[S]` deferred, green-selenium below closes it. Same `[S]`-class as 5.5 red-frontend-api / 5.3 red-frontend-api (behavior already green under an existing test).
+- [S] green-frontend — nothing to implement, see red-frontend: `AccountLockedScreen.onDismiss` + `LoginForm.dismissLockout` (`setLockoutSeconds(null)`) already exist and are green under 5.4 test #4.
+- [S] red-frontend-api — no API call in this scenario: "Back to login" is pure client-side state (`onDismiss`→`setLockoutSeconds(null)`), no network request.
+- [S] green-frontend-api — see red-frontend-api, nothing to implement.
+- [S] align-design — no new UI: the account-locked screen incl. its `account-locked-back-to-login` button was aligned to mockup `04-account-locked.html` in Scenario 5.4; 6.5 adds no visual element.
+- [S] green-selenium — DEFERRED 2026-07-21: backend-gated, batched for the full-stack selenium pass (see 5.1 green-selenium note). This leg owns the real `/login`-route load; the in-place state return is already component-covered by 5.4 test #4.
+- [S] demo — SKIPPED (visual-only, non-gating; demo skipped for all scenarios in this story, see top-of-file note).
