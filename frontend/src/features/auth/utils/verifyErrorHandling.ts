@@ -4,21 +4,12 @@
 // the error to a declared shape, because at run time nothing holds it to one (verifyApi's return
 // type says so).
 import { GENERIC_VERIFY_FAILURE_MESSAGE, isUsableMessage } from './authMessages'
+import { hasErrorCode, hasProp } from './errorGuards'
 
 // The distinct wrong-code copy the FORM owns, keyed off errorCode — NEVER a server-relayed string.
 // The api mapper leaves `message: ''` for these codes (round-8 display seam), so this copy can only
 // come from here, exactly as login's UNVERIFIED_MESSAGE is substituted for the UNVERIFIED code.
 export const WRONG_CODE_MESSAGE = 'Неверный или устаревший код. Проверьте его и попробуйте снова.'
-
-// One narrowing guard for "this unknown rejection carries field K", so each reader tests a field
-// without re-spelling the object/null dance and without an `as` cast — a match narrows the type.
-function hasProp<K extends string>(error: unknown, key: K): error is Record<K, unknown> {
-  return typeof error === 'object' && error !== null && key in error
-}
-
-function hasErrorCode(error: unknown, code: string): boolean {
-  return hasProp(error, 'errorCode') && error.errorCode === code
-}
 
 // Both rejection codes mean the same thing to the user — "the code you submitted is not acceptable,
 // check it and try again" — so both render one message. INVALID_OR_EXPIRED_CODE is the backend's

@@ -3,23 +3,13 @@
 // `unknown` rejection and earns it with an `in`/typeof guard — nothing casts the error to a
 // declared shape, because at run time nothing holds it to one (loginApi's return type says so).
 import { GENERIC_LOGIN_FAILURE_MESSAGE, isUsableMessage } from './authMessages'
+import { hasErrorCode, hasProp } from './errorGuards'
 
 // UNVERIFIED is a DIFFERENT action for the user, not a reworded "sign-in failed": their password
 // was right and they must go confirm the emailed code. Rendering the generic constant here told
 // them the one thing that is not true. Confirmed live 2026-07-16: an unverified account gets
 // 403 { error_code: "UNVERIFIED", message }.
 export const UNVERIFIED_MESSAGE = 'Аккаунт не подтверждён. Введите код подтверждения из письма.'
-
-// One narrowing guard for "this unknown rejection carries field K", so each reader below tests a
-// field without re-spelling the object/null dance and without an `as` cast — a match narrows the
-// type so `error[key]` is reachable.
-function hasProp<K extends string>(error: unknown, key: K): error is Record<K, unknown> {
-  return typeof error === 'object' && error !== null && key in error
-}
-
-export function hasErrorCode(error: unknown, code: string): boolean {
-  return hasProp(error, 'errorCode') && error.errorCode === code
-}
 
 export function isAccountLocked(error: unknown): boolean {
   return hasErrorCode(error, 'ACCOUNT_LOCKED')
