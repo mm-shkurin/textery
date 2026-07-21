@@ -81,6 +81,7 @@ class TestRegisterPostRouterServerOwnedFields:
             account_id=created_account.id,
             code="123456",
             expires_at=datetime.now(UTC),
+            created_at=datetime.now(UTC),
         )
         registration_result = RegistrationResult(
             account=created_account, verification_code=created_verification_code
@@ -148,6 +149,7 @@ class TestRegisterPostRouterVerificationCode:
             account_id=created_account.id,
             code="042917",
             expires_at=code_expires_at,
+            created_at=datetime.now(UTC),
         )
         registration_result = RegistrationResult(
             account=created_account, verification_code=created_verification_code

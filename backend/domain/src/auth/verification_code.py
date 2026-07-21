@@ -16,17 +16,27 @@ class VerificationCode:
         account_id: UUID,
         code: str,
         expires_at: datetime,
+        created_at: datetime,
         consumed_at: datetime | None = None,
     ) -> None:
         self.id = id
         self.account_id = account_id
         self._code = code
         self.expires_at = expires_at
+        self._created_at = created_at
         self._consumed_at = consumed_at
 
     @property
     def code(self) -> str:
         return self._code
+
+    @property
+    def created_at(self) -> datetime:
+        # The cooldown gate (resend, scenario 4.x) needs the code's real issuance
+        # instant, not `expires_at - TTL`: deriving it from expires_at would couple
+        # the cooldown to the fixed-expiry constant, so a TTL change would silently
+        # move the cooldown window. Stored explicitly instead.
+        return self._created_at
 
     @property
     def consumed_at(self) -> datetime | None:
@@ -46,13 +56,14 @@ class VerificationCode:
 
     @classmethod
     def create(
-        cls, id: UUID, account_id: UUID, code: str, expires_at: datetime
+        cls, id: UUID, account_id: UUID, code: str, expires_at: datetime, created_at: datetime
     ) -> "VerificationCode":
         return cls(
             id=id,
             account_id=account_id,
             code=code,
             expires_at=expires_at,
+            created_at=created_at,
         )
 
     @classmethod
@@ -62,14 +73,16 @@ class VerificationCode:
         account_id: UUID,
         code: str,
         expires_at: datetime,
+        created_at: datetime,
         consumed_at: datetime | None,
     ) -> "VerificationCode":
-        """Rebuild a VerificationCode from storage, preserving consumed_at."""
+        """Rebuild a VerificationCode from storage, preserving created_at/consumed_at."""
         return cls(
             id=id,
             account_id=account_id,
             code=code,
             expires_at=expires_at,
+            created_at=created_at,
             consumed_at=consumed_at,
         )
 
@@ -92,4 +105,5 @@ class VerificationCode:
             account_id=account_id,
             code=code,
             expires_at=expires_at,
+            created_at=created_at,
         )

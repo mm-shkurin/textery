@@ -43,6 +43,7 @@ class VerificationCodeConcurrencyStatements:
             account_id=account_id,
             code="007123",
             expires_at=self._now + timedelta(minutes=10),
+            created_at=self._now,
         )
         async with self._session_factory() as session:
             await SqlAlchemyAccountRepository(session).save(account)

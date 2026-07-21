@@ -4,16 +4,17 @@ from scope.register_request_scope import RegisterRequestScope
 
 from auth.register_user import RegisterUser
 from auth.resend_code import ResendCode
+from auth.verification_code import VerificationCode
 from auth.verify_account import VerifyAccount
 from fake.auth.fake_account_repository import FakeAccountRepository
 from fake.auth.fake_clock import FakeClock
 from fake.auth.fake_password_hasher import FakePasswordHasher
 from fake.auth.fake_unit_of_work import FakeUnitOfWork
 from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
-from shared.exceptions import ValidationException
+from statements.resend_code_assertions import ResendCodeAssertions
 
 
-class ResendCodeStatements:
+class ResendCodeStatements(ResendCodeAssertions):
     """Scenario 4.1: resend issues a new code and supersedes the previous one.
 
     The two behaviours the acceptance layer cannot prove (no server-clock lever):
@@ -30,11 +31,6 @@ class ResendCodeStatements:
     AT_COOLDOWN_BOUNDARY = timedelta(seconds=60)
     PAST_COOLDOWN = timedelta(seconds=61)
 
-    COOLDOWN_ERROR_CODE = "RESEND_COOLDOWN_ACTIVE"
-    COOLDOWN_MESSAGE = "A verification code was recently sent. Please wait before requesting another."
-    INVALID_OR_EXPIRED_CODE = "INVALID_OR_EXPIRED_CODE"
-    INVALID_OR_EXPIRED_MESSAGE = "The verification code is invalid or has expired."
-
     def __init__(self) -> None:
         self.account_repository = FakeAccountRepository()
         self.password_hasher = FakePasswordHasher()
@@ -43,6 +39,7 @@ class ResendCodeStatements:
         self.unit_of_work = FakeUnitOfWork()
         self.registered_email: str | None = None
         self.old_code: str | None = None
+        self.old_code_entity: VerificationCode | None = None
         self.new_code: str | None = None
         self.codes_before_resend = 0
         self.thrown_exception: Exception | None = None
@@ -64,6 +61,7 @@ class ResendCodeStatements:
         )
         self.registered_email = result.account.email
         self.old_code = result.verification_code.code
+        self.old_code_entity = result.verification_code
 
     async def resend_within_the_cooldown_window(self) -> None:
         self.clock.fixed_now = self.T0 + self.WITHIN_COOLDOWN
@@ -78,6 +76,17 @@ class ResendCodeStatements:
         # so this instant must SUCCEED. Pins the boundary against an off-by-one
         # green (`> 60`) that would wrongly reject a legit resend at exactly 60s.
         await self._resend_at(self.AT_COOLDOWN_BOUNDARY)
+
+    async def resend_past_cooldown_then_again_shortly_after_the_second_code(self) -> None:
+        # First resend is a legal past-cooldown resend (issues code #2). The second
+        # is 30s after code #2 but ~91s after the registration code -- inside code
+        # #2's cooldown. It must be REJECTED, forcing green to measure the cooldown
+        # from the NEWEST code (max(created_at)), not the oldest/registration code.
+        self.clock.fixed_now = self.T0 + self.PAST_COOLDOWN
+        await self._execute_resend()
+        self.clock.fixed_now = self.T0 + self.PAST_COOLDOWN + self.WITHIN_COOLDOWN
+        self.codes_before_resend = len(self.verification_code_repository.saved_codes)
+        await self._execute_resend()
 
     async def _resend_at(self, delta: timedelta) -> None:
         self.clock.fixed_now = self.T0 + delta
@@ -117,62 +126,3 @@ class ResendCodeStatements:
             return exc
         return None
 
-    def assert_rejected_as_cooldown_active_with_no_new_code(self) -> None:
-        self._assert_validation_exception(
-            self.thrown_exception, self.COOLDOWN_ERROR_CODE, self.COOLDOWN_MESSAGE
-        )
-        assert len(self.verification_code_repository.saved_codes) == self.codes_before_resend, (
-            f"expected an in-cooldown resend to issue NO new code, saved_codes went from "
-            f"{self.codes_before_resend} to {len(self.verification_code_repository.saved_codes)}"
-        )
-
-    def assert_new_code_issued_and_supersedes_the_old_one(self) -> None:
-        self._assert_fresh_code_issued()
-        self._assert_is_invalid_or_expired(self.old_code_verify_exception)
-        assert self.new_code_verify_exception is None, (
-            f"expected the NEW code to verify the account, got "
-            f"{type(self.new_code_verify_exception).__name__}: {self.new_code_verify_exception}"
-        )
-        assert self.account_repository.saved_accounts[-1].is_verified is True, (
-            "expected the account to be verified by the NEW code after supersession"
-        )
-
-    def assert_a_new_code_was_issued_at_the_boundary(self) -> None:
-        # The boundary's intent (resend AT exactly 60s must SUCCEED, per the ADR's
-        # `now - max(created_at) >= 60s`) lives in the test method's docstring; the
-        # observable outcome is identical to any successful resend, so it shares the
-        # same fresh-code assertion.
-        self._assert_fresh_code_issued()
-
-    def _assert_fresh_code_issued(self) -> None:
-        assert self.thrown_exception is None, (
-            f"expected the resend to succeed, got "
-            f"{type(self.thrown_exception).__name__}: {self.thrown_exception}"
-        )
-        assert len(self.verification_code_repository.saved_codes) == self.codes_before_resend + 1, (
-            f"expected exactly one NEW code to be persisted by the resend, saved_codes went from "
-            f"{self.codes_before_resend} to {len(self.verification_code_repository.saved_codes)}"
-        )
-        assert self.new_code is not None and len(self.new_code) == 6 and self.new_code.isdigit(), (
-            f"expected a fresh 6-digit code, got {self.new_code!r}"
-        )
-        assert self.new_code != self.old_code, (
-            f"expected the reissued code to differ from the superseded one, both were "
-            f"{self.new_code!r}"
-        )
-
-    def _assert_is_invalid_or_expired(self, exc: Exception | None) -> None:
-        self._assert_validation_exception(
-            exc, self.INVALID_OR_EXPIRED_CODE, self.INVALID_OR_EXPIRED_MESSAGE
-        )
-
-    def _assert_validation_exception(
-        self, exc: Exception | None, expected_error_code: str, expected_message: str
-    ) -> None:
-        assert isinstance(exc, ValidationException), (
-            f"expected ValidationException('{expected_error_code}'), got "
-            f"{type(exc).__name__ if exc else None}: {exc}"
-        )
-        actual = (exc.error_code, exc.message)
-        expected = (expected_error_code, expected_message)
-        assert actual == expected, f"expected {expected}, got {actual}"

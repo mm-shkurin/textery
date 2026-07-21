@@ -42,6 +42,7 @@ class VerificationCodeStorageStatements:
             account_id=account.id,
             code="007123",
             expires_at=_now() + timedelta(minutes=10),
+            created_at=_now(),
         )
 
     def build_generated_code_for_account(self, account: Account) -> VerificationCode:

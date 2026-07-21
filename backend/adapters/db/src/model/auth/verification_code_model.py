@@ -38,5 +38,6 @@ class VerificationCodeModel(Base):
             account_id=self.account_id,
             code=self.code,
             expires_at=self.expires_at,
+            created_at=self.created_at,
             consumed_at=self.consumed_at,
         )
