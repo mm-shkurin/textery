@@ -32,8 +32,9 @@ class LoginUser:
         self.account_repository = account_repository
         self.password_hasher = password_hasher
         self.token_service = token_service
-        # Accepted but not yet used (scenario 5.3 red-usecase): the wrong-password
-        # branch will increment-then-commit the failed-attempt counter in green.
+        # The wrong-password branch increments-then-commits the failed-attempt
+        # counter on this UoW (scenario 5.3); NullUnitOfWork is the no-op default
+        # for callers that do not supply one.
         self.unit_of_work = unit_of_work or NullUnitOfWork()
 
     async def execute(self, email: str, password: str) -> TokenPair:
