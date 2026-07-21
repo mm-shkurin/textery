@@ -706,13 +706,13 @@ so its red-frontend step must add the button first.
 
 ### 6.4: Successful verification navigates to the authenticated app shell
 - [S] red-selenium — DEFERRED 2026-07-21: backend-gated, batched for the full-stack selenium pass (see 5.1 green-selenium note). Component legs below carry the real coverage this session.
-- [ ] red-frontend
-- [ ] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
-- [ ] green-selenium
-- [ ] demo
+- [x] red-frontend — BORN-GREEN guard (2026-07-21), success-navigation already shipped (the out-of-TDD live-integration work). New `VerifyCodeForm.success.test.tsx` (~74 lines, NOT skipped — enabled regression guard, same class as `LoginForm.submitPathErrors` test 3): mocks `verify`→`{isVerified:true}` and `signInAfterVerification`→a DISTINCTIVE sentinel target `/post-verify-landing`, asserts (a) `signInAfterVerification` called WITH the email (target is per-account, not hardcoded), (b) `navigate` called with `('/post-verify-landing', {replace:true})` — the app-shell load + history-replace so Back doesn't return to `/verify`, (c) `verify-success` renders. **This CLOSES the 5.5 L62 coverage gap** — `setCodeError(false)` on the resolved `isVerified:true` path had no happy-path vitest (all prior verify tests drive rejections); the success branch is now asserted, not merely line-executed. **Predicted:** born-green (success-nav implemented at `VerifyCodeForm.tsx:60-75`) → test PASSES. **Actual:** 1 passed. **Match.** test-review: 2 fixes — distinctive sentinel target (proves the return pipes into `navigate`, not a coincidental `/`) + assert `verify-success` renders (turns incidental L62 line-coverage into an asserted property). Partial `react-router-dom` mock spreads `actual` (only `useNavigate` spied). Strict `toHaveBeenCalledWith`.
+- [S] green-frontend — nothing to implement: verify success-navigation (`verify()`→`signInAfterVerification`→`navigate(target,{replace:true})`) already shipped at `VerifyCodeForm.tsx:60-75`; the born-green guard above pins it.
+- [S] red-frontend-api — no new API-layer behavior: `verify` (`POST /verify`) + its mapping were built/tested in 5.5's cycle; 6.4 is the client navigation on a successful verify, mocked at the module seam. `signInAfterVerification`'s own network behavior is its util's concern, not a new 6.4 api contract.
+- [S] green-frontend-api — see red-frontend-api, nothing to implement.
+- [S] align-design — no new UI: 6.4 is a navigation outcome (route change to the app shell), not a new visual element on the verify screen. `verify-success` output was aligned in 1.3's cycle.
+- [S] green-selenium — DEFERRED 2026-07-21: backend-gated, batched for the full-stack selenium pass (see 5.1 green-selenium note); the real app-shell route render is that leg's job. Component nav-call coverage carries this session.
+- [S] demo — SKIPPED (visual-only, non-gating; demo skipped for all scenarios in this story, see top-of-file note).
 
 ### 6.5: "Back to login" from the account-locked screen navigates to the login page
 - [ ] red-selenium
