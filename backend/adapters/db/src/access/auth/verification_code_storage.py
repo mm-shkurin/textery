@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.verification_code import VerificationCode
@@ -33,6 +33,24 @@ class SqlAlchemyVerificationCodeRepository:
         )
         model = result.scalar_one_or_none()
         return model.to_domain() if model else None
+
+    async def transition_to_consumed(self, code_id: UUID, now: datetime) -> bool:
+        """Atomically stamp consumed_at for exactly one caller.
+
+        Conditional single-row UPDATE (``WHERE consumed_at IS NULL``): the winning
+        racer affects one row (``rowcount == 1`` -> True); every later racer sees the
+        row already consumed and affects zero rows (``rowcount == 0`` -> False). Zero
+        rows is idempotent success, NOT an error (inverts generation_storage.py's
+        zero-row->raise, exactly like account_storage.transition_to_verified): the
+        loser resolves to the already-consumed state, no exception. No commit here --
+        the caller owns the transaction boundary.
+        """
+        result = await self._session.execute(
+            update(VerificationCodeModel)
+            .where(VerificationCodeModel.id == code_id, VerificationCodeModel.consumed_at.is_(None))
+            .values(consumed_at=now)
+        )
+        return result.rowcount == 1
 
     async def save(self, code: VerificationCode) -> None:
         """Insert a newly issued code, or update the one that already exists.

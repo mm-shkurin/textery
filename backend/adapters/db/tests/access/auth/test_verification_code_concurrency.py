@@ -1,13 +1,8 @@
-import pytest
-
 from statements.verification_code_concurrency_statements import (
     VerificationCodeConcurrencyStatements,
 )
 
 
-@pytest.mark.skip(
-    reason="RED: SqlAlchemyVerificationCodeRepository.transition_to_consumed not yet implemented"
-)
 class TestConcurrentTransitionToConsumed:
     """Two racing sessions call transition_to_consumed on the SAME unconsumed
     verification code row. Exactly one returns True (it stamped consumed_at,
