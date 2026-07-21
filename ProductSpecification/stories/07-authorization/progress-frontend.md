@@ -696,13 +696,13 @@ so its red-frontend step must add the button first.
 
 ### 6.3: "Resend code" link, after cooldown, re-issues a code
 - [S] red-selenium — DEFERRED 2026-07-21: backend-gated, batched for the full-stack selenium pass (see 5.1 green-selenium note). Component legs below carry the real coverage this session.
-- [ ] red-frontend
-- [ ] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
-- [ ] green-selenium
-- [ ] demo
+- [S] red-frontend — ALREADY-COVERED 2026-07-21 (no RED achievable). All 6.3 clauses pinned strictly-and-green by tests from 5.5/5.7: cooldown-elapses→button enabled (`VerifyCodeForm.resend.test.tsx:64`, asserts `verify-resend-countdown`=`00:00` AND `toBeEnabled`); click-after-cooldown→resendCode called once with email (`resend.test.tsx:82` at the fetch seam + `refreshNoResend.test.tsx:54` at the authApi seam, non-vacuity); resend→countdown RESTARTS + button re-disabled (`resend.test.tsx:103`, asserts back to `01:00` AND `toBeDisabled`). A new test would duplicate strict-green coverage. Live-run: 10 passed / 10 across the two files. Same `[S]`-already-covered class as 5.5/5.7 red-frontend-api.
+- [S] green-frontend — nothing to implement: `handleResend` (gated `!email || !countdown.isElapsed`) + `useResendCountdown.restart()` on success already implement the full behavior. **CARRIED (reconfirmed by red-agent, already in the 5.6 note):** `handleResend` clears `formError` but NOT `setCodeError(false)` — a SUCCESSFUL resend strands the six code boxes red with no message; dormant only because `resend-code` is a live 404, and 6.3's success-path resend is exactly the transition that exposes it once the route deploys. Fix (setCodeError(false) in handleResend + a guard test) belongs with the verify error-state-consistency follow-up carried at 5.6/5.7.
+- [S] red-frontend-api — no new API-layer behavior: `resendCode` (`POST /api/v1/auth/resend-code`) was implemented + tested in Scenario 1.3; the request-is-sent clause is asserted at both the fetch and authApi seams above.
+- [S] green-frontend-api — see red-frontend-api, nothing to implement.
+- [S] align-design — no new UI: the resend link/countdown (`.verify-resend`) were aligned to mockup `02-verify-code.html` in Scenario 1.3; 6.3 adds no visual element.
+- [S] green-selenium — DEFERRED 2026-07-21: backend-gated, batched for the full-stack selenium pass (see 5.1 green-selenium note). Component-layer coverage carries this session.
+- [S] demo — SKIPPED (visual-only, non-gating; demo skipped for all scenarios in this story, see top-of-file note).
 
 ### 6.4: Successful verification navigates to the authenticated app shell
 - [ ] red-selenium
