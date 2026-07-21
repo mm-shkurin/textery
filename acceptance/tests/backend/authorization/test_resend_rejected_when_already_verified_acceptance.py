@@ -1,13 +1,6 @@
-import pytest
-
 from tests.backend.abstract_backend_test import AbstractBackendTest
 
 
-@pytest.mark.skip(
-    reason="RED: 4.5 needs an is_verified gate in ResendCode.execute BEFORE the "
-    "cooldown check. Today a verified account's immediate resend falls through to "
-    "the cooldown and answers 429 RESEND_COOLDOWN_ACTIVE, not 409 ALREADY_VERIFIED."
-)
 class TestResendRejectedWhenAlreadyVerifiedAcceptance(AbstractBackendTest):
     """Scenario 4.5: a resend requested against an already-verified account is
     rejected, already verified.
