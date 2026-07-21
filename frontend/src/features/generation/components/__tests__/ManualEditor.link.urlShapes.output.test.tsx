@@ -34,15 +34,26 @@ describe('ManualEditor link URL shapes — normalized output', () => {
     expectRejected(contentArea)
   })
 
-  // GROUP 2 — invisible / control characters. `\S*` (and the host class) admit
-  // U+00AD (Word's soft hyphen — the realistic vector is pasting a wiki URL out
-  // of Word), U+200B, U+202E (a known RTL-override spoofing char) and C0
-  // controls. Fixture: a host with a soft hyphen inside `example`. Today →
-  // `http://exa­mple.com`, NO alert, and `new URL()` parses it OK with
-  // host `example.com` — a well-formed-LOOKING link that resolves nowhere the
-  // reader intends. Disposition decided by the orchestrator: REJECT (not strip,
-  // not accept). RED today: the anchor renders, expectRejected fails length-0.
-  // Kills a green that normalizes structure but never screens the character set.
+  // GROUP 2 — invisible / control characters. U+00AD (Word's soft hyphen — the
+  // realistic vector is pasting a wiki URL out of Word), U+200B, U+202E (a known
+  // RTL-override spoofing char) and C0 controls. Fixture: a host with a soft
+  // hyphen inside `example`.
+  //
+  // Branch it actually flows through (verified by execution, agent-review on
+  // `026a026` — corrected from an earlier draft that misattributed it to
+  // HOST_SHAPE): U+00AD is Unicode category Cf, NOT in `[\p{L}\p{N}-]`, so
+  // `HOST_SHAPE.test('exa­mple.com')` is FALSE. The input falls to the
+  // FALLBACK (`return url`, bare `exa­mple.com`), and `isAllowedUri`'s
+  // relative-form alternative treats the soft hyphen as a word boundary and
+  // accepts it — so the anchor renders today with NO alert. (`new URL()` on the
+  // bare string THROWS; it is a schemeless/relative href, not a parsed
+  // `host=example.com` — the opposite of what the first draft claimed.)
+  // Disposition decided by the orchestrator: REJECT (not strip, not accept).
+  // RED today: the anchor renders, expectRejected fails length-0.
+  //
+  // Implication for green: the character screen must sit on the OUTPUT / fallback
+  // path (or on every branch), NOT only inside HOST_SHAPE — a green that screens
+  // chars only in the host branch leaves this vector open.
   it.skip('RED: a host containing an invisible soft-hyphen is rejected, not linked as a deceptive http:// href', async () => {
     const contentArea = await applyLinkUrl('exa­mple.com')
 

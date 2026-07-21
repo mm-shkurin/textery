@@ -748,7 +748,16 @@ add new ones — the first red phase in this story to do so.
   (b) add a post-normalization usability screen — reject when the resulting href fails `new URL()` (G1 port
   overflow) and reject invisible/control chars U+00AD/U+200B/U+202E/C0 (G2, disposition=REJECT); (c) reject
   the bare-relative fallback (G4). Do NOT re-enumerate `\S*` (the emoji guard now forbids it). Mutation-check
-  each fix; un-skip only the RED tests (tests otherwise read-only).
+  each fix; un-skip only the RED tests (tests otherwise read-only). **Review findings on the RED (`026a026`):**
+  - *(premortem CREDIBLE)* two `word:digits` scheme rows (tel, sms) do NOT prove the SET isn't a hardcode —
+    `{tel, sms}` passes all 9. Add a LIVE guard in this green's coverage: a THIRD collision scheme
+    `callto:79001234567` → `expectSoleLink(…, 'callto:79001234567')` (callto is in isAllowedUri's set and is
+    also `word:digits`-shaped). Stronger: assert the passthrough SET equals isAllowedUri's list
+    (`http,https,ftp,ftps,mailto,tel,callto,sms,cid,xmpp`). Without it green may ship an incomplete set.
+  - *(agent-review, fixed in the RED)* G2 soft-hyphen flows through the FALLBACK (U+00AD is Cf → HOST_SHAPE
+    false), not the host branch — so the char screen must sit on the OUTPUT/fallback path (or every branch),
+    NOT only inside HOST_SHAPE. Keep the emoji + Cyrillic (`кремль.рф`, `Война_и_мир`) guards green: the screen
+    must reject `\p{C}` (control/format) but NOT legitimate `\p{L}`/`\p{So}`.
 - [ ] design — /design-preview for the popover's interaction contract, which this green resolved by silence and the ADR explicitly deferred: Enter-to-apply, Escape-to-cancel, click-outside disposition of half-typed input, whether the field prefills with the current href when the cursor is inside a link (defect 2 — open→Apply currently destroys it), and whether the popover closes or captures its range on selection change (defect 3). These compose into one interaction model and should be decided together, not one test at a time.
 - [ ] red-frontend-popover-contract — pin whatever the design approves, including: cursor inside an existing `<a>` → the field shows that href and Apply replaces it, leaving `querySelectorAll('a')` length 1; selection change while open does not silently apply to the new cursor; a rejected apply does not move the selection for the retry.
 - [ ] green-frontend-popover-contract
