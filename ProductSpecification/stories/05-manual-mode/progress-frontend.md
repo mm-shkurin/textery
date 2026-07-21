@@ -856,6 +856,33 @@ add new ones — the first red phase in this story to do so.
   implemented but unpinned): post-close/unmount document mousedown = no re-apply; mousedown on
   toolbar-link/toolbar-bold = toggle/bold not link-apply; Enter mid-IME = no apply; captured-range stale across
   a mid-open `setContent`.
+
+  **Review-pass verdicts on `dee4260` (green): agent-review CONCERNS, premortem CONCERNS — non-gating, commit
+  stands; `/refactor` NO ACTION (normalize logic already in `normalizeHref.ts`, a `useLinkPopover` hook would
+  relocate not decouple, click-outside predicate is single-use). Verified correct on a cold read: `capturedRange`
+  initializer runs once so rejected-retry keeps the original range; `[url]` re-bind does not double-apply (cleanup
+  runs before re-add); apply-on-rejection stays open; none of the 7 reds pass for a wrong reason; `.me-toolbar`
+  exclusion resolves (popover is inside `me-link-popover-anchor` within `.me-toolbar`). Two findings for red-2 /
+  a design tweak:**
+  - *(agent-review PRIMARY — real contract divergence, introduced by the defensive editor-DOM exclusion)* the
+    `editor.view.dom.contains(target)` exclusion means a click INTO the editor body (the commonest next gesture:
+    reposition the caret) → handler returns early → **popover stuck open AND typed URL silently dropped**. This
+    contradicts the ADR's own click-outside row ("Close AND apply the current field value to the captured range")
+    — a click into the editor IS outside the popover. The captured-range mechanism exists precisely so
+    click-outside can apply after the caret moves; excluding editor DOM defeats it for the case it was built for.
+    **Design tension to resolve deliberately in red-2:** should a click into the editor (a) apply+close per the
+    ADR, or (b) stay open (current behavior)? (b) diverges from the ADR as written. Lines 99-105 are entirely
+    unpinned — no test drives a mousedown inside `editor.view.dom` or `.me-toolbar`.
+  - *(premortem PRIMARY — stale captured range)* `capturedRange` is frozen ABSOLUTE positions at open. An
+    autosave round-trip while the popover is open (`useDocumentSave.ts:95-96` re-runs `setContent` when
+    `result.content !== sent && editor.getHTML() === sent` — MORE likely to hold because the open popover blurs
+    the editor so no typing occurs) shifts node positions after server sanitization → `setTextSelection` clamps
+    (no throw) → link lands on the WRONG text. Owed to red-2 ("captured-range stale across a mid-open setContent").
+    Production hardening option: capture a mark/relative anchor, or re-validate `capturedRange` against
+    `doc.content.size` and bail if the doc changed.
+  - *(agent-review minor)* the Отмена button wires `onClick={onClose}` directly, bypassing `cancel()`'s
+    `editor.chain().focus().run()` — so Escape restores editor focus but the Cancel button leaves it blurred.
+    Low severity, unpinned. Fold into red-2 or the aria step.
 - [~] red-frontend-aria — pin defect (6): the disclosure state must be visible and non-conflicting. Whatever the fix (separate the concerns, or drop `aria-pressed` from UI actions), assert `aria-expanded` toggles and that the open popover is visually distinguishable. Also fold defect (7): render the anchor `<span>` only for `action.ui`.
 - [ ] green-frontend-aria
 - [ ] red-frontend-api
