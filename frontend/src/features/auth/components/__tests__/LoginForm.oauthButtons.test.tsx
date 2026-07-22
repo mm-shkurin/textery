@@ -7,7 +7,7 @@ import { LoginForm } from '../LoginForm'
 // provider buttons yet. Unskip in green-frontend once oauth-vk-button / oauth-yandex-button
 // are added. Currently fails: TestingLibraryElementError: Unable to find an element by:
 // [data-testid="oauth-vk-button"] (and the Yandex testid).
-describe.skip('LoginForm OAuth provider buttons', () => {
+describe('LoginForm OAuth provider buttons', () => {
   it('shows a VK ID button distinct from the primary submit button', () => {
     renderWithRouter(<LoginForm />)
 

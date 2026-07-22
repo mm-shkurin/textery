@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
+import { OAuthProviderButtons } from './OAuthProviderButtons'
 import { AccountLockedScreen } from './AccountLockedScreen'
 import { login, type LoginResult } from '../api/loginApi'
 import { saveSession } from '../utils/authSession'
@@ -182,6 +183,7 @@ export function LoginForm() {
         </AuthSubmitButton>
         {isSubmitting && <AuthLoadingIndicator testId="login-loading-indicator" />}
       </form>
+      <OAuthProviderButtons />
       <p className="auth-footer-link">
         Нет аккаунта?{' '}
         <Link to="/register" data-testid="login-register-link">

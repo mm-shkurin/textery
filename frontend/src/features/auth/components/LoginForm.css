@@ -5,3 +5,69 @@
 .login-subtitle {
   margin-bottom: 28px;
 }
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+.oauth-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-oauth {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+
+.btn-oauth:hover {
+  border-color: var(--border-strong);
+}
+
+.provider-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.provider-badge-vk {
+  background: var(--vk, #0077ff);
+}
+
+.provider-badge-yandex {
+  background: var(--yandex, #fc3f1d);
+}
