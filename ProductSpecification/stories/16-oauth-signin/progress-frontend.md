@@ -81,7 +81,7 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 
 ### 3.2: The exchange is issued exactly once per code
 > CARRIED (agent-review + premortem CONCERNS on 3.1 align-design `d2be610`, both non-blocking):
-> (a) the callback's whole shell now hangs on one `import './AuthForm.css'` line plus the
+> (a) [CLOSED by 3.2 red-frontend's born-green test 2] the callback's whole shell hung on one `import './AuthForm.css'` line plus the
 > `auth-card`/`auth-subtitle` classnames — an import tidy-up drops the shell back to a naked box
 > and NO test can go RED (jsdom applies no CSS). Add a class-contract assertion in a callback
 > render test: `oauth-callback-loading` has `auth-card`, subtitle has `auth-subtitle`.
@@ -99,7 +99,23 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 > can regress into a zero-execution hang. Fix likely: drop the `active` teardown for the success
 > path, or key the guard so the surviving run completes.
 - [S] red-selenium
-- [ ] red-frontend
+- [x] red-frontend — REAL RED. New `OAuthCallback.exactlyOnce.test.tsx` (2 tests). Test 1 (skipped,
+  the RED one) mounts the callback under `StrictMode` and asserts BOTH directions in one test:
+  at-most-once (`oauthExchange` called exactly once with `{code}` — already true today) AND
+  at-least-once (`saveSession` then `navigate` each once — the failing half). Asserting both is the
+  point: green cannot satisfy it by tightening the guard, only by making the surviving run complete,
+  and any "fix" that cancels the winner leaves saveSession/navigate at 0. **Predicted:** AssertionError,
+  `expected "vi.fn()" to be called 1 times, but got 0 times` at line 96 (`saveSession`), 1 failed 1 passed.
+  **Actual:** exactly that at 96:37, 1 failed 1 passed. **Match** on type/message/location/status.
+  (Prediction revision 1 named the symbol `saveSession`; vitest renders anonymous mocks as `vi.fn()` —
+  future predictions against these seams must use the `vi.fn()` label.) Test 2 is born-green (enabled):
+  the carried 3.1 (a) shell class-contract guard — `oauth-callback-loading` class is exactly
+  `auth-card oauth-callback-card`, subtitle is a `P` with exactly `auth-subtitle oauth-callback-subtitle`
+  — so an `AuthForm.css` import tidy-up or a classname rename goes RED where jsdom's no-CSS blindness
+  otherwise hides it. test-review: 5 fixes (exact `class` attribute over partial `toHaveClass` on both
+  tests, exact heading + subtitle text over regex substring, tag-name pin). Carried (b) padding
+  specificity and (c) `.auth-card` `max-width` stay carried — CSS-only, untestable in jsdom, and (c)
+  belongs on the shared rule. Suite 319 passed / 1 skipped, tsc clean, file 122L.
 - [ ] green-frontend
 - [S] red-frontend-api — client-dedup behavior, no new API contract
 - [S] green-frontend-api
