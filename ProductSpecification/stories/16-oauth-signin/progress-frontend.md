@@ -1,5 +1,13 @@
 # Story 16: OAuth sign-in — Frontend Progress
 
+> RESUME NOTE (session limit, 2026-07-22): stopped mid work-unit on **3.1 red-frontend-api**.
+> Its behavior commit `ca78e2d` landed clean (born-green 3/3, test-review 0 fixes), but the
+> post-commit refactor batch + the two review passes were CUT by the session limit before
+> completing — re-run `/refactor` + agent-review + premortem over `ca78e2d` on resume if a gate
+> record is wanted (the test is tiny + born-green, so refactor is almost certainly a no-op).
+> Next actionable step: **3.1 align-design** (`[~]`) — pixel-match the `/auth/callback` screen
+> (`OAuthCallback.tsx` + `OAuthCallback.css`) to mockup `mockups/desktop/02-callback-loading.html`.
+
 Scenarios from `tests/02_UI_Tests.md`. Selenium legs (`red-selenium`/`green-selenium`) are
 backend-gated → `[S]` deferred, batched for a full-stack selenium pass once the backend
 `/oauth/*` endpoints land (same convention as Story 7). `demo` skipped (visual-only,
