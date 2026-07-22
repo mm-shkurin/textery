@@ -1066,13 +1066,23 @@ add new ones — the first red phase in this story to do so.
 - [S] green-frontend-coverage-control-char — no production change: the `\p{C}` screen (`normalizeHref.ts:50`)
   already exists; the red is a LIVE characterization test (see mutation-check on `cf5c62e`). Nothing to implement
   or un-skip.
-- [~] red-frontend-coverage-rtl-override — DISCOVERED (agent-review + premortem CONCERNS on `cf5c62e`): pin the
-  security-relevant control chars the `\p{C}` screen must reject on the HOST_SHAPE path, mirroring GROUP-4's
-  "one fixture per char, an enumeration defeats a single fixture" discipline. Separate `expectRejected` rows for
-  `example.com/pa‮th` (RTL-override spoofing) and a C0 control (e.g. ``); each must reject via
-  `normalizeHref.ts:50`, not the fallback. This makes the `\p{C}` breadth test-forced so a future narrowing green
-  can't silently re-open the spoofing hole. (Characterization — screen already exists; expect LIVE PASS + mutation-check.)
-- [ ] green-frontend-coverage-rtl-override
+- [x] red-frontend-coverage-rtl-override — DONE (LIVE characterization, `\p{C}` screen already implemented). Added
+  GROUP 6 to `ManualEditor.link.urlShapes.output.test.tsx` (file now 192 lines, under the 200 limit): two SEPARATE
+  `expectRejected` rows (NOT it.each-collapsed, mirroring GROUP-4's "one fixture per char" discipline) —
+  `example.com/pa\u{202E}th` (U+202E RTL-override spoofing vector) and `example.com/pa\u{0007}th` (U+0007 BEL, a C0
+  control). Escapes not literals (same rationale as GROUP-4's `\u{1F600}`: U+202E would reorder the source, U+0007
+  is invisible). Both VERIFIED `\S` (stay in HOST_SHAPE's `([/?#]\S*)?` segment → HOST_SHAPE MATCHES, not fallback)
+  AND `\p{C}`, and `new URL('http://…')` does NOT throw for either — so line 50's `/\p{C}/u` is the SOLE rejector.
+  **Predicted PASS (characterization); Actual 12/12 PASS; match.** **Mutation-check (teeth, per fixture):** narrowed
+  line 50 to `/[\u{200B}\u{00AD}]/u` → BOTH GROUP-6 rows FAIL (now link) while GROUP-5's U+200B and all 9 others
+  still PASS (2 failed | 10 passed); each char independently forces the `\p{C}` breadth. Original `/\p{C}/u`
+  restored (`git diff` on normalizeHref.ts clean). test-review: PASS — assertions strict (`expectRejected` = exact
+  `toHaveLength(0)` + alert present), both fixtures verified through HOST_SHAPE, rows kept separate. Generation
+  suite: 141 passed | 0 failed | 0 skipped, tsc clean.
+- [~] green-frontend-coverage-rtl-override — expected `[S]`: no production change (the `\p{C}` screen at
+  `normalizeHref.ts:50` already rejects U+202E and U+0007; the red is a LIVE characterization test proven by the
+  mutation-check above). Nothing to implement or un-skip.
+
 - [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. **This is the step that owes 7.9 its real verification**: the popover's clipping under `.me-editor-shell`'s `overflow: hidden`, its placement on a narrow viewport, and real-browser focus behaviour are all invisible to jsdom by construction. The ADR chose the popover partly for jsdom reachability; that argument covers the rejection signal only. **Owe-list (align-design premortem on `2929d74`):** opening the popover with the cursor OUTSIDE a link must render the active-highlight background on `toolbar-link` via `.me-toolbar-btn[aria-expanded='true']` — jsdom applies no CSS so this rule is entirely unguarded; a real-browser computed-style assertion is the only thing that can pin it.
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 

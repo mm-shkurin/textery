@@ -151,4 +151,42 @@ describe('ManualEditor link URL shapes — normalized output', () => {
 
     expectRejected(contentArea)
   })
+
+  // GROUP 6 — the security-relevant control chars the `\p{C}` screen must reject
+  // on the HOST_SHAPE branch (coverage-characterization, LIVE not skip: the
+  // screen already exists). GROUP 5 pinned exactly ONE char (U+200B); the
+  // breadth of `/\p{C}/u` was otherwise comment-forced only, so a later green
+  // that narrows it to a targeted set (e.g. `[​­]`) would drop these two,
+  // ship a live deceptive anchor, and keep the suite green. Each char here is
+  // its OWN row (not it.each-collapsed): mirroring GROUP-4's "one fixture per
+  // char, an enumeration defeats a single fixture" discipline — a narrowing
+  // green cannot special-case both independent fixtures at once.
+  //
+  // Both are `\S` (so they stay in HOST_SHAPE's `([/?#]\S*)?` path segment →
+  // HOST_SHAPE MATCHES, not the fallback) AND category `\p{C}` (so `isUsable`
+  // at normalizeHref.ts:50 returns false BEFORE `new URL()` — verified: `new
+  // URL('http://example.com/pa<c>th')` does NOT throw for either char, so line
+  // 50 is the SOLE rejector). Flow: HOST_SHAPE true → `http://…` prefixed →
+  // `/\p{C}/u` fires → REJECT → setLink fails → inline alert. Escapes (not
+  // literals) so U+202E does not reorder this source and U+0007 is not an
+  // invisible byte in the file — same rationale as GROUP 4's \u{1F600}.
+
+  // U+202E RIGHT-TO-LEFT OVERRIDE — the classic filename/URL spoofing vector
+  // (renders following text right-to-left, e.g. `photo‮gpj.exe` shows as
+  // `photoexe.jpg`). Must be REJECTED, never shipped as a live deceptive href.
+  it('an RTL-override char in the path is rejected on the HOST_SHAPE branch, not shipped as a spoofing http:// link', async () => {
+    const contentArea = await applyLinkUrl('example.com/pa\u{202E}th')
+
+    expectRejected(contentArea)
+  })
+
+  // U+0007 BEL — a C0 control char. `\S` (stays in the path segment → HOST_SHAPE
+  // matches) and `\p{C}` (rejected at line 50). A green that narrows the screen
+  // to zero-width/format chars only would let C0 controls through — this row
+  // keeps the C0 range test-forced.
+  it('a C0 control char in the path is rejected on the HOST_SHAPE branch, not shipped as a deceptive http:// link', async () => {
+    const contentArea = await applyLinkUrl('example.com/pa\u{0007}th')
+
+    expectRejected(contentArea)
+  })
 })
