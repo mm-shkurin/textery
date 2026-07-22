@@ -62,6 +62,14 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 - [S] demo
 
 ### 3.2: The exchange is issued exactly once per code
+> CARRIED (premortem on 3.1 green `2b80323`, REMOTE→own here): OAuthCallback's `hasExchanged` ref
+> + per-run `active` flag interact under React StrictMode's mount→cleanup→remount: run 1 sets
+> `hasExchanged=true` and `active1=true`, cleanup sets `active1=false`, run 2 returns early on the
+> ref and never arms a new `active`; when exchange 1 resolves it sees `active1===false` → stores/
+> navigates NOTHING (dev-only permanent spinner). **3.2 must assert AT-LEAST-once (exchange fires
+> AND the sign-in completes) under a double-mount, not only at-most-once** — otherwise the once-guard
+> can regress into a zero-execution hang. Fix likely: drop the `active` teardown for the success
+> path, or key the guard so the surviving run completes.
 - [S] red-selenium
 - [ ] red-frontend
 - [ ] green-frontend
