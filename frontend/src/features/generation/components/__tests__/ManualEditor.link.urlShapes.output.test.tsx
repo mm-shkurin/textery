@@ -134,4 +134,21 @@ describe('ManualEditor link URL shapes — normalized output', () => {
 
     expectSoleLink(contentArea, 'http://example.com/\u{1F600}')
   })
+
+  // GROUP 5 — control char INSIDE the HOST_SHAPE branch (coverage-characterization,
+  // LIVE not skip: the `\p{C}` screen in isUsable already exists). This is DISTINCT
+  // from GROUP 2's soft hyphen (U+00AD, category Cf but NOT `\S` in a way that keeps
+  // it in the host class — it misses HOST_SHAPE and reaches the FALLBACK). A
+  // zero-width space (U+200B) is `\S` so it stays in the `([/?#]\S*)?` path segment
+  // and MATCHES HOST_SHAPE → gets `http://`-prefixed → `isUsable` hits the
+  // `/\p{C}/u` guard (normalizeHref.ts:50) FIRST, before `new URL()`, and returns
+  // false → REJECT → alert. Exercises normalizeHref.ts:50 on the HOST_SHAPE path,
+  // the branch no other test takes. TEETH proven by mutation-check on the RED commit
+  // (delete line 50 → new URL('http://example.com/pa​th') does not throw →
+  // isUsable true → the char ships as a live deceptive link → this test fails).
+  it('a zero-width space in the path is rejected on the HOST_SHAPE branch, not shipped as a deceptive http:// link', async () => {
+    const contentArea = await applyLinkUrl('example.com/pa​th')
+
+    expectRejected(contentArea)
+  })
 })

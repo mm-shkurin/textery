@@ -1036,12 +1036,19 @@ add new ones — the first red phase in this story to do so.
 - [S] green-frontend-coverage-click-inside — no production change: the click-inside guard (`LinkPopover.tsx:99-104`)
   already exists; the red is a LIVE characterization test (see mutation-check on `fafeda2`). Nothing to implement or
   un-skip.
-- [~] red-frontend-coverage-control-char — pin `normalizeHref`'s control-char rejection on the HOST_SHAPE path
-  (`normalizeHref.ts:50`, `if (/\p{C}/u.test(href)) return false`, branch never taken today): `example.com/pa​th`
-  matches HOST_SHAPE, gets `http://`-prefixed, then `isUsable` must reject it → `unsafe:rejected` → alert. Assert
-  `expectRejected`. (Distinct from url-shapes-3's G2, which reached the fallback via a soft-hyphen HOST; this is the
-  in-path control char through the HOST_SHAPE branch.)
-- [ ] green-frontend-coverage-control-char
+- [x] red-frontend-coverage-control-char — DONE (LIVE characterization, `\p{C}` screen already implemented). New
+  GROUP 5 test in `ManualEditor.link.urlShapes.output.test.tsx` (file now 154 lines). Fixture `example.com/pa​th`
+  with a zero-width space U+200B in the path: `\S` so it stays in HOST_SHAPE's `([/?#]\S*)?` segment (MATCHES) AND
+  category Cf so `\p{C}` fires. Flow: HOST_SHAPE true → `http://…` prefixed → `isUsable` hits `/\p{C}/u` FIRST
+  (before `new URL()`) → false → `REJECT` → `setLink` fails → inline alert. Asserts `expectRejected` (0 anchors +
+  alert present). **Predicted: PASS (characterization); Actual: PASS; Comparison: match.** Mutation-check (teeth):
+  deleted `normalizeHref.ts:50` → `new URL('http://example.com/pa​th')` does NOT throw → `isUsable` true → the
+  ZWSP ships as a live deceptive link → test FAILS (`expected <a> length 0 but got 1`); production restored.
+  Distinct from url-shapes-3's G2 (soft-hyphen U+00AD *host* → fallback branch); this is the in-path control char
+  through the HOST_SHAPE branch. test-review: PASS, assertions already strict (`expectRejected` = exact
+  `toHaveLength(0)` + `toBeInTheDocument`), fixture verified through HOST_SHAPE by execution. Suite: 262 passed |
+  0 failed, tsc clean.
+- [~] green-frontend-coverage-control-char
 - [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. **This is the step that owes 7.9 its real verification**: the popover's clipping under `.me-editor-shell`'s `overflow: hidden`, its placement on a narrow viewport, and real-browser focus behaviour are all invisible to jsdom by construction. The ADR chose the popover partly for jsdom reachability; that argument covers the rejection signal only. **Owe-list (align-design premortem on `2929d74`):** opening the popover with the cursor OUTSIDE a link must render the active-highlight background on `toolbar-link` via `.me-toolbar-btn[aria-expanded='true']` — jsdom applies no CSS so this rule is entirely unguarded; a real-browser computed-style assertion is the only thing that can pin it.
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
