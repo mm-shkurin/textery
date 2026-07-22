@@ -32,11 +32,11 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 > AND that the control is a PLAIN anchor (full-page nav), not a react-router `<Link>` — a
 > `<Link>` would client-route and never reach the backend. Both close this gap.
 - [S] red-selenium
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — BORN-GREEN guard (enabled, not skipped), closes the carried 1.1 href/anchor gap. New `OAuthProviderButtons.vkHandshake.test.tsx` (56L, 2 tests): pins VK exact href `/api/v1/auth/oauth/vk/start`, `not` the Yandex endpoint (swap guard), plain-anchor via `tagName==='A'` AND a cancelable click asserting `defaultPrevented===false` (a react-router `<Link>` would preventDefault — regression turns it RED), and no background fetch on render/click (spy armed to throw + non-vacuity probe). **Predicted:** born-green, 2 pass (1.1 green already ships the plain `<a>` with correct href). **Actual:** 2 passed. **Match.** test-review: 1 fix (click discriminator from opaque `fireEvent` return → explicit `defaultPrevented` on a named cancelable event).
+- [S] green-frontend — born-green, nothing to implement (1.1 already ships the correct plain `<a href>`); guard above pins it.
 - [S] red-frontend-api — full-page nav, no fetch
 - [S] green-frontend-api
-- [ ] align-design
+- [S] align-design — no new UI; VK button styled + aligned in 1.1.
 - [S] green-selenium
 - [S] demo
 
