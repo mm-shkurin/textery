@@ -998,11 +998,22 @@ add new ones — the first red phase in this story to do so.
   - *(premortem minor/REMOTE)* empty-apply when the caret is NOT inside a link runs `unsetLink` on a non-link
     range (never exercised — the helper always seeds an anchor). Almost certainly a harmless no-op close; optional
     follow-up (open popover on plain selection, apply empty, assert 0 anchors / no throw).
-- [~] red-frontend-coverage-click-inside — pin the click-inside-does-not-apply guard (`LinkPopover.tsx:99-104`,
-  early-return never taken today; this is ALSO premortem CREDIBLE 2 from `dee4260` — wrong-target apply): open the
-  popover, dispatch `mousedown` on the editor content DOM (and on `.me-toolbar` / a sibling toolbar button) →
-  assert the popover stays open and NO link is applied. Discriminates the three "inside" exclusions.
-- [ ] green-frontend-coverage-click-inside
+- [x] red-frontend-coverage-click-inside — DONE (LIVE characterization, guard already implemented). New file
+  `ManualEditor.link.popoverClickInside.test.tsx` (3 tests) + jsdom geometry polyfill in `src/test/setup.ts`
+  (`elementFromPoint`/`getClientRects` stubs — ProseMirror's own mousedown coordinate math throws in jsdom on a
+  real pointer event; inert for non-pointer tests). Opens the popover inside a link, dispatches `mousedown` on
+  (1) editor content DOM, (2) a sibling toolbar button, (3) the popover input → each asserts popover stays
+  mounted (`toBeInTheDocument`), zero anchors (`querySelectorAll('a')` length 0), text intact (`toBe('hello
+  world')`). **Predicted: PASS (characterization); Actual: PASS; Comparison: match.** Mutation-check (teeth):
+  removing `editorDom.contains(target)` → the editor-content row FAILS (`link-popover` null, apply→onClose
+  unmounted it); production restored, 101/101 re-verified. test-review: assertions already strict, nothing
+  weakened. **test-review finding (folded, not blocking):** the popover-input row (case 3) does NOT
+  independently exercise the `popover.contains` branch (line 100) — the popover is nested INSIDE `.me-toolbar`
+  (`ManualEditorToolbar.tsx:42/67/70`), so `toolbar?.contains` (line 101) also catches the input; line 100 is
+  defensive/redundant given current nesting. Independent coverage would need portaling the popover out of
+  `.me-toolbar` (a production refactor, out of scope here). Comment corrected to state this accurately. Suite:
+  101 passed | 0 skipped | 0 failed, tsc clean.
+- [~] green-frontend-coverage-click-inside
 - [ ] red-frontend-coverage-control-char — pin `normalizeHref`'s control-char rejection on the HOST_SHAPE path
   (`normalizeHref.ts:50`, `if (/\p{C}/u.test(href)) return false`, branch never taken today): `example.com/pa​th`
   matches HOST_SHAPE, gets `http://`-prefixed, then `isUsable` must reject it → `unsafe:rejected` → alert. Assert
