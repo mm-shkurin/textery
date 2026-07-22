@@ -1033,8 +1033,10 @@ add new ones — the first red phase in this story to do so.
     `ManualEditor.tsx:50`) leaks past a prior test file and occasionally closes the popover before the assert. Fix
     per the Flaky Test Fix Protocol (likely await the pending state in `openLinkPopover`, or wrap the mousedown
     dispatch in `act`). Not blocking this unit, but should not be left flaky — open a bug task if it recurs.
-- [~] green-frontend-coverage-click-inside
-- [ ] red-frontend-coverage-control-char — pin `normalizeHref`'s control-char rejection on the HOST_SHAPE path
+- [S] green-frontend-coverage-click-inside — no production change: the click-inside guard (`LinkPopover.tsx:99-104`)
+  already exists; the red is a LIVE characterization test (see mutation-check on `fafeda2`). Nothing to implement or
+  un-skip.
+- [~] red-frontend-coverage-control-char — pin `normalizeHref`'s control-char rejection on the HOST_SHAPE path
   (`normalizeHref.ts:50`, `if (/\p{C}/u.test(href)) return false`, branch never taken today): `example.com/pa​th`
   matches HOST_SHAPE, gets `http://`-prefixed, then `isUsable` must reject it → `unsafe:rejected` → alert. Assert
   `expectRejected`. (Distinct from url-shapes-3's G2, which reached the fallback via a soft-hyphen HOST; this is the
