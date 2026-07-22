@@ -1048,7 +1048,29 @@ add new ones — the first red phase in this story to do so.
   through the HOST_SHAPE branch. test-review: PASS, assertions already strict (`expectRejected` = exact
   `toHaveLength(0)` + `toBeInTheDocument`), fixture verified through HOST_SHAPE by execution. Suite: 262 passed |
   0 failed, tsc clean.
+  **Review-pass verdicts on `cf5c62e` (red): agent-review CONCERNS (1 mild), premortem CONCERNS (1 credible),
+  `/refactor` NO ACTION (test-only, no cross-file smell; GROUP-4 rows deliberately un-collapsed per their comment).**
+  - *(agent-review mild + premortem CREDIBLE — same gap, folded to a discovered follow-up step below)* the
+    `\p{C}` breadth is **comment-forced, not test-forced**. This unit pins exactly ONE control char (U+200B) on the
+    HOST_SHAPE path; the security-relevant **U+202E RTL-override** (a known filename-spoofing vector) plus C0
+    controls and direction marks (U+200E/200F/200D) have **zero test teeth on the live HOST_SHAPE branch** — GROUP-2's
+    U+00AD is a *fallback*-path red, never exercises `normalizeHref.ts:50`. A later green that narrows `/\p{C}/u`
+    to a targeted set (e.g. `[​­]`) would drop U+202E, ship a live deceptive anchor, and keep the whole
+    suite green. Also (agent-review): both the HOST_SHAPE-reject and the fallback produce the identical observable
+    (0 anchors + alert), so nothing in the test *itself* ties this input to line 50 — the branch attribution rests
+    on the manual mutation-check. Both close with the same guard → new discovered step below.
+  - *(premortem REMOTE, noted not tracked)* `\p{C}` also catches U+200D (ZWJ), so a compound ZWJ emoji path
+    (`example.com/👨‍👩‍👧`) is rejected while single-codepoint emoji (U+1F600) passes — implausible product need,
+    fully reversible (user re-enters). jsdom/browser `new URL()` divergence does NOT bite here: `\p{C}` short-circuits
+    before `new URL()`, both are pure regex.
 - [~] green-frontend-coverage-control-char
+- [ ] red-frontend-coverage-rtl-override — DISCOVERED (agent-review + premortem CONCERNS on `cf5c62e`): pin the
+  security-relevant control chars the `\p{C}` screen must reject on the HOST_SHAPE path, mirroring GROUP-4's
+  "one fixture per char, an enumeration defeats a single fixture" discipline. Separate `expectRejected` rows for
+  `example.com/pa‮th` (RTL-override spoofing) and a C0 control (e.g. ``); each must reject via
+  `normalizeHref.ts:50`, not the fallback. This makes the `\p{C}` breadth test-forced so a future narrowing green
+  can't silently re-open the spoofing hole. (Characterization — screen already exists; expect LIVE PASS + mutation-check.)
+- [ ] green-frontend-coverage-rtl-override
 - [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. **This is the step that owes 7.9 its real verification**: the popover's clipping under `.me-editor-shell`'s `overflow: hidden`, its placement on a narrow viewport, and real-browser focus behaviour are all invisible to jsdom by construction. The ADR chose the popover partly for jsdom reachability; that argument covers the rejection signal only. **Owe-list (align-design premortem on `2929d74`):** opening the popover with the cursor OUTSIDE a link must render the active-highlight background on `toolbar-link` via `.me-toolbar-btn[aria-expanded='true']` — jsdom applies no CSS so this rule is entirely unguarded; a real-browser computed-style assertion is the only thing that can pin it.
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
