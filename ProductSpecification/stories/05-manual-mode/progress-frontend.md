@@ -1063,8 +1063,10 @@ add new ones — the first red phase in this story to do so.
     (`example.com/👨‍👩‍👧`) is rejected while single-codepoint emoji (U+1F600) passes — implausible product need,
     fully reversible (user re-enters). jsdom/browser `new URL()` divergence does NOT bite here: `\p{C}` short-circuits
     before `new URL()`, both are pure regex.
-- [~] green-frontend-coverage-control-char
-- [ ] red-frontend-coverage-rtl-override — DISCOVERED (agent-review + premortem CONCERNS on `cf5c62e`): pin the
+- [S] green-frontend-coverage-control-char — no production change: the `\p{C}` screen (`normalizeHref.ts:50`)
+  already exists; the red is a LIVE characterization test (see mutation-check on `cf5c62e`). Nothing to implement
+  or un-skip.
+- [~] red-frontend-coverage-rtl-override — DISCOVERED (agent-review + premortem CONCERNS on `cf5c62e`): pin the
   security-relevant control chars the `\p{C}` screen must reject on the HOST_SHAPE path, mirroring GROUP-4's
   "one fixture per char, an enumeration defeats a single fixture" discipline. Separate `expectRejected` rows for
   `example.com/pa‮th` (RTL-override spoofing) and a C0 control (e.g. ``); each must reject via
