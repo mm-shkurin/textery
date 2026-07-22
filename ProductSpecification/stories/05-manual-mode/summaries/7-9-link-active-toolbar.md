@@ -35,3 +35,15 @@
 **Surprise:** The document `mousedown` click-outside handler excludes `editor.view.dom` from "outside", so clicking into the editor body to reposition the caret neither applies nor closes — the popover stays stuck open and the typed URL is silently dropped, contradicting the ADR's own click-outside row ("close AND apply the captured range").
 **Why:** The exclusion was added as a premortem defensive guard (don't apply on a text-selection drag ending in the editor), but a click into the editor genuinely IS outside the popover per the ADR.
 **Impact:** A follow-up red-2 must resolve the tension deliberately (apply+close vs stay-open); also the captured range is frozen ABSOLUTE positions, so an autosave `setContent` round-trip (`useDocumentSave.ts:95`) while the popover is open shifts them and the link lands on the wrong text (`setTextSelection` clamps, no throw).
+
+## red-frontend-coverage-rtl-override (2026-07-22)
+
+**Decision:** Stop pinning individual `\p{C}` control chars in the link-URL reject tests; the defensible coverage bound is one representative per security-relevant C sub-category, not per codepoint.
+**Why:** `\p{C}` is an infinite category — each member fixture only forces that one codepoint, so a narrowing green's cost rises by one char and nothing structural is closed; the live `/\p{C}/u` catch-all already rejects the unpinned siblings (U+200E/200F, U+202A-202D, U+2066-2069).
+**Where applied:** `ManualEditor.link.urlShapes.output.test.tsx` GROUPs 5-6 now span Cf (U+200B, U+202E) and Cc (U+0007); if the bidi family ever needs a hard guarantee, guard it structurally (a bidi-range screen), not by adding members.
+
+## red-frontend-coverage-click-inside (2026-07-22)
+
+**Quirk:** ProseMirror's mousedown coordinate math throws in jsdom (no `elementFromPoint`/`getClientRects`), so any test that dispatches a real pointer event into the editor DOM needs the geometry polyfill added suite-globally in `src/test/setup.ts`.
+**Where:** `frontend/src/test/setup.ts` (zero-geometry stub on `document`/`Range.prototype`).
+**Implication:** The stub is suite-global — a future test asserting real layout/geometry gets a silent zero-rect false-green instead of a loud throw; scope it per-file if layout ever matters. It also correlates with an intermittent cross-file failure of the `toolbar-bold` click-inside row (an unawaited editor state update, `act()` warning at `ManualEditor.tsx:50`).
