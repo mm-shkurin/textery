@@ -1,0 +1,40 @@
+openapi: 3.0.3
+info:
+  title: OAuth start (VK ID / Yandex ID)
+  version: 1.0.0
+
+paths:
+  /api/v1/auth/oauth/{provider}/start:
+    get:
+      summary: >
+        Begin the backend-mediated OAuth handshake. Full-page browser navigation target
+        of the provider button; 302-redirects to the provider's authorization page.
+      operationId: oauthStart
+      tags:
+        - auth
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          description: OAuth provider. Any value outside the enum is rejected, not defaulted.
+          schema:
+            type: string
+            enum: [vk, yandex]
+      responses:
+        '302':
+          description: >
+            Redirect to the provider auth page. The backend sets client_id, the registered
+            redirect_uri, requested scope (email + basic profile), and a CSRF `state` — all
+            held server-side; the client sees none of them. Config missing/blank at boot
+            fails fast, never a lazy dev-fallback (hazard-scan group 7).
+          headers:
+            Location:
+              schema:
+                type: string
+              description: Provider authorization URL.
+        '404':
+          description: Unknown provider (outside the vk|yandex enum).
+        '500':
+          description: >
+            Internal server error (e.g. OAuth provider config unset). Fails closed —
+            no redirect to a half-configured provider.
