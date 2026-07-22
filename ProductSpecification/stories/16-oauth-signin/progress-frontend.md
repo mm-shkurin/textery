@@ -80,6 +80,16 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 - [S] demo
 
 ### 3.2: The exchange is issued exactly once per code
+> CARRIED (agent-review + premortem CONCERNS on 3.1 align-design `d2be610`, both non-blocking):
+> (a) the callback's whole shell now hangs on one `import './AuthForm.css'` line plus the
+> `auth-card`/`auth-subtitle` classnames — an import tidy-up drops the shell back to a naked box
+> and NO test can go RED (jsdom applies no CSS). Add a class-contract assertion in a callback
+> render test: `oauth-callback-loading` has `auth-card`, subtitle has `auth-subtitle`.
+> (b) `.oauth-callback-card{padding:48px 40px}` beats `.auth-card{padding:40px}` only by import
+> order — equal specificity. Tighten to `.oauth-callback-card.auth-card` (cosmetic, no test possible).
+> (c) `.auth-card` has `width:420px` with no `max-width:100%` (the rewrite dropped the callback's
+> own one) — overflows under 420px viewports; the same gap already exists for login/register, so
+> the fix belongs on `.auth-card`, not here.
 > CARRIED (premortem on 3.1 green `2b80323`, REMOTE→own here): OAuthCallback's `hasExchanged` ref
 > + per-run `active` flag interact under React StrictMode's mount→cleanup→remount: run 1 sets
 > `hasExchanged=true` and `active1=true`, cleanup sets `active1=false`, run 2 returns early on the
