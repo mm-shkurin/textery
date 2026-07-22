@@ -4,7 +4,7 @@
 // access token and a 401 renews the session and replays it, instead of surfacing as a generation
 // failure the user did nothing to cause.
 import { send } from '../../../shared/api/send'
-import { DEFAULT_DOCUMENT_TYPE } from '../../../shared/documentTypes'
+import { DEFAULT_DOCUMENT_TYPE, WIRE_DOCUMENT_TYPE } from '../../../shared/documentTypes'
 
 // No UI control exists yet for volume — every request asks for a fixed 5-page document
 // until the product adds a page-count selector.
@@ -50,7 +50,9 @@ export async function createGeneration(topic: string): Promise<CreateGenerationR
       // collapses the replay onto the first request instead of billing a second generation.
       headers: { 'Idempotency-Key': crypto.randomUUID() },
       body: {
-        document_type: DEFAULT_DOCUMENT_TYPE,
+        // The wire type is Cyrillic ("доклад"); the backend rejects the app value ("doklad")
+        // with 422 INVALID_DOCUMENT_TYPE. Map here, same as documentApi.createDocument does.
+        document_type: WIRE_DOCUMENT_TYPE[DEFAULT_DOCUMENT_TYPE],
         topic,
         volume_pages: DEFAULT_VOLUME_PAGES,
       },

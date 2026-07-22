@@ -31,7 +31,7 @@ describe('generationApi', () => {
     expect(url).toContain('/api/v1/generations')
     expect(JSON.parse(init.body)).toMatchObject({
       topic: 'Квантовые компьютеры',
-      document_type: 'doklad',
+      document_type: 'доклад',
       volume_pages: 5,
     })
   })
