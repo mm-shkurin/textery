@@ -129,6 +129,14 @@ generic (e.g. "This account is temporarily locked due to repeated failed logins.
 - **5.6 (lockout read fails closed):** a DB error while reading the count must DENY
   the login (no token). Separate scenario; the read is `find_by_email`, so 5.6 wraps
   that failure into a denial rather than a 5xx.
+- **Observability / Load phase (premortem carry, 6e140b0):** the reset-on-success
+  commit failure is *swallowed* (ADR §4) with only a `logger.exception` — no metric.
+  §4 reasons about the **per-user** worst case (locks one attempt early), but not the
+  **systemic** mode: a fleet-wide reset-commit failure (deadlock storm) stops zeroing
+  counters, so counts monotonically climb toward N across many verified users and mass
+  ACCOUNT_LOCKED lockouts appear with **no alert**. The Load/Observability phase must
+  add a `login.reset_commit_failed` counter/metric with an alert threshold. Not
+  captured elsewhere — recorded here so 5.5+ inherits it.
 
 ## Scope / steps
 
