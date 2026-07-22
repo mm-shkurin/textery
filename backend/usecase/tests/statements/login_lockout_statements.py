@@ -61,15 +61,21 @@ class LoginLockoutStatements(LoginFailedAttemptStatements):
             f"{self.password_hasher.verify_call_count} time(s)"
         )
 
-    def _assert_reset_committed_once(self) -> None:
-        # Shared strict guard: exactly one atomic reset for the authenticated account
-        # AND exactly one commit to persist it (a reset that never commits is silently
-        # rolled back on session.close() -- 5.3 premortem carry).
+    def _assert_reset_attempted_once(self) -> None:
+        # Exactly one atomic reset for the authenticated account. Shared by the
+        # committed-happy-path guard and the commit-fails coverage branch (which
+        # cannot reuse the full committed guard: commit_call_count is 0 there).
         assert self.account_repository.reset_failed_attempts_calls == [self.account_id], (
             f"expected exactly one atomic reset for the authenticated account "
             f"{self.account_id}, got "
             f"{self.account_repository.reset_failed_attempts_calls}"
         )
+
+    def _assert_reset_committed_once(self) -> None:
+        # Shared strict guard: exactly one atomic reset for the authenticated account
+        # AND exactly one commit to persist it (a reset that never commits is silently
+        # rolled back on session.close() -- 5.3 premortem carry).
+        self._assert_reset_attempted_once()
         assert self.unit_of_work.commit_call_count == 1, (
             f"expected exactly one commit to persist the reset, got "
             f"{self.unit_of_work.commit_call_count}"
@@ -89,3 +95,25 @@ class LoginLockoutStatements(LoginFailedAttemptStatements):
         # Focused commit guard (5.3 premortem carry): pin the reset+commit explicitly
         # so a reset-without-commit implementation goes RED, not silently green.
         self._assert_reset_committed_once()
+
+    async def login_with_the_correct_password_while_the_reset_commit_fails(self) -> None:
+        # Coverage 5.4: a stale failed-attempt count must NEVER block a valid login
+        # (ADR §4). Arm the shared UoW to blow up on the reset's commit, then drive
+        # the SUCCESS/reset branch (not the wrong-password branch 5.3 covers).
+        self.unit_of_work.raise_on_commit = RuntimeError("commit failed")
+        await self.login_with_the_correct_password()
+
+    def assert_authenticated_despite_the_failed_reset_commit(self) -> None:
+        # The swallow lets the login proceed: the token pair is still issued (no
+        # exception surfaces to the client), the reset was attempted, the commit was
+        # attempted, and the poisoned txn was rolled back quietly.
+        self.assert_token_pair_issued_for_the_account()
+        self._assert_reset_attempted_once()
+        assert self.unit_of_work.commit_attempt_count == 1, (
+            f"expected exactly one commit attempt to persist the reset, got "
+            f"{self.unit_of_work.commit_attempt_count}"
+        )
+        assert self.unit_of_work.rollback_call_count == 1, (
+            f"expected exactly one rollback after the reset commit failed, got "
+            f"{self.unit_of_work.rollback_call_count}"
+        )

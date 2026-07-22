@@ -32,3 +32,10 @@ class TestLoginLockout:
         await login_lockout_statements.given_verified_account_one_below_the_lockout_threshold()
         await login_lockout_statements.login_with_the_correct_password()
         login_lockout_statements.assert_committed_the_reset()
+
+    async def test_should_still_authenticate_when_the_reset_commit_fails(
+        self, login_lockout_statements: LoginLockoutStatements
+    ):
+        await login_lockout_statements.given_verified_account_one_below_the_lockout_threshold()
+        await login_lockout_statements.login_with_the_correct_password_while_the_reset_commit_fails()
+        login_lockout_statements.assert_authenticated_despite_the_failed_reset_commit()
