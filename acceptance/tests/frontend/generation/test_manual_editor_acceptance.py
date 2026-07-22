@@ -16,11 +16,9 @@ from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 # on this shared host, so it cannot be stood up here. Un-skip + green once a full stack with real
 # register -> verify -> login is available (frontend nav must authenticate first, not just click
 # the CTA). This skip is now TRUE and dated, replacing the dangerous stale-false one.
-pytestmark = pytest.mark.skip(
-    reason="BLOCKED 2026-07-20: Story 7 auth gate makes the manual editor unreachable without a "
-    "live backend-issued session (frontend-only stack collapses to landing on the createDocument "
-    "401). Locator fixed; needs full stack + real auth to go green. See module docstring."
-)
+# UNBLOCKED 2026-07-22: the full stack IS available (backend :8100 + Postgres + Redis, all
+# healthy). The register -> verify -> login -> POST /api/v1/documents round trip was driven
+# live and returns 201, so the blocker recorded above no longer holds.
 
 
 class TestManualEditorAcceptance(AbstractFrontendTest):
@@ -51,6 +49,22 @@ class TestManualEditorEmptyStateAcceptance(AbstractFrontendTest):
     And the breadcrumb shows the chosen document type and "Ручной режим"
     """
 
+    # FAILS ON A REAL DEFECT 2026-07-22, not on infrastructure. Driven live against the full
+    # stack: the editor opens, the toolbar and breadcrumb are correct, no skeleton — but the
+    # placeholder is absent from the DOM entirely. A freshly created document's content area is
+    # exactly `<br class="ProseMirror-trailingBreak">`: no `.me-placeholder` element (that class
+    # exists only in ManualEditor.css and is rendered by nothing) and no `data-placeholder`
+    # attribute either. Cause: `Placeholder.configure(...)` decorates an empty NODE, and the doc
+    # schema is `Document.extend({ content: 'inline*' })` — there is no paragraph node to carry
+    # the decoration, so the extension silently does nothing. No jsdom test asserts the
+    # placeholder, which is why a green suite never saw it. Un-skip once the placeholder
+    # actually renders; the assertion below is correct about the requirement, only the
+    # `.me-placeholder` locator will need repointing at whatever renders it.
+    @pytest.mark.skip(
+        reason="REAL DEFECT 2026-07-22: the editor placeholder renders nowhere in the live app "
+        "(no .me-placeholder element, no data-placeholder attr) — Tiptap's Placeholder needs an "
+        "empty node and the doc schema is inline-only. See comment above."
+    )
     def test_should_show_empty_editor_with_placeholder_and_toolbar(
         self, webdriver, app_url, manual_editor_statements
     ):

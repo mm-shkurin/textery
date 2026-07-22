@@ -58,7 +58,19 @@ queue was never exercised through a real click dispatch.
 - [S] red-frontend-api — no new API call for this scenario (display-only, document already created in 1.2's flow)
 - [S] green-frontend-api — same reason
 - [S] align-design — content-area/toolbar/breadcrumb styling already aligned to mockup in scenario 1.2
-- [S] green-selenium — red-selenium test is already green; no marker to remove
+- [S] green-selenium — ~~red-selenium test is already green; no marker to remove~~ **FALSE, corrected
+  2026-07-22.** Driven live against the full stack (backend :8100 + Postgres + Redis) with a real
+  register→verify→login session: the test FAILS on a genuine production defect. The placeholder
+  renders nowhere — a freshly created document's content area is exactly
+  `<br class="ProseMirror-trailingBreak">`, with no `.me-placeholder` element (that class exists
+  only in `ManualEditor.css`, nothing renders it) and no `data-placeholder` attribute. Cause:
+  `Placeholder.configure(...)` decorates an empty **node**, and the doc schema is
+  `Document.extend({ content: 'inline*' })` — no paragraph node exists to carry the decoration, so
+  the extension silently no-ops. **No jsdom test asserts the placeholder at all**, which is why the
+  suite stayed green over a missing feature (a fourth instance of carryover's "a green suite is not
+  evidence"). Test re-skipped with an accurate dated reason naming the defect; the other three
+  assertions in it (no skeleton, toolbar, breadcrumb) were verified passing live before the
+  placeholder assertion failed. Owed: make the placeholder render, then un-skip.
 - [x] demo
 
 ### Scenario 3.1: Applying a format changes the content and highlights the active toolbar button
@@ -68,7 +80,17 @@ queue was never exercised through a real click dispatch.
 - [S] red-frontend-api — no API call: bold formatting is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
 - [x] align-design
-- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. **Backfill 2026-07-20 (framework `FRAMEWORK_BACKFILL_PLAN.md` Phase B):** the `test_manual_editor_acceptance.py` skip decorator carried a *stale, false* reason (`.me-content-area is a static placeholder div with no contenteditable attribute`) — false since the Tiptap rewrite: the wrapper's child is a real ProseMirror contenteditable div (`data-testid="editor-content-area"`). Un-skipped, fixed the Statements locator to type into that editable element (`manual_editor_statements.py` `EDITABLE_CONTENT`), re-verified live against the frontend dev server. Un-skipping exposed a *larger, true* blocker beyond "backend unavailable": Story 7's auth gate makes the type→mode→editor flow unreachable without a **valid** backend-issued session (unauthenticated CTA → `/register`; a seeded fake sessionStorage token fails too — the editor's `createDocument` mount call 401s, refresh fails, `clearSession` collapses the app back to landing, verified live). So all three scenarios (1.2/2.1/3.1) need a full stack + real register→verify→login, not just a running backend. Re-skipped at module level with an accurate dated reason. Locator fix landed; green pending a live authenticated stack.
+- [x] green-selenium — **GREEN live 2026-07-22.** The 2026-07-20 blocker below is resolved: the full
+  stack is up (backend :8100 + Postgres + Redis, all healthy) and the missing piece was a real
+  session, not a running backend. Added `acceptance/statements/frontend/live_auth_session.py`
+  (`issue_live_session()` — register → verify → login over HTTP, verification code read from the
+  register response body since the email adapter is mocked here) and threaded a `live_session` flag
+  through `_establish_logged_in_precondition`/`navigate_to_doklad_type_modal`; the manual-editor
+  entry point now mints a real backend-issued JWT instead of the seeded placeholder that 401s on
+  `createDocument`. Verified the round trip independently first (`POST /api/v1/documents` → 201)
+  before touching test code. Module-level skip removed. Scenarios 1.2 and 3.1 pass live against a
+  real browser; 2.1 fails on a genuine placeholder defect (see its row above). Suite:
+  **4 passed, 1 skipped**. Historical reason follows. ~~backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. **Backfill 2026-07-20 (framework `FRAMEWORK_BACKFILL_PLAN.md` Phase B):** the `test_manual_editor_acceptance.py` skip decorator carried a *stale, false* reason (`.me-content-area is a static placeholder div with no contenteditable attribute`) — false since the Tiptap rewrite: the wrapper's child is a real ProseMirror contenteditable div (`data-testid="editor-content-area"`). Un-skipped, fixed the Statements locator to type into that editable element (`manual_editor_statements.py` `EDITABLE_CONTENT`), re-verified live against the frontend dev server. Un-skipping exposed a *larger, true* blocker beyond "backend unavailable": Story 7's auth gate makes the type→mode→editor flow unreachable without a **valid** backend-issued session (unauthenticated CTA → `/register`; a seeded fake sessionStorage token fails too — the editor's `createDocument` mount call 401s, refresh fails, `clearSession` collapses the app back to landing, verified live). So all three scenarios (1.2/2.1/3.1) need a full stack + real register→verify→login, not just a running backend. Re-skipped at module level with an accurate dated reason. Locator fix landed; green pending a live authenticated stack.~~
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
 ### Scenario 3.2: The toolbar reflects formatting state at the cursor position, not globally

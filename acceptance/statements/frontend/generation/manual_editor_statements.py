@@ -45,7 +45,9 @@ BOLD_BUTTON = _toolbar_button_locator(TOOLBAR_BUTTON_ARIA_LABELS["bold"][0])
 
 class ManualEditorStatements(BaseFrontendStatements):
     def open_manual_editor_for_doklad(self, driver: WebDriver, app_url: str) -> None:
-        self.navigate_to_doklad_type_modal(driver, app_url)
+        # A live session, not a seeded one: the editor calls createDocument on mount, and a
+        # fake token 401s there — the app then clears the session and falls back to the landing.
+        self.navigate_to_doklad_type_modal(driver, app_url, live_session=True)
         self._wait_for_visible(driver, MODE_CARD_MANUAL).click()
 
     def assert_mode_modal_is_closed(self, driver: WebDriver) -> None:

@@ -17,6 +17,7 @@ from statements.frontend.frontend_form_assertions import (  # noqa: F401
     FormAssertionsMixin,
     HintErrorSnapshot,
 )
+from statements.frontend.live_auth_session import issue_live_session
 
 REQUEST_LOG_SETTLE_SECONDS = 1
 
@@ -70,41 +71,52 @@ class BaseFrontendStatements(FormAssertionsMixin):
     _ACCESS_TOKEN_KEY = "textery.auth.accessToken"
     _REFRESH_TOKEN_KEY = "textery.auth.refreshToken"
 
-    def _establish_logged_in_precondition(self, driver: WebDriver, app_url: str) -> None:
-        """Seed a signed-in session so the auth-gated flow is reachable.
+    def _establish_logged_in_precondition(
+        self, driver: WebDriver, app_url: str, live_session: bool = False
+    ) -> None:
+        """Establish a "given a logged-in visitor" precondition in sessionStorage.
 
-        A "given a logged-in visitor" precondition, set via sessionStorage rather than a real
-        register -> verify -> login round-trip. This is honest for tests whose system-under-test
-        is a PURELY CLIENT-SIDE screen that makes no authenticated API call (the type and mode
-        modals): `isAuthenticated()` only checks for a token's presence, and the modals render
-        identically whether the token is real or seeded — no request is sent that could reject it.
+        Two grades of token, because they cost differently and the cheap one is genuinely
+        sufficient for some screens:
 
-        It is NOT sufficient for screens that call the API on mount/submit (the manual editor's
-        createDocument, the chat workspace's generation POST): the backend answers a seeded token
-        with 401, the client clears the session, and the app collapses to the landing. Those flows
-        need a real backend-issued token (live stack + real login) and their acceptance tests stay
-        skipped until one is available.
+        SEEDED (default) — a placeholder string, no backend call. Honest for a PURELY
+        CLIENT-SIDE screen that makes no authenticated API call (the type and mode modals):
+        `isAuthenticated()` only checks for a token's presence, and the modals render identically
+        whether the token is real or seeded, because no request is sent that could reject it.
+
+        LIVE (`live_session=True`) — a real register -> verify -> login round trip against the
+        running backend. Required for any screen that calls the API on mount or submit (the
+        manual editor's createDocument, the chat workspace's generation POST): a seeded token
+        gets a 401, the client clears the session, and the app collapses to the landing.
         """
         driver.get(app_url)
+        if live_session:
+            session = issue_live_session()
+            access_token, refresh_token = session.access_token, session.refresh_token
+        else:
+            access_token = refresh_token = "acceptance-seeded-session"
         driver.execute_script(
             "window.sessionStorage.setItem(arguments[0], arguments[2]);"
-            "window.sessionStorage.setItem(arguments[1], arguments[2]);",
+            "window.sessionStorage.setItem(arguments[1], arguments[3]);",
             self._ACCESS_TOKEN_KEY,
             self._REFRESH_TOKEN_KEY,
-            "acceptance-seeded-session",
+            access_token,
+            refresh_token,
         )
 
-    def navigate_to_doklad_type_modal(self, driver: WebDriver, app_url: str) -> None:
+    def navigate_to_doklad_type_modal(
+        self, driver: WebDriver, app_url: str, live_session: bool = False
+    ) -> None:
         """Navigate to the app, open the primary CTA, and select the 'doklad' type card.
 
         Shared entry point for both the mode-modal and chat-workspace flows, which
         diverge only in what they click next (a mode card vs. waiting on the modal).
 
         The type modal lives behind the Story 7 auth gate, so a logged-in precondition is
-        established first; see `_establish_logged_in_precondition` for why a seeded session is
-        valid here (no authenticated API call) but not for the editor/workspace flows.
+        established first. Callers whose flow ends on a screen that calls the API must pass
+        `live_session=True`; see `_establish_logged_in_precondition` for the difference.
         """
-        self._establish_logged_in_precondition(driver, app_url)
+        self._establish_logged_in_precondition(driver, app_url, live_session=live_session)
         driver.get(app_url)
         self._wait_for_visible(driver, PRIMARY_CTA_BUTTON).click()
         self._wait_for_visible(driver, TYPE_CARD_DOKLAD).click()
