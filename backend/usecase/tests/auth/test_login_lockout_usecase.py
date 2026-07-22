@@ -1,12 +1,4 @@
-import pytest
-
 from statements.login_lockout_statements import LoginLockoutStatements
-
-pytestmark = pytest.mark.skip(
-    reason="RED 5.4: LoginUser has no lockout gate and no reset-on-success -- a "
-    "correct password on a locked account authenticates (no ACCOUNT_LOCKED), and a "
-    "successful login below the threshold neither resets the counter nor commits."
-)
 
 
 class TestLoginLockout:

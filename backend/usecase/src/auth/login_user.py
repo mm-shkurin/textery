@@ -21,6 +21,10 @@ class LoginUser:
     UNVERIFIED_MESSAGE = (
         "This account has not been verified yet. Please confirm the code sent to your email."
     )
+    ACCOUNT_LOCKED_MESSAGE = "This account is temporarily locked due to repeated failed logins."
+    # An account locks once its consecutive-failure counter reaches this many; the
+    # gate is a derived predicate over the 5.3 counter, no stored is_locked flag.
+    LOCKOUT_THRESHOLD = 5
 
     def __init__(
         self,
@@ -41,6 +45,15 @@ class LoginUser:
         account = await self.account_repository.find_by_email(self._normalized_email(email))
         if account is None:
             raise self._invalid_credentials()
+        # Lockout gate runs BEFORE password verification (but after the null check):
+        # a locked account is refused even with the correct password, and verify()
+        # must never be reached. Placed after `account is None` so an unknown email
+        # still takes the generic 401 path -- only a real, demonstrably-existing row
+        # can be locked (ADR §3).
+        if account.failed_attempt_count >= self.LOCKOUT_THRESHOLD:
+            raise ValidationException(
+                error_code="ACCOUNT_LOCKED", message=self.ACCOUNT_LOCKED_MESSAGE
+            )
         if not self.password_hasher.verify(
             self._normalized_password(password), account.password_hash
         ):
@@ -54,7 +67,22 @@ class LoginUser:
         # the verify screen instead of showing "wrong password".
         if not account.is_verified:
             raise ValidationException(error_code="UNVERIFIED", message=self.UNVERIFIED_MESSAGE)
+        await self._reset_failed_attempts(account.id)
         return self.token_service.issue_pair(account_id=account.id, email=account.email)
+
+    async def _reset_failed_attempts(self, account_id: UUID) -> None:
+        # "Consecutive" means a successful login zeroes the counter. This reset lands
+        # on the happy path, which has a UoW wired since 5.3 but never committed -- so
+        # reset-then-commit, or the UPDATE is silently rolled back on session.close().
+        # Unlike the failure path, a commit failure here must NOT block token issuance:
+        # a stale count is acceptable (worst case: the next failure trips lockout one
+        # attempt early), so swallow + roll back and let the login proceed (ADR §4).
+        try:
+            await self.account_repository.reset_failed_attempts(account_id)
+            await self.unit_of_work.commit()
+        except Exception:
+            logger.exception("failed to persist the failed-attempt reset")
+            await rollback_quietly(self.unit_of_work)
 
     async def _record_failed_attempt(self, account_id: UUID) -> None:
         # Increment-then-commit BEFORE the caller raises INVALID_CREDENTIALS, so
