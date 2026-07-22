@@ -1097,7 +1097,7 @@ add new ones — the first red phase in this story to do so.
     exceed the limit. Planned cut when that happens: split the HOST_SHAPE `\p{C}` characterization rows (GROUPs 5-6)
     into `ManualEditor.link.urlShapes.controlChars.test.tsx`, sharing `applyLinkUrl`/`expectRejected` from
     `testSupport`. A genuine branch-target seam, so it won't violate refactor restraint at that point.
-- [~] green-frontend-coverage-rtl-override — expected `[S]`: no production change (the `\p{C}` screen at
+- [S] green-frontend-coverage-rtl-override — no production change (the `\p{C}` screen at
   `normalizeHref.ts:50` already rejects U+202E and U+0007; the red is a LIVE characterization test proven by the
   mutation-check above). Nothing to implement or un-skip.
 
