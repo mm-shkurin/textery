@@ -34,6 +34,7 @@ async def create_login_user() -> AsyncIterator[LoginUser]:
             account_repository=SqlAlchemyAccountRepository(session),
             password_hasher=BcryptPasswordHasher(),
             token_service=token_service,
+            unit_of_work=SqlAlchemyUnitOfWork(session),
         )
     finally:
         await session.close()

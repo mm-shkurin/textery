@@ -1,15 +1,9 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 from container.auth_wiring import create_login_user
 from session import SqlAlchemyUnitOfWork
 
 
-@pytest.mark.skip(
-    reason="RED: create_login_user wires no unit_of_work, so LoginUser defaults to "
-    "NullUnitOfWork (silent no-op commit); isinstance(SqlAlchemyUnitOfWork) is False"
-)
 class TestCreateLoginUserSharesOneSession:
     """The failed-attempt increment (scenario 5.3) only survives if the wrong-password
     branch's ``unit_of_work.commit()`` actually commits. That holds only when
