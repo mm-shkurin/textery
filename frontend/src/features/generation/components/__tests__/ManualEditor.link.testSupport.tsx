@@ -15,6 +15,19 @@ import { renderEditorWithDocumentCreated, selectRange } from './ManualEditor.tes
 // flow (popover in the document, full attribute set, aria-pressed toggling on
 // cursor move), so it still cannot be expressed as a call to this.
 export async function applyLinkUrl(url: string) {
+  const contentArea = await openLinkPopover()
+
+  fireEvent.change(screen.getByTestId('link-url-input'), { target: { value: url } })
+  fireEvent.click(screen.getByTestId('link-apply'))
+
+  return contentArea
+}
+
+// Renders a fresh editor, selects "hello" out of "hello world", and opens the
+// link popover WITHOUT applying — the seam applyLinkUrl stops short of, for the
+// interaction-contract tests that drive the popover's own keys, click-outside,
+// and captured range rather than the resulting anchor.
+export async function openLinkPopover() {
   await renderEditorWithDocumentCreated()
 
   const contentArea = screen.getByTestId('editor-content-area')
@@ -25,8 +38,22 @@ export async function applyLinkUrl(url: string) {
   fireEvent.select(contentArea)
 
   fireEvent.click(screen.getByTestId('toolbar-link'))
-  fireEvent.change(screen.getByTestId('link-url-input'), { target: { value: url } })
-  fireEvent.click(screen.getByTestId('link-apply'))
+
+  return contentArea
+}
+
+// Applies a link to "hello", then places a collapsed caret inside that anchor
+// and re-opens the popover — the "cursor inside an existing link" starting
+// state for the prefill/replace and Escape-preserves-link cases.
+export async function openLinkPopoverInsideExistingLink(href: string) {
+  const contentArea = await applyLinkUrl(href)
+
+  const anchor = contentArea.querySelector('a')
+  if (!anchor) throw new Error('setup: expected an existing link on "hello"')
+  selectRange(anchor.firstChild as Node, 2, 2)
+  fireEvent.select(contentArea)
+
+  fireEvent.click(screen.getByTestId('toolbar-link'))
 
   return contentArea
 }
@@ -48,5 +75,28 @@ export function expectSoleLink(contentArea: HTMLElement, href: string) {
   // linked correctly but dropped the unselected " world" would pass every
   // caller — the anchor is right, so nothing else here would notice.
   expect(contentArea.textContent).toBe('hello world')
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+}
+
+// The counterpart to expectSoleLink: the input was refused. Asserts NO anchor
+// was produced AND the rejection message is shown — not a silent no-op. Both
+// halves matter: a green that dropped the anchor but showed nothing would
+// leave the visitor with a swallowed link and no signal, and a green that
+// showed the alert but still linked would be a live dead/deceptive href. The
+// alert presence is the ADR's whole reason for choosing the popover over
+// window.prompt (a visible rejection signal), so pinning it here is on-contract.
+export function expectRejected(contentArea: HTMLElement) {
+  expect(contentArea.querySelectorAll('a')).toHaveLength(0)
+  expect(screen.queryByRole('alert')).toBeInTheDocument()
+}
+
+// The empty/whitespace-apply outcome: the link mark is removed but the text it
+// wrapped survives, the popover closes, and — unlike expectRejected — NO alert
+// is shown. Clearing the field is a deliberate "remove the link", not a refused
+// address, so the absent alert is what distinguishes this from a rejection.
+export function expectLinkRemoved(contentArea: HTMLElement) {
+  expect(contentArea.querySelectorAll('a')).toHaveLength(0)
+  expect(contentArea.textContent).toBe('hello world')
+  expect(screen.queryByTestId('link-popover')).not.toBeInTheDocument()
   expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 }

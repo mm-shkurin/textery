@@ -40,30 +40,42 @@ export function ManualEditorToolbar({
 
   return (
     <div className="me-toolbar">
-      {TOOLBAR_ACTIONS.map((action) => (
-        <Fragment key={action.key}>
-          {TOOLBAR_DIVIDER_BEFORE.has(action.key) && (
-            <div className="me-toolbar-divider" aria-hidden="true" />
-          )}
-          <span className={action.ui ? 'me-link-popover-anchor' : undefined}>
-            <button
-              type="button"
-              className="me-toolbar-btn"
-              aria-label={action.ariaLabel}
-              data-testid={action.testId}
-              onClick={() => handleClick(action)}
-              aria-pressed={editor ? action.isActive(editor) : false}
-              aria-expanded={action.ui ? openUiKey === action.key : undefined}
-              disabled={editor ? (action.disabled?.(editor) ?? false) : true}
-            >
-              {action.label}
-            </button>
-            {editor && action.ui === 'link-popover' && openUiKey === action.key && (
-              <LinkPopover editor={editor} onClose={() => setOpenUiKey(null)} />
+      {TOOLBAR_ACTIONS.map((action) => {
+        const button = (
+          <button
+            type="button"
+            className="me-toolbar-btn"
+            aria-label={action.ariaLabel}
+            data-testid={action.testId}
+            onClick={() => handleClick(action)}
+            aria-pressed={editor ? action.isActive(editor) : false}
+            aria-expanded={action.ui ? openUiKey === action.key : undefined}
+            disabled={editor ? (action.disabled?.(editor) ?? false) : true}
+          >
+            {action.label}
+          </button>
+        )
+        return (
+          <Fragment key={action.key}>
+            {TOOLBAR_DIVIDER_BEFORE.has(action.key) && (
+              <div className="me-toolbar-divider" aria-hidden="true" />
             )}
-          </span>
-        </Fragment>
-      ))}
+            {action.ui ? (
+              // Only the UI (link) button needs the positioning-context span:
+              // the popover anchors to it. Non-UI buttons render bare so the
+              // toolbar row is their direct DOM parent.
+              <span className="me-link-popover-anchor">
+                {button}
+                {editor && action.ui === 'link-popover' && openUiKey === action.key && (
+                  <LinkPopover editor={editor} onClose={() => setOpenUiKey(null)} />
+                )}
+              </span>
+            ) : (
+              button
+            )}
+          </Fragment>
+        )
+      })}
       <div className="me-toolbar-status">
         <ManualEditorSaveStatus
           documentId={documentId}

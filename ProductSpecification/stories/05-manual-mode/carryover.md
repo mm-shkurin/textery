@@ -74,3 +74,14 @@
 **Where:** `useDocumentInit.strictMode.test.tsx` exists solely to close (2), and kills that mutant with `expected 2 to be 1`.
 **Implication:** For anything with a live surface, the order is: mutate the fix and watch the tests fail, then drive the real thing. Neither step is ceremony. Both caught defects here that the suite could not.
 **From:** docking + history + mobile (2026-07-17)
+
+## Codebase Quirk: jsdom needs a geometry polyfill for editor pointer events
+**Quirk:** ProseMirror's mousedown coordinate math throws in jsdom (no `elementFromPoint`/`getClientRects`); any test dispatching a real pointer event into the editor DOM depends on the zero-geometry stub in `src/test/setup.ts`.
+**Where:** `frontend/src/test/setup.ts`.
+**Implication:** Stub is suite-global — a future test asserting real layout gets a silent zero-rect false-green, not a throw; scope per-file if layout matters. Correlates with an intermittent cross-file `act()` state leak at `ManualEditor.tsx:50`.
+**From:** scenario 7.9 (link-active-toolbar)
+
+## Decision: `\p{C}` reject coverage is bounded per-sub-category, not per-codepoint
+**Decision:** The link-URL control-char reject tests pin one representative per security-relevant C sub-category (Cf, Cc), not every member; the live `/\p{C}/u` screen is the real guard and already rejects unpinned siblings.
+**Where applied:** `normalizeHref.ts:50` + `ManualEditor.link.urlShapes.output.test.tsx` GROUPs 5-6; a hard bidi guarantee needs a structural range screen, not more member fixtures.
+**From:** scenario 7.9 (link-active-toolbar)

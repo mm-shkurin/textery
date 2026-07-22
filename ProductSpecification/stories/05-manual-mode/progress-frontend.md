@@ -565,7 +565,12 @@ add new ones — the first red phase in this story to do so.
   3. **Force the required-vs-optional decision on `version`.** Update the 9 files' mocks (red owns tests; green does not) so `CreateDocumentResult.version` can be non-optional, closing the `result.version ?? 1` escape that keeps defect A alive under a green suite.
 
   Mutation-check each: the minimal green (`?? crypto.randomUUID()`, callers untouched) **must fail**. That is the bar this red missed and the one measurement that says these tests have teeth.
-- [ ] green-frontend-api-contract — wire A, B, NEW-1. **Do not start before `red-frontend-api-contract-2`** — measured twice, the current constraints admit a green that passes 93 tests with every defect live. Note the ordering constraint NEW-4 imposes as well: **fixing NEW-1 alone still 422s** ("Unsupported document_type"), so this green does not make create work end-to-end on its own, and must not be reported as if it does.
+- [x] green-frontend-api-contract — **DUPLICATE of the completed entry above (line ~544); this was the
+  original planning stub, left behind when the green was reordered to fold in `red-frontend-api-contract-2`.**
+  The work landed in `07d8cd5` (dock to live backend: `content` sanitized = NEW-1, Cyrillic wire type =
+  NEW-4, 409 recovery + server `version` threaded = defect A) plus the `useDocumentInit.strictMode.test.tsx`
+  guard = defect B. Suite was 191 passed at completion. No work pending here — see the `[x]` entry above for
+  the full record. (Reconciled 2026-07-20.)
 
 ### Defect NEW-4 — the client's `document_type` values are Latin; the spec's enum is Cyrillic
 - `documentTypes.ts:1` defines `'doklad' | 'essay' | 'sochinenie' | 'referat'`; `documents_create.yaml:57` enumerates `[доклад, эссе, сочинение, реферат]`. `useDocumentInit.ts:38` passes the `DocumentType` straight through, so the wire value is Latin.
@@ -714,7 +719,19 @@ add new ones — the first red phase in this story to do so.
 
 **Tooling note worth keeping (`/refactor`):** a probe left in `frontend/src/.../__tests__/` by a concurrently-running review agent made the suite **flaky by construction** — it asserted nothing and appended to a shared output file, so the same tree returned `34 files / 94 passed` and then `34 files / 5 failed | 89 passed` depending on ordering. `/refactor` was one literal instruction ("if a refactoring changes suite counts, revert it") away from reverting a provably inert two-line inline and blaming itself. It also misattributed the probe to the green phase's own verification; the probes were the premortem agent's live scratch and it removed them itself on finishing. Two durable lessons: **`git add -A` is unsafe in this tree while review agents are live** (neither probe path was gitignored — `48e39fe` was verified clean afterwards, 2 files, but by luck of timing), and a suite count taken while an agent is running is not a measurement.
 
-- [ ] red-frontend-url-shapes-3 — **pin `normalizeHref`'s *output*, not just its branches.** Scope widened from the original "pin the fallback" by the review passes on `48e39fe`; that framing missed half the defects, for a reason worth stating up front: **under the old `\w` path class the bad inputs below fell to the *fallback*; `\S*` moved them into the `HOST_SHAPE` branch, where they report success.** A red aimed at the fallback would have passed while they shipped. Four groups, one root (the discriminator), one file:
+- [x] red-frontend-url-shapes-3 — DONE. New `ManualEditor.link.urlShapes.output.test.tsx` (126) + new
+  `expectRejected` helper in `ManualEditor.link.testSupport.tsx` (asserts 0 anchors AND `role="alert"`
+  present). 9 tests: **7 `it.skip` RED** (predictions all YES verbatim) + **2 live GREEN guards**. Suite
+  112→**114 passed | 7 skipped (121)**, tsc clean. test-review: PASS (strict, reject fixtures reach the
+  `setError` path — proven by the live javascript guard). RED rows & actual failures:
+  - G1 `example.com:99999999999` (port>65535, `new URL` throws) → links today, must reject: `expected <a> length +0 but got 1`.
+  - G2 `exa­mple.com` (soft hyphen) → links today, must reject (disposition = REJECT, orchestrator decision): `…length +0 but got 1`.
+  - G3 `tel:79001234567` → `http://tel:…` today, must be `tel:79001234567`: `expected 'http://tel:79001234567' to be 'tel:79001234567'`; `sms:79001234567` likewise (second scheme so green can't hardcode 'tel').
+  - G4 `/docs`, `#anchor`, `?q=1` → bare relative today, must reject: `…length +0 but got 1`.
+  GREEN guards (live): `javascript:alert(1)`→rejected (fix must NOT admit it); `example.com/😀`→`http://example.com/😀` (makes `\S*` test-forced). Mutation-checks distinct: sms kills hardcoded-tel; soft-hyphen kills parse-only; port kills fallback-only; tel/sms kill no-scheme-set. **Green note:** `isAllowedUri` permits `http,https,ftp,ftps,mailto,tel,callto,sms,cid,xmpp` — passthrough must be a known-scheme SET (shape `word:digits` can't separate `tel:…` from host `localhost:3000`); G1/G2 need a post-normalize usability screen (`new URL()` parse + invisible/control-char reject) the scheme-only `isAllowedUri` lacks.
+  <details><summary>original planning text</summary>
+
+  **pin `normalizeHref`'s *output*, not just its branches.** Scope widened from the original "pin the fallback" by the review passes on `48e39fe`; that framing missed half the defects, for a reason worth stating up front: **under the old `\w` path class the bad inputs below fell to the *fallback*; `\S*` moved them into the `HOST_SHAPE` branch, where they report success.** A red aimed at the fallback would have passed while they shipped. Four groups, one root (the discriminator), one file:
 
   1. **The `HOST_SHAPE` branch is unrejectable by construction, and nothing pins that it produces a usable href.** Everything it matches is prefixed `http://`, so the scheme is `http` by construction, and `isAllowedUri` — the only downstream validator — vets the **scheme only**. Cheapest fixture: `example.com:99999999999` (port > 65535) → today yields `href="http://example.com:99999999999"` with **no alert**, which `new URL()` itself refuses (`THROWS: Invalid URL`) and `ManualEditor.tsx:56` persists forever. Independently verified by probe, twice. Pin: **a `HOST_SHAPE`-matched input must be rejected when its normalized href does not parse.** This is distinct from the known "rejection signal is untested" gap — there the path exists and is unasserted; here rejection is *unreachable* for the whole branch. (The port half comes from the pre-existing `(:\d+)?`, not the `\S*` diff — but `\S*` is what made the unrejectable set large enough to matter.)
   2. **Invisible and control characters ride through into a confident, dead link.** `\S*` admits U+00AD (Word's soft hyphen — the realistic vector: pasting a wiki URL out of Word), U+200B, U+202E and C0 controls. All verified to yield `http://…`, `alert: NONE`, and `new URL()` parsing **OK** with `host="example.com"` — well-formed-looking and dead on click. Nothing pins this in either direction. Decide the disposition (strip, reject, or accept) rather than leaving it to the regex's silence.
@@ -724,14 +741,444 @@ add new ones — the first red phase in this story to do so.
   **Also fold in (agent-review, low): `\S*` itself is unpinned.** An enumeration like `[\p{L}\p{N}\/%.@#?&=_~+:-]*` passes all 89 tests, so the "structural, not enumerated" invariant is held by a code comment alone — a future `/refactor` may re-enumerate, stay green, and re-open the hole. A fixture with a path character outside any plausible enumeration (an emoji, or a rare-script path) would make `\S*` test-forced rather than comment-forced.
 
   Mutation-check every fixture against the candidate green it targets, per this scenario's standing practice.
-- [ ] green-frontend-url-shapes-3
-- [ ] design — /design-preview for the popover's interaction contract, which this green resolved by silence and the ADR explicitly deferred: Enter-to-apply, Escape-to-cancel, click-outside disposition of half-typed input, whether the field prefills with the current href when the cursor is inside a link (defect 2 — open→Apply currently destroys it), and whether the popover closes or captures its range on selection change (defect 3). These compose into one interaction model and should be decided together, not one test at a time.
-- [ ] red-frontend-popover-contract — pin whatever the design approves, including: cursor inside an existing `<a>` → the field shows that href and Apply replaces it, leaving `querySelectorAll('a')` length 1; selection change while open does not silently apply to the new cursor; a rejected apply does not move the selection for the retry.
-- [ ] green-frontend-popover-contract
-- [ ] red-frontend-aria — pin defect (6): the disclosure state must be visible and non-conflicting. Whatever the fix (separate the concerns, or drop `aria-pressed` from UI actions), assert `aria-expanded` toggles and that the open popover is visually distinguishable. Also fold defect (7): render the anchor `<span>` only for `action.ui`.
-- [ ] green-frontend-aria
-- [ ] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
-- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. **This is the step that owes 7.9 its real verification**: the popover's clipping under `.me-editor-shell`'s `overflow: hidden`, its placement on a narrow viewport, and real-browser focus behaviour are all invisible to jsdom by construction. The ADR chose the popover partly for jsdom reachability; that argument covers the rejection signal only.
+  </details>
+- [x] green-frontend-url-shapes-3 — DONE. Rewrote `normalizeHref` (`LinkPopover.tsx`, 155 lines): keyed on
+  a known-scheme SET (`http,https,ftp,ftps,mailto,tel,callto,sms,cid,xmpp`) checked BEFORE HOST_SHAPE, so
+  `tel:`/`sms:` pass through and `localhost:3000`/`myserver:8080` still fall to `http://`; added `isUsable`
+  screen (`new URL()` parse + `\p{C}` reject) applied on the HOST_SHAPE output AND the fallback — G2 soft
+  hyphen (Cf) flows through the fallback so a HOST_SHAPE-only screen would miss it; bare fallback (`/docs`,
+  `#anchor`, `?q=1`) returns a `REJECT` sentinel (`unsafe:rejected`, unknown scheme → isAllowedUri refuses →
+  setLink false → alert). `\S*` not re-enumerated; emoji/Cyrillic stay green. Suite 237p|7skip → **244 passed
+  | 0 skipped | 0 failed**; all 7 REDs un-skipped, both live guards green; tsc clean. Rejection mechanism
+  verified against `extension-link/src/link.ts:376-384`, not assumed. Mutation-checked: `{tel}`-only special
+  case fails the `sms:` row; HOST_SHAPE-only char screen fails the soft-hyphen G2 row.
+
+  **Review-pass verdicts on `1d9994b` (green): agent-review CONCERNS, premortem CONCERNS — both non-gating,
+  commits stand (behavior `1d9994b`, refactor `5d5933b` extracted `normalizeHref.ts` per the humble-object
+  rule). Both passes converge on ONE credible gap plus premortem adds a second — feed these into the next red
+  (a `url-shapes-4` or the popover-contract slice), NOT reopened here:**
+  - *(agent-review + premortem, CREDIBLE — same root)* **The `isUsable` screen is bypassed on the known-scheme
+    passthrough** (`normalizeHref`, `if (scheme && ALLOWED_SCHEMES.has(scheme)) return url` — returns unscreened).
+    So the SCHEMED twins of the exact vectors this step closed still link: `http://example.com:99999999999`
+    (dead port, `new URL()` throws) and `http://exa­mple.com` (soft-hyphen U+00AD). The schemeless forms the 7
+    REDs pin go through HOST_SHAPE/fallback and ARE rejected, so the suite is green — the security property is
+    only half-enforced (holds for bare-host shape, fails for explicit-scheme shape). Not a regression (the prior
+    `HAS_SCHEME` branch also passed schemed URLs through). Fix: run `isUsable` on the passthrough result too;
+    missing guard = two rejected-rows for `http://…:99999999999` and `http://exa­mple.com` in
+    `ManualEditor.link.urlShapes.output.test.tsx`.
+  - *(premortem, CREDIBLE — lower severity)* **ZWJ emoji path over-rejected.** `isUsable`'s `/\p{C}/u` rejects
+    U+200D (ZERO WIDTH JOINER, category Cf), so `http://example.com/👨‍👩‍👧` (family emoji) → REJECT — contradicting
+    the "emoji stays green" claim. The line-132 guard uses a SINGLE emoji (U+1F600, no ZWJ) so it's invisible to
+    the suite. If the product wants multi-codepoint emoji linked, `isUsable` must exempt U+200D (and likely the
+    U+FE0F variation selector, also Cf). Missing guard = an `expectSoleLink` row for a ZWJ-joined sequence.
+  - *(both, cleared on inspection)* REJECT sentinel `unsafe:rejected` correctly fails `isAllowedUri` → setLink
+    false → alert (verified against `extension-link/src/link.ts:167-179,370-384`); `javascript:` stays rejected;
+    single-emoji + Cyrillic stay green.
+  <details><summary>original planning text</summary>
+  fix `normalizeHref` so the 7 RED tests un-skip and pass, the 2 GREEN
+  guards + whole suite stay green. Per the RED's green-note: (a) recognize a known-scheme SET before
+  HOST_SHAPE so `tel:`/`sms:` (and the isAllowedUri set) pass through, while `javascript:` stays rejected;
+  (b) add a post-normalization usability screen — reject when the resulting href fails `new URL()` (G1 port
+  overflow) and reject invisible/control chars U+00AD/U+200B/U+202E/C0 (G2, disposition=REJECT); (c) reject
+  the bare-relative fallback (G4). Do NOT re-enumerate `\S*` (the emoji guard now forbids it). Mutation-check
+  each fix; un-skip only the RED tests (tests otherwise read-only). **Review findings on the RED (`026a026`):**
+  - *(premortem CREDIBLE)* two `word:digits` scheme rows (tel, sms) do NOT prove the SET isn't a hardcode —
+    `{tel, sms}` passes all 9. Add a LIVE guard in this green's coverage: a THIRD collision scheme
+    `callto:79001234567` → `expectSoleLink(…, 'callto:79001234567')` (callto is in isAllowedUri's set and is
+    also `word:digits`-shaped). Stronger: assert the passthrough SET equals isAllowedUri's list
+    (`http,https,ftp,ftps,mailto,tel,callto,sms,cid,xmpp`). Without it green may ship an incomplete set.
+  - *(agent-review, fixed in the RED)* G2 soft-hyphen flows through the FALLBACK (U+00AD is Cf → HOST_SHAPE
+    false), not the host branch — so the char screen must sit on the OUTPUT/fallback path (or every branch),
+    NOT only inside HOST_SHAPE. Keep the emoji + Cyrillic (`кремль.рф`, `Война_и_мир`) guards green: the screen
+    must reject `\p{C}` (control/format) but NOT legitimate `\p{L}`/`\p{So}`.
+  </details>
+- [x] design — DONE (2026-07-21, `/design-preview` with the user). Interaction contract decided and recorded
+  in `decisions/link-url-input-decision.md` (new "Interaction contract" section): Enter=apply, Escape=cancel,
+  **click-outside=close AND apply the captured range**, cursor-inside-link **prefills href + replaces** (fixes
+  defect 2), selection-change **captures the original range** (fixes defect 3). Two tensions flagged for red to
+  pin explicitly: (1) click-outside applies to the CAPTURED range not the live caret (else defect 3 returns);
+  (2) click-outside + invalid URL vs the visible-rejection signal — leaning "close on success, stay open with
+  the alert on rejection". No `/architecture` escalation (trade-off narrow, one control). ADR-update commit.
+- [x] red-frontend-popover-contract — DONE. Two new files: `ManualEditor.link.popoverContract.test.tsx`
+  (points 1/2/7 — prefill+replace, captured-range apply, rejected-apply keeps range) and
+  `ManualEditor.link.popoverKeys.test.tsx` (points 3-6 — Enter=apply, Escape=cancel, click-outside applies
+  captured range, click-outside+rejected keeps alert). Two shared helpers added to `ManualEditor.link.testSupport.tsx`
+  (`openLinkPopover`, `openLinkPopoverInsideExistingLink(href)`). All 7 points genuinely RED, predictions matched
+  verbatim (prefill: `expected '' to be 'https://old.example.com'`; captured-range/Enter: `length 1 but got 0`;
+  Escape/click-outside: `document not to contain <popover>`; click-outside+rejected: `Unable to find role "alert"`).
+  None came back green — the "replace in place" half of point 1 already works (`extendMarkRange('link').setLink`),
+  the defect is the missing **prefill**, asserted first. `it.skip` on each (dated reason) so the 244-green suite
+  holds. test-review: tightened point 6's alert to exact `toHaveTextContent(LINK_INVALID_MESSAGE)`; rest already
+  strict. Suite 244 passed | **7 skipped** | 0 failed; tsc clean. **Green note:** click-outside handler must be a
+  document-level `mousedown` listener treating a target not inside the popover as "outside"; green needs
+  captured-range state at open + href prefill from `editor.getAttributes('link')` + `onKeyDown` (Enter→apply,
+  Escape→cancel) + the mousedown handler (close on success, stay-open-with-alert on rejection).
+  **Review-pass verdicts on `c04626f` (red): agent-review CONCERNS, premortem CONCERNS — non-gating, commit
+  stands. `/refactor` applied one dedup (`applyLinkUrl` composes `openLinkPopover`, testSupport 99→91). The
+  reds pin the happy paths but leave dangerous edges unpinned; green must implement the guards defensively AND
+  a follow-up `red-frontend-popover-contract-2` should pin them (a green built to satisfy only the 7 current
+  tests ships several ways broken while green):**
+  - *(agent-review CONCERNS)* **click-outside path does NOT discriminate tension 1.** The click-outside test
+    never moves the caret before `mouseDown(document.body)`, so live selection == captured range — a green
+    applying to the LIVE caret passes identically. The Apply-BUTTON path IS discriminated (moves caret to 8,8).
+    Follow-up red: move the caret after open, assert click-outside still lands the link on "hello".
+  - *(agent-review minor)* click-outside+rejected test omits `querySelectorAll('a')` length 0 — add it (or reuse
+    `expectRejected`) so "no anchor silently created on the captured range" is pinned, not left to `javascript:`'s
+    inherent rejection.
+  - *(premortem CREDIBLE 1)* **leaked document listener.** Green wires `document.addEventListener('mousedown')`;
+    popover unmounts on every close, so a missing `useEffect` cleanup leaves a stale listener over the old
+    editor+range → next mousedown re-applies on a torn-down editor. No red fires a second document mousedown
+    AFTER close/unmount. Follow-up red: open → close (Escape/Cancel) → `mouseDown(document.body)` → assert anchor
+    count unchanged + no throw.
+  - *(premortem CREDIBLE 2)* **wrong-target apply.** Only `mouseDown(document.body)` is tested; `toolbar-link` is
+    a SIBLING of the popover (inside `me-link-popover-anchor`), so a naive `popoverRef.contains(target)` treats
+    the link button AND the other 16 toolbar buttons AND editor content as "outside" → each becomes an
+    unintended apply (and the link button re-opens an empty popover via `handleClick`). Follow-up red: mousedown
+    on `toolbar-link` → toggles closed, no anchor; mousedown on `toolbar-bold` → bold runs, no link applied.
+  - *(premortem CREDIBLE 3)* **Enter mid-IME composition.** Green adds `onKeyDown` Enter→apply; without an
+    `event.isComposing`/`keyCode===229` guard, Enter-to-commit-composition misfires as submit — and this editor
+    is Russian/IDN-first, the exact population using composition input. Follow-up red:
+    `keyDown(input,{key:'Enter',isComposing:true})` → no anchor, popover stays open.
+  - *(premortem lower)* captured range stored as raw ProseMirror positions goes stale across a `setContent`
+    (save handler) while open — map through intervening transactions or it lands wrong/throws; and Escape does
+    not restore focus to the editor (ADR left focus disposition to red; jsdom passes either way). Both named,
+    not surprises.
+- [x] green-frontend-popover-contract — DONE. Un-skipped the 7 reds; suite **251 passed | 0 skipped | 0
+  failed**, tsc clean. `LinkPopover.tsx` 150 lines (no hook extraction needed). Impl: captured range at open
+  (`useState(() => editor.state.selection {from,to})`, every apply does `.setTextSelection(captured).extendMarkRange('link').setLink(…)`);
+  prefill from `editor.getAttributes('link').href ?? ''`; `onKeyDown` Enter→apply / Escape→cancel; document
+  `mousedown` click-outside listener → apply captured range, close on success / stay-open-with-alert on reject.
+  **All premortem defensive guards landed** (even though no current red forces them — the follow-up
+  red-…-2 will): `useEffect` cleanup `removeEventListener` (re-binds on `url` change); "outside" excludes
+  `popover.contains` + `.me-toolbar` + `editor.view.dom` (covers sibling link button, other toolbar buttons,
+  editor content); IME guard (`isComposing || keyCode===229`); Escape `editor.chain().focus().run()`. No other
+  component changed; all prior tests green. **Owed to a follow-up red-frontend-popover-contract-2** (guards
+  implemented but unpinned): post-close/unmount document mousedown = no re-apply; mousedown on
+  toolbar-link/toolbar-bold = toggle/bold not link-apply; Enter mid-IME = no apply; captured-range stale across
+  a mid-open `setContent`.
+
+  **Review-pass verdicts on `dee4260` (green): agent-review CONCERNS, premortem CONCERNS — non-gating, commit
+  stands; `/refactor` NO ACTION (normalize logic already in `normalizeHref.ts`, a `useLinkPopover` hook would
+  relocate not decouple, click-outside predicate is single-use). Verified correct on a cold read: `capturedRange`
+  initializer runs once so rejected-retry keeps the original range; `[url]` re-bind does not double-apply (cleanup
+  runs before re-add); apply-on-rejection stays open; none of the 7 reds pass for a wrong reason; `.me-toolbar`
+  exclusion resolves (popover is inside `me-link-popover-anchor` within `.me-toolbar`). Two findings for red-2 /
+  a design tweak:**
+  - *(agent-review PRIMARY — real contract divergence, introduced by the defensive editor-DOM exclusion)* the
+    `editor.view.dom.contains(target)` exclusion means a click INTO the editor body (the commonest next gesture:
+    reposition the caret) → handler returns early → **popover stuck open AND typed URL silently dropped**. This
+    contradicts the ADR's own click-outside row ("Close AND apply the current field value to the captured range")
+    — a click into the editor IS outside the popover. The captured-range mechanism exists precisely so
+    click-outside can apply after the caret moves; excluding editor DOM defeats it for the case it was built for.
+    **Design tension to resolve deliberately in red-2:** should a click into the editor (a) apply+close per the
+    ADR, or (b) stay open (current behavior)? (b) diverges from the ADR as written. Lines 99-105 are entirely
+    unpinned — no test drives a mousedown inside `editor.view.dom` or `.me-toolbar`.
+  - *(premortem PRIMARY — stale captured range)* `capturedRange` is frozen ABSOLUTE positions at open. An
+    autosave round-trip while the popover is open (`useDocumentSave.ts:95-96` re-runs `setContent` when
+    `result.content !== sent && editor.getHTML() === sent` — MORE likely to hold because the open popover blurs
+    the editor so no typing occurs) shifts node positions after server sanitization → `setTextSelection` clamps
+    (no throw) → link lands on the WRONG text. Owed to red-2 ("captured-range stale across a mid-open setContent").
+    Production hardening option: capture a mark/relative anchor, or re-validate `capturedRange` against
+    `doc.content.size` and bail if the doc changed.
+  - *(agent-review minor)* the Отмена button wires `onClick={onClose}` directly, bypassing `cancel()`'s
+    `editor.chain().focus().run()` — so Escape restores editor focus but the Cancel button leaves it blurred.
+    Low severity, unpinned. Fold into red-2 or the aria step.
+- [x] red-frontend-aria — DONE. New `ManualEditorToolbar.aria.test.tsx` (70 lines): 2 `it.skip` RED + 3 live
+  regression guards. Discovery: the toolbar ALREADY has `aria-expanded` (line 56) and a conditional anchor-span
+  CLASS (line 48) — so two sub-points came back green and were converted to live guards, not faked reds.
+  **RED (skip):** (6b) the link/UI button must NOT carry `aria-pressed` — today line 55 sets it on EVERY button:
+  predicted `not.toHaveAttribute('aria-pressed')` → received `aria-pressed="false"`, matched. (7) a non-UI button
+  (`toolbar-bold`) must sit directly in `.me-toolbar`, not a bare `<span>` — today line 48 wraps all 17 buttons:
+  predicted parent `'SPAN'` must be `'DIV'`+`me-toolbar` class, matched. **Live guards:** aria-expanded toggles
+  false→true→false; bold keeps `aria-pressed='false'`; link stays wrapped in `me-link-popover-anchor` span
+  (positioning context). test-review tightened: exact `aria-pressed='false'` (not presence-only) and the parent
+  discriminator (`DIV`+`me-toolbar`, not vague "not SPAN"). Suite **254 passed | 2 skipped**, tsc clean.
+  **Green note:** two changes in `ManualEditorToolbar.tsx` — (1) line 55 `aria-pressed={action.ui ? undefined :
+  (editor ? action.isActive(editor) : false)}`; (2) line 48 render the `me-link-popover-anchor` span ONLY when
+  `action.ui`, else the button directly in the Fragment.
+  **Review-pass verdicts on `1cc9158` (red): agent-review PASS (every assertion pins the defect; symmetric guards
+  block an over-broad fix — strip-all-aria-pressed fails the bold guard, remove-all-spans fails the link guard;
+  aria-expanded guard drives open AND close). `/refactor` merged duplicate `vitest` imports (`52f6dad`). premortem
+  CONCERNS — one CREDIBLE the green MUST handle:**
+  - *(premortem CREDIBLE)* **dropping `aria-pressed` from the link button removes its ONLY visual highlight.**
+    `.me-toolbar-btn[aria-pressed='true']` (`ManualEditorToolbar.css:30`) is the sole active affordance; the link
+    action has a real active state (`isActive: editor.isActive('link')`), so cursor-in-link highlights today via
+    aria-pressed. After the green strips it, there is NO `.me-toolbar-btn[aria-expanded='true']` rule to replace
+    it and `.me-link-popover-anchor` is positioning-only → the link button goes visually dead when a link is
+    active or the popover is open. **Green MUST add a `.me-toolbar-btn[aria-expanded='true']` CSS rule** (mirroring
+    the aria-pressed rule) so the disclosure/open state stays visible — the red pins removal but nothing replaces
+    the affordance. Verify at `align-design`.
+  - *(premortem, pre-existing, out of scope)* the button has `aria-expanded` but no `aria-controls`/`id` linking it
+    to the popover — a real disclosure-wiring gap, but present today (line 56) and not introduced by this unit.
+    Flag if the aria scope is meant to fully wire the disclosure; else defer.
+  **RED CORRECTION (2026-07-21, design decision — "keep both") — defect-6b premise was WRONG.** `green-frontend-aria`
+  hit a hard contradiction: the committed `ManualEditor.link.test.tsx:54/63` pins `aria-pressed='true'/'false'` on
+  the link button (scenario 7.9's Gherkin — "button active while cursor is within a link"), which defect-6b's
+  "drop aria-pressed" would delete. The green-agent correctly refused to edit an out-of-scope test and stopped.
+  Resolution (user): **keep BOTH** — `aria-pressed` = cursor-in-link (isActive), `aria-expanded` = popover open;
+  they encode ORTHOGONAL states, ARIA permits both, no conflict. The "drop aria-pressed" premise deleted a
+  separate required indicator. Corrected `ManualEditorToolbar.aria.test.tsx`: replaced the defect-6b `it.skip`
+  (`not.toHaveAttribute('aria-pressed')`) with a LIVE guard pinning independence — opening the popover flips
+  `aria-expanded` WITHOUT touching `aria-pressed`, both present throughout (passes today, both attrs already
+  exist). Defect-7 (span only for `action.ui`) stays the sole RED. File 4 passed | 1 skipped, tsc clean.
+  `ManualEditor.link.test.tsx` left untouched (its assertions are correct). Red-correction commit.
+- [x] green-frontend-aria — DONE (narrowed scope, aria-pressed KEPT). `ManualEditorToolbar.tsx` (103 lines): the
+  toolbar map wraps the `<button>` in `me-link-popover-anchor` span ONLY when `action.ui`; non-UI buttons render
+  bare in the Fragment, so `toolbar-bold`'s parent is now the `.me-toolbar` DIV (defect 7). aria-pressed unchanged
+  on all buttons; aria-expanded only on the UI button. `ManualEditorToolbar.css` (136 lines): added
+  `.me-toolbar-btn[aria-expanded='true']` mirroring the `[aria-pressed='true']` rule (premortem CREDIBLE) — the
+  link button now highlights on popover-open independent of cursor-in-link. Un-skipped the defect-7 test only.
+  Suite **256 passed | 0 skipped | 0 failed**, tsc clean. All guards + `ManualEditor.link.test.tsx:54/63` green.
+  Minor doc-staleness left for refactor: the aria-test comments at lines 48-50/59-63 still reference the old
+  "strip aria-pressed" framing — inaccurate now (nothing strips it), cosmetic.
+
+  **Review-pass verdicts on `2929d74` (green): agent-review PASS, premortem CONCERNS (1 credible, non-gating).
+  `/refactor` fixed the 3 stale "strip aria-pressed" comment blocks in the aria test (toolbar NO ACTION — the
+  `<button>` is already built once as a `const` and wrapped conditionally, no markup duplication). agent-review
+  PASS: no CSS collision (`[aria-pressed='true']` and `[aria-expanded='true']` have identical specificity AND
+  identical declarations, so last-wins is moot); divider Fragment/key placement correct both branches; bare
+  non-UI button loses no focus/layout (`.me-link-popover-anchor` was `inline-flex` shrink-wrapping the 34px
+  button — identical flex box).**
+  - *(premortem CREDIBLE — owed to align-design / green-selenium)* the `.me-toolbar-btn[aria-expanded='true']`
+    highlight rule (the one net-new visual behavior of this unit, added to satisfy the prior premortem) has
+    **zero automated guard** — jsdom applies no CSS-file rules and the aria tests assert DOM attributes only.
+    Delete the rule and all 256 tests stay green; the popover-open highlight silently vanishes. Guard belongs in
+    the visual layer: a Selenium assertion that opening the popover with the cursor OUTSIDE a link highlights
+    `toolbar-link`, OR an `align-design` check pinning the rule's declarations against the mockup. Low severity
+    (cosmetic a11y affordance), reversible. Fold into `align-design` below (and the deferred `green-selenium`).
+  - *(premortem, design note not incident)* cursor-in-link and popover-open paint the SAME highlight — one visual
+    bit for two orthogonal states. Distinct for assistive tech (separate aria attributes, pinned independent);
+    visual distinctness was never required (only that popover-open be visible at all). Noted, not a defect.
+- [S] red-frontend-api — no new API call: the link popover, `normalizeHref`, and the aria/disclosure work are all
+  client-side editor state. A link's href reaches the server only inside the EXISTING `saveDocument` PUT
+  `/api/v1/documents/{id}` `content` field via `editor.getHTML()` (contract already pinned in scenarios 4.1/5.2 +
+  the `documentApi.test.ts` failure-path tests) — no new endpoint, request shape, or response shape to pin. Same
+  disposition as 7.1-7.8's api steps. The end-to-end "does the link markup survive the real server round-trip"
+  question is a live-backend gap (server may sanitize `href`/`target`/`rel`), owed to the deferred `green-selenium`
+  and the `@pytest.mark.skip`ped acceptance test — NOT a mocked-`documentApi` frontend-api unit test (mocking the
+  API cannot cross the boundary the concern is about). Recorded in the ADR "Knowingly unverified" section.
+- [S] green-frontend-api — no production gap, see red-frontend-api: `saveDocument`/`getHTML()` already carry the
+  href; nothing new to implement at the api layer.
+- [x] align-design — verify-only (7.9 has NO mockup — the popover extends past the mockup set, so no pixel
+  alignment; `LinkPopover.css`/`ManualEditorToolbar.css` already styled). **design-review: PASS** — zero
+  placeholder-data findings across `LinkPopover.tsx`/`.css`, `normalizeHref.ts`, `ManualEditorToolbar.tsx`/`.css`;
+  the `https://example.com` input placeholder + Russian UI copy + error string are intentional static UI copy,
+  not user-specific data; the only URL-shaped literals in `normalizeHref.ts` are comment-only examples.
+  **test-coverage --focus:** `normalizeHref.ts` 100% line / 92.9% branch; `ManualEditorToolbar.tsx` 100% line /
+  92% branch; `LinkPopover.tsx` 90.9% line / 78.3% branch. Found **3 reachable gaps in 7.9's own code** →
+  follow-up coverage steps inserted below. No code change (verify-only) → progress-only commit, no /refactor.
+  **Owed to `green-selenium` (premortem CREDIBLE on `2929d74`):** the `.me-toolbar-btn[aria-expanded='true']`
+  highlight rule has NO automated guard (jsdom applies no CSS) — a Selenium assertion that opening the popover
+  with the cursor OUTSIDE a link highlights `toolbar-link` is the only thing that can pin it. Folded into the
+  green-selenium owe-list below.
+- [x] red-frontend-coverage-empty-apply — DONE (characterization, LIVE — path already implemented). New
+  `ManualEditor.link.popoverRemove.test.tsx` (33 lines, 2 tests) + `expectLinkRemoved` helper in
+  `ManualEditor.link.testSupport.tsx` (103 lines). Empty input AND whitespace-only both open the popover inside an
+  existing link, clear the field, click Применить → `querySelectorAll('a')` length 0, `textContent` exactly
+  `'hello world'`, popover closed, NO alert (removal, not rejection). **Predicted: passes (characterization);
+  Actual: passes; Comparison: match** — coverage gap, not missing behavior, so kept LIVE, no `it.skip`.
+  Mutation-check (teeth): removing `.unsetLink()` from the empty-branch chain → both fail
+  (`expected <a> length +0 but got 1`); production restored. Covers `LinkPopover.tsx:37-46` (the `if (!trimmed)`
+  true-branch + `setTextSelection → extendMarkRange('link') → unsetLink()` chain). test-review: PASS (all exact,
+  the absent-alert assertion is load-bearing — separates remove from reject). Suite **258 passed | 0 skipped**,
+  tsc clean.
+- [S] green-frontend-coverage-empty-apply — no production change: the remove-link path already exists, the red is
+  a live characterization test (see mutation-check above). Nothing to implement or un-skip.
+
+  **Review-pass verdicts on `a9e2979` (red): agent-review PASS, premortem CONCERNS (1 credible), `/refactor`
+  collapsed the two tests into `it.each` (32→29, established codebase pattern). agent-review confirmed the setup
+  helper `openLinkPopoverInsideExistingLink` throws if no anchor was created, so `expectLinkRemoved` discriminates
+  "removed" from "never applied"; the absent-alert assertion separates remove from reject.**
+  - *(premortem CREDIBLE — owed to a follow-up coverage step)* **stored-mark lingering after `unsetLink`.** The
+    empty-branch ends `extendMarkRange('link').unsetLink().run()` — the *apply* branch two lines below documents
+    the mirror hazard (`setLink` writes a stored mark, next typed char becomes a second link). Nothing proves
+    `unsetLink` clears the stored mark: `expectLinkRemoved` only snapshots the post-apply state, never types after.
+    Named guard: after empty-apply, fire one input char at the caret, assert `querySelectorAll('a')` still length 0
+    (the typed char is NOT inside an anchor). Add as a third case in `ManualEditor.link.popoverRemove.test.tsx`.
+  - *(premortem minor/REMOTE)* empty-apply when the caret is NOT inside a link runs `unsetLink` on a non-link
+    range (never exercised — the helper always seeds an anchor). Almost certainly a harmless no-op close; optional
+    follow-up (open popover on plain selection, apply empty, assert 0 anchors / no throw).
+- [x] red-frontend-coverage-click-inside — DONE (LIVE characterization, guard already implemented). New file
+  `ManualEditor.link.popoverClickInside.test.tsx` (3 tests) + jsdom geometry polyfill in `src/test/setup.ts`
+  (`elementFromPoint`/`getClientRects` stubs — ProseMirror's own mousedown coordinate math throws in jsdom on a
+  real pointer event; inert for non-pointer tests). Opens the popover inside a link, dispatches `mousedown` on
+  (1) editor content DOM, (2) a sibling toolbar button, (3) the popover input → each asserts popover stays
+  mounted (`toBeInTheDocument`), zero anchors (`querySelectorAll('a')` length 0), text intact (`toBe('hello
+  world')`). **Predicted: PASS (characterization); Actual: PASS; Comparison: match.** Mutation-check (teeth):
+  removing `editorDom.contains(target)` → the editor-content row FAILS (`link-popover` null, apply→onClose
+  unmounted it); production restored, 101/101 re-verified. test-review: assertions already strict, nothing
+  weakened. **test-review finding (folded, not blocking):** the popover-input row (case 3) does NOT
+  independently exercise the `popover.contains` branch (line 100) — the popover is nested INSIDE `.me-toolbar`
+  (`ManualEditorToolbar.tsx:42/67/70`), so `toolbar?.contains` (line 101) also catches the input; line 100 is
+  defensive/redundant given current nesting. Independent coverage would need portaling the popover out of
+  `.me-toolbar` (a production refactor, out of scope here). Comment corrected to state this accurately. Suite:
+  101 passed | 0 skipped | 0 failed, tsc clean.
+  **Review-pass verdicts on `fafeda2` (red): agent-review PASS, premortem CONCERNS (3 credible, all owed to
+  green-selenium — reversible coverage gaps, non-blocking), `/refactor` NO ACTION (test-only unit, no cross-file
+  smell worth a 7-file helper rewrite).**
+  - *(premortem CREDIBLE-1 — owed to green-selenium)* the test proves *this* mousedown didn't apply, but never
+    asserts the captured selection range survived a real caret-reposition click; a real click inside editor text
+    collapses the selection so the *next* apply targets the wrong range. jsdom's zero-geometry stub suppresses the
+    caret math. Guard: Selenium test — open popover, type href, real click inside editor text, commit, assert the
+    anchor wraps the ORIGINAL selection. (Folded into 7.9's green-selenium owe-list.)
+  - *(premortem CREDIBLE-3 — owed to green-selenium)* `toBeInTheDocument()` asserts DOM presence only; the popover
+    clipping under `.me-editor-shell` `overflow:hidden` is invisible to jsdom. Guard: Selenium `isDisplayed` +
+    bounding-box-within-viewport on the opened popover. (Already on the green-selenium owe-list.)
+  - *(premortem CREDIBLE-2 + refactor flaky finding — owed to a follow-up)* the jsdom geometry stub in
+    `src/test/setup.ts` is installed **suite-globally**: (a) it flips a future layout-asserting test from loud-throw
+    to silent-zero-rect false-green — scope the stub to a per-file `beforeAll` in the ProseMirror editor tests, or
+    add a steering comment that geometry is faked suite-wide; (b) the `toolbar-bold` row of
+    `ManualEditor.link.popoverClickInside.test.tsx` is **intermittently red under cross-file execution** (1 fail /
+    32 in one of 3 runs; popover found closed) — an unawaited async editor state update (`act(...)` warning at
+    `ManualEditor.tsx:50`) leaks past a prior test file and occasionally closes the popover before the assert. Fix
+    per the Flaky Test Fix Protocol (likely await the pending state in `openLinkPopover`, or wrap the mousedown
+    dispatch in `act`). Not blocking this unit, but should not be left flaky — open a bug task if it recurs.
+- [S] green-frontend-coverage-click-inside — no production change: the click-inside guard (`LinkPopover.tsx:99-104`)
+  already exists; the red is a LIVE characterization test (see mutation-check on `fafeda2`). Nothing to implement or
+  un-skip.
+- [x] red-frontend-coverage-control-char — DONE (LIVE characterization, `\p{C}` screen already implemented). New
+  GROUP 5 test in `ManualEditor.link.urlShapes.output.test.tsx` (file now 154 lines). Fixture `example.com/pa​th`
+  with a zero-width space U+200B in the path: `\S` so it stays in HOST_SHAPE's `([/?#]\S*)?` segment (MATCHES) AND
+  category Cf so `\p{C}` fires. Flow: HOST_SHAPE true → `http://…` prefixed → `isUsable` hits `/\p{C}/u` FIRST
+  (before `new URL()`) → false → `REJECT` → `setLink` fails → inline alert. Asserts `expectRejected` (0 anchors +
+  alert present). **Predicted: PASS (characterization); Actual: PASS; Comparison: match.** Mutation-check (teeth):
+  deleted `normalizeHref.ts:50` → `new URL('http://example.com/pa​th')` does NOT throw → `isUsable` true → the
+  ZWSP ships as a live deceptive link → test FAILS (`expected <a> length 0 but got 1`); production restored.
+  Distinct from url-shapes-3's G2 (soft-hyphen U+00AD *host* → fallback branch); this is the in-path control char
+  through the HOST_SHAPE branch. test-review: PASS, assertions already strict (`expectRejected` = exact
+  `toHaveLength(0)` + `toBeInTheDocument`), fixture verified through HOST_SHAPE by execution. Suite: 262 passed |
+  0 failed, tsc clean.
+  **Review-pass verdicts on `cf5c62e` (red): agent-review CONCERNS (1 mild), premortem CONCERNS (1 credible),
+  `/refactor` NO ACTION (test-only, no cross-file smell; GROUP-4 rows deliberately un-collapsed per their comment).**
+  - *(agent-review mild + premortem CREDIBLE — same gap, folded to a discovered follow-up step below)* the
+    `\p{C}` breadth is **comment-forced, not test-forced**. This unit pins exactly ONE control char (U+200B) on the
+    HOST_SHAPE path; the security-relevant **U+202E RTL-override** (a known filename-spoofing vector) plus C0
+    controls and direction marks (U+200E/200F/200D) have **zero test teeth on the live HOST_SHAPE branch** — GROUP-2's
+    U+00AD is a *fallback*-path red, never exercises `normalizeHref.ts:50`. A later green that narrows `/\p{C}/u`
+    to a targeted set (e.g. `[​­]`) would drop U+202E, ship a live deceptive anchor, and keep the whole
+    suite green. Also (agent-review): both the HOST_SHAPE-reject and the fallback produce the identical observable
+    (0 anchors + alert), so nothing in the test *itself* ties this input to line 50 — the branch attribution rests
+    on the manual mutation-check. Both close with the same guard → new discovered step below.
+  - *(premortem REMOTE, noted not tracked)* `\p{C}` also catches U+200D (ZWJ), so a compound ZWJ emoji path
+    (`example.com/👨‍👩‍👧`) is rejected while single-codepoint emoji (U+1F600) passes — implausible product need,
+    fully reversible (user re-enters). jsdom/browser `new URL()` divergence does NOT bite here: `\p{C}` short-circuits
+    before `new URL()`, both are pure regex.
+- [S] green-frontend-coverage-control-char — no production change: the `\p{C}` screen (`normalizeHref.ts:50`)
+  already exists; the red is a LIVE characterization test (see mutation-check on `cf5c62e`). Nothing to implement
+  or un-skip.
+- [x] red-frontend-coverage-rtl-override — DONE (LIVE characterization, `\p{C}` screen already implemented). Added
+  GROUP 6 to `ManualEditor.link.urlShapes.output.test.tsx` (file now 192 lines, under the 200 limit): two SEPARATE
+  `expectRejected` rows (NOT it.each-collapsed, mirroring GROUP-4's "one fixture per char" discipline) —
+  `example.com/pa\u{202E}th` (U+202E RTL-override spoofing vector) and `example.com/pa\u{0007}th` (U+0007 BEL, a C0
+  control). Escapes not literals (same rationale as GROUP-4's `\u{1F600}`: U+202E would reorder the source, U+0007
+  is invisible). Both VERIFIED `\S` (stay in HOST_SHAPE's `([/?#]\S*)?` segment → HOST_SHAPE MATCHES, not fallback)
+  AND `\p{C}`, and `new URL('http://…')` does NOT throw for either — so line 50's `/\p{C}/u` is the SOLE rejector.
+  **Predicted PASS (characterization); Actual 12/12 PASS; match.** **Mutation-check (teeth, per fixture):** narrowed
+  line 50 to `/[\u{200B}\u{00AD}]/u` → BOTH GROUP-6 rows FAIL (now link) while GROUP-5's U+200B and all 9 others
+  still PASS (2 failed | 10 passed); each char independently forces the `\p{C}` breadth. Original `/\p{C}/u`
+  restored (`git diff` on normalizeHref.ts clean). test-review: PASS — assertions strict (`expectRejected` = exact
+  `toHaveLength(0)` + alert present), both fixtures verified through HOST_SHAPE, rows kept separate. Generation
+  suite: 141 passed | 0 failed | 0 skipped, tsc clean.
+  **Review-pass verdicts on `898b470` (red): agent-review PASS, premortem CONCERNS (1 bounded), `/refactor`
+  NO ACTION.** agent-review verified U+200E/200F (bidi direction marks) are still caught by the live `/\p{C}/u`
+  catch-all — NO live deceptive char ships; they are simply not independently *pinned*.
+  - *(premortem CREDIBLE-bounded — deliberately NOT a new red step)* sibling bidi controls (U+202A-202D LRE/RLE/PDF/
+    LRO, U+2066-2069 isolates) remain per-char unpinned, the same narrowing-green hole that motivated this step.
+    **But premortem's own conclusion is that adding another member fixture is low-value:** point fixtures can never
+    close the infinite `\p{C}` category — each buys teeth for exactly one codepoint, raising a narrowing green's cost
+    by one char, nothing structural. The defensible stopping point is **per-C-sub-category coverage**, which this
+    step now achieves: **Cf** (format — U+200B, U+202E) AND **Cc** (control — U+0007) are both pinned, so a
+    sub-category narrowing (`/\p{Cf}/u` or `/\p{Cc}/u`) fails a row either way. The two new fixtures carry
+    *independent* teeth precisely because they span the two sub-categories (not redundant). **Decision: stop here** —
+    this is a characterization test, not the production guard; the live `\p{C}` catch-all already rejects the
+    unpinned siblings. If the bidi family ever needs a hard guarantee, pin it *structurally* (a bidi-range screen),
+    not by adding members one at a time. No follow-up step.
+  - *(refactor + agent-review, maintainability)* this file is at **192/200 lines** — the next `it` added here will
+    exceed the limit. Planned cut when that happens: split the HOST_SHAPE `\p{C}` characterization rows (GROUPs 5-6)
+    into `ManualEditor.link.urlShapes.controlChars.test.tsx`, sharing `applyLinkUrl`/`expectRejected` from
+    `testSupport`. A genuine branch-target seam, so it won't violate refactor restraint at that point.
+- [S] green-frontend-coverage-rtl-override — no production change (the `\p{C}` screen at
+  `normalizeHref.ts:50` already rejects U+202E and U+0007; the red is a LIVE characterization test proven by the
+  mutation-check above). Nothing to implement or un-skip.
+
+- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. **This is the step that owes 7.9 its real verification**: the popover's clipping under `.me-editor-shell`'s `overflow: hidden`, its placement on a narrow viewport, and real-browser focus behaviour are all invisible to jsdom by construction. The ADR chose the popover partly for jsdom reachability; that argument covers the rejection signal only. **Owe-list (align-design premortem on `2929d74`):** opening the popover with the cursor OUTSIDE a link must render the active-highlight background on `toolbar-link` via `.me-toolbar-btn[aria-expanded='true']` — jsdom applies no CSS so this rule is entirely unguarded; a real-browser computed-style assertion is the only thing that can pin it.
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
+
+---
+
+## Bug: line break in Ручной режим (sprint criterion, 2026-07-20)
+
+Text prints on a single line only — Enter has nowhere to go in the `inline*` document.
+Direction fixed by ADR `decisions/line-break-in-inline-doc-decision.md` (**A′**: enable
+`hardBreak` + `appendTransaction` stripping the trailing hardBreak node). RED already
+pinned and committed (`d12f4a2`), currently `describe.skip` in `ManualEditor.lineBreak.test.tsx`
+(`d17eac6`) pending this decision.
+
+- [x] red-frontend-line-break — RED pinned in `ManualEditor.lineBreak.test.tsx`: captures the
+  save payload via the `saveDocument` mock (`calls[0][1]` = the `content` arg = `getHTML()`,
+  `useDocumentSave.ts:84`) and asserts `line one<br>line two` round-trips exactly — one `<br>`,
+  no trailing `<br>`. Verified RED: with `hardBreak: false` the `<br>` is dropped by schema
+  reconciliation, payload collapses to `line one line two` (break → space), round-trip assert
+  fails. test-review: PASS (strict `toBe`, argument-not-mock-return confirmed).
+- [x] green-frontend-line-break — done, **106/106** `src/features/generation` green, tsc clean,
+  `ManualEditor.lineBreak.test.tsx` un-skipped and passing. **Mechanism deviated from the ADR's
+  first draft** (ADR updated to match): the planned `appendTransaction` delete-strip is unviable —
+  its delete re-renders the trailing-break helper which `domObserver.flush()` reparses into a new
+  hardBreak in the same dispatch → OOM strip↔reparse loop. Fix removes both trailing-`<br>` sources
+  at origin instead: `hardBreakNode.ts` (required `marker` attr disqualifies hardBreak from the
+  `inline*` schema `defaultType` ghost-filler + parse-rule ignores `br.ProseMirror-trailingBreak`
+  cursor helper) and `hardBreakKeymap.ts` (plain Enter + Shift-Enter → insert hardBreak). Files 42 +
+  26 lines. `StarterKit hardBreak:false` kept only to avoid a schema-name collision with the custom
+  node. See ADR Implementation note.
+- [x] test-coverage — done, **6 tests** added in `ManualEditor.lineBreak.coverage.test.tsx` (150
+  lines), suite **112/112** green, tsc clean, no production change, no defect surfaced. Keymap Enter
+  path drove via `fireEvent.keyDown` in jsdom (real coverage, not deferred). Covered: real
+  Enter/Shift-Enter (count = 1, guards double-insert), stray-trailing prevented, intentional trailing
+  KEPT, interior not over-stripped, load/paste `<br>` round-trip (no marker parse error). The cases:
+    1. *Real Enter keystroke, not just programmatic `<br>`.* Fire the actual Enter key event on
+       the editor and assert `getHTML()` gains one `<br>` at the caret (validates the green keymap;
+       RED only exercised the `innerHTML`+`fireEvent.input` domObserver path).
+    2. *Trailing-strip actually fires.* Content ending in a break `line one<br>` → getHTML
+       `line one` (zero `<br>`); multiple trailing `a<br><br>` → `a`; legacy-reopen self-heal (init a
+       saved doc ending in `<br>`, first transaction strips it) — ADR edge table. Plus empty-doc no-op.
+    3. *No over-strip of an interior break + live-DOM render.* Mixed `line one<br>line two<br>` →
+       getHTML exactly `line one<br>line two` (interior survives, only trailing removed); assert the
+       live content area renders two visual lines (guard getHTML/DOM divergence).
+    4. *Keymap path has ZERO coverage (agent-review CONCERNS, commit `5a1c1b2`).* The RED/green only
+       exercised the DOM-parse path (`innerHTML`+`fireEvent.input`); `hardBreakKeymap.ts` and its
+       `insertContent({type:'hardBreak', attrs:{marker:'br'}})` are never executed by the suite. If
+       the `marker` attr is renamed/made optional or the keymap drifts to `setHardBreak()` (throws on
+       the required attr), Enter breaks silently and the suite stays green. Fire an Enter keydown in
+       the editor, assert exactly ONE `<br>` lands in the save payload (count assertion, not "a break
+       appears" — guards premortem #2 double-insert).
+    5. *Pin the decided trailing-break behavior (premortem #1; ADR edge table already reconciled
+       2026-07-20).* Decision: STRAY breaks are prevented, an INTENTIONAL trailing break is KEPT.
+       Pin both sides: (a) typed non-empty content has no stray trailing `<br>` in `getHTML()` (stray
+       side — already covered by the RED for interior content, extend to the ghost-filler/helper
+       path); (b) a keymap Enter at end-of-content → the `<br>` IS present in the save payload
+       (intentional side); (c) `setContent('foo<br>')`→`getHTML()` round-trip preserves the break with
+       no parse error (load/paste path, required-`marker` supplied by the attr's parseHTML). Live-
+       browser proof of no-double-insert + real trailing behavior is owed by the deferred
+       green-selenium step below.
+- [S] refactor — original intent (extract `stripTrailingHardBreak`) moot (green abandoned the strip
+  extension). The fix ships as two dedicated per-extension files (`hardBreakNode.ts` 42,
+  `hardBreakKeymap.ts` 26 — both ≤200, matching `horizontalRuleNode.ts` layout). refactor-agent
+  already scanned these exact files in the green batch (`5a1c1b2`): verdict NO ACTION (naming clear;
+  marker-attr overlap with `horizontalRuleNode.ts` is the intentional one-customization-per-file
+  convention, extraction would add indirection). No cross-file smell — nothing to refactor.
+- [ ] green-selenium — [S] deferred: same "live app to drive Selenium" gap as the rest of
+  this file (see RECONCILE_05); real-browser Enter keystroke bypasses the domObserver path
+  that the unit test exercises, so a live run is the only proof the in-browser Enter produces
+  exactly one `<br>`. Owe it when the stack runs. **Owe-list (review passes on `cffedc7`):**
+  (i) single Enter → exactly one `<br>` (no double-insert from ProseMirror's own contenteditable
+  handler, which jsdom cannot exercise); (ii) **≥2 consecutive Enters at end-of-content** —
+  premortem CREDIBLE: in jsdom two Enters collapse to zero breaks (`foo`+2×Enter → `foo`). Likely a
+  jsdom fake-caret artifact (2nd keyDown doesn't reposition the caret), but could be a real
+  multi-trailing bug — a live browser is the only place to tell; pin the intended behavior there;
+  (iii) the saved `<br>` actually renders as a visual line break.
+
+**Cleanup follow-up (agent-review on `cffedc7`, non-gating):** `ManualEditor.lineBreak.coverage.test.tsx:80`
+`expect(sent).not.toContain('ProseMirror-trailingBreak')` is a dead assertion — `getHTML()` serializes
+from the model and never emits that view-only cursor-helper class, so it is always-true. The real stray
+guard is the trailing-`<br>` regex on the next line. Delete line 80 or repoint it at the live view DOM
+on the next touch of this file.

@@ -67,6 +67,21 @@ Then the bold toolbar button becomes inactive
 And no other formatting button is incorrectly shown as active
 ```
 
+### 3.3 Pressing Enter inserts a line break and the text spans multiple lines
+
+```gherkin
+Given the visitor has typed a line of text in the editor
+When the visitor presses Enter and types a second line
+Then a line break separates the two lines in the content
+And the saved content preserves the break as a single <br> between the lines
+And no stray trailing break is appended after the last line
+```
+
+> Design: `decisions/line-break-in-inline-doc-decision.md` (A′ — hardBreak +
+> strip-trailing-hardBreak). The inline* document has no paragraph to split on, so the
+> break is a hardBreak `<br>`; a trailing one at document end is stripped so `getHTML()`
+> (the save payload) never grows a stray `<br>`.
+
 ---
 
 ## 4. Save Submission

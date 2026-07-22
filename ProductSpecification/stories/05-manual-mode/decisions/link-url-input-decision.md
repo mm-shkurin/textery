@@ -38,6 +38,32 @@ The `ToolbarAction.run: (editor) => void` contract discards `setLink`'s `false` 
 | Stored `<a>` with a disallowed href arriving via `setContent` | Mark not applied (Tiptap `getAttrs` returns false); text survives, href is dropped and the next save persists that drop. Accepted: the allowlist covers http/https/**ftps**/ftp/mailto/tel/callto/sms/cid/xmpp (`:212-222`), so a legitimate-but-dropped protocol is not a realistic case. |
 | Typing at the end of a link | `autolink: false` also makes the link mark **non-inclusive** — `inclusive() { return this.options.autolink }` (`:261-263`). So typing immediately after a link does not extend it. A consequence of the config choice, not an independent decision; pin it so the coupling is visible. |
 
+## Interaction contract (decided 2026-07-21, `/design-preview` with the user)
+
+The edge-case table above pinned only "Cancel"; the popover's live interaction was
+resolved by silence in the first green and explicitly deferred to this step. Decided
+together (they compose into one model) rather than one test at a time:
+
+| Interaction | Decision |
+|-------------|----------|
+| **Enter** in the URL field | Applies — same path as clicking Применить (`apply()`). |
+| **Escape** | Cancels — closes the popover, document byte-identical, an existing link survives (identical to the Отмена button / the Cancel edge-case row). |
+| **Click-outside with half-typed input** | **Close AND apply** the current field value to the *captured* range (see selection-change row). Chosen over discard-on-blur deliberately. |
+| **Cursor inside an existing `<a>`** | Field **prefills** with that anchor's current href; Применить **replaces** it, leaving `querySelectorAll('a')` length 1. Fixes defect 2 (today open→Apply destroys the existing link because the field opens empty). |
+| **Selection changes while open** (click elsewhere, caret moves) | The popover **captures the original range** at open time and Применить acts on *that* range, not the new caret position. Fixes defect 3 (silent apply to a moved cursor). |
+
+**Two tensions `red-frontend-popover-contract` must pin, not paper over:**
+1. **Click-outside applies to the captured range, not the live selection** — the two
+   decisions only cohere this way. A click-outside that applied to wherever the caret
+   now sits would re-open defect 3 through the back door.
+2. **Click-outside + invalid URL hides the rejection signal.** `apply()` on a rejected
+   href sets `LINK_INVALID_MESSAGE` and keeps the popover open so the alert is visible;
+   but click-outside closes the popover. So a click-outside apply of an invalid URL would
+   either (a) swallow the rejection silently, or (b) keep the popover open on rejection
+   (contradicting "close"). Red must decide and pin which — the ADR's whole reason for the
+   popover over `window.prompt` is a *visible* rejection signal, so (a) erodes it. Leaning
+   (b): click-outside closes on success, stays open with the alert on rejection.
+
 ## Knowingly unverified on this branch
 
 Not gaps to close in 7.9 — record so no one reads the green suite as more than it is:
