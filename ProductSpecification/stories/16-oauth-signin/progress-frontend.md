@@ -1,12 +1,8 @@
 # Story 16: OAuth sign-in — Frontend Progress
 
-> RESUME NOTE (session limit, 2026-07-22): stopped mid work-unit on **3.1 red-frontend-api**.
-> Its behavior commit `ca78e2d` landed clean (born-green 3/3, test-review 0 fixes), but the
-> post-commit refactor batch + the two review passes were CUT by the session limit before
-> completing — re-run `/refactor` + agent-review + premortem over `ca78e2d` on resume if a gate
-> record is wanted (the test is tiny + born-green, so refactor is almost certainly a no-op).
-> Next actionable step: **3.1 align-design** (`[~]`) — pixel-match the `/auth/callback` screen
-> (`OAuthCallback.tsx` + `OAuthCallback.css`) to mockup `mockups/desktop/02-callback-loading.html`.
+> CARRIED GATE DEBT: `ca78e2d` (3.1 red-frontend-api) landed clean but its post-commit refactor
+> batch + the two review passes were cut by a session limit. The test is tiny and born-green, so
+> `/refactor` is almost certainly a no-op — re-run over `ca78e2d` only if a gate record is wanted.
 
 Scenarios from `tests/02_UI_Tests.md`. Selenium legs (`red-selenium`/`green-selenium`) are
 backend-gated → `[S]` deferred, batched for a full-stack selenium pass once the backend
@@ -65,7 +61,21 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 
 - [x] red-frontend-api — BORN-GREEN (enabled), api-layer wire contract. New `oauthExchangeApi.test.ts` (94L, real-fetch stub like loginApi.test.ts): pins POST `/api/v1/auth/oauth/exchange` exact URL/method/body `{code}`, snake→camel success map via `toStrictEqual` (4-field OAuthSession, pins `sessionTokensFromWire`), coded-error via shared `toAuthApiError` (`{errorCode,message}`, `toStrictEqual` also proves no stray retryAfter/status on the coded path). **Predicted:** born-green 3 pass (green-frontend already shipped the real mapping). **Actual:** 3 passed. **Match.** test-review: 0 fixes (already strict).
 - [S] green-frontend-api — already-implemented: `oauthExchangeApi.ts` (real `postJson` → `sessionTokensFromWire` → `toAuthApiError`) shipped in green-frontend 3.1; the born-green api test above pins it. Same [S]-class as Story 7's already-covered api legs.
-- [~] align-design
+- [x] align-design — aligned `/auth/callback` to `mockups/desktop/02-callback-loading.html`. The
+  structural CSS duplicated the shared shell verbatim (width 420 / surface / subtle border /
+  radius 16 / margin 48 auto — identical values in the mockup), so the card now reuses
+  `.auth-card` + `.auth-subtitle` (`AuthForm.css` imported, as this is a standalone route —
+  AccountLockedScreen renders inside login and doesn't need it) and `OAuthCallback.css` keeps
+  only the real deltas: mockup card padding `48px 40px`, `text-align:center`, the conic-gradient
+  spinner, `h1` mb 8, subtitle line-height 1.5. **This also fixed a live defect: the error state's
+  `<h1>`/`<p>` carried no shared classes, so `oauth-callback-error` rendered browser-default
+  32px type and unstyled body copy.** h1 stays the app-standard 28px rather than the mockup's
+  22px, for cross-auth-screen consistency (same call as AccountLockedScreen). design-review:
+  PASS — the mockup's `Завершаем вход через VK ID` provider name was deliberately NOT hardcoded
+  (per-session data; if the heading should name the provider it must come from the query/exchange).
+  test-coverage --focus: OAuthCallback 95.45% line / 58.33% branch, `oauthExchangeApi` 100% line /
+  66.66% func — every gap is a 4.x error path (rejected exchange `.catch`, missing `code` param,
+  unmount-before-resolve), already scheduled as 4.2/4.4; no new steps needed.
 - [S] green-selenium
 - [S] demo
 

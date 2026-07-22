@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { oauthExchange } from '../api/oauthExchangeApi'
 import { saveSession } from '../utils/authSession'
 import { safeRedirectTarget } from '../utils/safeRedirectTarget'
+import './AuthForm.css'
 import './OAuthCallback.css'
 
 // The /auth/callback interstitial. The visitor arrives here from the provider with a one-time
@@ -56,19 +57,21 @@ export function OAuthCallback() {
 
   if (failed) {
     return (
-      <div className="oauth-callback-card" data-testid="oauth-callback-error">
+      <div className="auth-card oauth-callback-card" data-testid="oauth-callback-error">
         <h1>Не удалось завершить вход</h1>
-        <p className="oauth-callback-subtitle">Попробуйте войти ещё раз.</p>
+        <p className="auth-subtitle oauth-callback-subtitle">Попробуйте войти ещё раз.</p>
       </div>
     )
   }
 
   return (
-    <div className="oauth-callback-card" data-testid="oauth-callback-loading">
+    <div className="auth-card oauth-callback-card" data-testid="oauth-callback-loading">
       <div className="oauth-callback-spinner" aria-hidden="true" />
       <output className="oauth-callback-status" aria-live="polite">
         <h1>Завершаем вход…</h1>
-        <p className="oauth-callback-subtitle">Это займёт пару секунд. Не закрывайте страницу.</p>
+        <p className="auth-subtitle oauth-callback-subtitle">
+          Это займёт пару секунд. Не закрывайте страницу.
+        </p>
       </output>
     </div>
   )
