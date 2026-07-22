@@ -42,4 +42,5 @@ class AccountModel(Base):
             password_hash=self.password_hash,
             created_at=self.created_at,
             is_verified=self.is_verified,
+            failed_attempt_count=self.failed_attempt_count,
         )

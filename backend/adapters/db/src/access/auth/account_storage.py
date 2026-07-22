@@ -75,6 +75,19 @@ class SqlAlchemyAccountRepository:
             .values(failed_attempt_count=AccountModel.failed_attempt_count + 1)
         )
 
+    async def reset_failed_attempts(self, account_id: UUID) -> None:
+        """Atomically zero this account's failed_attempt_count on success.
+
+        DB-side ``SET failed_attempt_count = 0`` as a single UPDATE statement. The
+        ``WHERE id = :account_id`` targets exactly one row -- bystander accounts
+        are untouched. No commit here -- the caller owns the transaction boundary.
+        """
+        await self._session.execute(
+            update(AccountModel)
+            .where(AccountModel.id == account_id)
+            .values(failed_attempt_count=0)
+        )
+
     async def save(self, account: Account) -> None:
         """Insert a new account, or update the one that already exists.
 

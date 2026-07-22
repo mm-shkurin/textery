@@ -5,9 +5,6 @@ from statements.account_to_domain_roundtrip_statements import (
 )
 
 
-@pytest.mark.skip(
-    reason="RED: AccountModel.to_domain drops failed_attempt_count (reconstitutes to 0)"
-)
 class TestAccountToDomainCarriesFailedAttemptCount:
     """Persist an account row with failed_attempt_count = 3, then read it back
     through find_by_email (which routes through AccountModel.to_domain). The

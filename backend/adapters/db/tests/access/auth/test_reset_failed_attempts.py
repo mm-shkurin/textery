@@ -5,9 +5,6 @@ from statements.reset_failed_attempts_statements import (
 )
 
 
-@pytest.mark.skip(
-    reason="RED: SqlAlchemyAccountRepository.reset_failed_attempts not implemented"
-)
 class TestResetFailedAttemptsPersistsAtomically:
     """Seed a verified account with failed_attempt_count = 4 and a bystander with
     count = 2, call reset_failed_attempts(account_id) + commit, then re-read on a
