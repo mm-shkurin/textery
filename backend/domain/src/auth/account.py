@@ -17,10 +17,15 @@ class Account:
         self.password_hash = password_hash
         self.created_at = created_at
         self._is_verified = False
+        self._failed_attempt_count = 0
 
     @property
     def is_verified(self) -> bool:
         return self._is_verified
+
+    @property
+    def failed_attempt_count(self) -> int:
+        return self._failed_attempt_count
 
     @classmethod
     def create(cls, id: UUID, email: str, password_hash: str, created_at: datetime) -> "Account":
@@ -33,7 +38,13 @@ class Account:
 
     @classmethod
     def reconstitute(
-        cls, id: UUID, email: str, password_hash: str, created_at: datetime, is_verified: bool
+        cls,
+        id: UUID,
+        email: str,
+        password_hash: str,
+        created_at: datetime,
+        is_verified: bool,
+        failed_attempt_count: int = 0,
     ) -> "Account":
         account = cls(
             id=id,
@@ -42,6 +53,7 @@ class Account:
             created_at=created_at,
         )
         account._is_verified = is_verified
+        account._failed_attempt_count = failed_attempt_count
         return account
 
     def verify(self) -> None:

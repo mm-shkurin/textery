@@ -3,6 +3,7 @@ import pytest
 from statements.generation_lifecycle_statements import GenerationLifecycleStatements
 from statements.generation_statements import GenerationStatements
 from statements.login_failed_attempt_statements import LoginFailedAttemptStatements
+from statements.login_lockout_statements import LoginLockoutStatements
 from statements.login_statements import LoginStatements
 from statements.refresh_statements import RefreshStatements
 from statements.register_atomic_write_statements import RegisterAtomicWriteStatements
@@ -92,6 +93,11 @@ def login_statements():
 @pytest.fixture
 def login_failed_attempt_statements():
     return LoginFailedAttemptStatements()
+
+
+@pytest.fixture
+def login_lockout_statements():
+    return LoginLockoutStatements()
 
 
 @pytest.fixture

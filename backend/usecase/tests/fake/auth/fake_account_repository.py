@@ -13,6 +13,9 @@ class FakeAccountRepository:
         # Scenario 5.3: spy on the atomic failed-attempt increment so a usecase
         # test can assert the wrong-password branch calls it with the account id.
         self.increment_failed_attempts_calls: list[UUID] = []
+        # Scenario 5.4: spy on the atomic failed-attempt RESET so a usecase test can
+        # assert a successful login zeroes the counter for the found account id.
+        self.reset_failed_attempts_calls: list[UUID] = []
         # Shared across the two Fakes so a test can assert the RELATIVE order of
         # lock_for_update vs the cooldown read (find_active_by_account_id). Left None
         # by default so existing Statements pay no cost; a test opts in by assigning
@@ -59,6 +62,16 @@ class FakeAccountRepository:
         self.increment_failed_attempts_calls.append(account_id)
         if self.call_log is not None:
             self.call_log.append("increment_failed_attempts")
+
+    async def reset_failed_attempts(self, account_id: UUID) -> None:
+        # Spy + real semantics mirroring the db adapter's single atomic
+        # UPDATE ... SET failed_attempt_count = 0. The recorded id is what the
+        # usecase test asserts on, and call_log (when shared) pins reset-before-commit
+        # ordering on the happy path. A regression that stops resetting on a
+        # successful login leaves this list empty -> RED.
+        self.reset_failed_attempts_calls.append(account_id)
+        if self.call_log is not None:
+            self.call_log.append("reset_failed_attempts")
 
     async def transition_to_verified(self, account_id: UUID) -> bool:
         # Spy + real semantics, mirroring the atomic conditional UPDATE the db
