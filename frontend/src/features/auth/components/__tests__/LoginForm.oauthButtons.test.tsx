@@ -12,8 +12,11 @@ describe.skip('LoginForm OAuth provider buttons', () => {
     renderWithRouter(<LoginForm />)
 
     const vkButton = screen.getByTestId('oauth-vk-button')
-    // Exact label, not substring: toHaveTextContent matches partials, so trim + toBe pins it.
-    expect(vkButton.textContent?.trim()).toBe('Войти через VK ID')
+    // Assert the ACCESSIBLE NAME, not raw textContent: the mockup puts a decorative provider
+    // badge ("VK") inside the control, so textContent is "VKВойти через VK ID". The badge must
+    // be aria-hidden, making the accessible name exactly the label — this pins the label AND
+    // forces the badge to be decorative (green must aria-hide it), matching the mockup.
+    expect(screen.getByRole('link', { name: 'Войти через VK ID' })).toBe(vkButton)
     expect(vkButton).not.toBe(screen.getByTestId('login-submit-button'))
   })
 
@@ -21,8 +24,8 @@ describe.skip('LoginForm OAuth provider buttons', () => {
     renderWithRouter(<LoginForm />)
 
     const yandexButton = screen.getByTestId('oauth-yandex-button')
-    // Exact label, not substring: toHaveTextContent matches partials, so trim + toBe pins it.
-    expect(yandexButton.textContent?.trim()).toBe('Войти через Yandex ID')
+    // Accessible name excludes the decorative (aria-hidden) "Я" badge — see the VK test.
+    expect(screen.getByRole('link', { name: 'Войти через Yandex ID' })).toBe(yandexButton)
     expect(yandexButton).not.toBe(screen.getByTestId('login-submit-button'))
   })
 
