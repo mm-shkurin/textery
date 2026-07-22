@@ -14,6 +14,10 @@ export const GENERIC_LOGIN_FAILURE_MESSAGE = 'Не удалось войти'
 // this, so a fixture carrying no network text still renders it.
 export const NETWORK_LOGIN_FAILURE_MESSAGE =
   'Не удалось связаться с сервером. Проверьте подключение и попробуйте снова.'
+// Storage refused the session (private mode, embedded webview): a LOCAL fault, distinct from a
+// rejected credential or a transport failure — say so rather than navigating into an app that
+// will behave as if signed out. Form-owned copy, kept here with its siblings.
+export const SESSION_SAVE_FAILURE_MESSAGE = 'Не удалось сохранить сессию — проверьте настройки браузера'
 export const GENERIC_REGISTER_FAILURE_MESSAGE = 'Не удалось зарегистрироваться'
 export const GENERIC_VERIFY_FAILURE_MESSAGE = 'Не удалось подтвердить код'
 

@@ -18,6 +18,12 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 - [S] demo
 
 ### 2.1: VK button starts the VK handshake
+> CARRIED (agent-review + premortem CONCERNS on 1.1 green `25b7020`): the `href` /
+> `startPath` on each OAuth link is currently UNGUARDED — a typo or a VK↔Yandex path swap
+> ships green (1.1 asserts only testid/name/order). This scenario (VK) and 2.2 (Yandex) MUST
+> assert the exact `href` per provider (`toHaveAttribute('href', '/api/v1/auth/oauth/vk/start')`)
+> AND that the control is a PLAIN anchor (full-page nav), not a react-router `<Link>` — a
+> `<Link>` would client-route and never reach the backend. Both close this gap.
 - [S] red-selenium
 - [ ] red-frontend
 - [ ] green-frontend

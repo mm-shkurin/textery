@@ -6,7 +6,11 @@ import { OAuthProviderButtons } from './OAuthProviderButtons'
 import { AccountLockedScreen } from './AccountLockedScreen'
 import { login, type LoginResult } from '../api/loginApi'
 import { saveSession } from '../utils/authSession'
-import { GENERIC_LOGIN_FAILURE_MESSAGE, NETWORK_LOGIN_FAILURE_MESSAGE } from '../utils/authMessages'
+import {
+  GENERIC_LOGIN_FAILURE_MESSAGE,
+  NETWORK_LOGIN_FAILURE_MESSAGE,
+  SESSION_SAVE_FAILURE_MESSAGE,
+} from '../utils/authMessages'
 import {
   isAccountLocked,
   isLoginNetworkError,
@@ -75,7 +79,7 @@ export function LoginForm() {
     if (!saveSession(session)) {
       // Storage refused (private mode, embedded webview). Say so rather than navigating into an
       // app that will behave as if signed out.
-      setFormError('Не удалось сохранить сессию — проверьте настройки браузера')
+      setFormError(SESSION_SAVE_FAILURE_MESSAGE)
       return
     }
     navigate(redirectTo, { replace: true })
