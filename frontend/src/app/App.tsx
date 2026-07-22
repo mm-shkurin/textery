@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes, useInRouterContext } from 'react-router-d
 import { RegisterForm } from '../features/auth/components/RegisterForm'
 import { LoginForm } from '../features/auth/components/LoginForm'
 import { VerifyCodeForm } from '../features/auth/components/VerifyCodeForm'
+import { OAuthCallback } from '../features/auth/components/OAuthCallback'
 import { DocumentGenerationFlow } from './DocumentGenerationFlow'
 
 function AppRoutes() {
@@ -10,6 +11,7 @@ function AppRoutes() {
       <Route path="/register" element={<RegisterForm />} />
       <Route path="/login" element={<LoginForm />} />
       <Route path="/verify" element={<VerifyCodeForm />} />
+      <Route path="/auth/callback" element={<OAuthCallback />} />
       <Route path="/*" element={<DocumentGenerationFlow />} />
     </Routes>
   )

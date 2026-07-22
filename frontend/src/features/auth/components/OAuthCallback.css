@@ -1,0 +1,52 @@
+/* Structural only — the callback interstitial (spinner + "Завершаем вход…"). Pixel alignment to
+   mockups/desktop/02-callback-loading.html is the later /align-design step; this establishes the
+   centered card, the spinner, and the status region so the flow is legible in the meantime. */
+.oauth-callback-card {
+  width: 420px;
+  max-width: 100%;
+  margin: 48px auto;
+  padding: 48px 40px;
+  text-align: center;
+  background: var(--bg-surface, #1a1b1e);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 16px;
+}
+
+.oauth-callback-spinner {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 24px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    var(--accent-start, #6366f1),
+    var(--accent-end, #a855f7),
+    transparent 75%
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 0);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 0);
+  animation: oauth-callback-spin 0.9s linear infinite;
+}
+
+@keyframes oauth-callback-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.oauth-callback-status {
+  display: block;
+}
+
+.oauth-callback-status h1 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.oauth-callback-subtitle {
+  color: var(--text-secondary, #9a9ba3);
+  font-size: 14px;
+  line-height: 1.5;
+}

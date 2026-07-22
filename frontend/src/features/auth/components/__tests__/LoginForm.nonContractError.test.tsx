@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { renderWithRouter } from '../../../../test/renderWithRouter'
 import { LoginForm } from '../LoginForm'
+import { GENERIC_LOGIN_FAILURE_MESSAGE } from '../../utils/authMessages'
 import * as api from '../../api/loginApi'
 
 vi.mock('../../api/loginApi', () => ({
@@ -33,28 +34,23 @@ function renderAndSubmit() {
 //
 // So every non-contract outcome resolves to a client-owned generic constant. 5.3/5.4/5.6 will
 // branch distinct messages ABOVE this fallback; INTERNAL_SERVER_ERROR is used here precisely
-// because no planned scenario branches on it.
-const GENERIC_LOGIN_FAILURE_MESSAGE = 'Не удалось войти'
+// because no planned scenario branches on it. The constant itself is the canonical
+// GENERIC_LOGIN_FAILURE_MESSAGE from utils/authMessages (single source of truth, shared with the
+// sibling networkError test and the form's own render guard) — imported, not re-declared.
 
 describe('LoginForm non-contract rejections', () => {
   afterEach(() => {
     vi.mocked(api.login).mockReset()
   })
 
-  // A transport failure is not an enumeration oracle — it cannot be induced per-account — but
-  // it is the MOST common trigger of the silent form, so the fallback must cover it too. 5.6
-  // owns the retry-capable network state and will branch it ABOVE this fallback. Pinning
-  // silence here would force green to write a TypeError-discriminating branch whose only
-  // purpose is to preserve the incident this scenario exists to kill.
-  it('displays the generic message, not the transport failure text, when login rejects with a bodyless transport failure', async () => {
-    const transportText = 'Failed to fetch'
-    vi.mocked(api.login).mockRejectedValue(new TypeError(transportText))
-    const { submitButton } = renderAndSubmit()
-
-    await waitFor(() => expect(submitButton).not.toBeDisabled())
-    expect(screen.getByTestId('login-form-error').textContent).toBe(GENERIC_LOGIN_FAILURE_MESSAGE)
-    expect(document.body.textContent).not.toContain(transportText)
-  })
+  // NOTE (5.6 RED, 2026-07-21): the bodyless-transport-failure test that lived here was DELETED,
+  // not moved by accident. It pinned `TypeError → login-form-error === GENERIC`, which is exactly
+  // the input §5.6 must now turn into a DISTINCT retry-capable network-error state (`login-network-
+  // error`, not `login-form-error`). Keeping it would have gone red at 5.6's GREEN, where green-
+  // agent (tests-read-only) could not remove it — RED owns this collision (round-3 premortem on
+  // 5d40a5a, CREDIBLE). The transport-failure case, including its non-disclosure clause, now lives
+  // in LoginForm.networkError.test.tsx (a). The fixtures remaining below all carry an errorCode,
+  // so they still route through `login-form-error` and are untouched by the network branch.
 
   it('displays the generic message, not the server text, when login rejects with an unrecognised error code', async () => {
     const serverText = 'NullPointerException at AuthService.line42'

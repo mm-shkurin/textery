@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { resendCode } from '../api/authApi'
-import { verify, type VerifyApiError } from '../api/verifyApi'
+import { verify } from '../api/verifyApi'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { CODE_LENGTH, VerifyCodeInputs } from './VerifyCodeInputs'
 import { useResendCountdown } from '../hooks/useResendCountdown'
 import { signInAfterVerification } from '../utils/postVerifySignIn'
-import { GENERIC_VERIFY_FAILURE_MESSAGE, isUsableMessage } from '../utils/authMessages'
+import { GENERIC_VERIFY_FAILURE_MESSAGE } from '../utils/authMessages'
+import { verifyErrorMessage } from '../utils/verifyErrorHandling'
 import './AuthForm.css'
 import './VerifyCodeForm.css'
 
@@ -24,16 +25,9 @@ interface VerifyRouterState {
 const RESEND_FAILURE_MESSAGE = 'Не удалось отправить код повторно. Попробуйте ещё раз позже.'
 const MISSING_EMAIL_MESSAGE = 'Не найден email для подтверждения — начните регистрацию заново'
 
-function applyVerifyError(error: unknown): string {
-  if (error && typeof error === 'object' && 'errorCode' in error) {
-    const apiError = error as VerifyApiError
-    if (isUsableMessage(apiError.message)) {
-      return apiError.message
-    }
-  }
-  return GENERIC_VERIFY_FAILURE_MESSAGE
-}
-
+// Rejection interpretation (wrong-code distinct message, usable-server-message pass-through,
+// generic fallback) lives in ../utils/verifyErrorHandling so this component stays under the
+// 200-line cap and mirrors login's loginErrorHandling.
 export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
   const navigate = useNavigate()
   const routerState = (useLocation().state ?? {}) as VerifyRouterState
@@ -44,7 +38,15 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [isVerified, setIsVerified] = useState(false)
+  const [codeError, setCodeError] = useState(false)
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''))
+
+  // Editing the code clears the error paint — the boxes no longer show the value the server
+  // rejected, so keeping them red would accuse input the user has already changed.
+  function handleDigitsChange(next: string[]) {
+    setDigits(next)
+    if (codeError) setCodeError(false)
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -57,12 +59,14 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
     try {
       const result = await verify(email, digits.join(''))
       setFormError(null)
+      setCodeError(false)
       setIsVerified(result.isVerified)
       // A 200 that says `is_verified: false` is not a success to navigate on. The backend has
       // never sent one, but the field only means something if we read it — treating any 200 as
       // "verified" would make the flag decoration.
       if (!result.isVerified) {
         setFormError(GENERIC_VERIFY_FAILURE_MESSAGE)
+        setCodeError(true)
         return
       }
       // Verification does not mint a session, so getting into the app is a separate step that
@@ -71,7 +75,8 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
       navigate(await signInAfterVerification(email), { replace: true })
     } catch (error) {
       setIsVerified(false)
-      setFormError(applyVerifyError(error))
+      setFormError(verifyErrorMessage(error))
+      setCodeError(true)
     } finally {
       setIsSubmitting(false)
     }
@@ -116,7 +121,7 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
         </p>
       )}
       <form onSubmit={handleSubmit}>
-        <VerifyCodeInputs digits={digits} onChange={setDigits} />
+        <VerifyCodeInputs digits={digits} onChange={handleDigitsChange} hasError={codeError} />
         <AuthSubmitButton testId="verify-confirm-button" isSubmitting={isSubmitting}>
           Подтвердить
         </AuthSubmitButton>

@@ -1,0 +1,70 @@
+openapi: 3.0.3
+info:
+  title: OAuth exchange (one-time handoff code -> session)
+  version: 1.0.0
+
+paths:
+  /api/v1/auth/oauth/exchange:
+    post:
+      summary: >
+        Exchange the one-time opaque handoff code (received by the frontend at /auth/callback)
+        for a JWT session. Response body is identical to /auth/login.
+      operationId: oauthExchange
+      tags:
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthExchangeRequest'
+      responses:
+        '200':
+          description: >
+            Handoff code valid and unspent. Returns the same session shape as /auth/login.
+            The code is redeemed by an atomic compare-and-delete so exactly one of two
+            concurrent exchanges succeeds and the other gets 400 — never two sessions
+            (hazard-scan group 3). Redeem + issue are atomic: a code that yields no session
+            is not silently burned (group 2). A freshly-minted code is redeemable on any
+            instance (read-your-write on the shared store, group 3).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthExchangeResponse'
+        '400':
+          description: >
+            INVALID_OR_EXPIRED_OAUTH_CODE — bad, replayed (already redeemed), or expired
+            code. A browser back/refresh onto /auth/callback re-POSTs a spent code and lands
+            here; the client shows an error and never a second silent sign-in. TTL is
+            evaluated against an injectable clock (group 7). `{ error_code, message }`.
+        '500':
+          description: >
+            Internal server error. `{ error_code, message }`, generic client-safe message —
+            no stack trace / internal id leaks (hazard-scan group 7).
+
+components:
+  schemas:
+    OAuthExchangeRequest:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          maxLength: 512
+          description: >
+            The opaque one-time handoff code. Bounded length (group 6); the ONLY field —
+            no client-supplied account field can over-bind on auto-create (group 5).
+    OAuthExchangeResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        access_token_expires_at:
+          type: string
+          format: date-time
+        refresh_token_expires_at:
+          type: string
+          format: date-time

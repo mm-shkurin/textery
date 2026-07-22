@@ -15,7 +15,12 @@ EDITOR_BREADCRUMB = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} [data-testid='e
 LOADING_SKELETON = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-loading-skeleton")
 CONTENT_PLACEHOLDER = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-placeholder")
 TOOLBAR_BUTTON = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-toolbar-btn")
-CONTENT_AREA = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-content-area")
+# The typeable target is the ProseMirror contenteditable div rendered by <EditorContent>,
+# not the .me-content-area wrapper. It carries data-testid="editor-content-area" (set via
+# useEditor editorProps.attributes) and is the element send_keys/click must reach.
+EDITABLE_CONTENT = (
+    By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} [data-testid='editor-content-area']"
+)
 BOLD_TEXT = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-content-area strong")
 
 EXPECTED_DOKLAD_BREADCRUMB = "Доклад · Ручной режим"
@@ -95,9 +100,9 @@ class ManualEditorStatements(BaseFrontendStatements):
         ActionChains(driver).key_down(Keys.CONTROL).send_keys("a").key_up(Keys.CONTROL).perform()
 
     def _focus_content_area(self, driver: WebDriver) -> WebElement:
-        content_area = self._wait_for_visible(driver, CONTENT_AREA)
-        content_area.click()
-        return content_area
+        editable = self._wait_for_visible(driver, EDITABLE_CONTENT)
+        editable.click()
+        return editable
 
     def apply_bold_formatting(self, driver: WebDriver) -> None:
         self._wait_for_visible(driver, BOLD_BUTTON).click()

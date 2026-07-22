@@ -36,7 +36,7 @@ queue was never exercised through a real click dispatch.
 - [S] red-frontend-api — no API call: mode-modal availability is a static local flag, no backend endpoint involved
 - [S] green-frontend-api — same reason, covered by red-frontend/green-frontend component tests
 - [x] align-design
-- [x] green-selenium
+- [x] green-selenium — **Backfill reconcile 2026-07-20 (`FRAMEWORK_BACKFILL_PLAN.md`):** silently broken since Story 7 (2026-07-16) — the auth gate routes the CTA to `/register` for an unauthenticated visitor, so `navigate_to_mode_modal` (→ `navigate_to_doklad_type_modal`) timed out on the CTA click and this `[x]` was false (re-verified failing live before the fix). Restored by a logged-in precondition (seeded session) in the shared navigation helper; valid here because the mode modal is a static local-flag screen with no authenticated API call. Re-verified GREEN live 2026-07-20 (`1 passed`).
 - [x] demo
 
 ### Scenario 1.2: Selecting Ручной режим opens the empty editor
@@ -68,7 +68,7 @@ queue was never exercised through a real click dispatch.
 - [S] red-frontend-api — no API call: bold formatting is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
 - [x] align-design
-- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against
+- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. **Backfill 2026-07-20 (framework `FRAMEWORK_BACKFILL_PLAN.md` Phase B):** the `test_manual_editor_acceptance.py` skip decorator carried a *stale, false* reason (`.me-content-area is a static placeholder div with no contenteditable attribute`) — false since the Tiptap rewrite: the wrapper's child is a real ProseMirror contenteditable div (`data-testid="editor-content-area"`). Un-skipped, fixed the Statements locator to type into that editable element (`manual_editor_statements.py` `EDITABLE_CONTENT`), re-verified live against the frontend dev server. Un-skipping exposed a *larger, true* blocker beyond "backend unavailable": Story 7's auth gate makes the type→mode→editor flow unreachable without a **valid** backend-issued session (unauthenticated CTA → `/register`; a seeded fake sessionStorage token fails too — the editor's `createDocument` mount call 401s, refresh fails, `clearSession` collapses the app back to landing, verified live). So all three scenarios (1.2/2.1/3.1) need a full stack + real register→verify→login, not just a running backend. Re-skipped at module level with an accurate dated reason. Locator fix landed; green pending a live authenticated stack.
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
 ### Scenario 3.2: The toolbar reflects formatting state at the cursor position, not globally

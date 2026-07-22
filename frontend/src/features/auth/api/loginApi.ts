@@ -1,20 +1,15 @@
 // HTTP client for the login API (POST authenticate).
 import { postJson } from '../../../shared/api/httpClient'
 import { toAuthApiError, type AuthApiError } from './apiError'
+import { sessionTokensFromWire, type SessionTokens } from './sessionTokens'
 import { GENERIC_LOGIN_FAILURE_MESSAGE } from '../utils/authMessages'
 
 // The wire is snake_case — verified by curl against the live backend 2026-07-16:
 //   200 → {access_token, refresh_token, access_token_expires_at, refresh_token_expires_at}
-// This interface previously declared camelCase and nothing mapped to it, so every field was
-// silently `undefined`. It never surfaced because LoginForm discarded the result entirely and
-// every component test mocks this module. The mapping below is the boundary; the rest of the
-// app sees camelCase.
-export interface LoginResult {
-  accessToken: string
-  refreshToken: string
-  accessTokenExpiresAt: string
-  refreshTokenExpiresAt: string
-}
+// The camelCase shape and the mapping that produces it are the shared auth-session boundary in
+// sessionTokens.ts (the exchange endpoint returns the same body). Kept as a named alias so
+// LoginForm and the component tests that read `LoginResult` are unchanged.
+export type LoginResult = SessionTokens
 
 export type LoginApiError = AuthApiError
 
@@ -65,12 +60,7 @@ function fallbackMessageFor(errorCode: string): string {
 export async function login(email: string, password: string): Promise<LoginResult> {
   try {
     const body = await postJson<Record<string, unknown>>('/api/v1/auth/login', { email, password })
-    return {
-      accessToken: String(body.access_token ?? ''),
-      refreshToken: String(body.refresh_token ?? ''),
-      accessTokenExpiresAt: String(body.access_token_expires_at ?? ''),
-      refreshTokenExpiresAt: String(body.refresh_token_expires_at ?? ''),
-    }
+    return sessionTokensFromWire(body)
   } catch (error) {
     throw toLoginApiError(error)
   }

@@ -1,0 +1,47 @@
+<!-- Story 16 — OAuth sign-in. Desktop, 1400px. The /auth/callback interstitial while the
+     frontend exchanges the one-time handoff code for a session (POST /oauth/exchange).
+     Transient: shows a spinner + provider-named copy, NEVER an indefinite spinner — a
+     failed/timed-out exchange (shared 25s httpClient) returns the user to login with an
+     error (see 03-login-oauth-error.html). Provider name is illustrative (VK ID). -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1400">
+<title>Завершаем вход — Textery AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-page:#111214; --bg-surface:#1a1b1e; --bg-surface-raised:#232428;
+    --border-subtle:rgba(255,255,255,0.08); --text-primary:#f5f5f7;
+    --text-secondary:#9a9ba3; --text-muted:#6b6c74;
+    --accent-start:#6366f1; --accent-end:#a855f7;
+    --accent-gradient:linear-gradient(135deg,var(--accent-start),var(--accent-end));
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Inter',sans-serif; background:var(--bg-page); color:var(--text-primary); min-height:100vh; }
+  header { display:flex; align-items:center; padding:24px 64px; }
+  .logo { display:flex; align-items:center; gap:10px; font-weight:700; font-size:18px; }
+  .logo-mark { width:32px; height:32px; border-radius:8px; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; font-weight:700; }
+  main { display:flex; justify-content:center; padding:48px 24px 96px; }
+  .card { width:420px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:16px; padding:48px 40px; text-align:center; }
+  .spinner { width:48px; height:48px; margin:0 auto 24px; border-radius:50%; background:conic-gradient(from 0deg, var(--accent-start), var(--accent-end), transparent 75%); -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 0); mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 0); animation:spin 0.9s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  h1 { font-size:22px; font-weight:700; letter-spacing:-0.02em; margin-bottom:8px; }
+  .subtitle { color:var(--text-secondary); font-size:14px; line-height:1.5; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-mark">T</div>Textery</div>
+</header>
+<main>
+  <div class="card">
+    <div class="spinner"></div>
+    <h1>Завершаем вход через VK ID</h1>
+    <p class="subtitle">Это займёт пару секунд. Не закрывайте страницу.</p>
+  </div>
+</main>
+</body>
+</html>

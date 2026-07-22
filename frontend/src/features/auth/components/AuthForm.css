@@ -119,6 +119,21 @@
   text-align: center;
 }
 
+/* Network/transport failure — a connection problem, not a rejected credential, so it is VISUALLY
+   DISTINCT from .auth-form-error above: an amber boxed alert rather than plain red text, signalling
+   "retry" instead of "your input was wrong". align-design pins the exact treatment against the
+   mockup; green owns only the distinction. */
+.auth-network-error {
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  text-align: center;
+}
+
 /* display:block for the same reason as .auth-loading-indicator: <output> is inline. */
 .auth-form-success {
   display: block;
