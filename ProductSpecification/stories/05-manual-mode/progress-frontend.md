@@ -1079,6 +1079,24 @@ add new ones — the first red phase in this story to do so.
   restored (`git diff` on normalizeHref.ts clean). test-review: PASS — assertions strict (`expectRejected` = exact
   `toHaveLength(0)` + alert present), both fixtures verified through HOST_SHAPE, rows kept separate. Generation
   suite: 141 passed | 0 failed | 0 skipped, tsc clean.
+  **Review-pass verdicts on `898b470` (red): agent-review PASS, premortem CONCERNS (1 bounded), `/refactor`
+  NO ACTION.** agent-review verified U+200E/200F (bidi direction marks) are still caught by the live `/\p{C}/u`
+  catch-all — NO live deceptive char ships; they are simply not independently *pinned*.
+  - *(premortem CREDIBLE-bounded — deliberately NOT a new red step)* sibling bidi controls (U+202A-202D LRE/RLE/PDF/
+    LRO, U+2066-2069 isolates) remain per-char unpinned, the same narrowing-green hole that motivated this step.
+    **But premortem's own conclusion is that adding another member fixture is low-value:** point fixtures can never
+    close the infinite `\p{C}` category — each buys teeth for exactly one codepoint, raising a narrowing green's cost
+    by one char, nothing structural. The defensible stopping point is **per-C-sub-category coverage**, which this
+    step now achieves: **Cf** (format — U+200B, U+202E) AND **Cc** (control — U+0007) are both pinned, so a
+    sub-category narrowing (`/\p{Cf}/u` or `/\p{Cc}/u`) fails a row either way. The two new fixtures carry
+    *independent* teeth precisely because they span the two sub-categories (not redundant). **Decision: stop here** —
+    this is a characterization test, not the production guard; the live `\p{C}` catch-all already rejects the
+    unpinned siblings. If the bidi family ever needs a hard guarantee, pin it *structurally* (a bidi-range screen),
+    not by adding members one at a time. No follow-up step.
+  - *(refactor + agent-review, maintainability)* this file is at **192/200 lines** — the next `it` added here will
+    exceed the limit. Planned cut when that happens: split the HOST_SHAPE `\p{C}` characterization rows (GROUPs 5-6)
+    into `ManualEditor.link.urlShapes.controlChars.test.tsx`, sharing `applyLinkUrl`/`expectRejected` from
+    `testSupport`. A genuine branch-target seam, so it won't violate refactor restraint at that point.
 - [~] green-frontend-coverage-rtl-override — expected `[S]`: no production change (the `\p{C}` screen at
   `normalizeHref.ts:50` already rejects U+202E and U+0007; the red is a LIVE characterization test proven by the
   mutation-check above). Nothing to implement or un-skip.
