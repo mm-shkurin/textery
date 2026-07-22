@@ -10,11 +10,10 @@ import * as authSession from '../../utils/authSession'
 // session it stores the tokens and takes the user to the authenticated app shell, REPLACING
 // history so Back does not walk back onto the callback interstitial.
 //
-// REAL RED — OAuthCallback and oauthExchangeApi do not exist yet; this drives them into being.
-// The imports of both are DYNAMIC (inside the test) and the suite is describe.skip, mirroring
-// AppRouting.test.tsx: a static import of a not-yet-existing module crashes collection even under
-// skip, so `.skip` only truly suppresses resolution when the import is deferred. green-frontend
-// un-skips (and switches to static imports) once the two modules land.
+// REAL RED — OAuthCallback and oauthExchangeApi ship as behaviorally-empty STUBS (null render /
+// throwing) so the static top-level imports resolve: vite import-analysis resolves import and
+// vi.mock path strings at transform time even under describe.skip, so a reference to a truly
+// nonexistent module crashes collection. green-frontend fills the stubs and un-skips.
 //
 // Seams mocked (mirrors VerifyCodeForm.success.test.tsx): the exchange api (no real fetch; the
 // component's contract with it is the only thing under test), authSession.saveSession (the storage
@@ -60,8 +59,6 @@ function deferred<T>() {
   return { promise, resolve }
 }
 
-// RED: OAuthCallback + oauthExchangeApi do not exist yet — skipped so the suite stays green
-// between red and green. green-frontend un-skips after the component + exchange api land.
 // RED: OAuthCallback + oauthExchangeApi are empty stubs — skipped so the suite stays green
 // between red and green. green-frontend un-skips after implementing the loading + exchange flow.
 describe.skip('OAuthCallback success flow', () => {
@@ -105,5 +102,34 @@ describe.skip('OAuthCallback success flow', () => {
     expect(navigate).toHaveBeenCalledWith('/', { replace: true })
     // ...and land there exactly once — a stray second navigation must fail, not pass.
     expect(navigate).toHaveBeenCalledTimes(1)
+  })
+
+  // Fail-closed on a refused session store (Safari private mode / storage-disabled webview):
+  // saveSession returns false when sessionStorage.setItem throws. The callback must NOT navigate
+  // to the app shell with no token stored — that strands the user in a sign-in loop (the shell's
+  // isAuthenticated() is false → bounce back). Mirrors LoginForm's `if (!saveSession(session))`
+  // guard (pinned by LoginForm.submitPathErrors) and postVerifySignIn's. Not covered by 4.x
+  // (network/replay) — a local storage-write failure falls through those.
+  it('does not navigate to the app shell when the session store is refused', async () => {
+    navigate.mockReset()
+
+    const exchange = deferred<typeof SESSION>()
+    vi.mocked(oauthExchangeApi.oauthExchange).mockReturnValue(exchange.promise)
+    vi.mocked(authSession.saveSession).mockReturnValue(false)
+
+    render(
+      <MemoryRouter initialEntries={[`/auth/callback?code=${CODE}&provider=vk`]}>
+        <OAuthCallback />
+      </MemoryRouter>,
+    )
+
+    await act(async () => {
+      exchange.resolve(SESSION)
+      await exchange.promise
+    })
+
+    // The store was attempted, but it was refused — so no app-shell navigation happens.
+    await waitFor(() => expect(authSession.saveSession).toHaveBeenCalledTimes(1))
+    expect(navigate).not.toHaveBeenCalledWith('/', { replace: true })
   })
 })
