@@ -13,7 +13,14 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 - [x] green-frontend — added VK/Yandex links below the submit. New `OAuthProviderButtons.tsx` (33L, provider-as-data array `{provider,label,badge,startPath}` → no per-provider JSX branch); `<a href="/api/v1/auth/oauth/{provider}/start">` full-page nav, `aria-hidden` badge span so accessible name = label; `LoginForm.tsx` 195L (imports the component to stay under the 200 cap); `LoginForm.css` +`.auth-divider`/`.oauth-list`/`.btn-oauth`/`.provider-badge` (vk #0077ff / yandex #fc3f1d). Un-skipped the test. Full suite **273/273**, tsc clean, oxlint clean, all files <200.
 - [S] red-frontend-api — pure display, no API call
 - [S] green-frontend-api
-- [~] align-design
+- [x] align-design — VERIFY-ONLY, no changes. green-frontend already built from the mockup's
+  exact values; compared every token against `mockups/desktop/01-login-oauth.html`: divider
+  (margin 24px 0, gap 12px, muted, 13px, 1px border-subtle rules), `.btn-oauth` (transparent,
+  border-subtle→strong hover, radius 10px, padding 12px 16px, 15px/500, gap 12px), `.provider-badge`
+  (28×28, radius 8px, 13px/700, #fff on vk #0077ff / yandex #fc3f1d) — all match; divider+list sit
+  OUTSIDE `<form>` per mockup. design-review: PASS (no hardcoded placeholder data — labels/badges/
+  routes are static config). test-coverage --focus: OAuthProviderButtons 100% line/branch (data-driven,
+  no conditionals). href-value assertion deferred to 2.1/2.2 (carried follow-up).
 - [S] green-selenium — deferred
 - [S] demo
 
@@ -25,7 +32,7 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 > AND that the control is a PLAIN anchor (full-page nav), not a react-router `<Link>` — a
 > `<Link>` would client-route and never reach the backend. Both close this gap.
 - [S] red-selenium
-- [ ] red-frontend
+- [~] red-frontend
 - [ ] green-frontend
 - [S] red-frontend-api — full-page nav, no fetch
 - [S] green-frontend-api
