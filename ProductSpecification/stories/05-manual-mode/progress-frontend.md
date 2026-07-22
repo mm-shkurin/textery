@@ -1188,7 +1188,8 @@ pinned and committed (`d12f4a2`), currently `describe.skip` in `ManualEditor.lin
   already scanned these exact files in the green batch (`5a1c1b2`): verdict NO ACTION (naming clear;
   marker-attr overlap with `horizontalRuleNode.ts` is the intentional one-customization-per-file
   convention, extraction would add indirection). No cross-file smell — nothing to refactor.
-- [x] green-selenium — **GREEN live 2026-07-22, all three owe-list items closed.** New
+- [x] green-selenium — **GREEN live 2026-07-22 — but only the RENDER half of the owe-list; see the
+  correction at the end of this entry, the "all three closed" claim first written here was wrong.** New
   `test_manual_editor_line_break_acceptance.py` (2 tests) + `manual_editor_line_break_statements.py`,
   driven against the full stack in a real Chrome with a real backend-issued session.
   (i) single Enter → **exactly one** `<br>` (`foo<br>bar`), asserted as a COUNT so a double-insert
@@ -1205,7 +1206,30 @@ pinned and committed (`d12f4a2`), currently `describe.skip` in `ManualEditor.lin
   caret, no click); any future multi-keystroke Selenium sequence must click once to focus and then
   keep typing. **Mutation-check (teeth):** removed `HardBreakKeymap` from `ManualEditor.tsx` →
   both tests FAIL; restored (`git checkout`, diff clean) → both PASS. Suite:
-  **6 passed, 1 skipped**. Historical deferral follows. ~~[S] deferred: same "live app to drive Selenium" gap as the rest of
+  **6 passed, 1 skipped**.
+  **CORRECTION (agent-review CONCERNS ×3 + premortem CONCERNS, 3 CREDIBLE — both passes flagged the
+  same overstatement independently):** this step did NOT close the whole owe-list. Every assertion
+  reads the *view* DOM (`editor-content-area` innerHTML); the save path serializes
+  `editor.getHTML()` from the ProseMirror **document model**, a different producer. Owe-list item (i)
+  was phrased "exactly one `<br>` lands in the **save payload**" — what shipped proves it lands in
+  the **rendered content area**. Still genuinely owed, and both are data-loss-shaped rather than
+  cosmetic:
+    (a) *save payload* — assert the outbound PUT body (or `editor.getHTML()`) carries exactly one
+        `<br>` after one Enter. A break that exists as a view artifact but not as a `hardBreak` node
+        passes all three current assertions and saves nothing;
+    (b) *reopen round trip* — type with a break, save, reload the document, assert the break
+        survived. Nothing in this commit crosses the backend, so a sanitizer or parse rule that
+        drops `<br>` is invisible. This is precisely the shape carryover's "a green suite is not
+        evidence" keeps producing.
+  Two smaller test-side findings, non-data-loss: `continue_typing_in_editor` is silently
+  order-dependent (WebDriver focuses an unfocused element and a contenteditable focus puts the caret
+  at the START, so a first caller without a prior click gets text *prepended*, with no error — the
+  docstring states the contract, nothing enforces it); and `assert_break_count_is` counts the literal
+  substring `"<br>"` while the strip matches one exact literal, so any `<br>` that gains an attribute
+  is neither stripped nor counted — `querySelectorAll('br:not(.ProseMirror-trailingBreak)').length`
+  is the non-brittle form. Also untested: a TRAILING Enter with nothing typed after it (both tests
+  type after every Enter, so the strip's interaction with a genuine trailing break is unexercised).
+  Historical deferral follows. ~~[S] deferred: same "live app to drive Selenium" gap as the rest of
   this file (see RECONCILE_05); real-browser Enter keystroke bypasses the domObserver path
   that the unit test exercises, so a live run is the only proof the in-browser Enter produces
   exactly one `<br>`. Owe it when the stack runs. **Owe-list (review passes on `cffedc7`):**
