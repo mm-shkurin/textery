@@ -42,11 +42,11 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 
 ### 2.2: Yandex button starts the Yandex handshake
 - [S] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — BORN-GREEN guard (enabled), mirror of 2.1 for Yandex. New `OAuthProviderButtons.yandexHandshake.test.tsx` (57L, 2 tests): pins Yandex exact href `/api/v1/auth/oauth/yandex/start`, swap guard (≠ VK endpoint), plain-anchor via `tagName==='A'` + cancelable click `defaultPrevented===false`, no background fetch (armed spy + non-vacuity probe). **Predicted:** born-green, 2 pass. **Actual:** 2 passed. **Match.** test-review: 0 fixes (already strict). **Together with 2.1 this fully closes the carried 1.1 review CONCERNS — both provider controls now have pinned-href + plain-anchor + no-fetch regression guards.**
+- [S] green-frontend — born-green, 1.1 already ships the correct plain `<a href>` for Yandex.
 - [S] red-frontend-api — full-page nav, no fetch
 - [S] green-frontend-api
-- [ ] align-design
+- [S] align-design — no new UI; Yandex button styled + aligned in 1.1.
 - [S] green-selenium
 - [S] demo
 
