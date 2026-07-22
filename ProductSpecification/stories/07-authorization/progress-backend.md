@@ -374,8 +374,9 @@ Working branch: `feature/story-7-authorization-backend`, branched from `dev`.
 - [S] green-acceptance — not HTTP-observable (per `[S]` red-acceptance): the exactly-both-increments invariant is proven by the db-adapter two-racing-session test, not over HTTP.
 
 ### Scenario 5.4: Account locks out after N consecutive failed attempts
-- [~] red-acceptance
-- [ ] design
+- [x] red-acceptance — first login acceptance test (5.1/5.2/5.3 were `[S]`/trimmed). New `test_login_lockout_acceptance.py` + `login_statements.py` (provisional `LOCKOUT_THRESHOLD = 5`, pending design ratification) + login DTOs + `ApplicationClient.login()` + `login_statements` conftest fixture. Flow: register+verify a per-run-unique account, submit `LOCKOUT_THRESHOLD` wrong-password logins, then one MORE login **with the CORRECT password** → asserts **403** + exact `error_code == "ACCOUNT_LOCKED"` (strict status + parsed-field equality). **Genuine RED verified live @:8100:** endpoint has no lockout logic → the correct-password login after N failures succeeds `200 + token pair`; predicted/actual `AssertionError: expected 403 ... got status_code=200, body={token pair}` — type/message/status all YES. Skip-marked; 1 skipped. test-review: 4 clusters clean (strict 403+error_code assertion, test-vs-Statements separated, per-run-unique email). **Design notes:** N=5 provisional — if design picks a different N, update `LOCKOUT_THRESHOLD`; error_code `ACCOUNT_LOCKED` (message TBD) is a distinct 403 code, NOT the not-verified 403 code; the correct-password-after-lockout case proves lockout precedes credential check.
+- [~] design
+- [ ] red-usecase (**premortem forward-note from 5.3 bf7c7cc:** the lockout counter must RESET to 0 on *successful* login — that reset lands on LoginUser's happy path, which now has the UoW wired but NEVER calls `commit()`; a naive reset UPDATE without an explicit commit gets silently rolled back on `session.close()`, same silent-no-op class 5.3 just closed. 5.4's red-usecase should plant a guard asserting `commit()` invoked on the happy path — e.g. `FakeUnitOfWork.commit_call_count == 1` — BEFORE wiring the reset.)
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
