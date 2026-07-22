@@ -71,8 +71,6 @@ describe('OAuthCallback success flow', () => {
   })
 
   it('shows loading, exchanges the code once, stores the session and replaces history to the app shell', async () => {
-    navigate.mockReset()
-
     const exchange = deferred<typeof SESSION>()
     vi.mocked(oauthExchangeApi.oauthExchange).mockReturnValue(exchange.promise)
     vi.mocked(authSession.saveSession).mockReturnValue(true)
@@ -119,8 +117,6 @@ describe('OAuthCallback success flow', () => {
   // guard (pinned by LoginForm.submitPathErrors) and postVerifySignIn's. Not covered by 4.x
   // (network/replay) — a local storage-write failure falls through those.
   it('does not navigate to the app shell when the session store is refused', async () => {
-    navigate.mockReset()
-
     const exchange = deferred<typeof SESSION>()
     vi.mocked(oauthExchangeApi.oauthExchange).mockReturnValue(exchange.promise)
     vi.mocked(authSession.saveSession).mockReturnValue(false)

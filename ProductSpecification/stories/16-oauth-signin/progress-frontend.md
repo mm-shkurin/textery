@@ -117,6 +117,22 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   specificity and (c) `.auth-card` `max-width` stay carried — CSS-only, untestable in jsdom, and (c)
   belongs on the shared rule. Suite 319 passed / 1 skipped, tsc clean, file 122L.
 - [ ] green-frontend
+  > CARRIED (agent-review + premortem CONCERNS on 3.2 red `f3ce139`), green MUST honour all three:
+  > (i) **premortem CREDIBLE — the fix proposed in the 3.2 carry-over ("drop the `active` teardown
+  > for the success path") repairs only the branch the RED test watches.** The same stale-`active`
+  > flag also gates `.catch(() => setFailed(true))` and the fail-closed `if (!stored)` arm, so a
+  > success-path-only fix leaves the ERROR screen never rendering under double-mount — green passes,
+  > the eternal spinner survives on the rejected-code path. Fold in two more tests: `oauth-callback-error`
+  > appears under StrictMode when the exchange REJECTS, and when `saveSession` returns false.
+  > (ii) both passes flagged the same thing: the RED case is `it.skip`, so a green that fixes the
+  > component but forgets the un-skip leaves the suite green and the regression uncovered. Green's
+  > verification must assert the ENABLED count moves (319 passed / 1 skipped → 321 / 0 skipped),
+  > not merely "suite green".
+  > (iii) agent-review: the scenario title says "exactly once **per code**", but `hasExchanged` is a
+  > `useRef` — per component INSTANCE. A genuine remount (route re-entry, Fast Refresh, parent `key`
+  > change) makes a fresh ref and fires a second POST with the same single-use code. Either widen the
+  > guard to key off the code outside the instance, or narrow the scenario's claim in `02_UI_Tests.md`
+  > to same-instance double-effect — do not leave the title broader than the guard.
 - [S] red-frontend-api — client-dedup behavior, no new API contract
 - [S] green-frontend-api
 - [S] align-design — no new UI

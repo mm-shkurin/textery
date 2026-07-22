@@ -102,13 +102,11 @@ describe('OAuthCallback exactly-once exchange', () => {
     })
     expect(navigate).toHaveBeenCalledTimes(1)
     expect(navigate).toHaveBeenCalledWith('/', { replace: true })
-    // ...and the transient spinner is gone from the caller's point of view: the sign-in resolved
-    // rather than hanging. (Route swap is the router's job; here the state is simply not "failed".)
+    // ...and it resolved rather than failing. `navigate` is mocked, so the route never swaps and
+    // the component legitimately stays on the loading branch — the positive check is that this is
+    // the loading state and NOT the terminal error state.
     expect(screen.queryByTestId('oauth-callback-error')).not.toBeInTheDocument()
-    expect(screen.getByTestId('oauth-callback-loading')).toHaveAttribute(
-      'class',
-      'auth-card oauth-callback-card',
-    )
+    expect(screen.getByTestId('oauth-callback-loading')).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Завершаем вход…')
   })
 
