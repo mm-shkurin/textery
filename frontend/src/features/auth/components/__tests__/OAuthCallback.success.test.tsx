@@ -136,8 +136,11 @@ describe('OAuthCallback success flow', () => {
       await exchange.promise
     })
 
-    // The store was attempted, but it was refused — so no app-shell navigation happens.
+    // The store was attempted, but it was refused — so no app-shell navigation happens...
     await waitFor(() => expect(authSession.saveSession).toHaveBeenCalledTimes(1))
     expect(navigate).not.toHaveBeenCalledWith('/', { replace: true })
+    // ...AND a terminal error is shown instead of hanging the loading spinner forever.
+    await waitFor(() => expect(screen.getByTestId('oauth-callback-error')).toBeInTheDocument())
+    expect(screen.queryByTestId('oauth-callback-loading')).not.toBeInTheDocument()
   })
 })

@@ -35,8 +35,14 @@ export function OAuthCallback() {
           accessToken: session.accessToken,
           refreshToken: session.refreshToken,
         })
-        // FAIL-CLOSED: only land on the app shell when a credential was actually stored.
-        if (!stored) return
+        // FAIL-CLOSED: only land on the app shell when a credential was actually stored. A refused
+        // store (Safari private mode / storage-disabled webview) must show a terminal error, NOT
+        // hang the spinner forever — skipping only the navigation would strand the user on
+        // "Завершаем вход…" indefinitely.
+        if (!stored) {
+          setFailed(true)
+          return
+        }
         navigate(safeRedirectTarget(undefined), { replace: true })
       })
       .catch(() => {
