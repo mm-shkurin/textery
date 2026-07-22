@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { OAuthCallback } from '../OAuthCallback'
@@ -61,7 +61,15 @@ function deferred<T>() {
 
 // RED: OAuthCallback + oauthExchangeApi are empty stubs — skipped so the suite stays green
 // between red and green. green-frontend un-skips after implementing the loading + exchange flow.
-describe.skip('OAuthCallback success flow', () => {
+describe('OAuthCallback success flow', () => {
+  // Reset all three mocked seams between tests — without this, test 1's saveSession/exchange
+  // calls leak into test 2's toHaveBeenCalledTimes counts (vitest has no global clearMocks here).
+  afterEach(() => {
+    navigate.mockReset()
+    vi.mocked(oauthExchangeApi.oauthExchange).mockReset()
+    vi.mocked(authSession.saveSession).mockReset()
+  })
+
   it('shows loading, exchanges the code once, stores the session and replaces history to the app shell', async () => {
     navigate.mockReset()
 

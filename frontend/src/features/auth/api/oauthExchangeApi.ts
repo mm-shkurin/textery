@@ -1,8 +1,14 @@
-// STUB (red-frontend 3.1). The exchange client does not exist yet — green-frontend implements the
-// real POST /api/v1/auth/oauth/exchange boundary, mapping the snake_case session body onto
-// camelCase through the SAME apiError seam as loginApi (see endpoints.md: body identical to
-// /auth/login). This throwing stub exists only so the (skipped) 3.1 test can resolve its import;
-// it holds NO behavior.
+// HTTP client for the OAuth handoff-code exchange (POST /oauth/exchange).
+//
+// The body shape is IDENTICAL to /auth/login (endpoints.md): snake_case on the wire →
+//   200 → {access_token, refresh_token, access_token_expires_at, refresh_token_expires_at}
+// so this mirrors loginApi's boundary exactly: it maps snake_case → camelCase and routes any
+// rejection through the SAME `toAuthApiError` seam. The rich error/replay/network handling is
+// scenario 4.x; here the error path only needs to preserve the {errorCode, message} shape those
+// scenarios will match on, so the fallback reports a missing server message AS absence ('').
+import { postJson } from '../../../shared/api/httpClient'
+import { toAuthApiError } from './apiError'
+
 export interface OAuthExchangeRequest {
   code: string
 }
@@ -14,6 +20,25 @@ export interface OAuthSession {
   refreshTokenExpiresAt: string
 }
 
-export function oauthExchange(_request: OAuthExchangeRequest): Promise<OAuthSession> {
-  throw new Error('oauthExchange not implemented (red-frontend 3.1)')
+// The exchange owns no display copy of its own — a missing server message is reported as absence
+// ('') so the callback (and the 4.x error handling) owns what reaches the screen, mirroring how
+// loginApi scopes its fallback rather than forging provenance onto an unrelated code.
+function toOAuthExchangeError(error: unknown): unknown {
+  return toAuthApiError(error, () => '')
+}
+
+export async function oauthExchange(request: OAuthExchangeRequest): Promise<OAuthSession> {
+  try {
+    const body = await postJson<Record<string, unknown>>('/api/v1/auth/oauth/exchange', {
+      code: request.code,
+    })
+    return {
+      accessToken: String(body.access_token ?? ''),
+      refreshToken: String(body.refresh_token ?? ''),
+      accessTokenExpiresAt: String(body.access_token_expires_at ?? ''),
+      refreshTokenExpiresAt: String(body.refresh_token_expires_at ?? ''),
+    }
+  } catch (error) {
+    throw toOAuthExchangeError(error)
+  }
 }
