@@ -1,0 +1,89 @@
+from datetime import UTC, datetime
+from uuid import uuid4
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from access.auth.account_storage import SqlAlchemyAccountRepository
+from auth.account import Account
+from model.auth.account_model import AccountModel
+
+TARGET_SEED_COUNT = 4
+BYSTANDER_SEED_COUNT = 2
+
+
+class ResetFailedAttemptsStatements:
+    """DSL for the atomic reset_failed_attempts UPDATE (scenario 5.4).
+
+    Owns a session factory so the reset and the re-read each run in their own
+    AsyncSession -- the re-read proves durability on a FRESH connection, not the
+    writing session's identity map. A bystander account (seeded with count>0)
+    pins the `WHERE id = :account_id`: a reset missing that clause would zero
+    every row.
+    """
+
+    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
+        self._session_factory = session_factory
+        self.account_id = None
+        self.bystander_account_id = None
+        self.target_count_after_reset: int | None = None
+        self.bystander_count_after_reset: int | None = None
+
+    def _new_verified_account(self, account_id):
+        return Account.reconstitute(
+            id=account_id,
+            # Per-run-unique: uq_accounts_email would make a fixed literal collide
+            # (ConflictException) on reruns against the persistent test postgres.
+            email=f"reset-{uuid4()}@example.com",
+            password_hash="hashed-password-value",
+            created_at=datetime.now(UTC),
+            is_verified=True,
+        )
+
+    async def seed_accounts_with_failed_attempts(self) -> None:
+        self.account_id = uuid4()
+        self.bystander_account_id = uuid4()
+        target = self._new_verified_account(self.account_id)
+        bystander = self._new_verified_account(self.bystander_account_id)
+        async with self._session_factory() as session:
+            repository = SqlAlchemyAccountRepository(session)
+            await repository.save(target)
+            await repository.save(bystander)
+            for _ in range(TARGET_SEED_COUNT):
+                await repository.increment_failed_attempts(self.account_id)
+            for _ in range(BYSTANDER_SEED_COUNT):
+                await repository.increment_failed_attempts(self.bystander_account_id)
+            await session.commit()
+
+    async def reset_target_failed_attempts(self) -> None:
+        async with self._session_factory() as session:
+            await SqlAlchemyAccountRepository(session).reset_failed_attempts(
+                self.account_id
+            )
+            await session.commit()
+
+    async def reread_counts_on_new_session(self) -> None:
+        async with self._session_factory() as session:
+            target = await session.get(AccountModel, self.account_id)
+            self.target_count_after_reset = (
+                target.failed_attempt_count if target else None
+            )
+            bystander = await session.get(AccountModel, self.bystander_account_id)
+            self.bystander_count_after_reset = (
+                bystander.failed_attempt_count if bystander else None
+            )
+
+    def assert_target_reset_to_zero(self) -> None:
+        assert self.target_count_after_reset == 0, (
+            f"expected target failed_attempt_count=0 after reset, "
+            f"got {self.target_count_after_reset!r}"
+        )
+
+    def assert_bystander_unchanged(self) -> None:
+        # Targeting guard: reset touched ONLY account_id. A reset UPDATE missing
+        # `WHERE id = :account_id` would zero every row, so the bystander would
+        # read 0 here. Exact == BYSTANDER_SEED_COUNT catches that lost WHERE.
+        assert self.bystander_count_after_reset == BYSTANDER_SEED_COUNT, (
+            f"expected bystander failed_attempt_count={BYSTANDER_SEED_COUNT} "
+            f"(reset targeted only the racing account), "
+            f"got {self.bystander_count_after_reset!r}"
+        )
