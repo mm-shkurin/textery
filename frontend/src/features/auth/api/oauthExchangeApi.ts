@@ -8,17 +8,15 @@
 // scenarios will match on, so the fallback reports a missing server message AS absence ('').
 import { postJson } from '../../../shared/api/httpClient'
 import { toAuthApiError } from './apiError'
+import { sessionTokensFromWire, type SessionTokens } from './sessionTokens'
 
 export interface OAuthExchangeRequest {
   code: string
 }
 
-export interface OAuthSession {
-  accessToken: string
-  refreshToken: string
-  accessTokenExpiresAt: string
-  refreshTokenExpiresAt: string
-}
+// The exchange returns the same session shape as /auth/login — see sessionTokens.ts for the
+// shared boundary. Kept as a named alias so callers/tests reading `OAuthSession` are unchanged.
+export type OAuthSession = SessionTokens
 
 // The exchange owns no display copy of its own — a missing server message is reported as absence
 // ('') so the callback (and the 4.x error handling) owns what reaches the screen, mirroring how
@@ -32,12 +30,7 @@ export async function oauthExchange(request: OAuthExchangeRequest): Promise<OAut
     const body = await postJson<Record<string, unknown>>('/api/v1/auth/oauth/exchange', {
       code: request.code,
     })
-    return {
-      accessToken: String(body.access_token ?? ''),
-      refreshToken: String(body.refresh_token ?? ''),
-      accessTokenExpiresAt: String(body.access_token_expires_at ?? ''),
-      refreshTokenExpiresAt: String(body.refresh_token_expires_at ?? ''),
-    }
+    return sessionTokensFromWire(body)
   } catch (error) {
     throw toOAuthExchangeError(error)
   }
