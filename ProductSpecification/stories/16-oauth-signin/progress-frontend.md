@@ -9,8 +9,8 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 
 ### 1.1: Login screen shows both OAuth provider buttons
 - [S] red-selenium — backend-gated, deferred to full-stack pass
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — REAL RED. New `LoginForm.oauthButtons.test.tsx` (3 tests, describe.skip): asserts VK (`oauth-vk-button`, exact "Войти через VK ID") + Yandex (`oauth-yandex-button`, exact "Войти через Yandex ID") buttons render, each distinct from `login-submit-button` and each other, both below the submit in DOM order. **Predicted:** TestingLibraryElementError, unable to find `[data-testid="oauth-vk-button"]`, 3 failed. **Actual:** exactly that, 3 failed. **Match** on type/message/status. test-review: 3 fixes (substring→exact `toBe` on both labels; DOM-order truthy→exact `DOCUMENT_POSITION_FOLLOWING`; explicit VK≠Yandex). 46 lines.
+- [~] green-frontend
 - [S] red-frontend-api — pure display, no API call
 - [S] green-frontend-api
 - [ ] align-design
