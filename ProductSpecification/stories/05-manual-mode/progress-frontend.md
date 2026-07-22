@@ -1013,6 +1013,26 @@ add new ones — the first red phase in this story to do so.
   defensive/redundant given current nesting. Independent coverage would need portaling the popover out of
   `.me-toolbar` (a production refactor, out of scope here). Comment corrected to state this accurately. Suite:
   101 passed | 0 skipped | 0 failed, tsc clean.
+  **Review-pass verdicts on `fafeda2` (red): agent-review PASS, premortem CONCERNS (3 credible, all owed to
+  green-selenium — reversible coverage gaps, non-blocking), `/refactor` NO ACTION (test-only unit, no cross-file
+  smell worth a 7-file helper rewrite).**
+  - *(premortem CREDIBLE-1 — owed to green-selenium)* the test proves *this* mousedown didn't apply, but never
+    asserts the captured selection range survived a real caret-reposition click; a real click inside editor text
+    collapses the selection so the *next* apply targets the wrong range. jsdom's zero-geometry stub suppresses the
+    caret math. Guard: Selenium test — open popover, type href, real click inside editor text, commit, assert the
+    anchor wraps the ORIGINAL selection. (Folded into 7.9's green-selenium owe-list.)
+  - *(premortem CREDIBLE-3 — owed to green-selenium)* `toBeInTheDocument()` asserts DOM presence only; the popover
+    clipping under `.me-editor-shell` `overflow:hidden` is invisible to jsdom. Guard: Selenium `isDisplayed` +
+    bounding-box-within-viewport on the opened popover. (Already on the green-selenium owe-list.)
+  - *(premortem CREDIBLE-2 + refactor flaky finding — owed to a follow-up)* the jsdom geometry stub in
+    `src/test/setup.ts` is installed **suite-globally**: (a) it flips a future layout-asserting test from loud-throw
+    to silent-zero-rect false-green — scope the stub to a per-file `beforeAll` in the ProseMirror editor tests, or
+    add a steering comment that geometry is faked suite-wide; (b) the `toolbar-bold` row of
+    `ManualEditor.link.popoverClickInside.test.tsx` is **intermittently red under cross-file execution** (1 fail /
+    32 in one of 3 runs; popover found closed) — an unawaited async editor state update (`act(...)` warning at
+    `ManualEditor.tsx:50`) leaks past a prior test file and occasionally closes the popover before the assert. Fix
+    per the Flaky Test Fix Protocol (likely await the pending state in `openLinkPopover`, or wrap the mousedown
+    dispatch in `act`). Not blocking this unit, but should not be left flaky — open a bug task if it recurs.
 - [~] green-frontend-coverage-click-inside
 - [ ] red-frontend-coverage-control-char — pin `normalizeHref`'s control-char rejection on the HOST_SHAPE path
   (`normalizeHref.ts:50`, `if (/\p{C}/u.test(href)) return false`, branch never taken today): `example.com/pa​th`
