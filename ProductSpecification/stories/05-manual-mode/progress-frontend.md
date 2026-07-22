@@ -1188,7 +1188,24 @@ pinned and committed (`d12f4a2`), currently `describe.skip` in `ManualEditor.lin
   already scanned these exact files in the green batch (`5a1c1b2`): verdict NO ACTION (naming clear;
   marker-attr overlap with `horizontalRuleNode.ts` is the intentional one-customization-per-file
   convention, extraction would add indirection). No cross-file smell — nothing to refactor.
-- [ ] green-selenium — [S] deferred: same "live app to drive Selenium" gap as the rest of
+- [x] green-selenium — **GREEN live 2026-07-22, all three owe-list items closed.** New
+  `test_manual_editor_line_break_acceptance.py` (2 tests) + `manual_editor_line_break_statements.py`,
+  driven against the full stack in a real Chrome with a real backend-issued session.
+  (i) single Enter → **exactly one** `<br>` (`foo<br>bar`), asserted as a COUNT so a double-insert
+  cannot pass; (ii) **the premortem's CREDIBLE multi-trailing suspicion was a jsdom artifact, not a
+  product defect** — a real browser keeps both breaks (`foo<br><br>baz`) where jsdom collapsed them
+  to zero; behavior now pinned; (iii) breaks render as real visual lines, asserted via distinct
+  `getClientRects()` baselines (2 and 3), so a `<br>` that stops breaking the line visually fails
+  even though the HTML still matches.
+  **Prediction MISSED, and the miss was informative:** predicted both tests PASS first run
+  (characterization of already-shipped behavior, pre-probed live). Actual: both FAILED —
+  `foobar<br>` instead of `foo<br>bar`. Cause was the TEST, not the product: `type_text_in_editor`
+  focuses by clicking, and a click re-places the caret where the pointer landed, so the
+  continuation typed *before* the break. Added `continue_typing_in_editor` (types at the current
+  caret, no click); any future multi-keystroke Selenium sequence must click once to focus and then
+  keep typing. **Mutation-check (teeth):** removed `HardBreakKeymap` from `ManualEditor.tsx` →
+  both tests FAIL; restored (`git checkout`, diff clean) → both PASS. Suite:
+  **6 passed, 1 skipped**. Historical deferral follows. ~~[S] deferred: same "live app to drive Selenium" gap as the rest of
   this file (see RECONCILE_05); real-browser Enter keystroke bypasses the domObserver path
   that the unit test exercises, so a live run is the only proof the in-browser Enter produces
   exactly one `<br>`. Owe it when the stack runs. **Owe-list (review passes on `cffedc7`):**
@@ -1197,7 +1214,7 @@ pinned and committed (`d12f4a2`), currently `describe.skip` in `ManualEditor.lin
   premortem CREDIBLE: in jsdom two Enters collapse to zero breaks (`foo`+2×Enter → `foo`). Likely a
   jsdom fake-caret artifact (2nd keyDown doesn't reposition the caret), but could be a real
   multi-trailing bug — a live browser is the only place to tell; pin the intended behavior there;
-  (iii) the saved `<br>` actually renders as a visual line break.
+  (iii) the saved `<br>` actually renders as a visual line break.~~
 
 **Cleanup follow-up (agent-review on `cffedc7`, non-gating):** `ManualEditor.lineBreak.coverage.test.tsx:80`
 `expect(sent).not.toContain('ProseMirror-trailingBreak')` is a dead assertion — `getHTML()` serializes

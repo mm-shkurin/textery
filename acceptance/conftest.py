@@ -16,6 +16,9 @@ from statements.frontend.auth.register_page_statements import RegisterPageStatem
 from statements.frontend.auth.verify_code_page_statements import VerifyCodePageStatements
 from statements.frontend.landing_page_statements import LandingPageStatements
 from statements.frontend.generation.chat_workspace_statements import ChatWorkspaceStatements
+from statements.frontend.generation.manual_editor_line_break_statements import (
+    ManualEditorLineBreakStatements,
+)
 from statements.frontend.generation.manual_editor_statements import ManualEditorStatements
 from statements.frontend.generation.mode_modal_statements import ModeModalStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
@@ -127,3 +130,8 @@ def mode_modal_statements():
 @pytest.fixture
 def manual_editor_statements():
     return ManualEditorStatements()
+
+
+@pytest.fixture
+def manual_editor_line_break_statements():
+    return ManualEditorLineBreakStatements()
