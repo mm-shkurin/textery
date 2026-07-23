@@ -31,6 +31,9 @@ from statements.frontend.generation.manual_editor_placeholder_delete_statements 
 from statements.frontend.generation.manual_editor_save_payload_statements import (
     ManualEditorSavePayloadStatements,
 )
+from statements.frontend.generation.manual_editor_save_queue_statements import (
+    ManualEditorSaveQueueStatements,
+)
 from statements.frontend.generation.manual_editor_statements import ManualEditorStatements
 from statements.frontend.generation.mode_modal_statements import ModeModalStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
@@ -167,3 +170,8 @@ def manual_editor_aria_statements():
 @pytest.fixture
 def manual_editor_caret_statements():
     return ManualEditorCaretStatements()
+
+
+@pytest.fixture
+def manual_editor_save_queue_statements():
+    return ManualEditorSaveQueueStatements()

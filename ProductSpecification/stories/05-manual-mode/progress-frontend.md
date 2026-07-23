@@ -301,7 +301,12 @@ queue was never exercised through a real click dispatch.
 - [S] red-frontend-api — no new API call: scenario 4.2 reuses saveDocument's existing PUT /api/v1/documents/{id} contract (already implemented/tested in scenario 4.1); the queue/auto-retrigger logic is client-side state only
 - [S] green-frontend-api — same reason
 - [x] align-design — verify-only: no new markup/CSS for this scenario, reuses scenario 4.1's `isSaving`-driven `.me-save-btn[aria-disabled='true']`/`.me-save-spinner` styling; queued saves surface through the same visual state
-- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. Real-browser click-suppression risk on the disabled/aria-disabled button was already reviewed and fixed via aria-disabled during green-frontend refactor — but this is still the only test type that can confirm the queue actually fires on a real browser dispatch; do not treat 4.2 as fully verified until it runs.
+- [x] green-selenium — **CLOSED 2026-07-23 by the Track B `green-selenium-4.2-save-queue` run** (see that
+  entry below): `test_manual_editor_save_queue_acceptance.py` throttles the network so the first PUT stays in
+  flight, then fires a second Save via a REAL click on the aria-disabled button and reads the backend back to
+  prove the queued save with the latest content (`v1v2`) won — confirming the queue actually fires on a real
+  browser dispatch, not just under jsdom fake promises. `1 passed` against the live stack. ~~backend
+  unavailable on this branch — do not treat 4.2 as fully verified until it runs.~~
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
 ### Scenario 5.1: A successful save shows a lightweight confirmation, no full-page transition
@@ -1573,10 +1578,20 @@ drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 pytho
   THEN move the caret into the bold run (assert active, `false→true`). Also replaced the flaky `Home`+`ArrowRight`
   nav with deterministic `End`+`ArrowLeft`×5 (`Home` did not reliably move the caret in this contenteditable —
   the reorder surfaced it as a genuine RED before the fix). Re-verified GREEN live (`1 passed`).
-- [~] green-selenium-4.2-save-queue — scenario 4.2's out-of-order save queue was never exercised through a
-  real click dispatch. Add an acceptance test that fires a second save while one is in flight (real
-  clicks) and asserts the displayed status never reflects a stale save.
-- [ ] green-selenium-7.9-popover-clip — scenario 7.9's link popover is `position:absolute; z-index:20`
+- [x] green-selenium-4.2-save-queue — **GREEN live 2026-07-23 (`1 passed in 11.46s`, headless Chrome, backend
+  :8100).** Scenario 4.2's out-of-order save queue exercised through REAL clicks with a real PUT in flight.
+  New `test_manual_editor_save_queue_acceptance.py` (34 lines) + `manual_editor_save_queue_statements.py`
+  (~70 lines, extends `ManualEditorSavePayloadStatements` to reuse the API read-back + save locators). Flow:
+  type `v1`, throttle the network via CDP `Network.emulateNetworkConditions` (latency 2500ms) so the first
+  PUT stays open, click Save, WAIT for the `save-spinner` (proof the first save is genuinely in flight), then
+  type `v2` (→ `v1v2`) and click Save AGAIN while the first is still open — the design queues this (sets
+  `saveAgainRequested`, consumed in the first save's `.then`) rather than firing a concurrent request. Clear
+  the throttle, wait for `Сохранено`, then read the document BACK through `GET /api/v1/documents/{id}` and
+  assert the content is exactly `v1v2`. Teeth: the first PUT's body was captured at its click = `v1`, so a
+  final `v1v2` REQUIRES the queued second save to have fired with the latest content — a broken/dropped queue
+  would leave the backend at the stale `v1` and fail. The spinner gate guarantees the second click lands
+  in-flight, not after settle. Needs `BACKEND_PORT=8100`.
+- [~] green-selenium-7.9-popover-clip — scenario 7.9's link popover is `position:absolute; z-index:20`
   inside `.me-editor-shell { overflow:hidden }`; a z-index cannot escape an ancestor's clip, so it almost
   certainly clips. Add an acceptance test that opens the popover and asserts its bounding box is within the
   viewport / not clipped (`isDisplayed` + rect check). If it clips → that is a real defect to fix
