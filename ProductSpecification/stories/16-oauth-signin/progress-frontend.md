@@ -196,8 +196,19 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 
 ### 4.1: Provider error / user-cancel returns to login with a distinct message
 - [S] red-selenium
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — REAL RED, both halves (the message must actually be shown). New
+  `OAuthCallback.providerError.test.tsx` (2 tests): landing `/auth/callback?error=access_denied&provider=vk`
+  fires NO exchange (armed spy `not.toHaveBeenCalled`), `navigate('/login',{replace:true,state:{oauthError:
+  'Не удалось войти через VK ID. Попробуйте снова.'}})` once, `oauth-callback-loading` absent; 2nd case
+  provider-absent → fallback "…через провайдера…". **Predicted:** AssertionError, `expected "vi.fn()" to
+  not be called at all, but actually been called 1 times` (current code fires `oauthExchange({code:''})`,
+  ignores `error`), 2 failed. **Actual:** exactly that at :61/:76. **Match.** New `LoginForm.oauthError.test.tsx`
+  (2 tests): LoginForm with `location.state.oauthError` shows `login-oauth-error` banner (exact text,
+  `role="alert"`), distinct from `login-form-error` (validation absent). **Predicted:** TestingLibraryElementError,
+  `Unable to find [data-testid="login-oauth-error"]` (LoginForm never reads `oauthError`), 2 failed. **Actual:**
+  exactly that at :37/:43. **Match.** test-review: 3 strict fixes (loading-absent ×2, banner exact `.textContent).toBe`).
+  Suite 323 passed / 4 skipped.
+- [~] green-frontend
 - [S] red-frontend-api — callback param, no API call
 - [S] green-frontend-api
 - [ ] align-design
