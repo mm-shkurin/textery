@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { oauthExchange } from '../api/oauthExchangeApi'
+import { hasUsableAccessToken } from '../api/sessionTokens'
 import { isAuthenticated, saveSession } from '../utils/authSession'
 import { isLoginNetworkError } from '../utils/loginErrorHandling'
 import { NETWORK_LOGIN_FAILURE_MESSAGE } from '../utils/authMessages'
@@ -79,10 +80,10 @@ export function OAuthCallback() {
       .then((session) => {
         if (!mountedRef.current) return
         // FAIL-CLOSED on a token-less 200: a resolved exchange whose access token is missing, null,
-        // or blank (the wire mapper collapses absent/null to '') is an error, not a sign-in — reject
-        // only on a MISSING usable token (spec 16_OAuthSignin.md:67 / Notes:55-56). `/\S/` mirrors the
-        // isMalformedCallback / isUsableMessage convention so a whitespace-only token is unusable too.
-        if (!/\S/.test(session.accessToken)) {
+        // or blank is an error, not a sign-in — reject only on a MISSING usable token. The `/\S/`
+        // convention lives in hasUsableAccessToken alongside the wire mapper that collapses an
+        // absent/null token to '' (spec 16_OAuthSignin.md:67 / Notes:55-56).
+        if (!hasUsableAccessToken(session)) {
           setFailed(true)
           return
         }

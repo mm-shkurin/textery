@@ -24,3 +24,11 @@ export function sessionTokensFromWire(body: Record<string, unknown>): SessionTok
     refreshTokenExpiresAt: String(body.refresh_token_expires_at ?? ''),
   }
 }
+
+// A resolved exchange whose access token is missing, null, or blank is an error, not a sign-in:
+// `sessionTokensFromWire` collapses an absent/null token to '', so a token-less 200 lands here as
+// ''. `/\S/` mirrors the isUsableMessage / isMalformedCallback convention, so a whitespace-only
+// token is unusable too (spec 16_OAuthSignin.md:67 / Notes:55-56).
+export function hasUsableAccessToken(session: SessionTokens): boolean {
+  return /\S/.test(session.accessToken)
+}
