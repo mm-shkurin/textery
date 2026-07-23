@@ -55,15 +55,20 @@ async def callback(
 ) -> RedirectResponse:
     # Every failure is one generic ?error= — the only thing that ever rides on success
     # is the opaque handoff code, never a token (invariant I4).
+    # `provider` rides back on both legs so the frontend callback page can key its
+    # copy off it. It is always the exact lowercase slug that matched the registry —
+    # any other casing raises UNKNOWN_OAUTH_PROVIDER before reaching here, so the
+    # frontend's exact-match guard never sees `Yandex`/`YANDEX`.
     try:
         handoff_code = await usecase.execute(provider, code, state)
-        location = f"{frontend_callback_url}?{urlencode({'code': handoff_code})}"
+        params = {"code": handoff_code, "provider": provider}
     except OAuthCallbackError as error:
         # The client only ever sees the generic ?error=; the operator-facing reason
         # (which leg failed) goes to the log. The message is safe by construction —
         # it names the failure kind, never the code, token or provider secret (I5).
         logger.warning("oauth callback refused for provider %s: %s", provider, error)
-        location = f"{frontend_callback_url}?{urlencode({'error': OAUTH_CALLBACK_FAILED})}"
+        params = {"error": OAUTH_CALLBACK_FAILED, "provider": provider}
+    location = f"{frontend_callback_url}?{urlencode(params)}"
     return RedirectResponse(location, status_code=_REDIRECT_STATUS)
 
 
