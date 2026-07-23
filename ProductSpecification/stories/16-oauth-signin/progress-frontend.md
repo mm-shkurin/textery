@@ -278,6 +278,15 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   on type/message/location/status. test-review: 1 fix (non-vacuous exchange spy `toHaveBeenCalledWith({code})`
   ×3). Suite 331 passed / 3 skipped.
 - [~] green-frontend
+  > CARRIED (premortem CONCERNS on 4.2 red `6d3d524`, CREDIBLE, non-blocking; agent-review PASS): the RED
+  > pins the network + 5xx arms but NOT the **timeout** arm the scenario names. `RequestTimeoutError`
+  > (shared/api/httpClient) routes to /login correctly today only INCIDENTALLY — it's a bodyless `Error`, so
+  > `isLoginNetworkError`'s `!hasProp('errorCode')` branch accepts it, same as the bare-Error transport case.
+  > That equivalence is unguarded: any future tightening of `isLoginNetworkError` (e.g. `instanceof TypeError`
+  > or a transport allowlist) would silently regress the hung-sign-in path to the terminal `setFailed` screen
+  > with NO red going red — the exact dead-end 4.2 exists to prevent. Green MUST fold in a 3rd case: reject the
+  > exchange with `new RequestTimeoutError()` (unauthenticated) and assert `navigate('/login',{replace:true,
+  > state:{oauthError: NETWORK_LOGIN_FAILURE_MESSAGE}})` — pinning the timeout arm independently of the bare-Error shape.
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [S] align-design — reuses login network-error styling
