@@ -90,17 +90,22 @@ queue was never exercised through a real click dispatch.
   payload is unaffected; `pointer-events:none` + `position:absolute;height:0` on the `::before`).
   `@tiptap/extension-placeholder` is now unused in `package.json` (refactor flagged, left — dep removal is
   out of this unit's tested scope).
-- [ ] red-frontend-placeholder-aria — premortem CREDIBLE-low (owed guard): the empty editor has no programmatic
+- [~] red-frontend-placeholder-aria — premortem CREDIBLE-low (owed guard): the empty editor has no programmatic
   hint — `::before` content is decoratively announced at best and `data-placeholder` carries no a11y semantics.
   Fix is one line in `inlinePlaceholder.ts` (`props.attributes` also emits `'aria-placeholder': INLINE_PLACEHOLDER_TEXT`
   while empty, tracking emptiness like the other two attrs) + a jsdom red asserting `toHaveAttribute('aria-placeholder',
   'Начните печатать…')` present while empty and absent after typing.
-- [~] red-frontend-placeholder-roundtrip — premortem CREDIBLE-1 (owed guard): the current jsdom red pins only
-  empty→typed one-way. Pin the return trip: empty → type → select-all-delete → assert `data-placeholder` +
-  `is-editor-empty` are RESTORED. Also exercises the HardBreak trailing-break artifact (delete-all leaves
-  `<br class="ProseMirror-trailingBreak">`; a childNode-count emptiness check would misread it as non-empty).
-  Implementation already handles this (keyed off `doc.content.size`); this red proves it and forecloses a
-  one-shot-toggle green from ever regressing it.
+- [x] red-frontend-placeholder-roundtrip — DONE (2026-07-23), LIVE characterization (no green needed — prod
+  already handles it). Added 2nd test to `ManualEditor.placeholder.test.tsx` (now 65 lines): empty → type →
+  clear-back-to-empty → `data-placeholder` + `is-editor-empty` RESTORED. **Predicted PASS** (attributes fn
+  recomputes from `state.doc.content.size` every update; the trailing-break `<br>` is a DOM-only helper
+  HardBreakNode keeps out of `content.size`, so a cleared editor faithfully reports size 0). **Actual PASS.
+  Comparison: all cells YES.** Kept LIVE, no skip. **Mutation-check (teeth):** added a one-shot
+  `mutationHadContent` flag so the placeholder never returns once content existed → new test FAILED
+  (`data-placeholder` null at restore) while the sibling empty→typed test stayed green; production restored
+  (`git diff` clean on `inlinePlaceholder.ts`). test-review: PASS (exact `toHaveAttribute`/`toHaveClass` +
+  independent `.not` forms; no `::before` assertion). Suite: 2 passed | 0 skipped | 0 failed; tsc clean. No
+  `green-frontend-placeholder-roundtrip` step — nothing to implement.
 - [ ] red-frontend-placeholder-reopen — premortem CREDIBLE-2 (owed guard): `renderEditorWithDocumentCreated`
   only drives the fresh create-empty path. Pin the `existingDocumentId` reopen path in both polarities:
   reopen-empty ⇒ attr+class present; reopen-with-content ⇒ both absent (guards `setContent` not re-adding the

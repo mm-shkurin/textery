@@ -36,4 +36,30 @@ describe('ManualEditor placeholder', () => {
     expect(contentArea).not.toHaveAttribute('data-placeholder')
     expect(contentArea).not.toHaveClass('is-editor-empty')
   })
+
+  // Characterization of the RETURN trip (premortem CREDIBLE-1). The sibling test above
+  // pins only empty→typed (placeholder drops once). This pins typed→empty: after the
+  // user deletes all content back to empty the placeholder attribute AND the
+  // is-editor-empty class must be RESTORED. inlinePlaceholder.ts keys emptiness off
+  // state.doc.content.size (recomputed on every state update), so the attrs reappear
+  // the moment the doc is empty again. It also exercises the HardBreak trailing-break
+  // artifact: a truly-empty editor renders <br class="ProseMirror-trailingBreak">, but
+  // HardBreakNode keeps that DOM helper out of content.size, so size is a faithful 0.
+  it('restores the placeholder attribute and empty-state class after content is deleted back to empty', async () => {
+    await renderEditorWithDocumentCreated()
+
+    const contentArea = screen.getByTestId('editor-content-area')
+
+    contentArea.textContent = 'hello world'
+    fireEvent.input(contentArea)
+
+    expect(contentArea).not.toHaveAttribute('data-placeholder')
+    expect(contentArea).not.toHaveClass('is-editor-empty')
+
+    contentArea.textContent = ''
+    fireEvent.input(contentArea)
+
+    expect(contentArea).toHaveAttribute('data-placeholder', 'Начните печатать…')
+    expect(contentArea).toHaveClass('is-editor-empty')
+  })
 })
