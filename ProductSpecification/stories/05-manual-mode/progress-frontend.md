@@ -1436,16 +1436,19 @@ container (`random_coffee_app`) and 404s on `/api/v1/auth/register`. Canonical f
 
 ### Track A — honesty & data-safety (jsdom, no live stack)
 
-- [~] fix-status-lie — the "Сохранено" status can lie. `setHasUnsavedChanges(true)` is claimed (see
-  functionality.md) to fire only from ProseMirror's DOM `input` handler, so a toolbar format applied
-  AFTER a save leaves the doc changed while the status still reads *Сохранено*. FIRST verify against
-  current code: `ManualEditor.tsx` already wires `onUpdate: () => noteEditRef.current()`, and `onUpdate`
-  fires for programmatic transactions too — so this may ALREADY be correct and the functionality.md note
-  stale. red-frontend: apply a toolbar mark (e.g. bold via `toolbar-bold`) after a resolved save, assert
-  the status reverts to the dirty label (`Черновик, ещё не сохранён`) and `hasUnsavedChanges` is true. If
-  it passes today → LIVE characterization (mutation-check); if it fails → green-frontend fixes the dirty
-  trigger to fire on every transaction, not just DOM `input`.
-- [ ] fix-save-banner-lie — the failed-save error banner tells the user their text is "сохранён локально
+- [x] fix-status-lie — **DONE (2026-07-23), existence hit — already correct, no new code.** Verified against
+  current code: `ManualEditor.tsx:99` wires `onUpdate: () => noteEditRef.current()`, and Tiptap's `onUpdate`
+  fires for programmatic transactions too — so a toolbar mark applied AFTER a save DOES re-dirty the doc. The
+  fix already landed in `921bb73` ("fix: the dirty flag now sees the toolbar"); the functionality.md note is
+  **stale**. Capability already covered LIVE by `ManualEditor.dirty.test.tsx:22` ("applying a toolbar format
+  after a successful save marks the document unsaved again"): type → save → await `Сохранено` → `selectRange`
+  + click `toolbar-bold` → assert innerHTML diverged, no 2nd save fired, `getByText('Черновик, ещё не сохранён')`
+  present + `Сохранено` absent. Writing a 2nd test would duplicate (reuse rule). **Mutation-check (teeth):**
+  `onUpdate: () => {}` → dirty.test.tsx:68 FAILED (`Черновик…` not found) while the plain-typing test stayed
+  green, isolating the guard; production restored (`git diff` clean). tsc `-b --noEmit` clean; full suite 329
+  passed | 0 failed (84 files). No green-frontend needed. Progress-only commit (no reviewable content →
+  `/refactor` + review passes skipped).
+- [~] fix-save-banner-lie — the failed-save error banner tells the user their text is "сохранён локально
   в редакторе", which is FALSE: there is no `localStorage`/persistence, content lives only in Tiptap's
   in-memory state (a lost tab loses it). red-frontend: assert the failed-save banner text does NOT claim
   local persistence; green-frontend: change `SAVE_ERROR_MESSAGE` (in `useDocumentSave.ts`) to honest copy
