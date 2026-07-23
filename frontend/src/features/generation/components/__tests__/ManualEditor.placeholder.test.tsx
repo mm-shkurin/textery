@@ -22,11 +22,7 @@ vi.mock('../../api/documentApi')
 // is deliberately out of scope here (owed to green-selenium) — this test asserts the
 // attribute/class presence, which jsdom can see.
 //
-// TDD Red Phase (2026-07-23) — placeholder extension no-ops on the inline-only schema:
-// the content area has neither data-placeholder nor is-editor-empty, so the first
-// assertion (toHaveAttribute) fails. Un-skip in GREEN once the empty-state placeholder
-// contract is implemented for the inline-only document.
-describe.skip('ManualEditor placeholder', () => {
+describe('ManualEditor placeholder', () => {
   it('shows the placeholder attribute and empty-state class while empty, and drops both after typing', async () => {
     await renderEditorWithDocumentCreated()
 

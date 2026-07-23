@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import Placeholder from '@tiptap/extension-placeholder'
 import Document from '@tiptap/extension-document'
 import { BlockquoteMark } from './blockquoteMark'
 import { HorizontalRuleNode } from './horizontalRuleNode'
@@ -10,6 +9,7 @@ import { Heading3Mark } from './heading3Mark'
 import { AlignCenterMark } from './alignCenterMark'
 import { HardBreakKeymap } from './hardBreakKeymap'
 import { HardBreakNode } from './hardBreakNode'
+import { InlinePlaceholder } from './inlinePlaceholder'
 import './ManualEditor.css'
 import type { DocumentType } from '../../../shared/documentTypes'
 import { useDocumentInit } from '../hooks/useDocumentInit'
@@ -83,7 +83,7 @@ export function ManualEditor({
       AlignCenterMark,
       HardBreakNode,
       HardBreakKeymap,
-      Placeholder.configure({ placeholder: 'Начните печатать…' }),
+      InlinePlaceholder,
     ],
     content: '',
     // Every change to the document, however it was made — not just typing. The dirty flag used to

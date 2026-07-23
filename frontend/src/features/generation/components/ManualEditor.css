@@ -38,9 +38,17 @@
   position: relative;
 }
 
-.me-placeholder {
+/* The inline-only editor has no block node for Tiptap's stock Placeholder to
+   decorate, so InlinePlaceholder (inlinePlaceholder.ts) hangs is-editor-empty +
+   data-placeholder on the ProseMirror root while empty; this ::before paints the
+   attribute text as a non-interactive overlay on the empty first line. */
+.ProseMirror.is-editor-empty::before {
+  content: attr(data-placeholder);
   color: var(--text-muted);
   font-size: 17px;
+  pointer-events: none;
+  position: absolute;
+  height: 0;
 }
 
 @media (max-width: 768px) {

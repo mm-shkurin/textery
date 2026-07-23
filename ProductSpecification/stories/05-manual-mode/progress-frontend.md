@@ -68,11 +68,30 @@ queue was never exercised through a real click dispatch.
   assertions already strict (exact `toHaveAttribute`/`toHaveClass` + independent `.not` removals; no
   computed-style/`::before` assertion — that visual paint stays owed to green-selenium). Suite: 1 skipped |
   0 failed; tsc clean.
-- [~] green-frontend-placeholder — make the empty inline doc carry the placeholder attr/class in the DOM
-  (green-agent picks the mechanism — a custom ProseMirror decoration on the empty doc is the likely fit,
-  stock Placeholder cannot attach to a non-block doc). Wire the existing `.me-placeholder` CSS token to an
-  `::before` on the empty-state class so the text actually paints. The paint itself is verified by
-  green-selenium (owed); this step pins the DOM contract in jsdom.
+- [x] green-frontend-placeholder — DONE (2026-07-23). New `inlinePlaceholder.ts` (49) — a Tiptap `Extension`
+  whose `addProseMirrorPlugins` returns a plugin with a `props.attributes(state)` function: when
+  `state.doc.content.size === 0` it puts `data-placeholder="Начните печатать…"` + class `is-editor-empty`
+  on the `.ProseMirror` root (coexists with the existing `data-testid`), returns `{}` when non-empty so
+  ProseMirror diff-strips both. Keyed off REAL doc emptiness (not a one-shot DOM-input flag) so the
+  placeholder returns on delete-to-empty and stays absent on a reopened non-empty doc — the two premortem
+  round-trip/reopen incidents are implemented robustly now, pinned by the follow-up reds below. The
+  `<br class="ProseMirror-trailingBreak">` helper is kept out of the doc by `HardBreakNode`, so it never
+  inflates `content.size`. Dropped the dead stock `Placeholder` extension. CSS: replaced the bare
+  `.me-placeholder` with `.ProseMirror.is-editor-empty::before { content: attr(data-placeholder) }` reusing
+  its color/font tokens. Verified decoration API against `prosemirror-view` source (`computeDocDeco`), not
+  assumed. Un-skipped the test (only allowed test edit). Suite: **142 passed | 0 skipped | 0 failed**; tsc
+  clean. `ManualEditor.tsx` 161 lines. **`::before` visual paint owed to green-selenium (jsdom sees no CSS).**
+- [ ] red-frontend-placeholder-roundtrip — premortem CREDIBLE-1 (owed guard): the current jsdom red pins only
+  empty→typed one-way. Pin the return trip: empty → type → select-all-delete → assert `data-placeholder` +
+  `is-editor-empty` are RESTORED. Also exercises the HardBreak trailing-break artifact (delete-all leaves
+  `<br class="ProseMirror-trailingBreak">`; a childNode-count emptiness check would misread it as non-empty).
+  Implementation already handles this (keyed off `doc.content.size`); this red proves it and forecloses a
+  one-shot-toggle green from ever regressing it.
+- [ ] red-frontend-placeholder-reopen — premortem CREDIBLE-2 (owed guard): `renderEditorWithDocumentCreated`
+  only drives the fresh create-empty path. Pin the `existingDocumentId` reopen path in both polarities:
+  reopen-empty ⇒ attr+class present; reopen-with-content ⇒ both absent (guards `setContent` not re-adding the
+  empty marker). Needs a reopen render variant in `ManualEditor.testSupport.tsx` (or a local `getDocument`
+  mock) — the create-only harness has no existingDocumentId path today.
 - [S] green-selenium — ~~red-selenium test is already green; no marker to remove~~ **FALSE, corrected
   2026-07-22.** Driven live against the full stack (backend :8100 + Postgres + Redis) with a real
   register→verify→login session: the test FAILS on a genuine production defect. The placeholder
