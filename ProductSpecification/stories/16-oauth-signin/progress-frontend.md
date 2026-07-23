@@ -310,6 +310,15 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 - [S] green-frontend-api — already-implemented: the exchange's real mapping (postJson → sessionTokensFromWire
   → toAuthApiError, stamping UNKNOWN_ERROR+status on the codeless path) shipped in green-frontend 3.1; the
   born-green api test above pins the network/5xx shape. Same [S]-class as 3.1's already-covered api leg.
+  > NOTE (agent-review + premortem CONCERN on 4.2 api `db20e69`, CREDIBLE but PRE-EXISTING + backend-WIP,
+  > SHARED with login — NOT a 4.x frontend step): the retry-vs-terminal fork keys off `status`, which
+  > `toAuthApiError` attaches ONLY on the codeless path (apiError.ts:71). So a **coded 5xx** (a 500/503 whose
+  > body carries an `error_code`) maps to `{errorCode,message}` with no status → `isLoginNetworkError` false →
+  > terminal "sign-in failed", NOT the retry-affording network arm — the dead-end 4.2 exists to prevent. Today
+  > unreachable: the backend 400s business errors and FastAPI's default 5xx is codeless (`{detail}`), which
+  > lands on the covered path. **For whoever wires the real backend / the security scenarios:** either the
+  > backend must emit 5xx as codeless, OR `isLoginNetworkError` must widen to treat `status>=500` as network
+  > regardless of errorCode. Deliberately NOT pinned here — pinning the current false would cement the bug.
 - [S] align-design — reuses login network-error styling
 - [S] green-selenium
 - [S] demo
