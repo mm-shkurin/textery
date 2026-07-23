@@ -113,12 +113,29 @@ queue was never exercised through a real click dispatch.
   **144 passed | 0 skipped | 0 failed.** `inlinePlaceholder.ts` 56, `ManualEditor.tsx` 167. Real-AT
   announcement of `aria-placeholder`+`role` stays owed to green-selenium/axe (jsdom proves the attrs render,
   not that a reader speaks them).
+  **Review-pass verdicts on `822fac6`: `/refactor` NO ACTION, agent-review CONCERNS ×2, premortem CONCERNS ×1
+  — both passes converged on the SAME gap.** Merge correctness independently confirmed against
+  `prosemirror-view` `computeDocDeco` (distinct keys, first-writer-wins, no collision; role persists while
+  aria-placeholder toggles). **CREDIBLE (both passes): `aria-multiline` missing.** `role="textbox"` defaults to
+  single-line per WAI-ARIA, but this editor supports hard breaks (Enter, `HardBreakNode`/`HardBreakKeymap`) —
+  premortem calls it a semantics REGRESSION (pre-commit, the bare contenteditable fell back to AT multiline
+  heuristics; pinning `role` without `aria-multiline` narrows it). → new `red/green-frontend-placeholder-multiline`
+  steps below. agent-review low: the un-skipped aria test still carries a stale "Skipped until…green" comment
+  (`ManualEditor.placeholder.test.tsx:72`) — fix on the next touch of that file (the multiline green).
 - [~] red-frontend-placeholder-role — follow-up guard (2026-07-23): `role="textbox"` shipped by the green above
   is currently UNGUARDED — delete it and the whole suite stays green. It is a raw DOM attribute (jsdom-observable),
   so pin it: a fresh ManualEditor's content area (`data-testid="editor-content-area"`) has `role="textbox"`, and
   it persists after typing (unlike the empty-state attrs, role is unconditional). LIVE characterization (already
   shipped) — mutation-check by removing the role from `editorProps.attributes`. The remaining real-AT/axe
   verification stays owed to green-selenium.
+- [ ] red-frontend-placeholder-multiline — genuine RED (both review passes, CREDIBLE): the editor supports hard
+  breaks yet exposes `role="textbox"` with no `aria-multiline`, so AT announces it single-line. Pin: the content
+  area (`data-testid="editor-content-area"`) has `aria-multiline="true"`. Fails today (grep: zero `aria-multiline`
+  in `frontend/src`). `it.skip` until green.
+- [ ] green-frontend-placeholder-multiline — add `'aria-multiline': 'true'` to `editorProps.attributes` in
+  ManualEditor.tsx alongside `role`/`data-testid` (unconditional, like role). Un-skip the multiline red. Also
+  fix the stale `it.skip`-era comment in `ManualEditor.placeholder.test.tsx:72` (agent-review low). Verify with
+  canonical `tsc -b --noEmit`. Real-AT announcement of role+aria-multiline stays owed to green-selenium/axe.
 - [x] red-frontend-placeholder-roundtrip — DONE (2026-07-23), LIVE characterization (no green needed — prod
   already handles it). Added 2nd test to `ManualEditor.placeholder.test.tsx` (now 65 lines): empty → type →
   clear-back-to-empty → `data-placeholder` + `is-editor-empty` RESTORED. **Predicted PASS** (attributes fn
