@@ -359,6 +359,16 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   > + a `OAUTH_CODE_MAX_LENGTH = 512` const; add a pure `isMalformedCallback(provider, code)` guard; in the effect,
   > after the `error=` branch and before the exchange, `if (isMalformedCallback(...)) { setFailed(true); return }`.
   > Reuse the shared provider set in BOTH the buttons and the guard so an added provider updates one place.
+  > CARRIED (agent-review + premortem CONCERNS on 4.4 red `517012c`, both CREDIBLE), green MUST fold in 2 tests:
+  > (1) **512 boundary is one-sided** — the RED pins only 513 as invalid; nothing pins that an EXACTLY-512-char
+  > code is VALID. A green written `code.length >= 512` (off-by-one) passes every RED case yet silently rejects
+  > legit max-length codes → terminal error, no sign-in, all-green. Fold in a POSITIVE control: `?code=<'x'.repeat
+  > (512)>&provider=vk` FIRES the exchange (`toHaveBeenCalledWith({code})`) and shows NO `oauth-callback-error`.
+  > Implement the cap as `> OAUTH_CODE_MAX_LENGTH` (512 valid, 513 first invalid).
+  > (2) **whitespace-only code** — the RED pins empty-string + missing but not `'   '`. A `code===''`/`!code` green
+  > lets a whitespace code POST. Fold in `?code=%20%20%20&provider=vk` → NO exchange, error shown. Implement
+  > emptiness as `code.trim() === ''` (reuse the `/\S/` `isUsableMessage` convention if it fits) so blank-but-present
+  > is malformed.
 - [S] red-frontend-api — no exchange issued
 - [S] green-frontend-api
 - [S] align-design

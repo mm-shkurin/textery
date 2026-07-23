@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { OAuthCallback } from '../OAuthCallback'
@@ -70,6 +70,12 @@ function assertMalformed() {
 // called 1 times"). Skipped so the suite stays green; green-frontend adds the pre-exchange
 // validation guard and un-skips.
 describe.skip('OAuthCallback malformed-callback validation', () => {
+  beforeEach(() => {
+    // Arm the exchange spy non-vacuously so "not called" is a genuine observation, not a
+    // vacuous pass on an undefined stub whose absent `.then` would throw.
+    vi.mocked(oauthExchangeApi.oauthExchange).mockReturnValue(neverResolves())
+  })
+
   afterEach(() => {
     navigate.mockReset()
     vi.mocked(oauthExchangeApi.oauthExchange).mockReset()
@@ -78,8 +84,6 @@ describe.skip('OAuthCallback malformed-callback validation', () => {
 
   // provider is not in the valid {vk, yandex} set → malformed, no exchange.
   it('shows the error state and fires no exchange for an unknown provider', () => {
-    vi.mocked(oauthExchangeApi.oauthExchange).mockReturnValue(neverResolves())
-
     renderAtCallback('?code=goodcode&provider=foo')
 
     assertMalformed()
@@ -87,8 +91,6 @@ describe.skip('OAuthCallback malformed-callback validation', () => {
 
   // code present but empty (`?code=`) → malformed, no exchange.
   it('shows the error state and fires no exchange for an empty code', () => {
-    vi.mocked(oauthExchangeApi.oauthExchange).mockReturnValue(neverResolves())
-
     renderAtCallback('?code=&provider=vk')
 
     assertMalformed()
@@ -96,8 +98,6 @@ describe.skip('OAuthCallback malformed-callback validation', () => {
 
   // code param absent entirely → malformed, no exchange.
   it('shows the error state and fires no exchange for a missing code', () => {
-    vi.mocked(oauthExchangeApi.oauthExchange).mockReturnValue(neverResolves())
-
     renderAtCallback('?provider=vk')
 
     assertMalformed()
@@ -105,8 +105,6 @@ describe.skip('OAuthCallback malformed-callback validation', () => {
 
   // code exceeds the 512-char client-side sanity cap → malformed, no exchange.
   it('shows the error state and fires no exchange for an over-length code', () => {
-    vi.mocked(oauthExchangeApi.oauthExchange).mockReturnValue(neverResolves())
-
     renderAtCallback(`?code=${'x'.repeat(513)}&provider=vk`)
 
     assertMalformed()
