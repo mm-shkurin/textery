@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { oauthExchange } from '../api/oauthExchangeApi'
 import { isAuthenticated, saveSession } from '../utils/authSession'
+import { isLoginNetworkError } from '../utils/loginErrorHandling'
+import { NETWORK_LOGIN_FAILURE_MESSAGE } from '../utils/authMessages'
 import { oauthProviderFailureMessage } from '../utils/oauthMessages'
 import { safeRedirectTarget } from '../utils/safeRedirectTarget'
 import './AuthForm.css'
@@ -36,6 +38,10 @@ export function OAuthCallback() {
   // cleanup and never re-armed for the surviving run → eternal spinner.
   const mountedRef = useRef(false)
   const [failed, setFailed] = useState(false)
+  // Set once the network branch has routed back to /login (scenario 4.2). Because the router mock in
+  // tests keeps the component mounted after navigate, this flips the render to null so the transient
+  // spinner is not left on screen behind the /login banner.
+  const [routedAway, setRoutedAway] = useState(false)
 
   useEffect(() => {
     mountedRef.current = true
@@ -76,7 +82,7 @@ export function OAuthCallback() {
         }
         navigate(safeRedirectTarget(undefined), { replace: true })
       })
-      .catch(() => {
+      .catch((error) => {
         if (!mountedRef.current) return
         // A late/duplicate rejection after a session was already stored (a genuine remount fires a
         // second POST with the spent one-time code) must NOT bounce an already-signed-in user onto
@@ -86,13 +92,25 @@ export function OAuthCallback() {
           navigate(safeRedirectTarget(undefined), { replace: true })
           return
         }
+        // Scenario 4.2: a TRANSPORT / TIMEOUT / GATEWAY-5xx failure on the unauthenticated path is
+        // retry-affording, not terminal — route back to /login carrying the retry-capable banner
+        // (the same channel 4.1 built) instead of stranding the visitor on the error card. A genuine
+        // BUSINESS rejection (has errorCode, no 5xx) falls through to the terminal error below (4.3).
+        if (isLoginNetworkError(error)) {
+          setRoutedAway(true)
+          navigate('/login', {
+            replace: true,
+            state: { oauthError: NETWORK_LOGIN_FAILURE_MESSAGE },
+          })
+          return
+        }
         setFailed(true)
       })
   }, [code, error, provider, navigate])
 
   // On the error path we route away immediately; render nothing so the transient loading spinner
   // never persists (the visitor is sent to /login, not stranded on "Завершаем вход…").
-  if (error !== null) {
+  if (error !== null || routedAway) {
     return null
   }
 

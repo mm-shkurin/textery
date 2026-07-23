@@ -277,8 +277,22 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   setFailed unconditionally), 2 failed 1 passed. **Actual:** exactly that at :82/:102, 2 failed 1 passed. **Match**
   on type/message/location/status. test-review: 1 fix (non-vacuous exchange spy `toHaveBeenCalledWith({code})`
   ×3). Suite 331 passed / 3 skipped.
-- [~] green-frontend
-  > CARRIED (premortem CONCERNS on 4.2 red `6d3d524`, CREDIBLE, non-blocking; agent-review PASS): the RED
+- [x] green-frontend — added the network branch to OAuthCallback's `.catch`, BETWEEN the isAuthenticated
+  (3.3) and setFailed (4.3) arms: `if (isLoginNetworkError(error)) navigate('/login',{replace:true,state:
+  {oauthError: NETWORK_LOGIN_FAILURE_MESSAGE}})`. Reuses the existing classifier + constant. Added a
+  `routedAway` state flag (set before the mocked navigate) folded into the render early-return so the spinner
+  clears when navigate is stubbed (real router unmounts on replace; the flag covers the test seam) — mirrors
+  the `error!==null` null-render. Un-skipped the RED file + folded the carried **timeout** case (`new
+  RequestTimeoutError()` → routes to /login, pinning the timeout arm independently of bare-Error). OAuthCallback
+  137L, network test 163L, all ≤200; tsc + oxlint clean.
+  **CROSS-SCENARIO RECONCILIATION (orchestrator, not green — green correctly refused to edit another test):**
+  3.2's `exactlyOnce` double-mount error-branch guard rejected with a bare `new Error('exchange failed')` and
+  asserted the terminal error card. Under 4.2's classifier a bare Error is now a transport failure → routes to
+  /login, so the two tests demanded opposite outcomes for the same shape. Changed the 3.2 fixture to a
+  BUSINESS-shaped rejection `{errorCode:'INVALID_OR_EXPIRED_OAUTH_CODE',message:'expired'}` — preserves that
+  test's intent (`.catch` survives StrictMode double-mount → terminal error) without colliding with 4.2's
+  transport routing. Suite 331/3skip → **335/0skip** (un-skip 3 network + 1 folded timeout).
+  > CARRIED (premortem CONCERNS on 4.2 red `6d3d524`, CREDIBLE, non-blocking; agent-review PASS) — HONORED (timeout case folded): the RED
   > pins the network + 5xx arms but NOT the **timeout** arm the scenario names. `RequestTimeoutError`
   > (shared/api/httpClient) routes to /login correctly today only INCIDENTALLY — it's a bodyless `Error`, so
   > `isLoginNetworkError`'s `!hasProp('errorCode')` branch accepts it, same as the bare-Error transport case.
@@ -288,6 +302,8 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   > exchange with `new RequestTimeoutError()` (unauthenticated) and assert `navigate('/login',{replace:true,
   > state:{oauthError: NETWORK_LOGIN_FAILURE_MESSAGE}})` — pinning the timeout arm independently of the bare-Error shape.
 - [ ] red-frontend-api
+- [ ] green-frontend-api
+- [~] red-frontend-api
 - [ ] green-frontend-api
 - [S] align-design — reuses login network-error styling
 - [S] green-selenium

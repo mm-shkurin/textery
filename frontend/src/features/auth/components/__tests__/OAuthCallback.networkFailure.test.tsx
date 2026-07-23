@@ -5,6 +5,7 @@ import { OAuthCallback } from '../OAuthCallback'
 import * as oauthExchangeApi from '../../api/oauthExchangeApi'
 import * as authSession from '../../utils/authSession'
 import { NETWORK_LOGIN_FAILURE_MESSAGE } from '../../utils/authMessages'
+import { RequestTimeoutError } from '../../../../shared/api/httpClient'
 
 // Scenario 4.2 — the visitor lands on /auth/callback with a VALID handoff code, but the exchange
 // fails with a NETWORK / TIMEOUT / SERVER (5xx) error. This is the UNauthenticated first-sign-in
@@ -66,7 +67,7 @@ async function renderAndSettleRejection(reason: unknown) {
 // error card renders instead of routing to /login. Case 3 is the born-green bounding guard.
 // Skipped until green-frontend adds the isLoginNetworkError branch that routes transport/5xx
 // failures to /login with NETWORK_LOGIN_FAILURE_MESSAGE.
-describe.skip('OAuthCallback network / server exchange failure', () => {
+describe('OAuthCallback network / server exchange failure', () => {
   afterEach(() => {
     navigate.mockReset()
     vi.mocked(oauthExchangeApi.oauthExchange).mockReset()
@@ -107,6 +108,27 @@ describe.skip('OAuthCallback network / server exchange failure', () => {
     vi.mocked(authSession.isAuthenticated).mockReturnValue(false)
 
     await renderAndSettleRejection({ errorCode: 'UNKNOWN_ERROR', message: '', status: 503 })
+
+    expect(oauthExchangeApi.oauthExchange).toHaveBeenCalledTimes(1)
+    expect(oauthExchangeApi.oauthExchange).toHaveBeenCalledWith({ code: 'valid-abc' })
+    expect(navigate).toHaveBeenCalledTimes(1)
+    expect(navigate).toHaveBeenCalledWith('/login', {
+      replace: true,
+      state: { oauthError: NETWORK_LOGIN_FAILURE_MESSAGE },
+    })
+    expect(screen.queryByTestId('oauth-callback-loading')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('oauth-callback-error')).not.toBeInTheDocument()
+    expect(authSession.saveSession).not.toHaveBeenCalled()
+  })
+
+  // RED (folded from the 4.2 premortem CONCERN): a RequestTimeoutError — the httpClient's transport
+  // timeout, carrying NO errorCode and NO status — is retry-affording too. It reaches isLoginNetworkError
+  // via the SAME `!errorCode` transport arm as the bare-Error case, but pinning it independently proves
+  // the TIMEOUT shape routes to /login and is not accidentally coupled to a plain Error's identity.
+  it('returns to /login with a retry-capable message on a RequestTimeoutError exchange failure', async () => {
+    vi.mocked(authSession.isAuthenticated).mockReturnValue(false)
+
+    await renderAndSettleRejection(new RequestTimeoutError())
 
     expect(oauthExchangeApi.oauthExchange).toHaveBeenCalledTimes(1)
     expect(oauthExchangeApi.oauthExchange).toHaveBeenCalledWith({ code: 'valid-abc' })

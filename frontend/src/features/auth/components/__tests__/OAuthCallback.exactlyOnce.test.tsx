@@ -112,7 +112,15 @@ describe('OAuthCallback exactly-once exchange', () => {
   // still render the terminal error — a success-path-only fix would leave `.catch` gated on a
   // disarmed flag and hang the spinner forever.
   it('renders the error state under a double mount when the exchange rejects', async () => {
-    const rejection = Promise.reject<typeof SESSION>(new Error('exchange failed'))
+    // A BUSINESS-shaped rejection (carries an errorCode, no 5xx status) — so scenario 4.2's
+    // `isLoginNetworkError` branch classifies it as terminal, not a transport failure. A bare
+    // Error here would now be a network failure and route to /login (4.2), which is a different
+    // scenario; this test only means to prove the `.catch` survives StrictMode's double mount and
+    // reaches the terminal error card.
+    const rejection = Promise.reject<typeof SESSION>({
+      errorCode: 'INVALID_OR_EXPIRED_OAUTH_CODE',
+      message: 'expired',
+    })
     vi.mocked(oauthExchangeApi.oauthExchange).mockReturnValue(rejection)
     // Swallow the terminal rejection so it is not flagged as unhandled once the component's
     // `.catch` has consumed it.
