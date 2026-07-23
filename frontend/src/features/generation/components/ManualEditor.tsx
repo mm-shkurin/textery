@@ -100,6 +100,12 @@ export function ManualEditor({
     editorProps: {
       attributes: {
         'data-testid': 'editor-content-area',
+        // A contenteditable editing surface is a textbox in both empty and full
+        // states, so role is unconditional here (NOT gated on emptiness like the
+        // placeholder attrs in inlinePlaceholder.ts). Without an explicit textbox
+        // role, the aria-placeholder that plugin emits carries no meaning to
+        // assistive tech — aria-placeholder is announced only on a textbox-ish role.
+        role: 'textbox',
       },
       handleDOMEvents: {
         input: (view, event) => flushDomObserverOnInput(view, event),

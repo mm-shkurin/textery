@@ -102,20 +102,23 @@ queue was never exercised through a real click dispatch.
   (root config), which does not run the project-reference build. Fixed separately (`1821c8a`, `fix:` — annotate
   return `Record<string,string>`), canonical typecheck now clean. Suite: 2 passed | 1 skipped in file (143 |
   1 across generation); `tsc -b --noEmit` clean.
-- [~] green-frontend-placeholder-aria — one-line fix: `inlinePlaceholder.ts` empty-state branch also returns
-  `'aria-placeholder': INLINE_PLACEHOLDER_TEXT` (dropped automatically when non-empty via the `content.size > 0`
-  early `{}` return). Un-skip the aria test. The `Record<string,string>` annotation from `1821c8a` already
-  types the added key cleanly. **VERIFY WITH THE CANONICAL `tsc -b --noEmit`, not plain `tsc --noEmit`** (the
-  latter misses project-reference errors — the a72fa40 slip). **premortem CREDIBLE-low owed to green-selenium/axe:**
-  `aria-placeholder` is announced by AT only on an element with a textbox-ish role; the ProseMirror contenteditable
-  root has no explicit `role` in the current markup. A jsdom attribute assertion proves the string renders, NOT
-  that a screen reader announces it — owe an axe check or a green-selenium `role`/accessible-name assertion; the
-  green should also consider emitting `role="textbox"` if the contenteditable mapping is not reliable.
-  **Review-pass verdicts on `1821c8a`+`1644557` (aria red unit): agent-review PASS, `/refactor` NO ACTION,
-  premortem CONCERNS ×2 — (1) recurring process gap: frontend greens must verify with the canonical
-  `tsc -b --noEmit` (a durable guard — a note in `tdd-rules.md`/`technology.md` or a CI `npm run typecheck`
-  gate — is owed at the workflow layer, flagged to the orchestrator, not code); (2) the a11y-role guard folded
-  into this green step above.**
+- [x] green-frontend-placeholder-aria — DONE (2026-07-23). Added `'aria-placeholder': INLINE_PLACEHOLDER_TEXT`
+  to `inlinePlaceholder.ts`'s empty-state branch (dropped when non-empty via the existing `content.size > 0`
+  `{}` return; the `Record<string,string>` annotation types it cleanly). Also emitted `role="textbox"`
+  UNCONDITIONALLY in `editorProps.attributes` (ManualEditor.tsx, alongside `data-testid`) — a contenteditable
+  surface is a textbox in both empty and full states, so role is always-on, NOT gated on emptiness; this makes
+  the `aria-placeholder` actually AT-meaningful (premortem role gap). Confirmed the dynamic plugin
+  `props.attributes` and static `editorProps.attributes` merge onto the same root with no collision. Un-skipped
+  the aria test (only allowed test edit). **Verified with the CANONICAL `tsc -b --noEmit` — clean.** Suite:
+  **144 passed | 0 skipped | 0 failed.** `inlinePlaceholder.ts` 56, `ManualEditor.tsx` 167. Real-AT
+  announcement of `aria-placeholder`+`role` stays owed to green-selenium/axe (jsdom proves the attrs render,
+  not that a reader speaks them).
+- [~] red-frontend-placeholder-role — follow-up guard (2026-07-23): `role="textbox"` shipped by the green above
+  is currently UNGUARDED — delete it and the whole suite stays green. It is a raw DOM attribute (jsdom-observable),
+  so pin it: a fresh ManualEditor's content area (`data-testid="editor-content-area"`) has `role="textbox"`, and
+  it persists after typing (unlike the empty-state attrs, role is unconditional). LIVE characterization (already
+  shipped) — mutation-check by removing the role from `editorProps.attributes`. The remaining real-AT/axe
+  verification stays owed to green-selenium.
 - [x] red-frontend-placeholder-roundtrip — DONE (2026-07-23), LIVE characterization (no green needed — prod
   already handles it). Added 2nd test to `ManualEditor.placeholder.test.tsx` (now 65 lines): empty → type →
   clear-back-to-empty → `data-placeholder` + `is-editor-empty` RESTORED. **Predicted PASS** (attributes fn

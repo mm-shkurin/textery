@@ -70,7 +70,7 @@ describe('ManualEditor placeholder', () => {
   // emit aria-placeholder while empty (tracking emptiness exactly like data-placeholder /
   // is-editor-empty) and drop it when non-empty, so a screen-reader user meets a labelled
   // editor. Skipped until green-frontend-placeholder-aria implements it.
-  it.skip('exposes aria-placeholder while empty and drops it after typing', async () => {
+  it('exposes aria-placeholder while empty and drops it after typing', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')

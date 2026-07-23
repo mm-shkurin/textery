@@ -40,6 +40,13 @@ export const InlinePlaceholder = Extension.create({
             return {
               class: 'is-editor-empty',
               'data-placeholder': INLINE_PLACEHOLDER_TEXT,
+              // aria-placeholder carries the accessible hint data-placeholder lacks:
+              // the latter is painted only via CSS ::before, which screen readers
+              // announce inconsistently. Tracks emptiness exactly like the pair above
+              // (dropped by the size > 0 branch), so an SR user meets a labelled,
+              // textbox-role (see editorProps.attributes in ManualEditor.tsx) editor
+              // while empty and loses the hint the moment real content exists.
+              'aria-placeholder': INLINE_PLACEHOLDER_TEXT,
             }
           },
         },
