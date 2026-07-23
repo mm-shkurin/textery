@@ -1599,12 +1599,21 @@ drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 pytho
   requests over the run via the driver's already-enabled `goog:loggingPrefs performance` log and asserts
   exactly 2 (initial + one queued re-save): ONE would mean a dropped queue, THREE+ a regression to concurrent
   PUTs (the version-race the strictly-sequential queue prevents). Re-verified GREEN live (`1 passed`).
-- [~] green-selenium-7.9-popover-clip — scenario 7.9's link popover is `position:absolute; z-index:20`
-  inside `.me-editor-shell { overflow:hidden }`; a z-index cannot escape an ancestor's clip, so it almost
-  certainly clips. Add an acceptance test that opens the popover and asserts its bounding box is within the
-  viewport / not clipped (`isDisplayed` + rect check). If it clips → that is a real defect to fix
-  (portal the popover out of the overflow context or lift the clip).
-- [ ] green-selenium-beforeunload-prompt — `guard-unsaved-work`'s owe (review passes on `24269ba`): the
+- [x] green-selenium-7.9-popover-clip — **GREEN live 2026-07-23 (`2 passed in 16.18s`, headless Chrome, backend
+  :8100). NO DEFECT — the clip does NOT occur; already mitigated.** New
+  `test_manual_editor_popover_clip_acceptance.py` (34 lines, two viewports) +
+  `manual_editor_popover_clip_statements.py` (~65 lines, extends `ManualEditorStatements`). Opens the link
+  popover and measures `getBoundingClientRect` for the popover, the `.me-editor-shell`, and the viewport via
+  one `execute_script`, then asserts the popover's rect fits inside the shell's rect (the `overflow:hidden`
+  clip box, 1px tolerance) AND inside the viewport — checked at the DEFAULT desktop width AND at a narrow
+  390×740 phone viewport (where the toolbar wraps and the button can sit near the right edge, the worst case).
+  Both pass: the feared z-index-can't-escape-overflow:hidden clip is already prevented by the popover CSS from
+  prior scenario-7.9 work — `width: min(260px, calc(100vw - 32px))` + `max-width: calc(100vw - 32px)` clamp the
+  width, and `@media (max-width:768px)` re-anchors `right:0` so a right-edge button opens leftward. So this is
+  a live characterization confirming no regression, not a fix. Teeth: the assertion is a strict rect-containment
+  check (fails the moment any edge crosses the shell/viewport bound), exercised at the two widths where a clip
+  would actually manifest.
+- [~] green-selenium-beforeunload-prompt — `guard-unsaved-work`'s owe (review passes on `24269ba`): the
   guard sets `event.returnValue = ''` alongside `preventDefault()` because legacy Chrome/Edge + older
   Safari/Firefox only render the native "leave?" dialog when returnValue is set — but jsdom cannot observe
   the BeforeUnloadEvent string returnValue (its generic Event exposes only the legacy boolean getter), so

@@ -28,6 +28,9 @@ from statements.frontend.generation.manual_editor_caret_statements import (
 from statements.frontend.generation.manual_editor_placeholder_delete_statements import (
     ManualEditorPlaceholderDeleteStatements,
 )
+from statements.frontend.generation.manual_editor_popover_clip_statements import (
+    ManualEditorPopoverClipStatements,
+)
 from statements.frontend.generation.manual_editor_save_payload_statements import (
     ManualEditorSavePayloadStatements,
 )
@@ -175,3 +178,8 @@ def manual_editor_caret_statements():
 @pytest.fixture
 def manual_editor_save_queue_statements():
     return ManualEditorSaveQueueStatements()
+
+
+@pytest.fixture
+def manual_editor_popover_clip_statements():
+    return ManualEditorPopoverClipStatements()
