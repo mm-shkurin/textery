@@ -162,6 +162,20 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   test-review: 3 strict seam fixes (non-vacuous `isAuthenticated` called-once, exchange pinned
   `{code}`×1, `saveSession` not-called on the rejection path). Suite 322 passed / 1 skipped.
 - [~] green-frontend
+  > CARRIED (premortem CREDIBLE + agent-review CONCERNS on 3.3 red `f8887dd`), green MUST honour:
+  > (a) **premortem CREDIBLE — `isAuthenticated()` is a bare presence check (`Boolean(getAccessToken())`,
+  > authSession.ts:81), NOT validity.** Redirecting on ANY `.catch` when a token exists is fail-OPEN:
+  > a network drop / 500 / genuinely-bad code while a stale or unrelated token sits in sessionStorage
+  > silently lands the user in the app shell on dead/wrong credentials — the opposite of the `.then`
+  > path's deliberate fail-closed stance, and can even drop them into a DIFFERENT account (wrong
+  > identity). Scope the benign redirect to the **already-used / duplicate error code ONLY**, not to
+  > session presence — the exchange rejection must carry a discriminable error code (mirror
+  > `toAuthApiError`/`errorCode` from oauthExchangeApi). Fold in a companion green test: a
+  > NON-duplicate rejection (network/500/invalid) while `isAuthenticated()` is true STILL renders
+  > `oauth-callback-error` and does NOT navigate.
+  > (b) agent-review (low): the 3.3 red only covers the authenticated=true side; the false-branch
+  > guard lives implicitly in `OAuthCallback.exactlyOnce.test.tsx` (real `isAuthenticated` → false →
+  > setFailed). The (a) companion test also closes this by pinning the fail path within 3.3's own file.
 - [S] red-frontend-api
 - [S] green-frontend-api
 - [S] align-design
