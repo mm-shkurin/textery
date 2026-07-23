@@ -402,10 +402,21 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 
 ### 4.6: A 200 exchange without a usable token fails closed
 - [S] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
-- [ ] red-frontend-api
-- [ ] green-frontend-api
+- [x] red-frontend — REAL RED. New `OAuthCallback.emptyToken.test.tsx` (162L, 3 it.skip + 1 born-green
+  positive control). A 200 whose access token is absent/null/empty maps (via the REAL
+  `sessionTokensFromWire`, `String(x ?? '')`) to `accessToken:''`; the success arm has no usable-token
+  check so it would `saveSession({accessToken:'',…})` and navigate to the app shell — the bug. Cases:
+  (1) `access_token` absent, (2) null — both driven through real `sessionTokensFromWire`; (3) empty ''
+  via mapped session shape. Each asserts `saveSession` NOT called, `navigate` NOT called (never app
+  shell), terminal `oauth-callback-error` shown, no spinner. Positive control (enabled): a usable token
+  still stores + `navigate('/',{replace:true})` once. **Predicted:** AssertionError at :84
+  (`saveSession` not-called), `expected "vi.fn()" to not be called at all, but actually been called 1 times`,
+  3 failed 1 passed. **Actual:** exactly that at :84:39, 3 failed 1 passed. **Match** (label `vi.fn()` — anon
+  mock render). test-review: 0 fixes (already strict). Suite 355 passed / 3 skipped.
+- [~] green-frontend
+- [S] red-frontend-api — no new API contract; the exchange wire + the `String(x??'')` collapse are already
+  pinned by 3.1 + 4.2 born-green api tests. The usable-token guard is component logic, not a wire change.
+- [S] green-frontend-api — no new API contract (see above).
 - [S] align-design
 - [S] green-selenium
 - [S] demo
