@@ -344,8 +344,21 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 
 ### 4.4: A malformed callback resolves to the error state without an exchange
 - [S] red-selenium
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — REAL RED (4 cases). New `OAuthCallback.malformed.test.tsx` (115L, describe.skip).
+  DESIGN: client-side pre-exchange validation inserted AFTER the `error=` check, BEFORE the exchange —
+  malformed = provider ∉ {vk,yandex} OR code missing/empty OR code length > **512** (client sanity cap;
+  server owns single-use/TTL). Cases: unknown provider `?provider=foo`, empty `?code=`, missing code, over-length
+  513-char code — each asserts `oauthExchange` NOT called (armed spy), `oauth-callback-error` shown, no lingering
+  spinner, `saveSession`/`navigate` not called. **Predicted:** AssertionError, `expected "vi.fn()" to not be
+  called at all, but actually been called 1 times` (current effect fires the exchange unconditionally, ignores
+  provider, no length check), 4 failed. **Actual:** exactly that, missing-code confirmed firing `{code:''}`, 4
+  failed. **Match** on type/message/status. test-review: 0 fixes (already strict, boundary 513=512+1). Suite 339
+  passed / 4 skipped.
+- [~] green-frontend
+  > GREEN design: share the `{vk,yandex}` valid set (currently local `OAUTH_PROVIDERS` in OAuthProviderButtons.tsx)
+  > + a `OAUTH_CODE_MAX_LENGTH = 512` const; add a pure `isMalformedCallback(provider, code)` guard; in the effect,
+  > after the `error=` branch and before the exchange, `if (isMalformedCallback(...)) { setFailed(true); return }`.
+  > Reuse the shared provider set in BOTH the buttons and the guard so an added provider updates one place.
 - [S] red-frontend-api — no exchange issued
 - [S] green-frontend-api
 - [S] align-design
