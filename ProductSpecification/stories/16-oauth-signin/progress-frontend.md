@@ -209,6 +209,25 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   exactly that at :37/:43. **Match.** test-review: 3 strict fixes (loading-absent ×2, banner exact `.textContent).toBe`).
   Suite 323 passed / 4 skipped.
 - [~] green-frontend
+  > CARRIED (agent-review + premortem CONCERNS on 4.1 red `c58a106`), green MUST honour + fold in tests:
+  > (1) **provider mapping under-pinned / raw-render risk (both passes, CREDIBLE).** The RED pins only
+  > `vk` + provider-absent. Green MUST map ONLY `vk`→VK-copy and `yandex`→Yandex-copy, and EVERYTHING
+  > else (unrecognized `provider=zzz`, missing) → the GENERIC "…через провайдера…" fallback — NEVER
+  > interpolate the raw `provider`/`error` value into copy (spec 16_OAuthSignin.md:65 — mapped, never
+  > raw; enumeration/XSS-adjacent). Fold in tests: `provider=yandex` → exact Yandex message; `provider=zzz`
+  > → GENERIC, and the emitted `oauthError` does NOT contain the raw param. Add `AUTH…YANDEX` message
+  > constant to authMessages.
+  > (2) **error-before-code ordering (premortem #3, CREDIBLE).** Check `searchParams.get('error')` BEFORE
+  > the `code` exchange path. Fold in test: `?error=access_denied&provider=vk&code=abc` fires NO exchange
+  > and routes to /login with the VK message — proves error wins over a leftover code.
+  > (3) **stale banner (premortem #2, CREDIBLE).** Fold in the negative: a plain `/login` with NO
+  > navigation state renders NO `login-oauth-error` banner. Prefer clearing `location.state.oauthError`
+  > after first render (replaceState) so Back/re-render doesn't resurrect a stale banner; at minimum pin
+  > the no-state negative.
+  > (4) agent-review (low): "distinct from validation" is weakly pinned (formError is '' with no submit).
+  > Optional — pin that a banner + a real validation error can coexist as separate elements if cheap.
+  > NOTE file-size: LoginForm.tsx is 195L — adding the banner + oauthError read will breach the 200 cap;
+  > extract (e.g. the banner into a small subcomponent, or the state read into a helper) to stay under.
 - [S] red-frontend-api — callback param, no API call
 - [S] green-frontend-api
 - [ ] align-design
