@@ -1,0 +1,56 @@
+/* The four auth status banners, split from AuthForm.css to keep that shell under the 200-line
+   cap. Imported next to AuthForm.css by the forms that show any of them. Each treatment is
+   deliberately DISTINCT so the four failure/success meanings are not read as one. */
+
+/* Every auth form's failure text. Declared once rather than per form: login's error had no
+   class at all and rendered as unstyled body copy, and verify's `.verify-form-error` was a class
+   name with no rule behind it — so the two screens that must show a failure showed it in the
+   same colour as the labels. */
+.auth-form-error {
+  color: var(--error);
+  font-size: 15px;
+  margin-top: 12px;
+  text-align: center;
+}
+
+/* Network/transport failure — a connection problem, not a rejected credential, so it is VISUALLY
+   DISTINCT from .auth-form-error above: an amber boxed alert rather than plain red text, signalling
+   "retry" instead of "your input was wrong". */
+.auth-network-error {
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+/* Provider sign-in failure routed back from /auth/callback — DISTINCT from both the field error and
+   the network banner so it reads as "sign-in through the provider failed", not "wrong password". */
+.auth-oauth-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--error);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  margin-bottom: 20px;
+  padding: 12px 14px;
+}
+
+.auth-oauth-error-icon {
+  flex-shrink: 0;
+}
+
+/* display:block because <output> is inline; text-align and margin-top depend on it being block. */
+.auth-form-success {
+  display: block;
+  color: #15803d;
+  font-size: 15px;
+  margin-top: 12px;
+  text-align: center;
+}

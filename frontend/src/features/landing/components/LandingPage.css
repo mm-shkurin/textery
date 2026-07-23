@@ -1,126 +1,52 @@
 .landing {
-  max-width: 1160px;
-  margin: 0 auto;
-  padding: 0 16px;
   overflow-x: hidden;
+  background: var(--bg-page);
 }
 
-.hero {
-  max-width: 1160px;
-  margin: 0 auto;
-  padding: 64px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 24px;
-}
-
-.hero h1 {
-  font-size: 40px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-}
-
-.hero .subtitle {
-  color: var(--text-secondary);
-  font-size: 16px;
-}
-
-.btn-primary.large,
-.btn-light.centered {
-  border: none;
-  border-radius: var(--radius-sm);
-  font-family: inherit;
-  cursor: pointer;
-  background: var(--surface-light);
-  color: var(--bg-page);
-  font-weight: 600;
-  padding: 16px 32px;
-  font-size: 16px;
-}
-
-.hero-collage-wrap {
+/* `Ellipse 33` — a 1587x519 near-black ellipse that bleeds off both sides of the frame,
+   so only its domed top edge is visible above the footer. A wide border-radius on an
+   over-width block reproduces that dome without an SVG. */
+.landing-footer {
   position: relative;
-  padding: 40px 0 0;
+  margin-top: 120px;
+  padding-top: 120px;
+  overflow: hidden;
 }
 
-.hero-collage-wrap::before {
+.landing-footer::before {
   content: '';
   position: absolute;
-  inset: -20px -60px;
-  background-image:
-    linear-gradient(to right, var(--border-subtle) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--border-subtle) 1px, transparent 1px);
-  background-size: 60px 60px;
-  -webkit-mask-image: radial-gradient(ellipse 60% 70% at center, black 40%, transparent 80%);
-  mask-image: radial-gradient(ellipse 60% 70% at center, black 40%, transparent 80%);
-  z-index: 0;
+  top: 0;
+  left: -10%;
+  width: 120%;
+  height: 400px;
+  background: var(--bg-inverse);
+  border-radius: 50% 50% 0 0 / 120px 120px 0 0;
 }
 
-.hero-collage {
+.landing-footer-inner {
   position: relative;
-  display: block;
-  width: 100%;
-  height: auto;
+  max-width: 1200px;
   margin: 0 auto;
-  z-index: 1;
+  padding: 60px 20px 60px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--bg-inverse);
 }
 
-.trust-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  width: fit-content;
-  margin: -30px auto 80px;
-  padding: 16px 24px;
-  background: var(--bg-surface);
-  border-radius: var(--radius-pill);
-  position: relative;
-  z-index: 1;
-}
-
-.trust-avatars {
-  display: flex;
-}
-
-.trust-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-pill);
-  background: var(--bg-card);
-  border: 2px solid var(--bg-page);
-  margin-left: -10px;
-}
-
-.trust-avatar:first-child {
-  margin-left: 0;
-}
-
-.trust-text {
-  color: var(--text-secondary);
-  font-size: 15px;
+.footer-logo {
+  height: 45px;
+  width: auto;
+  display: block;
+  filter: invert(1) brightness(2);
 }
 
 @media (max-width: 640px) {
-  .hero {
-    padding: 40px 16px;
+  .landing-footer {
+    margin-top: 72px;
+    padding-top: 72px;
   }
 
-  .hero h1 {
-    font-size: 28px;
-    white-space: normal;
-  }
-
-  .hero-collage-wrap::before {
-    inset: -20px -16px;
-  }
-
-  .trust-row {
-    flex-wrap: wrap;
-    justify-content: center;
-    text-align: center;
+  .landing-footer::before {
+    height: 260px;
   }
 }

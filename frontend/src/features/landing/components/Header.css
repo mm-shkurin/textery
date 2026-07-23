@@ -1,16 +1,18 @@
+/* Figma `Desktop` (node 90:880), nav row at y=47: the header sits directly on the page
+   background — there is no bar or pill behind it — with the wordmark at the left edge of
+   the 1200px content column and the actions flush right. */
 .site-header {
-  max-width: 1160px;
-  margin: 24px auto 0;
-  padding: 12px 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 20px 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bg-header);
-  border-radius: var(--radius-lg);
+  background: none;
 }
 
 .brand-logo {
-  height: 28px;
+  height: 45px;
   width: auto;
   display: block;
 }
@@ -18,55 +20,71 @@
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
+/* `Component 20` — the secondary action: white fill, black label, same 50px height and
+   8px radius as the primary next to it. `.btn-ghost` keeps its name because three landing
+   actions (Войти / Мои работы / Выйти) already share it. */
 .btn-ghost {
   border: none;
-  background: none;
+  background: var(--neutral-000);
+  border-radius: var(--radius-sm);
   font-family: inherit;
-  color: var(--text-muted);
-  font-size: 15px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
   cursor: pointer;
-  padding: 12px 16px;
+  height: 50px;
+  padding: 0 24px;
 }
 
+.btn-ghost:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* `Component 19` — the primary CTA. Its Variant2 (hover) state inverts to a `blue-50`
+   fill with a `blue-700` label rather than darkening the blue. */
 .btn-light {
   border: none;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   font-family: inherit;
   cursor: pointer;
-  background: var(--surface-light);
-  color: var(--bg-page);
-  font-weight: 600;
-  padding: 12px 20px;
-  font-size: 15px;
+  background: var(--accent);
+  color: var(--text-inverse);
+  font-weight: 700;
+  height: 50px;
+  padding: 0 28px;
+  font-size: 16px;
+}
+
+.btn-light:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 @media (max-width: 640px) {
   .site-header {
-    margin: 12px auto 0;
-    padding: 10px 12px;
+    padding: 16px 16px 0;
   }
 
-  .btn-ghost {
-    display: none;
+  .brand-logo {
+    height: 32px;
   }
 
-  /* The rule above drops secondary marketing links on a narrow screen, which is fine for a
-     link and wrong for these two. Signing out is the only way to end a session, and a phone
-     is exactly where a borrowed device gets left signed in. Signing in is how every returning
-     user gets back to their work — hiding it on mobile leaves them with "start over" as the
-     only visible action. Shrink both, hide neither. */
-  .header-logout,
-  .header-login {
-    display: inline-block;
-    padding: 10px 8px;
-    font-size: 13px;
+  .header-actions {
+    gap: 8px;
   }
 
+  /* Signing out is the only way to end a session, and a phone is exactly where a borrowed
+     device gets left signed in. Signing in is how every returning user gets back to their
+     work — hiding it on mobile leaves them with "start over" as the only visible action.
+     Shrink both, hide neither. */
+  .btn-ghost,
   .btn-light {
-    padding: 10px 14px;
+    height: 40px;
+    padding: 0 14px;
     font-size: 13px;
   }
 }

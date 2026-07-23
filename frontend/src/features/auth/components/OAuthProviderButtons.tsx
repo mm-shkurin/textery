@@ -11,15 +11,15 @@ export function OAuthProviderButtons() {
     <>
       <div className="auth-divider">или</div>
       <div className="oauth-list">
-        {OAUTH_PROVIDERS.map(({ provider, label, badge, startPath }) => (
+        {OAUTH_PROVIDERS.map(({ provider, label, badgeSrc, startPath }) => (
           <a
             key={provider}
             className={`btn-oauth btn-oauth-${provider}`}
             href={startPath}
             data-testid={`oauth-${provider}-button`}
           >
-            <span className={`provider-badge provider-badge-${provider}`} aria-hidden="true">
-              {badge}
+            <span className="provider-badge" aria-hidden="true">
+              <img src={badgeSrc} alt="" />
             </span>
             {label}
           </a>

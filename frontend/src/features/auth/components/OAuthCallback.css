@@ -1,9 +1,6 @@
-/* The /auth/callback interstitial. Aligned to mockups/desktop/02-callback-loading.html.
-   Reuses the shared .auth-card shell (width 420, surface, subtle border, radius 16, margin
-   48 auto — identical in the mockup) and .auth-subtitle (secondary, 14px); only the
-   callback-specific deltas live here: the mockup's taller centred card padding, the spinner,
-   and the status rhythm. h1 stays the app-standard 28px from .auth-card rather than the
-   mockup's 22px, for cross-auth-screen consistency — the same call taken on AccountLockedScreen. */
+/* The /auth/callback interstitial. Reuses the shared .auth-card shell; only the
+   callback-specific deltas live here: taller centred padding, the spinner, and the status
+   rhythm. The spinner now sweeps the brand blue rather than the retired violet gradient. */
 .oauth-callback-card {
   padding: 48px 40px;
   text-align: center;
@@ -14,12 +11,7 @@
   height: 48px;
   margin: 0 auto 24px;
   border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    var(--accent-start, #6366f1),
-    var(--accent-end, #a855f7),
-    transparent 75%
-  );
+  background: conic-gradient(from 0deg, var(--accent), var(--accent-hover), transparent 75%);
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 0);
   mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 0);
   animation: oauth-callback-spin 0.9s linear infinite;
@@ -36,7 +28,7 @@
 }
 
 .oauth-callback-card h1 {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .oauth-callback-subtitle {

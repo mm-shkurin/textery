@@ -9,6 +9,7 @@ import { signInAfterVerification } from '../utils/postVerifySignIn'
 import { GENERIC_VERIFY_FAILURE_MESSAGE } from '../utils/authMessages'
 import { verifyErrorMessage } from '../utils/verifyErrorHandling'
 import './AuthForm.css'
+import './AuthStatus.css'
 import './VerifyCodeForm.css'
 
 export interface VerifyCodeFormProps {

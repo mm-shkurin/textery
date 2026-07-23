@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { isUsableMessage } from '../utils/authMessages'
-// This component's own styles (.auth-oauth-error*) live in AuthForm.css — import it directly so the
+// This component's own styles (.auth-oauth-error*) live in AuthStatus.css — import it directly so the
 // banner is self-styling wherever it mounts, rather than relying on a parent to pull the shared shell.
-import './AuthForm.css'
+import './AuthStatus.css'
 
 // Surfaces the provider-aware message the /auth/callback error path stashes in router state
 // (`location.state.oauthError`) as a DISTINCT banner: its own class + testid + role="alert",

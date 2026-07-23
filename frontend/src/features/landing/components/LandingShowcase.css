@@ -1,0 +1,132 @@
+.showcase {
+  position: relative;
+  max-width: 1200px;
+  margin: 140px auto 0;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.showcase-title {
+  max-width: 700px;
+  margin: 0 auto;
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.showcase-title-accent {
+  color: var(--accent);
+}
+
+.showcase-stage {
+  position: relative;
+  height: 640px;
+  margin-top: 40px;
+}
+
+/* `Ellipse 34/35/36` — three 480px circles. Only the middle one carries a solid `#1e87ff`
+   fill; the outer two are stroked outlines in the design. */
+.showcase-orb {
+  position: absolute;
+  width: 480px;
+  height: 480px;
+  border-radius: var(--radius-pill);
+}
+
+.showcase-orb-1 {
+  left: 50%;
+  top: 130px;
+  transform: translateX(-50%);
+  background: #1e87ff;
+  opacity: 0.25;
+  filter: blur(30px);
+}
+
+.showcase-orb-2 {
+  left: 8%;
+  top: 0;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.showcase-orb-3 {
+  right: 8%;
+  top: 250px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.showcase-card {
+  position: absolute;
+  width: 392px;
+  max-width: 34vw;
+  height: 187px;
+  border-radius: var(--radius-md);
+}
+
+.showcase-card-plain {
+  background: var(--bg-card);
+}
+
+.showcase-card-muted {
+  background: var(--bg-card-muted);
+}
+
+.showcase-card-1 {
+  left: 0;
+  top: 60px;
+}
+
+.showcase-card-2 {
+  right: 4%;
+  top: 130px;
+}
+
+.showcase-card-3 {
+  left: 6%;
+  top: 380px;
+}
+
+.showcase-card-4 {
+  right: 0;
+  top: 450px;
+}
+
+/* `Component 19` again — same primary CTA the header uses. */
+.showcase-cta {
+  position: relative;
+  z-index: 1;
+  margin-top: 24px;
+  height: 50px;
+  padding: 0 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--text-inverse);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.showcase-cta:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+@media (max-width: 900px) {
+  .showcase {
+    margin-top: 80px;
+  }
+
+  .showcase-title {
+    font-size: 28px;
+  }
+
+  .showcase-stage {
+    display: none;
+  }
+
+  .showcase-cta {
+    margin-top: 32px;
+  }
+}

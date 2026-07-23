@@ -1,0 +1,96 @@
+.faq {
+  max-width: 890px;
+  margin: 120px auto 0;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.faq-title {
+  font-size: 40px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.faq-list {
+  margin-top: 40px;
+  display: grid;
+  gap: 15px;
+  text-align: left;
+}
+
+.faq-item {
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+}
+
+.faq-question {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 70px;
+  padding: 12px 60px 12px 20px;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  list-style: none;
+}
+
+.faq-question::-webkit-details-marker {
+  display: none;
+}
+
+/* `Component 24` — a 22x22 plus drawn from two 1px lines. Rotating one arm to horizontal
+   on open turns it into the minus the open state needs, with no second glyph to keep. */
+.faq-marker {
+  position: absolute;
+  right: 22px;
+  width: 22px;
+  height: 22px;
+}
+
+.faq-marker::before,
+.faq-marker::after {
+  content: '';
+  position: absolute;
+  background: var(--text-primary);
+  transition: opacity 0.15s ease;
+}
+
+.faq-marker::before {
+  left: 0;
+  top: 10px;
+  width: 22px;
+  height: 1.5px;
+}
+
+.faq-marker::after {
+  top: 0;
+  left: 10px;
+  width: 1.5px;
+  height: 22px;
+}
+
+.faq-item[open] .faq-marker::after {
+  opacity: 0;
+}
+
+.faq-answer {
+  padding: 0 60px 20px 20px;
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 640px) {
+  .faq {
+    margin-top: 72px;
+  }
+
+  .faq-title {
+    font-size: 28px;
+  }
+
+  .faq-question {
+    font-size: 16px;
+  }
+}

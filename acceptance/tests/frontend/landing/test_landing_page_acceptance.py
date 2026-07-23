@@ -5,7 +5,7 @@ class TestLandingPageAcceptance(AbstractFrontendTest):
     """UI Test Scenario 1.1: The landing page displays the hero and primary CTA.
 
     Given a visitor opens the landing page
-    Then the "Word онлайн" hero heading is visible
+    Then the "Textery — самая быстрая нейросеть для докладов" hero heading is visible
     And a "Создать генерацию" call-to-action button is visible
     """
 

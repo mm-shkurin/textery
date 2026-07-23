@@ -13,6 +13,7 @@ import {
   PASSWORD_POLICY_HINT,
 } from '../utils/passwordPolicy'
 import './AuthForm.css'
+import './AuthStatus.css'
 import './RegisterForm.css'
 
 // 'EMAIL_ALREADY_REGISTERED' is what the backend actually sends on 409 — confirmed by curl

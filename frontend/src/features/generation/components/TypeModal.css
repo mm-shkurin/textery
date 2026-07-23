@@ -1,37 +1,77 @@
-/* Owned by TypeModal.tsx. Imports Modal.css + SelectableCard.css for the shared parts. */
+/* Owned by TypeModal.tsx. Imports Modal.css + SelectableCard.css for the shared parts.
+   Figma `Generation screen` (node 422:1439): four 266x361 white cards at 8px radius, the
+   bold type name at the card's top, a gradient preview below it, and the card's own action
+   button (rendered by SelectableCard as `.add-btn`) at the foot. Every rule that touches
+   `.add-btn` is scoped through `.type-card` so ModeModal's shared card is untouched. */
 .type-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 20px;
 }
 .type-card {
   width: 100%;
-  background: var(--bg-surface-raised);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
+  background: var(--neutral-000);
+  border-radius: var(--radius-sm);
+  border: none;
   position: relative;
   cursor: pointer;
   font-family: inherit;
   color: var(--text-primary);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 16px;
-  padding: 16px;
+  padding: 19px;
 }
 .type-card.disabled {
-  opacity: 0.45;
+  opacity: 0.55;
   cursor: not-allowed;
 }
+/* Name first, preview second: `order` lifts the name above the icon without fighting DOM order. */
 .type-name {
+  order: -1;
   display: block;
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 700;
+  text-align: center;
 }
 
-@media (max-width: 640px) {
+/* The gradient preview block. Each type gets a distinct wash so the four cards read as a set
+   rather than four identical tiles — matching the coloured thumbnails in the design. */
+.type-card .card-icon {
+  height: 190px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(150deg, var(--blue-500), var(--blue-900));
+  color: transparent;
+}
+.type-card[data-testid$='essay'] .card-icon {
+  background: linear-gradient(150deg, #16b7a8, #0c3f6e);
+}
+.type-card[data-testid$='sochinenie'] .card-icon {
+  background: linear-gradient(150deg, #c9b458, #1b3a2f);
+}
+.type-card[data-testid$='referat'] .card-icon {
+  background: linear-gradient(150deg, #c86ad0, #3a2f6e);
+}
+
+/* SelectableCard renders the action affordance as `.add-btn` beside the card. On the type
+   modal it becomes the full-width button the design draws under each card, styled as
+   `Component 33`'s soft variant. Scoped to the type card's sibling so ModeModal is unaffected. */
+.type-card + .add-btn {
+  width: 100%;
+  height: 45px;
+  border-radius: var(--radius-sm);
+  background: var(--blue-50);
+  color: var(--accent);
+  border: none;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
   .type-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 16px;
   }
 }

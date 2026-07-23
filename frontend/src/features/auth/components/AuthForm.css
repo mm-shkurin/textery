@@ -1,58 +1,82 @@
+/* Shared auth shell. Geometry from the Figma frame `Authorization` (node 125:1276): a 595x650
+   white card at 8px radius centred on the blue-50 page, with two large `blue-500` ellipses
+   glowing behind it. Figma px are divided by 1.3333 (the frames are drawn at 1.3333x). */
+
 /* display:block because <output> is inline by default — text-align and margin-top below both
    depend on it being a block. */
 .auth-loading-indicator {
   display: block;
   font-size: 14px;
-  color: #9a9ba3;
+  color: var(--text-muted);
   text-align: center;
   margin-top: 12px;
 }
 
 .auth-card {
-  width: 420px;
-  background: #1a1b1e;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 40px;
-  margin: 48px auto;
+  position: relative;
+  width: 595px;
+  max-width: calc(100vw - 32px);
+  background: var(--bg-surface);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 38px 23px 30px;
+  margin: 90px auto;
+}
+
+/* `Ellipse 22/23/24` — the blue wash behind the card. Fixed rather than absolute so it fills
+   the viewport regardless of how tall the card grows, and pinned behind it with z-index. */
+.auth-card::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(60% 55% at 50% 40%, rgba(24, 131, 255, 0.35), transparent 70%),
+    radial-gradient(40% 40% at 100% 0%, rgba(24, 131, 255, 0.3), transparent 70%);
+  pointer-events: none;
 }
 
 .auth-card h1 {
-  font-size: 28px;
+  font-size: 39px;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--text-primary);
 }
 
 .auth-field {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .auth-field label {
   display: block;
-  font-size: 14px;
-  color: #9a9ba3;
+  font-size: 17px;
+  color: var(--text-muted);
   margin-bottom: 8px;
   font-weight: 500;
 }
 
+/* `Rectangle 71` — 553x68 at 13px radius, filled `blue-50`, no border in the design. */
 .auth-field input {
   width: 100%;
-  background: #232428;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  padding: 14px 16px;
-  color: #f5f5f7;
-  font-size: 16px;
+  height: 68px;
+  background: var(--blue-50);
+  border: 1px solid transparent;
+  border-radius: 13px;
+  padding: 0 19px;
+  color: var(--neutral-900);
+  font-size: 20px;
   font-family: inherit;
 }
 
 .auth-field input:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.16);
+  border-color: var(--accent);
 }
 
 .auth-field input::placeholder {
-  color: #6b6c74;
+  color: var(--neutral-900);
+  opacity: 0.7;
 }
 
 .auth-field-wrap {
@@ -60,18 +84,18 @@
 }
 
 .auth-field-wrap input {
-  padding-right: 72px;
+  padding-right: 88px;
 }
 
 .auth-password-toggle {
   position: absolute;
-  right: 14px;
+  right: 18px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: #6b6c74;
-  font-size: 14px;
+  color: var(--text-muted);
+  font-size: 15px;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
@@ -79,21 +103,29 @@
 }
 
 .auth-password-toggle:hover {
-  color: #9a9ba3;
+  color: var(--accent);
 }
 
+/* `Component 14` — 553x68 at 8px radius. Its two variants swap fill and label between
+   `blue-50`/`blue-700` and `blue-700`/white; the filled one is the resting submit state. */
 .auth-submit {
   width: 100%;
-  background: #f5f5f7;
-  color: #111214;
+  height: 68px;
+  background: var(--accent);
+  color: var(--text-inverse);
   border: none;
-  border-radius: 10px;
-  padding: 14px 24px;
-  font-size: 16px;
+  border-radius: var(--radius-sm);
+  padding: 0 24px;
+  font-size: 22px;
   font-weight: 600;
   cursor: pointer;
-  margin-top: 8px;
+  margin-top: 12px;
   font-family: inherit;
+}
+
+.auth-submit:hover:not(:disabled) {
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .auth-submit:disabled,
@@ -103,77 +135,41 @@
 }
 
 .auth-subtitle {
-  color: #9a9ba3;
-  font-size: 14px;
-}
-
-/* Every auth form's failure text. Declared once here rather than per form: login's error had no
-   class at all and rendered as unstyled body copy, and verify's `.verify-form-error` was a class
-   name with no rule behind it — so the two screens that must show a failure showed it in the
-   same colour as the labels. `.register-hint-error` already used this red; this is that colour
-   promoted to the shared sheet rather than a fourth opinion about it. */
-.auth-form-error {
-  color: #ef4444;
-  font-size: 14px;
-  margin-top: 12px;
+  color: var(--neutral-900);
+  font-size: 18px;
   text-align: center;
 }
 
-/* Network/transport failure — a connection problem, not a rejected credential, so it is VISUALLY
-   DISTINCT from .auth-form-error above: an amber boxed alert rather than plain red text, signalling
-   "retry" instead of "your input was wrong". align-design pins the exact treatment against the
-   mockup; green owns only the distinction. */
-.auth-network-error {
-  color: #b45309;
-  background: #fffbeb;
-  border: 1px solid #fcd34d;
-  border-radius: 8px;
-  font-size: 14px;
-  margin-top: 12px;
-  padding: 10px 12px;
-  text-align: center;
-}
+/* Status banners (error / network / oauth / success) live in AuthStatus.css — imported
+   alongside this file by every form. Split out to keep this shell under the 200-line cap. */
 
-/* Provider sign-in failure routed back from /auth/callback — DISTINCT from both the field error and
-   the network banner so it reads as "sign-in through the provider failed", not "wrong password".
-   Pinned to mockup 03-login-oauth-error.html .error-banner: a red boxed alert with a leading
-   alert-circle icon, sitting above the form (margin-bottom, not -top). --error is #ef4444, so the
-   0.1/0.3 tints match the mockup's literal rgba(239,68,68,…). */
-.auth-oauth-error {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--error);
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 10px;
-  font-size: 14px;
-  margin-bottom: 20px;
-  padding: 12px 14px;
-}
-
-.auth-oauth-error-icon {
-  flex-shrink: 0;
-}
-
-/* display:block for the same reason as .auth-loading-indicator: <output> is inline. */
-.auth-form-success {
-  display: block;
-  color: #4ade80;
-  font-size: 14px;
-  margin-top: 12px;
-  text-align: center;
-}
-
+/* "Уже есть аккаунт? Войти с паролем" — 17px, near-black, the link itself brand blue. */
 .auth-footer-link {
   text-align: center;
-  margin-top: 24px;
-  font-size: 14px;
-  color: #9a9ba3;
+  margin-top: 22px;
+  font-size: 17px;
+  color: #222222;
 }
 
 .auth-footer-link a {
-  color: #f5f5f7;
+  color: var(--accent);
   font-weight: 500;
   text-decoration: none;
+}
+
+@media (max-width: 640px) {
+  .auth-card {
+    margin: 24px auto;
+    padding: 24px 16px;
+  }
+
+  .auth-card h1 {
+    font-size: 26px;
+  }
+
+  .auth-field input,
+  .auth-submit {
+    height: 56px;
+    font-size: 17px;
+  }
 }

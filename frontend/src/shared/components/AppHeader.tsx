@@ -11,7 +11,7 @@ interface AppHeaderProps {
 export function AppHeader({ onLogoutClick }: AppHeaderProps) {
   return (
     <header className="app-header">
-      <img className="app-logo" src="/logo.svg" alt="Textery" />
+      <img className="app-logo" src="/design/logo-textery.svg" alt="Textery" />
       {onLogoutClick && (
         <button
           type="button"

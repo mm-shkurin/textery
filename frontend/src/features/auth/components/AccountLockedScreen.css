@@ -1,13 +1,10 @@
-/* Account-locked screen. Values sourced from mockup 04-account-locked.html; the card itself
-   reuses .auth-card (shared auth shell). align-design refines any remaining gaps. */
+/* Account-locked screen. Reuses the shared .auth-card shell; only the deltas live here.
+   Re-skinned to the Figma light theme — the surfaces it used to borrow (#232428, white-alpha
+   borders) do not exist on a white card. */
 .account-locked-card {
   text-align: center;
 }
 
-/* Vertical rhythm from mockup 04-account-locked.html (h1 mb 12, subtitle mb 24). Scoped to this
-   card so the shared .auth-card h1 (used by login/register, which sit above form fields with their
-   own spacing) is unaffected. h1 size stays the app-standard 28px (shared) rather than the mockup's
-   24px, for cross-auth-screen consistency — the same call taken on 5.1/5.2. */
 .account-locked-card h1 {
   margin-bottom: 12px;
 }
@@ -32,27 +29,38 @@
 .al-icon {
   width: 26px;
   height: 26px;
+  color: var(--error);
 }
 
 .al-timer-pill {
   display: inline-block;
-  background: #232428;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 999px;
-  padding: 8px 20px;
-  font-size: 14px;
+  background: var(--blue-50);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 10px 24px;
+  font-size: 16px;
   font-weight: 600;
+  color: var(--accent);
   margin-bottom: 28px;
 }
 
+/* The secondary way out. Styled as `Component 14`'s soft variant so it reads as the quieter
+   sibling of .auth-submit rather than a second primary. */
 .al-back-button {
   width: 100%;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #9a9ba3;
-  border-radius: 10px;
-  padding: 14px 24px;
-  font-size: 16px;
+  height: 68px;
+  background: var(--blue-50);
+  border: none;
+  color: var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 0 24px;
+  font-size: 22px;
   font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
+}
+
+.al-back-button:hover {
+  background: var(--accent);
+  color: var(--text-inverse);
 }

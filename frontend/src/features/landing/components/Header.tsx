@@ -20,7 +20,9 @@ export function Header({
 }: HeaderProps) {
   return (
     <header className="site-header">
-      <img className="brand-logo" src="/logo.svg" alt="Textery" />
+      {/* Exported from the Figma `Logo` component (node 577:2034) rather than redrawn, so the
+          mark stays byte-identical to the design source. */}
+      <img className="brand-logo" src="/design/logo-textery.svg" alt="Textery" />
       <div className="header-actions">
         {!isAuthenticated && (
           // The mockup's second header action for a signed-out visitor (01-landing.html:46,

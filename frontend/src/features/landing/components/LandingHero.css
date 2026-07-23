@@ -1,0 +1,177 @@
+.hero {
+  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 90px 20px 0;
+  text-align: center;
+}
+
+/* Two `Ellipse` shapes bleed off each side of the 1440px frame at y=112 with a 1033px
+   diameter in `blue-500`; the glass renders sit on top of them. */
+.hero::before,
+.hero::after {
+  content: '';
+  position: absolute;
+  top: 60px;
+  width: 1033px;
+  height: 1033px;
+  border-radius: var(--radius-pill);
+  background: var(--blue-500);
+  opacity: 0.18;
+  filter: blur(40px);
+  z-index: 0;
+}
+
+.hero::before {
+  right: calc(100% - 300px);
+}
+
+.hero::after {
+  left: calc(100% - 300px);
+}
+
+.hero-glass {
+  position: absolute;
+  top: 40px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.hero-glass img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.hero-glass-left {
+  left: -180px;
+  width: 420px;
+}
+
+.hero-glass-right {
+  right: -180px;
+  width: 440px;
+}
+
+.hero-glass-left img:last-child {
+  margin-top: -40px;
+  margin-left: 40px;
+  width: 130%;
+}
+
+.hero-glass-right img:last-child {
+  margin-top: -60px;
+  margin-left: -60px;
+  width: 145%;
+}
+
+.hero-title,
+.hero-subtitle,
+.hero-prompt {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-title {
+  max-width: 700px;
+  margin: 0 auto;
+  font-size: 44px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #1f1f1f;
+}
+
+.hero-title-accent {
+  color: #1252d3;
+}
+
+.hero-subtitle {
+  max-width: 770px;
+  margin: 20px auto 0;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text-primary);
+}
+
+.hero-subtitle strong {
+  font-weight: 700;
+}
+
+/* `Rectangle 116` — a 770x72 white bar at 10px radius holding the field and, inset 12px
+   from its right edge, the 208x50 black `Сгенерировать` button (`Component 23`). */
+.hero-prompt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 770px;
+  margin: 44px auto 0;
+  padding: 11px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+}
+
+.hero-prompt-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  font-family: inherit;
+  font-size: 16px;
+  color: var(--text-primary);
+  padding: 0 12px;
+}
+
+.hero-prompt-input::placeholder {
+  color: var(--text-primary);
+  opacity: 0.75;
+}
+
+.hero-prompt-button {
+  flex-shrink: 0;
+  width: 208px;
+  height: 50px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--neutral-950);
+  color: var(--text-inverse);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hero-prompt-button:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+@media (max-width: 900px) {
+  .hero-glass,
+  .hero::before,
+  .hero::after {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding: 48px 16px 0;
+  }
+
+  .hero-title {
+    font-size: 30px;
+  }
+
+  .hero-subtitle {
+    font-size: 16px;
+  }
+
+  .hero-prompt {
+    flex-wrap: wrap;
+  }
+
+  .hero-prompt-button {
+    width: 100%;
+  }
+}

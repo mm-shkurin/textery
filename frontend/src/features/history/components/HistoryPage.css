@@ -34,7 +34,7 @@
 .history-tabs {
   display: flex;
   gap: 4px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-subtle);
   margin-bottom: 8px;
 }
 
@@ -68,7 +68,7 @@
   width: 100%;
   background: none;
   border: none;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-subtle);
   padding: 16px 4px;
   text-align: left;
   font: inherit;
@@ -80,7 +80,7 @@ button.history-row {
 }
 
 button.history-row:hover {
-  background: var(--surface-hover, rgba(255, 255, 255, 0.04));
+  background: var(--blue-50);
 }
 
 .history-row-title {
@@ -117,7 +117,7 @@ button.history-row:hover {
 .history-more {
   align-self: center;
   background: none;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   color: var(--text-primary);
   cursor: pointer;

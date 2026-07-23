@@ -2,9 +2,23 @@
 // renders one control per entry, and the /auth/callback interstitial rejects any provider that is
 // not exactly one of these — so adding a provider (or removing one) is a ONE-place edit here, and
 // the callback's malformed-guard and the rendered buttons can never drift out of agreement.
+// `badgeSrc` points at the provider mark exported from the Figma UI Kit (`Group 18`/`Group 19`,
+// node 125:1276) rather than a letter drawn in CSS, so the buttons carry the real provider logos
+// the design specifies. The labels stay as story 16 spells them — the Figma copy reads
+// "Продолжить с Яндекс"/"Продолжить с VK", which is a spec change, not a styling one.
 export const OAUTH_PROVIDERS = [
-  { provider: 'vk', label: 'Войти через VK ID', badge: 'VK', startPath: '/api/v1/auth/oauth/vk/start' },
-  { provider: 'yandex', label: 'Войти через Yandex ID', badge: 'Я', startPath: '/api/v1/auth/oauth/yandex/start' },
+  {
+    provider: 'vk',
+    label: 'Войти через VK ID',
+    badgeSrc: '/design/icon-vk.svg',
+    startPath: '/api/v1/auth/oauth/vk/start',
+  },
+  {
+    provider: 'yandex',
+    label: 'Войти через Yandex ID',
+    badgeSrc: '/design/icon-yandex.svg',
+    startPath: '/api/v1/auth/oauth/yandex/start',
+  },
 ] as const
 
 // The valid provider identifiers as a lookup set, derived from OAUTH_PROVIDERS so it cannot drift.

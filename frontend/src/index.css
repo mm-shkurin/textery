@@ -1,27 +1,52 @@
+/* Design tokens mirror the Figma file "Labs-2026 ООО ИИ" (page Textery), frame `Pallete`
+   (node 315:2139). The Figma frames are drawn at 1.3333x, so every px value taken from the
+   API is divided by 1.3333 before it lands here — Figma 21.33px text is 16px CSS. */
 :root {
-  --bg-page: #1a1b1c;
-  --bg-header: #37383a;
-  --bg-surface: #262728;
-  --bg-surface-raised: #2c2d2e;
-  --bg-card: #313233;
-  --border-subtle: #3d3f40;
-  --border-strong: #504f56;
-  --text-primary: #ffffff;
-  --text-secondary: #8d8d8d;
-  --text-muted: #6c6f72;
-  --surface-light: #e9e9e9;
+  /* Palette — the ten swatches of the `Pallete` frame, in the order they appear there. */
+  --blue-900: #042e7b;
+  --blue-700: #004ee0;
+  --blue-500: #1883ff;
+  --blue-200: #99caff;
+  --blue-50: #e3f2ff;
+  --neutral-000: #ffffff;
+  --neutral-600: #797d81;
+  --neutral-700: #4f555b;
+  --neutral-900: #262728;
+  --neutral-950: #161616;
+
+  /* Semantic surfaces. The product is a light theme: the page is `blue-50`, and every
+     panel that sits on it (nav pill, prompt bar, stat card, FAQ row) is plain white. */
+  --bg-page: var(--blue-50);
+  --bg-header: var(--neutral-000);
+  --bg-surface: var(--neutral-000);
+  --bg-surface-raised: var(--neutral-000);
+  --bg-card: var(--neutral-000);
+  --bg-card-muted: #d2e2f2;
+  --bg-inverse: var(--neutral-950);
+  --border-subtle: #d5e6f7;
+  --border-strong: var(--blue-200);
+  --text-primary: var(--neutral-950);
+  --text-secondary: var(--neutral-700);
+  --text-muted: var(--neutral-600);
+  --text-inverse: var(--neutral-000);
+  --surface-light: var(--neutral-000);
   --surface-light-2: #d9d9d9;
-  /* The light-on-dark primary button pair, shared by .cw-btn-primary,
-     .me-save-btn and .me-link-apply. Kept as one token pair so a third
-     copy of the literals can't drift from the other two. */
-  --btn-primary-bg: #f5f5f7;
-  --btn-primary-fg: #111214;
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
+  /* The primary button pair, shared by .cw-btn-primary, .me-save-btn and .me-link-apply.
+     Kept as one token pair so a third copy of the literals can't drift from the other two. */
+  --btn-primary-bg: var(--blue-700);
+  --btn-primary-fg: var(--neutral-000);
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
   --radius-pill: 999px;
-  --accent-start: #6366f1;
-  --accent-end: #a855f7;
+  /* The UI Kit draws no gradient accent — a button's second variant is a flat colour swap
+     (#004ee0 <-> #e3f2ff). The gradient tokens stay defined because older screens still
+     reference them, but they now resolve to the flat brand blues rather than violet. */
+  --accent: var(--blue-700);
+  --accent-hover: var(--blue-500);
+  --accent-soft: var(--blue-50);
+  --accent-start: var(--blue-700);
+  --accent-end: var(--blue-500);
   --accent-gradient: linear-gradient(135deg, var(--accent-start), var(--accent-end));
   --warning: #f59e0b;
   --success: #22c55e;

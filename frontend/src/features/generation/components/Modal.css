@@ -1,21 +1,25 @@
 /* The modal chrome only — backdrop, panel, header, close. Split from a 229-line
    Modal.css that both modals imported whole: each file is now owned by the component
    whose classes it holds, so a card change cannot touch the panel. */
+/* Figma `Generation screen` (node 422:1439): the modal sits over a blurred `#71b7fd` wash of
+   the landing behind it, not a dark scrim. */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(8, 8, 10, 0.72);
+  background: rgba(113, 183, 253, 0.55);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
 }
+/* `Rectangle 15` — the 1173x573 panel is `blue-50` at 8px radius, no border. */
 .modal {
-  width: 760px;
+  width: 880px;
   max-width: calc(100vw - 32px);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 20px;
+  background: var(--bg-page);
+  border: none;
+  border-radius: var(--radius-sm);
   padding: 40px;
   text-align: left;
 }
@@ -29,8 +33,9 @@
   margin-bottom: 8px;
 }
 .modal-header h1 {
-  font-size: 26px;
+  font-size: 36px;
   font-weight: 700;
+  color: var(--text-primary);
 }
 .close-btn {
   width: 36px;
@@ -59,8 +64,9 @@
   padding: 0;
 }
 .modal-subtitle {
-  color: var(--text-secondary);
-  font-size: 15px;
+  color: var(--text-primary);
+  font-size: 21px;
+  font-weight: 500;
   margin-bottom: 32px;
 }
 

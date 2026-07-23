@@ -1,61 +1,102 @@
-/* border/padding/margin are reset because <fieldset> ships with a default border and inline
+/* Figma `Email code` (node 600:1540): six 56x75 boxes at 8px radius filled `blue-50`, with a
+   short dash between the third and fourth. Digits are 27px, weight 500.
+
+   border/padding/margin are reset because <fieldset> ships with a default border and inline
    padding of its own — the element is here for its grouping semantics, not its chrome. */
 .verify-code-inputs {
+  position: relative;
   display: flex;
-  gap: 10px;
+  gap: 11px;
   justify-content: center;
-  margin: 0 0 16px;
+  align-items: center;
+  margin: 24px 0 20px;
   padding: 0;
   border: 0;
   min-inline-size: 0;
 }
 
 .verify-code-inputs input {
-  width: 52px;
-  height: 60px;
-  background: #232428;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  color: #f5f5f7;
+  width: 56px;
+  height: 75px;
+  background: var(--blue-50);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
   text-align: center;
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 27px;
+  font-weight: 500;
   font-family: inherit;
 }
 
 .verify-code-inputs input:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.16);
+  border-color: var(--accent);
 }
 
-/* Wrong/expired code: red border on every box (mockup 02-verify-code `.code-box.error`).
-   Placed after :focus so an error box keeps the error border while focused. */
+/* `Vector 25` — the 23px dash that splits the six boxes into two triplets. Drawn as a border
+   on the third box's right gap so no extra element is needed in the fieldset. */
+.verify-code-inputs input:nth-child(3) {
+  margin-right: 34px;
+}
+
+.verify-code-inputs::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 23px;
+  height: 2px;
+  background: var(--neutral-900);
+}
+
+/* Wrong/expired code: red border on every box. Placed after :focus so an error box keeps the
+   error border while focused. */
 .verify-code-inputs input.error,
 .verify-code-inputs input.error:focus {
-  border-color: #ef4444;
+  border-color: var(--error);
 }
 
+/* "Письмо не пришло?" then the countdown line, both centred under the boxes. */
 .verify-resend {
-  margin-top: 24px;
+  margin-top: 22px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   text-align: center;
-  font-size: 14px;
-  color: #9a9ba3;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--neutral-900);
 }
 
 .verify-resend button {
   background: none;
   border: none;
   padding: 0;
-  color: #6b6c74;
-  font-size: 14px;
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 600;
   font-family: inherit;
   cursor: pointer;
 }
 
 .verify-resend [data-testid='verify-resend-countdown'] {
-  color: #f5f5f7;
-  font-weight: 500;
+  color: var(--neutral-900);
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .verify-code-inputs {
+    gap: 6px;
+  }
+
+  .verify-code-inputs input {
+    width: 44px;
+    height: 58px;
+    font-size: 22px;
+  }
+
+  .verify-code-inputs input:nth-child(3) {
+    margin-right: 22px;
+  }
 }

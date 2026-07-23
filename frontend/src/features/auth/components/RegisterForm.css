@@ -1,5 +1,5 @@
 .register-card h1 {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .register-subtitle {
@@ -7,18 +7,26 @@
 }
 
 .register-hint {
-  font-size: 12px;
-  color: #6b6c74;
+  font-size: 14px;
+  color: var(--text-muted);
   margin-top: 6px;
 }
 
 .register-hint-error {
-  color: #ef4444;
+  color: var(--error);
 }
 
+/* "Cоздавая аккаунт, вы соглашаетесь…" — 14px, near-black, centred under the card's actions
+   (node 125:1276, y=750). The links inside it are brand blue. */
 .register-terms {
-  font-size: 12px;
-  color: #6b6c74;
+  font-size: 14px;
+  color: var(--text-primary);
+  text-align: center;
   margin-top: 20px;
   line-height: 1.5;
+}
+
+.register-terms a {
+  color: var(--accent);
+  text-decoration: none;
 }

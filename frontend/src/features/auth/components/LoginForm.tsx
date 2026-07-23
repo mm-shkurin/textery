@@ -20,6 +20,7 @@ import {
 } from '../utils/loginErrorHandling'
 import { safeRedirectTarget } from '../utils/safeRedirectTarget'
 import './AuthForm.css'
+import './AuthStatus.css'
 import './LoginForm.css'
 
 // Login-rejection interpretation (UNVERIFIED distinct message, INVALID_CREDENTIALS pass-through,
