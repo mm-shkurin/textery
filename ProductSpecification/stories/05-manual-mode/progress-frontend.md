@@ -58,6 +58,21 @@ queue was never exercised through a real click dispatch.
 - [S] red-frontend-api — no new API call for this scenario (display-only, document already created in 1.2's flow)
 - [S] green-frontend-api — same reason
 - [S] align-design — content-area/toolbar/breadcrumb styling already aligned to mockup in scenario 1.2
+- [x] red-frontend-placeholder — DONE (2026-07-23). New `ManualEditor.placeholder.test.tsx` (43 lines):
+  empty ManualEditor's content area must carry `data-placeholder="Начните печатать…"` + class
+  `is-editor-empty`, both gone after typing. **Predicted:** `AssertionError` on `toHaveAttribute('data-placeholder',
+  'Начните печатать…')` — attribute absent, `Received: null`, because stock `Placeholder.configure`
+  (`ManualEditor.tsx:86`) no-ops on the `inline*` schema (`ManualEditor.tsx:78`, no block node to decorate).
+  **Actual:** identical — failed at the first assertion, `Received: null`. **Comparison: all cells YES**
+  (type/message/status). `describe.skip` with dated reason so the suite stays green. test-review: PASS,
+  assertions already strict (exact `toHaveAttribute`/`toHaveClass` + independent `.not` removals; no
+  computed-style/`::before` assertion — that visual paint stays owed to green-selenium). Suite: 1 skipped |
+  0 failed; tsc clean.
+- [~] green-frontend-placeholder — make the empty inline doc carry the placeholder attr/class in the DOM
+  (green-agent picks the mechanism — a custom ProseMirror decoration on the empty doc is the likely fit,
+  stock Placeholder cannot attach to a non-block doc). Wire the existing `.me-placeholder` CSS token to an
+  `::before` on the empty-state class so the text actually paints. The paint itself is verified by
+  green-selenium (owed); this step pins the DOM contract in jsdom.
 - [S] green-selenium — ~~red-selenium test is already green; no marker to remove~~ **FALSE, corrected
   2026-07-22.** Driven live against the full stack (backend :8100 + Postgres + Redis) with a real
   register→verify→login session: the test FAILS on a genuine production defect. The placeholder
