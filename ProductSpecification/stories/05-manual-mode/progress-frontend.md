@@ -122,13 +122,16 @@ queue was never exercised through a real click dispatch.
   heuristics; pinning `role` without `aria-multiline` narrows it). → new `red/green-frontend-placeholder-multiline`
   steps below. agent-review low: the un-skipped aria test still carries a stale "Skipped until…green" comment
   (`ManualEditor.placeholder.test.tsx:72`) — fix on the next touch of that file (the multiline green).
-- [~] red-frontend-placeholder-role — follow-up guard (2026-07-23): `role="textbox"` shipped by the green above
-  is currently UNGUARDED — delete it and the whole suite stays green. It is a raw DOM attribute (jsdom-observable),
-  so pin it: a fresh ManualEditor's content area (`data-testid="editor-content-area"`) has `role="textbox"`, and
-  it persists after typing (unlike the empty-state attrs, role is unconditional). LIVE characterization (already
-  shipped) — mutation-check by removing the role from `editorProps.attributes`. The remaining real-AT/axe
-  verification stays owed to green-selenium.
-- [ ] red-frontend-placeholder-multiline — genuine RED (both review passes, CREDIBLE): the editor supports hard
+- [x] red-frontend-placeholder-role — DONE (2026-07-23), LIVE characterization (role already shipped). Added
+  test to `ManualEditor.placeholder.test.tsx` (now 103 lines): fresh content area has `role="textbox"`, and it
+  PERSISTS after typing (unconditional, unlike the empty-state attrs). **Predicted PASS** (role set
+  unconditionally in `editorProps.attributes`, ManualEditor.tsx:108). **Actual PASS. Comparison: all cells
+  YES.** Kept LIVE. **Mutation-check (teeth):** removed `role: 'textbox'` → new test FAILED (`role` null at the
+  fresh assertion, line 96); production restored (`git diff` clean on ManualEditor.tsx). test-review: PASS
+  (exact `toHaveAttribute('role','textbox')` on both fresh + persistence assertions; no `aria-multiline` leaked
+  in). Suite: 4 passed in file | 0 skipped; canonical `tsc -b --noEmit` clean. Real-AT/axe verification stays
+  owed to green-selenium.
+- [~] red-frontend-placeholder-multiline — genuine RED (both review passes, CREDIBLE): the editor supports hard
   breaks yet exposes `role="textbox"` with no `aria-multiline`, so AT announces it single-line. Pin: the content
   area (`data-testid="editor-content-area"`) has `aria-multiline="true"`. Fails today (grep: zero `aria-multiline`
   in `frontend/src`). `it.skip` until green.

@@ -81,4 +81,23 @@ describe('ManualEditor placeholder', () => {
 
     expect(contentArea).not.toHaveAttribute('aria-placeholder')
   })
+
+  // Characterization (LIVE, already GREEN). ManualEditor.tsx sets
+  // editorProps.attributes.role = 'textbox' UNCONDITIONALLY (not gated on emptiness
+  // like the placeholder attrs). No prior test asserts it, so deleting the line keeps
+  // the suite green. role is a raw DOM attribute (jsdom-observable), so we pin it: the
+  // content area must carry role="textbox" on a fresh editor AND keep it after typing,
+  // proving the attribute is unconditional rather than empty-state-gated. Scope is role
+  // ONLY — aria-multiline is a separate queued red (red-frontend-placeholder-multiline).
+  it('carries role=textbox on a fresh editor and keeps it after typing', async () => {
+    await renderEditorWithDocumentCreated()
+
+    const contentArea = screen.getByTestId('editor-content-area')
+    expect(contentArea).toHaveAttribute('role', 'textbox')
+
+    contentArea.textContent = 'hello world'
+    fireEvent.input(contentArea)
+
+    expect(contentArea).toHaveAttribute('role', 'textbox')
+  })
 })
