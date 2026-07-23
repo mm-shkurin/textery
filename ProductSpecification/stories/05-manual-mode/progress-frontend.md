@@ -229,19 +229,24 @@ queue was never exercised through a real click dispatch.
   2.1 is ONLY non-jsdom work: the green-selenium owe-list (`::before` visual paint, real-AT/axe announcement of
   role+aria-multiline+aria-placeholder, real-browser delete-after-Enter placeholder return, popover clip, caret,
   save-queue, line-break save-payload) — all requiring the live backend :8100 + Chrome stack.
-- [S] green-selenium — ~~red-selenium test is already green; no marker to remove~~ **FALSE, corrected
-  2026-07-22.** Driven live against the full stack (backend :8100 + Postgres + Redis) with a real
-  register→verify→login session: the test FAILS on a genuine production defect. The placeholder
-  renders nowhere — a freshly created document's content area is exactly
-  `<br class="ProseMirror-trailingBreak">`, with no `.me-placeholder` element (that class exists
-  only in `ManualEditor.css`, nothing renders it) and no `data-placeholder` attribute. Cause:
-  `Placeholder.configure(...)` decorates an empty **node**, and the doc schema is
-  `Document.extend({ content: 'inline*' })` — no paragraph node exists to carry the decoration, so
-  the extension silently no-ops. **No jsdom test asserts the placeholder at all**, which is why the
-  suite stayed green over a missing feature (a fourth instance of carryover's "a green suite is not
-  evidence"). Test re-skipped with an accurate dated reason naming the defect; the other three
-  assertions in it (no skeleton, toolbar, breadcrumb) were verified passing live before the
-  placeholder assertion failed. Owed: make the placeholder render, then un-skip.
+- [x] green-selenium — **GREEN live 2026-07-23 (`1 passed in 18.95s`).** The 2026-07-22 placeholder defect is
+  RESOLVED and verified in a real headless Chrome against the full stack (backend :8100 + Postgres + Redis,
+  vite dev :5173 serving current source), with a real register→verify→login session. `InlinePlaceholder`
+  (`inlinePlaceholder.ts`) decorates the empty ProseMirror root with `data-placeholder` + `is-editor-empty`,
+  and `ManualEditor.css` paints the hint via `.ProseMirror.is-editor-empty::before { content:
+  attr(data-placeholder) }`. Un-skipped `test_should_show_empty_editor_with_placeholder_and_toolbar` and
+  repointed the Statement's stale `.me-placeholder` locator to the real mechanism:
+  `assert_content_placeholder_is_visible` now asserts the `data-placeholder` attribute value, the
+  `is-editor-empty` class, AND — the coverage the jsdom unit tests explicitly owed to selenium — the
+  **`::before` computed content actually paints** `Начните печатать…` (via
+  `getComputedStyle(el,'::before').content`, invisible to jsdom by construction). Also de-brittled a stale
+  exact-count assertion exposed by the live run: `_assert_toolbar_button_count` expected exactly 7 but the
+  toolbar legitimately grew to **18** buttons (scenarios 7.1-7.9); changed to a lower bound
+  (`MINIMUM_TOOLBAR_BUTTON_COUNT = 7`, the named controls still pinned individually by aria-label) so 2.1 is not
+  coupled to the extended toolbar's size. **Run gotcha recorded:** the live-auth harness defaults
+  `BACKEND_PORT=8000`, which on this host is another project's container (`random_coffee_app`, 404 on
+  `/api/v1/auth/register`); the Textery backend is :8100, so acceptance runs need `BACKEND_PORT=8100` exported.
+  Scenarios 1.2 and 3.1 re-verified GREEN live in the same run.
 - [x] demo
 
 ### Scenario 3.1: Applying a format changes the content and highlights the active toolbar button
