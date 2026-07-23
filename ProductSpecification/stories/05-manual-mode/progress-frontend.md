@@ -1467,19 +1467,31 @@ container (`random_coffee_app`) and 404s on `/api/v1/auth/register`. Canonical f
   (desktop line 85 + mobile line 75) was itself the SOURCE of the lie — updated BOTH to the honest copy so a
   future `align-design` cannot re-seed it; intentional divergence recorded (honesty over pixel-match to a false
   mockup). tsc `-b --noEmit` clean; full suite **330 passed | 0 skipped | 0 failed (84 files)**.
-- [~] guard-unsaved-work — nothing protects unsaved work: zero `beforeunload`/`localStorage` hits in
-  `frontend/src`. red-frontend: assert a `beforeunload` handler is registered while the document has
-  unsaved changes and removed when clean (spy on `window.addEventListener`). green-frontend: add a
-  `useEffect` in `ManualEditor` that binds `beforeunload` (preventDefault + returnValue) whenever
-  `hasUnsavedChanges` is true, cleaned up otherwise. (A full `localStorage` draft is a larger follow-up —
-  scope THIS step to the `beforeunload` prompt only; note the draft as owed.)
+- [x] guard-unsaved-work — **DONE (2026-07-23), genuine red→green.** Nothing protected unsaved editor work —
+  zero `beforeunload` in `frontend/src/features/generation`; a tab-close/refresh silently lost everything
+  (content lives only in Tiptap in-memory state, no persistence). **red-frontend:** new
+  `ManualEditor.beforeUnloadGuard.test.tsx` (asserts the behavioral contract, not impl): (1) while dirty a
+  dispatched `cancelable` `beforeunload` is `defaultPrevented === true`; (2) after a resolved save →
+  `false` (guard stands down); (3) unmount removes the SAME handler ref (no leak). **Predicted:** case 1
+  `AssertionError: expected false to be true` — no listener registered, so the dirty dispatch isn't prevented.
+  **Actual:** identical, `expected false to be true` at case 1 (cases 2/3 pass vacuously in red). **Comparison:
+  all cells YES.** `describe.skip` + dated reason. test-review: strengthened cases 2 & 3 from vacuous — case 2
+  now asserts the full `true→false` transition (arm-then-disarm), case 3 spies `removeEventListener` with the
+  exact handler ref (catches the classic effect-cleanup leak). **green-frontend:** added a `useEffect` in
+  `ManualEditor.tsx` keyed on `hasUnsavedChanges` — registers a `window` `beforeunload` listener that
+  `preventDefault()`s while dirty, cleanup removes it on clean/unmount. Un-skipped (only allowed test edit).
+  Did NOT import the ref-based `auth/utils/useUnsavedGuard` (registration-specific message + confirmLeave API);
+  reuse/extraction left as a refactor-pass call. `ManualEditor.tsx` 184 lines (under 200). tsc `-b --noEmit`
+  clean; full suite **333 passed | 0 skipped | 0 failed (85 files)**. **OWED follow-up (out of this unit's
+  scope):** a full `localStorage`/sessionStorage draft so work survives an actual tab close (the `beforeunload`
+  prompt only warns; it does not persist) — larger step, not yet a checkbox here.
 
 ### Track B — live-Selenium owe-list (stack up, `BACKEND_PORT=8100`)
 
 Each is a `green-selenium` step: `/run-backend` (already up) → `/run-frontend` (vite :5173 already up) →
 drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 python -m pytest <path> -q`.
 
-- [ ] green-selenium-line-break-save-payload — the line-break green-selenium proved the RENDER half only;
+- [~] green-selenium-line-break-save-payload — the line-break green-selenium proved the RENDER half only;
   the SAVE path (`editor.getHTML()` → PUT body) and the reopen round-trip are still owed (data-loss
   shaped). Add an acceptance test: type text, press Enter, type more, SAVE, assert the outbound PUT body
   (or a reopen) carries exactly one `<br>`; then reload the document and assert the break survived the

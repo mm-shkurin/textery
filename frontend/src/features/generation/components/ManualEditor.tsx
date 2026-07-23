@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Document from '@tiptap/extension-document'
@@ -127,6 +127,17 @@ export function ManualEditor({
     onDirty: () => setHasUnsavedChanges(true),
   })
   noteEditRef.current = noteEdit
+
+  // Unsaved work lives only in Tiptap's in-memory state, so a tab-close or refresh drops it
+  // silently. beforeunload's native "leave?" prompt is the browser's one built-in defence, shown
+  // only when a listener calls preventDefault. Arm it while dirty, and detach on clean/unmount with
+  // the same handler reference so a closed editor cannot keep blocking navigation.
+  useEffect(() => {
+    if (!hasUnsavedChanges) return
+    const guard = (event: BeforeUnloadEvent) => event.preventDefault()
+    window.addEventListener('beforeunload', guard)
+    return () => window.removeEventListener('beforeunload', guard)
+  }, [hasUnsavedChanges])
 
   useDocumentInit({
     documentType,
