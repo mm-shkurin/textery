@@ -25,3 +25,15 @@ Enduring quirks and decisions promoted from completed scenarios. Read on resume.
 **Where:** frontend/src/features/auth/api/apiError.ts + loginErrorHandling.ts.
 **Implication:** Backend must emit 5xx as codeless (FastAPI default is), or the classifier must widen to status>=500 regardless of errorCode — else a server outage dead-ends OAuth users on the terminal screen.
 **From:** scenario 4.2 (network-failure-retry-affording)
+
+## Quirk: the coded-5xx-is-terminal rule now has an INTERNAL_ERROR exception (Task 6)
+**Quirk:** `isLoginNetworkError`'s final fall-through returns `hasErrorCode(error,'INTERNAL_ERROR')`, so a status-less codeful `{errorCode:'INTERNAL_ERROR'}` (the backend's generic 500) IS retry-classified — partially superseding the carryover entry above. The widening keys on that ONE sentinel; every other coded-but-statusless business error (INVALID_CREDENTIALS, INVALID_OR_EXPIRED_OAUTH_CODE) still returns false → terminal.
+**Where:** frontend/src/features/auth/utils/loginErrorHandling.ts.
+**Implication:** OAuth 5xx now shows the retry banner, not the terminal card. No end-to-end test drives a real backend 500 body through `toAuthApiError` — if the live backend spells the code differently (INTERNAL_SERVER_ERROR / lowercase), the fix is a silent no-op behind a green suite.
+**From:** Task 6 (oauth-5xx-terminal-not-retry)
+
+## Quirk: MemoryRouter rerender + no-op navigate mock can't clear location.state
+**Quirk:** A test that mounts under `MemoryRouter` with a mocked no-op `useNavigate` cannot make an effect's `navigate(...,{state:{}})` actually clear `location.state` — MemoryRouter ignores changed `initialEntries` on rerender, so a component reading live `location.state` and one reading a captured local copy are indistinguishable in that setup.
+**Where:** frontend/src/features/auth/components/__tests__/ (OAuthErrorBanner.staleBanner vs survivesScrub).
+**Implication:** To prove a component survives its own history-state scrub (capture-locally vs blank-on-scrub), the discriminating test must leave react-router REAL so the scrub genuinely mutates state; a no-op-navigate + rerender guard is non-discriminating.
+**From:** scenario 4.1 (provider-error-distinct-message)
