@@ -151,8 +151,17 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 
 ### 3.3: A late duplicate rejection after a stored success is ignored
 - [S] red-selenium
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — REAL RED. New `OAuthCallback.lateDuplicateRejection.test.tsx` (91L, it.skip).
+  Real scenario behind the 3.2 premortem cross-mount carry: a genuine callback remount (fresh Router
+  → fresh `hasExchanged` ref) fires a SECOND POST with the spent one-time code; backend rejects
+  already-used; current `.catch` calls `setFailed(true)` unconditionally → the already-signed-in user
+  is thrown onto the error screen. Test mocks `isAuthenticated: () => true`, rejects the exchange,
+  asserts `navigate('/',{replace:true})` once AND `oauth-callback-error` absent. **Predicted:**
+  AssertionError, `expected "vi.fn()" to be called 1 times, but got 0 times` at line 74 (navigate),
+  1 skipped-when-off / RED. **Actual:** exactly that at 74:22. **Match** on type/message/location/status.
+  test-review: 3 strict seam fixes (non-vacuous `isAuthenticated` called-once, exchange pinned
+  `{code}`×1, `saveSession` not-called on the rejection path). Suite 322 passed / 1 skipped.
+- [~] green-frontend
 - [S] red-frontend-api
 - [S] green-frontend-api
 - [S] align-design
