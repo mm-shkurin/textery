@@ -92,4 +92,25 @@ describe('ManualEditor beforeunload guard', () => {
     // And behaviourally: the detached editor no longer prevents unload.
     expect(dispatchBeforeUnload()).toBe(false)
   })
+
+  it('sets returnValue on the event so legacy browsers actually render the leave prompt', async () => {
+    // Dispatching a synthetic Event only exposes the LEGACY boolean returnValue getter
+    // (!defaultPrevented) — in jsdom AND real Chrome alike — so `dispatchBeforeUnload` above can
+    // never observe the string assignment. But the guard's `event.returnValue = ''` is a plain
+    // field write, and legacy Chrome/Edge + older Safari/Firefox only render the native prompt
+    // when it is set. Calling the captured handler DIRECTLY with a mock event observes it — the
+    // one place this otherwise-untested line (ManualEditor.tsx) has teeth. A refactor dropping
+    // the assignment (silent no-prompt on those browsers) fails here.
+    const addSpy = vi.spyOn(window, 'addEventListener')
+    await renderEditorWithDocumentCreated()
+    const registered = addSpy.mock.calls.filter(([type]) => type === 'beforeunload')
+    expect(registered).toHaveLength(1)
+    const handler = registered[0][1] as (event: BeforeUnloadEvent) => void
+
+    const event = { preventDefault: vi.fn(), returnValue: undefined } as unknown as BeforeUnloadEvent
+    handler(event)
+
+    expect(event.preventDefault).toHaveBeenCalledTimes(1)
+    expect(event.returnValue).toBe('')
+  })
 })

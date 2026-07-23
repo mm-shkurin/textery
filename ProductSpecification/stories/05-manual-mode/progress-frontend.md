@@ -1638,7 +1638,18 @@ drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 pytho
   `returnValue: false` exactly as jsdom does, so the string form the guard sets (`returnValue = ''`) is
   unobservable without a real user-driven navigation the driver cannot surface. Those two stay runtime
   behavior, documented in the statements module, NOT falsely claimed as covered. Same live-efficacy limit
-  applies to `auth/utils/useUnsavedGuard.ts` (identical pattern).
+  applies to `auth/utils/useUnsavedGuard.ts` (identical pattern). **Review passes on `96e51b4`: agent-review
+  PASS** (both polarities teethed; `SAVED_STATUS` ⟺ `!hasUnsavedChanges` so disarmed can't false-pass; headless
+  limitation accurate). **premortem CONCERNS (credible) — FIXED in follow-up:** it distinguished the
+  *unobservable* part (dispatching a synthetic event → legacy boolean; the visible dialog) from the
+  *observable* part I had over-generalized as unobservable — the `event.returnValue = ''` ASSIGNMENT is a plain
+  field write, untested at ANY layer (jsdom + this both declined it), yet a refactor dropping it would silently
+  stop the native prompt on legacy Chrome/Edge + older Safari/Firefox. Closed one layer down: added a unit test
+  to `ManualEditor.beforeUnloadGuard.test.tsx` that calls the CAPTURED guard handler DIRECTLY with a mock event
+  (`{preventDefault, returnValue: undefined}`) and asserts `returnValue === ''` + `preventDefault` called — the
+  one place that line has teeth (mock starts `undefined`, so dropping the assignment fails). generation suite
+  green, tsc `-b --noEmit` clean. **Owed (not this story's file):** `auth/utils/useUnsavedGuard.ts` has the
+  identical untested `preventDefault`-only pattern (no `returnValue`) — a separate auth-side follow-up.
 
 **🎉 ALL Track A + Track B work complete — the "Remaining work (ready for /loop)" section is fully done.**
 What remains for Story 5 frontend is only the **Owed follow-ups** below (product decisions / larger scope),
