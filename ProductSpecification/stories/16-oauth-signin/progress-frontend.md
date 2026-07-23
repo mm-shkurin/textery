@@ -454,6 +454,18 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   `toEqual([['/',{replace:true}]])` pin + a recorded-args 'evil' probe; genuinely non-vacuous). Suite 364 passed / 0 skipped.
 - [S] green-frontend — born-green; the callback already lands on the '/' default and never honors an injected
   target (`safeRedirectTarget(undefined)`). No production change; guard test enabled + passing.
+  > CARRIED (premortem CONCERNS on 5.1 red `86629b8`, 2 credible, non-blocking — coverage residuals, not
+  > defects in this commit; deferred as small follow-ups outside the frontend-first scope):
+  > (a) **5.1 guard only catches the NAIVE bypass.** Every EVIL_* payload (`https://evil…`, `//evil…`, bare
+  > host) is already rejected by `safeRedirectTarget`, so the suite would stay GREEN if a future dev wired the
+  > LoginForm pattern `navigate(safeRedirectTarget(location.state?.from))` — the most likely evolution. To make
+  > 5.1 catch that, add EITHER a structural assertion that OAuthCallback never reads `location.state` at all, OR
+  > a payload that SURVIVES `safeRedirectTarget` yet still diverts (e.g. `/\evil`, `/%09/evil`) so wiring-in
+  > `state.from` genuinely flips it red.
+  > (b) **`safeRedirectTarget` has no dedicated unit test.** The callback calls it with hardcoded `undefined`, so
+  > the `startsWith('/') && !startsWith('//')` sanitizing branch is never exercised anywhere. Add
+  > `utils/__tests__/safeRedirectTarget.test.ts`: `'//evil'→'/'`, `'/\evil'→'/'`, `'https://evil'→'/'`,
+  > `'/legit'→'/legit'` so a cleanup that drops the `//` clause fires a RED.
 - [S] red-frontend-api — client-side redirect guard
 - [S] green-frontend-api
 - [S] align-design
