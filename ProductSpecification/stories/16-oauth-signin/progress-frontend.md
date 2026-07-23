@@ -443,8 +443,17 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 
 ### 5.1: The post-sign-in redirect target is validated
 - [S] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — BORN-GREEN guard (enabled). New `OAuthCallback.redirectSafety.test.tsx` (5 cases):
+  a crafted EXTERNAL target injected through every channel the component could read — `location.state.from`
+  (absolute `https://evil…`, protocol-relative `//evil…`, bare host), plus `?redirect=`/`?next=` query params —
+  with a valid code + resolving exchange; asserts `navigate` fired exactly once with EXACTLY `('/',{replace:true})`
+  and the external host never reaches navigate. **Predicted:** born-green — the success arm hardcodes
+  `safeRedirectTarget(undefined)`→'/', and the component reads only error/provider/code params, never a target.
+  **Actual:** 5 passed. **Match.** test-review: 1 fix (replaced a vacuous `not.toHaveBeenCalledWith(stringContaining
+  ('evil'), anything())` — `anything()` misses single-arg diversions — with a structural `navigate.mock.calls`
+  `toEqual([['/',{replace:true}]])` pin + a recorded-args 'evil' probe; genuinely non-vacuous). Suite 364 passed / 0 skipped.
+- [S] green-frontend — born-green; the callback already lands on the '/' default and never honors an injected
+  target (`safeRedirectTarget(undefined)`). No production change; guard test enabled + passing.
 - [S] red-frontend-api — client-side redirect guard
 - [S] green-frontend-api
 - [S] align-design
