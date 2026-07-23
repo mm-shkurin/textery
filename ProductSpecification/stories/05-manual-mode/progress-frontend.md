@@ -1538,7 +1538,16 @@ drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 pytho
   `rgba(0, 0, 0, 0)`), opens the link popover, then asserts `aria-expanded='true'` + a non-transparent painted
   background + `aria-pressed='false'`. The fresh editor has no link, so `aria-pressed` is false and the paint
   can ONLY come from the `.me-toolbar-btn[aria-expanded='true']` rule (`ManualEditorToolbar.css:38`) — the exact
-  orthogonal highlight jsdom cannot see.
+  orthogonal highlight jsdom cannot see. **Review passes on `8e897bf` (both CONCERNS, both false-greens, FIXED
+  in follow-up commit):** (1) `aria_role=='textbox'` was vacuous — a contenteditable root computes `textbox`
+  IMPLICITLY, so removing the explicit `role` attr would still pass; added an explicit `role='textbox'`
+  attribute assertion (real regression target, `None`→fail) alongside the computed-role check. (2) the highlight
+  `after != transparent` was satisfied by `:hover` — Selenium's `.click()` leaves the pointer on the button and
+  `.me-toolbar-btn:hover` paints the SAME `var(--bg-surface)` as the aria-expanded rule, so deleting the rule
+  would still pass; fixed by parking the pointer on the editor (`ActionChains.move_to_element`) to kill `:hover`
+  before reading. **Mutation-check: neutralizing the `[aria-expanded='true']` CSS rule makes the highlight test
+  FAIL (`still 'rgba(0, 0, 0, 0)'`) — the hardened test has real teeth; CSS restored clean.** Re-verified GREEN
+  live (`2 passed`).
 - [~] green-selenium-3.2-caret — scenario 3.2's caret-only `select` event was hand-fired via `fireEvent`
   in jsdom, never proven to fire in a real browser for a caret-only (non-drag) cursor move. Add an
   acceptance test that moves the caret between a bold and a plain run and asserts the bold button's
