@@ -336,8 +336,9 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 - [S] green-frontend — already-implemented: the unauthenticated non-network rejection already routes to the
   terminal `oauth-callback-error` via `setFailed` (shipped in 3.1 green, bounded by 4.2's classifier); the
   born-green test above pins the no-session/no-redirect invariant. Nothing to implement.
-- [ ] red-frontend-api
-- [ ] green-frontend-api
+- [S] red-frontend-api — no new API contract; the exchange wire (reject with coded error) is already
+  pinned by 3.1 + 4.2 born-green api tests. Same [S]-class as 4.2 green-frontend-api.
+- [S] green-frontend-api — no new API contract (see above).
 - [S] align-design
 - [S] green-selenium
 - [S] demo
@@ -384,8 +385,15 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 
 ### 4.5: An unrecognized error code falls back to generic copy
 - [S] red-selenium
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — BORN-GREEN guard (enabled). New `OAuthCallback.unknownErrorCode.test.tsx` (1 test):
+  lands `/auth/callback?error=totally_unknown_xyz` (unknown/absent provider) → exchange never fired
+  (`toHaveBeenCalledTimes(0)`, armed spy), `navigate('/login',{replace:true,state:{oauthError: GENERIC}})`
+  once with exact GENERIC string, and the raw `totally_unknown_xyz` value absent from BOTH the emitted
+  state AND the DOM. **Predicted:** born-green (4.1 maps message on provider only; `error` is a presence
+  trigger, never interpolated/rendered). **Actual:** 1 passed. **Match.** test-review: 2 fixes (added a
+  positive-control probe so the raw-value-never-rendered assertion is non-vacuous on the null-render path;
+  exchange spy `not.toHaveBeenCalled`→`toHaveBeenCalledTimes(0)`). Suite 354 passed / 0 skipped.
+- [S] green-frontend — born-green under 4.1's provider-keyed mapper; guard test already enabled + passing.
 - [S] red-frontend-api
 - [S] green-frontend-api
 - [S] align-design
