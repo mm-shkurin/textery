@@ -414,6 +414,20 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   3 failed 1 passed. **Actual:** exactly that at :84:39, 3 failed 1 passed. **Match** (label `vi.fn()` — anon
   mock render). test-review: 0 fixes (already strict). Suite 355 passed / 3 skipped.
 - [~] green-frontend
+  > CARRIED (agent-review + premortem CONCERNS on 4.6 red `270a24f`, both non-blocking) — green MUST honor:
+  > (1) **premortem CREDIBLE — whitespace-only truthy token.** The 3 RED cases pin only FALSY tokens
+  > (absent/null/''); a naive `if (!session.accessToken)` guard passes them all yet lets `accessToken:'   '`
+  > (truthy) through → stored + app shell + `isAuthenticated()` true = the exact 4.6 bug. Implement the guard
+  > with the project's `/\S/.test(...)` convention (mirrors `isMalformedCallback` in oauthProviders.ts and the
+  > LoginForm.nonContractError whitespace guard), NOT a bare falsy check. Fold in a whitespace-only RED case
+  > (`accessToken:'   '` → `expectFailedClosed`).
+  > (2) **agent-review LOW — line 87 over-constrains presentation.** `expectFailedClosed` asserts
+  > `navigate` NOT called AT ALL, stricter than the store-refused arm it claims to mirror
+  > (`OAuthCallback.success.test.tsx:137` forbids only `('/',{replace:true})`, not all navigation). Line 86
+  > already pins the real "never app shell" contract. If green chooses the `setFailed(true)` terminal-card
+  > presentation (consistent with the store-refused fail-closed arm), line 87 is correct as-is; if green
+  > instead routes to `/login` (like the 4.2 network path), loosen line 87 to `not.toHaveBeenCalledWith('/',…)`.
+  > Decide the fail-closed presentation deliberately, don't let line 87 pick it silently.
 - [S] red-frontend-api — no new API contract; the exchange wire + the `String(x??'')` collapse are already
   pinned by 3.1 + 4.2 born-green api tests. The usable-token guard is component logic, not a wire change.
 - [S] green-frontend-api — no new API contract (see above).
