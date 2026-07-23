@@ -41,4 +41,5 @@ Type: bug
   `return hasErrorCode(error, 'INTERNAL_ERROR')` (was `return false`). Keys on the sentinel only —
   `INVALID_CREDENTIALS`/`INVALID_OR_EXPIRED_OAUTH_CODE` still false. Un-skipped all 3 red cases (marker-only).
   Suite: 353 passed / 0 failed / 0 skipped (was 350/3 skipped).
-- [~] green-frontend — verification only (no new production code; confirm the callback + login reds are green).
+- [x] green-frontend — verified (no new production code). OAuthCallback.networkFailure + LoginForm.networkError:
+  2 files / 11 passed. Both INTERNAL_ERROR reds green under the single classifier fix. Task complete.
