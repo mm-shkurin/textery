@@ -186,11 +186,19 @@ queue was never exercised through a real click dispatch.
   residual node so `doc.content.size >= 1` and the placeholder would NOT return. jsdom cannot exercise this →
   folded into 2.1's green-selenium owe-list. Link-mark / horizontalRule residuals rated REMOTE (marks add no
   size; HR unreachable by ordinary typing in this flow).
-- [~] red-frontend-placeholder-reopen — premortem CREDIBLE-2 (owed guard): `renderEditorWithDocumentCreated`
-  only drives the fresh create-empty path. Pin the `existingDocumentId` reopen path in both polarities:
-  reopen-empty ⇒ attr+class present; reopen-with-content ⇒ both absent (guards `setContent` not re-adding the
-  empty marker). Needs a reopen render variant in `ManualEditor.testSupport.tsx` (or a local `getDocument`
-  mock) — the create-only harness has no existingDocumentId path today.
+- [x] red-frontend-placeholder-reopen — DONE (2026-07-23), LIVE characterization (both polarities pass — prod
+  keys off `content.size`). New `ManualEditor.placeholder.reopen.test.tsx` (41 lines) + new harness helper
+  `renderEditorReopeningDocument(content, onBack?)` in `ManualEditor.testSupport.tsx` (27→51 lines, mocks
+  `getDocument`, mounts `<ManualEditor existingDocumentId=…>`, waits on the `getDocument` call). **Polarity A
+  (reopen empty, `content: ''`):** content area HAS `is-editor-empty` + `data-placeholder` + `aria-placeholder`.
+  **Polarity B (reopen with content):** all three ABSENT — the content-polarity test `waitFor`s the exact loaded
+  `innerHTML` before the `.not` assertions, so it cannot false-pass against the transient empty mount.
+  **Predicted both PASS; Actual both PASS; Comparison: MATCH.** **Mutation-check (teeth):** inverting the
+  `size > 0` guard in `inlinePlaceholder.ts` FAILS both (empty loses the decoration; content-polarity gets the
+  placeholder bleeding under real text); production restored (`git diff` clean). test-review: PASS (exact text
+  on both attrs, exact class, independent `.not` forms, mock shape matches `GetDocumentResult`). reopen scoped:
+  2 passed; **full `npx vitest run`: 325 passed | 0 skipped (83 files)**; canonical `tsc -b --noEmit` clean.
+  Nothing owed to a follow-up green — reopen contract already satisfied by the `content.size`-keyed impl.
 - [S] green-selenium — ~~red-selenium test is already green; no marker to remove~~ **FALSE, corrected
   2026-07-22.** Driven live against the full stack (backend :8100 + Postgres + Redis) with a real
   register→verify→login session: the test FAILS on a genuine production defect. The placeholder
