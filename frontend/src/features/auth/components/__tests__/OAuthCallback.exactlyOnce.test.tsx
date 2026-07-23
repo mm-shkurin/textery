@@ -72,12 +72,9 @@ describe('OAuthCallback exactly-once exchange', () => {
     vi.mocked(authSession.saveSession).mockReset()
   })
 
-  // RED: under StrictMode the surviving effect run is disarmed by the first run's cleanup, so the
-  // resolved exchange stores and navigates NOTHING — the screen hangs on the spinner.
-  // Actual failure: AssertionError: expected "vi.fn()" to be called 1 times, but got 0 times
-  // (line 96, saveSession) — the exchange DID fire exactly once, but nothing was stored.
-  // Skipped so the suite stays green between red and green; green-frontend un-skips.
-  it.skip('issues one exchange under a double mount AND still completes the sign-in', async () => {
+  // Under StrictMode the surviving effect run must NOT be disarmed by the first run's cleanup: a
+  // shared mountedRef is re-armed on remount, so the resolved exchange stores and navigates.
+  it('issues one exchange under a double mount AND still completes the sign-in', async () => {
     const exchange = deferred<typeof SESSION>()
     vi.mocked(oauthExchangeApi.oauthExchange).mockReturnValue(exchange.promise)
     vi.mocked(authSession.saveSession).mockReturnValue(true)
@@ -108,6 +105,47 @@ describe('OAuthCallback exactly-once exchange', () => {
     expect(screen.queryByTestId('oauth-callback-error')).not.toBeInTheDocument()
     expect(screen.getByTestId('oauth-callback-loading')).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Завершаем вход…')
+  })
+
+  // Born-green guard (premortem CREDIBLE from red 3.2 review): the mountedRef fix must serve the
+  // ERROR branch too, not just success. Under the same double mount, a REJECTED exchange must
+  // still render the terminal error — a success-path-only fix would leave `.catch` gated on a
+  // disarmed flag and hang the spinner forever.
+  it('renders the error state under a double mount when the exchange rejects', async () => {
+    const rejection = Promise.reject<typeof SESSION>(new Error('exchange failed'))
+    vi.mocked(oauthExchangeApi.oauthExchange).mockReturnValue(rejection)
+    // Swallow the terminal rejection so it is not flagged as unhandled once the component's
+    // `.catch` has consumed it.
+    const settled = rejection.catch(() => undefined)
+
+    renderUnderDoubleMount()
+
+    await act(async () => {
+      await settled
+    })
+
+    expect(await screen.findByTestId('oauth-callback-error')).toBeInTheDocument()
+    expect(screen.queryByTestId('oauth-callback-loading')).not.toBeInTheDocument()
+  })
+
+  // Born-green guard (premortem CREDIBLE): the mountedRef fix must also serve the fail-closed
+  // saveSession-false branch under double mount — a refused store shows the terminal error rather
+  // than hanging on the spinner.
+  it('renders the error state under a double mount when the session store is refused', async () => {
+    const exchange = deferred<typeof SESSION>()
+    vi.mocked(oauthExchangeApi.oauthExchange).mockReturnValue(exchange.promise)
+    vi.mocked(authSession.saveSession).mockReturnValue(false)
+
+    renderUnderDoubleMount()
+
+    await act(async () => {
+      exchange.resolve(SESSION)
+      await exchange.promise
+    })
+
+    expect(await screen.findByTestId('oauth-callback-error')).toBeInTheDocument()
+    expect(screen.queryByTestId('oauth-callback-loading')).not.toBeInTheDocument()
+    expect(authSession.saveSession).toHaveBeenCalledTimes(1)
   })
 
   // Carried from the 3.1 align-design review: the callback's whole visual shell rests on one

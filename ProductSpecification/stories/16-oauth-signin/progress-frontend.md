@@ -116,7 +116,17 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   tests, exact heading + subtitle text over regex substring, tag-name pin). Carried (b) padding
   specificity and (c) `.auth-card` `max-width` stay carried — CSS-only, untestable in jsdom, and (c)
   belongs on the shared rule. Suite 319 passed / 1 skipped, tsc clean, file 122L.
-- [ ] green-frontend
+- [x] green-frontend — fixed the StrictMode double-mount hang. Replaced OAuthCallback's per-run
+  local `active` flag with a shared `mountedRef` (dedicated mount/cleanup effect: mount→true,
+  cleanup→false); exchange `.then`/`.catch` gate saveSession/setFailed/navigate on `mountedRef.current`.
+  StrictMode remount re-arms the ref→true so the surviving in-flight exchange completes; genuine unmount
+  leaves it false (no post-unmount setState). `hasExchanged` ref untouched → POST still fires once. ONE
+  uniform gate serves all branches (success/reject/saveSession-false). Un-skipped the RED test (now
+  green: at-most-once AND at-least-once). Honored all three carried CONCERNS: (i) folded 2 born-green
+  StrictMode guards — exchange-rejects→`oauth-callback-error`, saveSession-false→`oauth-callback-error`
+  — proving the fix serves the error branches, not just success; (ii) skipped 1→0, passing +3 (319/1skip →
+  **322/0skip**); (iii) tightened scenario 3.2 title in `02_UI_Tests.md` to "…once per callback mount"
+  (guard is per-instance; gherkin already same-instance). tsc + oxlint clean; both files ≤200 (87/168).
   > CARRIED (agent-review + premortem CONCERNS on 3.2 red `f3ce139`), green MUST honour all three:
   > (i) **premortem CREDIBLE — the fix proposed in the 3.2 carry-over ("drop the `active` teardown
   > for the success path") repairs only the branch the RED test watches.** The same stale-`active`
@@ -141,7 +151,7 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 
 ### 3.3: A late duplicate rejection after a stored success is ignored
 - [S] red-selenium
-- [ ] red-frontend
+- [~] red-frontend
 - [ ] green-frontend
 - [S] red-frontend-api
 - [S] green-frontend-api

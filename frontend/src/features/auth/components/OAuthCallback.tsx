@@ -22,16 +22,29 @@ export function OAuthCallback() {
   // The exchange runs once for the mount: a ref guard keeps an effect re-run from firing a second
   // POST / store / navigate, so the "exactly once" contract holds regardless of what re-renders.
   const hasExchanged = useRef(false)
+  // Whether the component is currently mounted. A SHARED ref (not a per-effect-run local flag)
+  // that survives StrictMode's mount → cleanup → remount replay: the cleanup of run 1 flips it
+  // false, the remount of run 2 flips it back true, so the in-flight exchange's `.then`/`.catch`
+  // still see `true` and complete the sign-in. On a genuine unmount it stays false, so no
+  // post-unmount setState/navigate fires. A per-run local flag would be disarmed by run 1's
+  // cleanup and never re-armed for the surviving run → eternal spinner.
+  const mountedRef = useRef(false)
   const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
 
   useEffect(() => {
     if (hasExchanged.current) return
     hasExchanged.current = true
 
-    let active = true
     oauthExchange({ code })
       .then((session) => {
-        if (!active) return
+        if (!mountedRef.current) return
         const stored = saveSession({
           accessToken: session.accessToken,
           refreshToken: session.refreshToken,
@@ -47,12 +60,8 @@ export function OAuthCallback() {
         navigate(safeRedirectTarget(undefined), { replace: true })
       })
       .catch(() => {
-        if (active) setFailed(true)
+        if (mountedRef.current) setFailed(true)
       })
-
-    return () => {
-      active = false
-    }
   }, [code, navigate])
 
   if (failed) {
