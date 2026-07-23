@@ -268,9 +268,18 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   `expected "vi.fn()" to be called with arguments: ['/login',{replace:true,state:{}}]`, Number of calls: 0
   (component has no useNavigate/effect today). **Actual:** exactly that at :50:22. **Match.** test-review: 0
   fixes (already strict). Suite 367 passed / 1 skipped.
-- [~] green-frontend (stale-banner debt) — capture the message locally so it survives the scrub; add the
-  clear-once effect.
-  > CARRIED (agent-review + premortem CONCERNS on 4.1 stale-banner red `ba9cc24`) — green MUST honor:
+- [x] green-frontend (stale-banner debt) — DONE. OAuthErrorBanner now captures `oauthError` into a lazy
+  `useState` initializer (renders from the captured value, not live `location.state`) + a clear-once
+  `useEffect` (empty deps) that scrubs the history entry `navigate(pathname,{replace:true,state:{}})` when the
+  captured message is usable. Banner survives the scrub on the current visit; Back/remount reads cleared state
+  → no banner. All 3 carries honored: (1) capture-locally + a NEW discriminating `OAuthErrorBanner.survivesScrub
+  .test.tsx` (real-router, so the effect's navigate genuinely clears state mid-mount — verified it FAILS against
+  a live-reading variant and PASSES against the captured version; the in-file rerender approach was proven
+  non-discriminating because MemoryRouter ignores changed initialEntries on rerender + the no-op navigate mock);
+  (2) scrub once-only (empty deps, RED's `toHaveBeenCalledTimes(1)` stays green); (3) `state:{}` exactness
+  documented (error nav only ever sets `{oauthError}`). Un-skipped the RED driver. Suite **369 passed / 0
+  skipped**, tsc + oxlint clean, OAuthErrorBanner 66L / staleBanner 83L / survivesScrub 41L (all ≤200).
+  > CARRIED (agent-review + premortem CONCERNS on 4.1 stale-banner red `ba9cc24`) — HONORED in green above:
   > (1) **CREDIBLE — same-visit bound can't catch blank-on-scrub.** `navigate` is a no-op mock, so it never
   > mutates `location.state`; a naive green that keeps reading live `location.state.oauthError` and just adds
   > `useEffect(() => navigate(pathname,{replace:true,state:{}}),[])` WITHOUT capturing the message locally passes

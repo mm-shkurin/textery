@@ -1,4 +1,5 @@
-import { useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { isUsableMessage } from '../utils/authMessages'
 // This component's own styles (.auth-oauth-error*) live in AuthForm.css — import it directly so the
 // banner is self-styling wherever it mounts, rather than relying on a parent to pull the shared shell.
@@ -14,8 +15,29 @@ import './AuthForm.css'
 // plain /login visit shows no banner at all.
 export function OAuthErrorBanner() {
   const location = useLocation()
-  const oauthError = (location.state as { oauthError?: unknown } | null)?.oauthError
-  if (!isUsableMessage(oauthError)) {
+  const navigate = useNavigate()
+  // CAPTURE the message once, on first render, into local state. The banner renders from this
+  // captured value — NOT live location.state — so it survives the history scrub below (and any
+  // Back/remount that reads the now-cleared state).
+  const [oauthError] = useState<unknown>(
+    () => (location.state as { oauthError?: unknown } | null)?.oauthError,
+  )
+
+  const usable = isUsableMessage(oauthError)
+  const pathname = location.pathname
+  // Clear-once: after the first render, scrub the message from the history entry so pressing Back
+  // onto /login (or any remount) can't resurrect a stale banner. Empty deps → runs exactly once, so
+  // it can't loop. The error nav that seeds this state only ever sets `{ oauthError }`
+  // (navigate('/login', { replace: true, state: { oauthError } })), so replacing the whole state
+  // object with `{}` clears exactly that key and nothing else.
+  useEffect(() => {
+    if (usable) {
+      navigate(pathname, { replace: true, state: {} })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  if (!usable) {
     return null
   }
   return (

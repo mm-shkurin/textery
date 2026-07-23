@@ -42,7 +42,7 @@ afterEach(() => {
 //   AssertionError: expected "vi.fn()" to be called with arguments: [ '/login', { replace: true,
 //   state: {} } ]  /  Number of calls: 0
 // Un-skip once green captures-locally + scrubs the history entry.
-describe.skip('OAuthErrorBanner history-state scrub (RED)', () => {
+describe('OAuthErrorBanner history-state scrub', () => {
   it('scrubs oauthError from the history entry after first render', () => {
     renderAt({ oauthError: MESSAGE })
 
@@ -50,6 +50,13 @@ describe.skip('OAuthErrorBanner history-state scrub (RED)', () => {
     expect(navigate).toHaveBeenCalledTimes(1)
   })
 })
+
+// NOTE — the survives-the-scrub case (CARRIED premortem #1: the discriminating test that actually
+// forces capture-locally) lives in OAuthErrorBanner.survivesScrub.test.tsx, NOT here. It needs a
+// REAL useNavigate so the scrub genuinely clears location.state mid-mount; this file mocks
+// useNavigate to a no-op, so no in-file rerender can distinguish a captured banner from a live one
+// (a MemoryRouter ignores changed initialEntries on rerender, and the no-op mock never clears the
+// live state). Keeping that test real-router avoids a false sense of coverage here.
 
 // Born-green BOUND — the scrub must NOT blank the banner on the current visit. This pins that the
 // fix captures the message locally (not merely clears state); a green that "fixes" resurrection by
