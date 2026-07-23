@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { oauthExchange } from '../oauthExchangeApi'
+import { isLoginNetworkError } from '../../utils/loginErrorHandling'
 import { rejectionOf } from './loginApiTestUtils'
 
 // Real-fetch tests: `fetch` is stubbed, `oauthExchange` is NOT mocked. This is the only place the
@@ -29,6 +30,23 @@ function stubFetchErrorBody(status: number, body: unknown): void {
       ok: false,
       status,
       json: async () => body,
+    }),
+  )
+}
+
+function stubFetchReject(error: unknown): void {
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(error))
+}
+
+function stubFetchNonJsonError(status: number): void {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({
+      ok: false,
+      status,
+      json: async () => {
+        throw new SyntaxError('non-json')
+      },
     }),
   )
 }
@@ -90,5 +108,49 @@ describe('oauthExchange', () => {
       errorCode: 'INVALID_OR_EXPIRED_OAUTH_CODE',
       message: 'Код входа истёк',
     })
+  })
+
+  // API→classifier contract (scenario 4.2): a transport failure rethrows the bodyless error
+  // untouched (no errorCode wrapped on), and isLoginNetworkError classifies it as network — the
+  // signal the callback's retry-affording branch reads.
+  it('rethrows a transport failure untouched, network-classified and uncoded', async () => {
+    const transportError = new TypeError('Failed to fetch')
+    stubFetchReject(transportError)
+
+    const rejection = await rejectionOf(oauthExchange({ code: HANDOFF_CODE }))
+
+    // Same instance, not wrapped: the bodyless transport error is rethrown untouched (no errorCode
+    // stamped on), so the classifier reads the raw TypeError, not a re-shaped envelope.
+    expect(rejection).toBe(transportError)
+    expect(rejection).not.toHaveProperty('errorCode')
+    expect(isLoginNetworkError(rejection)).toBe(true)
+  })
+
+  // A non-JSON gateway 5xx (proxy 502/503) becomes a codeless UNKNOWN_ERROR carrying the transport
+  // status; isLoginNetworkError reads that status>=500 and classifies it as network.
+  it('rejects a codeless gateway 5xx as network-classified with status', async () => {
+    stubFetchNonJsonError(503)
+
+    const rejection = await rejectionOf(oauthExchange({ code: HANDOFF_CODE }))
+
+    expect(rejection).toStrictEqual({
+      errorCode: 'UNKNOWN_ERROR',
+      message: '',
+      status: 503,
+    })
+    expect(isLoginNetworkError(rejection)).toBe(true)
+  })
+
+  // BOUND: a coded business 4xx keeps its two-field shape (no status) and must NOT be classified as
+  // network — it belongs on the form-error path, not the retry-your-connection path.
+  it('does not classify a coded business 4xx as network', async () => {
+    stubFetchErrorBody(400, {
+      error_code: 'INVALID_OR_EXPIRED_OAUTH_CODE',
+      message: 'Код входа истёк',
+    })
+
+    const rejection = await rejectionOf(oauthExchange({ code: HANDOFF_CODE }))
+
+    expect(isLoginNetworkError(rejection)).toBe(false)
   })
 })

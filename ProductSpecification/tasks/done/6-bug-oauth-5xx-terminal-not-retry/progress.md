@@ -1,0 +1,45 @@
+# Task 6: OAuth 5xx shows terminal error instead of retry — Progress
+
+Type: bug
+
+## Spec
+- [x] spec
+
+## Fix: codeful INTERNAL_ERROR 5xx misclassified as terminal, not retry
+- [x] root cause analysis — confirmed from the live backend contract (2026-07-23): the generic 500 is
+  codeful `{error_code:"INTERNAL_ERROR", message}`; `toAuthApiError` attaches `status` only on the
+  codeless path, so `isLoginNetworkError` (keyed on `status>=500`) returns false for it → terminal, not
+  retry. The coded-5xx gap carried from scenario 4.2, now live. See spec.md.
+- [S] design — fix approach is obvious (widen `isLoginNetworkError` to treat `errorCode==='INTERNAL_ERROR'`
+  as network); no ADR. Rejected the alternative (attach status on the coded path) — it breaks the coded
+  two-field invariant and its app-wide tests.
+- [x] steps discovery (scope: frontend classifier util + OAuthCallback component + login regression;
+  no new external seams/adapters — pure client classification change; hazard groups n/a for a frontend-only
+  logic widening; GAPs: none fired — the login-regression guard below covers the shared-classifier blast radius)
+- [x] red-frontend-api — REAL RED. New `utils/__tests__/loginErrorHandling.test.ts` (43L). Case 1
+  `isLoginNetworkError({errorCode:'INTERNAL_ERROR'})` (no status) → expect true; **Predicted:** AssertionError,
+  `expected false to be true` (has errorCode, no status → current returns false); **Actual:** exactly that at :10,
+  1 failed 5 passed. **Match.** Case 1 `it.skip` (RED). Bounds 2-6 born-green + enabled: `{INTERNAL_ERROR,status:500}`
+  →true, transport TypeError→true, codeless 503→true, and CRITICALLY `INVALID_CREDENTIALS`/`INVALID_OR_EXPIRED_OAUTH_CODE`
+  (same no-status shape as case 1, different code) → false — these force green to key on the INTERNAL_ERROR SENTINEL,
+  not the whole coded-but-statusless class. test-review: 0 fixes. Suite 350 passed / 1 skipped.
+  (Reordered: all red surfaces land before the single green, since one classifier fix resolves every one.)
+- [x] red-frontend — REAL RED. Added a case to `OAuthCallback.networkFailure.test.tsx` (188L): exchange rejects
+  `{errorCode:'INTERNAL_ERROR', message}` (unauth, no status) → asserts `navigate('/login',{replace,state:
+  {oauthError:NETWORK_LOGIN_FAILURE_MESSAGE}})` once, no terminal error, no spinner, no saveSession. **Predicted:**
+  `expected "vi.fn()" to be called 1 times, but got 0 times` (classifier false → setFailed → terminal). **Actual:**
+  exactly that at :159. **Match.** it.skip.
+- [x] red-frontend (login regression) — REAL RED. Added case (f) to `LoginForm.networkError.test.tsx` (150L):
+  login() rejects `{errorCode:'INTERNAL_ERROR'}` → asserts `login-network-error` shown + `login-form-error` absent.
+  **Predicted:** `findByTestId('login-network-error')` times out (classifier false → setFormError → field error).
+  **Actual:** exactly that at :131. **Match.** it.skip. test-review: 0 fixes on either. Suite 350 passed / 3 skipped.
+  > Review passes on the two-red behavior commit `49d6e8a` (non-gating, commit stands): refactor — no changes
+  > (no refactor commit); agent-review — PASS (both genuinely RED for the same root cause; bounds fence a
+  > wrong over-broad green); premortem — INTERRUPTED by a session limit (did not complete). Optionally re-run
+  > premortem over `49d6e8a` on resume; not required to proceed.
+- [x] green-frontend-api — GREEN. Single fix in `loginErrorHandling.ts`: final fall-through now
+  `return hasErrorCode(error, 'INTERNAL_ERROR')` (was `return false`). Keys on the sentinel only —
+  `INVALID_CREDENTIALS`/`INVALID_OR_EXPIRED_OAUTH_CODE` still false. Un-skipped all 3 red cases (marker-only).
+  Suite: 353 passed / 0 failed / 0 skipped (was 350/3 skipped).
+- [x] green-frontend — verified (no new production code). OAuthCallback.networkFailure + LoginForm.networkError:
+  2 files / 11 passed. Both INTERNAL_ERROR reds green under the single classifier fix. Task complete.

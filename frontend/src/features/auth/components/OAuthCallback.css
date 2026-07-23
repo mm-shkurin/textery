@@ -1,15 +1,12 @@
-/* Structural only — the callback interstitial (spinner + "Завершаем вход…"). Pixel alignment to
-   mockups/desktop/02-callback-loading.html is the later /align-design step; this establishes the
-   centered card, the spinner, and the status region so the flow is legible in the meantime. */
+/* The /auth/callback interstitial. Aligned to mockups/desktop/02-callback-loading.html.
+   Reuses the shared .auth-card shell (width 420, surface, subtle border, radius 16, margin
+   48 auto — identical in the mockup) and .auth-subtitle (secondary, 14px); only the
+   callback-specific deltas live here: the mockup's taller centred card padding, the spinner,
+   and the status rhythm. h1 stays the app-standard 28px from .auth-card rather than the
+   mockup's 22px, for cross-auth-screen consistency — the same call taken on AccountLockedScreen. */
 .oauth-callback-card {
-  width: 420px;
-  max-width: 100%;
-  margin: 48px auto;
   padding: 48px 40px;
   text-align: center;
-  background: var(--bg-surface, #1a1b1e);
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
-  border-radius: 16px;
 }
 
 .oauth-callback-spinner {
@@ -38,15 +35,10 @@
   display: block;
 }
 
-.oauth-callback-status h1 {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+.oauth-callback-card h1 {
   margin-bottom: 8px;
 }
 
 .oauth-callback-subtitle {
-  color: var(--text-secondary, #9a9ba3);
-  font-size: 14px;
   line-height: 1.5;
 }

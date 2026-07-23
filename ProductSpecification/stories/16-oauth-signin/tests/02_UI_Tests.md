@@ -54,7 +54,7 @@ And the user is taken to the authenticated app shell
 And the browser history is replaced so Back does not return to the callback
 ```
 
-### 3.2 The exchange is issued exactly once per code
+### 3.2 The exchange is issued exactly once per callback mount
 
 ```gherkin
 Given the visitor lands on the OAuth callback screen with a valid handoff code
