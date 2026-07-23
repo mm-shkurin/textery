@@ -7,7 +7,7 @@
 | 1  | Auto-generate: доклад          | ✅   | 🔧   | —    | 🔧   | —     | —    | —     | 12/74 | 16% |
 | 5  | Manual input mode (non-AI document creation) | ✅ | 🔧 | — | 🔧 | 🔧 | — | — | 0/40 | 0% |
 | 7  | Authorization (email+password w/ mocked code, Yandex ID, VK ID) | ✅ | 🔧 | — | ✅ | 🔧     | —    | —     | 35/63 | 56% |
-| 16 | OAuth sign-in: VK ID + Yandex ID (frontend-first, backend WIP) | ✅ | · | · | 🔧 | · | n/a | · | 13/14 | 93% |
+| 16 | OAuth sign-in: VK ID + Yandex ID (frontend-first, backend WIP) | ✅ | · | · | ✅ | · | n/a | · | 14/14 | 100% |
 
 # Backlog — Core sequence (build order, decided 2026-07-06)
 

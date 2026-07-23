@@ -474,8 +474,15 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 
 ### 6.1: Email + password login is unchanged (regression guard)
 - [S] red-selenium
-- [ ] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — BORN-GREEN regression guard (enabled). New `LoginForm.happyPathRegression.test.tsx` (82L):
+  valid creds → `login(EMAIL,PASSWORD)` once (positional, matching LoginForm.tsx:99-102), `saveSession(SESSION)`
+  once (whole-object, all 4 SessionTokens fields), `navigate('/',{replace:true})` once, AND the OAuth additions
+  inert on this path — `login-oauth-error` + `login-form-error` both absent. Proves the VK/Yandex buttons +
+  OAuthErrorBanner + /auth/callback route were additive and didn't alter the classic email+password happy path.
+  **Predicted:** born-green (OAuth work additive, happy path untouched). **Actual:** 1 passed. **Match.**
+  test-review: 0 fixes (already strict; both banner-absence probes trace to real conditional testids). Suite
+  365 passed / 0 skipped.
+- [S] green-frontend — born-green; happy path unchanged by the OAuth additions. No production change.
 - [S] red-frontend-api
 - [S] green-frontend-api
 - [S] align-design
