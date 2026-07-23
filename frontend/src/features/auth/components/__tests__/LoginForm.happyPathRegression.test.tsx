@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { render } from '@testing-library/react'
 import { LoginForm } from '../LoginForm'
 import * as api from '../../api/loginApi'
 import type { LoginResult } from '../../api/loginApi'
