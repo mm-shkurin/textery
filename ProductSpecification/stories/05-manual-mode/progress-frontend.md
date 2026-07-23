@@ -1509,11 +1509,19 @@ drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 pytho
   **Run gotcha (still true):** acceptance runs need `BACKEND_PORT=8100` exported — the harness defaults to
   8000, another project's container on this host. The `getHTML()` serialization carries no ProseMirror
   caret-helper `<br>` (view-only, never in the model), so the saved html needs no caret-helper stripping.
-- [~] green-selenium-placeholder-delete — premortem owe: the jsdom roundtrip test clears via `textContent=''`
-  (a full DOM wipe), not a real delete-transaction. Add an acceptance test: type text incl. a hard break
-  (Enter), select-all + Backspace to truly empty, assert the placeholder (`data-placeholder` +
-  `is-editor-empty` + the `::before` paint) RETURNS in a real browser.
-- [ ] green-selenium-aria-announced — the a11y attrs (`role="textbox"` + `aria-multiline="true"` +
+- [x] green-selenium-placeholder-delete — **GREEN live 2026-07-23 (`1 passed in 9.05s`, headless Chrome,
+  backend :8100).** The premortem owe is resolved and the feared bug does NOT exist: type `foo`, Enter (a
+  real hardBreak NODE), `bar`, then select-all + Backspace through ProseMirror's own keymap to truly empty —
+  the placeholder RETURNS. New `test_manual_editor_placeholder_delete_acceptance.py` (28 lines) +
+  `manual_editor_placeholder_delete_statements.py` (28 lines, extends `ManualEditorLineBreakStatements`, adds
+  `clear_all_via_backspace` = `select_all_text_in_editor` + `Keys.BACKSPACE`). Reuses the existing
+  `assert_content_placeholder_is_visible` (base statements) which pins all three surfaces jsdom owed to
+  selenium: `data-placeholder` attr + `is-editor-empty` class + the `::before` computed paint of
+  `Начните печатать…`. Teeth: a residual hardBreak node left by the delete would keep `doc.content.size >= 1`,
+  so `is-editor-empty`/`data-placeholder` would be absent and the assertion fails — passing proves the delete
+  transaction reached a genuinely empty doc, not a `textContent=''` DOM wipe (the jsdom path). This is the
+  real delete-transaction path the jsdom roundtrip test structurally cannot exercise.
+- [~] green-selenium-aria-announced — the a11y attrs (`role="textbox"` + `aria-multiline="true"` +
   `aria-placeholder`) are pinned in the DOM by jsdom but their real announcement is unverified. Add an axe
   check (or a computed-role assertion) on the live editor; ALSO pin the `.me-toolbar-btn[aria-expanded='true']`
   highlight rule (jsdom applies no CSS — opening the link popover with the cursor OUTSIDE a link must
