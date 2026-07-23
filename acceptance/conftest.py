@@ -19,6 +19,9 @@ from statements.frontend.generation.chat_workspace_statements import ChatWorkspa
 from statements.frontend.generation.manual_editor_line_break_statements import (
     ManualEditorLineBreakStatements,
 )
+from statements.frontend.generation.manual_editor_aria_statements import (
+    ManualEditorAriaStatements,
+)
 from statements.frontend.generation.manual_editor_placeholder_delete_statements import (
     ManualEditorPlaceholderDeleteStatements,
 )
@@ -151,3 +154,8 @@ def manual_editor_save_payload_statements():
 @pytest.fixture
 def manual_editor_placeholder_delete_statements():
     return ManualEditorPlaceholderDeleteStatements()
+
+
+@pytest.fixture
+def manual_editor_aria_statements():
+    return ManualEditorAriaStatements()

@@ -1526,12 +1526,20 @@ drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 pytho
   without ever exercising the round-trip. Added `assert_content_placeholder_is_hidden` (no `data-placeholder`,
   no `is-editor-empty`) between the typing and the delete, so the test now pins the full round-trip: present →
   hidden-once-typed → returns-after-delete. Re-verified GREEN live (`1 passed`).
-- [~] green-selenium-aria-announced — the a11y attrs (`role="textbox"` + `aria-multiline="true"` +
-  `aria-placeholder`) are pinned in the DOM by jsdom but their real announcement is unverified. Add an axe
-  check (or a computed-role assertion) on the live editor; ALSO pin the `.me-toolbar-btn[aria-expanded='true']`
-  highlight rule (jsdom applies no CSS — opening the link popover with the cursor OUTSIDE a link must
-  highlight `toolbar-link`, asserted via `getComputedStyle`).
-- [ ] green-selenium-3.2-caret — scenario 3.2's caret-only `select` event was hand-fired via `fireEvent`
+- [x] green-selenium-aria-announced — **GREEN live 2026-07-23 (`2 passed in 15.66s`, headless Chrome, backend
+  :8100).** Both jsdom-blind a11y surfaces proven in a real browser. New
+  `test_manual_editor_aria_acceptance.py` (36 lines, two test classes) + `manual_editor_aria_statements.py`
+  (~70 lines, extends `ManualEditorStatements`). **(1) Computed textbox role:** no axe dependency exists, so
+  used Selenium's `WebElement.aria_role` (the browser's CDP-computed accessibility role — the one a screen
+  reader announces, which jsdom cannot compute since it builds no accessibility tree) — asserts the content
+  area computes to `textbox`, plus the live-DOM `aria-multiline='true'` + exact `aria-placeholder='Начните
+  печатать…'` (attribute-level teeth: removing either → `null` → fail). **(2) aria-expanded highlight (CSS,
+  jsdom applies none):** captures the `toolbar-link` button's computed `background-color` BEFORE (transparent,
+  `rgba(0, 0, 0, 0)`), opens the link popover, then asserts `aria-expanded='true'` + a non-transparent painted
+  background + `aria-pressed='false'`. The fresh editor has no link, so `aria-pressed` is false and the paint
+  can ONLY come from the `.me-toolbar-btn[aria-expanded='true']` rule (`ManualEditorToolbar.css:38`) — the exact
+  orthogonal highlight jsdom cannot see.
+- [~] green-selenium-3.2-caret — scenario 3.2's caret-only `select` event was hand-fired via `fireEvent`
   in jsdom, never proven to fire in a real browser for a caret-only (non-drag) cursor move. Add an
   acceptance test that moves the caret between a bold and a plain run and asserts the bold button's
   `aria-pressed` tracks it live.
