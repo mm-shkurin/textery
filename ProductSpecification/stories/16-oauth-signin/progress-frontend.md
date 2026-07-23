@@ -265,8 +265,19 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 
 ### 4.2: Exchange network or server failure is retry-affording
 - [S] red-selenium
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — REAL RED. New `OAuthCallback.networkFailure.test.tsx` (141L, describe.skip, 3 tests).
+  DESIGN: the `.catch` classifies the unauthenticated failure — network/timeout/5xx → back to /login with a
+  retry message; business rejection → terminal error screen (4.3). Reuses the EXISTING `isLoginNetworkError`
+  (loginErrorHandling) + `NETWORK_LOGIN_FAILURE_MESSAGE` (authMessages), delivered via the 4.1 banner channel:
+  `navigate('/login',{replace:true,state:{oauthError: NETWORK_LOGIN_FAILURE_MESSAGE}})`. Cases: (1) transport
+  `new Error('Failed to fetch')` (no errorCode) → route to login; (2) gateway `{errorCode:'UNKNOWN_ERROR',
+  status:503}` → route to login; (3) BOUND: business `{errorCode:'INVALID_OR_EXPIRED_OAUTH_CODE'}` → navigate
+  NOT called, `oauth-callback-error` shown (born-green — stops green over-routing every failure to login).
+  **Predicted:** AssertionError, `expected "vi.fn()" to be called 1 times, but got 0 times` (current `.catch`
+  setFailed unconditionally), 2 failed 1 passed. **Actual:** exactly that at :82/:102, 2 failed 1 passed. **Match**
+  on type/message/location/status. test-review: 1 fix (non-vacuous exchange spy `toHaveBeenCalledWith({code})`
+  ×3). Suite 331 passed / 3 skipped.
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [S] align-design — reuses login network-error styling
