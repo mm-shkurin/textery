@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { oauthExchange } from '../api/oauthExchangeApi'
-import { saveSession } from '../utils/authSession'
+import { isAuthenticated, saveSession } from '../utils/authSession'
 import { safeRedirectTarget } from '../utils/safeRedirectTarget'
 import './AuthForm.css'
 import './OAuthCallback.css'
@@ -60,7 +60,16 @@ export function OAuthCallback() {
         navigate(safeRedirectTarget(undefined), { replace: true })
       })
       .catch(() => {
-        if (mountedRef.current) setFailed(true)
+        if (!mountedRef.current) return
+        // A late/duplicate rejection after a session was already stored (a genuine remount fires a
+        // second POST with the spent one-time code) must NOT bounce an already-signed-in user onto
+        // the error screen — spec 16_OAuthSignin.md:49-50 / Notes:48-50: "ignored, not a bounce
+        // back to login".
+        if (isAuthenticated()) {
+          navigate(safeRedirectTarget(undefined), { replace: true })
+          return
+        }
+        setFailed(true)
       })
   }, [code, navigate])
 

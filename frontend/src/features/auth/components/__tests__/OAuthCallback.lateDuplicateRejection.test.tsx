@@ -61,7 +61,7 @@ describe('OAuthCallback late duplicate rejection', () => {
   // RED (Scenario 3.3): current `.catch` calls setFailed(true) unconditionally with no
   // isAuthenticated branch → navigate is never called (0 times, expected 1) and the error screen
   // renders. Skipped until green-frontend adds the authenticated-rejection branch.
-  it.skip('lands on the app shell and hides the error state when a duplicate exchange rejects while authenticated', async () => {
+  it('lands on the app shell and hides the error state when a duplicate exchange rejects while authenticated', async () => {
     const rejection = Promise.reject(new Error('handoff code already used'))
     vi.mocked(oauthExchangeApi.oauthExchange).mockReturnValue(rejection)
     vi.mocked(authSession.isAuthenticated).mockReturnValue(true)

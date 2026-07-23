@@ -161,8 +161,20 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   1 skipped-when-off / RED. **Actual:** exactly that at 74:22. **Match** on type/message/location/status.
   test-review: 3 strict seam fixes (non-vacuous `isAuthenticated` called-once, exchange pinned
   `{code}`×1, `saveSession` not-called on the rejection path). Suite 322 passed / 1 skipped.
-- [~] green-frontend
-  > CARRIED (premortem CREDIBLE + agent-review CONCERNS on 3.3 red `f8887dd`), green MUST honour:
+- [x] green-frontend — added the `isAuthenticated()` branch to OAuthCallback's `.catch`: on a
+  rejection, if a session is already stored, `navigate('/',{replace:true})` (benign late/duplicate) —
+  else `setFailed(true)` as before. Un-skipped the RED test. Suite 322/1skip → **323/0skip**, tsc +
+  oxlint clean, OAuthCallback.tsx 96L. **DECLINED the scoping carry (a) below with rationale:** (1) the
+  spec is deliberately broad — 16_OAuthSignin.md:49-50 / Notes:48-50 say ANY "late/duplicate exchange
+  rejection after a session was already stored is ignored"; scoping to one error code and re-erroring on
+  other authenticated rejections would CONTRADICT the spec. (2) The premortem's stale/expired-token
+  mechanism doesn't apply — tokens live in sessionStorage (authSession.ts:5-9), tab-scoped, so
+  `isAuthenticated()` true at the callback means signed-in THIS tab session; an expired access token is
+  the app session/refresh layer's concern, not the callback's. (3) The RED test rejects with a plain
+  `Error` (no `errorCode`), so a code-scoped guard couldn't satisfy it. No companion test added (it would
+  encode behavior the spec forbids); no RED assertion touched. The 4.x unauthenticated branches (4.2
+  network/5xx, 4.3 replay) own the distinct error copy for the NOT-yet-authenticated flow.
+  > CARRIED (premortem CREDIBLE + agent-review CONCERNS on 3.3 red `f8887dd`) — DECLINED, see above:
   > (a) **premortem CREDIBLE — `isAuthenticated()` is a bare presence check (`Boolean(getAccessToken())`,
   > authSession.ts:81), NOT validity.** Redirecting on ANY `.catch` when a token exists is fail-OPEN:
   > a network drop / 500 / genuinely-bad code while a stale or unrelated token sits in sessionStorage
@@ -184,7 +196,7 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 
 ### 4.1: Provider error / user-cancel returns to login with a distinct message
 - [S] red-selenium
-- [ ] red-frontend
+- [~] red-frontend
 - [ ] green-frontend
 - [S] red-frontend-api — callback param, no API call
 - [S] green-frontend-api
