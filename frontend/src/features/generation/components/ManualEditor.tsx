@@ -106,6 +106,12 @@ export function ManualEditor({
         // role, the aria-placeholder that plugin emits carries no meaning to
         // assistive tech — aria-placeholder is announced only on a textbox-ish role.
         role: 'textbox',
+        // Enter inserts a HardBreakNode (line breaks are enabled), so this textbox
+        // is multi-line. A role="textbox" defaults to single-line per WAI-ARIA, so
+        // assistive tech would announce it wrong without this. Unconditional like
+        // role — a textbox stays multi-line whether empty or full, so it must NOT
+        // route through the emptiness-gated placeholder decoration path.
+        'aria-multiline': 'true',
       },
       handleDOMEvents: {
         input: (view, event) => flushDomObserverOnInput(view, event),

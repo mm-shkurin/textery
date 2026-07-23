@@ -69,7 +69,7 @@ describe('ManualEditor placeholder', () => {
   // contenteditable root exposes no accessible name/hint. inlinePlaceholder.ts must ALSO
   // emit aria-placeholder while empty (tracking emptiness exactly like data-placeholder /
   // is-editor-empty) and drop it when non-empty, so a screen-reader user meets a labelled
-  // editor. Skipped until green-frontend-placeholder-aria implements it.
+  // editor. Now LIVE and passing (green-frontend-placeholder-aria implemented it).
   it('exposes aria-placeholder while empty and drops it after typing', async () => {
     await renderEditorWithDocumentCreated()
 
@@ -106,9 +106,9 @@ describe('ManualEditor placeholder', () => {
   // but the editor supports hard breaks (Enter → HardBreakNode/HardBreakKeymap). Per
   // WAI-ARIA a role="textbox" defaults to single-line; a line-break-capable textbox
   // must carry aria-multiline="true" or assistive tech announces it as single-line.
-  // That attribute is currently absent. Skipped until green-frontend-placeholder-multiline
-  // adds 'aria-multiline': 'true' to editorProps.attributes alongside role/data-testid.
-  it.skip('exposes aria-multiline=true on a line-break-capable textbox, unconditionally', async () => {
+  // Now LIVE and passing (green-frontend-placeholder-multiline added 'aria-multiline':
+  // 'true' to editorProps.attributes, unconditionally alongside role/data-testid).
+  it('exposes aria-multiline=true on a line-break-capable textbox, unconditionally', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')

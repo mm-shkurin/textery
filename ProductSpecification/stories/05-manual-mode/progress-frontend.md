@@ -151,10 +151,14 @@ queue was never exercised through a real click dispatch.
   after-typing persistence assertion mirroring the role test (type → `fireEvent.input` → re-assert
   `aria-multiline='true'`), so an emptiness-gated green now goes RED. Still skipped, still genuine red (both
   assertions fail today); tsc clean, 4 passed | 1 skipped.
-- [~] green-frontend-placeholder-multiline — add `'aria-multiline': 'true'` to `editorProps.attributes` in
-  ManualEditor.tsx alongside `role`/`data-testid` (unconditional, like role). Un-skip the multiline red. Also
-  fix the stale `it.skip`-era comment in `ManualEditor.placeholder.test.tsx:72` (agent-review low). Verify with
-  canonical `tsc -b --noEmit`. Real-AT announcement of role+aria-multiline stays owed to green-selenium/axe.
+- [x] green-frontend-placeholder-multiline — DONE (2026-07-23). Added `'aria-multiline': 'true'` to
+  `editorProps.attributes` in ManualEditor.tsx (static, alongside `role`/`data-testid`, unconditional — NOT
+  routed through the emptiness-gated `inlinePlaceholder` decoration, so the after-typing persistence assertion
+  passes). Un-skipped the multiline red. Fixed the stale `it.skip`-era comments on BOTH the aria-placeholder
+  test (line 72) and this multiline test (agent-review low + a second stale block the green touched). Verified
+  with canonical `tsc -b --noEmit` — clean. Suite: **146 passed | 0 skipped | 0 failed.** `ManualEditor.tsx`
+  173 lines. Real-AT announcement of role+aria-multiline stays owed to green-selenium/axe (jsdom proves the
+  attrs render, not that a reader speaks them).
 - [x] red-frontend-placeholder-roundtrip — DONE (2026-07-23), LIVE characterization (no green needed — prod
   already handles it). Added 2nd test to `ManualEditor.placeholder.test.tsx` (now 65 lines): empty → type →
   clear-back-to-empty → `data-placeholder` + `is-editor-empty` RESTORED. **Predicted PASS** (attributes fn
@@ -174,7 +178,7 @@ queue was never exercised through a real click dispatch.
   residual node so `doc.content.size >= 1` and the placeholder would NOT return. jsdom cannot exercise this →
   folded into 2.1's green-selenium owe-list. Link-mark / horizontalRule residuals rated REMOTE (marks add no
   size; HR unreachable by ordinary typing in this flow).
-- [ ] red-frontend-placeholder-reopen — premortem CREDIBLE-2 (owed guard): `renderEditorWithDocumentCreated`
+- [~] red-frontend-placeholder-reopen — premortem CREDIBLE-2 (owed guard): `renderEditorWithDocumentCreated`
   only drives the fresh create-empty path. Pin the `existingDocumentId` reopen path in both polarities:
   reopen-empty ⇒ attr+class present; reopen-with-content ⇒ both absent (guards `setContent` not re-adding the
   empty marker). Needs a reopen render variant in `ManualEditor.testSupport.tsx` (or a local `getDocument`
