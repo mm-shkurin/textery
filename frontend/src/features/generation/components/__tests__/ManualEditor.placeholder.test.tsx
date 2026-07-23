@@ -108,10 +108,19 @@ describe('ManualEditor placeholder', () => {
   // must carry aria-multiline="true" or assistive tech announces it as single-line.
   // That attribute is currently absent. Skipped until green-frontend-placeholder-multiline
   // adds 'aria-multiline': 'true' to editorProps.attributes alongside role/data-testid.
-  it.skip('exposes aria-multiline=true on a line-break-capable textbox', async () => {
+  it.skip('exposes aria-multiline=true on a line-break-capable textbox, unconditionally', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')
+    expect(contentArea).toHaveAttribute('aria-multiline', 'true')
+
+    // Unconditional, NOT emptiness-gated (premortem on b993cb2): the sibling
+    // placeholder attrs DO drop after typing, so a green routing aria-multiline
+    // through that decoration path would pass the fresh assertion and ship a
+    // "flips to single-line the instant you type" bug. Mirror the role test.
+    contentArea.textContent = 'hello world'
+    fireEvent.input(contentArea)
+
     expect(contentArea).toHaveAttribute('aria-multiline', 'true')
   })
 })

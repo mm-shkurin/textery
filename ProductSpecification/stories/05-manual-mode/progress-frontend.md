@@ -143,6 +143,14 @@ queue was never exercised through a real click dispatch.
   `Received: null` at line 115. **Comparison: all cells YES.** test-review: PASS (exact
   `toHaveAttribute('aria-multiline','true')` — a `"false"` green fails). Suite: 4 passed | 1 skipped; canonical
   `tsc -b --noEmit` clean.
+  **Review-pass verdicts on `b993cb2`: `/refactor` NO ACTION, agent-review PASS (verified the editor is
+  genuinely multiline — Enter/Shift-Enter → hardBreak), premortem CONCERNS (1 credible) → RED STRENGTHENED
+  before green.** premortem: the RED asserted `aria-multiline` only on the FRESH empty editor; an emptiness-gated
+  green (the wrong path — the sibling placeholder attrs ARE gated in this component) would pass it yet ship a
+  "flips to single-line the instant you type" bug. Fixed in the same skipped test (commit follows): added the
+  after-typing persistence assertion mirroring the role test (type → `fireEvent.input` → re-assert
+  `aria-multiline='true'`), so an emptiness-gated green now goes RED. Still skipped, still genuine red (both
+  assertions fail today); tsc clean, 4 passed | 1 skipped.
 - [~] green-frontend-placeholder-multiline — add `'aria-multiline': 'true'` to `editorProps.attributes` in
   ManualEditor.tsx alongside `role`/`data-testid` (unconditional, like role). Un-skip the multiline red. Also
   fix the stale `it.skip`-era comment in `ManualEditor.placeholder.test.tsx:72` (agent-review low). Verify with
