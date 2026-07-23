@@ -1,12 +1,7 @@
 import type { Editor } from '@tiptap/react'
 
 export type ToolbarActionKey =
-  | 'heading1'
-  | 'heading2'
   | 'heading3'
-  | 'paragraph'
-  | 'bulletList'
-  | 'orderedList'
   | 'bold'
   | 'italic'
   | 'strike'

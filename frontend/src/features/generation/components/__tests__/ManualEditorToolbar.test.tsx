@@ -23,4 +23,27 @@ describe('ManualEditorToolbar', () => {
     expect(screen.getByTestId('toolbar-undo')).toBeDisabled()
     expect(screen.getByTestId('toolbar-redo')).toBeDisabled()
   })
+
+  // The inline-only document schema (Document.extend({ content: 'inline*' })) has no block
+  // nodes, so toggleHeading / setParagraph / toggleBulletList / toggleOrderedList are inert —
+  // clicking these controls does nothing. They were mockup-era stubs; showing them overstates
+  // what the editor can do. Removed rather than left as dead surface.
+  it('does not render the inert block controls the inline-only schema cannot support', () => {
+    render(
+      <ManualEditorToolbar
+        editor={null}
+        documentId={null}
+        hasUnsavedChanges={false}
+        isSaving={false}
+        onSave={vi.fn()}
+      />,
+    )
+
+    for (const label of ['Заголовок 1', 'Заголовок 2', 'Абзац', 'Маркированный список', 'Нумерованный список']) {
+      expect(screen.queryByLabelText(label)).toBeNull()
+    }
+    // The working inline controls stay.
+    expect(screen.getByTestId('toolbar-bold')).toBeInTheDocument()
+    expect(screen.getByTestId('toolbar-h3')).toBeInTheDocument()
+  })
 })

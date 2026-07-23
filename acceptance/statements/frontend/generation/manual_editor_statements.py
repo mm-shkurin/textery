@@ -25,19 +25,21 @@ BOLD_TEXT = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-content-area strong
 EXPECTED_DOKLAD_BREADCRUMB = "Доклад · Ручной режим"
 EXPECTED_PLACEHOLDER_TEXT = "Начните печатать…"
 
+# The inline-only document schema has no block nodes, so H1/H2, paragraph, and the two list
+# toggles were inert stubs and have been removed from the toolbar. The named controls scenario
+# 2.1 asserts are the ones that actually work: the H3 heading (a mark, not a block node), bold,
+# and italic.
 TOOLBAR_BUTTON_ARIA_LABELS = {
-    "heading": ["Заголовок 1", "Заголовок 2"],
-    "paragraph": ["Абзац"],
-    "list": ["Маркированный список", "Нумерованный список"],
+    "heading": ["Заголовок 3"],
     "bold": ["Жирный"],
     "italic": ["Курсив"],
 }
-# Scenario 2.1 requires the five named control groups below (heading, paragraph, list, bold,
-# italic = 7 buttons) to be present; each is asserted individually by aria-label. The toolbar
-# has since grown to 18 buttons (scenarios 7.1-7.9: strike, blockquote, hr, code, code-block,
-# undo, redo, H3, underline, alignment, link), so the count is a LOWER BOUND, not an exact match —
-# pinning an exact total here would couple 2.1's test to the extended toolbar's size.
-MINIMUM_TOOLBAR_BUTTON_COUNT = 7
+# Scenario 2.1 asserts the three working named controls above (H3, bold, italic) individually by
+# aria-label. The toolbar carries 13 controls total (after the inert H1/H2/¶/list stubs were
+# removed: H3, bold, italic, strike, underline, code, blockquote, hr, code-block, align-centre,
+# link, undo, redo), so the count is a LOWER BOUND, not an exact match — pinning an exact total
+# here would couple 2.1's test to the extended toolbar's size.
+MINIMUM_TOOLBAR_BUTTON_COUNT = 3
 
 
 def _toolbar_button_locator(aria_label: str) -> tuple[str, str]:

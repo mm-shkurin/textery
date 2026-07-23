@@ -40,8 +40,9 @@ And an empty editor opens, scoped to the chosen document type
 ```gherkin
 Given a visitor has just created a manual document
 Then the editor shows an empty content area with a placeholder, not a loading skeleton
-And the formatting toolbar is visible with heading, paragraph, list, bold, and italic
-  controls
+And the formatting toolbar is visible with heading (H3), bold, and italic controls
+  (the inline-only schema has no block nodes, so H1/H2, paragraph, and list controls are
+  not offered — see functionality.md)
 And the breadcrumb shows the chosen document type and "Ручной режим"
 ```
 
