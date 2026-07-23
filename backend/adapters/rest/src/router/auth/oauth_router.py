@@ -1,3 +1,4 @@
+import logging
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends
@@ -9,6 +10,8 @@ from auth.oauth.oauth_error_codes import OAUTH_CALLBACK_FAILED, OAuthCallbackErr
 from auth.oauth.start_oauth import StartOAuth
 from dto.auth.login_response_dto import LoginResponseDto
 from dto.auth.oauth_exchange_request_dto import OAuthExchangeRequestDto
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/auth/oauth", tags=["auth", "oauth"])
 
@@ -55,7 +58,11 @@ async def callback(
     try:
         handoff_code = await usecase.execute(provider, code, state)
         location = f"{frontend_callback_url}?{urlencode({'code': handoff_code})}"
-    except OAuthCallbackError:
+    except OAuthCallbackError as error:
+        # The client only ever sees the generic ?error=; the operator-facing reason
+        # (which leg failed) goes to the log. The message is safe by construction —
+        # it names the failure kind, never the code, token or provider secret (I5).
+        logger.warning("oauth callback refused for provider %s: %s", provider, error)
         location = f"{frontend_callback_url}?{urlencode({'error': OAUTH_CALLBACK_FAILED})}"
     return RedirectResponse(location, status_code=_REDIRECT_STATUS)
 

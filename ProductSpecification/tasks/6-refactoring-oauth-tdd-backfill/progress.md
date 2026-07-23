@@ -16,13 +16,22 @@ same day.
 ### Step 1: Ceremony backfill for the scenarios shipped reduced
 - [ ] restore the per-step red/green record for every `[S] reduced-TDD` entry in
       `stories/16-oauth-signin/progress-backend.md`
-- [ ] unit tests for the slice shipped with only the invariant gate exercising it (all
-      2026-07-23): domain (`oauth_state` TTL/`belongs_to`, `handoff_code` `>=` boundary,
-      `oauth_identity` invariants), usecases (`StartOAuth`, `CompleteOAuthCallback` incl.
-      the I8 password-collision branch, `ExchangeHandoffCode` over-length/empty guards),
-      storages (state/handoff delete-RETURNING atomicity, identity uniqueness),
-      `ProviderRegistry` unknown-provider, both provider adapters (`FakeOAuthProvider`
-      code parsing, `YandexOAuthProvider` error mapping — mocked, never real Yandex)
+- [x] unit tests for the slice — DONE 2026-07-23, **54 passed**: domain
+      (`oauth_state` TTL/`belongs_to`, `handoff_code` `>=` boundary, `oauth_identity`
+      invariants), usecases (`StartOAuth`, `CompleteOAuthCallback` incl. the I8
+      password-collision + all state-validation branches, `ExchangeHandoffCode`
+      over-length/empty/expired/single-use/orphan-account guards), `ProviderRegistry`
+      unknown-provider, both provider adapters (`FakeOAuthProvider` code parsing,
+      `YandexOAuthProvider` id/email mapping + error paths via httpx MockTransport,
+      never real Yandex).
+- [ ] STILL OWED: storage-adapter integration tests (state/handoff `DELETE ...
+      RETURNING` atomicity + identity unique constraint) — need a live Postgres; the
+      local db-test harness (asyncpg testcontainer) does not come up on this host, and
+      the atomicity is currently proven only end-to-end by invariant I2. Run under CI
+      or a working PG.
+- [ ] STILL OWED: dedicated per-scenario acceptance tests separate from the gate (1.1
+      start shape, 1.2 unknown provider, 2.4 over-length, 2.7 empty) — the gate proves
+      the security-critical ones transitively.
 - [ ] `/test-review` over the OAuth acceptance + usecase tests (strict assertions on parsed
       fields, no `contains` / `isNotNull` looseness)
 - [ ] `/test-coverage` per layer: usecase, rest, db, oauth provider adapter

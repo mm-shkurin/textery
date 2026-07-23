@@ -30,6 +30,17 @@ session stops; the invariant test itself is never edited, weakened, skipped or x
 (`OAUTH_PROVIDER=fake`, `OAUTH_HANDOFF_CODE_TTL_SECONDS=5`). The gate is NOT reduced-TDD
 debt: these are the real invariant tests and they pass end to end.
 
+**LIVE YANDEX CONFIRMED 2026-07-23** — full handshake against real Yandex ID succeeded:
+`start → Yandex login → callback → exchange → 200`. Created identity `(yandex, 2027708195)`
+and verified account `mmm-shkurin2000@yandex.ru`. Two prerequisites found by doing:
+(1) the Yandex app must be granted **login:email** or `default_email` is absent and the
+callback refuses; (2) real config lives in `backend/.env` (not `infra/.env`). Observability
+added along the way (safe, keys/types only — I5 intact): callback logs the refusal reason,
+`YandexOAuthProvider` logs the provider error status/body and missing-field keys.
+
+**UNIT BACKFILL GREEN 2026-07-23** — `54 passed` (domain + usecases + registry + both
+provider adapters). See task 6. Storage-adapter atomicity tests still owed (need live PG).
+
 - [x] I1 — `state` server-minted, validated on callback, single-use; forged/replayed/missing state refused, never a session (3 shapes) — GREEN
 - [x] I2 — handoff redeem atomic: two concurrent exchanges yield exactly one 200 (asyncio.gather) — GREEN
 - [x] I3 — a handoff code past its TTL does not exchange — GREEN, TTL is real config `OAUTH_HANDOFF_CODE_TTL_SECONDS`
