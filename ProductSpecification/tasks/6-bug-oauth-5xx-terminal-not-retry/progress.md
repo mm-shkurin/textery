@@ -16,10 +16,14 @@ Type: bug
 - [x] steps discovery (scope: frontend classifier util + OAuthCallback component + login regression;
   no new external seams/adapters — pure client classification change; hazard groups n/a for a frontend-only
   logic widening; GAPs: none fired — the login-regression guard below covers the shared-classifier blast radius)
-- [~] red-frontend-api — classifier unit test: `isLoginNetworkError({errorCode:'INTERNAL_ERROR'})` (no status)
-  → true; `{errorCode:'INTERNAL_ERROR', status:500}` → true; a 4xx business code (INVALID_CREDENTIALS) stays
-  false; a bodyless transport error stays true. Predict RED on the codeful-INTERNAL_ERROR case.
-- [ ] green-frontend-api — widen `isLoginNetworkError` (add the INTERNAL_ERROR sentinel branch).
+- [x] red-frontend-api — REAL RED. New `utils/__tests__/loginErrorHandling.test.ts` (43L). Case 1
+  `isLoginNetworkError({errorCode:'INTERNAL_ERROR'})` (no status) → expect true; **Predicted:** AssertionError,
+  `expected false to be true` (has errorCode, no status → current returns false); **Actual:** exactly that at :10,
+  1 failed 5 passed. **Match.** Case 1 `it.skip` (RED). Bounds 2-6 born-green + enabled: `{INTERNAL_ERROR,status:500}`
+  →true, transport TypeError→true, codeless 503→true, and CRITICALLY `INVALID_CREDENTIALS`/`INVALID_OR_EXPIRED_OAUTH_CODE`
+  (same no-status shape as case 1, different code) → false — these force green to key on the INTERNAL_ERROR SENTINEL,
+  not the whole coded-but-statusless class. test-review: 0 fixes. Suite 350 passed / 1 skipped.
+- [~] green-frontend-api — widen `isLoginNetworkError` (add the INTERNAL_ERROR sentinel branch), un-skip case 1.
 - [ ] red-frontend — OAuthCallback: exchange rejects `{errorCode:'INTERNAL_ERROR', message}` (unauth) →
   navigate('/login', retry banner), NOT the terminal `oauth-callback-error`. Predict RED.
 - [ ] green-frontend — verification only (the classifier fix above already resolves it); un-skip if skipped.
