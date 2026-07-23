@@ -301,15 +301,22 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   > with NO red going red — the exact dead-end 4.2 exists to prevent. Green MUST fold in a 3rd case: reject the
   > exchange with `new RequestTimeoutError()` (unauthenticated) and assert `navigate('/login',{replace:true,
   > state:{oauthError: NETWORK_LOGIN_FAILURE_MESSAGE}})` — pinning the timeout arm independently of the bare-Error shape.
-- [~] red-frontend-api
-- [ ] green-frontend-api
+- [x] red-frontend-api — BORN-GREEN (enabled), pins the api→classifier contract 4.2's callback relies on.
+  Extended `oauthExchangeApi.test.ts` (156L) with the REAL `isLoginNetworkError`: (1) transport `TypeError`
+  → rethrown untouched (`toBe` identity, no `errorCode`), `isLoginNetworkError` true; (2) codeless 503
+  (non-JSON body → `{}`) → `toStrictEqual({errorCode:'UNKNOWN_ERROR',message:'',status:503})`, network true;
+  (3) BOUND coded 400 → network false. **Predicted:** all 3 born-green (3.1 shipped postJson→toAuthApiError).
+  **Actual:** 3 pass. **Match.** test-review: 1 fix (rethrow-identity `toBe` on case 1). Suite 338 passed / 0 skipped.
+- [S] green-frontend-api — already-implemented: the exchange's real mapping (postJson → sessionTokensFromWire
+  → toAuthApiError, stamping UNKNOWN_ERROR+status on the codeless path) shipped in green-frontend 3.1; the
+  born-green api test above pins the network/5xx shape. Same [S]-class as 3.1's already-covered api leg.
 - [S] align-design — reuses login network-error styling
 - [S] green-selenium
 - [S] demo
 
 ### 4.3: A replayed or expired code shows an error, not a second sign-in
 - [S] red-selenium
-- [ ] red-frontend
+- [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
