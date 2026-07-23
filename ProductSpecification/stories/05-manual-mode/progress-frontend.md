@@ -1621,14 +1621,28 @@ drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 pytho
   CSS mitigation is load-bearing — real teeth, not a vacuous pass. (Chrome's minimum window width floored the
   effective narrow viewport at ~504px, still `<768px` so the `@media` regime applies.) CSS restored clean;
   both tests GREEN after restore.
-- [~] green-selenium-beforeunload-prompt — `guard-unsaved-work`'s owe (review passes on `24269ba`): the
-  guard sets `event.returnValue = ''` alongside `preventDefault()` because legacy Chrome/Edge + older
-  Safari/Firefox only render the native "leave?" dialog when returnValue is set — but jsdom cannot observe
-  the BeforeUnloadEvent string returnValue (its generic Event exposes only the legacy boolean getter), so
-  the unit test proves only that the event is cancelled, not that a real browser SHOWS the prompt. Add an
-  acceptance test: edit the doc, trigger a navigation/refresh, assert the native beforeunload prompt fires
-  (or at minimum `defaultPrevented` on a real Chrome event). Same live-efficacy gap applies to
-  `auth/utils/useUnsavedGuard.ts`, which uses the identical pattern.
+- [x] green-selenium-beforeunload-prompt — **GREEN live 2026-07-23 (`1 passed in 10.95s`, headless Chrome,
+  backend :8100). Partial by design — the honestly-assertable half is proven; two probes established the rest
+  is not observable in headless.** New `test_manual_editor_beforeunload_acceptance.py` (30 lines) +
+  `manual_editor_beforeunload_statements.py` (~55 lines, extends `ManualEditorSavePayloadStatements`).
+  **PROVEN live:** the guard's `useEffect` binds a `beforeunload` listener on the REAL window while the doc is
+  dirty and its cleanup REMOVES it once a save leaves it clean — dispatch a genuine cancelable `beforeunload`
+  through Chrome's own event system and read `defaultPrevented`: `true` on the fresh (dirty) doc → save →
+  `false` once clean. Both polarities have teeth (unbound effect fails the armed assertion; missing cleanup
+  fails the disarmed one). This is more than the jsdom unit test in that it exercises the real `window`
+  listener + real effect cleanup, not a simulated event target. **NOT assertable in headless (both probed, not
+  assumed):** (1) the VISIBLE native "Leave site?" dialog — headless Chrome auto-handles the beforeunload
+  dialog on a real reload, no catchable alert surfaced (probe: `PROBE_RESULT=NO_DIALOG`); (2) the
+  BeforeUnloadEvent STRING `returnValue` — a synthetic `new Event('beforeunload')` exposes only the legacy
+  boolean `returnValue` getter (`!defaultPrevented`) in EVERY engine: real Chrome reported
+  `returnValue: false` exactly as jsdom does, so the string form the guard sets (`returnValue = ''`) is
+  unobservable without a real user-driven navigation the driver cannot surface. Those two stay runtime
+  behavior, documented in the statements module, NOT falsely claimed as covered. Same live-efficacy limit
+  applies to `auth/utils/useUnsavedGuard.ts` (identical pattern).
+
+**🎉 ALL Track A + Track B work complete — the "Remaining work (ready for /loop)" section is fully done.**
+What remains for Story 5 frontend is only the **Owed follow-ups** below (product decisions / larger scope),
+which are intentionally not checkboxes.
 
 ### Owed follow-ups (not yet checkboxes — need a product decision)
 

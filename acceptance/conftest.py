@@ -22,6 +22,9 @@ from statements.frontend.generation.manual_editor_line_break_statements import (
 from statements.frontend.generation.manual_editor_aria_statements import (
     ManualEditorAriaStatements,
 )
+from statements.frontend.generation.manual_editor_beforeunload_statements import (
+    ManualEditorBeforeUnloadStatements,
+)
 from statements.frontend.generation.manual_editor_caret_statements import (
     ManualEditorCaretStatements,
 )
@@ -183,3 +186,9 @@ def manual_editor_save_queue_statements():
 @pytest.fixture
 def manual_editor_popover_clip_statements():
     return ManualEditorPopoverClipStatements()
+
+
+@pytest.fixture
+def manual_editor_beforeunload_statements():
+    return ManualEditorBeforeUnloadStatements()
+
