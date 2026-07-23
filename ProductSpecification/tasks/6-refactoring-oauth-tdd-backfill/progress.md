@@ -16,6 +16,13 @@ same day.
 ### Step 1: Ceremony backfill for the scenarios shipped reduced
 - [ ] restore the per-step red/green record for every `[S] reduced-TDD` entry in
       `stories/16-oauth-signin/progress-backend.md`
+- [ ] unit tests for the slice shipped with only the invariant gate exercising it (all
+      2026-07-23): domain (`oauth_state` TTL/`belongs_to`, `handoff_code` `>=` boundary,
+      `oauth_identity` invariants), usecases (`StartOAuth`, `CompleteOAuthCallback` incl.
+      the I8 password-collision branch, `ExchangeHandoffCode` over-length/empty guards),
+      storages (state/handoff delete-RETURNING atomicity, identity uniqueness),
+      `ProviderRegistry` unknown-provider, both provider adapters (`FakeOAuthProvider`
+      code parsing, `YandexOAuthProvider` error mapping — mocked, never real Yandex)
 - [ ] `/test-review` over the OAuth acceptance + usecase tests (strict assertions on parsed
       fields, no `contains` / `isNotNull` looseness)
 - [ ] `/test-coverage` per layer: usecase, rest, db, oauth provider adapter

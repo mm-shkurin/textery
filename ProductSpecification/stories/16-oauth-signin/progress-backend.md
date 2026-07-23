@@ -26,40 +26,46 @@ stubbed to look configured. See `carryover.md`.
 end of every work unit. If an invariant test is red, the production code is fixed or the
 session stops; the invariant test itself is never edited, weakened, skipped or xfailed.
 
-Gate test written first and RED — no production wiring exists yet, so it fails at the
-handshake. Held red on purpose; it turns green as the foundation + happy path land. All 12
-assertions are authored (I1 in three shapes: forged / missing / replayed state).
+**GATE GREEN 2026-07-23** — `12 passed` against the recreated backend image
+(`OAUTH_PROVIDER=fake`, `OAUTH_HANDOFF_CODE_TTL_SECONDS=5`). The gate is NOT reduced-TDD
+debt: these are the real invariant tests and they pass end to end.
 
-- [~] I1 — `state` is server-minted, validated on callback, single-use; forged/replayed/missing state is refused, never a session — test authored, RED
-- [~] I2 — handoff code redeem is atomic: two concurrent exchanges yield exactly one 200 — test authored (asyncio.gather, not sequential), RED
-- [~] I3 — a handoff code past its TTL does not exchange — test authored, TTL is real config `OAUTH_HANDOFF_CODE_TTL_SECONDS` (small in the stend), RED
-- [~] I4 — no JWT in any URL or redirect header; tokens only in the exchange response body — test authored, RED
-- [~] I5 — no handoff code, token or provider secret in the logs — test authored (reads compose backend logs), RED
-- [~] I6 — identity unique per (provider, subject); email NFC-normalized + case-folded — test authored (compares JWT `sub` of two sign-ins, black-box), RED
-- [~] I7 — missing provider config fails fast at boot, never a quiet half-configured start — test authored (one-off container, blank client id, non-zero exit naming the var), RED
-- [~] I8 — an OAuth email matching an existing password account is NOT silently linked — test authored (asserts refusal AND the password still logs in), RED
+- [x] I1 — `state` server-minted, validated on callback, single-use; forged/replayed/missing state refused, never a session (3 shapes) — GREEN
+- [x] I2 — handoff redeem atomic: two concurrent exchanges yield exactly one 200 (asyncio.gather) — GREEN
+- [x] I3 — a handoff code past its TTL does not exchange — GREEN, TTL is real config `OAUTH_HANDOFF_CODE_TTL_SECONDS`
+- [x] I4 — no JWT in any URL/redirect header; tokens only in the exchange body — GREEN
+- [x] I5 — no handoff code, token or provider secret in the logs — GREEN
+- [x] I6 — identity unique per (provider, subject); email NFC + case-folded — GREEN
+- [x] I7 — missing provider config fails fast at boot naming the var — GREEN
+- [x] I8 — an OAuth email matching an existing password account is NOT silently linked — GREEN (refused AND password still logs in)
 
 ## Foundation
 
-- [S] `OAuthProvider` port in usecase — DONE this session: `backend/usecase/src/auth/oauth/oauth_provider.py` (Protocol + `ProviderIdentity` + `OAuthProviderError`/`OAuthConfigurationError`). `FakeOAuthProvider` still pending. `[S] reduced-TDD 2026-07-23, backfill pending`
-- [S] Domain — DONE this session: `oauth_identity.py`, `oauth_state.py`, `handoff_code.py` in `backend/domain/src/auth/`. Unit tests pending (reduced). `[S] reduced-TDD 2026-07-23, backfill pending`
-- [ ] `FakeOAuthProvider` test double (mirrors `FakeProvider`); tests never reach the real Yandex
-- [ ] DB: identities + handoff-code tables, alembic migration on the current head
-- [ ] Composition root: Yandex adapter wired, config fail-fast at boot (I7)
-- [ ] **BLOCKED** — `infra/docker-compose.yml` does not pass `YANDEX_*` / `OAUTH_*` into the backend container (`env_file` points at `backend/.env`; `infra/.env` vars only interpolate inside compose, never reach the process). Fix is ~4 lines in the `backend` service `environment:`, but `infra/` is outside this session's boundary. Awaiting the go-ahead to edit it (or for it to be done externally). Until then no OAuth acceptance test can pass. See `carryover.md` 2026-07-23.
+- [S] `OAuthProvider` port + `ProviderIdentity` + errors — `backend/usecase/src/auth/oauth/oauth_provider.py`. Unit tests reduced. `[S] reduced-TDD 2026-07-23, backfill pending`
+- [S] Domain — `oauth_identity.py`, `oauth_state.py`, `handoff_code.py`. Unit tests reduced. `[S] reduced-TDD 2026-07-23, backfill pending`
+- [S] Usecase ports + usecases — `oauth/{oauth_state,oauth_identity,handoff_code}_repository.py`, `provider_registry.py`, `oauth_error_codes.py`, `start_oauth.py`, `complete_oauth_callback.py`, `exchange_handoff_code.py`. Unit tests reduced. `[S] reduced-TDD 2026-07-23, backfill pending`
+- [S] `FakeOAuthProvider` + `YandexOAuthProvider` — new adapter `backend/adapters/oauth_provider/src/oauth_providers/`; selected by `OAUTH_PROVIDER` in `oauth_wiring.py`. Fake impersonates `yandex`, never reaches real Yandex. Unit tests reduced. `[S] reduced-TDD 2026-07-23, backfill pending`
+- [S] DB — models + storages (`model/auth/oauth_*`, `access/auth/oauth_*`) + migration `0f1a2b3c4d5e_oauth_tables.py` (down_revision `f7b8c9d0e1a2`, applied clean). State/handoff use delete-RETURNING for single-use/atomic redeem. Unit tests reduced. `[S] reduced-TDD 2026-07-23, backfill pending`
+- [S] REST — `router/auth/oauth_router.py` (3 legs, 302 redirects, generic `?error=`) + `dto/auth/oauth_exchange_request_dto.py`; reuses `LoginResponseDto`. `[S] reduced-TDD 2026-07-23, backfill pending`
+- [S] Composition root — `container/oauth_wiring.py` (per-request factories, `ProviderRegistry`, config fail-fast I7), re-exported in `container/__init__.py`, sys.path + `dependency_overrides` in `main.py`, `adapters/oauth_provider/src` added to `pyproject.toml` pythonpath. `[S] reduced-TDD 2026-07-23, backfill pending`
+- [x] **BLOCKER RESOLVED** — OAuth config goes in `backend/.env` (loaded by the container via `env_file`, inside this session's boundary), not `infra/.env`. Earlier "compose does not pass env" note was a misdiagnosis. `infra/` untouched. See `carryover.md` 2026-07-23.
 
 ## Backend Scenarios (`tests/01_API_Tests.md`)
 
-- [ ] 1.1 Start redirects to the provider
-- [ ] 1.2 Unknown provider is rejected
-- [ ] 2.1 A valid handoff code returns a session (Story 7 login body)
-- [ ] 2.2 A replayed code is rejected
-- [ ] 2.3 An expired code is rejected at the TTL boundary
-- [ ] 2.4 An over-length code is rejected before lookup
-- [ ] 2.5 Concurrent exchanges of one code yield exactly one session
-- [ ] 2.7 An empty or missing code is rejected server-side
-- [ ] 3.1 First sign-in auto-creates one verified account
-- [ ] 3.8 OAuth email colliding with an existing password account does not overwrite it
+Implemented and proven by the invariant gate (green) end to end, but each still owes its
+own dedicated per-scenario acceptance test — collapsed into this work unit under
+reduced-TDD, tracked in task 6.
+
+- [S] 1.1 Start redirects to the provider — proven by I4 (start leg). `reduced-TDD 2026-07-23, backfill pending`
+- [S] 1.2 Unknown provider is rejected — `ProviderRegistry` raises `UNKNOWN_OAUTH_PROVIDER`; dedicated acceptance test pending. `reduced-TDD 2026-07-23, backfill pending`
+- [S] 2.1 A valid handoff code returns a session (Story 7 login body) — proven by I4/I6. `reduced-TDD 2026-07-23, backfill pending`
+- [S] 2.2 A replayed code is rejected — delete-RETURNING redeem burns it; dedicated test pending. `reduced-TDD 2026-07-23, backfill pending`
+- [S] 2.3 An expired code is rejected at the TTL boundary — proven by I3. `reduced-TDD 2026-07-23, backfill pending`
+- [S] 2.4 An over-length code is rejected before lookup — `MAX_HANDOFF_CODE_LENGTH` guard; verified in-process. `reduced-TDD 2026-07-23, backfill pending`
+- [S] 2.5 Concurrent exchanges of one code yield exactly one session — proven by I2. `reduced-TDD 2026-07-23, backfill pending`
+- [S] 2.7 An empty or missing code is rejected server-side — guard + 422 on missing field; verified in-process. `reduced-TDD 2026-07-23, backfill pending`
+- [S] 3.1 First sign-in auto-creates one verified account — proven by I6 (account created, JWT `sub` stable). `reduced-TDD 2026-07-23, backfill pending`
+- [S] 3.8 OAuth email colliding with an existing password account does not overwrite it — proven by I8. `reduced-TDD 2026-07-23, backfill pending`
 
 ### Deferred to the weekend (named, not forgotten)
 

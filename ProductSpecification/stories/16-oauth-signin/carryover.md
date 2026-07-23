@@ -20,7 +20,24 @@ registered in the Yandex OAuth app, so it cannot be invented here — it is read
 `YANDEX_REDIRECT_URI` and boot fails when unset (I7). Needs the real registered value before
 the demo can run against live Yandex; the Fake provider path does not need it.
 
-## 2026-07-23 — compose does not pass OAuth env into the backend container (BLOCKER)
+## 2026-07-23 — BLOCKER RESOLVED: OAuth config belongs in `backend/.env`, not `infra/.env`
+
+The earlier "compose does not pass OAuth env" entry below misdiagnosed *where* the
+config goes. The `backend` service already loads `env_file: ../backend/.env`, and
+`backend/.env` is inside this session's boundary (and gitignored). So OAuth config was
+added there — `OAUTH_PROVIDER=fake`, `OAUTH_HANDOFF_CODE_TTL_SECONDS=5`,
+`OAUTH_FRONTEND_CALLBACK_URL`, `YANDEX_REDIRECT_URI`, and `YANDEX_CLIENT_ID`/
+`YANDEX_CLIENT_SECRET` (mirrored from `infra/.env` so the I7 fail-fast passes). No edit
+to `infra/` was needed; the compose `environment:` block is untouched. The real-Yandex
+demo still needs the registered `YANDEX_REDIRECT_URI` value (placeholder for now).
+
+Test-runner env: the pytest process (host) also needs `YANDEX_CLIENT_SECRET` (I5
+`provider_secret` fixture) and `OAUTH_HANDOFF_CODE_TTL_SECONDS` (I3 `expired_code`
+fixture) in `os.environ`. `infra/.env` carries the secret; export
+`OAUTH_HANDOFF_CODE_TTL_SECONDS=5` inline when running the acceptance gate so it matches
+the container's TTL.
+
+## 2026-07-23 — compose does not pass OAuth env into the backend container (superseded — see entry above)
 
 `infra/docker-compose.yml` `backend` service takes `env_file: backend/.env` and an
 `environment:` block that never lists `YANDEX_CLIENT_ID` / `YANDEX_CLIENT_SECRET`. Vars in

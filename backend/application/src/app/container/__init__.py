@@ -28,6 +28,12 @@ from container.document_wiring import (
     create_list_documents,
     create_save_document,
 )
+from container.oauth_wiring import (
+    create_complete_oauth_callback,
+    create_exchange_handoff_code,
+    create_frontend_callback_url,
+    create_start_oauth,
+)
 from container.generation_wiring import (
     NoOpGenerationQueue,
     create_generate_document,
@@ -49,8 +55,12 @@ __all__ = [
     "JWT_SECRET_ENV_VAR",
     "NoOpGenerationQueue",
     "STALE_AFTER_MINUTES_ENV_VAR",
+    "create_complete_oauth_callback",
     "create_create_document",
+    "create_exchange_handoff_code",
+    "create_frontend_callback_url",
     "create_generate_document",
+    "create_start_oauth",
     "create_get_document",
     "create_get_generation",
     "create_list_documents",

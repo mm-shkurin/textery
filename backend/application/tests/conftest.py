@@ -13,3 +13,11 @@ os.environ.setdefault("JWT_SECRET", "test-secret-for-wiring-import-only")
 # runtime also builds the generation provider at import; the fake needs no
 # credentials, so the composition root imports without GIGACHAT_CREDENTIALS.
 os.environ.setdefault("GENERATION_PROVIDER", "fake")
+# The `container` package __init__ now also imports `oauth_wiring`, which fail-fasts
+# at import unless the Yandex credentials are present (invariant I7 — Yandex is the
+# shipped provider). The fake OAuth provider needs no network, so dummy non-blank
+# values are enough to let the wiring import succeed in isolation, exactly as the
+# DATABASE_URL/JWT_SECRET dummies above do.
+os.environ.setdefault("YANDEX_CLIENT_ID", "wiring-import-only")
+os.environ.setdefault("YANDEX_CLIENT_SECRET", "wiring-import-only")
+os.environ.setdefault("OAUTH_PROVIDER", "fake")

@@ -10,6 +10,7 @@ _DOMAIN_SRC = os.path.join(_BACKEND_DIR, "domain", "src")
 _USECASE_SRC = os.path.join(_BACKEND_DIR, "usecase", "src")
 _DB_SRC = os.path.join(_BACKEND_DIR, "adapters", "db", "src")
 _PROVIDER_SRC = os.path.join(_BACKEND_DIR, "adapters", "generation_provider", "src")
+_OAUTH_PROVIDER_SRC = os.path.join(_BACKEND_DIR, "adapters", "oauth_provider", "src")
 _SECURITY_SRC = os.path.join(_BACKEND_DIR, "adapters", "security", "src")
 
 sys.path.insert(0, _APP_DIR)
@@ -18,6 +19,7 @@ sys.path.insert(0, _DOMAIN_SRC)
 sys.path.insert(0, _USECASE_SRC)
 sys.path.insert(0, _DB_SRC)
 sys.path.insert(0, _PROVIDER_SRC)
+sys.path.insert(0, _OAUTH_PROVIDER_SRC)
 sys.path.insert(0, _SECURITY_SRC)
 
 import asyncio
@@ -33,12 +35,16 @@ from container import (
     create_get_generation,
     create_list_documents,
     create_list_generations,
+    create_complete_oauth_callback,
+    create_exchange_handoff_code,
+    create_frontend_callback_url,
     create_login_user,
     create_refresh_access_token,
     create_register_user,
     create_request_generation,
     create_resend_code,
     create_save_document,
+    create_start_oauth,
     create_token_service,
     create_verify_account,
     run_stale_generation_sweep,
@@ -57,6 +63,13 @@ from router.auth.auth_router import (
     get_verify_account_usecase,
 )
 from router.auth.auth_router import router as auth_router
+from router.auth.oauth_router import (
+    get_complete_oauth_callback_usecase,
+    get_exchange_handoff_code_usecase,
+    get_frontend_callback_url,
+    get_start_oauth_usecase,
+)
+from router.auth.oauth_router import router as oauth_router
 from router.document.document_router import (
     get_create_document_usecase,
     get_get_document_usecase,
@@ -102,6 +115,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(generation_router)
 app.include_router(auth_router)
+app.include_router(oauth_router)
 app.include_router(document_router)
 app.add_exception_handler(ValidationException, validation_exception_handler)
 app.add_exception_handler(NotFoundException, not_found_exception_handler)
@@ -122,3 +136,7 @@ app.dependency_overrides[get_get_document_usecase] = create_get_document
 app.dependency_overrides[get_list_documents_usecase] = create_list_documents
 app.dependency_overrides[get_save_document_usecase] = create_save_document
 app.dependency_overrides[get_token_service] = create_token_service
+app.dependency_overrides[get_start_oauth_usecase] = create_start_oauth
+app.dependency_overrides[get_complete_oauth_callback_usecase] = create_complete_oauth_callback
+app.dependency_overrides[get_exchange_handoff_code_usecase] = create_exchange_handoff_code
+app.dependency_overrides[get_frontend_callback_url] = create_frontend_callback_url

@@ -25,6 +25,7 @@ pythonpath = [
     "adapters/db/src",
     "adapters/security/src",
     "adapters/generation_provider/src",
+    "adapters/oauth_provider/src",
     "application/src/app",
     # Test-support roots, for the `statements` test-DSL packages. The two
     # `statements` directories carry no `__init__.py`, so they merge into one
