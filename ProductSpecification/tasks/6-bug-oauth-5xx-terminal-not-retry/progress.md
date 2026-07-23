@@ -33,6 +33,10 @@ Type: bug
   login() rejects `{errorCode:'INTERNAL_ERROR'}` → asserts `login-network-error` shown + `login-form-error` absent.
   **Predicted:** `findByTestId('login-network-error')` times out (classifier false → setFormError → field error).
   **Actual:** exactly that at :131. **Match.** it.skip. test-review: 0 fixes on either. Suite 350 passed / 3 skipped.
-- [~] green-frontend-api — the SINGLE fix: widen `isLoginNetworkError` with the `INTERNAL_ERROR` sentinel
+  > Review passes on the two-red behavior commit `49d6e8a` (non-gating, commit stands): refactor — no changes
+  > (no refactor commit); agent-review — PASS (both genuinely RED for the same root cause; bounds fence a
+  > wrong over-broad green); premortem — INTERRUPTED by a session limit (did not complete). Optionally re-run
+  > premortem over `49d6e8a` on resume; not required to proceed.
+- [~] green-frontend-api — NEXT. The SINGLE fix: widen `isLoginNetworkError` with the `INTERNAL_ERROR` sentinel
   branch. Resolves all three red surfaces (classifier case 1 + OAuthCallback + login regression); un-skip all.
 - [ ] green-frontend — verification only (no new production code; confirm the callback + login reds are green).
