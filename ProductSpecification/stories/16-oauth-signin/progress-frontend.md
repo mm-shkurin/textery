@@ -242,19 +242,30 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   > extract (e.g. the banner into a small subcomponent, or the state read into a helper) to stay under.
 - [S] red-frontend-api — callback param, no API call
 - [S] green-frontend-api
-- [~] align-design
-  > CARRIED (premortem #2 on 4.1, CREDIBLE, non-blocking): the oauth-error banner reads immutable
-  > `location.state.oauthError`, so pressing Back onto the /login history entry (or any re-render)
-  > resurrects a stale "sign-in failed" banner with no failure having occurred. green declined the
-  > optional `replaceState` clear. Fix in align-design or a 4.x follow-up: clear `location.state.oauthError`
-  > after first render (e.g. `navigate(pathname,{replace:true,state:{}})` in an effect) and pin a test that
-  > a second render finds no banner. Cheap, real UX guard.
+- [x] align-design — pinned `.auth-oauth-error` to mockup 03 `.error-banner`: was reusing the amber
+  network treatment; now the red boxed alert — `display:flex;align-items:center;gap:10px`, `var(--error)`
+  text (#ef4444 = the mockup's literal rgba(239,68,68)), `rgba(239,68,68,0.1)` bg / `0.3` border,
+  radius 10, padding 12px 14px, margin-bottom 20px, 14px — plus a leading inline alert-circle SVG (lucide
+  glyph, `currentColor`, aria-hidden + text-free so the banner's `textContent` stays exactly the pinned
+  message; 8/8 tests still green). No icon dependency (no lucide/svg convention existed in auth).
+  design-review: PASS (message is `{oauthError}` from router state — the mockup's hardcoded "…VK ID…"
+  placeholder was NOT copied in; `--error` resolves from app-wide index.css:1 `:root`). test-coverage
+  --focus: OAuthErrorBanner 100% line/branch (both isUsableMessage arms covered), suite 331/0. Files
+  ≤200 (banner 42L, AuthForm.css 179L). **STALE-BANNER RESIDUAL STILL DEFERRED** — the `replaceState`
+  clear is a behavior change, not styling; kept out of align-design to preserve TDD discipline. Re-carried
+  to a 4.x follow-up below.
+  > CARRIED (premortem #2 on 4.1, CREDIBLE, non-blocking) — STILL OPEN, deferred past align-design (it's a
+  > behavior change needing its own red/green, not a styling fix): the oauth-error banner reads immutable
+  > `location.state.oauthError`, so pressing Back onto the /login history entry (or any re-render) resurrects
+  > a stale "sign-in failed" banner with no failure having occurred. Fix: clear `location.state.oauthError`
+  > after first render (`navigate(pathname,{replace:true,state:{}})` in an effect) + pin a test that a second
+  > render finds no banner. Cheap, real UX guard — schedule as a small 4.x frontend follow-up.
 - [S] green-selenium
 - [S] demo
 
 ### 4.2: Exchange network or server failure is retry-affording
 - [S] red-selenium
-- [ ] red-frontend
+- [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
