@@ -199,6 +199,20 @@ queue was never exercised through a real click dispatch.
   on both attrs, exact class, independent `.not` forms, mock shape matches `GetDocumentResult`). reopen scoped:
   2 passed; **full `npx vitest run`: 325 passed | 0 skipped (83 files)**; canonical `tsc -b --noEmit` clean.
   Nothing owed to a follow-up green — reopen contract already satisfied by the `content.size`-keyed impl.
+  **Review-pass verdicts on `119f300`: `/refactor` NO ACTION (the reopen helper differs from the create helper
+  on every axis that matters — mock target, props, waitFor, return — extracting a core would add indirection),
+  agent-review PASS, premortem CONCERNS (1 credible-low) → new jsdom guard queued below.** premortem: the two
+  reopen tests drive only the clean poles (`''` vs rich `<strong>` content); the DEGENERATE boundary is unpinned
+  — a saved doc whose content parses to a lone HardBreak / `&nbsp;` / whitespace is `size > 0`, so the
+  placeholder is suppressed and the user meets a blank UNLABELLED box. It is a pure function of the parsed
+  `content.size` (jsdom reproduces the parse exactly), so it is an owed jsdom red, NOT a selenium guard.
+- [~] red-frontend-placeholder-reopen-degenerate — premortem CREDIBLE-low (owed jsdom guard): characterize the
+  placeholder polarity for degenerate reopen content — `renderEditorReopeningDocument('<br>')`,
+  `('&nbsp;')`, `('   ')`. For each, assert which side of the contract results (placeholder present vs absent)
+  against the actual parsed `doc.content.size`, pinning today's behavior so a future `content.size` / HardBreak
+  parse change can't silently flip it. Characterization (behavior defensible either way — a HardBreak-only doc
+  genuinely is non-empty); mutation-check the guard. Which degenerate string the SERVER actually stores/returns
+  (sanitize/trim) is a backend-contract question owed elsewhere, not here.
 - [S] green-selenium — ~~red-selenium test is already green; no marker to remove~~ **FALSE, corrected
   2026-07-22.** Driven live against the full stack (backend :8100 + Postgres + Redis) with a real
   register→verify→login session: the test FAILS on a genuine production defect. The placeholder
