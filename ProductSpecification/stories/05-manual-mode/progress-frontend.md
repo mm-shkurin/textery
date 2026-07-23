@@ -156,9 +156,17 @@ queue was never exercised through a real click dispatch.
   routed through the emptiness-gated `inlinePlaceholder` decoration, so the after-typing persistence assertion
   passes). Un-skipped the multiline red. Fixed the stale `it.skip`-era comments on BOTH the aria-placeholder
   test (line 72) and this multiline test (agent-review low + a second stale block the green touched). Verified
-  with canonical `tsc -b --noEmit` — clean. Suite: **146 passed | 0 skipped | 0 failed.** `ManualEditor.tsx`
+  with canonical `tsc -b --noEmit` — clean. **generation suite (`src/features/generation`): 146 passed | 0
+  skipped; full `npx vitest run`: 323 passed | 0 skipped | 0 failed (82 files).** `ManualEditor.tsx`
   173 lines. Real-AT announcement of role+aria-multiline stays owed to green-selenium/axe (jsdom proves the
   attrs render, not that a reader speaks them).
+  **Review-pass verdicts on `80fda67`: `/refactor` NO ACTION, premortem PASS (getHTML save payload
+  unaffected — `editorProps.attributes` decorate the view root, not the doc model; role+aria-multiline+
+  aria-placeholder is the correct spec-composed set), agent-review CONCERNS (doc-only): the `146` figure is
+  the generation-scoped count, not the whole suite (323) — corrected above and labelled going forward. No
+  code follow-up.** LABELLING NOTE for future units: report scoped counts as "generation suite N", reserve
+  "suite" for the full `npx vitest run` (this is a recurring mislabel — the green-agent reports its scoped
+  run).
 - [x] red-frontend-placeholder-roundtrip — DONE (2026-07-23), LIVE characterization (no green needed — prod
   already handles it). Added 2nd test to `ManualEditor.placeholder.test.tsx` (now 65 lines): empty → type →
   clear-back-to-empty → `data-placeholder` + `is-editor-empty` RESTORED. **Predicted PASS** (attributes fn
