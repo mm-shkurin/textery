@@ -22,6 +22,9 @@ from statements.frontend.generation.manual_editor_line_break_statements import (
 from statements.frontend.generation.manual_editor_aria_statements import (
     ManualEditorAriaStatements,
 )
+from statements.frontend.generation.manual_editor_caret_statements import (
+    ManualEditorCaretStatements,
+)
 from statements.frontend.generation.manual_editor_placeholder_delete_statements import (
     ManualEditorPlaceholderDeleteStatements,
 )
@@ -159,3 +162,8 @@ def manual_editor_placeholder_delete_statements():
 @pytest.fixture
 def manual_editor_aria_statements():
     return ManualEditorAriaStatements()
+
+
+@pytest.fixture
+def manual_editor_caret_statements():
+    return ManualEditorCaretStatements()

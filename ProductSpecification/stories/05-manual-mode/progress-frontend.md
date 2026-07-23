@@ -276,7 +276,12 @@ queue was never exercised through a real click dispatch.
 - [S] red-frontend-api — no API call: cursor-driven toolbar state is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
 - [x] align-design — verify-only: no new markup/CSS for this scenario, reuses scenario 3.1's `.me-toolbar-btn[aria-pressed='true']` active-state styling already aligned to mockup 04-editor-content.html
-- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. This is the deferred gap the premortem flagged (see red-frontend note above) — must run before 3.2 is fully verified.
+- [x] green-selenium — **CLOSED 2026-07-23 by the Track B `green-selenium-3.2-caret` run** (see that entry
+  below): `test_manual_editor_caret_acceptance.py` drives a caret-only (keyboard, non-drag) move between a bold
+  and a plain run against the live stack (backend :8100 + headless Chrome) and asserts the bold button's
+  `aria-pressed` tracks it — `true` in the bold run, `false` in the plain run. The premortem gap flagged in the
+  red-frontend note above is resolved: a real browser DOES dispatch the selection event for a caret-only move.
+  `1 passed`. ~~backend unavailable on this branch — must run before 3.2 is fully verified.~~
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
 ### Scenario 4.1: Saving shows a loading state and disables the save control
@@ -1548,11 +1553,19 @@ drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 pytho
   before reading. **Mutation-check: neutralizing the `[aria-expanded='true']` CSS rule makes the highlight test
   FAIL (`still 'rgba(0, 0, 0, 0)'`) — the hardened test has real teeth; CSS restored clean.** Re-verified GREEN
   live (`2 passed`).
-- [~] green-selenium-3.2-caret — scenario 3.2's caret-only `select` event was hand-fired via `fireEvent`
-  in jsdom, never proven to fire in a real browser for a caret-only (non-drag) cursor move. Add an
-  acceptance test that moves the caret between a bold and a plain run and asserts the bold button's
-  `aria-pressed` tracks it live.
-- [ ] green-selenium-4.2-save-queue — scenario 4.2's out-of-order save queue was never exercised through a
+- [x] green-selenium-3.2-caret — **GREEN live 2026-07-23 (`1 passed in 6.83s`, headless Chrome, backend
+  :8100).** Scenario 3.2's premortem gap is closed: a caret-only (keyboard, non-drag) cursor move updates the
+  toolbar in a real browser. New `test_manual_editor_caret_acceptance.py` (30 lines) +
+  `manual_editor_caret_statements.py` (~50 lines, extends `ManualEditorStatements`). Type `aaabbb`, select the
+  leading `aaa` via Home + Shift+ArrowRight×3 (keyboard, no pointer drag), bold it → a bold run + a plain run.
+  Then Home+ArrowRight to move the caret INTO the bold run → `assert_bold_button_is_active` (aria-pressed
+  `true`); End to move into the plain run → `assert_bold_button_is_inactive` (aria-pressed `false`). Teeth: the
+  trailing inactive assertion is the real proof — a toolbar that did NOT re-read state on a caret move would
+  stay stuck `true` (from the bold selection) and fail it; passing both polarities proves the real
+  `selectionchange`/`select` the app listens for actually fires on a caret-only move, which jsdom's
+  `fireEvent.select` could only simulate. This is the deferred `red-selenium`/`green-selenium` for scenario 3.2
+  (see its rows above).
+- [~] green-selenium-4.2-save-queue — scenario 4.2's out-of-order save queue was never exercised through a
   real click dispatch. Add an acceptance test that fires a second save while one is in flight (real
   clicks) and asserts the displayed status never reflects a stale save.
 - [ ] green-selenium-7.9-popover-clip — scenario 7.9's link popover is `position:absolute; z-index:20`
