@@ -354,7 +354,14 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   provider, no length check), 4 failed. **Actual:** exactly that, missing-code confirmed firing `{code:''}`, 4
   failed. **Match** on type/message/status. test-review: 0 fixes (already strict, boundary 513=512+1). Suite 339
   passed / 4 skipped.
-- [~] green-frontend
+- [x] green-frontend — added the pre-exchange guard. New `utils/oauthProviders.ts` (32L): moved `OAUTH_PROVIDERS`
+  out of the component (now one-place provider edits), `isValidOAuthProvider`, `OAUTH_CODE_MAX_LENGTH = 512`, pure
+  `isMalformedCallback(provider, code)` (provider ∉ {vk,yandex} OR `!/\S/.test(code)` blank/whitespace OR length
+  > 512 — strict `>`). OAuthCallback effect: `if (isMalformedCallback(provider, code)) { setFailed(true); return }`
+  after the `error=` branch, before the exchange. OAuthProviderButtons imports the shared set (buttons tests stay
+  green). Un-skipped RED + folded both carried guards: (1) exactly-512 POSITIVE control fires the exchange (guards
+  `>` vs `>=`); (2) whitespace-only `%20%20%20` → no exchange, error (guards `trim`/`/\S/` vs `===''`). Suite 339/4skip
+  → **345/0skip**, tsc + oxlint clean, all files ≤200 (OAuthCallback 145).
   > GREEN design: share the `{vk,yandex}` valid set (currently local `OAUTH_PROVIDERS` in OAuthProviderButtons.tsx)
   > + a `OAUTH_CODE_MAX_LENGTH = 512` const; add a pure `isMalformedCallback(provider, code)` guard; in the effect,
   > after the `error=` branch and before the exchange, `if (isMalformedCallback(...)) { setFailed(true); return }`.
@@ -377,7 +384,7 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 
 ### 4.5: An unrecognized error code falls back to generic copy
 - [S] red-selenium
-- [ ] red-frontend
+- [~] red-frontend
 - [ ] green-frontend
 - [S] red-frontend-api
 - [S] green-frontend-api

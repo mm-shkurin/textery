@@ -64,12 +64,7 @@ function assertMalformed() {
   expect(navigate).not.toHaveBeenCalled()
 }
 
-// RED (scenario 4.4): the current effect fires oauthExchange({ code }) unconditionally on the
-// no-error path, ignoring provider and code validity — so each case here calls the exchange 1 time,
-// failing `not.toHaveBeenCalled()` ("expected vi.fn() to not be called at all, but actually been
-// called 1 times"). Skipped so the suite stays green; green-frontend adds the pre-exchange
-// validation guard and un-skips.
-describe.skip('OAuthCallback malformed-callback validation', () => {
+describe('OAuthCallback malformed-callback validation', () => {
   beforeEach(() => {
     // Arm the exchange spy non-vacuously so "not called" is a genuine observation, not a
     // vacuous pass on an undefined stub whose absent `.then` would throw.
@@ -106,6 +101,27 @@ describe.skip('OAuthCallback malformed-callback validation', () => {
   // code exceeds the 512-char client-side sanity cap → malformed, no exchange.
   it('shows the error state and fires no exchange for an over-length code', () => {
     renderAtCallback(`?code=${'x'.repeat(513)}&provider=vk`)
+
+    assertMalformed()
+  })
+
+  // POSITIVE control (guards `>` vs `>=` off-by-one): a code of EXACTLY 512 chars is at the cap and
+  // therefore VALID — the exchange DOES fire with { code } and no error card is shown. The exchange
+  // spy returns a never-resolving promise so the component stays on the loading state.
+  it('fires the exchange for a code at exactly the 512-char cap', () => {
+    const code = 'x'.repeat(512)
+
+    renderAtCallback(`?code=${code}&provider=vk`)
+
+    expect(oauthExchangeApi.oauthExchange).toHaveBeenCalledTimes(1)
+    expect(oauthExchangeApi.oauthExchange).toHaveBeenCalledWith({ code })
+    expect(screen.queryByTestId('oauth-callback-error')).not.toBeInTheDocument()
+  })
+
+  // Whitespace-only code (guards trim() vs `=== ''`): `?code=%20%20%20` is blank once trimmed →
+  // malformed, no exchange.
+  it('shows the error state and fires no exchange for a whitespace-only code', () => {
+    renderAtCallback('?code=%20%20%20&provider=vk')
 
     assertMalformed()
   })

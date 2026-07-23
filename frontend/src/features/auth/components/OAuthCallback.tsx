@@ -5,6 +5,7 @@ import { isAuthenticated, saveSession } from '../utils/authSession'
 import { isLoginNetworkError } from '../utils/loginErrorHandling'
 import { NETWORK_LOGIN_FAILURE_MESSAGE } from '../utils/authMessages'
 import { oauthProviderFailureMessage } from '../utils/oauthMessages'
+import { isMalformedCallback } from '../utils/oauthProviders'
 import { safeRedirectTarget } from '../utils/safeRedirectTarget'
 import './AuthForm.css'
 import './OAuthCallback.css'
@@ -63,6 +64,14 @@ export function OAuthCallback() {
     // exchange, exactly once. Only the no-error path reaches the exchange below.
     if (error !== null) {
       goToLogin(oauthProviderFailureMessage(provider))
+      return
+    }
+
+    // Client-side pre-exchange validation: an unknown provider, a blank code, or an over-length
+    // code is not a spendable handoff — resolve to the terminal error state without ever issuing
+    // the exchange POST (spec 16_OAuthSignin.md:63-64).
+    if (isMalformedCallback(provider, code)) {
+      setFailed(true)
       return
     }
 

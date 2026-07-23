@@ -1,14 +1,11 @@
+import { OAUTH_PROVIDERS } from '../utils/oauthProviders'
 import './LoginForm.css'
 
 // OAuth providers as DATA, not duplicated JSX branches: an unknown provider is simply not in this
-// array, so it is not a reachable code path. Each entry is a full-page navigation (an <a>, not a
-// fetch) to the backend start endpoint — the client never talks to a provider SDK. The badge is
-// DECORATIVE (aria-hidden) so each control's accessible name is exactly its label.
-const OAUTH_PROVIDERS = [
-  { provider: 'vk', label: 'Войти через VK ID', badge: 'VK', startPath: '/api/v1/auth/oauth/vk/start' },
-  { provider: 'yandex', label: 'Войти через Yandex ID', badge: 'Я', startPath: '/api/v1/auth/oauth/yandex/start' },
-] as const
-
+// list, so it is not a reachable code path. The list lives in utils/oauthProviders so the callback
+// screen's malformed-guard shares the exact same provider set. Each entry is a full-page navigation
+// (an <a>, not a fetch) to the backend start endpoint — the client never talks to a provider SDK.
+// The badge is DECORATIVE (aria-hidden) so each control's accessible name is exactly its label.
 export function OAuthProviderButtons() {
   return (
     <>
