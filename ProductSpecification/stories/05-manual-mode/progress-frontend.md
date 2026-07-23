@@ -1612,7 +1612,15 @@ drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 pytho
   width, and `@media (max-width:768px)` re-anchors `right:0` so a right-edge button opens leftward. So this is
   a live characterization confirming no regression, not a fix. Teeth: the assertion is a strict rect-containment
   check (fails the moment any edge crosses the shell/viewport bound), exercised at the two widths where a clip
-  would actually manifest.
+  would actually manifest. **Review passes on `275f090`: agent-review PASS** (verified `getBoundingClientRect`
+  reports the element's own box, NOT truncated by the ancestor's `overflow:hidden` — so the test genuinely
+  *can* detect a clip, not measure a pre-clipped rect). **premortem CONCERNS (the narrow test might not
+  reproduce the worst case → "no clip" unproven) — DISPROVEN by mutation-check:** neutralizing the
+  `@media (max-width:768px){ .me-link-popover{ right:0 } }` re-anchor made the narrow test FAIL (`popover
+  right=668 > shell right=473, clipped RIGHT`), so the test DOES reproduce the right-edge worst case and the
+  CSS mitigation is load-bearing — real teeth, not a vacuous pass. (Chrome's minimum window width floored the
+  effective narrow viewport at ~504px, still `<768px` so the `@media` regime applies.) CSS restored clean;
+  both tests GREEN after restore.
 - [~] green-selenium-beforeunload-prompt — `guard-unsaved-work`'s owe (review passes on `24269ba`): the
   guard sets `event.returnValue = ''` alongside `preventDefault()` because legacy Chrome/Edge + older
   Safari/Firefox only render the native "leave?" dialog when returnValue is set — but jsdom cannot observe
