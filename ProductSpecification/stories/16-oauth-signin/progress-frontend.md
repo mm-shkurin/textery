@@ -294,6 +294,15 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   > additional keys (e.g. `from`) alongside `oauthError`, blanket `state:{}` loses them. Prefer clearing only the
   > `oauthError` key (`state: { ...rest }` without oauthError) OR document that the callback's error nav only ever
   > sets `{oauthError}` so `{}` is exact. If you keep `{}`, add a note; if the spec allows co-carried state, guard it.
+  > RESIDUAL (agent-review LOW + premortem CREDIBLE on 4.1 green `ab15a8c`, LATENT — not a live defect, deferred):
+  > green documented `{}` is exact TODAY (callback's error nav only sets `{oauthError}`; `from` and `oauthError`
+  > never coexist on `/login`), but the scrub `navigate(pathname,{replace:true,state:{}})` is a blanket replace: it
+  > (a) would silently drop a co-carried `location.state.from` (LoginForm.tsx:32 reads it for the post-login
+  > redirect) the day any flow lands on `/login` with `{from,oauthError}` together, and (b) drops `location.search`/
+  > `hash` (harmless — nothing on `/login` reads them). FOLLOW-UP if that invariant ever changes: make the scrub
+  > key-preserving — `navigate({pathname, search, hash},{replace:true, state:{...rest}})` stripping only `oauthError`
+  > — and add a test that a co-carried `from` survives the scrub. Not fixed now: currently unreachable, and fixing
+  > it would encode behavior no current flow exercises.
 - [S] green-selenium
 - [S] demo
 
