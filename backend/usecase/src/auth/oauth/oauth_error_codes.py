@@ -7,6 +7,11 @@ INVALID_OR_EXPIRED_OAUTH_CODE = "INVALID_OR_EXPIRED_OAUTH_CODE"
 
 UNKNOWN_OAUTH_PROVIDER = "UNKNOWN_OAUTH_PROVIDER"
 
+# Returned when a source exceeds the per-window rate on any of the three OAuth legs.
+# Mapped to HTTP 429 (abuse bound, hazard-scan G6 / Security 5.1). It names the class
+# of refusal, never the source or the count — nothing an attacker can probe with.
+OAUTH_RATE_LIMITED = "OAUTH_RATE_LIMITED"
+
 # The value placed in the frontend redirect's `?error=` on any failed callback. It
 # is a fixed, client-safe token, never the internal reason: which leg failed (forged
 # state, provider error, an email already owned by a password account) is operator

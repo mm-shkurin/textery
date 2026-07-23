@@ -106,7 +106,13 @@ shared `conftest.py` is off-limits, move the fixtures into a `tests/backend/oaut
 
 - [ ] 1.1 A crafted callback redirect target cannot drive an external redirect
 - [ ] 2.1 The callback error value is never rendered raw
-- [ ] 5.1 Repeated OAuth requests are rate-limited
+- [x] 5.1 Repeated OAuth requests are rate-limited — per-source, per-leg fixed-window
+  counter in Postgres (`oauth_rate_limits`, migration `1a2b3c4d5e6f`), atomic upsert so
+  the bound holds across instances. `RateLimiter` port + `OAuthRateGuard` in usecase;
+  each leg checks first, over-limit raises `OAUTH_RATE_LIMITED` → 429. Source = rightmost
+  X-Forwarded-For (nginx-appended) else socket peer. Config `OAUTH_RATE_LIMIT_MAX_REQUESTS`
+  (40) / `OAUTH_RATE_LIMIT_WINDOW_SECONDS` (60) in `backend/.env`. Acceptance
+  `test_oauth_rate_limiting.py` (3 legs) GREEN; invariant gate 12/12 GREEN.
 - [ ] 6.1 Privileged fields in the exchange body are ignored
 - [ ] 7.1 Failure responses carry no internal detail
 
@@ -136,9 +142,9 @@ Two open coordination points (not backend bugs):
 
 Ordered by priority. None blocks the Yandex happy path, which is live.
 
-1. **Rate-limiting (Security 5.1) — NOT implemented.** `endpoints.md` G6 requires
-   `start`/`callback`/`exchange` to be rate-limited; currently they are not. This is the
-   biggest functional gap and the one real security scenario still open in code.
+1. **Rate-limiting (Security 5.1) — DONE 2026-07-23.** `start`/`callback`/`exchange` now
+   rate-limited per source+leg via a shared Postgres fixed-window counter. See the 5.1 row
+   under Security Scenarios above.
 2. **Security scenarios (`tests/05`): 1.1** crafted callback redirect cannot drive an
    external redirect (open-redirect guard on the frontend-callback URL is currently a fixed
    config value, needs a test proving a crafted `?next`/host cannot leak); **6.1** privileged

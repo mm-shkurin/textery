@@ -4,11 +4,13 @@ from collections.abc import AsyncIterator
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.auth.handoff_code_storage import SqlAlchemyHandoffCodeRepository
 from access.auth.oauth_identity_storage import SqlAlchemyOAuthIdentityRepository
+from access.auth.oauth_rate_limit_storage import SqlAlchemyRateLimiter
 from access.auth.oauth_state_storage import SqlAlchemyOAuthStateRepository
 from auth.oauth.complete_oauth_callback import CompleteOAuthCallback
 from auth.oauth.exchange_handoff_code import ExchangeHandoffCode
 from auth.oauth.oauth_provider import OAuthConfigurationError
 from auth.oauth.provider_registry import ProviderRegistry
+from auth.oauth.rate_limiter import OAuthRateGuard
 from auth.oauth.start_oauth import StartOAuth
 from container.runtime import session_factory, token_service
 from oauth_providers.fake_oauth_provider import FakeOAuthProvider
@@ -19,9 +21,13 @@ from shared.clock import SystemClock
 OAUTH_PROVIDER_ENV_VAR = "OAUTH_PROVIDER"
 HANDOFF_TTL_ENV_VAR = "OAUTH_HANDOFF_CODE_TTL_SECONDS"
 FRONTEND_CALLBACK_URL_ENV_VAR = "OAUTH_FRONTEND_CALLBACK_URL"
+RATE_LIMIT_MAX_ENV_VAR = "OAUTH_RATE_LIMIT_MAX_REQUESTS"
+RATE_LIMIT_WINDOW_ENV_VAR = "OAUTH_RATE_LIMIT_WINDOW_SECONDS"
 DEFAULT_HANDOFF_TTL_SECONDS = 300
 DEFAULT_FRONTEND_CALLBACK_URL = "http://localhost/auth/callback"
 DEFAULT_FAKE_AUTHORIZE_URL = "https://fake-oauth.local/authorize"
+DEFAULT_RATE_LIMIT_MAX_REQUESTS = 40
+DEFAULT_RATE_LIMIT_WINDOW_SECONDS = 60
 
 
 def _require(var_name: str) -> str:
@@ -46,6 +52,19 @@ _handoff_ttl_seconds = int(os.environ.get(HANDOFF_TTL_ENV_VAR, DEFAULT_HANDOFF_T
 _frontend_callback_url = os.environ.get(
     FRONTEND_CALLBACK_URL_ENV_VAR, DEFAULT_FRONTEND_CALLBACK_URL
 )
+_rate_limit_max = int(os.environ.get(RATE_LIMIT_MAX_ENV_VAR, DEFAULT_RATE_LIMIT_MAX_REQUESTS))
+_rate_limit_window = int(
+    os.environ.get(RATE_LIMIT_WINDOW_ENV_VAR, DEFAULT_RATE_LIMIT_WINDOW_SECONDS)
+)
+
+
+def _rate_guard(session) -> OAuthRateGuard:
+    # The limiter runs on the same request session but commits its increment itself,
+    # so the hit counts even when the guarded operation rolls back (a throttled or
+    # failed leg). The session is closed by the create_* factory's finally block.
+    return OAuthRateGuard(
+        SqlAlchemyRateLimiter(session, _rate_limit_max, _rate_limit_window)
+    )
 
 
 def _create_provider():
@@ -78,6 +97,7 @@ async def create_start_oauth() -> AsyncIterator[StartOAuth]:
             state_repository=SqlAlchemyOAuthStateRepository(session),
             clock=SystemClock(),
             unit_of_work=SqlAlchemyUnitOfWork(session),
+            rate_guard=_rate_guard(session),
         )
     finally:
         await session.close()
@@ -95,6 +115,7 @@ async def create_complete_oauth_callback() -> AsyncIterator[CompleteOAuthCallbac
             handoff_ttl_seconds=_handoff_ttl_seconds,
             clock=SystemClock(),
             unit_of_work=SqlAlchemyUnitOfWork(session),
+            rate_guard=_rate_guard(session),
         )
     finally:
         await session.close()
@@ -109,6 +130,7 @@ async def create_exchange_handoff_code() -> AsyncIterator[ExchangeHandoffCode]:
             token_service=token_service,
             clock=SystemClock(),
             unit_of_work=SqlAlchemyUnitOfWork(session),
+            rate_guard=_rate_guard(session),
         )
     finally:
         await session.close()

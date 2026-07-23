@@ -119,3 +119,14 @@ class OAuthStatements:
     async def can_still_log_in_with_password(self, email: str, password: str) -> bool:
         response = await self._client.login(LoginRequestDto(email=email, password=password))
         return response.status_code == 200
+
+    async def start_from(self, headers: dict, provider: str = PROVIDER) -> OAuthRedirectDto:
+        return await self._client.oauth_start(provider, headers=headers)
+
+    async def callback_from(
+        self, headers: dict, provider: str = PROVIDER, **params
+    ) -> OAuthRedirectDto:
+        return await self._client.oauth_callback(provider, params, headers=headers)
+
+    async def exchange_from(self, headers: dict, code: str) -> OAuthExchangeResponseDto:
+        return await self._client.oauth_exchange({"code": code}, headers=headers)

@@ -36,25 +36,34 @@ class ApplicationClient:
         response = await self._client.post("/api/v1/auth/login", json=request.to_json())
         return LoginResponseDto(status_code=response.status_code, body=self._parsed_body(response))
 
-    async def oauth_start(self, provider: str) -> OAuthRedirectDto:
+    async def oauth_start(self, provider: str, headers: dict | None = None) -> OAuthRedirectDto:
         # follow_redirects stays off on purpose: following would send the test at
         # the real provider, and the assertion surface is the Location header
-        # itself, not the page behind it.
-        response = await self._client.get(f"/api/v1/auth/oauth/{provider}/start")
-        return OAuthRedirectDto(
-            status_code=response.status_code, location=response.headers.get("location")
-        )
-
-    async def oauth_callback(self, provider: str, params: dict) -> OAuthRedirectDto:
+        # itself, not the page behind it. `headers` lets a test spoof the source
+        # (X-Forwarded-For) so the rate-limit bucket is per-caller.
         response = await self._client.get(
-            f"/api/v1/auth/oauth/{provider}/callback", params=params
+            f"/api/v1/auth/oauth/{provider}/start", headers=headers
         )
         return OAuthRedirectDto(
             status_code=response.status_code, location=response.headers.get("location")
         )
 
-    async def oauth_exchange(self, body: dict) -> OAuthExchangeResponseDto:
-        response = await self._client.post("/api/v1/auth/oauth/exchange", json=body)
+    async def oauth_callback(
+        self, provider: str, params: dict, headers: dict | None = None
+    ) -> OAuthRedirectDto:
+        response = await self._client.get(
+            f"/api/v1/auth/oauth/{provider}/callback", params=params, headers=headers
+        )
+        return OAuthRedirectDto(
+            status_code=response.status_code, location=response.headers.get("location")
+        )
+
+    async def oauth_exchange(
+        self, body: dict, headers: dict | None = None
+    ) -> OAuthExchangeResponseDto:
+        response = await self._client.post(
+            "/api/v1/auth/oauth/exchange", json=body, headers=headers
+        )
         return OAuthExchangeResponseDto(
             status_code=response.status_code, body=self._parsed_body(response)
         )

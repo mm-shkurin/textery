@@ -73,9 +73,30 @@ recorded in progress-backend.md: `?error=` is a single generic `oauth_failed` (n
 user-cancel distinction — deliberate), and the app-wide 5xx handler is codeful
 (`INTERNAL_ERROR`), so the frontend retry classifier must treat any 5xx as retryable.
 
-## 2026-07-23 — biggest open backend gap: rate-limiting not implemented
+## 2026-07-23 — rate-limiting DONE (Security 5.1 / hazard G6)
 
-`endpoints.md` G6 requires start/callback/exchange to be rate-limited (Security 5.1). Not
-done. Everything else remaining is edge-scenario coverage or tests; this is the one missing
-piece of named production behavior. Restore: add rate-limiting on the three OAuth routes and
-the 5.1 acceptance test.
+Implemented per-source, per-leg fixed-window limiting on all three OAuth routes. Design
+notes for future sessions:
+- **Store: Postgres, not Redis.** Redis is up but has zero Python wiring; Postgres is
+  fully wired (UoW, migrations, delete-RETURNING pattern). New table `oauth_rate_limits`
+  (`bucket_key`, `window_start` bigint, `request_count`), migration `1a2b3c4d5e6f`
+  (down_revision `0f1a2b3c4d5e`). One atomic `INSERT ... ON CONFLICT DO UPDATE
+  ... RETURNING count` per hit → multi-instance safe.
+- **Clean split:** `RateLimiter` port + `AllowAllRateLimiter` default + `OAuthRateGuard`
+  helper in `usecase/src/auth/oauth/rate_limiter.py` (guard is a shared helper, NOT a
+  usecase — the three legs each call `check(leg, source, now)` first). Adapter
+  `SqlAlchemyRateLimiter` commits its own increment on the request session, so the hit
+  counts even when the guarded op rolls back (throttled/failed leg). Rate check is always
+  the FIRST op, so its early commit flushes nothing else.
+- **429 via existing machinery:** new code `OAUTH_RATE_LIMITED` → added to the
+  `_ERROR_CODE_STATUS_MAP` (429), alongside `RESEND_COOLDOWN_ACTIVE`. No app-wide handler
+  change. Callback throttle returns a 429 JSON, not a redirect (the guard raises
+  `ValidationException`, which the router's `OAuthCallbackError`-only except does not catch).
+- **Source = rightmost X-Forwarded-For** (nginx appends the real client; earlier hops are
+  spoofable) else socket peer. Best-effort abuse bound — NO invariant rests on it.
+- **Test isolation quirk:** the 5.1 acceptance tests flood a UNIQUE spoofed XFF per test,
+  so each flood is its own bucket and the shared localhost bucket the rest of the suite
+  runs on is never spent. Limit 40 keeps localhost well clear. `configured_rate_limit()`
+  in `oauth_scope.py` reads `OAUTH_RATE_LIMIT_MAX_REQUESTS` (export it for the test host).
+- **Config in `backend/.env`:** `OAUTH_RATE_LIMIT_MAX_REQUESTS=40`,
+  `OAUTH_RATE_LIMIT_WINDOW_SECONDS=60`. Not `infra/.env`.

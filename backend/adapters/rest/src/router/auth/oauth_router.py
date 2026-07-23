@@ -1,7 +1,7 @@
 import logging
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 
 from auth.oauth.complete_oauth_callback import CompleteOAuthCallback
@@ -36,12 +36,28 @@ def get_frontend_callback_url() -> str:
     raise NotImplementedError("wired by the application composition root")
 
 
+def client_source(request: Request) -> str:
+    """The caller identity the rate-limit buckets key on.
+
+    Behind the nginx proxy the real client IP is the rightmost X-Forwarded-For hop
+    (nginx appends `$remote_addr`); earlier hops are client-supplied and spoofable,
+    so the last entry is the one to trust. Falls back to the socket peer for a
+    direct connection. This is a best-effort abuse bound, not an auth boundary — no
+    security invariant rests on it.
+    """
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[-1].strip()
+    return request.client.host if request.client else "unknown"
+
+
 @router.get("/{provider}/start")
 async def start(
     provider: str,
+    source: str = Depends(client_source),
     usecase: StartOAuth = Depends(get_start_oauth_usecase),
 ) -> RedirectResponse:
-    authorization_url = await usecase.execute(provider)
+    authorization_url = await usecase.execute(provider, source)
     return RedirectResponse(authorization_url, status_code=_REDIRECT_STATUS)
 
 
@@ -50,6 +66,7 @@ async def callback(
     provider: str,
     code: str = "",
     state: str = "",
+    source: str = Depends(client_source),
     usecase: CompleteOAuthCallback = Depends(get_complete_oauth_callback_usecase),
     frontend_callback_url: str = Depends(get_frontend_callback_url),
 ) -> RedirectResponse:
@@ -60,7 +77,7 @@ async def callback(
     # any other casing raises UNKNOWN_OAUTH_PROVIDER before reaching here, so the
     # frontend's exact-match guard never sees `Yandex`/`YANDEX`.
     try:
-        handoff_code = await usecase.execute(provider, code, state)
+        handoff_code = await usecase.execute(provider, code, state, source)
         params = {"code": handoff_code, "provider": provider}
     except OAuthCallbackError as error:
         # The client only ever sees the generic ?error=; the operator-facing reason
@@ -75,7 +92,8 @@ async def callback(
 @router.post("/exchange", status_code=200, response_model=LoginResponseDto)
 async def exchange(
     request: OAuthExchangeRequestDto,
+    source: str = Depends(client_source),
     usecase: ExchangeHandoffCode = Depends(get_exchange_handoff_code_usecase),
 ) -> LoginResponseDto:
-    pair = await usecase.execute(request.code)
+    pair = await usecase.execute(request.code, source)
     return LoginResponseDto.from_domain(pair)
