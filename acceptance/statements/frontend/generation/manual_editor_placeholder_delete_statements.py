@@ -27,3 +27,21 @@ class ManualEditorPlaceholderDeleteStatements(ManualEditorLineBreakStatements):
         """
         self.select_all_text_in_editor(driver)
         self._wait_for_visible(driver, EDITABLE_CONTENT).send_keys(Keys.BACKSPACE)
+
+    def assert_content_placeholder_is_hidden(self, driver: WebDriver) -> None:
+        """The negative of the placeholder assertion — no data-placeholder, no is-editor-empty.
+
+        Run AFTER typing and BEFORE the delete: it proves the typing actually landed in the
+        document. Without it the whole test could false-pass on a no-op keystroke (the editor
+        stays empty from mount, the final placeholder assertion passes for the trivial reason,
+        and the delete-then-return round-trip is never exercised).
+        """
+        content_area = self._wait_for_visible(driver, EDITABLE_CONTENT)
+        placeholder_attr = content_area.get_attribute("data-placeholder")
+        assert placeholder_attr is None, (
+            f"expected no data-placeholder while the editor has content, got {placeholder_attr!r}"
+        )
+        classes = (content_area.get_attribute("class") or "").split()
+        assert "is-editor-empty" not in classes, (
+            f"expected the is-editor-empty class to be gone once content is typed, got {classes}"
+        )

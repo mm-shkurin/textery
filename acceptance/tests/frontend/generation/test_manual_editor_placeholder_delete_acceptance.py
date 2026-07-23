@@ -24,6 +24,11 @@ class TestManualEditorPlaceholderDeleteAcceptance(AbstractFrontendTest):
         statements.press_enter_in_editor(webdriver)
         statements.continue_typing_in_editor(webdriver, "bar")
 
+        # Proves the typing actually landed: without this the whole test could false-pass on a
+        # no-op keystroke (editor stays empty from mount, the final assertion passes trivially,
+        # and the delete-then-return round-trip is never exercised).
+        statements.assert_content_placeholder_is_hidden(webdriver)
+
         statements.clear_all_via_backspace(webdriver)
 
         statements.assert_content_placeholder_is_visible(webdriver)

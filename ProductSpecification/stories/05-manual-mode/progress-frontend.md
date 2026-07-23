@@ -1520,7 +1520,12 @@ drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 pytho
   `Начните печатать…`. Teeth: a residual hardBreak node left by the delete would keep `doc.content.size >= 1`,
   so `is-editor-empty`/`data-placeholder` would be absent and the assertion fails — passing proves the delete
   transaction reached a genuinely empty doc, not a `textContent=''` DOM wipe (the jsdom path). This is the
-  real delete-transaction path the jsdom roundtrip test structurally cannot exercise.
+  real delete-transaction path the jsdom roundtrip test structurally cannot exercise. **Premortem CONCERNS on
+  `e8db228` (fixed, follow-up commit):** the test lacked an intermediate check that the placeholder DISAPPEARED
+  after typing — a no-op keystroke would leave the editor empty-from-mount and false-pass the final assertion
+  without ever exercising the round-trip. Added `assert_content_placeholder_is_hidden` (no `data-placeholder`,
+  no `is-editor-empty`) between the typing and the delete, so the test now pins the full round-trip: present →
+  hidden-once-typed → returns-after-delete. Re-verified GREEN live (`1 passed`).
 - [~] green-selenium-aria-announced — the a11y attrs (`role="textbox"` + `aria-multiline="true"` +
   `aria-placeholder`) are pinned in the DOM by jsdom but their real announcement is unverified. Add an axe
   check (or a computed-role assertion) on the live editor; ALSO pin the `.me-toolbar-btn[aria-expanded='true']`
