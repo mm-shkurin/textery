@@ -1491,13 +1491,22 @@ container (`random_coffee_app`) and 404s on `/api/v1/auth/register`. Canonical f
 Each is a `green-selenium` step: `/run-backend` (already up) → `/run-frontend` (vite :5173 already up) →
 drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 python -m pytest <path> -q`.
 
-- [~] green-selenium-line-break-save-payload — the line-break green-selenium proved the RENDER half only;
-  the SAVE path (`editor.getHTML()` → PUT body) and the reopen round-trip are still owed (data-loss
-  shaped). Add an acceptance test: type text, press Enter, type more, SAVE, assert the outbound PUT body
-  (or a reopen) carries exactly one `<br>`; then reload the document and assert the break survived the
-  backend round-trip (a sanitizer/parse rule could drop it). See the line-break green-selenium entry above
-  for the owe-list detail.
-- [ ] green-selenium-placeholder-delete — premortem owe: the jsdom roundtrip test clears via `textContent=''`
+- [x] green-selenium-line-break-save-payload — **GREEN live 2026-07-23 (`1 passed in 9.56s`, headless Chrome,
+  backend :8100 + Postgres + Redis + vite :5173).** The SAVE half of the line break is proven: type `foo`,
+  Enter, `bar`, click Сохранить, wait for `me-save-status--saved`, then read the document BACK through the
+  backend's own `GET /api/v1/documents/{id}` and assert exactly one `<br>` + both text runs survived. New
+  `test_manual_editor_save_payload_acceptance.py` (30 lines) + `manual_editor_save_payload_statements.py`
+  (~95 lines, extends `ManualEditorLineBreakStatements`). **Reopen without a UI entry point:** the story has
+  no document-list/history screen (that's story #12), so the round-trip is read at the API level, not by
+  re-navigating — the freshly registered live-session account owns exactly one document (created on editor
+  mount), so `GET /api/v1/documents` (list) identifies it without the app exposing an id to the DOM; the
+  saved-content read uses the same access token the browser stored in `sessionStorage`
+  (`textery.auth.accessToken`, `Authorization: Bearer`). Teeth: the assertion pins an EXACT `<br>` count of 1
+  (fails for 0 = break dropped by a sanitizer/parse rule, and for 2 = double-insert) plus both runs present.
+  **Run gotcha (still true):** acceptance runs need `BACKEND_PORT=8100` exported — the harness defaults to
+  8000, another project's container on this host. The `getHTML()` serialization carries no ProseMirror
+  caret-helper `<br>` (view-only, never in the model), so the saved html needs no caret-helper stripping.
+- [~] green-selenium-placeholder-delete — premortem owe: the jsdom roundtrip test clears via `textContent=''`
   (a full DOM wipe), not a real delete-transaction. Add an acceptance test: type text incl. a hard break
   (Enter), select-all + Backspace to truly empty, assert the placeholder (`data-placeholder` +
   `is-editor-empty` + the `::before` paint) RETURNS in a real browser.

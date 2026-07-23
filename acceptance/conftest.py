@@ -19,6 +19,9 @@ from statements.frontend.generation.chat_workspace_statements import ChatWorkspa
 from statements.frontend.generation.manual_editor_line_break_statements import (
     ManualEditorLineBreakStatements,
 )
+from statements.frontend.generation.manual_editor_save_payload_statements import (
+    ManualEditorSavePayloadStatements,
+)
 from statements.frontend.generation.manual_editor_statements import ManualEditorStatements
 from statements.frontend.generation.mode_modal_statements import ModeModalStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
@@ -135,3 +138,8 @@ def manual_editor_statements():
 @pytest.fixture
 def manual_editor_line_break_statements():
     return ManualEditorLineBreakStatements()
+
+
+@pytest.fixture
+def manual_editor_save_payload_statements():
+    return ManualEditorSavePayloadStatements()
