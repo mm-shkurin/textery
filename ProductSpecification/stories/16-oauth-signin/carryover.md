@@ -62,3 +62,20 @@ Per-step red/green commits collapsed to one commit per scenario. Skipped sub-ski
 `/test-review`, `/test-coverage`, `/refactor`, `/agent-review`, `/premortem`, and the formal
 `adapters-discovery` gate. Statements-DSL polish kept minimal. Restore: task 6, one step per
 scenario.
+
+## 2026-07-23 — frontend contract confirmed + callback `provider` param added
+
+Frontend session verified the 3-endpoint contract. One real gap found and fixed: the
+callback redirect carried only `?code=`/`?error=`, never `provider=`, though the frontend
+callback page keys its copy off the slug. Added `&provider=<slug>` to both legs (commit
+`5c8bff8`); slug is always the exact lowercase registry match. Two coordination notes
+recorded in progress-backend.md: `?error=` is a single generic `oauth_failed` (no
+user-cancel distinction — deliberate), and the app-wide 5xx handler is codeful
+(`INTERNAL_ERROR`), so the frontend retry classifier must treat any 5xx as retryable.
+
+## 2026-07-23 — biggest open backend gap: rate-limiting not implemented
+
+`endpoints.md` G6 requires start/callback/exchange to be rate-limited (Security 5.1). Not
+done. Everything else remaining is edge-scenario coverage or tests; this is the one missing
+piece of named production behavior. Restore: add rate-limiting on the three OAuth routes and
+the 5.1 acceptance test.

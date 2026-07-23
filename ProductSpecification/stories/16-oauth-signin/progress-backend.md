@@ -110,6 +110,53 @@ shared `conftest.py` is off-limits, move the fixtures into a `tests/backend/oaut
 - [ ] 6.1 Privileged fields in the exchange body are ignored
 - [ ] 7.1 Failure responses carry no internal detail
 
+## Frontend contract — confirmed 2026-07-23
+
+The frontend session verified the three-endpoint contract against the live (fake) backend.
+Confirmed and delivered:
+- `/start` → 302 to provider, **no Set-Cookie** (state is server-side in `oauth_states`,
+  not a browser cookie); `/api` is same-origin via the nginx `/api/ → backend` proxy.
+- `/callback` success → `{FRONTEND}/auth/callback?code=<opaque>&provider=yandex`; failure →
+  `?error=oauth_failed&provider=yandex`. **`provider` was added this session** (commit
+  `5c8bff8`) — it was missing; the slug is always the exact lowercase value that matched
+  the registry. Handoff code is `token_urlsafe(32)` ≈ 43 chars, always ≤512.
+- `/exchange`: body is exactly `{"code": "..."}` (no CSRF header); 200 is the Story-7 login
+  shape (snake_case, ISO-8601 `*_expires_at`); the only business error is
+  `400 INVALID_OR_EXPIRED_OAUTH_CODE` (a missing `code` KEY yields FastAPI's `422 {detail}`).
+
+Two open coordination points (not backend bugs):
+- **`?error=` has a single value `oauth_failed`** — all failure causes (incl. user-cancel)
+  are deliberately collapsed to one generic value so the callback leaks nothing. If the UX
+  needs a distinct `user-cancelled` copy, that is a design decision to revisit (Security 2.1).
+- **Generic 5xx is codeful** (`{"error_code":"INTERNAL_ERROR", ...}`), not codeless. The
+  frontend's retry classifier must treat any 5xx as retryable regardless of `error_code`.
+  The 500 handler is app-wide; not changed for one endpoint.
+
+## Remaining backend work (besides VK credentials)
+
+Ordered by priority. None blocks the Yandex happy path, which is live.
+
+1. **Rate-limiting (Security 5.1) — NOT implemented.** `endpoints.md` G6 requires
+   `start`/`callback`/`exchange` to be rate-limited; currently they are not. This is the
+   biggest functional gap and the one real security scenario still open in code.
+2. **Security scenarios (`tests/05`): 1.1** crafted callback redirect cannot drive an
+   external redirect (open-redirect guard on the frontend-callback URL is currently a fixed
+   config value, needs a test proving a crafted `?next`/host cannot leak); **6.1** privileged
+   fields in the exchange body are ignored (the DTO is `{code}`-only — needs a test pinning
+   it); **7.1/2.1** failure responses carry no internal detail (generic `oauth_failed` +
+   `INTERNAL_ERROR` — needs tests).
+3. **Deferred edge scenarios 2.6, 3.2–3.10** (multi-instance code redeem, concurrent first
+   sign-in dedupe, normalization/locale variants, no-burn on failed session, over-binding,
+   failure-copy non-disclosure, large subject id, orphan-account cleanup, lost-exchange
+   recovery) — listed above.
+4. **Storage-adapter integration tests** (state/handoff `DELETE ... RETURNING` atomicity +
+   identity unique constraint) — need a live Postgres; atomicity currently proven only
+   end-to-end by I2. See task 6.
+5. **Dedicated per-scenario acceptance tests** separate from the invariant gate (1.1, 1.2,
+   2.4, 2.7) — task 6.
+6. **Prod config**: register the real prod redirect URI in the Yandex app and set
+   `YANDEX_REDIRECT_URI` for the prod domain (`mmshkurin.ru`). Local/live already work.
+
 ## Integration / Load / Infrastructure Scenarios
 
 Not started — after the demo.
