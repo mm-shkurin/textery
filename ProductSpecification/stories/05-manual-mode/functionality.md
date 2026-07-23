@@ -6,9 +6,17 @@ This is the complement to [`progress-frontend.md`](progress-frontend.md): that f
 what looks finished but isn't. Where the two disagree, the code wins — everything below was
 read from the source, not from the checkboxes.
 
-Scope note: the backend is developed on a parallel branch and is unreachable here. Every
-Selenium and demo step in this story is `[S]`, so **nothing below has ever run in a real
-browser against a real server**. The evidence is 76 jsdom component tests.
+Scope note (updated 2026-07-23): the stack is now reachable (backend :8100 + Postgres + Redis +
+vite :5173), and a substantial slice of this story HAS run in a real headless Chrome against a
+real server with a real register→verify→login session — see `progress-frontend.md`, the Track B
+`green-selenium-*` entries. Live-verified end to end: opening the editor (1.2), the empty-state
+placeholder incl. its `::before` paint (2.1), bold formatting (3.1), caret-driven toolbar state
+(3.2), the out-of-order save queue (4.2), line-break save round-trip, delete-to-empty placeholder
+return, the a11y role + aria-expanded highlight, the link-popover clip check, and the
+beforeunload guard arming/disarming. What is still jsdom-only are the scenarios whose
+`green-selenium`/`demo` rows remain `[S]` (1.1, 4.1, 5.1, 5.2, 6.1, 6.2, 7.x) — those have not
+yet been re-run live. The historical "76 jsdom tests, nothing in a real browser" note below is
+superseded.
 
 ## Getting into the editor
 
