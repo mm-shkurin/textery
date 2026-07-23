@@ -1564,7 +1564,15 @@ drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 pytho
   stay stuck `true` (from the bold selection) and fail it; passing both polarities proves the real
   `selectionchange`/`select` the app listens for actually fires on a caret-only move, which jsdom's
   `fireEvent.select` could only simulate. This is the deferred `red-selenium`/`green-selenium` for scenario 3.2
-  (see its rows above).
+  (see its rows above). **Review passes on `4950276` (both CONCERNS, both FIXED in follow-up):** (1) the single
+  `get_attribute` read RACED the async toolbar re-render (`shouldRerenderOnTransaction` → React render is not
+  synchronous with `send_keys` returning) → added a `_wait_for_bold_pressed` poll-until-value. (2) the original
+  order only exercised `true→false`: the leading `active` assertion inherited `true` from the bold-apply, so
+  the `false→true` edge (caret ENTERING bold — scenario 3.2's core claim) was never proven; a toolbar that
+  updated on exit but not entry would pass. Reordered: visit the plain run FIRST (assert inactive, `true→false`),
+  THEN move the caret into the bold run (assert active, `false→true`). Also replaced the flaky `Home`+`ArrowRight`
+  nav with deterministic `End`+`ArrowLeft`×5 (`Home` did not reliably move the caret in this contenteditable —
+  the reorder surfaced it as a genuine RED before the fix). Re-verified GREEN live (`1 passed`).
 - [~] green-selenium-4.2-save-queue — scenario 4.2's out-of-order save queue was never exercised through a
   real click dispatch. Add an acceptance test that fires a second save while one is in flight (real
   clicks) and asserts the displayed status never reflects a stale save.

@@ -7,8 +7,11 @@ with arrow keys and reads the bold button's `aria-pressed`, which only updates i
 `selectionchange`/`select` the app listens for actually fired.
 """
 
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.wait import WebDriverWait
 
+from statements.frontend.base_frontend_statements import WAIT_TIMEOUT_SECONDS
 from statements.frontend.generation.manual_editor_statements import (
     BOLD_BUTTON,
     EDITABLE_CONTENT,
@@ -31,18 +34,40 @@ class ManualEditorCaretStatements(ManualEditorStatements):
         self._wait_for_visible(driver, BOLD_BUTTON).click()
 
     def move_caret_into_leading_run(self, driver) -> None:
-        # Home lands at the doc start (inside the bold run); one Right keeps the caret inside it.
+        # Deterministic, no reliance on Home (flaky in this contenteditable): go to the end, then
+        # ArrowLeft five times over "aaabbb" — offset 6 -> 1, unambiguously inside the bold "aaa".
         editable = self._wait_for_visible(driver, EDITABLE_CONTENT)
-        editable.send_keys(Keys.HOME)
-        editable.send_keys(Keys.ARROW_RIGHT)
+        editable.send_keys(Keys.END)
+        for _ in range(5):
+            editable.send_keys(Keys.ARROW_LEFT)
 
     def move_caret_into_trailing_run(self, driver) -> None:
+        # End -> offset 6, inside the plain "bbb" run.
         self._wait_for_visible(driver, EDITABLE_CONTENT).send_keys(Keys.END)
 
-    def assert_bold_button_is_inactive(self, driver) -> None:
-        button = self._wait_for_visible(driver, BOLD_BUTTON)
-        pressed = button.get_attribute("aria-pressed")
-        assert pressed == "false", (
-            f"expected the bold button to be aria-pressed='false' with the caret in plain text, "
-            f"got {pressed!r}"
+    def _wait_for_bold_pressed(self, driver, expected: str) -> None:
+        """Poll aria-pressed until it reaches `expected` — the toolbar re-render is async.
+
+        The attribute only flips after ProseMirror dispatches the selection transaction AND React
+        re-renders (`shouldRerenderOnTransaction`), which is not synchronous with `send_keys`
+        returning. A single immediate read races that flip; polling makes the caret-tracking
+        assertion deterministic instead of catching a stale value.
+        """
+        try:
+            WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(
+                lambda d: self._wait_for_visible(d, BOLD_BUTTON).get_attribute("aria-pressed")
+                == expected
+            )
+        except TimeoutException:
+            pass
+        actual = self._wait_for_visible(driver, BOLD_BUTTON).get_attribute("aria-pressed")
+        assert actual == expected, (
+            f"expected the bold button to reach aria-pressed={expected!r} after the caret move, "
+            f"got {actual!r}"
         )
+
+    def assert_bold_button_becomes_active(self, driver) -> None:
+        self._wait_for_bold_pressed(driver, "true")
+
+    def assert_bold_button_becomes_inactive(self, driver) -> None:
+        self._wait_for_bold_pressed(driver, "false")
