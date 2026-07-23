@@ -206,13 +206,18 @@ queue was never exercised through a real click dispatch.
   — a saved doc whose content parses to a lone HardBreak / `&nbsp;` / whitespace is `size > 0`, so the
   placeholder is suppressed and the user meets a blank UNLABELLED box. It is a pure function of the parsed
   `content.size` (jsdom reproduces the parse exactly), so it is an owed jsdom red, NOT a selenium guard.
-- [~] red-frontend-placeholder-reopen-degenerate — premortem CREDIBLE-low (owed jsdom guard): characterize the
-  placeholder polarity for degenerate reopen content — `renderEditorReopeningDocument('<br>')`,
-  `('&nbsp;')`, `('   ')`. For each, assert which side of the contract results (placeholder present vs absent)
-  against the actual parsed `doc.content.size`, pinning today's behavior so a future `content.size` / HardBreak
-  parse change can't silently flip it. Characterization (behavior defensible either way — a HardBreak-only doc
-  genuinely is non-empty); mutation-check the guard. Which degenerate string the SERVER actually stores/returns
-  (sanitize/trim) is a backend-contract question owed elsewhere, not here.
+- [x] red-frontend-placeholder-reopen-degenerate — DONE (2026-07-23), LIVE characterization, **all 3 predictions
+  matched, NO bug found.** New `ManualEditor.placeholder.reopenDegenerate.test.tsx` (57 lines). Reopen via
+  `renderEditorReopeningDocument`: **`<br>` → size 1 → NO placeholder** (a bare `<br>` matches HardBreakNode's
+  `{tag:'br'}` rule → real hardBreak leaf; only `br.ProseMirror-trailingBreak` is ignored); **`&nbsp;` → size 1
+  → NO placeholder** (U+00A0 text node); **`'   '` whitespace → size 0 → placeholder PRESENT** (inline parser
+  strips surrounding whitespace to 0 nodes). The premortem's feared "blank UNLABELLED box" does NOT occur:
+  whitespace-only is treated as empty and the user still gets the hint (benign); `<br>`/`&nbsp;` are legitimately
+  non-empty so suppressing the hint is correct. **No follow-up bug task.** Timing: the two NO-placeholder cases
+  `waitFor` a distinguishing post-load innerHTML (`<br><br…>` / `&nbsp;`) so absence never reads the transient
+  empty mount. Mutation-check (invert `size > 0`): all 3 flip polarity; production restored (`git diff` clean).
+  test-review: PASS (exact attrs/class/innerHTML, category-1 values). Scoped: 3 passed; canonical
+  `tsc -b --noEmit` clean.
 - [S] green-selenium — ~~red-selenium test is already green; no marker to remove~~ **FALSE, corrected
   2026-07-22.** Driven live against the full stack (backend :8100 + Postgres + Redis) with a real
   register→verify→login session: the test FAILS on a genuine production defect. The placeholder
