@@ -270,6 +270,21 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   fixes (already strict). Suite 367 passed / 1 skipped.
 - [~] green-frontend (stale-banner debt) — capture the message locally so it survives the scrub; add the
   clear-once effect.
+  > CARRIED (agent-review + premortem CONCERNS on 4.1 stale-banner red `ba9cc24`) — green MUST honor:
+  > (1) **CREDIBLE — same-visit bound can't catch blank-on-scrub.** `navigate` is a no-op mock, so it never
+  > mutates `location.state`; a naive green that keeps reading live `location.state.oauthError` and just adds
+  > `useEffect(() => navigate(pathname,{replace:true,state:{}}),[])` WITHOUT capturing the message locally passes
+  > all 3 current tests, yet in production the real replace clears the state and the banner flashes-then-blanks
+  > on the SAME visit. FIX: capture `oauthError` into local `useState` (lazy initializer) and render from the
+  > captured value; the effect scrubs router state. ADD a "survives-the-scrub" RED case: after the initial
+  > oauthError render, re-render/rerender with `state:{}` and assert `login-oauth-error` is STILL present
+  > (banner reads captured local value, not live state).
+  > (2) **effect fires once, not per render** — the `toHaveBeenCalledTimes(1)` in the RED already forces this;
+  > gate the scrub so it can't loop (empty dep array / once-guard). Keep it green.
+  > (3) **don't wipe OTHER router state** — `state:{}` replaces the WHOLE state object; if a future flow carries
+  > additional keys (e.g. `from`) alongside `oauthError`, blanket `state:{}` loses them. Prefer clearing only the
+  > `oauthError` key (`state: { ...rest }` without oauthError) OR document that the callback's error nav only ever
+  > sets `{oauthError}` so `{}` is exact. If you keep `{}`, add a note; if the spec allows co-carried state, guard it.
 - [S] green-selenium
 - [S] demo
 
