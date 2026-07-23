@@ -1502,7 +1502,10 @@ drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 pytho
   mount), so `GET /api/v1/documents` (list) identifies it without the app exposing an id to the DOM; the
   saved-content read uses the same access token the browser stored in `sessionStorage`
   (`textery.auth.accessToken`, `Authorization: Bearer`). Teeth: the assertion pins an EXACT `<br>` count of 1
-  (fails for 0 = break dropped by a sanitizer/parse rule, and for 2 = double-insert) plus both runs present.
+  (fails for 0 = break dropped by a sanitizer/parse rule, and for 2 = double-insert) AND — after a premortem
+  CONCERNS on `4498f0b` (the count + independent `foo`/`bar` membership was position-blind, would false-pass
+  on `foobar<br>`) — a position-locked `foo<br>bar` substring so the run-together data loss fails loud. Both
+  the initial and tightened forms verified GREEN live (`1 passed`).
   **Run gotcha (still true):** acceptance runs need `BACKEND_PORT=8100` exported — the harness defaults to
   8000, another project's container on this host. The `getHTML()` serialization carries no ProseMirror
   caret-helper `<br>` (view-only, never in the model), so the saved html needs no caret-helper stripping.

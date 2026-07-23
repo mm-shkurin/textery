@@ -82,6 +82,10 @@ class ManualEditorSavePayloadStatements(ManualEditorLineBreakStatements):
             f"expected exactly one <br> to survive the save round-trip, got {break_count} "
             f"in saved content {content!r}"
         )
-        assert "foo" in content and "bar" in content, (
-            f"expected both text runs to survive the save round-trip, got {content!r}"
+        # Position-locked, not membership-blind: a global count + independent `"foo"`/`"bar"`
+        # membership would both pass on `foobar<br>` — the exact run-together data loss this test
+        # exists to catch (the break moved OUT from between the runs, a stray <br> left behind).
+        # Assert the break sits BETWEEN the two runs.
+        assert "foo<br>bar" in content, (
+            f"expected the break to survive BETWEEN the two runs (foo<br>bar), got {content!r}"
         )
