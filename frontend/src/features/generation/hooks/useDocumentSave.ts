@@ -27,7 +27,7 @@ export const CONFLICT_ERROR_MESSAGE =
 // A VersionConflictError reaching here is the same mistake one branch over. `saveDocument` already
 // answers the FIRST 409 by refetching the version and retrying, so anything that arrives here has
 // survived that — a second writer landed during the retry, or the refetch itself failed. The
-// connection is not the problem, and "текст сохранён локально в редакторе" is a promise this
+// connection is not the problem, and reassuring the user their text is safe would be a promise this
 // branch cannot keep: another save holds the document, and the next click re-enters the same race.
 // Saying so lets the user reopen the document instead of clicking a button that will lose again.
 function describeSaveFailure(error: unknown): string {

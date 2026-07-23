@@ -9,9 +9,8 @@ import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
 vi.mock('../../api/documentApi')
 
 // A failed save is not one thing, and the banner must not pretend it is. Two of these three
-// rejections are NOT connection problems, and the default copy ("Проверьте соединение… текст
-// сохранён локально в редакторе") is both wrong about the cause and — for the conflict — a
-// promise that cannot be kept.
+// rejections are NOT network problems, so routing them through the network-default copy would be
+// both wrong about the cause and — for the conflict — a promise (text is safe) that cannot be kept.
 describe('ManualEditor — what a failed save says depends on why it failed', () => {
   beforeEach(() => {
     // The banner is the assertion; the console.error beside it is the only diagnostic this app
@@ -36,7 +35,7 @@ describe('ManualEditor — what a failed save says depends on why it failed', ()
     return await screen.findByTestId('me-save-error')
   }
 
-  it('blames the connection only when the failure actually is one', async () => {
+  it('shows the network-default copy for a plain connection failure', async () => {
     expect(await saveRejectingWith(new Error('network down'))).toHaveTextContent(SAVE_ERROR_MESSAGE)
   })
 
