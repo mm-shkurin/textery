@@ -1448,13 +1448,26 @@ container (`random_coffee_app`) and 404s on `/api/v1/auth/register`. Canonical f
   green, isolating the guard; production restored (`git diff` clean). tsc `-b --noEmit` clean; full suite 329
   passed | 0 failed (84 files). No green-frontend needed. Progress-only commit (no reviewable content →
   `/refactor` + review passes skipped).
-- [~] fix-save-banner-lie — the failed-save error banner tells the user their text is "сохранён локально
-  в редакторе", which is FALSE: there is no `localStorage`/persistence, content lives only in Tiptap's
-  in-memory state (a lost tab loses it). red-frontend: assert the failed-save banner text does NOT claim
-  local persistence; green-frontend: change `SAVE_ERROR_MESSAGE` (in `useDocumentSave.ts`) to honest copy
-  (e.g. "Не удалось сохранить. Повторите — текст пока только в редакторе."). Update the existing
-  `ManualEditor.saveStatus`/5.2 tests that assert the old string. Design-review the new copy.
-- [ ] guard-unsaved-work — nothing protects unsaved work: zero `beforeunload`/`localStorage` hits in
+- [x] fix-save-banner-lie — **DONE (2026-07-23), genuine red→green.** The network-failure banner falsely
+  claimed "введённый текст сохранён локально в редакторе" — FALSE: grep confirms zero `localStorage`/
+  persistence in `frontend/src`; content lives only in Tiptap in-memory state (lost tab loses it).
+  **red-frontend:** new `it('does not promise a network-failed save is stored locally')` in
+  `ManualEditor.saveFailureKinds.test.tsx` (79 lines) — reuses `saveRejectingWith(new Error('network down'))`
+  + the `me-save-error` banner; asserts `banner.not.toHaveTextContent('сохранён локально')`. **Predicted:**
+  `AssertionError` (`not.toHaveTextContent`) — banner renders old `SAVE_ERROR_MESSAGE` still containing the
+  phrase. **Actual:** identical, `Received: …текст сохранён локально в редакторе.` at the new assertion.
+  **Comparison: all cells YES.** `.skip` + dated reason. test-review: PASS (short negative substring is the
+  stricter form; line-40 constant assertion + session/conflict cases left intact). **green-frontend:** changed
+  `SAVE_ERROR_MESSAGE` (`useDocumentSave.ts:7-8`) to honest copy
+  `'Не удалось сохранить. Повторите — текст пока только в редакторе, не потеряйте вкладку.'` — keeps the retry
+  prompt, drops the false "saved locally" reassurance, tells the truth (tab is the only copy). Rewrote the
+  block comment above the constant to match. Un-skipped the red (only allowed test edit); line-40 auto-follows
+  the constant. Grep confirms no test hard-codes the old literal (conflict test's own `CONFLICT_ERROR_MESSAGE`
+  phrase untouched). `useDocumentSave.ts` 148 lines. **design-review:** the mockup `06-editor-error.html`
+  (desktop line 85 + mobile line 75) was itself the SOURCE of the lie — updated BOTH to the honest copy so a
+  future `align-design` cannot re-seed it; intentional divergence recorded (honesty over pixel-match to a false
+  mockup). tsc `-b --noEmit` clean; full suite **330 passed | 0 skipped | 0 failed (84 files)**.
+- [~] guard-unsaved-work — nothing protects unsaved work: zero `beforeunload`/`localStorage` hits in
   `frontend/src`. red-frontend: assert a `beforeunload` handler is registered while the document has
   unsaved changes and removed when clean (spy on `window.addEventListener`). green-frontend: add a
   `useEffect` in `ManualEditor` that binds `beforeunload` (preventDefault + returnValue) whenever

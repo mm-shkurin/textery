@@ -40,6 +40,16 @@ describe('ManualEditor — what a failed save says depends on why it failed', ()
     expect(await saveRejectingWith(new Error('network down'))).toHaveTextContent(SAVE_ERROR_MESSAGE)
   })
 
+  // The other half of that same lie: there is NO localStorage/persistence anywhere in the app
+  // (content lives only in Tiptap's in-memory state, so a lost tab loses it). The network banner's
+  // "введённый текст сохранён локально в редакторе" is a reassurance the app cannot back — a user
+  // who believes it, closes the tab, and loses the paragraph. The banner must not promise it.
+  it('does not promise a network-failed save is stored locally', async () => {
+    const banner = await saveRejectingWith(new Error('network down'))
+
+    expect(banner).not.toHaveTextContent('сохранён локально')
+  })
+
   // authorizedRequest raises this so callers can tell "you are signed out" from "your document
   // could not be saved". Flattened into the default, it told a signed-out user their connection
   // was at fault, reassured them the text was safe, and invited them to retry a button that
