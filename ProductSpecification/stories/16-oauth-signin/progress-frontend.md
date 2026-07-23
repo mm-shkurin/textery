@@ -301,8 +301,6 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   > with NO red going red — the exact dead-end 4.2 exists to prevent. Green MUST fold in a 3rd case: reject the
   > exchange with `new RequestTimeoutError()` (unauthenticated) and assert `navigate('/login',{replace:true,
   > state:{oauthError: NETWORK_LOGIN_FAILURE_MESSAGE}})` — pinning the timeout arm independently of the bare-Error shape.
-- [ ] red-frontend-api
-- [ ] green-frontend-api
 - [~] red-frontend-api
 - [ ] green-frontend-api
 - [S] align-design — reuses login network-error styling

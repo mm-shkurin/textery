@@ -54,14 +54,15 @@ export function OAuthCallback() {
     if (hasExchanged.current) return
     hasExchanged.current = true
 
+    const goToApp = () => navigate(safeRedirectTarget(undefined), { replace: true })
+    const goToLogin = (message: string) =>
+      navigate('/login', { replace: true, state: { oauthError: message } })
+
     // Guard order matters: an `?error` param means the provider refused (or the user cancelled) and
     // there is no code to spend — route back to /login with the provider-aware message and fire NO
     // exchange, exactly once. Only the no-error path reaches the exchange below.
     if (error !== null) {
-      navigate('/login', {
-        replace: true,
-        state: { oauthError: oauthProviderFailureMessage(provider) },
-      })
+      goToLogin(oauthProviderFailureMessage(provider))
       return
     }
 
@@ -80,7 +81,7 @@ export function OAuthCallback() {
           setFailed(true)
           return
         }
-        navigate(safeRedirectTarget(undefined), { replace: true })
+        goToApp()
       })
       .catch((error) => {
         if (!mountedRef.current) return
@@ -89,7 +90,7 @@ export function OAuthCallback() {
         // the error screen — spec 16_OAuthSignin.md:49-50 / Notes:48-50: "ignored, not a bounce
         // back to login".
         if (isAuthenticated()) {
-          navigate(safeRedirectTarget(undefined), { replace: true })
+          goToApp()
           return
         }
         // Scenario 4.2: a TRANSPORT / TIMEOUT / GATEWAY-5xx failure on the unauthenticated path is
@@ -98,10 +99,7 @@ export function OAuthCallback() {
         // BUSINESS rejection (has errorCode, no 5xx) falls through to the terminal error below (4.3).
         if (isLoginNetworkError(error)) {
           setRoutedAway(true)
-          navigate('/login', {
-            replace: true,
-            state: { oauthError: NETWORK_LOGIN_FAILURE_MESSAGE },
-          })
+          goToLogin(NETWORK_LOGIN_FAILURE_MESSAGE)
           return
         }
         setFailed(true)
@@ -110,7 +108,8 @@ export function OAuthCallback() {
 
   // On the error path we route away immediately; render nothing so the transient loading spinner
   // never persists (the visitor is sent to /login, not stranded on "Завершаем вход…").
-  if (error !== null || routedAway) {
+  const routedToLogin = error !== null || routedAway
+  if (routedToLogin) {
     return null
   }
 
