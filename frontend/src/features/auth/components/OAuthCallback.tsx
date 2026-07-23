@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { oauthExchange } from '../api/oauthExchangeApi'
 import { isAuthenticated, saveSession } from '../utils/authSession'
+import { oauthProviderFailureMessage } from '../utils/oauthMessages'
 import { safeRedirectTarget } from '../utils/safeRedirectTarget'
 import './AuthForm.css'
 import './OAuthCallback.css'
@@ -18,6 +19,11 @@ import './OAuthCallback.css'
 export function OAuthCallback() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  // Checked BEFORE the code/exchange path: a provider error or user-cancel arrives as `?error=…`
+  // with NO spendable code, so the exchange must never fire. When present we route straight back to
+  // /login carrying a provider-aware distinct message (mapped from copy, never the raw value).
+  const error = searchParams.get('error')
+  const provider = searchParams.get('provider')
   const code = searchParams.get('code') ?? ''
   // The exchange runs once for the mount: a ref guard keeps an effect re-run from firing a second
   // POST / store / navigate, so the "exactly once" contract holds regardless of what re-renders.
@@ -41,6 +47,17 @@ export function OAuthCallback() {
   useEffect(() => {
     if (hasExchanged.current) return
     hasExchanged.current = true
+
+    // Guard order matters: an `?error` param means the provider refused (or the user cancelled) and
+    // there is no code to spend — route back to /login with the provider-aware message and fire NO
+    // exchange, exactly once. Only the no-error path reaches the exchange below.
+    if (error !== null) {
+      navigate('/login', {
+        replace: true,
+        state: { oauthError: oauthProviderFailureMessage(provider) },
+      })
+      return
+    }
 
     oauthExchange({ code })
       .then((session) => {
@@ -71,7 +88,13 @@ export function OAuthCallback() {
         }
         setFailed(true)
       })
-  }, [code, navigate])
+  }, [code, error, provider, navigate])
+
+  // On the error path we route away immediately; render nothing so the transient loading spinner
+  // never persists (the visitor is sent to /login, not stranded on "Завершаем вход…").
+  if (error !== null) {
+    return null
+  }
 
   if (failed) {
     return (

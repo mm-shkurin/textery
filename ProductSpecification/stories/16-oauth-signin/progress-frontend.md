@@ -208,8 +208,20 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   `Unable to find [data-testid="login-oauth-error"]` (LoginForm never reads `oauthError`), 2 failed. **Actual:**
   exactly that at :37/:43. **Match.** test-review: 3 strict fixes (loading-absent ×2, banner exact `.textContent).toBe`).
   Suite 323 passed / 4 skipped.
-- [~] green-frontend
-  > CARRIED (agent-review + premortem CONCERNS on 4.1 red `c58a106`), green MUST honour + fold in tests:
+- [x] green-frontend — implemented both halves. New `utils/oauthMessages.ts` (19L): VK/Yandex/GENERIC
+  constants (exact mockup copy) + pure `oauthProviderFailureMessage(provider)` — exact-match 'vk'/'yandex',
+  GENERIC for null/''/unknown, NEVER interpolates the raw provider. New `OAuthErrorBanner.tsx` (24L,
+  extracted to keep LoginForm ≤cap): reads `location.state.oauthError`, gates on `isUsableMessage`, renders
+  distinct `login-oauth-error` `role="alert"` banner. `OAuthCallback.tsx` (119L): error guard runs BEFORE
+  the code/exchange path — `error!==null` → no exchange, `navigate('/login',{replace:true,state:{oauthError:
+  oauthProviderFailureMessage(provider)}})` once, renders null (no persistent spinner). `LoginForm.tsx` (200L):
+  renders `<OAuthErrorBanner/>` at card top. `AuthForm.css`: `.auth-oauth-error` (align-design pins exact
+  treatment). Un-skipped both RED files; folded 4 mandated guards (yandex→Yandex msg; zzz→GENERIC not raw;
+  error+code→no exchange+VK msg proving error-before-code; no-state→no banner). Suite 323/4skip → **331/0skip**,
+  tsc + oxlint clean, all files ≤200. Carry groups (1)(2) fully honored; (3) partially — DECLINED the optional
+  `replaceState` clearing, so the no-state negative pins the direct-GET case but the **Back/re-render banner
+  resurrection remains a residual** (premortem #2, CREDIBLE) → carried to align-design/4.x follow-up below.
+  > CARRIED (agent-review + premortem CONCERNS on 4.1 red `c58a106`) — (1)(2) honored, (3) partial:
   > (1) **provider mapping under-pinned / raw-render risk (both passes, CREDIBLE).** The RED pins only
   > `vk` + provider-absent. Green MUST map ONLY `vk`→VK-copy and `yandex`→Yandex-copy, and EVERYTHING
   > else (unrecognized `provider=zzz`, missing) → the GENERIC "…через провайдера…" fallback — NEVER
@@ -230,7 +242,13 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   > extract (e.g. the banner into a small subcomponent, or the state read into a helper) to stay under.
 - [S] red-frontend-api — callback param, no API call
 - [S] green-frontend-api
-- [ ] align-design
+- [~] align-design
+  > CARRIED (premortem #2 on 4.1, CREDIBLE, non-blocking): the oauth-error banner reads immutable
+  > `location.state.oauthError`, so pressing Back onto the /login history entry (or any re-render)
+  > resurrects a stale "sign-in failed" banner with no failure having occurred. green declined the
+  > optional `replaceState` clear. Fix in align-design or a 4.x follow-up: clear `location.state.oauthError`
+  > after first render (e.g. `navigate(pathname,{replace:true,state:{}})` in an effect) and pin a test that
+  > a second render finds no banner. Cheap, real UX guard.
 - [S] green-selenium
 - [S] demo
 

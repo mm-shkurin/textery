@@ -23,10 +23,7 @@ function renderWithOAuthError() {
   )
 }
 
-// RED: LoginForm reads location.state.from but not `oauthError`, so no `login-oauth-error` element
-// is ever rendered. describe.skip keeps the suite green between red and green; green-frontend adds
-// the banner and un-skips.
-describe.skip('LoginForm OAuth provider-error banner', () => {
+describe('LoginForm OAuth provider-error banner', () => {
   it('renders the provider-aware oauthError from router state as a distinct alert banner', () => {
     renderWithOAuthError()
 
@@ -43,5 +40,17 @@ describe.skip('LoginForm OAuth provider-error banner', () => {
 
     expect(screen.getByTestId('login-oauth-error')).toBeInTheDocument()
     expect(screen.queryByTestId('login-form-error')).not.toBeInTheDocument()
+  })
+
+  // Negative: a plain /login visit with NO router state renders NO banner — the banner is gated on
+  // a usable oauthError, so an ordinary login never shows a stray provider-failure box.
+  it('renders no oauth-error banner when there is no navigation state', () => {
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <LoginForm />
+      </MemoryRouter>,
+    )
+
+    expect(screen.queryByTestId('login-oauth-error')).not.toBeInTheDocument()
   })
 })

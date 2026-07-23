@@ -134,6 +134,20 @@
   text-align: center;
 }
 
+/* Provider sign-in failure routed back from /auth/callback — DISTINCT from both the field error and
+   the network banner so it reads as "sign-in through the provider failed", not "wrong password".
+   green owns only the distinction; align-design pins the exact treatment against the mockup. */
+.auth-oauth-error {
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  text-align: center;
+}
+
 /* display:block for the same reason as .auth-loading-indicator: <output> is inline. */
 .auth-form-success {
   display: block;

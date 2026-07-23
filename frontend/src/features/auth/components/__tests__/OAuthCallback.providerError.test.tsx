@@ -16,6 +16,7 @@ import * as oauthExchangeApi from '../../api/oauthExchangeApi'
 // an undefined stub). safeRedirectTarget is irrelevant here — the target is the fixed '/login'.
 
 const VK_ERROR_MESSAGE = 'Не удалось войти через VK ID. Попробуйте снова.'
+const YANDEX_ERROR_MESSAGE = 'Не удалось войти через Yandex ID. Попробуйте снова.'
 const GENERIC_ERROR_MESSAGE = 'Не удалось войти через провайдера. Попробуйте снова.'
 
 const navigate = vi.fn()
@@ -41,10 +42,7 @@ function renderAtCallback(query: string) {
   )
 }
 
-// RED: the current callback ignores the error param, spends an empty code on the exchange, and
-// never routes to /login. describe.skip so the suite stays green between red and green;
-// green-frontend implements the error-routing branch and un-skips.
-describe.skip('OAuthCallback provider-error routing', () => {
+describe('OAuthCallback provider-error routing', () => {
   afterEach(() => {
     navigate.mockReset()
     vi.mocked(oauthExchangeApi.oauthExchange).mockReset()
@@ -83,5 +81,48 @@ describe.skip('OAuthCallback provider-error routing', () => {
       state: { oauthError: GENERIC_ERROR_MESSAGE },
     })
     expect(screen.queryByTestId('oauth-callback-loading')).not.toBeInTheDocument()
+  })
+
+  // provider=yandex → the Yandex-aware message, proving the mapper distinguishes the two providers.
+  it('routes to /login with the Yandex-aware message for ?error with provider=yandex', () => {
+    vi.mocked(oauthExchangeApi.oauthExchange).mockReturnValue(neverResolves())
+
+    renderAtCallback('?error=access_denied&provider=yandex')
+
+    expect(oauthExchangeApi.oauthExchange).not.toHaveBeenCalled()
+    expect(navigate).toHaveBeenCalledTimes(1)
+    expect(navigate).toHaveBeenCalledWith('/login', {
+      replace: true,
+      state: { oauthError: YANDEX_ERROR_MESSAGE },
+    })
+  })
+
+  // An unrecognized provider id must fall through to the GENERIC copy and NEVER reflect its raw
+  // value onto the screen — the mapper never interpolates the attacker-influenceable provider.
+  it('routes with the generic message and never reflects the raw provider for an unknown provider', () => {
+    vi.mocked(oauthExchangeApi.oauthExchange).mockReturnValue(neverResolves())
+
+    renderAtCallback('?error=access_denied&provider=zzz')
+
+    expect(oauthExchangeApi.oauthExchange).not.toHaveBeenCalled()
+    expect(navigate).toHaveBeenCalledTimes(1)
+    const [, options] = navigate.mock.calls[0]
+    expect(options.state.oauthError).toBe(GENERIC_ERROR_MESSAGE)
+    expect(options.state.oauthError).not.toContain('zzz')
+  })
+
+  // error AND code both present: the error guard is checked FIRST, so no code is ever spent — the
+  // visitor returns to /login with the provider message rather than firing a doomed exchange.
+  it('checks error before code: fires no exchange when both ?error and ?code are present', () => {
+    vi.mocked(oauthExchangeApi.oauthExchange).mockReturnValue(neverResolves())
+
+    renderAtCallback('?error=access_denied&provider=vk&code=abc')
+
+    expect(oauthExchangeApi.oauthExchange).not.toHaveBeenCalled()
+    expect(navigate).toHaveBeenCalledTimes(1)
+    expect(navigate).toHaveBeenCalledWith('/login', {
+      replace: true,
+      state: { oauthError: VK_ERROR_MESSAGE },
+    })
   })
 })

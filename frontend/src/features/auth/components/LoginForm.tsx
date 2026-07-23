@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
 import { OAuthProviderButtons } from './OAuthProviderButtons'
+import { OAuthErrorBanner } from './OAuthErrorBanner'
 import { AccountLockedScreen } from './AccountLockedScreen'
 import { login, type LoginResult } from '../api/loginApi'
 import { saveSession } from '../utils/authSession'
@@ -22,9 +23,8 @@ import './AuthForm.css'
 import './LoginForm.css'
 
 // Login-rejection interpretation (UNVERIFIED distinct message, INVALID_CREDENTIALS pass-through,
-// lockout detection, Retry-After extraction) lives in ../utils/loginErrorHandling so this
-// component stays under the 200-line cap and the branching has one testable home. Lockout is NOT
-// one of the message branches: it swaps the whole screen, handled separately below.
+// lockout detection, Retry-After extraction) lives in ../utils/loginErrorHandling so this component
+// stays under the 200-line cap. Lockout is NOT a message branch: it swaps the whole screen, below.
 
 export function LoginForm() {
   const navigate = useNavigate()
@@ -128,6 +128,7 @@ export function LoginForm() {
 
   return (
     <div className="auth-card login-card">
+      <OAuthErrorBanner />
       <h1>Вход в Textery AI</h1>
       <p className="auth-subtitle login-subtitle">Введите свои данные для продолжения работы</p>
       <form onSubmit={handleSubmit}>
