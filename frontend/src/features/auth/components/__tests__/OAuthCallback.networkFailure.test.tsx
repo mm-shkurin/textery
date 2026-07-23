@@ -142,6 +142,30 @@ describe('OAuthCallback network / server exchange failure', () => {
     expect(authSession.saveSession).not.toHaveBeenCalled()
   })
 
+  // RED (Task 6): a codeful server-fault 500 — `{ errorCode: 'INTERNAL_ERROR', message }` with NO
+  // status (the real backend's app-wide 500 shape: coded two-field body, status dropped by
+  // toAuthApiError's coded path) — is a SERVER fault, retry-affording, and must route back to
+  // /login with the retry banner. Today isLoginNetworkError sees an errorCode + no status → false,
+  // so the callback falls through to setFailed(true) and strands the visitor on the terminal error
+  // card while navigate never fires. Skipped until green widens the classifier with the
+  // INTERNAL_ERROR sentinel branch.
+  it.skip('returns to /login with a retry-capable message on a codeful INTERNAL_ERROR 500 exchange failure', async () => {
+    vi.mocked(authSession.isAuthenticated).mockReturnValue(false)
+
+    await renderAndSettleRejection({ errorCode: 'INTERNAL_ERROR', message: 'oops' })
+
+    expect(oauthExchangeApi.oauthExchange).toHaveBeenCalledTimes(1)
+    expect(oauthExchangeApi.oauthExchange).toHaveBeenCalledWith({ code: 'valid-abc' })
+    expect(navigate).toHaveBeenCalledTimes(1)
+    expect(navigate).toHaveBeenCalledWith('/login', {
+      replace: true,
+      state: { oauthError: NETWORK_LOGIN_FAILURE_MESSAGE },
+    })
+    expect(screen.queryByTestId('oauth-callback-error')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('oauth-callback-loading')).not.toBeInTheDocument()
+    expect(authSession.saveSession).not.toHaveBeenCalled()
+  })
+
   // BOUNDING GUARD (born-green): a genuine BUSINESS rejection (has errorCode, no 5xx →
   // isLoginNetworkError false) while unauthenticated must STAY on the terminal error screen, never
   // routed to /login. This stops a 4.2 green from over-broadly sweeping EVERY failure to login,

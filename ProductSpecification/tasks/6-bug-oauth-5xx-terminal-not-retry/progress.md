@@ -23,10 +23,16 @@ Type: bug
   →true, transport TypeError→true, codeless 503→true, and CRITICALLY `INVALID_CREDENTIALS`/`INVALID_OR_EXPIRED_OAUTH_CODE`
   (same no-status shape as case 1, different code) → false — these force green to key on the INTERNAL_ERROR SENTINEL,
   not the whole coded-but-statusless class. test-review: 0 fixes. Suite 350 passed / 1 skipped.
-- [~] green-frontend-api — widen `isLoginNetworkError` (add the INTERNAL_ERROR sentinel branch), un-skip case 1.
-- [ ] red-frontend — OAuthCallback: exchange rejects `{errorCode:'INTERNAL_ERROR', message}` (unauth) →
-  navigate('/login', retry banner), NOT the terminal `oauth-callback-error`. Predict RED.
-- [ ] green-frontend — verification only (the classifier fix above already resolves it); un-skip if skipped.
-- [ ] red-frontend (login regression) — LoginForm: login() rejects `{errorCode:'INTERNAL_ERROR'}` → the
-  distinct `login-network-error` (retry) state, NOT the field-level `login-form-error`. Predict RED.
-- [ ] green-frontend (login regression) — verification only (same classifier fix).
+  (Reordered: all red surfaces land before the single green, since one classifier fix resolves every one.)
+- [x] red-frontend — REAL RED. Added a case to `OAuthCallback.networkFailure.test.tsx` (188L): exchange rejects
+  `{errorCode:'INTERNAL_ERROR', message}` (unauth, no status) → asserts `navigate('/login',{replace,state:
+  {oauthError:NETWORK_LOGIN_FAILURE_MESSAGE}})` once, no terminal error, no spinner, no saveSession. **Predicted:**
+  `expected "vi.fn()" to be called 1 times, but got 0 times` (classifier false → setFailed → terminal). **Actual:**
+  exactly that at :159. **Match.** it.skip.
+- [x] red-frontend (login regression) — REAL RED. Added case (f) to `LoginForm.networkError.test.tsx` (150L):
+  login() rejects `{errorCode:'INTERNAL_ERROR'}` → asserts `login-network-error` shown + `login-form-error` absent.
+  **Predicted:** `findByTestId('login-network-error')` times out (classifier false → setFormError → field error).
+  **Actual:** exactly that at :131. **Match.** it.skip. test-review: 0 fixes on either. Suite 350 passed / 3 skipped.
+- [~] green-frontend-api — the SINGLE fix: widen `isLoginNetworkError` with the `INTERNAL_ERROR` sentinel
+  branch. Resolves all three red surfaces (classifier case 1 + OAuthCallback + login regression); un-skip all.
+- [ ] green-frontend — verification only (no new production code; confirm the callback + login reds are green).

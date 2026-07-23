@@ -37,6 +37,9 @@ const CODELESS_BUSINESS_400 = { errorCode: 'UNKNOWN_ERROR', message: '', status:
 // pins that a status-less rejection carrying an errorCode STAYS on login-form-error.
 const CODELESS_BUSINESS_NO_STATUS = { errorCode: 'UNKNOWN_ERROR', message: '' }
 const INVALID_CREDENTIALS = { errorCode: 'INVALID_CREDENTIALS', message: 'Неверный email или пароль' }
+// The backend's app-wide 500 shape: a codeful two-field { error_code:'INTERNAL_ERROR', message }
+// with NO status (toAuthApiError drops status on the coded path). A SERVER fault, retry-affording.
+const INTERNAL_ERROR_500 = { errorCode: 'INTERNAL_ERROR', message: 'oops' }
 
 async function submitRejectingWith(rejection: unknown) {
   vi.mocked(api.login).mockRejectedValue(rejection)
@@ -114,6 +117,21 @@ describe('LoginForm network/transport error', () => {
       expect(screen.getByTestId('login-form-error').textContent).toBe(GENERIC_LOGIN_FAILURE_MESSAGE),
     )
     expect(screen.queryByTestId('login-network-error')).not.toBeInTheDocument()
+  })
+
+  // (f) RED (Task 6) — THE CODEFUL SERVER 500. A login 500 arrives as the app-wide codeful
+  // { errorCode:'INTERNAL_ERROR', message } with NO status. It is a SERVER fault and must reach the
+  // SAME retry-capable network-error state as (a)/(c), NOT the field-level form-error. Today
+  // isLoginNetworkError sees an errorCode + no status → false, so applyLoginFailure routes it to
+  // setFormError and it lands in login-form-error. RED until green adds the INTERNAL_ERROR sentinel
+  // branch. Skipped until then.
+  it.skip('shows the network-error state on a codeful INTERNAL_ERROR 500', async () => {
+    await submitRejectingWith(INTERNAL_ERROR_500)
+
+    const networkError = await screen.findByTestId('login-network-error')
+    expect(networkError).toHaveAttribute('role', 'alert')
+    expect(networkError.textContent).not.toBe(GENERIC_LOGIN_FAILURE_MESSAGE)
+    expect(screen.queryByTestId('login-form-error')).not.toBeInTheDocument()
   })
 
   // (e) THE STATUS-ABSENT CONVERSE — pins the discriminator to `status >= 500` ONLY, never
