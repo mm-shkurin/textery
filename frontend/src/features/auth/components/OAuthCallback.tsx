@@ -78,6 +78,14 @@ export function OAuthCallback() {
     oauthExchange({ code })
       .then((session) => {
         if (!mountedRef.current) return
+        // FAIL-CLOSED on a token-less 200: a resolved exchange whose access token is missing, null,
+        // or blank (the wire mapper collapses absent/null to '') is an error, not a sign-in — reject
+        // only on a MISSING usable token (spec 16_OAuthSignin.md:67 / Notes:55-56). `/\S/` mirrors the
+        // isMalformedCallback / isUsableMessage convention so a whitespace-only token is unusable too.
+        if (!/\S/.test(session.accessToken)) {
+          setFailed(true)
+          return
+        }
         const stored = saveSession({
           accessToken: session.accessToken,
           refreshToken: session.refreshToken,

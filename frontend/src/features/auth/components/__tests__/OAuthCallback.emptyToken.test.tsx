@@ -101,7 +101,7 @@ describe('OAuthCallback 200-without-usable-token fail-closed', () => {
   // to accessToken:''. Current code has no usability guard: it calls saveSession({accessToken:'', …}),
   // the armed store returns true, and it navigates to the app shell '/'. Skipped until green-frontend
   // adds the missing-usable-token guard.
-  it.skip('fails closed when the exchange 200 body has no access_token (real wire mapping)', async () => {
+  it('fails closed when the exchange 200 body has no access_token (real wire mapping)', async () => {
     const session = sessionTokensFromWire({
       refresh_token: 'ref-abc',
       access_token_expires_at: '2026-07-22T10:00:00Z',
@@ -115,7 +115,7 @@ describe('OAuthCallback 200-without-usable-token fail-closed', () => {
 
   // RED: access_token is explicitly null on the wire — REAL sessionTokensFromWire collapses null to
   // accessToken:'' via `?? ''`. Same missing-usable-token failure as the absent case.
-  it.skip('fails closed when the exchange 200 body has a null access_token (real wire mapping)', async () => {
+  it('fails closed when the exchange 200 body has a null access_token (real wire mapping)', async () => {
     const session = sessionTokensFromWire({
       access_token: null,
       refresh_token: 'ref-abc',
@@ -129,9 +129,25 @@ describe('OAuthCallback 200-without-usable-token fail-closed', () => {
   // RED: access token is an empty string in the resolved session shape — an unusable credential just
   // like absent/null. Driven via the camelCase session directly to pin the guard triggers regardless
   // of the token's provenance (wire vs. already-mapped).
-  it.skip('fails closed when the exchange 200 session has an empty-string access token', async () => {
+  it('fails closed when the exchange 200 session has an empty-string access token', async () => {
     const session: SessionTokens = {
       accessToken: '',
+      refreshToken: 'ref-abc',
+      accessTokenExpiresAt: '2026-07-22T10:00:00Z',
+      refreshTokenExpiresAt: '2026-07-29T10:00:00Z',
+    }
+
+    await renderAndResolve(session)
+
+    await expectFailedClosed()
+  })
+
+  // A whitespace-only access token is truthy but unspendable — a bare `if (!session.accessToken)`
+  // check would wrongly sign it in. The guard uses `/\S/` so blank-but-present tokens fail closed too
+  // (carried premortem finding: whitespace-only truthy token).
+  it('fails closed when the exchange 200 session has a whitespace-only access token', async () => {
+    const session: SessionTokens = {
+      accessToken: '   ',
       refreshToken: 'ref-abc',
       accessTokenExpiresAt: '2026-07-22T10:00:00Z',
       refreshTokenExpiresAt: '2026-07-29T10:00:00Z',

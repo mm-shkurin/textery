@@ -413,8 +413,14 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   (`saveSession` not-called), `expected "vi.fn()" to not be called at all, but actually been called 1 times`,
   3 failed 1 passed. **Actual:** exactly that at :84:39, 3 failed 1 passed. **Match** (label `vi.fn()` — anon
   mock render). test-review: 0 fixes (already strict). Suite 355 passed / 3 skipped.
-- [~] green-frontend
-  > CARRIED (agent-review + premortem CONCERNS on 4.6 red `270a24f`, both non-blocking) — green MUST honor:
+- [x] green-frontend — added the usable-token guard to OAuthCallback's success arm, BEFORE saveSession:
+  `if (!/\S/.test(session.accessToken)) { setFailed(true); return }` — fail-closed terminal card, no store,
+  no navigate (mirrors the store-refused `if(!stored)` arm). Uses the project `/\S/` convention (not a falsy
+  check), so a whitespace-only truthy token also fails closed. Un-skipped the 3 RED cases + folded a new
+  whitespace-only case (premortem carry (1)); kept `expectFailedClosed` line 87 strict since the fix takes the
+  setFailed path (agent-review carry (2)). Suite 355/3skip → **359 passed / 0 skipped**, tsc + oxlint clean,
+  OAuthCallback.tsx 153L, test 178L (both ≤200).
+  > CARRIED (agent-review + premortem CONCERNS on 4.6 red `270a24f`, both non-blocking) — HONORED in green above:
   > (1) **premortem CREDIBLE — whitespace-only truthy token.** The 3 RED cases pin only FALSY tokens
   > (absent/null/''); a naive `if (!session.accessToken)` guard passes them all yet lets `accessToken:'   '`
   > (truthy) through → stored + app shell + `isAuthenticated()` true = the exact 4.6 bug. Implement the guard
