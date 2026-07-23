@@ -35,7 +35,7 @@ export const InlinePlaceholder = Extension.create({
       new Plugin({
         key: inlinePlaceholderKey,
         props: {
-          attributes: (state) => {
+          attributes: (state): Record<string, string> => {
             if (state.doc.content.size > 0) return {}
             return {
               class: 'is-editor-empty',
