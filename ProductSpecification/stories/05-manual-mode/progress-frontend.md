@@ -1421,3 +1421,72 @@ pinned and committed (`d12f4a2`), currently `describe.skip` in `ManualEditor.lin
 from the model and never emits that view-only cursor-helper class, so it is always-true. The real stray
 guard is the trailing-`<br>` regex on the next line. Delete line 80 or repoint it at the live view DOM
 on the next touch of this file.
+
+---
+
+## Remaining work — ready for `/loop /continue frontend 5` (2026-07-23)
+
+The whole placeholder chain (2.1) is done and live-verified; the inert toolbar stubs are removed.
+What is left is two ordered tracks. **Track A is jsdom-only (no infra) — do it first.** Track B needs
+the live stack; **the stack is already up on this host** (`docker ps`: `infra-backend-1` :8100,
+`infra-postgres-1`, `infra-redis-1`, vite dev :5173), and every acceptance run MUST export
+`BACKEND_PORT=8100` — the harness defaults to `8000`, which on this host is another project's
+container (`random_coffee_app`) and 404s on `/api/v1/auth/register`. Canonical frontend typecheck is
+`tsc -b --noEmit` (NOT plain `tsc --noEmit`). Work top-to-bottom; each is a full red→green→refactor unit.
+
+### Track A — honesty & data-safety (jsdom, no live stack)
+
+- [~] fix-status-lie — the "Сохранено" status can lie. `setHasUnsavedChanges(true)` is claimed (see
+  functionality.md) to fire only from ProseMirror's DOM `input` handler, so a toolbar format applied
+  AFTER a save leaves the doc changed while the status still reads *Сохранено*. FIRST verify against
+  current code: `ManualEditor.tsx` already wires `onUpdate: () => noteEditRef.current()`, and `onUpdate`
+  fires for programmatic transactions too — so this may ALREADY be correct and the functionality.md note
+  stale. red-frontend: apply a toolbar mark (e.g. bold via `toolbar-bold`) after a resolved save, assert
+  the status reverts to the dirty label (`Черновик, ещё не сохранён`) and `hasUnsavedChanges` is true. If
+  it passes today → LIVE characterization (mutation-check); if it fails → green-frontend fixes the dirty
+  trigger to fire on every transaction, not just DOM `input`.
+- [ ] fix-save-banner-lie — the failed-save error banner tells the user their text is "сохранён локально
+  в редакторе", which is FALSE: there is no `localStorage`/persistence, content lives only in Tiptap's
+  in-memory state (a lost tab loses it). red-frontend: assert the failed-save banner text does NOT claim
+  local persistence; green-frontend: change `SAVE_ERROR_MESSAGE` (in `useDocumentSave.ts`) to honest copy
+  (e.g. "Не удалось сохранить. Повторите — текст пока только в редакторе."). Update the existing
+  `ManualEditor.saveStatus`/5.2 tests that assert the old string. Design-review the new copy.
+- [ ] guard-unsaved-work — nothing protects unsaved work: zero `beforeunload`/`localStorage` hits in
+  `frontend/src`. red-frontend: assert a `beforeunload` handler is registered while the document has
+  unsaved changes and removed when clean (spy on `window.addEventListener`). green-frontend: add a
+  `useEffect` in `ManualEditor` that binds `beforeunload` (preventDefault + returnValue) whenever
+  `hasUnsavedChanges` is true, cleaned up otherwise. (A full `localStorage` draft is a larger follow-up —
+  scope THIS step to the `beforeunload` prompt only; note the draft as owed.)
+
+### Track B — live-Selenium owe-list (stack up, `BACKEND_PORT=8100`)
+
+Each is a `green-selenium` step: `/run-backend` (already up) → `/run-frontend` (vite :5173 already up) →
+drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 python -m pytest <path> -q`.
+
+- [ ] green-selenium-line-break-save-payload — the line-break green-selenium proved the RENDER half only;
+  the SAVE path (`editor.getHTML()` → PUT body) and the reopen round-trip are still owed (data-loss
+  shaped). Add an acceptance test: type text, press Enter, type more, SAVE, assert the outbound PUT body
+  (or a reopen) carries exactly one `<br>`; then reload the document and assert the break survived the
+  backend round-trip (a sanitizer/parse rule could drop it). See the line-break green-selenium entry above
+  for the owe-list detail.
+- [ ] green-selenium-placeholder-delete — premortem owe: the jsdom roundtrip test clears via `textContent=''`
+  (a full DOM wipe), not a real delete-transaction. Add an acceptance test: type text incl. a hard break
+  (Enter), select-all + Backspace to truly empty, assert the placeholder (`data-placeholder` +
+  `is-editor-empty` + the `::before` paint) RETURNS in a real browser.
+- [ ] green-selenium-aria-announced — the a11y attrs (`role="textbox"` + `aria-multiline="true"` +
+  `aria-placeholder`) are pinned in the DOM by jsdom but their real announcement is unverified. Add an axe
+  check (or a computed-role assertion) on the live editor; ALSO pin the `.me-toolbar-btn[aria-expanded='true']`
+  highlight rule (jsdom applies no CSS — opening the link popover with the cursor OUTSIDE a link must
+  highlight `toolbar-link`, asserted via `getComputedStyle`).
+- [ ] green-selenium-3.2-caret — scenario 3.2's caret-only `select` event was hand-fired via `fireEvent`
+  in jsdom, never proven to fire in a real browser for a caret-only (non-drag) cursor move. Add an
+  acceptance test that moves the caret between a bold and a plain run and asserts the bold button's
+  `aria-pressed` tracks it live.
+- [ ] green-selenium-4.2-save-queue — scenario 4.2's out-of-order save queue was never exercised through a
+  real click dispatch. Add an acceptance test that fires a second save while one is in flight (real
+  clicks) and asserts the displayed status never reflects a stale save.
+- [ ] green-selenium-7.9-popover-clip — scenario 7.9's link popover is `position:absolute; z-index:20`
+  inside `.me-editor-shell { overflow:hidden }`; a z-index cannot escape an ancestor's clip, so it almost
+  certainly clips. Add an acceptance test that opens the popover and asserts its bounding box is within the
+  viewport / not clipped (`isDisplayed` + rect check). If it clips → that is a real defect to fix
+  (portal the popover out of the overflow context or lift the clip).
