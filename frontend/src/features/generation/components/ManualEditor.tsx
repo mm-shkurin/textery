@@ -134,7 +134,13 @@ export function ManualEditor({
   // the same handler reference so a closed editor cannot keep blocking navigation.
   useEffect(() => {
     if (!hasUnsavedChanges) return
-    const guard = (event: BeforeUnloadEvent) => event.preventDefault()
+    const guard = (event: BeforeUnloadEvent) => {
+      // preventDefault marks the event cancelled on current Chromium, but legacy Chrome/Edge and
+      // older Safari/Firefox only show the native "leave?" prompt when returnValue is also set —
+      // without it the guard would arm yet display nothing on a subset of supported browsers.
+      event.preventDefault()
+      event.returnValue = ''
+    }
     window.addEventListener('beforeunload', guard)
     return () => window.removeEventListener('beforeunload', guard)
   }, [hasUnsavedChanges])

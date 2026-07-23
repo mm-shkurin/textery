@@ -1518,3 +1518,28 @@ drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 pytho
   certainly clips. Add an acceptance test that opens the popover and asserts its bounding box is within the
   viewport / not clipped (`isDisplayed` + rect check). If it clips → that is a real defect to fix
   (portal the popover out of the overflow context or lift the clip).
+- [ ] green-selenium-beforeunload-prompt — `guard-unsaved-work`'s owe (review passes on `24269ba`): the
+  guard sets `event.returnValue = ''` alongside `preventDefault()` because legacy Chrome/Edge + older
+  Safari/Firefox only render the native "leave?" dialog when returnValue is set — but jsdom cannot observe
+  the BeforeUnloadEvent string returnValue (its generic Event exposes only the legacy boolean getter), so
+  the unit test proves only that the event is cancelled, not that a real browser SHOWS the prompt. Add an
+  acceptance test: edit the doc, trigger a navigation/refresh, assert the native beforeunload prompt fires
+  (or at minimum `defaultPrevented` on a real Chrome event). Same live-efficacy gap applies to
+  `auth/utils/useUnsavedGuard.ts`, which uses the identical pattern.
+
+### Owed follow-ups (not yet checkboxes — need a product decision)
+
+- **guard-unsaved-work spurious prompt** (both review passes on `24269ba`, CONCERNS): `hasUnsavedChanges`
+  initialises `true` (ManualEditor.tsx:41) and only clears on a resolved save, so the `beforeunload` guard
+  is ARMED the instant any editor mounts — a user who opens a manual doc, reads it, and leaves WITHOUT
+  typing still gets the "leave? unsaved changes" prompt. The current guard tests codify this dirty-on-mount
+  as intended. Fixing it (arm only after the first real edit) is a semantics change to the same flag that
+  drives the "Черновик, ещё не сохранён" draft status (scenarios 5.1/5.2), so it needs a product call, not a
+  drive-by edit. Decide: (a) seed dirty from actual edit activity and split "has content" from "has unsaved
+  user edits", or (b) accept the prompt on any open and pin that decision. Also owed: the full
+  `localStorage`/sessionStorage draft so "leave" doesn't still lose everything (the prompt only warns).
+- **useBeforeUnloadGuard extraction** (refactor pass on `24269ba`, NO ACTION-owed): ManualEditor's guard
+  effect duplicates the addEventListener/preventDefault/removeEventListener shape in
+  `auth/utils/useUnsavedGuard.ts`. Extracting a shared generic `useBeforeUnloadGuard(active)` is a real
+  de-dup but should ride WITH a rework of the auth hook (its ref-based design + confirmLeave/markDirty API),
+  not force a risky one-off conversion of auth to reactive state now.

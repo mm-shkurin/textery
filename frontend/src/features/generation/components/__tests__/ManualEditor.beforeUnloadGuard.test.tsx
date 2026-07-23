@@ -25,6 +25,11 @@ describe('ManualEditor beforeunload guard', () => {
   it('prevents unload while the document is dirty', async () => {
     await renderEditorWithDocumentCreated()
 
+    // The guard also sets `event.returnValue = ''`, which legacy Chrome/Edge and older Safari/Firefox
+    // require to actually SHOW the native prompt. jsdom cannot pin that: its generic Event exposes only
+    // the legacy boolean `returnValue` getter (`!defaultPrevented`), never the BeforeUnloadEvent string
+    // form — so `returnValue === ''` is unobservable here. The live effect of returnValue is owed to a
+    // Track B green-selenium prompt test; jsdom proves only that the guard cancels the event.
     expect(dispatchBeforeUnload()).toBe(true)
   })
 
