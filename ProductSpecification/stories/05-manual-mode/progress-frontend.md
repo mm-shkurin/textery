@@ -216,8 +216,19 @@ queue was never exercised through a real click dispatch.
   non-empty so suppressing the hint is correct. **No follow-up bug task.** Timing: the two NO-placeholder cases
   `waitFor` a distinguishing post-load innerHTML (`<br><br…>` / `&nbsp;`) so absence never reads the transient
   empty mount. Mutation-check (invert `size > 0`): all 3 flip polarity; production restored (`git diff` clean).
-  test-review: PASS (exact attrs/class/innerHTML, category-1 values). Scoped: 3 passed; canonical
-  `tsc -b --noEmit` clean.
+  test-review: PASS (exact attrs/class/innerHTML, category-1 values). Scoped: 3 passed; **full `npx vitest
+  run`: 328 passed | 0 skipped (84 files)**; canonical `tsc -b --noEmit` clean.
+  **Review-pass verdicts on `246ae6f`: `/refactor` NO ACTION (it.each/merge/helper-extract all rejected — the
+  3 fixtures split on polarity and the assertions ARE a characterization test's deliverable), agent-review
+  PASS (parse polarities verified against `hardBreakNode.ts` parse-rule ordering + ProseMirror inline
+  whitespace), premortem PASS.** **premortem's key conclusion: the jsdom-observable placeholder surface for
+  scenario 2.1 is now GENUINELY EXHAUSTED** — the two remaining untested-looking edges both reduce to the
+  already-guarded `size === 0` recompute path: a reopen whose `getDocument` REJECTS never reaches `setContent`
+  (`useDocumentInit` catch branch), so the editor stays default-empty → placeholder present (already pinned);
+  and reopen-then-delete-to-empty is the same size→0 trigger the roundtrip test already pins. What remains for
+  2.1 is ONLY non-jsdom work: the green-selenium owe-list (`::before` visual paint, real-AT/axe announcement of
+  role+aria-multiline+aria-placeholder, real-browser delete-after-Enter placeholder return, popover clip, caret,
+  save-queue, line-break save-payload) — all requiring the live backend :8100 + Chrome stack.
 - [S] green-selenium — ~~red-selenium test is already green; no marker to remove~~ **FALSE, corrected
   2026-07-22.** Driven live against the full stack (backend :8100 + Postgres + Redis) with a real
   register→verify→login session: the test FAILS on a genuine production defect. The placeholder
