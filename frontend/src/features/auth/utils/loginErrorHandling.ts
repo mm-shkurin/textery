@@ -22,6 +22,11 @@ export function isAccountLocked(error: unknown): boolean {
 //     status, since a transport failure has no body to carry one.
 //   * GATEWAY 5xx — a codeless `UNKNOWN_ERROR` body wearing a `status >= 500` (a proxy 502 during a
 //     deploy). It is told from a GENUINE codeless business error ONLY by that 5xx status.
+//   * INTERNAL_ERROR SENTINEL — the live backend's generic 500 is codeful
+//     `{ error_code: 'INTERNAL_ERROR', message }` and toAuthApiError drops its status, so it reaches
+//     here with an errorCode and no status. It is a server fault, not a client business error, so it
+//     earns the retry path by that specific code alone — NOT by the whole coded-but-statusless class,
+//     which still holds real 4xx business errors (INVALID_CREDENTIALS, INVALID_OR_EXPIRED_OAUTH_CODE).
 // Deliberately `status >= 500` only, never `status === undefined || status >= 500`: a status-less
 // rejection that DOES carry an errorCode is a real client-side business error (production currently
 // drops status), and must stay on the form-error path — routing it to "check your connection"
@@ -33,7 +38,7 @@ export function isLoginNetworkError(error: unknown): boolean {
   if (hasProp(error, 'status')) {
     return typeof error.status === 'number' && error.status >= 500
   }
-  return false
+  return hasErrorCode(error, 'INTERNAL_ERROR')
 }
 
 // The cooldown the account-locked screen counts down. Sourced from the Retry-After header, which

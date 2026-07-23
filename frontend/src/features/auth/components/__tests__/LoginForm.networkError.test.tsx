@@ -119,13 +119,11 @@ describe('LoginForm network/transport error', () => {
     expect(screen.queryByTestId('login-network-error')).not.toBeInTheDocument()
   })
 
-  // (f) RED (Task 6) — THE CODEFUL SERVER 500. A login 500 arrives as the app-wide codeful
+  // (f) THE CODEFUL SERVER 500. A login 500 arrives as the app-wide codeful
   // { errorCode:'INTERNAL_ERROR', message } with NO status. It is a SERVER fault and must reach the
-  // SAME retry-capable network-error state as (a)/(c), NOT the field-level form-error. Today
-  // isLoginNetworkError sees an errorCode + no status → false, so applyLoginFailure routes it to
-  // setFormError and it lands in login-form-error. RED until green adds the INTERNAL_ERROR sentinel
-  // branch. Skipped until then.
-  it.skip('shows the network-error state on a codeful INTERNAL_ERROR 500', async () => {
+  // SAME retry-capable network-error state as (a)/(c), NOT the field-level form-error, via the
+  // INTERNAL_ERROR sentinel branch in isLoginNetworkError.
+  it('shows the network-error state on a codeful INTERNAL_ERROR 500', async () => {
     await submitRejectingWith(INTERNAL_ERROR_500)
 
     const networkError = await screen.findByTestId('login-network-error')

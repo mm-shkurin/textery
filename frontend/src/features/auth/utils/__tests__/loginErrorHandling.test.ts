@@ -6,9 +6,7 @@ import { isLoginNetworkError } from '../loginErrorHandling'
 // with an errorCode and no status. It is a server fault the user should be invited to retry, not a
 // terminal business error. This is the fix target.
 describe('isLoginNetworkError — server-fault INTERNAL_ERROR sentinel', () => {
-  // RED (task 6): the classifier returns false today — has errorCode, no status → not network.
-  // Skipped to keep the suite green for commit; green-frontend-api widens the classifier and un-skips.
-  it.skip('treats a codeful INTERNAL_ERROR 500 (no status) as a retryable network failure', () => {
+  it('treats a codeful INTERNAL_ERROR 500 (no status) as a retryable network failure', () => {
     expect(isLoginNetworkError({ errorCode: 'INTERNAL_ERROR', message: 'oops' })).toBe(true)
   })
 })

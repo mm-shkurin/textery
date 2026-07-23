@@ -142,14 +142,11 @@ describe('OAuthCallback network / server exchange failure', () => {
     expect(authSession.saveSession).not.toHaveBeenCalled()
   })
 
-  // RED (Task 6): a codeful server-fault 500 — `{ errorCode: 'INTERNAL_ERROR', message }` with NO
-  // status (the real backend's app-wide 500 shape: coded two-field body, status dropped by
-  // toAuthApiError's coded path) — is a SERVER fault, retry-affording, and must route back to
-  // /login with the retry banner. Today isLoginNetworkError sees an errorCode + no status → false,
-  // so the callback falls through to setFailed(true) and strands the visitor on the terminal error
-  // card while navigate never fires. Skipped until green widens the classifier with the
-  // INTERNAL_ERROR sentinel branch.
-  it.skip('returns to /login with a retry-capable message on a codeful INTERNAL_ERROR 500 exchange failure', async () => {
+  // A codeful server-fault 500 — `{ errorCode: 'INTERNAL_ERROR', message }` with NO status (the real
+  // backend's app-wide 500 shape: coded two-field body, status dropped by toAuthApiError's coded
+  // path) — is a SERVER fault, retry-affording, and must route back to /login with the retry banner
+  // via the INTERNAL_ERROR sentinel branch in isLoginNetworkError.
+  it('returns to /login with a retry-capable message on a codeful INTERNAL_ERROR 500 exchange failure', async () => {
     vi.mocked(authSession.isAuthenticated).mockReturnValue(false)
 
     await renderAndSettleRejection({ errorCode: 'INTERNAL_ERROR', message: 'oops' })
