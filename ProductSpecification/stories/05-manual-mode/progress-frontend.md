@@ -1590,7 +1590,15 @@ drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 pytho
   assert the content is exactly `v1v2`. Teeth: the first PUT's body was captured at its click = `v1`, so a
   final `v1v2` REQUIRES the queued second save to have fired with the latest content — a broken/dropped queue
   would leave the backend at the stale `v1` and fail. The spinner gate guarantees the second click lands
-  in-flight, not after settle. Needs `BACKEND_PORT=8100`.
+  in-flight, not after settle. Needs `BACKEND_PORT=8100`. **Review passes on `a35f446` (both CONCERNS, FIXED
+  in follow-up):** both passes found the second CLICK is NOT the queue trigger — `onUpdate -> noteEdit`
+  (`ManualEditor.tsx:99`) arms `saveAgainRequested` on the `v2` KEYSTROKE while `isSaving`, so the click is a
+  realistic user action but not load-bearing; the original narrative overclaimed it, and content-only teeth
+  couldn't distinguish a genuine queue from two sequential saves or concurrent PUTs. Corrected the narrative
+  to credit the mid-flight edit, and added `assert_exactly_two_document_puts` — counts PUT `/documents/{id}`
+  requests over the run via the driver's already-enabled `goog:loggingPrefs performance` log and asserts
+  exactly 2 (initial + one queued re-save): ONE would mean a dropped queue, THREE+ a regression to concurrent
+  PUTs (the version-race the strictly-sequential queue prevents). Re-verified GREEN live (`1 passed`).
 - [~] green-selenium-7.9-popover-clip — scenario 7.9's link popover is `position:absolute; z-index:20`
   inside `.me-editor-shell { overflow:hidden }`; a z-index cannot escape an ancestor's clip, so it almost
   certainly clips. Add an acceptance test that opens the popover and asserts its bounding box is within the

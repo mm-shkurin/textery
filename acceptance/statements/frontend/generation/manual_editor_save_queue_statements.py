@@ -7,6 +7,8 @@ the backend back to prove the LATEST edit won — the displayed "Сохране�
 content, never a stale earlier save.
 """
 
+import json
+
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
@@ -71,4 +73,26 @@ class ManualEditorSaveQueueStatements(ManualEditorSavePayloadStatements):
         assert content == expected, (
             f"expected the LATEST edit {expected!r} to win the save round-trip (never a stale "
             f"earlier save), got {content!r}"
+        )
+
+    def assert_exactly_two_document_puts(self, driver) -> None:
+        """Count the PUT /documents/{id} requests over the run — must be exactly two.
+
+        The initial save is one; the mid-flight edit queues exactly one re-save (consumed in the
+        first save's `.then`), so two total. This is the concrete proof the queue behaved: ONE
+        rules out a dropped queue (the re-save never fired), and TWO rules out the design
+        regressing to fire concurrent PUTs (three+ near-simultaneous requests) — the version-race
+        the strictly-sequential queue exists to prevent. The perf log is enabled on the driver
+        fixture (`goog:loggingPrefs performance`).
+        """
+        puts = 0
+        for entry in driver.get_log("performance"):
+            message = json.loads(entry["message"])["message"]
+            if message.get("method") != "Network.requestWillBeSent":
+                continue
+            request = message.get("params", {}).get("request", {})
+            if request.get("method") == "PUT" and "/api/v1/documents/" in request.get("url", ""):
+                puts += 1
+        assert puts == 2, (
+            f"expected exactly two PUT /documents saves (initial + one queued re-save), got {puts}"
         )
