@@ -85,3 +85,21 @@
 **Decision:** The link-URL control-char reject tests pin one representative per security-relevant C sub-category (Cf, Cc), not every member; the live `/\p{C}/u` screen is the real guard and already rejects unpinned siblings.
 **Where applied:** `normalizeHref.ts:50` + `ManualEditor.link.urlShapes.output.test.tsx` GROUPs 5-6; a hard bidi guarantee needs a structural range screen, not more member fixtures.
 **From:** scenario 7.9 (link-active-toolbar)
+
+## Quirk: a seeded token is not enough for API-calling screens; mint a real session
+**Quirk:** A seeded sessionStorage token reaches the type/mode modals (no request can reject it) but any screen that calls the API on mount/submit 401s on it — `createDocument`, the generation POST — after which the client clears the session and the app collapses to the landing.
+**Where:** `acceptance/statements/frontend/live_auth_session.py` (`issue_live_session`: register→verify→login over HTTP, code from the register response body) + `base_frontend_statements.py`'s `live_session` flag threaded through `navigate_to_doklad_type_modal`.
+**Implication:** every future Selenium flow that lands on an API-calling screen must pass `live_session=True`; the cheap seeded path is valid only up to the last purely-client screen.
+**From:** scenario 1.2 (manual-editor-opens)
+
+## Quirk: the empty-editor placeholder renders nowhere (open real defect)
+**Quirk:** A freshly created manual document shows no placeholder at all — the content area is exactly `<br class="ProseMirror-trailingBreak">`, with no `.me-placeholder` element and no `data-placeholder` attribute.
+**Where:** `ManualEditor.tsx` (`Placeholder.configure(...)` over a `Document.extend({ content: 'inline*' })` schema); `.me-placeholder` lives only in `ManualEditor.css` and nothing renders it.
+**Implication:** Tiptap's `Placeholder` decorates an empty NODE and the inline-only schema has no paragraph node to carry it, so it silently no-ops. Scenario 2.1's `green-selenium` is skipped on this; fixing it needs a node the decoration can attach to (or a different placeholder mechanism). No jsdom test asserts the placeholder, so the suite is green over the gap.
+**From:** scenario 2.1 (empty-editor)
+
+## Quirk: a WebDriver click re-places the caret in the contenteditable
+**Quirk:** `send_keys` after a `click()` on the editor types at the pointer's landing position, not at the logical end of prior input — so a click between keystrokes moves the caret and the continuation lands in the wrong place (`foobar<br>` instead of `foo<br>bar`).
+**Where:** `acceptance/statements/frontend/generation/manual_editor_line_break_statements.py` (`continue_typing_in_editor` types with no click; `type_text_in_editor` clicks to focus).
+**Implication:** a multi-keystroke Selenium sequence must click ONCE to focus, then keep typing without re-clicking; jsdom line-break tests also cannot be trusted for trailing-Enter counts (jsdom collapses consecutive trailing Enters that a real browser keeps).
+**From:** scenario 3.3 (line-break)

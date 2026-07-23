@@ -18,3 +18,16 @@
 **Quirk:** In this `inline*` Document a plain `hardBreak` (no required attrs) is eligible as the schema's `defaultType`, so ProseMirror auto-injects a trailing `<br>` on reconciliation with no keystroke; and plain **Enter** does nothing (the default keymap has no block to split), so a line break needs an explicit Enter→hardBreak keymap.
 **Where:** `frontend/src/features/generation/components/hardBreakNode.ts`, `hardBreakKeymap.ts` (same ghost-filler class already handled in `horizontalRuleNode.ts`).
 **Implication:** Any future inline-node addition to this editor must give the node a required attr (or otherwise disqualify it from `defaultType`) or it will ghost-fill, and any block-splitting gesture must be bound explicitly.
+
+## green-selenium (2026-07-22)
+
+**Expected:** both live-browser tests pass on the first run — characterization of already-shipped behavior, pre-probed live before writing.
+**Actual:** both FAILED — `foobar<br>` instead of `foo<br>bar`.
+**Why:** the fault was the test, not the product: `type_text_in_editor` focuses by clicking, and a WebDriver click re-places the caret where the pointer landed (the previous line), so the continuation typed *before* the break.
+**Resolution:** added `continue_typing_in_editor` (send_keys with no click, typing at the current caret); a multi-keystroke Selenium sequence must click once to focus, then keep typing.
+
+## green-selenium (2026-07-22)
+
+**Surprise:** two consecutive Enters at end-of-content keep BOTH breaks in a real browser (`foo<br><br>baz`), where jsdom collapsed them to zero — the premortem had rated the collapse a CREDIBLE possible multi-trailing bug.
+**Why:** the jsdom collapse was a fake-caret artifact (the 2nd synthetic keyDown does not reposition the caret); a real contenteditable advances it.
+**Impact:** the behavior is correct and now pinned; the jsdom line-break tests cannot be trusted for trailing-Enter counts — only the live Selenium run can.
