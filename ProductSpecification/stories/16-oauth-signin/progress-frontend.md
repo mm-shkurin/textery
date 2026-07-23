@@ -325,8 +325,17 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 
 ### 4.3: A replayed or expired code shows an error, not a second sign-in
 - [S] red-selenium
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — BORN-GREEN (enabled). New `OAuthCallback.replayedCode.test.tsx` (92L). The UNauthenticated
+  replay path (distinct from 3.3's authenticated late-duplicate): mount unauth with a code, reject
+  `oauthExchange` with `{errorCode:'INVALID_OR_EXPIRED_OAUTH_CODE',message:'Код входа истёк'}` → current `.catch`
+  (unauth + non-network → `setFailed`) shows `oauth-callback-error`. Pins the 4.3 invariant the 4.2 bound did
+  NOT: `saveSession` NOT called (no new session) + `navigate` NOT called (no silent re-login), plus exchange
+  fired once with `{code}` and no lingering spinner. **Predicted:** born-green (setFailed path leaves
+  saveSession/navigate untouched). **Actual:** 1 pass. **Match.** test-review: 0 fixes (already strict). Suite
+  339 passed / 0 skipped.
+- [S] green-frontend — already-implemented: the unauthenticated non-network rejection already routes to the
+  terminal `oauth-callback-error` via `setFailed` (shipped in 3.1 green, bounded by 4.2's classifier); the
+  born-green test above pins the no-session/no-redirect invariant. Nothing to implement.
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [S] align-design
@@ -335,7 +344,7 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
 
 ### 4.4: A malformed callback resolves to the error state without an exchange
 - [S] red-selenium
-- [ ] red-frontend
+- [~] red-frontend
 - [ ] green-frontend
 - [S] red-frontend-api — no exchange issued
 - [S] green-frontend-api
