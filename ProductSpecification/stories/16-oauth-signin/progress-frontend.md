@@ -260,6 +260,16 @@ non-gating). Frontend builds against a mock of `POST /oauth/exchange`.
   > a stale "sign-in failed" banner with no failure having occurred. Fix: clear `location.state.oauthError`
   > after first render (`navigate(pathname,{replace:true,state:{}})` in an effect) + pin a test that a second
   > render finds no banner. Cheap, real UX guard — schedule as a small 4.x frontend follow-up.
+- [x] red-frontend (stale-banner debt) — REAL RED. New `OAuthErrorBanner.staleBanner.test.tsx` (76L):
+  (1) RED driver (describe.skip) — mount at `/login` with `state:{oauthError:MESSAGE}` asserts the component
+  scrubs the history entry after first render: `navigate('/login',{replace:true,state:{}})` once; (2) enabled
+  bound — banner shows exact MESSAGE + role=alert on the current visit (locks green into capture-locally, not
+  blank-on-scrub); (3) enabled guard — cleared state renders NO banner. **Predicted:** AssertionError,
+  `expected "vi.fn()" to be called with arguments: ['/login',{replace:true,state:{}}]`, Number of calls: 0
+  (component has no useNavigate/effect today). **Actual:** exactly that at :50:22. **Match.** test-review: 0
+  fixes (already strict). Suite 367 passed / 1 skipped.
+- [~] green-frontend (stale-banner debt) — capture the message locally so it survives the scrub; add the
+  clear-once effect.
 - [S] green-selenium
 - [S] demo
 
