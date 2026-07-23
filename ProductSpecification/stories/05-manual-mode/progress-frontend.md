@@ -131,11 +131,19 @@ queue was never exercised through a real click dispatch.
   (exact `toHaveAttribute('role','textbox')` on both fresh + persistence assertions; no `aria-multiline` leaked
   in). Suite: 4 passed in file | 0 skipped; canonical `tsc -b --noEmit` clean. Real-AT/axe verification stays
   owed to green-selenium.
-- [~] red-frontend-placeholder-multiline — genuine RED (both review passes, CREDIBLE): the editor supports hard
-  breaks yet exposes `role="textbox"` with no `aria-multiline`, so AT announces it single-line. Pin: the content
-  area (`data-testid="editor-content-area"`) has `aria-multiline="true"`. Fails today (grep: zero `aria-multiline`
-  in `frontend/src`). `it.skip` until green.
-- [ ] green-frontend-placeholder-multiline — add `'aria-multiline': 'true'` to `editorProps.attributes` in
+  **Review-pass verdicts on `d261800`: `/refactor` NO ACTION (4× render+typing idiom judged DAMP, not
+  extract-worthy), agent-review PASS, premortem PASS. No owed follow-ups.** (Nuance recorded: agent-review read
+  the persistence-after-typing assertion as redundant since `role` is a static `editorProps.attribute`;
+  premortem read it as load-bearing — it would catch a future migration of `role` into the emptiness-gated
+  decoration path. Kept for that reason.)
+- [x] red-frontend-placeholder-multiline — DONE (2026-07-23), genuine RED (skipped). Added `it.skip` to
+  `ManualEditor.placeholder.test.tsx` (now 117 lines): fresh content area has `aria-multiline="true"`.
+  **Predicted:** `toHaveAttribute` AssertionError, absent → `Received: null` (grep confirms zero `aria-multiline`
+  in production `frontend/src`; `editorProps.attributes` sets only `data-testid`+`role`). **Actual:** identical,
+  `Received: null` at line 115. **Comparison: all cells YES.** test-review: PASS (exact
+  `toHaveAttribute('aria-multiline','true')` — a `"false"` green fails). Suite: 4 passed | 1 skipped; canonical
+  `tsc -b --noEmit` clean.
+- [~] green-frontend-placeholder-multiline — add `'aria-multiline': 'true'` to `editorProps.attributes` in
   ManualEditor.tsx alongside `role`/`data-testid` (unconditional, like role). Un-skip the multiline red. Also
   fix the stale `it.skip`-era comment in `ManualEditor.placeholder.test.tsx:72` (agent-review low). Verify with
   canonical `tsc -b --noEmit`. Real-AT announcement of role+aria-multiline stays owed to green-selenium/axe.

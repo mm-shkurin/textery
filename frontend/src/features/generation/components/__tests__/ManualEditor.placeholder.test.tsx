@@ -100,4 +100,18 @@ describe('ManualEditor placeholder', () => {
 
     expect(contentArea).toHaveAttribute('role', 'textbox')
   })
+
+  // a11y guard (red-frontend-placeholder-multiline, 2026-07-23). The content area
+  // exposes role="textbox" UNCONDITIONALLY (editorProps.attributes, ManualEditor.tsx),
+  // but the editor supports hard breaks (Enter → HardBreakNode/HardBreakKeymap). Per
+  // WAI-ARIA a role="textbox" defaults to single-line; a line-break-capable textbox
+  // must carry aria-multiline="true" or assistive tech announces it as single-line.
+  // That attribute is currently absent. Skipped until green-frontend-placeholder-multiline
+  // adds 'aria-multiline': 'true' to editorProps.attributes alongside role/data-testid.
+  it.skip('exposes aria-multiline=true on a line-break-capable textbox', async () => {
+    await renderEditorWithDocumentCreated()
+
+    const contentArea = screen.getByTestId('editor-content-area')
+    expect(contentArea).toHaveAttribute('aria-multiline', 'true')
+  })
 })
