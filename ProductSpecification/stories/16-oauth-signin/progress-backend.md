@@ -26,21 +26,27 @@ stubbed to look configured. See `carryover.md`.
 end of every work unit. If an invariant test is red, the production code is fixed or the
 session stops; the invariant test itself is never edited, weakened, skipped or xfailed.
 
-- [ ] I1 — `state` is server-minted, validated on callback, single-use; forged/replayed/missing state is refused, never a session
-- [ ] I2 — handoff code redeem is atomic: two concurrent exchanges yield exactly one 200
-- [ ] I3 — a handoff code past its TTL does not exchange
-- [ ] I4 — no JWT in any URL or redirect header; tokens only in the exchange response body
-- [ ] I5 — no handoff code, token or provider secret in the logs
-- [ ] I6 — identity unique per (provider, subject); email NFC-normalized + case-folded
-- [ ] I7 — missing provider config fails fast at boot, never a quiet half-configured start
-- [ ] I8 — an OAuth email matching an existing password account is NOT silently linked
+Gate test written first and RED — no production wiring exists yet, so it fails at the
+handshake. Held red on purpose; it turns green as the foundation + happy path land. All 12
+assertions are authored (I1 in three shapes: forged / missing / replayed state).
+
+- [~] I1 — `state` is server-minted, validated on callback, single-use; forged/replayed/missing state is refused, never a session — test authored, RED
+- [~] I2 — handoff code redeem is atomic: two concurrent exchanges yield exactly one 200 — test authored (asyncio.gather, not sequential), RED
+- [~] I3 — a handoff code past its TTL does not exchange — test authored, TTL is real config `OAUTH_HANDOFF_CODE_TTL_SECONDS` (small in the stend), RED
+- [~] I4 — no JWT in any URL or redirect header; tokens only in the exchange response body — test authored, RED
+- [~] I5 — no handoff code, token or provider secret in the logs — test authored (reads compose backend logs), RED
+- [~] I6 — identity unique per (provider, subject); email NFC-normalized + case-folded — test authored (compares JWT `sub` of two sign-ins, black-box), RED
+- [~] I7 — missing provider config fails fast at boot, never a quiet half-configured start — test authored (one-off container, blank client id, non-zero exit naming the var), RED
+- [~] I8 — an OAuth email matching an existing password account is NOT silently linked — test authored (asserts refusal AND the password still logs in), RED
 
 ## Foundation
 
-- [ ] `OAuthProvider` port in usecase + `FakeOAuthProvider` test double (mirrors `GenerationProvider`/`FakeProvider`); tests never reach the real Yandex
-- [ ] Domain: OAuth identity, CSRF state, one-time handoff code
+- [S] `OAuthProvider` port in usecase — DONE this session: `backend/usecase/src/auth/oauth/oauth_provider.py` (Protocol + `ProviderIdentity` + `OAuthProviderError`/`OAuthConfigurationError`). `FakeOAuthProvider` still pending. `[S] reduced-TDD 2026-07-23, backfill pending`
+- [S] Domain — DONE this session: `oauth_identity.py`, `oauth_state.py`, `handoff_code.py` in `backend/domain/src/auth/`. Unit tests pending (reduced). `[S] reduced-TDD 2026-07-23, backfill pending`
+- [ ] `FakeOAuthProvider` test double (mirrors `FakeProvider`); tests never reach the real Yandex
 - [ ] DB: identities + handoff-code tables, alembic migration on the current head
 - [ ] Composition root: Yandex adapter wired, config fail-fast at boot (I7)
+- [ ] **BLOCKED** — `infra/docker-compose.yml` does not pass `YANDEX_*` / `OAUTH_*` into the backend container (`env_file` points at `backend/.env`; `infra/.env` vars only interpolate inside compose, never reach the process). Fix is ~4 lines in the `backend` service `environment:`, but `infra/` is outside this session's boundary. Awaiting the go-ahead to edit it (or for it to be done externally). Until then no OAuth acceptance test can pass. See `carryover.md` 2026-07-23.
 
 ## Backend Scenarios (`tests/01_API_Tests.md`)
 
@@ -70,6 +76,16 @@ session stops; the invariant test itself is never edited, weakened, skipped or x
 ## Security Scenarios (`tests/05_Security_Tests.md`)
 
 Covered by the invariant gate above: 3.1 (I2), 3.2 (I4/I5), 4.1 (I1).
+
+## Acceptance harness added this session (oauth-only)
+
+New files, no cross-story impact: `acceptance/statements/oauth_scope.py`,
+`oauth_statements.py`, `oauth_runtime_probe.py`,
+`acceptance/clients/application/dto/auth/oauth_dtos.py`,
+`acceptance/tests/backend/oauth/test_oauth_security_invariants.py`. Point edits to shared
+harness: three OAuth methods on `ApplicationClient`, `oauth_statements`/`expired_code`/
+`provider_secret` fixtures + imports in `acceptance/conftest.py`. Flagged for review — if the
+shared `conftest.py` is off-limits, move the fixtures into a `tests/backend/oauth/conftest.py`.
 
 - [ ] 1.1 A crafted callback redirect target cannot drive an external redirect
 - [ ] 2.1 The callback error value is never rendered raw

@@ -20,6 +20,25 @@ registered in the Yandex OAuth app, so it cannot be invented here — it is read
 `YANDEX_REDIRECT_URI` and boot fails when unset (I7). Needs the real registered value before
 the demo can run against live Yandex; the Fake provider path does not need it.
 
+## 2026-07-23 — compose does not pass OAuth env into the backend container (BLOCKER)
+
+`infra/docker-compose.yml` `backend` service takes `env_file: backend/.env` and an
+`environment:` block that never lists `YANDEX_CLIENT_ID` / `YANDEX_CLIENT_SECRET`. Vars in
+`infra/.env` are only interpolated by compose itself (`${...}`) — they do not enter the
+container process. So the Yandex credentials that exist in `infra/.env` never reach the app,
+and every OAuth acceptance test fails before it starts. Fix: add `YANDEX_CLIENT_ID`,
+`YANDEX_CLIENT_SECRET`, `YANDEX_REDIRECT_URI`, `OAUTH_HANDOFF_CODE_TTL_SECONDS`, and
+`OAUTH_PROVIDER=fake` (for the test run) to the service `environment:`. `infra/` is outside
+this session's file boundary — not touched, awaiting the go-ahead.
+
+## 2026-07-23 — domain + port shipped without their unit tests
+
+`oauth_identity.py`, `oauth_state.py`, `handoff_code.py`, and the `OAuthProvider` port landed
+this session under reduced-TDD with no usecase/domain unit tests yet — the invariant gate is
+the only thing exercising them, and only end-to-end. Backfill: unit tests for state TTL/
+single-provider binding, handoff-code TTL boundary (`>=`), and identity `(provider, subject)`
+invariants. Tracked as task 6 Step 1.
+
 ## 2026-07-22 — reduced-TDD ceremony cut across the whole story
 
 Per-step red/green commits collapsed to one commit per scenario. Skipped sub-skills:
