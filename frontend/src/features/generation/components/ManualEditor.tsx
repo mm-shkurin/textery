@@ -1,7 +1,6 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import Placeholder from '@tiptap/extension-placeholder'
 import Document from '@tiptap/extension-document'
 import { BlockquoteMark } from './blockquoteMark'
 import { HorizontalRuleNode } from './horizontalRuleNode'
@@ -10,6 +9,7 @@ import { Heading3Mark } from './heading3Mark'
 import { AlignCenterMark } from './alignCenterMark'
 import { HardBreakKeymap } from './hardBreakKeymap'
 import { HardBreakNode } from './hardBreakNode'
+import { InlinePlaceholder } from './inlinePlaceholder'
 import './ManualEditor.css'
 import type { DocumentType } from '../../../shared/documentTypes'
 import { useDocumentInit } from '../hooks/useDocumentInit'
@@ -83,7 +83,7 @@ export function ManualEditor({
       AlignCenterMark,
       HardBreakNode,
       HardBreakKeymap,
-      Placeholder.configure({ placeholder: 'Начните печатать…' }),
+      InlinePlaceholder,
     ],
     content: '',
     // Every change to the document, however it was made — not just typing. The dirty flag used to
@@ -100,6 +100,18 @@ export function ManualEditor({
     editorProps: {
       attributes: {
         'data-testid': 'editor-content-area',
+        // A contenteditable editing surface is a textbox in both empty and full
+        // states, so role is unconditional here (NOT gated on emptiness like the
+        // placeholder attrs in inlinePlaceholder.ts). Without an explicit textbox
+        // role, the aria-placeholder that plugin emits carries no meaning to
+        // assistive tech — aria-placeholder is announced only on a textbox-ish role.
+        role: 'textbox',
+        // Enter inserts a HardBreakNode (line breaks are enabled), so this textbox
+        // is multi-line. A role="textbox" defaults to single-line per WAI-ARIA, so
+        // assistive tech would announce it wrong without this. Unconditional like
+        // role — a textbox stays multi-line whether empty or full, so it must NOT
+        // route through the emptiness-gated placeholder decoration path.
+        'aria-multiline': 'true',
       },
       handleDOMEvents: {
         input: (view, event) => flushDomObserverOnInput(view, event),
@@ -115,6 +127,23 @@ export function ManualEditor({
     onDirty: () => setHasUnsavedChanges(true),
   })
   noteEditRef.current = noteEdit
+
+  // Unsaved work lives only in Tiptap's in-memory state, so a tab-close or refresh drops it
+  // silently. beforeunload's native "leave?" prompt is the browser's one built-in defence, shown
+  // only when a listener calls preventDefault. Arm it while dirty, and detach on clean/unmount with
+  // the same handler reference so a closed editor cannot keep blocking navigation.
+  useEffect(() => {
+    if (!hasUnsavedChanges) return
+    const guard = (event: BeforeUnloadEvent) => {
+      // preventDefault marks the event cancelled on current Chromium, but legacy Chrome/Edge and
+      // older Safari/Firefox only show the native "leave?" prompt when returnValue is also set —
+      // without it the guard would arm yet display nothing on a subset of supported browsers.
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', guard)
+    return () => window.removeEventListener('beforeunload', guard)
+  }, [hasUnsavedChanges])
 
   useDocumentInit({
     documentType,

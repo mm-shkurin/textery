@@ -1,5 +1,3 @@
-import pytest
-
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 # BLOCKED 2026-07-20 (was previously: only 3.1 skipped on a now-false contenteditable reason).
@@ -16,11 +14,9 @@ from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 # on this shared host, so it cannot be stood up here. Un-skip + green once a full stack with real
 # register -> verify -> login is available (frontend nav must authenticate first, not just click
 # the CTA). This skip is now TRUE and dated, replacing the dangerous stale-false one.
-pytestmark = pytest.mark.skip(
-    reason="BLOCKED 2026-07-20: Story 7 auth gate makes the manual editor unreachable without a "
-    "live backend-issued session (frontend-only stack collapses to landing on the createDocument "
-    "401). Locator fixed; needs full stack + real auth to go green. See module docstring."
-)
+# UNBLOCKED 2026-07-22: the full stack IS available (backend :8100 + Postgres + Redis, all
+# healthy). The register -> verify -> login -> POST /api/v1/documents round trip was driven
+# live and returns 201, so the blocker recorded above no longer holds.
 
 
 class TestManualEditorAcceptance(AbstractFrontendTest):
@@ -51,6 +47,13 @@ class TestManualEditorEmptyStateAcceptance(AbstractFrontendTest):
     And the breadcrumb shows the chosen document type and "Ручной режим"
     """
 
+    # FIXED + UN-SKIPPED 2026-07-23. The 2026-07-22 defect (placeholder rendered nowhere on the
+    # inline-only schema) is resolved: InlinePlaceholder (frontend/src/.../inlinePlaceholder.ts)
+    # decorates the empty ProseMirror root with data-placeholder + is-editor-empty, and
+    # ManualEditor.css paints the text via `.ProseMirror.is-editor-empty::before`. The Statement's
+    # `.me-placeholder` locator was repointed at that real mechanism (data-placeholder attr +
+    # is-editor-empty class + ::before computed content) — the ::before paint is the coverage the
+    # jsdom placeholder unit tests explicitly owed to selenium.
     def test_should_show_empty_editor_with_placeholder_and_toolbar(
         self, webdriver, app_url, manual_editor_statements
     ):

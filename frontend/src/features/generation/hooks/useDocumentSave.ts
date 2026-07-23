@@ -5,7 +5,7 @@ import { SessionExpiredError } from '../../auth/api/authorizedRequest'
 import { VersionConflictError } from '../../../shared/api/send'
 
 export const SAVE_ERROR_MESSAGE =
-  'Не удалось сохранить документ. Проверьте соединение и попробуйте ещё раз — введённый текст сохранён локально в редакторе.'
+  'Не удалось сохранить. Повторите — текст пока только в редакторе, не потеряйте вкладку.'
 
 // Deliberately does NOT say "попробуйте ещё раз": retrying is what just failed. Reopening is the
 // only action that can succeed, and it costs the text in this editor — so the message says that
@@ -13,9 +13,9 @@ export const SAVE_ERROR_MESSAGE =
 export const CONFLICT_ERROR_MESSAGE =
   'Документ был изменён другим сохранением. Откройте его заново, чтобы увидеть актуальную версию — текст в этом редакторе не сохранён.'
 
-// What a failed save says. The default blames the connection and reassures ("текст сохранён
-// локально в редакторе") — true and useful for a network blip, and actively misleading for the
-// one failure it used to cover indiscriminately.
+// What a failed save says. The default is for a network blip: retrying may recover, so it asks for
+// that — but it does NOT reassure the text is "сохранён локально": there is no persistence anywhere
+// (content lives only in Tiptap's in-memory state), so it warns the tab is the only copy instead.
 //
 // An expired session is not a failure of the save: the request was fine, the user is signed out.
 // `authorizedRequest` raises SessionExpiredError precisely so callers can tell the two apart, and
@@ -27,7 +27,7 @@ export const CONFLICT_ERROR_MESSAGE =
 // A VersionConflictError reaching here is the same mistake one branch over. `saveDocument` already
 // answers the FIRST 409 by refetching the version and retrying, so anything that arrives here has
 // survived that — a second writer landed during the retry, or the refetch itself failed. The
-// connection is not the problem, and "текст сохранён локально в редакторе" is a promise this
+// connection is not the problem, and reassuring the user their text is safe would be a promise this
 // branch cannot keep: another save holds the document, and the next click re-enters the same race.
 // Saying so lets the user reopen the document instead of clicking a button that will lose again.
 function describeSaveFailure(error: unknown): string {

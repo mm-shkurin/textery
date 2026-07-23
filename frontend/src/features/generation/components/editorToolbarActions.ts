@@ -8,7 +8,7 @@ export type {
   ToolbarUiAction,
 } from './toolbarAction'
 
-export const TOOLBAR_DIVIDER_BEFORE: Set<ToolbarActionKey> = new Set(['bulletList', 'bold'])
+export const TOOLBAR_DIVIDER_BEFORE: Set<ToolbarActionKey> = new Set(['bold'])
 
 // Shared by the blockquote and codeBlock toolbar actions: on an empty
 // selection, toggling a mark needs an explicit line-range selection first
@@ -51,21 +51,12 @@ function simpleMarkToggle(
   }
 }
 
+// H1/H2, paragraph, and both list toggles were mockup-era stubs calling Tiptap block-node
+// commands (toggleHeading / setParagraph / toggleBulletList / toggleOrderedList). The document
+// schema is Document.extend({ content: 'inline*' }) — it has no block nodes — so those commands
+// are inert: the controls rendered but did nothing. Removed so the toolbar reflects real
+// capability. Restoring them requires migrating the schema to block content (a separate story).
 export const TOOLBAR_ACTIONS: ToolbarAction[] = [
-  {
-    key: 'heading1',
-    label: 'H1',
-    ariaLabel: 'Заголовок 1',
-    run: (editor) => editor.chain().focus().toggleHeading({ level: 1 }).run(),
-    isActive: (editor) => editor.isActive('heading', { level: 1 }),
-  },
-  {
-    key: 'heading2',
-    label: 'H2',
-    ariaLabel: 'Заголовок 2',
-    run: (editor) => editor.chain().focus().toggleHeading({ level: 2 }).run(),
-    isActive: (editor) => editor.isActive('heading', { level: 2 }),
-  },
   {
     key: 'heading3',
     label: 'H3',
@@ -73,27 +64,6 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     testId: 'toolbar-h3',
     run: (editor) => toggleLineMark(editor, 'heading3'),
     isActive: (editor) => editor.isActive('heading3'),
-  },
-  {
-    key: 'paragraph',
-    label: '¶',
-    ariaLabel: 'Абзац',
-    run: (editor) => editor.chain().focus().setParagraph().run(),
-    isActive: (editor) => editor.isActive('paragraph'),
-  },
-  {
-    key: 'bulletList',
-    label: '•',
-    ariaLabel: 'Маркированный список',
-    run: (editor) => editor.chain().focus().toggleBulletList().run(),
-    isActive: (editor) => editor.isActive('bulletList'),
-  },
-  {
-    key: 'orderedList',
-    label: '1.',
-    ariaLabel: 'Нумерованный список',
-    run: (editor) => editor.chain().focus().toggleOrderedList().run(),
-    isActive: (editor) => editor.isActive('orderedList'),
   },
   simpleMarkToggle('bold', 'bold', 'B', 'Жирный', 'toolbar-bold'),
   simpleMarkToggle('italic', 'italic', 'I', 'Курсив'),

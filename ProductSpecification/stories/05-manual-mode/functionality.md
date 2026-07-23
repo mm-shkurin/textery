@@ -6,9 +6,17 @@ This is the complement to [`progress-frontend.md`](progress-frontend.md): that f
 what looks finished but isn't. Where the two disagree, the code wins — everything below was
 read from the source, not from the checkboxes.
 
-Scope note: the backend is developed on a parallel branch and is unreachable here. Every
-Selenium and demo step in this story is `[S]`, so **nothing below has ever run in a real
-browser against a real server**. The evidence is 76 jsdom component tests.
+Scope note (updated 2026-07-23): the stack is now reachable (backend :8100 + Postgres + Redis +
+vite :5173), and a substantial slice of this story HAS run in a real headless Chrome against a
+real server with a real register→verify→login session — see `progress-frontend.md`, the Track B
+`green-selenium-*` entries. Live-verified end to end: opening the editor (1.2), the empty-state
+placeholder incl. its `::before` paint (2.1), bold formatting (3.1), caret-driven toolbar state
+(3.2), the out-of-order save queue (4.2), line-break save round-trip, delete-to-empty placeholder
+return, the a11y role + aria-expanded highlight, the link-popover clip check, and the
+beforeunload guard arming/disarming. What is still jsdom-only are the scenarios whose
+`green-selenium`/`demo` rows remain `[S]` (1.1, 4.1, 5.1, 5.2, 6.1, 6.2, 7.x) — those have not
+yet been re-run live. The historical "76 jsdom tests, nothing in a real browser" note below is
+superseded.
 
 ## Getting into the editor
 
@@ -40,13 +48,15 @@ while the caret sits inside text carrying that mark, and goes dark when the care
 Undo and redo are the only controls with a disabled state rather than an active one; they grey
 out when there is nothing to unwind.
 
-**Six of the seventeen toolbar entries are dead.** H1, H2, paragraph, bullet list and ordered
-list are the original mockup-era stubs: they still call Tiptap's block-node commands
-(`toggleHeading`, `toggleBulletList`, …), which the `inline*` schema makes inert. Italic is a
-different case — it works, but has no `testId`, so no test clicks it and nothing renders it
-reachable by the same route the others use. None of these six have a scenario of their own; they
-are inherited surface, not shipped capability. A toolbar reading "H1 H2 H3 ¶ • 1. B I S U <>"
-overstates what the editor can do by a third.
+**The five inert toolbar stubs were removed (2026-07-23).** H1, H2, paragraph, bullet list and
+ordered list were mockup-era stubs calling Tiptap's block-node commands (`toggleHeading`,
+`toggleBulletList`, …), which the `inline*` schema makes inert — they rendered but did nothing.
+They had no scenario of their own; showing them overstated the editor by a third. Removed from
+`TOOLBAR_ACTIONS` (and `ToolbarActionKey`) so the toolbar reflects real capability; scenario
+2.1's Gherkin and acceptance check were updated to the working named controls (H3, bold, italic).
+Restoring real headings/lists requires migrating the schema to block content — a separate story.
+Remaining note: italic works but still has no `testId`, so it is reachable by `aria-label`
+(`Курсив`) but not by the `toolbar-*` route its siblings use.
 
 ## Saving
 

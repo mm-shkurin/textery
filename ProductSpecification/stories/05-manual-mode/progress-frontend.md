@@ -58,7 +58,195 @@ queue was never exercised through a real click dispatch.
 - [S] red-frontend-api — no new API call for this scenario (display-only, document already created in 1.2's flow)
 - [S] green-frontend-api — same reason
 - [S] align-design — content-area/toolbar/breadcrumb styling already aligned to mockup in scenario 1.2
-- [S] green-selenium — red-selenium test is already green; no marker to remove
+- [x] red-frontend-placeholder — DONE (2026-07-23). New `ManualEditor.placeholder.test.tsx` (43 lines):
+  empty ManualEditor's content area must carry `data-placeholder="Начните печатать…"` + class
+  `is-editor-empty`, both gone after typing. **Predicted:** `AssertionError` on `toHaveAttribute('data-placeholder',
+  'Начните печатать…')` — attribute absent, `Received: null`, because stock `Placeholder.configure`
+  (`ManualEditor.tsx:86`) no-ops on the `inline*` schema (`ManualEditor.tsx:78`, no block node to decorate).
+  **Actual:** identical — failed at the first assertion, `Received: null`. **Comparison: all cells YES**
+  (type/message/status). `describe.skip` with dated reason so the suite stays green. test-review: PASS,
+  assertions already strict (exact `toHaveAttribute`/`toHaveClass` + independent `.not` removals; no
+  computed-style/`::before` assertion — that visual paint stays owed to green-selenium). Suite: 1 skipped |
+  0 failed; tsc clean.
+- [x] green-frontend-placeholder — DONE (2026-07-23). New `inlinePlaceholder.ts` (49) — a Tiptap `Extension`
+  whose `addProseMirrorPlugins` returns a plugin with a `props.attributes(state)` function: when
+  `state.doc.content.size === 0` it puts `data-placeholder="Начните печатать…"` + class `is-editor-empty`
+  on the `.ProseMirror` root (coexists with the existing `data-testid`), returns `{}` when non-empty so
+  ProseMirror diff-strips both. Keyed off REAL doc emptiness (not a one-shot DOM-input flag) so the
+  placeholder returns on delete-to-empty and stays absent on a reopened non-empty doc — the two premortem
+  round-trip/reopen incidents are implemented robustly now, pinned by the follow-up reds below. The
+  `<br class="ProseMirror-trailingBreak">` helper is kept out of the doc by `HardBreakNode`, so it never
+  inflates `content.size`. Dropped the dead stock `Placeholder` extension. CSS: replaced the bare
+  `.me-placeholder` with `.ProseMirror.is-editor-empty::before { content: attr(data-placeholder) }` reusing
+  its color/font tokens. Verified decoration API against `prosemirror-view` source (`computeDocDeco`), not
+  assumed. Un-skipped the test (only allowed test edit). Suite: **142 passed | 0 skipped | 0 failed**; tsc
+  clean. `ManualEditor.tsx` 161 lines. **`::before` visual paint owed to green-selenium (jsdom sees no CSS).**
+  **Review-pass verdicts on `a72fa40`: agent-review PASS, premortem CONCERNS (1 low), `/refactor` NO ACTION.**
+  agent-review verified the `{}`-diff-strip against `computeDocDeco`, no `data-testid` collision, `content.size`
+  emptiness correct vs the trailing-break artifact, stock Placeholder fully removed, CSS rename complete.
+  premortem CREDIBLE-low: no `aria-placeholder` — the `::before` hint is invisible to screen readers (net-neutral,
+  the stock extension also no-op'd) → tracked as `red-frontend-placeholder-aria` below. Save-leak/autosave/
+  overlay-clip all disposed REMOTE (props.attributes decorate the VIEW not the doc model, so `getHTML()` save
+  payload is unaffected; `pointer-events:none` + `position:absolute;height:0` on the `::before`).
+  `@tiptap/extension-placeholder` is now unused in `package.json` (refactor flagged, left — dep removal is
+  out of this unit's tested scope).
+- [x] red-frontend-placeholder-aria — DONE (2026-07-23), genuine RED (skipped). Added `it.skip` to
+  `ManualEditor.placeholder.test.tsx` (now 84 lines): empty editor's content area must carry
+  `aria-placeholder="Начните печатать…"`, gone after typing. **Predicted:** `toHaveAttribute` AssertionError,
+  attribute absent → `Received: null` (grep confirms no `aria-placeholder` anywhere in `frontend/src`).
+  **Actual:** identical, `Received: null` at the first assertion. **Comparison: all cells YES.** test-review:
+  PASS (exact value + `.not` form). **tsc discovery (via test-review):** running the CANONICAL typecheck
+  `tsc -b --noEmit` (package.json `typecheck`) surfaced a PRE-EXISTING production type error at
+  `inlinePlaceholder.ts:38` shipped by the green `a72fa40` — its `attributes` arrow's inferred union return was
+  not assignable to `{[name:string]:string}`. It slipped because the green verified with plain `tsc --noEmit`
+  (root config), which does not run the project-reference build. Fixed separately (`1821c8a`, `fix:` — annotate
+  return `Record<string,string>`), canonical typecheck now clean. Suite: 2 passed | 1 skipped in file (143 |
+  1 across generation); `tsc -b --noEmit` clean.
+- [x] green-frontend-placeholder-aria — DONE (2026-07-23). Added `'aria-placeholder': INLINE_PLACEHOLDER_TEXT`
+  to `inlinePlaceholder.ts`'s empty-state branch (dropped when non-empty via the existing `content.size > 0`
+  `{}` return; the `Record<string,string>` annotation types it cleanly). Also emitted `role="textbox"`
+  UNCONDITIONALLY in `editorProps.attributes` (ManualEditor.tsx, alongside `data-testid`) — a contenteditable
+  surface is a textbox in both empty and full states, so role is always-on, NOT gated on emptiness; this makes
+  the `aria-placeholder` actually AT-meaningful (premortem role gap). Confirmed the dynamic plugin
+  `props.attributes` and static `editorProps.attributes` merge onto the same root with no collision. Un-skipped
+  the aria test (only allowed test edit). **Verified with the CANONICAL `tsc -b --noEmit` — clean.** Suite:
+  **144 passed | 0 skipped | 0 failed.** `inlinePlaceholder.ts` 56, `ManualEditor.tsx` 167. Real-AT
+  announcement of `aria-placeholder`+`role` stays owed to green-selenium/axe (jsdom proves the attrs render,
+  not that a reader speaks them).
+  **Review-pass verdicts on `822fac6`: `/refactor` NO ACTION, agent-review CONCERNS ×2, premortem CONCERNS ×1
+  — both passes converged on the SAME gap.** Merge correctness independently confirmed against
+  `prosemirror-view` `computeDocDeco` (distinct keys, first-writer-wins, no collision; role persists while
+  aria-placeholder toggles). **CREDIBLE (both passes): `aria-multiline` missing.** `role="textbox"` defaults to
+  single-line per WAI-ARIA, but this editor supports hard breaks (Enter, `HardBreakNode`/`HardBreakKeymap`) —
+  premortem calls it a semantics REGRESSION (pre-commit, the bare contenteditable fell back to AT multiline
+  heuristics; pinning `role` without `aria-multiline` narrows it). → new `red/green-frontend-placeholder-multiline`
+  steps below. agent-review low: the un-skipped aria test still carries a stale "Skipped until…green" comment
+  (`ManualEditor.placeholder.test.tsx:72`) — fix on the next touch of that file (the multiline green).
+- [x] red-frontend-placeholder-role — DONE (2026-07-23), LIVE characterization (role already shipped). Added
+  test to `ManualEditor.placeholder.test.tsx` (now 103 lines): fresh content area has `role="textbox"`, and it
+  PERSISTS after typing (unconditional, unlike the empty-state attrs). **Predicted PASS** (role set
+  unconditionally in `editorProps.attributes`, ManualEditor.tsx:108). **Actual PASS. Comparison: all cells
+  YES.** Kept LIVE. **Mutation-check (teeth):** removed `role: 'textbox'` → new test FAILED (`role` null at the
+  fresh assertion, line 96); production restored (`git diff` clean on ManualEditor.tsx). test-review: PASS
+  (exact `toHaveAttribute('role','textbox')` on both fresh + persistence assertions; no `aria-multiline` leaked
+  in). Suite: 4 passed in file | 0 skipped; canonical `tsc -b --noEmit` clean. Real-AT/axe verification stays
+  owed to green-selenium.
+  **Review-pass verdicts on `d261800`: `/refactor` NO ACTION (4× render+typing idiom judged DAMP, not
+  extract-worthy), agent-review PASS, premortem PASS. No owed follow-ups.** (Nuance recorded: agent-review read
+  the persistence-after-typing assertion as redundant since `role` is a static `editorProps.attribute`;
+  premortem read it as load-bearing — it would catch a future migration of `role` into the emptiness-gated
+  decoration path. Kept for that reason.)
+- [x] red-frontend-placeholder-multiline — DONE (2026-07-23), genuine RED (skipped). Added `it.skip` to
+  `ManualEditor.placeholder.test.tsx` (now 117 lines): fresh content area has `aria-multiline="true"`.
+  **Predicted:** `toHaveAttribute` AssertionError, absent → `Received: null` (grep confirms zero `aria-multiline`
+  in production `frontend/src`; `editorProps.attributes` sets only `data-testid`+`role`). **Actual:** identical,
+  `Received: null` at line 115. **Comparison: all cells YES.** test-review: PASS (exact
+  `toHaveAttribute('aria-multiline','true')` — a `"false"` green fails). Suite: 4 passed | 1 skipped; canonical
+  `tsc -b --noEmit` clean.
+  **Review-pass verdicts on `b993cb2`: `/refactor` NO ACTION, agent-review PASS (verified the editor is
+  genuinely multiline — Enter/Shift-Enter → hardBreak), premortem CONCERNS (1 credible) → RED STRENGTHENED
+  before green.** premortem: the RED asserted `aria-multiline` only on the FRESH empty editor; an emptiness-gated
+  green (the wrong path — the sibling placeholder attrs ARE gated in this component) would pass it yet ship a
+  "flips to single-line the instant you type" bug. Fixed in the same skipped test (commit follows): added the
+  after-typing persistence assertion mirroring the role test (type → `fireEvent.input` → re-assert
+  `aria-multiline='true'`), so an emptiness-gated green now goes RED. Still skipped, still genuine red (both
+  assertions fail today); tsc clean, 4 passed | 1 skipped.
+- [x] green-frontend-placeholder-multiline — DONE (2026-07-23). Added `'aria-multiline': 'true'` to
+  `editorProps.attributes` in ManualEditor.tsx (static, alongside `role`/`data-testid`, unconditional — NOT
+  routed through the emptiness-gated `inlinePlaceholder` decoration, so the after-typing persistence assertion
+  passes). Un-skipped the multiline red. Fixed the stale `it.skip`-era comments on BOTH the aria-placeholder
+  test (line 72) and this multiline test (agent-review low + a second stale block the green touched). Verified
+  with canonical `tsc -b --noEmit` — clean. **generation suite (`src/features/generation`): 146 passed | 0
+  skipped; full `npx vitest run`: 323 passed | 0 skipped | 0 failed (82 files).** `ManualEditor.tsx`
+  173 lines. Real-AT announcement of role+aria-multiline stays owed to green-selenium/axe (jsdom proves the
+  attrs render, not that a reader speaks them).
+  **Review-pass verdicts on `80fda67`: `/refactor` NO ACTION, premortem PASS (getHTML save payload
+  unaffected — `editorProps.attributes` decorate the view root, not the doc model; role+aria-multiline+
+  aria-placeholder is the correct spec-composed set), agent-review CONCERNS (doc-only): the `146` figure is
+  the generation-scoped count, not the whole suite (323) — corrected above and labelled going forward. No
+  code follow-up.** LABELLING NOTE for future units: report scoped counts as "generation suite N", reserve
+  "suite" for the full `npx vitest run` (this is a recurring mislabel — the green-agent reports its scoped
+  run).
+- [x] red-frontend-placeholder-roundtrip — DONE (2026-07-23), LIVE characterization (no green needed — prod
+  already handles it). Added 2nd test to `ManualEditor.placeholder.test.tsx` (now 65 lines): empty → type →
+  clear-back-to-empty → `data-placeholder` + `is-editor-empty` RESTORED. **Predicted PASS** (attributes fn
+  recomputes from `state.doc.content.size` every update; the trailing-break `<br>` is a DOM-only helper
+  HardBreakNode keeps out of `content.size`, so a cleared editor faithfully reports size 0). **Actual PASS.
+  Comparison: all cells YES.** Kept LIVE, no skip. **Mutation-check (teeth):** added a one-shot
+  `mutationHadContent` flag so the placeholder never returns once content existed → new test FAILED
+  (`data-placeholder` null at restore) while the sibling empty→typed test stayed green; production restored
+  (`git diff` clean on `inlinePlaceholder.ts`). test-review: PASS (exact `toHaveAttribute`/`toHaveClass` +
+  independent `.not` forms; no `::before` assertion). Suite: 2 passed | 0 skipped | 0 failed; tsc clean. No
+  `green-frontend-placeholder-roundtrip` step — nothing to implement.
+  **Review-pass verdicts on `e4b461f`: agent-review PASS (reproduced the mutation-check independently),
+  `/refactor` NO ACTION, premortem CONCERNS (1 credible, owed to green-selenium — NOT a jsdom red).** premortem:
+  the `textContent=''; fireEvent.input` clear is a full DOM wipe that forces a reparse into a guaranteed-empty
+  doc — it never travels the real delete-transaction path. A real-browser select-all+Backspace (especially after
+  a typed Enter, which inserts a real hardBreak NODE, distinct from the trailing-break helper) could leave a
+  residual node so `doc.content.size >= 1` and the placeholder would NOT return. jsdom cannot exercise this →
+  folded into 2.1's green-selenium owe-list. Link-mark / horizontalRule residuals rated REMOTE (marks add no
+  size; HR unreachable by ordinary typing in this flow).
+- [x] red-frontend-placeholder-reopen — DONE (2026-07-23), LIVE characterization (both polarities pass — prod
+  keys off `content.size`). New `ManualEditor.placeholder.reopen.test.tsx` (41 lines) + new harness helper
+  `renderEditorReopeningDocument(content, onBack?)` in `ManualEditor.testSupport.tsx` (27→51 lines, mocks
+  `getDocument`, mounts `<ManualEditor existingDocumentId=…>`, waits on the `getDocument` call). **Polarity A
+  (reopen empty, `content: ''`):** content area HAS `is-editor-empty` + `data-placeholder` + `aria-placeholder`.
+  **Polarity B (reopen with content):** all three ABSENT — the content-polarity test `waitFor`s the exact loaded
+  `innerHTML` before the `.not` assertions, so it cannot false-pass against the transient empty mount.
+  **Predicted both PASS; Actual both PASS; Comparison: MATCH.** **Mutation-check (teeth):** inverting the
+  `size > 0` guard in `inlinePlaceholder.ts` FAILS both (empty loses the decoration; content-polarity gets the
+  placeholder bleeding under real text); production restored (`git diff` clean). test-review: PASS (exact text
+  on both attrs, exact class, independent `.not` forms, mock shape matches `GetDocumentResult`). reopen scoped:
+  2 passed; **full `npx vitest run`: 325 passed | 0 skipped (83 files)**; canonical `tsc -b --noEmit` clean.
+  Nothing owed to a follow-up green — reopen contract already satisfied by the `content.size`-keyed impl.
+  **Review-pass verdicts on `119f300`: `/refactor` NO ACTION (the reopen helper differs from the create helper
+  on every axis that matters — mock target, props, waitFor, return — extracting a core would add indirection),
+  agent-review PASS, premortem CONCERNS (1 credible-low) → new jsdom guard queued below.** premortem: the two
+  reopen tests drive only the clean poles (`''` vs rich `<strong>` content); the DEGENERATE boundary is unpinned
+  — a saved doc whose content parses to a lone HardBreak / `&nbsp;` / whitespace is `size > 0`, so the
+  placeholder is suppressed and the user meets a blank UNLABELLED box. It is a pure function of the parsed
+  `content.size` (jsdom reproduces the parse exactly), so it is an owed jsdom red, NOT a selenium guard.
+- [x] red-frontend-placeholder-reopen-degenerate — DONE (2026-07-23), LIVE characterization, **all 3 predictions
+  matched, NO bug found.** New `ManualEditor.placeholder.reopenDegenerate.test.tsx` (57 lines). Reopen via
+  `renderEditorReopeningDocument`: **`<br>` → size 1 → NO placeholder** (a bare `<br>` matches HardBreakNode's
+  `{tag:'br'}` rule → real hardBreak leaf; only `br.ProseMirror-trailingBreak` is ignored); **`&nbsp;` → size 1
+  → NO placeholder** (U+00A0 text node); **`'   '` whitespace → size 0 → placeholder PRESENT** (inline parser
+  strips surrounding whitespace to 0 nodes). The premortem's feared "blank UNLABELLED box" does NOT occur:
+  whitespace-only is treated as empty and the user still gets the hint (benign); `<br>`/`&nbsp;` are legitimately
+  non-empty so suppressing the hint is correct. **No follow-up bug task.** Timing: the two NO-placeholder cases
+  `waitFor` a distinguishing post-load innerHTML (`<br><br…>` / `&nbsp;`) so absence never reads the transient
+  empty mount. Mutation-check (invert `size > 0`): all 3 flip polarity; production restored (`git diff` clean).
+  test-review: PASS (exact attrs/class/innerHTML, category-1 values). Scoped: 3 passed; **full `npx vitest
+  run`: 328 passed | 0 skipped (84 files)**; canonical `tsc -b --noEmit` clean.
+  **Review-pass verdicts on `246ae6f`: `/refactor` NO ACTION (it.each/merge/helper-extract all rejected — the
+  3 fixtures split on polarity and the assertions ARE a characterization test's deliverable), agent-review
+  PASS (parse polarities verified against `hardBreakNode.ts` parse-rule ordering + ProseMirror inline
+  whitespace), premortem PASS.** **premortem's key conclusion: the jsdom-observable placeholder surface for
+  scenario 2.1 is now GENUINELY EXHAUSTED** — the two remaining untested-looking edges both reduce to the
+  already-guarded `size === 0` recompute path: a reopen whose `getDocument` REJECTS never reaches `setContent`
+  (`useDocumentInit` catch branch), so the editor stays default-empty → placeholder present (already pinned);
+  and reopen-then-delete-to-empty is the same size→0 trigger the roundtrip test already pins. What remains for
+  2.1 is ONLY non-jsdom work: the green-selenium owe-list (`::before` visual paint, real-AT/axe announcement of
+  role+aria-multiline+aria-placeholder, real-browser delete-after-Enter placeholder return, popover clip, caret,
+  save-queue, line-break save-payload) — all requiring the live backend :8100 + Chrome stack.
+- [x] green-selenium — **GREEN live 2026-07-23 (`1 passed in 18.95s`).** The 2026-07-22 placeholder defect is
+  RESOLVED and verified in a real headless Chrome against the full stack (backend :8100 + Postgres + Redis,
+  vite dev :5173 serving current source), with a real register→verify→login session. `InlinePlaceholder`
+  (`inlinePlaceholder.ts`) decorates the empty ProseMirror root with `data-placeholder` + `is-editor-empty`,
+  and `ManualEditor.css` paints the hint via `.ProseMirror.is-editor-empty::before { content:
+  attr(data-placeholder) }`. Un-skipped `test_should_show_empty_editor_with_placeholder_and_toolbar` and
+  repointed the Statement's stale `.me-placeholder` locator to the real mechanism:
+  `assert_content_placeholder_is_visible` now asserts the `data-placeholder` attribute value, the
+  `is-editor-empty` class, AND — the coverage the jsdom unit tests explicitly owed to selenium — the
+  **`::before` computed content actually paints** `Начните печатать…` (via
+  `getComputedStyle(el,'::before').content`, invisible to jsdom by construction). Also de-brittled a stale
+  exact-count assertion exposed by the live run: `_assert_toolbar_button_count` expected exactly 7 but the
+  toolbar legitimately grew to **18** buttons (scenarios 7.1-7.9); changed to a lower bound
+  (`MINIMUM_TOOLBAR_BUTTON_COUNT = 7`, the named controls still pinned individually by aria-label) so 2.1 is not
+  coupled to the extended toolbar's size. **Run gotcha recorded:** the live-auth harness defaults
+  `BACKEND_PORT=8000`, which on this host is another project's container (`random_coffee_app`, 404 on
+  `/api/v1/auth/register`); the Textery backend is :8100, so acceptance runs need `BACKEND_PORT=8100` exported.
+  Scenarios 1.2 and 3.1 re-verified GREEN live in the same run.
 - [x] demo
 
 ### Scenario 3.1: Applying a format changes the content and highlights the active toolbar button
@@ -68,7 +256,17 @@ queue was never exercised through a real click dispatch.
 - [S] red-frontend-api — no API call: bold formatting is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
 - [x] align-design
-- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. **Backfill 2026-07-20 (framework `FRAMEWORK_BACKFILL_PLAN.md` Phase B):** the `test_manual_editor_acceptance.py` skip decorator carried a *stale, false* reason (`.me-content-area is a static placeholder div with no contenteditable attribute`) — false since the Tiptap rewrite: the wrapper's child is a real ProseMirror contenteditable div (`data-testid="editor-content-area"`). Un-skipped, fixed the Statements locator to type into that editable element (`manual_editor_statements.py` `EDITABLE_CONTENT`), re-verified live against the frontend dev server. Un-skipping exposed a *larger, true* blocker beyond "backend unavailable": Story 7's auth gate makes the type→mode→editor flow unreachable without a **valid** backend-issued session (unauthenticated CTA → `/register`; a seeded fake sessionStorage token fails too — the editor's `createDocument` mount call 401s, refresh fails, `clearSession` collapses the app back to landing, verified live). So all three scenarios (1.2/2.1/3.1) need a full stack + real register→verify→login, not just a running backend. Re-skipped at module level with an accurate dated reason. Locator fix landed; green pending a live authenticated stack.
+- [x] green-selenium — **GREEN live 2026-07-22.** The 2026-07-20 blocker below is resolved: the full
+  stack is up (backend :8100 + Postgres + Redis, all healthy) and the missing piece was a real
+  session, not a running backend. Added `acceptance/statements/frontend/live_auth_session.py`
+  (`issue_live_session()` — register → verify → login over HTTP, verification code read from the
+  register response body since the email adapter is mocked here) and threaded a `live_session` flag
+  through `_establish_logged_in_precondition`/`navigate_to_doklad_type_modal`; the manual-editor
+  entry point now mints a real backend-issued JWT instead of the seeded placeholder that 401s on
+  `createDocument`. Verified the round trip independently first (`POST /api/v1/documents` → 201)
+  before touching test code. Module-level skip removed. Scenarios 1.2 and 3.1 pass live against a
+  real browser; 2.1 fails on a genuine placeholder defect (see its row above). Suite:
+  **4 passed, 1 skipped**. Historical reason follows. ~~backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. **Backfill 2026-07-20 (framework `FRAMEWORK_BACKFILL_PLAN.md` Phase B):** the `test_manual_editor_acceptance.py` skip decorator carried a *stale, false* reason (`.me-content-area is a static placeholder div with no contenteditable attribute`) — false since the Tiptap rewrite: the wrapper's child is a real ProseMirror contenteditable div (`data-testid="editor-content-area"`). Un-skipped, fixed the Statements locator to type into that editable element (`manual_editor_statements.py` `EDITABLE_CONTENT`), re-verified live against the frontend dev server. Un-skipping exposed a *larger, true* blocker beyond "backend unavailable": Story 7's auth gate makes the type→mode→editor flow unreachable without a **valid** backend-issued session (unauthenticated CTA → `/register`; a seeded fake sessionStorage token fails too — the editor's `createDocument` mount call 401s, refresh fails, `clearSession` collapses the app back to landing, verified live). So all three scenarios (1.2/2.1/3.1) need a full stack + real register→verify→login, not just a running backend. Re-skipped at module level with an accurate dated reason. Locator fix landed; green pending a live authenticated stack.~~
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
 ### Scenario 3.2: The toolbar reflects formatting state at the cursor position, not globally
@@ -78,7 +276,12 @@ queue was never exercised through a real click dispatch.
 - [S] red-frontend-api — no API call: cursor-driven toolbar state is client-side editor state only, no backend endpoint involved
 - [S] green-frontend-api — same reason
 - [x] align-design — verify-only: no new markup/CSS for this scenario, reuses scenario 3.1's `.me-toolbar-btn[aria-pressed='true']` active-state styling already aligned to mockup 04-editor-content.html
-- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. This is the deferred gap the premortem flagged (see red-frontend note above) — must run before 3.2 is fully verified.
+- [x] green-selenium — **CLOSED 2026-07-23 by the Track B `green-selenium-3.2-caret` run** (see that entry
+  below): `test_manual_editor_caret_acceptance.py` drives a caret-only (keyboard, non-drag) move between a bold
+  and a plain run against the live stack (backend :8100 + headless Chrome) and asserts the bold button's
+  `aria-pressed` tracks it — `true` in the bold run, `false` in the plain run. The premortem gap flagged in the
+  red-frontend note above is resolved: a real browser DOES dispatch the selection event for a caret-only move.
+  `1 passed`. ~~backend unavailable on this branch — must run before 3.2 is fully verified.~~
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
 ### Scenario 4.1: Saving shows a loading state and disables the save control
@@ -98,7 +301,12 @@ queue was never exercised through a real click dispatch.
 - [S] red-frontend-api — no new API call: scenario 4.2 reuses saveDocument's existing PUT /api/v1/documents/{id} contract (already implemented/tested in scenario 4.1); the queue/auto-retrigger logic is client-side state only
 - [S] green-frontend-api — same reason
 - [x] align-design — verify-only: no new markup/CSS for this scenario, reuses scenario 4.1's `isSaving`-driven `.me-save-btn[aria-disabled='true']`/`.me-save-spinner` styling; queued saves surface through the same visual state
-- [S] green-selenium — backend unavailable on this branch (backend developed in parallel session/branch); no live app to drive Selenium against. Real-browser click-suppression risk on the disabled/aria-disabled button was already reviewed and fixed via aria-disabled during green-frontend refactor — but this is still the only test type that can confirm the queue actually fires on a real browser dispatch; do not treat 4.2 as fully verified until it runs.
+- [x] green-selenium — **CLOSED 2026-07-23 by the Track B `green-selenium-4.2-save-queue` run** (see that
+  entry below): `test_manual_editor_save_queue_acceptance.py` throttles the network so the first PUT stays in
+  flight, then fires a second Save via a REAL click on the aria-disabled button and reads the backend back to
+  prove the queued save with the latest content (`v1v2`) won — confirming the queue actually fires on a real
+  browser dispatch, not just under jsdom fake promises. `1 passed` against the live stack. ~~backend
+  unavailable on this branch — do not treat 4.2 as fully verified until it runs.~~
 - [S] demo — same reason, no live backend to drive a visible Selenium run against
 
 ### Scenario 5.1: A successful save shows a lightweight confirmation, no full-page transition
@@ -1166,7 +1374,48 @@ pinned and committed (`d12f4a2`), currently `describe.skip` in `ManualEditor.lin
   already scanned these exact files in the green batch (`5a1c1b2`): verdict NO ACTION (naming clear;
   marker-attr overlap with `horizontalRuleNode.ts` is the intentional one-customization-per-file
   convention, extraction would add indirection). No cross-file smell — nothing to refactor.
-- [ ] green-selenium — [S] deferred: same "live app to drive Selenium" gap as the rest of
+- [x] green-selenium — **GREEN live 2026-07-22 — but only the RENDER half of the owe-list; see the
+  correction at the end of this entry, the "all three closed" claim first written here was wrong.** New
+  `test_manual_editor_line_break_acceptance.py` (2 tests) + `manual_editor_line_break_statements.py`,
+  driven against the full stack in a real Chrome with a real backend-issued session.
+  (i) single Enter → **exactly one** `<br>` (`foo<br>bar`), asserted as a COUNT so a double-insert
+  cannot pass; (ii) **the premortem's CREDIBLE multi-trailing suspicion was a jsdom artifact, not a
+  product defect** — a real browser keeps both breaks (`foo<br><br>baz`) where jsdom collapsed them
+  to zero; behavior now pinned; (iii) breaks render as real visual lines, asserted via distinct
+  `getClientRects()` baselines (2 and 3), so a `<br>` that stops breaking the line visually fails
+  even though the HTML still matches.
+  **Prediction MISSED, and the miss was informative:** predicted both tests PASS first run
+  (characterization of already-shipped behavior, pre-probed live). Actual: both FAILED —
+  `foobar<br>` instead of `foo<br>bar`. Cause was the TEST, not the product: `type_text_in_editor`
+  focuses by clicking, and a click re-places the caret where the pointer landed, so the
+  continuation typed *before* the break. Added `continue_typing_in_editor` (types at the current
+  caret, no click); any future multi-keystroke Selenium sequence must click once to focus and then
+  keep typing. **Mutation-check (teeth):** removed `HardBreakKeymap` from `ManualEditor.tsx` →
+  both tests FAIL; restored (`git checkout`, diff clean) → both PASS. Suite:
+  **6 passed, 1 skipped**.
+  **CORRECTION (agent-review CONCERNS ×3 + premortem CONCERNS, 3 CREDIBLE — both passes flagged the
+  same overstatement independently):** this step did NOT close the whole owe-list. Every assertion
+  reads the *view* DOM (`editor-content-area` innerHTML); the save path serializes
+  `editor.getHTML()` from the ProseMirror **document model**, a different producer. Owe-list item (i)
+  was phrased "exactly one `<br>` lands in the **save payload**" — what shipped proves it lands in
+  the **rendered content area**. Still genuinely owed, and both are data-loss-shaped rather than
+  cosmetic:
+    (a) *save payload* — assert the outbound PUT body (or `editor.getHTML()`) carries exactly one
+        `<br>` after one Enter. A break that exists as a view artifact but not as a `hardBreak` node
+        passes all three current assertions and saves nothing;
+    (b) *reopen round trip* — type with a break, save, reload the document, assert the break
+        survived. Nothing in this commit crosses the backend, so a sanitizer or parse rule that
+        drops `<br>` is invisible. This is precisely the shape carryover's "a green suite is not
+        evidence" keeps producing.
+  Two smaller test-side findings, non-data-loss: `continue_typing_in_editor` is silently
+  order-dependent (WebDriver focuses an unfocused element and a contenteditable focus puts the caret
+  at the START, so a first caller without a prior click gets text *prepended*, with no error — the
+  docstring states the contract, nothing enforces it); and `assert_break_count_is` counts the literal
+  substring `"<br>"` while the strip matches one exact literal, so any `<br>` that gains an attribute
+  is neither stripped nor counted — `querySelectorAll('br:not(.ProseMirror-trailingBreak)').length`
+  is the non-brittle form. Also untested: a TRAILING Enter with nothing typed after it (both tests
+  type after every Enter, so the strip's interaction with a genuine trailing break is unexercised).
+  Historical deferral follows. ~~[S] deferred: same "live app to drive Selenium" gap as the rest of
   this file (see RECONCILE_05); real-browser Enter keystroke bypasses the domObserver path
   that the unit test exercises, so a live run is the only proof the in-browser Enter produces
   exactly one `<br>`. Owe it when the stack runs. **Owe-list (review passes on `cffedc7`):**
@@ -1175,10 +1424,250 @@ pinned and committed (`d12f4a2`), currently `describe.skip` in `ManualEditor.lin
   premortem CREDIBLE: in jsdom two Enters collapse to zero breaks (`foo`+2×Enter → `foo`). Likely a
   jsdom fake-caret artifact (2nd keyDown doesn't reposition the caret), but could be a real
   multi-trailing bug — a live browser is the only place to tell; pin the intended behavior there;
-  (iii) the saved `<br>` actually renders as a visual line break.
+  (iii) the saved `<br>` actually renders as a visual line break.~~
 
 **Cleanup follow-up (agent-review on `cffedc7`, non-gating):** `ManualEditor.lineBreak.coverage.test.tsx:80`
 `expect(sent).not.toContain('ProseMirror-trailingBreak')` is a dead assertion — `getHTML()` serializes
 from the model and never emits that view-only cursor-helper class, so it is always-true. The real stray
 guard is the trailing-`<br>` regex on the next line. Delete line 80 or repoint it at the live view DOM
 on the next touch of this file.
+
+---
+
+## Remaining work — ready for `/loop /continue frontend 5` (2026-07-23)
+
+The whole placeholder chain (2.1) is done and live-verified; the inert toolbar stubs are removed.
+What is left is two ordered tracks. **Track A is jsdom-only (no infra) — do it first.** Track B needs
+the live stack; **the stack is already up on this host** (`docker ps`: `infra-backend-1` :8100,
+`infra-postgres-1`, `infra-redis-1`, vite dev :5173), and every acceptance run MUST export
+`BACKEND_PORT=8100` — the harness defaults to `8000`, which on this host is another project's
+container (`random_coffee_app`) and 404s on `/api/v1/auth/register`. Canonical frontend typecheck is
+`tsc -b --noEmit` (NOT plain `tsc --noEmit`). Work top-to-bottom; each is a full red→green→refactor unit.
+
+### Track A — honesty & data-safety (jsdom, no live stack)
+
+- [x] fix-status-lie — **DONE (2026-07-23), existence hit — already correct, no new code.** Verified against
+  current code: `ManualEditor.tsx:99` wires `onUpdate: () => noteEditRef.current()`, and Tiptap's `onUpdate`
+  fires for programmatic transactions too — so a toolbar mark applied AFTER a save DOES re-dirty the doc. The
+  fix already landed in `921bb73` ("fix: the dirty flag now sees the toolbar"); the functionality.md note is
+  **stale**. Capability already covered LIVE by `ManualEditor.dirty.test.tsx:22` ("applying a toolbar format
+  after a successful save marks the document unsaved again"): type → save → await `Сохранено` → `selectRange`
+  + click `toolbar-bold` → assert innerHTML diverged, no 2nd save fired, `getByText('Черновик, ещё не сохранён')`
+  present + `Сохранено` absent. Writing a 2nd test would duplicate (reuse rule). **Mutation-check (teeth):**
+  `onUpdate: () => {}` → dirty.test.tsx:68 FAILED (`Черновик…` not found) while the plain-typing test stayed
+  green, isolating the guard; production restored (`git diff` clean). tsc `-b --noEmit` clean; full suite 329
+  passed | 0 failed (84 files). No green-frontend needed. Progress-only commit (no reviewable content →
+  `/refactor` + review passes skipped).
+- [x] fix-save-banner-lie — **DONE (2026-07-23), genuine red→green.** The network-failure banner falsely
+  claimed "введённый текст сохранён локально в редакторе" — FALSE: grep confirms zero `localStorage`/
+  persistence in `frontend/src`; content lives only in Tiptap in-memory state (lost tab loses it).
+  **red-frontend:** new `it('does not promise a network-failed save is stored locally')` in
+  `ManualEditor.saveFailureKinds.test.tsx` (79 lines) — reuses `saveRejectingWith(new Error('network down'))`
+  + the `me-save-error` banner; asserts `banner.not.toHaveTextContent('сохранён локально')`. **Predicted:**
+  `AssertionError` (`not.toHaveTextContent`) — banner renders old `SAVE_ERROR_MESSAGE` still containing the
+  phrase. **Actual:** identical, `Received: …текст сохранён локально в редакторе.` at the new assertion.
+  **Comparison: all cells YES.** `.skip` + dated reason. test-review: PASS (short negative substring is the
+  stricter form; line-40 constant assertion + session/conflict cases left intact). **green-frontend:** changed
+  `SAVE_ERROR_MESSAGE` (`useDocumentSave.ts:7-8`) to honest copy
+  `'Не удалось сохранить. Повторите — текст пока только в редакторе, не потеряйте вкладку.'` — keeps the retry
+  prompt, drops the false "saved locally" reassurance, tells the truth (tab is the only copy). Rewrote the
+  block comment above the constant to match. Un-skipped the red (only allowed test edit); line-40 auto-follows
+  the constant. Grep confirms no test hard-codes the old literal (conflict test's own `CONFLICT_ERROR_MESSAGE`
+  phrase untouched). `useDocumentSave.ts` 148 lines. **design-review:** the mockup `06-editor-error.html`
+  (desktop line 85 + mobile line 75) was itself the SOURCE of the lie — updated BOTH to the honest copy so a
+  future `align-design` cannot re-seed it; intentional divergence recorded (honesty over pixel-match to a false
+  mockup). tsc `-b --noEmit` clean; full suite **330 passed | 0 skipped | 0 failed (84 files)**.
+- [x] guard-unsaved-work — **DONE (2026-07-23), genuine red→green.** Nothing protected unsaved editor work —
+  zero `beforeunload` in `frontend/src/features/generation`; a tab-close/refresh silently lost everything
+  (content lives only in Tiptap in-memory state, no persistence). **red-frontend:** new
+  `ManualEditor.beforeUnloadGuard.test.tsx` (asserts the behavioral contract, not impl): (1) while dirty a
+  dispatched `cancelable` `beforeunload` is `defaultPrevented === true`; (2) after a resolved save →
+  `false` (guard stands down); (3) unmount removes the SAME handler ref (no leak). **Predicted:** case 1
+  `AssertionError: expected false to be true` — no listener registered, so the dirty dispatch isn't prevented.
+  **Actual:** identical, `expected false to be true` at case 1 (cases 2/3 pass vacuously in red). **Comparison:
+  all cells YES.** `describe.skip` + dated reason. test-review: strengthened cases 2 & 3 from vacuous — case 2
+  now asserts the full `true→false` transition (arm-then-disarm), case 3 spies `removeEventListener` with the
+  exact handler ref (catches the classic effect-cleanup leak). **green-frontend:** added a `useEffect` in
+  `ManualEditor.tsx` keyed on `hasUnsavedChanges` — registers a `window` `beforeunload` listener that
+  `preventDefault()`s while dirty, cleanup removes it on clean/unmount. Un-skipped (only allowed test edit).
+  Did NOT import the ref-based `auth/utils/useUnsavedGuard` (registration-specific message + confirmLeave API);
+  reuse/extraction left as a refactor-pass call. `ManualEditor.tsx` 184 lines (under 200). tsc `-b --noEmit`
+  clean; full suite **333 passed | 0 skipped | 0 failed (85 files)**. **OWED follow-up (out of this unit's
+  scope):** a full `localStorage`/sessionStorage draft so work survives an actual tab close (the `beforeunload`
+  prompt only warns; it does not persist) — larger step, not yet a checkbox here.
+
+### Track B — live-Selenium owe-list (stack up, `BACKEND_PORT=8100`)
+
+Each is a `green-selenium` step: `/run-backend` (already up) → `/run-frontend` (vite :5173 already up) →
+drive a real headless Chrome. Run with `cd acceptance && BACKEND_PORT=8100 python -m pytest <path> -q`.
+
+- [x] green-selenium-line-break-save-payload — **GREEN live 2026-07-23 (`1 passed in 9.56s`, headless Chrome,
+  backend :8100 + Postgres + Redis + vite :5173).** The SAVE half of the line break is proven: type `foo`,
+  Enter, `bar`, click Сохранить, wait for `me-save-status--saved`, then read the document BACK through the
+  backend's own `GET /api/v1/documents/{id}` and assert exactly one `<br>` + both text runs survived. New
+  `test_manual_editor_save_payload_acceptance.py` (30 lines) + `manual_editor_save_payload_statements.py`
+  (~95 lines, extends `ManualEditorLineBreakStatements`). **Reopen without a UI entry point:** the story has
+  no document-list/history screen (that's story #12), so the round-trip is read at the API level, not by
+  re-navigating — the freshly registered live-session account owns exactly one document (created on editor
+  mount), so `GET /api/v1/documents` (list) identifies it without the app exposing an id to the DOM; the
+  saved-content read uses the same access token the browser stored in `sessionStorage`
+  (`textery.auth.accessToken`, `Authorization: Bearer`). Teeth: the assertion pins an EXACT `<br>` count of 1
+  (fails for 0 = break dropped by a sanitizer/parse rule, and for 2 = double-insert) AND — after a premortem
+  CONCERNS on `4498f0b` (the count + independent `foo`/`bar` membership was position-blind, would false-pass
+  on `foobar<br>`) — a position-locked `foo<br>bar` substring so the run-together data loss fails loud. Both
+  the initial and tightened forms verified GREEN live (`1 passed`).
+  **Run gotcha (still true):** acceptance runs need `BACKEND_PORT=8100` exported — the harness defaults to
+  8000, another project's container on this host. The `getHTML()` serialization carries no ProseMirror
+  caret-helper `<br>` (view-only, never in the model), so the saved html needs no caret-helper stripping.
+- [x] green-selenium-placeholder-delete — **GREEN live 2026-07-23 (`1 passed in 9.05s`, headless Chrome,
+  backend :8100).** The premortem owe is resolved and the feared bug does NOT exist: type `foo`, Enter (a
+  real hardBreak NODE), `bar`, then select-all + Backspace through ProseMirror's own keymap to truly empty —
+  the placeholder RETURNS. New `test_manual_editor_placeholder_delete_acceptance.py` (28 lines) +
+  `manual_editor_placeholder_delete_statements.py` (28 lines, extends `ManualEditorLineBreakStatements`, adds
+  `clear_all_via_backspace` = `select_all_text_in_editor` + `Keys.BACKSPACE`). Reuses the existing
+  `assert_content_placeholder_is_visible` (base statements) which pins all three surfaces jsdom owed to
+  selenium: `data-placeholder` attr + `is-editor-empty` class + the `::before` computed paint of
+  `Начните печатать…`. Teeth: a residual hardBreak node left by the delete would keep `doc.content.size >= 1`,
+  so `is-editor-empty`/`data-placeholder` would be absent and the assertion fails — passing proves the delete
+  transaction reached a genuinely empty doc, not a `textContent=''` DOM wipe (the jsdom path). This is the
+  real delete-transaction path the jsdom roundtrip test structurally cannot exercise. **Premortem CONCERNS on
+  `e8db228` (fixed, follow-up commit):** the test lacked an intermediate check that the placeholder DISAPPEARED
+  after typing — a no-op keystroke would leave the editor empty-from-mount and false-pass the final assertion
+  without ever exercising the round-trip. Added `assert_content_placeholder_is_hidden` (no `data-placeholder`,
+  no `is-editor-empty`) between the typing and the delete, so the test now pins the full round-trip: present →
+  hidden-once-typed → returns-after-delete. Re-verified GREEN live (`1 passed`).
+- [x] green-selenium-aria-announced — **GREEN live 2026-07-23 (`2 passed in 15.66s`, headless Chrome, backend
+  :8100).** Both jsdom-blind a11y surfaces proven in a real browser. New
+  `test_manual_editor_aria_acceptance.py` (36 lines, two test classes) + `manual_editor_aria_statements.py`
+  (~70 lines, extends `ManualEditorStatements`). **(1) Computed textbox role:** no axe dependency exists, so
+  used Selenium's `WebElement.aria_role` (the browser's CDP-computed accessibility role — the one a screen
+  reader announces, which jsdom cannot compute since it builds no accessibility tree) — asserts the content
+  area computes to `textbox`, plus the live-DOM `aria-multiline='true'` + exact `aria-placeholder='Начните
+  печатать…'` (attribute-level teeth: removing either → `null` → fail). **(2) aria-expanded highlight (CSS,
+  jsdom applies none):** captures the `toolbar-link` button's computed `background-color` BEFORE (transparent,
+  `rgba(0, 0, 0, 0)`), opens the link popover, then asserts `aria-expanded='true'` + a non-transparent painted
+  background + `aria-pressed='false'`. The fresh editor has no link, so `aria-pressed` is false and the paint
+  can ONLY come from the `.me-toolbar-btn[aria-expanded='true']` rule (`ManualEditorToolbar.css:38`) — the exact
+  orthogonal highlight jsdom cannot see. **Review passes on `8e897bf` (both CONCERNS, both false-greens, FIXED
+  in follow-up commit):** (1) `aria_role=='textbox'` was vacuous — a contenteditable root computes `textbox`
+  IMPLICITLY, so removing the explicit `role` attr would still pass; added an explicit `role='textbox'`
+  attribute assertion (real regression target, `None`→fail) alongside the computed-role check. (2) the highlight
+  `after != transparent` was satisfied by `:hover` — Selenium's `.click()` leaves the pointer on the button and
+  `.me-toolbar-btn:hover` paints the SAME `var(--bg-surface)` as the aria-expanded rule, so deleting the rule
+  would still pass; fixed by parking the pointer on the editor (`ActionChains.move_to_element`) to kill `:hover`
+  before reading. **Mutation-check: neutralizing the `[aria-expanded='true']` CSS rule makes the highlight test
+  FAIL (`still 'rgba(0, 0, 0, 0)'`) — the hardened test has real teeth; CSS restored clean.** Re-verified GREEN
+  live (`2 passed`).
+- [x] green-selenium-3.2-caret — **GREEN live 2026-07-23 (`1 passed in 6.83s`, headless Chrome, backend
+  :8100).** Scenario 3.2's premortem gap is closed: a caret-only (keyboard, non-drag) cursor move updates the
+  toolbar in a real browser. New `test_manual_editor_caret_acceptance.py` (30 lines) +
+  `manual_editor_caret_statements.py` (~50 lines, extends `ManualEditorStatements`). Type `aaabbb`, select the
+  leading `aaa` via Home + Shift+ArrowRight×3 (keyboard, no pointer drag), bold it → a bold run + a plain run.
+  Then Home+ArrowRight to move the caret INTO the bold run → `assert_bold_button_is_active` (aria-pressed
+  `true`); End to move into the plain run → `assert_bold_button_is_inactive` (aria-pressed `false`). Teeth: the
+  trailing inactive assertion is the real proof — a toolbar that did NOT re-read state on a caret move would
+  stay stuck `true` (from the bold selection) and fail it; passing both polarities proves the real
+  `selectionchange`/`select` the app listens for actually fires on a caret-only move, which jsdom's
+  `fireEvent.select` could only simulate. This is the deferred `red-selenium`/`green-selenium` for scenario 3.2
+  (see its rows above). **Review passes on `4950276` (both CONCERNS, both FIXED in follow-up):** (1) the single
+  `get_attribute` read RACED the async toolbar re-render (`shouldRerenderOnTransaction` → React render is not
+  synchronous with `send_keys` returning) → added a `_wait_for_bold_pressed` poll-until-value. (2) the original
+  order only exercised `true→false`: the leading `active` assertion inherited `true` from the bold-apply, so
+  the `false→true` edge (caret ENTERING bold — scenario 3.2's core claim) was never proven; a toolbar that
+  updated on exit but not entry would pass. Reordered: visit the plain run FIRST (assert inactive, `true→false`),
+  THEN move the caret into the bold run (assert active, `false→true`). Also replaced the flaky `Home`+`ArrowRight`
+  nav with deterministic `End`+`ArrowLeft`×5 (`Home` did not reliably move the caret in this contenteditable —
+  the reorder surfaced it as a genuine RED before the fix). Re-verified GREEN live (`1 passed`).
+- [x] green-selenium-4.2-save-queue — **GREEN live 2026-07-23 (`1 passed in 11.46s`, headless Chrome, backend
+  :8100).** Scenario 4.2's out-of-order save queue exercised through REAL clicks with a real PUT in flight.
+  New `test_manual_editor_save_queue_acceptance.py` (34 lines) + `manual_editor_save_queue_statements.py`
+  (~70 lines, extends `ManualEditorSavePayloadStatements` to reuse the API read-back + save locators). Flow:
+  type `v1`, throttle the network via CDP `Network.emulateNetworkConditions` (latency 2500ms) so the first
+  PUT stays open, click Save, WAIT for the `save-spinner` (proof the first save is genuinely in flight), then
+  type `v2` (→ `v1v2`) and click Save AGAIN while the first is still open — the design queues this (sets
+  `saveAgainRequested`, consumed in the first save's `.then`) rather than firing a concurrent request. Clear
+  the throttle, wait for `Сохранено`, then read the document BACK through `GET /api/v1/documents/{id}` and
+  assert the content is exactly `v1v2`. Teeth: the first PUT's body was captured at its click = `v1`, so a
+  final `v1v2` REQUIRES the queued second save to have fired with the latest content — a broken/dropped queue
+  would leave the backend at the stale `v1` and fail. The spinner gate guarantees the second click lands
+  in-flight, not after settle. Needs `BACKEND_PORT=8100`. **Review passes on `a35f446` (both CONCERNS, FIXED
+  in follow-up):** both passes found the second CLICK is NOT the queue trigger — `onUpdate -> noteEdit`
+  (`ManualEditor.tsx:99`) arms `saveAgainRequested` on the `v2` KEYSTROKE while `isSaving`, so the click is a
+  realistic user action but not load-bearing; the original narrative overclaimed it, and content-only teeth
+  couldn't distinguish a genuine queue from two sequential saves or concurrent PUTs. Corrected the narrative
+  to credit the mid-flight edit, and added `assert_exactly_two_document_puts` — counts PUT `/documents/{id}`
+  requests over the run via the driver's already-enabled `goog:loggingPrefs performance` log and asserts
+  exactly 2 (initial + one queued re-save): ONE would mean a dropped queue, THREE+ a regression to concurrent
+  PUTs (the version-race the strictly-sequential queue prevents). Re-verified GREEN live (`1 passed`).
+- [x] green-selenium-7.9-popover-clip — **GREEN live 2026-07-23 (`2 passed in 16.18s`, headless Chrome, backend
+  :8100). NO DEFECT — the clip does NOT occur; already mitigated.** New
+  `test_manual_editor_popover_clip_acceptance.py` (34 lines, two viewports) +
+  `manual_editor_popover_clip_statements.py` (~65 lines, extends `ManualEditorStatements`). Opens the link
+  popover and measures `getBoundingClientRect` for the popover, the `.me-editor-shell`, and the viewport via
+  one `execute_script`, then asserts the popover's rect fits inside the shell's rect (the `overflow:hidden`
+  clip box, 1px tolerance) AND inside the viewport — checked at the DEFAULT desktop width AND at a narrow
+  390×740 phone viewport (where the toolbar wraps and the button can sit near the right edge, the worst case).
+  Both pass: the feared z-index-can't-escape-overflow:hidden clip is already prevented by the popover CSS from
+  prior scenario-7.9 work — `width: min(260px, calc(100vw - 32px))` + `max-width: calc(100vw - 32px)` clamp the
+  width, and `@media (max-width:768px)` re-anchors `right:0` so a right-edge button opens leftward. So this is
+  a live characterization confirming no regression, not a fix. Teeth: the assertion is a strict rect-containment
+  check (fails the moment any edge crosses the shell/viewport bound), exercised at the two widths where a clip
+  would actually manifest. **Review passes on `275f090`: agent-review PASS** (verified `getBoundingClientRect`
+  reports the element's own box, NOT truncated by the ancestor's `overflow:hidden` — so the test genuinely
+  *can* detect a clip, not measure a pre-clipped rect). **premortem CONCERNS (the narrow test might not
+  reproduce the worst case → "no clip" unproven) — DISPROVEN by mutation-check:** neutralizing the
+  `@media (max-width:768px){ .me-link-popover{ right:0 } }` re-anchor made the narrow test FAIL (`popover
+  right=668 > shell right=473, clipped RIGHT`), so the test DOES reproduce the right-edge worst case and the
+  CSS mitigation is load-bearing — real teeth, not a vacuous pass. (Chrome's minimum window width floored the
+  effective narrow viewport at ~504px, still `<768px` so the `@media` regime applies.) CSS restored clean;
+  both tests GREEN after restore.
+- [x] green-selenium-beforeunload-prompt — **GREEN live 2026-07-23 (`1 passed in 10.95s`, headless Chrome,
+  backend :8100). Partial by design — the honestly-assertable half is proven; two probes established the rest
+  is not observable in headless.** New `test_manual_editor_beforeunload_acceptance.py` (30 lines) +
+  `manual_editor_beforeunload_statements.py` (~55 lines, extends `ManualEditorSavePayloadStatements`).
+  **PROVEN live:** the guard's `useEffect` binds a `beforeunload` listener on the REAL window while the doc is
+  dirty and its cleanup REMOVES it once a save leaves it clean — dispatch a genuine cancelable `beforeunload`
+  through Chrome's own event system and read `defaultPrevented`: `true` on the fresh (dirty) doc → save →
+  `false` once clean. Both polarities have teeth (unbound effect fails the armed assertion; missing cleanup
+  fails the disarmed one). This is more than the jsdom unit test in that it exercises the real `window`
+  listener + real effect cleanup, not a simulated event target. **NOT assertable in headless (both probed, not
+  assumed):** (1) the VISIBLE native "Leave site?" dialog — headless Chrome auto-handles the beforeunload
+  dialog on a real reload, no catchable alert surfaced (probe: `PROBE_RESULT=NO_DIALOG`); (2) the
+  BeforeUnloadEvent STRING `returnValue` — a synthetic `new Event('beforeunload')` exposes only the legacy
+  boolean `returnValue` getter (`!defaultPrevented`) in EVERY engine: real Chrome reported
+  `returnValue: false` exactly as jsdom does, so the string form the guard sets (`returnValue = ''`) is
+  unobservable without a real user-driven navigation the driver cannot surface. Those two stay runtime
+  behavior, documented in the statements module, NOT falsely claimed as covered. Same live-efficacy limit
+  applies to `auth/utils/useUnsavedGuard.ts` (identical pattern). **Review passes on `96e51b4`: agent-review
+  PASS** (both polarities teethed; `SAVED_STATUS` ⟺ `!hasUnsavedChanges` so disarmed can't false-pass; headless
+  limitation accurate). **premortem CONCERNS (credible) — FIXED in follow-up:** it distinguished the
+  *unobservable* part (dispatching a synthetic event → legacy boolean; the visible dialog) from the
+  *observable* part I had over-generalized as unobservable — the `event.returnValue = ''` ASSIGNMENT is a plain
+  field write, untested at ANY layer (jsdom + this both declined it), yet a refactor dropping it would silently
+  stop the native prompt on legacy Chrome/Edge + older Safari/Firefox. Closed one layer down: added a unit test
+  to `ManualEditor.beforeUnloadGuard.test.tsx` that calls the CAPTURED guard handler DIRECTLY with a mock event
+  (`{preventDefault, returnValue: undefined}`) and asserts `returnValue === ''` + `preventDefault` called — the
+  one place that line has teeth (mock starts `undefined`, so dropping the assignment fails). generation suite
+  green, tsc `-b --noEmit` clean. **Owed (not this story's file):** `auth/utils/useUnsavedGuard.ts` has the
+  identical untested `preventDefault`-only pattern (no `returnValue`) — a separate auth-side follow-up.
+
+**🎉 ALL Track A + Track B work complete — the "Remaining work (ready for /loop)" section is fully done.**
+What remains for Story 5 frontend is only the **Owed follow-ups** below (product decisions / larger scope),
+which are intentionally not checkboxes.
+
+### Owed follow-ups (not yet checkboxes — need a product decision)
+
+- **guard-unsaved-work spurious prompt** (both review passes on `24269ba`, CONCERNS): `hasUnsavedChanges`
+  initialises `true` (ManualEditor.tsx:41) and only clears on a resolved save, so the `beforeunload` guard
+  is ARMED the instant any editor mounts — a user who opens a manual doc, reads it, and leaves WITHOUT
+  typing still gets the "leave? unsaved changes" prompt. The current guard tests codify this dirty-on-mount
+  as intended. Fixing it (arm only after the first real edit) is a semantics change to the same flag that
+  drives the "Черновик, ещё не сохранён" draft status (scenarios 5.1/5.2), so it needs a product call, not a
+  drive-by edit. Decide: (a) seed dirty from actual edit activity and split "has content" from "has unsaved
+  user edits", or (b) accept the prompt on any open and pin that decision. Also owed: the full
+  `localStorage`/sessionStorage draft so "leave" doesn't still lose everything (the prompt only warns).
+- **useBeforeUnloadGuard extraction** (refactor pass on `24269ba`, NO ACTION-owed): ManualEditor's guard
+  effect duplicates the addEventListener/preventDefault/removeEventListener shape in
+  `auth/utils/useUnsavedGuard.ts`. Extracting a shared generic `useBeforeUnloadGuard(active)` is a real
+  de-dup but should ride WITH a rework of the auth hook (its ref-based design + confirmLeave/markDirty API),
+  not force a risky one-off conversion of auth to reactive state now.
