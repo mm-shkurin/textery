@@ -81,7 +81,21 @@ queue was never exercised through a real click dispatch.
   its color/font tokens. Verified decoration API against `prosemirror-view` source (`computeDocDeco`), not
   assumed. Un-skipped the test (only allowed test edit). Suite: **142 passed | 0 skipped | 0 failed**; tsc
   clean. `ManualEditor.tsx` 161 lines. **`::before` visual paint owed to green-selenium (jsdom sees no CSS).**
-- [ ] red-frontend-placeholder-roundtrip — premortem CREDIBLE-1 (owed guard): the current jsdom red pins only
+  **Review-pass verdicts on `a72fa40`: agent-review PASS, premortem CONCERNS (1 low), `/refactor` NO ACTION.**
+  agent-review verified the `{}`-diff-strip against `computeDocDeco`, no `data-testid` collision, `content.size`
+  emptiness correct vs the trailing-break artifact, stock Placeholder fully removed, CSS rename complete.
+  premortem CREDIBLE-low: no `aria-placeholder` — the `::before` hint is invisible to screen readers (net-neutral,
+  the stock extension also no-op'd) → tracked as `red-frontend-placeholder-aria` below. Save-leak/autosave/
+  overlay-clip all disposed REMOTE (props.attributes decorate the VIEW not the doc model, so `getHTML()` save
+  payload is unaffected; `pointer-events:none` + `position:absolute;height:0` on the `::before`).
+  `@tiptap/extension-placeholder` is now unused in `package.json` (refactor flagged, left — dep removal is
+  out of this unit's tested scope).
+- [ ] red-frontend-placeholder-aria — premortem CREDIBLE-low (owed guard): the empty editor has no programmatic
+  hint — `::before` content is decoratively announced at best and `data-placeholder` carries no a11y semantics.
+  Fix is one line in `inlinePlaceholder.ts` (`props.attributes` also emits `'aria-placeholder': INLINE_PLACEHOLDER_TEXT`
+  while empty, tracking emptiness like the other two attrs) + a jsdom red asserting `toHaveAttribute('aria-placeholder',
+  'Начните печатать…')` present while empty and absent after typing.
+- [~] red-frontend-placeholder-roundtrip — premortem CREDIBLE-1 (owed guard): the current jsdom red pins only
   empty→typed one-way. Pin the return trip: empty → type → select-all-delete → assert `data-placeholder` +
   `is-editor-empty` are RESTORED. Also exercises the HardBreak trailing-break artifact (delete-all leaves
   `<br class="ProseMirror-trailingBreak">`; a childNode-count emptiness check would misread it as non-empty).
