@@ -62,4 +62,23 @@ describe('ManualEditor placeholder', () => {
     expect(contentArea).toHaveAttribute('data-placeholder', 'Начните печатать…')
     expect(contentArea).toHaveClass('is-editor-empty')
   })
+
+  // a11y guard (premortem CREDIBLE-low, 2026-07-23). The placeholder is painted only
+  // via CSS ::before { content: attr(data-placeholder) }, which screen readers announce
+  // inconsistently, and data-placeholder carries no accessibility semantics. The
+  // contenteditable root exposes no accessible name/hint. inlinePlaceholder.ts must ALSO
+  // emit aria-placeholder while empty (tracking emptiness exactly like data-placeholder /
+  // is-editor-empty) and drop it when non-empty, so a screen-reader user meets a labelled
+  // editor. Skipped until green-frontend-placeholder-aria implements it.
+  it.skip('exposes aria-placeholder while empty and drops it after typing', async () => {
+    await renderEditorWithDocumentCreated()
+
+    const contentArea = screen.getByTestId('editor-content-area')
+    expect(contentArea).toHaveAttribute('aria-placeholder', 'Начните печатать…')
+
+    contentArea.textContent = 'hello world'
+    fireEvent.input(contentArea)
+
+    expect(contentArea).not.toHaveAttribute('aria-placeholder')
+  })
 })

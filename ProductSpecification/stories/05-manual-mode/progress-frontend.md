@@ -90,11 +90,22 @@ queue was never exercised through a real click dispatch.
   payload is unaffected; `pointer-events:none` + `position:absolute;height:0` on the `::before`).
   `@tiptap/extension-placeholder` is now unused in `package.json` (refactor flagged, left — dep removal is
   out of this unit's tested scope).
-- [~] red-frontend-placeholder-aria — premortem CREDIBLE-low (owed guard): the empty editor has no programmatic
-  hint — `::before` content is decoratively announced at best and `data-placeholder` carries no a11y semantics.
-  Fix is one line in `inlinePlaceholder.ts` (`props.attributes` also emits `'aria-placeholder': INLINE_PLACEHOLDER_TEXT`
-  while empty, tracking emptiness like the other two attrs) + a jsdom red asserting `toHaveAttribute('aria-placeholder',
-  'Начните печатать…')` present while empty and absent after typing.
+- [x] red-frontend-placeholder-aria — DONE (2026-07-23), genuine RED (skipped). Added `it.skip` to
+  `ManualEditor.placeholder.test.tsx` (now 84 lines): empty editor's content area must carry
+  `aria-placeholder="Начните печатать…"`, gone after typing. **Predicted:** `toHaveAttribute` AssertionError,
+  attribute absent → `Received: null` (grep confirms no `aria-placeholder` anywhere in `frontend/src`).
+  **Actual:** identical, `Received: null` at the first assertion. **Comparison: all cells YES.** test-review:
+  PASS (exact value + `.not` form). **tsc discovery (via test-review):** running the CANONICAL typecheck
+  `tsc -b --noEmit` (package.json `typecheck`) surfaced a PRE-EXISTING production type error at
+  `inlinePlaceholder.ts:38` shipped by the green `a72fa40` — its `attributes` arrow's inferred union return was
+  not assignable to `{[name:string]:string}`. It slipped because the green verified with plain `tsc --noEmit`
+  (root config), which does not run the project-reference build. Fixed separately (`1821c8a`, `fix:` — annotate
+  return `Record<string,string>`), canonical typecheck now clean. Suite: 2 passed | 1 skipped in file (143 |
+  1 across generation); `tsc -b --noEmit` clean.
+- [~] green-frontend-placeholder-aria — one-line fix: `inlinePlaceholder.ts` empty-state branch also returns
+  `'aria-placeholder': INLINE_PLACEHOLDER_TEXT` (dropped automatically when non-empty via the `content.size > 0`
+  early `{}` return). Un-skip the aria test. The `Record<string,string>` annotation from `1821c8a` already
+  types the added key cleanly.
 - [x] red-frontend-placeholder-roundtrip — DONE (2026-07-23), LIVE characterization (no green needed — prod
   already handles it). Added 2nd test to `ManualEditor.placeholder.test.tsx` (now 65 lines): empty → type →
   clear-back-to-empty → `data-placeholder` + `is-editor-empty` RESTORED. **Predicted PASS** (attributes fn
@@ -106,6 +117,14 @@ queue was never exercised through a real click dispatch.
   (`git diff` clean on `inlinePlaceholder.ts`). test-review: PASS (exact `toHaveAttribute`/`toHaveClass` +
   independent `.not` forms; no `::before` assertion). Suite: 2 passed | 0 skipped | 0 failed; tsc clean. No
   `green-frontend-placeholder-roundtrip` step — nothing to implement.
+  **Review-pass verdicts on `e4b461f`: agent-review PASS (reproduced the mutation-check independently),
+  `/refactor` NO ACTION, premortem CONCERNS (1 credible, owed to green-selenium — NOT a jsdom red).** premortem:
+  the `textContent=''; fireEvent.input` clear is a full DOM wipe that forces a reparse into a guaranteed-empty
+  doc — it never travels the real delete-transaction path. A real-browser select-all+Backspace (especially after
+  a typed Enter, which inserts a real hardBreak NODE, distinct from the trailing-break helper) could leave a
+  residual node so `doc.content.size >= 1` and the placeholder would NOT return. jsdom cannot exercise this →
+  folded into 2.1's green-selenium owe-list. Link-mark / horizontalRule residuals rated REMOTE (marks add no
+  size; HR unreachable by ordinary typing in this flow).
 - [ ] red-frontend-placeholder-reopen — premortem CREDIBLE-2 (owed guard): `renderEditorWithDocumentCreated`
   only drives the fresh create-empty path. Pin the `existingDocumentId` reopen path in both polarities:
   reopen-empty ⇒ attr+class present; reopen-with-content ⇒ both absent (guards `setContent` not re-adding the
