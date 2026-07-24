@@ -1,6 +1,5 @@
-from statements.login_statements import LoginStatements
-
 from auth.login_user import LoginUser
+from statements.login_statements import LoginStatements
 
 
 class LoginFailedAttemptStatements(LoginStatements):

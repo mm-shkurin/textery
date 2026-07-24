@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select, tuple_
+from sqlalchemy import literal, select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.keyset_cursor import KeysetCursor
@@ -33,7 +33,13 @@ async def paginate_by_owner(
     statement = select(model).where(model.owner_id == owner_id)
     if cursor is not None:
         statement = statement.where(
-            tuple_(model.created_at, model.id) < tuple_(cursor.created_at, cursor.id)
+            # `literal()` on the anchor half: SQLAlchemy coerces bare Python values
+            # here anyway, but spelling it makes the two sides of the comparison
+            # visibly different things -- columns on the left, bound parameters on
+            # the right -- and keeps the anchor a bound parameter rather than
+            # something that could be read as inlined SQL.
+            tuple_(model.created_at, model.id)
+            < tuple_(literal(cursor.created_at), literal(cursor.id))
         )
     statement = statement.order_by(model.created_at.desc(), model.id.desc()).limit(limit)
     result = await session.execute(statement)

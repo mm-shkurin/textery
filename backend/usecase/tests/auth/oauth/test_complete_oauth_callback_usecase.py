@@ -49,9 +49,7 @@ class _Fixture:
 
 
 def _fixture(identity_email: str = _EMAIL) -> _Fixture:
-    provider = FakeOAuthProvider(
-        identity=ProviderIdentity(subject=_SUBJECT, email=identity_email)
-    )
+    provider = FakeOAuthProvider(identity=ProviderIdentity(subject=_SUBJECT, email=identity_email))
     return _Fixture(provider)
 
 

@@ -1,5 +1,3 @@
-import pytest
-
 from statements.account_to_domain_roundtrip_statements import (
     AccountToDomainRoundtripStatements,
 )

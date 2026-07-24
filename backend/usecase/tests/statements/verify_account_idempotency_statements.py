@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from statements.verify_account_base import VerifyAccountStatementsBase
 
@@ -22,7 +22,7 @@ class VerifyAccountIdempotencyStatements(VerifyAccountStatementsBase):
 
     def __init__(self) -> None:
         super().__init__()
-        self.first_consumed_at = None
+        self.first_consumed_at: datetime | None = None
 
     async def given_account_already_verified_once_with_its_code(self) -> None:
         await super().given_account_already_verified_once_with_its_code()
@@ -35,7 +35,7 @@ class VerifyAccountIdempotencyStatements(VerifyAccountStatementsBase):
         # Advance the clock so any re-consume would stamp a DIFFERENT time than the
         # first one -- the whole point of the negative consumed_at assertion.
         self.clock.fixed_now = self.REPLAY_CLOCK_NOW
-        await self._execute_verify(self.registered_email, self.issued_code)
+        await self._execute_verify(self.account_email, self.account_code)
 
     async def resubmit_the_same_code_after_it_expired(self) -> None:
         # Push the clock PAST the code's 10-minute validity window before the
@@ -46,7 +46,7 @@ class VerifyAccountIdempotencyStatements(VerifyAccountStatementsBase):
         # that was ordered ahead of the is_verified block.
         expires_at = self.verification_code_repository.saved_codes[-1].expires_at
         self.clock.fixed_now = expires_at + timedelta(minutes=1)
-        await self._execute_verify(self.registered_email, self.issued_code)
+        await self._execute_verify(self.account_email, self.account_code)
 
     def assert_replay_was_a_no_op(self) -> None:
         assert self.thrown_exception is None, (
@@ -58,16 +58,14 @@ class VerifyAccountIdempotencyStatements(VerifyAccountStatementsBase):
             f"original clock time, got {self.first_consumed_at}"
         )
         assert (
-            len(self.verification_code_repository.saved_codes)
-            == self.code_saves_after_first_verify
+            len(self.verification_code_repository.saved_codes) == self.code_saves_after_first_verify
         ), (
             f"expected NO second VerificationCode persist on replay, so the save "
             f"count stays {self.code_saves_after_first_verify}, got "
             f"{len(self.verification_code_repository.saved_codes)}"
         )
         assert (
-            len(self.account_repository.saved_accounts)
-            == self.account_saves_after_first_verify
+            len(self.account_repository.saved_accounts) == self.account_saves_after_first_verify
         ), (
             f"expected NO second Account persist on replay, so the save count stays "
             f"{self.account_saves_after_first_verify}, got "
@@ -78,8 +76,7 @@ class VerifyAccountIdempotencyStatements(VerifyAccountStatementsBase):
             f"{self.commits_after_first_verify}, got {self.unit_of_work.commit_call_count}"
         )
         assert (
-            self.verification_code_repository.saved_codes[-1].consumed_at
-            == self.first_consumed_at
+            self.verification_code_repository.saved_codes[-1].consumed_at == self.first_consumed_at
         ), (
             f"expected the stored code's consumed_at to stay the FIRST consume time "
             f"{self.first_consumed_at} (no re-consume), got "

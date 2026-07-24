@@ -28,12 +28,6 @@ from container.document_wiring import (
     create_list_documents,
     create_save_document,
 )
-from container.oauth_wiring import (
-    create_complete_oauth_callback,
-    create_exchange_handoff_code,
-    create_frontend_callback_url,
-    create_start_oauth,
-)
 from container.generation_wiring import (
     NoOpGenerationQueue,
     create_generate_document,
@@ -41,6 +35,12 @@ from container.generation_wiring import (
     create_list_generations,
     create_request_generation,
     run_stale_generation_sweep,
+)
+from container.oauth_wiring import (
+    create_complete_oauth_callback,
+    create_exchange_handoff_code,
+    create_frontend_callback_url,
+    create_start_oauth,
 )
 from container.runtime import (
     DEFAULT_STALE_AFTER_MINUTES,

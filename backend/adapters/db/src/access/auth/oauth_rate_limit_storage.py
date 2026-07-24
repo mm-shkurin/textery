@@ -17,9 +17,7 @@ class SqlAlchemyRateLimiter:
     operation later rolls back (the exact case of a throttled or failed request).
     """
 
-    def __init__(
-        self, session: AsyncSession, max_requests: int, window_seconds: int
-    ) -> None:
+    def __init__(self, session: AsyncSession, max_requests: int, window_seconds: int) -> None:
         self._session = session
         self._max_requests = max_requests
         self._window_seconds = window_seconds

@@ -8,6 +8,7 @@ from fake.generation.fake_generation_storage import CALL_SAVE, FakeGenerationSto
 from generation.generation import Generation
 from generation.request_generation import RequestGeneration
 from shared.exceptions import ValidationException
+from statements.arranged import arranged
 
 
 class GenerationStatements:
@@ -23,6 +24,38 @@ class GenerationStatements:
         self._queue: FakeGenerationQueue | None = None
         self._before_submit: datetime | None = None
         self._after_submit: datetime | None = None
+
+    # Everything below the fields is set by `submit_valid_generation_request`.
+    # Reading it through these properties makes "the act step ran" a checked
+    # precondition: an assert called on its own now names the missing step
+    # instead of raising AttributeError on None halfway through a message.
+    @property
+    def submitted(self) -> Generation:
+        return arranged(self.generation, "generation")
+
+    @property
+    def scope(self) -> GenerationRequestScope:
+        return arranged(self._scope, "_scope")
+
+    @property
+    def storage(self) -> FakeGenerationStorage:
+        return arranged(self._storage, "_storage")
+
+    @property
+    def queue(self) -> FakeGenerationQueue:
+        return arranged(self._queue, "_queue")
+
+    @property
+    def call_order(self) -> list[tuple[str, object]]:
+        return arranged(self._call_order, "_call_order")
+
+    @property
+    def before_submit(self) -> datetime:
+        return arranged(self._before_submit, "_before_submit")
+
+    @property
+    def after_submit(self) -> datetime:
+        return arranged(self._after_submit, "_after_submit")
 
     def attempt_creating_generation_with_topic(self, topic: str | None) -> None:
         scope = GenerationRequestScope.builder(topic=topic)
@@ -79,60 +112,60 @@ class GenerationStatements:
         self._after_submit = datetime.now(UTC)
 
     def assert_generation_accepted_and_pending(self) -> None:
-        assert self.generation.status == "pending", (
-            f"expected status 'pending', got '{self.generation.status}'"
+        assert self.submitted.status == "pending", (
+            f"expected status 'pending', got '{self.submitted.status}'"
         )
         # id is generated inside Generation.create() with no API to predict or
         # capture it ahead of time (determinism hierarchy category 4: truly
         # opaque) -- an isinstance check is the strictest assertion available.
-        assert isinstance(self.generation.id, UUID), (
-            f"expected id to be a UUID, got {type(self.generation.id).__name__}"
+        assert isinstance(self.submitted.id, UUID), (
+            f"expected id to be a UUID, got {type(self.submitted.id).__name__}"
         )
-        assert self._before_submit <= self.generation.created_at <= self._after_submit, (
-            f"expected created_at between {self._before_submit} and {self._after_submit}, "
-            f"got {self.generation.created_at}"
+        assert self.before_submit <= self.submitted.created_at <= self.after_submit, (
+            f"expected created_at between {self.before_submit} and {self.after_submit}, "
+            f"got {self.submitted.created_at}"
         )
         actual_request_fields = (
-            self.generation.topic,
-            self.generation.volume_pages,
-            self.generation.requirements,
-            self.generation.extra_wishes,
-            self.generation.document_type,
+            self.submitted.topic,
+            self.submitted.volume_pages,
+            self.submitted.requirements,
+            self.submitted.extra_wishes,
+            self.submitted.document_type,
             # Not a request field: the owner comes from the token, never the body.
             # Asserted alongside them so a usecase that dropped it on the floor --
             # or stamped someone else's id -- fails here rather than at the NOT NULL
             # column with a constraint error.
-            self.generation.owner_id,
+            self.submitted.owner_id,
         )
         expected_request_fields = (
-            self._scope.topic,
-            self._scope.volume_pages,
-            self._scope.requirements,
-            self._scope.extra_wishes,
-            self._scope.document_type,
-            self._scope.owner_id,
+            self.scope.topic,
+            self.scope.volume_pages,
+            self.scope.requirements,
+            self.scope.extra_wishes,
+            self.scope.document_type,
+            self.scope.owner_id,
         )
         assert actual_request_fields == expected_request_fields, (
             f"expected request fields {expected_request_fields}, got {actual_request_fields}"
         )
 
     def assert_generation_persisted_exactly_once(self) -> None:
-        assert self._storage.saved_generations == [self.generation], (
-            f"expected save() called exactly once with {self.generation}, "
-            f"got {self._storage.saved_generations}"
+        assert self.storage.saved_generations == [self.submitted], (
+            f"expected save() called exactly once with {self.submitted}, "
+            f"got {self.storage.saved_generations}"
         )
 
     def assert_generation_enqueued_exactly_once(self) -> None:
-        assert self._queue.enqueued_ids == [self.generation.id], (
-            f"expected enqueue() called exactly once with {self.generation.id}, "
-            f"got {self._queue.enqueued_ids}"
+        assert self.queue.enqueued_ids == [self.submitted.id], (
+            f"expected enqueue() called exactly once with {self.submitted.id}, "
+            f"got {self.queue.enqueued_ids}"
         )
 
     def assert_save_happened_before_enqueue(self) -> None:
         expected_order = [
-            (CALL_SAVE, self.generation),
-            (CALL_ENQUEUE, self.generation.id),
+            (CALL_SAVE, self.submitted),
+            (CALL_ENQUEUE, self.submitted.id),
         ]
-        assert self._call_order == expected_order, (
-            f"expected call order {expected_order}, got {self._call_order}"
+        assert self.call_order == expected_order, (
+            f"expected call order {expected_order}, got {self.call_order}"
         )

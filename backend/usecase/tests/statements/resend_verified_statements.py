@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 from scope.register_request_scope import RegisterRequestScope
 
@@ -12,6 +13,7 @@ from fake.auth.fake_password_hasher import FakePasswordHasher
 from fake.auth.fake_unit_of_work import FakeUnitOfWork
 from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
 from shared.exceptions import ValidationException
+from statements.arranged import arranged
 
 
 class ResendVerifiedStatements:
@@ -45,11 +47,20 @@ class ResendVerifiedStatements:
         self.verification_code_repository = FakeVerificationCodeRepository()
         self.unit_of_work = FakeUnitOfWork()
         self.registered_email: str | None = None
-        self.account_id = None
+        self.account_id: UUID | None = None
         self.thrown_exception: Exception | None = None
         self.codes_before_resend = 0
 
-    async def given_a_verified_account_with_a_code_still_inside_cooldown(self) -> None:
+    @property
+    def account_email(self) -> str:
+        """The email a `given_*` step registered -- required by every act step."""
+        return arranged(self.registered_email, "registered_email")
+
+    @property
+    def registered_account_id(self) -> UUID:
+        return arranged(self.account_id, "account_id")
+
+    async def given_a_verified_account_with_a_code_inside_cooldown(self) -> None:
         # Register at T0 (issues the registration code at created_at=T0), then verify
         # the account through the real VerifyAccount so is_verified flips to True. The
         # newest code stays the T0 registration code; moving the clock to T0+30s keeps
@@ -61,7 +72,7 @@ class ResendVerifiedStatements:
             verification_code_repository=self.verification_code_repository,
             clock=self.clock,
             unit_of_work=self.unit_of_work,
-        ).execute(email=self.registered_email, code=code)
+        ).execute(email=self.account_email, code=code)
         self.clock.fixed_now = self.T0 + self.WITHIN_COOLDOWN
 
     async def given_an_unverified_account_eligible_for_resend(self) -> None:
@@ -80,8 +91,8 @@ class ResendVerifiedStatements:
         # SELECT ... FOR UPDATE would return the freshly-committed verified row. Correct
         # wiring gates on THIS post-lock account, not the stale pre-lock one.
         verified = Account.reconstitute(
-            id=self.account_id,
-            email=self.registered_email,
+            id=self.registered_account_id,
+            email=self.account_email,
             password_hash="hash",
             created_at=self.T0,
             is_verified=True,
@@ -115,7 +126,7 @@ class ResendVerifiedStatements:
                 verification_code_repository=self.verification_code_repository,
                 clock=self.clock,
                 unit_of_work=self.unit_of_work,
-            ).execute(email=self.registered_email)
+            ).execute(email=self.account_email)
         except Exception as exc:
             self.thrown_exception = exc
 

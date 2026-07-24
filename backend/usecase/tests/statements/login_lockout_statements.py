@@ -1,9 +1,9 @@
 from uuid import uuid4
 
 from scope.register_request_scope import RegisterRequestScope
-from statements.login_failed_attempt_statements import LoginFailedAttemptStatements
 
 from auth.account import Account
+from statements.login_failed_attempt_statements import LoginFailedAttemptStatements
 
 
 class LoginLockoutStatements(LoginFailedAttemptStatements):
@@ -96,7 +96,7 @@ class LoginLockoutStatements(LoginFailedAttemptStatements):
         # so a reset-without-commit implementation goes RED, not silently green.
         self._assert_reset_committed_once()
 
-    async def login_with_the_correct_password_while_the_reset_commit_fails(self) -> None:
+    async def login_correctly_while_the_reset_commit_fails(self) -> None:
         # Coverage 5.4: a stale failed-attempt count must NEVER block a valid login
         # (ADR §4). Arm the shared UoW to blow up on the reset's commit, then drive
         # the SUCCESS/reset branch (not the wrong-password branch 5.3 covers).

@@ -1,6 +1,6 @@
 import asyncio
 from datetime import UTC, datetime, timedelta
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -9,6 +9,7 @@ from access.auth.verification_code_storage import SqlAlchemyVerificationCodeRepo
 from auth.account import Account
 from auth.verification_code import VerificationCode
 from model.auth.verification_code_model import VerificationCodeModel
+from statements.arranged import arranged
 
 
 class VerificationCodeConcurrencyStatements:
@@ -21,11 +22,16 @@ class VerificationCodeConcurrencyStatements:
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self._session_factory = session_factory
-        self.code_id = None
+        self.code_id: UUID | None = None
         self.results: list[bool] = []
         self.race_error: Exception | None = None
         self.final_consumed_at: datetime | None = None
         self._now = datetime.now(UTC)
+
+    @property
+    def inserted_code_id(self) -> UUID:
+        """The code id the insert step generated -- read by every racer."""
+        return arranged(self.code_id, "code_id")
 
     async def insert_pending_account_with_unconsumed_code(self) -> None:
         account_id = uuid4()
@@ -37,9 +43,9 @@ class VerificationCodeConcurrencyStatements:
             password_hash="hashed-password-value",
             created_at=self._now,
         )
-        self.code_id = uuid4()
+        self.code_id = code_id = uuid4()
         code = VerificationCode.create(
-            id=self.code_id,
+            id=code_id,
             account_id=account_id,
             code="007123",
             expires_at=self._now + timedelta(minutes=10),
@@ -53,7 +59,7 @@ class VerificationCodeConcurrencyStatements:
     async def _consume_in_own_session(self) -> bool:
         async with self._session_factory() as session:
             outcome = await SqlAlchemyVerificationCodeRepository(session).transition_to_consumed(
-                self.code_id, self._now
+                self.inserted_code_id, self._now
             )
             await session.commit()
             return outcome

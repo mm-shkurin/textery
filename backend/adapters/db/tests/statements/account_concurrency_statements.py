@@ -1,12 +1,13 @@
 import asyncio
 from datetime import UTC, datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from auth.account import Account
 from model.auth.account_model import AccountModel
+from statements.arranged import arranged
 
 
 class AccountConcurrencyStatements:
@@ -19,10 +20,15 @@ class AccountConcurrencyStatements:
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self._session_factory = session_factory
-        self.account_id = None
+        self.account_id: UUID | None = None
         self.results: list[bool] = []
         self.race_error: Exception | None = None
         self.final_is_verified: bool | None = None
+
+    @property
+    def inserted_account_id(self) -> UUID:
+        """The id the insert step generated -- read by every later step."""
+        return arranged(self.account_id, "account_id")
 
     async def insert_pending_account(self) -> None:
         self.account_id = uuid4()
@@ -41,7 +47,7 @@ class AccountConcurrencyStatements:
     async def _transition_in_own_session(self) -> bool:
         async with self._session_factory() as session:
             outcome = await SqlAlchemyAccountRepository(session).transition_to_verified(
-                self.account_id
+                self.inserted_account_id
             )
             await session.commit()
             return outcome

@@ -3,10 +3,12 @@ from uuid import uuid4
 
 from auth.account import Account
 from auth.refresh_access_token import RefreshAccessToken
+from auth.token_pair import TokenPair
 from fake.auth.fake_account_repository import FakeAccountRepository
 from fake.auth.fake_password_hasher import FakePasswordHasher
 from fake.auth.fake_token_service import FakeTokenService
 from shared.exceptions import InvalidTokenException, ValidationException
+from statements.arranged import arranged
 
 
 class RefreshStatements:
@@ -24,7 +26,12 @@ class RefreshStatements:
         self.password_hasher = FakePasswordHasher()
         self.token_service = FakeTokenService()
         self.account: Account | None = None
-        self.issued_pair = None
+        self.issued_pair: TokenPair | None = None
+
+    @property
+    def registered_account(self) -> Account:
+        """The account a `given_*` step saved -- required by every assert step."""
+        return arranged(self.account, "account")
 
     async def _given_account(self, is_verified: bool) -> Account:
         account = Account.reconstitute(
@@ -76,12 +83,15 @@ class RefreshStatements:
             f"expected no exception on a valid refresh, got "
             f"{type(self.thrown_exception).__name__}: {self.thrown_exception}"
         )
-        assert self.token_service.issued_for == [(self.account.id, self.account.email)], (
-            f"expected exactly one pair issued for {(self.account.id, self.account.email)}, "
+        assert self.token_service.issued_for == [
+            (self.registered_account.id, self.registered_account.email)
+        ], (
+            f"expected exactly one pair issued for "
+            f"{(self.registered_account.id, self.registered_account.email)}, "
             f"got {self.token_service.issued_for}"
         )
         expected_pair = FakeTokenService().issue_pair(
-            account_id=self.account.id, email=self.account.email
+            account_id=self.registered_account.id, email=self.registered_account.email
         )
         assert self.issued_pair == expected_pair, (
             f"expected the usecase to return the pair the token service minted "

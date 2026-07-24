@@ -18,12 +18,12 @@ class VerifyAccountFailureStatements(VerifyAccountStatementsBase):
 
     async def verify_with_the_issued_code_when_final_commit_fails(self) -> None:
         self.unit_of_work.raise_on_commit = RuntimeError("connection reset")
-        await self._execute_verify(self.registered_email, self.issued_code)
+        await self._execute_verify(self.account_email, self.account_code)
 
     async def verify_with_the_issued_code_when_rollback_itself_fails(self) -> None:
         self.unit_of_work.raise_on_commit = RuntimeError("connection reset")
         self.unit_of_work.raise_on_rollback = RuntimeError("rollback also failed")
-        await self._execute_verify(self.registered_email, self.issued_code)
+        await self._execute_verify(self.account_email, self.account_code)
 
     def assert_verification_failed_and_rolled_back(self) -> None:
         self._assert_verification_failed_with_sanitized_message()

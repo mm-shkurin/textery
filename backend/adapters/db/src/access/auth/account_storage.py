@@ -4,6 +4,7 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access.affected_rows import affected_rows
 from auth.account import Account
 from model.auth.account_model import AccountModel
 from shared.exceptions import ConflictException
@@ -58,7 +59,7 @@ class SqlAlchemyAccountRepository:
             .where(AccountModel.id == account_id, AccountModel.is_verified.is_(False))
             .values(is_verified=True)
         )
-        return result.rowcount == 1
+        return affected_rows(result) == 1
 
     async def increment_failed_attempts(self, account_id: UUID) -> None:
         """Atomically bump this account's failed_attempt_count by one.
@@ -83,9 +84,7 @@ class SqlAlchemyAccountRepository:
         are untouched. No commit here -- the caller owns the transaction boundary.
         """
         await self._session.execute(
-            update(AccountModel)
-            .where(AccountModel.id == account_id)
-            .values(failed_attempt_count=0)
+            update(AccountModel).where(AccountModel.id == account_id).values(failed_attempt_count=0)
         )
 
     async def save(self, account: Account) -> None:

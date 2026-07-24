@@ -1,4 +1,7 @@
 import os
+from collections.abc import AsyncIterator, Callable
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from generation.generation_provider import GenerationProvider
 from provider.fake_provider import FakeProvider
@@ -50,3 +53,32 @@ token_service = _create_token_service()
 
 def stale_after_minutes() -> int:
     return int(os.environ.get(STALE_AFTER_MINUTES_ENV_VAR, DEFAULT_STALE_AFTER_MINUTES))
+
+
+def request_scoped[Usecase](
+    build: Callable[[AsyncSession], Usecase],
+) -> Callable[[], AsyncIterator[Usecase]]:
+    """Turn `session -> usecase` into a FastAPI dependency that closes the session.
+
+    Thirteen factories across the four wiring modules opened a session, yielded a
+    usecase built on it, and closed it in a `finally` -- eight lines each, of which
+    only the middle one differed. A leak in that block had thirteen places to be
+    fixed and twelve to be missed.
+
+    Deliberately NOT `functools.wraps`: that copies `__wrapped__`, and FastAPI
+    resolves a dependency's parameters from the signature it can see. It would
+    find `session: AsyncSession` and try to inject one, which is precisely the
+    job this wrapper exists to do itself. Only the name and docstring are carried
+    over, which is all a traceback and `/docs` need.
+    """
+
+    async def factory() -> AsyncIterator[Usecase]:
+        session = session_factory()
+        try:
+            yield build(session)
+        finally:
+            await session.close()
+
+    factory.__name__ = build.__name__
+    factory.__doc__ = build.__doc__
+    return factory

@@ -10,6 +10,7 @@ from generation.generate_document import (
 )
 from generation.generation import Generation
 from generation.get_generation import GetGeneration
+from statements.arranged import arranged
 
 
 class GenerationLifecycleStatements:
@@ -23,6 +24,33 @@ class GenerationLifecycleStatements:
         # Retry backoff is real time; record what was asked for instead of
         # sleeping it, so the retry tests stay instant and can assert the wait.
         self.slept_for: list[float] = []
+
+    # Each `given_*` step sets the fields it needs; every act and assert step
+    # reads them back. The properties make that ordering a checked precondition
+    # rather than an assumption repeated at two dozen call sites.
+    @property
+    def storage(self) -> FakeGenerationStorage:
+        return arranged(self._storage, "_storage")
+
+    @property
+    def provider(self) -> FakeGenerationProvider:
+        return arranged(self._provider, "_provider")
+
+    @property
+    def seeded_generation(self) -> Generation:
+        return arranged(self._seeded_generation, "_seeded_generation")
+
+    @property
+    def looked_up_id(self) -> UUID:
+        return arranged(self._looked_up_id, "_looked_up_id")
+
+    @property
+    def looked_up_owner_id(self) -> UUID:
+        return arranged(self._looked_up_owner_id, "_looked_up_owner_id")
+
+    @property
+    def looked_up_result(self) -> Generation:
+        return arranged(self.result, "result")
 
     def given_pending_generation(self) -> None:
         self._seed(status="pending", content=None)
@@ -65,8 +93,8 @@ class GenerationLifecycleStatements:
         self._looked_up_owner_id = self._seeded_generation.owner_id
 
     async def look_up_generation_status(self) -> None:
-        usecase = GetGeneration(storage=self._storage)
-        self.result = await usecase.execute(self._looked_up_id, self._looked_up_owner_id)
+        usecase = GetGeneration(storage=self.storage)
+        self.result = await usecase.execute(self.looked_up_id, self.looked_up_owner_id)
 
     def assert_status_pending_without_content(self) -> None:
         assert self.result is not None, "expected a Generation to be returned, got None"
@@ -103,18 +131,18 @@ class GenerationLifecycleStatements:
         self._provider = FakeGenerationProvider()
         self._provider.content_to_return = content
         usecase = GenerateDocument(
-            storage=self._storage, provider=self._provider, sleep=self._record_sleep
+            storage=self.storage, provider=self.provider, sleep=self._record_sleep
         )
-        await usecase.execute(self._seeded_generation.id, self._seeded_generation.owner_id)
+        await usecase.execute(self.seeded_generation.id, self.seeded_generation.owner_id)
 
     async def process_pending_generation_with_provider_error(self, error: Exception) -> None:
         self.given_pending_generation()
         self._provider = FakeGenerationProvider()
         self._provider.error_to_raise = error
         usecase = GenerateDocument(
-            storage=self._storage, provider=self._provider, sleep=self._record_sleep
+            storage=self.storage, provider=self.provider, sleep=self._record_sleep
         )
-        await usecase.execute(self._seeded_generation.id, self._seeded_generation.owner_id)
+        await usecase.execute(self.seeded_generation.id, self.seeded_generation.owner_id)
 
     async def process_pending_generation_with_transient_provider_error(
         self, error: Exception, fail_times: int, content: str = "Готовый доклад"
@@ -125,9 +153,9 @@ class GenerationLifecycleStatements:
         self._provider.fail_times = fail_times
         self._provider.content_to_return = content
         usecase = GenerateDocument(
-            storage=self._storage, provider=self._provider, sleep=self._record_sleep
+            storage=self.storage, provider=self.provider, sleep=self._record_sleep
         )
-        await usecase.execute(self._seeded_generation.id, self._seeded_generation.owner_id)
+        await usecase.execute(self.seeded_generation.id, self.seeded_generation.owner_id)
 
     async def process_a_generation_that_is_gone(self) -> None:
         """Run GenerateDocument against an id the storage does not hold.
@@ -138,20 +166,20 @@ class GenerationLifecycleStatements:
         self.given_no_generation()
         self._provider = FakeGenerationProvider()
         usecase = GenerateDocument(
-            storage=self._storage, provider=self._provider, sleep=self._record_sleep
+            storage=self.storage, provider=self.provider, sleep=self._record_sleep
         )
-        await usecase.execute(self._looked_up_id, self._looked_up_owner_id)
+        await usecase.execute(self.looked_up_id, self.looked_up_owner_id)
 
     def assert_no_generation_was_written(self) -> None:
-        assert self._storage.updated_generations == [], (
+        assert self.storage.updated_generations == [], (
             "expected no write for a generation that does not exist, got "
-            f"{self._storage.updated_generations}"
+            f"{self.storage.updated_generations}"
         )
 
     def assert_provider_was_not_called(self) -> None:
-        assert self._provider.call_count == 0, (
+        assert self.provider.call_count == 0, (
             "expected the provider not to be called for a generation that does not "
-            f"exist, got {self._provider.call_count} calls"
+            f"exist, got {self.provider.call_count} calls"
         )
 
     async def _record_sleep(self, seconds: float) -> None:
@@ -171,19 +199,19 @@ class GenerationLifecycleStatements:
         assert self.slept_for == [], f"expected no backoff, got {self.slept_for}"
 
     def assert_provider_call_count(self, expected_count: int) -> None:
-        assert self._provider.call_count == expected_count, (
-            f"expected provider called {expected_count} times, got {self._provider.call_count}"
+        assert self.provider.call_count == expected_count, (
+            f"expected provider called {expected_count} times, got {self.provider.call_count}"
         )
 
     def assert_generation_completed_with_content(self, expected_content: str) -> None:
-        stored = self._storage.updated_generations[-1]
+        stored = self.storage.updated_generations[-1]
         assert stored.status == "completed", f"expected status 'completed', got '{stored.status}'"
         assert stored.content == expected_content, (
             f"expected content '{expected_content}', got '{stored.content}'"
         )
 
     def assert_generation_failed_with_reason(self, expected_reason: str) -> None:
-        stored = self._storage.updated_generations[-1]
+        stored = self.storage.updated_generations[-1]
         assert stored.status == "failed", f"expected status 'failed', got '{stored.status}'"
         assert stored.error_message == expected_reason, (
             f"expected failure reason '{expected_reason}', got '{stored.error_message}'"
@@ -193,7 +221,7 @@ class GenerationLifecycleStatements:
         self.assert_generation_failed_with_reason(GENERIC_FAILURE_MESSAGE)
 
     def assert_generation_marked_in_progress_before_final_update(self) -> None:
-        statuses = [g.status for g in self._storage.updated_generations]
+        statuses = [g.status for g in self.storage.updated_generations]
         assert statuses[0] == "in_progress", (
             f"expected first update() to record status 'in_progress', got {statuses}"
         )

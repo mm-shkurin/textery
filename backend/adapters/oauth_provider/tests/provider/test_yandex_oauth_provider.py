@@ -1,9 +1,9 @@
 import httpx
 import pytest
-
-from auth.oauth.oauth_provider import OAuthProviderError
 from oauth_providers import yandex_oauth_provider
 from oauth_providers.yandex_oauth_provider import YandexOAuthProvider
+
+from auth.oauth.oauth_provider import OAuthProviderError
 
 _REAL_ASYNC_CLIENT = httpx.AsyncClient
 

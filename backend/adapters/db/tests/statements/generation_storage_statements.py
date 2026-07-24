@@ -8,6 +8,7 @@ from access.generation.generation_storage import SqlAlchemyGenerationStorage
 from auth.account import Account
 from generation.generation import Generation
 from shared.exceptions import ConflictException, NotFoundException
+from statements.arranged import arranged
 
 
 class GenerationStorageStatements:
@@ -20,6 +21,21 @@ class GenerationStorageStatements:
         self.fetched_generation: Generation | None = None
         self.raised_error: Exception | None = None
         self.stale_generations: list[Generation] = []
+
+    # `given_an_account` sets the owner; `save_generation`/`fetch_generation` set
+    # the rows. Reading them back through these properties turns "the arrange step
+    # ran first" into a checked precondition that names the missing step.
+    @property
+    def owner_id(self) -> UUID:
+        return arranged(self._owner_id, "_owner_id")
+
+    @property
+    def saved(self) -> Generation:
+        return arranged(self.saved_generation, "saved_generation")
+
+    @property
+    def fetched(self) -> Generation:
+        return arranged(self.fetched_generation, "fetched_generation")
 
     async def given_an_account(self) -> UUID:
         # generations.owner_id is a real FK, so a generation needs a real account row.
@@ -41,7 +57,7 @@ class GenerationStorageStatements:
     ) -> Generation:
         return Generation(
             id=generation_id or uuid4(),
-            owner_id=owner_id or self._owner_id,
+            owner_id=owner_id or self.owner_id,
             status="pending",
             created_at=created_at or datetime.now(UTC),
             topic="Как работает фотосинтез",
@@ -58,7 +74,7 @@ class GenerationStorageStatements:
 
     async def fetch_generation(self, generation_id: UUID, owner_id: UUID | None = None) -> None:
         self.fetched_generation = await self._storage.get_by_id_and_owner(
-            generation_id, owner_id or self._owner_id
+            generation_id, owner_id or self.owner_id
         )
 
     async def update_generation(self, generation: Generation) -> None:
@@ -78,7 +94,7 @@ class GenerationStorageStatements:
             self.raised_error = error
 
     async def fetch_by_saved_id(self) -> None:
-        await self.fetch_generation(self.saved_generation.id)
+        await self.fetch_generation(self.saved.id)
 
     async def fetch_unknown_generation(self) -> None:
         await self.fetch_generation(uuid4())
@@ -90,32 +106,32 @@ class GenerationStorageStatements:
         """
         other_owner_id = await self.given_an_account()
         self.fetched_generation = await self._storage.get_by_id_and_owner(
-            self.saved_generation.id, other_owner_id
+            self.saved.id, other_owner_id
         )
 
     def assert_fetched_matches_saved(self) -> None:
         assert self.fetched_generation is not None, "expected a Generation, got None"
         actual = (
-            self.fetched_generation.id,
-            self.fetched_generation.owner_id,
-            self.fetched_generation.status,
-            self.fetched_generation.topic,
-            self.fetched_generation.volume_pages,
-            self.fetched_generation.requirements,
-            self.fetched_generation.extra_wishes,
-            self.fetched_generation.document_type,
-            self.fetched_generation.content,
+            self.fetched.id,
+            self.fetched.owner_id,
+            self.fetched.status,
+            self.fetched.topic,
+            self.fetched.volume_pages,
+            self.fetched.requirements,
+            self.fetched.extra_wishes,
+            self.fetched.document_type,
+            self.fetched.content,
         )
         expected = (
-            self.saved_generation.id,
-            self.saved_generation.owner_id,
-            self.saved_generation.status,
-            self.saved_generation.topic,
-            self.saved_generation.volume_pages,
-            self.saved_generation.requirements,
-            self.saved_generation.extra_wishes,
-            self.saved_generation.document_type,
-            self.saved_generation.content,
+            self.saved.id,
+            self.saved.owner_id,
+            self.saved.status,
+            self.saved.topic,
+            self.saved.volume_pages,
+            self.saved.requirements,
+            self.saved.extra_wishes,
+            self.saved.document_type,
+            self.saved.content,
         )
         assert actual == expected, f"expected {expected}, got {actual}"
 
@@ -161,9 +177,9 @@ class GenerationStorageStatements:
     def assert_fetched_status_and_content(
         self, expected_status: str, expected_content: str | None
     ) -> None:
-        assert self.fetched_generation.status == expected_status, (
-            f"expected status '{expected_status}', got '{self.fetched_generation.status}'"
+        assert self.fetched.status == expected_status, (
+            f"expected status '{expected_status}', got '{self.fetched.status}'"
         )
-        assert self.fetched_generation.content == expected_content, (
-            f"expected content '{expected_content}', got '{self.fetched_generation.content}'"
+        assert self.fetched.content == expected_content, (
+            f"expected content '{expected_content}', got '{self.fetched.content}'"
         )

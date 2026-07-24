@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.auth.verification_code_storage import SqlAlchemyVerificationCodeRepository
@@ -8,73 +8,58 @@ from auth.register_user import RegisterUser
 from auth.resend_code import ResendCode
 from auth.token_service import TokenService
 from auth.verify_account import VerifyAccount
-from container.runtime import session_factory, token_service
+from container.runtime import request_scoped, token_service
 from hashing.bcrypt_password_hasher import BcryptPasswordHasher
 from session import SqlAlchemyUnitOfWork
 from shared.clock import SystemClock
 
 
-async def create_register_user() -> AsyncIterator[RegisterUser]:
-    session = session_factory()
-    try:
-        yield RegisterUser(
-            password_hasher=BcryptPasswordHasher(),
-            account_repository=SqlAlchemyAccountRepository(session),
-            verification_code_repository=SqlAlchemyVerificationCodeRepository(session),
-            unit_of_work=SqlAlchemyUnitOfWork(session),
-        )
-    finally:
-        await session.close()
+@request_scoped
+def create_register_user(session: AsyncSession) -> RegisterUser:
+    return RegisterUser(
+        password_hasher=BcryptPasswordHasher(),
+        account_repository=SqlAlchemyAccountRepository(session),
+        verification_code_repository=SqlAlchemyVerificationCodeRepository(session),
+        unit_of_work=SqlAlchemyUnitOfWork(session),
+    )
 
 
-async def create_login_user() -> AsyncIterator[LoginUser]:
-    session = session_factory()
-    try:
-        yield LoginUser(
-            account_repository=SqlAlchemyAccountRepository(session),
-            password_hasher=BcryptPasswordHasher(),
-            token_service=token_service,
-            unit_of_work=SqlAlchemyUnitOfWork(session),
-        )
-    finally:
-        await session.close()
+@request_scoped
+def create_login_user(session: AsyncSession) -> LoginUser:
+    return LoginUser(
+        account_repository=SqlAlchemyAccountRepository(session),
+        password_hasher=BcryptPasswordHasher(),
+        token_service=token_service,
+        unit_of_work=SqlAlchemyUnitOfWork(session),
+    )
 
 
-async def create_refresh_access_token() -> AsyncIterator[RefreshAccessToken]:
-    session = session_factory()
-    try:
-        yield RefreshAccessToken(
-            account_repository=SqlAlchemyAccountRepository(session),
-            token_service=token_service,
-        )
-    finally:
-        await session.close()
+@request_scoped
+def create_refresh_access_token(session: AsyncSession) -> RefreshAccessToken:
+    return RefreshAccessToken(
+        account_repository=SqlAlchemyAccountRepository(session),
+        token_service=token_service,
+    )
 
 
-async def create_verify_account() -> AsyncIterator[VerifyAccount]:
-    session = session_factory()
-    try:
-        yield VerifyAccount(
-            account_repository=SqlAlchemyAccountRepository(session),
-            verification_code_repository=SqlAlchemyVerificationCodeRepository(session),
-            clock=SystemClock(),
-            unit_of_work=SqlAlchemyUnitOfWork(session),
-        )
-    finally:
-        await session.close()
+@request_scoped
+def create_verify_account(session: AsyncSession) -> VerifyAccount:
+    return VerifyAccount(
+        account_repository=SqlAlchemyAccountRepository(session),
+        verification_code_repository=SqlAlchemyVerificationCodeRepository(session),
+        clock=SystemClock(),
+        unit_of_work=SqlAlchemyUnitOfWork(session),
+    )
 
 
-async def create_resend_code() -> AsyncIterator[ResendCode]:
-    session = session_factory()
-    try:
-        yield ResendCode(
-            account_repository=SqlAlchemyAccountRepository(session),
-            verification_code_repository=SqlAlchemyVerificationCodeRepository(session),
-            clock=SystemClock(),
-            unit_of_work=SqlAlchemyUnitOfWork(session),
-        )
-    finally:
-        await session.close()
+@request_scoped
+def create_resend_code(session: AsyncSession) -> ResendCode:
+    return ResendCode(
+        account_repository=SqlAlchemyAccountRepository(session),
+        verification_code_repository=SqlAlchemyVerificationCodeRepository(session),
+        clock=SystemClock(),
+        unit_of_work=SqlAlchemyUnitOfWork(session),
+    )
 
 
 def create_token_service() -> TokenService:

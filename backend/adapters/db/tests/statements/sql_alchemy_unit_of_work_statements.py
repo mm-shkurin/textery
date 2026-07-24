@@ -7,6 +7,7 @@ from access.auth.account_storage import SqlAlchemyAccountRepository
 from auth.account import Account
 from session import SqlAlchemyUnitOfWork
 from statements.account_row_lookup import fetch_account_row_on_new_connection
+from statements.arranged import arranged
 
 
 class SqlAlchemyUnitOfWorkStatements:
@@ -15,6 +16,11 @@ class SqlAlchemyUnitOfWorkStatements:
         self._account_storage = SqlAlchemyAccountRepository(session)
         self._unit_of_work = SqlAlchemyUnitOfWork(session)
         self.saved_account: Account | None = None
+
+    @property
+    def flushed(self) -> Account:
+        """The account `flush_account` put on the session -- read by every assert."""
+        return arranged(self.saved_account, "saved_account")
 
     def build_account(self, email: str = "uow-student@example.com") -> Account:
         return Account.create(
@@ -35,23 +41,23 @@ class SqlAlchemyUnitOfWorkStatements:
         await self._unit_of_work.rollback()
 
     async def assert_account_durable_on_new_connection(self) -> None:
-        row = await fetch_account_row_on_new_connection(self.saved_account.id)
+        row = await fetch_account_row_on_new_connection(self.flushed.id)
         assert row is not None, (
-            f"expected account {self.saved_account.id} to be committed via UnitOfWork, found none"
+            f"expected account {self.flushed.id} to be committed via UnitOfWork, found none"
         )
         actual = (row.id, row.email, row.password_hash, row.is_verified, row.created_at)
         expected = (
-            self.saved_account.id,
-            self.saved_account.email,
-            self.saved_account.password_hash,
+            self.flushed.id,
+            self.flushed.email,
+            self.flushed.password_hash,
             False,
-            self.saved_account.created_at,
+            self.flushed.created_at,
         )
         assert actual == expected, f"expected {expected}, got {actual}"
 
     async def assert_account_absent_on_new_connection(self) -> None:
-        row = await fetch_account_row_on_new_connection(self.saved_account.id)
+        row = await fetch_account_row_on_new_connection(self.flushed.id)
         assert row is None, (
-            f"expected account {self.saved_account.id} to be discarded via "
+            f"expected account {self.flushed.id} to be discarded via "
             f"UnitOfWork.rollback(), found {row}"
         )

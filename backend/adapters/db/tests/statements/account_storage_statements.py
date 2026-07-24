@@ -9,6 +9,7 @@ from auth.account import Account
 from model.auth.account_model import AccountModel
 from shared.exceptions import ConflictException
 from statements.account_row_lookup import fetch_account_row_on_new_connection
+from statements.arranged import arranged
 
 
 class AccountStorageStatements:
@@ -18,6 +19,16 @@ class AccountStorageStatements:
         self.saved_account: Account | None = None
         self.fetched_model: AccountModel | None = None
         self.raised_error: Exception | None = None
+
+    # Set by an arrange/act step; read back through a checked property, so a step
+    # called out of order names the arrangement it is missing.
+    @property
+    def saved(self) -> Account:
+        return arranged(self.saved_account, "saved_account")
+
+    @property
+    def fetched(self) -> AccountModel:
+        return arranged(self.fetched_model, "fetched_model")
 
     def build_account(self, email: str = "student@example.com") -> Account:
         return Account.create(
@@ -44,7 +55,7 @@ class AccountStorageStatements:
         )
 
     async def fetch_saved_account_row(self) -> None:
-        stmt = select(AccountModel).where(AccountModel.id == self.saved_account.id)
+        stmt = select(AccountModel).where(AccountModel.id == self.saved.id)
         result = await self._session.execute(stmt)
         self.fetched_model = result.scalar_one_or_none()
 
@@ -52,25 +63,23 @@ class AccountStorageStatements:
         await self._session.rollback()
 
     async def assert_account_absent_on_new_connection(self) -> None:
-        row = await fetch_account_row_on_new_connection(self.saved_account.id)
-        assert row is None, (
-            f"expected account {self.saved_account.id} absent after rollback, found a row"
-        )
+        row = await fetch_account_row_on_new_connection(self.saved.id)
+        assert row is None, f"expected account {self.saved.id} absent after rollback, found a row"
 
     def assert_fetched_matches_saved(self) -> None:
         assert self.fetched_model is not None, "expected an accounts row, got None"
         actual = (
-            self.fetched_model.id,
-            self.fetched_model.email,
-            self.fetched_model.password_hash,
-            self.fetched_model.is_verified,
-            self.fetched_model.created_at,
+            self.fetched.id,
+            self.fetched.email,
+            self.fetched.password_hash,
+            self.fetched.is_verified,
+            self.fetched.created_at,
         )
         expected = (
-            self.saved_account.id,
-            self.saved_account.email,
-            self.saved_account.password_hash,
+            self.saved.id,
+            self.saved.email,
+            self.saved.password_hash,
             False,
-            self.saved_account.created_at,
+            self.saved.created_at,
         )
         assert actual == expected, f"expected {expected}, got {actual}"

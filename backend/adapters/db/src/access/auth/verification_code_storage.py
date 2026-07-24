@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access.affected_rows import affected_rows
 from auth.verification_code import VerificationCode
 from model.auth.verification_code_model import VerificationCodeModel
 
@@ -50,7 +51,7 @@ class SqlAlchemyVerificationCodeRepository:
             .where(VerificationCodeModel.id == code_id, VerificationCodeModel.consumed_at.is_(None))
             .values(consumed_at=now)
         )
-        return result.rowcount == 1
+        return affected_rows(result) == 1
 
     async def save(self, code: VerificationCode) -> None:
         """Insert a newly issued code, or update the one that already exists.

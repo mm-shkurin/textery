@@ -30,6 +30,50 @@ jobs:
       - name: Check formatting
         run: ruff format --check .
 
+  # Its own job, and not folded into `lint`: mypy needs the runtime dependencies
+  # installed to see FastAPI's and SQLAlchemy's own type information, which the
+  # ruff-only job deliberately skips to stay fast. It still needs no database.
+  types:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check types
+        run: mypy
+
+  # Blocking, not advisory. Every dependency here is pinned to an exact version,
+  # which is what makes the build reproducible -- and also what makes a known
+  # vulnerability sit in the lockfile until somebody looks. Nobody was looking.
+  # It runs on the requirements file rather than the installed environment, so it
+  # answers for what deploys, not for whatever the runner happens to have.
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+
+      - name: Install pip-audit
+        run: pip install pip-audit==2.9.0
+
+      - name: Check dependencies for known vulnerabilities
+        run: pip-audit -r requirements.txt --progress-spinner=off
+
   test:
     runs-on: ubuntu-latest
 
@@ -76,8 +120,12 @@ jobs:
         working-directory: adapters/db
         run: alembic upgrade head
 
+      # The threshold is deliberately below the 98% the suite actually reaches:
+      # it is a ratchet against a slice landing with no tests at all, not a
+      # target to hover at. Uploading coverage.xml without gating on it made the
+      # number visible to anyone who went looking and binding on no one.
       - name: Run tests with coverage
-        run: pytest --cov --cov-report=xml:coverage.xml
+        run: pytest --cov --cov-report=xml:coverage.xml --cov-fail-under=90
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4

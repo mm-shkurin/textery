@@ -79,9 +79,9 @@ class TestUpdateConcurrentConflict:
         generation = generation_storage_statements.build_pending_generation()
         await generation_storage_statements.save_generation(generation)
         await generation_storage_statements.fetch_by_saved_id()
-        stale_copy = generation_storage_statements.fetched_generation
+        stale_copy = generation_storage_statements.fetched
         await generation_storage_statements.fetch_by_saved_id()
-        fresh_copy = generation_storage_statements.fetched_generation
+        fresh_copy = generation_storage_statements.fetched
 
         fresh_copy.mark_in_progress()
         await generation_storage_statements.update_generation(fresh_copy)

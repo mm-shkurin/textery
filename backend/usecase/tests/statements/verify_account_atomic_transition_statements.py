@@ -28,7 +28,7 @@ class VerifyAccountAtomicTransitionStatements(VerifyAccountStatementsBase):
     """
 
     async def verify_with_the_issued_code(self) -> None:
-        await self._execute_verify(self.registered_email, self.issued_code)
+        await self._execute_verify(self.account_email, self.account_code)
 
     def assert_verify_drove_the_atomic_transitions(self) -> None:
         assert self.thrown_exception is None, (

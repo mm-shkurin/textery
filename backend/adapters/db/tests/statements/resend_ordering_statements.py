@@ -87,8 +87,7 @@ class ResendOrderingStatements:
 
     def assert_active_is_committed_code_never_none(self) -> None:
         assert self.reloaded is not None, (
-            "expected the committed code to remain active after the rolled-back "
-            "insert, got None"
+            "expected the committed code to remain active after the rolled-back insert, got None"
         )
         assert self.reloaded.id == self.committed_code_id, (
             f"expected find_active to still return the committed code "

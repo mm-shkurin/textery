@@ -1,5 +1,3 @@
-import pytest
-
 from statements.reset_failed_attempts_statements import (
     ResetFailedAttemptsStatements,
 )
