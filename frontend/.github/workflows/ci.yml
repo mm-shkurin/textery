@@ -40,6 +40,11 @@ jobs:
       - name: CI parity
         run: npm run ci:parity
 
+      # Production dependencies only, high and above. See the monorepo workflow for why the two
+      # open moderate react-router advisories are not reachable here and why the floor is `high`.
+      - name: Audit production dependencies
+        run: npm run audit
+
       - name: Lint
         run: npm run lint
 

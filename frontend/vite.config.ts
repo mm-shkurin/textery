@@ -36,11 +36,16 @@ export default defineConfig({
       // the run when coverage DROPS — which is how historyApi.ts sat at 0% while every caller
       // mocked it and the suite stayed green. Raise these as coverage rises; never lower them to
       // make a run pass.
+      // Ratcheted to sit ~1 pt under the measured 96.06 / 89.90 / 99.69 / 97.92. One point is
+      // deliberate on both sides: tighter and an unrelated refactor turns the build red for
+      // rounding, looser and a real regression slips through — which is exactly how historyApi.ts
+      // sat at 0% while every caller mocked it and the suite stayed green. Raise as coverage
+      // rises; never lower to make a red run pass.
       thresholds: {
-        statements: 93,
-        branches: 87,
-        functions: 96,
-        lines: 95,
+        statements: 95,
+        branches: 89,
+        functions: 98,
+        lines: 97,
       },
     },
   },

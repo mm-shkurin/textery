@@ -9,6 +9,7 @@
     "typecheck": "tsc -b --noEmit",
     "lint": "oxlint --max-warnings=0",
     "ci:parity": "node scripts/check-ci-parity.mjs",
+    "audit": "npm audit --omit=dev --audit-level=high",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
     "preview": "vite preview",

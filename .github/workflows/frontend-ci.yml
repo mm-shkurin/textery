@@ -39,6 +39,16 @@ jobs:
       - name: CI parity
         run: npm run ci:parity
 
+      # Production dependencies only, high and above. Two moderate react-router advisories are
+      # open today (GHSA-wrjc-x8rr-h8h6 backslash open redirect, GHSA-337j-9hxr-rhxg SSR
+      # deserializeErrors) whose only fix is the v7 major. Neither is reachable here — the one
+      # place a user-controlled redirect target enters is safeRedirectTarget, which rejects
+      # backslashes itself and says why, and this app does not server-render. The gate is set to
+      # `high` so it stays a signal rather than a permanently-red step nobody reads; drop it to
+      # `moderate` once the v7 migration lands.
+      - name: Audit production dependencies
+        run: npm run audit
+
       - name: Lint
         run: npm run lint
 
