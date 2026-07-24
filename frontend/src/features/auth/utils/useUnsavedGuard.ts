@@ -8,8 +8,7 @@ import { useCallback, useEffect, useRef } from 'react'
 // `isDirty` lives in a component-scoped ref (never a module global): the ref keeps the
 // beforeunload effect reading the live value without re-subscribing, and the effect returns a
 // cleanup so the listener + dirty state never leak past unmount onto login/verify/workspace.
-export const UNSAVED_LEAVE_MESSAGE =
-  'Введённые данные не сохранены. Покинуть страницу регистрации?'
+export const UNSAVED_LEAVE_MESSAGE = 'Введённые данные не сохранены. Покинуть страницу регистрации?'
 
 export function useUnsavedGuard() {
   const isDirtyRef = useRef(false)

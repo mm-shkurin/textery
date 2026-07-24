@@ -26,5 +26,22 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      // Config, CSS and the test harness itself are not subjects — counting them would move the
+      // ratio without telling anyone anything.
+      exclude: ['src/main.tsx', 'src/test/**', '**/*.d.ts', '**/__tests__/**'],
+      // A FLOOR set just under today's measured numbers, not an aspiration. Its job is to fail
+      // the run when coverage DROPS — which is how historyApi.ts sat at 0% while every caller
+      // mocked it and the suite stayed green. Raise these as coverage rises; never lower them to
+      // make a run pass.
+      thresholds: {
+        statements: 93,
+        branches: 87,
+        functions: 96,
+        lines: 95,
+      },
+    },
   },
 })

@@ -107,7 +107,10 @@ describe('ManualEditor beforeunload guard', () => {
     expect(registered).toHaveLength(1)
     const handler = registered[0][1] as (event: BeforeUnloadEvent) => void
 
-    const event = { preventDefault: vi.fn(), returnValue: undefined } as unknown as BeforeUnloadEvent
+    const event = {
+      preventDefault: vi.fn(),
+      returnValue: undefined,
+    } as unknown as BeforeUnloadEvent
     handler(event)
 
     expect(event.preventDefault).toHaveBeenCalledTimes(1)

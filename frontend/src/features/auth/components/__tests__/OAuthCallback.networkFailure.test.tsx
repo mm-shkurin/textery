@@ -171,7 +171,10 @@ describe('OAuthCallback network / server exchange failure', () => {
   it('keeps a business rejection on the terminal error screen and does not route to /login', async () => {
     vi.mocked(authSession.isAuthenticated).mockReturnValue(false)
 
-    await renderAndSettleRejection({ errorCode: 'INVALID_OR_EXPIRED_OAUTH_CODE', message: 'expired' })
+    await renderAndSettleRejection({
+      errorCode: 'INVALID_OR_EXPIRED_OAUTH_CODE',
+      message: 'expired',
+    })
 
     // The terminal error card proves it was THIS rejection that rendered, not a vacuous early exit:
     // the exchange fired and the classifier bounded it away from the /login retry channel.

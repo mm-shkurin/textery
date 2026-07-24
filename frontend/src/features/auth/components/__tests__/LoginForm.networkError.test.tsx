@@ -36,7 +36,10 @@ const CODELESS_BUSINESS_400 = { errorCode: 'UNKNOWN_ERROR', message: '', status:
 // fixture bakes in status:400 and so cannot catch a `status===undefined → network` slip; this one
 // pins that a status-less rejection carrying an errorCode STAYS on login-form-error.
 const CODELESS_BUSINESS_NO_STATUS = { errorCode: 'UNKNOWN_ERROR', message: '' }
-const INVALID_CREDENTIALS = { errorCode: 'INVALID_CREDENTIALS', message: 'Неверный email или пароль' }
+const INVALID_CREDENTIALS = {
+  errorCode: 'INVALID_CREDENTIALS',
+  message: 'Неверный email или пароль',
+}
 // The backend's app-wide 500 shape: a codeful two-field { error_code:'INTERNAL_ERROR', message }
 // with NO status (toAuthApiError drops status on the coded path). A SERVER fault, retry-affording.
 const INTERNAL_ERROR_500 = { errorCode: 'INTERNAL_ERROR', message: 'oops' }
@@ -114,7 +117,9 @@ describe('LoginForm network/transport error', () => {
     await submitRejectingWith(CODELESS_BUSINESS_400)
 
     await waitFor(() =>
-      expect(screen.getByTestId('login-form-error').textContent).toBe(GENERIC_LOGIN_FAILURE_MESSAGE),
+      expect(screen.getByTestId('login-form-error').textContent).toBe(
+        GENERIC_LOGIN_FAILURE_MESSAGE,
+      ),
     )
     expect(screen.queryByTestId('login-network-error')).not.toBeInTheDocument()
   })
@@ -140,7 +145,9 @@ describe('LoginForm network/transport error', () => {
     await submitRejectingWith(CODELESS_BUSINESS_NO_STATUS)
 
     await waitFor(() =>
-      expect(screen.getByTestId('login-form-error').textContent).toBe(GENERIC_LOGIN_FAILURE_MESSAGE),
+      expect(screen.getByTestId('login-form-error').textContent).toBe(
+        GENERIC_LOGIN_FAILURE_MESSAGE,
+      ),
     )
     expect(screen.queryByTestId('login-network-error')).not.toBeInTheDocument()
   })

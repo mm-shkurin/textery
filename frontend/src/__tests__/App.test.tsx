@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { describe, expect, it, vi, beforeAll, beforeEach, afterEach } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import App from '../app/App'
 import * as api from '../features/generation/api/generationApi'
@@ -20,6 +20,19 @@ function openModeModalForDoklad() {
 // flow test below stops at the landing without it. Story 5's tests passed before this because
 // the flow was open to anonymous users, which changed by product decision, not by accident.
 describe('App step transitions', () => {
+  // DocumentGenerationFlow reaches ManualEditor through `lazy()`, so the first click that opens
+  // the editor also triggers a module load — compiling Tiptap and ProseMirror. In an isolated
+  // run that finishes in milliseconds; with the full suite competing for the same worker pool it
+  // ran past Testing Library's default 1000 ms `findBy` window and failed at random, which is
+  // worse than a slow test because it fails for a reason unrelated to the change under review.
+  //
+  // Importing the module here resolves the same promise `lazy()` awaits BEFORE any test runs, so
+  // the boundary settles in a microtask and the timing disappears from the assertions. This is
+  // load-order setup, not a mock: the component under test is the real one.
+  beforeAll(async () => {
+    await import('../features/generation/components/ManualEditor')
+  })
+
   beforeEach(() => {
     vi.mocked(api.createGeneration).mockReturnValue(new Promise(() => {}))
     vi.mocked(documentApi.createDocument).mockReturnValue(new Promise(() => {}))
@@ -104,15 +117,19 @@ describe('App step transitions', () => {
     expect(screen.queryByTestId('type-modal')).not.toBeInTheDocument()
   })
 
-  it('selecting manual mode opens a dedicated empty editor with a document-type breadcrumb', () => {
+  // `findBy`, not `getBy`: ManualEditor is behind a `lazy()` boundary (Tiptap is the heaviest
+  // dependency in the tree and manual mode is the only path that reaches it), so the editor
+  // appears one microtask after the click rather than in the same commit. The assertion is
+  // unchanged — only the wait for the chunk is new.
+  it('selecting manual mode opens a dedicated empty editor with a document-type breadcrumb', async () => {
     render(<App />)
 
     openModeModalForDoklad()
 
     fireEvent.click(screen.getByTestId('mode-card-manual'))
 
+    expect(await screen.findByTestId('manual-editor')).toBeInTheDocument()
     expect(screen.queryByTestId('mode-modal')).not.toBeInTheDocument()
-    expect(screen.getByTestId('manual-editor')).toBeInTheDocument()
     expect(screen.getByTestId('editor-breadcrumb')).toHaveTextContent('Доклад · Ручной режим')
   })
 
@@ -120,12 +137,13 @@ describe('App step transitions', () => {
   // resets step to 'landing' and clears documentType/mode instead of returning
   // to the mode modal. Predicted/actual: TestingLibraryElementError, unable to
   // find [data-testid="mode-modal"] (rendered landing page instead).
-  it('back button from the manual editor returns to the mode modal, document type still scoped', () => {
+  it('back button from the manual editor returns to the mode modal, document type still scoped', async () => {
     render(<App />)
 
     openModeModalForDoklad()
     fireEvent.click(screen.getByTestId('mode-card-manual'))
-    expect(screen.getByTestId('manual-editor')).toBeInTheDocument()
+    // Awaited for the lazy chunk, per the note on the preceding test.
+    expect(await screen.findByTestId('manual-editor')).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('Назад'))
 

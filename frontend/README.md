@@ -41,6 +41,7 @@ npm run format        # prettier --write
 npm run format:check  # prettier --check (этот шаг выполняется в CI)
 npm run test          # разовый запуск тестов
 npm run test:watch
+npm run test:coverage # тесты + покрытие с порогами (этот шаг выполняется в CI)
 ```
 
 ## CI
@@ -56,8 +57,14 @@ npm run test:watch
   `.github/workflows/ci.yml` и является там единственным CI. Поэтому в нём нет `paths:` и
   `working-directory`, а `cache-dependency-path` указывает на корневой `package-lock.json`.
 
-Оба выполняют `lint` → `format:check` → `typecheck` → `test` → `build`. Синхронизируются
+Оба выполняют `lint` → `format:check` → `typecheck` → `test:coverage` → `build`. Синхронизируются
 руками: удаление «мёртвой» копии выключает CI в gitverse целиком.
+
+Шаг тестов запускается именно с покрытием: пороги живут в `vite.config.ts` и срабатывают только
+под `--coverage`. Пороги — это **пол**, зафиксированный чуть ниже текущих цифр; их задача — уронить
+сборку, когда покрытие *падает*. Именно так `historyApi.ts` держался на 0% (все вызывающие его
+тесты мокали модуль целиком), а сюита оставалась зелёной. Поднимать по мере роста; не опускать,
+чтобы починить красный прогон.
 
 ## Переменные окружения
 

@@ -45,8 +45,10 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # Coverage, not a bare test run: the thresholds in vite.config.ts only fire under
+      # --coverage, and a floor nobody enforces is a comment. Mirrors the root workflow.
       - name: Test
-        run: npm run test
+        run: npm run test:coverage
 
       - name: Build
         run: npm run build

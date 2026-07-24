@@ -62,7 +62,11 @@ describe('loginApi account-locked', () => {
 
     const rejection = await rejectionOf(login(EMAIL, PASSWORD))
 
-    expect(rejection).toStrictEqual({ errorCode: 'RATE_LIMITED', message: '', retryAfterSeconds: 60 })
+    expect(rejection).toStrictEqual({
+      errorCode: 'RATE_LIMITED',
+      message: '',
+      retryAfterSeconds: 60,
+    })
   })
 
   // The converse: ACCOUNT_LOCKED WITHOUT a header must NOT gain the key (a code-driven green would
@@ -79,7 +83,10 @@ describe('loginApi account-locked', () => {
   // parseInt/Number would yield NaN; the api must OMIT the key rather than attach NaN (a value the
   // `number` type permits and downstream readers without the form's triple-defense would trust).
   it('omits retryAfterSeconds when Retry-After is a non-numeric (HTTP-date) value, never NaN', async () => {
-    stubFetchLockout(403, 'Wed, 21 Oct 2026 07:28:00 GMT', { error_code: 'ACCOUNT_LOCKED', message: '' })
+    stubFetchLockout(403, 'Wed, 21 Oct 2026 07:28:00 GMT', {
+      error_code: 'ACCOUNT_LOCKED',
+      message: '',
+    })
 
     const rejection = await rejectionOf(login(EMAIL, PASSWORD))
 

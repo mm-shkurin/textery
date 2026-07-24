@@ -17,7 +17,10 @@ vi.mock('../../api/verifyApi', async (importOriginal) => {
 
 describe('VerifyCodeForm code-box error state', () => {
   it('paints every code box with the error class after the server rejects the code', async () => {
-    vi.mocked(verifyApi.verify).mockRejectedValue({ errorCode: 'INVALID_OR_EXPIRED_CODE', message: '' })
+    vi.mocked(verifyApi.verify).mockRejectedValue({
+      errorCode: 'INVALID_OR_EXPIRED_CODE',
+      message: '',
+    })
     renderWithRouter(<VerifyCodeForm email="user@example.com" />)
 
     fireEvent.click(screen.getByTestId('verify-confirm-button'))
@@ -42,7 +45,10 @@ describe('VerifyCodeForm code-box error state', () => {
   })
 
   it('clears the error paint as soon as the user edits a box', async () => {
-    vi.mocked(verifyApi.verify).mockRejectedValue({ errorCode: 'INVALID_OR_EXPIRED_CODE', message: '' })
+    vi.mocked(verifyApi.verify).mockRejectedValue({
+      errorCode: 'INVALID_OR_EXPIRED_CODE',
+      message: '',
+    })
     renderWithRouter(<VerifyCodeForm email="user@example.com" />)
 
     fireEvent.click(screen.getByTestId('verify-confirm-button'))
