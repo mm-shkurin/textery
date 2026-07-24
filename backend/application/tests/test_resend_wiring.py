@@ -21,7 +21,7 @@ class TestCreateResendCodeSharesOneSession:
         sentinel_session = MagicMock()
         sentinel_session.close = AsyncMock()
 
-        with patch("container.auth_wiring.session_factory", return_value=sentinel_session):
+        with patch("container.runtime.session_factory", return_value=sentinel_session):
             resend_generator = create_resend_code()
             resend = await resend_generator.__anext__()
             try:

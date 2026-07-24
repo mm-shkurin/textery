@@ -23,7 +23,7 @@ class TestCreateLoginUserSharesOneSession:
         sentinel_session = MagicMock()
         sentinel_session.close = AsyncMock()
 
-        with patch("container.auth_wiring.session_factory", return_value=sentinel_session):
+        with patch("container.runtime.session_factory", return_value=sentinel_session):
             login_generator = create_login_user()
             login = await login_generator.__anext__()
             try:

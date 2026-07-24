@@ -1,8 +1,8 @@
 import os
-from collections.abc import AsyncIterator
 
 from oauth_providers.fake_oauth_provider import FakeOAuthProvider
 from oauth_providers.yandex_oauth_provider import YandexOAuthProvider
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.auth.handoff_code_storage import SqlAlchemyHandoffCodeRepository
@@ -15,7 +15,7 @@ from auth.oauth.oauth_provider import OAuthConfigurationError
 from auth.oauth.provider_registry import ProviderRegistry
 from auth.oauth.rate_limiter import OAuthRateGuard
 from auth.oauth.start_oauth import StartOAuth
-from container.runtime import session_factory, token_service
+from container.runtime import request_scoped, token_service
 from session import SqlAlchemyUnitOfWork
 from shared.clock import SystemClock
 
@@ -59,7 +59,7 @@ _rate_limit_window = int(
 )
 
 
-def _rate_guard(session) -> OAuthRateGuard:
+def _rate_guard(session: AsyncSession) -> OAuthRateGuard:
     # The limiter runs on the same request session but commits its increment itself,
     # so the hit counts even when the guarded operation rolls back (a throttled or
     # failed leg). The session is closed by the create_* factory's finally block.
@@ -88,48 +88,39 @@ def create_frontend_callback_url() -> str:
     return _frontend_callback_url
 
 
-async def create_start_oauth() -> AsyncIterator[StartOAuth]:
-    session = session_factory()
-    try:
-        yield StartOAuth(
-            provider_registry=provider_registry,
-            state_repository=SqlAlchemyOAuthStateRepository(session),
-            clock=SystemClock(),
-            unit_of_work=SqlAlchemyUnitOfWork(session),
-            rate_guard=_rate_guard(session),
-        )
-    finally:
-        await session.close()
+@request_scoped
+def create_start_oauth(session: AsyncSession) -> StartOAuth:
+    return StartOAuth(
+        provider_registry=provider_registry,
+        state_repository=SqlAlchemyOAuthStateRepository(session),
+        clock=SystemClock(),
+        unit_of_work=SqlAlchemyUnitOfWork(session),
+        rate_guard=_rate_guard(session),
+    )
 
 
-async def create_complete_oauth_callback() -> AsyncIterator[CompleteOAuthCallback]:
-    session = session_factory()
-    try:
-        yield CompleteOAuthCallback(
-            provider_registry=provider_registry,
-            state_repository=SqlAlchemyOAuthStateRepository(session),
-            identity_repository=SqlAlchemyOAuthIdentityRepository(session),
-            account_repository=SqlAlchemyAccountRepository(session),
-            handoff_code_repository=SqlAlchemyHandoffCodeRepository(session),
-            handoff_ttl_seconds=_handoff_ttl_seconds,
-            clock=SystemClock(),
-            unit_of_work=SqlAlchemyUnitOfWork(session),
-            rate_guard=_rate_guard(session),
-        )
-    finally:
-        await session.close()
+@request_scoped
+def create_complete_oauth_callback(session: AsyncSession) -> CompleteOAuthCallback:
+    return CompleteOAuthCallback(
+        provider_registry=provider_registry,
+        state_repository=SqlAlchemyOAuthStateRepository(session),
+        identity_repository=SqlAlchemyOAuthIdentityRepository(session),
+        account_repository=SqlAlchemyAccountRepository(session),
+        handoff_code_repository=SqlAlchemyHandoffCodeRepository(session),
+        handoff_ttl_seconds=_handoff_ttl_seconds,
+        clock=SystemClock(),
+        unit_of_work=SqlAlchemyUnitOfWork(session),
+        rate_guard=_rate_guard(session),
+    )
 
 
-async def create_exchange_handoff_code() -> AsyncIterator[ExchangeHandoffCode]:
-    session = session_factory()
-    try:
-        yield ExchangeHandoffCode(
-            handoff_code_repository=SqlAlchemyHandoffCodeRepository(session),
-            account_repository=SqlAlchemyAccountRepository(session),
-            token_service=token_service,
-            clock=SystemClock(),
-            unit_of_work=SqlAlchemyUnitOfWork(session),
-            rate_guard=_rate_guard(session),
-        )
-    finally:
-        await session.close()
+@request_scoped
+def create_exchange_handoff_code(session: AsyncSession) -> ExchangeHandoffCode:
+    return ExchangeHandoffCode(
+        handoff_code_repository=SqlAlchemyHandoffCodeRepository(session),
+        account_repository=SqlAlchemyAccountRepository(session),
+        token_service=token_service,
+        clock=SystemClock(),
+        unit_of_work=SqlAlchemyUnitOfWork(session),
+        rate_guard=_rate_guard(session),
+    )

@@ -1,7 +1,7 @@
-from collections.abc import AsyncIterator
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from access.document.document_storage import SqlAlchemyDocumentStorage
-from container.runtime import session_factory
+from container.runtime import request_scoped
 from document.create_document import CreateDocument
 from document.get_document import GetDocument
 from document.list_documents import ListDocuments
@@ -11,44 +11,32 @@ from session import SqlAlchemyUnitOfWork
 from shared.clock import SystemClock
 
 
-async def create_create_document() -> AsyncIterator[CreateDocument]:
-    session = session_factory()
-    try:
-        yield CreateDocument(
-            document_repository=SqlAlchemyDocumentStorage(session),
-            clock=SystemClock(),
-            unit_of_work=SqlAlchemyUnitOfWork(session),
-        )
-    finally:
-        await session.close()
+@request_scoped
+def create_create_document(session: AsyncSession) -> CreateDocument:
+    return CreateDocument(
+        document_repository=SqlAlchemyDocumentStorage(session),
+        clock=SystemClock(),
+        unit_of_work=SqlAlchemyUnitOfWork(session),
+    )
 
 
-async def create_get_document() -> AsyncIterator[GetDocument]:
-    session = session_factory()
-    try:
-        yield GetDocument(document_repository=SqlAlchemyDocumentStorage(session))
-    finally:
-        await session.close()
+@request_scoped
+def create_get_document(session: AsyncSession) -> GetDocument:
+    return GetDocument(document_repository=SqlAlchemyDocumentStorage(session))
 
 
-async def create_list_documents() -> AsyncIterator[ListDocuments]:
-    session = session_factory()
-    try:
-        yield ListDocuments(document_repository=SqlAlchemyDocumentStorage(session))
-    finally:
-        await session.close()
+@request_scoped
+def create_list_documents(session: AsyncSession) -> ListDocuments:
+    return ListDocuments(document_repository=SqlAlchemyDocumentStorage(session))
 
 
-async def create_save_document() -> AsyncIterator[SaveDocument]:
-    session = session_factory()
-    try:
-        yield SaveDocument(
-            document_repository=SqlAlchemyDocumentStorage(session),
-            html_sanitizer=Nh3HtmlSanitizer(),
-            clock=SystemClock(),
-            # One session across the repository and the unit of work, so the
-            # usecase's commit is what makes the CAS durable.
-            unit_of_work=SqlAlchemyUnitOfWork(session),
-        )
-    finally:
-        await session.close()
+@request_scoped
+def create_save_document(session: AsyncSession) -> SaveDocument:
+    return SaveDocument(
+        document_repository=SqlAlchemyDocumentStorage(session),
+        html_sanitizer=Nh3HtmlSanitizer(),
+        clock=SystemClock(),
+        # One session across the repository and the unit of work, so the usecase's
+        # commit is what makes the CAS durable.
+        unit_of_work=SqlAlchemyUnitOfWork(session),
+    )

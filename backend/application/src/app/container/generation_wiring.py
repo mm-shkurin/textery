@@ -1,9 +1,10 @@
-from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from access.generation.generation_storage import SqlAlchemyGenerationStorage
-from container.runtime import provider, session_factory, stale_after_minutes
+from container.runtime import provider, request_scoped, session_factory, stale_after_minutes
 from generation.document_generator import DocumentGenerator
 from generation.generate_document import GenerateDocument
 from generation.get_generation import GetGeneration
@@ -24,13 +25,11 @@ class NoOpGenerationQueue:
         pass
 
 
-async def create_request_generation() -> AsyncIterator[RequestGeneration]:
-    session = session_factory()
-    try:
-        storage = SqlAlchemyGenerationStorage(session)
-        yield RequestGeneration(storage=storage, queue=NoOpGenerationQueue())
-    finally:
-        await session.close()
+@request_scoped
+def create_request_generation(session: AsyncSession) -> RequestGeneration:
+    return RequestGeneration(
+        storage=SqlAlchemyGenerationStorage(session), queue=NoOpGenerationQueue()
+    )
 
 
 class _BackgroundGenerateDocument:
@@ -54,22 +53,14 @@ def create_generate_document() -> DocumentGenerator:
     return _BackgroundGenerateDocument()
 
 
-async def create_get_generation() -> AsyncIterator[GetGeneration]:
-    session = session_factory()
-    try:
-        storage = SqlAlchemyGenerationStorage(session)
-        yield GetGeneration(storage=storage)
-    finally:
-        await session.close()
+@request_scoped
+def create_get_generation(session: AsyncSession) -> GetGeneration:
+    return GetGeneration(storage=SqlAlchemyGenerationStorage(session))
 
 
-async def create_list_generations() -> AsyncIterator[ListGenerations]:
-    session = session_factory()
-    try:
-        storage = SqlAlchemyGenerationStorage(session)
-        yield ListGenerations(storage=storage)
-    finally:
-        await session.close()
+@request_scoped
+def create_list_generations(session: AsyncSession) -> ListGenerations:
+    return ListGenerations(storage=SqlAlchemyGenerationStorage(session))
 
 
 async def run_stale_generation_sweep() -> None:
