@@ -3,6 +3,7 @@ from uuid import UUID
 
 from document.document import Document
 from shared.exceptions import ConflictException
+from shared.keyset_cursor import KeysetCursor
 
 
 class FakeDocumentRepository:
@@ -44,6 +45,25 @@ class FakeDocumentRepository:
             ),
             None,
         )
+
+    async def list_by_owner(
+        self, owner_id: UUID, limit: int, cursor: KeysetCursor | None
+    ) -> list[Document]:
+        """Newest first, owner-scoped, anchored strictly after `cursor`.
+
+        The ordering and the strict `<` are mirrored from the real adapter rather
+        than simplified away: a fake that returned insertion order would let a
+        usecase that forgot to trim the has-next probe row look correct, and a
+        fake using `<=` would hide a cursor that re-serves its own anchor row.
+        """
+        rows = sorted(
+            (d for d in self.documents if d.owner_id == owner_id),
+            key=lambda d: (d.created_at, d.id),
+            reverse=True,
+        )
+        if cursor is not None:
+            rows = [d for d in rows if (d.created_at, d.id) < (cursor.created_at, cursor.id)]
+        return rows[:limit]
 
     async def save_content_if_version_matches(
         self,

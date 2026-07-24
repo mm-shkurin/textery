@@ -4,11 +4,13 @@ from uuid import UUID
 
 from fake.generation.call_order_recording_fake import CallOrderRecordingFake
 from generation.generation import Generation
+from shared.keyset_cursor import KeysetCursor
 
 CALL_SAVE = "save"
 CALL_GET = "get_by_id_and_owner"
 CALL_UPDATE = "update"
 CALL_LIST_STALE = "list_stale"
+CALL_LIST_BY_OWNER = "list_by_owner"
 
 
 class FakeGenerationStorage(CallOrderRecordingFake):
@@ -50,6 +52,26 @@ class FakeGenerationStorage(CallOrderRecordingFake):
         # status at call time so assertions can see the intermediate state.
         self.updated_generations.append(copy.deepcopy(generation))
         self._by_id[generation.id] = generation
+
+    async def list_by_owner(
+        self, owner_id: UUID, limit: int, cursor: KeysetCursor | None
+    ) -> list[Generation]:
+        """Newest first, owner-scoped, anchored strictly after `cursor`.
+
+        Same shape as FakeDocumentRepository.list_by_owner, and mirrored from the
+        real adapter for the same reason the owner predicate above is: a fake that
+        returned insertion order would keep a usecase that never trimmed the
+        has-next probe row green.
+        """
+        self._record(CALL_LIST_BY_OWNER, owner_id)
+        rows = sorted(
+            (g for g in self._by_id.values() if g.owner_id == owner_id),
+            key=lambda g: (g.created_at, g.id),
+            reverse=True,
+        )
+        if cursor is not None:
+            rows = [g for g in rows if (g.created_at, g.id) < (cursor.created_at, cursor.id)]
+        return rows[:limit]
 
     def seed(self, generation: Generation) -> None:
         self._by_id[generation.id] = generation
