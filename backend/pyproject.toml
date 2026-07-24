@@ -115,34 +115,6 @@ files = [
 # 20 import errors drowning the 3 real ones.
 ignore_missing_imports = true
 
-# The eight test-DSL modules below carry 82 errors between them, almost all the
-# same shape: a Statements class declares `self.result = None` in __init__ and
-# every later step reads attributes off it, so the type is `X | None` forever.
-# Fixing that means giving each class a real "not started yet" state, which is a
-# worthwhile change and not one to bundle into enabling the checker.
-#
-# This is a ratchet, not an exemption: the list is exhaustive and closed, so a
-# NEW test module is type-checked from its first commit. Delete entries as they
-# are cleaned; do not add any.
-[[tool.mypy.overrides]]
-module = [
-    "statements.generation_statements",
-    "statements.generation_lifecycle_statements",
-    "statements.login_statements",
-    "statements.refresh_statements",
-    "statements.resend_verified_statements",
-    "statements.resend_code_statements",
-    "statements.resend_code_lock_statements",
-    "statements.verify_account_base",
-    "statements.verify_account_statements",
-    "statements.verify_account_idempotency_statements",
-    "statements.verify_account_failure_statements",
-    "statements.verify_account_already_verified_statements",
-    "statements.verify_account_atomic_transition_statements",
-    "statements.login_lockout_statements",
-    "statements.login_failed_attempt_statements",
-]
-ignore_errors = true
 
 [tool.ruff.lint.isort]
 known-first-party = [

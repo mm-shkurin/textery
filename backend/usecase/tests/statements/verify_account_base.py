@@ -10,6 +10,7 @@ from fake.auth.fake_password_hasher import FakePasswordHasher
 from fake.auth.fake_unit_of_work import FakeUnitOfWork
 from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
 from shared.exceptions import ValidationException
+from statements.arranged import arranged
 
 
 class VerifyAccountStatementsBase:
@@ -43,7 +44,7 @@ class VerifyAccountStatementsBase:
         self.unit_of_work = FakeUnitOfWork()
         self.registered_email: str | None = None
         self.issued_code: str | None = None
-        self.original_account_snapshot = None
+        self.original_account_snapshot: dict[str, object] | None = None
         self.account_saves_after_first_verify = 0
         self.code_saves_after_first_verify = 0
         self.commits_after_first_verify = 0
@@ -77,10 +78,23 @@ class VerifyAccountStatementsBase:
         this same arrangement; each subclass adds only its own extra snapshot.
         """
         await self.given_pending_account_with_verification_code()
-        await self._execute_verify(self.registered_email, self.issued_code)
+        await self._execute_verify(self.account_email, self.account_code)
         self.account_saves_after_first_verify = len(self.account_repository.saved_accounts)
         self.code_saves_after_first_verify = len(self.verification_code_repository.saved_codes)
         self.commits_after_first_verify = self.unit_of_work.commit_call_count
+
+    @property
+    def account_email(self) -> str:
+        """The email a `given_*` step registered -- required by every act step."""
+        return arranged(self.registered_email, "registered_email")
+
+    @property
+    def account_code(self) -> str:
+        return arranged(self.issued_code, "issued_code")
+
+    @property
+    def account_snapshot(self) -> dict[str, object]:
+        return arranged(self.original_account_snapshot, "original_account_snapshot")
 
     async def _execute_verify(self, email: str, code: str) -> None:
         try:

@@ -1,12 +1,13 @@
 import unicodedata
 from datetime import UTC, datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from scope.register_request_scope import RegisterRequestScope
 
 from auth.account import Account
 from auth.login_user import LoginUser
 from auth.register_user import RegisterUser
+from auth.token_pair import TokenPair
 from auth.verify_account import VerifyAccount
 from fake.auth.fake_account_repository import FakeAccountRepository
 from fake.auth.fake_clock import FakeClock
@@ -15,6 +16,7 @@ from fake.auth.fake_token_service import FakeTokenService
 from fake.auth.fake_unit_of_work import FakeUnitOfWork
 from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
 from shared.exceptions import ValidationException
+from statements.arranged import arranged
 
 
 class LoginStatements:
@@ -48,8 +50,24 @@ class LoginStatements:
         self.unit_of_work = FakeUnitOfWork()
         self.account_email: str | None = None
         self.account_password: str | None = None
-        self.account_id = None
-        self.issued_pair = None
+        self.account_id: UUID | None = None
+        self.issued_pair: TokenPair | None = None
+
+    # The three `given_*` steps all set the account fields; every act and assert
+    # step needs them. Reading them through these properties is what makes "the
+    # arrangement ran first" a checked precondition rather than an assumption
+    # spread over a dozen call sites.
+    @property
+    def registered_email(self) -> str:
+        return arranged(self.account_email, "account_email")
+
+    @property
+    def registered_password(self) -> str:
+        return arranged(self.account_password, "account_password")
+
+    @property
+    def registered_account_id(self) -> UUID:
+        return arranged(self.account_id, "account_id")
 
     async def _register(self, password: str) -> None:
         scope = RegisterRequestScope.builder(password=password, confirm_password=password)
@@ -74,7 +92,7 @@ class LoginStatements:
             verification_code_repository=self.verification_code_repository,
             clock=self.clock,
             unit_of_work=self.unit_of_work,
-        ).execute(email=self.account_email, code=self.issued_code)
+        ).execute(email=self.registered_email, code=arranged(self.issued_code, "issued_code"))
 
     async def given_verified_account(self) -> None:
         await self._register(RegisterRequestScope.DEFAULTS["password"])
@@ -114,10 +132,10 @@ class LoginStatements:
             self.thrown_exception = exc
 
     async def login_with_the_correct_password(self) -> None:
-        await self._execute_login(self.account_email, self.account_password)
+        await self._execute_login(self.registered_email, self.registered_password)
 
     async def login_with_a_wrong_password(self) -> None:
-        await self._execute_login(self.account_email, self.WRONG_PASSWORD)
+        await self._execute_login(self.registered_email, self.WRONG_PASSWORD)
 
     async def login_with_an_unknown_email(self) -> None:
         await self._execute_login(self.UNKNOWN_EMAIL, RegisterRequestScope.DEFAULTS["password"])
@@ -126,22 +144,23 @@ class LoginStatements:
         await self._execute_login(self.MALFORMED_EMAIL, RegisterRequestScope.DEFAULTS["password"])
 
     async def login_with_the_email_in_a_different_case(self) -> None:
-        await self._execute_login(self.account_email.upper(), self.account_password)
+        await self._execute_login(self.registered_email.upper(), self.registered_password)
 
     async def login_with_the_decomposed_form_of_the_password(self) -> None:
-        await self._execute_login(self.account_email, self.ACCENTED_PASSWORD_NFD)
+        await self._execute_login(self.registered_email, self.ACCENTED_PASSWORD_NFD)
 
     def assert_token_pair_issued_for_the_account(self) -> None:
         assert self.thrown_exception is None, (
             f"expected no exception on a valid login, got "
             f"{type(self.thrown_exception).__name__}: {self.thrown_exception}"
         )
-        assert self.token_service.issued_for == [(self.account_id, self.account_email)], (
-            f"expected exactly one pair issued for {(self.account_id, self.account_email)}, "
+        expected_subject = (self.registered_account_id, self.registered_email)
+        assert self.token_service.issued_for == [expected_subject], (
+            f"expected exactly one pair issued for {expected_subject}, "
             f"got {self.token_service.issued_for}"
         )
         expected_pair = FakeTokenService().issue_pair(
-            account_id=self.account_id, email=self.account_email
+            account_id=self.registered_account_id, email=self.registered_email
         )
         assert self.issued_pair == expected_pair, (
             f"expected the usecase to return the pair the token service minted "

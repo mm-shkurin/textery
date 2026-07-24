@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from statements.verify_account_base import VerifyAccountStatementsBase
 
@@ -22,7 +22,7 @@ class VerifyAccountIdempotencyStatements(VerifyAccountStatementsBase):
 
     def __init__(self) -> None:
         super().__init__()
-        self.first_consumed_at = None
+        self.first_consumed_at: datetime | None = None
 
     async def given_account_already_verified_once_with_its_code(self) -> None:
         await super().given_account_already_verified_once_with_its_code()
@@ -35,7 +35,7 @@ class VerifyAccountIdempotencyStatements(VerifyAccountStatementsBase):
         # Advance the clock so any re-consume would stamp a DIFFERENT time than the
         # first one -- the whole point of the negative consumed_at assertion.
         self.clock.fixed_now = self.REPLAY_CLOCK_NOW
-        await self._execute_verify(self.registered_email, self.issued_code)
+        await self._execute_verify(self.account_email, self.account_code)
 
     async def resubmit_the_same_code_after_it_expired(self) -> None:
         # Push the clock PAST the code's 10-minute validity window before the
@@ -46,7 +46,7 @@ class VerifyAccountIdempotencyStatements(VerifyAccountStatementsBase):
         # that was ordered ahead of the is_verified block.
         expires_at = self.verification_code_repository.saved_codes[-1].expires_at
         self.clock.fixed_now = expires_at + timedelta(minutes=1)
-        await self._execute_verify(self.registered_email, self.issued_code)
+        await self._execute_verify(self.account_email, self.account_code)
 
     def assert_replay_was_a_no_op(self) -> None:
         assert self.thrown_exception is None, (

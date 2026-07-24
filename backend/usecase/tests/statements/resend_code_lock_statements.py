@@ -1,5 +1,5 @@
 from datetime import UTC, datetime, timedelta
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from scope.register_request_scope import RegisterRequestScope
 
@@ -12,6 +12,7 @@ from fake.auth.fake_clock import FakeClock
 from fake.auth.fake_password_hasher import FakePasswordHasher
 from fake.auth.fake_unit_of_work import FakeUnitOfWork
 from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
+from statements.arranged import arranged
 
 
 class ResendCodeLockStatements:
@@ -38,9 +39,18 @@ class ResendCodeLockStatements:
         self.unit_of_work = FakeUnitOfWork()
         self.call_log: list[str] = []
         self.registered_email: str | None = None
-        self.account_id = None
+        self.account_id: UUID | None = None
         self.locked_account: Account | None = None
         self.issued_code: VerificationCode | None = None
+
+    @property
+    def account_email(self) -> str:
+        """The email a `given_*` step registered -- required by every act step."""
+        return arranged(self.registered_email, "registered_email")
+
+    @property
+    def registered_account_id(self) -> UUID:
+        return arranged(self.account_id, "account_id")
 
     async def given_a_pending_account_eligible_for_resend(self) -> None:
         self.clock.fixed_now = self.T0
@@ -90,12 +100,12 @@ class ResendCodeLockStatements:
             verification_code_repository=self.verification_code_repository,
             clock=self.clock,
             unit_of_work=self.unit_of_work,
-        ).execute(email=self.registered_email)
+        ).execute(email=self.account_email)
 
     def assert_lock_acquired_once_before_the_cooldown_read(self) -> None:
-        assert self.account_repository.lock_for_update_calls == [self.account_id], (
+        assert self.account_repository.lock_for_update_calls == [self.registered_account_id], (
             f"expected lock_for_update to be called exactly once with the account id "
-            f"{self.account_id}, got {self.account_repository.lock_for_update_calls}"
+            f"{self.registered_account_id}, got {self.account_repository.lock_for_update_calls}"
         )
         assert self.call_log == ["lock_for_update", "find_active_by_account_id"], (
             f"expected the row lock to be acquired BEFORE the cooldown read, got call "
@@ -108,5 +118,5 @@ class ResendCodeLockStatements:
             f"expected the resend to bind decisions to the POST-lock account "
             f"{self.locked_account.id} (lock_for_update's return), but the issued code "
             f"carries account_id {self.issued_code.account_id} -- the stale pre-lock "
-            f"account from find_by_email ({self.account_id})"
+            f"account from find_by_email ({self.registered_account_id})"
         )

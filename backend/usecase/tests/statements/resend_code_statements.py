@@ -11,6 +11,7 @@ from fake.auth.fake_clock import FakeClock
 from fake.auth.fake_password_hasher import FakePasswordHasher
 from fake.auth.fake_unit_of_work import FakeUnitOfWork
 from fake.auth.fake_verification_code_repository import FakeVerificationCodeRepository
+from statements.arranged import arranged
 from statements.resend_code_assertions import ResendCodeAssertions
 
 
@@ -46,6 +47,11 @@ class ResendCodeStatements(ResendCodeAssertions):
         self.thrown_exception: Exception | None = None
         self.old_code_verify_exception: Exception | None = None
         self.new_code_verify_exception: Exception | None = None
+
+    @property
+    def account_email(self) -> str:
+        """The email a `given_*` step registered -- required by every act step."""
+        return arranged(self.registered_email, "registered_email")
 
     async def given_pending_account_with_a_code_issued_at_t0(self) -> None:
         self.clock.fixed_now = self.T0
@@ -101,7 +107,7 @@ class ResendCodeStatements(ResendCodeAssertions):
             verification_code_repository=self.verification_code_repository,
             clock=self.clock,
             unit_of_work=self.unit_of_work,
-        ).execute(email=self.registered_email)
+        ).execute(email=self.account_email)
 
     async def _resend_at(self, delta: timedelta) -> None:
         self.clock.fixed_now = self.T0 + delta
@@ -115,8 +121,12 @@ class ResendCodeStatements(ResendCodeAssertions):
         # pending, so a superseded code answers with the generic
         # INVALID_OR_EXPIRED_CODE (not ALREADY_VERIFIED). Then the NEW code
         # transitions the account, proving it is the active one.
-        self.old_code_verify_exception = await self._execute_verify(self.old_code)
-        self.new_code_verify_exception = await self._execute_verify(self.new_code)
+        self.old_code_verify_exception = await self._execute_verify(
+            arranged(self.old_code, "old_code")
+        )
+        self.new_code_verify_exception = await self._execute_verify(
+            arranged(self.new_code, "new_code")
+        )
 
     async def _execute_resend(self) -> None:
         try:
@@ -125,18 +135,18 @@ class ResendCodeStatements(ResendCodeAssertions):
                 verification_code_repository=self.verification_code_repository,
                 clock=self.clock,
                 unit_of_work=self.unit_of_work,
-            ).execute(email=self.registered_email)
+            ).execute(email=self.account_email)
         except Exception as exc:
             self.thrown_exception = exc
 
-    async def _execute_verify(self, code: str | None) -> Exception | None:
+    async def _execute_verify(self, code: str) -> Exception | None:
         try:
             await VerifyAccount(
                 account_repository=self.account_repository,
                 verification_code_repository=self.verification_code_repository,
                 clock=self.clock,
                 unit_of_work=self.unit_of_work,
-            ).execute(email=self.registered_email, code=code)
+            ).execute(email=self.account_email, code=code)
         except Exception as exc:
             return exc
         return None

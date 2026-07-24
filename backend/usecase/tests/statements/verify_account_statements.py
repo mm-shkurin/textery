@@ -32,7 +32,7 @@ class VerifyAccountStatements(VerifyAccountStatementsBase):
         self.registered_email = account.email
 
     async def verify_an_account_that_has_no_code(self) -> None:
-        await self._execute_verify(self.registered_email, "123456")
+        await self._execute_verify(self.account_email, "123456")
 
     def assert_rejected_as_invalid_or_expired_with_no_code_to_look_at(self) -> None:
         """The account exists, the lookup ran, and the answer is still generic.
@@ -58,13 +58,13 @@ class VerifyAccountStatements(VerifyAccountStatementsBase):
         )
 
     async def verify_with_the_issued_code(self) -> None:
-        await self._execute_verify(self.registered_email, self.issued_code)
+        await self._execute_verify(self.account_email, self.account_code)
 
     async def verify_with_a_malformed_code(self) -> None:
-        await self._execute_verify(self.registered_email, self.MALFORMED_CODE)
+        await self._execute_verify(self.account_email, self.MALFORMED_CODE)
 
     async def verify_with_a_malformed_email(self) -> None:
-        await self._execute_verify(self.MALFORMED_EMAIL, self.issued_code)
+        await self._execute_verify(self.MALFORMED_EMAIL, self.account_code)
 
     async def verify_with_both_a_malformed_email_and_a_malformed_code(self) -> None:
         # The only statement that varies both axes at once. Every other one holds
@@ -73,10 +73,10 @@ class VerifyAccountStatements(VerifyAccountStatementsBase):
         await self._execute_verify(self.MALFORMED_EMAIL, self.MALFORMED_CODE)
 
     async def verify_with_a_wrong_but_well_formed_code(self) -> None:
-        await self._execute_verify(self.registered_email, self.WRONG_CODE)
+        await self._execute_verify(self.account_email, self.WRONG_CODE)
 
     async def verify_with_an_unknown_email(self) -> None:
-        await self._execute_verify(self.UNKNOWN_EMAIL, self.issued_code)
+        await self._execute_verify(self.UNKNOWN_EMAIL, self.account_code)
 
     async def verify_with_the_issued_code_after_it_expired(self) -> None:
         # The code expires 10 minutes after issuance; step exactly onto the expiry
@@ -118,7 +118,7 @@ class VerifyAccountStatements(VerifyAccountStatementsBase):
             f"it in place via the atomic conditional UPDATE (transition_to_verified), not a "
             f"second save, got {len(self.account_repository.saved_accounts)} saves"
         )
-        original = self.original_account_snapshot
+        original = self.account_snapshot
         verified_account = self.account_repository.saved_accounts[-1]
         actual_unchanged = {
             field: getattr(verified_account, field) for field in self.UNCHANGED_BY_VERIFY_FIELDS

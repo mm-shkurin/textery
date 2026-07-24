@@ -22,16 +22,16 @@ class VerifyAccountAlreadyVerifiedStatements(VerifyAccountStatementsBase):
         # Flip the last digit so the code is guaranteed to differ from the one that
         # verified the account while staying a valid 6-digit shape (so it is not
         # rejected as INVALID_CODE before the is_verified fork is even reached).
-        last_digit = int(self.issued_code[-1])
-        return self.issued_code[:-1] + str((last_digit + 1) % 10)
+        last_digit = int(self.account_code[-1])
+        return self.account_code[:-1] + str((last_digit + 1) % 10)
 
     async def submit_a_different_code_against_the_verified_account(self) -> None:
         different_code = self._a_non_matching_code()
-        assert different_code != self.issued_code, (
+        assert different_code != self.account_code, (
             f"setup sanity: the derived code {different_code} must differ from the "
-            f"issued code {self.issued_code}"
+            f"issued code {self.account_code}"
         )
-        await self._execute_verify(self.registered_email, different_code)
+        await self._execute_verify(self.account_email, different_code)
 
     def assert_rejected_as_already_verified_without_persisting(self) -> None:
         self._assert_validation_exception(
