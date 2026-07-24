@@ -13,5 +13,16 @@
     "no-console": ["error", { "allow": ["error", "warn"] }],
     "jsx-a11y/alt-text": "error",
     "jsx-a11y/anchor-is-valid": "error"
-  }
+  },
+  "overrides": [
+    {
+      // Build-time CLI scripts, not shipped code. `console` is their entire output channel — the
+      // app-code ban exists because a stray log there reaches a user's devtools with nobody
+      // reading it, which is not the situation here.
+      "files": ["scripts/**"],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ]
 }

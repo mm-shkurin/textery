@@ -34,6 +34,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # The two pipelines are kept in step by hand, and hand-kept parity fails silently. This
+      # fails loudly instead, comparing the npm scripts each one runs.
+      - name: CI parity
+        run: npm run ci:parity
+
       - name: Lint
         run: npm run lint
 
