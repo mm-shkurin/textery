@@ -20,8 +20,10 @@ class FakeTokenService:
     def __init__(self) -> None:
         self.issued_for: list[tuple[UUID, str]] = []
         self.refresh_subject: UUID | None = None
+        self.access_subject: UUID | None = None
         self.raise_on_read_refresh_subject: Exception | None = None
         self.read_refresh_subject_call_count = 0
+        self.read_access_subject_call_count = 0
 
     def issue_pair(self, account_id: UUID, email: str) -> TokenPair:
         self.issued_for.append((account_id, email))
@@ -42,3 +44,22 @@ class FakeTokenService:
         if self.refresh_subject is None:
             raise InvalidTokenException("refresh token is not valid")
         return self.refresh_subject
+
+    def read_access_subject(self, access_token: str) -> UUID:
+        """The access half of the port, kept distinct from the refresh half.
+
+        Missing entirely until the type checker asked: `TokenService` grew this
+        method for the Bearer dependency and the double was never brought along,
+        so it had silently stopped being a `TokenService`. Nothing failed, because
+        no usecase test happened to call it -- and the next one to need it would
+        have got an AttributeError instead of a port it could drive.
+
+        Separate `access_subject` from `refresh_subject` on purpose: one shared
+        field would let a usecase that reads the wrong half of the port pass,
+        which is the exact confusion the real service's `type` claim exists to
+        prevent.
+        """
+        self.read_access_subject_call_count += 1
+        if self.access_subject is None:
+            raise InvalidTokenException("access token is not valid")
+        return self.access_subject
