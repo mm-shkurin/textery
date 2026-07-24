@@ -27,11 +27,15 @@ function parseRetryAfterSeconds(headers: Headers | undefined): number | undefine
     return undefined
   }
   const trimmed = raw.trim()
-  if (trimmed === '') {
+  // Digits only, because `Number()` is far more generous than the contract: it reads '0x10' as 16
+  // and '1e3' as 1000, so a malformed header would put the account-locked screen into a
+  // seventeen-minute countdown the server never asked for. Anything that is not a plain integer
+  // is treated as absent, which the field already means.
+  if (!/^\d+$/.test(trimmed)) {
     return undefined
   }
   const seconds = Number(trimmed)
-  return Number.isFinite(seconds) && seconds >= 0 ? Math.floor(seconds) : undefined
+  return Number.isFinite(seconds) ? seconds : undefined
 }
 
 export interface RequestOptions {
@@ -75,12 +79,23 @@ export class RequestTimeoutError extends Error {
 // error with a retry AFFORDANCE (the form re-enables its submit button); the actual retry is the
 // user's explicit choice, never an automatic replay. Generation's POST additionally carries an
 // Idempotency-Key, so even a user-driven retry collapses server-side rather than duplicating.
-function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
+//
+// The abort is belt to the timer's braces, and only that: it releases the socket and the pending
+// response handling instead of leaving them to the garbage collector's mercy, which matters most
+// under the 5s generation poll where abandoned connections would otherwise accumulate. It is NOT
+// what makes the timeout work — a black-holed connection may never honour it — so the timer still
+// rejects independently, and aborting changes nothing about the no-auto-retry reasoning above:
+// giving up on a response never unsends the request.
+function withTimeout<T>(work: (signal: AbortSignal) => Promise<T>, ms: number): Promise<T> {
+  const controller = new AbortController()
   let timer: ReturnType<typeof setTimeout>
   const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new RequestTimeoutError()), ms)
+    timer = setTimeout(() => {
+      controller.abort()
+      reject(new RequestTimeoutError())
+    }, ms)
   })
-  return Promise.race([work, timeout]).finally(() => clearTimeout(timer))
+  return Promise.race([work(controller.signal), timeout]).finally(() => clearTimeout(timer))
 }
 
 // Rejections reach callers as `unknown`, and only SOME of them are HttpError: a transport
@@ -101,13 +116,18 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   // Every call — GET and mutating POST alike — is bounded: a hung POST is the one this scenario
   // exists for (login), and the bound is reject-only with no auto-retry, so bounding a POST is
   // safe against duplicates (see withTimeout).
-  return withTimeout(performRequest<T>(path, options), REQUEST_TIMEOUT_MS)
+  return withTimeout((signal) => performRequest<T>(path, options, signal), REQUEST_TIMEOUT_MS)
 }
 
-async function performRequest<T>(path: string, options: RequestOptions): Promise<T> {
+async function performRequest<T>(
+  path: string,
+  options: RequestOptions,
+  signal: AbortSignal,
+): Promise<T> {
   const { method = 'GET', headers = {}, body } = options
   const res = await fetch(`${API_BASE}${path}`, {
     method,
+    signal,
     // Content-Type is only truthful when there IS a body. Sending it on a GET tells the server
     // to expect JSON that never arrives.
     headers: body === undefined ? headers : { 'Content-Type': 'application/json', ...headers },
@@ -127,7 +147,11 @@ async function performRequest<T>(path: string, options: RequestOptions): Promise
     }
     throw error
   }
-  return res.json()
+  // The success path needs the same defence the error path has. A 204, or a 200 with an empty
+  // body, makes `res.json()` throw a bare SyntaxError — which `isHttpError` rejects, so it falls
+  // through to the transport branch and the user is told the connection failed on a request that
+  // succeeded. An empty successful body is "nothing to report", and `{}` says that.
+  return (await res.json().catch(() => ({}))) as T
 }
 
 export async function postJson<T>(path: string, body: unknown): Promise<T> {

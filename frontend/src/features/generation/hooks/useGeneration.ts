@@ -49,7 +49,15 @@ export function useGeneration(): UseGeneration {
     }
   }, [])
 
-  const poll = useCallback(
+  // A tick may arrive while the previous check is still out: the interval is 5s and the shared
+  // request timeout allows 25s, so a slow backend stacks up to five concurrent status calls for
+  // one generation. The duplicate traffic is the lesser problem — each stacked call also spends
+  // an attempt, so the MAX_POLL_ATTEMPTS budget drains without any extra time passing and the
+  // "~5 minutes" ceiling can expire in one. Skipping a tick costs nothing: the next one is 5s
+  // away and the status has not changed in the meantime.
+  const inFlightRef = useRef(false)
+
+  const runPollAttempt = useCallback(
     async (id: string) => {
       attemptsRef.current += 1
       if (attemptsRef.current > MAX_POLL_ATTEMPTS) {
@@ -93,6 +101,19 @@ export function useGeneration(): UseGeneration {
       }
     },
     [stopPolling],
+  )
+
+  const poll = useCallback(
+    async (id: string) => {
+      if (inFlightRef.current) return
+      inFlightRef.current = true
+      try {
+        await runPollAttempt(id)
+      } finally {
+        inFlightRef.current = false
+      }
+    },
+    [runPollAttempt],
   )
 
   const submit = useCallback(

@@ -63,9 +63,7 @@ describe('LoginForm email+password happy path (OAuth-additions regression guard)
 
     await submit()
 
-    await waitFor(() =>
-      expect(screen.getByTestId('login-submit-button')).not.toBeDisabled(),
-    )
+    await waitFor(() => expect(screen.getByTestId('login-submit-button')).not.toBeDisabled())
     expect(api.login).toHaveBeenCalledTimes(1)
     expect(api.login).toHaveBeenCalledWith(EMAIL, PASSWORD)
     expect(saveSession).toHaveBeenCalledTimes(1)

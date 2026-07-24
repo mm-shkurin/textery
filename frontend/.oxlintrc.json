@@ -11,7 +11,33 @@
     // request leaves behind, and a blanket ban would delete the trace rather than route it
     // somewhere better. Revisit if a real sink is ever wired up.
     "no-console": ["error", { "allow": ["error", "warn"] }],
+    // Tokens live in sessionStorage, which any script on the origin can read. The reason that is
+    // survivable is that nothing here injects unescaped markup — React escaping by default is a
+    // property of the code, not a guarantee of the framework, and one dangerouslySetInnerHTML on
+    // a server-supplied string would turn a stored XSS into a session handover. Banned so the
+    // claim stays checkable rather than a comment someone has to remember.
+    "react/no-danger": "error",
     "jsx-a11y/alt-text": "error",
-    "jsx-a11y/anchor-is-valid": "error"
-  }
+    "jsx-a11y/anchor-is-valid": "error",
+    // The screens already carry hand-written aria: role="alert" on every error banner, an
+    // aria-labelledby textarea, aria-hidden ornaments. All of it was written correctly by hand
+    // and none of it was checked, so a typo'd attribute name would have failed silently — the
+    // worst kind of a11y bug, because the markup still looks right.
+    "jsx-a11y/aria-props": "error",
+    "jsx-a11y/aria-unsupported-elements": "error",
+    "jsx-a11y/role-has-required-aria-props": "error",
+    "jsx-a11y/role-supports-aria-props": "error",
+    "jsx-a11y/no-autofocus": "error"
+  },
+  "overrides": [
+    {
+      // Build-time CLI scripts, not shipped code. `console` is their entire output channel — the
+      // app-code ban exists because a stray log there reaches a user's devtools with nobody
+      // reading it, which is not the situation here.
+      "files": ["scripts/**"],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ]
 }

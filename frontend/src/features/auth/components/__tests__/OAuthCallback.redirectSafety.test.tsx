@@ -57,11 +57,7 @@ function deferred<T>() {
 
 // Mount the callback with a valid code plus a crafted external target injected via `search` and/or
 // router `state`, resolve the exchange, and let a usable session store succeed.
-async function signInWith(entry: {
-  pathname: string
-  search: string
-  state?: { from: string }
-}) {
+async function signInWith(entry: { pathname: string; search: string; state?: { from: string } }) {
   const exchange = deferred<typeof SESSION>()
   vi.mocked(oauthExchangeApi.oauthExchange).mockReturnValue(exchange.promise)
   vi.mocked(authSession.saveSession).mockReturnValue(true)

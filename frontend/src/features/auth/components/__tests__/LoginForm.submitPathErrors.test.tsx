@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { renderWithRouter } from '../../../../test/renderWithRouter'
 import { LoginForm } from '../LoginForm'
-import { GENERIC_LOGIN_FAILURE_MESSAGE, NETWORK_LOGIN_FAILURE_MESSAGE } from '../../utils/authMessages'
+import {
+  GENERIC_LOGIN_FAILURE_MESSAGE,
+  NETWORK_LOGIN_FAILURE_MESSAGE,
+} from '../../utils/authMessages'
 import * as api from '../../api/loginApi'
 import { saveSession } from '../../utils/authSession'
 
@@ -22,7 +25,10 @@ const VALID_SESSION = {
   refreshTokenExpiresAt: '',
 }
 const TRANSPORT_FAILURE = new TypeError('Failed to fetch')
-const INVALID_CREDENTIALS = { errorCode: 'INVALID_CREDENTIALS', message: 'Неверный email или пароль' }
+const INVALID_CREDENTIALS = {
+  errorCode: 'INVALID_CREDENTIALS',
+  message: 'Неверный email или пароль',
+}
 
 function fill() {
   renderWithRouter(<LoginForm />)

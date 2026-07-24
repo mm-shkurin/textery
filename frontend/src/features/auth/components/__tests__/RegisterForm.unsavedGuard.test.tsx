@@ -42,8 +42,12 @@ function typePartialEmail() {
 
 function fillAllFields() {
   fireEvent.change(screen.getByTestId('register-email-input'), { target: { value: VALID_EMAIL } })
-  fireEvent.change(screen.getByTestId('register-password-input'), { target: { value: VALID_PASSWORD } })
-  fireEvent.change(screen.getByTestId('register-confirm-password-input'), { target: { value: VALID_PASSWORD } })
+  fireEvent.change(screen.getByTestId('register-password-input'), {
+    target: { value: VALID_PASSWORD },
+  })
+  fireEvent.change(screen.getByTestId('register-confirm-password-input'), {
+    target: { value: VALID_PASSWORD },
+  })
 }
 
 function renderWithRoutes() {

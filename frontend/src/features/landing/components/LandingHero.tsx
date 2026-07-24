@@ -16,13 +16,18 @@ export function LandingHero({ onPromptSubmit }: LandingHeroProps) {
 
   return (
     <section className="hero">
+      {/* Decorative only (aria-hidden), and they used to cost 6.5 MB of PNG — more than the rest
+          of the page put together, on the one screen a first-time visitor sees before anything
+          else. Re-encoded to WebP at 900px, which is above the ~640 CSS px these ever render at,
+          for ~0.8 MB total. Keep any replacement in that budget: an ornament that delays the
+          heading is worse than no ornament. */}
       <div className="hero-glass hero-glass-left" aria-hidden="true">
-        <img src="/design/glass-16.png" alt="" />
-        <img src="/design/glass-8.png" alt="" />
+        <img src="/design/glass-16.webp" alt="" decoding="async" />
+        <img src="/design/glass-8.webp" alt="" decoding="async" />
       </div>
       <div className="hero-glass hero-glass-right" aria-hidden="true">
-        <img src="/design/glass-24.png" alt="" />
-        <img src="/design/glass-9.png" alt="" />
+        <img src="/design/glass-24.webp" alt="" decoding="async" />
+        <img src="/design/glass-9.webp" alt="" decoding="async" />
       </div>
 
       <h1 className="hero-title" data-testid="hero-heading">

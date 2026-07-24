@@ -65,3 +65,27 @@ body {
   font-family: 'Inter', sans-serif;
   line-height: 1.5;
 }
+
+/* The Suspense fallback shown while the lazily-loaded manual editor chunk arrives. It lives in
+   the global sheet on purpose: ManualEditor.css ships INSIDE that chunk, so a rule kept there
+   would only load once the thing it is meant to cover has already appeared. */
+.editor-loading {
+  padding: 48px 24px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Global for the same reason as .editor-loading: the boundary must be able to render when the
+   feature stylesheet it would otherwise live in is exactly what failed to load. */
+.error-boundary {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.error-boundary-title {
+  color: var(--error);
+}

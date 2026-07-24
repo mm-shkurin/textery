@@ -76,7 +76,9 @@ export function toAuthApiError(
   }
   // Header-driven pass-through: attach only when httpClient parsed a finite Retry-After, so the key
   // is present for a lockout/429 and absent otherwise.
-  const retryAfterSeconds = finiteNumberOrUndefined((error as HttpError | undefined)?.retryAfterSeconds)
+  const retryAfterSeconds = finiteNumberOrUndefined(
+    (error as HttpError | undefined)?.retryAfterSeconds,
+  )
   if (retryAfterSeconds !== undefined) {
     apiError.retryAfterSeconds = retryAfterSeconds
   }

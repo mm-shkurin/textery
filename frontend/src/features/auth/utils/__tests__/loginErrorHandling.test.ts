@@ -15,9 +15,9 @@ describe('isLoginNetworkError — server-fault INTERNAL_ERROR sentinel', () => {
 // sentinel does not regress the shapes that route correctly today.
 describe('isLoginNetworkError — established bounds (born-green)', () => {
   it('keeps a status-bearing INTERNAL_ERROR 500 retryable via the status>=500 branch', () => {
-    expect(
-      isLoginNetworkError({ errorCode: 'INTERNAL_ERROR', message: 'oops', status: 500 }),
-    ).toBe(true)
+    expect(isLoginNetworkError({ errorCode: 'INTERNAL_ERROR', message: 'oops', status: 500 })).toBe(
+      true,
+    )
   })
 
   it('treats a bodyless transport error as network (no errorCode)', () => {

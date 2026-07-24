@@ -1,10 +1,26 @@
+import { lazy, Suspense } from 'react'
 import { DOCUMENT_TYPE_LABELS } from '../shared/documentTypes'
 import { HistoryPage } from '../features/history/components/HistoryPage'
 import { LandingPage } from '../features/landing/components/LandingPage'
 import { ChatWorkspace } from '../features/generation/components/ChatWorkspace'
-import { ManualEditor } from '../features/generation/components/ManualEditor'
+import { ErrorBoundary } from '../shared/components/ErrorBoundary'
 import { FlowLanding } from './FlowLanding'
 import { useFlowNavigation } from './useFlowNavigation'
+
+// The ONE lazy boundary in the app, and it is drawn here on weight rather than on taste:
+// ManualEditor pulls Tiptap + ProseMirror, by far the largest dependency in the tree, and it is
+// reached only by picking manual mode — a landing visitor, the whole auth flow, history and the
+// chat workspace never touch it. Statically imported it rode in the single entry chunk, so every
+// first paint paid for an editor most sessions never open.
+//
+// Deliberately NOT applied per route: the auth screens and the landing are small enough that
+// splitting them would trade one chunk for several round trips without shrinking anything that
+// matters.
+const ManualEditor = lazy(() =>
+  import('../features/generation/components/ManualEditor').then((module) => ({
+    default: module.ManualEditor,
+  })),
+)
 
 // Which screen for which state, and nothing else — every transition and its reasoning lives in
 // useFlowNavigation.
@@ -53,13 +69,27 @@ export function DocumentGenerationFlow() {
       // not the place to invent one. That leaves the editor as the one signed-in screen with no
       // way out of the session — a real gap, but a NEW one, created by combining the branches
       // rather than present in either. It belongs to a follow-up.
+      // The fallback says what is happening rather than showing a blank frame: the chunk is
+      // fetched at the moment manual mode is chosen, and on a slow link that is a visible wait.
+      // Boundary OUTSIDE Suspense so it catches both failures the lazy path can produce: a
+      // rejected chunk fetch (offline mid-session) and a throw from inside the editor once it
+      // mounts. Recovery goes back to the mode modal — a real destination, not a reload into the
+      // same crash.
       return (
-        <ManualEditor
-          documentType={documentType}
-          documentTypeLabel={documentTypeLabel}
-          onBack={flow.backFromEditor}
-          existingDocumentId={flow.openDocumentId ?? undefined}
-        />
+        <ErrorBoundary
+          title="Редактор не удалось загрузить."
+          recoverLabel="Вернуться к выбору режима"
+          onRecover={flow.backFromEditor}
+        >
+          <Suspense fallback={<p className="editor-loading">Загрузка редактора…</p>}>
+            <ManualEditor
+              documentType={documentType}
+              documentTypeLabel={documentTypeLabel}
+              onBack={flow.backFromEditor}
+              existingDocumentId={flow.openDocumentId ?? undefined}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )
     }
 

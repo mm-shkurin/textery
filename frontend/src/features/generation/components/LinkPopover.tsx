@@ -96,11 +96,7 @@ export function LinkPopover({ editor, onClose }: LinkPopoverProps) {
       const target = event.target as Node
       const toolbar = popover.closest('.me-toolbar')
       const editorDom = editor.view.dom
-      if (
-        popover.contains(target) ||
-        toolbar?.contains(target) ||
-        editorDom.contains(target)
-      ) {
+      if (popover.contains(target) || toolbar?.contains(target) || editorDom.contains(target)) {
         return
       }
       apply()

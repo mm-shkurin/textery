@@ -4,6 +4,7 @@ import { LoginForm } from '../features/auth/components/LoginForm'
 import { VerifyCodeForm } from '../features/auth/components/VerifyCodeForm'
 import { OAuthCallback } from '../features/auth/components/OAuthCallback'
 import { DocumentGenerationFlow } from './DocumentGenerationFlow'
+import { ErrorBoundary } from '../shared/components/ErrorBoundary'
 
 function AppRoutes() {
   return (
@@ -20,17 +21,19 @@ function AppRoutes() {
 // Renders its own BrowserRouter when not already inside one (production entry
 // via main.tsx omits an outer Router), but defers to an existing Router
 // context when a test wraps App in MemoryRouter directly.
+// The editor has its own boundary with a recovery target (back to mode choice). This one is the
+// last line: every OTHER route — auth, landing, history — has none, and without it any throw
+// there unmounts the tree into a blank white page with no explanation. No recovery button here on
+// purpose: at the root there is nowhere safe left to send the user, and a button that re-renders
+// the same crash is worse than none.
 function App() {
   const isInsideRouter = useInRouterContext()
-
-  if (isInsideRouter) {
-    return <AppRoutes />
-  }
+  const routes = <AppRoutes />
 
   return (
-    <BrowserRouter>
-      <AppRoutes />
-    </BrowserRouter>
+    <ErrorBoundary title="Что-то пошло не так. Обновите страницу.">
+      {isInsideRouter ? routes : <BrowserRouter>{routes}</BrowserRouter>}
+    </ErrorBoundary>
   )
 }
 

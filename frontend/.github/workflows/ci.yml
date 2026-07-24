@@ -35,6 +35,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Self-skips here: in this repository shape the monorepo workflow does not exist, so there
+      # is nothing to compare. Kept in the step list so the two files stay identical in gates.
+      - name: CI parity
+        run: npm run ci:parity
+
+      # Production dependencies only, high and above. See the monorepo workflow for why the two
+      # open moderate react-router advisories are not reachable here and why the floor is `high`.
+      - name: Audit production dependencies
+        run: npm run audit
+
       - name: Lint
         run: npm run lint
 
@@ -45,8 +55,10 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # Coverage, not a bare test run: the thresholds in vite.config.ts only fire under
+      # --coverage, and a floor nobody enforces is a comment. Mirrors the root workflow.
       - name: Test
-        run: npm run test
+        run: npm run test:coverage
 
       - name: Build
         run: npm run build

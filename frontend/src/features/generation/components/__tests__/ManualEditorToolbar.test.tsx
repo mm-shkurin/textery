@@ -39,7 +39,13 @@ describe('ManualEditorToolbar', () => {
       />,
     )
 
-    for (const label of ['Заголовок 1', 'Заголовок 2', 'Абзац', 'Маркированный список', 'Нумерованный список']) {
+    for (const label of [
+      'Заголовок 1',
+      'Заголовок 2',
+      'Абзац',
+      'Маркированный список',
+      'Нумерованный список',
+    ]) {
       expect(screen.queryByLabelText(label)).toBeNull()
     }
     // The working inline controls stay.
