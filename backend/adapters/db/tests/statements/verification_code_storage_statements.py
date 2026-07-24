@@ -10,6 +10,7 @@ from access.auth.verification_code_storage import SqlAlchemyVerificationCodeRepo
 from auth.account import Account
 from auth.verification_code import VerificationCode
 from model.auth.verification_code_model import VerificationCodeModel
+from statements.arranged import arranged
 
 _ASCII_SIX_DIGITS = re.compile(r"^[0-9]{6}$")
 
@@ -26,6 +27,20 @@ class VerificationCodeStorageStatements:
         self.saved_code: VerificationCode | None = None
         self.fetched_model: VerificationCodeModel | None = None
         self.reloaded_code: VerificationCode | None = None
+
+    # Set by an arrange/act step; read back through a checked property, so a step
+    # called out of order names the arrangement it is missing.
+    @property
+    def saved(self) -> VerificationCode:
+        return arranged(self.saved_code, "saved_code")
+
+    @property
+    def fetched(self) -> VerificationCodeModel:
+        return arranged(self.fetched_model, "fetched_model")
+
+    @property
+    def reloaded(self) -> VerificationCode:
+        return arranged(self.reloaded_code, "reloaded_code")
 
     async def given_saved_account(self) -> Account:
         account = Account.create(
@@ -130,10 +145,10 @@ class VerificationCodeStorageStatements:
             reloaded.consumed_at,
         )
         expected = (
-            self.saved_code.id,
-            self.saved_code.account_id,
-            self.saved_code.code,
-            self.saved_code.expires_at,
+            self.saved.id,
+            self.saved.account_id,
+            self.saved.code,
+            self.saved.expires_at,
             None,
         )
         assert actual == expected, (
@@ -157,9 +172,9 @@ class VerificationCodeStorageStatements:
             f"expected the persisted generated code to be exactly six ASCII digits, "
             f"got {row.code!r}"
         )
-        assert row.code == self.saved_code.code, (
+        assert row.code == self.saved.code, (
             f"expected the generated code to survive the model round-trip unchanged, "
-            f"got '{row.code}' vs generated '{self.saved_code.code}'"
+            f"got '{row.code}' vs generated '{self.saved.code}'"
         )
         assert row.consumed_at is None, (
             f"expected a freshly generated code to persist unconsumed, "
@@ -171,7 +186,7 @@ class VerificationCodeStorageStatements:
         await self._storage.save(code)
 
     async def fetch_saved_code_row(self) -> None:
-        stmt = select(VerificationCodeModel).where(VerificationCodeModel.id == self.saved_code.id)
+        stmt = select(VerificationCodeModel).where(VerificationCodeModel.id == self.saved.id)
         result = await self._session.execute(stmt)
         self.fetched_model = result.scalar_one_or_none()
 
@@ -185,10 +200,10 @@ class VerificationCodeStorageStatements:
             row.consumed_at,
         )
         expected = (
-            self.saved_code.id,
-            self.saved_code.account_id,
-            self.saved_code.code,
-            self.saved_code.expires_at,
+            self.saved.id,
+            self.saved.account_id,
+            self.saved.code,
+            self.saved.expires_at,
             None,
         )
         assert actual == expected, f"expected {expected}, got {actual}"

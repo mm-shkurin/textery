@@ -10,6 +10,7 @@ from access.auth.verification_code_storage import SqlAlchemyVerificationCodeRepo
 from auth.account import Account
 from auth.verification_code import VerificationCode
 from model.auth.verification_code_model import VerificationCodeModel
+from statements.arranged import arranged
 
 RESEND_COOLDOWN = timedelta(seconds=60)
 _RACE_WINDOW_SECONDS = 0.2
@@ -47,6 +48,11 @@ class ResendConcurrencyStatements:
         self.final_code_count: int | None = None
         self.final_active_present: bool | None = None
 
+    @property
+    def eligible_account_id(self) -> UUID:
+        """The account the seeding step inserted -- read by both racers."""
+        return arranged(self.account_id, "account_id")
+
     async def insert_eligible_account(self) -> None:
         self.account_id = uuid4()
         account = Account.create(
@@ -80,9 +86,9 @@ class ResendConcurrencyStatements:
             # lock_for_update does not exist yet -> AttributeError today (RED). In
             # green it acquires SELECT ... FOR UPDATE on the account row, serializing
             # the two racers on this line.
-            await SqlAlchemyAccountRepository(session).lock_for_update(self.account_id)
+            await SqlAlchemyAccountRepository(session).lock_for_update(self.eligible_account_id)
             code_storage = SqlAlchemyVerificationCodeRepository(session)
-            newest = await code_storage.find_active_by_account_id(self.account_id)
+            newest = await code_storage.find_active_by_account_id(self.eligible_account_id)
             # Widen the read->commit window so the race is deterministic under
             # asyncio's cooperative scheduler. A real SELECT ... FOR UPDATE blocks
             # the second racer at lock_for_update ABOVE -- it never reaches this
@@ -99,14 +105,14 @@ class ResendConcurrencyStatements:
             inserted_id = uuid4()
             new_code = VerificationCode.create(
                 id=inserted_id,
-                account_id=self.account_id,
+                account_id=self.eligible_account_id,
                 code="654321",
                 expires_at=self._now + timedelta(minutes=10),
                 created_at=self._now,
             )
             await code_storage.save(new_code)
             await session.commit()
-            return (newest.id, inserted_id)
+            return (arranged(newest, "newest active code").id, inserted_id)
 
     async def race_two_resends(self) -> None:
         # No broad try/except: the whole point of a lock test is to let a real
@@ -128,7 +134,7 @@ class ResendConcurrencyStatements:
             )
             self.final_code_count = count.scalar_one()
             active = await SqlAlchemyVerificationCodeRepository(session).find_active_by_account_id(
-                self.account_id
+                self.eligible_account_id
             )
             self.final_active_present = active is not None
 

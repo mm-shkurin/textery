@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from statements.history_paging_statements import BASE_TIME, HistoryPagingStatements
 
 
@@ -78,7 +80,7 @@ class TestKeysetPaging:
         owner = await history_paging_statements.given_an_account()
         rows = await history_paging_statements.given_generations_seconds_apart(owner, count=7)
 
-        seen = []
+        seen: list[UUID] = []
         cursor = None
         for _ in range(4):
             await history_paging_statements.list_generations(owner, limit=3, cursor=cursor)

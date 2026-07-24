@@ -1,10 +1,11 @@
 from datetime import UTC, datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from auth.account import Account
+from statements.arranged import arranged
 
 FAILED_ATTEMPT_COUNT = 3
 
@@ -20,18 +21,27 @@ class AccountToDomainRoundtripStatements:
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self._session_factory = session_factory
-        self.account_id = None
+        self.account_id: UUID | None = None
         self.email: str | None = None
         self.read_back_account: Account | None = None
 
+    @property
+    def inserted_account_id(self) -> UUID:
+        """The id the insert step generated -- read by every later step."""
+        return arranged(self.account_id, "account_id")
+
+    @property
+    def inserted_email(self) -> str:
+        return arranged(self.email, "email")
+
     async def insert_account_with_failed_attempts(self) -> None:
-        self.account_id = uuid4()
+        self.account_id = account_id = uuid4()
         # Per-run-unique: uq_accounts_email would make a fixed literal collide
         # (ConflictException) on reruns against the persistent test postgres.
-        self.email = f"roundtrip-{uuid4()}@example.com"
+        self.email = email = f"roundtrip-{uuid4()}@example.com"
         account = Account.reconstitute(
-            id=self.account_id,
-            email=self.email,
+            id=account_id,
+            email=email,
             password_hash="hashed-password-value",
             created_at=datetime.now(UTC),
             is_verified=True,
@@ -40,13 +50,13 @@ class AccountToDomainRoundtripStatements:
             repository = SqlAlchemyAccountRepository(session)
             await repository.save(account)
             for _ in range(FAILED_ATTEMPT_COUNT):
-                await repository.increment_failed_attempts(self.account_id)
+                await repository.increment_failed_attempts(account_id)
             await session.commit()
 
     async def read_back_via_find_by_email(self) -> None:
         async with self._session_factory() as session:
             repository = SqlAlchemyAccountRepository(session)
-            self.read_back_account = await repository.find_by_email(self.email)
+            self.read_back_account = await repository.find_by_email(self.inserted_email)
 
     def assert_failed_attempt_count_carried_through(self) -> None:
         assert self.read_back_account is not None, (

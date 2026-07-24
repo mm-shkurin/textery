@@ -77,10 +77,13 @@ ignore = [
 # ruff answers style questions; nothing was answering type questions, even though
 # every signature in this codebase is annotated. The annotations were decoration.
 #
-# `files` covers all production source plus the domain and usecase test trees.
-# The adapter and application test trees are still out: each carries its own
-# `conftest.py`, and with the layer roots mapped separately mypy sees several
-# modules named `conftest` and refuses before checking anything.
+# `files` covers every production and test root. `conftest.py` is the one thing
+# excluded: the layer roots are separate sys.path entries rather than one package
+# tree, so all six conftests are the module `conftest` and mypy refuses the
+# duplicate before checking anything else. Excluding six fixture files to type-
+# check the ~90 test modules behind them is the trade; giving the test trees
+# `__init__.py` would fix it properly but would also break the deliberate
+# namespace-package merge of the two `statements` directories.
 [tool.mypy]
 python_version = "3.12"
 explicit_package_bases = true
@@ -98,6 +101,12 @@ mypy_path = [
     "application/src/app",
     "domain/tests",
     "usecase/tests",
+    "adapters/db/tests",
+    "adapters/rest/tests",
+    "adapters/security/tests",
+    "adapters/generation_provider/tests",
+    "adapters/oauth_provider/tests",
+    "application/tests",
 ]
 files = [
     "domain/src",
@@ -110,7 +119,14 @@ files = [
     "application/src",
     "domain/tests",
     "usecase/tests",
+    "adapters/db/tests",
+    "adapters/rest/tests",
+    "adapters/security/tests",
+    "adapters/generation_provider/tests",
+    "adapters/oauth_provider/tests",
+    "application/tests",
 ]
+exclude = ['(^|/)conftest\.py$']
 # Third-party packages without bundled stubs (asyncpg, nh3) would otherwise be
 # 20 import errors drowning the 3 real ones.
 ignore_missing_imports = true
