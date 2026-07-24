@@ -117,9 +117,16 @@ app.include_router(generation_router)
 app.include_router(auth_router)
 app.include_router(oauth_router)
 app.include_router(document_router)
-app.add_exception_handler(ValidationException, validation_exception_handler)
-app.add_exception_handler(NotFoundException, not_found_exception_handler)
-app.add_exception_handler(ConflictException, conflict_exception_handler)
+# The three narrow handlers are suppressed below because Starlette types the
+# second argument as taking `Exception`, while it dispatches on the class given
+# in the first argument, so a handler narrowed to the class it is registered for
+# is the intended usage and cannot be called with anything else. Typing that
+# relationship needs a dependent signature Starlette does not express. Suppressed
+# per line, with the code named, rather than by loosening the handlers to
+# `Exception` -- that would erase a real guarantee to satisfy a stub.
+app.add_exception_handler(ValidationException, validation_exception_handler)  # type: ignore[arg-type]
+app.add_exception_handler(NotFoundException, not_found_exception_handler)  # type: ignore[arg-type]
+app.add_exception_handler(ConflictException, conflict_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(Exception, unhandled_exception_handler)
 
 app.dependency_overrides[get_request_generation_usecase] = create_request_generation

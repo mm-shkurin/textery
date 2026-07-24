@@ -30,6 +30,27 @@ jobs:
       - name: Check formatting
         run: ruff format --check .
 
+  # Its own job, and not folded into `lint`: mypy needs the runtime dependencies
+  # installed to see FastAPI's and SQLAlchemy's own type information, which the
+  # ruff-only job deliberately skips to stay fast. It still needs no database.
+  types:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check types
+        run: mypy
+
   test:
     runs-on: ubuntu-latest
 

@@ -80,6 +80,7 @@ pytest                      # весь набор
 pytest domain usecase       # только быстрые тесты, без БД
 ruff check .                # линтер
 ruff format --check .       # форматирование
+mypy                        # статическая проверка типов (конфиг в pyproject.toml)
 ```
 
 Тесты каждого слоя лежат рядом с модулем (`domain/tests`, `usecase/tests`,

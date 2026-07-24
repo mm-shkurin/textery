@@ -73,6 +73,44 @@ ignore = [
 # its job, not an oversight.
 "**/tests/**" = ["ARG001", "ARG002"]
 
+# --- Static type checker -----------------------------------------------------
+# ruff answers style questions; nothing was answering type questions, even though
+# every signature in this codebase is annotated. The annotations were decoration.
+#
+# `files` covers production code only, for now. The test suite leans on duck-typed
+# fakes that implement Protocol ports structurally, and pulling it in would demand
+# annotations on hundreds of fixtures before it said anything useful about the
+# code that ships. Widening this to `**/tests` is the obvious next step.
+[tool.mypy]
+python_version = "3.12"
+explicit_package_bases = true
+# The layers are separate roots on sys.path, not one package tree, so mypy needs
+# the same map pytest gets from `pythonpath` above. A list, not a ":"-joined
+# string: the separator is OS-specific and CI is Linux while development is not.
+mypy_path = [
+    "domain/src",
+    "usecase/src",
+    "adapters/rest/src",
+    "adapters/db/src",
+    "adapters/security/src",
+    "adapters/generation_provider/src",
+    "adapters/oauth_provider/src",
+    "application/src/app",
+]
+files = [
+    "domain/src",
+    "usecase/src",
+    "adapters/rest/src",
+    "adapters/db/src",
+    "adapters/security/src",
+    "adapters/generation_provider/src",
+    "adapters/oauth_provider/src",
+    "application/src",
+]
+# Third-party packages without bundled stubs (asyncpg, nh3) would otherwise be
+# 20 import errors drowning the 3 real ones.
+ignore_missing_imports = true
+
 [tool.ruff.lint.isort]
 known-first-party = [
     "access",

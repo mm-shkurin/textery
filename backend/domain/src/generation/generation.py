@@ -87,8 +87,11 @@ class Generation:
         extra_wishes: str | None,
         document_type: str,
     ) -> "Generation":
-        if cls._is_blank_topic(topic):
-            raise ValidationException(MISSING_TOPIC_MESSAGE)
+        # Rebinding to the non-optional return is what lets the length check below
+        # be honest: a predicate that answers True for None leaves `topic` typed
+        # `str | None` afterwards, and `len(topic)` was only safe by reading the
+        # two lines together. The validator returns the narrowed value instead.
+        topic = cls._required_topic(topic)
         if len(topic) > MAX_TOPIC_LENGTH:
             raise ValidationException(TOPIC_TOO_LONG_MESSAGE)
         if cls._is_out_of_range_volume(volume_pages):
@@ -142,13 +145,21 @@ class Generation:
         return not (MIN_VOLUME_PAGES <= volume_pages <= MAX_VOLUME_PAGES)
 
     @staticmethod
-    def _is_blank_topic(topic: str | None) -> bool:
+    def _required_topic(topic: str | None) -> str:
+        """The topic, proven present, or `MISSING_TOPIC_MESSAGE`.
+
+        Returns the value rather than answering a yes/no question, so the caller
+        holds a `str` afterwards instead of a `str | None` it has to remember is
+        already checked.
+        """
         if topic is None:
-            return True
+            raise ValidationException(MISSING_TOPIC_MESSAGE)
         # str.strip() only removes Unicode whitespace (category Zs/Zl/Zp), not
         # format characters like U+200B ZERO WIDTH SPACE (category Cf). Strip
         # both ordinary whitespace and format characters before checking emptiness.
         visible_chars = [
             char for char in topic if not char.isspace() and unicodedata.category(char) != "Cf"
         ]
-        return len(visible_chars) == 0
+        if not visible_chars:
+            raise ValidationException(MISSING_TOPIC_MESSAGE)
+        return topic
