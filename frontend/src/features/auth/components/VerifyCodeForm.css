@@ -16,14 +16,14 @@
 }
 
 .verify-code-inputs input {
-  width: 56px;
-  height: 75px;
+  width: 46px;
+  height: 56px;
   background: var(--blue-50);
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   text-align: center;
-  font-size: 27px;
+  font-size: 22px;
   font-weight: 500;
   font-family: inherit;
 }
@@ -36,7 +36,7 @@
 /* `Vector 25` — the 23px dash that splits the six boxes into two triplets. Drawn as a border
    on the third box's right gap so no extra element is needed in the fieldset. */
 .verify-code-inputs input:nth-child(3) {
-  margin-right: 34px;
+  margin-right: 28px;
 }
 
 .verify-code-inputs::before {

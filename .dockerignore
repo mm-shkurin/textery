@@ -7,6 +7,10 @@ ProductSpecification
 infra/.memory-bank
 infra/swarm-report
 node_modules
+# Local Vite build output — the frontend image runs its own `npm run build` inside the
+# Dockerfile, so shipping the host's dist/ only bloats the context (and trips buildkit's
+# "invalid file request" on OneDrive-synced artifacts).
+frontend/dist
 .venv
 __pycache__
 *.pyc

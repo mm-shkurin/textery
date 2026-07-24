@@ -3,18 +3,18 @@
 }
 
 .login-subtitle {
-  margin-bottom: 28px;
+  margin-bottom: 22px;
 }
 
-/* "или" between the provider block and the e-mail block: 17px, mid-grey, flanked by two
-   242px hairlines (`Line 54`/`Line 55` in node 125:1276). */
+/* "или" between the provider block and the e-mail block: mid-grey, flanked by two hairlines
+   (`Line 54`/`Line 55` in node 125:1276). */
 .auth-divider {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin: 22px 0;
+  margin: 18px 0;
   color: #454748;
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -22,8 +22,8 @@
 .auth-divider::after {
   content: '';
   flex: 1;
-  height: 2px;
-  background: var(--neutral-000);
+  height: 1px;
+  background: var(--border-subtle);
 }
 
 .oauth-list {
@@ -32,20 +32,20 @@
   gap: 8px;
 }
 
-/* `Group 18`/`Group 19` — 553x68 at 8px radius, `blue-200` fill with a white label. The
-   Variant2 (hover) state deepens the fill to `blue-500` rather than changing the text. */
+/* `Group 18`/`Group 19` — `blue-200` fill with a white label; the Variant2 (hover) state
+   deepens to `blue-500`. Height scaled down from the Figma 68 to match the fields. */
 .btn-oauth {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
   width: 100%;
-  height: 68px;
+  height: 52px;
   background: var(--blue-200);
   border: none;
-  border-radius: var(--radius-sm);
-  padding: 0 10px;
+  border-radius: var(--radius-md);
+  padding: 0 8px;
   color: #fafdff;
-  font-size: 19px;
+  font-size: 15px;
   font-weight: 400;
   font-family: inherit;
   cursor: pointer;
@@ -58,10 +58,10 @@
   color: var(--neutral-000);
 }
 
-/* The white 51px chip the provider mark sits inside. */
+/* The white chip the provider mark sits inside. */
 .provider-badge {
-  width: 51px;
-  height: 51px;
+  width: 38px;
+  height: 38px;
   border-radius: var(--radius-sm);
   background: var(--neutral-000);
   display: flex;
@@ -71,25 +71,19 @@
 }
 
 .provider-badge img {
-  width: 31px;
-  height: 31px;
+  width: 22px;
+  height: 22px;
   object-fit: contain;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 480px) {
   .btn-oauth {
-    height: 56px;
-    font-size: 16px;
-    gap: 12px;
+    height: 48px;
+    font-size: 14px;
   }
 
   .provider-badge {
-    width: 40px;
-    height: 40px;
-  }
-
-  .provider-badge img {
-    width: 24px;
-    height: 24px;
+    width: 34px;
+    height: 34px;
   }
 }
