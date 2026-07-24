@@ -27,11 +27,15 @@ function parseRetryAfterSeconds(headers: Headers | undefined): number | undefine
     return undefined
   }
   const trimmed = raw.trim()
-  if (trimmed === '') {
+  // Digits only, because `Number()` is far more generous than the contract: it reads '0x10' as 16
+  // and '1e3' as 1000, so a malformed header would put the account-locked screen into a
+  // seventeen-minute countdown the server never asked for. Anything that is not a plain integer
+  // is treated as absent, which the field already means.
+  if (!/^\d+$/.test(trimmed)) {
     return undefined
   }
   const seconds = Number(trimmed)
-  return Number.isFinite(seconds) && seconds >= 0 ? Math.floor(seconds) : undefined
+  return Number.isFinite(seconds) ? seconds : undefined
 }
 
 export interface RequestOptions {
@@ -143,7 +147,11 @@ async function performRequest<T>(
     }
     throw error
   }
-  return res.json()
+  // The success path needs the same defence the error path has. A 204, or a 200 with an empty
+  // body, makes `res.json()` throw a bare SyntaxError — which `isHttpError` rejects, so it falls
+  // through to the transport branch and the user is told the connection failed on a request that
+  // succeeded. An empty successful body is "nothing to report", and `{}` says that.
+  return (await res.json().catch(() => ({}))) as T
 }
 
 export async function postJson<T>(path: string, body: unknown): Promise<T> {
