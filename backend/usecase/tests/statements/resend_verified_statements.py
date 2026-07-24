@@ -49,7 +49,7 @@ class ResendVerifiedStatements:
         self.thrown_exception: Exception | None = None
         self.codes_before_resend = 0
 
-    async def given_a_verified_account_with_a_code_still_inside_cooldown(self) -> None:
+    async def given_a_verified_account_with_a_code_inside_cooldown(self) -> None:
         # Register at T0 (issues the registration code at created_at=T0), then verify
         # the account through the real VerifyAccount so is_verified flips to True. The
         # newest code stays the T0 registration code; moving the clock to T0+30s keeps

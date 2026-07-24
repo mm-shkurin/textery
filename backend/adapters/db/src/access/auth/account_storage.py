@@ -83,9 +83,7 @@ class SqlAlchemyAccountRepository:
         are untouched. No commit here -- the caller owns the transaction boundary.
         """
         await self._session.execute(
-            update(AccountModel)
-            .where(AccountModel.id == account_id)
-            .values(failed_attempt_count=0)
+            update(AccountModel).where(AccountModel.id == account_id).values(failed_attempt_count=0)
         )
 
     async def save(self, account: Account) -> None:

@@ -140,4 +140,3 @@ class ResendCodeStatements(ResendCodeAssertions):
         except Exception as exc:
             return exc
         return None
-

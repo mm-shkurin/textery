@@ -127,9 +127,9 @@ class ResendConcurrencyStatements:
                 .where(VerificationCodeModel.account_id == self.account_id)
             )
             self.final_code_count = count.scalar_one()
-            active = await SqlAlchemyVerificationCodeRepository(
-                session
-            ).find_active_by_account_id(self.account_id)
+            active = await SqlAlchemyVerificationCodeRepository(session).find_active_by_account_id(
+                self.account_id
+            )
             self.final_active_present = active is not None
 
     def assert_exactly_one_new_code_issued(self) -> None:

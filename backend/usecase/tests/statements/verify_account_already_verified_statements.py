@@ -38,16 +38,14 @@ class VerifyAccountAlreadyVerifiedStatements(VerifyAccountStatementsBase):
             self.ALREADY_VERIFIED_ERROR_CODE, self.ALREADY_VERIFIED_MESSAGE
         )
         assert (
-            len(self.account_repository.saved_accounts)
-            == self.account_saves_after_first_verify
+            len(self.account_repository.saved_accounts) == self.account_saves_after_first_verify
         ), (
             f"expected NO Account persist on the rejected verify, so the save count "
             f"stays {self.account_saves_after_first_verify}, got "
             f"{len(self.account_repository.saved_accounts)}"
         )
         assert (
-            len(self.verification_code_repository.saved_codes)
-            == self.code_saves_after_first_verify
+            len(self.verification_code_repository.saved_codes) == self.code_saves_after_first_verify
         ), (
             f"expected NO VerificationCode persist on the rejected verify, so the save "
             f"count stays {self.code_saves_after_first_verify}, got "

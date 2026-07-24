@@ -1,7 +1,7 @@
 import pytest
+from oauth_providers.fake_oauth_provider import FakeOAuthProvider
 
 from auth.oauth.oauth_provider import OAuthProviderError
-from oauth_providers.fake_oauth_provider import FakeOAuthProvider
 
 
 def _provider() -> FakeOAuthProvider:

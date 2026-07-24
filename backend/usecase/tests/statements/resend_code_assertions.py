@@ -12,7 +12,9 @@ class ResendCodeAssertions:
     """
 
     COOLDOWN_ERROR_CODE = "RESEND_COOLDOWN_ACTIVE"
-    COOLDOWN_MESSAGE = "A verification code was recently sent. Please wait before requesting another."
+    COOLDOWN_MESSAGE = (
+        "A verification code was recently sent. Please wait before requesting another."
+    )
     INVALID_OR_EXPIRED_CODE = "INVALID_OR_EXPIRED_CODE"
     INVALID_OR_EXPIRED_MESSAGE = "The verification code is invalid or has expired."
 

@@ -1,5 +1,3 @@
-import pytest
-
 from statements.login_failed_attempt_statements import LoginFailedAttemptStatements
 
 

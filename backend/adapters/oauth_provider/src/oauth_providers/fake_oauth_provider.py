@@ -36,11 +36,7 @@ class FakeOAuthProvider:
         return f"{self._authorize_url}?{query}"
 
     async def fetch_identity(self, authorization_code: str) -> ProviderIdentity:
-        fields = dict(
-            part.split("=", 1)
-            for part in authorization_code.split(";")
-            if "=" in part
-        )
+        fields = dict(part.split("=", 1) for part in authorization_code.split(";") if "=" in part)
         subject, email = fields.get("sub"), fields.get("email")
         if not subject or not email:
             raise OAuthProviderError(f"unreadable fake authorization code: {authorization_code!r}")

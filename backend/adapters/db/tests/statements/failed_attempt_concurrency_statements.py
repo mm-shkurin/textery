@@ -51,9 +51,7 @@ class FailedAttemptConcurrencyStatements:
 
     async def _increment_in_own_session(self) -> None:
         async with self._session_factory() as session:
-            await SqlAlchemyAccountRepository(session).increment_failed_attempts(
-                self.account_id
-            )
+            await SqlAlchemyAccountRepository(session).increment_failed_attempts(self.account_id)
             await session.commit()
 
     async def race_two_increments(self) -> None:
@@ -65,9 +63,7 @@ class FailedAttemptConcurrencyStatements:
     async def fetch_final_failed_attempt_count(self) -> None:
         async with self._session_factory() as session:
             model = await session.get(AccountModel, self.account_id)
-            self.final_failed_attempt_count = (
-                model.failed_attempt_count if model else None
-            )
+            self.final_failed_attempt_count = model.failed_attempt_count if model else None
             bystander = await session.get(AccountModel, self.bystander_account_id)
             self.bystander_failed_attempt_count = (
                 bystander.failed_attempt_count if bystander else None

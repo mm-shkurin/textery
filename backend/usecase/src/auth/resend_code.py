@@ -97,7 +97,7 @@ class ResendCode:
         try:
             await self.verification_code_repository.save(verification_code)
             await self.unit_of_work.commit()
-        except Exception as error:
+        except Exception:
             logger.exception("resend failed while saving the verification code")
             await rollback_quietly(self.unit_of_work)
             raise

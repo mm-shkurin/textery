@@ -1,6 +1,9 @@
 import os
 from collections.abc import AsyncIterator
 
+from oauth_providers.fake_oauth_provider import FakeOAuthProvider
+from oauth_providers.yandex_oauth_provider import YandexOAuthProvider
+
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.auth.handoff_code_storage import SqlAlchemyHandoffCodeRepository
 from access.auth.oauth_identity_storage import SqlAlchemyOAuthIdentityRepository
@@ -13,8 +16,6 @@ from auth.oauth.provider_registry import ProviderRegistry
 from auth.oauth.rate_limiter import OAuthRateGuard
 from auth.oauth.start_oauth import StartOAuth
 from container.runtime import session_factory, token_service
-from oauth_providers.fake_oauth_provider import FakeOAuthProvider
-from oauth_providers.yandex_oauth_provider import YandexOAuthProvider
 from session import SqlAlchemyUnitOfWork
 from shared.clock import SystemClock
 
@@ -62,9 +63,7 @@ def _rate_guard(session) -> OAuthRateGuard:
     # The limiter runs on the same request session but commits its increment itself,
     # so the hit counts even when the guarded operation rolls back (a throttled or
     # failed leg). The session is closed by the create_* factory's finally block.
-    return OAuthRateGuard(
-        SqlAlchemyRateLimiter(session, _rate_limit_max, _rate_limit_window)
-    )
+    return OAuthRateGuard(SqlAlchemyRateLimiter(session, _rate_limit_max, _rate_limit_window))
 
 
 def _create_provider():

@@ -64,7 +64,9 @@ class YandexOAuthProvider:
             raise OAuthProviderError("Yandex token response carried no access_token")
         return token
 
-    async def _read_identity(self, client: httpx.AsyncClient, access_token: str) -> ProviderIdentity:
+    async def _read_identity(
+        self, client: httpx.AsyncClient, access_token: str
+    ) -> ProviderIdentity:
         try:
             response = await client.get(
                 INFO_URL,
@@ -100,7 +102,9 @@ class YandexOAuthProvider:
             # secret. Logged so a live-Yandex misconfig is visible; the caller still
             # answers a single generic error.
             logger.warning(
-                "Yandex token request failed: %s %s", error.response.status_code, error.response.text
+                "Yandex token request failed: %s %s",
+                error.response.status_code,
+                error.response.text,
             )
             raise OAuthProviderError("Yandex token request failed") from error
         except (httpx.HTTPError, ValueError) as error:

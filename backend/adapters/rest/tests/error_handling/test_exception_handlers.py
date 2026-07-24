@@ -9,6 +9,12 @@ from error_handling.exception_handlers import (
 )
 from shared.exceptions import ValidationException
 
+# Named once: the test raises it and asserts the response echoes it verbatim, so
+# a copy in each place could drift and still look like a passing round-trip.
+RESEND_COOLDOWN_MESSAGE = (
+    "A verification code was recently sent. Please wait before requesting another."
+)
+
 
 class TestValidationExceptionHandler:
     """A ValidationException is mapped to the {error_code, message} envelope at HTTP 400."""
@@ -83,7 +89,7 @@ class TestValidationExceptionHandler:
         async def resend_cooldown() -> None:
             raise ValidationException(
                 error_code="RESEND_COOLDOWN_ACTIVE",
-                message="A verification code was recently sent. Please wait before requesting another.",
+                message=RESEND_COOLDOWN_MESSAGE,
             )
 
         app.add_exception_handler(ValidationException, validation_exception_handler)
@@ -95,7 +101,7 @@ class TestValidationExceptionHandler:
         assert response.status_code == 429, f"expected 429, got {response.status_code}"
         assert response.json() == {
             "error_code": "RESEND_COOLDOWN_ACTIVE",
-            "message": "A verification code was recently sent. Please wait before requesting another.",
+            "message": RESEND_COOLDOWN_MESSAGE,
         }, f"unexpected response body {response.json()}"
 
 

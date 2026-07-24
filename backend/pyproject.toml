@@ -64,6 +64,10 @@ ignore = [
 # ARG002: FakeProvider implements the GenerationProvider port. Ignoring the
 # generation it is handed is exactly what makes it a fake.
 "adapters/generation_provider/src/provider/fake_provider.py" = ["ARG002"]
+# ARG002: AllowAllRateLimiter is the null object for the RateLimiter port. It
+# never throttles, so ignoring the bucket key and the clock is its whole
+# definition -- narrowing the signature would break the port instead.
+"usecase/src/auth/oauth/rate_limiter.py" = ["ARG002"]
 # Test doubles implement production ports, and SQLAlchemy event hooks have a
 # fixed five-argument shape; an unused argument in either is the signature doing
 # its job, not an oversight.

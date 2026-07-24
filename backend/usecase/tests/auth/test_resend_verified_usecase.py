@@ -13,7 +13,7 @@ class TestResendVerifiedUsecase:
     async def test_should_reject_a_verified_account_before_the_cooldown_check(
         self, resend_verified_statements: ResendVerifiedStatements
     ):
-        await resend_verified_statements.given_a_verified_account_with_a_code_still_inside_cooldown()
+        await resend_verified_statements.given_a_verified_account_with_a_code_inside_cooldown()
         await resend_verified_statements.resend()
         resend_verified_statements.assert_rejected_as_already_verified_with_no_new_code()
 

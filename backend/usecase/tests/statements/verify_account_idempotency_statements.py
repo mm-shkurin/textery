@@ -58,16 +58,14 @@ class VerifyAccountIdempotencyStatements(VerifyAccountStatementsBase):
             f"original clock time, got {self.first_consumed_at}"
         )
         assert (
-            len(self.verification_code_repository.saved_codes)
-            == self.code_saves_after_first_verify
+            len(self.verification_code_repository.saved_codes) == self.code_saves_after_first_verify
         ), (
             f"expected NO second VerificationCode persist on replay, so the save "
             f"count stays {self.code_saves_after_first_verify}, got "
             f"{len(self.verification_code_repository.saved_codes)}"
         )
         assert (
-            len(self.account_repository.saved_accounts)
-            == self.account_saves_after_first_verify
+            len(self.account_repository.saved_accounts) == self.account_saves_after_first_verify
         ), (
             f"expected NO second Account persist on replay, so the save count stays "
             f"{self.account_saves_after_first_verify}, got "
@@ -78,8 +76,7 @@ class VerifyAccountIdempotencyStatements(VerifyAccountStatementsBase):
             f"{self.commits_after_first_verify}, got {self.unit_of_work.commit_call_count}"
         )
         assert (
-            self.verification_code_repository.saved_codes[-1].consumed_at
-            == self.first_consumed_at
+            self.verification_code_repository.saved_codes[-1].consumed_at == self.first_consumed_at
         ), (
             f"expected the stored code's consumed_at to stay the FIRST consume time "
             f"{self.first_consumed_at} (no re-consume), got "

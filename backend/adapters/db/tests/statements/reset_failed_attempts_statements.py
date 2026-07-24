@@ -56,21 +56,15 @@ class ResetFailedAttemptsStatements:
 
     async def reset_target_failed_attempts(self) -> None:
         async with self._session_factory() as session:
-            await SqlAlchemyAccountRepository(session).reset_failed_attempts(
-                self.account_id
-            )
+            await SqlAlchemyAccountRepository(session).reset_failed_attempts(self.account_id)
             await session.commit()
 
     async def reread_counts_on_new_session(self) -> None:
         async with self._session_factory() as session:
             target = await session.get(AccountModel, self.account_id)
-            self.target_count_after_reset = (
-                target.failed_attempt_count if target else None
-            )
+            self.target_count_after_reset = target.failed_attempt_count if target else None
             bystander = await session.get(AccountModel, self.bystander_account_id)
-            self.bystander_count_after_reset = (
-                bystander.failed_attempt_count if bystander else None
-            )
+            self.bystander_count_after_reset = bystander.failed_attempt_count if bystander else None
 
     def assert_target_reset_to_zero(self) -> None:
         assert self.target_count_after_reset == 0, (
