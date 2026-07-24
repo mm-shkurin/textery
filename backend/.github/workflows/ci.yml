@@ -124,11 +124,14 @@ jobs:
       # it is a ratchet against a slice landing with no tests at all, not a
       # target to hover at. Uploading coverage.xml without gating on it made the
       # number visible to anyone who went looking and binding on no one.
+      #
+      # No upload-artifact step here, unlike the GitHub copy in the root
+      # .github/workflows/backend-ci.yml: GitVerse runs `act` in GHES mode, where
+      # @actions/artifact v2 (upload-artifact@v4+) is unsupported and fails the
+      # job outright -- after the tests have already passed. The gate above is
+      # what enforces coverage; the artifact was only ever for a human to read.
       - name: Run tests with coverage
         run: pytest --cov --cov-report=xml:coverage.xml --cov-fail-under=90
 
-      - name: Upload coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-coverage
-          path: coverage.xml
+      - name: Report coverage
+        run: coverage report
