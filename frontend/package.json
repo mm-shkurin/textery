@@ -15,7 +15,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage && node scripts/check-per-file-coverage.mjs"
   },
   "dependencies": {
     "@tiptap/extension-document": "^3.27.4",

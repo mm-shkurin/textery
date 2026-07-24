@@ -28,20 +28,11 @@ function AppRoutes() {
 // the same crash is worse than none.
 function App() {
   const isInsideRouter = useInRouterContext()
-
-  if (isInsideRouter) {
-    return (
-      <ErrorBoundary title="Что-то пошло не так. Обновите страницу.">
-        <AppRoutes />
-      </ErrorBoundary>
-    )
-  }
+  const routes = <AppRoutes />
 
   return (
     <ErrorBoundary title="Что-то пошло не так. Обновите страницу.">
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      {isInsideRouter ? routes : <BrowserRouter>{routes}</BrowserRouter>}
     </ErrorBoundary>
   )
 }

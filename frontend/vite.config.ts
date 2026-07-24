@@ -28,7 +28,9 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html'],
+      // json-summary feeds scripts/check-per-file-coverage.mjs, which enforces the floor the
+      // global thresholds below cannot: a single untested module hides inside a good aggregate.
+      reporter: ['text', 'html', 'json-summary'],
       // Config, CSS and the test harness itself are not subjects — counting them would move the
       // ratio without telling anyone anything.
       exclude: ['src/main.tsx', 'src/test/**', '**/*.d.ts', '**/__tests__/**'],

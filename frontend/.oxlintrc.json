@@ -11,6 +11,12 @@
     // request leaves behind, and a blanket ban would delete the trace rather than route it
     // somewhere better. Revisit if a real sink is ever wired up.
     "no-console": ["error", { "allow": ["error", "warn"] }],
+    // Tokens live in sessionStorage, which any script on the origin can read. The reason that is
+    // survivable is that nothing here injects unescaped markup — React escaping by default is a
+    // property of the code, not a guarantee of the framework, and one dangerouslySetInnerHTML on
+    // a server-supplied string would turn a stored XSS into a session handover. Banned so the
+    // claim stays checkable rather than a comment someone has to remember.
+    "react/no-danger": "error",
     "jsx-a11y/alt-text": "error",
     "jsx-a11y/anchor-is-valid": "error"
   },
