@@ -76,8 +76,12 @@ jobs:
         working-directory: adapters/db
         run: alembic upgrade head
 
+      # The threshold is deliberately below the 98% the suite actually reaches:
+      # it is a ratchet against a slice landing with no tests at all, not a
+      # target to hover at. Uploading coverage.xml without gating on it made the
+      # number visible to anyone who went looking and binding on no one.
       - name: Run tests with coverage
-        run: pytest --cov --cov-report=xml:coverage.xml
+        run: pytest --cov --cov-report=xml:coverage.xml --cov-fail-under=90
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4

@@ -2,13 +2,14 @@ import os
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import event, text
+from sqlalchemy import event
 
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.document.document_storage import SqlAlchemyDocumentStorage
 from auth.account import Account
 from document.document import Document
 from session import create_engine, create_session_factory
+from statements.database_cleanup import truncate_all
 
 
 class TestSaveIsASingleCompareAndSwapStatement:
@@ -96,9 +97,5 @@ class TestSaveIsASingleCompareAndSwapStatement:
                 f"re-open the race the CAS closes. Got: {statement}"
             )
         finally:
-            async with engine.connect() as cleanup:
-                await cleanup.execute(
-                    text("TRUNCATE TABLE generations, documents, verification_codes, accounts")
-                )
-                await cleanup.commit()
+            await truncate_all(engine)
             await engine.dispose()

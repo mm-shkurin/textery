@@ -11,6 +11,7 @@ from auth.account import Account
 from generation.generation import Generation
 from session import create_engine, create_session_factory
 from shared.exceptions import ConflictException, NotFoundException
+from statements.database_cleanup import truncate_all
 
 
 def _test_engine():
@@ -45,11 +46,7 @@ async def _seed(session_factory) -> tuple[Account, Generation]:
 
 
 async def _truncate(engine):
-    async with engine.connect() as cleanup:
-        await cleanup.execute(
-            text("TRUNCATE TABLE generations, documents, verification_codes, accounts")
-        )
-        await cleanup.commit()
+    await truncate_all(engine)
 
 
 class TestUpdateIsASingleCompareAndSwapStatement:
