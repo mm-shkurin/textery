@@ -15,10 +15,10 @@ This file tracks **which work units ran**.
 - [S] green-frontend-api — same reason, no API for control display.
 - [x] align-design — no mockup for story 17; styled to editor design tokens + defined the me-toolbar-row flex layout (breadcrumb left / export right). design-review PASS, coverage 100%.
 - [x] green-selenium — real Chrome, 2 clean runs; against Vite dev :5273 + backend :8100 (no infra/.env on branch — run needs FRONTEND_PORT=5273 BACKEND_PORT=8100)
-- [~] demo
+- [S] demo — autonomous loop, no interactive viewer; behavior already proven in real Chrome by green-selenium. Run `/demo TestExportControlDisplayAcceptance` manually to watch.
 
 ### Scenario 2.1: The export control is disabled while a request is in flight
-- [ ] red-selenium
+- [~] red-selenium
 - [ ] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
