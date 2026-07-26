@@ -88,6 +88,31 @@
   }
 }
 
+/* Inline export failure (scenario 3.2): the transport's message plus a retry, shown until the
+   next dispatch succeeds. Styled minimally here; pixel alignment is the align-design step. */
+.me-export-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-danger, #d9534f);
+  font-size: 13px;
+}
+
+.me-export-retry {
+  padding: 4px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.me-export-retry:hover {
+  background: var(--bg-card-muted);
+}
+
 @media (max-width: 768px) {
   .me-export-trigger,
   .me-export-option {

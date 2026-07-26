@@ -23,20 +23,39 @@ export function ExportControl({ documentId }: ExportControlProps) {
   // A genuine in-flight lock, not an accident of the menu unmounting: while a request is
   // pending the options are disabled so a second click cannot dispatch a second export.
   const [isExporting, setIsExporting] = useState(false)
+  // Scenario 3.2: a rejected export surfaces inline as this message (the transport's own
+  // failure text) plus a retry. Null = no failure to show.
+  const [error, setError] = useState<string | null>(null)
+  // The format of the last dispatched attempt, captured so retry re-dispatches the SAME
+  // format — a docx failure must retry docx, not a hardcoded pdf.
+  const [lastFormat, setLastFormat] = useState<ExportFormat | null>(null)
 
   const handleExport = (format: ExportFormat) => {
     if (isExporting || !documentId) return
     setIsExporting(true)
+    // Remember the format so retry re-dispatches the SAME one (docx retries docx, not pdf).
+    setLastFormat(format)
     exportDocument(documentId, format)
-      // Swallow here so a failed export never escapes as an unhandled rejection (the api
-      // step's real request can reject, and the current stub always does). The user-facing
-      // error + retry surfacing is scenario 3.2; this only keeps the rejection handled.
-      .catch(() => {})
+      // Clear the error ONLY on success — never optimistically at dispatch time. This keeps a
+      // failed export's banner visible through the retry's whole in-flight window and drops it
+      // the moment the retry succeeds; a still-failing retry leaves the banner up.
+      .then(() => {
+        setError(null)
+      })
+      // Surface the rejection as inline error state (keeps the rejection handled — no unhandled
+      // promise rejection). If the retry also rejects, the message is re-raised here.
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : String(err))
+      })
       // `finally` releases the lock on BOTH resolve and reject: a lock that only cleared on
       // success would leave the control permanently dead after the first failed export.
       .finally(() => {
         setIsExporting(false)
       })
+  }
+
+  const handleRetry = () => {
+    if (lastFormat) handleExport(lastFormat)
   }
 
   return (
@@ -58,6 +77,20 @@ export function ExportControl({ documentId }: ExportControlProps) {
           className="me-export-spinner"
           aria-hidden="true"
         />
+      )}
+      {error && (
+        <span className="me-export-error" role="alert" data-testid="export-error">
+          {error}
+          <button
+            type="button"
+            className="me-export-retry"
+            data-testid="export-retry"
+            aria-label="Повторить"
+            onClick={handleRetry}
+          >
+            Повторить
+          </button>
+        </span>
       )}
       {isOpen && (
         <div className="me-export-menu" role="menu" data-testid="export-menu">
