@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { ManualEditor } from '../ManualEditor'
 import { SAVE_ERROR_MESSAGE } from '../../hooks/useDocumentSave'
 import * as documentApi from '../../api/documentApi'
+import { AUTOSAVE_DEBOUNCE_MS, flushMicrotasks } from './ManualEditor.autosave.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -12,15 +13,8 @@ vi.mock('../../api/documentApi')
 // fires, whose .catch sets the failed-save banner (setSaveError) and never touches editor content.
 // The manual-save failure copy is already tested (ManualEditor.saveFailureKinds/save.test); what
 // no test yet pinned is that a debounce-triggered save (no click) surfaces the same failure state
-// AND preserves the typed text. This locks that combination in. Debounce interval assumed 1000ms,
-// the E3.1 constant.
-const AUTOSAVE_DEBOUNCE_MS = 1000
-
-async function flushMicrotasks() {
-  await act(async () => {
-    await vi.advanceTimersByTimeAsync(0)
-  })
-}
+// AND preserves the typed text. This locks that combination in. Debounce interval (AUTOSAVE_DEBOUNCE_MS)
+// is the shared E3.1 constant.
 
 describe('ManualEditor — a failed autosave keeps the content and shows the failure (E3.2)', () => {
   beforeEach(() => {

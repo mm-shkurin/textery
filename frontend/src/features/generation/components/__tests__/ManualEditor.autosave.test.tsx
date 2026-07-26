@@ -2,20 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { ManualEditor } from '../ManualEditor'
 import * as documentApi from '../../api/documentApi'
+import { AUTOSAVE_DEBOUNCE_MS, flushMicrotasks } from './ManualEditor.autosave.testSupport'
 
 vi.mock('../../api/documentApi')
 
 // Scenario E3.1 (07_Editor_Extension_Tests.md §3.1): edits autosave without an explicit click.
-// Green will schedule a debounced save on edit. Assumed debounce interval: 1000ms — a save must
-// fire once the user stops typing past it, and must NOT fire before it (debounce, not
+// Green will schedule a debounced save on edit. Assumed debounce interval: AUTOSAVE_DEBOUNCE_MS — a
+// save must fire once the user stops typing past it, and must NOT fire before it (debounce, not
 // save-on-every-keystroke). Assert around that constant.
-const AUTOSAVE_DEBOUNCE_MS = 1000
-
-async function flushMicrotasks() {
-  await act(async () => {
-    await vi.advanceTimersByTimeAsync(0)
-  })
-}
 
 describe('ManualEditor debounced autosave', () => {
   beforeEach(() => {
