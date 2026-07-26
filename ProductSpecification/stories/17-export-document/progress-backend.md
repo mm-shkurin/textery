@@ -187,12 +187,15 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   media_type=RenderedExport.media_type, headers={"Content-Disposition": "attachment;
   filename=document.pdf"})` — there is NO binary-Response precedent in the rest layer (only
   JSONResponse) → red-adapter rest / green-adapter rest.
-  ⚠️ WINDOWS-HOST RISK (confirmed live): `import weasyprint` fails on this host (no GTK/pango/cairo),
-  so `green-adapter rendering`'s unit test cannot execute a real render locally. Mitigation: add
-  WeasyPrint to backend requirements + libpango/cairo to backend.Dockerfile, and verify the real
-  render inside the Linux backend container (the baked-image rebuild at green-acceptance) rather than
-  on the host. The host-side rendering adapter test should assert construction / url_fetcher-disabled
-  wiring only where it can, deferring the actual byte-render proof to the in-container green-acceptance.
+  ⚠️ WINDOWS-HOST CONSTRAINT (confirmed live): `import weasyprint` fails on this host (no
+  GTK/pango/cairo), so a host-side pytest cannot even COLLECT the rendering-adapter test (the module
+  imports weasyprint at load). DECISION (user, 2026-07-26): **run the rendering-adapter red/green
+  tests inside the Linux backend container** (Docker), matching the acceptance pattern — host suites
+  stay weasyprint-free. So: add WeasyPrint to backend requirements + libpango/cairo to
+  backend.Dockerfile, rebuild the backend image, and execute the rendering-adapter tests via
+  `docker compose exec` (or the container's own pytest run) at BOTH red-adapter rendering (confirm
+  the real RED in-container) and green-adapter rendering. This is a departure from the usual
+  host-run adapter tests, forced by the native dependency.
 - [~] red-adapter rendering
 - [ ] green-adapter rendering
 - [ ] red-adapter rest
