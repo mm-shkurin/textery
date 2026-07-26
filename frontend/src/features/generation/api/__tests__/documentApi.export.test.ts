@@ -33,10 +33,7 @@ describe('documentApi export request contract', () => {
     return fetchMock
   }
 
-  // RED (skipped until green-frontend-api): exportDocument is a throw-stub, so the call rejects
-  // with `Error: exportDocument not implemented yet (documentId=doc-1, format=pdf); the HTTP
-  // download lands in green-frontend-api` before any request is issued (documentApi.ts:132).
-  it.skip('exportDocument GETs the export endpoint with the format query param and returns the body', async () => {
+  it('exportDocument GETs the export endpoint with the format query param and returns the body', async () => {
     const pdfBlob = new Blob(['%PDF-1.7 binary'], { type: 'application/pdf' })
     const fetchMock = stubExportFetch(pdfBlob)
 
