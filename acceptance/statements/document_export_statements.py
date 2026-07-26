@@ -8,6 +8,7 @@ from clients.application.dto.auth.verify_request_dto import VerifyRequestDto
 from clients.application.dto.document.export_response_dto import ExportResponseDto
 
 ACCOUNT_PASSWORD = "Str0ng!Pass"
+SUPPORTED_DOCUMENT_TYPE = "доклад"
 PDF_CONTENT_TYPE = "application/pdf"
 DOCX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
@@ -20,6 +21,28 @@ class DocumentExportStatements:
         "error_code": "NOT_FOUND",
         "message": "The requested resource was not found.",
     }
+    # The exact JSON-error content type on a refused export (no charset suffix is
+    # appended for application/* by Starlette). Pinned, not prefix-matched.
+    EXPECTED_ERROR_CONTENT_TYPE: ClassVar[str] = "application/json"
+    # The exact wire bytes of the sanctioned 404 body (Starlette JSONResponse serializes
+    # with compact separators and no trailing newline). This is the raw content both the
+    # non-existent and foreign cases must return byte-for-byte.
+    EXPECTED_NOT_FOUND_BYTES: ClassVar[bytes] = (
+        b'{"error_code":"NOT_FOUND","message":"The requested resource was not found."}'
+    )
+
+    @classmethod
+    def _expected_not_found_response(cls) -> ExportResponseDto:
+        # The complete sanctioned 404 export response. Both the non-existent-id case
+        # and the foreign-owned case must equal this exact DTO — same status, same
+        # parsed body, same raw bytes, same headers — so ownership is unprobeable.
+        return ExportResponseDto(
+            status_code=404,
+            body=cls.EXPECTED_NOT_FOUND_ERROR,
+            content_type=cls.EXPECTED_ERROR_CONTENT_TYPE,
+            content_disposition=None,
+            content=cls.EXPECTED_NOT_FOUND_BYTES,
+        )
 
     def __init__(self, client: ApplicationClient):
         self._client = client
@@ -59,6 +82,51 @@ class DocumentExportStatements:
             access_token=access_token,
         )
 
+    async def _create_document_owned_by(self, access_token: str) -> str:
+        response = await self._client.create_document(
+            document_type=SUPPORTED_DOCUMENT_TYPE,
+            access_token=access_token,
+            idempotency_key=str(uuid.uuid4()),
+        )
+        document_id = (response.body or {}).get("document_id")
+        assert document_id is not None, (
+            f"setup: expected document creation to return a document_id, got "
+            f"status_code={response.status_code}, body={response.body}"
+        )
+        return document_id
+
+    async def given_document_owned_by_another_account_exported_as_pdf(
+        self,
+    ) -> ExportResponseDto:
+        owner_access_token = await self._authenticated_access_token()
+        foreign_document_id = await self._create_document_owned_by(owner_access_token)
+        caller_access_token = await self._authenticated_access_token()
+        return await self._client.export_document(
+            document_id=foreign_document_id,
+            export_format="pdf",
+            access_token=caller_access_token,
+        )
+
+    def assert_byte_identical_to_nonexistent_case(
+        self, foreign: ExportResponseDto, nonexistent: ExportResponseDto
+    ) -> None:
+        # Indistinguishability: both the foreign (existing) document and the
+        # non-existent id must produce the SAME sanctioned 404 response, pinned to
+        # exact literals — same status, same parsed body, byte-for-byte the same raw
+        # content, and the same headers (content type + absent Content-Disposition).
+        # Pinning each side to the full expected DTO (not merely comparing the two to
+        # each other) means two identical 500s, or a leaked attachment header on one
+        # side, cannot pass. A frozen dataclass compares all fields recursively.
+        expected = self._expected_not_found_response()
+        assert nonexistent == expected, (
+            f"expected the non-existent-id export to be the sanctioned 404 response "
+            f"{expected!r}, got {nonexistent!r}"
+        )
+        assert foreign == expected, (
+            f"expected the foreign-document export to be byte-identical to the "
+            f"sanctioned 404 response {expected!r}, got {foreign!r}"
+        )
+
     def assert_refused_as_not_found(self, response: ExportResponseDto) -> None:
         assert response.status_code == 404, (
             f"expected 404 Not Found refusing the export of a non-existent document, got "
@@ -71,11 +139,11 @@ class DocumentExportStatements:
 
     def assert_no_file_returned(self, response: ExportResponseDto) -> None:
         # A refused export returns the JSON error body, never a file. Pinning the
-        # positive content type inherently excludes PDF/DOCX; an absent
+        # exact content type inherently excludes PDF/DOCX; an absent
         # Content-Disposition proves no attachment was offered.
-        content_type = response.content_type or ""
-        assert content_type.startswith("application/json"), (
-            f"expected the JSON error content type on a refused export, got "
+        assert response.content_type == self.EXPECTED_ERROR_CONTENT_TYPE, (
+            f"expected the exact JSON error content type "
+            f"{self.EXPECTED_ERROR_CONTENT_TYPE!r} on a refused export, got "
             f"content_type={response.content_type!r}"
         )
         assert response.content_disposition is None, (

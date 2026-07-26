@@ -38,15 +38,20 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 - [x] green-acceptance
 
 ### Scenario 1.2: Export of another account's document is refused indistinguishably
-- [~] red-acceptance
-- [ ] design
-- [ ] red-usecase
-- [ ] green-usecase
-- [ ] adapters-discovery
-- [ ] green-acceptance
+- [x] red-acceptance — enabled regression guard (already GREEN): a foreign existing document
+  and a non-existent id both collapse to the sanctioned 404 byte-for-byte. Asserts full-DTO
+  equality of both responses against the sanctioned NOT_FOUND literal (status + parsed body +
+  raw bytes + both headers).
+- [S] design — no new implementation: indistinguishability is already enforced structurally by
+  owner-scoped SQL (`find_by_id_and_owner` filters on owner_id).
+- [S] red-usecase — owner-scoped None collapse already built + covered by Scenario 1.1.
+- [S] green-usecase — same; zero production files modified for 1.2.
+- [S] adapters-discovery — no adapter change; `find_by_id_and_owner` + NotFoundException already
+  sufficient (see Scenario 1.1 discovery).
+- [x] green-acceptance — test enabled and passing (2 passed), no production change needed.
 
 ### Scenario 1.3: An unsupported or missing format is refused
-- [ ] red-acceptance
+- [~] red-acceptance
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase
