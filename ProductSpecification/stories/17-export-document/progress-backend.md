@@ -11,8 +11,18 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 
 ### Scenario 1.1: Export of a non-existent document is refused
 - [x] red-acceptance
-- [~] design
-- [ ] red-usecase
+- [x] design — new `ExportDocument(document_repository)` usecase: `execute(document_id, owner_id)`
+  does owner-scoped `find_by_id_and_owner`, returns `Document | None` (no rendering this
+  scenario). New route `GET /api/v1/documents/{document_id}/export` with typed
+  `document_id: UUID` path param + `Depends(get_current_owner_id)`; `None` →
+  `NotFoundException` → sanctioned 404. Absent+foreign collapse to None (owner-scoped SQL).
+  Hazard scan (all 8 groups): no open GAP — grp1/2/3/8 clear; grp5 IDOR-foreign owned by
+  Sc 1.2 + Security 1.1; grp5 unauth/null-owner guarded by reused story-7
+  `get_current_owner_id`; grp5/6 malformed/oversize id guarded by typed UUID param; grp7
+  exact-404-body already asserted in red-acceptance; grp4 title-migration owned by Infra
+  3.1; grp3 read-after-write owned by Sc 3.5; render seams → rendering/4.2/4.5. No ADR
+  (single viable approach, guards reuse established patterns).
+- [~] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
