@@ -1694,9 +1694,9 @@ deploy) live in `progress-backend.md`, referenced here as `[S]`.
 - [S] demo — skipped in unattended loop (no viewer to watch the visible browser); E1.1 behavior proven by the passing headless green-selenium round-trip. Run `/demo TestManualEditorBlockSchemaAcceptance` to watch it live.
 
 ### Scenario E1.2: An existing inline-only document loads without data loss
-- [ ] red-frontend — legacy `content` (pre-migration) loads intact in the block editor
-- [ ] green-frontend — load-path tolerance for old inline-only content
-- [ ] demo
+- [x] red-frontend — legacy `content` (pre-migration) loads intact: back-compat **characterization guard** (`ManualEditor.legacyLoad.test.tsx`, 5 passing) — not a red→green cycle. Existence-check STOP: the E1.1 migration already delivers "no text dropped" (ProseMirror lifts retired-mark wrappers into block nodes; verified 15 samples incl. centered-`<div>` child-lift). Closes the E1.1 premortem's severe alignment/text-loss follow-up; alignment loss on legacy `<div>` pinned as ADR-defined-lossy.
+- [S] green-frontend — no production code needed; load-path tolerance already provided by the E1.1 block-schema migration (see red-frontend note).
+- [S] demo — unattended loop, no viewer; back-compat load proven by the passing legacyLoad guard.
 
 ### Scenario E2.1: Bulleted and numbered lists round-trip
 - [ ] red-frontend — bulleted + numbered lists save→reload as correct semantic elements
