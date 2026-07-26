@@ -100,8 +100,16 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   / green-adapter rest. Check 3 (response shape): [S] the 422 refusal body `{error_code, message}`
   is already produced by the existing `validation_exception_handler`; the success/binary export
   body is deferred to the rendering scenarios (2.x), out of scope for 1.3's refusal path.
-- [~] red-adapter rest
-- [ ] green-adapter rest
+- [x] red-adapter rest — RED confirmed live: `assert 400 == 422` (predicted == actual). New test
+  `TestInvalidFormatStatusMapping::test_should_map_invalid_format_to_422` in
+  test_document_exception_handlers.py, modeled on `TestUnauthorizedStatusMapping`: a route raises
+  `ValidationException(INVALID_FORMAT, "The format must be pdf or docx.")` through the real
+  `validation_exception_handler`; asserts strict `status_code == 422` + full parsed body
+  `{"error_code":"INVALID_FORMAT","message":"The format must be pdf or docx."}`. Currently 400
+  (default) — INVALID_FORMAT absent from the map. test-review: target test already strict, no
+  change. (Detector also flagged 3 pre-existing loose `not in` leak-guards elsewhere in the file —
+  Security-5.1-owned, untouched by this commit, out of scope.)
+- [~] green-adapter rest
 - [ ] green-acceptance
 
 ### Scenario 2.1: A document exports as a valid PDF
