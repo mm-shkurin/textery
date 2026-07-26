@@ -24,7 +24,7 @@ This file tracks **which work units ran**.
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
-- [ ] green-selenium
+- [ ] green-selenium — **determinism debt (premortem 45e1e2b):** `trigger_export_as_pdf_twice` currently clicks twice with nothing holding the first `/export` open. Before relying on `== 1`, make the in-flight window deterministic — throttle the network (`Network.emulateNetworkConditions`) so the first request stays open AND wait for a browser-observable in-flight state (the exporting indicator from 3.1) before the second click. Mirror `manual_editor_save_queue_statements.py` (`_SLOW_LATENCY_MS` + `wait_for_save_in_flight`). Otherwise `== 1` passes a same-tick debounce (double-fire ships) or flakes on fast CI.
 - [ ] demo
 
 ### Scenario 3.1: An in-flight export shows a progress state
