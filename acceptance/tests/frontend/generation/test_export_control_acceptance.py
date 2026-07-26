@@ -3,10 +3,6 @@ import pytest
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
-# RED: scenario 1.1 — the editor has no export control yet. The editor opens fine (live session),
-# but `[data-testid='export-control-trigger']` does not exist, so opening the control times out.
-# Un-skip in green-selenium once the export control (trigger + PDF/DOCX choices) is implemented.
-@pytest.mark.skip(reason="RED: export control not implemented (scenario 1.1)")
 class TestExportControlDisplayAcceptance(AbstractFrontendTest):
     """UI Test Scenario 1.1: The editor offers a PDF and a DOCX export choice.
 
