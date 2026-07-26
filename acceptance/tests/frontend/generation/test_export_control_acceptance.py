@@ -22,8 +22,8 @@ class TestExportControlDisplayAcceptance(AbstractFrontendTest):
 
 
 @pytest.mark.skip(
-    reason="RED: ExportControl option has no onClick/request wiring, so an in-flight "
-    "lock does not exist yet — a double-click sends 0 export requests, not 1"
+    reason="RED: in-flight lock wiring is implemented; unskip is the green-selenium step. "
+    "Live verified 2026-07-26 with reordered throttle (open control before throttling)."
 )
 class TestExportControlInFlightAcceptance(AbstractFrontendTest):
     """UI Test Scenario 2.1: The export control is disabled while a request is in flight.

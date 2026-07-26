@@ -67,17 +67,22 @@ class ExportControlStatements(NetworkThrottleMixin, ManualEditorStatements):
         )
 
     def trigger_export_as_pdf_twice(self, driver) -> None:
-        """Throttle the network, click the PDF choice, wait for the in-flight lock, then click again.
+        """Open the export control, throttle the network, click PDF, wait for the lock, click again.
 
-        The throttle holds the first GET /export open for `SLOW_LATENCY_MS`, so the second click
-        is PROVEN to land while `isExporting` is true (the option disabled). A correct in-flight
-        lock drops that second click instead of dispatching a duplicate request; without the lock
-        the second click would fire a second GET /export and the count would be 2. The throttle is
-        cleared afterward so it never leaks into later assertions.
+        Opening the export control is a local toggle that sends no network request, so it must
+        happen BEFORE throttling — under the CDP throttle the trigger would never become visible
+        within the wait and the test would time out on the menu-open (as scenario 1.1, which does
+        not throttle, proves). The GET /export fires only on the PDF-option click, so the throttle
+        only needs to be active from that click onward. The throttle then holds the first GET
+        /export open for `SLOW_LATENCY_MS`, so the second click is PROVEN to land while
+        `isExporting` is true (the option disabled). A correct in-flight lock drops that second
+        click instead of dispatching a duplicate request; without the lock the second click would
+        fire a second GET /export and the count would be 2. The throttle is cleared afterward so it
+        never leaks into later assertions.
         """
-        self.throttle_network(driver)
         self.open_export_control(driver)
         pdf_option = self._wait_for_visible(driver, EXPORT_OPTION_PDF)
+        self.throttle_network(driver)
         pdf_option.click()
         self.wait_for_export_in_flight(driver)
         pdf_option.click()
