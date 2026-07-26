@@ -1733,8 +1733,8 @@ deploy) live in `progress-backend.md`, referenced here as `[S]`.
 - [ ] demo
 
 ### Scenario H9.4: Rapid typing coalesces to a bounded save rate
-- [ ] red-frontend — continuous typing collapses to few requests, not one per keystroke
-- [ ] green-frontend — debounce/coalesce (may be covered by E3.1 impl — verify, then `[S]` if reuse)
+- [ ] red-frontend — continuous typing collapses to few requests, not one per keystroke. **Also pin the redundant-trailing-PUT defect CONFIRMED by both review passes on E3.1 green (7f2998e):** an edit landing during an in-flight autosave triggers the `noteEdit` mid-flight queue re-save AND leaves an armed debounce timer, so after the doc is already clean ("Сохранено") a trailing autosave fires a redundant `saveDocument` on unchanged content (version churn / write amplification, not data loss). Add a test: type → let autosave fire + resolve to clean → advance another full debounce → assert `saveDocument` NOT called again. Fails today (no dirty-check in `save()`/autosave).
+- [ ] green-frontend — debounce/coalesce + **dirty-guard**: suppress the autosave PUT when nothing is unsaved (fixes the redundant trailing PUT above). Verify the base coalesce is covered by E3.1 impl — `[S]` that part if reuse.
 - [ ] demo
 
 ### Scenario E4.1: A document title can be set and round-trips
