@@ -22,6 +22,15 @@ When it is opened in the upgraded editor
 Then its content loads intact
 ```
 
+### 1.3 Inline marks survive co-resident with block nodes
+```gherkin
+Given block content whose paragraphs and headings contain inline marks (bold, link, code, alignment)
+When the document is saved and reloaded
+Then the inline marks round-trip intact inside their block nodes, not stripped
+```
+> Added by ADR `decisions/block-schema-migration-decision.md` (premortem gap #2): the base
+> block round-trip (1.1) only exercises bare-text blocks; this pins mixed inline+block content.
+
 ## 2. Lists
 
 ### 2.1 Bulleted and numbered lists round-trip

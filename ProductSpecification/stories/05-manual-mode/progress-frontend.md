@@ -1688,7 +1688,8 @@ deploy) live in `progress-backend.md`, referenced here as `[S]`.
 
 ### Scenario E1.1: Multi-paragraph block content round-trips (block schema) — ROOT BLOCKER
 - [x] red-frontend — block schema: paragraphs + H1/H2/H3 as block nodes; save→reload round-trips as semantic HTML
-- [~] green-frontend — migrate editor schema from `inline*` to block content
+- [x] design — ADR `decisions/block-schema-migration-decision.md`: full StarterKit block model; retire custom marks + bespoke line-break machinery; align → textAlign attr; strip trailing empty `<p>`; the ~40 inline-schema sibling assertions are rewritten to block expectations in the green unit, **authorized by the ADR** (green's tests-read-only rule is lifted for this scenario)
+- [~] red-rework + green-frontend (bundled per ADR) — migrate `Document` to `block+`, enable StarterKit paragraph/heading(1-3)/lists/blockquote/codeBlock/hr/hardBreak nodes, drop `Heading3Mark`/`BlockquoteMark`/`CodeBlockMark`/`HorizontalRuleNode`/`HardBreakNode`/`HardBreakKeymap`/`InlinePlaceholder`, move toolbar `isActive`/commands to node names, add `Placeholder` extension keeping the pinned surfaces; rewrite every inline-schema sibling assertion (`reopen`, `*.parseHTML`, `blockquote`, `dirty`, `textAlign`, `inlineCode`, `underline`, `horizontalRule`, `heading3.parseHTML`) to block-wrapped expectations; add a mixed inline-marks-inside-blocks round-trip test (premortem #2); strip trailing empty `<p>` on serialize
 - [ ] green-selenium — live round-trip through `PUT`/`GET /documents/{id}`
 - [ ] demo
 
