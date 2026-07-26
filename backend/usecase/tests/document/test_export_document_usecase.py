@@ -23,9 +23,6 @@ from shared.exceptions import ValidationException
 from statements.document_fakes import FakeDocumentRepository, seeded, stored_document
 
 
-@pytest.mark.skip(
-    reason="RED: ExportDocument.execute() takes no 'format' arg and ExportFormat VO absent"
-)
 class TestExportDocument:
     async def test_should_answer_none_for_a_non_existent_document(self):
         found = await ExportDocument(FakeDocumentRepository()).execute(

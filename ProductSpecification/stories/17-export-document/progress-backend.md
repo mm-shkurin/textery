@@ -82,8 +82,15 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   `found is document` (identity) — the premortem-mandated valid-format control. Sc 1.1's
   none-refusal test updated to pass `format="pdf"` to survive the signature change. test-review:
   no changes — all assertions already strict (exact-equality / identity, no loose validation).
-- [~] green-usecase
-- [ ] adapters-discovery
+- [x] green-usecase — GREEN at 8 passed (usecase suite 168 passed). New domain VO
+  `backend/domain/src/document/export_format.py` (33 lines): `ExportFormat(Enum)` PDF/DOCX with
+  `parse(value)` using exact `cls(value)` — no `.lower()`/`.strip()`, so `"PDF"`/`" pdf "` and
+  non-str/None raise `ValidationException(INVALID_FORMAT, "The format must be pdf or docx.")`.
+  Usecase `execute` gained `format`, calls `ExportFormat.parse` before `find_by_id_and_owner`.
+  Router `/export` now forwards its existing `format` query param to `execute` (required-arg
+  regression guard — no new behavior; the 422 status mapping is still the adapters-discovery /
+  green-adapter rest concern). Coverage: both files 100% stmts+branch, no gaps.
+- [~] adapters-discovery
 - [ ] green-acceptance
 
 ### Scenario 2.1: A document exports as a valid PDF

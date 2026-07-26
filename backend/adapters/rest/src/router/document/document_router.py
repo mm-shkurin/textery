@@ -102,7 +102,9 @@ async def export_document(
     owner_id: UUID = Depends(get_current_owner_id),
     usecase: ExportDocument = Depends(get_export_document_usecase),
 ) -> DocumentResponseDto:
-    document = await usecase.execute(document_id=document_id, owner_id=owner_id)
+    document = await usecase.execute(
+        document_id=document_id, owner_id=owner_id, format=format
+    )
     if document is None:
         # Absent and foreign collapse to the same None, translated into the
         # sanctioned 404 rather than leaking which case it was.
