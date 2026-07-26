@@ -118,10 +118,7 @@ files = [
     "adapters/rest/src",
     "adapters/db/src",
     "adapters/security/src",
-    # adapters/rendering/src is intentionally absent here until green-adapter
-    # rendering creates the first module file: mypy `files` (unlike pythonpath /
-    # mypy_path) errors out and type-checks nothing when a listed root has no
-    # .py, so listing an empty dir would red the whole `types` CI job.
+    "adapters/rendering/src",
     "adapters/generation_provider/src",
     "adapters/oauth_provider/src",
     "application/src",

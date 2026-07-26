@@ -206,7 +206,23 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   A/S/P all clean — `%PDF-` prefix is the strict boundable signature (full-body equality impossible;
   WeasyPrint output is non-deterministic), inline asserts match the sibling nh3 adapter-test convention.
   GREEN runs in-container.
-- [~] green-adapter rendering
+- [x] green-adapter rendering — GREEN in-container: `WeasyPrintPdfRenderer.render("<p>Привет</p>",
+  ExportFormat.PDF)` produced a real PDF (%PDF- + %%EOF + len>500) — 1 passed in the Linux backend
+  container. Adapter `backend/adapters/rendering/src/rendering/weasyprint_pdf_renderer.py`:
+  `weasyprint.HTML(string=content, url_fetcher=_blocked_url_fetcher).write_pdf()`; the blocking
+  url_fetcher makes it SSRF-safe from construction (never fires on plain HTML; Sc 4.1 covers its
+  raise — the one uncovered line, coverage 89%). Added `weasyprint==63.1` to requirements +
+  libpango/cairo/harfbuzz/gdk-pixbuf/libffi8/fonts-dejavu-core to backend.Dockerfile AND both CI
+  `test` jobs (backend/.github + root .github) so the test runs in the gating env, not a vacuous
+  importorskip. Re-added `adapters/rendering/src` to mypy `files`; wired WeasyPrintPdfRenderer into
+  `document_wiring.py` via a DEFERRED import (keeps host test-imports weasyprint-free) — this FIXED
+  the `document_wiring.py:31` mypy error. Test now uses module-level `pytest.importorskip("weasyprint")`
+  (skips only on the bare host; runs in CI/container). mypy on host: 269 files checked, only the
+  router:115 error remains (owned by green-adapter rest).
+  ⚠️ QUIRK (in-container test runs): the runtime backend image does NOT COPY backend/pyproject.toml,
+  so pytest in-container has no `pythonpath` config — a bare `python -m pytest` fails with
+  `ModuleNotFoundError: No module named 'document'`. Run in-container tests with explicit
+  `PYTHONPATH=domain/src:adapters/rendering/src` (add the other src roots as a given test needs).
   > MUST-DO when creating the adapter src file:
   > (1) re-add `"adapters/rendering/src",` to the mypy `files` list in backend/pyproject.toml (it was
   >     deferred at red-adapter rendering because mypy `files` errors-out on an empty root — see the
@@ -220,7 +236,7 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   >     the test actually RUNS on the runner, and run it in-container locally per the 2026-07-26 decision.
   > (3) the RED test already pins %PDF- + %%EOF trailer + length>500 (strengthened at red-adapter
   >     rendering per premortem) — green must satisfy all three.
-- [ ] red-adapter rest
+- [~] red-adapter rest
   > When green-adapter rest returns the binary Response, it FIXES the pending mypy error
   > `document_router.py:115 Argument 1 to "from_domain" ... incompatible type "RenderedExport"; expected
   > "Document"` — the route must stop calling DocumentResponseDto.from_domain on the RenderedExport and

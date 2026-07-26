@@ -1,22 +1,18 @@
 import pytest
 
-from document.export_format import ExportFormat
+# WeasyPrint needs native Pango/cairo libs. Where they are absent (the bare dev
+# host), skip this whole module at collection rather than error. The libs ARE
+# installed in the backend image and on the CI runner (see backend.Dockerfile and
+# ci.yml), so the test still executes in every gating environment -- the skip is
+# "can't run here", never "silently never runs".
+pytest.importorskip("weasyprint")
+
+from document.export_format import ExportFormat  # noqa: E402
+from rendering.weasyprint_pdf_renderer import WeasyPrintPdfRenderer  # noqa: E402
 
 
-@pytest.mark.skip(
-    reason="RED: WeasyPrintPdfRenderer adapter not implemented yet (Scenario 2.1); "
-    "real render verified in-container"
-)
 def test_should_render_html_to_real_pdf_bytes():
-    # Deferred import: WeasyPrintPdfRenderer imports weasyprint at module load,
-    # which cannot import on the Windows host (no GTK/pango/cairo). Importing
-    # inside the body keeps this module COLLECTABLE on the host (the suite shows a
-    # skip, not a collection error); the real render is verified in-container.
-    from rendering.weasyprint_pdf_renderer import WeasyPrintPdfRenderer
-
-    renderer = WeasyPrintPdfRenderer()
-
-    result = renderer.render("<p>Привет</p>", ExportFormat.PDF)
+    result = WeasyPrintPdfRenderer().render("<p>Привет</p>", ExportFormat.PDF)
 
     # Strict adapter-level proof that WeasyPrint produced a genuine, COMPLETE PDF,
     # not merely a non-empty blob or an 8-byte header stub:
