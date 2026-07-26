@@ -19,7 +19,7 @@
 }
 
 .me-export-trigger:hover {
-  background: var(--bg-surface-raised);
+  background: var(--bg-card-muted);
 }
 
 .me-export-menu {
@@ -50,7 +50,7 @@
 }
 
 .me-export-option:hover {
-  background: var(--bg-surface);
+  background: var(--bg-card-muted);
 }
 
 @media (max-width: 768px) {
