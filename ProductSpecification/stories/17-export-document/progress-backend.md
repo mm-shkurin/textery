@@ -90,7 +90,18 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   Router `/export` now forwards its existing `format` query param to `execute` (required-arg
   regression guard — no new behavior; the 422 status mapping is still the adapters-discovery /
   green-adapter rest concern). Coverage: both files 100% stmts+branch, no gaps.
-- [~] adapters-discovery
+- [x] adapters-discovery (rest) — Check 1 (ports): [S] `DocumentRepository.find_by_id_and_owner`
+  already implemented (document_storage.py) and sufficient — the read path is unchanged from
+  Sc 1.1. Check 2 (exceptions): rest — GAP: `ExportFormat.parse` raises
+  `ValidationException(error_code="INVALID_FORMAT")`, but `_ERROR_CODE_STATUS_MAP` in
+  exception_handlers.py has no `INVALID_FORMAT` entry, so `validation_exception_handler` defaults
+  it to 400; the acceptance contract (red-acceptance f219201) demands 422. Add `"INVALID_FORMAT":
+  422` alongside the existing INVALID_DOCUMENT_TYPE/INVALID_VERSION 422 entries → red-adapter rest
+  / green-adapter rest. Check 3 (response shape): [S] the 422 refusal body `{error_code, message}`
+  is already produced by the existing `validation_exception_handler`; the success/binary export
+  body is deferred to the rendering scenarios (2.x), out of scope for 1.3's refusal path.
+- [~] red-adapter rest
+- [ ] green-adapter rest
 - [ ] green-acceptance
 
 ### Scenario 2.1: A document exports as a valid PDF
