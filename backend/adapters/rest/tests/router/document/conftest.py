@@ -91,6 +91,11 @@ def list_client(document_app):
 
 
 @pytest.fixture
+def export_client(document_app):
+    return _client_factory(document_app, "get_export_document_usecase")
+
+
+@pytest.fixture
 def unauthenticated_list_client(document_app):
     """No owner override — the real Bearer dependency runs."""
     return _client_factory(document_app, "get_list_documents_usecase", override_owner=False)

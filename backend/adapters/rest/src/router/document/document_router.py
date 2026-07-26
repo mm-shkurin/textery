@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, Response
 
 from document.create_document import CreateDocument
+from document.export_document import ExportDocument
 from document.get_document import GetDocument
 from document.list_documents import ListDocuments
 from document.save_document import SaveDocument
@@ -33,6 +34,10 @@ def get_save_document_usecase() -> SaveDocument:
 
 
 def get_list_documents_usecase() -> ListDocuments:
+    raise NotImplementedError("wired by the application composition root")
+
+
+def get_export_document_usecase() -> ExportDocument:
     raise NotImplementedError("wired by the application composition root")
 
 

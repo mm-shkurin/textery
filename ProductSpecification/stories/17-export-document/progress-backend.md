@@ -33,8 +33,8 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   Starlette's default 404 body instead of the sanctioned shape. Add the route to document_router
   wiring ExportDocument (typed `document_id: UUID`, `Depends(get_current_owner_id)`, None →
   NotFoundException) → red-adapter rest / green-adapter rest.
-- [~] red-adapter rest
-- [ ] green-adapter rest
+- [x] red-adapter rest
+- [~] green-adapter rest
 - [ ] green-acceptance
 
 ### Scenario 1.2: Export of another account's document is refused indistinguishably
