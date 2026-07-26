@@ -22,8 +22,8 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   exact-404-body already asserted in red-acceptance; grp4 title-migration owned by Infra
   3.1; grp3 read-after-write owned by Sc 3.5; render seams → rendering/4.2/4.5. No ADR
   (single viable approach, guards reuse established patterns).
-- [~] red-usecase
-- [ ] green-usecase
+- [x] red-usecase
+- [~] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
