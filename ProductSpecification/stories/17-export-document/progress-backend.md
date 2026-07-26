@@ -207,7 +207,24 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   WeasyPrint output is non-deterministic), inline asserts match the sibling nh3 adapter-test convention.
   GREEN runs in-container.
 - [~] green-adapter rendering
+  > MUST-DO when creating the adapter src file:
+  > (1) re-add `"adapters/rendering/src",` to the mypy `files` list in backend/pyproject.toml (it was
+  >     deferred at red-adapter rendering because mypy `files` errors-out on an empty root — see the
+  >     comment there); this also FIXES the pending mypy error
+  >     `document_wiring.py:31 Missing positional argument "document_renderer"` by wiring the real
+  >     WeasyPrintPdfRenderer into the composition root.
+  > (2) CI GUARD (premortem, commit 20595ac): the CI `test` job runs on ubuntu WITHOUT libpango/cairo.
+  >     Do NOT lift the RED skip into a `skipif(weasyprint-unimportable)` — that makes the render test
+  >     skip FOREVER in the only gating env (vacuous green). Instead add the native libs to
+  >     backend/.github/workflows/ci.yml (apt-get libpango-1.0-0 libpangocairo-1.0-0 libcairo2 …) so
+  >     the test actually RUNS on the runner, and run it in-container locally per the 2026-07-26 decision.
+  > (3) the RED test already pins %PDF- + %%EOF trailer + length>500 (strengthened at red-adapter
+  >     rendering per premortem) — green must satisfy all three.
 - [ ] red-adapter rest
+  > When green-adapter rest returns the binary Response, it FIXES the pending mypy error
+  > `document_router.py:115 Argument 1 to "from_domain" ... incompatible type "RenderedExport"; expected
+  > "Document"` — the route must stop calling DocumentResponseDto.from_domain on the RenderedExport and
+  > instead build a binary fastapi.Response from its bytes + media_type.
 - [ ] green-adapter rest
 - [ ] green-acceptance
 
