@@ -1687,8 +1687,8 @@ Backend-only hazard guards (server re-sanitize, mass-assignment, title-length un
 deploy) live in `progress-backend.md`, referenced here as `[S]`.
 
 ### Scenario E1.1: Multi-paragraph block content round-trips (block schema) — ROOT BLOCKER
-- [~] red-frontend — block schema: paragraphs + H1/H2/H3 as block nodes; save→reload round-trips as semantic HTML
-- [ ] green-frontend — migrate editor schema from `inline*` to block content
+- [x] red-frontend — block schema: paragraphs + H1/H2/H3 as block nodes; save→reload round-trips as semantic HTML
+- [~] green-frontend — migrate editor schema from `inline*` to block content
 - [ ] green-selenium — live round-trip through `PUT`/`GET /documents/{id}`
 - [ ] demo
 
