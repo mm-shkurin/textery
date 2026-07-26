@@ -53,4 +53,22 @@ describe('documentApi export request contract', () => {
     // token. Owner-scoped: the backend cannot serve a document to a user it was never told about.
     expect(init.headers).toEqual({ Authorization: 'Bearer access-1' })
   })
+
+  // Safety-critical ordering guard (premortem a227968): the blob body must be read ONLY after the
+  // res.ok check. If a future edit hoists the blob read above the guard, a 4xx/5xx error body would
+  // stream out and be downloaded AS the document. This pins the invariant: a non-ok response must
+  // reject (the shared transport's HttpError) and must NEVER read/return a blob.
+  it('exportDocument rejects on a non-ok response and never streams the error body as a blob', async () => {
+    const blobSpy = vi.fn(async () => new Blob(['{"error":"boom"}']))
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ message: 'export failed' }),
+      blob: blobSpy,
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(exportDocument('doc-1', 'pdf')).rejects.toThrow()
+    expect(blobSpy).not.toHaveBeenCalled()
+  })
 })
