@@ -1,0 +1,176 @@
+openapi: 3.0.3
+info:
+  title: Create Document from a completed Generation
+  version: 1.0.0
+
+paths:
+  /api/v1/documents/from-generation:
+    post:
+      summary: Convert a completed generation into an editable document
+      description: >
+        Takes a completed, caller-owned generation, converts its markdown-ish content to
+        allowlist-sanitized HTML, and creates an editable Document linked by
+        generation_id. The Generation is retained unchanged (audit + original); the
+        Document becomes the source of truth.
+
+
+        Idempotent AND race-safe: a UNIQUE constraint on Document.generation_id makes a
+        second insert — a sequential replay OR two concurrent requests across instances —
+        fail atomically and return the existing document (200). Never a second row.
+
+
+        The frontend calls this once the generation poll observes `completed`, then opens
+        the editor from THIS response body (no re-read, avoiding a read-after-write race
+        on a multi-instance backend).
+      operationId: createDocumentFromGeneration
+      tags:
+        - documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: >
+            Client-generated key. Replaying the same key (or any repeat for the same
+            generation_id) returns the existing document (200), never a duplicate.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FromGenerationRequest'
+      responses:
+        '201':
+          description: Document created from the generation, content sanitized, version=1.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '200':
+          description: >
+            The generation was already converted (idempotent replay or lost race) —
+            returns the existing document. Owner-scoped, so a foreign key never discloses
+            another account's document.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '401':
+          description: >
+            Missing, malformed, expired, or non-access Bearer token. A refresh token
+            presented here is rejected like any other invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: >
+            The generation does not exist OR is owned by another account — byte-identical
+            in both cases (never 403, which would confirm the id exists). No Document.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: >
+            The generation is not in a `completed` state (pending/in_progress/failed) or
+            carries an unknown/unmapped status — fails closed, no Document created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: >
+            Missing/invalid generation_id, Idempotency-Key outside 1-128 chars, or the
+            converted content exceeds the Document content limit (200000 Unicode code
+            points) — rejected at the boundary, never truncated. Server-owned fields in
+            the body (title, id, status, version, a spoofed generation_id) are ignored,
+            not honoured — only the authorized generation_id and server-derived values
+            are written.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: >
+            Internal server error — generic client-safe message only, no DB text, id
+            shape, or stack frame. Covers the markdown-parser/sanitizer failure family,
+            which fails closed (no Document, nothing unsanitized stored).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Access token from POST /api/v1/auth/login. Documents are owned; see
+        decisions/document-ownership-decision.md.
+  schemas:
+    Error:
+      type: object
+      required:
+        - error_code
+        - message
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+    FromGenerationRequest:
+      type: object
+      required:
+        - generation_id
+      properties:
+        generation_id:
+          type: string
+          format: uuid
+          description: >
+            A completed generation owned by the caller. Absent/foreign → 404;
+            not-completed → 409.
+    DocumentResponse:
+      type: object
+      description: >
+        Same shape as documents_create/documents_save, plus generation_id and title.
+        These two fields are additive on the shared DocumentResponse (story 5) — existing
+        consumers must tolerate them.
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        document_type:
+          type: string
+        generation_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: >
+            Set for a document created from a generation; null for a manual document. A
+            client-supplied generation_id on the manual POST /documents is rejected.
+        title:
+          type: string
+          description: Server-derived at conversion (from topic/type); editable later via PUT.
+        status:
+          type: string
+          enum: [draft]
+        content:
+          type: string
+          description: Sanitized HTML converted from the generation's markdown-ish content.
+        version:
+          type: integer
+          description: Optimistic-concurrency token; 1 on creation, required on subsequent PUT.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
