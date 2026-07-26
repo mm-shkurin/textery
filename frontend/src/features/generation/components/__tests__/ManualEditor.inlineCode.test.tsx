@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
-import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
+import { paragraphTextNode, renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -14,7 +14,7 @@ describe('ManualEditor inline code toolbar', () => {
     contentArea.textContent = 'hello world'
     fireEvent.input(contentArea)
 
-    const textNode = contentArea.firstChild as Node
+    const textNode = paragraphTextNode(contentArea)
     const range = document.createRange()
     range.setStart(textNode, 0)
     range.setEnd(textNode, 5)
@@ -26,7 +26,7 @@ describe('ManualEditor inline code toolbar', () => {
     const codeButton = screen.getByTestId('toolbar-code')
     fireEvent.click(codeButton)
 
-    expect(contentArea.innerHTML).toBe('<code>hello</code> world')
+    expect(contentArea.innerHTML).toBe('<p><code>hello</code> world</p>')
     expect(codeButton).toHaveAttribute('aria-pressed', 'true')
   })
 
@@ -37,7 +37,7 @@ describe('ManualEditor inline code toolbar', () => {
     contentArea.textContent = 'coded plain'
     fireEvent.input(contentArea)
 
-    const initialTextNode = contentArea.firstChild as Node
+    const initialTextNode = paragraphTextNode(contentArea)
     const codeRange = document.createRange()
     codeRange.setStart(initialTextNode, 0)
     codeRange.setEnd(initialTextNode, 5)
@@ -49,10 +49,10 @@ describe('ManualEditor inline code toolbar', () => {
     const codeButton = screen.getByTestId('toolbar-code')
     fireEvent.click(codeButton)
 
-    expect(contentArea.innerHTML).toBe('<code>coded</code> plain')
+    expect(contentArea.innerHTML).toBe('<p><code>coded</code> plain</p>')
     expect(codeButton).toHaveAttribute('aria-pressed', 'true')
 
-    const plainTextNode = contentArea.lastChild as Node
+    const plainTextNode = (contentArea.firstChild as HTMLElement).lastChild as Node
     const cursorRange = document.createRange()
     cursorRange.setStart(plainTextNode, 1)
     cursorRange.setEnd(plainTextNode, 1)

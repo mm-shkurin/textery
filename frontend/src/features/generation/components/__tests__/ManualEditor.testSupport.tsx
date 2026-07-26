@@ -41,6 +41,21 @@ export async function renderEditorReopeningDocument(content: string, onBack = vi
   return screen.getByTestId('editor-content-area')
 }
 
+// The block-schema editor renders an empty trailing paragraph as the cursor's
+// landing block after a document that ends in a wrapper block (blockquote,
+// codeBlock) or a heading; ProseMirror paints its empty last textblock with a
+// cursor-helper <br>. It is stripped from the SAVED form (serializeEditorHtml)
+// but present in the live rendered innerHTML, so block-conversion assertions
+// that pin exact innerHTML include it.
+export const TRAILING_BREAK_P = '<p><br class="ProseMirror-trailingBreak"></p>'
+
+// After seeding text via `contentArea.textContent = ...; fireEvent.input`, the
+// content auto-wraps into a paragraph, so the editable text lives one level
+// deeper than the contenteditable root: root → <p> → text node.
+export function paragraphTextNode(contentArea: HTMLElement): Node {
+  return (contentArea.firstChild as HTMLElement).firstChild as Node
+}
+
 export function selectRange(node: Node, start: number, end: number) {
   const range = document.createRange()
   range.setStart(node, start)

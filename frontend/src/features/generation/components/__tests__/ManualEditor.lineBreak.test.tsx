@@ -43,7 +43,7 @@ describe('ManualEditor line break', () => {
 
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
     const sent = vi.mocked(documentApi.saveDocument).mock.calls[0][1]
-    expect(sent).toBe('line one<br>line two')
+    expect(sent).toBe('<p>line one<br>line two</p>')
     expect((sent.match(/<br\s*\/?>/g) ?? []).length).toBe(1)
     expect(/<br\s*\/?>\s*$/.test(sent)).toBe(false)
   })

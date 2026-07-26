@@ -1,4 +1,3 @@
-import type { Editor } from '@tiptap/react'
 import type { ToolbarAction, ToolbarActionKey, ToolbarRunAction } from './toolbarAction'
 
 export type {
@@ -9,27 +8,6 @@ export type {
 } from './toolbarAction'
 
 export const TOOLBAR_DIVIDER_BEFORE: Set<ToolbarActionKey> = new Set(['bold'])
-
-// Shared by the blockquote and codeBlock toolbar actions: on an empty
-// selection, toggling a mark needs an explicit line-range selection first
-// (ProseMirror can't apply a mark to a collapsed selection), then the
-// cursor position is restored so typing continues where the user left off.
-function toggleLineMark(editor: Editor, markName: string): void {
-  const { selection } = editor.state
-  if (selection.empty) {
-    const { $from } = selection
-    const cursorPos = $from.pos
-    editor
-      .chain()
-      .focus()
-      .setTextSelection({ from: $from.start(), to: $from.end() })
-      .toggleMark(markName)
-      .setTextSelection({ from: cursorPos, to: cursorPos })
-      .run()
-    return
-  }
-  editor.chain().focus().toggleMark(markName).run()
-}
 
 // Shared by bold/italic/strike/underline/code: each is a plain mark toggle
 // with no special selection handling, differing only in the mark name,
@@ -51,19 +29,18 @@ function simpleMarkToggle(
   }
 }
 
-// H1/H2, paragraph, and both list toggles were mockup-era stubs calling Tiptap block-node
-// commands (toggleHeading / setParagraph / toggleBulletList / toggleOrderedList). The document
-// schema is Document.extend({ content: 'inline*' }) — it has no block nodes — so those commands
-// are inert: the controls rendered but did nothing. Removed so the toolbar reflects real
-// capability. Restoring them requires migrating the schema to block content (a separate story).
+// Block-schema toolbar (migration ADR, 2026-07-26): heading/blockquote/codeBlock
+// are real block nodes now, so their toggles call the StarterKit node commands
+// and `isActive` reads node/attr names. H3 toggles the level-3 heading node;
+// alignment is a `textAlign` block attribute, not a wrapping mark.
 export const TOOLBAR_ACTIONS: ToolbarAction[] = [
   {
     key: 'heading3',
     label: 'H3',
     ariaLabel: 'Заголовок 3',
     testId: 'toolbar-h3',
-    run: (editor) => toggleLineMark(editor, 'heading3'),
-    isActive: (editor) => editor.isActive('heading3'),
+    run: (editor) => editor.chain().focus().toggleHeading({ level: 3 }).run(),
+    isActive: (editor) => editor.isActive('heading', { level: 3 }),
   },
   simpleMarkToggle('bold', 'bold', 'B', 'Жирный', 'toolbar-bold'),
   simpleMarkToggle('italic', 'italic', 'I', 'Курсив'),
@@ -75,7 +52,7 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     label: '"',
     ariaLabel: 'Цитата',
     testId: 'toolbar-blockquote',
-    run: (editor) => toggleLineMark(editor, 'blockquote'),
+    run: (editor) => editor.chain().focus().toggleBlockquote().run(),
     isActive: (editor) => editor.isActive('blockquote'),
   },
   {
@@ -83,12 +60,7 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     label: '―',
     ariaLabel: 'Горизонтальная линия',
     testId: 'toolbar-horizontal-rule',
-    run: (editor) =>
-      editor
-        .chain()
-        .focus()
-        .insertContent({ type: 'horizontalRule', attrs: { marker: 'hr' } })
-        .run(),
+    run: (editor) => editor.chain().focus().setHorizontalRule().run(),
     isActive: () => false,
   },
   {
@@ -96,7 +68,7 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     label: '{}',
     ariaLabel: 'Блок кода',
     testId: 'toolbar-code-block',
-    run: (editor) => toggleLineMark(editor, 'codeBlock'),
+    run: (editor) => editor.chain().focus().toggleCodeBlock().run(),
     isActive: (editor) => editor.isActive('codeBlock'),
   },
   {
@@ -104,8 +76,8 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     label: '↔',
     ariaLabel: 'Выравнивание по центру',
     testId: 'toolbar-align-center',
-    run: (editor) => toggleLineMark(editor, 'alignCenter'),
-    isActive: (editor) => editor.isActive('alignCenter'),
+    run: (editor) => editor.chain().focus().setTextAlign('center').run(),
+    isActive: (editor) => editor.isActive({ textAlign: 'center' }),
   },
   {
     key: 'link',

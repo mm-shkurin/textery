@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
-import { renderEditorWithDocumentCreated, selectRange } from './ManualEditor.testSupport'
+import {
+  paragraphTextNode,
+  renderEditorWithDocumentCreated,
+  selectRange,
+} from './ManualEditor.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -12,7 +16,7 @@ describe('ManualEditor formatting toolbar', () => {
       tag: 'strong',
       text: 'hello world',
       end: 5,
-      expected: '<strong>hello</strong> world',
+      expected: '<p><strong>hello</strong> world</p>',
     },
     {
       name: 'strikethrough',
@@ -20,7 +24,7 @@ describe('ManualEditor formatting toolbar', () => {
       tag: 's',
       text: 'hello world',
       end: 5,
-      expected: '<s>hello</s> world',
+      expected: '<p><s>hello</s> world</p>',
     },
     {
       name: 'underline',
@@ -28,7 +32,7 @@ describe('ManualEditor formatting toolbar', () => {
       tag: 'u',
       text: 'hello world',
       end: 5,
-      expected: '<u>hello</u> world',
+      expected: '<p><u>hello</u> world</p>',
     },
   ])(
     'applying $name to selected text wraps it in <$tag> and marks the $name button active',
@@ -41,7 +45,7 @@ describe('ManualEditor formatting toolbar', () => {
       contentArea.textContent = text
       fireEvent.input(contentArea)
 
-      const textNode = contentArea.firstChild as Node
+      const textNode = paragraphTextNode(contentArea)
       selectRange(textNode, 0, end)
       fireEvent.select(contentArea)
 
@@ -60,17 +64,17 @@ describe('ManualEditor formatting toolbar', () => {
     contentArea.textContent = 'bold plain'
     fireEvent.input(contentArea)
 
-    const initialTextNode = contentArea.firstChild as Node
+    const initialTextNode = paragraphTextNode(contentArea)
     selectRange(initialTextNode, 0, 4)
     fireEvent.select(contentArea)
 
     const boldButton = screen.getByTestId('toolbar-bold')
     fireEvent.click(boldButton)
 
-    expect(contentArea.innerHTML).toBe('<strong>bold</strong> plain')
+    expect(contentArea.innerHTML).toBe('<p><strong>bold</strong> plain</p>')
     expect(boldButton).toHaveAttribute('aria-pressed', 'true')
 
-    const plainTextNode = contentArea.lastChild as Node
+    const plainTextNode = (contentArea.firstChild as HTMLElement).lastChild as Node
     selectRange(plainTextNode, 1, 1)
     fireEvent.select(contentArea)
 
@@ -91,7 +95,7 @@ describe('ManualEditor formatting toolbar', () => {
       contentArea.textContent = text
       fireEvent.input(contentArea)
 
-      const initialTextNode = contentArea.firstChild as Node
+      const initialTextNode = paragraphTextNode(contentArea)
       selectRange(initialTextNode, 0, markLen)
       fireEvent.select(contentArea)
 
@@ -99,11 +103,11 @@ describe('ManualEditor formatting toolbar', () => {
       fireEvent.click(button)
 
       expect(contentArea.innerHTML).toBe(
-        `<${tag}>${text.slice(0, markLen)}</${tag}>${text.slice(markLen)}`,
+        `<p><${tag}>${text.slice(0, markLen)}</${tag}>${text.slice(markLen)}</p>`,
       )
       expect(button).toHaveAttribute('aria-pressed', 'true')
 
-      const plainTextNode = contentArea.lastChild as Node
+      const plainTextNode = (contentArea.firstChild as HTMLElement).lastChild as Node
       selectRange(plainTextNode, 1, 1)
       fireEvent.select(contentArea)
 

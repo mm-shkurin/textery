@@ -6,16 +6,14 @@ import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
 
 vi.mock('../../api/documentApi')
 
-// Coverage backfill for scenario 3.3 (line-break-in-inline-doc-decision.md, approach A′).
-// The original RED (ManualEditor.lineBreak.test.tsx) pinned only ONE save-payload shape and
-// never exercised the KEYMAP path (hardBreakKeymap.ts) nor the load/parse path
-// (hardBreakNode.ts parseHTML). These add the cases agent-review + premortem surfaced:
-// a real keystroke inserting EXACTLY one <br> (guarding a double-insert), the stray trailing
-// break being prevented, an intentional trailing break being kept, an interior break surviving,
-// and a bare <br> in loaded content round-tripping without a parse error.
+// Line-break coverage under the block schema (migration ADR, 2026-07-26, supersedes
+// approach A′). Enter now SPLITS the block into a new paragraph; Shift+Enter inserts a
+// hardBreak <br> within the block. These cases exercise both keymap paths, the trailing
+// empty-paragraph strip (serializeEditorHtml), an interior break surviving, and a bare <br>
+// in loaded content round-tripping without a parse error.
 //
-// The save payload asserted against is editor.getHTML(), captured as the 2nd arg the
-// saveDocument mock receives (useDocumentSave.ts:84-85).
+// The save payload asserted against is serializeEditorHtml(editor) — the trailing-empty-<p>
+// stripped form — captured as the 2nd arg the saveDocument mock receives (useDocumentSave.ts).
 
 // Each test renders its own editor; without this the module-level saveDocument mock keeps
 // calls from earlier tests and calls[0] / toHaveBeenCalledTimes(1) would read the wrong save.
@@ -49,16 +47,23 @@ async function renderAndGetContentArea() {
 }
 
 describe('ManualEditor line break — keymap and parse coverage', () => {
-  // Case 1: a real Enter keystroke drives the hardBreakKeymap (zero coverage before this).
+  // Case 1: a real Enter keystroke SPLITS the block into a new paragraph (block schema).
   // ProseMirror binds its keymap plugin to the editable element's keydown; @testing-library's
   // fireEvent.keyDown dispatches a real KeyboardEvent that the plugin's handleKeyDown reads.
-  it('a real Enter keystroke inserts exactly one <br>', async () => {
+  // Two lines separated by Enter persist as two <p> blocks, with no <br>.
+  it('a real Enter keystroke splits the text into two paragraphs', async () => {
     const contentArea = await renderAndGetContentArea()
 
+    contentArea.textContent = 'line one'
+    fireEvent.input(contentArea)
     fireEvent.keyDown(contentArea, { key: 'Enter' })
+    const secondParagraph = contentArea.lastChild as HTMLElement
+    secondParagraph.textContent = 'line two'
+    fireEvent.input(contentArea)
 
     const sent = await saveAndGetPayload()
-    expect(countBreaks(sent)).toBe(1)
+    expect(sent).toBe('<p>line one</p><p>line two</p>')
+    expect(countBreaks(sent)).toBe(0)
   })
 
   it('a Shift-Enter keystroke inserts exactly one <br>', async () => {
@@ -83,16 +88,16 @@ describe('ManualEditor line break — keymap and parse coverage', () => {
     expect(sent).not.toContain('ProseMirror-trailingBreak')
   })
 
-  // Case 3: an INTENTIONAL trailing break is KEPT. Contrast with case 2: there the trailing
-  // break would be an auto-injected filler / cursor helper and is stripped; here the user
-  // pressed Enter after their text, so the resulting <br> at the end of content must survive
-  // into the save payload. Driven through the real keymap (fireEvent.keyDown), which jsdom
-  // dispatches to ProseMirror's keydown handler — the same path a browser keystroke takes.
-  it('an intentional Enter at the end of typed content keeps the trailing <br>', async () => {
+  // Case 3: an INTENTIONAL Shift+Enter at the end of typed content keeps the trailing <br>
+  // within the paragraph. Contrast with case 2's empty-editor filler strip: here the user
+  // deliberately inserted a hardBreak after their text, so the <br> must survive into the
+  // save payload. Driven through the real keymap (fireEvent.keyDown), which jsdom dispatches
+  // to ProseMirror's keydown handler — the same path a browser keystroke takes.
+  it('an intentional Shift-Enter at the end of typed content keeps the trailing <br>', async () => {
     const contentArea = await renderAndGetContentArea()
     contentArea.textContent = 'foo'
     fireEvent.input(contentArea)
-    fireEvent.keyDown(contentArea, { key: 'Enter' })
+    fireEvent.keyDown(contentArea, { key: 'Enter', shiftKey: true })
 
     const sent = await saveAndGetPayload()
     expect(sent).toContain('foo<br>')

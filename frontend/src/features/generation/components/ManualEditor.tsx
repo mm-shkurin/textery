@@ -1,15 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import Document from '@tiptap/extension-document'
-import { BlockquoteMark } from './blockquoteMark'
-import { HorizontalRuleNode } from './horizontalRuleNode'
-import { CodeBlockMark } from './codeBlockMark'
-import { Heading3Mark } from './heading3Mark'
-import { AlignCenterMark } from './alignCenterMark'
-import { HardBreakKeymap } from './hardBreakKeymap'
-import { HardBreakNode } from './hardBreakNode'
-import { InlinePlaceholder } from './inlinePlaceholder'
+import TextAlign from '@tiptap/extension-text-align'
+import { BlockPlaceholder } from './blockPlaceholder'
 import './ManualEditor.css'
 import type { DocumentType } from '../../../shared/documentTypes'
 import { useDocumentInit } from '../hooks/useDocumentInit'
@@ -56,16 +49,12 @@ export function ManualEditor({
     // in sync with the editor's current selection/marks.
     shouldRerenderOnTransaction: true,
     extensions: [
-      // hardBreak is disabled here only so HardBreakNode (below) can replace it
-      // with a parse-rule override: line breaks ARE enabled for this editor
-      // (scenario 3.3, approach A′), just via the dedicated node that also drops
-      // ProseMirror's stray trailing-break cursor helper. See hardBreakNode.ts.
+      // Full StarterKit block model (block-schema migration ADR, 2026-07-26):
+      // Document is `block+`; paragraph/heading(1–3)/lists/blockquote/codeBlock/
+      // horizontalRule/hardBreak are the StarterKit standard nodes, replacing the
+      // bespoke inline-schema marks and the hand-rolled line-break machinery.
       StarterKit.configure({
-        document: false,
-        hardBreak: false,
-        blockquote: false,
-        horizontalRule: false,
-        codeBlock: false,
+        heading: { levels: [1, 2, 3] },
         // Link is already registered by StarterKit — configured, not
         // re-registered. openOnClick: false is the sole barrier between an
         // anchor click and total content loss (no beforeunload guard exists on
@@ -75,15 +64,10 @@ export function ManualEditor({
         // silently gain an href nobody typed and the next save would persist it.
         link: { openOnClick: false, autolink: false, linkOnPaste: false },
       }),
-      Document.extend({ content: 'inline*' }),
-      BlockquoteMark,
-      HorizontalRuleNode,
-      CodeBlockMark,
-      Heading3Mark,
-      AlignCenterMark,
-      HardBreakNode,
-      HardBreakKeymap,
-      InlinePlaceholder,
+      // Alignment is a block attribute now, not a wrapping <div> mark: it renders
+      // as `style="text-align: …"` on the heading/paragraph it applies to.
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      BlockPlaceholder,
     ],
     content: '',
     // Every change to the document, however it was made — not just typing. The dirty flag used to
@@ -102,15 +86,15 @@ export function ManualEditor({
         'data-testid': 'editor-content-area',
         // A contenteditable editing surface is a textbox in both empty and full
         // states, so role is unconditional here (NOT gated on emptiness like the
-        // placeholder attrs in inlinePlaceholder.ts). Without an explicit textbox
-        // role, the aria-placeholder that plugin emits carries no meaning to
+        // placeholder attrs in blockPlaceholder.ts). Without an explicit textbox
+        // role, the aria-placeholder that extension emits carries no meaning to
         // assistive tech — aria-placeholder is announced only on a textbox-ish role.
         role: 'textbox',
-        // Enter inserts a HardBreakNode (line breaks are enabled), so this textbox
-        // is multi-line. A role="textbox" defaults to single-line per WAI-ARIA, so
-        // assistive tech would announce it wrong without this. Unconditional like
-        // role — a textbox stays multi-line whether empty or full, so it must NOT
-        // route through the emptiness-gated placeholder decoration path.
+        // Enter splits into a new block and Shift+Enter inserts a hardBreak, so
+        // this textbox is multi-line. A role="textbox" defaults to single-line per
+        // WAI-ARIA, so assistive tech would announce it wrong without this.
+        // Unconditional like role — a textbox stays multi-line whether empty or
+        // full, so it must NOT route through the emptiness-gated placeholder path.
         'aria-multiline': 'true',
       },
       handleDOMEvents: {

@@ -6,7 +6,7 @@ import * as documentApi from '../../api/documentApi'
 vi.mock('../../api/documentApi')
 
 describe('ManualEditor heading 3 parseHTML', () => {
-  it('loading a saved document containing an existing <h3> restores it as the heading3 mark, not a Heading node', async () => {
+  it('loading a saved document containing an existing <h3> restores it as a level-3 Heading node', async () => {
     vi.mocked(documentApi.createDocument).mockResolvedValue({
       documentId: 'doc-1',
       status: 'draft',
@@ -32,15 +32,16 @@ describe('ManualEditor heading 3 parseHTML', () => {
       expect(documentApi.getDocument).toHaveBeenCalledWith('doc-99')
     })
 
+    // Block schema: top-level inline text auto-wraps into paragraphs, and the
+    // <h3> parses into a real level-3 Heading NODE sitting between them (the
+    // custom Heading3 mark is retired). Root children: <p>before</p>, <h3>, <p>after</p>.
     const contentArea = await screen.findByTestId('editor-content-area')
     await waitFor(() => {
-      expect(contentArea.innerHTML).toBe('before<h3>hello world</h3>after')
+      expect(contentArea.innerHTML).toBe('<p>before</p><h3>hello world</h3><p>after</p>')
     })
 
-    // StarterKit's Heading node is still registered (ManualEditor.tsx does not
-    // disable it) and its parseHTML also matches <h3>, so the innerHTML above
-    // is byte-identical whether the mark or the node won the parse. Pin which
-    // one applied - same discrimination the inline-code/code-block pair needs.
+    // Place a collapsed cursor inside the restored heading and read the toolbar
+    // to pin that the H3 control reflects the level-3 heading node at the cursor.
     const textNode = contentArea.childNodes[1].firstChild as Node
     const range = document.createRange()
     range.setStart(textNode, 1)

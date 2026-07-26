@@ -28,7 +28,7 @@ describe('ManualEditor save status', () => {
     fireEvent.click(saveButton)
 
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', 'hello world', 7)
+    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', '<p>hello world</p>', 7)
 
     await waitFor(() => {
       expect(screen.getByText('Сохранено')).toBeInTheDocument()
@@ -167,7 +167,7 @@ describe('ManualEditor save status', () => {
     await waitFor(() => {
       expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
     })
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', 'second content', 2)
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', '<p>second content</p>', 2)
     expect(screen.queryByText('Сохранено')).not.toBeInTheDocument()
     expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
 

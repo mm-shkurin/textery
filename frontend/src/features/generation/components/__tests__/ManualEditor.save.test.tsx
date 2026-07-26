@@ -36,7 +36,7 @@ describe('ManualEditor save flow', () => {
     fireEvent.click(saveButton)
 
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', 'hello world', 7)
+    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', '<p>hello world</p>', 7)
 
     resolveSave({ status: 'saved', version: 2, content: 'hello world' })
   })
@@ -64,7 +64,7 @@ describe('ManualEditor save flow', () => {
     fireEvent.click(saveButton)
 
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(1, 'doc-1', 'first content', 7)
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(1, 'doc-1', '<p>first content</p>', 7)
 
     contentArea.textContent = 'second content'
     fireEvent.input(contentArea)
@@ -77,7 +77,7 @@ describe('ManualEditor save flow', () => {
     await waitFor(() => {
       expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
     })
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', 'second content', 2)
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', '<p>second content</p>', 2)
     expect(saveButton).toHaveAttribute('aria-disabled', 'true')
     expect(screen.getByTestId('save-spinner')).toBeInTheDocument()
 
@@ -129,7 +129,7 @@ describe('ManualEditor save flow', () => {
 
     fireEvent.click(saveButton)
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', 'second content', 7)
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', '<p>second content</p>', 7)
 
     consoleErrorSpy.mockRestore()
   })

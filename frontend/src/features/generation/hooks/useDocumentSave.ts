@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 import { saveDocument } from '../api/documentApi'
+import { serializeEditorHtml } from '../components/serializeEditorHtml'
 import { SessionExpiredError } from '../../auth/api/authorizedRequest'
 import { VersionConflictError } from '../../../shared/api/send'
 
@@ -81,7 +82,7 @@ export function useDocumentSave({
     saveAgainRequested.current = false
     // Captured before the round trip: the response's content is the SANITIZED persisted form,
     // and telling whether to adopt it requires knowing what we actually sent.
-    const sent = editor.getHTML()
+    const sent = serializeEditorHtml(editor)
     saveDocument(documentId, sent, saveVersion)
       .then((result) => {
         // The server's content is the source of truth — it strips <script> with its contents and
@@ -92,7 +93,7 @@ export function useDocumentSave({
         // the request is in flight, and setContent would delete those keystrokes — the worst
         // possible trade for cosmetic agreement. If it changed, the next save re-sanitizes
         // anyway, so nothing is lost by skipping.
-        if (result.content !== sent && editor.getHTML() === sent) {
+        if (result.content !== sent && serializeEditorHtml(editor) === sent) {
           editor.commands.setContent(result.content)
         }
         setVersion(result.version)

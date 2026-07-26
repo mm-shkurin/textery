@@ -34,10 +34,12 @@ describe('ManualEditor inline code parseHTML', () => {
 
     const contentArea = await screen.findByTestId('editor-content-area')
     await waitFor(() => {
-      expect(contentArea.innerHTML).toBe('before<code>hello</code>after')
+      expect(contentArea.innerHTML).toBe('<p>before<code>hello</code>after</p>')
     })
 
-    const textNode = contentArea.childNodes[1].firstChild as Node
+    // Block schema: inline content lives inside the wrapping paragraph, so
+    // descend one level to reach the <code> text node.
+    const textNode = (contentArea.firstChild as HTMLElement).childNodes[1].firstChild as Node
     const range = document.createRange()
     range.setStart(textNode, 1)
     range.setEnd(textNode, 1)

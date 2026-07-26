@@ -5,18 +5,18 @@ import { renderEditorReopeningDocument } from './ManualEditor.testSupport'
 vi.mock('../../api/documentApi')
 
 // Owed jsdom guard (premortem CREDIBLE-low, red-frontend-placeholder-reopen-degenerate,
-// 2026-07-23). The sibling reopen tests drive only the CLEAN poles: '' (→ placeholder)
-// and rich '<strong>Saved</strong> content' (→ no placeholder). The DEGENERATE boundary
-// was unpinned: a saved doc whose content parses to a lone hardBreak, an &nbsp;, or plain
-// whitespace. inlinePlaceholder.ts keys the decoration off state.doc.content.size === 0,
-// so how ProseMirror parses each degenerate string into the inline* schema decides whether
-// the user meets the hint or a blank unlabelled box. These are LIVE CHARACTERIZATION tests
-// pinning what the shipped parser + HardBreakNode rules actually do TODAY, not a wish:
-//   '<br>'   → bare <br> matches HardBreakNode's `{ tag: 'br' }` rule → a real hardBreak
-//              leaf node (size 1) → NO placeholder.
-//   '&nbsp;' → parsed as a one-char text node U+00A0 (size 1) → NO placeholder.
-//   '   '    → leading/trailing whitespace stripped by the inline parser → 0 nodes
-//              (size 0) → placeholder PRESENT (blank box, but labelled with the hint).
+// 2026-07-23; migrated to block schema 2026-07-26). The sibling reopen tests drive only the
+// CLEAN poles: '' (→ placeholder) and rich '<strong>Saved</strong> content' (→ no placeholder).
+// The DEGENERATE boundary was unpinned: a saved doc whose content parses to a lone hardBreak,
+// an &nbsp;, or plain whitespace. blockPlaceholder.ts keys the decoration off whether the doc
+// is a single empty paragraph, so how ProseMirror parses each degenerate string into the block
+// schema decides whether the user meets the hint or a blank unlabelled box. These are LIVE
+// CHARACTERIZATION tests pinning what the shipped parser does TODAY, not a wish. Top-level
+// inline content auto-wraps into a paragraph:
+//   '<br>'   → a real hardBreak leaf inside a paragraph (non-empty) → NO placeholder.
+//   '&nbsp;' → a one-char text node U+00A0 inside a paragraph (non-empty) → NO placeholder.
+//   '   '    → whitespace stripped by the parser → a single EMPTY paragraph → placeholder
+//              PRESENT (blank box, but labelled with the hint).
 // The whitespace case rendering blank-with-hint is benign, not a bug: a whitespace-only
 // save is treated as empty and the user still sees the labelled affordance.
 describe('ManualEditor placeholder on reopen of degenerate content', () => {
@@ -24,7 +24,7 @@ describe('ManualEditor placeholder on reopen of degenerate content', () => {
     const contentArea = await renderEditorReopeningDocument('<br>')
 
     await waitFor(() => {
-      expect(contentArea.innerHTML).toBe('<br><br class="ProseMirror-trailingBreak">')
+      expect(contentArea.innerHTML).toBe('<p><br><br class="ProseMirror-trailingBreak"></p>')
     })
 
     expect(contentArea).not.toHaveClass('is-editor-empty')
@@ -36,7 +36,7 @@ describe('ManualEditor placeholder on reopen of degenerate content', () => {
     const contentArea = await renderEditorReopeningDocument('&nbsp;')
 
     await waitFor(() => {
-      expect(contentArea.innerHTML).toBe('&nbsp;')
+      expect(contentArea.innerHTML).toBe('<p>&nbsp;</p>')
     })
 
     expect(contentArea).not.toHaveClass('is-editor-empty')

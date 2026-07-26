@@ -35,14 +35,15 @@ describe('ManualEditor underline parseHTML', () => {
 
     const contentArea = await screen.findByTestId('editor-content-area')
     await waitFor(() => {
-      expect(contentArea.innerHTML).toBe('before<u>hello</u>after')
+      expect(contentArea.innerHTML).toBe('<p>before<u>hello</u>after</p>')
     })
 
     // innerHTML alone cannot tell an applied Underline mark from raw <u>
     // passthrough - both render byte-identically. Place a collapsed cursor
     // inside the restored text and read the toolbar to pin that the mark
-    // actually won the parse.
-    const textNode = contentArea.childNodes[1].firstChild as Node
+    // actually won the parse. Under the block schema the inline content lives
+    // inside the wrapping paragraph, so descend one level: <p> → [before, <u>, after].
+    const textNode = (contentArea.firstChild as HTMLElement).childNodes[1].firstChild as Node
     selectRange(textNode, 1, 1)
     fireEvent.select(contentArea)
 

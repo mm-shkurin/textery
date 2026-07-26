@@ -2,7 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
 import { SAVE_ERROR_MESSAGE } from '../ManualEditor'
-import { renderEditorWithDocumentCreated, selectRange } from './ManualEditor.testSupport'
+import {
+  paragraphTextNode,
+  renderEditorWithDocumentCreated,
+  selectRange,
+} from './ManualEditor.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -37,7 +41,7 @@ describe('ManualEditor dirty flag', () => {
     // Pins what the server now holds: the clean status below is only meaningful if
     // the save that produced it carried the pre-format content at the known version.
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', 'hello world', 7)
+    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', '<p>hello world</p>', 7)
 
     // The document must be observed clean BEFORE the toolbar click: hasUnsavedChanges
     // initialises to true, so without a settled save the final assertion would pass
@@ -49,7 +53,7 @@ describe('ManualEditor dirty flag', () => {
     })
     expect(screen.queryByText('Черновик, ещё не сохранён')).not.toBeInTheDocument()
 
-    const textNode = contentArea.firstChild as Node
+    const textNode = paragraphTextNode(contentArea)
     selectRange(textNode, 0, 5)
     fireEvent.select(contentArea)
 
@@ -59,7 +63,7 @@ describe('ManualEditor dirty flag', () => {
     // toggleMark setting only storedMarks, the document unchanged at 'hello world',
     // and a clean status legitimately correct. This pins the document as genuinely
     // diverged from the saved 'hello world' above, so "Сохранено" cannot be correct.
-    expect(contentArea.innerHTML).toBe('<strong>hello</strong> world')
+    expect(contentArea.innerHTML).toBe('<p><strong>hello</strong> world</p>')
 
     // No second save fired, so the dirty status below can only come from the flag —
     // not from a fresh in-flight save incidentally re-dirtying the document.
@@ -88,7 +92,7 @@ describe('ManualEditor dirty flag', () => {
     // an early return in handleSave would leave the document dirty by never having
     // saved at all, and the assertions below would pass for the wrong reason.
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', 'hello world', 7)
+    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', '<p>hello world</p>', 7)
 
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const saveError = new Error('network error')
