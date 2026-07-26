@@ -41,6 +41,9 @@ from statements.frontend.generation.manual_editor_save_payload_statements import
 from statements.frontend.generation.manual_editor_save_queue_statements import (
     ManualEditorSaveQueueStatements,
 )
+from statements.frontend.generation.manual_editor_export_control_statements import (
+    ExportControlStatements,
+)
 from statements.frontend.generation.manual_editor_statements import ManualEditorStatements
 from statements.frontend.generation.mode_modal_statements import ModeModalStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
@@ -191,6 +194,11 @@ def mode_modal_statements():
 @pytest.fixture
 def manual_editor_statements():
     return ManualEditorStatements()
+
+
+@pytest.fixture
+def export_control_statements():
+    return ExportControlStatements()
 
 
 @pytest.fixture

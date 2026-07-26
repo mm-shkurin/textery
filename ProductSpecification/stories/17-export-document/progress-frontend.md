@@ -8,8 +8,8 @@ This file tracks **which work units ran**.
 ## Frontend Scenarios (02_UI_Tests.md)
 
 ### Scenario 1.1: The editor offers a PDF and a DOCX export choice
-- [~] red-selenium
-- [ ] red-frontend
+- [x] red-selenium
+- [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
