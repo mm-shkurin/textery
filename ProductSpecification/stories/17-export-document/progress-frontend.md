@@ -21,8 +21,8 @@ This file tracks **which work units ran**.
 - [x] red-selenium
 - [x] red-frontend
 - [x] green-frontend — real in-flight disabled state (not menu-close), released in `.finally()`; `exportDocument` throw-stub pending green-frontend-api. Addressed finding (1) by implementing a genuine disabled lock. Finding (2) release-path sibling test still owed — carry to a strengthening step (see below). **original findings on RED test (23ab6ce):** (1) *vacuous-pass risk (agent-review):* the RED test clicks the same captured `pdfOption` node twice; if green closes the menu on select, the 2nd click hits a detached node and passes with NO lock. Green must implement a real disabled/in-flight state on the control (per scenario title "control is disabled while a request is in flight") and the test must re-query + assert the control is disabled between clicks so the 2nd click reaches a live handler. (2) *lock-never-releases (premortem):* the never-settling mock can't prove release — add a sibling test with a manually-resolvable deferred asserting the control re-enables and a fresh click fires a 2nd `exportDocument` after settle (success AND reject paths; reject overlaps 3.2).
-- [~] red-frontend-api
-- [ ] green-frontend-api
+- [x] red-frontend-api
+- [~] green-frontend-api
 - [ ] align-design
 - [ ] green-selenium — **determinism debt (premortem 45e1e2b):** `trigger_export_as_pdf_twice` currently clicks twice with nothing holding the first `/export` open. Before relying on `== 1`, make the in-flight window deterministic — throttle the network (`Network.emulateNetworkConditions`) so the first request stays open AND wait for a browser-observable in-flight state (the exporting indicator from 3.1) before the second click. Mirror `manual_editor_save_queue_statements.py` (`_SLOW_LATENCY_MS` + `wait_for_save_in_flight`). Otherwise `== 1` passes a same-tick debounce (double-fire ships) or flakes on fast CI.
 - [ ] demo
