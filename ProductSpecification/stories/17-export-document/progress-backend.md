@@ -74,8 +74,15 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   refuse-everything guard passes the negative tests tautologically (same gap class Sc 1.2 hardened
   against in a062c5b). Also cover `format=""` (agent-review CONCERNS) in the parse tests.
   No ADR — single viable approach, guards reuse the established ValidationException→handler pattern.
-- [~] red-usecase
-- [ ] green-usecase
+- [x] red-usecase — RED confirmed live: `TypeError: ExportDocument.execute() got an unexpected
+  keyword argument 'format'` on all 6 cases (predicted == actual). 6 parametrized cases:
+  negatives `xml`/`None`/`""` each assert `error_code == "INVALID_FORMAT"` + exact message
+  "The format must be pdf or docx." run against an EMPTY repo (proves the guard fires before the
+  fetch — bad format discloses nothing about existence); positive control `pdf`/`docx` asserts
+  `found is document` (identity) — the premortem-mandated valid-format control. Sc 1.1's
+  none-refusal test updated to pass `format="pdf"` to survive the signature change. test-review:
+  no changes — all assertions already strict (exact-equality / identity, no loose validation).
+- [~] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
