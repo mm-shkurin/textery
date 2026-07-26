@@ -7,7 +7,10 @@ with its own label — a count-only check would lose which formats are offered.
 """
 
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.support.wait import WebDriverWait
 
+from statements.frontend.base_frontend_statements import WAIT_TIMEOUT_SECONDS
 from statements.frontend.generation.manual_editor_statements import (
     MANUAL_EDITOR_SELECTOR,
     ManualEditorStatements,
@@ -33,23 +36,74 @@ EXPECTED_DOCX_LABEL = "DOCX"
 # actually left the browser.
 EXPORT_REQUEST_PATH = "/export"
 
+# Latency (ms) held on every response while throttled — large enough that the first GET /export
+# stays open across the second click, so the in-flight lock is genuinely under test. Mirrors the
+# save-queue statements' _SLOW_LATENCY_MS pattern.
+_SLOW_LATENCY_MS = 2500
+
 
 class ExportControlStatements(ManualEditorStatements):
     def open_export_control(self, driver) -> None:
         self._wait_for_visible(driver, EXPORT_TRIGGER).click()
 
-    def trigger_export_as_pdf_twice(self, driver) -> None:
-        """Open the export control and click the PDF choice twice in immediate succession.
+    def throttle_network(self, driver) -> None:
+        driver.execute_cdp_cmd("Network.enable", {})
+        driver.execute_cdp_cmd(
+            "Network.emulateNetworkConditions",
+            {
+                "offline": False,
+                "latency": _SLOW_LATENCY_MS,
+                "downloadThroughput": -1,
+                "uploadThroughput": -1,
+            },
+        )
 
-        The second click lands before the first export request returns — the in-flight window
-        scenario 2.1 guards. Both clicks target the same mounted option element, so a correct
-        in-flight lock (the option disabled while its request is open) simply drops the second
-        click instead of dispatching a duplicate request.
+    def clear_network_throttle(self, driver) -> None:
+        driver.execute_cdp_cmd(
+            "Network.emulateNetworkConditions",
+            {"offline": False, "latency": 0, "downloadThroughput": -1, "uploadThroughput": -1},
+        )
+
+    def wait_for_export_in_flight(self, driver) -> None:
+        """Wait until the PDF option is disabled — the browser-observable proof isExporting is true.
+
+        The control keeps the PDF/DOCX options mounted but sets `disabled`/`aria-disabled` while a
+        request is pending (ExportControl.tsx: `disabled={isExporting}`). Waiting on that state is
+        what makes the second click PROVABLY land inside the in-flight window, rather than racing a
+        fast backend that already released the lock. This does NOT use scenario 3.1's exporting
+        indicator — that element does not exist yet.
         """
+        WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(
+            self._pdf_option_is_disabled,
+            "expected the PDF export option to become disabled while its request is in flight",
+        )
+
+    @staticmethod
+    def _pdf_option_is_disabled(driver: WebDriver) -> bool:
+        elements = driver.find_elements(*EXPORT_OPTION_PDF)
+        if not elements:
+            return False
+        option = elements[0]
+        return bool(option.get_attribute("disabled")) or (
+            option.get_attribute("aria-disabled") == "true"
+        )
+
+    def trigger_export_as_pdf_twice(self, driver) -> None:
+        """Throttle the network, click the PDF choice, wait for the in-flight lock, then click again.
+
+        The throttle holds the first GET /export open for `_SLOW_LATENCY_MS`, so the second click
+        is PROVEN to land while `isExporting` is true (the option disabled). A correct in-flight
+        lock drops that second click instead of dispatching a duplicate request; without the lock
+        the second click would fire a second GET /export and the count would be 2. The throttle is
+        cleared afterward so it never leaks into later assertions.
+        """
+        self.throttle_network(driver)
         self.open_export_control(driver)
         pdf_option = self._wait_for_visible(driver, EXPORT_OPTION_PDF)
         pdf_option.click()
+        self.wait_for_export_in_flight(driver)
         pdf_option.click()
+        self.clear_network_throttle(driver)
 
     def assert_exactly_one_export_request_was_sent(self, driver) -> None:
         request_count = self._count_requests_to(driver, EXPORT_REQUEST_PATH, method="GET")
