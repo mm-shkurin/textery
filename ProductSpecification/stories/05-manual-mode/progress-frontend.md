@@ -1671,3 +1671,129 @@ which are intentionally not checkboxes.
   `auth/utils/useUnsavedGuard.ts`. Extracting a shared generic `useBeforeUnloadGuard(active)` is a real
   de-dup but should ride WITH a rework of the auth hook (its ref-based design + confirmLeave/markDirty API),
   not force a risky one-off conversion of auth to reactive state now.
+
+---
+
+## Editor Extension — "full manual mode" (points 1–8)
+
+New scope arrived 2026-07-26 via `editor-extension.md` + `tests/07_Editor_Extension_Tests.md`
++ `tests/08_Editor_Extension_Hazard_Tests.md`. Frontend-owned (session C) except the `title`
+backend column (session A, tracked in `progress-backend.md`). **Block schema is the root
+blocker — everything below stands on it; sequence it first.** Each scenario is a full
+frontend TDD unit (`red-frontend` → `/test-review` → commit → `/refactor` → commit →
+`green-frontend` → commit → `/refactor` → commit → `green-selenium` for browser-only
+surfaces → `demo`). Steps not applicable to a given scenario are marked `[S]` with a reason.
+Backend-only hazard guards (server re-sanitize, mass-assignment, title-length unit, rolling
+deploy) live in `progress-backend.md`, referenced here as `[S]`.
+
+### Scenario E1.1: Multi-paragraph block content round-trips (block schema) — ROOT BLOCKER
+- [~] red-frontend — block schema: paragraphs + H1/H2/H3 as block nodes; save→reload round-trips as semantic HTML
+- [ ] green-frontend — migrate editor schema from `inline*` to block content
+- [ ] green-selenium — live round-trip through `PUT`/`GET /documents/{id}`
+- [ ] demo
+
+### Scenario E1.2: An existing inline-only document loads without data loss
+- [ ] red-frontend — legacy `content` (pre-migration) loads intact in the block editor
+- [ ] green-frontend — load-path tolerance for old inline-only content
+- [ ] demo
+
+### Scenario E2.1: Bulleted and numbered lists round-trip
+- [ ] red-frontend — bulleted + numbered lists save→reload as correct semantic elements
+- [ ] green-frontend — list nodes + toolbar controls
+- [ ] align-design — list toolbar buttons match mockup
+- [ ] green-selenium — live list round-trip
+- [ ] demo
+
+### Scenario E3.1: Edits autosave without an explicit click (debounced)
+- [ ] red-frontend — debounced autosave over existing `PUT /documents/{id}`; saved indicator shown
+- [ ] green-frontend — debounced autosave hook + in-flight/saved indicator
+- [ ] green-selenium — live debounced save fires without click
+- [ ] demo
+
+### Scenario E3.2: A failed autosave keeps the content and shows the failure
+- [ ] red-frontend — autosave failure never clears editor; failed-save state shown
+- [ ] green-frontend — failure handling preserves content
+- [ ] demo
+
+### Scenario E3.3 / H9.2: Out-of-order autosave responses reflect the latest edit and content
+- [ ] red-frontend — two saves in flight resolving out of order: status + content reflect latest (B), B not lost
+- [ ] green-frontend — response-ordering guard (sequence/latest-wins)
+- [ ] demo
+
+### Scenario E3.4 / H9.5: A stale autosave is rejected (409), never a silent overwrite; version fail-closed
+- [ ] red-frontend — stale-version autosave → 409 reconciled; absent/unparseable version fails closed
+- [ ] green-frontend — version guard on autosave path
+- [ ] green-selenium — live 409 reconcile
+- [ ] demo
+
+### Scenario H9.3: Autosave failures handled per kind (transient backoff/cap vs re-auth)
+- [ ] red-frontend — transient timeout/5xx retries with capped backoff; expired session prompts re-auth
+- [ ] green-frontend — failure taxonomy + bounded retry
+- [ ] demo
+
+### Scenario H9.4: Rapid typing coalesces to a bounded save rate
+- [ ] red-frontend — continuous typing collapses to few requests, not one per keystroke
+- [ ] green-frontend — debounce/coalesce (may be covered by E3.1 impl — verify, then `[S]` if reuse)
+- [ ] demo
+
+### Scenario E4.1: A document title can be set and round-trips
+- [ ] red-frontend — editable title field; set + save → reopen shows title
+- [ ] red-frontend-api — `PUT`/`POST` request carries `title`; response echoes it
+- [ ] green-frontend-api — wire title into save payload + parse from response
+- [ ] green-frontend — title field component + state
+- [ ] align-design — title field matches mockup
+- [ ] green-selenium — live title round-trip (needs backend `title` column — coordinate with session A)
+- [ ] demo
+
+### Scenario E4.2: An over-length title is rejected at the boundary
+- [ ] red-frontend — client shows boundary rejection (never silent truncation)
+- [ ] green-frontend — client-side length guard surfacing server rejection
+- [ ] demo
+
+### Scenario E4.3 / H9.1: Content-only autosave does not wipe the title; markup neutralized
+- [ ] red-frontend — content-only autosave omits title (unchanged); trio omit→unchanged / null→cleared / value→set
+- [ ] green-frontend — omit-vs-null request shaping for title
+- [ ] demo
+
+### Scenario E5.1: Pasted rich content is sanitized on the client before entering the document
+- [ ] red-frontend — pasted script / event-handler / javascript: link never enter content (allowlist)
+- [ ] green-frontend — client paste-sanitize consistent with backend `HtmlSanitizer`
+- [ ] green-selenium — live paste sanitize
+- [ ] demo
+- [S] E5.2 server re-sanitize on save — backend-owned, tracked in `progress-backend.md`
+
+### Scenario E6.1: Undo and redo restore block structure
+- [ ] red-frontend — apply heading + list, undo, redo → block structure restored (not just inline text)
+- [ ] green-frontend — verify history under block schema
+- [ ] green-selenium — live undo/redo on block nodes
+- [ ] demo
+
+### Scenario E7.1: Word / character count reflects content in grapheme clusters
+- [ ] red-frontend — combining accent + emoji each count as one grapheme; updates as user types
+- [ ] green-frontend — client-side grapheme-cluster count (Intl.Segmenter), no endpoint
+- [ ] align-design — count display matches mockup
+- [ ] demo
+
+### Scenario E8.1: A table can be inserted, edited, and round-trips
+- [ ] red-frontend — insert table + fill cells; save→reload returns table + cell content intact
+- [ ] green-frontend — table node + insert/edit controls (heaviest — sequence last)
+- [ ] align-design — table controls match mockup
+- [ ] green-selenium — live table round-trip
+- [ ] demo
+
+### Scenario H10.1: A legacy document survives load-edit-save without content loss
+- [ ] red-frontend — old inline-only doc opened, edited, saved, reloaded → prior content preserved (or lossy transform explicitly asserted)
+- [ ] green-frontend — migration-safe load-edit-save
+- [ ] green-selenium — live legacy round-trip
+- [ ] demo
+
+### Scenario H10.3: Leaving with unsaved or failed-autosave edits is guarded
+- [ ] red-frontend — navigate away / refresh / session-expire mid-save → warned or draft restored, not silently lost
+- [ ] green-frontend — extend existing `beforeunload` guard to autosave-failed state
+- [ ] demo
+
+### Backend-owned hazard guards (tracked in `progress-backend.md`)
+- [S] H9.6 mass assignment with `title` added — backend
+- [S] H9.7 title length in pinned unit — backend
+- [S] H10.2 multibyte NFC byte-exact round-trip — backend (client count is grapheme, server is bytes)
+- [S] H10.4 `title` column tolerates rolling deploy — backend (session A migration)
