@@ -13,8 +13,8 @@ This file tracks **which work units ran**.
 - [x] green-frontend
 - [S] red-frontend-api — control display is pure local toggle state; no backend call. The export endpoint (GET /documents/{id}/export) is exercised by scenario 5.1 (download).
 - [S] green-frontend-api — same reason, no API for control display.
-- [~] align-design
-- [ ] green-selenium
+- [x] align-design — no mockup for story 17; styled to editor design tokens + defined the me-toolbar-row flex layout (breadcrumb left / export right). design-review PASS, coverage 100%.
+- [~] green-selenium
 - [ ] demo
 
 ### Scenario 2.1: The export control is disabled while a request is in flight

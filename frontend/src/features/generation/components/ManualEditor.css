@@ -8,6 +8,14 @@
   padding: 32px 24px 96px;
 }
 
+.me-toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
 .me-editor-shell {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
