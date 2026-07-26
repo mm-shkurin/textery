@@ -16,9 +16,7 @@ vi.mock('../../api/documentApi', () => ({
 }))
 
 describe('ManualEditor export in-flight safety', () => {
-  // TDD Red Phase - ExportControl options are not wired to an export call and hold no
-  // in-flight lock yet (green-frontend adds both).
-  it.skip('sends only one export request when the user clicks export twice before it returns', async () => {
+  it('sends only one export request when the user clicks export twice before it returns', async () => {
     // A deferred promise that never settles during the test: the first export stays in
     // flight for the duration, so a second click can only be suppressed by an in-flight
     // guard in the component — not by the request having already resolved.

@@ -161,7 +161,7 @@ export function ManualEditor({
       <div className="me-container">
         <div className="me-toolbar-row">
           <ManualEditorBreadcrumb documentTypeLabel={documentTypeLabel} onBack={onBack} />
-          <ExportControl />
+          <ExportControl documentId={documentId} />
         </div>
         <div className="me-editor-shell">
           <ManualEditorToolbar

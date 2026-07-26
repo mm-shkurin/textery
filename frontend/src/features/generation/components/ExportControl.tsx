@@ -1,18 +1,38 @@
 import { useState } from 'react'
+import { exportDocument, type ExportFormat } from '../api/documentApi'
 import './ExportControl.css'
 
-// Scenario 1.1: the control DISPLAY only — a trigger that reveals a PDF and a DOCX
-// choice. No API call, no download wiring yet (that is red-frontend-api). The two
-// labels must read exactly "PDF" and "DOCX" because the export endpoint accepts
-// format=pdf|docx and the acceptance statements assert the exact labels — hence the
-// list is keyed by the raw format value, with the label its upper-case form and the
-// test id derived as export-option-<format>.
-const EXPORT_FORMATS = ['pdf', 'docx'] as const
+// Scenario 1.1: the control DISPLAY — a trigger that reveals a PDF and a DOCX choice.
+// Scenario 2.1: clicking a choice fires the export request and the control locks while it is
+// in flight, so a double-click cannot dispatch two requests. The two labels must read exactly
+// "PDF" and "DOCX" because the export endpoint accepts format=pdf|docx and the acceptance
+// statements assert the exact labels — the list is keyed by the raw format value, the label its
+// upper-case form, and the test id derived as export-option-<format>.
+const EXPORT_FORMATS: ExportFormat[] = ['pdf', 'docx']
 
-export function ExportControl() {
+interface ExportControlProps {
+  // Null until the document has been created/loaded — there is nothing to export before then,
+  // so the trigger stays disabled and no click can reach exportDocument with a missing id.
+  documentId: string | null
+}
+
+export function ExportControl({ documentId }: ExportControlProps) {
   // Conditional mount, not a hidden toggle — the options are absent from the DOM
   // until the trigger is clicked, mirroring the link popover's open/close pattern.
   const [isOpen, setIsOpen] = useState(false)
+  // A genuine in-flight lock, not an accident of the menu unmounting: while a request is
+  // pending the options are disabled so a second click cannot dispatch a second export.
+  const [isExporting, setIsExporting] = useState(false)
+
+  const handleExport = (format: ExportFormat) => {
+    if (isExporting || !documentId) return
+    setIsExporting(true)
+    // `finally` releases the lock on BOTH resolve and reject: a lock that only cleared on
+    // success would leave the control permanently dead after the first failed export.
+    exportDocument(documentId, format).finally(() => {
+      setIsExporting(false)
+    })
+  }
 
   return (
     <div className="me-export-control">
@@ -22,6 +42,7 @@ export function ExportControl() {
         data-testid="export-control-trigger"
         aria-haspopup="menu"
         aria-expanded={isOpen}
+        disabled={!documentId}
         onClick={() => setIsOpen((open) => !open)}
       >
         Экспорт
@@ -35,6 +56,9 @@ export function ExportControl() {
               className="me-export-option"
               role="menuitem"
               data-testid={`export-option-${format}`}
+              disabled={isExporting}
+              aria-disabled={isExporting}
+              onClick={() => handleExport(format)}
             >
               {format.toUpperCase()}
             </button>

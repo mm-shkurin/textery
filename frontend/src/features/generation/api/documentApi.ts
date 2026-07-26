@@ -120,6 +120,21 @@ export interface GetDocumentResult {
   version: number
 }
 
+// The two output formats the export endpoint accepts (documents_export.yaml, enum [pdf, docx]).
+export type ExportFormat = 'pdf' | 'docx'
+
+// Placeholder — the real GET /api/v1/documents/{id}/export?format= (binary stream + attachment
+// download) lands in green-frontend-api. Declared now, typed, so ExportControl can wire its
+// click handler and its in-flight lock (scenario 2.1) against a real call signature. It throws
+// on purpose rather than resolving a fake value: a stub that "succeeded" would let the in-flight
+// test pass while masking that no request is actually issued yet.
+export async function exportDocument(documentId: string, format: ExportFormat): Promise<void> {
+  throw new Error(
+    `exportDocument not implemented yet (documentId=${documentId}, format=${format}); ` +
+      'the HTTP download lands in green-frontend-api',
+  )
+}
+
 export async function getDocument(documentId: string): Promise<GetDocumentResult> {
   const data = await send<DocumentWire>(
     `/api/v1/documents/${documentId}`,
