@@ -120,8 +120,15 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   (only test change). Baked-image rebuild done per carryover quirk before running.
 
 ### Scenario 2.1: A document exports as a valid PDF
-- [~] red-acceptance
-- [ ] design
+- [x] red-acceptance — RED confirmed live (BACKEND_PORT=8100): the export found-path returns the
+  DocumentResponseDto JSON placeholder, so `content_type='application/json'` vs expected exact
+  `'application/pdf'` (predicted == actual, AssertionError). New class `TestExportDocumentAsPdf`
+  delegates to `assert_valid_pdf_attachment` (Statements): strict status 200, exact application/pdf
+  content type, `%PDF-` magic-byte signature, attachment Content-Disposition, and `body is None`
+  (added per test-review cluster-A: no JSON dict-body may leak on the success path). Skip-marked;
+  5 passed / 1 skipped. NOTE: `document_export_statements.py` is now at exactly the 200-line cap —
+  any further addition to it must split the file first.
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery

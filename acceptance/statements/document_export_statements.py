@@ -149,6 +149,32 @@ class DocumentExportStatements:
             f"sanctioned 404 response {expected!r}, got {foreign!r}"
         )
 
+    def assert_valid_pdf_attachment(self, response: ExportResponseDto) -> None:
+        # A successful owner export delivers a real PDF, not the JSON placeholder:
+        # 200, exact application/pdf, a %PDF- signature, an attachment disposition,
+        # and no parsed JSON body.
+        assert response.status_code == 200, (
+            f"expected 200 exporting the owner's own document as pdf, got "
+            f"status_code={response.status_code}, body={response.body}"
+        )
+        assert response.content_type == PDF_CONTENT_TYPE, (
+            f"expected the exact pdf content type {PDF_CONTENT_TYPE!r}, got "
+            f"content_type={response.content_type!r}"
+        )
+        assert response.content.startswith(b"%PDF-"), (
+            f"expected the body to start with the %PDF- signature of a valid PDF, got "
+            f"first bytes={response.content[:8]!r}"
+        )
+        assert response.content_disposition is not None and (
+            response.content_disposition.strip().lower().startswith("attachment")
+        ), (
+            f"expected a Content-Disposition delivering the export as an attachment, got "
+            f"content_disposition={response.content_disposition!r}"
+        )
+        assert response.body is None, (
+            f"a PDF export carries binary bytes, not a parsed JSON body — got {response.body!r}"
+        )
+
     def assert_refused_as_not_found(self, response: ExportResponseDto) -> None:
         assert response.status_code == 404, (
             f"expected 404 Not Found refusing the export of a non-existent document, got "

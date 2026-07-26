@@ -39,6 +39,24 @@ class TestExportDocumentAcceptance(AbstractBackendTest):
         document_export_statements.assert_distinguishable_from_not_found(own)
 
 
+class TestExportDocumentAsPdf(AbstractBackendTest):
+    """Scenario 2.1: A document exports as a valid PDF.
+
+    Given a document owned by the caller
+    When they export it as pdf
+    Then the response is a valid PDF with the pdf content type
+    And is delivered as an attachment.
+    """
+
+    @pytest.mark.skip(reason="RED: PDF rendering not yet implemented (Scenario 2.1)")
+    async def test_owner_exports_own_document_as_valid_pdf_attachment(
+        self, document_export_statements
+    ):
+        response = await document_export_statements.given_owner_exports_their_own_document_as_pdf()
+
+        document_export_statements.assert_valid_pdf_attachment(response)
+
+
 class TestExportDocumentFormatGuard(AbstractBackendTest):
     """Scenario 1.3: An unsupported or missing format is refused.
 
