@@ -301,6 +301,12 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 - [ ] green-acceptance
 
 ### Scenario 3.4: Multibyte content renders intact
+> CARRY-FORWARD (from Sc 2.1 green-adapter rendering premortem, commit c9c9a4d): the render test
+> pins STRUCTURE only (%PDF- / %%EOF / len>500). Tofu boxes (□□□) are still glyphs and still
+> kilobytes, so a font-coverage regression (e.g. fonts-dejavu-core dropped/renamed in one of the
+> three apt lists) would ship green. This scenario must assert the ACTUAL Cyrillic glyphs survive —
+> extract text/font info from the rendered PDF (e.g. pypdf) and assert the input text is present as
+> embedded glyphs, not just that a PDF came back. Structure-only is not enough for a Russian product.
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase

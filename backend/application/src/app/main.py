@@ -12,6 +12,7 @@ _DB_SRC = os.path.join(_BACKEND_DIR, "adapters", "db", "src")
 _PROVIDER_SRC = os.path.join(_BACKEND_DIR, "adapters", "generation_provider", "src")
 _OAUTH_PROVIDER_SRC = os.path.join(_BACKEND_DIR, "adapters", "oauth_provider", "src")
 _SECURITY_SRC = os.path.join(_BACKEND_DIR, "adapters", "security", "src")
+_RENDERING_SRC = os.path.join(_BACKEND_DIR, "adapters", "rendering", "src")
 
 sys.path.insert(0, _APP_DIR)
 sys.path.insert(0, _REST_SRC)
@@ -21,6 +22,9 @@ sys.path.insert(0, _DB_SRC)
 sys.path.insert(0, _PROVIDER_SRC)
 sys.path.insert(0, _OAUTH_PROVIDER_SRC)
 sys.path.insert(0, _SECURITY_SRC)
+# The export wiring lazy-imports WeasyPrintPdfRenderer from here at request time;
+# without this root a real export 500s with ModuleNotFoundError: 'rendering'.
+sys.path.insert(0, _RENDERING_SRC)
 
 import asyncio
 import contextlib
