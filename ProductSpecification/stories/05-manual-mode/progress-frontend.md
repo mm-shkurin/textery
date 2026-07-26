@@ -1728,8 +1728,8 @@ deploy) live in `progress-backend.md`, referenced here as `[S]`.
 - [ ] demo
 
 ### Scenario H9.3: Autosave failures handled per kind (transient backoff/cap vs re-auth)
-- [ ] red-frontend — transient timeout/5xx retries with capped backoff; expired session prompts re-auth
-- [ ] green-frontend — failure taxonomy + bounded retry
+- [ ] red-frontend — transient timeout/5xx retries with capped backoff; expired session prompts re-auth. **Also pin two failure-path gaps CONFIRMED by the E3.2 premortem (6a3dbc4):** (a) **queued-edit dropped on failure** — an edit landing during an in-flight save sets `saveAgainRequested=true`; if that save then FAILS, the `.catch` resets `saveAgainRequested=false` (`useDocumentSave.ts:119`) and the queued edit is never re-sent, and autosave only re-arms on a fresh edit → silent data loss if the user stops typing. Bounded retry must re-fire the dropped queued edit (or keep it dirty + retried). (b) **beforeunload-still-armed-after-failed-autosave** — after a failed autosave `hasUnsavedChanges` must stay true so the `beforeunload` guard stays armed (currently correct but UNGUARDED by any test); add a test that dispatches a cancelable `beforeunload` after a rejected autosave and asserts `preventDefault` fired (mirror `beforeUnloadGuard.test.tsx` dirty path).
+- [ ] green-frontend — failure taxonomy + bounded retry (must close H9.3(a) queued-edit-dropped above)
 - [ ] demo
 
 ### Scenario H9.4: Rapid typing coalesces to a bounded save rate
