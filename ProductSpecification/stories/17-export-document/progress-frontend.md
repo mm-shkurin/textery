@@ -43,8 +43,8 @@ This file tracks **which work units ran**.
 
 ### Scenario 3.2: An export error is shown with retry, document unchanged
 - [x] red-selenium — new skipped class `TestExportControlErrorAcceptance` + `ExportErrorStatementsMixin` (CDP `Network.setBlockedURLs` on `*/export*` for a deterministic failed GET; `trigger_failed_pdf_export`, `assert_export_error_with_retry_is_shown`, `assert_document_view_is_unchanged`). Split shared `export_control_locators.py` (avoid circular import) — all files <200. Analytical RED (prod `.catch(()=>{})` swallows the reject at ExportControl.tsx:34, no `export-error`/`export-retry` node exists): predicted `TimeoutException` on the `export-error` visibility wait, matched. test-review 3 strict fixes: pinned error text `"Не удалось экспортировать документ"`, retry label `"Повторить"`, and a real content-baseline unchanged assertion (captured before the blocked GET). green-selenium performs the live remove-marker run.
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — new `ExportControl.error.test.tsx` (5 tests, deferred resolve/reject mirroring 3.1). Pins: idle=no error, success=no error, reject→`export-error` visible with exact transport text `"Не удалось экспортировать документ"`, `export-retry` visible accessible-name `"Повторить"`, and **retry re-dispatch** — click fires 2nd `exportDocument` (`toHaveBeenCalledTimes(2)`+`toHaveBeenNthCalledWith(2,'doc-1','pdf')`) then clears error. Closes the premortem retry-as-decoration gap from red-selenium. RED run: **3 failed** (tests 3,4,5 — `TestingLibraryElementError` on missing `export-error`/`export-retry`, prod swallows reject at ExportControl.tsx:34) **| 2 passed** (idle/success guards), matched prediction field-by-field. test-review PASS 0 fixes (assertions already strict: `toHaveTextContent`/`toHaveAccessibleName`/`toHaveBeenNthCalledWith`).
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
