@@ -24,11 +24,12 @@ describe('ManualEditorToolbar', () => {
     expect(screen.getByTestId('toolbar-redo')).toBeDisabled()
   })
 
-  // The inline-only document schema (Document.extend({ content: 'inline*' })) has no block
-  // nodes, so toggleHeading / setParagraph / toggleBulletList / toggleOrderedList are inert —
-  // clicking these controls does nothing. They were mockup-era stubs; showing them overstates
-  // what the editor can do. Removed rather than left as dead surface.
-  it('does not render the inert block controls the inline-only schema cannot support', () => {
+  // The block-schema migration (ADR 2026-07-26) enabled real block nodes, so
+  // list controls became supported and were added (Scenario E2.1). The heading
+  // level-1/2 and explicit paragraph controls remain absent: the schema exposes
+  // only the H3 heading level, and there is no dedicated "paragraph" toggle —
+  // showing those would overstate what the editor supports. They stay removed.
+  it('renders the supported block controls and omits the ones the schema cannot back', () => {
     render(
       <ManualEditorToolbar
         editor={null}
@@ -39,16 +40,12 @@ describe('ManualEditorToolbar', () => {
       />,
     )
 
-    for (const label of [
-      'Заголовок 1',
-      'Заголовок 2',
-      'Абзац',
-      'Маркированный список',
-      'Нумерованный список',
-    ]) {
+    for (const label of ['Заголовок 1', 'Заголовок 2', 'Абзац']) {
       expect(screen.queryByLabelText(label)).toBeNull()
     }
-    // The working inline controls stay.
+    // The list controls now exist alongside the working inline controls.
+    expect(screen.getByLabelText('Маркированный список')).toBeInTheDocument()
+    expect(screen.getByLabelText('Нумерованный список')).toBeInTheDocument()
     expect(screen.getByTestId('toolbar-bold')).toBeInTheDocument()
     expect(screen.getByTestId('toolbar-h3')).toBeInTheDocument()
   })

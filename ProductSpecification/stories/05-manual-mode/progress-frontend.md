@@ -1700,8 +1700,8 @@ deploy) live in `progress-backend.md`, referenced here as `[S]`.
 
 ### Scenario E2.1: Bulleted and numbered lists round-trip
 - [x] red-frontend — bulleted + numbered lists save→reload as correct semantic elements. Existence-check: list HTML already round-trips (StarterKit lists enabled by E1.1). RED targets the missing capability — toolbar bulleted/numbered controls (`ManualEditor.list.test.tsx`, `it.skip`): fails today with `getByLabelText('Маркированный список')` not found. GREEN owes: add list toolbar actions + rewrite the inline-era `ManualEditorToolbar.test.tsx:31-54` assertion that pins those controls ABSENT (ADR sibling-rewrite clause).
-- [~] green-frontend — list nodes + toolbar controls
-- [ ] align-design — list toolbar buttons match mockup
+- [x] green-frontend — list nodes + toolbar controls. Added `bulletList`/`orderedList` actions to `editorToolbarActions.ts` (aria `Маркированный список`/`Нумерованный список`, toggleBulletList/toggleOrderedList, isActive on node names); enabled `ManualEditor.list.test.tsx` (un-skipped); rewrote sibling `ManualEditorToolbar.test.tsx` absence assertion (H1/H2/paragraph still inert, list controls now present). Frontend 513 passed, 0 skipped.
+- [~] align-design — list toolbar buttons match mockup
 - [ ] green-selenium — live list round-trip
 - [ ] demo
 

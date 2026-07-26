@@ -38,10 +38,7 @@ describe('ManualEditor list toolbar', () => {
     return contentArea
   }
 
-  // RED (skipped until list-toolbar green): no bulleted/numbered list controls
-  // exist in TOOLBAR_ACTIONS yet, so getByLabelText('Маркированный список')
-  // throws before any list can be created.
-  it.skip('exposes bulleted and numbered list controls that wrap the current block in the correct list node', async () => {
+  it('exposes bulleted and numbered list controls that wrap the current block in the correct list node', async () => {
     await renderEditorWithDocumentCreated()
     const bulleted = applyListControl('Маркированный список')
     expect(bulleted.innerHTML).toBe(

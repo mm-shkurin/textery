@@ -56,6 +56,22 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     isActive: (editor) => editor.isActive('blockquote'),
   },
   {
+    key: 'bulletList',
+    label: '•',
+    ariaLabel: 'Маркированный список',
+    testId: 'toolbar-bullet-list',
+    run: (editor) => editor.chain().focus().toggleBulletList().run(),
+    isActive: (editor) => editor.isActive('bulletList'),
+  },
+  {
+    key: 'orderedList',
+    label: '1.',
+    ariaLabel: 'Нумерованный список',
+    testId: 'toolbar-ordered-list',
+    run: (editor) => editor.chain().focus().toggleOrderedList().run(),
+    isActive: (editor) => editor.isActive('orderedList'),
+  },
+  {
     key: 'horizontalRule',
     label: '―',
     ariaLabel: 'Горизонтальная линия',

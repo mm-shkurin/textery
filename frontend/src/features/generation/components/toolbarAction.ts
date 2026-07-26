@@ -8,6 +8,8 @@ export type ToolbarActionKey =
   | 'underline'
   | 'code'
   | 'blockquote'
+  | 'bulletList'
+  | 'orderedList'
   | 'horizontalRule'
   | 'codeBlock'
   | 'alignCenter'
