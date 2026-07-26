@@ -39,13 +39,6 @@ class TestExportDocumentAcceptance(AbstractBackendTest):
         document_export_statements.assert_distinguishable_from_not_found(own)
 
 
-@pytest.mark.skip(
-    reason="RED 1.3: the export route declares format: str | None = None and ignores it — "
-    "no format guard exists, so an owned document exported with ?format=xml or with no "
-    "format hits the found-path placeholder and returns 200 + the DocumentResponseDto JSON "
-    "instead of the sanctioned 422 {error_code: INVALID_FORMAT} (verified live against "
-    "BACKEND_PORT=8100: both cases got status_code=200)"
-)
 class TestExportDocumentFormatGuard(AbstractBackendTest):
     """Scenario 1.3: An unsupported or missing format is refused.
 

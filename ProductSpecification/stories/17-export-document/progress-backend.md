@@ -114,10 +114,13 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   the canonical `{error_code, message}` body, only the status was defaulting to 400. Error-handling
   tests 11 passed / 0 skipped; full rest adapter suite 73 passed, no regression. Coverage:
   exception_handlers.py 100% (21 stmts, 0 branch), no gaps.
-- [~] green-acceptance
+- [x] green-acceptance — GREEN live against the rebuilt backend (BACKEND_PORT=8100): 5 passed
+  incl. both format-guard cases `[unsupported_format]` (xml→422) and `[missing_format]` (None→422),
+  plus the three Sc 1.1/1.2 regression tests. Enabled the test by removing the RED skip decorator
+  (only test change). Baked-image rebuild done per carryover quirk before running.
 
 ### Scenario 2.1: A document exports as a valid PDF
-- [ ] red-acceptance
+- [~] red-acceptance
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase
