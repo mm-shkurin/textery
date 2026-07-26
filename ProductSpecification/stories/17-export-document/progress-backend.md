@@ -35,10 +35,10 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   NotFoundException) → red-adapter rest / green-adapter rest.
 - [x] red-adapter rest
 - [x] green-adapter rest
-- [~] green-acceptance
+- [x] green-acceptance
 
 ### Scenario 1.2: Export of another account's document is refused indistinguishably
-- [ ] red-acceptance
+- [~] red-acceptance
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase
