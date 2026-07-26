@@ -8,14 +8,14 @@ from shared.keyset_cursor import KeysetCursor
 _EPOCH = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
 
 
-def stored_document(owner_id: UUID, minutes_old: int = 0) -> Document:
+def stored_document(owner_id: UUID, minutes_old: int = 0, content: str = "") -> Document:
     """A persisted draft, `minutes_old` minutes older than the newest possible one."""
     return Document(
         id=uuid4(),
         owner_id=owner_id,
         document_type="эссе",
         status="draft",
-        content="",
+        content=content,
         version=1,
         idempotency_key=f"key-{uuid4()}",
         created_at=_EPOCH - timedelta(minutes=minutes_old),
@@ -120,6 +120,29 @@ class FakeHtmlSanitizer:
     def sanitize(self, content: str) -> str:
         self.sanitized.append(content)
         return content.replace("<script>", "").replace("</script>", "")
+
+
+FAKE_RENDERED_PDF = b"%PDF-1.7\nfake-rendered-bytes"
+
+
+class FakeDocumentRenderer:
+    """Records every render call and returns fixed sentinel bytes.
+
+    The sentinel matters: bytes a plain document could never carry. A usecase
+    that skipped the render step, or echoed the stored content back instead of
+    rendering it, could not produce these exact bytes -- so the happy-path
+    assertion is a real proof the STORED content was fed through the renderer,
+    not a tautology. `calls` records `(content, export_format)` so the test can
+    pin that the usecase rendered the stored content under the parsed format,
+    and that a refused request (absent doc / bad format) never reaches render.
+    """
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, object]] = []
+
+    def render(self, content: str, export_format: object) -> bytes:
+        self.calls.append((content, export_format))
+        return FAKE_RENDERED_PDF
 
 
 class FakeClock:

@@ -149,8 +149,18 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   • DEPENDENCY green will require: add WeasyPrint to backend requirements + libpango/cairo system
     libs to backend.Dockerfile so the render actually executes (the baked image must be rebuilt for
     green-acceptance). The fail-fast-at-boot guard for missing native libs is owned by Infra 1.1.
-- [~] red-usecase
-- [ ] green-usecase
+- [x] red-usecase — RED confirmed live: `TypeError: ExportDocument.__init__() got an unexpected
+  keyword argument 'document_renderer'` on all 7 tests (predicted == actual). Uses a
+  `FakeDocumentRenderer` (in document_fakes.py) — no real WeasyPrint. Three cases: (1) happy path
+  asserts `result.content == FAKE_RENDERED_PDF` + `result.media_type == "application/pdf"` (exact)
+  AND `renderer.calls == [("<p>Привет</p>", ExportFormat.PDF)]` (proves the STORED content is
+  rendered under the parsed format); (2) not-found returns None AND `renderer.calls == []` (a
+  missing document never reaches render); (3) invalid-format (5 params) raises INVALID_FORMAT
+  before fetch/render AND `renderer.calls == []`. docx positive control deferred to Sc 2.2
+  red-usecase (asserting a docx media_type here would force 2.2's branch into 2.1's green).
+  test-review: no changes — assertions already strict; placement flag (Statements DSL) overruled
+  by the document-usecase family's inline direct-fakes convention.
+- [~] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
