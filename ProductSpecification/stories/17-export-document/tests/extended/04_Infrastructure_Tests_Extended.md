@@ -1,0 +1,12 @@
+> These are additional edge case tests. Implement after core tests pass.
+
+# Export document — Infrastructure Tests (Extended)
+
+## 1. Image Reproducibility
+
+### 1.1 The render libraries are present in the built image
+```gherkin
+Given the built backend image
+When the render backend is probed
+Then the required native libraries are present and loadable
+```

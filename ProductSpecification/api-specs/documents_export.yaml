@@ -1,0 +1,111 @@
+openapi: 3.0.3
+info:
+  title: Export Document to PDF / DOCX
+  version: 1.0.0
+
+paths:
+  /api/v1/documents/{document_id}/export:
+    get:
+      summary: Render a document to PDF or DOCX and stream it
+      description: >
+        Renders the document's stored sanitized HTML to the requested format in memory and
+        streams it — nothing is written to disk (multi-instance rule). Read-only: export
+        never mutates the document or runs generation.
+
+
+        The PDF renderer's network fetch is disabled, so an embedded external URL cannot
+        cause an outbound request (SSRF-safe). The filename is derived from the document
+        title, RFC 5987-encoded for non-ASCII, and stripped of CR/LF/quotes so it cannot
+        inject into the Content-Disposition header.
+      operationId: exportDocument
+      tags:
+        - documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: format
+          in: query
+          required: true
+          description: Output format. Any value other than pdf or docx is rejected.
+          schema:
+            type: string
+            enum: [pdf, docx]
+      responses:
+        '200':
+          description: >
+            The rendered file, streamed. Content-Type is application/pdf or the DOCX
+            wordprocessingml type. Content-Disposition is attachment with an RFC
+            5987-encoded filename derived from the title (default document.pdf/.docx when
+            the title is absent).
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              description: attachment; filename*=UTF-8''<encoded-title>.<ext>
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: >
+            Missing, malformed, expired, or non-access Bearer token. A refresh token
+            presented here is rejected like any other invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: >
+            The document does not exist OR is owned by another account — byte-identical in
+            both cases (never 403, which would confirm the id exists). No file.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Missing or unsupported format (not pdf or docx). No file.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: >
+            Render failure or render-deadline abort — generic client-safe message only, no
+            DB text, filesystem path, id shape, or stack frame. Emits a server-side signal
+            keyed by document id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Access token from POST /api/v1/auth/login. Documents are owned; see
+        decisions/document-ownership-decision.md.
+  schemas:
+    Error:
+      type: object
+      required:
+        - error_code
+        - message
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
