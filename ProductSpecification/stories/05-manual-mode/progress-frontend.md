@@ -1712,9 +1712,9 @@ deploy) live in `progress-backend.md`, referenced here as `[S]`.
 - [S] demo — unattended loop, no viewer; autosave proven by the passing green-selenium test. Run `/demo TestManualEditorAutosaveAcceptance` to watch it live.
 
 ### Scenario E3.2: A failed autosave keeps the content and shows the failure
-- [ ] red-frontend — autosave failure never clears editor; failed-save state shown
-- [ ] green-frontend — failure handling preserves content
-- [ ] demo
+- [x] red-frontend — autosave failure never clears editor; failed-save state shown. LIVE **characterization guard** (`ManualEditor.autosaveFailure.test.tsx`, 1 passing) — not a red→green cycle. Existence-check: the debounced autosave reuses the same `save()` whose `performSave.catch` already sets the `me-save-error` banner and never touches editor content; E3.2 was delivered by the manual-save failure machinery. Guard pins the combination for the AUTOSAVE path: saveDocument rejects after the debounce → `me-save-error`/SAVE_ERROR_MESSAGE shown AND `editor-content-area` still exactly `<p>hello world</p>`. Both assertions mutation-checked to bite (red-agent + test-review).
+- [S] green-frontend — no production code needed; failure handling already provided by the shared `save()` catch path (see red-frontend note).
+- [S] demo — unattended loop, no viewer; failed-autosave behavior proven by the passing characterization guard.
 
 ### Scenario E3.3 / H9.2: Out-of-order autosave responses reflect the latest edit and content
 - [ ] red-frontend — two saves in flight resolving out of order: status + content reflect latest (B), B not lost
