@@ -27,11 +27,16 @@ export function ExportControl({ documentId }: ExportControlProps) {
   const handleExport = (format: ExportFormat) => {
     if (isExporting || !documentId) return
     setIsExporting(true)
-    // `finally` releases the lock on BOTH resolve and reject: a lock that only cleared on
-    // success would leave the control permanently dead after the first failed export.
-    exportDocument(documentId, format).finally(() => {
-      setIsExporting(false)
-    })
+    exportDocument(documentId, format)
+      // Swallow here so a failed export never escapes as an unhandled rejection (the api
+      // step's real request can reject, and the current stub always does). The user-facing
+      // error + retry surfacing is scenario 3.2; this only keeps the rejection handled.
+      .catch(() => {})
+      // `finally` releases the lock on BOTH resolve and reject: a lock that only cleared on
+      // success would leave the control permanently dead after the first failed export.
+      .finally(() => {
+        setIsExporting(false)
+      })
   }
 
   return (
