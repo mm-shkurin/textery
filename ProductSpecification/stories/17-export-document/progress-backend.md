@@ -196,8 +196,17 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   `docker compose exec` (or the container's own pytest run) at BOTH red-adapter rendering (confirm
   the real RED in-container) and green-adapter rendering. This is a departure from the usual
   host-run adapter tests, forced by the native dependency.
-- [~] red-adapter rendering
-- [ ] green-adapter rendering
+- [x] red-adapter rendering — RED confirmed live on host: `ModuleNotFoundError: No module named
+  'rendering.weasyprint_pdf_renderer'` (predicted == actual). New module `backend/adapters/rendering`
+  (src root + tests root registered in backend/pyproject.toml: pytest pythonpath, mypy mypy_path +
+  files, isort known-first-party "rendering"); full backend suite still collects (514 tests, exit 0).
+  Test `test_weasyprint_pdf_renderer.py` (26 lines) defers the adapter import into the test body (so
+  the suite collects clean while weasyprint is absent on the host) and asserts strictly
+  `isinstance(result, bytes)` + `result.startswith(b"%PDF-")`. Skip-marked (1 skipped). test-review:
+  A/S/P all clean — `%PDF-` prefix is the strict boundable signature (full-body equality impossible;
+  WeasyPrint output is non-deterministic), inline asserts match the sibling nh3 adapter-test convention.
+  GREEN runs in-container.
+- [~] green-adapter rendering
 - [ ] red-adapter rest
 - [ ] green-adapter rest
 - [ ] green-acceptance
