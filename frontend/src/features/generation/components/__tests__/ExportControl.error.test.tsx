@@ -77,6 +77,36 @@ describe('ExportControl export failure surfacing', () => {
     expect(error).toHaveTextContent(EXPORT_ERROR_TEXT)
   })
 
+  it('shows the localized failure text, not the raw transport message, when the export rejects', async () => {
+    const deferred = createDeferred()
+    vi.mocked(documentApi.exportDocument).mockReturnValue(deferred.promise)
+
+    render(<ExportControl documentId="doc-1" />)
+    triggerExport()
+    // A real network-layer failure surfaces as the transport's own English message.
+    deferred.reject(new Error('Failed to fetch'))
+
+    const error = await screen.findByTestId('export-error')
+    // The banner must present the localized constant regardless of the caught message. The retry
+    // label "Повторить" also lives inside this node, so scope the assertion to the leading text.
+    expect(error).toHaveTextContent(EXPORT_ERROR_TEXT)
+    expect(error).not.toHaveTextContent('Failed to fetch')
+  })
+
+  it('shows the localized failure text when the export rejects with a non-Error value', async () => {
+    const deferred = createDeferred()
+    vi.mocked(documentApi.exportDocument).mockReturnValue(deferred.promise)
+
+    render(<ExportControl documentId="doc-1" />)
+    triggerExport()
+    // A non-Error rejection (thrown string, undefined) must not leak its stringified form either.
+    deferred.reject('boom' as unknown as Error)
+
+    const error = await screen.findByTestId('export-error')
+    expect(error).toHaveTextContent(EXPORT_ERROR_TEXT)
+    expect(error).not.toHaveTextContent('boom')
+  })
+
   it('offers a retry control labelled "Повторить" alongside the error', async () => {
     const deferred = createDeferred()
     vi.mocked(documentApi.exportDocument).mockReturnValue(deferred.promise)
