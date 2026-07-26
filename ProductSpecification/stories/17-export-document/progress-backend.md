@@ -236,12 +236,20 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   >     the test actually RUNS on the runner, and run it in-container locally per the 2026-07-26 decision.
   > (3) the RED test already pins %PDF- + %%EOF trailer + length>500 (strengthened at red-adapter
   >     rendering per premortem) — green must satisfy all three.
-- [~] red-adapter rest
+- [x] red-adapter rest — RED confirmed live: `AttributeError: 'RenderedExport' object has no
+  attribute 'id'` at document_router.py:115 (the route still calls `DocumentResponseDto.from_domain`
+  on the RenderedExport) — predicted == actual. New `TestExportDocumentAsPdfResponse` (reuses the
+  `export_client` fixture + `mocker.AsyncMock`): a fake usecase returns
+  `RenderedExport(b"%PDF-1.7 fake pdf bytes", "application/pdf")`; asserts strict status 200,
+  `content-type == "application/pdf"`, `content ==` the exact bytes, and `content-disposition ==
+  "attachment; filename=document.pdf"`. Skip-marked (1 passed / 1 skipped). test-review: A/S/P clean,
+  no changes. GREEN builds the binary fastapi.Response and FIXES the last pending mypy error
+  (document_router.py:115).
   > When green-adapter rest returns the binary Response, it FIXES the pending mypy error
   > `document_router.py:115 Argument 1 to "from_domain" ... incompatible type "RenderedExport"; expected
   > "Document"` — the route must stop calling DocumentResponseDto.from_domain on the RenderedExport and
   > instead build a binary fastapi.Response from its bytes + media_type.
-- [ ] green-adapter rest
+- [~] green-adapter rest
 - [ ] green-acceptance
 
 ### Scenario 2.2: A document exports as a valid DOCX
