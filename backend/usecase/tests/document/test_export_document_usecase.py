@@ -36,10 +36,6 @@ from statements.document_fakes import (
 )
 
 
-@pytest.mark.skip(
-    reason="RED: ExportDocument.__init__() takes no document_renderer arg / execute "
-    "returns Document|None, not a rendered result (TypeError on construction)"
-)
 class TestExportDocument:
     async def test_should_answer_none_and_never_render_for_a_non_existent_document(self):
         renderer = FakeDocumentRenderer()

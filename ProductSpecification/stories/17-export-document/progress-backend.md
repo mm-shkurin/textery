@@ -160,8 +160,20 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   red-usecase (asserting a docx media_type here would force 2.2's branch into 2.1's green).
   test-review: no changes — assertions already strict; placement flag (Statements DSL) overruled
   by the document-usecase family's inline direct-fakes convention.
-- [~] green-usecase
-- [ ] adapters-discovery
+- [x] green-usecase — GREEN at 7 passed (usecase suite 167 passed). New port
+  `document_renderer.py` (`DocumentRenderer(Protocol)`, sync `render(content, export_format) ->
+  bytes`, mirrors HtmlSanitizer); new frozen result `rendered_export.py`
+  (`RenderedExport(content: bytes, media_type: str)`). `ExportDocument` gains the renderer arg;
+  execute parses format → owner-scoped fetch (None → None, renderer untouched) → renders
+  `document.content` and returns `RenderedExport`; media type from an `ExportFormat`-keyed dict
+  (only PDF mapped now — an unmapped format KeyErrors loudly, never a wrong Content-Type; DOCX is
+  a one-line add in Sc 2.2). Coverage: all three files 100% line+branch.
+  FOLLOW-UP (breaks app construction until closed): `backend/application/src/app/container/
+  document_wiring.py` still constructs `ExportDocument(document_repository=...)` without the now-
+  required `document_renderer` — deliberately NOT wired here (the WeasyPrint adapter doesn't exist
+  yet and may not import on the Windows host). adapters-discovery / green-adapter rendering must
+  create the rendering adapter and inject it before the app boots / green-acceptance rebuilds.
+- [~] adapters-discovery
 - [ ] green-acceptance
 
 ### Scenario 2.2: A document exports as a valid DOCX
