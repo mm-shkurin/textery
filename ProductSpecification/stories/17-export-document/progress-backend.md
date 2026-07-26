@@ -173,7 +173,30 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   required `document_renderer` — deliberately NOT wired here (the WeasyPrint adapter doesn't exist
   yet and may not import on the Windows host). adapters-discovery / green-adapter rendering must
   create the rendering adapter and inject it before the app boots / green-acceptance rebuilds.
-- [~] adapters-discovery
+- [x] adapters-discovery (rendering + rest) — Check 1 (ports): rendering — GAP: the new
+  `DocumentRenderer` port has NO adapter. Add module `backend/adapters/rendering` with
+  `WeasyPrintPdfRenderer` implementing `render(content, ExportFormat.PDF) -> bytes` with WeasyPrint's
+  `url_fetcher` disabled (SSRF-safe from construction); wire it into the composition root
+  (`backend/application/src/app/container/document_wiring.py`, which currently omits the required
+  `document_renderer` arg — see green-usecase follow-up) → red-adapter rendering / green-adapter
+  rendering. `DocumentRepository.find_by_id_and_owner` unchanged → [S]. Check 2 (exceptions): [S] for
+  2.1 — render-failure / deadline / disclosure exceptions are owned by Sc 4.2/4.3/4.4; the happy
+  path raises nothing new. Check 3 (response shape): rest — GAP: `/export` still returns the
+  `DocumentResponseDto` JSON placeholder, but the usecase now returns `RenderedExport(content,
+  media_type)`; the route must return a binary `fastapi.Response(content=bytes,
+  media_type=RenderedExport.media_type, headers={"Content-Disposition": "attachment;
+  filename=document.pdf"})` — there is NO binary-Response precedent in the rest layer (only
+  JSONResponse) → red-adapter rest / green-adapter rest.
+  ⚠️ WINDOWS-HOST RISK (confirmed live): `import weasyprint` fails on this host (no GTK/pango/cairo),
+  so `green-adapter rendering`'s unit test cannot execute a real render locally. Mitigation: add
+  WeasyPrint to backend requirements + libpango/cairo to backend.Dockerfile, and verify the real
+  render inside the Linux backend container (the baked-image rebuild at green-acceptance) rather than
+  on the host. The host-side rendering adapter test should assert construction / url_fetcher-disabled
+  wiring only where it can, deferring the actual byte-render proof to the in-container green-acceptance.
+- [~] red-adapter rendering
+- [ ] green-adapter rendering
+- [ ] red-adapter rest
+- [ ] green-adapter rest
 - [ ] green-acceptance
 
 ### Scenario 2.2: A document exports as a valid DOCX
