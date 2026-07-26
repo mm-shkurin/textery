@@ -21,10 +21,9 @@ class ExportFormat(Enum):
 
     @classmethod
     def parse(cls, value: str | None) -> "ExportFormat":
-        if not isinstance(value, str):
-            raise ValidationException(
-                error_code="INVALID_FORMAT", message=INVALID_FORMAT_MESSAGE
-            )
+        # The Enum constructor self-validates: None, non-strings, and any token
+        # other than the exact members all raise ValueError, so a single guard
+        # covers every invalid input -- no separate isinstance branch is needed.
         try:
             return cls(value)
         except ValueError as error:
