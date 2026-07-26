@@ -37,8 +37,16 @@ class TestExportDocumentAsPdfResponse:
         # The usecase now yields the rendered payload + its media type; the route
         # must hand those bytes back unchanged as a binary Response, never re-wrap
         # them in the DocumentResponseDto JSON placeholder.
+        #
+        # media_type is a DISTINCTIVE sentinel, not "application/pdf": the route
+        # must THREAD RenderedExport.media_type into the response, and a green that
+        # hardcodes "application/pdf" (ignoring the field) would pass a pdf-literal
+        # assertion while silently mis-typing a future DOCX export. Asserting the
+        # header echoes this sentinel forces the pass-through here rather than
+        # leaking the bug into Scenario 2.2. The real "application/pdf" type on a
+        # genuine render is pinned end to end by green-acceptance.
         rendered = RenderedExport(
-            content=b"%PDF-1.7 fake pdf bytes", media_type="application/pdf"
+            content=b"%PDF-1.7 fake pdf bytes", media_type="application/x-render-marker"
         )
         usecase = mocker.Mock()
         usecase.execute = mocker.AsyncMock(return_value=rendered)
@@ -47,6 +55,6 @@ class TestExportDocumentAsPdfResponse:
             response = await client.get(f"/api/v1/documents/{uuid4()}/export?format=pdf")
 
         assert response.status_code == 200, f"got {response.status_code}: {response.text}"
-        assert response.headers["content-type"] == "application/pdf"
+        assert response.headers["content-type"] == "application/x-render-marker"
         assert response.content == b"%PDF-1.7 fake pdf bytes"
         assert response.headers["content-disposition"] == "attachment; filename=document.pdf"
