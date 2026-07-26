@@ -1708,8 +1708,8 @@ deploy) live in `progress-backend.md`, referenced here as `[S]`.
 ### Scenario E3.1: Edits autosave without an explicit click (debounced)
 - [x] red-frontend — debounced autosave over existing `PUT /documents/{id}`; saved indicator shown. `ManualEditor.autosave.test.tsx` (`it.skip`): edits without a click → after the debounce fires exactly one `saveDocument('doc-1', '<p>hello world</p>', 7)` and shows "Сохранено"; no save at 999ms, one at 1000ms (assumed `AUTOSAVE_DEBOUNCE_MS=1000`). Fails today: saveDocument 0 calls (no debounce exists). GREEN owes the debounced autosave in `useDocumentSave.ts` + `ManualEditor.tsx` onUpdate wiring.
 - [x] green-frontend — debounced autosave hook + in-flight/saved indicator. New `useAutosave.ts` hook (`AUTOSAVE_DEBOUNCE_MS=1000`) wired via ManualEditor `onUpdate` alongside `noteEdit`; reuses the existing `save()`/PUT machinery. `clearTimeout` at two sites: edit-reset (collapse burst to one save) + effect cleanup (unmount cancels pending). Un-skipped `ManualEditor.autosave.test.tsx`; added multi-edit-collapse + unmount-cancel guards (both green). Frontend 516 passed, 0 skipped. ManualEditor.tsx 182 lines, useAutosave.ts 40.
-- [~] green-selenium — live debounced save fires without click
-- [ ] demo
+- [x] green-selenium — live debounced save fires without click (test_manual_editor_autosave_acceptance.py; types text, never clicks Сохранить, waits for `.me-save-status--saved` to appear on its own, then reads back via backend GET and asserts `<p>autosaved text</p>` persisted). Required a frontend rebuild (container was 5h stale, predating the autosave code).
+- [S] demo — unattended loop, no viewer; autosave proven by the passing green-selenium test. Run `/demo TestManualEditorAutosaveAcceptance` to watch it live.
 
 ### Scenario E3.2: A failed autosave keeps the content and shows the failure
 - [ ] red-frontend — autosave failure never clears editor; failed-save state shown

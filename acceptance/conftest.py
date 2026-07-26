@@ -35,6 +35,9 @@ from statements.frontend.generation.manual_editor_placeholder_delete_statements 
 from statements.frontend.generation.manual_editor_popover_clip_statements import (
     ManualEditorPopoverClipStatements,
 )
+from statements.frontend.generation.manual_editor_autosave_statements import (
+    ManualEditorAutosaveStatements,
+)
 from statements.frontend.generation.manual_editor_block_schema_statements import (
     ManualEditorBlockSchemaStatements,
 )
@@ -217,6 +220,11 @@ def manual_editor_block_schema_statements():
 @pytest.fixture
 def manual_editor_list_statements():
     return ManualEditorListStatements()
+
+
+@pytest.fixture
+def manual_editor_autosave_statements():
+    return ManualEditorAutosaveStatements()
 
 
 @pytest.fixture
