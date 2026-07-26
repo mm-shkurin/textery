@@ -11,6 +11,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.wait import WebDriverWait
 
 from statements.frontend.base_frontend_statements import WAIT_TIMEOUT_SECONDS
+from statements.frontend.network_throttle_mixin import NetworkThrottleMixin
 from statements.frontend.generation.manual_editor_statements import (
     MANUAL_EDITOR_SELECTOR,
     ManualEditorStatements,
@@ -36,33 +37,10 @@ EXPECTED_DOCX_LABEL = "DOCX"
 # actually left the browser.
 EXPORT_REQUEST_PATH = "/export"
 
-# Latency (ms) held on every response while throttled — large enough that the first GET /export
-# stays open across the second click, so the in-flight lock is genuinely under test. Mirrors the
-# save-queue statements' _SLOW_LATENCY_MS pattern.
-_SLOW_LATENCY_MS = 2500
 
-
-class ExportControlStatements(ManualEditorStatements):
+class ExportControlStatements(NetworkThrottleMixin, ManualEditorStatements):
     def open_export_control(self, driver) -> None:
         self._wait_for_visible(driver, EXPORT_TRIGGER).click()
-
-    def throttle_network(self, driver) -> None:
-        driver.execute_cdp_cmd("Network.enable", {})
-        driver.execute_cdp_cmd(
-            "Network.emulateNetworkConditions",
-            {
-                "offline": False,
-                "latency": _SLOW_LATENCY_MS,
-                "downloadThroughput": -1,
-                "uploadThroughput": -1,
-            },
-        )
-
-    def clear_network_throttle(self, driver) -> None:
-        driver.execute_cdp_cmd(
-            "Network.emulateNetworkConditions",
-            {"offline": False, "latency": 0, "downloadThroughput": -1, "uploadThroughput": -1},
-        )
 
     def wait_for_export_in_flight(self, driver) -> None:
         """Wait until the PDF option is disabled — the browser-observable proof isExporting is true.
@@ -91,7 +69,7 @@ class ExportControlStatements(ManualEditorStatements):
     def trigger_export_as_pdf_twice(self, driver) -> None:
         """Throttle the network, click the PDF choice, wait for the in-flight lock, then click again.
 
-        The throttle holds the first GET /export open for `_SLOW_LATENCY_MS`, so the second click
+        The throttle holds the first GET /export open for `SLOW_LATENCY_MS`, so the second click
         is PROVEN to land while `isExporting` is true (the option disabled). A correct in-flight
         lock drops that second click instead of dispatching a duplicate request; without the lock
         the second click would fire a second GET /export and the count would be 2. The throttle is
