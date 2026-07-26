@@ -53,6 +53,23 @@
   background: var(--bg-card-muted);
 }
 
+/* Disabled = the in-flight lock (options, while an export is pending) and the no-document
+   trigger. Matches the editor toolbar's disabled convention (me-toolbar-btn:disabled):
+   faded + not-allowed, and hover must NOT re-tint or the control would look active mid-request. */
+.me-export-trigger:disabled,
+.me-export-option:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.me-export-trigger:disabled:hover {
+  background: var(--bg-surface);
+}
+
+.me-export-option:disabled:hover {
+  background: transparent;
+}
+
 @media (max-width: 768px) {
   .me-export-trigger,
   .me-export-option {
