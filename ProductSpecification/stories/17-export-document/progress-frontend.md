@@ -19,8 +19,8 @@ This file tracks **which work units ran**.
 
 ### Scenario 2.1: The export control is disabled while a request is in flight
 - [x] red-selenium
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
