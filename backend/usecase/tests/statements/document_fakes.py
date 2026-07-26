@@ -1,9 +1,26 @@
-from datetime import UTC, datetime
-from uuid import UUID
+from datetime import UTC, datetime, timedelta
+from uuid import UUID, uuid4
 
 from document.document import Document
 from shared.exceptions import ConflictException
 from shared.keyset_cursor import KeysetCursor
+
+_EPOCH = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
+
+
+def stored_document(owner_id: UUID, minutes_old: int = 0) -> Document:
+    """A persisted draft, `minutes_old` minutes older than the newest possible one."""
+    return Document(
+        id=uuid4(),
+        owner_id=owner_id,
+        document_type="эссе",
+        status="draft",
+        content="",
+        version=1,
+        idempotency_key=f"key-{uuid4()}",
+        created_at=_EPOCH - timedelta(minutes=minutes_old),
+        updated_at=_EPOCH - timedelta(minutes=minutes_old),
+    )
 
 
 class FakeDocumentRepository:
@@ -80,6 +97,13 @@ class FakeDocumentRepository:
         stored.version += 1
         stored.updated_at = updated_at
         return stored
+
+
+async def seeded(*documents: Document) -> FakeDocumentRepository:
+    repository = FakeDocumentRepository()
+    for document in documents:
+        await repository.save_new(document)
+    return repository
 
 
 class FakeHtmlSanitizer:

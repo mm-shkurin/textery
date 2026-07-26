@@ -14,38 +14,13 @@ non-negotiable: without it the negative cases pass tautologically against a
 guard that refuses everything.
 """
 
-from datetime import UTC, datetime
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 
-from document.document import Document
 from document.export_document import ExportDocument
 from shared.exceptions import ValidationException
-from statements.document_fakes import FakeDocumentRepository
-
-_EPOCH = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
-
-
-def _stored_document(owner_id: UUID) -> Document:
-    return Document(
-        id=uuid4(),
-        owner_id=owner_id,
-        document_type="эссе",
-        status="draft",
-        content="",
-        version=1,
-        idempotency_key=f"key-{uuid4()}",
-        created_at=_EPOCH,
-        updated_at=_EPOCH,
-    )
-
-
-async def _seeded(*documents: Document) -> FakeDocumentRepository:
-    repository = FakeDocumentRepository()
-    for document in documents:
-        await repository.save_new(document)
-    return repository
+from statements.document_fakes import FakeDocumentRepository, seeded, stored_document
 
 
 @pytest.mark.skip(
@@ -60,9 +35,15 @@ class TestExportDocument:
         assert found is None
 
     @pytest.mark.parametrize(
-        "bad_format", ["xml", None, ""], ids=["unsupported", "missing", "empty"]
+        "bad_format",
+        ["xml", None, "", "PDF", " pdf "],
+        ids=["unsupported", "missing", "empty", "wrong_case", "padded"],
     )
     async def test_should_reject_an_invalid_format_before_the_fetch(self, bad_format):
+        # "PDF" and " pdf " are near-misses: the design declares parse
+        # case-sensitive and unpadded, so a GREEN guard that .lower()/.strip()s
+        # its input would silently widen the accepted set. Pinning them here
+        # keeps the negative net a real discrimination proof, not a tautology.
         # The repository is empty, so a format that slipped past the guard would
         # return None, not raise. Raising proves the guard fired ahead of the
         # fetch -- a bad format is refused regardless of whether the id exists.
@@ -81,9 +62,9 @@ class TestExportDocument:
     @pytest.mark.parametrize("good_format", ["pdf", "docx"])
     async def test_should_export_the_document_for_a_valid_format(self, good_format):
         owner_id = uuid4()
-        document = _stored_document(owner_id)
+        document = stored_document(owner_id)
 
-        found = await ExportDocument(await _seeded(document)).execute(
+        found = await ExportDocument(await seeded(document)).execute(
             document_id=document.id, owner_id=owner_id, format=good_format
         )
 
