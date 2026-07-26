@@ -13,19 +13,17 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 from statements.frontend.base_frontend_statements import WAIT_TIMEOUT_SECONDS
 from statements.frontend.network_throttle_mixin import NetworkThrottleMixin
+from statements.frontend.generation.export_control_locators import (
+    EXPORT_OPTION_DOCX,
+    EXPORT_OPTION_PDF,
+    EXPORT_TRIGGER,
+)
+from statements.frontend.generation.manual_editor_export_error_statements import (
+    ExportErrorStatementsMixin,
+)
 from statements.frontend.generation.manual_editor_statements import (
     MANUAL_EDITOR_SELECTOR,
     ManualEditorStatements,
-)
-
-EXPORT_TRIGGER = (
-    By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} [data-testid='export-control-trigger']"
-)
-EXPORT_OPTION_PDF = (
-    By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} [data-testid='export-option-pdf']"
-)
-EXPORT_OPTION_DOCX = (
-    By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} [data-testid='export-option-docx']"
 )
 # Scenario 3.1: a VISIBLE exporting indicator shown while a request is in flight. This is the
 # `save-spinner` precedent (manual_editor_save_queue_statements.py) applied to export — a
@@ -47,7 +45,9 @@ EXPECTED_DOCX_LABEL = "DOCX"
 EXPORT_REQUEST_PATH = "/export"
 
 
-class ExportControlStatements(NetworkThrottleMixin, ManualEditorStatements):
+class ExportControlStatements(
+    ExportErrorStatementsMixin, NetworkThrottleMixin, ManualEditorStatements
+):
     def open_export_control(self, driver) -> None:
         self._wait_for_visible(driver, EXPORT_TRIGGER).click()
 

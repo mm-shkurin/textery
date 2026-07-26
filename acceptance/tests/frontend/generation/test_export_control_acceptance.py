@@ -1,3 +1,5 @@
+import pytest
+
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
@@ -53,3 +55,27 @@ class TestExportControlProgressAcceptance(AbstractFrontendTest):
         export_control_statements.trigger_throttled_pdf_export(webdriver)
 
         export_control_statements.assert_exporting_indicator_is_shown(webdriver)
+
+
+@pytest.mark.skip(
+    reason="RED: the control swallows a failed export (ExportControl.tsx `.catch(() => {})`) "
+    "and renders no export-error/export-retry; green-selenium 3.2 surfaces the inline error + retry."
+)
+class TestExportControlErrorAcceptance(AbstractFrontendTest):
+    """UI Test Scenario 3.2: A failed export shows an inline error with retry, document unchanged.
+
+    Given the user has triggered an export
+    When the request fails
+    Then an inline error with a retry is shown
+    And the document view is unchanged
+    """
+
+    def test_should_show_inline_error_with_retry_and_leave_document_unchanged(
+        self, webdriver, app_url, export_control_statements
+    ):
+        export_control_statements.open_manual_editor_for_doklad(webdriver, app_url)
+
+        export_control_statements.trigger_failed_pdf_export(webdriver)
+
+        export_control_statements.assert_export_error_with_retry_is_shown(webdriver)
+        export_control_statements.assert_document_view_is_unchanged(webdriver)

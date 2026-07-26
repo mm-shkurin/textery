@@ -42,8 +42,8 @@ This file tracks **which work units ran**.
 - [S] demo — autonomous loop, no interactive viewer; behavior already proven in real Chrome by green-selenium (2 clean runs). Run `/demo TestExportControlProgressAcceptance` manually to watch.
 
 ### Scenario 3.2: An export error is shown with retry, document unchanged
-- [~] red-selenium
-- [ ] red-frontend
+- [x] red-selenium — new skipped class `TestExportControlErrorAcceptance` + `ExportErrorStatementsMixin` (CDP `Network.setBlockedURLs` on `*/export*` for a deterministic failed GET; `trigger_failed_pdf_export`, `assert_export_error_with_retry_is_shown`, `assert_document_view_is_unchanged`). Split shared `export_control_locators.py` (avoid circular import) — all files <200. Analytical RED (prod `.catch(()=>{})` swallows the reject at ExportControl.tsx:34, no `export-error`/`export-retry` node exists): predicted `TimeoutException` on the `export-error` visibility wait, matched. test-review 3 strict fixes: pinned error text `"Не удалось экспортировать документ"`, retry label `"Повторить"`, and a real content-baseline unchanged assertion (captured before the blocked GET). green-selenium performs the live remove-marker run.
+- [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
