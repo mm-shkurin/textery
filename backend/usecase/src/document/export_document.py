@@ -11,4 +11,6 @@ class ExportDocument:
         self.document_repository = document_repository
 
     async def execute(self, document_id: UUID, owner_id: UUID) -> Document | None:
-        raise NotImplementedError
+        # Returns None rather than raising, mirroring GetDocument: absent and foreign
+        # collapse to the same None because the repository filters on owner_id in SQL.
+        return await self.document_repository.find_by_id_and_owner(document_id, owner_id)

@@ -14,7 +14,6 @@ from document.export_document import ExportDocument
 from statements.document_fakes import FakeDocumentRepository
 
 
-@pytest.mark.skip(reason="RED: ExportDocument.execute not implemented")
 class TestExportDocument:
     async def test_should_answer_none_for_a_non_existent_document(self):
         found = await ExportDocument(FakeDocumentRepository()).execute(

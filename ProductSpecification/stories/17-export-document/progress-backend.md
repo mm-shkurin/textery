@@ -23,8 +23,8 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   3.1; grp3 read-after-write owned by Sc 3.5; render seams → rendering/4.2/4.5. No ADR
   (single viable approach, guards reuse established patterns).
 - [x] red-usecase
-- [~] green-usecase
-- [ ] adapters-discovery
+- [x] green-usecase
+- [~] adapters-discovery
 - [ ] green-acceptance
 
 ### Scenario 1.2: Export of another account's document is refused indistinguishably
