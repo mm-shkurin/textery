@@ -11,9 +11,9 @@ This file tracks **which work units ran**.
 - [x] red-selenium
 - [x] red-frontend
 - [x] green-frontend
-- [~] red-frontend-api
-- [ ] green-frontend-api
-- [ ] align-design
+- [S] red-frontend-api — control display is pure local toggle state; no backend call. The export endpoint (GET /documents/{id}/export) is exercised by scenario 5.1 (download).
+- [S] green-frontend-api — same reason, no API for control display.
+- [~] align-design
 - [ ] green-selenium
 - [ ] demo
 
