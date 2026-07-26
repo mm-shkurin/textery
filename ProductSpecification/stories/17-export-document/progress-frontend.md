@@ -10,8 +10,8 @@ This file tracks **which work units ran**.
 ### Scenario 1.1: The editor offers a PDF and a DOCX export choice
 - [x] red-selenium
 - [x] red-frontend
-- [~] green-frontend
-- [ ] red-frontend-api
+- [x] green-frontend
+- [~] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
 - [ ] green-selenium

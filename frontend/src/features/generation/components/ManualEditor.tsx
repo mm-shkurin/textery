@@ -19,6 +19,7 @@ import { AppHeader } from '../../../shared/components/AppHeader'
 import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from './editorDomSync'
 import { ManualEditorToolbar } from './ManualEditorToolbar'
 import { ManualEditorBreadcrumb } from './ManualEditorBreadcrumb'
+import { ExportControl } from './ExportControl'
 
 // Re-exported: this was the message's home before the save machinery moved to useDocumentSave,
 // and tests and callers import it from here.
@@ -158,7 +159,10 @@ export function ManualEditor({
     <div className="manual-editor-page" data-testid="manual-editor">
       <AppHeader />
       <div className="me-container">
-        <ManualEditorBreadcrumb documentTypeLabel={documentTypeLabel} onBack={onBack} />
+        <div className="me-toolbar-row">
+          <ManualEditorBreadcrumb documentTypeLabel={documentTypeLabel} onBack={onBack} />
+          <ExportControl />
+        </div>
         <div className="me-editor-shell">
           <ManualEditorToolbar
             editor={editor}
