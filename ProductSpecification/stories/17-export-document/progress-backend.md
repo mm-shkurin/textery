@@ -109,8 +109,12 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   (default) — INVALID_FORMAT absent from the map. test-review: target test already strict, no
   change. (Detector also flagged 3 pre-existing loose `not in` leak-guards elsewhere in the file —
   Security-5.1-owned, untouched by this commit, out of scope.)
-- [~] green-adapter rest
-- [ ] green-acceptance
+- [x] green-adapter rest — GREEN: added `"INVALID_FORMAT": 422` to `_ERROR_CODE_STATUS_MAP`
+  (exception_handlers.py, 78 lines); no new handler — `validation_exception_handler` already emits
+  the canonical `{error_code, message}` body, only the status was defaulting to 400. Error-handling
+  tests 11 passed / 0 skipped; full rest adapter suite 73 passed, no regression. Coverage:
+  exception_handlers.py 100% (21 stmts, 0 branch), no gaps.
+- [~] green-acceptance
 
 ### Scenario 2.1: A document exports as a valid PDF
 - [ ] red-acceptance

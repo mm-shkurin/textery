@@ -21,6 +21,7 @@ _ERROR_CODE_STATUS_MAP = {
     "INVALID_DOCUMENT_TYPE": 422,
     "INVALID_IDEMPOTENCY_KEY": 422,
     "INVALID_VERSION": 422,
+    "INVALID_FORMAT": 422,
     # CONTENT_TOO_LONG is absent deliberately: documents_save.yaml specifies 400 for
     # it, which is the default.
 }

@@ -108,7 +108,6 @@ class TestUnauthorizedStatusMapping:
         }
 
 
-@pytest.mark.skip(reason="RED: INVALID_FORMAT not in _ERROR_CODE_STATUS_MAP, defaults to 400")
 class TestInvalidFormatStatusMapping:
     """Story 17 Scenario 1.3: an unsupported/missing export format is a 422.
 
