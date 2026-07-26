@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from access.document.document_storage import SqlAlchemyDocumentStorage
 from container.runtime import request_scoped
 from document.create_document import CreateDocument
+from document.export_document import ExportDocument
 from document.get_document import GetDocument
 from document.list_documents import ListDocuments
 from document.save_document import SaveDocument
@@ -23,6 +24,11 @@ def create_create_document(session: AsyncSession) -> CreateDocument:
 @request_scoped
 def create_get_document(session: AsyncSession) -> GetDocument:
     return GetDocument(document_repository=SqlAlchemyDocumentStorage(session))
+
+
+@request_scoped
+def create_export_document(session: AsyncSession) -> ExportDocument:
+    return ExportDocument(document_repository=SqlAlchemyDocumentStorage(session))
 
 
 @request_scoped

@@ -34,8 +34,8 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   wiring ExportDocument (typed `document_id: UUID`, `Depends(get_current_owner_id)`, None →
   NotFoundException) → red-adapter rest / green-adapter rest.
 - [x] red-adapter rest
-- [~] green-adapter rest
-- [ ] green-acceptance
+- [x] green-adapter rest
+- [~] green-acceptance
 
 ### Scenario 1.2: Export of another account's document is refused indistinguishably
 - [ ] red-acceptance

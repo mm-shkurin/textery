@@ -1,13 +1,5 @@
 from uuid import uuid4
 
-import pytest
-
-
-@pytest.mark.skip(
-    reason="RED: GET /api/v1/documents/{id}/export route does not exist yet, so the "
-    "request hits Starlette's default {'detail':'Not Found'} 404 body instead of the "
-    "sanctioned {'error_code':'NOT_FOUND', ...} shape"
-)
 class TestExportDocumentRoute:
     """Scenario 1.1: export of a non-existent document is refused with the sanctioned 404."""
 

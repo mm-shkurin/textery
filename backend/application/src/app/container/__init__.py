@@ -24,6 +24,7 @@ from container.auth_wiring import (
 )
 from container.document_wiring import (
     create_create_document,
+    create_export_document,
     create_get_document,
     create_list_documents,
     create_save_document,
@@ -58,6 +59,7 @@ __all__ = [
     "create_complete_oauth_callback",
     "create_create_document",
     "create_exchange_handoff_code",
+    "create_export_document",
     "create_frontend_callback_url",
     "create_generate_document",
     "create_start_oauth",
