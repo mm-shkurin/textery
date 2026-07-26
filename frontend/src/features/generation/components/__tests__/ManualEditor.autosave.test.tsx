@@ -27,7 +27,7 @@ describe('ManualEditor debounced autosave', () => {
     vi.useRealTimers()
   })
 
-  it.skip('autosaves an edit once typing stops past the debounce interval, without clicking Сохранить, and shows the saved indicator', async () => {
+  it('autosaves an edit once typing stops past the debounce interval, without clicking Сохранить, and shows the saved indicator', async () => {
     vi.mocked(documentApi.createDocument).mockResolvedValue({
       documentId: 'doc-1',
       status: 'draft',
@@ -66,5 +66,78 @@ describe('ManualEditor debounced autosave', () => {
 
     await flushMicrotasks()
     expect(screen.getByText('Сохранено')).toBeInTheDocument()
+  })
+
+  // Guard: a burst of edits inside the window must collapse to ONE save. If the first edit's timer
+  // were not cleared when the second lands, this run would fire twice — once for each edit. Proves
+  // the clearTimeout-on-reschedule, not a per-keystroke save storm.
+  it('collapses multiple edits within the debounce window into a single autosave', async () => {
+    vi.mocked(documentApi.createDocument).mockResolvedValue({
+      documentId: 'doc-1',
+      status: 'draft',
+      version: 7,
+    })
+    render(<ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={vi.fn()} />)
+    await flushMicrotasks()
+
+    vi.mocked(documentApi.saveDocument).mockResolvedValue({
+      status: 'saved',
+      version: 8,
+      content: 'hello world',
+    })
+
+    const contentArea = screen.getByTestId('editor-content-area')
+    contentArea.textContent = 'hello'
+    await act(async () => {
+      fireEvent.input(contentArea)
+    })
+
+    // Partway into the window, before the first edit's debounce elapses.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500)
+    })
+    expect(documentApi.saveDocument).not.toHaveBeenCalled()
+
+    // A second edit resets the timer. The first edit's deadline (t=1000) now sits INSIDE the span we
+    // advance below, so an uncleared first timer would fire there — producing a second call.
+    contentArea.textContent = 'hello world'
+    await act(async () => {
+      fireEvent.input(contentArea)
+    })
+
+    // Advance a full debounce past the second edit (crossing t=1000 where the first would have fired).
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS)
+    })
+    expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
+  })
+
+  // Guard: navigating away before the debounce elapses must cancel the pending autosave. Without the
+  // timer clear in the hook's cleanup, the timer would fire after unmount — a write to an abandoned
+  // document plus a state update on an unmounted component. Mirrors the beforeunload detach-on-unmount.
+  it('cancels a pending autosave when the editor unmounts before the debounce elapses', async () => {
+    vi.mocked(documentApi.createDocument).mockResolvedValue({
+      documentId: 'doc-1',
+      status: 'draft',
+      version: 7,
+    })
+    const { unmount } = render(
+      <ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={vi.fn()} />,
+    )
+    await flushMicrotasks()
+
+    const contentArea = screen.getByTestId('editor-content-area')
+    contentArea.textContent = 'hello world'
+    await act(async () => {
+      fireEvent.input(contentArea)
+    })
+
+    unmount()
+
+    // Advance well past the debounce: the cancelled timer must not fire a save.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS * 2)
+    })
+    expect(documentApi.saveDocument).not.toHaveBeenCalled()
   })
 })

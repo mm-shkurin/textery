@@ -7,6 +7,7 @@ import './ManualEditor.css'
 import type { DocumentType } from '../../../shared/documentTypes'
 import { useDocumentInit } from '../hooks/useDocumentInit'
 import { useDocumentSave } from '../hooks/useDocumentSave'
+import { useAutosave } from '../hooks/useAutosave'
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
 import { AppHeader } from '../../../shared/components/AppHeader'
 import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from './editorDomSync'
@@ -110,7 +111,14 @@ export function ManualEditor({
     onSaved: () => setHasUnsavedChanges(false),
     onDirty: () => setHasUnsavedChanges(true),
   })
-  noteEditRef.current = noteEdit
+  // Every edit both marks the document dirty / queues a mid-flight re-save (noteEdit) AND resets
+  // the autosave debounce so a save fires once typing stops — no explicit Сохранить click needed.
+  // The manual button still calls `save` directly and is unaffected.
+  const scheduleAutosave = useAutosave(save)
+  noteEditRef.current = () => {
+    noteEdit()
+    scheduleAutosave()
+  }
 
   // Unsaved work lives only in Tiptap's in-memory state, so a tab-close or refresh drops it
   // silently. beforeunload's native "leave?" prompt is the browser's one built-in defence, shown
