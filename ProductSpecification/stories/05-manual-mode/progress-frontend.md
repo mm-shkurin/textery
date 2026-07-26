@@ -1706,8 +1706,8 @@ deploy) live in `progress-backend.md`, referenced here as `[S]`.
 - [S] demo — unattended loop, no viewer; list round-trip proven by the passing green-selenium test. Run `/demo TestManualEditorListAcceptance` to watch it live.
 
 ### Scenario E3.1: Edits autosave without an explicit click (debounced)
-- [ ] red-frontend — debounced autosave over existing `PUT /documents/{id}`; saved indicator shown
-- [ ] green-frontend — debounced autosave hook + in-flight/saved indicator
+- [x] red-frontend — debounced autosave over existing `PUT /documents/{id}`; saved indicator shown. `ManualEditor.autosave.test.tsx` (`it.skip`): edits without a click → after the debounce fires exactly one `saveDocument('doc-1', '<p>hello world</p>', 7)` and shows "Сохранено"; no save at 999ms, one at 1000ms (assumed `AUTOSAVE_DEBOUNCE_MS=1000`). Fails today: saveDocument 0 calls (no debounce exists). GREEN owes the debounced autosave in `useDocumentSave.ts` + `ManualEditor.tsx` onUpdate wiring.
+- [~] green-frontend — debounced autosave hook + in-flight/saved indicator
 - [ ] green-selenium — live debounced save fires without click
 - [ ] demo
 
