@@ -35,6 +35,9 @@ from statements.frontend.generation.manual_editor_placeholder_delete_statements 
 from statements.frontend.generation.manual_editor_popover_clip_statements import (
     ManualEditorPopoverClipStatements,
 )
+from statements.frontend.generation.manual_editor_block_schema_statements import (
+    ManualEditorBlockSchemaStatements,
+)
 from statements.frontend.generation.manual_editor_save_payload_statements import (
     ManualEditorSavePayloadStatements,
 )
@@ -201,6 +204,11 @@ def manual_editor_line_break_statements():
 @pytest.fixture
 def manual_editor_save_payload_statements():
     return ManualEditorSavePayloadStatements()
+
+
+@pytest.fixture
+def manual_editor_block_schema_statements():
+    return ManualEditorBlockSchemaStatements()
 
 
 @pytest.fixture
