@@ -177,6 +177,14 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 - [ ] green-acceptance
 
 ### Scenario 2.2: A document exports as a valid DOCX
+> CARRY-FORWARD (from Sc 2.1 green-usecase reviews, commit 26c1d66 — agent-review + premortem, both
+> CONCERNS CREDIBLE): `ExportFormat.parse` ACCEPTS `docx` (advertised in the INVALID_FORMAT message),
+> but the Sc 2.1 `_MEDIA_TYPE` dict maps only PDF and `execute` renders BEFORE the media lookup — so
+> `format="docx"` on an owned document currently renders (wasted) then raises an unhandled `KeyError`
+> → a 500 for a validation-passing input. No prod exposure (story not deployable until wiring lands),
+> but 2.2 MUST close it: red-usecase needs a docx-on-found case, green maps `ExportFormat.DOCX` +
+> renders docx, and consider moving the media-type lookup ahead of `render` (fail-fast, no wasted
+> render). Do NOT let 2.2 inherit the silent 500 window.
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase
@@ -367,6 +375,12 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 - [ ] green-acceptance
 
 ### Scenario 2.1: Concurrent renders are bounded, not unbounded
+> CARRY-FORWARD (from Sc 2.1 green-usecase reviews, commit 26c1d66 — agent-review + premortem):
+> the `DocumentRenderer.render` port is SYNCHRONOUS and called directly inside the `async def
+> execute`. Once the real WeasyPrint adapter lands (CPU-bound), a render pegs the event-loop thread
+> and stalls co-tenant endpoints on that instance for the render's duration. This load scenario must
+> assert export concurrency does not stall an unrelated endpoint, and the fix (offload the sync
+> render, e.g. `asyncio.to_thread`/`run_in_executor`, plus a concurrency bound) belongs here / Sc 4.2.
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase
