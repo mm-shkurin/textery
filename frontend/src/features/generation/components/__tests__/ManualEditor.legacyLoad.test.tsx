@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { waitFor } from '@testing-library/react'
 import { renderEditorReopeningDocument } from './ManualEditor.testSupport'
-import * as documentApi from '../../api/documentApi'
 
 vi.mock('../../api/documentApi')
 
