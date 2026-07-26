@@ -1,5 +1,3 @@
-import pytest
-
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
@@ -21,10 +19,6 @@ class TestExportControlDisplayAcceptance(AbstractFrontendTest):
         export_control_statements.assert_pdf_and_docx_choices_are_shown(webdriver)
 
 
-@pytest.mark.skip(
-    reason="RED: in-flight lock wiring is implemented; unskip is the green-selenium step. "
-    "Live verified 2026-07-26 with reordered throttle (open control before throttling)."
-)
 class TestExportControlInFlightAcceptance(AbstractFrontendTest):
     """UI Test Scenario 2.1: The export control is disabled while a request is in flight.
 
