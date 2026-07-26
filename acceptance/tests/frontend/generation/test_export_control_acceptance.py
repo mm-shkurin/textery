@@ -1,5 +1,3 @@
-import pytest
-
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
@@ -39,7 +37,6 @@ class TestExportControlInFlightAcceptance(AbstractFrontendTest):
         export_control_statements.assert_exactly_one_export_request_was_sent(webdriver)
 
 
-@pytest.mark.skip(reason="RED: exporting indicator (export-spinner) not yet rendered by the control")
 class TestExportControlProgressAcceptance(AbstractFrontendTest):
     """UI Test Scenario 3.1: An in-flight export shows a progress state.
 

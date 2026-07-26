@@ -38,8 +38,8 @@ This file tracks **which work units ran**.
 - [S] red-frontend-api — UI scenario 3.1 (progress indicator) is pure client-side state: the spinner rides the existing `exportDocument` in-flight window (gated on `isExporting`), no new frontend-api surface. The export transport is already covered by 2.1's green-frontend-api. (API §3.1 in 01_API_Tests is a backend filename-encoding concern, not this UI layer.) Same rationale as 1.1.
 - [S] green-frontend-api — same reason; no API for the progress indicator.
 - [x] align-design — no CSS change needed: `.me-export-spinner` already matches the `.me-save-spinner` precedent exactly (14px, 2px border `rgba(17,18,20,0.35)`, `border-top-color:var(--btn-primary-fg)`, 0.7s linear) + editor tokens; only `align-self:center` added (correct for the inline-flex row) and a namespaced `me-export-spin` keyframe. No mockup for story 17. design-review PASS (no placeholder data, no divergent magic values). Coverage: ExportControl.tsx 100% statements/branches/lines — new spinner branch covered both edges; lone uncovered fn is the `.catch(()=>{})` rejection handler, correctly deferred to 3.2.
-- [~] green-selenium
-- [ ] demo
+- [x] green-selenium — removed `@pytest.mark.skip` from `TestExportControlProgressAcceptance` (and the now-dead `import pytest`, its sole user). Real Chrome (:8100/:5273), **2 clean runs** (9.70s, 7.30s), spinner visible in-flight both. No flake/landmine, no chromedriver orphans. Spinner already shipped in green-frontend 3.1 (de21f55), so acceptance passed as-is on unskip.
+- [~] demo
 
 ### Scenario 3.2: An export error is shown with retry, document unchanged
 - [ ] red-selenium
