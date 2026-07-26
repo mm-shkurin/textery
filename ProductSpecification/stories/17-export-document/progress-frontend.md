@@ -33,7 +33,7 @@ This file tracks **which work units ran**.
 
 ### Scenario 3.1: An in-flight export shows a progress state
 - [x] red-selenium — added `EXPORT_SPINNER=[data-testid='export-spinner']` + `trigger_throttled_pdf_export` + `assert_exporting_indicator_is_shown` (WebDriverWait on visibility, throttle holds GET /export open, open-before-throttle ordering) to `manual_editor_export_control_statements.py` (155 lines). New skipped class `TestExportControlProgressAcceptance`. Analytical RED: indicator not rendered yet → live run would TimeoutException on the visibility wait; green-frontend adds the spinner. test-review PASS 0 fixes. Live run deferred to green-selenium.
-- [~] red-frontend
+- [~] red-frontend — **directive (convergent agent-review + premortem on a2948be):** the selenium test asserts only the spinner's RISING edge (visible while in-flight), so an always-mounted `export-spinner` would pass falsely AND a stuck-spinner that never clears is unguarded (re-opens 2.1's release-path debt). Close BOTH at the jsdom level here (deterministic, cheaper than Selenium): assert (1) `export-spinner` NOT rendered when idle (before trigger), (2) rendered while `isExporting`, (3) hidden/removed after the export settles — use a manually-resolvable deferred so the falling edge is real (success path; reject overlaps 3.2). This is the natural home for the rising+falling-edge pins.
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api

@@ -75,24 +75,33 @@ class ExportControlStatements(NetworkThrottleMixin, ManualEditorStatements):
             option.get_attribute("aria-disabled") == "true"
         )
 
-    def trigger_export_as_pdf_twice(self, driver) -> None:
-        """Open the export control, throttle the network, click PDF, wait for the lock, click again.
+    def _open_throttle_and_click_pdf(self, driver):
+        """Open the export control, throttle the network, click PDF once; return the option.
 
-        Opening the export control is a local toggle that sends no network request, so it must
-        happen BEFORE throttling — under the CDP throttle the trigger would never become visible
-        within the wait and the test would time out on the menu-open (as scenario 1.1, which does
-        not throttle, proves). The GET /export fires only on the PDF-option click, so the throttle
-        only needs to be active from that click onward. The throttle then holds the first GET
-        /export open for `SLOW_LATENCY_MS`, so the second click is PROVEN to land while
-        `isExporting` is true (the option disabled). A correct in-flight lock drops that second
-        click instead of dispatching a duplicate request; without the lock the second click would
-        fire a second GET /export and the count would be 2. The throttle is cleared afterward so it
-        never leaks into later assertions.
+        Shared ordering scenario 2.1's fix established: opening the export control is a local
+        toggle that sends no network request, so it must happen BEFORE throttling — under the CDP
+        throttle the trigger/option would never become visible within the wait and the test would
+        time out on the menu-open (as scenario 1.1, which does not throttle, proves). The GET
+        /export fires only on the PDF-option click, so the throttle only needs to be active from
+        that click onward, and it holds that first GET /export open for `SLOW_LATENCY_MS`. The
+        caller decides what to do with the in-flight request and when to clear the throttle.
         """
         self.open_export_control(driver)
         pdf_option = self._wait_for_visible(driver, EXPORT_OPTION_PDF)
         self.throttle_network(driver)
         pdf_option.click()
+        return pdf_option
+
+    def trigger_export_as_pdf_twice(self, driver) -> None:
+        """Trigger a throttled PDF export, wait for the in-flight lock, then click PDF again.
+
+        The throttle holds the first GET /export open for `SLOW_LATENCY_MS`, so the second click
+        is PROVEN to land while `isExporting` is true (the option disabled). A correct in-flight
+        lock drops that second click instead of dispatching a duplicate request; without the lock
+        the second click would fire a second GET /export and the count would be 2. The throttle is
+        cleared afterward so it never leaks into later assertions.
+        """
+        pdf_option = self._open_throttle_and_click_pdf(driver)
         self.wait_for_export_in_flight(driver)
         pdf_option.click()
         self.clear_network_throttle(driver)
@@ -105,21 +114,14 @@ class ExportControlStatements(NetworkThrottleMixin, ManualEditorStatements):
         )
 
     def trigger_throttled_pdf_export(self, driver) -> None:
-        """Open the export control, throttle the network, and click PDF once — leaving it in flight.
+        """Trigger a single throttled PDF export and leave it in flight (throttle NOT cleared here).
 
-        Same ordering scenario 2.1's fix established: the export control is a local toggle that
-        sends no request, so it must be OPENED (and the PDF option resolved) BEFORE throttling —
-        under the CDP throttle the trigger/option would never become visible within the wait. The
-        GET /export fires only on the PDF-option click, so the throttle is active exactly for that
-        request and holds it open for `SLOW_LATENCY_MS`. Unlike 2.1 this clicks ONCE and does NOT
-        clear the throttle here: the request stays in flight so the caller can assert the exporting
-        indicator is shown WHILE `isExporting` is true. `assert_exporting_indicator_is_shown`
-        clears the throttle after observing the indicator.
+        Unlike scenario 2.1 this clicks ONCE and does NOT clear the throttle: the request stays in
+        flight so the caller can assert the exporting indicator is shown WHILE `isExporting` is
+        true. `assert_exporting_indicator_is_shown` clears the throttle after observing the
+        indicator.
         """
-        self.open_export_control(driver)
-        pdf_option = self._wait_for_visible(driver, EXPORT_OPTION_PDF)
-        self.throttle_network(driver)
-        pdf_option.click()
+        self._open_throttle_and_click_pdf(driver)
 
     def assert_exporting_indicator_is_shown(self, driver) -> None:
         """Assert the visible exporting indicator appears while the export request is in flight.
