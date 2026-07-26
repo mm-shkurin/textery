@@ -1,3 +1,5 @@
+import pytest
+
 from tests.backend.abstract_backend_test import AbstractBackendTest
 
 
@@ -35,3 +37,33 @@ class TestExportDocumentAcceptance(AbstractBackendTest):
         own = await document_export_statements.given_owner_exports_their_own_document_as_pdf()
 
         document_export_statements.assert_distinguishable_from_not_found(own)
+
+
+@pytest.mark.skip(
+    reason="RED 1.3: the export route declares format: str | None = None and ignores it — "
+    "no format guard exists, so an owned document exported with ?format=xml or with no "
+    "format hits the found-path placeholder and returns 200 + the DocumentResponseDto JSON "
+    "instead of the sanctioned 422 {error_code: INVALID_FORMAT} (verified live against "
+    "BACKEND_PORT=8100: both cases got status_code=200)"
+)
+class TestExportDocumentFormatGuard(AbstractBackendTest):
+    """Scenario 1.3: An unsupported or missing format is refused.
+
+    Given a document owned by the caller
+    When they export it with a format that is neither pdf nor docx, or with no format
+    Then the request is refused as unprocessable
+    And no file is returned.
+    """
+
+    @pytest.mark.parametrize(
+        "export_format", ["xml", None], ids=["unsupported_format", "missing_format"]
+    )
+    async def test_should_refuse_unsupported_or_missing_format(
+        self, document_export_format_statements, export_format
+    ):
+        response = await document_export_format_statements.given_owner_exports_own_document_with_format(
+            export_format
+        )
+
+        document_export_format_statements.assert_refused_as_unprocessable(response)
+        document_export_format_statements.assert_no_file_returned(response)

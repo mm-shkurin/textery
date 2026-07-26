@@ -45,6 +45,7 @@ from statements.frontend.generation.manual_editor_statements import ManualEditor
 from statements.frontend.generation.mode_modal_statements import ModeModalStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
 from statements.document_export_statements import DocumentExportStatements
+from statements.document_export_format_statements import DocumentExportFormatStatements
 from statements.generation_statements import GenerationStatements
 from statements.login_statements import LoginStatements
 from statements.oauth_statements import OAuthStatements
@@ -75,6 +76,11 @@ def generation_statements(application_client):
 @pytest_asyncio.fixture
 def document_export_statements(application_client):
     return DocumentExportStatements(application_client)
+
+
+@pytest_asyncio.fixture
+def document_export_format_statements(application_client):
+    return DocumentExportFormatStatements(application_client)
 
 
 @pytest_asyncio.fixture

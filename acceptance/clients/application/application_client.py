@@ -100,11 +100,15 @@ class ApplicationClient:
         )
 
     async def export_document(
-        self, document_id: str, export_format: str, access_token: str
+        self, document_id: str, export_format: str | None, access_token: str
     ) -> ExportResponseDto:
+        # export_format is passed straight through so a test can exercise an
+        # unsupported value ("xml"); None omits the query param entirely, which is
+        # the "no format at all" case the format guard must also refuse.
+        params = {} if export_format is None else {"format": export_format}
         response = await self._client.get(
             f"/api/v1/documents/{document_id}/export",
-            params={"format": export_format},
+            params=params,
             headers={"Authorization": f"Bearer {access_token}"},
         )
         return ExportResponseDto(

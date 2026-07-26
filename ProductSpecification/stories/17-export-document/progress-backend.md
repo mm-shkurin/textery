@@ -51,8 +51,14 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 - [x] green-acceptance — test enabled and passing (2 passed), no production change needed.
 
 ### Scenario 1.3: An unsupported or missing format is refused
-- [~] red-acceptance
-- [ ] design
+- [x] red-acceptance — RED confirmed live (got 200 placeholder vs expected 422). New contract:
+  `INVALID_FORMAT → 422`, body `{error_code:INVALID_FORMAT, message:"The format must be pdf or
+  docx."}`. GREEN must (1) add INVALID_FORMAT→422 to _ERROR_CODE_STATUS_MAP in
+  exception_handlers.py and (2) validate `format` explicitly (raise ValidationException) — NOT a
+  FastAPI enum param (that emits {"detail":[...]}). Test-review verified inline (strict assertions,
+  clean placement). NOTE: /refactor + agent-review + premortem NOT run — session limit hit; a
+  future session must run them over commit before proceeding.
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
