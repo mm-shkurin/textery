@@ -24,7 +24,17 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   (single viable approach, guards reuse established patterns).
 - [x] red-usecase
 - [x] green-usecase
-- [~] adapters-discovery
+- [x] adapters-discovery (rest) — Check 1 (ports): [S] `DocumentRepository.find_by_id_and_owner`
+  already implemented in db adapter (document_storage.py:49, owner-scoped SQL, returns None for
+  absent/foreign); exercised by GetDocument — sufficient for the not-found path. Check 2
+  (exceptions): [S] `NotFoundException` already mapped to the sanctioned 404 by the document
+  router's existing handler (GET /{id} raises it identically). Check 3 (response shape): rest —
+  GAP: no `GET /api/v1/documents/{document_id}/export` route exists, so the acceptance test hits
+  Starlette's default 404 body instead of the sanctioned shape. Add the route to document_router
+  wiring ExportDocument (typed `document_id: UUID`, `Depends(get_current_owner_id)`, None →
+  NotFoundException) → red-adapter rest / green-adapter rest.
+- [~] red-adapter rest
+- [ ] green-adapter rest
 - [ ] green-acceptance
 
 ### Scenario 1.2: Export of another account's document is refused indistinguishably
