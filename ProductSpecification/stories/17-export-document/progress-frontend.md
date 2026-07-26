@@ -32,8 +32,8 @@ This file tracks **which work units ran**.
 - [S] demo — autonomous loop, no interactive viewer; behavior already proven in real Chrome by green-selenium (2 clean runs). Run `/demo TestExportControlInFlightAcceptance` manually to watch.
 
 ### Scenario 3.1: An in-flight export shows a progress state
-- [~] red-selenium
-- [ ] red-frontend
+- [x] red-selenium — added `EXPORT_SPINNER=[data-testid='export-spinner']` + `trigger_throttled_pdf_export` + `assert_exporting_indicator_is_shown` (WebDriverWait on visibility, throttle holds GET /export open, open-before-throttle ordering) to `manual_editor_export_control_statements.py` (155 lines). New skipped class `TestExportControlProgressAcceptance`. Analytical RED: indicator not rendered yet → live run would TimeoutException on the visibility wait; green-frontend adds the spinner. test-review PASS 0 fixes. Live run deferred to green-selenium.
+- [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api

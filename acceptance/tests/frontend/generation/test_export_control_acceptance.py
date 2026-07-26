@@ -1,3 +1,5 @@
+import pytest
+
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
@@ -35,3 +37,22 @@ class TestExportControlInFlightAcceptance(AbstractFrontendTest):
         export_control_statements.trigger_export_as_pdf_twice(webdriver)
 
         export_control_statements.assert_exactly_one_export_request_was_sent(webdriver)
+
+
+@pytest.mark.skip(reason="RED: exporting indicator (export-spinner) not yet rendered by the control")
+class TestExportControlProgressAcceptance(AbstractFrontendTest):
+    """UI Test Scenario 3.1: An in-flight export shows a progress state.
+
+    Given the user has triggered an export
+    When the file is still being generated
+    Then an exporting indicator is shown
+    """
+
+    def test_should_show_exporting_indicator_while_in_flight(
+        self, webdriver, app_url, export_control_statements
+    ):
+        export_control_statements.open_manual_editor_for_doklad(webdriver, app_url)
+
+        export_control_statements.trigger_throttled_pdf_export(webdriver)
+
+        export_control_statements.assert_exporting_indicator_is_shown(webdriver)

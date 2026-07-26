@@ -8,6 +8,7 @@ with its own label — a count-only check would lose which formats are offered.
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
 
 from statements.frontend.base_frontend_statements import WAIT_TIMEOUT_SECONDS
@@ -25,6 +26,14 @@ EXPORT_OPTION_PDF = (
 )
 EXPORT_OPTION_DOCX = (
     By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} [data-testid='export-option-docx']"
+)
+# Scenario 3.1: a VISIBLE exporting indicator shown while a request is in flight. This is the
+# `save-spinner` precedent (manual_editor_save_queue_statements.py) applied to export — a
+# distinct element from scenario 2.1's `disabled`/`aria-disabled` option state, which proves the
+# lock but is not a progress indicator the user can see. This element does not exist yet; the
+# green phase renders it inside the control while `isExporting` is true.
+EXPORT_SPINNER = (
+    By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} [data-testid='export-spinner']"
 )
 
 EXPECTED_PDF_LABEL = "PDF"
@@ -94,6 +103,41 @@ class ExportControlStatements(NetworkThrottleMixin, ManualEditorStatements):
             f"expected exactly one export request to '{EXPORT_REQUEST_PATH}' to be sent "
             f"(the in-flight lock drops the second click), got {request_count}"
         )
+
+    def trigger_throttled_pdf_export(self, driver) -> None:
+        """Open the export control, throttle the network, and click PDF once — leaving it in flight.
+
+        Same ordering scenario 2.1's fix established: the export control is a local toggle that
+        sends no request, so it must be OPENED (and the PDF option resolved) BEFORE throttling —
+        under the CDP throttle the trigger/option would never become visible within the wait. The
+        GET /export fires only on the PDF-option click, so the throttle is active exactly for that
+        request and holds it open for `SLOW_LATENCY_MS`. Unlike 2.1 this clicks ONCE and does NOT
+        clear the throttle here: the request stays in flight so the caller can assert the exporting
+        indicator is shown WHILE `isExporting` is true. `assert_exporting_indicator_is_shown`
+        clears the throttle after observing the indicator.
+        """
+        self.open_export_control(driver)
+        pdf_option = self._wait_for_visible(driver, EXPORT_OPTION_PDF)
+        self.throttle_network(driver)
+        pdf_option.click()
+
+    def assert_exporting_indicator_is_shown(self, driver) -> None:
+        """Assert the visible exporting indicator appears while the export request is in flight.
+
+        Waits (strict — element must become visible, not a sleep) on the `export-spinner` testid,
+        then asserts it is displayed. This is a DIFFERENT element from scenario 2.1's disabled
+        option: 2.1 proved no second request leaves the browser; 3.1 proves the user SEES progress
+        while the file is generated. The throttle is cleared last so it never leaks into any later
+        assertion (the driver is function-scoped, but releasing explicitly keeps the intent clear).
+        """
+        spinner = WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(
+            ec.visibility_of_element_located(EXPORT_SPINNER),
+            "expected the exporting indicator to be shown while the export request is in flight",
+        )
+        assert spinner.is_displayed(), (
+            "expected the exporting indicator to be visible while the export is in flight"
+        )
+        self.clear_network_throttle(driver)
 
     def assert_pdf_and_docx_choices_are_shown(self, driver) -> None:
         self._assert_choice_shown(driver, EXPORT_OPTION_PDF, EXPECTED_PDF_LABEL)
