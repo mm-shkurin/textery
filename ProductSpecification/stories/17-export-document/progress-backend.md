@@ -58,8 +58,23 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   FastAPI enum param (that emits {"detail":[...]}). Test-review verified inline (strict assertions,
   clean placement). NOTE: /refactor + agent-review + premortem NOT run — session limit hit; a
   future session must run them over commit before proceeding.
-- [~] design
-- [ ] red-usecase
+- [x] design — new domain value object `ExportFormat` (backend/domain/src/document/export_format.py):
+  members `pdf`/`docx`; classmethod `parse(value: str | None) -> ExportFormat` raising
+  `ValidationException(error_code="INVALID_FORMAT", message="The format must be pdf or docx.")`
+  for None/empty/unknown (case-sensitive: only lowercase `pdf`/`docx` accepted for now).
+  Usecase `ExportDocument.execute` gains a `format` arg and calls `ExportFormat.parse(format)`
+  **before** the owner-scoped fetch — a bad format is a 422 that depends only on the string, so
+  it discloses nothing about the target document (no IDOR leak: valid-format+foreign still → 404,
+  invalid-format+foreign → 422 regardless of existence). Rest route forwards `format` to the
+  usecase and adds `"INVALID_FORMAT": 422` to `_ERROR_CODE_STATUS_MAP` in exception_handlers.py;
+  the existing `validation_exception_handler` then emits the canonical `{error_code, message}`
+  body at 422 — same reuse path as page.py INVALID_LIMIT and current_owner UNAUTHORIZED, no new
+  handler. POSITIVE CONTROL (from premortem CONCERNS on f219201): red-usecase and green-acceptance
+  must each assert a VALID `pdf`/`docx` export is NOT refused with 422 — otherwise a
+  refuse-everything guard passes the negative tests tautologically (same gap class Sc 1.2 hardened
+  against in a062c5b). Also cover `format=""` (agent-review CONCERNS) in the parse tests.
+  No ADR — single viable approach, guards reuse the established ValidationException→handler pattern.
+- [~] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
