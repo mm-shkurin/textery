@@ -128,8 +128,28 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   (added per test-review cluster-A: no JSON dict-body may leak on the success path). Skip-marked;
   5 passed / 1 skipped. NOTE: `document_export_statements.py` is now at exactly the 200-line cap —
   any further addition to it must split the file first.
-- [~] design
-- [ ] red-usecase
+- [x] design — PDF rendering, mirroring the established `HtmlSanitizer` port→adapter precedent
+  (usecase Protocol port implemented by a themed adapter under `backend/adapters/`). Decisions
+  (all substance pinned by interview 2026-07-25 — WeasyPrint for PDF, backend render, synchronous
+  GET returns binary, no polling, `url_fetcher` disabled — so no open fork, no ADR):
+  • New usecase port `backend/usecase/src/document/document_renderer.py` — `DocumentRenderer(Protocol)`
+    with `render(content: str, export_format: ExportFormat) -> bytes` (unified over the format enum
+    to avoid a per-format method explosion; 2.1 implements the pdf branch, 2.2 adds docx).
+  • New adapter module `backend/adapters/rendering` with `WeasyPrintPdfRenderer` implementing the
+    pdf branch. `url_fetcher` disabled from construction (SSRF-safe by default — Sc 4.1 formally
+    asserts it; building it safe now avoids a knowingly-unsafe interim).
+  • `ExportDocument.execute` return shape changes: after `ExportFormat.parse` + owner-scoped fetch,
+    a found document is rendered; execute returns the rendered bytes + media type (absent/foreign
+    still collapse to None → 404, unchanged). 2.1 uses a fixed default filename `document.pdf`
+    (title-derived filename is Sc 3.1/3.2 — out of scope here).
+  • Rest `/export` returns a binary `Response(content=bytes, media_type="application/pdf",
+    headers={"Content-Disposition": "attachment; filename=document.pdf"})` instead of the
+    DocumentResponseDto JSON placeholder. In-process synchronous render (forced by the
+    no-polling binary-GET contract; render deadline/resource bounds are Sc 4.2/4.5 + Load 2.1).
+  • DEPENDENCY green will require: add WeasyPrint to backend requirements + libpango/cairo system
+    libs to backend.Dockerfile so the render actually executes (the baked image must be rebuilt for
+    green-acceptance). The fail-fast-at-boot guard for missing native libs is owned by Infra 1.1.
+- [~] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
