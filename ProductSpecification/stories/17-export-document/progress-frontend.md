@@ -18,8 +18,8 @@ This file tracks **which work units ran**.
 - [S] demo — autonomous loop, no interactive viewer; behavior already proven in real Chrome by green-selenium. Run `/demo TestExportControlDisplayAcceptance` manually to watch.
 
 ### Scenario 2.1: The export control is disabled while a request is in flight
-- [~] red-selenium
-- [ ] red-frontend
+- [x] red-selenium
+- [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
