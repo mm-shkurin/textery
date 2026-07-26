@@ -70,6 +70,24 @@
   background: transparent;
 }
 
+/* In-flight indicator (scenario 3.1): mounted only while an export is pending, matching the
+   editor toolbar's save-spinner convention (.me-save-spinner). */
+.me-export-spinner {
+  align-self: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(17, 18, 20, 0.35);
+  border-top-color: var(--btn-primary-fg);
+  animation: me-export-spin 0.7s linear infinite;
+}
+
+@keyframes me-export-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 768px) {
   .me-export-trigger,
   .me-export-option {

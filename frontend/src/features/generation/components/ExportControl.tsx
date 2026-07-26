@@ -52,6 +52,13 @@ export function ExportControl({ documentId }: ExportControlProps) {
       >
         Экспорт
       </button>
+      {isExporting && (
+        <span
+          data-testid="export-spinner"
+          className="me-export-spinner"
+          aria-hidden="true"
+        />
+      )}
       {isOpen && (
         <div className="me-export-menu" role="menu" data-testid="export-menu">
           {EXPORT_FORMATS.map((format) => (

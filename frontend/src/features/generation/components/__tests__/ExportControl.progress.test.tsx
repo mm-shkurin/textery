@@ -14,10 +14,7 @@ vi.mock('../../api/documentApi', () => ({
   exportDocument: vi.fn(),
 }))
 
-// RED 2026-07-26 (scenario 3.1): ExportControl has an isExporting in-flight lock but renders no
-// visible indicator yet. green-frontend adds an element with data-testid="export-spinner" mounted
-// while isExporting is true. Remove .skip in green-frontend once the spinner is implemented.
-describe.skip('ExportControl in-flight progress indicator', () => {
+describe('ExportControl in-flight progress indicator', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
