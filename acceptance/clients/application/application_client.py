@@ -11,6 +11,7 @@ from clients.application.dto.auth.resend_response_dto import ResendResponseDto
 from clients.application.dto.auth.verify_request_dto import VerifyRequestDto
 from clients.application.dto.auth.verify_response_dto import VerifyResponseDto
 from clients.application.dto.auth.oauth_dtos import OAuthExchangeResponseDto, OAuthRedirectDto
+from clients.application.dto.document.export_response_dto import ExportResponseDto
 from clients.application.dto.generation.generation_request_dto import CreateGenerationRequestDto
 from clients.application.dto.generation.generation_response_dto import GenerationResponseDto
 
@@ -81,6 +82,22 @@ class ApplicationClient:
     async def get_generation(self, generation_id: str) -> GenerationResponseDto:
         response = await self._client.get(f"/api/v1/generations/{generation_id}")
         return GenerationResponseDto(status_code=response.status_code, body=self._parsed_body(response))
+
+    async def export_document(
+        self, document_id: str, export_format: str, access_token: str
+    ) -> ExportResponseDto:
+        response = await self._client.get(
+            f"/api/v1/documents/{document_id}/export",
+            params={"format": export_format},
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        return ExportResponseDto(
+            status_code=response.status_code,
+            body=self._parsed_body(response),
+            content_type=response.headers.get("content-type"),
+            content_disposition=response.headers.get("content-disposition"),
+            content=response.content,
+        )
 
     @staticmethod
     def _parsed_body(response: httpx.Response) -> dict | None:

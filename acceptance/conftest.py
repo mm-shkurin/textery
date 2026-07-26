@@ -44,6 +44,7 @@ from statements.frontend.generation.manual_editor_save_queue_statements import (
 from statements.frontend.generation.manual_editor_statements import ManualEditorStatements
 from statements.frontend.generation.mode_modal_statements import ModeModalStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
+from statements.document_export_statements import DocumentExportStatements
 from statements.generation_statements import GenerationStatements
 from statements.login_statements import LoginStatements
 from statements.oauth_statements import OAuthStatements
@@ -69,6 +70,11 @@ async def application_client():
 @pytest_asyncio.fixture
 def generation_statements(application_client):
     return GenerationStatements(application_client)
+
+
+@pytest_asyncio.fixture
+def document_export_statements(application_client):
+    return DocumentExportStatements(application_client)
 
 
 @pytest_asyncio.fixture
