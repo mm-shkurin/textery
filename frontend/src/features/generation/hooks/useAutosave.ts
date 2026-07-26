@@ -19,19 +19,20 @@ export function useAutosave(save: () => void): () => void {
   const saveRef = useRef(save)
   saveRef.current = save
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current !== null) {
-        clearTimeout(timerRef.current)
-        timerRef.current = null
-      }
-    }
-  }, [])
-
-  return () => {
+  // Cancel any pending autosave. Shared by unmount cleanup (drop an abandoned write) and by every
+  // reschedule (a fresh edit supersedes the prior deadline). Nulling after clearTimeout keeps the
+  // "is a save pending?" check on timerRef honest between the two call sites.
+  const clearPending = () => {
     if (timerRef.current !== null) {
       clearTimeout(timerRef.current)
+      timerRef.current = null
     }
+  }
+
+  useEffect(() => clearPending, [])
+
+  return () => {
+    clearPending()
     timerRef.current = setTimeout(() => {
       timerRef.current = null
       saveRef.current()
