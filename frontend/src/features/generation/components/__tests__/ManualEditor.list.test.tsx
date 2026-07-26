@@ -3,6 +3,7 @@ import { cleanup, fireEvent, screen } from '@testing-library/react'
 import {
   paragraphTextNode,
   renderEditorWithDocumentCreated,
+  selectRange,
   TRAILING_BREAK_P,
 } from './ManualEditor.testSupport'
 
@@ -25,13 +26,7 @@ describe('ManualEditor list toolbar', () => {
     contentArea.textContent = 'grocery item'
     fireEvent.input(contentArea)
 
-    const textNode = paragraphTextNode(contentArea)
-    const range = document.createRange()
-    range.setStart(textNode, 0)
-    range.setEnd(textNode, 0)
-    const selection = window.getSelection()
-    selection?.removeAllRanges()
-    selection?.addRange(range)
+    selectRange(paragraphTextNode(contentArea), 0, 0)
     fireEvent.select(contentArea)
 
     fireEvent.click(screen.getByLabelText(ariaLabel))

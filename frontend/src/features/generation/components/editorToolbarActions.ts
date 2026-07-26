@@ -1,3 +1,4 @@
+import type { ChainedCommands } from '@tiptap/react'
 import type { ToolbarAction, ToolbarActionKey, ToolbarRunAction } from './toolbarAction'
 
 export type {
@@ -29,6 +30,27 @@ function simpleMarkToggle(
   }
 }
 
+// Shared by blockquote/bulletList/orderedList/codeBlock: each wraps the current
+// block in a StarterKit node, differing only in the toggle command and the node
+// name `isActive` reads. Parallel to simpleMarkToggle but for block nodes.
+function simpleBlockToggle(
+  key: ToolbarActionKey,
+  nodeName: string,
+  toggle: (chain: ChainedCommands) => ChainedCommands,
+  label: string,
+  ariaLabel: string,
+  testId: string,
+): ToolbarRunAction {
+  return {
+    key,
+    label,
+    ariaLabel,
+    testId,
+    run: (editor) => toggle(editor.chain().focus()).run(),
+    isActive: (editor) => editor.isActive(nodeName),
+  }
+}
+
 // Block-schema toolbar (migration ADR, 2026-07-26): heading/blockquote/codeBlock
 // are real block nodes now, so their toggles call the StarterKit node commands
 // and `isActive` reads node/attr names. H3 toggles the level-3 heading node;
@@ -47,30 +69,9 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
   simpleMarkToggle('strike', 'strike', 'S', 'Зачёркнутый', 'toolbar-strike'),
   simpleMarkToggle('underline', 'underline', 'U', 'Подчёркнутый', 'toolbar-underline'),
   simpleMarkToggle('code', 'code', '<>', 'Код', 'toolbar-code'),
-  {
-    key: 'blockquote',
-    label: '"',
-    ariaLabel: 'Цитата',
-    testId: 'toolbar-blockquote',
-    run: (editor) => editor.chain().focus().toggleBlockquote().run(),
-    isActive: (editor) => editor.isActive('blockquote'),
-  },
-  {
-    key: 'bulletList',
-    label: '•',
-    ariaLabel: 'Маркированный список',
-    testId: 'toolbar-bullet-list',
-    run: (editor) => editor.chain().focus().toggleBulletList().run(),
-    isActive: (editor) => editor.isActive('bulletList'),
-  },
-  {
-    key: 'orderedList',
-    label: '1.',
-    ariaLabel: 'Нумерованный список',
-    testId: 'toolbar-ordered-list',
-    run: (editor) => editor.chain().focus().toggleOrderedList().run(),
-    isActive: (editor) => editor.isActive('orderedList'),
-  },
+  simpleBlockToggle('blockquote', 'blockquote', (c) => c.toggleBlockquote(), '"', 'Цитата', 'toolbar-blockquote'),
+  simpleBlockToggle('bulletList', 'bulletList', (c) => c.toggleBulletList(), '•', 'Маркированный список', 'toolbar-bullet-list'),
+  simpleBlockToggle('orderedList', 'orderedList', (c) => c.toggleOrderedList(), '1.', 'Нумерованный список', 'toolbar-ordered-list'),
   {
     key: 'horizontalRule',
     label: '―',
@@ -79,14 +80,7 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     run: (editor) => editor.chain().focus().setHorizontalRule().run(),
     isActive: () => false,
   },
-  {
-    key: 'codeBlock',
-    label: '{}',
-    ariaLabel: 'Блок кода',
-    testId: 'toolbar-code-block',
-    run: (editor) => editor.chain().focus().toggleCodeBlock().run(),
-    isActive: (editor) => editor.isActive('codeBlock'),
-  },
+  simpleBlockToggle('codeBlock', 'codeBlock', (c) => c.toggleCodeBlock(), '{}', 'Блок кода', 'toolbar-code-block'),
   {
     key: 'alignCenter',
     label: '↔',
