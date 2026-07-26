@@ -27,3 +27,11 @@ class TestExportDocumentAcceptance(AbstractBackendTest):
         document_export_statements.assert_refused_as_not_found(foreign)
         document_export_statements.assert_no_file_returned(foreign)
         document_export_statements.assert_byte_identical_to_nonexistent_case(foreign, nonexistent)
+
+    async def test_owner_can_export_own_document_distinguishably(self, document_export_statements):
+        """Positive control for 1.2: the owner's own export must be distinguishable from
+        the sanctioned 404, so the foreign-vs-nonexistent equality proves owner-scoping
+        rather than degrading into a 404-equals-404 tautology."""
+        own = await document_export_statements.given_owner_exports_their_own_document_as_pdf()
+
+        document_export_statements.assert_distinguishable_from_not_found(own)

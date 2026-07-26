@@ -107,6 +107,28 @@ class DocumentExportStatements:
             access_token=caller_access_token,
         )
 
+    async def given_owner_exports_their_own_document_as_pdf(self) -> ExportResponseDto:
+        # Positive control for the indistinguishability guard: the SAME creation +
+        # export path, but exported by the owner. Its outcome must be distinguishable
+        # from the sanctioned 404 — otherwise "foreign == not-found" is a tautology
+        # that would stay green even if owner-scoping were dropped.
+        owner_access_token = await self._authenticated_access_token()
+        own_document_id = await self._create_document_owned_by(owner_access_token)
+        return await self._client.export_document(
+            document_id=own_document_id,
+            export_format="pdf",
+            access_token=owner_access_token,
+        )
+
+    def assert_distinguishable_from_not_found(self, response: ExportResponseDto) -> None:
+        # The owner's own export must NOT collapse to the sanctioned not-found response;
+        # a distinguishable outcome is what makes the foreign-vs-nonexistent equality a
+        # real owner-scoping proof rather than a vacuous 404-equals-404.
+        assert response.body != self.EXPECTED_NOT_FOUND_ERROR, (
+            f"expected the owner's own export to be distinguishable from the sanctioned "
+            f"not-found response, but it returned the same body={response.body!r}"
+        )
+
     def assert_byte_identical_to_nonexistent_case(
         self, foreign: ExportResponseDto, nonexistent: ExportResponseDto
     ) -> None:
