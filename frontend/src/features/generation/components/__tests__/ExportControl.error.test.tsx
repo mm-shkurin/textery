@@ -77,6 +77,26 @@ describe('ExportControl export failure surfacing', () => {
     expect(error).toHaveTextContent(EXPORT_ERROR_TEXT)
   })
 
+  // RED: fails — export-error node text is 'Не удалось экспортировать документПовторить' because the
+  // export-retry button is a CHILD of export-error, so its label bleeds into the node's own text.
+  // Fix in green-frontend: make retry a sibling of the error node, not a descendant.
+  it.skip('scopes the error node text to exactly the localized message, excluding the nested retry label', async () => {
+    const deferred = createDeferred()
+    vi.mocked(documentApi.exportDocument).mockReturnValue(deferred.promise)
+
+    render(<ExportControl documentId="doc-1" />)
+    triggerExport()
+    deferred.reject(new Error(EXPORT_ERROR_TEXT))
+
+    // Whole-node text (what Selenium's element.text reads) must equal the message ALONE. The retry
+    // control must be a SIBLING of this node, not a child, so its "Повторить" label does not bleed
+    // into the error text. toHaveTextContent only matches substrings and would miss this.
+    const error = await screen.findByTestId('export-error')
+    expect(error.textContent?.trim()).toBe(EXPORT_ERROR_TEXT)
+    // Retry wiring stays intact: the control still exists and is reachable.
+    expect(screen.getByTestId('export-retry')).toBeVisible()
+  })
+
   it('shows the localized failure text, not the raw transport message, when the export rejects', async () => {
     const deferred = createDeferred()
     vi.mocked(documentApi.exportDocument).mockReturnValue(deferred.promise)
