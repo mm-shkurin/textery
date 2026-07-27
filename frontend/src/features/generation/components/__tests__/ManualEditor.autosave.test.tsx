@@ -10,6 +10,7 @@ import {
   typeIntoEditor,
   useAutosaveFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import { DIRTY_STATUS, SAVED_STATUS } from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -23,7 +24,7 @@ describe('ManualEditor debounced autosave', () => {
 
   it('autosaves an edit once typing stops past the debounce interval, without clicking Сохранить, and shows the saved indicator', async () => {
     await renderCreatedDocument()
-    expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
+    expect(screen.getByText(DIRTY_STATUS)).toBeInTheDocument()
 
     vi.mocked(documentApi.saveDocument).mockResolvedValue({
       status: 'saved',
@@ -53,7 +54,7 @@ describe('ManualEditor debounced autosave', () => {
     )
 
     await flushMicrotasks()
-    expect(screen.getByText('Сохранено')).toBeInTheDocument()
+    expect(screen.getByText(SAVED_STATUS)).toBeInTheDocument()
   })
 
   // Guard: a burst of edits inside the window must collapse to ONE save. If the first edit's timer

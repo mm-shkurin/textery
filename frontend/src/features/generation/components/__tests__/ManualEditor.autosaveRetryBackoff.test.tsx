@@ -11,6 +11,7 @@ import {
   typeIntoEditor,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import { SAVED_STATUS } from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -61,7 +62,7 @@ describe('ManualEditor — a transient autosave failure retries on a capped back
     expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', '<p>hello world</p>', 7)
     // The recovered save settles clean: the failure banner is gone and the saved status shows.
     expect(screen.queryByTestId('me-save-error')).toBeNull()
-    expect(screen.getByText('Сохранено').textContent).toBe('Сохранено')
+    expect(screen.getByText(SAVED_STATUS).textContent).toBe(SAVED_STATUS)
   })
 
   it('stops retrying a persistently-failing transient autosave after a bounded number of attempts and shows the failure', async () => {
@@ -121,6 +122,6 @@ describe('ManualEditor — a transient autosave failure retries on a capped back
     expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', '<p>updated during wait</p>', 7)
     // Clean only over content that was actually sent — never marked saved over the lost keystrokes.
     expect(screen.queryByTestId('me-save-error')).toBeNull()
-    expect(screen.getByText('Сохранено').textContent).toBe('Сохранено')
+    expect(screen.getByText(SAVED_STATUS).textContent).toBe(SAVED_STATUS)
   })
 })

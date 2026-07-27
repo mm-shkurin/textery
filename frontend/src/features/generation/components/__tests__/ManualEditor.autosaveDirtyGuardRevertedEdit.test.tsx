@@ -4,17 +4,19 @@ import * as documentApi from '../../api/documentApi'
 import {
   CREATED_DOCUMENT_ID,
   CREATED_VERSION,
-  DIRTY_BADGE_CLASS,
-  DIRTY_STATUS,
-  SAVED_BADGE_CLASS,
-  SAVED_STATUS,
   crossDebounceBoundary,
-  dispatchBeforeUnload,
   flushMicrotasks,
   renderCreatedDocument,
   typeIntoEditor,
   useAutosaveFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import {
+  DIRTY_BADGE_CLASS,
+  DIRTY_STATUS,
+  SAVED_BADGE_CLASS,
+  SAVED_STATUS,
+  dispatchBeforeUnload,
+} from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')
 

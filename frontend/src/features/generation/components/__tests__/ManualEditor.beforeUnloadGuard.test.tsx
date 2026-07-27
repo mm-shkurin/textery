@@ -3,7 +3,11 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
 import { ManualEditor } from '../ManualEditor'
 import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
-import { dispatchBeforeUnload } from './ManualEditor.autosave.testSupport'
+import {
+  DIRTY_STATUS,
+  SAVED_STATUS,
+  dispatchBeforeUnload,
+} from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -50,7 +54,7 @@ describe('ManualEditor beforeunload guard', () => {
     // The clean status below is the gate: hasUnsavedChanges initialises true, so without a settled
     // save the assertion would pass for the wrong reason. getByText throws until the save settles.
     await waitFor(() => {
-      expect(screen.getByText('Сохранено')).toBeInTheDocument()
+      expect(screen.getByText(SAVED_STATUS)).toBeInTheDocument()
     })
 
     // ...and stands down once clean. This must be the transition true -> false, not a static false.
@@ -69,7 +73,7 @@ describe('ManualEditor beforeunload guard', () => {
       <ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={vi.fn()} />,
     )
     await waitFor(() => {
-      expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
+      expect(screen.getByText(DIRTY_STATUS)).toBeInTheDocument()
     })
 
     // Capture the exact handler reference registered for beforeunload. A fresh document initialises

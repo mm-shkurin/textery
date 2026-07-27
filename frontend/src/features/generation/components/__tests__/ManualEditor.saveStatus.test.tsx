@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
 import { SAVE_ERROR_MESSAGE } from '../ManualEditor'
 import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
+import { DIRTY_STATUS, SAVED_STATUS } from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -31,7 +32,7 @@ describe('ManualEditor save status', () => {
     expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', '<p>hello world</p>', 7)
 
     await waitFor(() => {
-      expect(screen.getByText('Сохранено')).toBeInTheDocument()
+      expect(screen.getByText(SAVED_STATUS)).toBeInTheDocument()
     })
     expect(saveButton).toHaveAttribute('aria-disabled', 'false')
     expect(screen.queryByTestId('save-spinner')).not.toBeInTheDocument()
@@ -56,14 +57,14 @@ describe('ManualEditor save status', () => {
     fireEvent.click(saveButton)
 
     await waitFor(() => {
-      expect(screen.getByText('Сохранено')).toBeInTheDocument()
+      expect(screen.getByText(SAVED_STATUS)).toBeInTheDocument()
     })
 
     contentArea.textContent = 'hello world again'
     fireEvent.input(contentArea)
 
-    expect(screen.queryByText('Сохранено')).not.toBeInTheDocument()
-    expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
+    expect(screen.queryByText(SAVED_STATUS)).not.toBeInTheDocument()
+    expect(screen.getByText(DIRTY_STATUS)).toBeInTheDocument()
   })
 
   it('a failed save shows an inline error message and keeps the typed content in the editor', async () => {
@@ -127,7 +128,7 @@ describe('ManualEditor save status', () => {
     fireEvent.click(saveButton)
 
     await waitFor(() => {
-      expect(screen.getByText('Сохранено')).toBeInTheDocument()
+      expect(screen.getByText(SAVED_STATUS)).toBeInTheDocument()
     })
     expect(screen.queryByText(SAVE_ERROR_MESSAGE)).not.toBeInTheDocument()
 
@@ -168,13 +169,13 @@ describe('ManualEditor save status', () => {
       expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
     })
     expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', '<p>second content</p>', 2)
-    expect(screen.queryByText('Сохранено')).not.toBeInTheDocument()
-    expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
+    expect(screen.queryByText(SAVED_STATUS)).not.toBeInTheDocument()
+    expect(screen.getByText(DIRTY_STATUS)).toBeInTheDocument()
 
     resolveSecondSave({ status: 'saved', version: 3, content: 'second content' })
 
     await waitFor(() => {
-      expect(screen.getByText('Сохранено')).toBeInTheDocument()
+      expect(screen.getByText(SAVED_STATUS)).toBeInTheDocument()
     })
   })
 })

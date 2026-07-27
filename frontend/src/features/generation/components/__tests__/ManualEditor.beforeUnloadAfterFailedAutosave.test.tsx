@@ -3,11 +3,11 @@ import { screen } from '@testing-library/react'
 import { SAVE_ERROR_MESSAGE } from '../../hooks/useDocumentSave'
 import * as documentApi from '../../api/documentApi'
 import {
-  dispatchBeforeUnload,
   renderCreatedDocument,
   typeAndFireAutosave,
   useAutosaveFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import { dispatchBeforeUnload } from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')
 

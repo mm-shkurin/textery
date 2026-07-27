@@ -10,6 +10,7 @@ import {
   typeAndFireAutosave,
   useAutosaveFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import { DIRTY_STATUS, SAVED_STATUS } from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -84,7 +85,7 @@ describe('ManualEditor — out-of-order autosaves reflect the latest edit and co
     expect(screen.getByTestId('editor-content-area').innerHTML).toBe('<p>second version</p>')
     // Strict status: the saved element's own text is exactly "Сохранено" (not a substring hit
     // elsewhere), and the dirty status must be gone — a stale-A clobber reverting to dirty fails here.
-    expect(screen.getByText('Сохранено').textContent).toBe('Сохранено')
-    expect(screen.queryByText('Черновик, ещё не сохранён')).toBeNull()
+    expect(screen.getByText(SAVED_STATUS).textContent).toBe(SAVED_STATUS)
+    expect(screen.queryByText(DIRTY_STATUS)).toBeNull()
   })
 })

@@ -4,8 +4,6 @@ import * as documentApi from '../../api/documentApi'
 import {
   CREATED_DOCUMENT_ID,
   CREATED_VERSION,
-  DIRTY_STATUS,
-  SAVED_STATUS,
   crossDebounceBoundary,
   defer,
   flushMicrotasks,
@@ -13,6 +11,7 @@ import {
   typeIntoEditor,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import { DIRTY_STATUS, SAVED_STATUS } from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')
 

@@ -2,6 +2,7 @@ import { expect, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { ManualEditor } from '../ManualEditor'
 import * as documentApi from '../../api/documentApi'
+import { DIRTY_STATUS } from './ManualEditor.saveStatus.testSupport'
 
 export async function renderEditorWithDocumentCreated(onBack = vi.fn()) {
   vi.mocked(documentApi.createDocument).mockResolvedValue({
@@ -11,7 +12,7 @@ export async function renderEditorWithDocumentCreated(onBack = vi.fn()) {
   })
   render(<ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={onBack} />)
   await waitFor(() => {
-    expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
+    expect(screen.getByText(DIRTY_STATUS)).toBeInTheDocument()
   })
   return onBack
 }

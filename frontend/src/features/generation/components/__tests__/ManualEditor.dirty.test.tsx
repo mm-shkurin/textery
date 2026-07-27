@@ -7,6 +7,7 @@ import {
   renderEditorWithDocumentCreated,
   selectRange,
 } from './ManualEditor.testSupport'
+import { DIRTY_STATUS, SAVED_STATUS } from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -49,9 +50,9 @@ describe('ManualEditor dirty flag', () => {
     // this gate real — it throws until the save settles, so the gate cannot pass
     // vacuously.
     await waitFor(() => {
-      expect(screen.getByText('Сохранено')).toBeInTheDocument()
+      expect(screen.getByText(SAVED_STATUS)).toBeInTheDocument()
     })
-    expect(screen.queryByText('Черновик, ещё не сохранён')).not.toBeInTheDocument()
+    expect(screen.queryByText(DIRTY_STATUS)).not.toBeInTheDocument()
 
     const textNode = paragraphTextNode(contentArea)
     selectRange(textNode, 0, 5)
@@ -69,8 +70,8 @@ describe('ManualEditor dirty flag', () => {
     // not from a fresh in-flight save incidentally re-dirtying the document.
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
 
-    expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
-    expect(screen.queryByText('Сохранено')).not.toBeInTheDocument()
+    expect(screen.getByText(DIRTY_STATUS)).toBeInTheDocument()
+    expect(screen.queryByText(SAVED_STATUS)).not.toBeInTheDocument()
   })
 
   it('a failed save leaves the document marked unsaved', async () => {
@@ -107,7 +108,7 @@ describe('ManualEditor dirty flag', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save document', saveError)
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
 
-    expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
-    expect(screen.queryByText('Сохранено')).not.toBeInTheDocument()
+    expect(screen.getByText(DIRTY_STATUS)).toBeInTheDocument()
+    expect(screen.queryByText(SAVED_STATUS)).not.toBeInTheDocument()
   })
 })

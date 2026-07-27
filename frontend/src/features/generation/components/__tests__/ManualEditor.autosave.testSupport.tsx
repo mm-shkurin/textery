@@ -15,28 +15,6 @@ export { AUTOSAVE_DEBOUNCE_MS } from '../../hooks/useAutosave'
 export const CREATED_DOCUMENT_ID = 'doc-1'
 export const CREATED_VERSION = 7
 
-// The two save-status badge strings rendered by ManualEditorSaveStatus. They live as inline JSX
-// literals in production (no exported constant to import), so this is the single place the test
-// suite spells them — retyping them per file is how one suite ends up asserting a stale wording.
-export const SAVED_STATUS = 'Сохранено'
-export const DIRTY_STATUS = 'Черновик, ещё не сохранён'
-
-// The modifier class each badge branch renders. Asserting the class alongside the text is what
-// keeps a badge assertion from being tautological: `getByText(SAVED_STATUS).textContent` can only
-// ever equal SAVED_STATUS — the query already matched on it — whereas the variant class is an
-// independent fact about WHICH of ManualEditorSaveStatus's mutually exclusive branches rendered.
-export const SAVED_BADGE_CLASS = 'me-save-status--saved'
-export const DIRTY_BADGE_CLASS = 'me-save-status--dirty'
-
-// Dispatches a cancelable beforeunload and reports whether the app's guard cancelled it — i.e.
-// whether the browser would show its native "leave?" prompt. Shared by every suite that asserts
-// the guard is armed or disarmed.
-export function dispatchBeforeUnload(): boolean {
-  const event = new Event('beforeunload', { cancelable: true })
-  window.dispatchEvent(event)
-  return event.defaultPrevented
-}
-
 // A generous timer advance for the H9.3 failure-taxonomy tests: big enough that the whole
 // capped-backoff retry schedule plays out inside it, so assertions never hardcode green's exact
 // per-attempt delays. Shared by the retry/expired-session/queued-edit suites (single source).
