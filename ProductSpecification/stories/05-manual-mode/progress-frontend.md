@@ -1717,9 +1717,9 @@ deploy) live in `progress-backend.md`, referenced here as `[S]`.
 - [S] demo — unattended loop, no viewer; failed-autosave behavior proven by the passing characterization guard.
 
 ### Scenario E3.3 / H9.2: Out-of-order autosave responses reflect the latest edit and content
-- [ ] red-frontend — two saves in flight resolving out of order: status + content reflect latest (B), B not lost
-- [ ] green-frontend — response-ordering guard (sequence/latest-wins)
-- [ ] demo
+- [x] red-frontend — two saves in flight resolving out of order: status + content reflect latest (B), B not lost. LIVE **characterization guard** (`ManualEditor.autosaveOutOfOrder.test.tsx`, 1 passing) — not a red→green cycle. Existence-check: `useDocumentSave.ts` SERIALIZES saves (`isSavingRef`/`saveAgainRequested`) — a save landing mid-flight only flips `saveAgainRequested`; the queued save (B) is fired from A's resolve handler using A's returned version + a fresh editor read, so two `saveDocument` calls are never simultaneously in flight and out-of-order *arrival* cannot occur — latest-wins holds by construction. Guard pins: after A resolves then B resolves, `saveDocument` called with B's content/version (not A's stale one) AND editor content stays B (`<p>second version</p>`) AND status is exactly "Сохранено" (not reverted to dirty). Both content + status assertions mutation-checked to bite (removing the `&& serializeEditorHtml(editor) === sent` anti-clobber guard fails the test); test-review added exact-`textContent` + negative dirty-status assertions.
+- [S] green-frontend — no production code needed; latest-wins already guaranteed by the serialized save state machine (see red-frontend note). Zero production files change.
+- [S] demo — unattended loop, no viewer; latest-wins behavior proven by the passing characterization guard.
 
 ### Scenario E3.4 / H9.5: A stale autosave is rejected (409), never a silent overwrite; version fail-closed
 - [ ] red-frontend — stale-version autosave → 409 reconciled; absent/unparseable version fails closed
