@@ -2,21 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 import { saveDocument } from '../api/documentApi'
 import { serializeEditorHtml } from '../components/serializeEditorHtml'
-import {
-  MAX_AUTOSAVE_ATTEMPTS,
-  backoffDelay,
-  isTransientFailure,
-} from './autosaveRetryPolicy'
+import { MAX_AUTOSAVE_ATTEMPTS, isTransientFailure } from './autosaveRetryPolicy'
 import {
   isAlreadySaved,
   savedContentAfterResolve,
   shouldAdoptPersistedContent,
 } from './autosaveDirtyGuard'
-import {
-  CONFLICT_ERROR_MESSAGE,
-  SAVE_ERROR_MESSAGE,
-  describeSaveFailure,
-} from './saveFailureMessages'
+import { createSaveCycle } from './autosaveSaveCycle'
+import { CONFLICT_ERROR_MESSAGE, SAVE_ERROR_MESSAGE } from './saveFailureMessages'
 
 // Re-exported so callers (and the retry-backoff / failure-copy tests) keep importing the attempt
 // ceiling and the failure copy from the save hook — one definition lives in autosaveRetryPolicy and
@@ -61,13 +54,21 @@ export function useDocumentSave({
   const [saveError, setSaveError] = useState<string | null>(null)
   const isSavingRef = useRef(false)
   const saveAgainRequested = useRef(false)
-  // A scheduled transient retry lives here so unmount can cancel it — an editor the user navigated
-  // away from must not fire a write at an abandoned document on a backoff timer.
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // The content the server last confirmed while the editor still held it (H9.4). A resolve records
-  // it; a terminal failure clears it back to null ("unknown, never suppress"), since suppression
-  // now settles the document clean and a document with a failure banner over it is not clean.
   const lastSavedContentRef = useRef<string | null>(null)
+  // How a cycle ends and how the backoff timer is kept — see autosaveSaveCycle.
+  const cycle = createSaveCycle({
+    isSavingRef,
+    saveAgainRequested,
+    retryTimerRef,
+    lastSavedContentRef,
+    setIsSaving,
+    setSaveError,
+    onSaved,
+  })
+  // Cancel a pending backoff retry on unmount. Deliberately reads the ref directly rather than
+  // going through `cycle`: `cycle` is rebuilt every render, so depending on it would re-run this
+  // cleanup on every render and cancel a live retry.
   useEffect(
     () => () => {
       if (retryTimerRef.current !== null) clearTimeout(retryTimerRef.current)
@@ -81,16 +82,6 @@ export function useDocumentSave({
   // editor's CURRENT content, so a keystroke typed during the wait is re-sent, never silently lost.
   const performSave = (saveVersion: number, attempt = 1) => {
     if (!documentId || !editor) return
-    // The end of an in-flight cycle with nothing left to write: drop the queue, leave the saving
-    // state, and tell the caller the document is clean. `onSaved` is the SOLE writer of the clean
-    // flag, so every exit that stops writing has to come through here — a bare return would strand
-    // the badge, beforeunload and the Сохранить button in the dirty state with no path back.
-    const settleClean = () => {
-      saveAgainRequested.current = false
-      isSavingRef.current = false
-      setIsSaving(false)
-      onSaved()
-    }
     isSavingRef.current = true
     setIsSaving(true)
     saveAgainRequested.current = false
@@ -116,7 +107,7 @@ export function useDocumentSave({
           saveAgainRequested.current = false
           performSave(result.version)
         } else {
-          settleClean()
+          cycle.settleClean()
         }
       })
       .catch((error) => {
@@ -129,36 +120,21 @@ export function useDocumentSave({
         // the retry is the sole writer and any edit in the gap only queues. The retry re-serializes
         // current content at fire time (below), so a queued edit's LATEST text is what gets sent.
         if (isTransientFailure(error) && attempt < MAX_AUTOSAVE_ATTEMPTS) {
-          retryTimerRef.current = setTimeout(() => {
-            retryTimerRef.current = null
+          cycle.scheduleRetry(attempt, () => {
             // The backoff window is the one place save() cannot apply the guard: isSavingRef is
             // still true, so an edit landing here takes the queue branch and returns before the
             // check. Undo an edit in that gap and the queue now points at content the server
             // already has — firing it would write it again AND chain a second write off the
             // resolve. Fire time is when the question is finally answerable, so ask it here.
             if (isAlreadySaved(serializeEditorHtml(editor), lastSavedContentRef.current)) {
-              settleClean()
+              cycle.settleClean()
               return
             }
             performSave(saveVersion, attempt + 1)
-          }, backoffDelay(attempt))
+          })
           return
         }
-        // Non-transient, or the bounded retry budget is spent: give up. Drop the queued flag so a
-        // stale retry doesn't fire later, but keep the user's latest content in the editor untouched
-        // so they can manually retry by clicking Save again.
-        saveAgainRequested.current = false
-        isSavingRef.current = false
-        setIsSaving(false)
-        setSaveError(describeSaveFailure(error))
-        // And forget what the guard remembered. Suppression now settles the document CLEAN, so the
-        // memory may only outlive events that leave it true — a terminal failure is not one. A
-        // VersionConflictError here has already survived saveDocument's own refetch-and-retry, i.e.
-        // another writer holds the document and the remembered content is provably not on the
-        // server. Even for a plain network failure the banner says "not saved", and suppressing a
-        // later revert would flip the badge to «Сохранено» right above it. Forgetting makes the next
-        // boundary a real attempt instead — which is also the retry that clears the banner.
-        lastSavedContentRef.current = null
+        cycle.settleFailed(error)
       })
   }
 
