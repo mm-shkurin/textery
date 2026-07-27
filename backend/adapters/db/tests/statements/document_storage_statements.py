@@ -59,6 +59,23 @@ class DocumentStorageStatements:
             updated_at=datetime.now(UTC),
         )
 
+    async def save_content_with_title(
+        self,
+        document_id: UUID,
+        owner_id: UUID,
+        content: str,
+        expected_version: int,
+        title: str,
+    ) -> Document | None:
+        return await self._storage.save_content_if_version_matches(
+            document_id=document_id,
+            owner_id=owner_id,
+            content=content,
+            expected_version=expected_version,
+            updated_at=datetime.now(UTC),
+            title=title,
+        )
+
     async def rollback(self) -> None:
         await self._session.rollback()
 

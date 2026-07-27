@@ -521,12 +521,16 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   filename=document.pdf` (document_router.py:118) and ignores `rendered.filename` — it must thread it
   and RFC 5987-percent-encode (`filename*=UTF-8''<quote(filename, safe='')>`; `.`/unreserved stay
   literal, space→%20, Cyrillic→%XX, matching the red literal). Inserted steps below.
-- [ ] red-adapter db (title round-trip) — DocumentModel gains nullable `title` + additive Alembic
-  migration (down_revision b2c3d4e5f6a7); `from_domain`/`to_domain` thread title; the
-  `save_content_if_version_matches` port + `SaveDocument.execute` gain `title`; storage persists it in
-  the SAME CAS UPDATE. Test drives the REAL flow: `SaveDocument.execute(..., title="Привет")` then
-  `find_by_id_and_owner` returns a Document whose `title == "Привет"` (write-here-read-there). In-DB
-  test (needs the migration applied to the test DB).
+- [x] red-adapter db (title round-trip) — RED confirmed LIVE against real Postgres (localhost:5432):
+  `TypeError: SqlAlchemyDocumentStorage.save_content_if_version_matches() got an unexpected keyword
+  argument 'title'` (predicted == actual). New `TestTitlePersistence::test_should_round_trip_a_saved_title`
+  + statements `save_content_with_title`: save content WITH title="Привет" through the version-CAS
+  writer, read back via `find_by_id_and_owner`, assert `fetched.title == "Привет"` (exact,
+  write-here-read-there). 9 passed / 1 skipped. test-review inline: strict equality, DSL in statements
+  (test 170 lines, statements 103 — under cap). None/default case deliberately omitted (already green —
+  title-less doc reads back None today). GREEN: nullable `title` column on DocumentModel + additive
+  Alembic migration (down_revision b2c3d4e5f6a7); from_domain/to_domain thread it; port +
+  SaveDocument.execute + storage CAS gain `title`.
 - [ ] green-adapter db (title round-trip)
 - [ ] red-adapter rest (save title) — `SaveDocumentRequestDto` gains optional `title: str | None`; the
   PUT `/{id}` route forwards `request.title` to `SaveDocument.execute`. Test: a save with a title

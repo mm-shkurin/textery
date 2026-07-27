@@ -85,6 +85,34 @@ class TestIdempotencyKeyUniqueness:
         document_storage_statements.assert_documents_match(found, document)
 
 
+@pytest.mark.skip(
+    reason="RED: SqlAlchemyDocumentStorage.save_content_if_version_matches() got an "
+    "unexpected keyword argument 'title' -- title not yet persisted in the CAS UPDATE "
+    "nor mapped on DocumentModel (green-adapter db)"
+)
+class TestTitlePersistence:
+    """Scenario 3.1: a saved title round-trips through storage.
+
+    Write-here-read-there: the title is persisted through the version-CAS save
+    path (`save_content_if_version_matches`) and read back through the export/get
+    read path (`find_by_id_and_owner`). Pins the shared additive `documents.title`
+    column so the export filename can later be derived from it.
+    """
+
+    async def test_should_round_trip_a_saved_title(self, document_storage_statements):
+        owner_id = await document_storage_statements.given_an_account()
+        document = await document_storage_statements.given_a_saved_document(owner_id)
+
+        await document_storage_statements.save_content_with_title(
+            document.id, owner_id, "<p>текст</p>", expected_version=1, title="Привет"
+        )
+        await document_storage_statements.commit()
+
+        fetched = await document_storage_statements.find_by_id_and_owner(document.id, owner_id)
+        assert fetched is not None, "the saved document must read back"
+        assert fetched.title == "Привет", "the saved title must survive the round-trip"
+
+
 class TestSaveContentCompareAndSwap:
     """Scenarios 6.1 / 6.3: the version is the lost-update guard."""
 
