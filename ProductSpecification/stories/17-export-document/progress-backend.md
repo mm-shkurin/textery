@@ -471,6 +471,26 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 - [ ] green-acceptance
 
 ### Scenario 4.1: Embedded external URLs do not cause an outbound request
+> CARRY-FORWARD (from Sc 2.2 green-adapter rendering reviews, commit 47c1adc — agent-review CONCERNS
+> + premortem BLOCK, both CREDIBLE, independently confirmed against htmldocx 0.0.6 source): the DOCX
+> path has a LATENT SSRF the PDF path does not. `HtmlDocxRenderer` builds `HtmlToDocx()` with default
+> options where `images=True`, so `handle_img` calls `urllib.request.urlopen(src)` for any
+> `<img src="http://…">` in the stored content — a server-side fetch of attacker-chosen URLs (e.g.
+> `169.254.169.254` metadata) during export, no allowlist, no timeout. It is only NON-live today
+> because the nh3 sanitizer's `_ALLOWED_TAGS` excludes `img`, stripping images before storage — a
+> guard in a DIFFERENT adapter module. Add `img` to that allowlist and the DOCX path silently gains
+> the hole while the PDF path (disabled `url_fetcher`) stays safe. Two defects to close here:
+>   (1) Disable image/URL resolution at the htmldocx boundary explicitly (e.g. `HtmlToDocx()` with
+>       image handling off), mirroring the PDF renderer's local `_blocked_url_fetcher` — DOCX
+>       SSRF-safety must not depend on a cross-module allowlist. Add a DOCX adapter test feeding
+>       `<img src="http://…">` and asserting NO outbound fetch (patch/assert urlopen never called).
+>       Note: WeasyPrint suite ALSO lacks a live SSRF test exercising `_blocked_url_fetcher` — add one
+>       for the PDF path too so 4.1 covers both engines, not just prose.
+>   (2) FALSE DOCSTRING shipped in 47c1adc: `html_docx_renderer.py` claims "SSRF-safe by construction
+>       (the parser resolves no external URLs)" — inaccurate for htmldocx's default config. Also the
+>       redaction comment overstates python-docx's default (it sets creator="python-docx", a literal,
+>       NOT an OS username — redaction is still good hygiene, but correct the rationale). Fix both
+>       comments when 4.1 hardens the path.
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase
