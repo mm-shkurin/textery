@@ -4,30 +4,15 @@ import { saveDocument } from '../api/documentApi'
 import { serializeEditorHtml } from '../components/serializeEditorHtml'
 import { SessionExpiredError } from '../../auth/api/authorizedRequest'
 import { VersionConflictError } from '../../../shared/api/send'
-import { RequestTimeoutError, isHttpError } from '../../../shared/api/httpClient'
+import {
+  MAX_AUTOSAVE_ATTEMPTS,
+  backoffDelay,
+  isTransientFailure,
+} from './autosaveRetryPolicy'
 
-// The retry contract (H9.3). A TRANSIENT autosave failure — a request timeout or a 5xx — is the one
-// kind a backoff can heal, so it re-fires ITSELF on a capped schedule up to this many total attempts
-// (initial + retries) before giving up and surfacing the banner. Exported so the test asserts one
-// definition of the ceiling, never a drifting inline literal (mirrors INVALID_VERSION_MESSAGE).
-export const MAX_AUTOSAVE_ATTEMPTS = 4
-
-// Capped exponential backoff between attempts: 1s, 2s, 4s… ceilinged at 8s so a long outage does not
-// stretch a single retry gap to minutes. `attempt` is the 1-based number of the attempt that just
-// failed; the whole schedule for MAX_AUTOSAVE_ATTEMPTS stays well inside the tests' RETRY_WINDOW_MS.
-const RETRY_BASE_MS = 1000
-const RETRY_MAX_MS = 8000
-function backoffDelay(attempt: number): number {
-  return Math.min(RETRY_BASE_MS * 2 ** (attempt - 1), RETRY_MAX_MS)
-}
-
-// Only a timeout or a 5xx is worth retrying: the request may recover on its own. A session expiry
-// (signed out), a version conflict (someone else's write landed), or any 4xx cannot be healed by
-// waiting — retrying only burns the schedule against a request that will fail identically.
-function isTransientFailure(error: unknown): boolean {
-  if (error instanceof RequestTimeoutError) return true
-  return isHttpError(error) && error.status >= 500
-}
+// Re-exported so callers (and the retry-backoff test) keep importing the attempt ceiling from the
+// save hook — one definition lives in autosaveRetryPolicy, this is just its public surface here.
+export { MAX_AUTOSAVE_ATTEMPTS }
 
 export const SAVE_ERROR_MESSAGE =
   'Не удалось сохранить. Повторите — текст пока только в редакторе, не потеряйте вкладку.'
