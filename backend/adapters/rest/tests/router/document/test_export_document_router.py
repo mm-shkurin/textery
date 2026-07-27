@@ -1,7 +1,5 @@
 from uuid import uuid4
 
-import pytest
-
 from document.rendered_export import RenderedExport
 
 
@@ -42,7 +40,9 @@ class TestExportDocumentAsPdfResponse:
         # leaking the bug into Scenario 2.2. The real "application/pdf" type on a
         # genuine render is pinned end to end by green-acceptance.
         rendered = RenderedExport(
-            content=b"%PDF-1.7 fake pdf bytes", media_type="application/x-render-marker"
+            content=b"%PDF-1.7 fake pdf bytes",
+            media_type="application/x-render-marker",
+            filename="document.pdf",
         )
         usecase = mocker.Mock()
         usecase.execute = mocker.AsyncMock(return_value=rendered)
@@ -53,10 +53,12 @@ class TestExportDocumentAsPdfResponse:
         assert response.status_code == 200, f"got {response.status_code}: {response.text}"
         assert response.headers["content-type"] == "application/x-render-marker"
         assert response.content == b"%PDF-1.7 fake pdf bytes"
-        assert response.headers["content-disposition"] == "attachment; filename=document.pdf"
+        assert (
+            response.headers["content-disposition"]
+            == "attachment; filename*=UTF-8''document.pdf"
+        )
 
 
-@pytest.mark.skip(reason="RED: export route hardcodes filename=document.pdf, ignores rendered.filename")
 class TestExportFilenameRfc5987:
     """Scenario 3.1: the download filename is derived from the title and RFC 5987
     percent-encoded so a Cyrillic title survives the Content-Disposition header.

@@ -13,7 +13,6 @@ class RenderedExport:
     content: bytes
     media_type: str
     # The plain (un-encoded) download filename, derived from the document title by
-    # ExportDocument. Defaults so callers that predate the title wiring (the rest
-    # router still hardcodes its Content-Disposition until the Sc 3.1 rest step)
-    # keep constructing a RenderedExport; the usecase always supplies it.
-    filename: str = "document.pdf"
+    # ExportDocument. Required: the rest router now RFC 5987 encodes it into the
+    # Content-Disposition, so every construction site supplies it explicitly.
+    filename: str

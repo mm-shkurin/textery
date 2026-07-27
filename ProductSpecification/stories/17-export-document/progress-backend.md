@@ -594,8 +594,21 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   >   explicit filename; and REMOVE the now-redundant `RenderedExport.filename = "document.pdf"`
   >   default (ADR) so every construction supplies it. (3) This FIXES the still-RED Sc 3.1 acceptance
   >   AND the Sc 2.2 docx-`.pdf` mislabel carry-forward.
-- [~] green-adapter rest (export filename)
-- [ ] green-acceptance
+- [x] green-adapter rest (export filename) — GREEN (host, mocked usecase): target
+  `TestExportFilenameRfc5987` PASSED (header matched the RFC 5987 literal exactly); router/document
+  suite 28 passed, full rest suite 76 passed, usecase 172 passed — 0 regression. Export route now
+  `from urllib.parse import quote` + `encoded = quote(rendered.filename, safe="")` →
+  `Content-Disposition: attachment; filename*=UTF-8''{encoded}` (replacing the hardcoded
+  `filename=document.pdf`). `safe=""` percent-encodes control chars too (CR→%0D/LF→%0A) —
+  injection-safe by construction (premortem obligation). Regression fixes: (1) `RenderedExport.filename`
+  default removed — now a REQUIRED field (ADR); grep confirmed only 3 construction sites (usecase +
+  the 2 tests), all supply it. (2) Sc 2.1 test `TestExportDocumentAsPdfResponse` updated — explicit
+  `filename="document.pdf"` + assertion `attachment; filename*=UTF-8''document.pdf` (strict). Coverage:
+  export encoding line + header + 404 branch 100% (only the known DI-stub NotImplementedError lines
+  uncovered, out of scope).
+- [~] green-acceptance — this closes the still-RED Sc 3.1 acceptance
+  (`test_export_filename_is_rfc5987_encoded_from_cyrillic_title`); requires baked-image rebuild
+  (carryover quirk) before running against BACKEND_PORT=8100.
 
 ### Scenario 3.2: A document with no title uses a default filename
 > CARRY-FORWARD (from Sc 2.2 green-acceptance premortem, commit 5e00082 — CONCERNS CREDIBLE): the

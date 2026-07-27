@@ -1,3 +1,4 @@
+from urllib.parse import quote
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Response
@@ -112,10 +113,15 @@ async def export_document(
     # Stream the rendered bytes back verbatim as a binary attachment. media_type
     # is threaded from the RenderedExport so a future DOCX export is typed
     # correctly rather than mislabelled application/pdf.
+    #
+    # The filename is RFC 5987 percent-encoded. safe="" encodes control chars too
+    # (CR->%0D, LF->%0A), so a title carrying raw CRLF cannot inject a header line;
+    # unreserved chars and the dot stay literal, space -> %20, Cyrillic -> %XX.
+    encoded = quote(rendered.filename, safe="")
     return Response(
         content=rendered.content,
         media_type=rendered.media_type,
-        headers={"Content-Disposition": "attachment; filename=document.pdf"},
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{encoded}"},
     )
 
 
