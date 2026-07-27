@@ -70,8 +70,7 @@ describe('useFlowNavigation', () => {
   // generation — the flow lands on the generation surface ('form' + 'auto' mode), never the
   // intermediate 'mode' step. The generating surface is rendered by ChatWorkspace, whose
   // Selenium contract is [data-testid='generation-generating'].
-  // TDD Red Phase - selectType still routes to the 'mode' step; straight-to-generation not built
-  it.skip('goes straight to generation when a type is picked, showing no mode step', () => {
+  it('goes straight to generation when a type is picked, showing no mode step', () => {
     const { result } = renderFlow()
 
     act(() => result.current.selectType('doklad'))
@@ -80,18 +79,6 @@ describe('useFlowNavigation', () => {
     expect(result.current.mode).toBe('auto')
     expect(result.current.documentType).toBe('doklad')
     expect(result.current.openDocumentId).toBeNull()
-  })
-
-  it('walks type then mode into the form', () => {
-    const { result } = renderFlow()
-
-    act(() => result.current.selectType('doklad'))
-    expect(result.current.step).toBe('mode')
-
-    act(() => result.current.selectMode('auto'))
-    expect(result.current.step).toBe('form')
-    expect(result.current.documentType).toBe('doklad')
-    expect(result.current.mode).toBe('auto')
   })
 
   it('steps back to the type and landing screens', () => {
@@ -140,24 +127,29 @@ describe('useFlowNavigation', () => {
     expect(result.current.mode).toBeNull()
   })
 
-  it('returns a newly created document to the mode modal', () => {
+  // Story 18 removed the mode modal, so Back from a new (non-history) document returns to the type
+  // step — a valid, forward-reachable destination — not the retired 'mode' step. The selection is
+  // cleared so the user re-picks cleanly.
+  it('returns a newly created document to the type step', () => {
     const { result } = renderFlow()
 
     act(() => result.current.selectType('doklad'))
-    act(() => result.current.selectMode('manual'))
     act(() => result.current.backFromEditor())
 
-    expect(result.current.step).toBe('mode')
+    expect(result.current.step).toBe('type')
     expect(result.current.mode).toBeNull()
+    expect(result.current.openDocumentId).toBeNull()
   })
 
   // Signing out has to unwind the flow, not just the header: leaving `step` at 'form' would keep
-  // a generation polling and drop the next user straight back into the workspace.
-  it('unwinds the whole flow on sign-out', () => {
+  // a generation polling and drop the next user straight back into the workspace. With the mode
+  // modal gone, a single `selectType` already lands on the generation surface — so the unwind is
+  // proven from that one step, and clearing back to 'landing' is what stops the poll
+  // (handleLogout → closeToLanding → generation.reset).
+  it('unwinds the whole flow on sign-out after a single-step selection', () => {
     const { result } = renderFlow()
 
     act(() => result.current.selectType('doklad'))
-    act(() => result.current.selectMode('manual'))
     act(() => result.current.handleLogout())
 
     expect(result.current.step).toBe('landing')

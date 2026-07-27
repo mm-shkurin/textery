@@ -51,8 +51,11 @@ export function DocArea({
     )
   }
   if (state === 'pending') {
+    // Story 18 contract: the generating surface is marked with this testid (also scenario 1.2's
+    // subject). It is present only while a generation is in flight, so a Selenium wait on it
+    // observes exactly the generating state and nothing else.
     return (
-      <div className="doc-placeholder">
+      <div className="doc-placeholder" data-testid="generation-generating">
         <div className="spinner" />
         <h2>Готовим ваш доклад</h2>
         <p>Обычно занимает 1–2 минуты — страница обновится автоматически</p>

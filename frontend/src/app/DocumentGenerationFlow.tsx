@@ -26,8 +26,8 @@ const ManualEditor = lazy(() =>
 // useFlowNavigation.
 //
 // The landing is the public shopfront and stays open to anonymous visitors; gating it would be
-// gating marketing. Everything BEHIND it (type → mode → the workspace or the manual editor)
-// needs an account.
+// gating marketing. Everything BEHIND it (type → the generation workspace, or the editor opened
+// from history) needs an account.
 //
 // The gate below is CLIENT-SIDE ONLY: it decides what UI to render and protects nothing on its
 // own. Neither destination has a URL of its own — both are internal state — so the CTA is the
@@ -73,12 +73,12 @@ export function DocumentGenerationFlow() {
       // fetched at the moment manual mode is chosen, and on a slow link that is a visible wait.
       // Boundary OUTSIDE Suspense so it catches both failures the lazy path can produce: a
       // rejected chunk fetch (offline mid-session) and a throw from inside the editor once it
-      // mounts. Recovery goes back to the mode modal — a real destination, not a reload into the
-      // same crash.
+      // mounts. Recovery goes back through backFromEditor (history for an opened document) — a
+      // real destination, not a reload into the same crash.
       return (
         <ErrorBoundary
           title="Редактор не удалось загрузить."
-          recoverLabel="Вернуться к выбору режима"
+          recoverLabel="Вернуться назад"
           onRecover={flow.backFromEditor}
         >
           <Suspense fallback={<p className="editor-loading">Загрузка редактора…</p>}>
@@ -110,16 +110,13 @@ export function DocumentGenerationFlow() {
 
   return (
     <FlowLanding
-      step={step as 'landing' | 'type' | 'mode'}
-      documentType={documentType}
+      step={step as 'landing' | 'type'}
       isAuthenticated={isAuthenticated}
       onPrimaryCtaClick={flow.startFlow}
       onLoginClick={flow.goToLogin}
       onLogoutClick={flow.handleLogout}
       onHistoryClick={flow.openHistory}
       onSelectType={flow.selectType}
-      onSelectMode={flow.selectMode}
-      onBackToType={flow.backToTypeModal}
       onClose={flow.closeToLanding}
     />
   )
