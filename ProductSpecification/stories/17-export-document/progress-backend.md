@@ -346,7 +346,30 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   moved `media_type = _MEDIA_TYPE[export_format]` AHEAD of `render()` (fail-fast, closes the docx
   KeyError→500 window). None→None (404) path unchanged and first. Both RED tests enabled (removed
   skip markers only). Coverage: export_document.py 100% line (18/18) + branch (2/2), no gaps.
-- [ ] adapters-discovery
+- [x] adapters-discovery (rendering) — Check 1 (ports): rendering — GAP: `ExportDocument.document_renderer`
+  is wired to the bare `WeasyPrintPdfRenderer`, which only writes PDF and ignores `export_format` — a
+  `format=docx` request currently returns PDF bytes under a wordprocessingml Content-Type (premortem on
+  0a9ac9a, guarded by the RED acceptance 9384dee). Per the ADR: add a pure-Python `HtmlDocxRenderer`
+  (`htmldocx`→`python-docx`, neutral `docProps` core properties + injected clock — hazard grp7 redaction
+  guard) implementing the DOCX branch, and a `FormatDispatchingRenderer` implementing `DocumentRenderer`
+  that routes PDF→WeasyPrintPdfRenderer, DOCX→HtmlDocxRenderer (raises loudly on an unmapped member);
+  wire `FormatDispatchingRenderer` into `document_wiring.py` in place of the bare WeasyPrintPdfRenderer
+  → red-adapter rendering / green-adapter rendering. `SqlAlchemyDocumentStorage.find_by_id_and_owner`
+  unchanged → [S]. Check 2 (exceptions): [S] — happy path raises nothing new; the docx KeyError→500
+  window is closed at the usecase (green-usecase 0a9ac9a); ValidationException(INVALID_FORMAT) already
+  mapped (Sc 1.3); render-failure/disclosure owned by Sc 4.3/4.4/5.1. Check 3 (response shape): [S] rest —
+  `/export` already returns a binary `Response(content, media_type=rendered.media_type, Content-Disposition
+  attachment)` (Sc 2.1 green-adapter rest); `media_type` is threaded from RenderedExport, so the DOCX MIME
+  flows through with no rest change. ⚠️ IN-CONTAINER: the rendering adapter + wiring import weasyprint
+  (host-unimportable, no Pango/cairo), so run the rendering-adapter red/green tests in the Linux backend
+  container per the Sc 2.1 decision; add `htmldocx`+`python-docx` to backend requirements + both CI test
+  jobs (pure-Python, no new native libs). green-adapter rendering MUST also assert `docProps/core.xml`
+  leaks no server identity/time (neutral author, injected/fixed clock — grp7 unowned GAP assigned here).
+- [ ] red-adapter rendering — FormatDispatchingRenderer + HtmlDocxRenderer (docx branch); assert real
+  `PK\x03\x04` DOCX bytes with `[Content_Types].xml`+`word/document.xml` parts AND neutral docProps
+  (no OS username, fixed clock). In-container.
+- [ ] green-adapter rendering — implement both adapters, wire FormatDispatchingRenderer into
+  document_wiring.py, add htmldocx+python-docx to requirements + CI. In-container.
 - [ ] green-acceptance
 
 ### Scenario 2.3: An empty document exports to a valid file
