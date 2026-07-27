@@ -425,7 +425,20 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 - [S] green-acceptance — nothing to enable; capability already green via 2.1/2.2.
 
 ### Scenario 2.4: Export does not mutate the document
-- [ ] red-acceptance
+- [x] red-acceptance — ALREADY-GREEN regression guard (not a fabricated RED, not a duplicate):
+  version-stability across export is asserted by NO existing test (2.1/2.2 assert file validity, 1.x
+  refusal), so this is a genuinely new contract. Predicted "test passes — export is a GET with no
+  SaveDocument, version stable"; actual == predicted (1 passed live BACKEND_PORT=8100; export suite
+  8 passed). Committed ENABLED (a passing guard carries no skip marker). New class
+  `TestExportDoesNotMutateDocument` → new `DocumentExportNoMutationStatements` (84 lines; base at
+  200-cap): reads via GetDocument, exports pdf, re-reads; `ExportMutationSnapshot` before/after pins
+  `version_after == version_before` (exact int) PLUS `content` + `updated_at` exact-equality (a
+  mutation touching any of the three cannot slip through). Added `get_document` client method +
+  `GetDocumentResponseDto`; registered fixture. test-review inline: assertions strict + non-vacuous
+  (GetDocument single-doc body carries content/version/updated_at per document_dtos.py:58-77), Statements
+  placement clean. FLAG: conftest.py now 260 lines (over 200-cap; was ~254 pre-existing — fixtures must
+  live in conftest, so the +6 lines were unavoidable). Cross-suite conftest split deferred to a
+  dedicated refactor, out of this work unit's scope.
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase

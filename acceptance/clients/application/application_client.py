@@ -13,6 +13,7 @@ from clients.application.dto.auth.verify_response_dto import VerifyResponseDto
 from clients.application.dto.auth.oauth_dtos import OAuthExchangeResponseDto, OAuthRedirectDto
 from clients.application.dto.document.create_document_response_dto import CreateDocumentResponseDto
 from clients.application.dto.document.export_response_dto import ExportResponseDto
+from clients.application.dto.document.get_document_response_dto import GetDocumentResponseDto
 from clients.application.dto.generation.generation_request_dto import CreateGenerationRequestDto
 from clients.application.dto.generation.generation_response_dto import GenerationResponseDto
 
@@ -96,6 +97,17 @@ class ApplicationClient:
             },
         )
         return CreateDocumentResponseDto(
+            status_code=response.status_code, body=self._parsed_body(response)
+        )
+
+    async def get_document(
+        self, document_id: str, access_token: str
+    ) -> GetDocumentResponseDto:
+        response = await self._client.get(
+            f"/api/v1/documents/{document_id}",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        return GetDocumentResponseDto(
             status_code=response.status_code, body=self._parsed_body(response)
         )
 

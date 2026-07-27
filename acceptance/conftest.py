@@ -47,6 +47,9 @@ from statements.frontend.responsive_statements import ResponsiveStatements
 from statements.document_export_statements import DocumentExportStatements
 from statements.document_export_format_statements import DocumentExportFormatStatements
 from statements.document_export_docx_statements import DocumentExportDocxStatements
+from statements.document_export_no_mutation_statements import (
+    DocumentExportNoMutationStatements,
+)
 from statements.generation_statements import GenerationStatements
 from statements.login_statements import LoginStatements
 from statements.oauth_statements import OAuthStatements
@@ -87,6 +90,11 @@ def document_export_format_statements(application_client):
 @pytest_asyncio.fixture
 def document_export_docx_statements(application_client):
     return DocumentExportDocxStatements(application_client)
+
+
+@pytest_asyncio.fixture
+def document_export_no_mutation_statements(application_client):
+    return DocumentExportNoMutationStatements(application_client)
 
 
 @pytest_asyncio.fixture

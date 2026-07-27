@@ -73,6 +73,25 @@ class TestExportDocumentAsDocx(AbstractBackendTest):
         document_export_docx_statements.assert_valid_docx_attachment(response)
 
 
+class TestExportDoesNotMutateDocument(AbstractBackendTest):
+    """Scenario 2.4: Export does not mutate the document.
+
+    Given a document owned by the caller at a known version
+    When they export it
+    Then the document version is unchanged afterwards.
+    """
+
+    async def test_export_leaves_document_version_unchanged(
+        self, document_export_no_mutation_statements
+    ):
+        snapshot = (
+            await document_export_no_mutation_statements.given_owner_document_read_exported_and_reread()
+        )
+
+        document_export_no_mutation_statements.assert_version_unchanged(snapshot)
+        document_export_no_mutation_statements.assert_not_mutated(snapshot)
+
+
 class TestExportDocumentFormatGuard(AbstractBackendTest):
     """Scenario 1.3: An unsupported or missing format is refused.
 
