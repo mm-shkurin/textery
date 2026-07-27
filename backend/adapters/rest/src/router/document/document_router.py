@@ -131,5 +131,6 @@ async def save_document(
         owner_id=owner_id,
         content=request.content,
         version=request.version,
+        title=request.title,
     )
     return DocumentResponseDto.from_domain(document)

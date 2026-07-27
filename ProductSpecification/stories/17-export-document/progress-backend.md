@@ -566,8 +566,18 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   full-kwarg exact equality with the distinctive Cyrillic sentinel (no vacuous green). New file (not
   extending test_document_router.py at 189 lines) to stay ≤200. GREEN: add `title: str | None = None`
   to `SaveDocumentRequestDto` + forward `title=request.title` in the PUT route.
-- [~] green-adapter rest (save title)
-- [ ] red-adapter rest (export filename) — export route builds `Content-Disposition` from
+- [x] green-adapter rest (save title) — GREEN (host, mocked usecase): target
+  `test_should_forward_the_title_to_the_save_usecase` PASSED (genuinely ran); router/document suite
+  27 passed, full rest suite 75 passed, 0 regression. `SaveDocumentRequestDto` gained optional
+  `title: str | None = None` (default None — a required field would 422 every current client/autosave
+  that sends no title; plain `str`, since Pydantic v2 lax mode already 422s a non-string title). PUT
+  `/{id}` route forwards `title=request.title`. REGRESSION FIX (premortem obligation): forwarding
+  changed the actual execute-call signature, so the two existing save-route tests in
+  test_document_router.py that pin exact `execute` kwargs (`test_should_return_200_with_the_stored_document`
+  + `test_should_ignore_server_owned_fields_in_the_save_body`) were updated to include `title=None`
+  (title-absent forwards None) — exact-kwarg pinning preserved, no assertion weakening. Coverage: DTO +
+  route 100% on changed lines/branches (both title-present and title-absent paths exercised).
+- [~] red-adapter rest (export filename) — export route builds `Content-Disposition` from
   `rendered.filename` RFC 5987-encoded, replacing the hardcoded `filename=document.pdf`. Test (mock
   usecase returns `RenderedExport(..., filename="Привет Мир.pdf")`): asserts
   `content-disposition == "attachment; filename*=UTF-8''%D0%9F…%D0%B8%D1%80.pdf"` (exact). This FIXES

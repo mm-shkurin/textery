@@ -31,11 +31,6 @@ class TestSaveDocumentTitleRoute:
     the title field before the route ever sees it.
     """
 
-    @pytest.mark.skip(
-        reason="RED 3.1: save route drops title -- SaveDocumentRequestDto has no "
-        "title field (extra=ignore) and the PUT route never forwards it to "
-        "SaveDocument.execute. Un-skip in green-adapter rest."
-    )
     async def test_should_forward_the_title_to_the_save_usecase(
         self, mocker, save_client, owner_id
     ):

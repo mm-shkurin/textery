@@ -159,7 +159,11 @@ class TestSaveDocumentRoute:
         assert response.status_code == 200, f"got {response.status_code}: {response.text}"
         assert response.json()["version"] == 2
         usecase.execute.assert_awaited_once_with(
-            document_id=document.id, owner_id=owner_id, content="<p>saved</p>", version=1
+            document_id=document.id,
+            owner_id=owner_id,
+            content="<p>saved</p>",
+            version=1,
+            title=None,
         )
 
     async def test_should_ignore_server_owned_fields_in_the_save_body(
@@ -184,5 +188,9 @@ class TestSaveDocumentRoute:
 
         assert response.status_code == 200, f"got {response.status_code}: {response.text}"
         usecase.execute.assert_awaited_once_with(
-            document_id=document.id, owner_id=owner_id, content="<p>x</p>", version=1
+            document_id=document.id,
+            owner_id=owner_id,
+            content="<p>x</p>",
+            version=1,
+            title=None,
         )
