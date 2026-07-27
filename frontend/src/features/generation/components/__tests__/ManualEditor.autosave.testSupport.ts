@@ -5,6 +5,11 @@ import { vi } from 'vitest'
 // (autosave) and E3.2 (failed autosave) fake-timer tests so both advance the same boundary.
 export const AUTOSAVE_DEBOUNCE_MS = 1000
 
+// A generous timer advance for the H9.3 failure-taxonomy tests: big enough that the whole
+// capped-backoff retry schedule plays out inside it, so assertions never hardcode green's exact
+// per-attempt delays. Shared by the retry/expired-session/queued-edit suites (single source).
+export const RETRY_WINDOW_MS = 60_000
+
 // Fake-timer settle: drain the pending microtask queue (resolved/rejected save promises,
 // their .then/.catch, and the React state updates they schedule) without advancing wall
 // clock. Must run under vi.useFakeTimers(); wraps in act() so the flushed updates commit.
