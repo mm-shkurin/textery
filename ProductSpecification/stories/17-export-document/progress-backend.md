@@ -433,6 +433,14 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 - [ ] green-acceptance
 
 ### Scenario 3.2: A document with no title uses a default filename
+> CARRY-FORWARD (from Sc 2.2 green-acceptance premortem, commit 5e00082 — CONCERNS CREDIBLE): the
+> rest route hardcodes `Content-Disposition: attachment; filename=document.pdf` for EVERY export
+> (document_router.py:~118), so a `format=docx` download currently ships valid wordprocessingml bytes
+> under a `.pdf` name — Windows/Word opens it as a corrupt PDF. Sc 2.1/2.2 left the filename out of
+> scope (deferred here + 3.1), but no DOCX-aware test asserts the extension, so it is unguarded. When
+> 3.1/3.2 derive the filename, the extension MUST follow the export format (`.docx` for docx, `.pdf`
+> for pdf), and red-acceptance MUST assert the docx `Content-Disposition` filename ends in `.docx`
+> (parse the `filename=` token, not just `startswith("attachment")` as the 2.2 assert does).
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase
