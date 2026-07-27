@@ -556,10 +556,17 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   `alembic upgrade head` — the test DB is a persistent stamped schema. green-agent applied the new
   revision manually so it's proven to apply cleanly on top of `1a2b3c4d5e6f`. A fresh/CI test DB
   must be migrated to head before this suite runs, or `title` won't exist and the round-trip fails.
-- [~] red-adapter rest (save title) — `SaveDocumentRequestDto` gains optional `title: str | None`; the
-  PUT `/{id}` route forwards `request.title` to `SaveDocument.execute`. Test: a save with a title
-  reaches the usecase (was silently dropped).
-- [ ] green-adapter rest (save title)
+- [x] red-adapter rest (save title) — RED confirmed live (host, mocked usecase, no Postgres/weasyprint):
+  predicted == actual. New `test_save_document_title_router.py` (`TestSaveDocumentTitleRoute`, 63 lines):
+  PUT a save with `title="Привет Мир"` in the JSON body, assert the mocked `SaveDocument.execute` was
+  `assert_awaited_once_with(..., title="Привет Мир")`. Actual: `AssertionError: expected await not
+  found` — Expected includes `title='Привет Мир'`, Actual omits it (`Right contains 1 more item:
+  {'title': 'Привет Мир'}`) — the route reads only content/version and `SaveDocumentRequestDto`
+  (`extra="ignore"`) drops the unknown title. Skip-marked. test-review: A/S/P clean, no fixes —
+  full-kwarg exact equality with the distinctive Cyrillic sentinel (no vacuous green). New file (not
+  extending test_document_router.py at 189 lines) to stay ≤200. GREEN: add `title: str | None = None`
+  to `SaveDocumentRequestDto` + forward `title=request.title` in the PUT route.
+- [~] green-adapter rest (save title)
 - [ ] red-adapter rest (export filename) — export route builds `Content-Disposition` from
   `rendered.filename` RFC 5987-encoded, replacing the hardcoded `filename=document.pdf`. Test (mock
   usecase returns `RenderedExport(..., filename="Привет Мир.pdf")`): asserts
