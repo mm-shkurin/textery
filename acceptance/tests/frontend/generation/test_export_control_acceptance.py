@@ -1,3 +1,5 @@
+import pytest
+
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
@@ -73,3 +75,29 @@ class TestExportControlErrorAcceptance(AbstractFrontendTest):
 
         export_control_statements.assert_export_error_with_retry_is_shown(webdriver)
         export_control_statements.assert_document_view_is_unchanged(webdriver)
+
+
+# RED (analytical, live run deferred to green-selenium): ExportControl receives only `documentId`
+# (ManualEditor.tsx:164) — no dirty flag, no `save` — so a PDF click fires the export GET with NO
+# preceding save PUT. The save-first ordering assertion fails: no save request is observed before
+# the export. green-frontend threads the dirty flag + save into ExportControl; green-selenium
+# removes this marker and runs it live.
+@pytest.mark.skip(reason="RED 4.1 — export does not save-first yet; unskipped in green-selenium")
+class TestExportControlDirtyExportAcceptance(AbstractFrontendTest):
+    """UI Test Scenario 4.1: Exporting with unsaved edits saves first.
+
+    Given a document with unsaved edits open in the editor
+    When the user triggers an export
+    Then the edits are saved first (a save PUT fires before the export GET)
+    """
+
+    def test_should_save_before_exporting_when_editor_has_unsaved_edits(
+        self, webdriver, app_url, export_control_statements
+    ):
+        export_control_statements.open_manual_editor_for_doklad(webdriver, app_url)
+
+        export_control_statements.make_unsaved_edit(webdriver)
+
+        export_control_statements.trigger_pdf_export_with_unsaved_edits(webdriver)
+
+        export_control_statements.assert_export_saves_before_exporting(webdriver)

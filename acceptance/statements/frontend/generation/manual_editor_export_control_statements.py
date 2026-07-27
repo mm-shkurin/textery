@@ -18,6 +18,9 @@ from statements.frontend.generation.export_control_locators import (
     EXPORT_OPTION_PDF,
     EXPORT_TRIGGER,
 )
+from statements.frontend.generation.manual_editor_export_dirty_statements import (
+    ExportDirtyStatementsMixin,
+)
 from statements.frontend.generation.manual_editor_export_error_statements import (
     ExportErrorStatementsMixin,
 )
@@ -46,7 +49,10 @@ EXPORT_REQUEST_PATH = "/export"
 
 
 class ExportControlStatements(
-    ExportErrorStatementsMixin, NetworkThrottleMixin, ManualEditorStatements
+    ExportDirtyStatementsMixin,
+    ExportErrorStatementsMixin,
+    NetworkThrottleMixin,
+    ManualEditorStatements,
 ):
     def open_export_control(self, driver) -> None:
         self._wait_for_visible(driver, EXPORT_TRIGGER).click()

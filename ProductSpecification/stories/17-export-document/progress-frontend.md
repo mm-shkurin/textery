@@ -56,7 +56,8 @@ This file tracks **which work units ran**.
 - [S] demo — autonomous loop, no interactive viewer; behavior proven in real Chrome by green-selenium (2 clean runs). Run `/demo TestExportControlErrorAcceptance` manually to watch.
 
 ### Scenario 4.1: Exporting with unsaved edits saves or warns first
-- [ ] red-selenium
+**Design decision (pinned): SAVE-FIRST.** Export renders the *stored* HTML, so unsaved edits would ship a stale file. Chose the spec's first branch — on export with unsaved edits, the app saves first (PUT /documents/{id}) and only then fires the export GET — reusing the existing `useDocumentSave`/`save()` machinery (no new modal/warn UI). ExportControl today gets only `documentId` (ManualEditor.tsx:164); green threads `hasUnsavedChanges` + `save` in. Alternative (explicit warn dialog) was available per spec but rejected: higher-risk new UI, worse flow.
+- [x] red-selenium — new `@pytest.mark.skip` class `TestExportControlDirtyExportAcceptance` + `ExportDirtyStatementsMixin` (`manual_editor_export_dirty_statements.py`, 121 lines; mixed into `ExportControlStatements`, 163). Dirties the editor, captures CDP perf-log, triggers PDF export, asserts **save-first ordering by position**: PUT (save) present AND `save_index < export_index` (GET /export). Analytical RED (live deferred to green-selenium): current wiring fires export GET with NO preceding PUT → `save_index is None` → AssertionError "no save request was observed". test-review PASS 0 fixes (strict position+presence, can't false-pass on missed PUT). Files 121/163/103 <200.
 - [ ] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
