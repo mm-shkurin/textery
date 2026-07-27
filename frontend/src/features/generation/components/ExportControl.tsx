@@ -19,9 +19,22 @@ interface ExportControlProps {
   // Null until the document has been created/loaded — there is nothing to export before then,
   // so the trigger stays disabled and no click can reach exportDocument with a missing id.
   documentId: string | null
+  // Scenario 4.1 (SAVE-FIRST): export renders the STORED html. When the editor holds unsaved
+  // edits, the file would ship stale — so we persist first and dispatch the export only after the
+  // save resolves. Optional so the many call sites that never carry dirty state (and the existing
+  // tests) keep working: absent/false means "already current", export straight through, no save.
+  hasUnsavedChanges?: boolean
+  // Reuses ManualEditor's existing save machinery (useDocumentSave). Typed to accept both the
+  // real fire-and-return-void save and a promise-returning one so the export can `await` it either
+  // way and only dispatch once it has settled.
+  save?: () => void | Promise<void>
 }
 
-export function ExportControl({ documentId }: ExportControlProps) {
+export function ExportControl({
+  documentId,
+  hasUnsavedChanges = false,
+  save,
+}: ExportControlProps) {
   // Conditional mount, not a hidden toggle — the options are absent from the DOM
   // until the trigger is clicked, mirroring the link popover's open/close pattern.
   const [isOpen, setIsOpen] = useState(false)
@@ -37,18 +50,35 @@ export function ExportControl({ documentId }: ExportControlProps) {
 
   const handleExport = (format: ExportFormat) => {
     if (isExporting || !documentId) return
+    // Set the in-flight lock BEFORE any save — the save happens inside this window so a
+    // double-click during it cannot slip past the guard and double-dispatch.
     setIsExporting(true)
     // Remember the format so retry re-dispatches the SAME one (docx retries docx, not pdf).
     setLastFormat(format)
-    exportDocument(documentId, format)
+    // Scenario 4.1: on a dirty editor, persist first and dispatch only after save resolves so the
+    // export never ships stale stored html. `await save()` before the export; if save REJECTS the
+    // export is skipped (a failed save must not ship a stale file) and the failure surfaces as the
+    // fixed banner. A clean editor skips the save entirely and exports straight through.
+    const run = async () => {
+      if (hasUnsavedChanges && save) {
+        // Await ONLY a promise-returning save so the export waits for persistence to settle
+        // (Scenario 4.1's pinned ordering). A fire-and-forget save that returns void is kicked
+        // off and not awaited — awaiting `undefined` would add nothing and would needlessly defer
+        // the dispatch a microtask, so we keep the synchronous path for void saves.
+        const saving = save()
+        if (saving && typeof saving.then === 'function') {
+          await saving
+        }
+      }
+      await exportDocument(documentId, format)
       // Clear the error ONLY on success — never optimistically at dispatch time. This keeps a
       // failed export's banner visible through the retry's whole in-flight window and drops it
       // the moment the retry succeeds; a still-failing retry leaves the banner up.
-      .then(() => {
-        setError(null)
-      })
-      // Surface the rejection as inline error state (keeps the rejection handled — no unhandled
-      // promise rejection). If the retry also rejects, the message is re-raised here.
+      setError(null)
+    }
+    run()
+      // Surface any rejection (failed save OR failed export) as inline error state, keeping the
+      // rejection handled — no unhandled promise rejection. If the retry also rejects, re-raised.
       .catch(() => {
         setError(EXPORT_ERROR_MESSAGE)
       })

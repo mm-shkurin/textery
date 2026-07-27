@@ -18,9 +18,7 @@ function triggerExport() {
 // file. When the editor is dirty, the control must persist the edits (save()) and only fire the
 // export GET AFTER that save resolves; when clean, it exports directly with no save. These pin the
 // ordering at the component level — ExportControl will accept `hasUnsavedChanges` + `save` props.
-// RED 4.1: ExportControl does not yet accept `hasUnsavedChanges`/`save` — the dirty-path save-first
-// ordering is unimplemented. Un-skip in green-frontend once export awaits save() before dispatch.
-describe.skip('ExportControl save-first on dirty export', () => {
+describe('ExportControl save-first on dirty export', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
