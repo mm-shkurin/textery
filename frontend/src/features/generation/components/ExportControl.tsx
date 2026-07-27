@@ -28,8 +28,8 @@ export function ExportControl({ documentId }: ExportControlProps) {
   // A genuine in-flight lock, not an accident of the menu unmounting: while a request is
   // pending the options are disabled so a second click cannot dispatch a second export.
   const [isExporting, setIsExporting] = useState(false)
-  // Scenario 3.2: a rejected export surfaces inline as this message (the transport's own
-  // failure text) plus a retry. Null = no failure to show.
+  // Scenario 3.2: a rejected export surfaces inline as the fixed EXPORT_ERROR_MESSAGE (never the
+  // caught error's own text) plus a retry. Null = no failure to show.
   const [error, setError] = useState<string | null>(null)
   // The format of the last dispatched attempt, captured so retry re-dispatches the SAME
   // format — a docx failure must retry docx, not a hardcoded pdf.
