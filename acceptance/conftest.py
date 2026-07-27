@@ -45,6 +45,7 @@ from statements.frontend.generation.manual_editor_export_control_statements impo
     ExportControlStatements,
 )
 from statements.frontend.generation.manual_editor_statements import ManualEditorStatements
+from statements.frontend.generation.generate_flow_statements import GenerateFlowStatements
 from statements.frontend.generation.mode_modal_statements import ModeModalStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
 from statements.generation_statements import GenerationStatements
@@ -184,6 +185,11 @@ def responsive_statements():
 @pytest.fixture
 def chat_workspace_statements():
     return ChatWorkspaceStatements()
+
+
+@pytest.fixture
+def generate_flow_statements():
+    return GenerateFlowStatements()
 
 
 @pytest.fixture
