@@ -365,9 +365,21 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   container per the Sc 2.1 decision; add `htmldocx`+`python-docx` to backend requirements + both CI test
   jobs (pure-Python, no new native libs). green-adapter rendering MUST also assert `docProps/core.xml`
   leaks no server identity/time (neutral author, injected/fixed clock — grp7 unowned GAP assigned here).
-- [ ] red-adapter rendering — FormatDispatchingRenderer + HtmlDocxRenderer (docx branch); assert real
-  `PK\x03\x04` DOCX bytes with `[Content_Types].xml`+`word/document.xml` parts AND neutral docProps
-  (no OS username, fixed clock). In-container.
+- [x] red-adapter rendering — RED confirmed live: `ModuleNotFoundError: No module named
+  'rendering.format_dispatching_renderer'` (and `...html_docx_renderer`) via deferred import
+  (predicted == actual). Two new test modules (93 + 71 lines): `test_html_docx_renderer.py`
+  (`TestHtmlDocxRenderer`) asserts `HtmlDocxRenderer.render("<p>Привет</p>", DOCX)` → `PK\x03\x04`
+  bytes, `[Content_Types].xml`+`word/document.xml` in the zip, "Привет" present in word/document.xml
+  (multibyte), AND neutral docProps — `dc:creator`/`cp:lastModifiedBy == "Textery"` (exact),
+  `dcterms:created`/`modified == FIXED_NOW` from an injected FixedClock (grp7 redaction guard);
+  `test_format_dispatching_renderer.py` (`TestFormatDispatchingRenderer`) asserts DOCX→docx renderer
+  output, PDF→pdf renderer output, and an unmapped format raises `ValueError` with NEITHER renderer
+  called (never silent wrong-format bytes). Conventions: html_docx module uses `importorskip("htmldocx")`
+  (pure-Python, runs once green adds the dep); dispatcher test defers the weasyprint import + uses
+  in-memory FakeRenderers so the RED is confirmable ON HOST (importorskip would have masked it). Full
+  backend suite still collects clean (519 tests, exit 0); committed form 4 skipped. test-review: A/S/P
+  all clean — assertions already strict (exact equality on docProps + call-lists; both OOXML parts
+  pinned). GREEN runs in-container.
 - [ ] green-adapter rendering — implement both adapters, wire FormatDispatchingRenderer into
   document_wiring.py, add htmldocx+python-docx to requirements + CI. In-container.
 - [ ] green-acceptance
