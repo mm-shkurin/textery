@@ -10,6 +10,7 @@ import {
   typeIntoEditor,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import { EDITED_CONTENT, SAVED_CONTENT, SAVED_VERSION } from './ManualEditor.autosaveFixture'
 import {
   DIRTY_BADGE_CLASS,
   DIRTY_STATUS,
@@ -19,10 +20,6 @@ import {
 } from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')
-
-const SAVED_CONTENT = '<p>hello world</p>'
-const EDITED_CONTENT = '<p>hello world edited</p>'
-const SAVED_VERSION = 8
 
 // Scenario H9.4, pre-condition (f) — what the dirty guard is allowed to remember AFTER a save has
 // failed terminally.

@@ -10,6 +10,7 @@ import {
   typeIntoEditor,
   useAutosaveFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import { SAVED_CONTENT, SAVED_VERSION } from './ManualEditor.autosaveFixture'
 import {
   DIRTY_BADGE_CLASS,
   DIRTY_STATUS,
@@ -19,9 +20,6 @@ import {
 } from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')
-
-const SAVED_CONTENT = '<p>hello world</p>'
-const SAVED_VERSION = 8
 
 // Scenario H9.4 — the regression shipped by the dirty guard (9650620), found independently by both
 // review passes.

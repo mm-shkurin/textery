@@ -119,7 +119,12 @@ describe('ManualEditor — a transient autosave failure retries on a capped back
     })
     await flushMicrotasks()
 
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', '<p>updated during wait</p>', 7)
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
+      2,
+      'doc-1',
+      '<p>updated during wait</p>',
+      7,
+    )
     // Clean only over content that was actually sent — never marked saved over the lost keystrokes.
     expect(screen.queryByTestId('me-save-error')).toBeNull()
     expect(screen.getByText(SAVED_STATUS).textContent).toBe(SAVED_STATUS)

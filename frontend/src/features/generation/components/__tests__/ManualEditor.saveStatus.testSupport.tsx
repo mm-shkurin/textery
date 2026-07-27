@@ -17,6 +17,10 @@ export const DIRTY_STATUS = 'Черновик, ещё не сохранён'
 export const SAVED_BADGE_CLASS = 'me-save-status--saved'
 export const DIRTY_BADGE_CLASS = 'me-save-status--dirty'
 
+// The save-failure banner's test id. Like the badge strings above it exists only as an inline JSX
+// literal in production, so the suite spells it once here instead of retyping it per assertion.
+export const SAVE_ERROR_TESTID = 'me-save-error'
+
 // Dispatches a cancelable beforeunload and reports whether the app's guard cancelled it — i.e.
 // whether the browser would show its native "leave?" prompt. Shared by every suite that asserts
 // the guard is armed or disarmed.
