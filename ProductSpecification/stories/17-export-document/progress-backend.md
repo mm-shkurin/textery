@@ -577,13 +577,24 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   + `test_should_ignore_server_owned_fields_in_the_save_body`) were updated to include `title=None`
   (title-absent forwards None) — exact-kwarg pinning preserved, no assertion weakening. Coverage: DTO +
   route 100% on changed lines/branches (both title-present and title-absent paths exercised).
-- [~] red-adapter rest (export filename) — export route builds `Content-Disposition` from
-  `rendered.filename` RFC 5987-encoded, replacing the hardcoded `filename=document.pdf`. Test (mock
-  usecase returns `RenderedExport(..., filename="Привет Мир.pdf")`): asserts
-  `content-disposition == "attachment; filename*=UTF-8''%D0%9F…%D0%B8%D1%80.pdf"` (exact). This FIXES
-  the still-RED Sc 3.1 acceptance AND the Sc 2.2 docx-`.pdf` mislabel carry-forward. Remove the now-
-  redundant `RenderedExport.filename` default when updating the Sc 2.1 rest test's construction.
-- [ ] green-adapter rest (export filename)
+- [x] red-adapter rest (export filename) — RED confirmed live (host, mocked usecase): predicted ==
+  actual. New class `TestExportFilenameRfc5987` in test_export_document_router.py (89 lines): mock
+  usecase returns `RenderedExport(..., filename="Привет Мир.pdf")`; asserts FULL header exact
+  `content-disposition == "attachment; filename*=UTF-8''%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%9C%D0%B8%D1%80.pdf"`.
+  Actual: `attachment; filename=document.pdf` (route hardcodes it, document_router.py:118, ignores
+  `rendered.filename`). test-review: A/S/P clean — encoding verified byte-for-byte against "Привет
+  Мир.pdf" UTF-8; literal-pinned (no runtime re-encode = no tautology). Pre-existing Sc 2.1 test at
+  line 54 (`content-disposition == "attachment; filename=document.pdf"` for a default-filename
+  RenderedExport) left UNTOUCHED — green must update it.
+  > GREEN must: (1) RFC 5987 percent-encode `rendered.filename` into
+  >   `Content-Disposition: attachment; filename*=UTF-8''<quote(filename, safe='')>` (`.`/unreserved
+  >   literal, space→%20, Cyrillic→%XX) — encoding lives in the rest adapter per ADR. (2) UPDATE the
+  >   existing Sc 2.1 test (line 54): a default-filename `RenderedExport` now yields
+  >   `attachment; filename*=UTF-8''document.pdf` — either update that assertion or give the test an
+  >   explicit filename; and REMOVE the now-redundant `RenderedExport.filename = "document.pdf"`
+  >   default (ADR) so every construction supplies it. (3) This FIXES the still-RED Sc 3.1 acceptance
+  >   AND the Sc 2.2 docx-`.pdf` mislabel carry-forward.
+- [~] green-adapter rest (export filename)
 - [ ] green-acceptance
 
 ### Scenario 3.2: A document with no title uses a default filename

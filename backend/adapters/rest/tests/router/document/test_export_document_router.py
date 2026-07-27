@@ -1,5 +1,7 @@
 from uuid import uuid4
 
+import pytest
+
 from document.rendered_export import RenderedExport
 
 
@@ -52,3 +54,36 @@ class TestExportDocumentAsPdfResponse:
         assert response.headers["content-type"] == "application/x-render-marker"
         assert response.content == b"%PDF-1.7 fake pdf bytes"
         assert response.headers["content-disposition"] == "attachment; filename=document.pdf"
+
+
+@pytest.mark.skip(reason="RED: export route hardcodes filename=document.pdf, ignores rendered.filename")
+class TestExportFilenameRfc5987:
+    """Scenario 3.1: the download filename is derived from the title and RFC 5987
+    percent-encoded so a Cyrillic title survives the Content-Disposition header.
+    """
+
+    async def test_should_encode_the_rendered_filename_per_rfc5987(
+        self, mocker, export_client
+    ):
+        # The usecase derives the plain-unicode filename onto RenderedExport.filename
+        # ("Привет Мир.pdf"). The route must stop hard-coding filename=document.pdf and
+        # instead emit the RFC 5987 extended form: filename*=UTF-8''<percent-encoded>.
+        # The expected header is literal-pinned (Cyrillic bytes + space encoded, the
+        # dot and .pdf left literal) so nothing in the test re-derives the encoding --
+        # a runtime encode() here would be a tautology that a hardcoded green passes.
+        rendered = RenderedExport(
+            content=b"%PDF-1.7 x",
+            media_type="application/pdf",
+            filename="Привет Мир.pdf",
+        )
+        usecase = mocker.Mock()
+        usecase.execute = mocker.AsyncMock(return_value=rendered)
+
+        async with export_client(usecase) as client:
+            response = await client.get(f"/api/v1/documents/{uuid4()}/export")
+
+        assert response.status_code == 200, f"got {response.status_code}: {response.text}"
+        assert response.headers["content-disposition"] == (
+            "attachment; filename*=UTF-8''"
+            "%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%9C%D0%B8%D1%80.pdf"
+        )
