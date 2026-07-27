@@ -1,5 +1,3 @@
-import pytest
-
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
@@ -82,7 +80,6 @@ class TestExportControlErrorAcceptance(AbstractFrontendTest):
 # preceding save PUT. The save-first ordering assertion fails: no save request is observed before
 # the export. green-frontend threads the dirty flag + save into ExportControl; green-selenium
 # removes this marker and runs it live.
-@pytest.mark.skip(reason="RED 4.1 — export does not save-first yet; unskipped in green-selenium")
 class TestExportControlDirtyExportAcceptance(AbstractFrontendTest):
     """UI Test Scenario 4.1: Exporting with unsaved edits saves first.
 
