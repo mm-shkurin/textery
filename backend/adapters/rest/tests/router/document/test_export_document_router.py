@@ -1,7 +1,5 @@
 from uuid import uuid4
 
-import pytest
-
 from document.rendered_export import RenderedExport
 
 
@@ -27,10 +25,6 @@ class TestExportDocumentRoute:
 class TestExportDocumentAsPdfResponse:
     """Scenario 2.1: the rendered PDF bytes stream back verbatim as a binary attachment."""
 
-    @pytest.mark.skip(
-        reason="RED: /export still wraps RenderedExport in DocumentResponseDto; "
-        "binary Response is green-adapter rest (Scenario 2.1)"
-    )
     async def test_should_stream_the_rendered_pdf_as_a_binary_attachment(
         self, mocker, export_client
     ):

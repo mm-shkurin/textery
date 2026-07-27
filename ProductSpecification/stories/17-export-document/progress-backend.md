@@ -249,8 +249,18 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   > `document_router.py:115 Argument 1 to "from_domain" ... incompatible type "RenderedExport"; expected
   > "Document"` — the route must stop calling DocumentResponseDto.from_domain on the RenderedExport and
   > instead build a binary fastapi.Response from its bytes + media_type.
-- [~] green-adapter rest
-- [ ] green-acceptance
+- [x] green-adapter rest — GREEN: `export_document` route now returns a binary
+  `fastapi.Response(content=rendered.content, media_type=rendered.media_type,
+  headers={"Content-Disposition": "attachment; filename=document.pdf"})` instead of
+  `DocumentResponseDto.from_domain` (dropped `response_model=DocumentResponseDto`, return type
+  `DocumentResponseDto` → `Response`, result var `document` → `rendered`). Media type threaded
+  from `RenderedExport`, not hardcoded. 404 (None) path unchanged. Enabled the RED test by
+  removing its `@pytest.mark.skip` (only test change; orphaned `import pytest` also removed for
+  ruff). Rest adapter suite 74 passed / 0 failed / 0 skipped; mypy `adapters/rest/src` clean —
+  the pending `document_router.py:115` incompatible-type error is FIXED. Coverage: export route
+  lines + both branches (4/4) 100%; the 5 uncovered lines are pre-existing DI-provider
+  `NotImplementedError` stubs (composition-root pattern, out of scope).
+- [~] green-acceptance
 
 ### Scenario 2.2: A document exports as a valid DOCX
 > CARRY-FORWARD (from Sc 2.1 green-usecase reviews, commit 26c1d66 — agent-review + premortem, both

@@ -95,24 +95,28 @@ async def get_document(
     return DocumentResponseDto.from_domain(document)
 
 
-@router.get("/{document_id}/export", response_model=DocumentResponseDto)
+@router.get("/{document_id}/export")
 async def export_document(
     document_id: UUID,
     format: str | None = None,
     owner_id: UUID = Depends(get_current_owner_id),
     usecase: ExportDocument = Depends(get_export_document_usecase),
-) -> DocumentResponseDto:
-    document = await usecase.execute(
+) -> Response:
+    rendered = await usecase.execute(
         document_id=document_id, owner_id=owner_id, format=format
     )
-    if document is None:
+    if rendered is None:
         # Absent and foreign collapse to the same None, translated into the
         # sanctioned 404 rather than leaking which case it was.
         raise NotFoundException(f"document {document_id} not found")
-    # Rendering to PDF/DOCX and the binary response are deferred to later
-    # scenarios (format guard, rendering); this scenario only exercises the
-    # not-found path.
-    return DocumentResponseDto.from_domain(document)
+    # Stream the rendered bytes back verbatim as a binary attachment. media_type
+    # is threaded from the RenderedExport so a future DOCX export is typed
+    # correctly rather than mislabelled application/pdf.
+    return Response(
+        content=rendered.content,
+        media_type=rendered.media_type,
+        headers={"Content-Disposition": "attachment; filename=document.pdf"},
+    )
 
 
 @router.put("/{document_id}", response_model=DocumentResponseDto)
