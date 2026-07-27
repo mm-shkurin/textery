@@ -260,7 +260,12 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   the pending `document_router.py:115` incompatible-type error is FIXED. Coverage: export route
   lines + both branches (4/4) 100%; the 5 uncovered lines are pre-existing DI-provider
   `NotImplementedError` stubs (composition-root pattern, out of scope).
-- [~] green-acceptance
+- [x] green-acceptance — GREEN live against the rebuilt backend (BACKEND_PORT=8100): 6 passed
+  (was 5 passed / 1 skipped). `test_owner_exports_own_document_as_valid_pdf_attachment` now
+  passes — the `/export` route streams a real WeasyPrint PDF (%PDF- magic, application/pdf,
+  attachment disposition, `body is None` on the success path). Enabled the test by removing the
+  RED skip decorator (only test change). Baked-image rebuild (docker compose up -d --build
+  backend) done per carryover quirk before running; container healthy. **Scenario 2.1 COMPLETE.**
 
 ### Scenario 2.2: A document exports as a valid DOCX
 > CARRY-FORWARD (from Sc 2.1 green-usecase reviews, commit 26c1d66 — agent-review + premortem, both
@@ -271,7 +276,7 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 > but 2.2 MUST close it: red-usecase needs a docx-on-found case, green maps `ExportFormat.DOCX` +
 > renders docx, and consider moving the media-type lookup ahead of `render` (fail-fast, no wasted
 > render). Do NOT let 2.2 inherit the silent 500 window.
-- [ ] red-acceptance
+- [~] red-acceptance
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase

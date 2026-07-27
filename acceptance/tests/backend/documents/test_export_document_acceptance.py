@@ -48,7 +48,6 @@ class TestExportDocumentAsPdf(AbstractBackendTest):
     And is delivered as an attachment.
     """
 
-    @pytest.mark.skip(reason="RED: PDF rendering not yet implemented (Scenario 2.1)")
     async def test_owner_exports_own_document_as_valid_pdf_attachment(
         self, document_export_statements
     ):
