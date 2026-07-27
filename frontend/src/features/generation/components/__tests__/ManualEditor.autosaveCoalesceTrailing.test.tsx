@@ -32,13 +32,19 @@ const DIRTY_STATUS = 'Черновик, ещё не сохранён'
 describe('ManualEditor — no redundant trailing autosave after a mid-flight edit already saved (H9.4)', () => {
   useAutosaveFailureFakeTimers()
 
-  it.skip('does not fire a third saveDocument on already-saved content when the stale mid-flight debounce timer elapses, and still autosaves the next real edit', async () => {
+  it('does not fire a third saveDocument on already-saved content when the stale mid-flight debounce timer elapses, and still autosaves the next real edit', async () => {
     await renderCreatedDocument()
 
     const firstSave = defer()
     vi.mocked(documentApi.saveDocument)
       .mockReturnValueOnce(firstSave.promise)
-      .mockResolvedValue({ status: 'saved', version: 9, content: '<p>hello world</p>' })
+      // Call #2 (the queued mid-flight re-save) echoes edit #2 back at version 9…
+      .mockResolvedValueOnce({ status: 'saved', version: 9, content: '<p>hello world</p>' })
+      // …and call #3 (the live-autosave proof) echoes ITS OWN content at version 10. Without a
+      // separate resolution the fallback would hand call #3 the PREVIOUS content, which the adoption
+      // branch in useDocumentSave would then write back into the editor — silently reverting the
+      // very edit this assertion is about.
+      .mockResolvedValue({ status: 'saved', version: 10, content: '<p>hello world again</p>' })
 
     // Edit #1 → cross the debounce → autosave #1 fires and stays in flight (isSaving true).
     await typeIntoEditor('hello')

@@ -51,4 +51,30 @@ describe('ManualEditor — a failed autosave keeps the content and shows the fai
     // failure path replaced the content with unrelated markup that happened to embed the phrase.
     expect(screen.getByTestId('editor-content-area').innerHTML).toBe('<p>hello world</p>')
   })
+
+  // H9.4 pre-condition (c): autosave must survive a TERMINAL failure. The dirty guard added for the
+  // redundant trailing PUT records what the server CONFIRMED — recording it at request time instead
+  // would leave the document looking clean after a save that then rejected, and every later
+  // debounced autosave would be suppressed for as long as the text stayed unchanged: the user's work
+  // is unsaved, the banner is the only sign, and nothing ever retries. Passes today; goes red under
+  // a badly-placed guard.
+  it('still autosaves a later edit after a save has failed terminally', async () => {
+    await renderCreatedDocument()
+
+    vi.mocked(documentApi.saveDocument).mockRejectedValue(new Error('network down'))
+
+    await typeAndFireAutosave('hello world')
+    expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('me-save-error')).toHaveTextContent(SAVE_ERROR_MESSAGE)
+
+    await typeAndFireAutosave('hello world again')
+
+    expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
+      2,
+      CREATED_DOCUMENT_ID,
+      '<p>hello world again</p>',
+      CREATED_VERSION,
+    )
+  })
 })

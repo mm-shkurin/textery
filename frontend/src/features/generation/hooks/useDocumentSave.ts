@@ -9,6 +9,7 @@ import {
   backoffDelay,
   isTransientFailure,
 } from './autosaveRetryPolicy'
+import { isAlreadySaved, savedContentAfterResolve } from './autosaveDirtyGuard'
 
 // Re-exported so callers (and the retry-backoff test) keep importing the attempt ceiling from the
 // save hook — one definition lives in autosaveRetryPolicy, this is just its public surface here.
@@ -86,6 +87,9 @@ export function useDocumentSave({
   // A scheduled transient retry lives here so unmount can cancel it — an editor the user navigated
   // away from must not fire a write at an abandoned document on a backoff timer.
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // The content the server last confirmed while the editor still held it (H9.4). Only a resolve
+  // writes here — a failed save leaves it alone, so autosave keeps working after a failure.
+  const lastSavedContentRef = useRef<string | null>(null)
   useEffect(
     () => () => {
       if (retryTimerRef.current !== null) clearTimeout(retryTimerRef.current)
@@ -118,6 +122,12 @@ export function useDocumentSave({
         if (result.content !== sent && serializeEditorHtml(editor) === sent) {
           editor.commands.setContent(result.content)
         }
+        // Read AFTER the adoption decision above: what the editor holds now is what the guard may
+        // call saved, and only if the server's copy agrees with it (see autosaveDirtyGuard).
+        lastSavedContentRef.current = savedContentAfterResolve(
+          serializeEditorHtml(editor),
+          result.content,
+        )
         setVersion(result.version)
         setSaveError(null)
         if (saveAgainRequested.current) {
@@ -175,6 +185,11 @@ export function useDocumentSave({
         saveAgainRequested.current = true
         return
       }
+      // Nothing to write: the editor holds exactly what the server confirmed. This is what makes the
+      // stale debounce timer left armed by a mid-flight edit inert. Checked only when NO save is in
+      // flight — mid-flight the ref describes the PREVIOUS save, and skipping the queue there could
+      // strand the editor holding older content than the request already on the wire.
+      if (isAlreadySaved(serializeEditorHtml(editor), lastSavedContentRef.current)) return
       performSave(version)
     },
   }
