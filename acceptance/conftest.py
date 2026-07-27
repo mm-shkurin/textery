@@ -29,6 +29,9 @@ from statements.frontend.generation.manual_editor_beforeunload_statements import
 from statements.frontend.generation.manual_editor_caret_statements import (
     ManualEditorCaretStatements,
 )
+from statements.frontend.generation.manual_editor_conflict_reconcile_statements import (
+    ManualEditorConflictReconcileStatements,
+)
 from statements.frontend.generation.manual_editor_placeholder_delete_statements import (
     ManualEditorPlaceholderDeleteStatements,
 )
@@ -225,6 +228,11 @@ def manual_editor_list_statements():
 @pytest.fixture
 def manual_editor_autosave_statements():
     return ManualEditorAutosaveStatements()
+
+
+@pytest.fixture
+def manual_editor_conflict_reconcile_statements():
+    return ManualEditorConflictReconcileStatements()
 
 
 @pytest.fixture
