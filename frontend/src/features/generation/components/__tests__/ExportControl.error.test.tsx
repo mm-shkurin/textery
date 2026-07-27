@@ -35,6 +35,18 @@ function triggerExport() {
   fireEvent.click(screen.getByTestId('export-option-pdf'))
 }
 
+// Renders ExportControl with a single pending export in flight and fires the export gesture.
+// Returns the deferred so the test controls the resolve-vs-reject settle.
+function renderAndExport() {
+  const deferred = createDeferred()
+  vi.mocked(documentApi.exportDocument).mockReturnValue(deferred.promise)
+
+  render(<ExportControl documentId="doc-1" />)
+  triggerExport()
+
+  return deferred
+}
+
 describe('ExportControl export failure surfacing', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -51,11 +63,7 @@ describe('ExportControl export failure surfacing', () => {
   })
 
   it('shows no inline error on the success path', async () => {
-    const deferred = createDeferred()
-    vi.mocked(documentApi.exportDocument).mockReturnValue(deferred.promise)
-
-    render(<ExportControl documentId="doc-1" />)
-    triggerExport()
+    const deferred = renderAndExport()
     // Falling edge of the spinner marks the settle; the success path must leave no error behind.
     deferred.resolve(new Blob())
     await waitForElementToBeRemoved(() => screen.queryByTestId('export-spinner'))
@@ -64,11 +72,7 @@ describe('ExportControl export failure surfacing', () => {
   })
 
   it('surfaces an inline error with the transport message when the export rejects', async () => {
-    const deferred = createDeferred()
-    vi.mocked(documentApi.exportDocument).mockReturnValue(deferred.promise)
-
-    render(<ExportControl documentId="doc-1" />)
-    triggerExport()
+    const deferred = renderAndExport()
     deferred.reject(new Error(EXPORT_ERROR_TEXT))
 
     // Rising edge: the rejection becomes a visible inline error carrying the exact wording.
@@ -81,11 +85,7 @@ describe('ExportControl export failure surfacing', () => {
   // export-retry button is a CHILD of export-error, so its label bleeds into the node's own text.
   // Fix in green-frontend: make retry a sibling of the error node, not a descendant.
   it.skip('scopes the error node text to exactly the localized message, excluding the nested retry label', async () => {
-    const deferred = createDeferred()
-    vi.mocked(documentApi.exportDocument).mockReturnValue(deferred.promise)
-
-    render(<ExportControl documentId="doc-1" />)
-    triggerExport()
+    const deferred = renderAndExport()
     deferred.reject(new Error(EXPORT_ERROR_TEXT))
 
     // Whole-node text (what Selenium's element.text reads) must equal the message ALONE. The retry
@@ -98,11 +98,7 @@ describe('ExportControl export failure surfacing', () => {
   })
 
   it('shows the localized failure text, not the raw transport message, when the export rejects', async () => {
-    const deferred = createDeferred()
-    vi.mocked(documentApi.exportDocument).mockReturnValue(deferred.promise)
-
-    render(<ExportControl documentId="doc-1" />)
-    triggerExport()
+    const deferred = renderAndExport()
     // A real network-layer failure surfaces as the transport's own English message.
     deferred.reject(new Error('Failed to fetch'))
 
@@ -114,11 +110,7 @@ describe('ExportControl export failure surfacing', () => {
   })
 
   it('shows the localized failure text when the export rejects with a non-Error value', async () => {
-    const deferred = createDeferred()
-    vi.mocked(documentApi.exportDocument).mockReturnValue(deferred.promise)
-
-    render(<ExportControl documentId="doc-1" />)
-    triggerExport()
+    const deferred = renderAndExport()
     // A non-Error rejection (thrown string, undefined) must not leak its stringified form either.
     deferred.reject('boom' as unknown as Error)
 
@@ -128,11 +120,7 @@ describe('ExportControl export failure surfacing', () => {
   })
 
   it('offers a retry control labelled "Повторить" alongside the error', async () => {
-    const deferred = createDeferred()
-    vi.mocked(documentApi.exportDocument).mockReturnValue(deferred.promise)
-
-    render(<ExportControl documentId="doc-1" />)
-    triggerExport()
+    const deferred = renderAndExport()
     deferred.reject(new Error(EXPORT_ERROR_TEXT))
 
     const retry = await screen.findByTestId('export-retry')
