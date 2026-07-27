@@ -530,7 +530,13 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   (test 170 lines, statements 103 — under cap). None/default case deliberately omitted (already green —
   title-less doc reads back None today). GREEN: nullable `title` column on DocumentModel + additive
   Alembic migration (down_revision b2c3d4e5f6a7); from_domain/to_domain thread it; port +
-  SaveDocument.execute + storage CAS gain `title`.
+  SaveDocument.execute + storage CAS gain `title`. HARDENED (folded review findings): (1) premortem
+  data-loss guard — added `test_should_preserve_an_existing_title_on_a_content_only_save`: after a
+  title is set, a later content-only save (title omitted) must NOT wipe it — so GREEN must OMIT title
+  from the CAS `.values()` when it is None, never `SET title = NULL` unconditionally. (2) agent-review
+  same-session-echo — `expire_identity_map()` (session is `expire_on_commit=False`) forces a genuine
+  SELECT re-hydration, not the cached RETURNING instance. Split `TestTitlePersistence` into
+  `test_document_storage_title.py` (base was at the 200-cap). Both tests skip-marked (2 skipped).
 - [ ] green-adapter db (title round-trip)
 - [ ] red-adapter rest (save title) — `SaveDocumentRequestDto` gains optional `title: str | None`; the
   PUT `/{id}` route forwards `request.title` to `SaveDocument.execute`. Test: a save with a title

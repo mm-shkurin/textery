@@ -82,6 +82,14 @@ class DocumentStorageStatements:
     async def commit(self) -> None:
         await self._session.commit()
 
+    def expire_identity_map(self) -> None:
+        # The session is built with expire_on_commit=False, and the CAS UPDATE's
+        # RETURNING loads the row into the identity map -- so a plain find after a
+        # save would hand back that cached instance, never re-hydrating from a real
+        # SELECT. expire_all() drops the cache so the next find issues a genuine
+        # SELECT, exercising the read path a separate export/get request would take.
+        self._session.expire_all()
+
     def assert_documents_match(self, actual: Document | None, expected: Document) -> None:
         assert actual is not None, "expected a document, got None"
         assert (
