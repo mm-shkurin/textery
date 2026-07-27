@@ -13,12 +13,10 @@ def stored_document(
 ) -> Document:
     """A persisted draft, `minutes_old` minutes older than the newest possible one.
 
-    `title` drives the export-filename derivation (Sc 3.1). It is attached to the
-    entity here rather than passed to the constructor because the domain gains a
-    `title` field in the same scenario's green step; until then the builder sets it
-    directly so the filename tests can exercise a titled document.
+    `title` drives the export-filename derivation (Sc 3.1) and is passed straight
+    through the constructor now that the domain entity carries a `title` field.
     """
-    document = Document(
+    return Document(
         id=uuid4(),
         owner_id=owner_id,
         document_type="эссе",
@@ -28,9 +26,8 @@ def stored_document(
         idempotency_key=f"key-{uuid4()}",
         created_at=_EPOCH - timedelta(minutes=minutes_old),
         updated_at=_EPOCH - timedelta(minutes=minutes_old),
+        title=title,
     )
-    document.title = title
-    return document
 
 
 class FakeDocumentRepository:

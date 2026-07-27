@@ -39,4 +39,10 @@ class ExportDocument:
         # rather than wasting a render and then KeyError-ing into a 500.
         media_type = _MEDIA_TYPE[export_format]
         content = self.document_renderer.render(document.content, export_format)
-        return RenderedExport(content=content, media_type=media_type)
+        # Derive the plain filename: title stem when present, else the default
+        # "document"; the extension IS the ExportFormat value (pdf/docx), so it
+        # cannot drift from the format that drove the render. RFC 5987 encoding is
+        # the rest adapter's concern -- this stays plain unicode.
+        stem = document.title or "document"
+        filename = f"{stem}.{export_format.value}"
+        return RenderedExport(content=content, media_type=media_type, filename=filename)

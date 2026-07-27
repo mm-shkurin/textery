@@ -119,7 +119,6 @@ class TestExportDocument:
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
 
-    @pytest.mark.skip(reason="RED: RenderedExport has no attribute 'filename'")
     @pytest.mark.parametrize(
         "title, export_format, expected_filename",
         [

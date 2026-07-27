@@ -495,7 +495,20 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   cap). GREEN must: add `filename: str` to RenderedExport; add `title: str | None` to
   `Document.__init__`/`reconstitute` (NOT create); derive stem (title-or-"document") + `.pdf`/`.docx`
   extension in `ExportDocument.execute`.
-- [ ] green-usecase
+- [x] green-usecase — GREEN: 304 passed (usecase + domain suites), 0 failed; 3 formerly-skipped
+  filename cases pass. `RenderedExport` gained `filename: str` (default "document.pdf" so the Sc 2.1
+  rest test's 2-positional `RenderedExport(content, media_type)` still compiles — the usecase always
+  supplies the real value; remove the default when green-adapter rest updates that construction).
+  `Document.__init__`/`reconstitute` gained `title: str | None = None` (create() untouched —
+  mass-assignment guard); default None keeps all callers valid. `ExportDocument.execute`:
+  `stem = document.title or "document"` (handles None AND empty), `filename = f"{stem}.{export_format.value}"`
+  — extension IS the enum value, so it cannot drift from the media dispatch (closes Sc 2.2
+  hardcoded-document.pdf carry-forward). No RFC 5987 encoding (rest concern). Whitespace-only stem
+  passes through → Sc 3.2 owns that. `stored_document` fake now threads title through the constructor.
+  Coverage: export_document.py + rendered_export.py 100% line+branch; document.py 96% (line 103
+  reconstitute return — pre-existing gap, covered in the db adapter suite). Files ≤200 (document 116,
+  export_document 52, rendered_export 19).
+- [ ] adapters-discovery
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
