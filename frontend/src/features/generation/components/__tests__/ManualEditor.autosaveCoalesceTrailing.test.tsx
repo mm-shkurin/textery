@@ -4,6 +4,8 @@ import * as documentApi from '../../api/documentApi'
 import {
   CREATED_DOCUMENT_ID,
   CREATED_VERSION,
+  DIRTY_STATUS,
+  SAVED_STATUS,
   crossDebounceBoundary,
   defer,
   flushMicrotasks,
@@ -13,9 +15,6 @@ import {
 } from './ManualEditor.autosave.testSupport'
 
 vi.mock('../../api/documentApi')
-
-const SAVED_STATUS = 'Сохранено'
-const DIRTY_STATUS = 'Черновик, ещё не сохранён'
 
 // Scenario H9.4 — the redundant-trailing-PUT defect confirmed by both review passes on E3.1 green
 // (7f2998e). An edit landing DURING an in-flight autosave does two things: it queues a mid-flight

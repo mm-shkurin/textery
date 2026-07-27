@@ -3,18 +3,13 @@ import { screen } from '@testing-library/react'
 import { SAVE_ERROR_MESSAGE } from '../../hooks/useDocumentSave'
 import * as documentApi from '../../api/documentApi'
 import {
+  dispatchBeforeUnload,
   renderCreatedDocument,
   typeAndFireAutosave,
   useAutosaveFakeTimers,
 } from './ManualEditor.autosave.testSupport'
 
 vi.mock('../../api/documentApi')
-
-function dispatchBeforeUnload(): boolean {
-  const event = new Event('beforeunload', { cancelable: true })
-  window.dispatchEvent(event)
-  return event.defaultPrevented
-}
 
 // Scenario H9.3, gap (b) — the beforeunload-still-armed-after-a-failed-autosave hole flagged by the
 // E3.2 premortem. A failed autosave must leave the document DIRTY: the work is still only in the

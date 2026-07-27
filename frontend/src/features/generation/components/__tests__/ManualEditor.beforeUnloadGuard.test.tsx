@@ -3,14 +3,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
 import { ManualEditor } from '../ManualEditor'
 import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
+import { dispatchBeforeUnload } from './ManualEditor.autosave.testSupport'
 
 vi.mock('../../api/documentApi')
-
-function dispatchBeforeUnload(): boolean {
-  const event = new Event('beforeunload', { cancelable: true })
-  window.dispatchEvent(event)
-  return event.defaultPrevented
-}
 
 // The editor holds unsaved work only in Tiptap's in-memory state — closing or refreshing the tab
 // loses it silently. The browser's one built-in defence is the beforeunload native prompt, shown
