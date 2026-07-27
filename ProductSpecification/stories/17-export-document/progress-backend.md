@@ -439,11 +439,16 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   placement clean. FLAG: conftest.py now 260 lines (over 200-cap; was ~254 pre-existing — fixtures must
   live in conftest, so the +6 lines were unavoidable). Cross-suite conftest split deferred to a
   dedicated refactor, out of this work unit's scope.
-- [ ] design
-- [ ] red-usecase
-- [ ] green-usecase
-- [ ] adapters-discovery
-- [ ] green-acceptance
+- [S] design — no production change: export is a read-only GET (`ExportDocument.execute` does
+  `find_by_id_and_owner` + render, no SaveDocument), so non-mutation is a structural property, not
+  new behavior to build. Confirmed by premortem PASS on 08720ce (both formats share one read-only
+  execute; the domain entity has no last-accessed/export-count field to drift).
+- [S] red-usecase — non-mutation needs no usecase behavior; the read-only structure is already
+  covered by the Sc 2.1/2.2 usecase tests (execute renders stored content without persisting).
+- [S] green-usecase — no production change.
+- [S] adapters-discovery — no adapter change; no new port/exception/response shape.
+- [S] green-acceptance — the guard is already enabled + green from red-acceptance (08720ce); nothing
+  to enable. Save-then-export freshness (a NON-default version) is owned by Sc 3.5 / Integration 2.1.
 
 ### Scenario 3.1: The filename is derived from the title, encoded for Cyrillic
 - [ ] red-acceptance
