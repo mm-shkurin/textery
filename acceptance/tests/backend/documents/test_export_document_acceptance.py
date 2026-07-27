@@ -56,6 +56,27 @@ class TestExportDocumentAsPdf(AbstractBackendTest):
         document_export_statements.assert_valid_pdf_attachment(response)
 
 
+class TestExportDocumentAsDocx(AbstractBackendTest):
+    """Scenario 2.2: A document exports as a valid DOCX.
+
+    Given a document owned by the caller
+    When they export it as docx
+    Then the response is a valid DOCX with the wordprocessingml content type
+    And is delivered as an attachment.
+    """
+
+    @pytest.mark.skip(
+        reason="RED: DOCX rendering not yet implemented (Scenario 2.2) — export raises "
+        "500 INTERNAL_ERROR instead of returning a wordprocessingml attachment"
+    )
+    async def test_owner_exports_own_document_as_valid_docx_attachment(
+        self, document_export_docx_statements
+    ):
+        response = await document_export_docx_statements.given_owner_exports_their_own_document_as_docx()
+
+        document_export_docx_statements.assert_valid_docx_attachment(response)
+
+
 class TestExportDocumentFormatGuard(AbstractBackendTest):
     """Scenario 1.3: An unsupported or missing format is refused.
 

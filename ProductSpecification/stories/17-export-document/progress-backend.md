@@ -276,8 +276,21 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 > but 2.2 MUST close it: red-usecase needs a docx-on-found case, green maps `ExportFormat.DOCX` +
 > renders docx, and consider moving the media-type lookup ahead of `render` (fail-fast, no wasted
 > render). Do NOT let 2.2 inherit the silent 500 window.
-- [~] red-acceptance
-- [ ] design
+- [x] red-acceptance — RED confirmed live: exporting an owned document as docx returns
+  `status_code=500 {error_code:INTERNAL_ERROR}` vs expected 200 wordprocessingml attachment
+  (predicted == actual) — this is exactly the carry-forward KeyError window: `docx` passes
+  `ExportFormat.parse` but the `_MEDIA_TYPE` dict maps only PDF, so `execute` renders then
+  KeyErrors → sanctioned 500. New class `TestExportDocumentAsDocx` delegates to a new
+  `DocumentExportDocxStatements` (`given_owner_exports_their_own_document_as_docx()` +
+  `assert_valid_docx_attachment`): strict status 200, exact DOCX_CONTENT_TYPE
+  (`application/vnd.openxmlformats-officedocument.wordprocessingml.document`), `PK\x03\x04`
+  ZIP magic prefix, attachment Content-Disposition, `body is None`. Statements split into a new
+  51-line module (base `document_export_statements.py` was at the 200-line cap). Skip-marked;
+  6 passed / 1 skipped. test-review: assertions already strict (A/P clean); one S DRY finding
+  (docx assert duplicates the base pdf assert) deferred to /refactor — extracting it would push
+  the 200-line base over cap. NOTE (pre-existing, out of scope): conftest.py is 258 lines
+  (over the 200-cap before this change); red only added a 2-line fixture — worth a future split.
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
