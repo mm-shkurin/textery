@@ -8,7 +8,7 @@
 | 5  | Manual input mode (non-AI document creation) | ✅ | 🔧 | — | 🔧 | 🔧 | — | — | 20/40 | 50% |
 | 7  | Authorization (email+password w/ mocked code, Yandex ID, VK ID) | ✅ | 🔧 | — | ✅ | 🔧     | —    | —     | 35/63 | 56% |
 | 16 | OAuth sign-in: VK ID + Yandex ID (frontend-first, backend WIP) | ✅ | · | · | ✅ | · | n/a | · | 14/14 | 100% |
-| 17 | Export document to PDF / DOCX | ✅ | — | — | 🔧 | — | — | — | 4/6 | 67% |
+| 17 | Export document to PDF / DOCX | ✅ | — | — | 🔧 | — | — | — | 5/6 | 83% |
 | 18 | Generate → edit (unify generate + manual, drop mode modal) | ✅ | — | — | — | — | — | — | 0/? | 0% |
 
 # Backlog — Core sequence (build order, decided 2026-07-06)
