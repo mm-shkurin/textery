@@ -53,7 +53,7 @@ describe('ExportControl download delivery on successful export', () => {
   // RED 5.1: FAILS on current code — ExportControl awaits exportDocument and discards the resolved
   // blob, so URL.createObjectURL is never called (got 0 calls, expected 1) and no download fires.
   // green-frontend 5.1 adds the blob→object-URL→anchor-click→revoke delivery.
-  it.skip('hands the exact resolved Blob to createObjectURL and downloads it, then revokes the url', async () => {
+  it('hands the exact resolved Blob to createObjectURL and downloads it, then revokes the url', async () => {
     const blob = new Blob(['%PDF-1.4'], { type: 'application/pdf' })
     vi.mocked(documentApi.exportDocument).mockResolvedValue(blob)
 
@@ -74,7 +74,7 @@ describe('ExportControl download delivery on successful export', () => {
 
   // RED 5.1: FAILS on current code — no anchor is created or clicked, so clickedDownloads stays []
   // (expected length 1). green-frontend 5.1 must derive the filename extension from the format.
-  it.skip('derives a .docx filename when exporting docx, proving the extension is format-driven', async () => {
+  it('derives a .docx filename when exporting docx, proving the extension is format-driven', async () => {
     const blob = new Blob(['PK'], {
       type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     })
@@ -90,7 +90,7 @@ describe('ExportControl download delivery on successful export', () => {
   // RED 5.1: passes vacuously today (no download path exists at all); skipped so the whole new
   // suite activates together in green, where it becomes a real guard that the reject path mints no
   // object URL and fires no download.
-  it.skip('triggers no download when the export fails', async () => {
+  it('triggers no download when the export fails', async () => {
     vi.mocked(documentApi.exportDocument).mockRejectedValue(new Error('boom'))
 
     render(<ExportControl documentId="doc-1" />)

@@ -15,6 +15,23 @@ const EXPORT_FORMATS: ExportFormat[] = ['pdf', 'docx']
 // ("boom") must not leak raw wording into the banner, so the message is fixed here, not derived.
 const EXPORT_ERROR_MESSAGE = 'Не удалось экспортировать документ'
 
+// Scenario 5.1: a successful export resolves a Blob that must reach the browser as a downloaded
+// file. The standard idiom: mint an object URL for the blob, drive a DOM-connected anchor's click
+// (a connected anchor is required for a real Firefox download), then release the URL so repeated
+// exports do not leak blob URLs. Revoke is synchronous right after the click — the resolved blob
+// is fully captured by the object URL before click(), so the eager release is safe here; the
+// selenium 5.1 real-browser test is the backstop.
+function triggerBrowserDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  document.body.removeChild(anchor)
+  URL.revokeObjectURL(url)
+}
+
 interface ExportControlProps {
   // Null until the document has been created/loaded — there is nothing to export before then,
   // so the trigger stays disabled and no click can reach exportDocument with a missing id.
@@ -75,7 +92,10 @@ export function ExportControl({ documentId, hasUnsavedChanges = false, save }: E
           }
         }
       }
-      await exportDocument(documentId, format)
+      const blob = await exportDocument(documentId, format)
+      // Deliver the resolved blob to the browser as a download. The extension is derived from the
+      // export format (…​.pdf / …​.docx), never hardcoded, so a docx export ships a .docx file.
+      triggerBrowserDownload(blob, `document.${format}`)
       // Clear the error ONLY on success — never optimistically at dispatch time. This keeps a
       // failed export's banner visible through the retry's whole in-flight window and drops it
       // the moment the retry succeeds; a still-failing retry leaves the banner up.
