@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { ManualEditor } from '../ManualEditor'
 import * as documentApi from '../../api/documentApi'
-import { AUTOSAVE_DEBOUNCE_MS, flushMicrotasks } from './ManualEditor.autosave.testSupport'
+import { AUTOSAVE_DEBOUNCE_MS, defer, flushMicrotasks } from './ManualEditor.autosave.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -18,19 +18,6 @@ vi.mock('../../api/documentApi')
 // and out-of-order ARRIVAL cannot occur — latest-wins holds by construction. There is nothing to
 // implement, so green-frontend is [S]. This test locks the observable guarantee so a future change
 // that let a stale A response clobber the newer content or status would fail here.
-
-interface Deferred<T> {
-  promise: Promise<T>
-  resolve: (value: T) => void
-}
-
-function defer<T>(): Deferred<T> {
-  let resolve!: (value: T) => void
-  const promise = new Promise<T>((res) => {
-    resolve = res
-  })
-  return { promise, resolve }
-}
 
 describe('ManualEditor — out-of-order autosaves reflect the latest edit and content (E3.3/H9.2)', () => {
   beforeEach(() => {
@@ -52,8 +39,8 @@ describe('ManualEditor — out-of-order autosaves reflect the latest edit and co
     await flushMicrotasks()
 
     // The first save (A) is held pending so a second edit lands while A is still "in flight".
-    const saveA = defer<{ status: string; version: number; content: string }>()
-    const saveB = defer<{ status: string; version: number; content: string }>()
+    const saveA = defer()
+    const saveB = defer()
     vi.mocked(documentApi.saveDocument)
       .mockReturnValueOnce(saveA.promise)
       .mockReturnValueOnce(saveB.promise)

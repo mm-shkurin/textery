@@ -5,6 +5,7 @@ import * as documentApi from '../../api/documentApi'
 import {
   AUTOSAVE_DEBOUNCE_MS,
   RETRY_WINDOW_MS,
+  defer,
   flushMicrotasks,
   renderCreatedDocument,
   useAutosaveFakeTimers,
@@ -22,28 +23,13 @@ vi.mock('../../api/documentApi')
 // The transient-retry work must not have this hole: after a failed save that had a queued edit, the
 // LATEST (queued) content must be re-sent, not abandoned.
 
-interface Deferred<T> {
-  promise: Promise<T>
-  reject: (reason: unknown) => void
-}
-
-function defer<T>(): Deferred<T> {
-  let reject!: (reason: unknown) => void
-  const promise = new Promise<T>((_, rej) => {
-    reject = rej
-  })
-  // Keep the rejection from surfacing as an unhandled rejection before the hook attaches its .catch.
-  promise.catch(() => {})
-  return { promise, reject }
-}
-
 describe('ManualEditor — a queued edit is not lost when the in-flight autosave fails (H9.3 gap a)', () => {
   useAutosaveFakeTimers()
 
   it('re-fires the queued latest edit after the in-flight autosave rejects, instead of dropping it', async () => {
     await renderCreatedDocument()
 
-    const saveA = defer<{ status: string; version: number; content: string }>()
+    const saveA = defer()
     vi.mocked(documentApi.saveDocument)
       .mockReturnValueOnce(saveA.promise)
       .mockResolvedValue({ status: 'saved', version: 8, content: '<p>second version</p>' })
