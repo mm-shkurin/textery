@@ -409,12 +409,20 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   quirk). **Scenario 2.2 COMPLETE.**
 
 ### Scenario 2.3: An empty document exports to a valid file
-- [ ] red-acceptance
-- [ ] design
-- [ ] red-usecase
-- [ ] green-usecase
-- [ ] adapters-discovery
-- [ ] green-acceptance
+- [S] red-acceptance — EXISTENCE-CHECK HIT (no valid RED; not faked): empty content is the DEFAULT
+  state of every created document — `Document.create()` (domain/document.py:67-77) hardcodes
+  `content=""` and the create path (POST /documents) accepts only `document_type`, so a freshly
+  created doc IS the empty-content case. Sc 2.1/2.2's happy-path tests already export exactly such a
+  document (`_create_document_owned_by` creates with no content; `ExportDocument.execute` renders
+  `document.content == ""` directly) and both pass live (BACKEND_PORT=8100: TestExportDocumentAsPdf +
+  TestExportDocumentAsDocx = 2 passed). A new empty-doc test would duplicate 2.1/2.2 byte-for-byte —
+  forbidden by the existence-check rule. Whitespace-only content (extended §1.2) is a strictly-more
+  content case requiring SaveDocument, out of core 2.3 scope.
+- [S] design — no domain/usecase/adapter change; render path already handles `content == ""`.
+- [S] red-usecase — covered by Sc 2.1/2.2 usecase tests (render of stored content).
+- [S] green-usecase — no production change.
+- [S] adapters-discovery — no adapter change.
+- [S] green-acceptance — nothing to enable; capability already green via 2.1/2.2.
 
 ### Scenario 2.4: Export does not mutate the document
 - [ ] red-acceptance
