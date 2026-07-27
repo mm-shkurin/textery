@@ -73,6 +73,15 @@ class DocumentExportNoMutationStatements(DocumentExportStatements):
         # timestamp while leaving version alone cannot slip through.
         before_body = snapshot.before.body or {}
         after_body = snapshot.after.body or {}
+        # Presence guard, mirroring assert_version_unchanged: without it a future
+        # rename/drop of content or updated_at makes both sides None, and None ==
+        # None passes vacuously — silently eroding this guard down to version only.
+        assert before_body.get("content") is not None, (
+            f"setup: expected content in the pre-export document view, got body={before_body!r}"
+        )
+        assert before_body.get("updated_at") is not None, (
+            f"setup: expected updated_at in the pre-export document view, got body={before_body!r}"
+        )
         assert after_body.get("content") == before_body.get("content"), (
             f"expected export to leave content unchanged, but it went from "
             f"{before_body.get('content')!r} to {after_body.get('content')!r}"
