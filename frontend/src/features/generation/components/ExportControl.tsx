@@ -10,6 +10,11 @@ import './ExportControl.css'
 // upper-case form, and the test id derived as export-option-<format>.
 const EXPORT_FORMATS: ExportFormat[] = ['pdf', 'docx']
 
+// Scenario 3.2: every export failure surfaces this ONE localized message. We never render the
+// caught error's own text — a transport-layer rejection ("Failed to fetch") or a non-Error throw
+// ("boom") must not leak raw wording into the banner, so the message is fixed here, not derived.
+const EXPORT_ERROR_MESSAGE = 'Не удалось экспортировать документ'
+
 interface ExportControlProps {
   // Null until the document has been created/loaded — there is nothing to export before then,
   // so the trigger stays disabled and no click can reach exportDocument with a missing id.
@@ -44,8 +49,8 @@ export function ExportControl({ documentId }: ExportControlProps) {
       })
       // Surface the rejection as inline error state (keeps the rejection handled — no unhandled
       // promise rejection). If the retry also rejects, the message is re-raised here.
-      .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : String(err))
+      .catch(() => {
+        setError(EXPORT_ERROR_MESSAGE)
       })
       // `finally` releases the lock on BOTH resolve and reject: a lock that only cleared on
       // success would leave the control permanently dead after the first failed export.
