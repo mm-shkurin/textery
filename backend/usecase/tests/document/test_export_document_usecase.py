@@ -18,13 +18,25 @@ type `application/pdf`. Rendering the stored content (not the request, not the
 raw entity) and pinning the exact sentinel bytes is the positive control: it
 proves the render step ran on the caller's own content rather than being
 tautologically refused.
+
+Scenario 2.2 -- a found document exports as a valid DOCX. The docx positive
+control mirrors 2.1 but pins the Word media type
+`application/vnd.openxmlformats-officedocument.wordprocessingml.document`. Its
+companion is an exhaustiveness guard: EVERY `ExportFormat` member must resolve
+to a media type in the usecase's `_MEDIA_TYPE` map, so a future format added
+without a media type fails loudly here at import-check time rather than 500-ing
+at runtime the first time a caller requests it. Fail-fast ordering (media lookup
+before render) is deliberately NOT tested: with only pdf/docx and both mapped
+after GREEN, no parseable-but-unmapped format exists, so the ordering is
+un-observable via the public API and contriving an invalid enum member is
+forbidden -- tests 2.2 + the exhaustiveness guard cover the invariant.
 """
 
 from uuid import uuid4
 
 import pytest
 
-from document.export_document import ExportDocument
+from document.export_document import _MEDIA_TYPE, ExportDocument
 from document.export_format import ExportFormat
 from shared.exceptions import ValidationException
 from statements.document_fakes import (
@@ -89,3 +101,32 @@ class TestExportDocument:
         )
         assert result.content == FAKE_RENDERED_PDF
         assert result.media_type == "application/pdf"
+
+    @pytest.mark.skip(reason="RED: _MEDIA_TYPE[ExportFormat.DOCX] KeyErrors -- docx unmapped")
+    async def test_should_render_the_stored_content_and_return_docx_bytes(self):
+        owner_id = uuid4()
+        document = stored_document(owner_id, content="<p>Пока</p>")
+        renderer = FakeDocumentRenderer()
+
+        result = await ExportDocument(
+            document_repository=await seeded(document), document_renderer=renderer
+        ).execute(document_id=document.id, owner_id=owner_id, format="docx")
+
+        assert renderer.calls == [("<p>Пока</p>", ExportFormat.DOCX)], (
+            "the usecase must render the STORED content under the parsed docx format"
+        )
+        assert result.content == FAKE_RENDERED_PDF
+        assert result.media_type == (
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+
+    @pytest.mark.skip(reason="RED: _MEDIA_TYPE omits ExportFormat.DOCX -- invariant unmet")
+    def test_every_export_format_resolves_to_a_media_type(self):
+        # Structural invariant, not a transient state: it stays green for any
+        # future format once that format is mapped, and fails loudly the moment a
+        # member is added without a media type -- the loud failure the moved
+        # media lookup (ADR) turns from a runtime 500 into an import-time guard.
+        unmapped = set(ExportFormat) - set(_MEDIA_TYPE)
+        assert unmapped == set(), (
+            f"every ExportFormat member must map to a media type; unmapped: {unmapped}"
+        )

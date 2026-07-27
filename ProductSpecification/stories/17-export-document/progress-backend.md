@@ -323,7 +323,23 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   Infra 1.1; IDOR re-auth → owner-scoped fetch (already covered, Sc 1.1/1.2/Security 1.1). One extra
   UNOWNED gap: DOCX **output-size amplification** (small input → huge in-memory .docx) — assign to
   Sc 4.5 (extend its cap from input to output).
-- [ ] red-usecase
+- [x] red-usecase — RED confirmed live (7 passed, 2 skipped). Added to
+  test_export_document_usecase.py (92→132 lines): (1) DOCX positive control
+  `test_should_render_the_stored_content_and_return_docx_bytes` — found owned doc + format="docx"
+  returns `RenderedExport` with `media_type == "application/vnd.openxmlformats-officedocument.
+  wordprocessingml.document"` (exact) AND `renderer.calls == [(document.content, ExportFormat.DOCX)]`;
+  currently `KeyError: <ExportFormat.DOCX: 'docx'>` at export_document.py:38 (docx unmapped, renders
+  then KeyErrors) — predicted == actual. (2) EXHAUSTIVENESS guard
+  `test_every_export_format_resolves_to_a_media_type` (hazard grp4/5): `set(ExportFormat) -
+  set(_MEDIA_TYPE) == set()`; currently `AssertionError ... unmapped: {ExportFormat.DOCX}` — predicted
+  == actual. GREEN: add `ExportFormat.DOCX` to `_MEDIA_TYPE` and move the media lookup ahead of
+  `render()` per the ADR. Fail-fast-ordering test #3 OMITTED (not skipped): with only pdf/docx both
+  mapped after green, no parseable-but-unmapped format exists, so lookup-before-render is
+  un-observable via the public API without contriving an invalid enum member (forbidden); invariant
+  pinned by test #2 + the ADR reorder instead. test-review: assertions already strict (A clean; exact
+  equality / identity / set-equality); P inline-fakes placement flag dismissed per the document-usecase
+  family's established direct-fakes convention (same call as Sc 2.1 red-usecase). Uses FakeDocumentRenderer
+  — no real htmldocx/python-docx.
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
