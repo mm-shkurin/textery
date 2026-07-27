@@ -470,7 +470,20 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   client method (PUT, optional title) + `SaveDocumentResponseDto`; registered fixture. test-review
   inline: assertions strict + exact-equality, placement clean. FLAG: conftest.py now 204 lines
   (over 200-cap; +8 for the new fixture) — /refactor to trim this work unit.
-- [ ] design
+- [x] design — see `decisions/title-filename-decision.md` (ADR). `title` is a NEW nullable
+  `Document` field via an ADDITIVE Alembic migration (rolling-deploy safe — Infra 3.1), set through
+  the save path: `SaveDocumentRequestDto` gains optional `title`, `SaveDocument.execute` gains
+  `title`, and the existing version-CAS `save_content_if_version_matches` persists it in the SAME
+  single SQL UPDATE (no read-compare-write). `Document.create` does NOT take title (mass-assignment
+  guard, Security 2.1) — a draft is born title=None; title set only via owner-scoped save.
+  DERIVATION vs ENCODING split: `ExportDocument.execute` derives a PLAIN filename (title when present
+  else default stem "document"; extension from `ExportFormat` — also closes the Sc 2.2 hardcoded-
+  document.pdf carry-forward) onto `RenderedExport.filename`; the rest `/export` route RFC 5987-
+  percent-encodes it into `Content-Disposition: attachment; filename*=UTF-8''<encoded>` (encoding is
+  an HTTP wire concern, kept in the adapter). CROSS-STORY: `documents.title` is shared with
+  story-5-extension — adapters-discovery MUST check `migrations/versions/` for an existing title
+  revision before adding one (reuse, don't double-add). Seams: default filename → Sc 3.2; CR/LF/quote
+  strip → Sc 3.3; grapheme truncation → Sc 3.6; docx extension → Sc 3.2 carry-forward.
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
