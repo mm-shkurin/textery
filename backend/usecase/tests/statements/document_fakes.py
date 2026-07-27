@@ -96,6 +96,7 @@ class FakeDocumentRepository:
         content: str,
         expected_version: int,
         updated_at: datetime,
+        title: str | None = None,
     ) -> Document | None:
         stored = await self.find_by_id_and_owner(document_id, owner_id)
         if stored is None or stored.version != expected_version:
@@ -103,6 +104,10 @@ class FakeDocumentRepository:
         stored.content = content
         stored.version += 1
         stored.updated_at = updated_at
+        # Preserve-on-omit, mirroring the real CAS: a content-only save leaves the
+        # existing title intact rather than wiping it.
+        if title is not None:
+            stored.title = title
         return stored
 
 

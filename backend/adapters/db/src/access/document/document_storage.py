@@ -85,6 +85,7 @@ class SqlAlchemyDocumentStorage:
         content: str,
         expected_version: int,
         updated_at: datetime,
+        title: str | None = None,
     ) -> Document | None:
         """Compare-and-swap the content. Returns the new state, or None if the
         version did not match (or the document is absent/foreign).
@@ -106,6 +107,15 @@ class SqlAlchemyDocumentStorage:
         reaches the version comparison, so a correct-version guess against someone
         else's id is indistinguishable from a wrong one.
         """
+        # title is included ONLY when provided. A content-only autosave omits it, and
+        # SETting title = NULL unconditionally would silently wipe the user's title.
+        values = {
+            "content": content,
+            "version": DocumentModel.version + 1,
+            "updated_at": updated_at,
+        }
+        if title is not None:
+            values["title"] = title
         result = await self._session.execute(
             update(DocumentModel)
             .where(
@@ -113,11 +123,7 @@ class SqlAlchemyDocumentStorage:
                 DocumentModel.owner_id == owner_id,
                 DocumentModel.version == expected_version,
             )
-            .values(
-                content=content,
-                version=DocumentModel.version + 1,
-                updated_at=updated_at,
-            )
+            .values(**values)
             .returning(DocumentModel)
         )
         model = result.scalar_one_or_none()

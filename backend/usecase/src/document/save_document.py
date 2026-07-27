@@ -35,7 +35,12 @@ class SaveDocument:
         self.unit_of_work = unit_of_work or NullUnitOfWork()
 
     async def execute(
-        self, document_id: UUID, owner_id: UUID, content: str, version: int
+        self,
+        document_id: UUID,
+        owner_id: UUID,
+        content: str,
+        version: int,
+        title: str | None = None,
     ) -> Document:
         self._validate_version(version)
         # Length is checked here, before sanitizing: sanitizing first would make the
@@ -51,6 +56,7 @@ class SaveDocument:
             content=sanitized,
             expected_version=version,
             updated_at=self.clock.now(),
+            title=title,
         )
         if saved is None:
             return await self._explain_miss(document_id, owner_id, sanitized, version)

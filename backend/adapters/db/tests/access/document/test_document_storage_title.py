@@ -1,11 +1,3 @@
-import pytest
-
-
-@pytest.mark.skip(
-    reason="RED: SqlAlchemyDocumentStorage.save_content_if_version_matches() got an "
-    "unexpected keyword argument 'title' -- title not yet persisted in the CAS UPDATE "
-    "nor mapped on DocumentModel (green-adapter db)"
-)
 class TestTitlePersistence:
     """Scenario 3.1: a saved title round-trips through storage.
 

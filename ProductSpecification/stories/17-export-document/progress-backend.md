@@ -513,8 +513,11 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   thread it, `SqlAlchemyDocumentStorage.save_content_if_version_matches` doesn't persist it, and the
   `DocumentRepository.save_content_if_version_matches` port + `SaveDocument.execute` don't accept it —
   so a saved title never round-trips to the export read. No existing `title` Alembic revision
-  (`grep title migrations/versions` empty), so THIS session adds the additive nullable column (current
-  head `b2c3d4e5f6a7`). Check 2 (exceptions): [S] — no new domain exception (a null/absent title is a
+  (`grep title migrations/versions` empty), so THIS session adds the additive nullable column.
+  ⚠️ CORRECTED HEAD (2026-07-27, verified live via revision-graph walk): the real Alembic head is
+  `1a2b3c4d5e6f` (oauth_rate_limits), NOT `b2c3d4e5f6a7` as the ADR/this line first claimed —
+  `b2c3d4e5f6a7` is a mid-chain revision. The additive title migration's `down_revision` MUST be
+  `1a2b3c4d5e6f`. Check 2 (exceptions): [S] — no new domain exception (a null/absent title is a
   default filename, not an error). Check 3 (response shape): rest — GAP ×2: (a) the save endpoint
   `SaveDocumentRequestDto` has no `title` (Pydantic `extra=ignore` drops it) and the PUT route doesn't
   forward it to `execute`; (b) the export route hardcodes `Content-Disposition: attachment;
@@ -537,8 +540,23 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   same-session-echo — `expire_identity_map()` (session is `expire_on_commit=False`) forces a genuine
   SELECT re-hydration, not the cached RETURNING instance. Split `TestTitlePersistence` into
   `test_document_storage_title.py` (base was at the 200-cap). Both tests skip-marked (2 skipped).
-- [ ] green-adapter db (title round-trip)
-- [ ] red-adapter rest (save title) — `SaveDocumentRequestDto` gains optional `title: str | None`; the
+- [x] green-adapter db (title round-trip) — GREEN against real Postgres: 2 target passed (both
+  genuinely RAN, not skipped), full db suite 54 passed, usecase suite 172 passed. New additive
+  nullable `title` column via migration `a3b4c5d6e7f8_add_title_column_to_documents.py`
+  (`down_revision = "1a2b3c4d5e6f"` — the VERIFIED real head; ADR/discovery originally misstated
+  it as `b2c3d4e5f6a7`, which is mid-chain). `DocumentModel.title` nullable + threaded through
+  from_domain/to_domain; `title: str | None = None` added to the port
+  `DocumentRepository.save_content_if_version_matches`, `SaveDocument.execute`, and the storage CAS.
+  DATA-LOSS GUARD (premortem, pinned by test #2): storage builds `.values()` conditionally —
+  `title` included ONLY when not None, so a content-only autosave never `SET title = NULL`.
+  Both guard branches 100% covered (coverage-agent: document_storage.py + document_model.py 100%
+  line+branch). Test-double conformance: `document_fakes.py` fake repo gained the same `title`
+  param (fixed 7 usecase tests that broke on the signature change — not an assertion change).
+  ⚠️ MIGRATION-HARNESS QUIRK (flag for next session): the db-test conftest does NOT run
+  `alembic upgrade head` — the test DB is a persistent stamped schema. green-agent applied the new
+  revision manually so it's proven to apply cleanly on top of `1a2b3c4d5e6f`. A fresh/CI test DB
+  must be migrated to head before this suite runs, or `title` won't exist and the round-trip fails.
+- [~] red-adapter rest (save title) — `SaveDocumentRequestDto` gains optional `title: str | None`; the
   PUT `/{id}` route forwards `request.title` to `SaveDocument.execute`. Test: a save with a title
   reaches the usecase (was silently dropped).
 - [ ] green-adapter rest (save title)
