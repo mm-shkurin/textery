@@ -40,9 +40,7 @@ function defer<T>(): Deferred<T> {
 describe('ManualEditor — a queued edit is not lost when the in-flight autosave fails (H9.3 gap a)', () => {
   useAutosaveFakeTimers()
 
-  // RED (H9.3 gap a): the reject handler drops the queued flag and nothing re-fires the edit.
-  // AssertionError: expected "vi.fn()" to be called 2 times, but got 1 times.
-  it.skip('re-fires the queued latest edit after the in-flight autosave rejects, instead of dropping it', async () => {
+  it('re-fires the queued latest edit after the in-flight autosave rejects, instead of dropping it', async () => {
     await renderCreatedDocument()
 
     const saveA = defer<{ status: string; version: number; content: string }>()

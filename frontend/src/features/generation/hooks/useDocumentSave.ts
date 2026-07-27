@@ -1,9 +1,33 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 import { saveDocument } from '../api/documentApi'
 import { serializeEditorHtml } from '../components/serializeEditorHtml'
 import { SessionExpiredError } from '../../auth/api/authorizedRequest'
 import { VersionConflictError } from '../../../shared/api/send'
+import { RequestTimeoutError, isHttpError } from '../../../shared/api/httpClient'
+
+// The retry contract (H9.3). A TRANSIENT autosave failure — a request timeout or a 5xx — is the one
+// kind a backoff can heal, so it re-fires ITSELF on a capped schedule up to this many total attempts
+// (initial + retries) before giving up and surfacing the banner. Exported so the test asserts one
+// definition of the ceiling, never a drifting inline literal (mirrors INVALID_VERSION_MESSAGE).
+export const MAX_AUTOSAVE_ATTEMPTS = 4
+
+// Capped exponential backoff between attempts: 1s, 2s, 4s… ceilinged at 8s so a long outage does not
+// stretch a single retry gap to minutes. `attempt` is the 1-based number of the attempt that just
+// failed; the whole schedule for MAX_AUTOSAVE_ATTEMPTS stays well inside the tests' RETRY_WINDOW_MS.
+const RETRY_BASE_MS = 1000
+const RETRY_MAX_MS = 8000
+function backoffDelay(attempt: number): number {
+  return Math.min(RETRY_BASE_MS * 2 ** (attempt - 1), RETRY_MAX_MS)
+}
+
+// Only a timeout or a 5xx is worth retrying: the request may recover on its own. A session expiry
+// (signed out), a version conflict (someone else's write landed), or any 4xx cannot be healed by
+// waiting — retrying only burns the schedule against a request that will fail identically.
+function isTransientFailure(error: unknown): boolean {
+  if (error instanceof RequestTimeoutError) return true
+  return isHttpError(error) && error.status >= 500
+}
 
 export const SAVE_ERROR_MESSAGE =
   'Не удалось сохранить. Повторите — текст пока только в редакторе, не потеряйте вкладку.'
@@ -74,8 +98,21 @@ export function useDocumentSave({
   const [saveError, setSaveError] = useState<string | null>(null)
   const isSavingRef = useRef(false)
   const saveAgainRequested = useRef(false)
+  // A scheduled transient retry lives here so unmount can cancel it — an editor the user navigated
+  // away from must not fire a write at an abandoned document on a backoff timer.
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (retryTimerRef.current !== null) clearTimeout(retryTimerRef.current)
+    },
+    [],
+  )
 
-  const performSave = (saveVersion: number) => {
+  // `attempt` is 1 for the initial save and increments on each transient retry. `isSavingRef` stays
+  // true across the backoff wait so an edit or Сохранить click landing in the gap only QUEUES
+  // (saveAgainRequested) rather than launching a competing save — and the retry re-serializes the
+  // editor's CURRENT content, so a keystroke typed during the wait is re-sent, never silently lost.
+  const performSave = (saveVersion: number, attempt = 1) => {
     if (!documentId || !editor) return
     isSavingRef.current = true
     setIsSaving(true)
@@ -112,9 +149,19 @@ export function useDocumentSave({
         // object survives at all. There is no reporting sink, so the console is the whole of the
         // diagnostics — deleting it would leave a failed save with no trace anywhere.
         console.error('Failed to save document', error)
-        // Don't auto-retry a queued edit after a real error (out of scope: that's
-        // autosave-retry behavior). Drop the queued flag so a stale retry doesn't
-        // fire later, but keep the user's latest content in the editor untouched
+        // A transient failure with attempts left re-fires itself on a capped backoff — no fresh
+        // edit and no click needed. Stay in the saving state (isSavingRef true, no banner yet) so
+        // the retry is the sole writer and any edit in the gap only queues. The retry re-serializes
+        // current content at fire time (below), so a queued edit's LATEST text is what gets sent.
+        if (isTransientFailure(error) && attempt < MAX_AUTOSAVE_ATTEMPTS) {
+          retryTimerRef.current = setTimeout(() => {
+            retryTimerRef.current = null
+            performSave(saveVersion, attempt + 1)
+          }, backoffDelay(attempt))
+          return
+        }
+        // Non-transient, or the bounded retry budget is spent: give up. Drop the queued flag so a
+        // stale retry doesn't fire later, but keep the user's latest content in the editor untouched
         // so they can manually retry by clicking Save again.
         saveAgainRequested.current = false
         isSavingRef.current = false

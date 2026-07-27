@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { act, screen } from '@testing-library/react'
-import { SAVE_ERROR_MESSAGE } from '../../hooks/useDocumentSave'
+import { act, fireEvent, screen } from '@testing-library/react'
+import { MAX_AUTOSAVE_ATTEMPTS, SAVE_ERROR_MESSAGE } from '../../hooks/useDocumentSave'
 import { RequestTimeoutError } from '../../../../shared/api/httpClient'
 import * as documentApi from '../../api/documentApi'
 import {
@@ -15,10 +15,9 @@ vi.mock('../../api/documentApi')
 
 // The bounded retry contract this scenario pins: the failed autosave fires once, then re-fires on a
 // capped backoff schedule up to a fixed ceiling before giving up and surfacing the banner. The exact
-// total (initial attempt + retries) is a value the test DEFINES — RETRY_WINDOW_MS is sized so the
-// whole schedule plays out inside it, so the count is deterministic, not a range. Green must cap at
-// exactly this many attempts.
-const MAX_AUTOSAVE_ATTEMPTS = 4
+// total (initial attempt + retries) is the production constant MAX_AUTOSAVE_ATTEMPTS, imported so the
+// contract lives in one place — RETRY_WINDOW_MS is sized so the whole schedule plays out inside it,
+// making the count deterministic, not a range.
 
 // Scenario H9.3 (autosave failures handled per kind). A TRANSIENT autosave failure — a request
 // timeout or a 5xx — is the one failure kind where retrying can actually recover. This suite pins
@@ -31,9 +30,7 @@ const MAX_AUTOSAVE_ATTEMPTS = 4
 describe('ManualEditor — a transient autosave failure retries on a capped backoff (H9.3)', () => {
   useAutosaveFakeTimers()
 
-  // RED (H9.3): no retry exists — saveDocument fires once and stays there.
-  // AssertionError: expected "vi.fn()" to be called 2 times, but got 1 times.
-  it.skip('re-fires a timed-out autosave on a backoff timer (not immediately) and clears the failure once it succeeds', async () => {
+  it('re-fires a timed-out autosave on a backoff timer (not immediately) and clears the failure once it succeeds', async () => {
     await renderCreatedDocument()
 
     vi.mocked(documentApi.saveDocument)
@@ -66,9 +63,7 @@ describe('ManualEditor — a transient autosave failure retries on a capped back
     expect(screen.getByText('Сохранено').textContent).toBe('Сохранено')
   })
 
-  // RED (H9.3): no retry exists — only one attempt ever fires.
-  // AssertionError: expected 1 to be 4.
-  it.skip('stops retrying a persistently-failing transient autosave after a bounded number of attempts and shows the failure', async () => {
+  it('stops retrying a persistently-failing transient autosave after a bounded number of attempts and shows the failure', async () => {
     await renderCreatedDocument()
 
     vi.mocked(documentApi.saveDocument).mockRejectedValue({ status: 503, body: {} })
@@ -95,5 +90,40 @@ describe('ManualEditor — a transient autosave failure retries on a capped back
 
     // Having given up, it surfaces the failed-save banner.
     expect(screen.getByTestId('me-save-error')).toHaveTextContent(SAVE_ERROR_MESSAGE)
+  })
+
+  // Premortem gap (H9.3): an edit typed during the backoff WAIT must not be silently lost. If the
+  // retry re-sent the stale content captured at the failed attempt, the successful retry would mark
+  // the doc "Сохранено" over text that was never sent — data loss with no banner. The retry must
+  // re-serialize the editor's LATEST content at fire time.
+  it('re-sends the latest content typed during the backoff wait, not the stale content from the failed attempt', async () => {
+    await renderCreatedDocument()
+
+    vi.mocked(documentApi.saveDocument)
+      .mockRejectedValueOnce(new RequestTimeoutError())
+      .mockResolvedValue({ status: 'saved', version: 8, content: '<p>updated during wait</p>' })
+
+    await typeAndFireAutosave('stale content')
+    expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(1, 'doc-1', '<p>stale content</p>', 7)
+
+    // While the backoff timer is pending, the user keeps typing — this is the gap the retry must not
+    // drop. The edit lands with no save in flight to queue against; only re-serialization saves it.
+    const contentArea = screen.getByTestId('editor-content-area')
+    contentArea.textContent = 'updated during wait'
+    await act(async () => {
+      fireEvent.input(contentArea)
+    })
+
+    // The retry fires across the window and must carry the LATEST content, at the unchanged version.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(RETRY_WINDOW_MS)
+    })
+    await flushMicrotasks()
+
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', '<p>updated during wait</p>', 7)
+    // Clean only over content that was actually sent — never marked saved over the lost keystrokes.
+    expect(screen.queryByTestId('me-save-error')).toBeNull()
+    expect(screen.getByText('Сохранено').textContent).toBe('Сохранено')
   })
 })
