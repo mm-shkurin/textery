@@ -301,7 +301,28 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 > exists in the 2.x sequence; flag as a story-level gap (parallels the Sc 3.4 PDF glyph guard).
 > agent-review: PASS. refactor: NO ACTION (DRY docx/pdf assert duplication left as-is — base at
 > 200-line cap, extraction would push it over; RED skip must stay).
-- [~] design
+- [x] design — see `decisions/docx-rendering-decision.md` (ADR). Format-dispatching renderer
+  behind the unified `DocumentRenderer` port: PDF→WeasyPrintPdfRenderer, DOCX→new pure-Python
+  `HtmlDocxRenderer` (`htmldocx`→`python-docx`, no native binary, no network). Usecase adds
+  `ExportFormat.DOCX` to `_MEDIA_TYPE` and moves the media lookup AHEAD of `render()` (fail-fast,
+  closes the docx KeyError→500 window). Hazard scan (all 8 groups) folded:
+  • red-usecase MUST add a `_MEDIA_TYPE`/dispatcher **exhaustiveness** guard — every `ExportFormat`
+    member maps to a media type and the dispatcher handles every member, so a future format can't
+    silently 500 (grp4/grp5 unknown-enum / dispatch-exhaustiveness).
+  • green-acceptance assert strengthened to OOXML structure ([Content_Types].xml + word/document.xml)
+    per the earlier carry-forward (grp1 structural half).
+  • DOCX metadata redaction (grp7 UNOWNED, assigned here): `HtmlDocxRenderer` sets neutral
+    `core_properties` — no OS username as author, `created`/`modified` from an injected clock, not
+    raw server time. red/green-adapter rendering must assert `docProps/core.xml` leaks no server
+    identity/time.
+  SEAMS handed to downstream scenarios (each must exercise the DOCX path, not only PDF): multibyte
+  text round-trip → Sc 3.4; embedded-URL SSRF (no outbound fetch from HtmlDocxRenderer) → Sc 4.1 /
+  Security 3.1; render deadline wraps HtmlDocxRenderer → Sc 4.2; input-size cap gates before the
+  docx build → Sc 4.5; concurrent-render bound covers docx → Load 2.1; resource/temp-file leak on a
+  failing docx render → Infra 2.1; boot-time dep fail-fast (htmldocx/python-docx importable) →
+  Infra 1.1; IDOR re-auth → owner-scoped fetch (already covered, Sc 1.1/1.2/Security 1.1). One extra
+  UNOWNED gap: DOCX **output-size amplification** (small input → huge in-memory .docx) — assign to
+  Sc 4.5 (extend its cap from input to output).
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
