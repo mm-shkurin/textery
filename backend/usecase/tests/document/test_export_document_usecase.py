@@ -119,6 +119,37 @@ class TestExportDocument:
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
 
+    @pytest.mark.skip(reason="RED: RenderedExport has no attribute 'filename'")
+    @pytest.mark.parametrize(
+        "title, export_format, expected_filename",
+        [
+            ("Привет Мир", "pdf", "Привет Мир.pdf"),
+            ("Привет Мир", "docx", "Привет Мир.docx"),
+            (None, "pdf", "document.pdf"),
+        ],
+        ids=["cyrillic_title_pdf", "cyrillic_title_docx", "absent_title_default"],
+    )
+    async def test_should_derive_the_plain_filename_from_the_title(
+        self, title, export_format, expected_filename
+    ):
+        # Derivation is a usecase policy: the filename stem is the title when
+        # present, else the default "document"; the extension follows the format
+        # (.pdf/.docx), closing the Sc 2.2 hardcoded-document.pdf carry-forward.
+        # The filename is the PLAIN unicode string -- RFC 5987 percent-encoding is
+        # an HTTP wire concern owned by the rest adapter, NOT tested here.
+        owner_id = uuid4()
+        document = stored_document(owner_id, content="<p>Привет</p>", title=title)
+        renderer = FakeDocumentRenderer()
+
+        result = await ExportDocument(
+            document_repository=await seeded(document), document_renderer=renderer
+        ).execute(document_id=document.id, owner_id=owner_id, format=export_format)
+
+        assert result.filename == expected_filename, (
+            f"expected filename {expected_filename!r} for title {title!r}, "
+            f"got {result.filename!r}"
+        )
+
     def test_every_export_format_resolves_to_a_media_type(self):
         # Structural invariant, not a transient state: it stays green for any
         # future format once that format is mapped, and fails loudly the moment a

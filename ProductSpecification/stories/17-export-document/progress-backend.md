@@ -484,7 +484,18 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   story-5-extension — adapters-discovery MUST check `migrations/versions/` for an existing title
   revision before adding one (reuse, don't double-add). Seams: default filename → Sc 3.2; CR/LF/quote
   strip → Sc 3.3; grapheme truncation → Sc 3.6; docx extension → Sc 3.2 carry-forward.
-- [ ] red-usecase
+- [x] red-usecase — RED confirmed live: `AttributeError: 'RenderedExport' object has no attribute
+  'filename'` on all 3 cases (predicted == actual); 9 passed / 3 skipped after skip-mark. New
+  parametrized `test_should_derive_the_plain_filename_from_the_title`: title "Привет Мир" + pdf →
+  `result.filename == "Привет Мир.pdf"`; + docx → `"Привет Мир.docx"` (pins the format-driven
+  extension); title None + pdf → `"document.pdf"` (default stem, so green can't regress it). Asserts
+  the PLAIN unicode filename — RFC 5987 encoding is NOT tested here (rest concern per ADR). Extended
+  `stored_document` fake to accept `title` (attaches it; the domain field lands in green). test-review
+  inline: exact-equality assertions, clean placement; test file 161 lines, document_fakes 178 (under
+  cap). GREEN must: add `filename: str` to RenderedExport; add `title: str | None` to
+  `Document.__init__`/`reconstitute` (NOT create); derive stem (title-or-"document") + `.pdf`/`.docx`
+  extension in `ExportDocument.execute`.
+- [ ] green-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance

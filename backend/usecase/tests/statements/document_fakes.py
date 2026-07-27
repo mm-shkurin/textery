@@ -8,9 +8,17 @@ from shared.keyset_cursor import KeysetCursor
 _EPOCH = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
 
 
-def stored_document(owner_id: UUID, minutes_old: int = 0, content: str = "") -> Document:
-    """A persisted draft, `minutes_old` minutes older than the newest possible one."""
-    return Document(
+def stored_document(
+    owner_id: UUID, minutes_old: int = 0, content: str = "", title: str | None = None
+) -> Document:
+    """A persisted draft, `minutes_old` minutes older than the newest possible one.
+
+    `title` drives the export-filename derivation (Sc 3.1). It is attached to the
+    entity here rather than passed to the constructor because the domain gains a
+    `title` field in the same scenario's green step; until then the builder sets it
+    directly so the filename tests can exercise a titled document.
+    """
+    document = Document(
         id=uuid4(),
         owner_id=owner_id,
         document_type="эссе",
@@ -21,6 +29,8 @@ def stored_document(owner_id: UUID, minutes_old: int = 0, content: str = "") -> 
         created_at=_EPOCH - timedelta(minutes=minutes_old),
         updated_at=_EPOCH - timedelta(minutes=minutes_old),
     )
+    document.title = title
+    return document
 
 
 class FakeDocumentRepository:
