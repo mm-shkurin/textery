@@ -626,6 +626,16 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 - [ ] green-acceptance
 
 ### Scenario 3.3: A title with header-breaking characters cannot inject into the header
+> CARRY-FORWARD (from Sc 3.1 red-adapter rest export-filename premortem, commit f0dabd6 — CONCERNS
+> CREDIBLE): the Sc 3.1 export-filename RED pins ONLY a well-behaved Cyrillic title, so it does not
+> force a control-char-safe encoder — a naive "encode only bytes>127" green would pass it yet leave a
+> raw `\r\n` in the header. The Sc 3.1 green is directed to use `quote(filename, safe='')` (encodes CR
+> `%0D`/LF too — injection-safe by construction), but nothing at the REST layer ASSERTS it. Sc 3.3
+> must add a **rest-layer** injection test (mock usecase returns `RenderedExport(filename="a\r\nb.pdf")`
+> → assert the emitted `Content-Disposition` contains NO literal CR/LF), NOT only the ADR's
+> usecase-strip test — so the encode correctness is defense-in-depth, not trusted-by-construction and
+> never checked. Also note the ADR chose `filename*`-only (no legacy plain `filename=` fallback) — a
+> deliberate RFC 6266 trade-off, ancient clients get the URL-segment name; not a defect.
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase
