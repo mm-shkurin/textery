@@ -17,15 +17,6 @@ from statements.frontend.auth.register_page_statements import RegisterPageStatem
 from statements.frontend.auth.verify_code_page_statements import VerifyCodePageStatements
 from statements.frontend.landing_page_statements import LandingPageStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
-from statements.document_export_statements import DocumentExportStatements
-from statements.document_export_format_statements import DocumentExportFormatStatements
-from statements.document_export_docx_statements import DocumentExportDocxStatements
-from statements.document_export_filename_statements import (
-    DocumentExportFilenameStatements,
-)
-from statements.document_export_no_mutation_statements import (
-    DocumentExportNoMutationStatements,
-)
 from statements.generation_statements import GenerationStatements
 from statements.login_statements import LoginStatements
 from statements.oauth_statements import OAuthStatements
@@ -45,6 +36,16 @@ from frontend_generation_fixtures import (  # noqa: F401
     manual_editor_save_queue_statements,
     manual_editor_popover_clip_statements,
     manual_editor_beforeunload_statements,
+)
+
+# Document-export Statements fixtures also live in their own module for the same
+# reason; re-imported here so pytest discovers them as conftest fixtures.
+from document_export_fixtures import (  # noqa: F401
+    document_export_statements,
+    document_export_format_statements,
+    document_export_docx_statements,
+    document_export_filename_statements,
+    document_export_no_mutation_statements,
 )
 
 # iPhone 12/13-class viewport — the smallest common real-device width the
@@ -67,31 +68,6 @@ async def application_client():
 @pytest_asyncio.fixture
 def generation_statements(application_client):
     return GenerationStatements(application_client)
-
-
-@pytest_asyncio.fixture
-def document_export_statements(application_client):
-    return DocumentExportStatements(application_client)
-
-
-@pytest_asyncio.fixture
-def document_export_format_statements(application_client):
-    return DocumentExportFormatStatements(application_client)
-
-
-@pytest_asyncio.fixture
-def document_export_docx_statements(application_client):
-    return DocumentExportDocxStatements(application_client)
-
-
-@pytest_asyncio.fixture
-def document_export_filename_statements(application_client):
-    return DocumentExportFilenameStatements(application_client)
-
-
-@pytest_asyncio.fixture
-def document_export_no_mutation_statements(application_client):
-    return DocumentExportNoMutationStatements(application_client)
 
 
 @pytest_asyncio.fixture
