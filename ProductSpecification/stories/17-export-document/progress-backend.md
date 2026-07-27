@@ -508,8 +508,37 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   Coverage: export_document.py + rendered_export.py 100% line+branch; document.py 96% (line 103
   reconstitute return — pre-existing gap, covered in the db adapter suite). Files ≤200 (document 116,
   export_document 52, rendered_export 19).
-- [ ] adapters-discovery
-- [ ] adapters-discovery
+- [x] adapters-discovery (db + rest) — Check 1 (ports): db — GAP. The write→read title flow is
+  unsupported end to end: `DocumentModel` has no `title` column, `to_domain`/`from_domain` don't
+  thread it, `SqlAlchemyDocumentStorage.save_content_if_version_matches` doesn't persist it, and the
+  `DocumentRepository.save_content_if_version_matches` port + `SaveDocument.execute` don't accept it —
+  so a saved title never round-trips to the export read. No existing `title` Alembic revision
+  (`grep title migrations/versions` empty), so THIS session adds the additive nullable column (current
+  head `b2c3d4e5f6a7`). Check 2 (exceptions): [S] — no new domain exception (a null/absent title is a
+  default filename, not an error). Check 3 (response shape): rest — GAP ×2: (a) the save endpoint
+  `SaveDocumentRequestDto` has no `title` (Pydantic `extra=ignore` drops it) and the PUT route doesn't
+  forward it to `execute`; (b) the export route hardcodes `Content-Disposition: attachment;
+  filename=document.pdf` (document_router.py:118) and ignores `rendered.filename` — it must thread it
+  and RFC 5987-percent-encode (`filename*=UTF-8''<quote(filename, safe='')>`; `.`/unreserved stay
+  literal, space→%20, Cyrillic→%XX, matching the red literal). Inserted steps below.
+- [ ] red-adapter db (title round-trip) — DocumentModel gains nullable `title` + additive Alembic
+  migration (down_revision b2c3d4e5f6a7); `from_domain`/`to_domain` thread title; the
+  `save_content_if_version_matches` port + `SaveDocument.execute` gain `title`; storage persists it in
+  the SAME CAS UPDATE. Test drives the REAL flow: `SaveDocument.execute(..., title="Привет")` then
+  `find_by_id_and_owner` returns a Document whose `title == "Привет"` (write-here-read-there). In-DB
+  test (needs the migration applied to the test DB).
+- [ ] green-adapter db (title round-trip)
+- [ ] red-adapter rest (save title) — `SaveDocumentRequestDto` gains optional `title: str | None`; the
+  PUT `/{id}` route forwards `request.title` to `SaveDocument.execute`. Test: a save with a title
+  reaches the usecase (was silently dropped).
+- [ ] green-adapter rest (save title)
+- [ ] red-adapter rest (export filename) — export route builds `Content-Disposition` from
+  `rendered.filename` RFC 5987-encoded, replacing the hardcoded `filename=document.pdf`. Test (mock
+  usecase returns `RenderedExport(..., filename="Привет Мир.pdf")`): asserts
+  `content-disposition == "attachment; filename*=UTF-8''%D0%9F…%D0%B8%D1%80.pdf"` (exact). This FIXES
+  the still-RED Sc 3.1 acceptance AND the Sc 2.2 docx-`.pdf` mislabel carry-forward. Remove the now-
+  redundant `RenderedExport.filename` default when updating the Sc 2.1 rest test's construction.
+- [ ] green-adapter rest (export filename)
 - [ ] green-acceptance
 
 ### Scenario 3.2: A document with no title uses a default filename
