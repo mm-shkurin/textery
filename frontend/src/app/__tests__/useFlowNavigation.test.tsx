@@ -66,6 +66,22 @@ describe('useFlowNavigation', () => {
     expect(navigate).toHaveBeenCalledWith('/login', { state: { from: '/' } })
   })
 
+  // Story 18 1.1: the mode-select modal is dropped. Picking a document type goes STRAIGHT to
+  // generation — the flow lands on the generation surface ('form' + 'auto' mode), never the
+  // intermediate 'mode' step. The generating surface is rendered by ChatWorkspace, whose
+  // Selenium contract is [data-testid='generation-generating'].
+  // TDD Red Phase - selectType still routes to the 'mode' step; straight-to-generation not built
+  it.skip('goes straight to generation when a type is picked, showing no mode step', () => {
+    const { result } = renderFlow()
+
+    act(() => result.current.selectType('doklad'))
+
+    expect(result.current.step).toBe('form')
+    expect(result.current.mode).toBe('auto')
+    expect(result.current.documentType).toBe('doklad')
+    expect(result.current.openDocumentId).toBeNull()
+  })
+
   it('walks type then mode into the form', () => {
     const { result } = renderFlow()
 
