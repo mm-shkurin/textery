@@ -598,6 +598,15 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 > NOTE (from Sc 3.1 red-usecase review): Sc 3.1 already pins the `title=None → "document.pdf"` default
 > at the usecase layer. Sc 3.2 should NOT re-pin that exact case — cover what 3.1 doesn't: empty-string
 > vs whitespace-only title, and the persisted-null path end-to-end (acceptance).
+> CARRY-FORWARD (from Sc 3.1 green-adapter rest premortem, commit c678cce — CONCERNS CREDIBLE, data
+> loss): the db CAS preserve-on-omit guard fires only on `title is None`. An empty-string `title=""`
+> is NOT None, so it PASSES the guard and executes `SET title = ''`, silently OVERWRITING a
+> previously-stored title — the exact wipe the None-guard was built to prevent, one branch over. No
+> test at any layer pins `title=""` behavior. Sc 3.2 must decide + pin the empty-string semantics:
+> either reject/normalize `""`→None at the save boundary (so it can't overwrite), or make it a
+> deliberate documented overwrite. Also unbounded: the `documents.title` column is `String()` with no
+> length cap and no usecase validation (contrast content's MAX_CONTENT_LENGTH) — a title length bound
+> is owned by Sc 3.6 (grapheme truncation) or the save-validation contract.
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase
