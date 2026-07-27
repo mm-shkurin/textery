@@ -7,7 +7,7 @@ import {
   flushMicrotasks,
   renderCreatedDocument,
   typeAndFireAutosave,
-  useAutosaveFakeTimers,
+  useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
 
 vi.mock('../../api/documentApi')
@@ -22,7 +22,7 @@ vi.mock('../../api/documentApi')
 // (autosaveRetryBackoff) from mistakenly folding SessionExpiredError into the transient-retry arm.
 
 describe('ManualEditor — an expired-session autosave prompts re-auth and is never retried (H9.3)', () => {
-  useAutosaveFakeTimers()
+  useAutosaveFailureFakeTimers()
 
   it('fires the autosave once, does not retry across the backoff window, and shows the re-auth message', async () => {
     await renderCreatedDocument()

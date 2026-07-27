@@ -9,7 +9,7 @@ import {
   flushMicrotasks,
   renderCreatedDocument,
   typeIntoEditor,
-  useAutosaveFakeTimers,
+  useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
 
 vi.mock('../../api/documentApi')
@@ -30,7 +30,7 @@ const DIRTY_STATUS = 'Черновик, ещё не сохранён'
 // window into a single autosave" — so it is reused here, not duplicated. This file targets only the
 // genuinely-failing trailing-PUT defect.
 describe('ManualEditor — no redundant trailing autosave after a mid-flight edit already saved (H9.4)', () => {
-  useAutosaveFakeTimers()
+  useAutosaveFailureFakeTimers()
 
   it.skip('does not fire a third saveDocument on already-saved content when the stale mid-flight debounce timer elapses, and still autosaves the next real edit', async () => {
     await renderCreatedDocument()

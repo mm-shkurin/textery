@@ -1,8 +1,15 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, render, screen } from '@testing-library/react'
-import { ManualEditor } from '../ManualEditor'
+import { describe, expect, it, vi } from 'vitest'
+import { act, screen } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
-import { AUTOSAVE_DEBOUNCE_MS, defer, flushMicrotasks } from './ManualEditor.autosave.testSupport'
+import {
+  CREATED_DOCUMENT_ID,
+  CREATED_VERSION,
+  defer,
+  flushMicrotasks,
+  renderCreatedDocument,
+  typeAndFireAutosave,
+  useAutosaveFakeTimers,
+} from './ManualEditor.autosave.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -20,23 +27,12 @@ vi.mock('../../api/documentApi')
 // that let a stale A response clobber the newer content or status would fail here.
 
 describe('ManualEditor — out-of-order autosaves reflect the latest edit and content (E3.3/H9.2)', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.clearAllMocks()
-    vi.useRealTimers()
-  })
+  // Timers only — this suite deliberately does NOT silence console.error: nothing here rejects, so a
+  // console.error appearing would be a real diagnostic worth seeing rather than expected noise.
+  useAutosaveFakeTimers()
 
   it('keeps the latest edit and status when a queued save resolves after a stale first save, and the stale response never clobbers the newer content', async () => {
-    vi.mocked(documentApi.createDocument).mockResolvedValue({
-      documentId: 'doc-1',
-      status: 'draft',
-      version: 7,
-    })
-    render(<ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={vi.fn()} />)
-    await flushMicrotasks()
+    await renderCreatedDocument()
 
     // The first save (A) is held pending so a second edit lands while A is still "in flight".
     const saveA = defer()
@@ -45,29 +41,20 @@ describe('ManualEditor — out-of-order autosaves reflect the latest edit and co
       .mockReturnValueOnce(saveA.promise)
       .mockReturnValueOnce(saveB.promise)
 
-    const contentArea = screen.getByTestId('editor-content-area')
-
     // Edit #1 → debounce → first autosave (A) fires and stays pending.
-    contentArea.textContent = 'first version'
-    await act(async () => {
-      fireEvent.input(contentArea)
-    })
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS)
-    })
+    await typeAndFireAutosave('first version')
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(1, 'doc-1', '<p>first version</p>', 7)
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
+      1,
+      CREATED_DOCUMENT_ID,
+      '<p>first version</p>',
+      CREATED_VERSION,
+    )
 
     // Edit #2 lands while A is still in flight: it must queue a re-save, NOT launch a second
     // concurrent saveDocument. Advancing the debounce here re-enters save() which finds A in
     // flight and only sets the "save again" flag.
-    contentArea.textContent = 'second version'
-    await act(async () => {
-      fireEvent.input(contentArea)
-    })
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS)
-    })
+    await typeAndFireAutosave('second version')
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
 
     // A resolves LAST-in-wall-clock but FIRST-in-order, carrying stale server content that differs
@@ -78,7 +65,12 @@ describe('ManualEditor — out-of-order autosaves reflect the latest edit and co
     })
     await flushMicrotasks()
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', '<p>second version</p>', 8)
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
+      2,
+      CREATED_DOCUMENT_ID,
+      '<p>second version</p>',
+      8,
+    )
     // The stale A response did not overwrite the editor's newer content.
     expect(screen.getByTestId('editor-content-area').innerHTML).toBe('<p>second version</p>')
 

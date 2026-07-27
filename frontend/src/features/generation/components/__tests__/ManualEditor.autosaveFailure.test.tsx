@@ -1,9 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, render, screen } from '@testing-library/react'
-import { ManualEditor } from '../ManualEditor'
+import { describe, expect, it, vi } from 'vitest'
+import { screen } from '@testing-library/react'
 import { SAVE_ERROR_MESSAGE } from '../../hooks/useDocumentSave'
 import * as documentApi from '../../api/documentApi'
-import { AUTOSAVE_DEBOUNCE_MS, flushMicrotasks } from './ManualEditor.autosave.testSupport'
+import {
+  CREATED_DOCUMENT_ID,
+  CREATED_VERSION,
+  renderCreatedDocument,
+  typeAndFireAutosave,
+  useAutosaveFailureFakeTimers,
+} from './ManualEditor.autosave.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -17,45 +22,25 @@ vi.mock('../../api/documentApi')
 // is the shared E3.1 constant.
 
 describe('ManualEditor — a failed autosave keeps the content and shows the failure (E3.2)', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-    // The banner is the assertion; the console.error beside it in the save .catch is this app's only
-    // diagnostic and would otherwise print a real-looking failure into a passing run.
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.clearAllMocks()
-    vi.useRealTimers()
-  })
+  // The banner is the assertion; the console.error beside it in the save .catch is this app's only
+  // diagnostic and would otherwise print a real-looking failure into a passing run.
+  useAutosaveFailureFakeTimers()
 
   it('shows the failed-save banner and does not clear the editor content when a debounced autosave rejects', async () => {
-    vi.mocked(documentApi.createDocument).mockResolvedValue({
-      documentId: 'doc-1',
-      status: 'draft',
-      version: 7,
-    })
-    render(<ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={vi.fn()} />)
-    await flushMicrotasks()
+    await renderCreatedDocument()
 
     vi.mocked(documentApi.saveDocument).mockRejectedValue(new Error('network down'))
 
-    const contentArea = screen.getByTestId('editor-content-area')
-    contentArea.textContent = 'hello world'
-    await act(async () => {
-      fireEvent.input(contentArea)
-    })
-
     // Cross the debounce boundary: the autosave fires with no click, then rejects.
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS)
-    })
-    await flushMicrotasks()
+    await typeAndFireAutosave('hello world')
 
     // The autosave was the ONLY trigger — no Сохранить click anywhere in this test.
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', '<p>hello world</p>', 7)
+    expect(documentApi.saveDocument).toHaveBeenCalledWith(
+      CREATED_DOCUMENT_ID,
+      '<p>hello world</p>',
+      CREATED_VERSION,
+    )
 
     // (b) A failed-save state is shown: the banner carries the network-default copy.
     const banner = screen.getByTestId('me-save-error')

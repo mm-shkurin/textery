@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, screen } from '@testing-library/react'
+import { act, screen } from '@testing-library/react'
 import { MAX_AUTOSAVE_ATTEMPTS, SAVE_ERROR_MESSAGE } from '../../hooks/useDocumentSave'
 import { RequestTimeoutError } from '../../../../shared/api/httpClient'
 import * as documentApi from '../../api/documentApi'
@@ -8,7 +8,8 @@ import {
   flushMicrotasks,
   renderCreatedDocument,
   typeAndFireAutosave,
-  useAutosaveFakeTimers,
+  typeIntoEditor,
+  useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
 
 vi.mock('../../api/documentApi')
@@ -28,7 +29,7 @@ vi.mock('../../api/documentApi')
 // do not hardcode green's exact per-attempt delays.
 
 describe('ManualEditor — a transient autosave failure retries on a capped backoff (H9.3)', () => {
-  useAutosaveFakeTimers()
+  useAutosaveFailureFakeTimers()
 
   it('re-fires a timed-out autosave on a backoff timer (not immediately) and clears the failure once it succeeds', async () => {
     await renderCreatedDocument()
@@ -109,11 +110,7 @@ describe('ManualEditor — a transient autosave failure retries on a capped back
 
     // While the backoff timer is pending, the user keeps typing — this is the gap the retry must not
     // drop. The edit lands with no save in flight to queue against; only re-serialization saves it.
-    const contentArea = screen.getByTestId('editor-content-area')
-    contentArea.textContent = 'updated during wait'
-    await act(async () => {
-      fireEvent.input(contentArea)
-    })
+    await typeIntoEditor('updated during wait')
 
     // The retry fires across the window and must carry the LATEST content, at the unchanged version.
     await act(async () => {

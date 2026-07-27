@@ -1,14 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, screen } from '@testing-library/react'
+import { act } from '@testing-library/react'
 import { RequestTimeoutError } from '../../../../shared/api/httpClient'
 import * as documentApi from '../../api/documentApi'
 import {
-  AUTOSAVE_DEBOUNCE_MS,
+  CREATED_DOCUMENT_ID,
+  CREATED_VERSION,
   RETRY_WINDOW_MS,
   defer,
   flushMicrotasks,
   renderCreatedDocument,
-  useAutosaveFakeTimers,
+  typeAndFireAutosave,
+  useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
 
 vi.mock('../../api/documentApi')
@@ -24,7 +26,7 @@ vi.mock('../../api/documentApi')
 // LATEST (queued) content must be re-sent, not abandoned.
 
 describe('ManualEditor — a queued edit is not lost when the in-flight autosave fails (H9.3 gap a)', () => {
-  useAutosaveFakeTimers()
+  useAutosaveFailureFakeTimers()
 
   it('re-fires the queued latest edit after the in-flight autosave rejects, instead of dropping it', async () => {
     await renderCreatedDocument()
@@ -34,27 +36,18 @@ describe('ManualEditor — a queued edit is not lost when the in-flight autosave
       .mockReturnValueOnce(saveA.promise)
       .mockResolvedValue({ status: 'saved', version: 8, content: '<p>second version</p>' })
 
-    const contentArea = screen.getByTestId('editor-content-area')
-
     // Edit #1 → debounce → autosave A fires and stays in flight.
-    contentArea.textContent = 'first version'
-    await act(async () => {
-      fireEvent.input(contentArea)
-    })
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS)
-    })
+    await typeAndFireAutosave('first version')
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(1, 'doc-1', '<p>first version</p>', 7)
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
+      1,
+      CREATED_DOCUMENT_ID,
+      '<p>first version</p>',
+      CREATED_VERSION,
+    )
 
     // Edit #2 lands while A is in flight: it queues a re-save rather than launching a second call.
-    contentArea.textContent = 'second version'
-    await act(async () => {
-      fireEvent.input(contentArea)
-    })
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS)
-    })
+    await typeAndFireAutosave('second version')
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
 
     // A fails transiently. The queued edit must survive: after the backoff the LATEST content is
@@ -69,6 +62,11 @@ describe('ManualEditor — a queued edit is not lost when the in-flight autosave
     await flushMicrotasks()
 
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(2, 'doc-1', '<p>second version</p>', 7)
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
+      2,
+      CREATED_DOCUMENT_ID,
+      '<p>second version</p>',
+      CREATED_VERSION,
+    )
   })
 })

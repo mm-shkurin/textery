@@ -29,13 +29,14 @@ export async function flushMicrotasks() {
   })
 }
 
-// Installs the fake-timer + silenced-console.error lifecycle shared by every autosave-failure
-// suite: fake timers on for each test, all mocks restored/cleared and real timers back after.
-// Call once inside a describe block — it registers the beforeEach/afterEach hooks at that scope.
+// Installs the fake-timer lifecycle shared by every autosave suite: fake timers on for each test,
+// all mocks restored/cleared and real timers back after. Call once inside a describe block — it
+// registers the beforeEach/afterEach hooks at that scope. Console output is left ALONE: suites that
+// exercise a failure path opt into silencing separately (see silenceConsoleError), so a suite whose
+// diagnostics matter keeps them.
 export function useAutosaveFakeTimers() {
   beforeEach(() => {
     vi.useFakeTimers()
-    vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
   afterEach(() => {
@@ -43,6 +44,22 @@ export function useAutosaveFakeTimers() {
     vi.clearAllMocks()
     vi.useRealTimers()
   })
+}
+
+// Opt-in companion for the failure suites: the save .catch's console.error is this app's only
+// diagnostic and would otherwise print a real-looking failure into a passing run. Kept separate from
+// useAutosaveFakeTimers so silencing is a choice each suite makes, not a side effect of wanting fake
+// timers — the restore is handled by useAutosaveFakeTimers' restoreAllMocks.
+export function silenceConsoleError() {
+  beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+}
+
+// The fake-timer + silenced-console lifecycle used by the autosave FAILURE suites.
+export function useAutosaveFailureFakeTimers() {
+  useAutosaveFakeTimers()
+  silenceConsoleError()
 }
 
 // A promise whose settlement the test controls, so a save can be held "in flight" while further
@@ -67,15 +84,19 @@ export function defer<T = SaveDocumentResult>(): Deferred<T> {
 }
 
 // Renders a ManualEditor whose initial createDocument has already resolved to a fresh draft at
-// version 7 — the common starting point for the autosave-failure scenarios.
+// version 7 — the common starting point for the autosave scenarios. Returns the render result so a
+// suite that needs to unmount (pending-timer cancellation) can reuse this same fixture.
 export async function renderCreatedDocument() {
   vi.mocked(documentApi.createDocument).mockResolvedValue({
     documentId: CREATED_DOCUMENT_ID,
     status: 'draft',
     version: CREATED_VERSION,
   })
-  render(<ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={vi.fn()} />)
+  const rendered = render(
+    <ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={vi.fn()} />,
+  )
   await flushMicrotasks()
+  return rendered
 }
 
 // Replaces the editor's text and fires the input event — one user edit, WITHOUT crossing the
