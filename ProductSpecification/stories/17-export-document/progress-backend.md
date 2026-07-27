@@ -451,7 +451,25 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   to enable. Save-then-export freshness (a NON-default version) is owned by Sc 3.5 / Integration 2.1.
 
 ### Scenario 3.1: The filename is derived from the title, encoded for Cyrillic
-- [ ] red-acceptance
+> AUTONOMOUS DESIGN DECISION (user-approved to proceed autonomously, 2026-07-27): `title` is a NEW
+> `Document` field, landed via an additive migration, SET through the SaveDocument save API (PUT
+> /api/v1/documents/{id}), read by export to derive the filename. Cross-story: the `title` column is
+> shared with story-5-extension ("whoever lands it first adds it") — this session lands it. The
+> `design` step below formalizes the model (domain field + migration + save DTO + RFC 5987 filename
+> in the rest route); consider an ADR given the cross-story migration coordination.
+- [x] red-acceptance — RED confirmed live (BACKEND_PORT=8100): predicted == actual.
+  `test_export_filename_is_rfc5987_encoded_from_cyrillic_title` (class `TestExportFilenameFromCyrillicTitle`)
+  → new `DocumentExportFilenameStatements` (74 lines; base at 200-cap): create doc, save it with title
+  "Привет Мир" via the save API, export pdf, assert the FULL `Content-Disposition` equals
+  `attachment; filename*=UTF-8''%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%9C%D0%B8%D1%80.pdf`
+  (exact equality, literal-pinned RFC 5987 value — no runtime encoding, no tautology). Actual:
+  `attachment; filename=document.pdf` (export hardcodes it; document_router.py:~118). SETUP QUIRK
+  confirmed live: the title-bearing save returns 200 because `SaveDocumentRequestDto` has Pydantic
+  `extra="ignore"` and SILENTLY DROPS the unknown `title` field — so GREEN must add `title` to the
+  save DTO + persist it (a dropped title = no filename derivation). Added `save_document` acceptance
+  client method (PUT, optional title) + `SaveDocumentResponseDto`; registered fixture. test-review
+  inline: assertions strict + exact-equality, placement clean. FLAG: conftest.py now 204 lines
+  (over 200-cap; +8 for the new fixture) — /refactor to trim this work unit.
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase

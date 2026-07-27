@@ -92,6 +92,29 @@ class TestExportDoesNotMutateDocument(AbstractBackendTest):
         document_export_no_mutation_statements.assert_not_mutated(snapshot)
 
 
+class TestExportFilenameFromCyrillicTitle(AbstractBackendTest):
+    """Scenario 3.1: The filename is derived from the title, encoded for Cyrillic.
+
+    Given a document whose title contains Cyrillic characters
+    When it is exported
+    Then the attachment filename is RFC 5987-encoded and reflects the title.
+    """
+
+    @pytest.mark.skip(
+        reason="RED: export hardcodes 'attachment; filename=document.pdf'; the "
+        "Cyrillic title is not persisted (SaveDocumentRequestDto drops it) nor "
+        "RFC 5987-encoded into the Content-Disposition."
+    )
+    async def test_export_filename_is_rfc5987_encoded_from_cyrillic_title(
+        self, document_export_filename_statements
+    ):
+        response = await document_export_filename_statements.given_owner_exports_document_with_cyrillic_title_as_pdf()
+
+        document_export_filename_statements.assert_filename_rfc5987_encoded_from_title(
+            response
+        )
+
+
 class TestExportDocumentFormatGuard(AbstractBackendTest):
     """Scenario 1.3: An unsupported or missing format is refused.
 

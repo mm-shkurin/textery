@@ -20,6 +20,9 @@ from statements.frontend.responsive_statements import ResponsiveStatements
 from statements.document_export_statements import DocumentExportStatements
 from statements.document_export_format_statements import DocumentExportFormatStatements
 from statements.document_export_docx_statements import DocumentExportDocxStatements
+from statements.document_export_filename_statements import (
+    DocumentExportFilenameStatements,
+)
 from statements.document_export_no_mutation_statements import (
     DocumentExportNoMutationStatements,
 )
@@ -79,6 +82,11 @@ def document_export_format_statements(application_client):
 @pytest_asyncio.fixture
 def document_export_docx_statements(application_client):
     return DocumentExportDocxStatements(application_client)
+
+
+@pytest_asyncio.fixture
+def document_export_filename_statements(application_client):
+    return DocumentExportFilenameStatements(application_client)
 
 
 @pytest_asyncio.fixture

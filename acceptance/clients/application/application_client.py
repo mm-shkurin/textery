@@ -14,6 +14,7 @@ from clients.application.dto.auth.oauth_dtos import OAuthExchangeResponseDto, OA
 from clients.application.dto.document.create_document_response_dto import CreateDocumentResponseDto
 from clients.application.dto.document.export_response_dto import ExportResponseDto
 from clients.application.dto.document.get_document_response_dto import GetDocumentResponseDto
+from clients.application.dto.document.save_document_response_dto import SaveDocumentResponseDto
 from clients.application.dto.generation.generation_request_dto import CreateGenerationRequestDto
 from clients.application.dto.generation.generation_response_dto import GenerationResponseDto
 
@@ -108,6 +109,30 @@ class ApplicationClient:
             headers={"Authorization": f"Bearer {access_token}"},
         )
         return GetDocumentResponseDto(
+            status_code=response.status_code, body=self._parsed_body(response)
+        )
+
+    async def save_document(
+        self,
+        document_id: str,
+        content: str,
+        version: int,
+        access_token: str,
+        title: str | None = None,
+    ) -> SaveDocumentResponseDto:
+        # title is threaded in as the Cyrillic-filename scenario's source of truth.
+        # It is sent as an extra field on the save payload; whether the backend
+        # persists it (story-5-extension) or drops it via Pydantic extra="ignore"
+        # is exactly what the export filename assertion pins down.
+        payload: dict = {"content": content, "version": version}
+        if title is not None:
+            payload["title"] = title
+        response = await self._client.put(
+            f"/api/v1/documents/{document_id}",
+            json=payload,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        return SaveDocumentResponseDto(
             status_code=response.status_code, body=self._parsed_body(response)
         )
 
