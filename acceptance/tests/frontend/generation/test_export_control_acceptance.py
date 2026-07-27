@@ -1,5 +1,3 @@
-import pytest
-
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
@@ -57,10 +55,6 @@ class TestExportControlProgressAcceptance(AbstractFrontendTest):
         export_control_statements.assert_exporting_indicator_is_shown(webdriver)
 
 
-@pytest.mark.skip(
-    reason="RED: the control swallows a failed export (ExportControl.tsx `.catch(() => {})`) "
-    "and renders no export-error/export-retry; green-selenium 3.2 surfaces the inline error + retry."
-)
 class TestExportControlErrorAcceptance(AbstractFrontendTest):
     """UI Test Scenario 3.2: A failed export shows an inline error with retry, document unchanged.
 
