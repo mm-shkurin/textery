@@ -3,6 +3,11 @@ import pytest
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
+@pytest.mark.skip(
+    reason="OBSOLETE (Story 18): the mode-select modal was removed — picking a type "
+    "now goes straight to generation. This Story 5 scenario asserts the deleted modal "
+    "surface; superseded by Story 18 frontend scenario 1.1."
+)
 class TestModeModalAcceptance(AbstractFrontendTest):
     """UI Test Scenario 1.1: The mode modal now shows both modes as available.
 
