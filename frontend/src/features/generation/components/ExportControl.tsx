@@ -30,11 +30,7 @@ interface ExportControlProps {
   save?: () => void | Promise<void>
 }
 
-export function ExportControl({
-  documentId,
-  hasUnsavedChanges = false,
-  save,
-}: ExportControlProps) {
+export function ExportControl({ documentId, hasUnsavedChanges = false, save }: ExportControlProps) {
   // Conditional mount, not a hidden toggle — the options are absent from the DOM
   // until the trigger is clicked, mirroring the link popover's open/close pattern.
   const [isOpen, setIsOpen] = useState(false)
@@ -67,7 +63,16 @@ export function ExportControl({
         // the dispatch a microtask, so we keep the synchronous path for void saves.
         const saving = save()
         if (saving && typeof saving.then === 'function') {
-          await saving
+          try {
+            await saving
+          } catch {
+            // Save FAILED: skip the export (never ship a stale file) AND do not set the generic
+            // export banner. useDocumentSave already surfaced the accurate data-loss message
+            // (SessionExpired / VersionConflict) in ManualEditor's save-error banner; the generic
+            // "Не удалось экспортировать" would only mask it. Returning here (rather than rethrowing)
+            // leaves that banner to speak. The `finally` below still releases the in-flight lock.
+            return
+          }
         }
       }
       await exportDocument(documentId, format)
@@ -107,11 +112,7 @@ export function ExportControl({
         Экспорт
       </button>
       {isExporting && (
-        <span
-          data-testid="export-spinner"
-          className="me-export-spinner"
-          aria-hidden="true"
-        />
+        <span data-testid="export-spinner" className="me-export-spinner" aria-hidden="true" />
       )}
       {error && (
         <div className="me-export-error-bar">

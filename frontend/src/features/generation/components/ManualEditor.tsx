@@ -161,7 +161,11 @@ export function ManualEditor({
       <div className="me-container">
         <div className="me-toolbar-row">
           <ManualEditorBreadcrumb documentTypeLabel={documentTypeLabel} onBack={onBack} />
-          <ExportControl documentId={documentId} />
+          <ExportControl
+            documentId={documentId}
+            hasUnsavedChanges={hasUnsavedChanges}
+            save={save}
+          />
         </div>
         <div className="me-editor-shell">
           <ManualEditorToolbar
@@ -170,7 +174,9 @@ export function ManualEditor({
             hasUnsavedChanges={hasUnsavedChanges}
             isSaving={isSaving}
             hasFailedToInitialize={Boolean(initError)}
-            onSave={save}
+            // save() REJECTS on failure so ExportControl can skip a stale export; the button has
+            // nothing to await it, so swallow the rejection (the banner was set before the rethrow).
+            onSave={() => void save().catch(() => {})}
           />
           {initError && (
             <div className="me-error-banner" role="alert" data-testid="me-init-error">

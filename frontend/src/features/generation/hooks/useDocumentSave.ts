@@ -51,7 +51,10 @@ export interface DocumentSave {
   setVersion: (version: number) => void
   // Call on every edit: an edit landing mid-flight has to queue a re-save.
   noteEdit: () => void
-  save: () => void
+  // Resolves only after the save (and any queued re-save) fully completes, and REJECTS on failure.
+  // ExportControl awaits this on a dirty export: a save that resolved on failure would let a stale
+  // file ship, so the failure must propagate. The Save button consumes it fire-and-forget.
+  save: () => Promise<void>
 }
 
 // The save state machine, extracted from ManualEditor — which was over the 200-line limit and
@@ -73,17 +76,24 @@ export function useDocumentSave({
   const [saveError, setSaveError] = useState<string | null>(null)
   const isSavingRef = useRef(false)
   const saveAgainRequested = useRef(false)
+  // The promise of the currently in-flight save chain (including any queued re-save it spawns). A
+  // second save() call while one is running returns THIS, not an already-resolved promise, so a
+  // caller awaiting it (ExportControl on a dirty export) waits for the real persistence to settle.
+  const inFlightRef = useRef<Promise<void> | null>(null)
 
-  const performSave = (saveVersion: number) => {
-    if (!documentId || !editor) return
+  const performSave = (saveVersion: number): Promise<void> => {
+    if (!documentId || !editor) return Promise.resolve()
     isSavingRef.current = true
     setIsSaving(true)
     saveAgainRequested.current = false
     // Captured before the round trip: the response's content is the SANITIZED persisted form,
     // and telling whether to adopt it requires knowing what we actually sent.
     const sent = editor.getHTML()
-    saveDocument(documentId, sent, saveVersion)
-      .then((result) => {
+    // .then(onFulfilled, onRejected) — NOT .then().catch(): onRejected must handle only THIS
+    // save's rejection, never the recursive performSave returned below (its own onRejected owns
+    // that). A trailing .catch would run twice for a queued re-save failure, doubling side effects.
+    return saveDocument(documentId, sent, saveVersion).then(
+      (result) => {
         // The server's content is the source of truth — it strips <script> with its contents and
         // normalises void tags (`<br />` -> `<br>`), measured 2026-07-17. Keeping ours would
         // render markup the server does not have and re-send it on every later save.
@@ -99,14 +109,15 @@ export function useDocumentSave({
         setSaveError(null)
         if (saveAgainRequested.current) {
           saveAgainRequested.current = false
-          performSave(result.version)
-        } else {
-          isSavingRef.current = false
-          setIsSaving(false)
-          onSaved()
+          // Return the re-save so this chain settles only after it does — the awaiting caller
+          // keeps waiting through the queued save, and its failure propagates out of here.
+          return performSave(result.version)
         }
-      })
-      .catch((error) => {
+        isSavingRef.current = false
+        setIsSaving(false)
+        onSaved()
+      },
+      (error) => {
         // The banner tells the user WHAT happened; this is the only place the underlying error
         // object survives at all. There is no reporting sink, so the console is the whole of the
         // diagnostics — deleting it would leave a failed save with no trace anywhere.
@@ -119,7 +130,11 @@ export function useDocumentSave({
         isSavingRef.current = false
         setIsSaving(false)
         setSaveError(describeSaveFailure(error))
-      })
+        // Rethrow so an awaiting caller (ExportControl) sees the failure and SKIPS the export —
+        // resolving here would ship a stale file. The banner side effects above already ran.
+        throw error
+      },
+    )
   }
 
   return {
@@ -136,13 +151,17 @@ export function useDocumentSave({
         saveAgainRequested.current = true
       }
     },
-    save: () => {
-      if (!documentId || !editor) return
+    save: (): Promise<void> => {
+      if (!documentId || !editor) return Promise.resolve()
       if (isSavingRef.current) {
         saveAgainRequested.current = true
-        return
+        // Return the in-flight chain, not a resolved promise: the queued re-save is folded into it
+        // (its resolve handler runs performSave again), so awaiting this waits for that too.
+        return inFlightRef.current ?? Promise.resolve()
       }
-      performSave(version)
+      const promise = performSave(version)
+      inFlightRef.current = promise
+      return promise
     },
   }
 }

@@ -14,10 +14,7 @@ vi.mock('../../api/documentApi', () => ({
 }))
 
 describe('ManualEditor dirty export save-first ordering', () => {
-  // RED: ManualEditor renders <ExportControl documentId={documentId} /> without threading the new
-  // save/hasUnsavedChanges props, so the dirty editor exports without saving first. Enable once
-  // green-frontend wires an awaitable+rejectable save into ExportControl.
-  it.skip('saves the document and waits for it to settle before dispatching the export', async () => {
+  it('saves the document and waits for it to settle before dispatching the export', async () => {
     // A freshly-created editor is dirty (hasUnsavedChanges initializes to true), so exporting must
     // persist first — the export renders STORED html, and shipping before the save resolves would
     // download a stale file (the exact bug scenario 4.1 exists to prevent).
