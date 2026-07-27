@@ -91,10 +91,13 @@
 /* Inline export failure (scenario 3.2): the transport's message plus a retry, shown until the
    next dispatch succeeds. Danger colour uses the shared --error token (index.css), matching
    every other error surface (auth, save-status, chat) — no divergent token or hex fallback. */
-.me-export-error {
+.me-export-error-bar {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+.me-export-error {
   color: var(--error);
   font-size: 13px;
 }

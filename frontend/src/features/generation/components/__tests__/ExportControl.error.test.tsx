@@ -81,10 +81,7 @@ describe('ExportControl export failure surfacing', () => {
     expect(error).toHaveTextContent(EXPORT_ERROR_TEXT)
   })
 
-  // RED: fails — export-error node text is 'Не удалось экспортировать документПовторить' because the
-  // export-retry button is a CHILD of export-error, so its label bleeds into the node's own text.
-  // Fix in green-frontend: make retry a sibling of the error node, not a descendant.
-  it.skip('scopes the error node text to exactly the localized message, excluding the nested retry label', async () => {
+  it('scopes the error node text to exactly the localized message, excluding the nested retry label', async () => {
     const deferred = renderAndExport()
     deferred.reject(new Error(EXPORT_ERROR_TEXT))
 

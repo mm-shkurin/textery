@@ -84,8 +84,10 @@ export function ExportControl({ documentId }: ExportControlProps) {
         />
       )}
       {error && (
-        <span className="me-export-error" role="alert" data-testid="export-error">
-          {error}
+        <div className="me-export-error-bar">
+          <span className="me-export-error" role="alert" data-testid="export-error">
+            {error}
+          </span>
           <button
             type="button"
             className="me-export-retry"
@@ -95,7 +97,7 @@ export function ExportControl({ documentId }: ExportControlProps) {
           >
             Повторить
           </button>
-        </span>
+        </div>
       )}
       {isOpen && (
         <div className="me-export-menu" role="menu" data-testid="export-menu">
