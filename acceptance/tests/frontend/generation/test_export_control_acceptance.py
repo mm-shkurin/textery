@@ -1,3 +1,5 @@
+import pytest
+
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
@@ -98,3 +100,30 @@ class TestExportControlDirtyExportAcceptance(AbstractFrontendTest):
         export_control_statements.trigger_pdf_export_with_unsaved_edits(webdriver)
 
         export_control_statements.assert_export_saves_before_exporting(webdriver)
+
+
+# RED (analytical, live run deferred to green-selenium): ExportControl awaits the resolved export
+# Blob (ExportControl.tsx:78) but discards it — there is no object-URL anchor click and no
+# `download` attribute — so a real PDF export fetches the bytes and drops them: nothing lands on
+# disk. With Chrome's download behavior pointed at a per-test temp dir, the poll finds NO complete
+# file and the assertion times out. green-frontend threads the blob into a browser download;
+# green-selenium removes this marker and runs it live.
+@pytest.mark.skip(reason="RED 5.1: blob->download delivery not implemented; live run at green-selenium")
+class TestExportControlDownloadAcceptance(AbstractFrontendTest):
+    """UI Test Scenario 5.1: A successful export delivers a downloaded file.
+
+    Given a document open in the editor
+    When the user exports it as pdf
+    Then a file is downloaded to the browser
+    """
+
+    def test_should_download_a_file_when_the_user_exports_as_pdf(
+        self, webdriver, app_url, export_control_statements
+    ):
+        export_control_statements.open_manual_editor_for_doklad(webdriver, app_url)
+
+        export_control_statements.enable_download_capture(webdriver)
+
+        export_control_statements.trigger_pdf_export_for_download(webdriver)
+
+        export_control_statements.assert_a_file_was_downloaded(webdriver)

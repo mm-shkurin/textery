@@ -21,6 +21,9 @@ from statements.frontend.generation.export_control_locators import (
 from statements.frontend.generation.manual_editor_export_dirty_statements import (
     ExportDirtyStatementsMixin,
 )
+from statements.frontend.generation.manual_editor_export_download_statements import (
+    ExportDownloadStatementsMixin,
+)
 from statements.frontend.generation.manual_editor_export_error_statements import (
     ExportErrorStatementsMixin,
 )
@@ -50,6 +53,7 @@ EXPORT_REQUEST_PATH = "/export"
 
 class ExportControlStatements(
     ExportDirtyStatementsMixin,
+    ExportDownloadStatementsMixin,
     ExportErrorStatementsMixin,
     NetworkThrottleMixin,
     ManualEditorStatements,

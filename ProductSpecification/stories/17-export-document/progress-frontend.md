@@ -71,8 +71,8 @@ This file tracks **which work units ran**.
 - [S] demo — autonomous loop, no interactive viewer; behavior proven in real Chrome by green-selenium (2 clean runs). Run `/demo TestExportControlDirtyExportAcceptance` manually to watch.
 
 ### Scenario 5.1: A successful export delivers a downloaded file
-- [ ] red-selenium
-- [ ] red-frontend
+- [x] red-selenium — new `@pytest.mark.skip` class `TestExportControlDownloadAcceptance` + new `ExportDownloadStatementsMixin` (`manual_editor_export_download_statements.py`, 118 lines; mixed into `ExportControlStatements`, 167). Headless Chrome blocks downloads by default (conftest webdriver sets no download dir), so `enable_download_capture` opts in via CDP `Page.setDownloadBehavior` (behavior=allow, downloadPath=per-test `mkdtemp`). `trigger_pdf_export_for_download` opens control + clicks PDF (no throttle). `assert_a_file_was_downloaded` polls the capture dir, requires a COMPLETE non-`.crdownload` file, `os.path.isfile`, non-zero size, AND `.pdf` extension (test-review fix — exports "as pdf"). Analytical RED: `exportDocument` resolves a Blob but `ExportControl.tsx:78` discards it (no `createObjectURL`/anchor `download`) → no file lands → `AssertionError` "no complete file appeared in the capture dir within Ns". green-frontend 5.1 adds blob→download delivery; live run at green-selenium. test-review 1 fix (`.pdf` extension assertion). All files <200 (118/167/129).
+- [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
