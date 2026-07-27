@@ -49,7 +49,7 @@ const SAVED_VERSION = 8
 describe('ManualEditor — an edit reverted to the last-saved content settles clean (H9.4 regression)', () => {
   useAutosaveFakeTimers()
 
-  it.skip('leaves the document clean, the Save button live and beforeunload disarmed after the boundary suppresses a no-op save', async () => {
+  it('leaves the document clean, the Save button live and beforeunload disarmed after the boundary suppresses a no-op save', async () => {
     await renderCreatedDocument()
 
     vi.mocked(documentApi.saveDocument).mockResolvedValue({

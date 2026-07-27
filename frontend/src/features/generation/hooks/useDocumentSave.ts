@@ -7,7 +7,11 @@ import {
   backoffDelay,
   isTransientFailure,
 } from './autosaveRetryPolicy'
-import { isAlreadySaved, savedContentAfterResolve } from './autosaveDirtyGuard'
+import {
+  isAlreadySaved,
+  savedContentAfterResolve,
+  shouldAdoptPersistedContent,
+} from './autosaveDirtyGuard'
 import {
   CONFLICT_ERROR_MESSAGE,
   SAVE_ERROR_MESSAGE,
@@ -60,8 +64,9 @@ export function useDocumentSave({
   // A scheduled transient retry lives here so unmount can cancel it — an editor the user navigated
   // away from must not fire a write at an abandoned document on a backoff timer.
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // The content the server last confirmed while the editor still held it (H9.4). Only a resolve
-  // writes here — a failed save leaves it alone, so autosave keeps working after a failure.
+  // The content the server last confirmed while the editor still held it (H9.4). A resolve records
+  // it; a terminal failure clears it back to null ("unknown, never suppress"), since suppression
+  // now settles the document clean and a document with a failure banner over it is not clean.
   const lastSavedContentRef = useRef<string | null>(null)
   useEffect(
     () => () => {
@@ -76,6 +81,16 @@ export function useDocumentSave({
   // editor's CURRENT content, so a keystroke typed during the wait is re-sent, never silently lost.
   const performSave = (saveVersion: number, attempt = 1) => {
     if (!documentId || !editor) return
+    // The end of an in-flight cycle with nothing left to write: drop the queue, leave the saving
+    // state, and tell the caller the document is clean. `onSaved` is the SOLE writer of the clean
+    // flag, so every exit that stops writing has to come through here — a bare return would strand
+    // the badge, beforeunload and the Сохранить button in the dirty state with no path back.
+    const settleClean = () => {
+      saveAgainRequested.current = false
+      isSavingRef.current = false
+      setIsSaving(false)
+      onSaved()
+    }
     isSavingRef.current = true
     setIsSaving(true)
     saveAgainRequested.current = false
@@ -84,15 +99,9 @@ export function useDocumentSave({
     const sent = serializeEditorHtml(editor)
     saveDocument(documentId, sent, saveVersion)
       .then((result) => {
-        // The server's content is the source of truth — it strips <script> with its contents and
-        // normalises void tags (`<br />` -> `<br>`), measured 2026-07-17. Keeping ours would
-        // render markup the server does not have and re-send it on every later save.
-        //
-        // But adopt ONLY if the editor still holds exactly what we sent. Typing continues while
-        // the request is in flight, and setContent would delete those keystrokes — the worst
-        // possible trade for cosmetic agreement. If it changed, the next save re-sanitizes
-        // anyway, so nothing is lost by skipping.
-        if (result.content !== sent && serializeEditorHtml(editor) === sent) {
+        // Whether to take the server's sanitized form into the editor — rules and rationale live
+        // beside the guard that reads the result (autosaveDirtyGuard).
+        if (shouldAdoptPersistedContent(sent, serializeEditorHtml(editor), result.content)) {
           editor.commands.setContent(result.content)
         }
         // Read AFTER the adoption decision above: what the editor holds now is what the guard may
@@ -107,9 +116,7 @@ export function useDocumentSave({
           saveAgainRequested.current = false
           performSave(result.version)
         } else {
-          isSavingRef.current = false
-          setIsSaving(false)
-          onSaved()
+          settleClean()
         }
       })
       .catch((error) => {
@@ -124,6 +131,15 @@ export function useDocumentSave({
         if (isTransientFailure(error) && attempt < MAX_AUTOSAVE_ATTEMPTS) {
           retryTimerRef.current = setTimeout(() => {
             retryTimerRef.current = null
+            // The backoff window is the one place save() cannot apply the guard: isSavingRef is
+            // still true, so an edit landing here takes the queue branch and returns before the
+            // check. Undo an edit in that gap and the queue now points at content the server
+            // already has — firing it would write it again AND chain a second write off the
+            // resolve. Fire time is when the question is finally answerable, so ask it here.
+            if (isAlreadySaved(serializeEditorHtml(editor), lastSavedContentRef.current)) {
+              settleClean()
+              return
+            }
             performSave(saveVersion, attempt + 1)
           }, backoffDelay(attempt))
           return
@@ -135,6 +151,14 @@ export function useDocumentSave({
         isSavingRef.current = false
         setIsSaving(false)
         setSaveError(describeSaveFailure(error))
+        // And forget what the guard remembered. Suppression now settles the document CLEAN, so the
+        // memory may only outlive events that leave it true — a terminal failure is not one. A
+        // VersionConflictError here has already survived saveDocument's own refetch-and-retry, i.e.
+        // another writer holds the document and the remembered content is provably not on the
+        // server. Even for a plain network failure the banner says "not saved", and suppressing a
+        // later revert would flip the badge to «Сохранено» right above it. Forgetting makes the next
+        // boundary a real attempt instead — which is also the retry that clears the banner.
+        lastSavedContentRef.current = null
       })
   }
 
@@ -162,7 +186,15 @@ export function useDocumentSave({
       // stale debounce timer left armed by a mid-flight edit inert. Checked only when NO save is in
       // flight — mid-flight the ref describes the PREVIOUS save, and skipping the queue there could
       // strand the editor holding older content than the request already on the wire.
-      if (isAlreadySaved(serializeEditorHtml(editor), lastSavedContentRef.current)) return
+      // Suppressing the write is only half the answer: an edit reverted to the saved content (undo,
+      // backspacing the one new character, bold-then-unbold) still ran onDirty on the way back, so
+      // returning bare here left hasUnsavedChanges true with nothing able to clear it — badge stuck
+      // dirty, beforeunload armed forever, and Сохранить a dead button routing into this same
+      // branch. The document genuinely IS clean, so say so.
+      if (isAlreadySaved(serializeEditorHtml(editor), lastSavedContentRef.current)) {
+        onSaved()
+        return
+      }
       performSave(version)
     },
   }

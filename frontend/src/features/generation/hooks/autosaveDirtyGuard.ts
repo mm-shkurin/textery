@@ -11,6 +11,23 @@
 // throw away the debounce in the case where the queued re-save FAILS — and there the debounce is the
 // only thing left that will retry. Suppressing at FIRE time, on the content, keeps that retry alive.
 
+// Whether a resolved save's persisted content should replace what the editor holds.
+//
+// The server's copy is the source of truth — it strips <script> with its contents and normalises
+// void tags (`<br />` -> `<br>`), measured 2026-07-17. Keeping ours would render markup the server
+// does not have and re-send it on every later save.
+//
+// But adopt ONLY if the editor still holds exactly what we sent. Typing continues while the request
+// is in flight, and setContent would delete those keystrokes — the worst possible trade for cosmetic
+// agreement. If it changed, the next save re-sanitizes anyway, so nothing is lost by skipping.
+export function shouldAdoptPersistedContent(
+  sentContent: string,
+  currentContent: string,
+  persistedContent: string,
+): boolean {
+  return persistedContent !== sentContent && currentContent === sentContent
+}
+
 // What the guard may remember as "saved" once a save resolves.
 //
 // `persistedContent` is the server's own copy (already sanitized: it strips <script> with its
