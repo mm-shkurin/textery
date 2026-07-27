@@ -1,3 +1,6 @@
+import io
+import zipfile
+
 from clients.application.dto.document.export_response_dto import ExportResponseDto
 from statements.document_export_statements import (
     DOCX_CONTENT_TYPE,
@@ -39,6 +42,21 @@ class DocumentExportDocxStatements(DocumentExportStatements):
         assert response.content.startswith(b"PK\x03\x04"), (
             f"expected the body to start with the PK\\x03\\x04 ZIP signature of a valid "
             f"DOCX, got first bytes={response.content[:8]!r}"
+        )
+        # PK magic alone passes for ANY zip (empty archive, renamed file, a docx
+        # missing its OOXML parts). Open the bytes and require the two mandatory
+        # OOXML parts so a bare/corrupt zip that Word reports as damaged cannot
+        # ship green (red-acceptance premortem carry-forward).
+        try:
+            with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
+                names = archive.namelist()
+        except zipfile.BadZipFile as error:  # pragma: no cover - defensive
+            raise AssertionError(
+                f"the DOCX body is not a readable ZIP archive: {error}"
+            ) from error
+        assert "[Content_Types].xml" in names and "word/document.xml" in names, (
+            f"expected the mandatory OOXML parts [Content_Types].xml and "
+            f"word/document.xml in the docx, got members={names!r}"
         )
         assert response.content_disposition is not None and (
             response.content_disposition.strip().lower().startswith("attachment")

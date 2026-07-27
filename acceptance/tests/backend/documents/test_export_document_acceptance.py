@@ -65,10 +65,6 @@ class TestExportDocumentAsDocx(AbstractBackendTest):
     And is delivered as an attachment.
     """
 
-    @pytest.mark.skip(
-        reason="RED: DOCX rendering not yet implemented (Scenario 2.2) — export raises "
-        "500 INTERNAL_ERROR instead of returning a wordprocessingml attachment"
-    )
     async def test_owner_exports_own_document_as_valid_docx_attachment(
         self, document_export_docx_statements
     ):

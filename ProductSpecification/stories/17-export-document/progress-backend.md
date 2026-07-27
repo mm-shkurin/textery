@@ -398,7 +398,15 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   deps installed before running (carryover quirk).
   QUIRK: container mounts project at /app/backend, so in-container cwd is `cd /app/backend` (not
   `/app` as the Sc 2.1 handoff stated) — correct in next handoff.
-- [ ] green-acceptance
+- [x] green-acceptance — GREEN live against the rebuilt backend (BACKEND_PORT=8100): 7 passed
+  (was 6 passed / 1 skipped). `test_owner_exports_own_document_as_valid_docx_attachment` now passes —
+  `/export?format=docx` on an owned document streams a real .docx (200, exact wordprocessingml
+  content type, PK\x03\x04, attachment disposition, `body is None`). Enabled the test (removed RED
+  skip) AND strengthened `assert_valid_docx_attachment` per the red-acceptance premortem carry-forward:
+  opens the bytes with `zipfile.ZipFile` and requires the mandatory OOXML parts `[Content_Types].xml`
+  + `word/document.xml` (a bare/renamed zip that Word calls corrupt can no longer ship green; BadZipFile
+  → AssertionError). Statements file 69 lines (under cap). Baked image rebuilt before running (carryover
+  quirk). **Scenario 2.2 COMPLETE.**
 
 ### Scenario 2.3: An empty document exports to a valid file
 - [ ] red-acceptance
