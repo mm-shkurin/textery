@@ -290,6 +290,17 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   (docx assert duplicates the base pdf assert) deferred to /refactor — extracting it would push
   the 200-line base over cap. NOTE (pre-existing, out of scope): conftest.py is 258 lines
   (over the 200-cap before this change); red only added a 2-line fixture — worth a future split.
+> CARRY-FORWARD (from red-acceptance premortem, commit 9384dee — CONCERNS CREDIBLE): the RED
+> DOCX assert pins only `PK\x03\x04` (generic ZIP local-file-header magic). That passes for ANY
+> zip — an empty zip, a renamed archive, a docx missing its OOXML parts — so a minimal green
+> renderer emitting a bare/corrupt zip would ship green while Word reports "file is corrupt".
+> Before green cements the contract, STRENGTHEN `assert_valid_docx_attachment` to open the bytes
+> with `zipfile.ZipFile(io.BytesIO(content))` and assert the mandatory OOXML parts are present
+> (`[Content_Types].xml` + `word/document.xml` in `namelist()`, and not `BadZipFile`). Content
+> fidelity (owner's text survives into the .docx) is a separate concern — no dedicated scenario
+> exists in the 2.x sequence; flag as a story-level gap (parallels the Sc 3.4 PDF glyph guard).
+> agent-review: PASS. refactor: NO ACTION (DRY docx/pdf assert duplication left as-is — base at
+> 200-line cap, extraction would push it over; RED skip must stay).
 - [~] design
 - [ ] red-usecase
 - [ ] green-usecase
