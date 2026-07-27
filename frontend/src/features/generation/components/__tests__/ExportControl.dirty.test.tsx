@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+} from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
 import { ExportControl } from '../ExportControl'
 
@@ -59,5 +65,33 @@ describe('ExportControl save-first on dirty export', () => {
     expect(save).not.toHaveBeenCalled()
     expect(documentApi.exportDocument).toHaveBeenCalledTimes(1)
     expect(documentApi.exportDocument).toHaveBeenNthCalledWith(1, 'doc-1', 'pdf')
+  })
+
+  // Guard C — ExportControl.tsx:74 (the `catch { return }` inside handleExport's run()). A dirty
+  // export whose save REJECTS must (1) NOT dispatch exportDocument — a failed save must never ship
+  // the stale stored html — and (2) NOT raise the generic export-error banner, so useDocumentSave's
+  // accurate data-loss banner (SessionExpired / VersionConflict) speaks unmasked. This pins that
+  // branch: without the `return`, either the export would fire on a rejected save or the generic
+  // banner would appear.
+  it('skips the export and shows no generic export banner when the save rejects on a dirty export', async () => {
+    vi.mocked(documentApi.exportDocument).mockReturnValue(new Promise(() => {}))
+    let rejectSave: (reason?: unknown) => void = () => {}
+    const save = vi.fn(() => new Promise<void>((_, reject) => {
+      rejectSave = reject
+    }))
+
+    render(<ExportControl documentId="doc-1" hasUnsavedChanges save={save} />)
+    triggerExport()
+
+    expect(save).toHaveBeenCalledTimes(1)
+
+    // The rejection settles the run() chain via the inner catch's `return`; the in-flight lock
+    // clears in `finally`, so the spinner's removal is the marker that the whole chain is done.
+    rejectSave(new Error('save failed'))
+    await waitForElementToBeRemoved(() => screen.queryByTestId('export-spinner'))
+
+    // Stale file never shipped, and no generic banner masks the accurate save-error message.
+    expect(documentApi.exportDocument).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('export-error')).toBeNull()
   })
 })
