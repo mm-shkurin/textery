@@ -38,10 +38,36 @@ from statements.frontend.generation.manual_editor_save_payload_statements import
 from statements.frontend.generation.manual_editor_statements import MANUAL_EDITOR_SELECTOR
 
 SAVE_ERROR_BANNER = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} [data-testid='me-save-error']")
+DIRTY_STATUS = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-save-status--dirty")
 # The debounce is 1000ms; the reconcile adds a 409 + refetch GET + retry PUT on top of it, so the
 # saved indicator can legitimately take longer than a clean autosave. Generous, but not so long
 # it hides a reconcile that never completes.
 _RECONCILE_WAIT_SECONDS = 20
+
+# Wraps window.fetch to record the HTTP status of every document PUT into window.__putStatuses.
+# Installed AFTER the app's own modules have loaded (the first autosave has already settled by the
+# time we install), so it captures the RESULT of each PUT the app makes without replacing the
+# app's transport — it call-throughs to the original fetch and returns the untouched response, so
+# saveDocument still sees a real 409 and drives its own refetch-retry. This is the test's only
+# window onto whether the stale PUT was actually REJECTED (409) and then RETRIED (200): the final
+# persisted content alone cannot distinguish a real 409-reconcile from a backend that silently
+# accepted the stale overwrite — both land the same bytes at the same version.
+_PUT_STATUS_RECORDER_SCRIPT = """
+if (!window.__putStatuses) {
+  window.__putStatuses = [];
+  var originalFetch = window.fetch;
+  window.fetch = function (input, init) {
+    var url = typeof input === 'string' ? input : (input && input.url) || '';
+    var method = ((init && init.method) || (input && input.method) || 'GET').toUpperCase();
+    return originalFetch.apply(this, arguments).then(function (response) {
+      if (method === 'PUT' && url.indexOf('/api/v1/documents/') !== -1) {
+        window.__putStatuses.push(response.status);
+      }
+      return response;
+    });
+  };
+}
+"""
 
 
 class ManualEditorConflictReconcileStatements(ManualEditorAutosaveStatements):
@@ -97,8 +123,45 @@ class ManualEditorConflictReconcileStatements(ManualEditorAutosaveStatements):
             f"got {put.status_code}: {put.text}"
         )
 
+    def install_put_status_recorder(self, driver: WebDriver) -> None:
+        """Start recording document-PUT statuses so the 409-then-retry can be OBSERVED.
+
+        Call this AFTER the first autosave settles and BEFORE the conflicting keystrokes, so the
+        recorder is armed for exactly the stale PUT and its retry.
+        """
+        driver.execute_script(_PUT_STATUS_RECORDER_SCRIPT)
+
+    def assert_stale_put_was_rejected_then_retried(self, driver: WebDriver) -> None:
+        """Prove the 409 refetch-retry branch actually executed — not a silent stale accept.
+
+        The recorder captured every document PUT's status. A genuine reconcile shows a 409 (the
+        backend rejecting the stale version) FOLLOWED BY a 200 (the retry against the refetched
+        version succeeding). If the app had no optimistic-concurrency handling and the backend
+        silently accepted the stale overwrite, no 409 would ever appear — the final content would
+        still be the editor's text, so this is the only assertion that would then fail.
+        """
+        statuses = driver.execute_script("return window.__putStatuses || [];")
+        assert 409 in statuses, (
+            "expected a 409 on the stale PUT (proving the version conflict was really raised), "
+            f"got PUT statuses {statuses!r}"
+        )
+        after_conflict = statuses[statuses.index(409) + 1 :]
+        assert 200 in after_conflict, (
+            "expected a 200 retry AFTER the 409 (proving the refetch-and-retry executed), "
+            f"got PUT statuses {statuses!r}"
+        )
+
     def assert_autosave_reconciled_without_error(self, driver: WebDriver) -> None:
-        """The stale autosave was reconciled, not left failed: saved returns, no error banner."""
+        """The stale autosave was reconciled, not left failed: saved returns, no error banner.
+
+        First wait for the status to LEAVE saved (dirty appears on the new keystrokes) so the
+        saved indicator we then wait for is the SECOND autosave completing, not the stale first
+        one still showing. Without this barrier the saved wait can return instantly on the prior
+        clean save — before the reconcile even fires — making the no-error check vacuous.
+        """
+        WebDriverWait(driver, _RECONCILE_WAIT_SECONDS).until(
+            ec.visibility_of_element_located(DIRTY_STATUS)
+        )
         WebDriverWait(driver, _RECONCILE_WAIT_SECONDS).until(
             ec.visibility_of_element_located(SAVED_STATUS)
         )

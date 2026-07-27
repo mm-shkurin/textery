@@ -29,7 +29,9 @@ class TestManualEditorConflictReconcileAcceptance(AbstractFrontendTest):
 
         statements.perform_out_of_band_edit(webdriver, "<p>other session</p>")
 
+        statements.install_put_status_recorder(webdriver)
         statements.continue_typing_in_editor(webdriver, " more")
         statements.assert_autosave_reconciled_without_error(webdriver)
+        statements.assert_stale_put_was_rejected_then_retried(webdriver)
 
         statements.assert_persisted_content_is(webdriver, "<p>original more</p>")
