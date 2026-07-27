@@ -496,7 +496,6 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   `Document.__init__`/`reconstitute` (NOT create); derive stem (title-or-"document") + `.pdf`/`.docx`
   extension in `ExportDocument.execute`.
 - [ ] green-usecase
-- [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
@@ -509,6 +508,9 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 > 3.1/3.2 derive the filename, the extension MUST follow the export format (`.docx` for docx, `.pdf`
 > for pdf), and red-acceptance MUST assert the docx `Content-Disposition` filename ends in `.docx`
 > (parse the `filename=` token, not just `startswith("attachment")` as the 2.2 assert does).
+> NOTE (from Sc 3.1 red-usecase review): Sc 3.1 already pins the `title=None → "document.pdf"` default
+> at the usecase layer. Sc 3.2 should NOT re-pin that exact case — cover what 3.1 doesn't: empty-string
+> vs whitespace-only title, and the persisted-null path end-to-end (acceptance).
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase
