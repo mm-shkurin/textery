@@ -30,14 +30,20 @@ def create_get_document(session: AsyncSession) -> GetDocument:
 def create_export_document(session: AsyncSession) -> ExportDocument:
     # Deferred import: WeasyPrintPdfRenderer imports weasyprint at module load,
     # which needs native Pango/cairo libs absent on the dev host. Importing it
-    # here rather than at module top keeps this wiring module (and every host
-    # test that imports it) loadable without those libs; only a real export
-    # request, served in-container, constructs the renderer.
+    # (and the dispatcher that composes it) here rather than at module top keeps
+    # this wiring module (and every host test that imports it) loadable without
+    # those libs; only a real export request, served in-container, constructs the
+    # renderers.
+    from rendering.format_dispatching_renderer import FormatDispatchingRenderer
+    from rendering.html_docx_renderer import HtmlDocxRenderer
     from rendering.weasyprint_pdf_renderer import WeasyPrintPdfRenderer
 
     return ExportDocument(
         document_repository=SqlAlchemyDocumentStorage(session),
-        document_renderer=WeasyPrintPdfRenderer(),
+        document_renderer=FormatDispatchingRenderer(
+            pdf_renderer=WeasyPrintPdfRenderer(),
+            docx_renderer=HtmlDocxRenderer(clock=SystemClock()),
+        ),
     )
 
 

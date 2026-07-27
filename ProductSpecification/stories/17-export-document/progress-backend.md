@@ -380,17 +380,24 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   backend suite still collects clean (519 tests, exit 0); committed form 4 skipped. test-review: A/S/P
   all clean — assertions already strict (exact equality on docProps + call-lists; both OOXML parts
   pinned). GREEN runs in-container.
-- [ ] green-adapter rendering — implement both adapters, wire FormatDispatchingRenderer into
-  document_wiring.py, add htmldocx+python-docx to requirements + CI. In-container.
-  ⚠️ PREMORTEM CREDIBLE (d0b89af, vacuous-green trap that bit Sc 2.1): `test_html_docx_renderer.py`
-  is gated by `importorskip("htmldocx")`, and htmldocx/python-docx are NOT in backend/requirements.txt.
-  GREEN MUST (1) add both pins to backend/requirements.txt so the importorskip resolves and the test
-  RUNS in the gating CI env — not skip forever, indistinguishable from a pass in the summary; (2) verify
-  the DOCX rendering suite actually EXECUTES in CI (run in-container + confirm not-skipped, e.g. `-rs`
-  or a non-zero collected-and-run count), mirroring the WeasyPrint "actually executes here" intent. Do
-  NOT lift the RED skip into a permanent skipif. Also: python-docx app.xml defaults are static
-  constants (no OS username) so core.xml redaction is the real guard (already pinned); formatting
-  fidelity (bold/headings) is NOT pinned by 2.2 and is out of scope (acceptance = "valid DOCX").
+- [x] green-adapter rendering — GREEN in-container: 6 passed / 0 skipped / 0 failed; the two
+  `importorskip("htmldocx")`/`("docx")` html_docx tests genuinely RAN (`-rs` showed zero skips —
+  vacuous-green trap avoided). New `html_docx_renderer.py` (47): `HtmlDocxRenderer(clock)` parses
+  sanitized HTML via `htmldocx` into a `python-docx` Document → BytesIO → bytes; neutral
+  core_properties (`author`/`last_modified_by` = "Textery", `created`/`modified` = `clock.now()`) —
+  group-07 redaction guard. New `format_dispatching_renderer.py` (30): `FormatDispatchingRenderer(
+  pdf_renderer, docx_renderer)` routes on ExportFormat, raises `ValueError` ("format") on unmapped
+  member with NEITHER renderer called. Wired `FormatDispatchingRenderer(WeasyPrintPdfRenderer(),
+  HtmlDocxRenderer(clock=SystemClock()))` into document_wiring.py (64) via deferred import (host stays
+  weasyprint-free); `SystemClock.now()` = `datetime.now(UTC)`. Added `python-docx==1.1.2` +
+  `htmldocx==0.0.6` to backend/requirements.txt (pure-Python, no apt). Both CI files install via
+  `pip install -r requirements.txt` — pip-only pins picked up with no yaml edit (only weasyprint's
+  native libs needed apt). mypy `files` already has adapters/rendering/src; new imports use
+  `# type: ignore[import-untyped]` (weasyprint pattern). Coverage: both new files 100% line + branch.
+  Removed the `@pytest.mark.skip` from both RED classes (only test change). Baked image rebuilt so
+  deps installed before running (carryover quirk).
+  QUIRK: container mounts project at /app/backend, so in-container cwd is `cd /app/backend` (not
+  `/app` as the Sc 2.1 handoff stated) — correct in next handoff.
 - [ ] green-acceptance
 
 ### Scenario 2.3: An empty document exports to a valid file

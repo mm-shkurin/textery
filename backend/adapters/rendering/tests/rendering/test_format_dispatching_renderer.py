@@ -25,10 +25,6 @@ class FakeRenderer:
         return self._output
 
 
-@pytest.mark.skip(
-    reason="RED: rendering.format_dispatching_renderer.FormatDispatchingRenderer "
-    "not implemented (ModuleNotFoundError on deferred import)"
-)
 class TestFormatDispatchingRenderer:
     def test_should_route_docx_to_the_docx_renderer(self):
         from rendering.format_dispatching_renderer import FormatDispatchingRenderer

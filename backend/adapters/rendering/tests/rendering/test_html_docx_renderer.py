@@ -50,10 +50,6 @@ def _parsed_instant(text: str | None) -> datetime:
     return datetime.fromisoformat(text.replace("Z", "+00:00"))
 
 
-@pytest.mark.skip(
-    reason="RED: rendering.html_docx_renderer.HtmlDocxRenderer not implemented "
-    "(ModuleNotFoundError on deferred import)"
-)
 class TestHtmlDocxRenderer:
     def test_should_render_html_to_real_docx_bytes(self):
         from rendering.html_docx_renderer import HtmlDocxRenderer  # noqa: E402
