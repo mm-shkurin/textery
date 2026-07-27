@@ -17,34 +17,6 @@ from statements.frontend.auth.register_page_statements import RegisterPageStatem
 from statements.frontend.auth.verify_code_page_statements import VerifyCodePageStatements
 from statements.frontend.landing_page_statements import LandingPageStatements
 from statements.frontend.generation.chat_workspace_statements import ChatWorkspaceStatements
-from statements.frontend.generation.manual_editor_line_break_statements import (
-    ManualEditorLineBreakStatements,
-)
-from statements.frontend.generation.manual_editor_aria_statements import (
-    ManualEditorAriaStatements,
-)
-from statements.frontend.generation.manual_editor_beforeunload_statements import (
-    ManualEditorBeforeUnloadStatements,
-)
-from statements.frontend.generation.manual_editor_caret_statements import (
-    ManualEditorCaretStatements,
-)
-from statements.frontend.generation.manual_editor_placeholder_delete_statements import (
-    ManualEditorPlaceholderDeleteStatements,
-)
-from statements.frontend.generation.manual_editor_popover_clip_statements import (
-    ManualEditorPopoverClipStatements,
-)
-from statements.frontend.generation.manual_editor_save_payload_statements import (
-    ManualEditorSavePayloadStatements,
-)
-from statements.frontend.generation.manual_editor_save_queue_statements import (
-    ManualEditorSaveQueueStatements,
-)
-from statements.frontend.generation.manual_editor_export_control_statements import (
-    ExportControlStatements,
-)
-from statements.frontend.generation.manual_editor_statements import ManualEditorStatements
 from statements.frontend.generation.generate_flow_statements import GenerateFlowStatements
 from statements.frontend.generation.mode_modal_statements import ModeModalStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
@@ -61,6 +33,10 @@ MOBILE_WINDOW_SIZE = "390,844"
 HANDOFF_CODE_TTL_ENV_VAR = "OAUTH_HANDOFF_CODE_TTL_SECONDS"
 PROVIDER_SECRET_ENV_VAR = "YANDEX_CLIENT_SECRET"
 MAX_TESTABLE_TTL_SECONDS = 10
+
+# Manual-editor Statements fixtures live in their own plugin module to keep this
+# root conftest under the 200-line file cap.
+pytest_plugins = ("statements.frontend.generation.manual_editor_fixtures",)
 
 
 @pytest_asyncio.fixture
@@ -195,54 +171,4 @@ def generate_flow_statements():
 @pytest.fixture
 def mode_modal_statements():
     return ModeModalStatements()
-
-
-@pytest.fixture
-def manual_editor_statements():
-    return ManualEditorStatements()
-
-
-@pytest.fixture
-def export_control_statements():
-    return ExportControlStatements()
-
-
-@pytest.fixture
-def manual_editor_line_break_statements():
-    return ManualEditorLineBreakStatements()
-
-
-@pytest.fixture
-def manual_editor_save_payload_statements():
-    return ManualEditorSavePayloadStatements()
-
-
-@pytest.fixture
-def manual_editor_placeholder_delete_statements():
-    return ManualEditorPlaceholderDeleteStatements()
-
-
-@pytest.fixture
-def manual_editor_aria_statements():
-    return ManualEditorAriaStatements()
-
-
-@pytest.fixture
-def manual_editor_caret_statements():
-    return ManualEditorCaretStatements()
-
-
-@pytest.fixture
-def manual_editor_save_queue_statements():
-    return ManualEditorSaveQueueStatements()
-
-
-@pytest.fixture
-def manual_editor_popover_clip_statements():
-    return ManualEditorPopoverClipStatements()
-
-
-@pytest.fixture
-def manual_editor_beforeunload_statements():
-    return ManualEditorBeforeUnloadStatements()
 
