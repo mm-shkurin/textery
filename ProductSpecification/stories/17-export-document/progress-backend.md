@@ -340,7 +340,12 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   equality / identity / set-equality); P inline-fakes placement flag dismissed per the document-usecase
   family's established direct-fakes convention (same call as Sc 2.1 red-usecase). Uses FakeDocumentRenderer
   — no real htmldocx/python-docx.
-- [ ] green-usecase
+- [x] green-usecase — GREEN (usecase file 9 passed; full usecase suite 169 passed, 0 skipped).
+  export_document.py (44 lines): added `ExportFormat.DOCX:
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"` to `_MEDIA_TYPE`, and
+  moved `media_type = _MEDIA_TYPE[export_format]` AHEAD of `render()` (fail-fast, closes the docx
+  KeyError→500 window). None→None (404) path unchanged and first. Both RED tests enabled (removed
+  skip markers only). Coverage: export_document.py 100% line (18/18) + branch (2/2), no gaps.
 - [ ] adapters-discovery
 - [ ] green-acceptance
 

@@ -102,7 +102,6 @@ class TestExportDocument:
         assert result.content == FAKE_RENDERED_PDF
         assert result.media_type == "application/pdf"
 
-    @pytest.mark.skip(reason="RED: _MEDIA_TYPE[ExportFormat.DOCX] KeyErrors -- docx unmapped")
     async def test_should_render_the_stored_content_and_return_docx_bytes(self):
         owner_id = uuid4()
         document = stored_document(owner_id, content="<p>Пока</p>")
@@ -120,7 +119,6 @@ class TestExportDocument:
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
 
-    @pytest.mark.skip(reason="RED: _MEDIA_TYPE omits ExportFormat.DOCX -- invariant unmet")
     def test_every_export_format_resolves_to_a_media_type(self):
         # Structural invariant, not a transient state: it stays green for any
         # future format once that format is mapped, and fails loudly the moment a
