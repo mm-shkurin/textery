@@ -1,5 +1,3 @@
-import pytest
-
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
@@ -108,7 +106,6 @@ class TestExportControlDirtyExportAcceptance(AbstractFrontendTest):
 # disk. With Chrome's download behavior pointed at a per-test temp dir, the poll finds NO complete
 # file and the assertion times out. green-frontend threads the blob into a browser download;
 # green-selenium removes this marker and runs it live.
-@pytest.mark.skip(reason="RED 5.1: blob->download delivery not implemented; live run at green-selenium")
 class TestExportControlDownloadAcceptance(AbstractFrontendTest):
     """UI Test Scenario 5.1: A successful export delivers a downloaded file.
 
