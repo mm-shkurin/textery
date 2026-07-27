@@ -7,11 +7,29 @@
 import { send, VersionConflictError } from '../../../shared/api/send'
 import { WIRE_DOCUMENT_TYPE, type DocumentType } from '../../../shared/documentTypes'
 
+// FAIL-CLOSED CONTRACT (H9.5). `version` is the optimistic-concurrency token every subsequent PUT
+// must carry. `send<DocumentWire>` casts the JSON blindly, so a response whose `version` is absent,
+// null, or unparseable would flow into the caller's version state and be PUT on the next autosave —
+// a write no longer guarded by the token it claims, i.e. the silent overwrite the hazard forbids.
+// Exported so the test asserts against ONE definition of the message, never a drifting inline copy.
+export const INVALID_VERSION_MESSAGE = 'Сервер вернул документ без корректной версии.'
+
 interface DocumentWire {
   document_id: string
   status: string
   content: string
   version: number
+}
+
+// The single fail-closed guard, applied wherever a wire version becomes a token a PUT will carry
+// (create, get, put) — including the 409 refetch, which flows through getDocument. `Number.isFinite`
+// rejects undefined, null, and unparseable strings ("abc") as well as NaN/Infinity without coercing,
+// so every non-finite shape fails closed here rather than being re-PUT unguarded.
+function parseVersion(raw: unknown): number {
+  if (!Number.isFinite(raw)) {
+    throw new Error(INVALID_VERSION_MESSAGE)
+  }
+  return raw as number
 }
 
 export interface CreateDocumentResult {
@@ -51,7 +69,7 @@ export async function createDocument(
     },
     'Не удалось создать документ',
   )
-  return { documentId: data.document_id, status: data.status, version: data.version }
+  return { documentId: data.document_id, status: data.status, version: parseVersion(data.version) }
 }
 
 export interface SaveDocumentResult {
@@ -79,7 +97,7 @@ async function putDocument(
     },
     'Не удалось сохранить документ',
   )
-  return { status: data.status, version: data.version, content: data.content }
+  return { status: data.status, version: parseVersion(data.version), content: data.content }
 }
 
 // On 409 the backend prescribes the recovery itself ("Refetch and retry"), so it is encoded
@@ -130,6 +148,6 @@ export async function getDocument(documentId: string): Promise<GetDocumentResult
     documentId: data.document_id,
     status: data.status,
     content: data.content,
-    version: data.version,
+    version: parseVersion(data.version),
   }
 }
