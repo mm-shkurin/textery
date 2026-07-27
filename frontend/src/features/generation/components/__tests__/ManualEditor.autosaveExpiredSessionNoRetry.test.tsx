@@ -1,9 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, render, screen } from '@testing-library/react'
-import { ManualEditor } from '../ManualEditor'
+import { describe, expect, it, vi } from 'vitest'
+import { act, screen } from '@testing-library/react'
 import { SessionExpiredError } from '../../../auth/api/authorizedRequest'
 import * as documentApi from '../../api/documentApi'
-import { AUTOSAVE_DEBOUNCE_MS, RETRY_WINDOW_MS, flushMicrotasks } from './ManualEditor.autosave.testSupport'
+import {
+  RETRY_WINDOW_MS,
+  flushMicrotasks,
+  renderCreatedDocument,
+  typeAndFireAutosave,
+  useAutosaveFakeTimers,
+} from './ManualEditor.autosave.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -17,37 +22,14 @@ vi.mock('../../api/documentApi')
 // (autosaveRetryBackoff) from mistakenly folding SessionExpiredError into the transient-retry arm.
 
 describe('ManualEditor — an expired-session autosave prompts re-auth and is never retried (H9.3)', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.clearAllMocks()
-    vi.useRealTimers()
-  })
+  useAutosaveFakeTimers()
 
   it('fires the autosave once, does not retry across the backoff window, and shows the re-auth message', async () => {
-    vi.mocked(documentApi.createDocument).mockResolvedValue({
-      documentId: 'doc-1',
-      status: 'draft',
-      version: 7,
-    })
-    render(<ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={vi.fn()} />)
-    await flushMicrotasks()
+    await renderCreatedDocument()
 
     vi.mocked(documentApi.saveDocument).mockRejectedValue(new SessionExpiredError())
 
-    const contentArea = screen.getByTestId('editor-content-area')
-    contentArea.textContent = 'hello world'
-    await act(async () => {
-      fireEvent.input(contentArea)
-    })
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS)
-    })
-    await flushMicrotasks()
+    await typeAndFireAutosave('hello world')
 
     // The re-auth prompt is shown on the first failure — no waiting on a backoff.
     expect(screen.getByTestId('me-save-error')).toHaveTextContent('Сессия истекла. Войдите снова.')

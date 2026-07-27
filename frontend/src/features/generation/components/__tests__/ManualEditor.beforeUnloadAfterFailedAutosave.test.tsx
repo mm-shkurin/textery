@@ -1,9 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, render, screen } from '@testing-library/react'
-import { ManualEditor } from '../ManualEditor'
+import { describe, expect, it, vi } from 'vitest'
+import { screen } from '@testing-library/react'
 import { SAVE_ERROR_MESSAGE } from '../../hooks/useDocumentSave'
 import * as documentApi from '../../api/documentApi'
-import { AUTOSAVE_DEBOUNCE_MS, flushMicrotasks } from './ManualEditor.autosave.testSupport'
+import {
+  renderCreatedDocument,
+  typeAndFireAutosave,
+  useAutosaveFakeTimers,
+} from './ManualEditor.autosave.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -23,37 +26,14 @@ function dispatchBeforeUnload(): boolean {
 // Characterization guard (mirrors the dirty path in ManualEditor.beforeUnloadGuard.test): passes
 // today, so its green counterpart is [S].
 describe('ManualEditor — the beforeunload guard stays armed after a failed autosave (H9.3 gap b)', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.clearAllMocks()
-    vi.useRealTimers()
-  })
+  useAutosaveFakeTimers()
 
   it('keeps preventing unload after a debounced autosave rejects', async () => {
-    vi.mocked(documentApi.createDocument).mockResolvedValue({
-      documentId: 'doc-1',
-      status: 'draft',
-      version: 7,
-    })
-    render(<ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={vi.fn()} />)
-    await flushMicrotasks()
+    await renderCreatedDocument()
 
     vi.mocked(documentApi.saveDocument).mockRejectedValue(new Error('network down'))
 
-    const contentArea = screen.getByTestId('editor-content-area')
-    contentArea.textContent = 'hello world'
-    await act(async () => {
-      fireEvent.input(contentArea)
-    })
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS)
-    })
-    await flushMicrotasks()
+    await typeAndFireAutosave('hello world')
 
     // The autosave failed and its banner is up — the gate that proves this ran the failure path.
     // A generic Error is neither SessionExpiredError nor VersionConflictError, so describeSaveFailure

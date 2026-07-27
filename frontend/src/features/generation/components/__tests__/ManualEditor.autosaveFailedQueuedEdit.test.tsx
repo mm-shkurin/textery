@@ -1,9 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, render, screen } from '@testing-library/react'
-import { ManualEditor } from '../ManualEditor'
+import { describe, expect, it, vi } from 'vitest'
+import { act, fireEvent, screen } from '@testing-library/react'
 import { RequestTimeoutError } from '../../../../shared/api/httpClient'
 import * as documentApi from '../../api/documentApi'
-import { AUTOSAVE_DEBOUNCE_MS, RETRY_WINDOW_MS, flushMicrotasks } from './ManualEditor.autosave.testSupport'
+import {
+  AUTOSAVE_DEBOUNCE_MS,
+  RETRY_WINDOW_MS,
+  flushMicrotasks,
+  renderCreatedDocument,
+  useAutosaveFakeTimers,
+} from './ManualEditor.autosave.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -33,27 +38,12 @@ function defer<T>(): Deferred<T> {
 }
 
 describe('ManualEditor — a queued edit is not lost when the in-flight autosave fails (H9.3 gap a)', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.clearAllMocks()
-    vi.useRealTimers()
-  })
+  useAutosaveFakeTimers()
 
   // RED (H9.3 gap a): the reject handler drops the queued flag and nothing re-fires the edit.
   // AssertionError: expected "vi.fn()" to be called 2 times, but got 1 times.
   it.skip('re-fires the queued latest edit after the in-flight autosave rejects, instead of dropping it', async () => {
-    vi.mocked(documentApi.createDocument).mockResolvedValue({
-      documentId: 'doc-1',
-      status: 'draft',
-      version: 7,
-    })
-    render(<ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={vi.fn()} />)
-    await flushMicrotasks()
+    await renderCreatedDocument()
 
     const saveA = defer<{ status: string; version: number; content: string }>()
     vi.mocked(documentApi.saveDocument)
