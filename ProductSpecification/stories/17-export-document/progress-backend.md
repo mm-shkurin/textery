@@ -686,6 +686,23 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 - [ ] green-acceptance
 
 ### Scenario 3.6: A long multibyte title is truncated on a grapheme boundary
+> CARRY-FORWARD (from Sc 3.1 green-acceptance, commit d89f8b8 — agent-review + premortem BOTH
+> CREDIBLE, same finding): `title` is unbounded at EVERY layer — `SaveDocumentRequestDto.title` has
+> no `max_length`, `DocumentModel.title` is an unbounded `String`, and `SaveDocument.execute`
+> validates content length but never title. The Sc 3.1 chain now proves that title reaches a
+> RESPONSE HEADER verbatim, and `quote(safe="")` expands each Cyrillic char 1→6 bytes, so a ~20k-char
+> title yields a ~120 KB single `Content-Disposition` line — past nginx's default `proxy_buffer_size`
+> (4–8 KB) and uvicorn/h11 header caps: the export 502s permanently for that document, self-service
+> reachable by any authenticated user. This is a HEADER-SIZE failure, distinct from the aesthetic
+> grapheme-truncation this scenario was written for — 3.6 must ALSO pin a named `MAX_TITLE_LENGTH`
+> (422 or truncate at the save boundary) plus a rest-layer assertion that the emitted header stays
+> under a bounded byte length for a pathological title.
+> CARRY-FORWARD (same commit, agent-review CONCERN #2): the export route emits ONLY
+> `filename*=UTF-8''…` with no RFC 6266 §4.3 ASCII `filename="…"` fallback, so a non-RFC-5987 client
+> saves the file as the URL path segment (`export`). Three statements files now pin whole-header
+> equality (`document_export_filename_statements.py`, `document_export_statements.py:168`,
+> `document_export_docx_statements.py:61`), so adding the fallback later breaks all three — decide
+> explicitly whether the fallback is wanted before those assertions harden further.
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase
@@ -880,6 +897,16 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 - [ ] green-acceptance
 
 ### Scenario 3.1: Old code serves documents after the title column lands
+> CARRY-FORWARD (from Backend Sc 3.1 green-acceptance, commit d89f8b8 — premortem CREDIBLE): the
+> migration chain is validated by NOTHING but the deploy itself. `infra/docker/backend.Dockerfile`
+> CMD is the only place `alembic upgrade head` ever runs; the db-suite conftest connects to a
+> pre-existing stamped database and only truncates it — it never migrates. `a3b4c5d6e7f8`
+> (documents.title) is the first migration-added column that is load-bearing for a shipped feature,
+> so a mis-chained `down_revision`, a second head after a branch merge, or a model/schema drift
+> surfaces first as a crashlooping container or `UndefinedColumn` on every document read. Guard to
+> add here: a db-suite test that runs `alembic upgrade head` against an EMPTY database and asserts
+> (a) `ScriptDirectory.get_heads()` has exactly one head, and (b) autogenerate against the migrated
+> schema produces an empty diff (`alembic check`).
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase
