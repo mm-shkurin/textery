@@ -1,16 +1,15 @@
 import uuid
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 from clients.application.application_client import ApplicationClient
 from clients.application.dto.auth.login_request_dto import LoginRequestDto
 from clients.application.dto.auth.register_request_dto import RegisterRequestDto
 from clients.application.dto.auth.verify_request_dto import VerifyRequestDto
 from clients.application.dto.document.export_response_dto import ExportResponseDto
+from statements.export_envelope import assert_export_attachment
 
 ACCOUNT_PASSWORD = "Str0ng!Pass"
 SUPPORTED_DOCUMENT_TYPE = "доклад"
-PDF_CONTENT_TYPE = "application/pdf"
-DOCX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
 class DocumentExportStatements:
@@ -112,12 +111,20 @@ class DocumentExportStatements:
         # export path, but exported by the owner. Its outcome must be distinguishable
         # from the sanctioned 404 — otherwise "foreign == not-found" is a tautology
         # that would stay green even if owner-scoping were dropped.
-        owner_access_token = await self._authenticated_access_token()
-        own_document_id = await self._create_document_owned_by(owner_access_token)
+        return await self._owner_exports_fresh_document("pdf")
+
+    async def _owner_exports_fresh_document(
+        self, export_format: Optional[str]
+    ) -> ExportResponseDto:
+        # The arrange every owner-side export scenario shares: authenticate, create a
+        # document owned by that caller, export it with the caller-chosen format. The
+        # per-scenario `given_*` wrappers name the intent and delegate here.
+        access_token = await self._authenticated_access_token()
+        own_document_id = await self._create_document_owned_by(access_token)
         return await self._client.export_document(
             document_id=own_document_id,
-            export_format="pdf",
-            access_token=owner_access_token,
+            export_format=export_format,
+            access_token=access_token,
         )
 
     def assert_distinguishable_from_not_found(self, response: ExportResponseDto) -> None:
@@ -153,27 +160,7 @@ class DocumentExportStatements:
         # A successful owner export delivers a real PDF, not the JSON placeholder:
         # 200, exact application/pdf, a %PDF- signature, an attachment disposition,
         # and no parsed JSON body.
-        assert response.status_code == 200, (
-            f"expected 200 exporting the owner's own document as pdf, got "
-            f"status_code={response.status_code}, body={response.body}"
-        )
-        assert response.content_type == PDF_CONTENT_TYPE, (
-            f"expected the exact pdf content type {PDF_CONTENT_TYPE!r}, got "
-            f"content_type={response.content_type!r}"
-        )
-        assert response.content.startswith(b"%PDF-"), (
-            f"expected the body to start with the %PDF- signature of a valid PDF, got "
-            f"first bytes={response.content[:8]!r}"
-        )
-        assert response.content_disposition is not None and (
-            response.content_disposition.strip().lower().startswith("attachment")
-        ), (
-            f"expected a Content-Disposition delivering the export as an attachment, got "
-            f"content_disposition={response.content_disposition!r}"
-        )
-        assert response.body is None, (
-            f"a PDF export carries binary bytes, not a parsed JSON body — got {response.body!r}"
-        )
+        assert_export_attachment(response, "pdf")
 
     def assert_refused_as_not_found(self, response: ExportResponseDto) -> None:
         assert response.status_code == 404, (

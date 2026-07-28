@@ -30,13 +30,7 @@ class DocumentExportFormatStatements(DocumentExportStatements):
         # A document owned by the caller, exported with a caller-chosen format.
         # export_format="xml" is the unsupported case; export_format=None omits the
         # query param entirely (the "no format" case). Both must be refused as 422.
-        access_token = await self._authenticated_access_token()
-        own_document_id = await self._create_document_owned_by(access_token)
-        return await self._client.export_document(
-            document_id=own_document_id,
-            export_format=export_format,
-            access_token=access_token,
-        )
+        return await self._owner_exports_fresh_document(export_format)
 
     def assert_refused_as_unprocessable(self, response: ExportResponseDto) -> None:
         assert response.status_code == 422, (
