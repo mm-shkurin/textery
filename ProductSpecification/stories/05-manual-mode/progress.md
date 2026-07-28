@@ -21,7 +21,7 @@ Items the frontend layer discovered, cannot pin from its own side, and which hav
 bootstrapped** — they are not tracked anywhere else, and the frontend follow-up that
 raised them is already closed.
 
-- **No handler may return 503.** The autosave retry treats a 503 as PROOF the write was
+- [ ] **No handler may return 503.** The autosave retry treats a 503 as PROOF the write was
   never taken (`mayHaveLandedServerSide` in
   `frontend/src/features/generation/hooks/autosaveRetryPolicy.ts`) and can suppress the
   write on that answer — the editor then shows «Сохранено» over content the server never
@@ -33,7 +33,15 @@ raised them is already closed.
   genuinely wanted for provider outages, say so and the frontend carve-out gets dropped
   instead (it costs one redundant PUT; keeping it costs the paragraph). The container
   nginx half of the same premise IS gated, by `npm run check:ingress`; see
-  `infra/architecture.md` Deploy notes for the hops that are not.
+  `infra/architecture.md` Deploy notes for the hops that are not. **The origin half is now gated
+  too**: `frontend/scripts/check-nginx-503.mjs` scans `backend/` for `503` on every
+  `npm run check:ingress`, so this checkbox is about the DELIBERATE case — deciding that a provider
+  outage should answer 503 — not about catching an accidental one. Reading `backend/` is not
+  editing it; the frontend is the layer that breaks when the claim lapses.
+
+  This bullet is load-bearing: `check-nginx-503.mjs` fails the build if this file stops saying
+  «No handler may return 503», so it cannot be tidied away silently while the docblock in
+  `autosaveRetryPolicy.ts` still cites it.
 
 ## Spec
 - [x] interview

@@ -42,7 +42,10 @@ export function isTransientFailure(error: unknown): boolean {
 //
 //   - the origin: `backend/adapters/rest/src/error_handling/exception_handlers.py:64-77` returns 500
 //     and it is the only 5xx emitted. No handler returns 503 (verified: no `503` in `backend/`).
-//     Unpinned by any test — owed to the backend session.
+//     Scanned on every `npm run check:ingress` (`check-nginx-503.mjs` greps `backend/` for 503), so
+//     an accidental one fails the build. The DELIBERATE case — deciding a provider outage should
+//     answer 503 — is owed to the backend session and tracked as a checkbox under «Owed to the
+//     backend layer» in `ProductSpecification/stories/05-manual-mode/progress.md`.
 //   - the container nginx, `infra/docker/nginx/frontend.conf`: carries nothing that can answer 503,
 //     and this is the one hop with a GATE — `frontend/scripts/check-nginx-503.mjs`
 //     (`npm run check:ingress`, a CI step) fails the build on any directive that could.

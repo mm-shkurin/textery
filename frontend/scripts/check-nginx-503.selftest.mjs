@@ -32,6 +32,13 @@ import { check, countCase, reportAndExit } from './selftestRunner.mjs'
 const NOTES_WITHOUT_POINTER = join(mkdtempSync(join(tmpdir(), 'nginx-503-notes-')), 'architecture.md')
 writeFileSync(NOTES_WITHOUT_POINTER, '# Architecture\n\n## Deploy notes\n\n- nothing about 503 here\n')
 
+// A backend tree holding one source file, for the origin-scan cases.
+function backendFixture(name, contents) {
+  const dir = mkdtempSync(join(tmpdir(), 'nginx-503-backend-'))
+  writeFileSync(join(dir, name), contents)
+  return dir
+}
+
 // A conf that proxies to the origin and can answer nothing itself: the only shape that may pass.
 expectVerdict({ what: 'a clean conf passes', confs: { 'frontend.conf': CLEAN_CONF }, code: 0 })
 
@@ -127,24 +134,6 @@ expectVerdict({
   what: 'a second conf without the back-reference passes while one conf has it',
   confs: { 'frontend.conf': CLEAN_CONF, 'health.conf': 'server {\n    listen 8081;\n}\n' },
   code: 0,
-})
-
-// The ungated hops' only carrier. It lives in a doc, docs get restructured, and losing the bullet
-// is silent — so the scan reads it the same way it reads the confs' back-reference.
-expectVerdict({
-  what: 'a deploy-notes file that lost the pointer fails',
-  confs: { 'frontend.conf': CLEAN_CONF },
-  deployNotes: NOTES_WITHOUT_POINTER,
-  code: 1,
-  quotes: ['no longer names mayHaveLandedServerSide'],
-})
-
-expectVerdict({
-  what: 'a deploy-notes file that was moved or renamed fails',
-  confs: { 'frontend.conf': CLEAN_CONF },
-  deployNotes: join(tmpdir(), 'nginx-503-no-such-architecture.md'),
-  code: 1,
-  quotes: ['does not exist'],
 })
 
 // Both ways of ending up with nothing to scan. The second is the one that used to exit 0 with a

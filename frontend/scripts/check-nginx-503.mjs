@@ -16,6 +16,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve } from 'node:path'
 import { DIRECTIVES, firstFiring } from './nginx503Directives.mjs'
+import { originEmits503, pointerProblems } from './ingressPremiseFiles.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
@@ -100,20 +101,40 @@ if (!backReferenced) {
   )
 }
 
-// The same reasoning, one file over. The hops with no IaC source — a WAF, a TLS terminator, the
-// host/prod-copy proxy — have no gate at all; their only carrier is the Deploy-notes bullet in
-// infra/architecture.md, which this scan does not otherwise read. It is a doc, docs get
-// restructured, and losing that bullet is silent. Checked for existence too: if the file is moved
-// or renamed, the pointer is gone in the way that looks most like housekeeping.
+// The same reasoning, beyond the confs. Two more halves of the premise are checkable from here,
+// read-only, and both are in `ingressPremiseFiles.mjs`: the ORIGIN emitting no 503, and the prose
+// pointers surviving in files that this scan does not otherwise read. Skipped when the caller
+// points the scan elsewhere — a fixture run is about the conf rules, not about this repo's layout.
+const BACKEND_DIR = flag('backend', resolve(here, '../../backend'))
 const DEPLOY_NOTES = flag('deploy-notes', resolve(here, '../../infra/architecture.md'))
+const OWED_ITEMS = flag('owed-items', resolve(here, '../../ProductSpecification/stories/05-manual-mode/progress.md'))
 
-if (!existsSync(DEPLOY_NOTES)) {
-  offenders.push(`  ${DEPLOY_NOTES} does not exist — it carried the only pointer for the ungated hops`)
-} else if (!readFileSync(DEPLOY_NOTES, 'utf8').includes('mayHaveLandedServerSide')) {
-  offenders.push(
-    `  ${DEPLOY_NOTES} no longer names mayHaveLandedServerSide — that bullet is the only thing` +
-      ' telling whoever adds a WAF or rate limiter what it breaks',
-  )
+offenders.push(
+  ...pointerProblems([
+    {
+      path: DEPLOY_NOTES,
+      marker: 'mayHaveLandedServerSide',
+      label: 'it carries the only pointer for the hops with no IaC source (WAF, TLS terminator,' +
+        ' the host/prod-copy proxy), which have no gate at all',
+    },
+    {
+      path: OWED_ITEMS,
+      marker: 'No handler may return 503',
+      label: 'it carries the owed backend item for the half of the premise this scan cannot' +
+        ' enforce — that no handler DELIBERATELY starts returning 503',
+    },
+  ]),
+)
+
+// The origin is the one hop that can 503 with nothing in front of it misbehaving, and a
+// provider-outage `HTTPException(503)` is a natural thing for the backend to add. `backend/` is the
+// other layer's to EDIT; reading it is not editing it, and the frontend is the layer that breaks.
+if (existsSync(BACKEND_DIR)) {
+  const emitting = originEmits503(BACKEND_DIR)
+  if (emitting.length > 0) {
+    offenders.push('  the ORIGIN now mentions 503 — the autosave carve-out assumes it never does:')
+    offenders.push(...emitting)
+  }
 }
 
 if (offenders.length > 0) {

@@ -34,11 +34,13 @@ export const confDeclaring = (line) => `${BACK_REFERENCE}server {\n    ${line}\n
 // The guard takes both paths as CLI flags, so what it believes about its surroundings is an input
 // here. `marker: null` means «pass no flag», leaving the guard to resolve its own defaults — the
 // only way to exercise the path resolution CI actually takes.
-export function runGuard({ dir, marker = MONOREPO_MARKER, deployNotes } = {}) {
+export function runGuard({ dir, marker = MONOREPO_MARKER, deployNotes, owedItems, backend } = {}) {
   const flags = [
     ...(dir === undefined ? [] : [`--dir=${dir}`]),
     ...(marker ? [`--monorepo-marker=${marker}`] : []),
     ...(deployNotes === undefined ? [] : [`--deploy-notes=${deployNotes}`]),
+    ...(owedItems === undefined ? [] : [`--owed-items=${owedItems}`]),
+    ...(backend === undefined ? [] : [`--backend=${backend}`]),
   ]
   return runNodeScript(GUARD, flags)
 }
@@ -51,12 +53,12 @@ function fixtureDir(confs) {
 
 // `confs: null` means the directory itself is absent — a path under a temp parent that does exist,
 // which is what MOVED confs look like, as opposed to a repository that never had any.
-export function expectVerdict({ what, confs, code, quotes = [], marker = MONOREPO_MARKER, deployNotes }) {
+export function expectVerdict({ what, confs, code, quotes = [], marker = MONOREPO_MARKER, deployNotes, owedItems, backend }) {
   const missing = confs === null
   const parent = missing ? mkdtempSync(join(tmpdir(), 'nginx-503-gone-')) : null
   const dir = missing ? join(parent, 'moved') : fixtureDir(confs)
 
-  checkVerdict({ what, result: runGuard({ dir, marker, deployNotes }), code, quotes })
+  checkVerdict({ what, result: runGuard({ dir, marker, deployNotes, owedItems, backend }), code, quotes })
 
   rmSync(parent ?? dir, { recursive: true, force: true })
 }

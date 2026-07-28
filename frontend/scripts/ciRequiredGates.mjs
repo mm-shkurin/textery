@@ -26,7 +26,7 @@ export const REQUIRED = [
   {
     script: 'check:ingress',
     why: 'the nginx 503 guard behind mayHaveLandedServerSide — see that predicate',
-    mustContain: ['check-nginx-503.selftest.mjs', 'check-nginx-503.mjs'],
+    mustContain: ['check-nginx-503.selftest.mjs', 'check-nginx-503.premise.selftest.mjs', 'check-nginx-503.mjs'],
   },
 ]
 
