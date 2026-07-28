@@ -52,8 +52,8 @@ describe('DocumentGenerationFlow — the generating state is shown while the cre
     vi.clearAllMocks()
   })
 
-  // RED, recorded failure. The behaviour already holds, so this was bite-verified instead of
-  // observed failing: with `setState('pending')` in useGeneration.submit moved to the line after
+  // What this pin catches, bite-verified rather than observed failing because the behaviour
+  // already holds: with `setState('pending')` in useGeneration.submit moved to the line after
   // `const { generationId } = await createGeneration(topic, documentType)`, this test FAILS at
   // the getByTestId('generation-generating') below with
   //
@@ -61,10 +61,6 @@ describe('DocumentGenerationFlow — the generating state is shown while the cre
   //   [data-testid="generation-generating"]
   //
   // Restoring the line makes it pass again; `git diff` on useGeneration.ts is empty.
-  //
-  // The exact texts asserted below were verified green by running this file once with the marker
-  // off — a skipped test compiles but never executes, so an expected string that does not match
-  // DocArea would otherwise sit here undetected until green-frontend unskips it.
   //
   // Correction to the premise this file was written on, found by running that break against the
   // WHOLE suite rather than this file alone: the regression is NOT silent everywhere. The sibling
@@ -75,8 +71,8 @@ describe('DocumentGenerationFlow — the generating state is shown while the cre
   // difference matters for diagnosis: that test fails with "expected 1 call, got 2", which points
   // an engineer at Composer's missing in-flight guard — the wrong file. This one fails on the
   // missing surface, which is both the actual defect and the exact assertion the Selenium
-  // contract for 1.2 depends on. green-frontend removes this marker only.
-  it.skip('shows the generating surface before the create request resolves', () => {
+  // contract for 1.2 depends on.
+  it('shows the generating surface before the create request resolves', () => {
     render(<App />)
 
     fireEvent.click(screen.getByTestId('features-primary-cta-button'))
