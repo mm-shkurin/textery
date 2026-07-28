@@ -1,4 +1,5 @@
 import ReactMarkdown from 'react-markdown'
+import './ChatButton.css'
 import type { GenerationUiState } from '../hooks/useGeneration'
 import { formatRelativeTime } from '../formatRelativeTime'
 

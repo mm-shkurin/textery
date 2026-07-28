@@ -23,7 +23,6 @@ REQUEST_LOG_SETTLE_SECONDS = 1
 
 PRIMARY_CTA_BUTTON = (By.CSS_SELECTOR, "[data-testid='header-primary-cta-button']")
 TYPE_CARD_DOKLAD = (By.CSS_SELECTOR, "[data-testid='type-card-doklad']")
-MODE_CARD_AUTO = (By.CSS_SELECTOR, "[data-testid='mode-card-auto']")
 
 
 class BaseFrontendStatements(FormAssertionsMixin):

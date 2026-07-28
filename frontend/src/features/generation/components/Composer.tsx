@@ -1,3 +1,4 @@
+import './ChatButton.css'
 import './Composer.css'
 
 export const MAX_TOPIC_LENGTH = 500
@@ -24,6 +25,15 @@ export function Composer({ topicLabel, topic, setTopic, onSend }: ComposerProps)
           change the page's outline. */}
       <h3 id={TOPIC_LABEL_ID} className="required">
         {topicLabel}
+        {/* The required marker is markup, not a `::after` on the heading: this h3 IS the
+            textarea's accessible name, and a real browser folds CSS-generated content into the
+            name computation — so the styling-only asterisk would rename the field to
+            'Тема доклада *' in every screen reader, a divergence jsdom (which applies no CSS)
+            can never catch. aria-hidden keeps it decorative; `required` on the field itself is
+            what conveys the constraint. */}
+        <span className="composer-required-marker" aria-hidden="true">
+          {' *'}
+        </span>
       </h3>
       <textarea
         className="composer-input"

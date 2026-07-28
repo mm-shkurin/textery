@@ -3,7 +3,7 @@ from typing import ClassVar
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 
-from statements.frontend.base_frontend_statements import BaseFrontendStatements, MODE_CARD_AUTO
+from statements.frontend.base_frontend_statements import BaseFrontendStatements
 
 CHAT_PANEL = (By.CSS_SELECTOR, "[data-testid='chat-panel']")
 TOPIC_INPUT = (By.CSS_SELECTOR, "[data-testid='topic-input']")
@@ -27,8 +27,9 @@ class ChatWorkspaceStatements(BaseFrontendStatements):
         # to exist before the CTA is clicked — otherwise the gate bounces this to /register.
         driver.get(app_url)
         self._given_signed_in(driver)
+        # Story 18 removed the mode-select modal: picking a type lands on step='form' directly,
+        # so the type click is the last navigation step — there is no mode card left to click.
         self.navigate_to_doklad_type_modal(driver, app_url)
-        self._wait_for_visible(driver, MODE_CARD_AUTO).click()
 
     @staticmethod
     def _given_signed_in(driver: WebDriver) -> None:

@@ -28,6 +28,17 @@ describe('Composer', () => {
     expect(screen.getByRole('textbox', { name: 'Тема реферата' })).toBeInTheDocument()
   })
 
+  // The required asterisk used to be a `::after` on the same heading. jsdom applies no CSS, so
+  // the test above stayed green while a real browser — which folds generated content into the
+  // accessible-name computation — announced 'Тема доклада *'. Keeping the marker in markup and
+  // aria-hidden is what makes the assertion above true outside jsdom too.
+  it('keeps the required marker out of the accessible name', () => {
+    renderComposer('')
+
+    const marker = screen.getByText('*', { exact: false, selector: '.composer-required-marker' })
+    expect(marker).toHaveAttribute('aria-hidden', 'true')
+  })
+
   it('reports every keystroke to the caller', () => {
     const { setTopic } = renderComposer('')
 
