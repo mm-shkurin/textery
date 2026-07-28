@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -12,6 +10,7 @@ from statements.frontend.generation.generation_flow_actions import (
     GenerationFlowActionsMixin,
 )
 from statements.frontend.generation.mode_modal_statements import MODE_MODAL
+from statements.uuid_format import is_uuid
 
 # Story 18 unifies the create flow: picking a document type no longer opens a mode-select
 # modal, it goes STRAIGHT to the generation surface — the topic composer, where the run is
@@ -39,14 +38,6 @@ EXPECTED_VOLUME_PAGES = 5
 # is neither the app value ("doklad") nor the wire value above. Named so the three do not get
 # mistaken for one another at a glance.
 EXPECTED_BREADCRUMB_TYPE_LABEL = "Доклад"
-
-
-def _is_uuid(value: str) -> bool:
-    try:
-        UUID(value)
-    except ValueError:
-        return False
-    return True
 
 
 class GenerateFlowStatements(
@@ -151,7 +142,7 @@ class GenerateFlowStatements(
         # "how many generations were started" if every key is a real minted UUID. A header of ""
         # or a constant placeholder would pass a presence check and silently collapse two genuine
         # creates into one — the exact under-count that would hide a double-billing regression.
-        assert all(key is not None and _is_uuid(key) for key in keys), (
+        assert all(is_uuid(key) for key in keys), (
             f"expected every POST {GENERATIONS_PATH} to carry a UUID {IDEMPOTENCY_KEY_HEADER} "
             f"header so a 401 replay collapses server-side, got keys {keys}"
         )

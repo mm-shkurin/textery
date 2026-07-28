@@ -47,8 +47,8 @@ class TestGeneratingStateAcceptance(AbstractFrontendTest):
         generating_state_statements.send_topic(webdriver, self.TOPIC)
 
         generating_state_statements.assert_send_started_a_run(webdriver)
-        generating_state_statements.assert_generating_state_shown(webdriver)
         generating_state_statements.assert_no_result_shown(webdriver)
+        generating_state_statements.assert_generating_state_shown(webdriver)
         generating_state_statements.assert_client_is_awaiting_the_result(webdriver)
 
         generating_state_statements.release_the_result(webdriver)

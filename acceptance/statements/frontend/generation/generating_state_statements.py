@@ -1,8 +1,6 @@
 import time
 from urllib.parse import urlparse
-from uuid import UUID
 
-from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 
 from statements.frontend.base_frontend_statements import BaseFrontendStatements, WAIT_TIMEOUT_SECONDS
@@ -11,44 +9,39 @@ from statements.frontend.generation.generation_flow_actions import (
     GENERATIONS_PATH,
     GenerationFlowActionsMixin,
 )
-from statements.frontend.network_throttle_mixin import NetworkThrottleMixin
-
-# The generating surface, marked with this testid by story 18 explicitly as scenario 1.2's
-# subject. It renders only on DocArea's `pending` branch, so observing it observes exactly
-# the generating state and nothing else.
-GENERATING_SURFACE = (By.CSS_SELECTOR, "[data-testid='generation-generating']")
-
-# The two terminal surfaces. Asserted ABSENT so "a generating state is shown" cannot be
-# satisfied by a screen that has already moved on: without these the run could complete
-# between the send and the check and the test would still be looking at a result it called
-# progress.
-DOC_BODY = (By.CSS_SELECTOR, "[data-testid='doc-body']")
-DOC_ERROR = (By.CSS_SELECTOR, "[data-testid='doc-error']")
-
-# The full visible text of each generating surface, read off the built components rather than
-# a mockup. Pinned by equality, not substring: the doc area renders a placeholder in three of
-# the four generation states and they differ only by their copy, so a presence-only check
-# would pass on the idle placeholder — the one state that means the send never happened.
-EXPECTED_GENERATING_DOC_TEXT = (
-    "Готовим ваш доклад\nОбычно занимает 1–2 минуты — страница обновится автоматически"
+from statements.frontend.generation.generating_state_locators import (
+    DOC_BODY,
+    DOC_ERROR,
+    EXPECTED_GENERATING_DOC_TEXT,
+    EXPECTED_GENERATING_PANEL_TEXT,
+    GENERATING_SURFACE,
 )
+from statements.frontend.network_throttle_mixin import SLOW_LATENCY_MS, NetworkThrottleMixin
+from statements.uuid_format import is_uuid
 
-# The left panel's Progress view. `ИИ пишет доклад` is rendered ONLY while pending — the
-# completed and failed branches replace it — so this is the second, independent witness that
-# the surface is the generating one. The typing-dots animation carries no text.
-#
-# The bare `✦` lines are each step's avatar (`Progress.ChatMsg`), which Selenium reports as its
-# own line because avatar and bubble are separate block children. They are kept in the expected
-# value rather than filtered out: `.text` is what the user sees, and the failed branch swaps the
-# same glyph for `✕`, so dropping them would discard a signal instead of noise.
-#
-# `ХОД ГЕНЕРАЦИИ` is upper-case because `.chat-panel h3` carries `text-transform: uppercase` and
-# Selenium reports RENDERED text — the source says `Ход генерации`. Worth stating: this is the
-# one layer that can see it. jsdom applies no CSS, so the renderer-level suite asserts the
-# source casing, and the two expected values legitimately differ for the same element.
-EXPECTED_GENERATING_PANEL_TEXT = (
-    "ХОД ГЕНЕРАЦИИ\n✦\nАнализирую тему и требования\n✦\nИИ пишет доклад"
-)
+# How long to keep scanning the performance log for the first status poll. It cannot be
+# WAIT_TIMEOUT_SECONDS alone: that constant is tuned for DOM waits, while this event
+# STRUCTURALLY cannot occur before the throttled create POST resolves — at least
+# SLOW_LATENCY_MS. Deriving the budget from the latency ties the two constants together, so
+# raising SLOW_LATENCY_MS can no longer turn a healthy client into a test that reports it
+# never polls. Whichever is larger wins, so the DOM budget is still the floor.
+POLL_SCAN_TIMEOUT_SECONDS = max(WAIT_TIMEOUT_SECONDS, 3 * SLOW_LATENCY_MS / 1000)
+
+
+def _is_status_poll_path(path: str) -> bool:
+    """A status poll is GET {GENERATIONS_PATH}/<one segment> and nothing else.
+
+    `_matching_requests_to` matches a URL SUBSTRING, so the collection load
+    `GET /api/v1/generations` (a history list, no run id) lands in the same batch as a real
+    poll. Filtering by SHAPE before asserting cardinality is what stops an unrelated feature's
+    list request from failing this scenario with a message about the client not polling —
+    the assertion would be reporting a healthy client as a broken one.
+    """
+    prefix = f"{GENERATIONS_PATH}/"
+    if not path.startswith(prefix):
+        return False
+    remainder = path[len(prefix) :]
+    return bool(remainder) and "/" not in remainder
 
 
 class GeneratingStateStatements(
@@ -113,9 +106,13 @@ class GeneratingStateStatements(
     def assert_no_result_shown(self, driver: WebDriver) -> None:
         """Neither terminal surface is up — this is progress, not an outcome.
 
-        Also the backstop for the throttle: if the latency were silently not applied the run
-        could complete before the assertions above, and their failure message would blame the
-        copy rather than the timing. A completed body found here names the real cause.
+        Also the backstop for the throttle, and it is called BEFORE `assert_generating_state_shown`
+        for that reason: if the latency were silently not applied the run would complete early and
+        the generating-surface wait would raise a bare TimeoutException naming a CSS selector —
+        the exact misattributed failure this scenario exists to eliminate. Ordered after it, this
+        method could only ever run on a path where it had nothing left to catch. Ordered first, a
+        completed body names the real cause. It costs nothing when the throttle IS applied: neither
+        terminal surface can be up yet, so both checks pass immediately.
         """
         self._assert_not_visible(
             driver,
@@ -146,22 +143,26 @@ class GeneratingStateStatements(
         performance buffer — re-reading it is not idempotent, so a hit seen on an early pass
         would be invisible to a later one.
         """
-        status_checks: list[dict] = []
-        deadline = time.monotonic() + WAIT_TIMEOUT_SECONDS
-        while not status_checks and time.monotonic() < deadline:
-            status_checks += self._matching_requests_to(driver, GENERATIONS_PATH, method="GET")
+        polled_paths: set[str] = set()
+        deadline = time.monotonic() + POLL_SCAN_TIMEOUT_SECONDS
+        while not polled_paths and time.monotonic() < deadline:
+            polled_paths |= {
+                path
+                for path in (
+                    urlparse(request.get("url", "")).path
+                    for request in self._matching_requests_to(
+                        driver, GENERATIONS_PATH, method="GET"
+                    )
+                )
+                if _is_status_poll_path(path)
+            }
 
-        assert status_checks, (
+        assert polled_paths, (
             f"expected the client to be polling GET {GENERATIONS_PATH}/<id> while the generation "
             "runs, but no status request was issued — the generating state is not being watched "
-            "and would never resolve"
+            "and would never resolve (collection loads of "
+            f"{GENERATIONS_PATH} do not count: they carry no run id)"
         )
-
-        # Presence of *a* GET is not the claim. `_matching_requests_to` matches on a URL
-        # SUBSTRING, so a collection load (GET /api/v1/generations, no run id at all) satisfies
-        # a truthiness check while no status poll exists — exactly the regression this method
-        # says it catches. So the polled path is pinned by equality instead.
-        polled_paths = {urlparse(request.get("url", "")).path for request in status_checks}
         assert len(polled_paths) == 1, (
             f"expected every status check to poll the one run that was just started, got "
             f"{len(polled_paths)} distinct paths {sorted(polled_paths)}"
@@ -169,20 +170,13 @@ class GeneratingStateStatements(
 
         polled_path = polled_paths.pop()
         generation_id = polled_path.rsplit("/", 1)[-1]
-        assert polled_path == f"{GENERATIONS_PATH}/{generation_id}", (
-            f"expected the client to poll GET {GENERATIONS_PATH}/<id>, got '{polled_path}' — a "
-            "path with no single run id is a collection load, not a status check"
-        )
 
         # The id itself is the one genuinely opaque value here: it is minted by the backend and
         # returned in the create POST's RESPONSE body, which `Network.requestWillBeSent` does not
         # carry — so there is no way to capture it for an equality check from the performance log.
         # Its FORMAT is not opaque, and pinning it is what rejects `/api/v1/generations/undefined`,
         # the shape a broken id hand-off actually produces.
-        try:
-            UUID(generation_id)
-        except ValueError:
-            raise AssertionError(
-                f"expected the polled run id to be a UUID, got '{generation_id}' in "
-                f"'{polled_path}' — the generation id was not threaded into the status poll"
-            ) from None
+        assert is_uuid(generation_id), (
+            f"expected the polled run id to be a UUID, got '{generation_id}' in "
+            f"'{polled_path}' — the generation id was not threaded into the status poll"
+        )

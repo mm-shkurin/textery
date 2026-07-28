@@ -28,9 +28,9 @@ EXPECTED_PLACEHOLDER_TEXT = "Начните печатать…"
 # 2.1 asserts are the ones that actually work: the H3 heading (a mark, not a block node), bold,
 # and italic.
 TOOLBAR_BUTTON_ARIA_LABELS = {
-    "heading": ["Заголовок 3"],
-    "bold": ["Жирный"],
-    "italic": ["Курсив"],
+    "heading": "Заголовок 3",
+    "bold": "Жирный",
+    "italic": "Курсив",
 }
 # Scenario 2.1 asserts the three working named controls above (H3, bold, italic) individually by
 # aria-label. The toolbar carries 13 controls total (after the inert H1/H2/¶/list stubs were
@@ -44,7 +44,7 @@ def _toolbar_button_locator(aria_label: str) -> tuple[str, str]:
     return (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-toolbar-btn[aria-label='{aria_label}']")
 
 
-BOLD_BUTTON = _toolbar_button_locator(TOOLBAR_BUTTON_ARIA_LABELS["bold"][0])
+BOLD_BUTTON = _toolbar_button_locator(TOOLBAR_BUTTON_ARIA_LABELS["bold"])
 
 
 class ManualEditorStatements(BaseFrontendStatements):
@@ -102,12 +102,11 @@ class ManualEditorStatements(BaseFrontendStatements):
         self._assert_toolbar_button_count(driver)
 
     def _assert_each_toolbar_button_is_enabled(self, driver: WebDriver) -> None:
-        for control_name, aria_labels in TOOLBAR_BUTTON_ARIA_LABELS.items():
-            for aria_label in aria_labels:
-                button = self._wait_for_visible(driver, _toolbar_button_locator(aria_label))
-                assert button.is_enabled(), (
-                    f"expected {control_name} toolbar control '{aria_label}' to be enabled"
-                )
+        for control_name, aria_label in TOOLBAR_BUTTON_ARIA_LABELS.items():
+            button = self._wait_for_visible(driver, _toolbar_button_locator(aria_label))
+            assert button.is_enabled(), (
+                f"expected {control_name} toolbar control '{aria_label}' to be enabled"
+            )
 
     def _assert_toolbar_button_count(self, driver: WebDriver) -> None:
         toolbar_buttons = driver.find_elements(*TOOLBAR_BUTTON)

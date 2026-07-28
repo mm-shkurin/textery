@@ -32,8 +32,10 @@ class ChatWorkspaceStatements(ComposerAssertionsMixin, BaseFrontendStatements):
         self.navigate_to_doklad_type_modal(driver, app_url)
 
     def assert_chat_panel_is_visible(self, driver: WebDriver) -> None:
-        element = self._wait_for_visible(driver, CHAT_PANEL)
-        assert element.is_displayed(), "expected chat panel to be visible"
+        # `_wait_for_visible` waits on `visibility_of_element_located`, so the element it returns
+        # is displayed by construction — a follow-up `assert element.is_displayed()` could never
+        # fire, and its message could never be read. The wait's TimeoutException IS the failure.
+        self._wait_for_visible(driver, CHAT_PANEL)
 
     def assert_topic_input_is_visible_and_empty(self, driver: WebDriver) -> None:
         self._assert_topic_input_empty_and_prompting(driver)
