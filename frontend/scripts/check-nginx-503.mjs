@@ -15,15 +15,21 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve } from 'node:path'
+import { DIRECTIVES } from './nginx503Directives.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
-// Overridable ONLY so the guard can be pointed at fixture confs by its own self-test
-// (check-nginx-503.selftest.mjs). Without that seam nothing can prove this script still fails on a
-// conf that emits 503 — and a gate whose own correctness is untested reports OK forever once
-// somebody narrows the scan. CI sets nothing, so the default is the real ingress.
-const NGINX_DIR = process.env.NGINX_503_DIR
-  ? resolve(process.env.NGINX_503_DIR)
-  : resolve(here, '../../infra/docker/nginx')
+
+// Both paths are overridable ONLY through explicit CLI flags, and only so the self-test can point
+// the guard at fixture confs and at a fabricated repository shape. Deliberately NOT environment
+// variables: an ambient NGINX_503_DIR exported by a runner, a sourced .env or a workflow-level
+// `env:` block would silently redirect the production scan and print the same reassuring OK line,
+// whereas a flag has to be typed into the step that runs it, where a reader sees it.
+function flag(name, fallback) {
+  const match = process.argv.slice(2).find((arg) => arg.startsWith(`--${name}=`))
+  return match ? resolve(match.slice(name.length + 3)) : fallback
+}
+
+const NGINX_DIR = flag('dir', resolve(here, '../../infra/docker/nginx'))
 
 // In the split repo (gitverse slide_frontend) `frontend/` is the ROOT and `infra/` does not exist —
 // the same shape check check-ci-parity.mjs makes. Nothing to scan is not a failure there; the
@@ -33,7 +39,7 @@ const NGINX_DIR = process.env.NGINX_503_DIR
 // ambiguous between "split repo" and "somebody moved infra/docker/nginx", and skipping on the
 // second is the gate failing OPEN with a reassuring line — the more likely of the two, since
 // directories get moved more often than emptied.
-const MONOREPO_WORKFLOW = resolve(here, '../../.github/workflows/frontend-ci.yml')
+const MONOREPO_WORKFLOW = flag('monorepo-marker', resolve(here, '../../.github/workflows/frontend-ci.yml'))
 
 if (!existsSync(NGINX_DIR)) {
   if (existsSync(MONOREPO_WORKFLOW)) {
@@ -47,24 +53,6 @@ if (!existsSync(NGINX_DIR)) {
   process.exit(0)
 }
 
-// Every way nginx can answer 503 to a request it has already forwarded, or answer it on the
-// origin's behalf. `return 503`/`503` in a rewrite is the canonical maintenance one-liner and the
-// most direct of them; `limit_req`/`limit_conn` reject with 503 by default; `error_page` can map
-// anything onto a 503 page; `proxy_intercept_errors` hands the origin's own 5xx to those pages;
-// `max_fails` + `proxy_next_upstream` make nginx exhaust an upstream group and answer 503 without
-// the origin ever replying. `upstream` is listed because it is the block the last two require —
-// its presence is the earliest visible signal. The bare status code is scanned as a string: any
-// uncommented line mentioning 503 is either an answer or a comment that should have been one.
-const DIRECTIVES = [
-  '503',
-  'limit_req',
-  'limit_conn',
-  'error_page',
-  'proxy_intercept_errors',
-  'max_fails',
-  'proxy_next_upstream',
-  'upstream',
-]
 
 const confs = readdirSync(NGINX_DIR).filter((name) => name.endsWith('.conf'))
 

@@ -10,91 +10,50 @@
 // pass a bare code check while telling the reader nothing). The mutation checks behind the original
 // commits were one-time manual runs; this is what preserves them.
 //
-// Fixtures are written to a temp dir rather than committed: they exist to be fed to one script, and
-// a committed fixture conf under infra/ would be scanned by the real gate itself.
-import { execFileSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { dirname, join, resolve } from 'node:path'
+// This file is the CASES. How a fixture is built, how the guard is invoked and how a verdict is
+// recorded live in nginx503SelftestHarness.mjs.
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-
-const here = dirname(fileURLToPath(import.meta.url))
-const GUARD = resolve(here, 'check-nginx-503.mjs')
-
-// Every fixture carries the back-reference except the case that tests its absence — the guard
-// requires one conf in the directory to name the predicate, so omitting it everywhere would make
-// every case fail for the wrong reason.
-const BACK_REFERENCE = '# see mayHaveLandedServerSide in autosaveRetryPolicy.ts\n'
-const CLEAN_CONF = `${BACK_REFERENCE}server {\n    listen 80;\n    location /api/ {\n        proxy_pass http://backend:8000;\n    }\n}\n`
-
-function runGuard(dir) {
-  try {
-    const stdout = execFileSync(process.execPath, [GUARD], {
-      env: { ...process.env, NGINX_503_DIR: dir },
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    })
-    return { code: 0, output: stdout }
-  } catch (error) {
-    return { code: error.status, output: `${error.stdout ?? ''}${error.stderr ?? ''}` }
-  }
-}
-
-function fixtureDir(confs) {
-  const dir = mkdtempSync(join(tmpdir(), 'nginx-503-guard-'))
-  for (const [name, contents] of Object.entries(confs)) writeFileSync(join(dir, name), contents)
-  return dir
-}
-
-const failures = []
-
-function check(what, condition, detail) {
-  if (condition) return
-  failures.push(`  ${what}\n     ${detail}`)
-}
-
-function expectVerdict({ what, confs, code, quotes = [] }) {
-  const dir = confs === null ? join(mkdtempSync(join(tmpdir(), 'nginx-503-gone-')), 'moved') : fixtureDir(confs)
-  const result = runGuard(dir)
-
-  check(what, result.code === code, `expected exit ${code}, got ${result.code}. Output:\n${result.output}`)
-  for (const quote of quotes) {
-    check(
-      `${what} — quotes ${JSON.stringify(quote)}`,
-      result.output.includes(quote),
-      `that string is absent from the guard's output:\n${result.output}`,
-    )
-  }
-
-  rmSync(dir, { recursive: true, force: true })
-}
+import { DIRECTIVES_THAT_CAN_EMIT_503 } from './nginx503Directives.mjs'
+import {
+  BACK_REFERENCE,
+  CLEAN_CONF,
+  REAL_MONOREPO_MARKER,
+  check,
+  confDeclaring,
+  countCase,
+  expectVerdict,
+  reportAndExit,
+  runGuard,
+} from './nginx503SelftestHarness.mjs'
 
 // A conf that proxies to the origin and can answer nothing itself: the only shape that may pass.
 expectVerdict({ what: 'a clean conf passes', confs: { 'frontend.conf': CLEAN_CONF }, code: 0 })
 
-// The canonical maintenance one-liner. This is the case the guard shipped unable to catch — it
-// matched no directive in the first version and the step printed OK over a conf 503ing every
-// request. Pinned first among the failures for that reason.
-expectVerdict({
-  what: '`return 503` fails',
-  confs: { 'frontend.conf': `${BACK_REFERENCE}server {\n    location = /maint { return 503; }\n}\n` },
-  code: 1,
-  quotes: ['return 503;', '`503`'],
-})
+// Generating the cases from the shared list closes one hole and opens another: an entry can no
+// longer exist without a case, but DELETING an entry deletes its case too and everything stays
+// green. So the list itself is pinned by name — dropping `max_fails` now fails here, and the reader
+// who wants it gone has to say so in this file, where the reason it was scanned is written down.
+check(
+  'the scanned list still covers every 503 route',
+  DIRECTIVES_THAT_CAN_EMIT_503.map((entry) => entry.directive).join() ===
+    '503,limit_req,limit_conn,error_page,proxy_intercept_errors,max_fails,proxy_next_upstream,upstream',
+  `the list changed to: ${DIRECTIVES_THAT_CAN_EMIT_503.map((entry) => entry.directive).join()}`,
+)
 
-expectVerdict({
-  what: '`limit_req` fails',
-  confs: { 'frontend.conf': `${BACK_REFERENCE}server {\n    limit_req zone=api burst=5;\n}\n` },
-  code: 1,
-  quotes: ['limit_req zone=api burst=5;'],
-})
-
-expectVerdict({
-  what: '`proxy_intercept_errors` fails',
-  confs: { 'frontend.conf': `${BACK_REFERENCE}server {\n    proxy_intercept_errors on;\n}\n` },
-  code: 1,
-  quotes: ['proxy_intercept_errors on;'],
-})
+// One case per entry in the scanned list, generated FROM that list: a directive silently dropped
+// from the scan cannot leave the self-test still reporting the same number of green cases, because
+// there is no way to express an entry without a case. `return 503` leads — it is the case the guard
+// shipped unable to catch, printing OK over a conf that 503'd every request.
+for (const { directive, sample } of DIRECTIVES_THAT_CAN_EMIT_503) {
+  expectVerdict({
+    what: `\`${directive}\` fails`,
+    confs: { 'frontend.conf': confDeclaring(sample) },
+    code: 1,
+    quotes: [sample, `\`${directive}\``],
+  })
+}
 
 // The comment-stripping is load-bearing in the other direction too: the real conf's back-reference
 // NAMES every scanned directive, so a scan of raw text would fire on the guard's own explanation.
@@ -127,12 +86,39 @@ expectVerdict({
 expectVerdict({ what: 'an empty conf directory fails', confs: {}, code: 1 })
 expectVerdict({ what: 'a missing conf directory fails in the monorepo shape', confs: null, code: 1 })
 
-if (failures.length > 0) {
-  console.error('nginx 503 guard self-test: the guard does not behave as its callers assume.')
-  console.error(failures.join('\n'))
-  console.error('Fix check-nginx-503.mjs — do not relax these cases to make this pass.')
-  process.exit(1)
-}
+// The shape the guard exists to stay safe in: `frontend/` as the repository ROOT, where infra/ does
+// not exist and never did. Without this case the missing-directory case above silently demanded
+// exit 1 everywhere, and `check:ingress` — which runs this self-test FIRST — turned the split
+// repo's clean skip into a hard failure, breaking the very both-shapes property being guarded.
+expectVerdict({
+  what: 'a missing conf directory is a SKIP in the split-repo shape',
+  confs: null,
+  // A marker path that does not exist IS the split shape — in that repo `frontend/` is the root, so
+  // the monorepo workflow two levels up is simply not there.
+  marker: join(tmpdir(), 'nginx-503-no-such-frontend-ci.yml'),
+  code: 0,
+})
 
-console.log('nginx 503 guard self-test OK — 9 cases: clean conf, 503 emitters, comments, the')
-console.log('back-reference, a second conf, an empty directory, a moved directory.')
+// The default path, with no flags at all — the one CI actually takes. Every other case overrides
+// the directory, so without this the resolution that matters is never executed: repoint it at any
+// directory holding one benign conf and all the other cases stay green over an unscanned ingress.
+//
+// The expected verdict is whatever THIS checkout's shape implies, read the same way the guard reads
+// it. In the monorepo that is a scan naming frontend.conf; in the split repo, where frontend/ is the
+// root and infra/ never existed, it is the documented skip — and asserting the monorepo answer there
+// is what turned that repo's clean skip into a hard failure once check:ingress ran this first.
+countCase()
+const monorepoHere = existsSync(REAL_MONOREPO_MARKER)
+const real = runGuard({ marker: null })
+const expected = monorepoHere ? 'frontend.conf' : 'skipped'
+check(
+  `with no flags the guard ${monorepoHere ? 'scans the real ingress' : 'skips (split-repo shape)'}`,
+  real.code === 0 && real.output.includes(expected),
+  `expected exit 0 mentioning ${JSON.stringify(expected)}, got ${real.code}:
+${real.output}`,
+)
+
+reportAndExit(
+  'one per scanned directive, plus the clean conf, comments, the back-reference, a second conf,\n' +
+    'an empty directory, a moved directory, the split-repo skip, and the real ingress with no flags.',
+)
