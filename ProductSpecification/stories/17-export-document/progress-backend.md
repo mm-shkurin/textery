@@ -1493,6 +1493,73 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   own refactor, not smuggled into the collapse.
   ⚠️ INFRA NOTE: three of the four test-review detector subagents died on API errors (403 / connection
   closed); the reviewer ran the checklist directly rather than report on partial detector output.
+  refactor: NO CHANGE — 0 refactorings, so this work unit ends with the behavior commit alone. All
+  three clusters clean over the diff: mechanics (zero conditionals, zero loops, max nesting 1, longest
+  body 7 statement-lines, no unused imports or dead code), design (production-only rows have no subject
+  in a test-only unit), duplication (`SaveTitleStatements` is the ONLY subclass of `SaveStatements`, so
+  A14 has no sibling set; zero raw `assert` in the test class; `assert_forwarded_title_update` already
+  makes one whole-object comparison). The single low-confidence A55 (derivable `owner_id` on the three
+  `when_autosaving_*` methods) was VERIFIED rather than taken on report and confirmed NO ACTION:
+  `when_saving_is_refused` exists specifically to present an owner that does NOT match the document, so
+  deriving the owner from `document.owner_id` would delete exactly that seam and make the two Statements
+  classes disagree about how a save's owner is expressed.
+> REVIEW FINDINGS over `b2fd068` — agent-review CONCERNS ×3, premortem 2 CREDIBLE + 2 REMOTE. BOTH
+> passes landed the SAME top finding independently, from different directions, and it is about the step
+> that comes next.
+> • **THE OMITTED-VS-EXPLICIT-NULL AXIS IS BEING CONCRETED ON THE WRONG SIDE (both passes, CREDIBLE /
+>   agent-review 2).** This commit pins that `execute(...)` with the `title` argument OMITTED forwards
+>   `preserve()` — but `execute`'s signature is `title: TitleUpdate | str | None = None`
+>   (`save_document.py:48`), so the omitted argument and an explicitly-passed `None` are THE SAME CALL.
+>   Upstream, `document_dtos.py:24` is `title: str | None = None` and `document_router.py:140` forwards
+>   `request.title`, DISCARDING `model_fields_set` — so a JSON body with NO `title` key and a body with
+>   `"title": null` arrive identically. The new `when_`'s docstring claims the omitted form is "what
+>   nearly every real call to `execute` looks like"; it is not — production ALWAYS passes the argument.
+>   The assertion is not wrong (both land on `title is None` today), but its stated grounding is, and
+>   the consequence is not cosmetic: the pending green (`if title is None: return preserve()`) makes
+>   EXPLICIT NULL → PRESERVE a pinned usecase contract, and this test is what pins it — for the one
+>   input the clear path most plausibly wants to mean CLEAR. INCIDENT: since the clear-path release,
+>   `title=None` means clear; every content-only autosave issues `SET title = NULL`; no test goes red,
+>   because the usecase suite cannot EXPRESS omitted-vs-null (no sentinel) and the REST layer has no
+>   title test at all. MISSING GUARD, named: a rest-adapter test pinning that the omitted key forwards
+>   `preserve()` while `"title": null` forwards the clear intent — which REQUIRES a sentinel default
+>   (`title: str | None | Omitted = OMITTED`, or `model_fields_set`) that exists in neither the DTO nor
+>   `execute`. Either land both cases as separate tests BEFORE the collapse, or record that the
+>   deferral to `model_fields_set` in `adapters-discovery (a)` is now BLOCKED by this pinning.
+>   DISTINCT from the standing `6750132` CREDIBLE: that one is about the VALUE (nothing blank crosses
+>   REST); this is about the AXIS, inert today, load-bearing the moment the clear path lands.
+> • **THE GUARD THIS COMMIT INSTALLS CANNOT DETECT THE FAILURE IT NAMES (agent-review 1).** The test's
+>   own docstring states the stakes — "once a second `None`-shaped meaning exists, every autosave that
+>   forwards the ambiguous value is a candidate mass wipe" — but the assertion is `TitleUpdate.__eq__`
+>   on a frozen dataclass whose only field is `value`, so `PRESERVE_TITLE_UPDATE` equals ANY
+>   `TitleUpdate` with `value=None`. When the clear path adds the third state, `_title_intent` returning
+>   `clear()` for the absent case — the exact mass wipe — passes this test GREEN. The VO docstring
+>   claims "Three-state title intent" while its representation encodes two. This is the standing
+>   `2bb51a5` collision, now with the sharper statement that the commit measured its own blindness and
+>   proceeded. MISSING GUARD unchanged: a discriminator such that `preserve() != clear()`; until it
+>   exists, the commit message's "the port boundary is the only place the two states are
+>   distinguishable" is true only of the CURRENT two states.
+> • **`skip` IS INERT ON REPAIR — THE GREEN CAN FORGET IT AND NOTHING ANNOUNCES IT (premortem,
+>   CREDIBLE 2).** Unlike `xfail(strict=True)`, `skip` does not fail when the code is fixed, and
+>   `180 passed / 1 skipped` looks exactly like `181 passed / 0`. The repo already demonstrates the
+>   failure mode: `test_login_lockout_acceptance.py:6` carries a module-level skip that has OUTLIVED its
+>   RED, and `test_export_document_acceptance.py:141` carries a second Scenario-3.2 skip — three skips,
+>   no accounting. MISSING GUARD: either a suite check asserting the usecase module's skip count is zero
+>   after a green, or `xfail(strict=True)` in place of `skip`, which self-fails the moment the green
+>   lands and cannot be forgotten. ⚠️ THE NEXT GREEN MUST DELETE THIS MARKER AND CONFIRM 181 passed / 0
+>   skipped — the same explicit obligation this scenario already had to write once before.
+> • **RESIDUAL SELF-REFERENTIAL SIGNAL, and the mutation counts must not be over-read (agent-review 3 +
+>   premortem REMOTE).** The headline fix removed factories from EXPECTATIONS, but the VO-arm DSL still
+>   builds its INPUT with `TitleUpdate.of(title)`, and production's `_title_intent` does not call `of()`
+>   on that arm. So of the 2 tests the `of(v) → TitleUpdate(v.strip())` mutation kills, only ONE — the
+>   wire test — detects a production defect; the other fails because the DSL invoked the mutated
+>   factory. The mutation is still caught, but the count overstates production coverage by one.
+>   SEPARATELY, the "left the whole suite green at 181/181" claim is scoped to the USECASE suite: the db
+>   tests at `test_document_storage_title.py:84`/`:144` feed `of(" Отчёт ")` and `preserve()` against
+>   the stored column and go RED under both mutations. The db suite was a real guard the whole time —
+>   "decorative for two commits" is true only of the usecase layer.
+> • REMOTE, recorded (premortem): expectations are now spelled `TitleUpdate(value=None)` STRUCTURALLY
+>   rather than via `preserve()`, so when the clear path forces a new internal representation the test
+>   constants will no longer track the factory. Friction, not an incident — the failure is loud.
 - [~] green-usecase (port narrowing) — collapse `None → TitleUpdate.preserve()` in `_title_intent`
   and DROP `| None` from `DocumentRepository.save_content_if_version_matches`, then delete the
   now-dead second collapse step in `document_storage._update_values` and the double guard at
