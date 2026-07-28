@@ -2,39 +2,8 @@ from uuid import uuid4
 
 import pytest
 
-from document.document import Document
-from document.save_document import SaveDocument
 from shared.exceptions import ConflictException, NotFoundException, ValidationException
-from statements.document_fakes import (
-    FakeClock,
-    FakeDocumentRepository,
-    FakeHtmlSanitizer,
-    FakeUnitOfWork,
-)
-
-
-class SaveStatements:
-    def __init__(self):
-        self.repository = FakeDocumentRepository()
-        self.sanitizer = FakeHtmlSanitizer()
-        self.unit_of_work = FakeUnitOfWork()
-        self.clock = FakeClock()
-        self.usecase = SaveDocument(
-            document_repository=self.repository,
-            html_sanitizer=self.sanitizer,
-            clock=self.clock,
-            unit_of_work=self.unit_of_work,
-        )
-
-    async def given_a_document(self, owner_id) -> Document:
-        document = Document.create(
-            owner_id=owner_id,
-            document_type="эссе",
-            idempotency_key=f"key-{uuid4()}",
-            created_at=self.clock.now(),
-        )
-        await self.repository.save_new(document)
-        return document
+from statements.save_document_statements import SaveStatements
 
 
 @pytest.fixture
@@ -110,7 +79,9 @@ class TestSaveValidation:
             document_id=document.id, owner_id=owner_id, content="a" * 200_000, version=1
         )
 
-        assert len(saved.content) == 200_000
+        assert saved.content == "a" * 200_000, (
+            "the boundary-sized content must land byte-for-byte, not merely at the right length"
+        )
 
     @pytest.mark.parametrize("version", [0, -1])
     async def test_should_reject_a_non_positive_version(self, statements, version):

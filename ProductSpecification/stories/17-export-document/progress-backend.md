@@ -727,11 +727,42 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   the three states so Pydantic never reaches the usecase and the CAS maps them explicitly.
   Review obligation 1 (no way to clear a title) is CLOSED by the `null` affordance; obligation 4
   (Test 2 can't tell preserve from whole-save no-op) is scheduled below.
-- [~] red-usecase — blank-preserve + verbatim-store + the `TitleUpdate` three-state contract, and
-  the whitespace-title-default DERIVATION case in `test_export_document_usecase.py` (currently only
-  `cyrillic_title_pdf` / `cyrillic_title_docx` / `absent_title_default`). Do NOT re-pin
-  `title=None → "document.pdf"` — Sc 3.1 owns it.
-- [ ] green-usecase — also FIX the Sc 3.2 acceptance Test 2 (review obligation 4): the blank save
+- [x] red-usecase — RED confirmed live on the host: predicted == actual on all 4 cases, first run,
+  no loop. 3 failed / 305 passed; after skip-marking, 305 passed / 3 skipped / 0 failed.
+  `[empty_title_preserves]` → `AssertionError: expected TitleUpdate(value=None) forwarded to the
+  repository, got TitleUpdate(value='')`; `[whitespace_title_preserves]` → same with
+  `TitleUpdate(value='   ')` (execute forwards `title` to the port unchanged);
+  `[whitespace_title_default]` → `AssertionError: expected filename 'document.pdf' for title '   ',
+  got '   .pdf'` (`stem = document.title or "document"`, `"   "` is truthy).
+  `[padded_title_verbatim]` PASSED — an already-green guard, kept ENABLED on purpose: it exists so
+  GREEN cannot adopt the ADR-rejected `title.strip() or None`.
+  New: domain `TitleUpdate` VO (22 lines) with `preserve()` / `of()` and ONE field — the domain-field
+  gate REMOVED the `clears` discriminator, since no line in this step reads it; `clear()` arrives
+  with its own red step, exactly as the ADR scheduled. New `save_document_statements.py` +
+  `test_save_document_title.py`; `SaveStatements` moved out of `test_save_document_usecase.py` (was
+  178, over-cap risk). Disabling is per-`pytest.param` `marks=pytest.mark.skip`, NOT a method-level
+  skip, so the three already-green derivation cases and the verbatim guard stay enabled.
+  test-review: A×4 fixed. The important one — `assert_forwarded_title_update` asserted only
+  `title_updates[-1]`, so a usecase that mangled the SETUP title or forwarded twice per `execute`
+  passed anyway; it now pins the whole sequence (`[of(STORED_TITLE), expected]`), which also pins the
+  call count and makes the `padded_title_verbatim` guard actually load-bearing. Also: a length-only
+  `len(saved.content) == 200_000` → full equality, and two `RenderedExport` happy paths that left
+  `filename` unasserted → whole-object comparison.
+  ⚠️ TYPE-LEVEL RED MARKER: `save_document_statements.py` carries three `# type: ignore[arg-type]`
+  (mypy checks the test tree, and rewriting the port signature is a GREEN change, not a RED one).
+  GREEN widens `title: str | None` → `TitleUpdate` on BOTH the port and `execute` and deletes them —
+  if they survive GREEN, GREEN didn't do the port change.
+  ⚠️ PRE-EXISTING, outside this diff: `ruff check .` is red at 5 findings on this branch —
+  `adapters/rendering/.../html_docx_renderer.py:32` + `weasyprint_pdf_renderer.py:8,8,34` (ARG001/
+  ARG002 on Protocol-conformance params) and `adapters/rest/tests/router/document/
+  test_save_document_title_router.py:4` (F401 unused `pytest`, left at Sc 3.1 green-adapter rest).
+  ⚠️ PLACEMENT DEBT (reported, deliberately not fixed in a RED review): `test_export_document_usecase.py`
+  has NO Statements class at all — fakes, factory, execute and assertions all live in the test class;
+  `test_save_document_usecase.py` reaches through `statements.repository` / `statements.usecase`
+  instead of DSL steps. Both predate this unit; `/refactor` owns them.
+  ⚠️ CAP PRESSURE: `document_fakes.py` 185 and `test_export_document_usecase.py` 183 — the next fake
+  or export case crosses 200.
+- [~] green-usecase — also FIX the Sc 3.2 acceptance Test 2 (review obligation 4): the blank save
   resubmits the SAME `DOCUMENT_CONTENT` and only checks `status_code == 200`, so a green that
   rejects or short-circuits the whole blank-title save — losing the content update — passes
   identically. Send distinct content on the blank save and assert it persisted (or that the version

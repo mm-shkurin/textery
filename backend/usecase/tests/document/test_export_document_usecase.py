@@ -38,6 +38,7 @@ import pytest
 
 from document.export_document import _MEDIA_TYPE, ExportDocument
 from document.export_format import ExportFormat
+from document.rendered_export import RenderedExport
 from shared.exceptions import ValidationException
 from statements.document_fakes import (
     FAKE_RENDERED_PDF,
@@ -99,8 +100,9 @@ class TestExportDocument:
         assert renderer.calls == [("<p>Привет</p>", ExportFormat.PDF)], (
             "the usecase must render the STORED content under the parsed pdf format"
         )
-        assert result.content == FAKE_RENDERED_PDF
-        assert result.media_type == "application/pdf"
+        assert result == RenderedExport(
+            content=FAKE_RENDERED_PDF, media_type="application/pdf", filename="document.pdf"
+        )
 
     async def test_should_render_the_stored_content_and_return_docx_bytes(self):
         owner_id = uuid4()
@@ -114,9 +116,10 @@ class TestExportDocument:
         assert renderer.calls == [("<p>Пока</p>", ExportFormat.DOCX)], (
             "the usecase must render the STORED content under the parsed docx format"
         )
-        assert result.content == FAKE_RENDERED_PDF
-        assert result.media_type == (
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        assert result == RenderedExport(
+            content=FAKE_RENDERED_PDF,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            filename="document.docx",
         )
 
     @pytest.mark.parametrize(
@@ -125,8 +128,22 @@ class TestExportDocument:
             ("Привет Мир", "pdf", "Привет Мир.pdf"),
             ("Привет Мир", "docx", "Привет Мир.docx"),
             (None, "pdf", "document.pdf"),
+            pytest.param(
+                "   ",
+                "pdf",
+                "document.pdf",
+                marks=pytest.mark.skip(
+                    reason="RED: stem = document.title or 'document' -- '   ' is truthy, so it "
+                    "survives derivation and yields '   .pdf'"
+                ),
+            ),
         ],
-        ids=["cyrillic_title_pdf", "cyrillic_title_docx", "absent_title_default"],
+        ids=[
+            "cyrillic_title_pdf",
+            "cyrillic_title_docx",
+            "absent_title_default",
+            "whitespace_title_default",
+        ],
     )
     async def test_should_derive_the_plain_filename_from_the_title(
         self, title, export_format, expected_filename
@@ -136,6 +153,12 @@ class TestExportDocument:
         # (.pdf/.docx), closing the Sc 2.2 hardcoded-document.pdf carry-forward.
         # The filename is the PLAIN unicode string -- RFC 5987 percent-encoding is
         # an HTTP wire concern owned by the rest adapter, NOT tested here.
+        # `whitespace_title_default` is DEFENSE IN DEPTH, not a duplicate of the
+        # save-boundary blank rule (Sc 3.2): the save boundary governs only writes
+        # made THROUGH it, while rows written before that green (today's
+        # `SET title = ''` is live) or by a migration/import/admin tool bypass it
+        # entirely and would otherwise derive `%20%20%20.pdf` forever. Derivation
+        # is where "never empty" is enforceable for every input.
         owner_id = uuid4()
         document = stored_document(owner_id, content="<p>Привет</p>", title=title)
         renderer = FakeDocumentRenderer()
