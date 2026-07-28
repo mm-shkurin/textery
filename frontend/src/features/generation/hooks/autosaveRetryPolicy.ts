@@ -48,8 +48,11 @@ export function isTransientFailure(error: unknown): boolean {
 //     (`npm run check:ingress`, a CI step) fails the build on any directive that could.
 //   - everything in front of that — a TLS terminator, WAF, rate limiter, the host/prod-copy reverse
 //     proxy: **no IaC source in this repo, therefore no gate.** Only the note in
-//     `infra/architecture.md` under Deploy notes. Add such a hop and this branch starts suppressing
-//     writes that are genuinely needed, with nothing red anywhere.
+//     `infra/architecture.md` under Deploy notes, which also spells out the exit for a hop with no
+//     config file at all: drop this carve-out rather than pretend it can be scanned.
+//   - and two paths that BYPASS the gated hop, so its scan never applies: the Vite dev proxy
+//     (`frontend/vite.config.ts`) and the published backend port in `infra/docker-compose.yml`
+//     reach the origin without traversing that conf. Neither emits 503 today.
 //
 // The carve-out is safe while no component in that chain emits 503 AFTER taking a write.
 export function mayHaveLandedServerSide(error: unknown): boolean {

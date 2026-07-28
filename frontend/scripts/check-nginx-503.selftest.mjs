@@ -16,6 +16,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { DIRECTIVES, DIRECTIVES_THAT_CAN_EMIT_503 } from './nginx503Directives.mjs'
+import { mkdtempSync, writeFileSync } from 'node:fs'
 import {
   BACK_REFERENCE,
   CLEAN_CONF,
@@ -25,6 +26,11 @@ import {
   runGuard,
 } from './nginx503SelftestHarness.mjs'
 import { check, countCase, reportAndExit } from './selftestRunner.mjs'
+
+// A deploy-notes file with the bullet tidied away — the failure mode being pinned is a doc edit, so
+// the fixture is a doc.
+const NOTES_WITHOUT_POINTER = join(mkdtempSync(join(tmpdir(), 'nginx-503-notes-')), 'architecture.md')
+writeFileSync(NOTES_WITHOUT_POINTER, '# Architecture\n\n## Deploy notes\n\n- nothing about 503 here\n')
 
 // A conf that proxies to the origin and can answer nothing itself: the only shape that may pass.
 expectVerdict({ what: 'a clean conf passes', confs: { 'frontend.conf': CLEAN_CONF }, code: 0 })
@@ -123,6 +129,24 @@ expectVerdict({
   code: 0,
 })
 
+// The ungated hops' only carrier. It lives in a doc, docs get restructured, and losing the bullet
+// is silent — so the scan reads it the same way it reads the confs' back-reference.
+expectVerdict({
+  what: 'a deploy-notes file that lost the pointer fails',
+  confs: { 'frontend.conf': CLEAN_CONF },
+  deployNotes: NOTES_WITHOUT_POINTER,
+  code: 1,
+  quotes: ['no longer names mayHaveLandedServerSide'],
+})
+
+expectVerdict({
+  what: 'a deploy-notes file that was moved or renamed fails',
+  confs: { 'frontend.conf': CLEAN_CONF },
+  deployNotes: join(tmpdir(), 'nginx-503-no-such-architecture.md'),
+  code: 1,
+  quotes: ['does not exist'],
+})
+
 // Both ways of ending up with nothing to scan. The second is the one that used to exit 0 with a
 // reassuring line, because a missing directory is ambiguous between "split repo" and "moved".
 expectVerdict({ what: 'an empty conf directory fails', confs: {}, code: 1 })
@@ -166,6 +190,7 @@ reportAndExit({
   script: 'check-nginx-503.mjs',
   tail:
     'one per scanned directive plus each benign near-miss, the clean conf, comments, the\n' +
-    'back-reference, a second conf, an empty directory, a moved directory, the split-repo skip,\n' +
+    'back-reference in the confs AND in the deploy notes, a second conf, an empty directory,\n' +
+    'a moved directory, the split-repo skip,\n' +
     'and the real ingress with no flags.',
 })

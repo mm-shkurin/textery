@@ -100,6 +100,22 @@ if (!backReferenced) {
   )
 }
 
+// The same reasoning, one file over. The hops with no IaC source — a WAF, a TLS terminator, the
+// host/prod-copy proxy — have no gate at all; their only carrier is the Deploy-notes bullet in
+// infra/architecture.md, which this scan does not otherwise read. It is a doc, docs get
+// restructured, and losing that bullet is silent. Checked for existence too: if the file is moved
+// or renamed, the pointer is gone in the way that looks most like housekeeping.
+const DEPLOY_NOTES = flag('deploy-notes', resolve(here, '../../infra/architecture.md'))
+
+if (!existsSync(DEPLOY_NOTES)) {
+  offenders.push(`  ${DEPLOY_NOTES} does not exist — it carried the only pointer for the ungated hops`)
+} else if (!readFileSync(DEPLOY_NOTES, 'utf8').includes('mayHaveLandedServerSide')) {
+  offenders.push(
+    `  ${DEPLOY_NOTES} no longer names mayHaveLandedServerSide — that bullet is the only thing` +
+      ' telling whoever adds a WAF or rate limiter what it breaks',
+  )
+}
+
 if (offenders.length > 0) {
   console.error('nginx can now answer 503, and the autosave retry treats 503 as proof the write')
   console.error('never landed — on that answer it can suppress the write, leaving the editor')
