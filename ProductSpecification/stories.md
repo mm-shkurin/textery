@@ -9,7 +9,7 @@
 | 7  | Authorization (email+password w/ mocked code, Yandex ID, VK ID) | ✅ | 🔧 | — | ✅ | 🔧     | —    | —     | 35/63 | 56% |
 | 16 | OAuth sign-in: VK ID + Yandex ID (frontend-first, backend WIP) | ✅ | · | · | ✅ | · | n/a | · | 14/14 | 100% |
 | 17 | Export document to PDF / DOCX | ✅ | — | — | ✅ | — | — | — | 6/6 | 100% |
-| 18 | Generate → edit (unify generate + manual, drop mode modal) | ✅ | — | — | 🔧 | — | — | — | 0/13 | 0% |
+| 18 | Generate → edit (unify generate + manual, drop mode modal) | ✅ | — | — | 🔧 | — | — | — | 1/13 | 8% |
 
 # Backlog — Core sequence (build order, decided 2026-07-06)
 
