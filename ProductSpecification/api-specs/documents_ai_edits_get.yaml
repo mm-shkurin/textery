@@ -107,7 +107,11 @@ components:
         changed:
           type: boolean
           nullable: true
-          description: Present only when status is done; false when the edit changed nothing.
+          description: >
+            Present only when status is done; false when the edit changed nothing, in
+            which case version and revision_number are null too. No field on this
+            response, and no SSE event, ever carries document HTML — the client re-fetches
+            GET /documents/{id} for sanitized content.
         error_code:
           type: string
           nullable: true
@@ -116,4 +120,6 @@ components:
           type: integer
           description: >
             Highest event seq written for this edit; a client reconnecting to the stream
-            may pass it as Last-Event-ID.
+            may pass it as Last-Event-ID. Safe on a terminal edit: the stream endpoint
+            always re-emits the terminal event regardless of Last-Event-ID, so a
+            reconnect at exactly last_seq terminates instead of hanging silent.

@@ -34,7 +34,10 @@ paths:
             an assistant message and never charges quota — an in-flight provider result
             arriving after this call cannot commit. Quota already charged is refunded,
             idempotently per edit_id. Already-written chunk event rows stay committed
-            and replayable; the stream still receives exactly one terminal event.
+            and replayable; the stream still receives exactly one terminal event — an
+            `event: cancelled` (see CancelledEvent in documents_ai_edits_stream.yaml),
+            NOT an `event: error`. A cancel is a user action, so the client unfreezes and
+            reverts without showing an error or offering a retry.
           content:
             application/json:
               schema:

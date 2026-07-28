@@ -22,16 +22,22 @@ paths:
         - name: limit
           in: query
           required: false
-          description: Clamped to the server cap; out-of-allowlist values are 4xx, never interpolated.
+          description: >
+            CLAMPED, not rejected: a value above the server cap of 100 is silently
+            reduced to 100, never unbounded. No `maximum` is declared, deliberately, so
+            the clamp stays testable through a generated client. A non-integer or
+            negative value is a 400, never interpolated.
           schema:
             type: integer
             minimum: 1
-            maximum: 100
             default: 50
         - name: cursor
           in: query
           required: false
-          description: Opaque keyset cursor; stable order under concurrent inserts.
+          description: >
+            Opaque keyset cursor. Order is FIXED server-side (newest first) and is not a
+            client parameter — there is no `order` query parameter. Stable under
+            concurrent inserts.
           schema:
             type: string
       responses:
@@ -39,14 +45,23 @@ paths:
           description: >
             One page of revisions, newest first. The list view NEVER returns document
             content — only metadata. A revision written by an edit is present as soon
-            as that edit's terminal done event is visible. A document created before
-            this story returns a valid EMPTY page. Constant query count per page.
+            as that edit's terminal done event is visible. Constant query count per page.
+
+            REVISION ORIGIN — a document that has never been edited (created before this
+            story, or created and never AI-edited) has an empty history and returns a
+            valid EMPTY page. The FIRST mutation of such a document writes TWO revisions
+            in the same transaction: revision 1 carrying the PRE-mutation content with
+            source `manual`, then revision 2 carrying the result. Without that baseline
+            the first AI edit would be unrollbackable — restore could only reach
+            post-edit states — which defeats the story's rollback promise.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/RevisionPage'
         '400':
-          description: limit, cursor or order outside the server allowlist.
+          description: >
+            limit non-integer or below 1, or an unparseable/forged cursor. A limit above
+            the cap is clamped, not rejected.
           content:
             application/json:
               schema:

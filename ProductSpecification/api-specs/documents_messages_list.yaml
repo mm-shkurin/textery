@@ -23,19 +23,23 @@ paths:
           in: query
           required: false
           description: >
-            Clamped to the server cap; a value above it is clamped, never unbounded. A
-            non-integer or out-of-allowlist value is a 4xx, never interpolated.
+            CLAMPED, not rejected: a value above the server cap of 100 is silently
+            reduced to 100, never unbounded. No `maximum` is declared, deliberately — a
+            generated client must be able to send limit=500 and reach the server, or the
+            clamp is untestable from the outside. A non-integer or negative value is a
+            400, never interpolated.
           schema:
             type: integer
             minimum: 1
-            maximum: 100
             default: 50
         - name: cursor
           in: query
           required: false
           description: >
-            Opaque keyset cursor from a previous page. Order is stable under concurrent
-            inserts. Offset pagination is not offered.
+            Opaque keyset cursor from a previous page. Order is FIXED server-side
+            (oldest first) and is not a client parameter — there is no `order` query
+            parameter on this endpoint. Order is stable under concurrent inserts. Offset
+            pagination is not offered.
           schema:
             type: string
       responses:
@@ -50,7 +54,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/MessagePage'
         '400':
-          description: limit, cursor or order outside the server allowlist.
+          description: >
+            limit non-integer or below 1, or an unparseable/forged cursor. A limit above
+            the cap is NOT a 400 — it is clamped (see the parameter).
           content:
             application/json:
               schema:

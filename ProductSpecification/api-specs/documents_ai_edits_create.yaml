@@ -16,16 +16,18 @@ paths:
         - name: document_id
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: {type: string, format: uuid}
         - name: Idempotency-Key
           in: header
           required: true
           description: >
-            Replay of the same key returns the SAME edit_id — never a second edit and
-            never a second chat message. A different key with an identical body creates
-            a new edit. Missing or blank rejects before any row is written.
+            Scoped to (account, document) and bound to a fingerprint of (message,
+            selection, base_version). Replay of the same key WITH THE SAME BODY returns
+            the SAME edit_id and the edit's CURRENT status — never a second edit, never a
+            second chat message. A different key with an identical body creates a new
+            edit. Reusing a key with a DIFFERENT body is a 422, never a silent 202
+            returning the earlier edit — which would discard the user's new instruction
+            while reporting success. Missing or blank rejects before any row is written.
           schema:
             type: string
             minLength: 1
@@ -38,18 +40,21 @@ paths:
       responses:
         '202':
           description: >
-            Accepted and enqueued. Status is server-set to exactly `queued`; it cannot
-            be set at construction from any input path.
+            Accepted and enqueued. On a FIRST submission status is server-set to exactly
+            `queued`; it cannot be set at construction from any input path. An idempotent
+            replay returns the same edit_id with the edit's CURRENT status, which may
+            already be terminal — a replay arriving seconds later stays representable.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AiEditAcceptedResponse'
         '400':
           description: >
-            Invalid selection (null, {start:null,end:null}, {start:0,end:0}, start >= end,
-            out of range for base_version), blank message, message over the code-point
-            limit, or a whole-document edit on a document above the context-fit threshold
-            (a selection is required above it — distinct error_code).
+            Semantically invalid though well-typed: an empty or inverted selection range
+            ({start:0,end:0}, start >= end), a selection out of range for base_version, a
+            blank message, a message over the code-point limit, or a whole-document edit
+            on a document above the context-fit threshold (a selection is required above
+            it — distinct error_code). Shape violations are 422, not 400 — see below.
           content:
             application/json:
               schema:
@@ -62,9 +67,9 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: >
-            No document with this id FOR THIS OWNER. A document owned by another account
-            is byte-identical to one that does not exist — never 403. Takes precedence
-            over 409, so the response cannot disclose that base_version was correct.
+            No document with this id FOR THIS OWNER; a foreign document is byte-identical
+            to an absent one — never 403. Takes precedence over 409, so the response
+            cannot disclose that base_version was correct.
           content:
             application/json:
               schema:
@@ -81,10 +86,14 @@ paths:
                 $ref: '#/components/schemas/Error'
         '422':
           description: >
-            base_version absent, null, 0, or not an integer; Idempotency-Key absent or
-            blank. Rejected before any row is written. Server-owned fields in the body
-            (status, edit_id, account_id, document_id, created_at, seq, quota fields,
-            version, revision_number) are IGNORED, not honoured.
+            SHAPE violations — every wrong-type or missing-required field, uniformly with
+            documents_save.yaml: base_version absent, null, 0 or non-integer; message
+            absent or not a string; `selection: null` or {start:null,end:null} (explicit
+            null is a type violation, and is NOT the same input as an omitted selection,
+            which means whole-document); Idempotency-Key absent, blank, or reused with a
+            body whose fingerprint differs. Rejected before any row is written.
+            Server-owned body fields (status, edit_id, account_id, document_id,
+            created_at, seq, quota fields, version, revision_number) are IGNORED.
           content:
             application/json:
               schema:
@@ -142,7 +151,7 @@ components:
           minimum: 0
           description: >
             Inclusive start offset in Unicode CODE POINTS (not UTF-16 units, not bytes)
-            into the NFC-normalized content at base_version.
+            into the NFC content at base_version.
         end:
           type: integer
           minimum: 1
@@ -157,22 +166,21 @@ components:
           type: string
           minLength: 1
           description: >
-            The user's instruction. Non-blank, max length measured in Unicode code
-            points (pinned like MAX_REQUIREMENTS_LENGTH). Stored as text, never
-            rendered as HTML.
+            The user's instruction. Non-blank, max length in Unicode code points (pinned
+            like MAX_REQUIREMENTS_LENGTH). Stored as text, never rendered as HTML.
         selection:
           allOf:
             - $ref: '#/components/schemas/Selection'
           nullable: false
           description: >
-            OMITTED means edit the whole document. Explicit null or an empty range is a
-            4xx, never a silent whole-document rewrite.
+            OMITTED means edit the whole document. Explicit null (422) or an empty range
+            (400) is never a silent whole-document rewrite.
         base_version:
           type: integer
           minimum: 1
           description: >
-            The document version the edit applies against, exactly like the manual
-            PUT /documents/{id} save. Mismatch returns 409.
+            The version the edit applies against, like the manual PUT /documents/{id}
+            save. Mismatch returns 409.
     AiEditAcceptedResponse:
       type: object
       required:
@@ -185,4 +193,7 @@ components:
           description: Opaque identifier; scoped to document_id on every subsequent call.
         status:
           type: string
-          enum: [queued]
+          enum: [queued, streaming, done, error, cancelled]
+          description: >
+            `queued` on a first submission; an idempotent replay returns the edit's
+            current status, so any value is legal.

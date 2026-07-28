@@ -33,17 +33,22 @@ paths:
             and no duplicate — including after a worker requeue and after the edit has
             already finished. Unknown, negative or non-integer replays from the start;
             never a crash. A large tail streams in bounded batches.
+
+            EXCEPTION — the terminal event is ALWAYS re-emitted, regardless of
+            Last-Event-ID, and the stream then closes. A client reconnecting with the
+            last_seq from GET /ai-edits/{edit_id} would otherwise filter out the very
+            event that ends the stream and hang forever.
           schema:
             type: integer
       responses:
         '200':
           description: >
-            Event stream opened. Events are read from persisted rows, not from
-            in-memory state, so any instance can serve any edit. Each event carries the
-            SSE `id:` field set to its seq. Chunk text is escaped into SSE framing —
-            text containing "\n\ndata:" or a bare "\r" is delivered as exactly ONE
-            chunk event with the text intact, never a forged terminal event. Chunk
-            boundaries fall on grapheme boundaries.
+            Event stream opened. Events are read from persisted rows, not in-memory
+            state, so any instance can serve any edit. Each event carries the SSE `id:`
+            field set to its seq. Chunk text is escaped into SSE framing — text
+            containing "\n\ndata:" or a bare "\r" is delivered as exactly ONE chunk event
+            with the text intact, never a forged terminal event. Chunk boundaries fall on
+            grapheme boundaries.
           headers:
             Cache-Control:
               schema:
@@ -51,9 +56,7 @@ paths:
                 enum: [no-store]
             X-Accel-Buffering:
               description: Disables proxy buffering so the first chunk is observable immediately.
-              schema:
-                type: string
-                enum: ['no']
+              schema: {type: string, enum: ['no']}
           content:
             text/event-stream:
               schema:
@@ -61,33 +64,29 @@ paths:
                   - $ref: '#/components/schemas/ChunkEvent'
                   - $ref: '#/components/schemas/DoneEvent'
                   - $ref: '#/components/schemas/ErrorEvent'
+                  - $ref: '#/components/schemas/CancelledEvent'
               examples:
                 chunkThenDone:
-                  summary: Two chunks followed by the single terminal event
+                  summary: A chunk followed by the single terminal event
                   value: |
                     event: chunk
                     id: 1
-                    data: {"seq":1,"text":"Введение "}
-
-                    event: chunk
-                    id: 2
-                    data: {"seq":2,"text":"сокращено."}
+                    data: {"seq":1,"text":"Введение сокращено."}
 
                     event: done
-                    id: 3
-                    data: {"seq":3,"version":8,"revision_number":4,"changed":true}
+                    id: 2
+                    data: {"seq":2,"version":8,"revision_number":4,"changed":true}
         '401':
-          description: Missing, malformed, expired, or non-access Bearer token. Identical body on all six endpoints.
+          description: Missing, malformed, expired, or non-access Bearer token. Identical body on all seven endpoints.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
           description: >
-            Document absent or owned by another account, OR edit_id absent or belonging
-            to a different document — including another document of the SAME owner. The
-            path document id is authoritative. Byte-identical body in every case; never
-            403.
+            Document absent or foreign, OR edit_id absent or belonging to a different
+            document — including another document of the SAME owner; the path document id
+            is authoritative. Byte-identical body in every case; never 403.
           content:
             application/json:
               schema:
@@ -107,8 +106,8 @@ components:
       bearerFormat: JWT
       description: >
         Access token from POST /api/v1/auth/login, sent as a request header. The browser
-        EventSource API cannot set headers, so the client reads this stream with
-        fetch + ReadableStream.
+        EventSource API cannot set headers, so the client reads this stream with fetch +
+        ReadableStream.
   schemas:
     Error:
       type: object
@@ -130,38 +129,55 @@ components:
         seq:
           type: integer
           minimum: 1
-          description: >
-            Strictly increasing per edit, allocated per edit and never reused across
-            worker attempts.
+          description: Strictly increasing per edit; never reused across worker attempts.
         text:
           type: string
           description: >
-            Plain text. The client renders it as text, NOT as HTML — sanitized HTML
-            arrives only with the terminal done event.
+            Plain text, NEVER markup. No SSE event carries HTML: on the terminal event the
+            client re-fetches GET /documents/{id} for the sanitized, persisted content.
+            Rendering concatenated chunk text as HTML is the stored-XSS path this closes.
     DoneEvent:
       description: 'SSE `event: done` — terminal, emitted only AFTER the apply transaction commits.'
       type: object
       required:
         - seq
-        - version
-        - revision_number
         - changed
       properties:
         seq:
           type: integer
         version:
           type: integer
+          nullable: true
           description: >
             The document version produced by the edit. A client issuing GET /documents/{id}
-            on receipt of done observes this version, never an earlier one.
+            on receipt of done observes this version, never an earlier one. NULL when
+            changed is false — no CAS ran, so no version was produced.
         revision_number:
           type: integer
-          description: The revision row written by this edit; present in GET /revisions immediately.
+          nullable: true
+          description: >
+            The revision row written by this edit; present in GET /revisions immediately.
+            NULL when changed is false — no revision row exists.
         changed:
           type: boolean
           description: >
             false when the edit produced no document change (a clarifying reply or a
-            model refusal) — distinguishes "done, unchanged" from "done, changed".
+            model refusal) — distinguishes "done, unchanged" from "done, changed". On
+            false, version and revision_number are null and the client must NOT re-fetch
+            expecting a new version. Nullability matches AiEditResponse in
+            documents_ai_edits_get.yaml.
+    CancelledEvent:
+      description: >
+        'SSE `event: cancelled` — terminal, emitted when POST .../cancel wins the status
+        CAS. Distinct from ErrorEvent because a cancel is a user action, not a failure:
+        the client unfreezes and reverts without an error banner or a retry offer. The
+        terminal-kind set {done, error, cancelled} equals the terminal status set.'
+      type: object
+      required:
+        - seq
+      properties:
+        seq:
+          type: integer
     ErrorEvent:
       description: 'SSE `event: error` — terminal. Errors arrive as an event, never as a silent connection drop.'
       type: object
@@ -174,10 +190,11 @@ components:
         error_code:
           type: string
           description: >
-            Stable code. Distinct values for: version conflict at apply time, result over
-            the content limit, provider connect timeout, provider read timeout, provider
-            4xx, provider 5xx after bounded retry, malformed or empty provider body,
-            mid-stream truncation, edit deadline exceeded.
+            Stable code, one distinct value per failure: apply-time version conflict,
+            result over the content limit, provider connect timeout, provider read
+            timeout, provider 4xx, provider 5xx after bounded retry, malformed or empty
+            provider body, mid-stream truncation, edit deadline exceeded. Cancellation is
+            NOT here — it has its own terminal event.
         message:
           type: string
-          description: Client-safe text; seeded sentinels are redacted to a fixed marker.
+          description: Client-safe text; sentinels redacted to a fixed marker.

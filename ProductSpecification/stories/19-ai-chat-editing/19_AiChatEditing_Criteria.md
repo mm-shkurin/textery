@@ -9,21 +9,23 @@ a requirement a downstream test must be able to go red on.
 - `POST /ai-edits` on a caller-owned document returns 202 with an opaque `edit_id` (wire
   type UUID string) and `queued`; the document is not mutated at request time.
 - Absent document, or one owned by another account → 404 (never 403), byte-identical body
-  for absent vs foreign, on every one of the six endpoints — including for `edit_id` and
+  for absent vs foreign, on every one of the seven endpoints — including for `edit_id` and
   revision numbers, which must not leak existence.
 - Cross-resource IDOR: an `edit_id` or revision `n` belonging to *another document of the
   same owner* → 404; the path document id is authoritative, never decorative.
-- Expired / garbage / absent Bearer → one identical 401 body on all six endpoints.
+- Expired / garbage / absent Bearer → one identical 401 body on all seven endpoints.
 - Mass assignment: `POST /ai-edits` persists server-derived values for every server-owned
   field a body may carry (`status`, `edit_id`, `account_id`, `document_id`, `created_at`,
   `seq`, quota fields, `version`, `revision_number`), asserted per field; a body sent to
   `restore` is ignored entirely — content comes only from revision `n`, `source` is
   server-set to `restore`.
-- Absent-vs-null-vs-default: `selection` omitted → whole-document edit; `selection: null`,
-  `{start:null,end:null}` and `{start:0,end:0}` → 4xx, never a silent whole-document
-  rewrite. `base_version` absent, `null` and `0` each → 4xx before any row is written.
-- List parameters (`limit`, keyset cursor, order) outside the server allowlist → 4xx,
-  never interpolated; `limit` above the server cap is clamped (or 4xx), never unbounded.
+- Absent-vs-null-vs-default: `selection` omitted → whole-document edit; `selection: null`
+  and `{start:null,end:null}` → 422 (shape), `{start:0,end:0}` → 400 (semantic), never a
+  silent whole-document rewrite. `base_version` absent, `null` and `0` each → 422 before
+  any row is written.
+- Neither list endpoint takes an `order` parameter — ordering is fixed server-side. A
+  malformed `limit`/cursor → 400, never interpolated; `limit` above the server cap is
+  CLAMPED, not rejected, and never unbounded.
 - A `message` containing `\r\n` plus a forged log prefix produces one structured log
   record, not two.
 
@@ -33,8 +35,11 @@ a requirement a downstream test must be able to go red on.
   `POST /revisions/{n}/restore` → 409; the guard is a DB uniqueness/CAS check so two
   concurrent instances cannot both win.
 - Same `Idempotency-Key` replayed (sequentially or concurrently) returns the same
-  `edit_id`, never a second edit and never a second chat message; a *different* key with
-  identical body creates a new edit. Missing/blank key → 4xx before any row is written.
+  `edit_id` with the edit's CURRENT status (a replay once the edit is `streaming` or
+  terminal must stay representable), never a second edit and never a second chat message;
+  a *different* key with identical body creates a new edit. The SAME key with a different
+  body (message, selection or base_version) → 422 on the fingerprint mismatch, never a 202
+  that silently discards the new instruction. Missing/blank key → 4xx before any row.
 - **Worker-side (outbound) idempotency:** re-executing the job for the same `edit_id`
   produces exactly one paid provider call, one revision, one assistant message and one
   quota charge. An edit that applied its CAS but died before the terminal event must not,
@@ -82,12 +87,16 @@ a requirement a downstream test must be able to go red on.
 ### Streaming
 
 - SSE emits `chunk` events with a strictly increasing per-edit `seq`, then exactly one
-  terminal event (`done` or `error`). `seq` is allocated per edit and never reused across
-  worker attempts. Terminal state is also readable from `GET /ai-edits/{edit_id}`.
+  terminal event — `done`, `error` or `cancelled`. That set equals the terminal values of
+  `status`, so no terminal state exists that the stream cannot express; a cancel is never
+  folded into `error`. `seq` is allocated per edit and never reused across worker
+  attempts. Terminal state is also readable from `GET /ai-edits/{edit_id}`.
 - Reconnect with `Last-Event-ID: <seq>` replays only events after `seq`, in order, with no
   gap and no duplicate — including after a requeue and after the edit already finished.
   Unknown/negative → from the start, never a crash; a large tail streams in bounded
-  batches, never one unbounded materialization.
+  batches, never one unbounded materialization. The terminal event is the one exception:
+  it is re-emitted unconditionally, so reconnecting with the `last_seq` read from
+  `GET /ai-edits/{edit_id}` terminates instead of hanging silent.
 - **SSE framing is injection-safe:** a chunk whose text contains `\n\ndata: …\n\nevent:
   done\n\n` or a bare `\r` is delivered as exactly one `chunk` event with the text intact —
   no forged terminal event, asserted on the raw wire bytes.
@@ -136,9 +145,10 @@ a requirement a downstream test must be able to go red on.
   grows, restore-of-a-restore works, unknown/foreign revision → 404, non-integer/overflow
   `n` → 404 (never 500). Restore is single-shot: a double-click creates exactly one new
   version.
-- Revision numbering has a defined origin for a document created before this story: its
-  pre-edit content is recoverable as revision 1 (or the spec states it is not, explicitly).
-  `GET /revisions` / `GET /messages` on such a document return a valid empty page.
+- Revision origin is defined: the FIRST mutation of a document with no history writes two
+  revisions in one transaction — revision 1 the pre-mutation content (`source: manual`),
+  revision 2 the result — so the first AI edit is rollbackable. Before that first
+  mutation, `GET /revisions` and `GET /messages` return a valid empty page.
 - Both list endpoints are owner-scoped, keyset-paginated with a stable order under
   concurrent inserts, capped page size, constant query count per page (no N+1), and never
   return document content in the list view.
@@ -178,20 +188,4 @@ a requirement a downstream test must be able to go red on.
   and asserted by an infrastructure scenario (first chunk observed before the response
   completes), never hand-edited on a host.
 
-### Client
-
-- Streamed chunks render as plain text until the terminal event delivers sanitized HTML; a
-  `<script>` chunk rendered mid-stream goes red.
-- On `error`, cancel or client timeout the editor buffer reverts byte-identically to the
-  pre-edit content and version — no partial model text left visible.
-- The send control is disabled while a `POST /ai-edits` is in flight; one user gesture
-  produces at most one effect.
-- Overlapping reads for one document view are last-write-wins: a late response from a
-  superseded request never overwrites the current render.
-- Revisions panel and chat history each have distinct loading / empty / fetch-error states;
-  a dropped SSE connection shows a visible reconnecting state, distinguishable from a
-  stalled stream.
-- Unsaved editor content is never silently discarded: sending an AI-edit instruction with a
-  dirty buffer persists the draft first or blocks with a confirm; navigating away or
-  refreshing with unsaved content fires a confirm-guard.
-
+See `19_AiChatEditing_Criteria_Client.md` for the client-side criteria.

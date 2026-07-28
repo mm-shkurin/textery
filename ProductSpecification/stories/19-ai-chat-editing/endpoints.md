@@ -3,7 +3,7 @@
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | /api/v1/documents/{document_id}/ai-edits | Queue an AI edit of the document (idempotent, one active edit per document) |
-| GET | /api/v1/documents/{document_id}/ai-edits/{edit_id}/stream | SSE stream of edit events (`chunk`, then exactly one `done`/`error`), replayable via `Last-Event-ID` |
+| GET | /api/v1/documents/{document_id}/ai-edits/{edit_id}/stream | SSE stream of edit events (`chunk`, then exactly one `done`/`error`/`cancelled`), replayable via `Last-Event-ID` |
 | GET | /api/v1/documents/{document_id}/ai-edits/{edit_id} | Edit state — polling fallback when SSE is unavailable |
 | POST | /api/v1/documents/{document_id}/ai-edits/{edit_id}/cancel | Terminalize a non-terminal edit as `cancelled` |
 | GET | /api/v1/documents/{document_id}/messages | Chat history for the document (keyset-paginated) |
@@ -25,9 +25,31 @@
   (`19_AiChatEditing_Criteria.md`, "Edit lifecycle"), which no other endpoint provides.
   Modelled as `POST .../cancel`, not `DELETE`, because nothing is deleted — the edit
   transitions to an absorbing terminal state and its event rows stay replayable.
-- **Six endpoints share one 404 body.** Absent document, foreign document, foreign
+- **All seven endpoints share one 404 body.** Absent document, foreign document, foreign
   `edit_id`, and foreign/unknown `revision_number` are byte-identical — the path document
-  id is authoritative, never decorative. Never 403.
+  id is authoritative, never decorative. Never 403. The 401 body is likewise identical
+  across all seven.
+- **No SSE event carries HTML.** Chunks are plain text and are rendered as text; on the
+  terminal event the client re-fetches `GET /documents/{id}` for the sanitized, persisted
+  content. Rendering concatenated chunk text as markup is the stored-XSS path this split
+  closes, so the contract gives the client no HTML to render early even by accident.
+- **SSE terminal kinds are `done` / `error` / `cancelled`** — exactly the terminal values
+  of `AiEditResponse.status`. A cancel is a user action, not a failure, so it is not
+  folded into `error`: the client unfreezes and reverts without an error banner or retry.
+- **Reconnect always terminates.** `GET /ai-edits/{edit_id}` hands the client `last_seq`
+  to reconnect with, and `Last-Event-ID` replays strictly *after* that seq — which would
+  filter out the terminal event itself. The stream therefore re-emits the terminal event
+  unconditionally on a terminal edit. Without that carve-out the documented recovery path
+  is a guaranteed silent hang.
+- **Revision origin is explicit.** A document with no history gets a baseline revision on
+  its first mutation: revision 1 holds the pre-mutation content, revision 2 the result.
+  Otherwise the first AI edit could never be rolled back.
+- **`limit` is clamped, never rejected**, and neither list endpoint declares an `order`
+  parameter — ordering is fixed server-side (messages oldest-first, revisions
+  newest-first).
+- **Shape errors are 422, semantic errors are 400**, uniformly with `documents_save.yaml`.
+  `selection: null` is a shape violation (422) and is *not* the same input as an omitted
+  `selection`, which means whole-document.
 - **`selection` offsets are Unicode code points**, tied to `base_version` — not UTF-16
   units and not bytes. Same unit as `DocumentContent`'s 200 000 limit.
 - The stream endpoint is the only non-JSON response (`text/event-stream`); its event
