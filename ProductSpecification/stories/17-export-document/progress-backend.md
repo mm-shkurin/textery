@@ -606,9 +606,16 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   `filename="document.pdf"` + assertion `attachment; filename*=UTF-8''document.pdf` (strict). Coverage:
   export encoding line + header + 404 branch 100% (only the known DI-stub NotImplementedError lines
   uncovered, out of scope).
-- [~] green-acceptance — this closes the still-RED Sc 3.1 acceptance
-  (`test_export_filename_is_rfc5987_encoded_from_cyrillic_title`); requires baked-image rebuild
-  (carryover quirk) before running against BACKEND_PORT=8100.
+- [x] green-acceptance — GREEN live against the rebuilt backend (BACKEND_PORT=8100): 9 passed, 0
+  failed, 0 skipped in `test_export_document_acceptance.py`. Only change: removed the RED
+  `@pytest.mark.skip` from `test_export_filename_is_rfc5987_encoded_from_cyrillic_title` (no
+  production code touched — the usecase/db/rest greens already carried the behavior). The full
+  write→read→encode chain is now proven end to end through real HTTP + real Postgres: save with
+  `title="Привет Мир"` persists (DTO + CAS), export derives `"Привет Мир.pdf"` in the usecase, and the
+  rest route emits `Content-Disposition: attachment; filename*=UTF-8''%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%9C%D0%B8%D1%80.pdf`
+  exactly. Migration `a3b4c5d6e7f8` applied cleanly on container start (`alembic upgrade head` runs in
+  the backend CMD), so the db-suite migration-harness quirk does NOT affect the compose path.
+  Scenario 3.1 complete.
 
 ### Scenario 3.2: A document with no title uses a default filename
 > CARRY-FORWARD (from Sc 2.2 green-acceptance premortem, commit 5e00082 — CONCERNS CREDIBLE): the
