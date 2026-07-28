@@ -874,6 +874,37 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   `created_at` and `updated_at`, so it could not have caught a title corruption (now all 10 persisted
   fields); and `save_content_with_title` was byte-identical to `save_content_if_version_matches` plus
   one kwarg, inventing a storage operation that does not exist — collapsed into the real one.
+  ⚠️ REVIEW FINDINGS over `ab40007` — agent-review CONCERNS ×3, premortem 2 CREDIBLE, and BOTH
+  independently landed the same #1, which is a real hole in THIS unit's collateral changes:
+  • `assert_documents_match` was widened 7 → 10 fields with the comment "every persisted field …
+    cannot hide behind a subset" — but the claim is FALSE at both (and only) call sites,
+    `test_document_storage.py:17` and `:85`. Neither calls `expire_identity_map()`. `save_new` does
+    `session.add(DocumentModel.from_domain(document))`, the session is `expire_on_commit=False`, and
+    the later `select()` is deduplicated against the identity map, so SQLAlchemy returns the SAME
+    instance and `to_domain()` reads back the Python attributes `from_domain` just set. The new
+    fields assert `x == x`; the DB's stored bytes are never observed. This is the exact trap the
+    padded-title test three files over was written to avoid — the seam was not carried along. FIX:
+    `expire_identity_map()` before the read in both tests, then prove it by mutating
+    `to_domain` (`title=None` or a fresh `created_at`) and confirming they go RED.
+  • That is ALSO where the conceded `from_domain` gap could be closed: `save_new` IS the
+    `from_domain` write path, and those two tests are the only ones traversing it write→read. Both
+    were touched here and left warm-cached. Premortem rates the insert path CREDIBLE precisely
+    because the asymmetry became a NOTE while the other two doors became STEPS — "a recorded
+    asymmetry with no step and no test is indistinguishable from an unrecorded one at the moment the
+    green is written". Concretely: construct a `Document` with `title=" Отчёт "`, persist via
+    `save_new`, expire, assert the padding survived (~5 lines on machinery this unit already built).
+    Mitigating today: `Document.create` takes no title, so `from_domain` always carries `title=None`
+    and a `.strip()` there would `AttributeError` loudly.
+  • `assert_stored_state` docstring claims "the full post-CAS state" but pins 3 of the 4 columns the
+    CAS writes — `updated_at` is written by the same `values` dict and is still unverified in all
+    three tests, by the helper introduced to close exactly that class of gap. Pin monotonicity
+    (`> created_at` / `>` the pre-save value), not an exact literal — the DSL generates it.
+  • The collapsed DSL comments `title=None` as "the content-only autosave path", written as durable
+    semantics that the accepted ADR INVERTS (`None` becomes clear under `TitleUpdate`). Narrow the
+    wording. Guarded — `test_should_preserve_an_existing_title_on_a_content_only_save` now pins
+    `version=3`, so a `None → clear()` mismatch goes RED.
+  • STALE: discovery guard (b) below still reads "which today covers round-trip and preserve-on-omit
+    only" — this unit added a third case.
   ORIGINAL RATIONALE — INSERTED by the premortem over `f0e6e7d` (CREDIBLE,
   and the reason it is a STEP rather than a note): the previous guard closed the two placements a
   green reaches for first — in-place mutation in `ExportDocument`, and `Document.__init__` — and
