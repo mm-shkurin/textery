@@ -10,46 +10,29 @@ import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { bodyProblems, scanPipeline } from './ciPipelineScan.mjs'
+import { REQUIRED } from './ciRequiredGates.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
+
+// Overridable only through explicit CLI flags, and only so the self-test can point this check at
+// fixture workflows. Not environment variables: an ambient value exported by a runner would
+// redirect the real check while printing the same OK line, where a flag has to be typed into the
+// step a reader can see. CI passes none, so the defaults are the real pipelines.
+function flag(name, fallback) {
+  const match = process.argv.slice(2).find((arg) => arg.startsWith(`--${name}=`))
+  return match ? resolve(match.slice(name.length + 3)) : fallback
+}
+
 const STANDALONE = {
   label: 'frontend/.github/workflows/ci.yml',
-  path: resolve(here, '../.github/workflows/ci.yml'),
+  path: flag('standalone', resolve(here, '../.github/workflows/ci.yml')),
 }
 const MONOREPO = {
   label: '.github/workflows/frontend-ci.yml',
-  path: resolve(here, '../../.github/workflows/frontend-ci.yml'),
+  path: flag('monorepo', resolve(here, '../../.github/workflows/frontend-ci.yml')),
 }
 
-const PACKAGE_JSON = resolve(here, '../package.json')
-
-// Sameness is not presence: two identical pipelines that run NOTHING satisfy the comparison below,
-// and so does deleting one step from both files in the same commit. That is the shape of the
-// failure this file exists to prevent, one level up — every gate here is a step someone under
-// release pressure can remove, and the only thing that noticed would be this comparison, which
-// removal keeps green.
-//
-// So the gates are named. Each entry says what is lost when it goes, because a bare list gets
-// pruned as clutter and a reason does not. `mustContain` pins the part of a composite body the
-// reason depends on — a name in a workflow says nothing about what the script still does.
-const REQUIRED = [
-  { script: 'typecheck', why: 'tsc -b; without it a broken build reaches main invisibly (vitest strips types)' },
-  {
-    script: 'test:coverage',
-    why: 'the suite AND the per-file coverage floors, which only fire under --coverage',
-    mustContain: ['--coverage', 'check-per-file-coverage.mjs'],
-  },
-  { script: 'build', why: 'the one step that proves the app still compiles and bundles' },
-  { script: 'lint', why: 'oxlint at --max-warnings=0', mustContain: ['--max-warnings=0'] },
-  { script: 'format:check', why: 'a .prettierrc nobody runs is a preference, not a convention' },
-  { script: 'audit', why: 'production dependency advisories at high and above' },
-  { script: 'ci:parity', why: 'this check; a pipeline that drops it can then drift freely' },
-  {
-    script: 'check:ingress',
-    why: 'the nginx 503 guard behind mayHaveLandedServerSide — see that predicate',
-    mustContain: ['check-nginx-503.selftest.mjs', 'check-nginx-503.mjs'],
-  },
-]
+const PACKAGE_JSON = flag('package', resolve(here, '../package.json'))
 
 function isBelowFloor({ label, path }, { active, neutralized }) {
   const missing = REQUIRED.filter(({ script }) => !active.includes(script))
