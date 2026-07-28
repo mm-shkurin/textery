@@ -85,7 +85,7 @@ class TestExportDocument:
         await statements.when_exporting("pdf")
 
         statements.assert_rendered_stored_content("<p>Привет</p>", ExportFormat.PDF)
-        statements.assert_export_is(media_type="application/pdf", filename="document.pdf")
+        statements.assert_export_is(media_type=PDF_MEDIA_TYPE, filename="document.pdf")
 
     async def test_should_render_the_stored_content_and_return_docx_bytes(self, statements):
         await statements.given_a_stored_document(content="<p>Пока</p>")

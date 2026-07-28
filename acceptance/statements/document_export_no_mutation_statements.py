@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from clients.application.dto.document.get_document_response_dto import GetDocumentResponseDto
 from statements.document_export_statements import DocumentExportStatements
+from statements.setup_assertions import assert_setup_ok
 
 
 @dataclass(frozen=True)
@@ -33,24 +34,15 @@ class DocumentExportNoMutationStatements(DocumentExportStatements):
         owner_access_token = await self._authenticated_access_token()
         document_id = await self._create_document_owned_by(owner_access_token)
         before = await self._client.get_document(document_id, owner_access_token)
-        assert before.status_code == 200, (
-            f"setup: expected 200 reading the owner's own document before export, got "
-            f"status_code={before.status_code}, body={before.body}"
-        )
+        assert_setup_ok(before, "reading the owner's own document before export")
         export_response = await self._client.export_document(
             document_id=document_id,
             export_format="pdf",
             access_token=owner_access_token,
         )
-        assert export_response.status_code == 200, (
-            f"setup: expected 200 exporting the owner's own document as pdf, got "
-            f"status_code={export_response.status_code}, body={export_response.body}"
-        )
+        assert_setup_ok(export_response, "exporting the owner's own document as pdf")
         after = await self._client.get_document(document_id, owner_access_token)
-        assert after.status_code == 200, (
-            f"setup: expected 200 reading the owner's own document after export, got "
-            f"status_code={after.status_code}, body={after.body}"
-        )
+        assert_setup_ok(after, "reading the owner's own document after export")
         return ExportMutationSnapshot(before=before, after=after)
 
     def assert_version_unchanged(self, snapshot: ExportMutationSnapshot) -> None:

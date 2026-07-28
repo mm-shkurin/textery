@@ -128,21 +128,31 @@ class TestExportFilenameDefaultWithoutTitle(AbstractBackendTest):
 
         document_export_filename_statements.assert_default_filename(response, export_format)
 
+
+class TestBlankTitleSaveDoesNotWipeStoredTitle(AbstractBackendTest):
+    """Scenario 3.2: A blank-title save leaves the stored title untouched.
+
+    Given a document whose stored title contains Cyrillic characters
+    When a content-only autosave submits a blank (empty or whitespace-only) title
+    Then the save lands but the stored title survives
+    And the export filename still reflects it.
+    """
+
     @pytest.mark.skip(reason="RED: blank-title save wipes the stored title (Scenario 3.2)")
     @pytest.mark.parametrize(
         "blank_title", ["", "   "], ids=["empty_title", "whitespace_title"]
     )
     async def test_blank_title_save_does_not_wipe_the_stored_title(
-        self, document_export_filename_statements, blank_title
+        self, document_blank_title_save_statements, blank_title
     ):
         """A blank title carries no title intent, so it must not overwrite a stored
         one -- the export filename still reflects the previously saved title."""
-        response = await document_export_filename_statements.given_owner_saves_a_blank_title_over_a_stored_title_and_exports(
+        response = await document_blank_title_save_statements.given_owner_saves_a_blank_title_over_a_stored_title_and_exports(
             blank_title
         )
 
-        document_export_filename_statements.assert_blank_title_save_persisted_the_document()
-        document_export_filename_statements.assert_filename_rfc5987_encoded_from_title(response)
+        document_blank_title_save_statements.assert_blank_title_save_persisted_the_document()
+        document_blank_title_save_statements.assert_filename_rfc5987_encoded_from_title(response)
 
 
 class TestExportDocumentFormatGuard(AbstractBackendTest):
