@@ -1,22 +1,11 @@
-import pytest
-
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
-# 1.1 live run is deferred to green-selenium: it needs a running backend (the flow issues a real
-# register -> verify -> login round trip, then a real generation POST) plus a browser, neither of
-# which the analytical phases have. The RED prediction this skip originally carried — a
-# TimeoutException from assert_generation_surface_shown because selectType routed to step='mode' —
-# is spent: useFlowNavigation.selectType now sets step='form' with mode='auto' and the mode modal
-# is gone, so the failure it named can no longer be produced. Un-skip in green-selenium.
-
-
-@pytest.mark.skip(
-    reason="1.1 needs a live backend + browser, so the run is deferred to green-selenium. The "
-    "unified flow has landed (selectType -> step='form', mode='auto', no mode modal), so no "
-    "analytical failure is predicted; if the live stack is unhealthy the first failure will be "
-    "assert_reached_generation_workspace, whose AssertionError names the current URL so an "
-    "auth-collapse back to the landing is not misread as a routing regression."
-)
+# 1.1's live run happened in green-selenium against a running backend + browser. The RED
+# prediction this test once carried — a TimeoutException from assert_generation_surface_shown
+# because selectType routed to step='mode' — was already spent when the skip was lifted:
+# useFlowNavigation.selectType has set step='form' with mode='auto' since 916ab0a and the mode
+# modal is deleted, so green-selenium was a first live verification of shipped behaviour rather
+# than a red-to-green transition.
 class TestGenerateFlowAcceptance(AbstractFrontendTest):
     """UI Test Scenario 1.1: Selecting a type goes straight to generation.
 
