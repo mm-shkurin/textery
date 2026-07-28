@@ -25,9 +25,9 @@ import { clearSession, saveSession } from '../../features/auth/utils/authSession
 // fresh Idempotency-Key per call, so the backend cannot collapse them. The refactor this file
 // catches is an await hoisted into `useGeneration.submit` itself, ahead of setState('pending') —
 // a topic validation, or moving the set inside the try. NOT a token refresh: refreshes live in
-// `authorizedRequest` inside `generationApi`, which line 27 mocks out wholesale, so a refresh
-// added where refreshes actually live is invisible at this seam and no layer guards it — the
-// Selenium test measures the surface, not when the first byte leaves.
+// `authorizedRequest` inside `generationApi`, which the `vi.mock` below mocks out wholesale, so
+// a refresh added where refreshes actually live is invisible at this seam and no layer guards it
+// — the Selenium test measures the surface, not when the first byte leaves.
 //
 // This file pins it at the only layer that can hold the POST open on purpose: createGeneration is
 // mocked to a promise that NEVER settles, so the generating surface can only be observed if it
