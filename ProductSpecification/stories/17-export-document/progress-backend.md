@@ -673,6 +673,41 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   reaches the CAS as None and hits the existing preserve-on-omit branch. `design` decides whether
   that lands in `SaveDocumentRequestDto`, `SaveDocument.execute`, or the domain — red-agent's read is
   the usecase, keeping the rest DTO a dumb transport and the CAS guard on a single `is None`.
+> DESIGN OBLIGATIONS (from the Sc 3.2 red-acceptance review passes over commit ab97072 —
+> agent-review CONCERNS ×3 + premortem CREDIBLE ×3, converging on the first three):
+> 1. **No way to clear a title (BOTH passes, CREDIBLE).** After the planned green, `None`, `""` and
+>    `"   "` all mean "preserve" — and `title: str | None = None` is the only write surface — so NO
+>    wire value can remove a stored title. A user who clears the title field sees it come back on
+>    reopen and on every export filename. The spec clause that justified the decision
+>    (`17_ExportDocument_Notes.md:45` "never empty or null") constrains the FILENAME, not the stored
+>    title — wiping to NULL satisfies it too (export falls back to `document.pdf`). `design` MUST put
+>    the clearing affordance on record and pin it with a test: either an explicit clear signal (e.g.
+>    JSON `null` clears, omitted preserves) or a documented "titles are replaced, never cleared".
+> 2. **`title.strip() or None` silently trims legitimate titles (agent-review).** It does two things:
+>    blank→None (intended) AND trims every real title (`" Отчёт "` → `"Отчёт"`). Nothing can detect
+>    it — Sc 3.1's `"Привет Мир"` has only an internal space, so a trimming and a non-trimming
+>    implementation (`if title is not None and not title.strip(): title = None`) are indistinguishable
+>    under the whole current suite. Add a leading/trailing-whitespace case asserting either verbatim
+>    round-trip or a documented trim.
+> 3. **The fix is write-path-only; derivation keeps its falsy-only fallback (premortem).**
+>    `export_document.py:46` is `stem = document.title or "document"` — `"   "` is truthy and survives
+>    to `%20%20%20.pdf`. Rows written BEFORE the green (today's `SET title = ''` is live), or by a
+>    migration/import/admin tool/future create-with-title endpoint, bypass the save boundary and
+>    reproduce the incident forever. Make it defense in depth: `strip()` in the derivation too, plus a
+>    `whitespace_title_default` case in `test_export_document_usecase.py` (currently only
+>    `cyrillic_title_pdf` / `cyrillic_title_docx` / `absent_title_default`).
+> 4. **Test 2 can't distinguish "title preserved" from "the whole blank save was a no-op"
+>    (agent-review).** The blank save resubmits the SAME `DOCUMENT_CONTENT` and only checks
+>    `status_code == 200`, so a green that rejects/short-circuits the entire blank-title save — losing
+>    the content update — passes identically. That is the exact regression the test exists to exclude,
+>    since the premise is a CONTENT-ONLY autosave. Send distinct content on the blank save and assert
+>    it persisted (or that the version advanced to 3). Fix during green.
+> 5. **Sequencing (premortem, not a finding):** the skip-marked test documents a LIVE production
+>    data-loss path — today any autosave submitting an empty title destroys a stored title, which a
+>    frontend mount/hydration race can trigger. Argues against letting this green sit behind other work.
+> Title LENGTH bound (premortem CREDIBLE 3) is a restatement of the cap already carried forward to
+> Sc 3.6 / Infra 3.1 in c00c2f5 — no new obligation here beyond noting that truncating the filename
+> STEM in `ExportDocument` bounds the header regardless of what is stored.
 - [~] design
 - [ ] red-usecase
 - [ ] green-usecase
