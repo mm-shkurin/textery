@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 import { saveDocument } from '../api/documentApi'
 import { serializeEditorHtml } from '../components/serializeEditorHtml'
-import { MAX_AUTOSAVE_ATTEMPTS, isTransientFailure } from './autosaveRetryPolicy'
+import {
+  MAX_AUTOSAVE_ATTEMPTS,
+  isTransientFailure,
+  mayHaveLandedServerSide,
+} from './autosaveRetryPolicy'
 import {
   isAlreadySaved,
   savedContentAfterResolve,
@@ -120,6 +124,13 @@ export function useDocumentSave({
         // the retry is the sole writer and any edit in the gap only queues. The retry re-serializes
         // current content at fire time (below), so a queued edit's LATEST text is what gets sent.
         if (isTransientFailure(error) && attempt < MAX_AUTOSAVE_ATTEMPTS) {
+          // Same principle settleFailed already applies, reaching the retry gate below: a failure
+          // that may have LANDED leaves the server's content unknown, so the guard's memory of what
+          // the server holds cannot outlive it — otherwise a revert inside the backoff window is
+          // suppressed against a memory the failure itself put in doubt, and the editor and the
+          // server silently diverge under a «Сохранено» badge. A definite refusal (503) keeps the
+          // memory: it is still provably true, and suppressing a redundant re-PUT there is correct.
+          if (mayHaveLandedServerSide(error)) lastSavedContentRef.current = null
           cycle.scheduleRetry(attempt, () => {
             // The backoff window is the one place save() cannot apply the guard: isSavingRef is
             // still true, so an edit landing here takes the queue branch and returns before the

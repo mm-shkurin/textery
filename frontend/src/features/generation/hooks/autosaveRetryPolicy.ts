@@ -25,3 +25,25 @@ export function isTransientFailure(error: unknown): boolean {
   if (error instanceof RequestTimeoutError) return true
   return isHttpError(error) && error.status >= 500
 }
+
+// A different question from isTransientFailure ("can waiting heal this?"): did the failure leave the
+// SERVER's content unknown? The dirty guard's memory ("the server holds this text") is only safe to
+// keep across a failure that provably did not land, so the two questions do not share an answer.
+//
+// Unknown is the DEFAULT across the whole 5xx range, not an enumeration: a server that had the
+// request in hand can fail on either side of the commit, and a 500 fires from a post-commit hook as
+// readily as from a rejected transaction. 503 is the sole carve-out — it is the only 5xx that ANSWERS
+// the question ("unavailable, I did not take your write"). Below 500 nothing was accepted, and a
+// rejection that is not an HttpError at all (a session expiry thrown before the request goes out)
+// never reached a server either.
+//
+// Measured 2026-07-28: the 503 carve-out is a claim about the INGRESS, not the application.
+// `backend/adapters/rest/src/error_handling/exception_handlers.py:64-77` returns 500 and it is the
+// only 5xx the origin emits; `infra/docker/nginx/frontend.conf` carries no `limit_req`/`limit_conn`/
+// `error_page`/`max_fails`/`proxy_next_upstream`, so nothing in front of it emits 503 either. The
+// carve-out is safe while no backend component emits 503 AFTER taking a write — add a rate limiter,
+// readiness probe, or WAF that answers 503 downstream of the origin and this branch starts
+// suppressing writes that are genuinely needed.
+export function mayHaveLandedServerSide(error: unknown): boolean {
+  return isTransientFailure(error) && !(isHttpError(error) && error.status === 503)
+}

@@ -57,14 +57,15 @@ vi.mock('../../api/documentApi')
 // and this suite stays green, because "always write" satisfies "write here" too. What makes the
 // pair a specification is the INVERSE assertion in the sibling suite
 // ManualEditor.autosaveDirtyGuardBackoffRevert.test.tsx, whose 503 suppression count
-// (`toHaveBeenCalledTimes(2)`) is the only thing that fails on an always-retry implementation.
+// (`toHaveBeenCalledTimes(2)`) is the only component-level discriminator that fails on an
+// always-retry implementation.
 // Weakening, re-scoping, or .skip-ing that count removes this suite's sole discriminator. The axis
 // the two of them straddle is pinned directly, without either component fixture, in
 // hooks/__tests__/autosaveRetryPolicy.mayHaveLandedServerSide.test.ts.
 describe('ManualEditor — a revert after a TIMED-OUT save is still written (H9.4)', () => {
   useAutosaveFailureFakeTimers()
 
-  it.skip('retries with the reverted content because a timeout leaves the server state unknown', async () => {
+  it('retries with the reverted content because a timeout leaves the server state unknown', async () => {
     // The scenario presupposes a timeout is retried at all rather than surfacing a banner outright.
     expect(isTransientFailure(new RequestTimeoutError())).toBe(true)
 

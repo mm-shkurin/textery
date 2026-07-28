@@ -24,6 +24,12 @@ import { isTransientFailure, mayHaveLandedServerSide } from '../autosaveRetryPol
 // pass for entirely the wrong reason.
 const GATEWAY_TIMEOUT: HttpError = { status: 504, body: {} }
 const BAD_GATEWAY: HttpError = { status: 502, body: {} }
+// Measured 2026-07-28: this is the one fail-DANGEROUS branch — every `true` costs at most a
+// redundant PUT, while `503 -> false` is the only answer that can suppress a needed write. And it is
+// a claim about the INGRESS, not the application: `exception_handlers.py:64-77` returns 500 and it is
+// the only 5xx the origin emits; `infra/docker/nginx/frontend.conf` has no `limit_req`/`limit_conn`/
+// `error_page`/`max_fails`/`proxy_next_upstream`, so nothing emits 503 today. Safe while no backend
+// component emits 503 AFTER taking a write — see the note on `mayHaveLandedServerSide` itself.
 const DEFINITE_SERVER_REJECTION: HttpError = { status: 503, body: {} }
 const BAD_REQUEST: HttpError = { status: 400, body: {} }
 
