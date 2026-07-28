@@ -10,7 +10,12 @@ import {
   typeIntoEditor,
   useAutosaveFakeTimers,
 } from './ManualEditor.autosave.testSupport'
-import { SAVED_CONTENT, SAVED_VERSION } from './ManualEditor.autosaveFixture'
+import {
+  EDITED_PLAIN,
+  SAVED_CONTENT,
+  SAVED_PLAIN,
+  SAVED_VERSION,
+} from './ManualEditor.autosaveFixture'
 import {
   DIRTY_BADGE_CLASS,
   DIRTY_STATUS,
@@ -57,7 +62,7 @@ describe('ManualEditor — an edit reverted to the last-saved content settles cl
     })
 
     // Baseline: one real autosave lands, so lastSavedContentRef holds exactly what the editor holds.
-    await typeIntoEditor('hello world')
+    await typeIntoEditor(SAVED_PLAIN)
     await crossDebounceBoundary()
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
     expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
@@ -73,8 +78,8 @@ describe('ManualEditor — an edit reverted to the last-saved content settles cl
     // Type one more word, then take it straight back out. Both transactions run noteEdit -> onDirty,
     // so the document is marked dirty and the debounce is re-armed — while the editor's serialized
     // HTML is once again byte-identical to what the server confirmed.
-    await typeIntoEditor('hello world edited')
-    await typeIntoEditor('hello world')
+    await typeIntoEditor(EDITED_PLAIN)
+    await typeIntoEditor(SAVED_PLAIN)
     expect(screen.getByText(DIRTY_STATUS)).toHaveClass(DIRTY_BADGE_CLASS)
     // THE non-vacuity gate for both `false` observations. ManualEditor arms the beforeunload
     // listener only while hasUnsavedChanges is true (`if (!hasUnsavedChanges) return` before

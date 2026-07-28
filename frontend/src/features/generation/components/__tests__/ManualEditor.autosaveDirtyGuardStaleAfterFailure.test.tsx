@@ -5,17 +5,25 @@ import { VersionConflictError } from '../../../../shared/api/send'
 import * as documentApi from '../../api/documentApi'
 import {
   CREATED_DOCUMENT_ID,
+  CREATED_VERSION,
   crossDebounceBoundary,
   renderCreatedDocument,
   typeIntoEditor,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
-import { EDITED_CONTENT, SAVED_CONTENT, SAVED_VERSION } from './ManualEditor.autosaveFixture'
+import {
+  EDITED_CONTENT,
+  EDITED_PLAIN,
+  SAVED_CONTENT,
+  SAVED_PLAIN,
+  SAVED_VERSION,
+} from './ManualEditor.autosaveFixture'
 import {
   DIRTY_BADGE_CLASS,
   DIRTY_STATUS,
   SAVED_BADGE_CLASS,
   SAVED_STATUS,
+  SAVE_ERROR_TESTID,
   dispatchBeforeUnload,
 } from './ManualEditor.saveStatus.testSupport'
 
@@ -44,13 +52,21 @@ describe('ManualEditor — a terminal save failure invalidates the dirty guard (
 
   async function saveThenFail() {
     await renderCreatedDocument()
-    await typeIntoEditor('hello world')
+    await typeIntoEditor(SAVED_PLAIN)
     await crossDebounceBoundary()
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
+    // The baseline's own tuple, not just its count: this is the write whose success is what the
+    // guard goes on to remember, so a wrong content or version here voids the whole premise.
+    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
+      1,
+      CREATED_DOCUMENT_ID,
+      SAVED_CONTENT,
+      CREATED_VERSION,
+    )
     expect(screen.getByText(SAVED_STATUS)).toHaveClass(SAVED_BADGE_CLASS)
 
     // The failing save. A fresh edit so the boundary has something to write.
-    await typeIntoEditor('hello world edited')
+    await typeIntoEditor(EDITED_PLAIN)
     await crossDebounceBoundary()
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
     expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
@@ -63,7 +79,7 @@ describe('ManualEditor — a terminal save failure invalidates the dirty guard (
 
   // Undoes the failed edit, restoring the exact bytes the guard remembers, and crosses the boundary.
   async function revertAndCrossBoundary() {
-    await typeIntoEditor('hello world')
+    await typeIntoEditor(SAVED_PLAIN)
     // Non-vacuity gate for nothing here — the assertions below are all positive — but it pins that
     // the revert really did re-dirty the document, so the boundary that follows is a live one.
     expect(dispatchBeforeUnload()).toBe(true)
@@ -80,7 +96,10 @@ describe('ManualEditor — a terminal save failure invalidates the dirty guard (
       SAVED_VERSION,
     )
     // …and since that attempt failed too, the document must not claim to be clean anywhere.
-    expect(screen.getByTestId('me-save-error')).toHaveTextContent(bannerMessage)
+    // Exact text, not a substring: the banner's whole content is the message (its icon renders no
+    // text), so toHaveTextContent would also pass for a message that merely embedded the expected
+    // one — and the two failure kinds this suite distinguishes differ only in that wording.
+    expect(screen.getByTestId(SAVE_ERROR_TESTID).textContent).toBe(bannerMessage)
     expect(screen.getByText(DIRTY_STATUS)).toHaveClass(DIRTY_BADGE_CLASS)
     expect(screen.queryByText(SAVED_STATUS)).toBeNull()
     expect(dispatchBeforeUnload()).toBe(true)
@@ -92,7 +111,7 @@ describe('ManualEditor — a terminal save failure invalidates the dirty guard (
       .mockRejectedValue(new Error('network down'))
 
     await saveThenFail()
-    expect(screen.getByTestId('me-save-error')).toHaveTextContent(SAVE_ERROR_MESSAGE)
+    expect(screen.getByTestId(SAVE_ERROR_TESTID).textContent).toBe(SAVE_ERROR_MESSAGE)
 
     await revertAndCrossBoundary()
     expectStillFailed(SAVE_ERROR_MESSAGE)
@@ -106,7 +125,7 @@ describe('ManualEditor — a terminal save failure invalidates the dirty guard (
       .mockRejectedValue(new VersionConflictError())
 
     await saveThenFail()
-    expect(screen.getByTestId('me-save-error')).toHaveTextContent(CONFLICT_ERROR_MESSAGE)
+    expect(screen.getByTestId(SAVE_ERROR_TESTID).textContent).toBe(CONFLICT_ERROR_MESSAGE)
 
     await revertAndCrossBoundary()
     expectStillFailed(CONFLICT_ERROR_MESSAGE)

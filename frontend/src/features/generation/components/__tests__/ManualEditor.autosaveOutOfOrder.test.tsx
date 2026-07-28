@@ -10,9 +10,26 @@ import {
   typeAndFireAutosave,
   useAutosaveFakeTimers,
 } from './ManualEditor.autosave.testSupport'
-import { DIRTY_STATUS, SAVED_STATUS } from './ManualEditor.saveStatus.testSupport'
+import { RETRY_VERSION, SAVED_VERSION, asParagraph } from './ManualEditor.autosaveFixture'
+import {
+  DIRTY_STATUS,
+  SAVED_BADGE_CLASS,
+  SAVED_STATUS,
+  dispatchBeforeUnload,
+} from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')
+
+// Vocabulary local to this suite: the shared fixture names a baseline-edit-revision story, whereas
+// this one needs an ordered first/second pair plus a body the server never legitimately holds.
+// Derived through asParagraph so the text typed and the HTML asserted on the wire cannot drift.
+const FIRST_PLAIN = 'first version'
+const SECOND_PLAIN = 'second version'
+const FIRST_CONTENT = asParagraph(FIRST_PLAIN)
+const SECOND_CONTENT = asParagraph(SECOND_PLAIN)
+// Deliberately unlike anything the user typed: if the stale response were ever adopted, the editor
+// assertions below name exactly which response clobbered it rather than failing on a near-miss.
+const STALE_SERVER_CONTENT = asParagraph('STALE SERVER')
 
 // Scenario E3.3 / H9.2 (07_Editor_Extension_Tests.md §3.3, 02_UI_Tests.md §4.2): two autosaves in
 // flight resolving out of order — the shown status and content must reflect the LATEST edit (B),
@@ -43,49 +60,58 @@ describe('ManualEditor — out-of-order autosaves reflect the latest edit and co
       .mockReturnValueOnce(saveB.promise)
 
     // Edit #1 → debounce → first autosave (A) fires and stays pending.
-    await typeAndFireAutosave('first version')
+    await typeAndFireAutosave(FIRST_PLAIN)
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
     expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
       1,
       CREATED_DOCUMENT_ID,
-      '<p>first version</p>',
+      FIRST_CONTENT,
       CREATED_VERSION,
     )
 
     // Edit #2 lands while A is still in flight: it must queue a re-save, NOT launch a second
     // concurrent saveDocument. Advancing the debounce here re-enters save() which finds A in
     // flight and only sets the "save again" flag.
-    await typeAndFireAutosave('second version')
+    await typeAndFireAutosave(SECOND_PLAIN)
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
+    // Unsent keystrokes exist, so the leave-guard is armed. Asserted here so the `false` at the end
+    // of the test means "the guard stood down", not "no guard was ever installed" — ManualEditor
+    // registers the beforeunload listener only while dirty.
+    expect(dispatchBeforeUnload()).toBe(true)
 
     // A resolves LAST-in-wall-clock but FIRST-in-order, carrying stale server content that differs
     // from what the editor now holds. The resolve handler must NOT adopt it (editor moved on), and
     // must fire the queued save (B) with the LATEST content and A's returned version.
     await act(async () => {
-      saveA.resolve({ status: 'saved', version: 8, content: '<p>STALE SERVER</p>' })
+      saveA.resolve({ status: 'saved', version: SAVED_VERSION, content: STALE_SERVER_CONTENT })
     })
     await flushMicrotasks()
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
     expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
       2,
       CREATED_DOCUMENT_ID,
-      '<p>second version</p>',
-      8,
+      SECOND_CONTENT,
+      SAVED_VERSION,
     )
     // The stale A response did not overwrite the editor's newer content.
-    expect(screen.getByTestId('editor-content-area').innerHTML).toBe('<p>second version</p>')
+    expect(screen.getByTestId('editor-content-area').innerHTML).toBe(SECOND_CONTENT)
 
     // B — the save for the latest edit — resolves and settles the shown state.
     await act(async () => {
-      saveB.resolve({ status: 'saved', version: 9, content: '<p>second version</p>' })
+      saveB.resolve({ status: 'saved', version: RETRY_VERSION, content: SECOND_CONTENT })
     })
     await flushMicrotasks()
 
     // Final state reflects the latest edit (B): content preserved, status is exactly "saved".
-    expect(screen.getByTestId('editor-content-area').innerHTML).toBe('<p>second version</p>')
-    // Strict status: the saved element's own text is exactly "Сохранено" (not a substring hit
-    // elsewhere), and the dirty status must be gone — a stale-A clobber reverting to dirty fails here.
-    expect(screen.getByText(SAVED_STATUS).textContent).toBe(SAVED_STATUS)
+    expect(screen.getByTestId('editor-content-area').innerHTML).toBe(SECOND_CONTENT)
+    // B settled the cycle — it must not chain a third write off its own resolve handler.
+    expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
+    // Strict status: the saved badge is the branch that rendered (asserted by its variant class —
+    // re-reading the text getByText already matched on could never fail), and the dirty status must
+    // be gone. A stale-A clobber reverting to dirty fails on both.
+    expect(screen.getByText(SAVED_STATUS)).toHaveClass(SAVED_BADGE_CLASS)
     expect(screen.queryByText(DIRTY_STATUS)).toBeNull()
+    // ...and the document is clean all the way through to the leave-guard, not merely in the badge.
+    expect(dispatchBeforeUnload()).toBe(false)
   })
 })
