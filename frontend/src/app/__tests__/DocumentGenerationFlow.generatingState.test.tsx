@@ -12,13 +12,22 @@ import { clearSession, saveSession } from '../../features/auth/utils/authSession
 // [data-testid='generation-generating'] — a design that is only sound because
 // `useGeneration.submit` sets state to 'pending' SYNCHRONOUSLY, before it awaits
 // createGeneration. With latency L the surface is up across [0, ~2L] if that holds and only
-// [L, ~2L] if it does not, and a WebDriverWait cannot tell those two apart. Nothing asserts it.
+// [L, ~2L] if it does not, and a WebDriverWait cannot tell those two apart.
+//
+// What already covered it, precisely: the sibling `DocumentGenerationFlow.documentType.test.tsx`
+// double-Ctrl+Enter case fails on the same production edit, and its comment names the same
+// render-ordering guarantee. So this premise was not unguarded — its CONSEQUENCE was guarded and
+// its CAUSE was not, which is a diagnosis difference, not a coverage one (see the correction in
+// the recorded-failure comment below).
 //
 // The consequence of losing it is not cosmetic: the user gets a dead composer for the whole POST
 // round trip, clicks send again, and is billed for two generations — `createGeneration` mints a
-// fresh Idempotency-Key per call, so the backend cannot collapse them. Any refactor that puts an
-// await ahead of setState('pending') (topic validation, a token refresh, moving the set inside
-// the try) does that, while the Selenium test stays green.
+// fresh Idempotency-Key per call, so the backend cannot collapse them. The refactor this file
+// catches is an await hoisted into `useGeneration.submit` itself, ahead of setState('pending') —
+// a topic validation, or moving the set inside the try. NOT a token refresh: refreshes live in
+// `authorizedRequest` inside `generationApi`, which line 27 mocks out wholesale, so a refresh
+// added where refreshes actually live is invisible at this seam and no layer guards it — the
+// Selenium test measures the surface, not when the first byte leaves.
 //
 // This file pins it at the only layer that can hold the POST open on purpose: createGeneration is
 // mocked to a promise that NEVER settles, so the generating surface can only be observed if it
@@ -101,11 +110,22 @@ describe('DocumentGenerationFlow — the generating state is shown while the cre
     // The run badge and the progress rail are the rest of what the same pending commit puts on
     // screen, and they are what makes this "a generating document shows PROGRESS" rather than a
     // bare spinner. They render from the identical `state === 'pending'` branch, so they are part
-    // of the same before-the-await claim, not a second scenario.
+    // of the same before-the-await claim, not a second scenario. Of the two only the rail is
+    // otherwise unasserted anywhere — ChatWorkspace.test.tsx already pins the badge for `pending`.
+    //
+    // The rail is scoped to its panel deliberately: a document-wide getByText throws on
+    // MULTIPLICITY the moment any second surface carries the same string (a run-history strip, a
+    // toast), and it would fail naming a string rather than this premise — the scope fragility the
+    // Selenium poll matcher was fixed for twice. The badge cannot be scoped the same way: it
+    // carries no testid (ChatWorkspace.tsx:71) and adding one is a production edit this phase
+    // forbids. Recorded rather than worked around.
     expect(screen.getByText('В обработке')).toBeInTheDocument()
-    expect(screen.getByText('ИИ пишет доклад')).toBeInTheDocument()
-    // The composer is gone in the same commit — that swap is what makes a second send impossible
-    // during the in-flight window, and it is the other half of the double-billing protection.
+    expect(
+      within(screen.getByTestId('chat-panel')).getByText('ИИ пишет доклад'),
+    ).toBeInTheDocument()
+    // The composer is gone in the same commit. Asserted here as the render-ordering fact this
+    // file is about — the surface swap IS the state set becoming visible — not as double-billing
+    // coverage: that consequence is the sibling test's subject and is left to it.
     expect(screen.queryByTestId('topic-input')).toBeNull()
   })
 })
