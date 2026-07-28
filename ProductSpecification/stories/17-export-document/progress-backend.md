@@ -1438,7 +1438,7 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 > • RETIRED BY THE REFACTOR, recorded for the audit trail (agent-review finding 2): the DSL `str` arm
 >   outlived its justification and type-laundered the narrowed port — a db test's `title="Привет"`
 >   type-checked and passed although the equivalent production call would not. Refactor (2) removed it.
-- [~] red-usecase (port narrowing: absent forwards `preserve()`, not a bare `None`) — BOTH review
+- [x] red-usecase (port narrowing: absent forwards `preserve()`, not a bare `None`) — BOTH review
   passes over `83e4e48` landed this independently, and it must precede the clear-path work because
   the clear path is what turns it into a mass wipe. `_title_intent` returns a bare `None` for the
   absent case while the port docstring declares `None` unusable, so `preserve()` and `None` ship as
@@ -1446,7 +1446,54 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   called with NO `title` argument forwards `TitleUpdate.preserve()` across the port — no test covers
   this today (`save_title_statements.when_autosaving_with_title` always passes an explicit
   `TitleUpdate.of(...)`, so the `None` arm is asserted nowhere at either layer).
-- [ ] green-usecase (port narrowing) — collapse `None → TitleUpdate.preserve()` in `_title_intent`
+  RED confirmed live: predicted == actual on every field, first run, no loop.
+  PREDICTED: `AssertionError` at `assert_forwarded_title_update` in `save_title_statements.py`
+  (`assert self.repository.title_updates == expected_sequence`), message `expected
+  [TitleUpdate(value='Привет Мир'), TitleUpdate(value=None)] forwarded to the repository, got
+  [TitleUpdate(value='Привет Мир'), None]`, status 1 failed / 6 passed. ACTUAL: `AssertionError` at
+  `save_title_statements.py:98` raised from `test_save_document_title.py:94`, message identical
+  verbatim, `1 failed, 6 passed in 0.51s`. COMPARISON: type, message, location, status — all YES.
+  (Cyrillic rendered as mojibake in the Windows console; that is the terminal codepage, not a value
+  difference — the same literal appears on BOTH sides of the comparison and the setup-title element
+  matched.) Skip marker on the new method only; usecase 180 passed / 1 skipped.
+  New: `when_autosaving_without_a_title` (omits the `title` argument to `execute` ENTIRELY) +
+  `test_should_forward_preserve_when_no_title_is_submitted_at_all`. Asserts at the PORT boundary, per
+  the premortem over `2bb51a5` — the db layer CANNOT falsify this step (measured: `preserve()` and a
+  bare `None` produce byte-identical SET clauses). Equality checked BEFORE predicting:
+  `preserve()` is `TitleUpdate(value=None)`, a bare `None` is `NoneType` — not equal, so the assertion
+  is genuinely falsifiable (unlike `preserve()` vs `clear()`, which per the standing CREDIBLE ARE equal).
+  DEVIATION FROM THE PREMORTEM'S LITERAL SUGGESTION, and test-review independently PROVED the deviation
+  correct rather than merely accepting it: the finding asked for an `absent_preserves` param inside
+  `TITLE_INTENT_CASES`. That table has TWO consumers, and the second is
+  `when_autosaving_with_a_wire_title(..., title: str)`, which forwards the raw string to `execute` —
+  absence is the OMISSION of the argument, and no `str` value encodes it. A sentinel row would be
+  unexecutable in one consumer and force BOTH parametrized methods to branch on it. A dedicated `when_`
+  method + the existing `assert_forwarded_title_update` unchanged satisfies the finding's substance.
+  test-review: 180 passed / 0 failed / 1 skipped, 1 finding fixed — and it is a serious one that
+  invalidates a guard this scenario had already banked.
+  ⚠️ EVERY EXPECTED `TitleUpdate` IN THIS SUITE WAS BUILT FROM THE SAME FACTORIES PRODUCTION CALLS, so
+  the assertions compared a factory call to itself — pinning the NAME of the intent and nothing about
+  what the intent IS. Proven by two mutations, each of which left the ENTIRE usecase suite green at
+  181/181 BEFORE the fix: (1) `preserve()` → `TitleUpdate(value="")`, i.e. the db CAS writes
+  `SET title = ''` over a stored title on EVERY autosave — 181 passed before, 4 failed after;
+  (2) `of(v)` → `TitleUpdate(v.strip())`, i.e. the exact `title.strip() or None` normalisation the ADR
+  REJECTS — 181 passed before, 2 failed after. The second is the sharper one: `padded_title_verbatim`
+  exists SPECIFICALLY to catch silent trimming (the module docstring calls it "the guard the ADR's
+  rejection of `title.strip() or None` demands") and could not detect the bug it was written for,
+  because expected and actual both flowed through the mutated `of()`. That guard was DECORATIVE for the
+  two commits it has existed. FIX: expected intents now spelled STRUCTURALLY and owned by the Statements
+  module — `PRESERVE_TITLE_UPDATE = TitleUpdate(value=None)`, `TitleUpdate(value=PADDED_TITLE)`. The
+  action methods still call `TitleUpdate.of(...)`; that is a real production call site being exercised
+  and correctly stays. Placement fixed as a side effect: the test class no longer imports the domain VO
+  at all (it was the file's first inline VO construction, against the file's own convention).
+  ⚠️ NOTE FOR THE GREEN: the collapse is one line — `if title is None: return None` →
+  `return TitleUpdate.preserve()`. The return type can then narrow `TitleUpdate | None` → `TitleUpdate`,
+  and the port/fake signatures `title: TitleUpdate | None = None` become over-wide — but tightening
+  those is a signature change across the port, the fake AND the db adapter, so it belongs in the green's
+  own refactor, not smuggled into the collapse.
+  ⚠️ INFRA NOTE: three of the four test-review detector subagents died on API errors (403 / connection
+  closed); the reviewer ran the checklist directly rather than report on partial detector output.
+- [~] green-usecase (port narrowing) — collapse `None → TitleUpdate.preserve()` in `_title_intent`
   and DROP `| None` from `DocumentRepository.save_content_if_version_matches`, then delete the
   now-dead second collapse step in `document_storage._update_values` and the double guard at
   `document_fakes.py:115` (`title is not None and title.value is not None`).

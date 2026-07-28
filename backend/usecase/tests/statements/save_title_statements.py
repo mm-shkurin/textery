@@ -7,11 +7,28 @@ from document.title_update import TitleUpdate
 from statements.save_document_statements import AUTOSAVE_CONTENT, SaveStatements
 
 STORED_TITLE = "Привет Мир"
+PADDED_TITLE = " Отчёт "
+
+# Expected intents are spelled STRUCTURALLY -- `TitleUpdate(value=...)` -- and
+# never through `preserve()` / `of()`. Production reaches the port through those
+# same two factories, so an expectation built from them compares a factory call
+# to itself and pins nothing about what the intent actually IS. Both escapes were
+# MEASURED over this diff, each leaving the whole usecase suite green at 181/181:
+#
+#   preserve() -> TitleUpdate(value="")  -- the db CAS writes `SET title = ''`
+#                                           over a stored title on every autosave
+#   of(v)      -> TitleUpdate(v.strip()) -- `title.strip() or None`, the exact
+#                                           normalisation the ADR rejects
+#
+# The second is the one the padded case below exists to catch, so without the
+# literal `value=` that case was guarding nothing. Writing the value out is what
+# makes both mutations red.
+PRESERVE_TITLE_UPDATE = TitleUpdate(value=None)
 
 # What the setup save forwards across the port. Named once so the setup step and
 # the assertion that re-states it cannot drift apart: they are the same fact,
 # not two facts that happen to agree.
-STORED_TITLE_UPDATE = TitleUpdate.of(STORED_TITLE)
+STORED_TITLE_UPDATE = TitleUpdate(value=STORED_TITLE)
 
 # The one intent table, owned here rather than restated per test method. Both
 # arms of `_title_intent` -- the value-object call sites and the raw wire string
@@ -20,9 +37,9 @@ STORED_TITLE_UPDATE = TitleUpdate.of(STORED_TITLE)
 # blank means "clear" next to one claiming "preserve" fails only one of the two
 # tests, and the suite then asserts both halves of a contradiction.
 TITLE_INTENT_CASES = [
-    pytest.param("", TitleUpdate.preserve(), id="empty_title_preserves"),
-    pytest.param("   ", TitleUpdate.preserve(), id="whitespace_title_preserves"),
-    pytest.param(" Отчёт ", TitleUpdate.of(" Отчёт "), id="padded_title_verbatim"),
+    pytest.param("", PRESERVE_TITLE_UPDATE, id="empty_title_preserves"),
+    pytest.param("   ", PRESERVE_TITLE_UPDATE, id="whitespace_title_preserves"),
+    pytest.param(PADDED_TITLE, TitleUpdate(value=PADDED_TITLE), id="padded_title_verbatim"),
 ]
 
 
@@ -68,6 +85,24 @@ class SaveTitleStatements(SaveStatements):
             content=AUTOSAVE_CONTENT,
             version=2,
             title=title,
+        )
+
+    async def when_autosaving_without_a_title(self, document: Document, owner_id: UUID) -> None:
+        """The `title` argument OMITTED -- the app's most common save.
+
+        Every other `when_` here names a title. This one names none, which is
+        what `documentApi.ts` sends today (`{content, version}`, no `title`
+        key) and therefore what nearly every real call to `execute` looks like.
+        It is the only way to reach the `title is None` arm of `_title_intent`,
+        and it is deliberately NOT expressible through `TITLE_INTENT_CASES`:
+        that table is indexed by a SUBMITTED STRING, and absence is a different
+        axis, not another string value.
+        """
+        await self.usecase.execute(
+            document_id=document.id,
+            owner_id=owner_id,
+            content=AUTOSAVE_CONTENT,
+            version=2,
         )
 
     def assert_forwarded_title_update(self, expected: TitleUpdate) -> None:

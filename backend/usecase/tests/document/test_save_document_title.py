@@ -24,7 +24,11 @@ from uuid import uuid4
 
 import pytest
 
-from statements.save_title_statements import TITLE_INTENT_CASES, SaveTitleStatements
+from statements.save_title_statements import (
+    PRESERVE_TITLE_UPDATE,
+    TITLE_INTENT_CASES,
+    SaveTitleStatements,
+)
 
 
 @pytest.fixture
@@ -63,3 +67,34 @@ class TestSaveDocumentTitleIntent:
         await statements.when_autosaving_with_a_wire_title(document, owner_id, submitted_title)
 
         statements.assert_forwarded_title_update(expected_update)
+
+    @pytest.mark.skip(
+        reason="RED: SaveDocument._title_intent returns a bare None when title is absent"
+    )
+    async def test_should_forward_preserve_when_no_title_is_submitted_at_all(self, statements):
+        """Absence must be spelled `preserve()`, not a bare `None`.
+
+        The port docstring declares `None` unusable for intent -- that is the
+        whole reason `TitleUpdate` exists -- yet the ABSENT case, which is what
+        nearly every save in the app is, is the one call still carrying it. So
+        the ambiguous value rides the most-travelled path while the named one
+        rides the rare ones.
+
+        This assertion has to live HERE, at the port boundary. `preserve()` and
+        a bare `None` produce byte-identical SET clauses in the db CAS (measured
+        over `2bb51a5`): the adapter reaches `new_title is None` from
+        `preserve()` via `.value` and from `None` directly, so no storage test
+        can go red on the difference. The forwarded OBJECT is the only place the
+        two states are distinguishable, and the fake records it verbatim.
+
+        It is not cosmetic. The pending clear path turns `SET title = NULL` into
+        real behavior, and `TitleUpdate.preserve() == TitleUpdate(value=None)`
+        today -- so once a second `None`-shaped meaning exists, every autosave
+        that forwards the ambiguous value is a candidate mass wipe.
+        """
+        owner_id = uuid4()
+        document = await statements.given_a_titled_document(owner_id)
+
+        await statements.when_autosaving_without_a_title(document, owner_id)
+
+        statements.assert_forwarded_title_update(PRESERVE_TITLE_UPDATE)
