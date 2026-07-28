@@ -46,6 +46,17 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
     if (trimmed) onSubmit(trimmed)
   }
 
+  // The topic lives in this component's state, so `useGeneration.reset()` cannot reach it — it
+  // clears the generation, and the workspace is never unmounted across a reset (only the idle
+  // branch swaps Progress back for Composer). Without this the "Создать новый доклад" screen
+  // came back pre-filled with the topic that was just generated, send button already enabled:
+  // one keystroke re-bills the user for the document they already have. Clearing here keeps the
+  // topic owned by the one component that holds it.
+  const reset = () => {
+    setTopic('')
+    onReset()
+  }
+
   return (
     <div className="chat-page">
       <AppHeader onLogoutClick={onLogoutClick} />
@@ -83,7 +94,7 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
               createdAt={createdAt ?? null}
               error={error}
               label={documentTypeLabel}
-              onReset={onReset}
+              onReset={reset}
             />
           </section>
         </div>

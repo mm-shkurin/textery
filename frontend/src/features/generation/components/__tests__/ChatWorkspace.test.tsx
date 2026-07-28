@@ -8,20 +8,28 @@ type WorkspaceProps = ComponentProps<typeof ChatWorkspace>
 function renderWorkspace(overrides: Partial<WorkspaceProps> = {}) {
   const onSubmit = vi.fn()
   const onReset = vi.fn()
-  render(
-    <ChatWorkspace
-      documentType="doklad"
-      documentTypeLabel="Доклад"
-      state="idle"
-      content={null}
-      volumePages={null}
-      error={null}
-      onSubmit={onSubmit}
-      onReset={onReset}
-      {...overrides}
-    />,
-  )
-  return { onSubmit, onReset }
+  const props = (extra: Partial<WorkspaceProps> = {}) => ({
+    documentType: 'doklad' as const,
+    documentTypeLabel: 'Доклад',
+    state: 'idle' as const,
+    content: null,
+    volumePages: null,
+    error: null,
+    onSubmit,
+    onReset,
+    ...overrides,
+    ...extra,
+  })
+  const { rerender } = render(<ChatWorkspace {...props()} />)
+  // The workspace is never unmounted across a generation — only its inner branches swap — so
+  // tests that follow the topic across a state change must rerender rather than render afresh,
+  // or they lose the very component state they are asserting about.
+  const setState = (extra: Partial<WorkspaceProps>) => rerender(<ChatWorkspace {...props(extra)} />)
+  return { onSubmit, onReset, setState }
+}
+
+function typeTopic(value: string) {
+  fireEvent.change(screen.getByTestId('topic-input'), { target: { value } })
 }
 
 describe('ChatWorkspace', () => {
@@ -63,14 +71,14 @@ describe('ChatWorkspace', () => {
     const send = screen.getByTestId('topic-send')
     expect(send).toBeDisabled()
 
-    fireEvent.change(screen.getByTestId('topic-input'), { target: { value: 'Тема доклада' } })
+    typeTopic('Тема доклада')
     expect(send).toBeEnabled()
   })
 
   it('calls onSubmit with trimmed topic', () => {
     const { onSubmit } = renderWorkspace()
 
-    fireEvent.change(screen.getByTestId('topic-input'), { target: { value: '  Тема  ' } })
+    typeTopic('  Тема  ')
     fireEvent.click(screen.getByTestId('topic-send'))
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
@@ -91,7 +99,7 @@ describe('ChatWorkspace', () => {
     const { onSubmit } = renderWorkspace()
 
     const input = screen.getByTestId('topic-input')
-    fireEvent.change(input, { target: { value: '   ' } })
+    typeTopic('   ')
 
     fireEvent.keyDown(input, { key: 'Enter', ctrlKey: true })
     expect(onSubmit).not.toHaveBeenCalled()
@@ -106,7 +114,7 @@ describe('ChatWorkspace', () => {
     // Control arm. Both negatives above also hold if Composer's onKeyDown is deleted outright,
     // which would pin nothing about `if (trimmed)`. This asserts the same key combination does
     // reach send() — and with the trimmed topic — so the silence above is the guard's doing.
-    fireEvent.change(input, { target: { value: '  Тема  ' } })
+    typeTopic('  Тема  ')
     fireEvent.keyDown(input, { key: 'Enter', ctrlKey: true })
     expect(onSubmit).toHaveBeenCalledTimes(1)
     expect(onSubmit).toHaveBeenCalledWith('Тема')
@@ -129,5 +137,41 @@ describe('ChatWorkspace', () => {
     expect(within(errorBlock).getByRole('heading')).toHaveTextContent(
       /^Не удалось сгенерировать доклад$/,
     )
+  })
+
+  // Both reset buttons were unreachable by test and by locator — no data-testid, and nothing
+  // asserted either one invokes onReset. Severing the onClick, or the onReset prop-drill above
+  // it, was green across the whole suite. The failed panel is the one screen with no other exit.
+  it('offers a way out of a completed generation', () => {
+    const { onReset } = renderWorkspace({ state: 'completed', content: '# Готово', volumePages: 3 })
+
+    fireEvent.click(screen.getByTestId('doc-reset'))
+
+    expect(onReset).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers a way out of a failed generation', () => {
+    const { onReset } = renderWorkspace({ state: 'failed', error: 'Не удалось создать запрос' })
+
+    fireEvent.click(screen.getByTestId('error-reset'))
+
+    expect(onReset).toHaveBeenCalledTimes(1)
+  })
+
+  // The topic lives in this component's state, which useGeneration.reset() cannot reach, and the
+  // workspace is not unmounted across a reset. So the new-request screen used to come back
+  // holding the topic that was just generated, with the send button already enabled — one
+  // keystroke re-bills the user for the document they already have. Unlike the double-Ctrl+Enter
+  // case, this second submit is a separate gesture, so nothing about render ordering helps.
+  it('comes back to an empty composer after a reset, not the topic just generated', () => {
+    const { setState } = renderWorkspace()
+    typeTopic('Влияние ИИ на образование')
+
+    setState({ state: 'completed', content: '# Готово', volumePages: 3 })
+    fireEvent.click(screen.getByTestId('doc-reset'))
+    setState({ state: 'idle' })
+
+    expect(screen.getByTestId('topic-input')).toHaveValue('')
+    expect(screen.getByTestId('topic-send')).toBeDisabled()
   })
 })

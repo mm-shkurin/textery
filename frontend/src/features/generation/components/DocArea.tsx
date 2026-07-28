@@ -32,7 +32,12 @@ export function DocArea({
           <ReactMarkdown>{content ?? ''}</ReactMarkdown>
         </div>
         <div className="actions-row">
-          <button type="button" className="cw-btn cw-btn-primary" onClick={onReset}>
+          <button
+            type="button"
+            className="cw-btn cw-btn-primary"
+            data-testid="doc-reset"
+            onClick={onReset}
+          >
             Создать новый доклад
           </button>
         </div>
@@ -45,7 +50,12 @@ export function DocArea({
         <div className="icon-circle">✕</div>
         <h2>Не удалось сгенерировать доклад</h2>
         <p>{error ?? 'Попробуйте создать новый запрос — измените тему или требования.'}</p>
-        <button type="button" className="cw-btn cw-btn-primary" onClick={onReset}>
+        <button
+          type="button"
+          className="cw-btn cw-btn-primary"
+          data-testid="error-reset"
+          onClick={onReset}
+        >
           Создать новый запрос
         </button>
       </div>
