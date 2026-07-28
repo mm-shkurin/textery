@@ -40,6 +40,12 @@ jobs:
       - name: CI parity
         run: npm run ci:parity
 
+      # Self-skips here too: infra/ lives in the monorepo, so there is no nginx conf to scan in
+      # this shape. Kept in the step list so the two files stay identical in gates. See the
+      # monorepo workflow for what the guard protects (mayHaveLandedServerSide's 503 carve-out).
+      - name: nginx 503 guard
+        run: npm run check:ingress
+
       # Production dependencies only, high and above. See the monorepo workflow for why the two
       # open moderate react-router advisories are not reachable here and why the floor is `high`.
       - name: Audit production dependencies
