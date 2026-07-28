@@ -5,7 +5,9 @@ import { clearSession, saveSession } from '../../../auth/utils/authSession'
 // Signing in is SETUP here, not subject: all three calls go through `authorizedRequest`, so
 // without a session every one of them fails before fetch is reached. The refresh/replay
 // machinery that setup enables is pinned in auth/api/__tests__/authorizedRequest.test.ts —
-// these tests cover what this module owns: the wire mapping, the headers, and the error text.
+// these tests cover what this module owns: the wire mapping and the headers. The error channel
+// lives in the sibling `documentApi.errorText.test.ts` — split out when H9.4 pushed this file
+// over the 200-line limit.
 describe('documentApi', () => {
   beforeEach(() => {
     saveSession({ accessToken: 'access-1', refreshToken: 'refresh-1' })
@@ -130,24 +132,6 @@ describe('documentApi', () => {
     })
   })
 
-  // Deliberately 500, not 409: 409 is no longer a refusal to report but a protocol step the
-  // client recovers from (see the conflict test below). Using it here would assert the message
-  // of an error the user is never shown.
-  it('saveDocument rejects with the server error message on a non-OK response', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500,
-        json: async () => ({ message: 'Внутренняя ошибка сервера' }),
-      }),
-    )
-
-    await expect(saveDocument('doc-1', '<p>Hello</p>', 1)).rejects.toThrow(
-      'Внутренняя ошибка сервера',
-    )
-  })
-
   it('getDocument GETs the document and returns documentId, status, content, version', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -175,18 +159,5 @@ describe('documentApi', () => {
     // No body, so no Content-Type — the shared client sends it only when there IS JSON to
     // declare. Pinned because it is a deliberate choice, not an accident of the call.
     expect(init.headers).toEqual({ Authorization: 'Bearer access-1' })
-  })
-
-  it('getDocument rejects with server error detail on non-OK response', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 404,
-        json: async () => ({ detail: 'Документ не найден' }),
-      }),
-    )
-
-    await expect(getDocument('doc-1')).rejects.toThrow('Документ не найден')
   })
 })

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createGeneration, getGeneration } from '../api/generationApi'
 import { SessionExpiredError } from '../../auth/api/authorizedRequest'
+import { describeFailure } from '../../../shared/api/send'
 
 export type GenerationUiState = 'idle' | 'pending' | 'completed' | 'failed'
 
@@ -95,7 +96,9 @@ export function useGeneration(): UseGeneration {
         consecutiveFailuresRef.current += 1
         if (consecutiveFailuresRef.current >= MAX_CONSECUTIVE_POLL_FAILURES) {
           stopPolling()
-          setError(e instanceof Error ? e.message : 'Ошибка сети')
+          // `describeFailure`, not `e.message`: a 5xx now arrives as a bare `HttpError` object,
+          // and the status is the only fact the user can quote when reporting a poll that gave up.
+          setError(describeFailure(e, 'Ошибка сети'))
           setState('failed')
         }
       }
@@ -134,7 +137,7 @@ export function useGeneration(): UseGeneration {
         }, POLL_INTERVAL_MS)
       } catch (e) {
         stopPolling()
-        setError(e instanceof Error ? e.message : 'Не удалось создать запрос')
+        setError(describeFailure(e, 'Не удалось создать запрос'))
         setState('failed')
       }
     },

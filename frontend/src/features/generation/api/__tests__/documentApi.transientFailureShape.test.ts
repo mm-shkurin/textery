@@ -3,6 +3,7 @@ import { clearSession, saveSession } from '../../../auth/utils/authSession'
 import { REQUEST_TIMEOUT_MS } from '../../../../shared/api/httpClient'
 import {
   ACCESS_TOKEN,
+  ORIGIN_INTERNAL_ERROR_BODY,
   REFRESH_TOKEN,
   type FetchMock,
   captureRejection,
@@ -32,10 +33,7 @@ import {
 // The rejection is asserted as a SHAPE, not just as a predicate outcome — see
 // `expectHttpRejection` in the testSupport module for why.
 
-// RED 2026-07-28: `send` flattens every non-401/409 rejection into a bare `Error`, so the shape both
-// predicates read is destroyed before `useDocumentSave` ever sees it. Un-skip in the green — nothing
-// in the toolchain fails on a lingering `.skip`.
-describe.skip('documentApi save rejection stays classifiable by the autosave retry policy', () => {
+describe('documentApi save rejection stays classifiable by the autosave retry policy', () => {
   beforeEach(() => {
     saveSession({ accessToken: ACCESS_TOKEN, refreshToken: REFRESH_TOKEN })
   })
@@ -45,9 +43,15 @@ describe.skip('documentApi save rejection stays classifiable by the autosave ret
     vi.unstubAllGlobals()
   })
 
-  function stubFetchWith(status: number): FetchMock {
+  // `mockImplementation`, deliberately NOT `mockResolvedValue`: the latter hands back ONE
+  // already-constructed `Response` whose body stream is consumable once, so a second call gets a
+  // drained object and `performRequest`'s `res.json().catch(() => ({}))` swallows the
+  // `body used already` TypeError into `{}` — degrading a green that routed into `saveDocument`'s
+  // 409 refetch-and-retry into a silently-wrong body instead of a failure. A fresh `Response`
+  // per call keeps `expectSingleSaveRequest` the thing that catches an extra request.
+  function stubFetchWith(status: number, body?: Record<string, unknown>): FetchMock {
     const fetchMock: FetchMock = vi.fn()
-    fetchMock.mockResolvedValue(serverError(status))
+    fetchMock.mockImplementation(() => Promise.resolve(serverError(status, body)))
     vi.stubGlobal('fetch', fetchMock)
     return fetchMock
   }
@@ -67,12 +71,17 @@ describe.skip('documentApi save rejection stays classifiable by the autosave ret
   // 500 is the only 5xx this system actually emits (measured 2026-07-28,
   // `backend/adapters/rest/src/error_handling/exception_handlers.py:64-77`), so it is the case that
   // decides whether the retry branch runs in PRODUCTION rather than only in a fixture.
-  it('keeps the origin catch-all 500 classifiable as transient', async () => {
-    const fetchMock = stubFetchWith(500)
+  // ...and it is the one case carrying the origin's REAL body rather than the `{}` a proxy leaves.
+  // The other cases here are proxy-shaped answers where `{}` is truthful (an HTML 502 page makes
+  // `res.json()` throw and `performRequest` substitutes `{}`); this one is the app's own handler,
+  // and `{error_code, message}` is the field that decides whether the server's text can reach a
+  // user at all once `send` stops flattening.
+  it('keeps the origin catch-all 500 classifiable as transient, body and all', async () => {
+    const fetchMock = stubFetchWith(500, ORIGIN_INTERNAL_ERROR_BODY)
 
     const rejection = await captureRejection(saveUnderTest())
 
-    expectClassifiableAsTransient(rejection, 500)
+    expectClassifiableAsTransient(rejection, 500, ORIGIN_INTERNAL_ERROR_BODY)
     expectSingleSaveRequest(fetchMock)
   })
 
@@ -111,8 +120,7 @@ describe.skip('documentApi save rejection stays classifiable by the autosave ret
 // never-settling fetch — the same construction as `shared/api/__tests__/httpClient.timeout.test.ts`.
 // Injecting a `RequestTimeoutError` from the fetch stub instead would test nothing: it would skip
 // the transport that mints it.
-// RED 2026-07-28 — same cause as the sibling describe above. Un-skip in the green.
-describe.skip('documentApi save rejection keeps the timeout type across the send boundary', () => {
+describe('documentApi save rejection keeps the timeout type across the send boundary', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     saveSession({ accessToken: ACCESS_TOKEN, refreshToken: REFRESH_TOKEN })

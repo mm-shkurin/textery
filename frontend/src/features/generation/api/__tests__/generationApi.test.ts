@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createGeneration, getGeneration } from '../generationApi'
 import { SessionExpiredError } from '../../../auth/api/authorizedRequest'
 import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { describeFailure } from '../../../../shared/api/send'
 
 // Signing in is SETUP here, not subject: both endpoints now go through `authorizedRequest`, so
 // without a session every call below fails before fetch is reached. The retry/refresh machinery
@@ -87,6 +88,13 @@ describe('generationApi', () => {
     await expect(createGeneration('x')).rejects.toThrow('Тема слишком короткая')
   })
 
+  // RE-POINTED 2026-07-28 (H9.4), NOT relaxed. This was `rejects.toThrow('HTTP 500')`. `send` now
+  // rethrows 5xx as the bare `HttpError` OBJECT so the autosave retry policy can read `.status`,
+  // and a plain-object rejection cannot satisfy `rejects.toThrow`. The fallback-text claim — the
+  // status still reaches the user when the body carried nothing readable — is what this test was
+  // for and is still asserted, now through `describeFailure`, the helper `useGeneration` itself
+  // calls. The added shape assertion pins the other half: the status survives as a NUMBER, which
+  // is what a generic-string regression here would quietly destroy.
   it('createGeneration falls back to generic message when body has no detail', async () => {
     vi.stubGlobal(
       'fetch',
@@ -99,7 +107,12 @@ describe('generationApi', () => {
       }),
     )
 
-    await expect(createGeneration('x')).rejects.toThrow('HTTP 500')
+    const rejection = await createGeneration('x').catch((e: unknown) => e)
+
+    expect(rejection).toEqual({ status: 500, body: {} })
+    expect(describeFailure(rejection, 'Не удалось создать запрос')).toBe(
+      'Не удалось создать запрос (HTTP 500)',
+    )
   })
 
   it('getGeneration maps snake_case response to GenerationStatus', async () => {

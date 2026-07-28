@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Page } from '../api/historyApi'
+import { describeFailure } from '../../../shared/api/send'
 
 interface HistoryList<T> {
   items: T[]
@@ -49,7 +50,10 @@ export function useHistoryList<T>(
         })
         .catch((err: unknown) => {
           if (id !== loadId.current) return
-          setError(err instanceof Error ? err.message : 'Не удалось загрузить список')
+          // `describeFailure`, not `err.message`: a 5xx from the list endpoints now arrives as a
+          // bare `HttpError` object, which would have collapsed to the generic string below and
+          // thrown away the status.
+          setError(describeFailure(err, 'Не удалось загрузить список'))
           setIsLoading(false)
         })
     },

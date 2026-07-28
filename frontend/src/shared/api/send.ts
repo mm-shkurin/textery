@@ -11,7 +11,7 @@
 // /auth/refresh client import a client that refreshes — a cycle), so the two layers are:
 //   httpClient      — transport, knows nothing
 //   send            — transport + session + human-readable refusal
-import { isHttpError, type RequestOptions } from './httpClient'
+import { RequestTimeoutError, isHttpError, type RequestOptions } from './httpClient'
 import { authorizedRequest, SessionExpiredError } from '../../features/auth/api/authorizedRequest'
 
 // A stale `version` on PUT — the lost-update guard firing (409 VERSION_CONFLICT). Kept as its
@@ -66,6 +66,23 @@ export async function send<T>(path: string, options: RequestOptions, fallback: s
       error.body.error_code === 'VERSION_CONFLICT'
     ) {
       throw new VersionConflictError()
+    }
+    // A failure whose OUTCOME IS UNKNOWN keeps its shape. A client-side deadline
+    // (`RequestTimeoutError`) and any 5xx are the two answers that do not tell us whether the
+    // server took the write — the autosave retry policy has to decide "retry?" and "may this have
+    // landed?" from `error.status` and from the timeout's identity (`autosaveRetryPolicy.ts`), and
+    // `new Error(describeFailure(...))` destroys both before the caller ever sees them: a status
+    // becomes a substring of a sentence, and a `RequestTimeoutError` becomes an `Error` whose
+    // message still reads 'Request timed out'. Flattening here is what made the whole H9.3/H9.4
+    // retry branch unreachable in production while every fixture that hand-rolled `{status: 5xx}`
+    // stayed green.
+    //
+    // Callers that only ever RENDER the failure must not read `.message` off these — `HttpError` is
+    // a bare object literal (httpClient.ts:141), not an `Error` — they call `describeFailure`
+    // instead, which handles both shapes and is the same text they were getting before.
+    // 4xx keeps flattening: those are decided answers, no caller has to classify them.
+    if (error instanceof RequestTimeoutError || (isHttpError(error) && error.status >= 500)) {
+      throw error
     }
     throw new Error(describeFailure(error, fallback))
   }

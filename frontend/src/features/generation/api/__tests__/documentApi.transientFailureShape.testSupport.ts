@@ -20,8 +20,20 @@ export const REFRESH_TOKEN = 'refresh-1'
 // optional chain — i.e. the fixture would be standing in for a contract it does not implement.
 // Minting the real thing also makes `headers`, `statusText` and `text()` behave, and lets the
 // mock be typed against `Response` so a future divergence is a tsc error.
-export function serverError(status: number): Response {
-  return new Response(JSON.stringify({}), { status })
+//
+// `body` defaults to `{}` — a non-JSON error page, a proxy's own 502 — because that is the shape
+// most of these cases are about. The origin's REAL 500 body is `{error_code, message}`
+// (`exception_handlers.py:64-77`), and one case passes it explicitly: after this green that field
+// is what decides whether the server's own text reaches a user, so a fixture that only ever mints
+// `{}` would leave the production shape unexercised under a comment claiming fidelity.
+export function serverError(status: number, body: Record<string, unknown> = {}): Response {
+  return new Response(JSON.stringify(body), { status })
+}
+
+// The origin's catch-all 500, verbatim (`exception_handlers.py:63-77`, measured 2026-07-28).
+export const ORIGIN_INTERNAL_ERROR_BODY = {
+  error_code: 'INTERNAL_ERROR',
+  message: 'An unexpected error occurred. Please try again.',
 }
 
 // Typed with the arguments `httpClient` actually passes, so the recorded call reads back as a
@@ -54,9 +66,13 @@ export async function isStillPending(work: Promise<unknown>): Promise<boolean> {
 // The EXACT rejection, not just `.status`. `httpClient` throws this object literal verbatim
 // (httpClient.ts:141), so `toEqual` additionally fails on a body the transport invented and on a
 // stray `retryAfterSeconds` — the two other fields of `HttpError` a partial assertion would miss.
-function expectHttpRejection(rejection: unknown, status: number): void {
+function expectHttpRejection(
+  rejection: unknown,
+  status: number,
+  body: Record<string, unknown> = {},
+): void {
   expect(isHttpError(rejection)).toBe(true)
-  expect(rejection).toEqual({ status, body: {} })
+  expect(rejection).toEqual({ status, body })
 }
 
 // Both predicates in ONE diff, so a failure names which question got the wrong answer and at
@@ -68,8 +84,12 @@ function expectPolicyAnswers(rejection: unknown, transient: boolean, mayHaveLand
   }).toEqual({ transient, mayHaveLanded })
 }
 
-export function expectClassifiableAsTransient(rejection: unknown, status: number): void {
-  expectHttpRejection(rejection, status)
+export function expectClassifiableAsTransient(
+  rejection: unknown,
+  status: number,
+  body?: Record<string, unknown>,
+): void {
+  expectHttpRejection(rejection, status, body)
   expectPolicyAnswers(rejection, true, true)
 }
 
