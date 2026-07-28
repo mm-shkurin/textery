@@ -46,25 +46,58 @@ check(
 // from the scan cannot leave the self-test still reporting the same number of green cases, because
 // there is no way to express an entry without a case. `return 503` leads — it is the case the guard
 // shipped unable to catch, printing OK over a conf that 503'd every request.
-for (const { directive, sample, nearMiss } of DIRECTIVES_THAT_CAN_EMIT_503) {
-  expectVerdict({
-    what: `\`${directive}\` fails`,
-    confs: { 'frontend.conf': confDeclaring(sample) },
-    code: 1,
-    quotes: [sample, `\`${directive}\``],
-  })
+for (const { directive, samples, nearMisses = [] } of DIRECTIVES_THAT_CAN_EMIT_503) {
+  for (const sample of samples) {
+    // The attribution is asserted, not just the exit code: `firstFiring` returns the FIRST matching
+    // entry, so a sample whose line also trips an earlier entry proves nothing about this one. The
+    // `upstream` sample did exactly that — it carried `max_fails` on the same line, was reported as
+    // `max_fails`, and the entry could be blinded outright with all cases green.
+    expectVerdict({
+      what: `\`${directive}\` fails on \`${sample}\``,
+      confs: { 'frontend.conf': confDeclaring(sample) },
+      code: 1,
+      quotes: [sample, `(\`${directive}\`)`],
+    })
+
+    // A trailing comment must not talk the guard out of firing. Every negating predicate reads a
+    // substring of the line — `off`, `max_fails=0`, a non-5xx code — so before comments were cut,
+    // `proxy_intercept_errors on;  # never off` scanned clean while answering 503.
+    if (nearMisses.length === 0) continue
+    expectVerdict({
+      what: `\`${directive}\` still fires with a trailing comment`,
+      confs: { 'frontend.conf': confDeclaring(`${sample}  # ${nearMisses[0]}`) },
+      code: 1,
+      quotes: [`(\`${directive}\`)`],
+    })
+  }
 
   // The other half of the boundary. An entry with a benign neighbouring form pins that form as
   // PASSING: firing on `error_page 404 /index.html;` or a bare `upstream` block is not a harmless
   // false positive, it is how the guard gets deleted — the author sees a commit that plainly cannot
   // endanger an autosave failing a check that says it does, and concludes the check is wrong.
-  if (!nearMiss) continue
-  expectVerdict({
-    what: `\`${directive}\` does not fire on \`${nearMiss}\``,
-    confs: { 'frontend.conf': confDeclaring(nearMiss) },
-    code: 0,
-  })
+  for (const nearMiss of nearMisses) {
+    expectVerdict({
+      what: `\`${directive}\` does not fire on \`${nearMiss}\``,
+      confs: { 'frontend.conf': confDeclaring(nearMiss) },
+      code: 0,
+    })
+  }
 }
+
+// The companion condition is about the whole conf, not one line — every generated case above keeps
+// its directive on a single line, so the cross-line path it exists for would otherwise be unrun.
+expectVerdict({
+  what: '`upstream` fires when the companion sits on ANOTHER line',
+  confs: {
+    'frontend.conf': `${BACK_REFERENCE}upstream backend { server backend:8000; }
+server {
+    proxy_next_upstream error timeout;
+}
+`,
+  },
+  code: 1,
+  quotes: ['(`upstream`)'],
+})
 
 // The comment-stripping is load-bearing in the other direction too: the real conf's back-reference
 // NAMES every scanned directive, so a scan of raw text would fire on the guard's own explanation.
