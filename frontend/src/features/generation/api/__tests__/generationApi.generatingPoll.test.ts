@@ -37,7 +37,7 @@ import { clearSession, saveSession } from '../../../auth/utils/authSession'
 // NOT a red-to-green transition, and that is stated rather than discovered: `getGeneration`
 // already threads the id and already maps these fields. This is a characterization pin on the
 // premise the Selenium wire assertion rests on, bite-verified below, the same shape as this
-// scenario's red-frontend step. green-frontend-api removes the marker only.
+// scenario's red-frontend step.
 describe('generationApi getGeneration — the poll behind the generating state', () => {
   beforeEach(() => {
     saveSession({ accessToken: 'access-1', refreshToken: 'refresh-1' })
@@ -59,11 +59,10 @@ describe('generationApi getGeneration — the poll behind the generating state',
     created_at: '2026-07-28T09:00:00Z',
   }
 
-  // RED, bite-verified: deleting `${id}` from the path in `getGeneration` fails this at the URL
+  // Bite-verified: deleting `${id}` from the path in `getGeneration` fails this at the URL
   // assertion — AssertionError: expected '/api/v1/generations/' to be
   // '/api/v1/generations/gen-42'.
-  // green-frontend-api removes this marker only.
-  it.skip('asks for the generation it was given and reports it as still running', async () => {
+  it('asks for the generation it was given and reports it as still running', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => inProgressWire })
     vi.stubGlobal('fetch', fetchMock)
 
