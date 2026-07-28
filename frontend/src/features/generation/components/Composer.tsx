@@ -1,6 +1,12 @@
+import './Composer.css'
+
 export const MAX_TOPIC_LENGTH = 500
 
 interface ComposerProps {
+  // Built by the caller from the picked type ('Тема доклада', 'Тема реферата'). Mockup 04 could
+  // hardcode 'Тема доклада' because a mockup depicts one type; this heading sits directly under a
+  // breadcrumb naming the real one, so a literal here would name a different type than the chip.
+  topicLabel: string
   topic: string
   setTopic: (v: string) => void
   onSend: () => void
@@ -8,7 +14,7 @@ interface ComposerProps {
 
 const TOPIC_LABEL_ID = 'composer-topic-label'
 
-export function Composer({ topic, setTopic, onSend }: ComposerProps) {
+export function Composer({ topicLabel, topic, setTopic, onSend }: ComposerProps) {
   return (
     <div className="composer">
       {/* Associated, not merely adjacent: the heading sat right above the field and named it to
@@ -16,7 +22,9 @@ export function Composer({ topic, setTopic, onSend }: ComposerProps) {
           box. aria-labelledby rather than a <label> so the visible heading stays the one source
           of the name — a <label> here would either duplicate the text or replace the h3 and
           change the page's outline. */}
-      <h3 id={TOPIC_LABEL_ID}>Тема доклада</h3>
+      <h3 id={TOPIC_LABEL_ID} className="required">
+        {topicLabel}
+      </h3>
       <textarea
         className="composer-input"
         data-testid="topic-input"
@@ -39,6 +47,9 @@ export function Composer({ topic, setTopic, onSend }: ComposerProps) {
       >
         Сгенерировать
       </button>
+      {/* Mockup 04's submit-row hint: the wait is long enough that the user needs to be told
+          up front, not only once the pending screen replaces this one. */}
+      <p className="composer-hint">Обычно занимает 1–2 минуты</p>
     </div>
   )
 }

@@ -23,6 +23,29 @@ export const DOCUMENT_TYPE_LABELS = Object.fromEntries(
   DOCUMENT_TYPES.map((t) => [t.id, t.name]),
 ) as Record<DocumentType, string>
 
+// Genitive forms, for copy that names the type inside a phrase — 'Тема доклада', not 'Тема
+// Доклад'. Russian declines, so a label cannot be concatenated into a sentence and stay
+// grammatical; the composer's field heading was a hardcoded 'Тема доклада' precisely because
+// interpolating `name` produces nonsense for every other type.
+//
+// Hand-written and exhaustive for the same reason as WIRE_DOCUMENT_TYPE below: this cannot be
+// derived from `name` by any rule (доклад -> доклада, эссе -> эссе, сочинение -> сочинения),
+// and adding a member to DocumentType without a form here is a compile error in the file that
+// has to know.
+export const DOCUMENT_TYPE_GENITIVE: Record<DocumentType, string> = {
+  doklad: 'доклада',
+  essay: 'эссе',
+  sochinenie: 'сочинения',
+  referat: 'реферата',
+}
+
+// The composer's field heading. Lives here rather than in the component so the phrase is built
+// from the same table the breadcrumb reads — the two sit five lines apart on screen, and naming
+// different types would be the visible bug.
+export function topicFieldLabel(documentType: DocumentType): string {
+  return `Тема ${DOCUMENT_TYPE_GENITIVE[documentType]}`
+}
+
 // The wire values the backend actually accepts — measured by curl against the live stack
 // 2026-07-17, not read from a spec:
 //   {"document_type":"doklad"} -> 422 {"error_code":"INVALID_DOCUMENT_TYPE"}

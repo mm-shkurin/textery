@@ -6,6 +6,7 @@ describe('ChatWorkspace', () => {
   it('disables send button until topic is non-empty', () => {
     render(
       <ChatWorkspace
+        documentType="doklad"
         documentTypeLabel="Доклад"
         state="idle"
         content={null}
@@ -27,6 +28,7 @@ describe('ChatWorkspace', () => {
     const onSubmit = vi.fn()
     render(
       <ChatWorkspace
+        documentType="doklad"
         documentTypeLabel="Доклад"
         state="idle"
         content={null}
@@ -46,6 +48,7 @@ describe('ChatWorkspace', () => {
   it('shows generated content and actual volumePages when completed', () => {
     render(
       <ChatWorkspace
+        documentType="doklad"
         documentTypeLabel="Доклад"
         state="completed"
         content="# Готовый текст"
@@ -63,6 +66,7 @@ describe('ChatWorkspace', () => {
   it('shows error message when failed', () => {
     render(
       <ChatWorkspace
+        documentType="doklad"
         documentTypeLabel="Доклад"
         state="failed"
         content={null}

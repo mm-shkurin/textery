@@ -95,6 +95,7 @@ export function DocumentGenerationFlow() {
 
     return (
       <ChatWorkspace
+        documentType={documentType}
         documentTypeLabel={documentTypeLabel}
         state={flow.generation.state}
         content={flow.generation.content}

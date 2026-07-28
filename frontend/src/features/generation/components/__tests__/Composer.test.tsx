@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { Composer, MAX_TOPIC_LENGTH } from '../Composer'
+import { topicFieldLabel } from '../../../../shared/documentTypes'
 
-function renderComposer(topic: string) {
+function renderComposer(topic: string, topicLabel = topicFieldLabel('doklad')) {
   const setTopic = vi.fn()
   const onSend = vi.fn()
-  render(<Composer topic={topic} setTopic={setTopic} onSend={onSend} />)
+  render(<Composer topicLabel={topicLabel} topic={topic} setTopic={setTopic} onSend={onSend} />)
   return { setTopic, onSend }
 }
 
@@ -16,6 +17,15 @@ describe('Composer', () => {
     renderComposer('')
 
     expect(screen.getByRole('textbox', { name: 'Тема доклада' })).toBeInTheDocument()
+  })
+
+  // The heading used to be a hardcoded 'Тема доклада' lifted from the mockup, sitting directly
+  // under a breadcrumb that renders the type the user actually picked — so any non-доклад type
+  // showed two different type names on one screen, and the screen reader announced the wrong one.
+  it('names the field after the type the user picked, not the default', () => {
+    renderComposer('', topicFieldLabel('referat'))
+
+    expect(screen.getByRole('textbox', { name: 'Тема реферата' })).toBeInTheDocument()
   })
 
   it('reports every keystroke to the caller', () => {
