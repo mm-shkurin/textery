@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1640">
+<title>Textery — Мои проекты · выбор типа документа</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .backdrop{filter:blur(3px); opacity:.55; pointer-events:none;}
+  .toolbar-row{display:flex; align-items:center; gap:12px; margin:22px 0 18px;}
+  .search{flex:0 0 260px; display:flex; align-items:center; gap:10px; padding:12px 16px;
+    background:var(--bg-surface); border-radius:var(--radius-md); color:var(--text-muted);}
+  .round-btn{width:46px; height:46px; border-radius:var(--radius-md);
+    background:var(--bg-surface); display:flex; align-items:center; justify-content:center;
+    color:var(--text-secondary);}
+  .toolbar-row .spacer{flex:1;}
+  .chips{display:flex; gap:10px; margin-bottom:26px;}
+  .chip{padding:10px 18px; border-radius:var(--radius-md); background:var(--bg-surface);
+    color:var(--text-secondary); font-weight:500;}
+  .chip.active{background:var(--accent-soft); color:var(--accent);}
+  .section-title{font-weight:700; font-size:15px; margin:22px 0 14px;}
+  .proj-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:22px;}
+  .proj{background:var(--bg-surface); border-radius:14px; height:200px;}
+  .type-blue{background:linear-gradient(160deg,#cfe4fb,#a9cdf6);}
+  .type-orange{background:linear-gradient(160deg,#fde0c4,#f9c79a);}
+  .type-purple{background:linear-gradient(160deg,#e2d4fb,#cbb4f6);}
+  .type-teal{background:linear-gradient(160deg,#c5eee9,#96ddd4);}
+  .type-red{background:linear-gradient(160deg,#fbd2d2,#f6adad);}
+  .type-green{background:linear-gradient(160deg,#c9edd0,#9cdcab);}
+  .type-yellow{background:linear-gradient(160deg,#fdeec2,#f9dd93);}
+  .type-pink{background:linear-gradient(160deg,#fbd3ef,#f6a9e0);}
+</style>
+</head>
+<body>
+  <div class="backdrop">
+    <div class="header">
+      <div class="logo"><div class="logo-mark">T<span>AI</span></div>Textery</div>
+      <div class="header-actions">
+        <button class="icon-btn"><i data-lucide="bell"></i></button>
+        <div class="avatar">АИ</div>
+        <i data-lucide="chevron-down"></i>
+      </div>
+    </div>
+    <div class="page">
+      <h1>Мои проекты</h1>
+      <div class="subtitle">Все ваши рефераты, курсовые, статьи и другие работы — в одном месте</div>
+      <div class="toolbar-row">
+        <div class="search"><i data-lucide="search"></i>Поиск проектов…</div>
+        <div class="round-btn"><i data-lucide="filter"></i></div>
+        <div class="round-btn"><i data-lucide="arrow-up-down"></i></div>
+        <div class="spacer"></div>
+        <button class="btn btn-primary"><i data-lucide="rocket"></i>Создать проект</button>
+      </div>
+      <div class="chips">
+        <div class="chip active">Все</div>
+        <div class="chip">Учебные</div>
+        <div class="chip">Деловые</div>
+      </div>
+      <div class="section-title">Недавние проекты</div>
+      <div class="proj-grid">
+        <div class="proj"></div><div class="proj"></div>
+      </div>
+      <div class="section-title">Все проекты</div>
+      <div class="proj-grid">
+        <div class="proj"></div><div class="proj"></div><div class="proj"></div>
+        <div class="proj"></div><div class="proj"></div><div class="proj"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay">
+    <div class="modal">
+      <button class="modal-close"><i data-lucide="x"></i></button>
+      <h1>Создание проекта</h1>
+      <div class="subtitle">Выберите <b style="color:var(--accent)">тип документа</b>, с которым будете работать</div>
+
+      <div class="group-title">Учебные</div>
+      <div class="type-grid">
+        <div class="type-card type-blue">
+          <div class="t">Реферат <i data-lucide="chevron-right"></i></div>
+          <div class="d">Изложение темы с выводами</div>
+        </div>
+        <div class="type-card type-orange">
+          <div class="t">Курсовая <i data-lucide="chevron-right"></i></div>
+          <div class="d">Анализ темы со списком литературы</div>
+        </div>
+        <div class="type-card type-purple">
+          <div class="t">Доклад <i data-lucide="chevron-right"></i></div>
+          <div class="d">Текст для устного выступления</div>
+        </div>
+        <div class="type-card type-teal">
+          <div class="t">Сочинение <i data-lucide="chevron-right"></i></div>
+          <div class="d">Рассуждение на тему с позицией</div>
+        </div>
+      </div>
+
+      <div class="group-title">Деловые</div>
+      <div class="type-grid">
+        <div class="type-card type-red">
+          <div class="t">Резюме <i data-lucide="chevron-right"></i></div>
+          <div class="d">Опыт и навыки для трудоустройства</div>
+        </div>
+        <div class="type-card type-green">
+          <div class="t">Бизнес-план <i data-lucide="chevron-right"></i></div>
+          <div class="d">Расчёты и план запуска</div>
+        </div>
+        <div class="type-card type-yellow">
+          <div class="t">Отчет <i data-lucide="chevron-right"></i></div>
+          <div class="d">Анализ показателей за период</div>
+        </div>
+        <div class="type-card type-pink">
+          <div class="t">Письмо <i data-lucide="chevron-right"></i></div>
+          <div class="d">Деловое обращение клиентам</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

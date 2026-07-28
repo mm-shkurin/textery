@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1640">
+<title>Textery — Создание реферата · ввод данных</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+  <div class="header">
+    <div class="logo"><div class="logo-mark">T<span>AI</span></div>Textery</div>
+    <div class="header-actions">
+      <button class="icon-btn"><i data-lucide="bell"></i></button>
+      <div class="avatar">АИ</div>
+      <i data-lucide="chevron-down"></i>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="card" style="margin-bottom:24px;">
+      <h1>Создание реферата</h1>
+      <div class="subtitle">Укажите тему — Textery подготовит все остальные параметры автоматически</div>
+      <div class="progress"><span style="width:32%"></span></div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="field">
+          <label class="label">Тема реферата <span class="req">*</span></label>
+          <input class="input" placeholder="Например: Влияние ИИ на рынок труда">
+        </div>
+
+        <div class="field">
+          <label class="label">Дополнительные материалы <span class="opt">/ Необязательно</span></label>
+          <div class="dropzone">
+            <i data-lucide="upload-cloud"></i>
+            <div style="margin-top:10px; font-weight:500;">Перетащите или загрузите файл</div>
+            <div class="hint">DOCX / PDF / TXT</div>
+            <span class="add">+ Добавить файл</span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-ghost">Отмена</button>
+          <button class="btn btn-primary">Далее</button>
+        </div>
+      </div>
+
+      <div class="card side">
+        <h2>Что будет в документе?</h2>
+        <ul class="side-list">
+          <li><div class="t">Введение</div><div class="d">Постановка темы и актуальность исследования</div></li>
+          <li><div class="t">Основная часть</div><div class="d">Анализ источников и ключевых аспектов темы</div></li>
+          <li><div class="t">Заключение</div><div class="d">Итоги и основные выводы</div></li>
+          <li><div class="t">Список литературы</div><div class="d">Источники, оформленные по ГОСТ</div></li>
+        </ul>
+        <div class="note">При отсутствии загруженных материалов документ будет создан на основе общедоступной информации по выбранной теме.</div>
+        <div class="side-foot">Сгенерированный документ можно будет отредактировать</div>
+      </div>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1640">
+<title>Textery — Редактор документа с ИИ-чатом</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+<style>
+  body{background:var(--bg-sunken);}
+  .topbar{background:var(--bg-surface); border-bottom:1px solid var(--border-subtle);
+    padding:14px 28px; display:flex; align-items:center; justify-content:space-between;}
+  .topbar .logo{font-size:22px;}
+  .topbar .logo-mark{background:var(--accent); width:34px; height:34px;}
+  .crumbs{background:var(--bg-surface); border-bottom:1px solid var(--border-subtle);
+    padding:14px 28px; display:flex; align-items:center; gap:12px; font-size:14px;}
+  .crumbs .back{display:flex; align-items:center; gap:8px; color:var(--text-secondary);}
+  .crumbs .tag{background:var(--accent-soft); color:var(--accent); border-radius:6px;
+    padding:3px 10px; font-size:12.5px; font-weight:600;}
+  .crumbs .title{font-weight:600;}
+  .crumbs .right{margin-left:auto; display:flex; align-items:center; gap:12px;}
+  .wc{color:var(--text-secondary); font-size:13px;}
+  .fmtbar{background:var(--bg-surface); border-bottom:1px solid var(--border-subtle);
+    padding:10px; display:flex; justify-content:center; gap:6px; color:var(--text-secondary);}
+  .fmtbar i{width:18px; height:18px;}
+  .fmtbar .sep{width:1px; background:var(--border-subtle); margin:0 8px;}
+  .layout{display:grid; grid-template-columns:240px 1fr 380px; min-height:calc(100vh - 120px);}
+  .pages{background:var(--bg-surface); border-right:1px solid var(--border-subtle); padding:20px 16px;}
+  .pages .cap{font-size:11px; letter-spacing:.08em; color:var(--text-muted);
+    display:flex; justify-content:space-between; margin-bottom:14px;}
+  .page-item{display:flex; align-items:center; gap:10px; padding:12px;
+    border-radius:var(--radius-md); margin-bottom:8px; color:var(--text-secondary);}
+  .page-item.active{background:var(--accent-soft); color:var(--accent);}
+  .page-item .sq{width:28px; height:28px; border-radius:8px; background:var(--bg-sunken);
+    display:flex; align-items:center; justify-content:center;}
+  .page-item.active .sq{background:var(--accent); color:#fff;}
+  .page-item .st{font-size:11.5px; color:var(--accent);}
+  .pages .add{color:var(--text-secondary); display:flex; align-items:center; gap:8px;
+    padding:12px; font-size:13px;}
+  .doc-wrap{padding:36px; overflow:auto;}
+  .doc{max-width:760px; margin:0 auto; background:var(--bg-surface); border-radius:14px;
+    box-shadow:var(--shadow-card); padding:48px 56px;}
+  .doc h1{font-size:28px; border-bottom:1px solid var(--border-subtle); padding-bottom:18px;
+    margin-bottom:28px;}
+  .doc h3{font-size:17px; margin:28px 0 14px;}
+  .doc p{margin-bottom:14px; color:#1e293b;}
+  .doc ul{margin:0 0 14px 20px; color:#1e293b;}
+  .doc .rule{border-top:1px solid var(--border-subtle); margin:32px 0;}
+  .chat{background:var(--bg-surface); border-left:1px solid var(--border-subtle);
+    display:flex; flex-direction:column;}
+  .chat-head{padding:18px 20px; display:flex; align-items:center; gap:10px; font-weight:600;
+    border-bottom:1px solid var(--border-subtle);}
+  .chat-head .mark{width:26px; height:26px; border-radius:8px; background:var(--accent-soft);
+    color:var(--accent); display:flex; align-items:center; justify-content:center;}
+  .chat-head .mark i{width:15px; height:15px;}
+  .history{padding:14px 20px; display:flex; align-items:center; gap:10px;
+    color:var(--text-secondary); border-bottom:1px solid var(--border-subtle); font-size:13.5px;}
+  .history i{width:16px; height:16px;}
+  .history .chev{margin-left:auto;}
+  .msgs{flex:1; padding:20px; overflow:auto;}
+  .msg{display:flex; gap:10px;}
+  .msg .mark{width:26px; height:26px; border-radius:8px; background:var(--accent-soft);
+    color:var(--accent); display:flex; align-items:center; justify-content:center; flex:0 0 26px;}
+  .msg .bubble{background:var(--accent-soft); border-radius:12px; padding:12px 14px;
+    font-size:13.5px; color:#1e293b;}
+  .msg .time{font-size:11.5px; color:var(--text-muted); margin:6px 0 0 36px;}
+  .composer{border-top:1px solid var(--border-subtle); padding:16px 20px;}
+  .composer .box{border:1px solid var(--border-strong); border-radius:12px; padding:14px;}
+  .composer .box .ph{color:var(--text-muted); font-size:13.5px;}
+  .composer .row{display:flex; align-items:center; margin-top:26px; color:var(--text-secondary);}
+  .composer .send{margin-left:auto; background:var(--bg-sunken); border-radius:8px;
+    padding:8px 14px; display:flex; align-items:center; gap:6px; font-size:13px;}
+  .composer .keys{font-size:11.5px; color:var(--text-muted); margin-top:10px;}
+  .statusbar{display:flex; justify-content:space-between; padding:10px 28px;
+    font-size:12.5px; color:var(--text-muted); background:var(--bg-surface);
+    border-top:1px solid var(--border-subtle);}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo"><div class="logo-mark"><i data-lucide="sparkles" style="width:16px;height:16px;"></i></div>Textery</div>
+    <div class="header-actions">
+      <button class="icon-btn"><i data-lucide="bell"></i></button>
+      <div class="avatar">АИ</div>
+      <i data-lucide="chevron-down"></i>
+    </div>
+  </div>
+
+  <div class="crumbs">
+    <div class="back"><i data-lucide="arrow-left" style="width:15px;height:15px;"></i>Мои проекты</div>
+    <span class="muted">/</span>
+    <span class="tag">Реферат</span>
+    <span class="title">История ИИ</span>
+    <div class="right">
+      <span class="wc">415 слов</span>
+      <button class="btn btn-ghost" style="padding:10px 20px;">Сохранить</button>
+      <button class="btn btn-ghost" style="padding:10px 20px;"><i data-lucide="download"></i>Скачать</button>
+      <button class="btn btn-primary" style="padding:10px 20px;"><i data-lucide="share-2"></i>Поделиться</button>
+    </div>
+  </div>
+
+  <div class="fmtbar">
+    <i data-lucide="heading-1"></i><i data-lucide="heading-2"></i><div class="sep"></div>
+    <i data-lucide="bold"></i><i data-lucide="italic"></i><i data-lucide="underline"></i>
+    <div class="sep"></div><i data-lucide="list"></i><i data-lucide="align-left"></i>
+    <div class="sep"></div><i data-lucide="more-horizontal"></i>
+  </div>
+
+  <div class="layout">
+    <div class="pages">
+      <div class="cap">СТРАНИЦЫ <i data-lucide="chevron-left" style="width:14px;height:14px;"></i></div>
+      <div class="page-item active">
+        <div class="sq"><i data-lucide="file-text" style="width:15px;height:15px;"></i></div>
+        <div>Страница 1<div class="st">Активная</div></div>
+      </div>
+      <div class="page-item">
+        <div class="sq"><i data-lucide="file-text" style="width:15px;height:15px;"></i></div>Страница 2
+      </div>
+      <div class="page-item">
+        <div class="sq"><i data-lucide="file-text" style="width:15px;height:15px;"></i></div>Страница 3
+      </div>
+      <div class="add"><i data-lucide="plus" style="width:15px;height:15px;"></i>Добавить страницу</div>
+    </div>
+
+    <div class="doc-wrap">
+      <div class="doc">
+        <h1>История ИИ</h1>
+        <h3>Введение</h3>
+        <p>Данный реферат посвящён теме «История ИИ». Актуальность данной темы обусловлена стремительным развитием технологий и необходимостью глубокого осмысления происходящих изменений. Целью работы является комплексное исследование ключевых аспектов заявленной темы на основе анализа научной литературы и актуальных данных.</p>
+        <p>Для достижения поставленной цели были определены следующие задачи:</p>
+        <ul>
+          <li>изучить теоретические основы исследуемого явления;</li>
+          <li>проанализировать актуальное состояние проблемы;</li>
+          <li>систематизировать имеющиеся данные и сформулировать выводы.</li>
+        </ul>
+        <div class="rule"></div>
+        <h3>Основная часть</h3>
+        <h3>1. Теоретические основы</h3>
+        <p>Исследуемая область представляет собой сложный многоаспектный феномен, который привлекал внимание учёных на протяжении нескольких десятилетий. Согласно ключевым исследованиям, данная тема занимает центральное место в современных научных дискуссиях.</p>
+        <p>Среди основополагающих работ следует выделить труды ведущих специалистов в данной области, которые сформировали концептуальную базу для последующих исследований.</p>
+      </div>
+    </div>
+
+    <div class="chat">
+      <div class="chat-head"><div class="mark"><i data-lucide="sparkles"></i></div>Редактор с ИИ</div>
+      <div class="history"><i data-lucide="history"></i>История изменений<i data-lucide="chevron-down" class="chev"></i></div>
+      <div class="msgs">
+        <div class="msg">
+          <div class="mark"><i data-lucide="sparkles" style="width:15px;height:15px;"></i></div>
+          <div class="bubble">Документ готов! Я могу помочь с правками — просто напишите, что нужно изменить.</div>
+        </div>
+        <div class="time">только что</div>
+      </div>
+      <div class="composer">
+        <div class="box">
+          <div class="ph">Опишите правку…</div>
+          <div class="row">
+            <i data-lucide="mic" style="width:18px;height:18px;"></i>
+            <div class="send"><i data-lucide="send" style="width:15px;height:15px;"></i>Отправить</div>
+          </div>
+        </div>
+        <div class="keys">Enter — отправить · Shift+Enter — новая строка</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span>415 слов · Автосохранение включено</span>
+    <span>Страница 1 из 3 · Textery AI</span>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

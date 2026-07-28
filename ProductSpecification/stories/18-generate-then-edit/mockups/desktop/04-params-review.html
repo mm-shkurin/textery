@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1640">
+<title>Textery — Проверьте, как Textery понял задачу</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .card + .card{margin-top:24px;}
+  .hint-line{color:var(--text-secondary); font-size:13px; margin-bottom:16px;}
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo"><div class="logo-mark">T<span>AI</span></div>Textery</div>
+    <div class="header-actions">
+      <button class="icon-btn"><i data-lucide="bell"></i></button>
+      <div class="avatar">АИ</div>
+      <i data-lucide="chevron-down"></i>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="card" style="margin-bottom:24px;">
+      <h1>Проверьте, как Textery понял задачу</h1>
+      <div class="subtitle">Уточните параметры генерации перед созданием документа</div>
+      <div class="progress"><span style="width:66%"></span></div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="card">
+          <div class="step"><div class="step-num">1</div><h2>Основная информация</h2></div>
+          <div class="field">
+            <label class="label">Тема реферата <span class="req">*</span></label>
+            <input class="input" value="Влияние ИИ на рынок труда">
+          </div>
+          <div class="grid-2">
+            <div class="field" style="margin:0;">
+              <label class="label">Уровень обучения</label>
+              <input class="input" placeholder="Например: 2 курс">
+            </div>
+            <div class="field" style="margin:0;">
+              <label class="label">Предмет / дисциплина</label>
+              <input class="input" value="Информатика">
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="step"><div class="step-num">2</div><h2>Параметры генерации</h2></div>
+          <div class="grid-2">
+            <div class="field">
+              <label class="label">Объём документа</label>
+              <select class="select"><option>500-1000 слов</option><option>1000-2000 слов</option></select>
+            </div>
+            <div class="field">
+              <label class="label">Язык</label>
+              <select class="select"><option>Русский</option><option>English</option></select>
+            </div>
+            <div class="field" style="margin:0;">
+              <label class="label">Стиль изложения</label>
+              <select class="select"><option>Академический</option><option>Публицистический</option></select>
+            </div>
+            <div class="field" style="margin:0;">
+              <label class="label">Количество источников</label>
+              <select class="select"><option>5-7</option><option>8-12</option></select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="step"><div class="step-num">3</div><h2>Дополнительные материалы</h2></div>
+          <label class="label">Дополнительные материалы <span class="opt">/ Необязательно</span></label>
+          <div class="hint-line">При отсутствии загруженных материалов документ будет создан на основе общедоступной информации по выбранной теме.</div>
+          <div class="dropzone">
+            <i data-lucide="upload-cloud"></i>
+            <div style="margin-top:10px; font-weight:500;">Перетащите или загрузите файл</div>
+            <div class="hint">DOCX / PDF / TXT</div>
+            <span class="add">+ Добавить файл</span>
+          </div>
+          <div class="actions">
+            <button class="btn btn-ghost">Отмена</button>
+            <button class="btn btn-primary"><i data-lucide="sparkles"></i>Сгенерировать документ</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card side">
+        <h2>Что будет в документе</h2>
+        <p>Будет подготовлен реферат по теме <b>«Влияние ИИ на рынок труда»</b>.</p>
+        <p>Документ будет создан на <b>русский</b> языке в <b>академический стиле</b>, объём — <b>1000–2000 слов</b>.</p>
+        <p>Структура будет включать введение, основную часть и заключение с выводами.</p>
+        <p>Текст сформирован на основе заявленной темы с раскрытием ключевых аспектов.</p>
+        <button class="btn btn-soft"><i data-lucide="refresh-cw"></i>Обновить результат</button>
+      </div>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>
