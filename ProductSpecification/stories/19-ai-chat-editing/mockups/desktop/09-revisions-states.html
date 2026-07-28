@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1640">
+<title>Textery — История изменений: загрузка / пусто / ошибка</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="editor.css">
+<style>
+  .row3{display:grid; grid-template-columns:repeat(3,380px); gap:28px; justify-content:center;
+    padding:36px;}
+  .row3 .chat{border:1px solid var(--border-subtle); border-radius:var(--radius-lg);
+    overflow:hidden; min-height:420px;}
+  .cap3{text-align:center; font-weight:600; margin-bottom:12px; color:var(--text-secondary);}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo"><div class="logo-mark"><i data-lucide="sparkles" style="width:16px;height:16px;"></i></div>Textery</div>
+    <div class="header-actions">
+      <button class="icon-btn"><i data-lucide="bell"></i></button>
+      <div class="avatar">АИ</div>
+      <i data-lucide="chevron-down"></i>
+    </div>
+  </div>
+
+  <div class="crumbs">
+    <span class="title">История изменений — три состояния панели</span>
+    <div class="right"><span class="wc">служебный макет, не отдельный экран приложения</span></div>
+  </div>
+
+  <div class="row3">
+    <div>
+      <div class="cap3">Загрузка</div>
+      <div class="chat">
+        <div class="chat-head"><div class="mark"><i data-lucide="sparkles"></i></div>Редактор с ИИ</div>
+        <div class="history" style="color:var(--accent); font-weight:600;">
+          <i data-lucide="history"></i>История изменений<i data-lucide="chevron-up" class="chev"></i>
+        </div>
+        <div class="revs">
+          <div class="skeleton"></div>
+          <div class="skeleton" style="opacity:.75;"></div>
+          <div class="skeleton" style="opacity:.5;"></div>
+          <div class="skeleton" style="opacity:.3;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="cap3">Пусто — правок ещё не было</div>
+      <div class="chat">
+        <div class="chat-head"><div class="mark"><i data-lucide="sparkles"></i></div>Редактор с ИИ</div>
+        <div class="history" style="color:var(--accent); font-weight:600;">
+          <i data-lucide="history"></i>История изменений<span class="muted" style="font-size:12px;">0 версий</span><i data-lucide="chevron-up" class="chev"></i>
+        </div>
+        <div class="revs">
+          <div class="revs-empty">
+            <i data-lucide="history" style="width:22px;height:22px;color:var(--text-muted);"></i>
+            <div style="margin-top:8px;">Здесь появятся версии документа.</div>
+            <div class="muted" style="margin-top:4px;">Первая правка через ИИ или ручное сохранение создаст версию.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="cap3">Ошибка загрузки</div>
+      <div class="chat">
+        <div class="chat-head"><div class="mark"><i data-lucide="sparkles"></i></div>Редактор с ИИ</div>
+        <div class="history" style="color:var(--accent); font-weight:600;">
+          <i data-lucide="history"></i>История изменений<i data-lucide="chevron-up" class="chev"></i>
+        </div>
+        <div class="revs">
+          <div class="revs-error">
+            <i data-lucide="alert-circle"></i>
+            <div>Не удалось загрузить историю изменений.</div>
+            <button class="chip-btn" style="margin-top:12px; color:var(--accent);">
+              <i data-lucide="refresh-cw"></i>Повторить
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+/* Textery — editor shell + AI chat (story 19). Loaded after theme.css. */
+body{background:var(--bg-sunken);}
+
+/* ---- chrome ---- */
+.topbar{background:var(--bg-surface); border-bottom:1px solid var(--border-subtle);
+  padding:14px 28px; display:flex; align-items:center; justify-content:space-between;}
+.topbar .logo{font-size:22px;}
+.topbar .logo-mark{background:var(--accent); width:34px; height:34px;}
+.crumbs{background:var(--bg-surface); border-bottom:1px solid var(--border-subtle);
+  padding:14px 28px; display:flex; align-items:center; gap:12px; font-size:14px;}
+.crumbs .back{display:flex; align-items:center; gap:8px; color:var(--text-secondary);}
+.crumbs .tag{background:var(--accent-soft); color:var(--accent); border-radius:6px;
+  padding:3px 10px; font-size:12.5px; font-weight:600;}
+.crumbs .title{font-weight:600;}
+.crumbs .right{margin-left:auto; display:flex; align-items:center; gap:12px;}
+.wc{color:var(--text-secondary); font-size:13px;}
+.fmtbar{background:var(--bg-surface); border-bottom:1px solid var(--border-subtle);
+  padding:10px; display:flex; justify-content:center; gap:6px; color:var(--text-secondary);}
+.fmtbar i{width:18px; height:18px;}
+.fmtbar .sep{width:1px; background:var(--border-subtle); margin:0 8px;}
+.fmtbar.locked{opacity:.4;}
+
+/* ---- shell ---- */
+.layout{display:grid; grid-template-columns:1fr 380px; min-height:calc(100vh - 150px);}
+.doc-wrap{padding:36px; overflow:auto; position:relative;}
+.doc{max-width:760px; margin:0 auto; background:var(--bg-surface); border-radius:14px;
+  box-shadow:var(--shadow-card); padding:48px 56px;}
+.doc h1{font-size:28px; border-bottom:1px solid var(--border-subtle); padding-bottom:18px;
+  margin-bottom:28px;}
+.doc h3{font-size:17px; margin:28px 0 14px;}
+.doc p{margin-bottom:14px; color:#1e293b;}
+.doc ul{margin:0 0 14px 20px; color:#1e293b;}
+.doc.readonly{opacity:.72;}
+.doc .sel{background:#fde68a; border-radius:3px; padding:1px 2px;}
+.doc .caret{display:inline-block; width:2px; height:15px; background:var(--accent);
+  vertical-align:-2px; margin-left:1px;}
+
+/* лента состояния над документом */
+.docnote{max-width:760px; margin:0 auto 16px; border-radius:var(--radius-md);
+  padding:12px 16px; display:flex; align-items:center; gap:10px; font-size:13.5px;}
+.docnote i{width:17px; height:17px; flex:0 0 17px;}
+.docnote .grow{margin-left:auto; display:flex; align-items:center; gap:10px;}
+.docnote-ai{background:var(--accent-soft); color:var(--accent);}
+.docnote-warn{background:#fff7ed; color:#c2410c; border:1px solid #fed7aa;}
+.docnote-err{background:#fef2f2; color:#b91c1c; border:1px solid #fecaca;}
+.docnote .lnk{font-weight:600; cursor:pointer; text-decoration:underline;}
+.chip-btn{background:var(--bg-surface); border:1px solid currentColor; border-radius:8px;
+  padding:6px 12px; font-family:inherit; font-size:12.5px; font-weight:600;
+  color:inherit; cursor:pointer; display:inline-flex; align-items:center; gap:6px;}
+.chip-btn i{width:14px; height:14px;}
+
+/* ---- chat ---- */
+.chat{background:var(--bg-surface); border-left:1px solid var(--border-subtle);
+  display:flex; flex-direction:column;}
+.chat-head{padding:18px 20px; display:flex; align-items:center; gap:10px; font-weight:600;
+  border-bottom:1px solid var(--border-subtle);}
+.chat-head .mark{width:26px; height:26px; border-radius:8px; background:var(--accent-soft);
+  color:var(--accent); display:flex; align-items:center; justify-content:center;}
+.chat-head .mark i{width:15px; height:15px;}
+.history{padding:14px 20px; display:flex; align-items:center; gap:10px;
+  color:var(--text-secondary); border-bottom:1px solid var(--border-subtle); font-size:13.5px;
+  cursor:pointer;}
+.history i{width:16px; height:16px;}
+.history .chev{margin-left:auto;}
+.msgs{flex:1; padding:20px; overflow:auto;}
+.msg{display:flex; gap:10px; margin-bottom:6px;}
+.msg .mark{width:26px; height:26px; border-radius:8px; background:var(--accent-soft);
+  color:var(--accent); display:flex; align-items:center; justify-content:center; flex:0 0 26px;}
+.msg .bubble{background:var(--accent-soft); border-radius:12px; padding:12px 14px;
+  font-size:13.5px; color:#1e293b;}
+.msg.user{justify-content:flex-end;}
+.msg.user .bubble{background:var(--bg-sunken); border:1px solid var(--border-subtle);}
+.msg .time{font-size:11.5px; color:var(--text-muted); margin:0 0 16px 36px;}
+.msg.user + .time{text-align:right; margin-left:0; margin-right:2px;}
+.quote{border-left:3px solid var(--accent); background:var(--bg-sunken); border-radius:6px;
+  padding:8px 10px; font-size:12.5px; color:var(--text-secondary); margin-bottom:8px;}
+.quote .cap{font-weight:600; color:var(--text-primary); display:block; margin-bottom:3px;}
+
+/* ---- composer ---- */
+.composer{border-top:1px solid var(--border-subtle); padding:16px 20px;}
+.composer .box{border:1px solid var(--border-strong); border-radius:12px; padding:14px;}
+.composer .box.disabled{background:var(--bg-sunken); border-color:var(--border-subtle);}
+.composer .box .ph{color:var(--text-muted); font-size:13.5px;}
+.composer .row{display:flex; align-items:center; margin-top:26px; color:var(--text-secondary);}
+.composer .send{margin-left:auto; background:var(--accent); color:#fff; border-radius:8px;
+  padding:8px 14px; display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600;}
+.composer .send.off{background:var(--bg-sunken); color:var(--text-muted);}
+.composer .keys{font-size:11.5px; color:var(--text-muted); margin-top:10px;}
+.selchip{display:flex; align-items:center; gap:8px; background:#fef9c3; border:1px solid #fde68a;
+  border-radius:8px; padding:8px 10px; font-size:12.5px; color:#854d0e; margin-bottom:10px;}
+.selchip i{width:14px; height:14px;}
+.selchip .x{margin-left:auto; cursor:pointer;}
+
+/* ---- typing / progress ---- */
+.typing{display:flex; align-items:center; gap:8px; color:var(--text-secondary);
+  font-size:12.5px; padding:4px 0 12px 36px;}
+.dots span{display:inline-block; width:5px; height:5px; border-radius:50%;
+  background:var(--accent); margin-right:3px; opacity:.55;}
+.dots span:nth-child(2){opacity:.8;} .dots span:nth-child(3){opacity:1;}
+
+/* ---- revisions ---- */
+.revs{border-bottom:1px solid var(--border-subtle); max-height:340px; overflow:auto;}
+.rev{display:flex; gap:12px; padding:12px 20px; border-bottom:1px solid var(--border-subtle);}
+.rev:last-child{border-bottom:none;}
+.rev.current{background:var(--accent-soft);}
+.rev .num{width:28px; height:28px; border-radius:8px; background:var(--bg-sunken);
+  display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;
+  color:var(--text-secondary); flex:0 0 28px;}
+.rev.current .num{background:var(--accent); color:#fff;}
+.rev .meta{flex:1;}
+.rev .who{font-size:13px; font-weight:600;}
+.rev .when{font-size:11.5px; color:var(--text-muted); margin-top:2px;}
+.rev .src{font-size:11px; border-radius:5px; padding:1px 7px; font-weight:600;}
+.src-ai{background:var(--accent-soft); color:var(--accent);}
+.src-manual{background:var(--bg-sunken); color:var(--text-secondary);}
+.src-restore{background:#fef9c3; color:#854d0e;}
+.rev .act{align-self:center; font-size:12.5px; color:var(--accent); font-weight:600;
+  cursor:pointer;}
+.revs-empty,.revs-error{padding:28px 20px; text-align:center; color:var(--text-secondary);
+  font-size:13px;}
+.revs-error i{width:20px; height:20px; color:var(--danger); margin-bottom:8px;}
+.skeleton{height:44px; margin:12px 20px; border-radius:8px; background:var(--bg-sunken);}
+
+/* ---- modal ---- */
+.confirm{width:460px; padding:30px;}
+.confirm h1{font-size:20px; text-align:left; margin-bottom:10px;}
+.confirm p{color:var(--text-secondary); font-size:13.5px; margin-bottom:8px;}
+.confirm .box{background:var(--bg-sunken); border-radius:var(--radius-sm); padding:14px;
+  font-size:12.5px; color:var(--text-secondary); margin:14px 0 22px;}
+
+/* ---- statusbar ---- */
+.statusbar{display:flex; justify-content:space-between; padding:10px 28px;
+  font-size:12.5px; color:var(--text-muted); background:var(--bg-surface);
+  border-top:1px solid var(--border-subtle);}
+.statusbar .lock{color:var(--accent); font-weight:600;}

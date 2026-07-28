@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1640">
+<title>Textery — Дневной лимит правок исчерпан</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo"><div class="logo-mark"><i data-lucide="sparkles" style="width:16px;height:16px;"></i></div>Textery</div>
+    <div class="header-actions">
+      <button class="icon-btn"><i data-lucide="bell"></i></button>
+      <div class="avatar">АИ</div>
+      <i data-lucide="chevron-down"></i>
+    </div>
+  </div>
+
+  <div class="crumbs">
+    <div class="back"><i data-lucide="arrow-left" style="width:15px;height:15px;"></i>Мои проекты</div>
+    <span class="muted">/</span>
+    <span class="tag">Реферат</span>
+    <span class="title">История ИИ</span>
+    <div class="right">
+      <span class="wc">415 слов · версия 7</span>
+      <button class="btn btn-ghost" style="padding:10px 20px;">Сохранить</button>
+      <button class="btn btn-ghost" style="padding:10px 20px;"><i data-lucide="download"></i>Скачать</button>
+    </div>
+  </div>
+
+  <div class="fmtbar">
+    <i data-lucide="heading-1"></i><i data-lucide="heading-2"></i><div class="sep"></div>
+    <i data-lucide="bold"></i><i data-lucide="italic"></i><i data-lucide="underline"></i>
+    <div class="sep"></div><i data-lucide="list"></i><i data-lucide="align-left"></i>
+    <div class="sep"></div><i data-lucide="more-horizontal"></i>
+  </div>
+
+  <div class="layout">
+    <div class="doc-wrap">
+      <div class="docnote docnote-warn">
+        <i data-lucide="gauge"></i>
+        <span>Дневной лимит правок исчерпан — 20 из 20. Лимит обновится в 00:00 по московскому времени, через 6 ч 12 мин.</span>
+      </div>
+      <div class="doc">
+        <h1>История ИИ</h1>
+        <h3>Введение</h3>
+        <p>Реферат посвящён истории искусственного интеллекта: от первых формальных моделей до современных нейросетевых архитектур. Цель работы — проследить ключевые этапы развития области.</p>
+        <h3>1. Теоретические основы</h3>
+        <p>Исследуемая область представляет собой многоаспектный феномен, привлекавший внимание учёных на протяжении нескольких десятилетий.</p>
+      </div>
+    </div>
+
+    <div class="chat">
+      <div class="chat-head"><div class="mark"><i data-lucide="sparkles"></i></div>Редактор с ИИ</div>
+      <div class="history"><i data-lucide="history"></i>История изменений<span class="muted" style="font-size:12px;">27 версий</span><i data-lucide="chevron-down" class="chev"></i></div>
+      <div class="msgs">
+        <div class="msg">
+          <div class="mark"><i data-lucide="sparkles" style="width:15px;height:15px;"></i></div>
+          <div class="bubble">Готово. Заключение переписано — сохранил как версию 27.</div>
+        </div>
+        <div class="time">17:48 · версия 27</div>
+        <div class="msg">
+          <div class="mark" style="background:#fff7ed; color:#c2410c;"><i data-lucide="gauge" style="width:15px;height:15px;"></i></div>
+          <div class="bubble" style="background:#fff7ed; color:#c2410c;">На сегодня правки закончились — использовано 20 из 20. Ручное редактирование и откат к прошлым версиям остаются доступны.</div>
+        </div>
+        <div class="time">17:48</div>
+      </div>
+      <div class="composer">
+        <div class="box disabled">
+          <div class="ph">Лимит исчерпан — обновится в 00:00 МСК</div>
+          <div class="row">
+            <span style="font-size:12px;">Осталось правок сегодня: 0 из 20</span>
+            <div class="send off"><i data-lucide="send" style="width:15px;height:15px;"></i>Отправить</div>
+          </div>
+        </div>
+        <div class="keys">Документ можно править вручную — лимит касается только правок через ИИ</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span>415 слов · версия 27 · сохранено</span>
+    <span>Лимит правок 20/20 · сброс в 00:00 МСК</span>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

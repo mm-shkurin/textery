@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1640">
+<title>Textery — Правка выделенного фрагмента</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo"><div class="logo-mark"><i data-lucide="sparkles" style="width:16px;height:16px;"></i></div>Textery</div>
+    <div class="header-actions">
+      <button class="icon-btn"><i data-lucide="bell"></i></button>
+      <div class="avatar">АИ</div>
+      <i data-lucide="chevron-down"></i>
+    </div>
+  </div>
+
+  <div class="crumbs">
+    <div class="back"><i data-lucide="arrow-left" style="width:15px;height:15px;"></i>Мои проекты</div>
+    <span class="muted">/</span>
+    <span class="tag">Реферат</span>
+    <span class="title">История ИИ</span>
+    <div class="right">
+      <span class="wc">415 слов · версия 7</span>
+      <button class="btn btn-ghost" style="padding:10px 20px;">Сохранить</button>
+      <button class="btn btn-ghost" style="padding:10px 20px;"><i data-lucide="download"></i>Скачать</button>
+    </div>
+  </div>
+
+  <div class="fmtbar">
+    <i data-lucide="heading-1"></i><i data-lucide="heading-2"></i><div class="sep"></div>
+    <i data-lucide="bold"></i><i data-lucide="italic"></i><i data-lucide="underline"></i>
+    <div class="sep"></div><i data-lucide="list"></i><i data-lucide="align-left"></i>
+    <div class="sep"></div><i data-lucide="more-horizontal"></i>
+  </div>
+
+  <div class="layout">
+    <div class="doc-wrap">
+      <div class="doc">
+        <h1>История ИИ</h1>
+        <h3>Введение</h3>
+        <p>Данный реферат посвящён истории искусственного интеллекта. Актуальность темы обусловлена стремительным развитием технологий.</p>
+        <h3>1. Теоретические основы</h3>
+        <p><span class="sel">Исследуемая область представляет собой многоаспектный феномен, привлекавший внимание учёных на протяжении нескольких десятилетий. Согласно ключевым исследованиям, тема занимает центральное место в современных научных дискуссиях.</span></p>
+        <p>Среди основополагающих работ следует выделить труды ведущих специалистов, сформировавших концептуальную базу для последующих исследований.</p>
+      </div>
+    </div>
+
+    <div class="chat">
+      <div class="chat-head"><div class="mark"><i data-lucide="sparkles"></i></div>Редактор с ИИ</div>
+      <div class="history"><i data-lucide="history"></i>История изменений<span class="muted" style="font-size:12px;">7 версий</span><i data-lucide="chevron-down" class="chev"></i></div>
+      <div class="msgs">
+        <div class="msg">
+          <div class="mark"><i data-lucide="sparkles" style="width:15px;height:15px;"></i></div>
+          <div class="bubble">Документ готов. Напишите, что нужно изменить — я поправлю текст и сохраню новую версию.</div>
+        </div>
+        <div class="time">14:02</div>
+      </div>
+      <div class="composer">
+        <div class="selchip">
+          <i data-lucide="text-cursor-input"></i>
+          <span>Правка применится к выделенному фрагменту — 247 символов, абзац «Исследуемая область…»</span>
+          <i data-lucide="x" class="x"></i>
+        </div>
+        <div class="box">
+          <div class="ph" style="color:var(--text-primary);">Перефразируй проще, без канцелярита</div>
+          <div class="row">
+            <span style="font-size:12px;">Осталось правок сегодня: 17 из 20</span>
+            <div class="send"><i data-lucide="send" style="width:15px;height:15px;"></i>Отправить</div>
+          </div>
+        </div>
+        <div class="keys">Снимите выделение крестиком, чтобы править документ целиком</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span>415 слов · версия 7 · сохранено</span>
+    <span>Выделено 247 символов · Textery AI</span>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

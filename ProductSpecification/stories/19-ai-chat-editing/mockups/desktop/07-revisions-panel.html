@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1640">
+<title>Textery — История изменений</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo"><div class="logo-mark"><i data-lucide="sparkles" style="width:16px;height:16px;"></i></div>Textery</div>
+    <div class="header-actions">
+      <button class="icon-btn"><i data-lucide="bell"></i></button>
+      <div class="avatar">АИ</div>
+      <i data-lucide="chevron-down"></i>
+    </div>
+  </div>
+
+  <div class="crumbs">
+    <div class="back"><i data-lucide="arrow-left" style="width:15px;height:15px;"></i>Мои проекты</div>
+    <span class="muted">/</span>
+    <span class="tag">Реферат</span>
+    <span class="title">История ИИ</span>
+    <div class="right">
+      <span class="wc">415 слов · версия 7</span>
+      <button class="btn btn-ghost" style="padding:10px 20px;">Сохранить</button>
+      <button class="btn btn-ghost" style="padding:10px 20px;"><i data-lucide="download"></i>Скачать</button>
+    </div>
+  </div>
+
+  <div class="fmtbar">
+    <i data-lucide="heading-1"></i><i data-lucide="heading-2"></i><div class="sep"></div>
+    <i data-lucide="bold"></i><i data-lucide="italic"></i><i data-lucide="underline"></i>
+    <div class="sep"></div><i data-lucide="list"></i><i data-lucide="align-left"></i>
+    <div class="sep"></div><i data-lucide="more-horizontal"></i>
+  </div>
+
+  <div class="layout">
+    <div class="doc-wrap">
+      <div class="doc">
+        <h1>История ИИ</h1>
+        <h3>Введение</h3>
+        <p>Реферат посвящён истории искусственного интеллекта: от первых формальных моделей до современных нейросетевых архитектур. Цель работы — проследить ключевые этапы развития области.</p>
+        <h3>1. Теоретические основы</h3>
+        <p>Исследуемая область представляет собой многоаспектный феномен, привлекавший внимание учёных на протяжении нескольких десятилетий.</p>
+      </div>
+    </div>
+
+    <div class="chat">
+      <div class="chat-head"><div class="mark"><i data-lucide="sparkles"></i></div>Редактор с ИИ</div>
+      <div class="history" style="color:var(--accent); font-weight:600;">
+        <i data-lucide="history"></i>История изменений<span class="muted" style="font-size:12px;">7 версий</span>
+        <i data-lucide="chevron-up" class="chev"></i>
+      </div>
+
+      <div class="revs">
+        <div class="rev current">
+          <div class="num">7</div>
+          <div class="meta">
+            <div class="who">Сокращено введение <span class="src src-ai">ИИ</span></div>
+            <div class="when">сегодня, 14:05 · текущая версия</div>
+          </div>
+        </div>
+        <div class="rev">
+          <div class="num">6</div>
+          <div class="meta">
+            <div class="who">Возврат к версии 3 <span class="src src-restore">откат</span></div>
+            <div class="when">сегодня, 13:40</div>
+          </div>
+          <div class="act">Откатить</div>
+        </div>
+        <div class="rev">
+          <div class="num">5</div>
+          <div class="meta">
+            <div class="who">Переписано заключение <span class="src src-ai">ИИ</span></div>
+            <div class="when">сегодня, 13:12</div>
+          </div>
+          <div class="act">Откатить</div>
+        </div>
+        <div class="rev">
+          <div class="num">4</div>
+          <div class="meta">
+            <div class="who">Правка вручную <span class="src src-manual">вручную</span></div>
+            <div class="when">вчера, 19:26</div>
+          </div>
+          <div class="act">Откатить</div>
+        </div>
+        <div class="rev">
+          <div class="num">3</div>
+          <div class="meta">
+            <div class="who">Убраны повторы <span class="src src-ai">ИИ</span></div>
+            <div class="when">вчера, 18:55</div>
+          </div>
+          <div class="act">Откатить</div>
+        </div>
+        <div class="rev">
+          <div class="num">2</div>
+          <div class="meta">
+            <div class="who">Правка вручную <span class="src src-manual">вручную</span></div>
+            <div class="when">вчера, 18:30</div>
+          </div>
+          <div class="act">Откатить</div>
+        </div>
+      </div>
+
+      <div class="msgs" style="flex:0 0 auto; padding:14px 20px; text-align:center;">
+        <span class="muted" style="font-size:12.5px;">Показать более ранние версии</span>
+      </div>
+
+      <div class="composer">
+        <div class="box">
+          <div class="ph">Опишите правку…</div>
+          <div class="row">
+            <span style="font-size:12px;">Осталось правок сегодня: 17 из 20</span>
+            <div class="send"><i data-lucide="send" style="width:15px;height:15px;"></i>Отправить</div>
+          </div>
+        </div>
+        <div class="keys">Откат создаёт новую версию — прежние никуда не исчезают</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span>415 слов · версия 7 · сохранено</span>
+    <span>7 версий · последняя от ИИ · Textery AI</span>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

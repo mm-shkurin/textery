@@ -3,8 +3,8 @@
 ## Spec
 - [x] interview
 - [x] story
-- [~] mockups
-- [ ] api-spec
+- [x] mockups
+- [~] api-spec
 - [ ] test-spec
 
 <!-- Scenario sections are bootstrapped from the test-spec once `/test-spec` lands.
