@@ -762,7 +762,15 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   instead of DSL steps. Both predate this unit; `/refactor` owns them.
   ⚠️ CAP PRESSURE: `document_fakes.py` 185 and `test_export_document_usecase.py` 183 — the next fake
   or export case crosses 200.
-- [~] green-usecase — also FIX the Sc 3.2 acceptance Test 2 (review obligation 4): the blank save
+- [~] red-usecase (padded derivation) — INSERTED by the review passes over the red-usecase commit
+  (`60ab441`, agent-review CONCERN 2). This diff creates the input and leaves the output unguarded:
+  `padded_title_verbatim` guarantees `" Отчёт "` is STORED verbatim, and `whitespace_title_default`
+  only pins the all-blank case, so a green that satisfies it with a blankness TEST rather than a
+  STRIP (`stem = title if title.strip() else "document"`) passes all four cases and derives
+  `" Отчёт .pdf"` → `Content-Disposition: …%20%D0%9E…%20.pdf`. Both decisions are individually
+  correct; their intersection is untested. Add the param `(" Отчёт ", "pdf", "Отчёт.pdf")` beside
+  `whitespace_title_default` — it must be a RED step, since green may not add tests.
+- [ ] green-usecase — also FIX the Sc 3.2 acceptance Test 2 (review obligation 4): the blank save
   resubmits the SAME `DOCUMENT_CONTENT` and only checks `status_code == 200`, so a green that
   rejects or short-circuits the whole blank-title save — losing the content update — passes
   identically. Send distinct content on the blank save and assert it persisted (or that the version
@@ -770,6 +778,31 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 - [ ] red-usecase (clear path) — `null` clears: the ADR's new behavior, which no existing test
   covers. Inserted at design so the clear branch is driven by a test rather than smuggled into a
   green whose tests do not exercise it.
+  ⚠️ MUST RESHAPE `TitleUpdate` FIRST — BOTH review passes over `60ab441` landed CREDIBLE on this,
+  and it invalidates guards already written. The domain-field gate dropped the `clears`
+  discriminator, so the VO ships one field with `preserve() == cls(value=None)`. `clear()` therefore
+  has NO representation left: its only possible value is `TitleUpdate(value=None)`, which under
+  frozen-dataclass equality IS `preserve()`. Consequences, all live:
+  • `save_document_statements.assert_forwarded_title_update` compares by dataclass equality against
+    `preserve()`, so a green that routes BLANK titles to `clear()` passes it — the exact
+    `SET title = NULL` data loss the ADR forbids.
+  • `document_fakes.save_content_if_version_matches` branches on `title.value is not None`, mapping
+    clear and preserve to the same "leave the title alone" — the clear path reads green at the
+    usecase layer while doing nothing. That predicate is cheap to fix here and expensive to notice
+    later.
+  • Scheduled guard (a) below demands TWO route assertions because "one alone passes under a
+    constant mapping" — but with a single-field VO, BOTH pass under a constant mapping that always
+    returns `TitleUpdate(value=None)`. The guard written against constant mappings cannot
+    discriminate. Reinstating the discriminator is part of THIS step, and must land before guard (a)
+    is authored.
+  • No `TitleUpdate` domain test exists anywhere. Add one: `preserve() != clear()`, plus a fake case
+    where clear actually nulls the stored title.
+  ⚠️ ALSO (premortem CREDIBLE 2): `of()` accepts `""` and `"   "` without objection, so the
+  blankness rule lives only in `SaveDocument.execute`. Any other caller — the scheduled rest
+  adapter, a create-with-title endpoint, an import — can hand `of("")` straight to the CAS and
+  reopen the `SET title = ''` path. This is the ADR's own defense-in-depth argument applied to the
+  WRITE side, where it was never made: pin that `of()` with a blank string is rejected or normalises
+  to `preserve()`, so the invariant lives on the type rather than on one caller.
 - [ ] green-usecase (clear path)
 - [ ] adapters-discovery — REQUIRED guards, named by the review passes over the design commit
   (`97e8f53`); discovery must insert all four, none is optional:
