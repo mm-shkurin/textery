@@ -51,6 +51,16 @@ vi.mock('../../api/documentApi')
 // unknown, so the memory must not outlive it") has to reach the retry gate three lines above it: a
 // timeout must forget, and the retry must issue a real PUT carrying the reverted content — which
 // converges through saveDocument's own 409 refetch-and-retry when the timed-out write did land.
+//
+// THESE ASSERTIONS ARE DELIBERATELY INSUFFICIENT ALONE. Every one of them also passes under an
+// implementation that simply never suppresses — delete the fire-time isAlreadySaved gate entirely
+// and this suite stays green, because "always write" satisfies "write here" too. What makes the
+// pair a specification is the INVERSE assertion in the sibling suite
+// ManualEditor.autosaveDirtyGuardBackoffRevert.test.tsx, whose 503 suppression count
+// (`toHaveBeenCalledTimes(2)`) is the only thing that fails on an always-retry implementation.
+// Weakening, re-scoping, or .skip-ing that count removes this suite's sole discriminator. The axis
+// the two of them straddle is pinned directly, without either component fixture, in
+// hooks/__tests__/autosaveRetryPolicy.mayHaveLandedServerSide.test.ts.
 describe('ManualEditor — a revert after a TIMED-OUT save is still written (H9.4)', () => {
   useAutosaveFailureFakeTimers()
 
