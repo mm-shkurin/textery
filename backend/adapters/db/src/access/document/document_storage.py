@@ -87,7 +87,7 @@ class SqlAlchemyDocumentStorage:
         content: str,
         expected_version: int,
         updated_at: datetime,
-        title: TitleUpdate | None = None,
+        title: TitleUpdate = TitleUpdate.preserve(),
     ) -> Document | None:
         """Compare-and-swap the content. Returns the new state, or None if the
         version did not match (or the document is absent/foreign).
@@ -124,9 +124,7 @@ class SqlAlchemyDocumentStorage:
         return model.to_domain() if model else None
 
     @staticmethod
-    def _update_values(
-        content: str, updated_at: datetime, title: TitleUpdate | None
-    ) -> dict[str, Any]:
+    def _update_values(content: str, updated_at: datetime, title: TitleUpdate) -> dict[str, Any]:
         """The SET clause. `title` is included ONLY when the caller carries an intent.
 
         A content-only autosave omits it, and SETting title = NULL unconditionally
@@ -140,14 +138,14 @@ class SqlAlchemyDocumentStorage:
         but NOT the path: `TitleUpdate.of("")` is a legal call and this method
         writes `SET title = ''` for it. Blankness is decided one layer up, by
         `SaveDocument._title_intent`; the adapter obeys the intent it is handed.
-        The remaining `| None` is the not-yet-narrowed absent case, owned by
-        `green-usecase (port narrowing)`.
+        There is no `| None` arm: the absent case reaches here as `preserve()`,
+        so the intent is always named and this method has exactly two branches.
         """
         values: dict[str, Any] = {
             "content": content,
             "version": DocumentModel.version + 1,
             "updated_at": updated_at,
         }
-        if title is not None and title.carries_a_value():
+        if title.carries_a_value():
             values["title"] = title.value
         return values

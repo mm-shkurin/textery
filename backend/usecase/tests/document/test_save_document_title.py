@@ -68,9 +68,6 @@ class TestSaveDocumentTitleIntent:
 
         statements.assert_forwarded_title_update(expected_update)
 
-    @pytest.mark.skip(
-        reason="RED: SaveDocument._title_intent returns a bare None when title is absent"
-    )
     async def test_should_forward_preserve_when_no_title_is_submitted_at_all(self, statements):
         """Absence must be spelled `preserve()`, not a bare `None`.
 

@@ -43,7 +43,7 @@ class FakeDocumentRepository:
 
     def __init__(self) -> None:
         self.documents: list[Document] = []
-        self.title_updates: list[TitleUpdate | None] = []
+        self.title_updates: list[TitleUpdate] = []
 
     async def save_new(self, document: Document) -> None:
         clash = any(
@@ -99,7 +99,7 @@ class FakeDocumentRepository:
         content: str,
         expected_version: int,
         updated_at: datetime,
-        title: TitleUpdate | None = None,
+        title: TitleUpdate = TitleUpdate.preserve(),
     ) -> Document | None:
         # Recorded before the CAS guard so the intent the usecase forwarded is
         # observable regardless of whether the swap matched.
@@ -112,7 +112,7 @@ class FakeDocumentRepository:
         stored.updated_at = updated_at
         # Preserve-on-omit, mirroring the real CAS: a title-less intent leaves the
         # existing title intact rather than wiping it.
-        if title is not None and title.value is not None:
+        if title.carries_a_value():
             stored.title = title.value
         return stored
 

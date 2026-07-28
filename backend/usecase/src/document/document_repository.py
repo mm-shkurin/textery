@@ -45,12 +45,15 @@ class DocumentRepository(Protocol):
         content: str,
         expected_version: int,
         updated_at: datetime,
-        title: TitleUpdate | None = None,
+        title: TitleUpdate = TitleUpdate.preserve(),
     ) -> Document | None:
         """Compare-and-swap the content, returning the new state.
 
         `title` is a `TitleUpdate`, not a `str | None`: once a blank title means
         "preserve", a bare `None` can no longer tell "preserve" from "clear".
+        `None` is not accepted at all -- the absent case is spelled `preserve()`,
+        so every call carries a named intent and the implementor has no fourth,
+        unnamed state to map.
         The value object names the intent, so the implementor maps the states to
         SQL explicitly (omit from the SET list / `SET title = NULL` / `SET title
         = ?`) -- see decisions/blank-title-semantics-decision.md.

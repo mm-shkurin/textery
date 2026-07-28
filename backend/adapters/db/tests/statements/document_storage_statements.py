@@ -58,15 +58,16 @@ class DocumentStorageStatements(DocumentStorageAssertions):
         owner_id: UUID,
         content: str,
         expected_version: int,
-        title: TitleUpdate | None = None,
+        title: TitleUpdate = TitleUpdate.preserve(),
     ) -> Document | None:
         # The signature MIRRORS the port exactly and the value is forwarded
         # UNCHANGED -- constructing or unwrapping a TitleUpdate here would launder
         # the very thing under test. A DSL that accepted a raw `str` would let a
         # test make a call no production caller can make, and would quietly lift a
         # future `title=""` back into the `SET title = ''` shape the adapter
-        # deleted by construction. `title=None` and `TitleUpdate.preserve()` are
-        # both the content-only autosave path (title omitted from the SET list).
+        # deleted by construction. `TitleUpdate.preserve()` is the content-only
+        # autosave path (title omitted from the SET list), and it is the DEFAULT
+        # here because the port no longer accepts a bare `None`.
         self._last_updated_at = datetime.now(UTC)
         return await self._storage.save_content_if_version_matches(
             document_id=document_id,

@@ -69,13 +69,18 @@ class SaveDocument:
         return saved
 
     @staticmethod
-    def _title_intent(title: TitleUpdate | str | None) -> TitleUpdate | None:
+    def _title_intent(title: TitleUpdate | str | None) -> TitleUpdate:
         """A blank title carries no title intent, so it must not overwrite one.
 
         What "blank" means belongs to TitleUpdate, not here -- see its `is_blank`.
+
+        Absence is spelled `preserve()` rather than forwarded as a bare `None`:
+        the port declares `None` unusable for intent, and the absent case is the
+        most-travelled path of all, so it must not be the one still carrying the
+        ambiguous value.
         """
         if title is None:
-            return None
+            return TitleUpdate.preserve()
         update = TitleUpdate.of(title) if isinstance(title, str) else title
         return TitleUpdate.preserve() if update.is_blank() else update
 

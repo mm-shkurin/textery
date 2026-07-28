@@ -1560,10 +1560,82 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 > • REMOTE, recorded (premortem): expectations are now spelled `TitleUpdate(value=None)` STRUCTURALLY
 >   rather than via `preserve()`, so when the clear path forces a new internal representation the test
 >   constants will no longer track the factory. Friction, not an incident — the failure is loud.
-- [~] green-usecase (port narrowing) — collapse `None → TitleUpdate.preserve()` in `_title_intent`
+- [x] green-usecase (port narrowing) — collapse `None → TitleUpdate.preserve()` in `_title_intent`
   and DROP `| None` from `DocumentRepository.save_content_if_version_matches`, then delete the
   now-dead second collapse step in `document_storage._update_values` and the double guard at
   `document_fakes.py:115` (`title is not None and title.value is not None`).
+  COVERAGE (mutation, not percentages — the percentages are blind here and have misled this scenario
+  three times): usecase 181 passed / 0 skipped (the RED marker is gone and the count is the promised
+  `181 / 0`); `save_document.py` 48/48 lines, `document_repository.py` 10/10, db `document_storage.py`
+  42/42 — all 100%, which proves NOTHING about `_title_intent`, whose three-way choice is one
+  conditional expression with no branch arc. Every arm was proven by KILLING it instead. Arm A
+  (`title is None → preserve()`, the new one): mutant `→ TitleUpdate.of("")` killed by EXACTLY 1 test,
+  `test_should_forward_preserve_when_no_title_is_submitted_at_all` — the test this green unskipped, so
+  the unskip bought a real guard and not a green tick. Arm B (`str → of(title)` verbatim): mutant
+  `of(title.strip())` — the ADR-rejected normalisation — killed by 1,
+  `test_should_apply_the_same_intent_to_a_raw_wire_string[padded_title_verbatim]`. Arm C (VO
+  pass-through): mutant `else TitleUpdate.preserve()` killed by 7. Arm D (`is_blank() → preserve()`):
+  mutant `return update` killed by 4. No arm is uncovered.
+  ⚠️ ONE GENUINE GAP, AND IT IS THE PREMORTEM'S OWN GUARD TURNED OFF BY THIS GREEN'S CONVENIENCE. The
+  premortem over `2cacaf7` (line ~1426) demanded a usecase test pinning the forwarded object for the
+  ABSENT case, because the db layer cannot distinguish it. That test now exists — but this green also
+  gave the port, the impl, the fake and the db DSL a DEFAULT, `title: TitleUpdate =
+  TitleUpdate.preserve()`, chosen so three db test files calling the CAS with `title` omitted needed
+  no edits. A default silently supplies the absent case, so the demanded guard is satisfiable WITHOUT
+  the code it guards. MEASURED: rewrite `execute` to omit the `title=` kwarg entirely on the absent
+  path (`intent = {} if title is None else {"title": self._title_intent(title)}`) — i.e. Arm A never
+  runs and the fake's default fills in — and the usecase suite is 181 passed, with
+  `test_should_forward_preserve_when_no_title_is_submitted_at_all` passing on its own. So the test
+  pins WHAT reaches the port but not WHO put it there. Arm A is killed only by a mutant that returns a
+  *wrong* intent, never by one that removes the arm. This matters precisely because of the standing
+  most-severe finding that `preserve()` and the ADR's `clear()` are dataclass-equal: once `clear()`
+  exists, `= TitleUpdate.preserve()` is a default whose value is indistinguishable from a clear, sitting
+  on the app's most-travelled save path, and the docstring added by this green ("every call carries a
+  named intent and the implementor has no fourth, unnamed state to map") is an OVERCLAIM — a default IS
+  a fourth, unnamed state, "argument absent", reintroduced one line below the sentence denying it.
+  Scoping note, so the two suites are not confused: the db suite DOES pin the default's meaning
+  (mutating it to `of("")` across port/impl/fake/DSL gives db 1 failed / 56 passed) while the usecase
+  suite stays 181 passed — the blind spot is the usecase layer's alone, the same asymmetry recorded at
+  line ~1556.
+  GREEN counts: target file 7 passed / 0 skipped; usecase 181 passed / 0 failed / **0 SKIPPED** (the
+  obligated number, not `180 / 1` — the premortem over `b2fd068` named this as a checkable obligation
+  because `skip` is inert on repair); db 57 passed / 0 failed / 0 skipped (real Postgres); full
+  `backend/` 538 passed / 0 failed / 2 skipped; mypy `Success: no issues found in 281 source files`
+  (run from `backend/`); ruff 5 errors, byte-identical to the HEAD baseline VERIFIED BY `git stash`
+  rather than by memory (4 ARG in `adapters/rendering`, 1 F401 in `test_save_document_title_router.py`).
+  The 2 remaining `backend/` skips are the host-dependency `importorskip` pair (weasyprint, htmldocx)
+  documented in `carryover.md` as in-container — NOT RED leftovers. The other two skips named in the
+  review block live in `acceptance/`, outside `backend/` scope; one of them is the very next step.
+  ⚠️ THREE TEST-FILE CHANGES, ALL FORCED, NONE TOUCHING AN ASSERTION — declared rather than buried:
+  (1) the RED skip marker removed (the only allowed test change); (2) `document_fakes.py` — the double
+  guard the step named, plus the two type consequences it implies (the fake's port signature mirrors the
+  narrowed port, `title_updates: list[TitleUpdate | None]` → `list[TitleUpdate]`); (3)
+  `document_storage_statements.py` — NOT named by the step but unavoidable: mypy type-checks the test
+  trees (`files` in `pyproject.toml` lists every `tests` root), so a DSL still declaring
+  `TitleUpdate | None` and forwarding into the narrowed port is a hard `arg-type` error. No call site
+  passed `None`, so no behaviour moved. `ruff format` briefly went 3 → 4 files on `document_storage.py`;
+  formatted that one file and re-ran usecase/db/mypy after.
+  NOT DONE, per the constraints: no clear path, no `SET title = NULL`, no touch to the `str` arm, no
+  attempt at absent-vs-explicit-null. The open finding stands unchanged — this collapse DOES pin
+  explicit `null` → `preserve()`, since `execute`'s signature makes it the same call.
+- [~] red-usecase (coverage: absent-title guard made falsifiable) — make the fake stop answering for
+  the usecase. `document_fakes.save_content_if_version_matches` must not default `title` to
+  `preserve()`; give it a sentinel `_title_intent` can never produce (or drop the default and let
+  omission raise `TypeError`). Acceptance is a MUTATION, not a passing run: the
+  `intent = {} if title is None else {...}` mutant above must go RED on
+  `test_should_forward_preserve_when_no_title_is_submitted_at_all`, where today it is green. Note there
+  is no behaviour-red available — `execute` already forwards `preserve()` correctly; what is missing is
+  the ability to notice if it stopped.
+- [ ] green-usecase (coverage: drop the port default, title required) — remove
+  `= TitleUpdate.preserve()` from `DocumentRepository.save_content_if_version_matches`,
+  `SqlAlchemyDocumentStorage.save_content_if_version_matches`, `document_fakes.py` and
+  `document_storage_statements.py`, making `title` a required keyword, and pass it explicitly at the db
+  test call sites that currently omit it (`test_document_storage.py:116,130,135,159` via the DSL, plus
+  `test_document_storage_cas_shape.py:72` and `test_document_storage_concurrency.py:70` which call the
+  storage directly — pass `TitleUpdate.preserve()`). This is the edit the green deferred; deferring it
+  is what put an unnamed state back on the port. Afterwards the docstring's "every call carries a named
+  intent" is true of the code and not just of the comment, and the `clear()` step below inherits a port
+  with no default to be mistaken for a clear.
 - [ ] green-acceptance (blank-title round trip) — PULLED FORWARD from the end of the scenario by the
   premortem over `83e4e48`: unskip `test_export_document_acceptance.py:141` (both `empty_title` and
   `whitespace_title` params) HERE, not after the clear path. It is the only test in the repo that
