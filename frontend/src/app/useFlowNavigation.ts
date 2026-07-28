@@ -134,7 +134,6 @@ export function useFlowNavigation() {
     generation,
     submitGeneration,
     openHistory: () => setStep('history'),
-    backToTypeModal: () => setStep('type'),
     backToLanding: () => setStep('landing'),
     closeToLanding,
     openDocumentFromHistory,

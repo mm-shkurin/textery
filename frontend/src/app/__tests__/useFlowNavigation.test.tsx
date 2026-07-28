@@ -81,13 +81,10 @@ describe('useFlowNavigation', () => {
     expect(result.current.openDocumentId).toBeNull()
   })
 
-  it('steps back to the type and landing screens', () => {
+  it('steps back to the landing screen', () => {
     const { result } = renderFlow()
 
     act(() => result.current.selectType('doklad'))
-    act(() => result.current.backToTypeModal())
-    expect(result.current.step).toBe('type')
-
     act(() => result.current.backToLanding())
     expect(result.current.step).toBe('landing')
   })
