@@ -110,12 +110,22 @@ class TestExportDocument:
                     "survives derivation and yields '   .pdf'"
                 ),
             ),
+            pytest.param(
+                " Отчёт ",
+                "pdf",
+                "Отчёт.pdf",
+                marks=pytest.mark.skip(
+                    reason="RED: stem = document.title or 'document' -- ' Отчёт ' is truthy, so "
+                    "the padding survives derivation and yields ' Отчёт .pdf'"
+                ),
+            ),
         ],
         ids=[
             "cyrillic_title_pdf",
             "cyrillic_title_docx",
             "absent_title_default",
             "whitespace_title_default",
+            "padded_title_stripped",
         ],
     )
     async def test_should_derive_the_plain_filename_from_the_title(
@@ -132,6 +142,13 @@ class TestExportDocument:
         # `SET title = ''` is live) or by a migration/import/admin tool bypass it
         # entirely and would otherwise derive `%20%20%20.pdf` forever. Derivation
         # is where "never empty" is enforceable for every input.
+        # `padded_title_stripped` guards the INTERSECTION the other cases leave
+        # open: `padded_title_verbatim` pins that " Отчёт " is STORED verbatim and
+        # `whitespace_title_default` pins only the all-blank case, so a derivation
+        # that TESTS blankness (`title if title.strip() else "document"`) rather
+        # than STRIPPING satisfies both and still ships " Отчёт .pdf". The ADR's
+        # rule is `stem = (title or "").strip() or "document"` -- strip for the
+        # FILENAME, never for the stored title.
         await statements.given_a_stored_document(content="<p>Привет</p>", title=title)
 
         await statements.when_exporting(export_format)

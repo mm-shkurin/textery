@@ -762,7 +762,26 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   instead of DSL steps. Both predate this unit; `/refactor` owns them.
   ⚠️ CAP PRESSURE: `document_fakes.py` 185 and `test_export_document_usecase.py` 183 — the next fake
   or export case crosses 200.
-- [~] red-usecase (padded derivation) — INSERTED by the review passes over the red-usecase commit
+- [x] red-usecase (padded derivation) — RED confirmed live: predicted == actual, first run, no loop.
+  `AssertionError: expected filename 'Отчёт.pdf' for title ' Отчёт ', got ' Отчёт .pdf'`
+  (`export_document.py:46` derives `stem = document.title or "document"`; `" Отчёт "` is truthy, so
+  the padding survives and the extension is appended to the padded stem). One new `pytest.param`
+  `[padded_title_stripped]` in the existing derivation parametrization, added through the
+  `ExportStatements` DSL seam; per-`pytest.param` skip so the four already-green cases stay enabled.
+  305 passed / 4 skipped / 0 failed; mypy clean (151 files, run from `backend/`).
+  test-review: NO violations, nothing to fix. Two things it confirmed that make the case non-vacuous:
+  the expected filename is a hardcoded literal (a computed `title.strip() + "." + fmt` would have
+  mirrored the production rule under test and passed vacuously), and `stored_document` passes `title`
+  verbatim into `Document(title=title)` with no strip — had the fake laundered it, the case would
+  have been a no-op.
+  ⚠️ mypy must run from `backend/` — the per-layer `sys.path` roots live in `backend/pyproject.toml`,
+  so running it from the repo root reports 132 spurious `import-not-found` errors.
+  ⚠️ PRE-EXISTING, not fixed in a RED unit (would mean editing untouched lines):
+  `test_export_document_usecase.py:164` raw inline `assert` in
+  `test_every_export_format_resolves_to_a_media_type`; `:37` imports the private `_MEDIA_TYPE` into
+  the test class; `export_document_statements.py:46` instantiates `FakeDocumentRepository` inside
+  Statements.
+  ORIGINAL RATIONALE — INSERTED by the review passes over the red-usecase commit
   (`60ab441`, agent-review CONCERN 2). This diff creates the input and leaves the output unguarded:
   `padded_title_verbatim` guarantees `" Отчёт "` is STORED verbatim, and `whitespace_title_default`
   only pins the all-blank case, so a green that satisfies it with a blankness TEST rather than a
@@ -770,7 +789,7 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   `" Отчёт .pdf"` → `Content-Disposition: …%20%D0%9E…%20.pdf`. Both decisions are individually
   correct; their intersection is untested. Add the param `(" Отчёт ", "pdf", "Отчёт.pdf")` beside
   `whitespace_title_default` — it must be a RED step, since green may not add tests.
-- [ ] green-usecase — also FIX the Sc 3.2 acceptance Test 2 (review obligation 4): the blank save
+- [~] green-usecase — also FIX the Sc 3.2 acceptance Test 2 (review obligation 4): the blank save
   resubmits the SAME `DOCUMENT_CONTENT` and only checks `status_code == 200`, so a green that
   rejects or short-circuits the whole blank-title save — losing the content update — passes
   identically. Send distinct content on the blank save and assert it persisted (or that the version
