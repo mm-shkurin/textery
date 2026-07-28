@@ -7,9 +7,10 @@
 DSL reference: see the table at the end of `01_API_Tests.md`, plus the additions at the
 end of this file.
 
-**Determinism rule for every race scenario in this story.** "Concurrently" in
-`01_API_Tests.md` §3.2, `01_API_Tests_Apply.md` §6.3, §7.4 and `05_Security_Tests.md`
-§4.1, §4.2 is not "start two threads and hope". Each race is driven through a barrier held
+**Determinism rule for every race scenario in this story.** "Concurrently", "at the same
+time" and "commits before" — in `01_API_Tests.md` §3.2, `01_API_Tests_Apply.md` §6.3, §7.4,
+`05_Security_Tests.md` §4.1, §4.2, `06_Integration_Tests.md` §3.2, and §3.3, §3.5 and §3.6
+below — is not "start two threads and hope". Each race is driven through a barrier held
 between the version read and the conditional write, and asserts the loser took the
 zero-rows-affected branch. A test that passes because the interleave rarely happens is a
 failed guard.
@@ -113,14 +114,56 @@ Then the restore is refused as a conflict
 And the manual save's content remains
 ```
 
-### 3.4 A manual save during a live edit has a defined outcome
+### 3.4 A manual save during a live edit succeeds and makes the edit lose
 ```gherkin
 Given a document with a non-terminal edit
 When a manual save is submitted from another session against the current version
-Then the outcome is the documented one
-And when the edit later applies, exactly one of the two is present with its version
-And neither is silently overwritten
+Then the save succeeds and the version is incremented
+And the one-active-mutation conflict does not apply to it
+When the edit later applies
+Then it ends terminal with the version-conflict code
+And it writes no revision and no content
+And its quota charge is refunded
 ```
+The manual save is deliberately not blocked — see the note in `endpoints.md`. Blocking it
+would let a hung edit lock a user out of their own document for the whole deadline.
+
+### 3.5 Cancel and worker completion resolve to exactly one terminal state
+```gherkin
+Given a non-terminal edit whose worker is ready to apply its result
+When the cancel and the apply are driven through the barrier together
+Then exactly one of them wins the status CAS
+And when the cancel wins there is no revision, no version change and no assistant message
+And when the apply wins the cancel is refused as already terminal
+And in both cases exactly one terminal event is emitted
+```
+The sequential orderings are covered in `01_API_Tests_Lifecycle.md` §4.3 and §4.4; this is
+the simultaneous one, which is what produces two terminal events or a revision on a
+cancelled edit.
+
+### 3.6 An edit cancelled before pickup costs no provider call
+```gherkin
+Given an edit that is still queued
+When it is cancelled before the worker picks it up
+And the worker then runs the job
+Then the provider is never called
+And the edit stays terminal cancelled
+```
+Every other cancellation assertion is about rows. A worker that calls the provider before
+re-checking status passes all of them while a third party bills for work nobody wanted, and
+the refund hides the spend from the quota counter.
+
+### 3.7 The same key on a second document creates a second edit
+```gherkin
+Given an authenticated user who submitted an instruction on one document
+When they submit the same instruction with the same idempotency key on another of their
+  documents
+Then a new edit is created for the second document
+And the first document's edit is not returned and not altered
+```
+The key is scoped to (account, document); a client with a per-session key generator would
+otherwise stream the first document's edit under the second document's path and hit the
+authoritative-path 404 forever.
 
 ---
 

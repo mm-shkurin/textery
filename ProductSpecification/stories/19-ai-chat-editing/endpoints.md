@@ -16,6 +16,15 @@
 |--------|------|------|-------------------|
 | GET | /api/v1/documents/{id} | story 5 | Load content + version after `done` |
 | PUT | /api/v1/documents/{id} | story 5 | Manual version-guarded save; races the AI edit on the same `base_version` |
+
+**A manual save during a live AI edit is ALLOWED, not blocked.** `PUT /documents/{id}` is
+story 5's endpoint and this story does not change it: it succeeds if its `version` matches,
+and the in-flight AI edit then loses its own CAS at apply time and ends terminal with the
+version-conflict code, refunded, having written no revision. The one-active-mutation 409
+covers a second `POST /ai-edits` and a `restore` — the two operations this story owns — not
+the manual save. Blocking the save instead would mean a hung edit locks the user out of
+their own document for the whole edit deadline, which is exactly what the cancel button and
+the deadline exist to prevent.
 | POST | /api/v1/documents/from-generation | story 18 | Produces the document being edited |
 
 ## Notes

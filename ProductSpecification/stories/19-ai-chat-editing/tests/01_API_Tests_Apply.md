@@ -71,6 +71,18 @@ And no streamed chunk is rendered as markup by the contract
 ```
 Repeat with upper-case markup under a locale with non-invariant case folding.
 
+### 6.8 A selection-scoped result is sanitised against the spliced document
+```gherkin
+Given a document whose text around the selection ends with an unclosed markup fragment
+And a model result for that selection which is inert when read on its own
+When the edit completes
+Then the stored document contains no live markup formed by the join
+```
+Sanitising the fragment in isolation is not enough: §6.6 deliberately leaves the
+surroundings byte-identical, so a fragment ending in a partial tag can form live markup
+only once spliced. Both halves must be individually inert in the fixture, or the scenario
+is not exercising the join.
+
 ---
 
 ## 7. History and Quota

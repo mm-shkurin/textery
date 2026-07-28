@@ -22,11 +22,15 @@ the legal edges which must be accepted.
 ```gherkin
 Given a stored <constant> whose value the reading code does not define
 When it is read
-Then the stated unknown-value policy applies
+Then the read fails loudly with the generic error envelope and an attributable log record
 And it is not coerced to the first defined value
-And nothing crashes
+And no stream is crashed mid-frame
 ```
-Cover each separately: <constant> ∈ {event type, edit status, revision source}.
+Cover each separately: <constant> ∈ {event type, edit status, revision source}. The policy
+is stated in `ProductSpecification/api-specs/README.md`: an unrecognised STORED value is a
+clean failure, because the row was written by code with a different idea of the state
+machine. The wire direction is the opposite and is covered client-side in
+`02_UI_Tests_Guards.md` §8.6.
 
 ### 4.3 An unknown field on the wire is ignored rather than rejected
 ```gherkin
@@ -55,10 +59,40 @@ cap → clamped to the cap}. A malformed value must never silently become the de
 ```gherkin
 Given an authenticated user owning a document with history
 When they read a list with a cursor that is <kind>
-Then the outcome is the documented one for that kind
+Then the outcome is <outcome>
 And no entry from another document is returned
 ```
-Cover each edge separately: <kind> ∈ {empty, structurally invalid, tampered}.
+Cover each edge separately, per `api-specs/README.md`: <kind> ∈ {empty → the first page,
+exactly as if omitted; structurally invalid → refused as malformed; valid-looking but not
+issued by this server → refused as malformed; referring to another owner's document →
+refused as not found, never confirming it exists}.
+
+### 5.7 A blank idempotency key is refused like an absent one
+```gherkin
+Given an authenticated user owning a document
+When they submit an instruction with an empty or whitespace-only idempotency key
+Then the request is refused as malformed
+And no edit is created
+```
+
+### 5.8 The event tail is served by its index, not by a scan
+```gherkin
+Given an edit with many recorded events
+When the stream tails them
+Then the query plan uses the edit-and-sequence index
+```
+Nothing else in the suite would go red on a sequential scan: at test data sizes it is fast.
+
+### 5.9 A non-terminal edit reports progress, not a frozen zero
+```gherkin
+Given an edit that is queued and then streaming
+When its state is read while it is still running
+Then the status reflects the current state
+And the highest recorded event number advances as chunks are committed
+```
+This is the documented polling fallback. An implementation returning zero until the edit
+finishes passes every other scenario while the fallback shows no progress and reconnects
+from the start on every tick.
 
 ### 5.3 An unlisted ordering parameter is not honoured
 ```gherkin

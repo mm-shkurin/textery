@@ -16,15 +16,11 @@ paths:
         - name: document_id
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: {type: string, format: uuid}
         - name: edit_id
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: {type: string, format: uuid}
         - name: Last-Event-ID
           in: header
           required: false
@@ -49,6 +45,16 @@ paths:
             containing "\n\ndata:" or a bare "\r" is delivered as exactly ONE chunk event
             with the text intact, never a forged terminal event. Chunk boundaries fall on
             grapheme boundaries.
+
+            HEARTBEAT — an SSE comment frame every KEEPALIVE_SECONDS whenever no event
+            has been sent, so the response is never byte-silent. A slow provider can leave
+            an edit chunk-less for minutes, and any idle intermediary would close it.
+            KEEPALIVE_SECONDS < proxy idle timeout is a startup-validated ordering.
+
+            VISIBILITY — committed event rows are tailed every EVENT_POLL_MS (order of
+            300 ms, env-configured, jittered per connection so streams do not query in
+            lockstep). A committed event reaches a connected reader within one interval
+            plus the jitter allowance; that is the window clients may rely on.
           headers:
             Cache-Control:
               schema:
@@ -111,9 +117,7 @@ components:
   schemas:
     Error:
       type: object
-      required:
-        - error_code
-        - message
+      required: [error_code, message]
       properties:
         error_code:
           type: string
@@ -122,9 +126,7 @@ components:
     ChunkEvent:
       description: 'SSE `event: chunk` — a fragment of the new document text.'
       type: object
-      required:
-        - seq
-        - text
+      required: [seq, text]
       properties:
         seq:
           type: integer
@@ -139,9 +141,7 @@ components:
     DoneEvent:
       description: 'SSE `event: done` — terminal, emitted only AFTER the apply transaction commits.'
       type: object
-      required:
-        - seq
-        - changed
+      required: [seq, changed]
       properties:
         seq:
           type: integer

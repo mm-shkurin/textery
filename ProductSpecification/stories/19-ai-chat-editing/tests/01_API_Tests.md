@@ -13,6 +13,11 @@ this file and applies to all three.
 
 ## 1. Prerequisite Guards
 
+§1.1 is implementable first. §1.2 needs a queued edit and §1.3-1.4 a recorded revision, so
+implement those three after the writes that create their preconditions (section 3 and
+`01_API_Tests_Apply.md` section 7), per the read-before-write exception in the format
+rules. They are grouped here as one guard family, not because they run first.
+
 ### 1.1 Every endpoint refuses an absent document indistinguishably from a foreign one
 ```gherkin
 Given an authenticated user
@@ -61,11 +66,10 @@ Given an authenticated user owning a document
 When they submit an instruction with the selection field <selection_form>
 Then the outcome is <outcome>
 ```
-Cover each edge separately: <selection_form> ∈ {omitted → accepted as a whole-document
-edit; explicit null → refused as malformed; start and end both null → refused as
-malformed; start and end both zero → refused as invalid; start greater than end → refused
-as invalid; end beyond the document length → refused as invalid}. No form silently
-becomes a whole-document rewrite.
+Cover each edge separately: <selection_form> ∈ {omitted → whole-document edit; explicit
+null → malformed; both fields null → malformed; both zero → invalid; start ≥ end →
+invalid; end past the document length → invalid}. No form silently becomes a
+whole-document rewrite.
 
 ### 2.2 A missing or zero base version is refused before any row is written
 ```gherkin
@@ -91,9 +95,8 @@ When they submit an instruction of <kind>
 Then the request is refused
 And no edit is created
 ```
-Cover each edge separately: <kind> ∈ {empty, whitespace only, exactly the maximum length
-in multi-byte characters → accepted, one code point over the maximum in multi-byte
-characters → refused}.
+Cover each edge separately: <kind> ∈ {empty; whitespace only; exactly the maximum length
+in multi-byte characters → accepted; one code point over → refused}.
 
 ### 2.5 A missing idempotency key is refused before any row is written
 ```gherkin

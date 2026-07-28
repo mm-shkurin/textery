@@ -5,6 +5,10 @@ model and a log, model output that becomes stored document HTML, and a server-se
 stream whose framing is built from that output. Generic 401 handling, security headers,
 CORS and transport are cross-cutting and are not repeated here.
 
+§1.1, §2.4, §3.1, §3.2 and §4.2 restate guards the API suite carries (`01_API_Tests.md`
+§1.1, §2.7, `_Apply` §6.7, `_Lifecycle` §5.5, §4.1). They are implemented ONCE, in the API
+suite, and referenced here so the attack surface reads complete — not written twice.
+
 ---
 
 ## 1. Authorization and object access

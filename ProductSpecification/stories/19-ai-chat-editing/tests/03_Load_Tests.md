@@ -90,7 +90,20 @@ And none of them climbs monotonically across the run
 Threshold: resource counts return to the pre-test baseline. Catches a client created per
 call, and a failure branch that skips the release the success branch performs.
 
-### 3.3 Pathological content does not stall the apply path
+### 3.3 Exhausting the stream and pool ceilings rejects, never hangs
+```gherkin
+Given the configured throughput baseline
+When streams are opened past the concurrent-connection ceiling
+And database connections are demanded past the pool bound
+Then the excess is refused with a defined code
+And no request waits indefinitely
+```
+
+Threshold: refusal at the ceiling within the configured acquisition timeout. The existing
+scenarios assert the counts stay *within* their bounds, so a silent hang at exhaustion —
+the actual production failure — passes them.
+
+### 3.4 Pathological content does not stall the apply path
 ```gherkin
 Given content at the maximum document length containing deeply nested and
   backtracking-prone markup

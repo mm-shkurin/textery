@@ -21,13 +21,15 @@ paths:
           in: header
           required: true
           description: >
-            Scoped to (account, document) and bound to a fingerprint of (message,
-            selection, base_version). Replay of the same key WITH THE SAME BODY returns
-            the SAME edit_id and the edit's CURRENT status — never a second edit, never a
-            second chat message. A different key with an identical body creates a new
-            edit. Reusing a key with a DIFFERENT body is a 422, never a silent 202
-            returning the earlier edit — which would discard the user's new instruction
-            while reporting success. Missing or blank rejects before any row is written.
+            Scoped to (account, document) — the same key on another document is a
+            different key and creates a second edit, never a cross-document replay — and
+            bound to a fingerprint of (message, selection, base_version). Replay with the
+            SAME body returns the SAME edit_id and the edit's CURRENT status: never a
+            second edit, never a second chat message. A different key with an identical
+            body creates a new edit. Reuse with a DIFFERENT body is a 422, never a silent
+            202 returning the earlier edit — which would discard the user's new
+            instruction while reporting success. Missing or blank rejects before any
+            row is written.
           schema:
             type: string
             minLength: 1
@@ -142,9 +144,7 @@ components:
               description: Start of the next quota day in the server's canonical zone.
     Selection:
       type: object
-      required:
-        - start
-        - end
+      required: [start, end]
       properties:
         start:
           type: integer

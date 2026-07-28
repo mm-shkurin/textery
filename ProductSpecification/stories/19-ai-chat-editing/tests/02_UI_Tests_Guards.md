@@ -6,6 +6,10 @@
 
 DSL reference: see the table at the end of `02_UI_Tests.md`.
 
+---
+
+## 8. Hazard Guards
+
 
 Folded in from the hazard-catalogue scan — each closes a fired trigger that no other
 scenario would go red on.

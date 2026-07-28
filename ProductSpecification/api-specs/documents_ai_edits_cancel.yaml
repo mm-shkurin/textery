@@ -38,6 +38,12 @@ paths:
             `event: cancelled` (see CancelledEvent in documents_ai_edits_stream.yaml),
             NOT an `event: error`. A cancel is a user action, so the client unfreezes and
             reverts without showing an error or offering a retry.
+
+            The worker re-checks terminal status IMMEDIATELY BEFORE the provider call, so
+            an edit cancelled while still queued costs ZERO provider calls. Refunding the
+            quota is not sufficient on its own: the provider call is billed by a third
+            party whether or not its result is ever used, and the refund hides that spend
+            from the counter.
           content:
             application/json:
               schema:
