@@ -144,6 +144,7 @@ warnings under `--max-warnings=0`) and `npm run format:check` (13 files under
 
 ## Where the state of play lives
 
+- [`status-ru.md`](status-ru.md) — the same picture as prose in Russian: what works, what does not, what to know before calling it done.
 - [`progress-frontend.md`](progress-frontend.md) — per-scenario work-unit state, the source of truth for what runs next.
 - [`progress.md`](progress.md) — story-level narrative, the Spec checklist, and items owed to the backend layer.
 - [`decisions/`](decisions/) — the block-schema migration and the 7.9 URL-input ADRs.
