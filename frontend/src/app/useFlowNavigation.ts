@@ -2,7 +2,11 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { logout } from '../features/auth/utils/authSession'
 import { useAuthSession } from '../features/auth/hooks/useAuthSession'
-import { documentTypeFromWire, type DocumentType } from '../shared/documentTypes'
+import {
+  DEFAULT_DOCUMENT_TYPE,
+  documentTypeFromWire,
+  type DocumentType,
+} from '../shared/documentTypes'
 import { useGeneration } from '../features/generation/hooks/useGeneration'
 
 // 'auto' generates from a topic, 'manual' opens the editor. Both are real destinations, not a
@@ -111,6 +115,16 @@ export function useFlowNavigation() {
     setStep('form')
   }
 
+  // The composer only knows the topic; the type the user picked lives here, in flow state. This
+  // is the join, and it is the whole point of scenario 1.1 — with the mode modal gone the type
+  // card is the LAST choice before the POST, so if it is not carried across this seam the wire
+  // says 'доклад' no matter which card was pressed. The fallback is unreachable in practice
+  // (the workspace only renders at `step === 'form' && documentType`) and exists so the composer
+  // cannot post a typeless request.
+  const submitGeneration = (topic: string) => {
+    generation.submit(topic, documentType ?? DEFAULT_DOCUMENT_TYPE)
+  }
+
   return {
     step,
     documentType,
@@ -118,6 +132,7 @@ export function useFlowNavigation() {
     openDocumentId,
     isAuthenticated,
     generation,
+    submitGeneration,
     openHistory: () => setStep('history'),
     backToTypeModal: () => setStep('type'),
     backToLanding: () => setStep('landing'),

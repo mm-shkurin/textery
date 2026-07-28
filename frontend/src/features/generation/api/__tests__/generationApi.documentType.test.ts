@@ -26,7 +26,7 @@ describe('generationApi createGeneration — the picked document type reaches th
   // RED (2026-07-28): createGeneration(topic) ignores any second argument and always sends
   // document_type 'доклад'.
   // Predicted: AssertionError — expected 'доклад' to be 'реферат'.
-  it.skip('sends the type the user picked, not the default', async () => {
+  it('sends the type the user picked, not the default', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ generation_id: 'gen-1', status: 'pending' }),
@@ -37,10 +37,6 @@ describe('generationApi createGeneration — the picked document type reaches th
     // one generation instead of billing the user for two.
     vi.stubGlobal('crypto', { randomUUID: () => 'idem-1' })
 
-    // @ts-expect-error createGeneration takes only a topic today — this second argument is the
-    // RED. Keeps `tsc -b` (and CI's typecheck/build) green while the test is skipped, and is
-    // self-removing: once green widens the signature, an unused @ts-expect-error is itself an
-    // error, so it cannot be left behind.
     const result = await createGeneration('Тема', 'referat')
 
     expect(result).toEqual({ generationId: 'gen-1', status: 'pending' })

@@ -101,7 +101,7 @@ export function DocumentGenerationFlow() {
         volumePages={flow.generation.volumePages}
         createdAt={flow.generation.createdAt}
         error={flow.generation.error}
-        onSubmit={flow.generation.submit}
+        onSubmit={flow.submitGeneration}
         onReset={flow.generation.reset}
         onLogoutClick={flow.handleLogout}
       />

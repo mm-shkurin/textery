@@ -4,7 +4,11 @@
 // access token and a 401 renews the session and replays it, instead of surfacing as a generation
 // failure the user did nothing to cause.
 import { send } from '../../../shared/api/send'
-import { DEFAULT_DOCUMENT_TYPE, WIRE_DOCUMENT_TYPE } from '../../../shared/documentTypes'
+import {
+  DEFAULT_DOCUMENT_TYPE,
+  WIRE_DOCUMENT_TYPE,
+  type DocumentType,
+} from '../../../shared/documentTypes'
 
 // No UI control exists yet for volume — every request asks for a fixed 5-page document
 // until the product adds a page-count selector.
@@ -41,7 +45,17 @@ interface GenerationStatusWire extends CreateGenerationWire {
   created_at: string
 }
 
-export async function createGeneration(topic: string): Promise<CreateGenerationResult> {
+// `documentType` is optional with a default rather than required, and that is a constraint, not
+// a preference: five sibling call sites in `generationApi.test.ts` and the useGeneration suite
+// call this with one argument, and test files are read-only in the green phase — a required
+// parameter would break the typecheck in files this phase may not touch. The hazard of an
+// optional default (green passes while the picked type is never actually threaded through) is
+// closed instead by a caller-level test: `useFlowNavigation.documentType.test.tsx` drives
+// `selectType('referat')` → `submitGeneration` and asserts THIS function receives 'referat'.
+export async function createGeneration(
+  topic: string,
+  documentType: DocumentType = DEFAULT_DOCUMENT_TYPE,
+): Promise<CreateGenerationResult> {
   const data = await send<CreateGenerationWire>(
     '/api/v1/generations',
     {
@@ -52,7 +66,7 @@ export async function createGeneration(topic: string): Promise<CreateGenerationR
       body: {
         // The wire type is Cyrillic ("доклад"); the backend rejects the app value ("doklad")
         // with 422 INVALID_DOCUMENT_TYPE. Map here, same as documentApi.createDocument does.
-        document_type: WIRE_DOCUMENT_TYPE[DEFAULT_DOCUMENT_TYPE],
+        document_type: WIRE_DOCUMENT_TYPE[documentType],
         topic,
         volume_pages: DEFAULT_VOLUME_PAGES,
       },
