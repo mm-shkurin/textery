@@ -8,6 +8,11 @@ from statements.save_document_statements import AUTOSAVE_CONTENT, SaveStatements
 
 STORED_TITLE = "Привет Мир"
 
+# What the setup save forwards across the port. Named once so the setup step and
+# the assertion that re-states it cannot drift apart: they are the same fact,
+# not two facts that happen to agree.
+STORED_TITLE_UPDATE = TitleUpdate.of(STORED_TITLE)
+
 # The one intent table, owned here rather than restated per test method. Both
 # arms of `_title_intent` -- the value-object call sites and the raw wire string
 # the PUT route sends -- answer to the SAME spec, so they must read it from the
@@ -31,7 +36,7 @@ class SaveTitleStatements(SaveStatements):
             owner_id=owner_id,
             content=AUTOSAVE_CONTENT,
             version=1,
-            title=TitleUpdate.of(STORED_TITLE),
+            title=STORED_TITLE_UPDATE,
         )
         return document
 
@@ -67,11 +72,11 @@ class SaveTitleStatements(SaveStatements):
 
     def assert_forwarded_title_update(self, expected: TitleUpdate) -> None:
         # The WHOLE recorded sequence, not just the last entry: the setup save
-        # forwards `of(STORED_TITLE)` and the autosave forwards the value under
-        # test, so pinning both also pins the call count -- a usecase that
+        # forwards `STORED_TITLE_UPDATE` and the autosave forwards the value
+        # under test, so pinning both also pins the call count -- a usecase that
         # mangled the setup title, or forwarded twice per call, would otherwise
         # still pass on a `[-1]` read.
-        expected_sequence = [TitleUpdate.of(STORED_TITLE), expected]
+        expected_sequence = [STORED_TITLE_UPDATE, expected]
         assert self.repository.title_updates == expected_sequence, (
             f"expected {expected_sequence!r} forwarded to the repository, "
             f"got {self.repository.title_updates!r}"

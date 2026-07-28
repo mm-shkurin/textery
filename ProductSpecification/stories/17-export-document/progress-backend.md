@@ -1237,6 +1237,69 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   `of(" Отчёт ")` verbatim.
   KILL TEST (the step is not done until this is demonstrated): deleting
   `TitleUpdate.of(title) if isinstance(title, str) else` must go RED.
+  refactor (commit follows this one): 1 refactoring. `STORED_TITLE_UPDATE = TitleUpdate.of(STORED_TITLE)`
+  extracted as a module constant in `save_title_statements.py` — the same fact was stated twice, at the
+  `given_a_titled_document` setup call site and inside `expected_sequence`, with nothing linking them
+  (the drift shape test-review had just fixed one level up). REJECTED: deriving `owner_id` from
+  `document.owner_id` in both `when_autosaving_*` steps (flagged independently by mechanics and design)
+  — the parent `SaveStatements.when_saving`/`when_saving_is_refused` take an explicit owner because the
+  refusal steps need a FOREIGN one, so dropping it here alone desyncs the two Statements classes for a
+  two-line saving. Also rejected collapsing the two `when_autosaving_*`/two test methods (duplication
+  cluster returned zero candidates and reached the same verdict unprompted). Runs: 180 usecase baseline,
+  6 target, 180 usecase post-change, 537 passed / 2 skipped full `backend/`. The documented mutation was
+  RE-RUN after the refactoring rather than trusting the green — still 3 failed / 3 passed with the new
+  test the sole killer. Files 83 and 65 lines.
+> REVIEW FINDINGS over `6750132` — agent-review CONCERNS (1 material + 2 minor), premortem 1 CREDIBLE
+> + 3 REMOTE (all dismissed with their guards named).
+> • **THE PIN HAS NO REMOVAL OWNER, AND ITS OWN ⚠️ CONTRADICTS THE STEP THAT OWNS THE ARM'S DELETION
+>   (agent-review, MATERIAL).** `save_document.py:41-45` declares the `str` arm TRANSITIONAL and
+>   `adapters-discovery (a2)` (below, untouched by this diff) is its named owner: "this is where it gets
+>   rewritten and the arm deleted from `SaveDocument.execute` … so this step naming it is the ONLY guard
+>   that exists". This commit adds a SECOND, HARDER reason for the arm to exist — 3 parametrized cases
+>   calling `execute(..., title=<bare str>)` — and does not update (a2), which will delete the arm and be
+>   blindsided by 3 red usecase tests it was never told about. Worse, the ⚠️ this diff ADDS says
+>   "`SaveDocument.execute` MUST STILL LIFT the wire string itself", while (a2) says `execute` must stop
+>   accepting a raw `str` — opposite standing requirements ~90 lines apart in this file. Line 992 already
+>   records a prior review's worry that the two `str` arms are becoming PERMANENT; this commit materially
+>   advances that by converting a documented shim into a tested contract. FIX (owner: whoever next edits
+>   (a2)): amend (a2) to name `when_autosaving_with_a_wire_title` + its test as part of the union removal,
+>   and reconcile the ⚠️ with it.
+> • **HOISTING `TITLE_INTENT_CASES` REMOVED THE CROSS-CHECK IT WAS JUSTIFIED BY (agent-review, minor).**
+>   Two tables could drift — but they also cross-checked: an expectation wrong in one was visible against
+>   the other. With one shared table a wrong expectation is wrong in both arms simultaneously and both
+>   tests agree silently. Given the new test's whole premise is "these two arms might diverge", one table
+>   means the suite can no longer EXPRESS divergence. Secondary: `test_save_document_title.py` no longer
+>   states its own spec — nothing in that file says `""` preserves or `" Отчёт "` is verbatim.
+> • **THE COMMIT MESSAGE CREDITS THE GUARD WITH A LAYER IT CANNOT SEE (agent-review, minor).** It says
+>   "that deletion lets a raw `""` reach `_update_values` unwrapped and run `SET title = ''`"; the test
+>   asserts against `FakeDocumentRepository.title_updates` at the usecase PORT and never reaches
+>   `document_storage._update_values`. The guard it does provide (execute never forwards a raw `str`
+>   across the port) is the right one; the db-layer `SET title = NULL`/`''` remains owned by guard (b).
+> • **EVERY GUARD THIS SCENARIO HAS BUILT SITS STRICTLY INSIDE THE SEAM THAT WOULD BREAK (premortem,
+>   CREDIBLE).** The blank string is BORN at `document_router.py:140` (`title=request.title`) off the
+>   Pydantic `title: str | None = None`, one layer ABOVE where this unit's guard starts. Grep for
+>   `"title": ""` / `title=""` over `acceptance/` and `backend/` returns ZERO hits — nothing in the repo
+>   sends a blank title across the REST boundary. `adapters-discovery (a)` is chartered to make the route
+>   map the wire shape itself (`model_fields_set`); the moment it lands a mapping like
+>   `TitleUpdate.of(request.title)` at the adapter, `_title_intent`'s blank rule is BYPASSED, `""` reaches
+>   `_update_values`, `new_title = ""` is not `None`, and the CAS runs `SET title = ''` — while all six
+>   `TITLE_INTENT_CASES` still pass (they call `execute` directly, below the mapping) and both db cases
+>   still pass (they construct the VO by hand). MISSING GUARD, named: an acceptance test in
+>   `acceptance/tests/backend/documents/` — PUT with title `"Привет Мир"`, PUT again with
+>   `{"content": …, "version": N, "title": ""}`, GET, assert the title is byte-identical and the version
+>   advanced. Minimum substitute if acceptance is out of scope: a case in
+>   `test_save_document_title_router.py` asserting a body of `{"title": ""}` reaches
+>   `SaveDocument.execute` with `title=""` — that the route FORWARDS blankness rather than resolving it.
+>   Worth landing BEFORE `adapters-discovery (a)`, not after.
+> • REMOTE, dismissed with guards named (premortem): (1) `preserve()`/clear collapse into one
+>   representation — guarded by `test_should_omit_the_title_from_the_set_list_for_a_preserve_update`;
+>   note the guard is a DB test, not a domain one, so `adapters-discovery (b)` must not "fix" that test
+>   to make clear fit. (2) Padding silently trimmed — the usecase expectation is TAUTOLOGICAL
+>   (`TITLE_INTENT_CASES` expects `TitleUpdate.of(" Отчёт ")` while production computes
+>   `TitleUpdate.of(title)`, same constructor both sides, so a `.strip()` inside `of()` leaves all six
+>   green); guarded one layer down by the db test asserting the literal stored column. (3) Padded title
+>   yields an unusable filename — `ExportDocument._derive_filename` already does
+>   `(document.title or "").strip() or "document"`.
 - [~] green-adapter db (TitleUpdate unwrap) — OWNS THE DB HALF OF THE UNION REMOVAL (assigned by the
   agent-review pass over `83e4e48`, which found the removal had no owner anywhere: (a) never mentions
   it, (b) is scoped to `SET title = NULL`, and the red step above deliberately WIDENS the DSL). Once
