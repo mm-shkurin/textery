@@ -740,8 +740,32 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   covers. Inserted at design so the clear branch is driven by a test rather than smuggled into a
   green whose tests do not exercise it.
 - [ ] green-usecase (clear path)
-- [ ] adapters-discovery
+- [ ] adapters-discovery — REQUIRED guards, named by the review passes over the design commit
+  (`97e8f53`); discovery must insert all four, none is optional:
+  (a) rest route — TWO assertions in `test_save_document_title_router.py`, not one: a body of
+  `{"content","version"}` with NO `title` key → `SaveDocument.execute(title=TitleUpdate.preserve())`
+  AND `{"title": null}` → `TitleUpdate.clear()`. One alone passes under a constant mapping, and
+  `model_fields_set` is the ONLY place absent and null are distinguishable — a route that maps
+  `null → preserve` cannot go red anywhere else.
+  (b) db CAS — pin the `SET title = NULL` branch in `test_document_storage_title.py`, which today
+  covers round-trip and preserve-on-omit only. This is the layer where "clear" is an actual SQL
+  statement; a usecase test passing against `document_fakes.py` proves nothing about it, and the
+  fake is rewritten by the same green it would be guarding.
+  (c) acceptance client — `application_client.py` currently spells absent as `title=None`
+  (`if title is not None: payload["title"] = title`), so it CANNOT send explicit null: it collapses
+  exactly the two shapes this contract separates. A sentinel is a precondition for any end-to-end
+  clear test.
+  (d) wire contract — propagate the three-state table to `endpoints.md` and to the PUT
+  request-schema `description` in `document_dtos.py` (the OpenAPI surface). Story-5-extension owns
+  the title editing UI and will never open this story's `decisions/` folder; those two artifacts are
+  what a parallel frontend session actually reads.
 - [ ] green-acceptance
+> READ-MODEL NOTE (agent-review, verified): `DocumentResponseDto` and `DocumentSummaryDto` carry NO
+> `title` field, so the whole three-state contract is unobservable to any client except by exporting
+> a document and decoding `Content-Disposition`. Exposing `title` on the read model is
+> story-5-extension's to make (it owns the title UI) — but note the coupling: doing so is what turns
+> the ADR's conceded residual live, because a client typing its state from a `string | null` read
+> DTO holds `null` before hydration.
 
 ### Scenario 3.3: A title with header-breaking characters cannot inject into the header
 > CARRY-FORWARD (from Sc 3.1 red-adapter rest export-filename premortem, commit f0dabd6 — CONCERNS

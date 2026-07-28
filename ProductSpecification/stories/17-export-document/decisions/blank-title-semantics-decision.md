@@ -80,6 +80,39 @@ for all inputs. Stripping here affects the filename only — the stored title is
   clearer: truncating the derived stem in `ExportDocument` bounds the `Content-Disposition` header
   regardless of what is stored, which is the same defense-in-depth argument made above.
 
+## Residual risk (conceded — both review passes over `97e8f53` raised it)
+
+**"A shape a client cannot send by accident" is weaker than it reads.** It is true of every client
+that exists today: `documentApi.ts` sends `body: { content, version }`, with no `title` key at all.
+It stops being true the moment `title` reaches the READ model. Story-5-extension owns the title
+editing UI and will have to expose `title` on `DocumentResponseDto` to render it — at which point a
+client typing its state from the read DTO holds `string | null`, and a save fired before hydration
+sends `"title": null`: the accidental shape and the destructive shape become the same value, which
+is the exact race this ADR moved *away* from blank to avoid.
+
+This is accepted rather than designed around, because the alternative signals are worse (see below)
+and absent-vs-null is the convention every merge-patch client already implements. But it is a
+residual, not a non-issue, and it is why the guards below are scheduled rather than assumed:
+
+- The three-state table must reach `endpoints.md` and the PUT request-schema `description` in
+  `document_dtos.py`. Those are the artifacts a parallel frontend session actually reads — a
+  contract recorded only in this story's `decisions/` folder is a contract story 5 will never see,
+  which is the same "first person to notice is a user whose deleted title keeps coming back"
+  failure this ADR rejected an alternative to avoid, reintroduced through the docs surface.
+- The route mapping needs TWO assertions, not one: absent → `preserve()` AND `null` → `clear()`. A
+  single assertion passes under a constant mapping.
+- The db CAS needs its `SET title = NULL` branch pinned at the layer where it is a SQL statement.
+  `test_document_storage_title.py` today pins round-trip and preserve-on-omit only.
+- The acceptance client cannot currently express explicit null —
+  `application_client.py` treats `title=None` as *absent* (`if title is not None: payload["title"]
+  = title`), collapsing the two shapes this ADR exists to separate. It needs a sentinel before any
+  end-to-end clear test is possible.
+
+**`str.strip()` is not "never empty".** The derivation guard neutralises ASCII and Unicode
+whitespace, but not zero-width characters — `"​"` is not whitespace to `str.strip()`, so a
+stored zero-width title still derives an effectively-empty `%E2%80%8B.pdf`. Scenario 3.6, which
+already owns stem bounding, is the natural owner of a stricter emptiness test.
+
 ## Alternatives rejected
 
 **Blank clears the title.** Symmetrical and needs no `model_fields_set`, but it makes the common
