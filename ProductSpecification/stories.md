@@ -10,7 +10,7 @@
 | 16 | OAuth sign-in: VK ID + Yandex ID (frontend-first, backend WIP) | ✅ | · | · | ✅ | · | n/a | · | 14/14 | 100% |
 | 17 | Export document to PDF / DOCX | ✅ | — | — | — | — | — | — | 0/? | 0% |
 | 18 | Generate → edit (unify generate + manual, drop mode modal) | ✅ | — | — | — | — | — | — | 0/? | 0% |
-| 19 | AI chat editing of an existing document (SSE, revisions, rollback) | 🔧 | — | — | — | — | — | — | 0/? | 0% |
+| 19 | AI chat editing of an existing document (SSE, revisions, rollback) | ✅ | — | — | — | — | — | — | 0/156 | 0% |
 
 # Backlog — Core sequence (build order, decided 2026-07-06)
 
