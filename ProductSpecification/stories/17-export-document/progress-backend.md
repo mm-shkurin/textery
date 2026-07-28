@@ -794,6 +794,31 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   rejects or short-circuits the whole blank-title save — losing the content update — passes
   identically. Send distinct content on the blank save and assert it persisted (or that the version
   advanced to 3).
+  ⚠️ PIN THE OTHER HALF OF THE ADR SENTENCE (both review passes over `6565709`, CREDIBLE). The
+  padded-derivation case asserts only `result.filename`, so NOTHING constrains WHERE green puts the
+  strip. A green written as `document.title = (document.title or "").strip()` before the derivation —
+  or a strip in `DocumentModel.to_domain()`, or in `Document`'s construction — produces `"Отчёт.pdf"`
+  and turns ALL five params green. It is undetectable because `Document` is a plain mutable class
+  (bare `self.title = title`, no frozen/`__slots__`) and `FakeDocumentRepository.find_by_id_and_owner`
+  returns the SAME instance it stored, so the mutation lands in the fake's store and no later step
+  reads it back. `padded_title_verbatim` does NOT cover this — it pins what reaches the port on the
+  way IN and never re-reads; and `test_should_round_trip_a_saved_title` (the only read-path guard)
+  uses `"Привет"` with NO padding, so a strip in the mapper is invisible to it. That is the exact
+  data loss the ADR spends a section forbidding ("Stripping here affects the filename only — the
+  stored title is untouched"): an ordinary autosave is a read-modify-write, so a read-path strip
+  becomes a persisted wipe. Guard: `assert_stored_title_unchanged(" Отчёт ")` on `ExportStatements`,
+  called after `when_exporting` in the padded case (cheapest), and/or a PADDED title in the db
+  round-trip test. NOTE the two passes disagreed on scope — premortem rates a usecase-level mutation
+  REMOTE because `find_by_id_and_owner` returns a detached `to_domain()` object, so the live risk is
+  MAPPER/ENTITY placement specifically; agent-review rates the usecase placement live via the fake.
+  The guard closes both readings, so it is worth adding either way.
+  ⚠️ EXPLICIT, CHECKABLE OBLIGATION (premortem CREDIBLE 2): green MUST delete the four RED per-param
+  skip marks — `whitespace_title_default` and `padded_title_stripped` in
+  `test_export_document_usecase.py`, plus the two in `test_save_document_title.py` — and confirm the
+  skipped count drops from 4 to 0. A skipped param is indistinguishable from a passing one in the
+  headline metric: a green that implements the strip and forgets the mark still reports
+  "305 passed / 4 skipped / 0 failed". Nothing in the repo asserts a skip baseline, and with six
+  skips live the count is not self-policing.
 - [ ] red-usecase (clear path) — `null` clears: the ADR's new behavior, which no existing test
   covers. Inserted at design so the clear branch is driven by a test rather than smuggled into a
   green whose tests do not exercise it.
