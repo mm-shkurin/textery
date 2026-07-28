@@ -12,6 +12,14 @@ class TestSaveNewAndRead:
         owner_id = await document_storage_statements.given_an_account()
         document = await document_storage_statements.given_a_saved_document(owner_id)
 
+        # Makes the fresh SELECT explicit instead of accidental. The session is
+        # expire_on_commit=False, so an instance still in the identity map would be
+        # handed back with its in-memory values and this would compare x == x. Today
+        # it does not happen -- SQLAlchemy's identity map is WEAK-referencing and
+        # `save_new` keeps no reference to the model, so it is collected and the read
+        # really does hit Postgres. That is a refcounting accident, not a guarantee:
+        # anyone who later retains the model re-introduces the stale read silently.
+        document_storage_statements.expire_identity_map()
         fetched = await document_storage_statements.find_by_id_and_owner(document.id, owner_id)
 
         document_storage_statements.assert_documents_match(fetched, document)
@@ -80,6 +88,9 @@ class TestIdempotencyKeyUniqueness:
         owner_id = await document_storage_statements.given_an_account()
         document = await document_storage_statements.given_a_saved_document(owner_id, "key-lookup")
 
+        # As above: pins the read as a genuine SELECT rather than relying on the weak
+        # identity map having dropped the instance.
+        document_storage_statements.expire_identity_map()
         found = await document_storage_statements.find_by_idempotency_key(owner_id, "key-lookup")
 
         document_storage_statements.assert_documents_match(found, document)
@@ -117,6 +128,9 @@ class TestSaveContentCompareAndSwap:
         )
 
         assert refused is None, "a stale version must not write"
+        # "The first save's content must survive" is only meaningful against the DB's
+        # bytes, so force the re-hydration rather than trusting the weak identity map.
+        document_storage_statements.expire_identity_map()
         current = await document_storage_statements.find_by_id_and_owner(document.id, owner_id)
         assert current.content == "<p>first</p>", "the first save's content must survive"
         assert current.version == 2, "a refused save must not advance the version"
@@ -138,5 +152,9 @@ class TestSaveContentCompareAndSwap:
         assert refused is None, (
             "a foreign document must not be writable even with a correct version"
         )
+        # `content == ""` is also the value Document.create set in Python, so read off
+        # a cached instance this security guard could not fail even if the hijack write
+        # HAD landed. Expiring makes it read the bytes Postgres actually holds.
+        document_storage_statements.expire_identity_map()
         current = await document_storage_statements.find_by_id_and_owner(document.id, owner_id)
         assert current.content == "", "the owner's content must be untouched"

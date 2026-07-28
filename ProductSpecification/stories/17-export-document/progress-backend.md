@@ -1044,7 +1044,56 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   headline metric: a green that implements the strip and forgets the mark still reports
   "305 passed / 4 skipped / 0 failed". Nothing in the repo asserts a skip baseline, and with six
   skips live the count is not self-policing.
-- [~] red-adapter db (TitleUpdate unwrap) — COVERAGE GAP, proven by mutation, NOT the clear path.
+- [x] red-adapter db (TitleUpdate unwrap) — ALREADY-GREEN regression guard confirmed live against
+  real Postgres (`infra-postgres-1`, localhost:5432): predicted PASS, got PASS, first run, no loop.
+  PREDICTED: none — `_update_values` already unwraps `title.value if isinstance(title, TitleUpdate)`,
+  so `of(" Отчёт ")` yields the padded string in the SET list and `preserve()` yields `value=None` →
+  the `if new_title is not None` guard omits `title`. ACTUAL: none — 5 passed / 0 failed / 0 skipped
+  in the target file (`-rs` confirms both new tests genuinely RAN); full adapters/db 57 passed
+  (was 55). COMPARISON: type, message and status all match; zero NOs.
+  New: `test_should_write_a_title_carried_by_a_title_update_verbatim` (VO through the version-CAS,
+  `commit()` + `expire_identity_map()` before the read-back) and
+  `test_should_omit_the_title_from_the_set_list_for_a_preserve_update` (pins the surviving title AND
+  the new content AND `version=3`, so "the save never happened" cannot satisfy it — that trap was
+  caught in this file once already). `DocumentStorageStatements.save_content_if_version_matches`
+  widened to `TitleUpdate | str | None` and forwards it UNLAUNDERED — unwrapping in the DSL would
+  make both cases vacuous.
+  NON-VACUITY PROVEN BY TWO MUTANTS (each new test killed by at least one): (1) the coverage agent's
+  `new_title = None if isinstance(...)` VO-drop → kills the verbatim test only; (2) unconditional
+  `values["title"] = new_title` (omit guard removed, preserve becomes a wipe) → kills the new
+  preserve test plus the pre-existing one. Production restored and verified byte-identical after each.
+  test-review: 2 findings fixed, both proven by mutation rather than asserted. `assert_stored_state`
+  claimed "the full post-CAS state" while pinning 3 of the 4 columns the CAS writes — `updated_at`
+  was unverified in every test using it; mutant M3 (delete `"updated_at"` from `_update_values`)
+  SURVIVED the pre-review suite at 14 passed and was KILLED at 5 failed after the fix. It also pinned
+  3 of 10 persisted fields, so an over-broad SET list clobbering `created_at` or resetting `status`
+  was invisible; it now builds an expected `Document` from the pre-save original and delegates to
+  `assert_documents_match`, which also retires the duplicated assertion logic between the two methods.
+  `updated_at` is pinned to the EXACT captured value, not a monotonicity bound — the DSL generates
+  that clock, which makes it determinism category 2 (capturable from setup), strictly stronger.
+  ⚠️ CORRECTION TO THE RECORD — the review over `ab40007` was WRONG, and this is worth carrying:
+  it claimed `test_document_storage.py:17` and `:85` assert `x == x` because they lack
+  `expire_identity_map()`. They do not. test-review MEASURED it instead of reasoning: after
+  `given_a_saved_document`, `in_identity_map=False` — SQLAlchemy's identity map holds WEAK
+  references and `save_new` keeps none (`session.add(DocumentModel.from_domain(document))`, no local
+  survives; the CAS likewise drops `model` after `to_domain()`), so the instance is collected and the
+  find already issues a real SELECT. Corrupting the row in raw SQL returned the DB's bytes with AND
+  without expire; causation was confirmed by holding a strong reference (then, and only then, the
+  un-expired read returned the stale value). ALSO: the mutant that prior review proposed
+  (`to_domain` returning a wrong `created_at`) CANNOT discriminate — it mutates the mapping function,
+  which runs identically on cached and fresh instances, so it kills the pre-fix tests too. That is
+  exactly why the finding looked confirmable and wasn't. The staleness mode is real but those tests
+  are protected by a CPython refcounting accident, not a guarantee, so the four
+  `expire_identity_map()` calls were kept as defense in depth — and every comment first written
+  asserting the false mechanism was rewritten, because a comment stating a wrong mechanism is worse
+  than no comment.
+  ⚠️ NOT FIXED IN A RED REVIEW, recorded for the step that next touches these files:
+  `Document.title: str | None` + `assert_stored_state(title=None)` is a null-on-a-VO-field smell whose
+  fix is PRODUCTION domain code — and the `SET title = NULL` clear branch lands straight on that
+  signature, so adapters-discovery (b) inherits it. A compound `save_and_reread` DSL method would make
+  forgetting the expire impossible (genuine hardening, restructures 5 tests) — `/refactor`'s call.
+  ~8 raw inline asserts in `test_document_storage.py` are pre-existing and outside the RED diff.
+  ORIGINAL STEP TEXT — COVERAGE GAP, proven by mutation, NOT the clear path.
   The green widened the CAS to `TitleUpdate | str | None` and unwraps at
   `document_storage.py:121` (`new_title = title.value if isinstance(title, TitleUpdate) else title`).
   No test anywhere passes a `TitleUpdate` to the real storage: `document_storage_statements.py:54`
@@ -1066,7 +1115,7 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   SCOPE: distinct from adapters-discovery guard (b), which pins the `SET title = NULL` clear branch.
   This step pins the SET and OMIT arms, which are live TODAY. Discovery (b) should add only the NULL
   case on top of the widened DSL this step lands — do not re-derive the DSL change there.
-- [ ] green-adapter db (TitleUpdate unwrap) — OWNS THE DB HALF OF THE UNION REMOVAL (assigned by the
+- [~] green-adapter db (TitleUpdate unwrap) — OWNS THE DB HALF OF THE UNION REMOVAL (assigned by the
   agent-review pass over `83e4e48`, which found the removal had no owner anywhere: (a) never mentions
   it, (b) is scoped to `SET title = NULL`, and the red step above deliberately WIDENS the DSL). Once
   the db DSL speaks `TitleUpdate`, this green MUST delete the `str` arm from
