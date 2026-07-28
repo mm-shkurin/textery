@@ -72,17 +72,12 @@ class SaveDocument:
     def _title_intent(title: TitleUpdate | str | None) -> TitleUpdate | None:
         """A blank title carries no title intent, so it must not overwrite one.
 
-        Blankness is TESTED (`strip() == ""`), never applied: the stored value is
-        forwarded byte-for-byte, so a legitimate `" Отчёт "` keeps its padding.
-        The rejected `title.strip() or None` would have trimmed every real title
-        as a side effect -- see decisions/blank-title-semantics-decision.md.
+        What "blank" means belongs to TitleUpdate, not here -- see its `is_blank`.
         """
         if title is None:
             return None
         update = TitleUpdate.of(title) if isinstance(title, str) else title
-        if update.value is not None and update.value.strip() == "":
-            return TitleUpdate.preserve()
-        return update
+        return TitleUpdate.preserve() if update.is_blank() else update
 
     def _validate_version(self, version: int) -> None:
         # bool is an int subclass in Python, and `True == 1`, so a JSON `true` would

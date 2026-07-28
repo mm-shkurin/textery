@@ -950,6 +950,70 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   test-coverage (usecase --focus): 100% line + branch on all four changed files, but the headline is
   MISLEADING and the agent proved it by mutation — see the inserted `red-adapter db (TitleUpdate
   unwrap)` step below.
+  refactor (commit follows this one): 4 refactorings — `TitleUpdate.is_blank()` (the blank rule moved
+  onto the VO that owns it), `_update_values` extracted in `document_storage` (which also CONFINES
+  the transitional unwrap to one method, so removing the `str` arm is deleting a line rather than
+  hunting for it), `_derive_filename` extracted from `ExportDocument.execute`, and a derivable
+  `owner_id` parameter dropped from four `save_document_statements` helpers. Two detector findings
+  were REJECTED after verification (`rollback_call_count` is live — the detector matched the reads
+  against a different `FakeUnitOfWork`; dropping `version: int = 1` is technically correct but the
+  default is what makes `test_save_document_usecase.py:111` stale). Also: the PLACEMENT DEBT this
+  step inherited from `red-usecase` was ALREADY resolved by earlier refactor commits — the debt note
+  was stale. 309 passed usecase+domain, 532/2 backend, 55 db vs Postgres, mypy clean (297 files),
+  ruff byte-identical to the pre-existing 5. No file over 179 lines — the cap pressure was overstated.
+> REVIEW FINDINGS over `83e4e48` — agent-review CONCERNS ×2, premortem 2 CREDIBLE + 3 REMOTE. BOTH
+> passes independently landed the SAME #1, which makes it the finding to act on first:
+> • **The port has two encodings of "preserve", and the raw one is what production sends
+>   (BOTH passes, CREDIBLE).** `document_repository.py` gained a docstring stating the ADR's premise —
+>   "a bare `None` can no longer tell 'preserve' from 'clear'" — while the signature one line above
+>   stayed `title: TitleUpdate | None = None`, and `_title_intent` RETURNS a bare `None` for the
+>   absent case. So the single most common call in the app (content-only autosave) crosses the port
+>   carrying the exact value the port's own docstring declares unusable. The tax is already being
+>   paid downstream in both implementors: `document_storage` collapses in two steps (unwrap `.value`,
+>   then absorb the raw `None`), and `document_fakes.py:115` double-guards
+>   `title is not None and title.value is not None`. THE INCIDENT: the very next step is
+>   `green-usecase (clear path)`, whose job is to make something mean `SET title = NULL`. An
+>   implementor reading that docstring literally — `None` is not a `TitleUpdate`, therefore it is the
+>   non-intent-bearing "clear" — flips the storage branch and EVERY autosave wipes its title. It also
+>   collides with scheduled guard (a), which will assert absent → `TitleUpdate.preserve()`: once that
+>   lands, one user intent has two representations depending on which caller you came through.
+>   FIX (one line today, more expensive per guard that accumulates on top): collapse
+>   `None → TitleUpdate.preserve()` inside `_title_intent` and DROP `| None` from the port.
+>   MISSING GUARD: nothing pins what a content-only autosave forwards —
+>   `save_title_statements.when_autosaving_with_title` always passes an explicit `TitleUpdate.of(...)`,
+>   so `assert_forwarded_title_update` never sees the `None` arm; a `_title_intent` returning garbage
+>   for `title=None` would not go red anywhere.
+> • **The recorded deviation names a removal owner that does not own it (agent-review).** This step's
+>   note scopes the `TitleUpdate | str | None` union with "`adapters-discovery` guards (a)/(b) remove
+>   the union". Traced as actually written, NEITHER does: (a) only adds two `model_fields_set` route
+>   assertions and never mentions the router building a `TitleUpdate` or narrowing `execute`; (b) is
+>   scoped to the `SET title = NULL` SQL branch only; and the inserted `red-adapter db (TitleUpdate
+>   unwrap)` step explicitly WIDENS the db DSL to `TitleUpdate | str | None` and keeps it. So as
+>   recorded the two `str` arms are PERMANENT, and `execute(title="")` remains a legal call meaning
+>   "set" — the exact branch this scenario's red was written to close. No guard is possible by
+>   construction: a permissive union never fails type-checking. The only guard is a step that names
+>   the removal, which is what was absent — now written into (a)/(b) and the db-unwrap green below.
+> • **The scenario's own end-to-end guard is still skipped, and is sequenced LAST (premortem,
+>   CREDIBLE).** `test_export_document_acceptance.py:141` still carries the Sc 3.2 RED skip. This step
+>   verified "4 → 0 skips" over `backend/usecase`, and the `backend/` 532/2 count does NOT include the
+>   `acceptance/` tree — so the one skip pinning the actual production data-loss path is precisely the
+>   one the verification scope could not see. Combined with the mutation-proven fact that the db
+>   unwrap arm is executed by nothing, the shipped state has ZERO executable proof of the round trip
+>   through the real route and real Postgres; the usecase test asserts against a fake whose preserve
+>   branch this same green wrote. FIX: `green-acceptance` is currently scheduled after the db unwrap,
+>   the clear path AND adapters-discovery — pull the unskip forward to immediately after
+>   `green-adapter db (TitleUpdate unwrap)`, before the clear-path work.
+> • VERIFIED AND HOLDING (premortem traced it end to end): the blank path DOES close today —
+>   route forwards raw `""` → `_title_intent` tests `strip() == ""` → `preserve()` → storage omits
+>   `title` from the CAS `values`. No `SET title = ''` is reachable from the PUT route. What is not
+>   closed is the PROOF, which is the two findings above.
+> • REMOTE, already scheduled elsewhere, recorded not re-raised: `TitleUpdate.of("")` is still legal
+>   so the storage arm keeps `SET title = ''` alive for any future non-route caller (owned by the
+>   `of()` blank-rejection obligation on `red-usecase (clear path)`); a zero-width title still derives
+>   `%E2%80%8B.pdf` (owned by Sc 3.6).
+> • DECISION GAP, no test possible: rows already wiped to `''` by the live pre-green bug stay wiped,
+>   and the new derivation strip MASKS them as `document.pdf` — no error, no recovery, no remediation
+>   step anywhere. Flagged for a decision, not a guard.
   ORIGINAL STEP TEXT follows — also FIX the Sc 3.2 acceptance Test 2 (review obligation 4): the blank save
   resubmits the SAME `DOCUMENT_CONTENT` and only checks `status_code == 200`, so a green that
   rejects or short-circuits the whole blank-title save — losing the content update — passes
@@ -1002,7 +1066,32 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   SCOPE: distinct from adapters-discovery guard (b), which pins the `SET title = NULL` clear branch.
   This step pins the SET and OMIT arms, which are live TODAY. Discovery (b) should add only the NULL
   case on top of the widened DSL this step lands — do not re-derive the DSL change there.
-- [ ] green-adapter db (TitleUpdate unwrap)
+- [ ] green-adapter db (TitleUpdate unwrap) — OWNS THE DB HALF OF THE UNION REMOVAL (assigned by the
+  agent-review pass over `83e4e48`, which found the removal had no owner anywhere: (a) never mentions
+  it, (b) is scoped to `SET title = NULL`, and the red step above deliberately WIDENS the DSL). Once
+  the db DSL speaks `TitleUpdate`, this green MUST delete the `str` arm from
+  `document_storage.save_content_if_version_matches` — the refactor confined the unwrap to
+  `_update_values`, so it is one line. Leaving it makes
+  `save_content_if_version_matches(title="")` a legal call that still executes `SET title = ''`.
+- [ ] red-usecase (port narrowing: absent forwards `preserve()`, not a bare `None`) — BOTH review
+  passes over `83e4e48` landed this independently, and it must precede the clear-path work because
+  the clear path is what turns it into a mass wipe. `_title_intent` returns a bare `None` for the
+  absent case while the port docstring declares `None` unusable, so `preserve()` and `None` ship as
+  synonyms and the most common call in the app carries the ambiguous one. Pin it: `SaveDocument.execute`
+  called with NO `title` argument forwards `TitleUpdate.preserve()` across the port — no test covers
+  this today (`save_title_statements.when_autosaving_with_title` always passes an explicit
+  `TitleUpdate.of(...)`, so the `None` arm is asserted nowhere at either layer).
+- [ ] green-usecase (port narrowing) — collapse `None → TitleUpdate.preserve()` in `_title_intent`
+  and DROP `| None` from `DocumentRepository.save_content_if_version_matches`, then delete the
+  now-dead second collapse step in `document_storage._update_values` and the double guard at
+  `document_fakes.py:115` (`title is not None and title.value is not None`).
+- [ ] green-acceptance (blank-title round trip) — PULLED FORWARD from the end of the scenario by the
+  premortem over `83e4e48`: unskip `test_export_document_acceptance.py:141` (both `empty_title` and
+  `whitespace_title` params) HERE, not after the clear path. It is the only test in the repo that
+  exercises route → usecase → CAS → Postgres → export header for this scenario, ~50 lines of
+  assertion code are reachable only from it, and until it runs the scenario has zero executable proof
+  of the round trip — this step's "4 → 0 skips" was verified over `backend/usecase`, a scope that
+  cannot see the `acceptance/` tree. Rebuild the baked backend image first (see carryover).
 - [ ] red-usecase (clear path) — `null` clears: the ADR's new behavior, which no existing test
   covers. Inserted at design so the clear branch is driven by a test rather than smuggled into a
   green whose tests do not exercise it.
@@ -1039,6 +1128,12 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   AND `{"title": null}` → `TitleUpdate.clear()`. One alone passes under a constant mapping, and
   `model_fields_set` is the ONLY place absent and null are distinguishable — a route that maps
   `null → preserve` cannot go red anywhere else.
+  (a2) OWNS THE REST HALF OF THE UNION REMOVAL (assigned by the agent-review pass over `83e4e48`).
+  The route must BUILD a `TitleUpdate` rather than forward a raw `str`; the read-only assertion at
+  `test_save_document_title_router.py:57` (`execute(..., title="Привет Мир")`) is the stated reason
+  the `str` arm exists, so this is where it gets rewritten and the arm deleted from
+  `SaveDocument.execute`. A permissive union never fails type-checking — mypy stays clean whether or
+  not the arm is ever removed, so this step naming it is the ONLY guard that exists.
   (b) db CAS — pin the `SET title = NULL` branch in `test_document_storage_title.py`, which today
   covers round-trip and preserve-on-omit only. This is the layer where "clear" is an actual SQL
   statement; a usecase test passing against `document_fakes.py` proves nothing about it, and the

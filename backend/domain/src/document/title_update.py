@@ -20,3 +20,13 @@ class TitleUpdate:
     @classmethod
     def of(cls, value: str) -> "TitleUpdate":
         return cls(value=value)
+
+    def is_blank(self) -> bool:
+        """Does this carry a value that is empty once whitespace is discounted?
+
+        Blankness is TESTED, never applied -- `value` is left byte-for-byte, so a
+        legitimate `" Отчёт "` keeps its padding. The rejected `value.strip() or
+        None` would have trimmed every real title as a side effect; see
+        decisions/blank-title-semantics-decision.md.
+        """
+        return self.value is not None and self.value.strip() == ""

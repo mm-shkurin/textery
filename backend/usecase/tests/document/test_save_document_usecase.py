@@ -41,7 +41,7 @@ class TestSaveHappyPath:
             "<p>ok</p>alert(1)",
             "the response must be built from the stored value, never echoed from the request",
         )
-        await statements.assert_response_matches_storage(document, owner_id)
+        await statements.assert_response_matches_storage(document)
 
 
 class TestSaveValidation:
@@ -54,7 +54,7 @@ class TestSaveValidation:
         await statements.when_saving_is_invalid(document, owner_id, content="a" * (MAX_CONTENT + 1))
 
         statements.assert_rejected_with("CONTENT_TOO_LONG")
-        await statements.assert_nothing_was_written(document, owner_id)
+        await statements.assert_nothing_was_written(document)
         statements.assert_sanitizer_saw(
             [],
             "oversized content must be rejected BEFORE sanitizing — otherwise an adversarial "
@@ -116,7 +116,7 @@ class TestSaveConflictAndAbsence:
         )
 
         await statements.assert_stored_content(
-            document, owner_id, "<p>first</p>", "the first save's content must survive"
+            document, "<p>first</p>", "the first save's content must survive"
         )
 
     async def test_should_treat_an_identical_resubmit_as_a_replay_not_a_conflict(self, statements):

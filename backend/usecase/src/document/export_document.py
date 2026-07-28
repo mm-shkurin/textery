@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from document.document import Document
 from document.document_renderer import DocumentRenderer
 from document.document_repository import DocumentRepository
 from document.export_format import ExportFormat
@@ -39,16 +40,26 @@ class ExportDocument:
         # rather than wasting a render and then KeyError-ing into a 500.
         media_type = _MEDIA_TYPE[export_format]
         content = self.document_renderer.render(document.content, export_format)
-        # Derive the plain filename: title stem when present, else the default
-        # "document"; the extension IS the ExportFormat value (pdf/docx), so it
-        # cannot drift from the format that drove the render. RFC 5987 encoding is
-        # the rest adapter's concern -- this stays plain unicode.
-        # The strip is DEFENSE IN DEPTH and belongs to the FILENAME ONLY: the
-        # save boundary only governs writes made through it, so a row written by
-        # a migration, an import, an admin tool, or before the blank-title green
-        # can still carry "   " or " Отчёт ". Derivation is where "never empty"
-        # is enforceable for every input. The stored entity is NOT rewritten --
-        # see decisions/blank-title-semantics-decision.md.
+        return RenderedExport(
+            content=content,
+            media_type=media_type,
+            filename=self._derive_filename(document, export_format),
+        )
+
+    @staticmethod
+    def _derive_filename(document: Document, export_format: ExportFormat) -> str:
+        """The plain filename: title stem when present, else the default "document".
+
+        The extension IS the ExportFormat value (pdf/docx), so it cannot drift from
+        the format that drove the render. RFC 5987 encoding is the rest adapter's
+        concern -- this stays plain unicode.
+
+        The strip is DEFENSE IN DEPTH and belongs to the FILENAME ONLY: the save
+        boundary only governs writes made through it, so a row written by a
+        migration, an import, an admin tool, or before the blank-title green can
+        still carry "   " or " Отчёт ". Derivation is where "never empty" is
+        enforceable for every input. The stored entity is NOT rewritten -- see
+        decisions/blank-title-semantics-decision.md.
+        """
         stem = (document.title or "").strip() or "document"
-        filename = f"{stem}.{export_format.value}"
-        return RenderedExport(content=content, media_type=media_type, filename=filename)
+        return f"{stem}.{export_format.value}"

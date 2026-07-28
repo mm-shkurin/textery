@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -111,16 +112,7 @@ class SqlAlchemyDocumentStorage:
         reaches the version comparison, so a correct-version guess against someone
         else's id is indistinguishable from a wrong one.
         """
-        # title is included ONLY when provided. A content-only autosave omits it, and
-        # SETting title = NULL unconditionally would silently wipe the user's title.
-        values = {
-            "content": content,
-            "version": DocumentModel.version + 1,
-            "updated_at": updated_at,
-        }
-        new_title = title.value if isinstance(title, TitleUpdate) else title
-        if new_title is not None:
-            values["title"] = new_title
+        values = self._update_values(content, updated_at, title)
         result = await self._session.execute(
             update(DocumentModel)
             .where(
@@ -133,3 +125,25 @@ class SqlAlchemyDocumentStorage:
         )
         model = result.scalar_one_or_none()
         return model.to_domain() if model else None
+
+    @staticmethod
+    def _update_values(
+        content: str, updated_at: datetime, title: TitleUpdate | str | None
+    ) -> dict[str, Any]:
+        """The SET clause. `title` is included ONLY when the caller supplied one.
+
+        A content-only autosave omits it, and SETting title = NULL unconditionally
+        would silently wipe the user's title.
+
+        Unwrapping the VO is confined to this one line so adapters-discovery (b)
+        can drop the transitional `str` arm by deleting it, not by hunting for it.
+        """
+        values: dict[str, Any] = {
+            "content": content,
+            "version": DocumentModel.version + 1,
+            "updated_at": updated_at,
+        }
+        new_title = title.value if isinstance(title, TitleUpdate) else title
+        if new_title is not None:
+            values["title"] = new_title
+        return values

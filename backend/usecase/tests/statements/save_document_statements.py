@@ -114,23 +114,25 @@ class SaveStatements:
             f"expected error code {error_code}, got {rejection.error_code}"
         )
 
-    async def assert_stored_content(
-        self, document: Document, owner_id: UUID, content: str, why: str
-    ) -> None:
-        stored = await self._stored(document, owner_id)
+    async def assert_stored_content(self, document: Document, content: str, why: str) -> None:
+        stored = await self._stored(document)
         assert stored.content == content, why
 
-    async def assert_response_matches_storage(self, document: Document, owner_id: UUID) -> None:
-        stored = await self._stored(document, owner_id)
+    async def assert_response_matches_storage(self, document: Document) -> None:
+        stored = await self._stored(document)
         assert stored.content == self.saved.content, "response and storage must not disagree"
 
-    async def assert_nothing_was_written(self, document: Document, owner_id: UUID) -> None:
-        stored = await self._stored(document, owner_id)
+    async def assert_nothing_was_written(self, document: Document) -> None:
+        stored = await self._stored(document)
         assert stored.content == "", "an oversized save must not reach storage"
         assert stored.version == 1, "a rejected save must not advance the version"
 
-    async def _stored(self, document: Document, owner_id: UUID) -> Document:
+    async def _stored(self, document: Document) -> Document:
+        """Reads back as the document's own owner -- the only owner these
+        assertions ever meant. The foreign-owner refusals are covered by the
+        `when_saving_is_refused` steps, which take their owner explicitly.
+        """
         return arranged(
-            await self.repository.find_by_id_and_owner(document.id, owner_id),
+            await self.repository.find_by_id_and_owner(document.id, document.owner_id),
             "the stored document",
         )
