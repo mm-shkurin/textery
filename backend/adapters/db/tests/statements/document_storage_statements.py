@@ -60,12 +60,17 @@ class DocumentStorageStatements(DocumentStorageAssertions):
         expected_version: int,
         title: TitleUpdate | str | None = None,
     ) -> Document | None:
-        # One adapter method, one DSL method. The value is forwarded UNCHANGED --
-        # unwrapping a TitleUpdate here would launder the very thing under test and
-        # make the VO cases vacuous. `title=None` and `TitleUpdate.preserve()` are
-        # both the content-only autosave path (title omitted from the SET list).
-        # The raw `str` arm is transitional; `green-adapter db (TitleUpdate unwrap)`
-        # owns its removal from production.
+        # A TitleUpdate is forwarded UNCHANGED -- unwrapping one here would launder
+        # the very thing under test and make the VO cases vacuous. `title=None` and
+        # `TitleUpdate.preserve()` are both the content-only autosave path (title
+        # omitted from the SET list).
+        # A raw `str` is a DSL-side convenience only: the adapter no longer accepts
+        # one (`green-adapter db (TitleUpdate unwrap)` removed that arm, so
+        # `title=""` can no longer reach `SET title = ''`), so it is LIFTED here to
+        # the VO the production caller would have built. Lifting cannot hide an
+        # adapter bug -- what crosses the port is the same value either way.
+        if isinstance(title, str):
+            title = TitleUpdate.of(title)
         self._last_updated_at = datetime.now(UTC)
         return await self._storage.save_content_if_version_matches(
             document_id=document_id,

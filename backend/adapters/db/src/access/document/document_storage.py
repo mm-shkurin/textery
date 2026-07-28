@@ -87,10 +87,7 @@ class SqlAlchemyDocumentStorage:
         content: str,
         expected_version: int,
         updated_at: datetime,
-        # `str` is TRANSITIONAL, owned by adapters-discovery (b): the usecase
-        # forwards a TitleUpdate, but this adapter's own test DSL still speaks the
-        # raw string. The `SET title = NULL` (clear) branch arrives with that step.
-        title: TitleUpdate | str | None = None,
+        title: TitleUpdate | None = None,
     ) -> Document | None:
         """Compare-and-swap the content. Returns the new state, or None if the
         version did not match (or the document is absent/foreign).
@@ -128,22 +125,24 @@ class SqlAlchemyDocumentStorage:
 
     @staticmethod
     def _update_values(
-        content: str, updated_at: datetime, title: TitleUpdate | str | None
+        content: str, updated_at: datetime, title: TitleUpdate | None
     ) -> dict[str, Any]:
-        """The SET clause. `title` is included ONLY when the caller supplied one.
+        """The SET clause. `title` is included ONLY when the caller carries an intent.
 
         A content-only autosave omits it, and SETting title = NULL unconditionally
         would silently wipe the user's title.
 
-        Unwrapping the VO is confined to this one line so adapters-discovery (b)
-        can drop the transitional `str` arm by deleting it, not by hunting for it.
+        The unwrap is a bare `.value`: a raw `str` is no longer accepted, so
+        `save_content_if_version_matches(title="")` cannot reach `SET title = ''`.
+        The remaining `| None` is the not-yet-narrowed absent case, owned by
+        `green-usecase (port narrowing)`.
         """
         values: dict[str, Any] = {
             "content": content,
             "version": DocumentModel.version + 1,
             "updated_at": updated_at,
         }
-        new_title = title.value if isinstance(title, TitleUpdate) else title
+        new_title = title.value if title is not None else None
         if new_title is not None:
             values["title"] = new_title
         return values

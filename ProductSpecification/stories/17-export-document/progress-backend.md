@@ -1300,14 +1300,63 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 >   green); guarded one layer down by the db test asserting the literal stored column. (3) Padded title
 >   yields an unusable filename — `ExportDocument._derive_filename` already does
 >   `(document.title or "").strip() or "document"`.
-- [~] green-adapter db (TitleUpdate unwrap) — OWNS THE DB HALF OF THE UNION REMOVAL (assigned by the
+- [x] green-adapter db (TitleUpdate unwrap) — OWNS THE DB HALF OF THE UNION REMOVAL (assigned by the
   agent-review pass over `83e4e48`, which found the removal had no owner anywhere: (a) never mentions
   it, (b) is scoped to `SET title = NULL`, and the red step above deliberately WIDENS the DSL). Once
   the db DSL speaks `TitleUpdate`, this green MUST delete the `str` arm from
   `document_storage.save_content_if_version_matches` — the refactor confined the unwrap to
   `_update_values`, so it is one line. Leaving it makes
   `save_content_if_version_matches(title="")` a legal call that still executes `SET title = ''`.
-- [ ] red-usecase (port narrowing: absent forwards `preserve()`, not a bare `None`) — BOTH review
+  GREEN: db 57 passed / 0 failed / 0 skipped (real Postgres, `infra-postgres-1`); target file 5 passed;
+  usecase 180 passed; full `backend/` 537 passed / 2 skipped / 0 failed; mypy clean (281 files, run from
+  `backend/` per `pyproject.toml` + `ci.yml:52` — `mypy backend/` from the repo root fails on a duplicate
+  -`conftest` module resolution error, which is a pre-existing invocation quirk, not a type error); ruff
+  byte-identical to the pre-existing 5. Files 148 and 104 lines.
+  `save_content_if_version_matches` and `_update_values` narrowed `TitleUpdate | str | None` →
+  `TitleUpdate | None`, so `save_content_if_version_matches(title="")` is no longer a LEGAL CALL and the
+  `SET title = ''` path is gone by construction, not by guard. The unwrap collapsed from
+  `title.value if isinstance(title, TitleUpdate) else title` to `title.value if title is not None else
+  None`. The surviving `| None` is the ABSENT case, still owned by `green-usecase (port narrowing)` below
+  — deliberately not touched. Docstring rewritten to state what the code now delivers rather than the
+  stale "adapters-discovery (b) will drop the arm" promise.
+  ⚠️ ONE TEST-DSL CHANGE, FLAGGED RATHER THAN SMUGGLED: four read-only tests call the DSL with a raw
+  `str` title, so with the production `str` arm gone the DSL had to stop forwarding one. The `str` arm is
+  kept in `document_storage_statements.py` as a DSL CONVENIENCE ONLY and now lifts
+  (`if isinstance(title, str): title = TitleUpdate.of(title)`). No test body, assertion or expected value
+  changed and the value crossing the port is byte-identical, so it cannot mask an adapter bug. Removing
+  the lift means editing four test call sites — outside a green.
+  ✅ WATCH ITEM FROM THE REVIEW OVER `2cacaf7` CONFIRMED BY RUNNING THE MUTANT, NOT BY ARGUMENT:
+  `test_should_omit_the_title_from_the_set_list_for_a_preserve_update` had NO mutant it alone killed
+  before this step. With the `str` arm gone and the unwrap a bare `.value`, mutant
+  `new_title = (title.value or "") if title is not None else None` gives 1 failed / 56 passed — the
+  single failure is that test (Postgres returned `'title': ''` against expected `'Привет'`), with the
+  verbatim/padded/round-trip tests all surviving. It was a passenger; it is load-bearing now.
+  SEQUENCING CONSTRAINT HOLDS: `save_document.py:48/72` still carries `TitleUpdate | str | None` and
+  `_title_intent`'s lift, untouched — that usecase-level `str` arm is owned by `adapters-discovery (a2)`
+  and pinned by `when_autosaving_with_a_wire_title`. usecase 180 passed proves `execute` still lifts the
+  wire string. The only `TitleUpdate | str` unions left in the repo are that usecase pair and the DSL
+  convenience arm.
+  test-coverage (`backend/adapters/db --focus`): CLEAN, no gap, no steps inserted. 43 stmts / 0 missed /
+  2 branches / 0 partial — and that 100% is NOT the evidence: the 2 arcs coverage.py counted belong to
+  `if new_title is not None:` (line 146); the conditional expression on line 145 contributed ZERO branch
+  arcs, exactly the blind spot that bit this scenario twice. Each arm proven by mutation instead, all
+  three reverted and the tree confirmed byte-identical. Arm 1 (`title is not None` → `title.value`):
+  mutant `None if title is not None else None` killed by 5 tests, the load-bearing one being
+  `test_should_write_a_title_carried_by_a_title_update_verbatim`, which passes `TitleUpdate.of(" Отчёт ")`
+  DIRECTLY — so the new DSL lift is a no-op for it and cannot launder the case. Arm 2 (`title is None`):
+  mutant `else "MUTANT-ELSE-ARM"` killed by EXACTLY 1 test,
+  `test_should_preserve_an_existing_title_on_a_content_only_save`, whose second save omits `title`
+  entirely — so the `None` arm has its own dedicated killer rather than riding on the preserve test
+  (`preserve()` reaches `new_title is None` through arm 1 via `.value`, a distinguishable path). Bonus:
+  mutant `title.value.strip() if title is not None and title.value else None` killed by the padded and
+  verbatim tests, so the unwrap is pinned BYTE-IDENTICALLY, not merely non-None — the thing the previous
+  two misses in this scenario were about.
+  ⚠️ OBSERVATION (not a gap, for whoever next touches these tests): the DSL lift now routes every
+  raw-`str` test through `TitleUpdate.of(...)`, so all five title tests hit arm 1. The `TitleUpdate.of`
+  and `TitleUpdate.preserve` tests still pass the VO UNLIFTED, so arm 1 keeps an unlaundered witness —
+  if those two ever go away, arm 1's only coverage becomes DSL-constructed and the port narrowing loses
+  its independent check.
+- [~] red-usecase (port narrowing: absent forwards `preserve()`, not a bare `None`) — BOTH review
   passes over `83e4e48` landed this independently, and it must precede the clear-path work because
   the clear path is what turns it into a mass wipe. `_title_intent` returns a bare `None` for the
   absent case while the port docstring declares `None` unusable, so `preserve()` and `None` ship as
