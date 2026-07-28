@@ -4,6 +4,7 @@ import pytest
 
 from document.export_document import _MEDIA_TYPE, ExportDocument
 from document.export_format import ExportFormat
+from document.get_document import GetDocument
 from document.rendered_export import RenderedExport
 from shared.exceptions import ValidationException
 from statements.arranged import arranged
@@ -53,10 +54,18 @@ class ExportStatements:
             document_repository=self.repository,  # type: ignore[arg-type]
             document_renderer=self.renderer,
         )
+        # The read-back after the export goes through GetDocument rather than the
+        # repository port: state is verified through a usecase, never by querying
+        # storage from a Statements class. GetDocument is a pure owner-scoped fetch,
+        # so it adds no behaviour that could mask an export-side mutation.
+        self.get_usecase = GetDocument(
+            document_repository=self.repository,  # type: ignore[arg-type]
+        )
         self._owner_id = uuid4()
         self._document_id: UUID | None = None
         self._result: RenderedExport | None = None
         self._error: ValidationException | None = None
+        self._document_before_export: dict | None = None
 
     @property
     def document_id(self) -> UUID:
@@ -73,6 +82,11 @@ class ExportStatements:
         document = stored_document(self._owner_id, content=content, title=title)
         await self.repository.save_new(document)
         self._document_id = document.id
+        # Snapshot EVERY field by value before the export runs. `Document` is a plain
+        # mutable class and the fake hands back the same instance it stored, so a copy
+        # taken here is the only thing that can still tell "unchanged" from "mutated
+        # in place" afterwards.
+        self._document_before_export = dict(document.__dict__)
 
     async def when_exporting(self, export_format: str | None) -> None:
         self._result = await self.usecase.execute(
@@ -117,10 +131,38 @@ class ExportStatements:
         )
         assert self.result == expected, f"expected {expected!r}, got {self.result!r}"
 
-    def assert_filename_is(self, expected_filename: str, title: str | None) -> None:
-        assert self.result.filename == expected_filename, (
-            f"expected filename {expected_filename!r} for title {title!r}, "
-            f"got {self.result.filename!r}"
+    async def assert_stored_document_unchanged(self, expected_title: str | None) -> None:
+        """Re-reads the document through GetDocument and pins EVERY field.
+
+        `assert_export_is` pins only the DERIVED name, which leaves open WHERE
+        the strip lands: a green written as `document.title = (document.title or
+        "").strip()` before the derivation produces the very same filename and turns
+        every param green. It is invisible because `Document` is a plain mutable
+        class and the fake hands back the SAME instance it stored, so the mutation
+        never surfaces in the export result. The ADR forbids exactly that: stripping
+        affects the filename only, the stored title is never rewritten -- and since
+        an ordinary autosave is a read-modify-write, a read-path strip becomes a
+        persisted wipe.
+
+        Two assertions, and both are load-bearing. The whole-entity comparison
+        against the pre-export snapshot catches an in-place mutation of ANY field
+        (content, version, updated_at), not just the title -- exporting is a read.
+        The explicit title pin catches what the snapshot cannot: a strip in
+        `Document`'s constructor would already have stripped the snapshot itself,
+        so only comparing against the RAW parametrized title still fails. (A strip
+        in `DocumentModel.to_domain` is out of reach at this layer -- the fake has
+        no mapper -- and is pinned by the h2 adapter tests instead.)
+        """
+        stored = await self.get_usecase.execute(self.document_id, self._owner_id)
+        assert stored is not None, "the exported document must still be readable after export"
+        assert stored.title == expected_title, (
+            f"exporting must leave the stored title untouched: expected "
+            f"{expected_title!r}, got {stored.title!r}"
+        )
+        before = arranged(self._document_before_export, "_document_before_export")
+        assert dict(stored.__dict__) == before, (
+            f"exporting must not mutate ANY stored field: expected {before!r}, "
+            f"got {stored.__dict__!r}"
         )
 
     def assert_every_export_format_resolves_to_a_media_type(self) -> None:

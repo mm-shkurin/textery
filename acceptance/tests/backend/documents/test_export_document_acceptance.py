@@ -141,6 +141,7 @@ class TestExportFilenameDefaultWithoutTitle(AbstractBackendTest):
             blank_title
         )
 
+        document_export_filename_statements.assert_blank_title_save_persisted_the_document()
         document_export_filename_statements.assert_filename_rfc5987_encoded_from_title(response)
 
 

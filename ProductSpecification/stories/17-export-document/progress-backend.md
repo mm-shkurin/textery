@@ -789,6 +789,43 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   `" Отчёт .pdf"` → `Content-Disposition: …%20%D0%9E…%20.pdf`. Both decisions are individually
   correct; their intersection is untested. Add the param `(" Отчёт ", "pdf", "Отчёт.pdf")` beside
   `whitespace_title_default` — it must be a RED step, since green may not add tests.
+- [x] red-usecase (export leaves the stored title untouched) — REORDERED here from the green step's
+  obligation list: both items are TEST changes, and green may not write tests. Both landed as
+  ALREADY-GREEN regression guards (predicted no failure, got no failure — Sc 1.2 / 2.4 precedent,
+  not a fabricated RED): usecase + domain 305 passed / 4 skipped, acceptance 11 passed / 2 skipped,
+  mypy clean. No skip mark added or removed.
+  (1) `assert_stored_document_unchanged` on `ExportStatements` — called after `when_exporting` for
+  EVERY derivation param (the invariant isn't padded-specific; the padded case is where it becomes
+  load-bearing). (2) Sc 3.2 acceptance Test 2 now sends `BLANK_SAVE_CONTENT` — distinct from
+  `DOCUMENT_CONTENT` — on the blank-title save, re-reads via `get_document`, and pins that content
+  survived, so a green that rejects or short-circuits the whole blank-title save can no longer pass.
+  VACUITY PROVEN BY MUTATION (test-review did not take the guard on trust): it injected
+  `document.title = ....strip()` into `export_document.py`, the guard went RED
+  (`expected None, got ''`), and the file was restored. A constructor strip is caught too — the
+  explicit title pin compares against the RAW parametrized title, so a strip that also strips the
+  snapshot still fails. ⚠️ The one green this CANNOT catch is a strip in `DocumentModel.to_domain()`
+  — the fake has no mapper, so that path is unreachable at this layer; the docstring was narrowed
+  rather than left overclaiming. The db-adapter round-trip test is where that one has to be pinned.
+  test-review: 7 findings fixed across 4 files. Notably — the guard originally read back through
+  `repository.find_by_id_and_owner` (rule 24, storage port in Statements, "NO EXCEPTIONS"); it now
+  reads through `GetDocument`. It also re-read a 10-field entity and pinned ONE field; it now
+  snapshots every field in the arrange and compares the whole entity, so an export that bumped
+  `version` or rewrote `content` fails. `assert_filename_is` pinned 1 of `RenderedExport`'s 3 fields
+  across all five params → folded into `assert_export_is`. An `isinstance(version, int)` that passed
+  for a version the CAS never incremented → exact literals (2 → 3). The acceptance `get_document`
+  asserted NOTHING (a 404/500 collapsed to `None`) → now pins 200 + a full structural comparison.
+  ⚠️ NOT FIXABLE IN A TEST REVIEW: the acceptance re-read cannot pin `title` directly —
+  `DocumentResponseDto` has NO title field, so no endpoint returns it and the export header is the
+  only black-box observation of title survival that exists. (Same read-model gap already recorded
+  under `green-acceptance`.)
+  ⚠️ FOUND WHILE RUNNING, PRE-EXISTING AND UNRELATED: the full `acceptance/tests/backend` tree has
+  5 failures + 2 errors in the GENERATION and OAUTH suites (401 `UNAUTHORIZED` on generation
+  endpoints). Nothing in this diff is shared with them, and the export-scoped counts above don't
+  cover them — but the acceptance tree is red outside this story.
+  ⚠️ CONFIRMED AGAINST THE REAL BACKEND: test-review temporarily lifted the acceptance skip; the new
+  content-survival assertion PASSED before the test failed on the genuine RED reason
+  (`%20%20%20.pdf`). So today's blank-title save does persist its content and increment the version
+  normally — only the title is wiped. Skip marker restored.
 - [~] green-usecase — also FIX the Sc 3.2 acceptance Test 2 (review obligation 4): the blank save
   resubmits the SAME `DOCUMENT_CONTENT` and only checks `status_code == 200`, so a green that
   rejects or short-circuits the whole blank-title save — losing the content update — passes

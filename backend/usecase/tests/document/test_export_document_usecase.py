@@ -37,6 +37,7 @@ import pytest
 from document.export_format import ExportFormat
 from statements.export_document_statements import ExportStatements
 
+PDF_MEDIA_TYPE = "application/pdf"
 DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
@@ -95,14 +96,15 @@ class TestExportDocument:
         statements.assert_export_is(media_type=DOCX_MEDIA_TYPE, filename="document.docx")
 
     @pytest.mark.parametrize(
-        "title, export_format, expected_filename",
+        "title, export_format, expected_media_type, expected_filename",
         [
-            ("Привет Мир", "pdf", "Привет Мир.pdf"),
-            ("Привет Мир", "docx", "Привет Мир.docx"),
-            (None, "pdf", "document.pdf"),
+            ("Привет Мир", "pdf", PDF_MEDIA_TYPE, "Привет Мир.pdf"),
+            ("Привет Мир", "docx", DOCX_MEDIA_TYPE, "Привет Мир.docx"),
+            (None, "pdf", PDF_MEDIA_TYPE, "document.pdf"),
             pytest.param(
                 "   ",
                 "pdf",
+                PDF_MEDIA_TYPE,
                 "document.pdf",
                 marks=pytest.mark.skip(
                     reason="RED: stem = document.title or 'document' -- '   ' is truthy, so it "
@@ -112,6 +114,7 @@ class TestExportDocument:
             pytest.param(
                 " Отчёт ",
                 "pdf",
+                PDF_MEDIA_TYPE,
                 "Отчёт.pdf",
                 marks=pytest.mark.skip(
                     reason="RED: stem = document.title or 'document' -- ' Отчёт ' is truthy, so "
@@ -128,7 +131,7 @@ class TestExportDocument:
         ],
     )
     async def test_should_derive_the_plain_filename_from_the_title(
-        self, statements, title, export_format, expected_filename
+        self, statements, title, export_format, expected_media_type, expected_filename
     ):
         # Derivation is a usecase policy: the filename stem is the title when
         # present, else the default "document"; the extension follows the format
@@ -152,7 +155,16 @@ class TestExportDocument:
 
         await statements.when_exporting(export_format)
 
-        statements.assert_filename_is(expected_filename, title)
+        # The whole export envelope, not just the filename: the media type and the
+        # rendered bytes are deterministic on every one of these params, so pinning
+        # only the stem would let either regress unnoticed across all five.
+        statements.assert_export_is(media_type=expected_media_type, filename=expected_filename)
+        # The other half of the ADR sentence: the strip belongs to the FILENAME,
+        # never to the stored entity. Asserted for every param, since the invariant
+        # is not specific to the padded case -- but it is the padded one it makes
+        # load-bearing, because there a green is tempted to normalise the entity
+        # (or the mapper) instead of the derived stem.
+        await statements.assert_stored_document_unchanged(title)
 
     def test_every_export_format_resolves_to_a_media_type(self, statements):
         # Structural invariant, not a transient state: it stays green for any
