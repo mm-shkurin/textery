@@ -17,6 +17,7 @@ def stored_document(
     `title` drives the export-filename derivation (Sc 3.1) and is passed straight
     through the constructor now that the domain entity carries a `title` field.
     """
+    stored_at = _EPOCH - timedelta(minutes=minutes_old)
     return Document(
         id=uuid4(),
         owner_id=owner_id,
@@ -25,8 +26,8 @@ def stored_document(
         content=content,
         version=1,
         idempotency_key=f"key-{uuid4()}",
-        created_at=_EPOCH - timedelta(minutes=minutes_old),
-        updated_at=_EPOCH - timedelta(minutes=minutes_old),
+        created_at=stored_at,
+        updated_at=stored_at,
         title=title,
     )
 
@@ -139,38 +140,9 @@ class FakeHtmlSanitizer:
         return content.replace("<script>", "").replace("</script>", "")
 
 
-FAKE_RENDERED_PDF = b"%PDF-1.7\nfake-rendered-bytes"
-
-
-class FakeDocumentRenderer:
-    """Records every render call and returns fixed sentinel bytes.
-
-    The sentinel matters: bytes a plain document could never carry. A usecase
-    that skipped the render step, or echoed the stored content back instead of
-    rendering it, could not produce these exact bytes -- so the happy-path
-    assertion is a real proof the STORED content was fed through the renderer,
-    not a tautology. `calls` records `(content, export_format)` so the test can
-    pin that the usecase rendered the stored content under the parsed format,
-    and that a refused request (absent doc / bad format) never reaches render.
-    """
-
-    def __init__(self) -> None:
-        self.calls: list[tuple[str, object]] = []
-
-    def render(self, content: str, export_format: object) -> bytes:
-        self.calls.append((content, export_format))
-        return FAKE_RENDERED_PDF
-
-
 class FakeClock:
-    def __init__(self, now: datetime | None = None) -> None:
-        self._now = now or datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
-
     def now(self) -> datetime:
-        return self._now
-
-    def advance_to(self, moment: datetime) -> None:
-        self._now = moment
+        return _EPOCH
 
 
 class FakeUnitOfWork:

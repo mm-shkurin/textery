@@ -32,40 +32,39 @@ un-observable via the public API and contriving an invalid enum member is
 forbidden -- tests 2.2 + the exhaustiveness guard cover the invariant.
 """
 
-from uuid import uuid4
-
 import pytest
 
-from document.export_document import _MEDIA_TYPE, ExportDocument
+from document.export_document import _MEDIA_TYPE
 from document.export_format import ExportFormat
-from document.rendered_export import RenderedExport
-from shared.exceptions import ValidationException
-from statements.document_fakes import (
-    FAKE_RENDERED_PDF,
-    FakeDocumentRenderer,
-    FakeDocumentRepository,
-    seeded,
-    stored_document,
-)
+from statements.export_document_statements import ExportStatements
+
+DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+
+@pytest.fixture
+def statements():
+    return ExportStatements()
 
 
 class TestExportDocument:
-    async def test_should_answer_none_and_never_render_for_a_non_existent_document(self):
-        renderer = FakeDocumentRenderer()
+    async def test_should_answer_none_and_never_render_for_a_non_existent_document(
+        self, statements
+    ):
+        statements.given_no_stored_document()
 
-        found = await ExportDocument(
-            document_repository=FakeDocumentRepository(), document_renderer=renderer
-        ).execute(document_id=uuid4(), owner_id=uuid4(), format="pdf")
+        await statements.when_exporting("pdf")
 
-        assert found is None
-        assert renderer.calls == [], "an absent document must never reach the render step"
+        statements.assert_export_withheld()
+        statements.assert_nothing_was_rendered()
 
     @pytest.mark.parametrize(
         "bad_format",
         ["xml", None, "", "PDF", " pdf "],
         ids=["unsupported", "missing", "empty", "wrong_case", "padded"],
     )
-    async def test_should_reject_an_invalid_format_before_fetch_or_render(self, bad_format):
+    async def test_should_reject_an_invalid_format_before_fetch_or_render(
+        self, statements, bad_format
+    ):
         # "PDF" and " pdf " are near-misses: the design declares parse
         # case-sensitive and unpadded, so a GREEN guard that .lower()/.strip()s
         # its input would silently widen the accepted set. The repository is
@@ -73,54 +72,28 @@ class TestExportDocument:
         # Raising -- with the renderer untouched -- proves the guard fired ahead
         # of both the fetch and the render: a bad format discloses nothing and
         # never drives a render.
-        renderer = FakeDocumentRenderer()
+        statements.given_no_stored_document()
 
-        with pytest.raises(ValidationException) as error:
-            await ExportDocument(
-                document_repository=FakeDocumentRepository(), document_renderer=renderer
-            ).execute(document_id=uuid4(), owner_id=uuid4(), format=bad_format)
+        await statements.when_exporting_is_refused(bad_format)
 
-        assert error.value.error_code == "INVALID_FORMAT", (
-            f"expected INVALID_FORMAT for {bad_format!r}, got {error.value.error_code}"
-        )
-        assert error.value.message == "The format must be pdf or docx.", (
-            f"unexpected message for {bad_format!r}: {error.value.message}"
-        )
-        assert renderer.calls == [], "a bad format must never reach the render step"
+        statements.assert_invalid_format_reported(bad_format)
+        statements.assert_nothing_was_rendered()
 
-    async def test_should_render_the_stored_content_and_return_pdf_bytes(self):
-        owner_id = uuid4()
-        document = stored_document(owner_id, content="<p>Привет</p>")
-        renderer = FakeDocumentRenderer()
+    async def test_should_render_the_stored_content_and_return_pdf_bytes(self, statements):
+        await statements.given_a_stored_document(content="<p>Привет</p>")
 
-        result = await ExportDocument(
-            document_repository=await seeded(document), document_renderer=renderer
-        ).execute(document_id=document.id, owner_id=owner_id, format="pdf")
+        await statements.when_exporting("pdf")
 
-        assert renderer.calls == [("<p>Привет</p>", ExportFormat.PDF)], (
-            "the usecase must render the STORED content under the parsed pdf format"
-        )
-        assert result == RenderedExport(
-            content=FAKE_RENDERED_PDF, media_type="application/pdf", filename="document.pdf"
-        )
+        statements.assert_rendered_stored_content("<p>Привет</p>", ExportFormat.PDF)
+        statements.assert_export_is(media_type="application/pdf", filename="document.pdf")
 
-    async def test_should_render_the_stored_content_and_return_docx_bytes(self):
-        owner_id = uuid4()
-        document = stored_document(owner_id, content="<p>Пока</p>")
-        renderer = FakeDocumentRenderer()
+    async def test_should_render_the_stored_content_and_return_docx_bytes(self, statements):
+        await statements.given_a_stored_document(content="<p>Пока</p>")
 
-        result = await ExportDocument(
-            document_repository=await seeded(document), document_renderer=renderer
-        ).execute(document_id=document.id, owner_id=owner_id, format="docx")
+        await statements.when_exporting("docx")
 
-        assert renderer.calls == [("<p>Пока</p>", ExportFormat.DOCX)], (
-            "the usecase must render the STORED content under the parsed docx format"
-        )
-        assert result == RenderedExport(
-            content=FAKE_RENDERED_PDF,
-            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            filename="document.docx",
-        )
+        statements.assert_rendered_stored_content("<p>Пока</p>", ExportFormat.DOCX)
+        statements.assert_export_is(media_type=DOCX_MEDIA_TYPE, filename="document.docx")
 
     @pytest.mark.parametrize(
         "title, export_format, expected_filename",
@@ -146,7 +119,7 @@ class TestExportDocument:
         ],
     )
     async def test_should_derive_the_plain_filename_from_the_title(
-        self, title, export_format, expected_filename
+        self, statements, title, export_format, expected_filename
     ):
         # Derivation is a usecase policy: the filename stem is the title when
         # present, else the default "document"; the extension follows the format
@@ -159,18 +132,11 @@ class TestExportDocument:
         # `SET title = ''` is live) or by a migration/import/admin tool bypass it
         # entirely and would otherwise derive `%20%20%20.pdf` forever. Derivation
         # is where "never empty" is enforceable for every input.
-        owner_id = uuid4()
-        document = stored_document(owner_id, content="<p>Привет</p>", title=title)
-        renderer = FakeDocumentRenderer()
+        await statements.given_a_stored_document(content="<p>Привет</p>", title=title)
 
-        result = await ExportDocument(
-            document_repository=await seeded(document), document_renderer=renderer
-        ).execute(document_id=document.id, owner_id=owner_id, format=export_format)
+        await statements.when_exporting(export_format)
 
-        assert result.filename == expected_filename, (
-            f"expected filename {expected_filename!r} for title {title!r}, "
-            f"got {result.filename!r}"
-        )
+        statements.assert_filename_is(expected_filename, title)
 
     def test_every_export_format_resolves_to_a_media_type(self):
         # Structural invariant, not a transient state: it stays green for any

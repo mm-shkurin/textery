@@ -25,7 +25,7 @@ from uuid import uuid4
 import pytest
 
 from document.title_update import TitleUpdate
-from statements.save_document_statements import SaveTitleStatements
+from statements.save_title_statements import SaveTitleStatements
 
 
 @pytest.fixture

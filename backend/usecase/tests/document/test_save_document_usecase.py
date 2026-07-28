@@ -2,8 +2,10 @@ from uuid import uuid4
 
 import pytest
 
-from shared.exceptions import ConflictException, NotFoundException, ValidationException
+from shared.exceptions import ConflictException, NotFoundException
 from statements.save_document_statements import SaveStatements
+
+MAX_CONTENT = 200_000
 
 
 @pytest.fixture
@@ -18,16 +20,11 @@ class TestSaveHappyPath:
         owner_id = uuid4()
         document = await statements.given_a_document(owner_id)
 
-        saved = await statements.usecase.execute(
-            document_id=document.id, owner_id=owner_id, content="<p>привет</p>", version=1
-        )
+        await statements.when_saving(document, owner_id, content="<p>привет</p>")
 
-        assert saved.content == "<p>привет</p>"
-        assert saved.version == 2, "a successful save advances the version by one"
-        assert statements.sanitizer.sanitized == ["<p>привет</p>"], (
-            "content must go through the sanitizer"
-        )
-        assert statements.unit_of_work.commit_call_count == 1
+        statements.assert_saved(content="<p>привет</p>", version=2)
+        statements.assert_sanitizer_saw(["<p>привет</p>"], "content must go through the sanitizer")
+        statements.assert_committed_once()
 
     async def test_should_return_what_was_stored_not_what_was_submitted(self, statements):
         # Scenario 7.2: when sanitization alters the content, the response reflects
@@ -36,18 +33,15 @@ class TestSaveHappyPath:
         owner_id = uuid4()
         document = await statements.given_a_document(owner_id)
 
-        saved = await statements.usecase.execute(
-            document_id=document.id,
-            owner_id=owner_id,
-            content="<p>ok</p><script>alert(1)</script>",
-            version=1,
+        await statements.when_saving(
+            document, owner_id, content="<p>ok</p><script>alert(1)</script>"
         )
 
-        assert saved.content == "<p>ok</p>alert(1)", (
-            "the response must be built from the stored value, never echoed from the request"
+        statements.assert_saved_content(
+            "<p>ok</p>alert(1)",
+            "the response must be built from the stored value, never echoed from the request",
         )
-        stored = await statements.repository.find_by_id_and_owner(document.id, owner_id)
-        assert stored.content == saved.content, "response and storage must not disagree"
+        await statements.assert_response_matches_storage(document, owner_id)
 
 
 class TestSaveValidation:
@@ -57,30 +51,25 @@ class TestSaveValidation:
         owner_id = uuid4()
         document = await statements.given_a_document(owner_id)
 
-        with pytest.raises(ValidationException) as excinfo:
-            await statements.usecase.execute(
-                document_id=document.id, owner_id=owner_id, content="a" * 200_001, version=1
-            )
+        await statements.when_saving_is_invalid(document, owner_id, content="a" * (MAX_CONTENT + 1))
 
-        assert excinfo.value.error_code == "CONTENT_TOO_LONG"
-        stored = await statements.repository.find_by_id_and_owner(document.id, owner_id)
-        assert stored.content == "", "an oversized save must not reach storage"
-        assert stored.version == 1, "a rejected save must not advance the version"
-        assert statements.sanitizer.sanitized == [], (
+        statements.assert_rejected_with("CONTENT_TOO_LONG")
+        await statements.assert_nothing_was_written(document, owner_id)
+        statements.assert_sanitizer_saw(
+            [],
             "oversized content must be rejected BEFORE sanitizing — otherwise an adversarial "
-            "payload is fully parsed before we decline it"
+            "payload is fully parsed before we decline it",
         )
 
     async def test_should_accept_content_at_exactly_the_maximum(self, statements):
         owner_id = uuid4()
         document = await statements.given_a_document(owner_id)
 
-        saved = await statements.usecase.execute(
-            document_id=document.id, owner_id=owner_id, content="a" * 200_000, version=1
-        )
+        await statements.when_saving(document, owner_id, content="a" * MAX_CONTENT)
 
-        assert saved.content == "a" * 200_000, (
-            "the boundary-sized content must land byte-for-byte, not merely at the right length"
+        statements.assert_saved_content(
+            "a" * MAX_CONTENT,
+            "the boundary-sized content must land byte-for-byte, not merely at the right length",
         )
 
     @pytest.mark.parametrize("version", [0, -1])
@@ -88,20 +77,18 @@ class TestSaveValidation:
         owner_id = uuid4()
         document = await statements.given_a_document(owner_id)
 
-        with pytest.raises(ValidationException) as excinfo:
-            await statements.usecase.execute(
-                document_id=document.id, owner_id=owner_id, content="<p>x</p>", version=version
-            )
+        await statements.when_saving_is_invalid(
+            document, owner_id, content="<p>x</p>", version=version
+        )
 
-        assert excinfo.value.error_code == "INVALID_VERSION"
+        statements.assert_rejected_with("INVALID_VERSION")
 
 
 class TestSaveConflictAndAbsence:
     async def test_should_report_not_found_for_an_unknown_document(self, statements):
-        with pytest.raises(NotFoundException):
-            await statements.usecase.execute(
-                document_id=uuid4(), owner_id=uuid4(), content="<p>x</p>", version=1
-            )
+        await statements.when_saving_is_refused(
+            NotFoundException, document_id=uuid4(), owner_id=uuid4(), content="<p>x</p>"
+        )
 
     async def test_should_report_not_found_for_another_owners_document(self, statements):
         # Security 7.1: 404, not 409 — even though the version is correct. Answering
@@ -109,25 +96,28 @@ class TestSaveConflictAndAbsence:
         owner_id = uuid4()
         document = await statements.given_a_document(owner_id)
 
-        with pytest.raises(NotFoundException):
-            await statements.usecase.execute(
-                document_id=document.id, owner_id=uuid4(), content="<p>hijack</p>", version=1
-            )
+        await statements.when_saving_is_refused(
+            NotFoundException,
+            document_id=document.id,
+            owner_id=uuid4(),
+            content="<p>hijack</p>",
+        )
 
     async def test_should_report_conflict_on_a_stale_version(self, statements):
         owner_id = uuid4()
         document = await statements.given_a_document(owner_id)
-        await statements.usecase.execute(
-            document_id=document.id, owner_id=owner_id, content="<p>first</p>", version=1
+        await statements.when_saving(document, owner_id, content="<p>first</p>")
+
+        await statements.when_saving_is_refused(
+            ConflictException,
+            document_id=document.id,
+            owner_id=owner_id,
+            content="<p>second</p>",
         )
 
-        with pytest.raises(ConflictException):
-            await statements.usecase.execute(
-                document_id=document.id, owner_id=owner_id, content="<p>second</p>", version=1
-            )
-
-        stored = await statements.repository.find_by_id_and_owner(document.id, owner_id)
-        assert stored.content == "<p>first</p>", "the first save's content must survive"
+        await statements.assert_stored_content(
+            document, owner_id, "<p>first</p>", "the first save's content must survive"
+        )
 
     async def test_should_treat_an_identical_resubmit_as_a_replay_not_a_conflict(self, statements):
         # Scenario 6.2. The client retried and its content already landed; answering
@@ -136,13 +126,9 @@ class TestSaveConflictAndAbsence:
         # advanced by exactly one. A content -> other -> content history still conflicts.
         owner_id = uuid4()
         document = await statements.given_a_document(owner_id)
-        first = await statements.usecase.execute(
-            document_id=document.id, owner_id=owner_id, content="<p>same</p>", version=1
-        )
+        await statements.when_saving(document, owner_id, content="<p>same</p>")
 
-        replay = await statements.usecase.execute(
-            document_id=document.id, owner_id=owner_id, content="<p>same</p>", version=1
-        )
+        await statements.when_saving(document, owner_id, content="<p>same</p>")
 
-        assert replay.version == first.version == 2, "no second version advance for a replay"
-        assert replay.content == "<p>same</p>"
+        statements.assert_every_save_landed_on_version(2)
+        statements.assert_saved_content("<p>same</p>", "the replay must return the stored content")
