@@ -70,7 +70,7 @@ body{background:var(--bg-sunken);}
   font-size:13.5px; color:#1e293b;}
 .msg.user{justify-content:flex-end;}
 .msg.user .bubble{background:var(--bg-sunken); border:1px solid var(--border-subtle);}
-.msg .time{font-size:11.5px; color:var(--text-muted); margin:0 0 16px 36px;}
+.time{font-size:11.5px; color:var(--text-muted); margin:0 0 16px 36px;}
 .msg.user + .time{text-align:right; margin-left:0; margin-right:2px;}
 .quote{border-left:3px solid var(--accent); background:var(--bg-sunken); border-radius:6px;
   padding:8px 10px; font-size:12.5px; color:var(--text-secondary); margin-bottom:8px;}
