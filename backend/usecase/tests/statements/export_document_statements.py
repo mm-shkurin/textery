@@ -2,7 +2,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from document.export_document import ExportDocument
+from document.export_document import _MEDIA_TYPE, ExportDocument
 from document.export_format import ExportFormat
 from document.rendered_export import RenderedExport
 from shared.exceptions import ValidationException
@@ -121,4 +121,16 @@ class ExportStatements:
         assert self.result.filename == expected_filename, (
             f"expected filename {expected_filename!r} for title {title!r}, "
             f"got {self.result.filename!r}"
+        )
+
+    def assert_every_export_format_resolves_to_a_media_type(self) -> None:
+        """Reaches into the usecase's private `_MEDIA_TYPE` deliberately.
+
+        The map has no public accessor -- exposing one would widen the usecase's
+        API for a test's convenience. Keeping the private read here, behind a
+        named step, is what lets the test class stay pure DSL.
+        """
+        unmapped = set(ExportFormat) - set(_MEDIA_TYPE)
+        assert unmapped == set(), (
+            f"every ExportFormat member must map to a media type; unmapped: {unmapped}"
         )

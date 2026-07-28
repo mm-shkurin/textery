@@ -34,7 +34,6 @@ forbidden -- tests 2.2 + the exhaustiveness guard cover the invariant.
 
 import pytest
 
-from document.export_document import _MEDIA_TYPE
 from document.export_format import ExportFormat
 from statements.export_document_statements import ExportStatements
 
@@ -155,12 +154,9 @@ class TestExportDocument:
 
         statements.assert_filename_is(expected_filename, title)
 
-    def test_every_export_format_resolves_to_a_media_type(self):
+    def test_every_export_format_resolves_to_a_media_type(self, statements):
         # Structural invariant, not a transient state: it stays green for any
         # future format once that format is mapped, and fails loudly the moment a
         # member is added without a media type -- the loud failure the moved
         # media lookup (ADR) turns from a runtime 500 into an import-time guard.
-        unmapped = set(ExportFormat) - set(_MEDIA_TYPE)
-        assert unmapped == set(), (
-            f"every ExportFormat member must map to a media type; unmapped: {unmapped}"
-        )
+        statements.assert_every_export_format_resolves_to_a_media_type()
