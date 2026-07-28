@@ -21,16 +21,62 @@ function npmScripts(path) {
   return [...matches].map((match) => match[1]).sort()
 }
 
-// In the split repo there IS no monorepo workflow — `frontend/` is the root there, and the
-// counterpart file simply does not exist. Nothing to compare is not a failure; the same command
-// has to be safe to run in both repository shapes or it cannot live in package.json.
-if (!existsSync(MONOREPO)) {
-  console.log('CI parity skipped — no monorepo workflow here (standalone repository shape).')
-  process.exit(0)
+// Sameness is not presence: two identical pipelines that run NOTHING satisfy the comparison below,
+// and so does deleting one step from both files in the same commit. That is the shape of the
+// failure this file exists to prevent, one level up — every gate here is a step someone under
+// release pressure can remove, and the only thing that noticed would be this comparison, which
+// removal keeps green.
+//
+// So the gates are named. Each entry says what is lost when it goes, because a bare list gets
+// pruned as clutter and a reason does not.
+const REQUIRED = [
+  ['typecheck', 'tsc -b; without it a broken build reaches main invisibly (vitest strips types)'],
+  ['test:coverage', 'the suite AND the per-file coverage floors, which only fire under --coverage'],
+  ['build', 'the one step that proves the app still compiles and bundles'],
+  ['lint', 'oxlint at --max-warnings=0'],
+  ['format:check', 'a .prettierrc nobody runs is a preference, not a convention'],
+  ['audit', 'production dependency advisories at high and above'],
+  ['ci:parity', 'this check; a pipeline that drops it can then drift freely'],
+  ['check:ingress', 'the nginx 503 guard behind mayHaveLandedServerSide — see that predicate'],
+]
+
+function checkFloor(label, path, scripts) {
+  const missing = REQUIRED.filter(([script]) => !scripts.includes(script))
+  if (missing.length === 0) return false
+
+  console.error(`CI gate missing from ${label}:`)
+  for (const [script, why] of missing) console.error(`  npm run ${script} — ${why}`)
+  console.error(`  (${path})`)
+  return true
 }
 
 const standalone = npmScripts(STANDALONE)
+
+// In the split repo there IS no monorepo workflow — `frontend/` is the root there, and the
+// counterpart file simply does not exist. Nothing to COMPARE is not a failure; the same command
+// has to be safe to run in both repository shapes or it cannot live in package.json. The floor
+// still applies to the pipeline that is here, since that is the one gating that repo.
+if (!existsSync(MONOREPO)) {
+  if (checkFloor('frontend/.github/workflows/ci.yml', STANDALONE, standalone)) {
+    console.error('Restore the step; do not remove a gate to make a pipeline pass.')
+    process.exit(1)
+  }
+  console.log('CI parity skipped — no monorepo workflow here (standalone repository shape).')
+  console.log(`Required gates present: ${REQUIRED.map(([script]) => script).join(', ')}`)
+  process.exit(0)
+}
+
 const monorepo = npmScripts(MONOREPO)
+
+const belowFloor = [
+  checkFloor('frontend/.github/workflows/ci.yml', STANDALONE, standalone),
+  checkFloor('.github/workflows/frontend-ci.yml', MONOREPO, monorepo),
+].some(Boolean)
+
+if (belowFloor) {
+  console.error('Restore the step; do not remove a gate to make a pipeline pass.')
+  process.exit(1)
+}
 
 if (standalone.join() !== monorepo.join()) {
   const onlyStandalone = standalone.filter((s) => !monorepo.includes(s))
