@@ -1,0 +1,135 @@
+openapi: 3.0.3
+info:
+  title: List Document Revisions
+  version: 1.0.0
+
+paths:
+  /api/v1/documents/{document_id}/revisions:
+    get:
+      summary: Revision history for the document, keyset-paginated
+      operationId: listDocumentRevisions
+      tags:
+        - documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          description: Clamped to the server cap; out-of-allowlist values are 4xx, never interpolated.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: cursor
+          in: query
+          required: false
+          description: Opaque keyset cursor; stable order under concurrent inserts.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: >
+            One page of revisions, newest first. The list view NEVER returns document
+            content — only metadata. A revision written by an edit is present as soon
+            as that edit's terminal done event is visible. A document created before
+            this story returns a valid EMPTY page. Constant query count per page.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevisionPage'
+        '400':
+          description: limit, cursor or order outside the server allowlist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing, malformed, expired, or non-access Bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: >
+            No document with this id FOR THIS OWNER — byte-identical for absent and
+            foreign; never 403.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error — generic client-safe message only.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token from POST /api/v1/auth/login.
+  schemas:
+    Error:
+      type: object
+      required:
+        - error_code
+        - message
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+    Revision:
+      type: object
+      required:
+        - revision_number
+        - version
+        - source
+        - created_at
+      properties:
+        revision_number:
+          type: integer
+          minimum: 1
+          description: >
+            Per-document, monotonically increasing. History only grows — a restore adds
+            a revision, it never removes one.
+        version:
+          type: integer
+          description: The document version this revision's content became.
+        source:
+          type: string
+          enum: [manual, ai, restore]
+          description: >
+            Server-set. An unrecognized value follows the stated unknown-enum policy —
+            never silently coerced to the first constant.
+        created_at:
+          type: string
+          format: date-time
+        restored_from:
+          type: integer
+          nullable: true
+          description: Present only when source is restore; the revision_number it copied.
+    RevisionPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Revision'
+        next_cursor:
+          type: string
+          nullable: true
+          description: Absent or null on the last page.

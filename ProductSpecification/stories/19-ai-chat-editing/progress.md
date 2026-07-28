@@ -4,8 +4,8 @@
 - [x] interview
 - [x] story
 - [x] mockups
-- [~] api-spec
-- [ ] test-spec
+- [x] api-spec
+- [~] test-spec
 
 <!-- Scenario sections are bootstrapped from the test-spec once `/test-spec` lands.
      Backend/Integration/Security/Load/Infrastructure scenarios go to

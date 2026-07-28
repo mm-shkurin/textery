@@ -1,0 +1,119 @@
+openapi: 3.0.3
+info:
+  title: Get AI Edit State
+  version: 1.0.0
+
+paths:
+  /api/v1/documents/{document_id}/ai-edits/{edit_id}:
+    get:
+      summary: Read one edit's state — polling fallback when SSE is unavailable
+      operationId: getDocumentAiEdit
+      tags:
+        - ai-edits
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: edit_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: >
+            Current state. Terminal states are absorbing — once done, error or
+            cancelled, the value never changes again. This endpoint never returns a
+            non-terminal state older than the edit deadline: an edit with events but no
+            terminal event is driven terminal by the reaper within that deadline.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiEditResponse'
+        '401':
+          description: Missing, malformed, expired, or non-access Bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: >
+            Document absent or foreign, OR edit_id absent or belonging to a different
+            document — including another document of the same owner. Byte-identical
+            body in every case; never 403.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error — generic client-safe message only.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token from POST /api/v1/auth/login.
+  schemas:
+    Error:
+      type: object
+      required:
+        - error_code
+        - message
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+    AiEditResponse:
+      type: object
+      required:
+        - edit_id
+        - status
+        - created_at
+      properties:
+        edit_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, streaming, done, error, cancelled]
+          description: >
+            An unrecognized value follows the stated unknown-enum policy — it is never
+            silently coerced to the first constant. A client treating an unknown
+            terminal kind must treat it as error (unfreeze + retry), never as success.
+        created_at:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          nullable: true
+          description: Present only when status is done; the version the edit produced.
+        revision_number:
+          type: integer
+          nullable: true
+          description: Present only when status is done.
+        changed:
+          type: boolean
+          nullable: true
+          description: Present only when status is done; false when the edit changed nothing.
+        error_code:
+          type: string
+          nullable: true
+          description: Present only when status is error; same stable codes as the SSE error event.
+        last_seq:
+          type: integer
+          description: >
+            Highest event seq written for this edit; a client reconnecting to the stream
+            may pass it as Last-Event-ID.

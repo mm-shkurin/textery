@@ -1,0 +1,183 @@
+openapi: 3.0.3
+info:
+  title: Stream AI Edit Events (SSE)
+  version: 1.0.0
+
+paths:
+  /api/v1/documents/{document_id}/ai-edits/{edit_id}/stream:
+    get:
+      summary: Server-sent events for one edit — chunks, then exactly one terminal event
+      operationId: streamDocumentAiEdit
+      tags:
+        - ai-edits
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: edit_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Last-Event-ID
+          in: header
+          required: false
+          description: >
+            Replay only events with seq greater than this value, in order, with no gap
+            and no duplicate — including after a worker requeue and after the edit has
+            already finished. Unknown, negative or non-integer replays from the start;
+            never a crash. A large tail streams in bounded batches.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: >
+            Event stream opened. Events are read from persisted rows, not from
+            in-memory state, so any instance can serve any edit. Each event carries the
+            SSE `id:` field set to its seq. Chunk text is escaped into SSE framing —
+            text containing "\n\ndata:" or a bare "\r" is delivered as exactly ONE
+            chunk event with the text intact, never a forged terminal event. Chunk
+            boundaries fall on grapheme boundaries.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum: [no-store]
+            X-Accel-Buffering:
+              description: Disables proxy buffering so the first chunk is observable immediately.
+              schema:
+                type: string
+                enum: ['no']
+          content:
+            text/event-stream:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ChunkEvent'
+                  - $ref: '#/components/schemas/DoneEvent'
+                  - $ref: '#/components/schemas/ErrorEvent'
+              examples:
+                chunkThenDone:
+                  summary: Two chunks followed by the single terminal event
+                  value: |
+                    event: chunk
+                    id: 1
+                    data: {"seq":1,"text":"Введение "}
+
+                    event: chunk
+                    id: 2
+                    data: {"seq":2,"text":"сокращено."}
+
+                    event: done
+                    id: 3
+                    data: {"seq":3,"version":8,"revision_number":4,"changed":true}
+        '401':
+          description: Missing, malformed, expired, or non-access Bearer token. Identical body on all six endpoints.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: >
+            Document absent or owned by another account, OR edit_id absent or belonging
+            to a different document — including another document of the SAME owner. The
+            path document id is authoritative. Byte-identical body in every case; never
+            403.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error — generic client-safe message only.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Access token from POST /api/v1/auth/login, sent as a request header. The browser
+        EventSource API cannot set headers, so the client reads this stream with
+        fetch + ReadableStream.
+  schemas:
+    Error:
+      type: object
+      required:
+        - error_code
+        - message
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+    ChunkEvent:
+      description: 'SSE `event: chunk` — a fragment of the new document text.'
+      type: object
+      required:
+        - seq
+        - text
+      properties:
+        seq:
+          type: integer
+          minimum: 1
+          description: >
+            Strictly increasing per edit, allocated per edit and never reused across
+            worker attempts.
+        text:
+          type: string
+          description: >
+            Plain text. The client renders it as text, NOT as HTML — sanitized HTML
+            arrives only with the terminal done event.
+    DoneEvent:
+      description: 'SSE `event: done` — terminal, emitted only AFTER the apply transaction commits.'
+      type: object
+      required:
+        - seq
+        - version
+        - revision_number
+        - changed
+      properties:
+        seq:
+          type: integer
+        version:
+          type: integer
+          description: >
+            The document version produced by the edit. A client issuing GET /documents/{id}
+            on receipt of done observes this version, never an earlier one.
+        revision_number:
+          type: integer
+          description: The revision row written by this edit; present in GET /revisions immediately.
+        changed:
+          type: boolean
+          description: >
+            false when the edit produced no document change (a clarifying reply or a
+            model refusal) — distinguishes "done, unchanged" from "done, changed".
+    ErrorEvent:
+      description: 'SSE `event: error` — terminal. Errors arrive as an event, never as a silent connection drop.'
+      type: object
+      required:
+        - seq
+        - error_code
+      properties:
+        seq:
+          type: integer
+        error_code:
+          type: string
+          description: >
+            Stable code. Distinct values for: version conflict at apply time, result over
+            the content limit, provider connect timeout, provider read timeout, provider
+            4xx, provider 5xx after bounded retry, malformed or empty provider body,
+            mid-stream truncation, edit deadline exceeded.
+        message:
+          type: string
+          description: Client-safe text; seeded sentinels are redacted to a fixed marker.

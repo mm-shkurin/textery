@@ -1,0 +1,136 @@
+openapi: 3.0.3
+info:
+  title: List Document Chat Messages
+  version: 1.0.0
+
+paths:
+  /api/v1/documents/{document_id}/messages:
+    get:
+      summary: Chat history for the document, keyset-paginated
+      operationId: listDocumentMessages
+      tags:
+        - documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          description: >
+            Clamped to the server cap; a value above it is clamped, never unbounded. A
+            non-integer or out-of-allowlist value is a 4xx, never interpolated.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: cursor
+          in: query
+          required: false
+          description: >
+            Opaque keyset cursor from a previous page. Order is stable under concurrent
+            inserts. Offset pagination is not offered.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: >
+            One page of messages, oldest first. Messages persist across sessions and
+            survive an edit that produced no document change. A document created before
+            this story returns a valid EMPTY page, not an error. Constant query count
+            per page — no N+1.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagePage'
+        '400':
+          description: limit, cursor or order outside the server allowlist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing, malformed, expired, or non-access Bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: >
+            No document with this id FOR THIS OWNER — byte-identical for absent and
+            foreign; never 403.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error — generic client-safe message only.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token from POST /api/v1/auth/login.
+  schemas:
+    Error:
+      type: object
+      required:
+        - error_code
+        - message
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+    Message:
+      type: object
+      required:
+        - message_id
+        - role
+        - text
+        - created_at
+      properties:
+        message_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [user, assistant]
+        text:
+          type: string
+          description: >
+            Stored and returned as TEXT, never as HTML — the client must not render it
+            as markup.
+        created_at:
+          type: string
+          format: date-time
+        edit_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: The edit this message belongs to, when it came from an AI edit.
+    MessagePage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        next_cursor:
+          type: string
+          nullable: true
+          description: Absent or null on the last page.

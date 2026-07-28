@@ -1,0 +1,131 @@
+openapi: 3.0.3
+info:
+  title: Restore a Document Revision
+  version: 1.0.0
+
+paths:
+  /api/v1/documents/{document_id}/revisions/{revision_number}/restore:
+    post:
+      summary: Restore revision n as a NEW version; nothing is destroyed
+      operationId: restoreDocumentRevision
+      tags:
+        - documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: revision_number
+          in: path
+          required: true
+          description: >
+            Must be a positive integer belonging to THIS document. A non-integer or an
+            overflowing value is a 404, never a 500.
+          schema:
+            type: integer
+            minimum: 1
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: >
+            Optional. Restore is single-shot regardless: the version CAS makes a
+            double-click create exactly one new version.
+          schema:
+            type: string
+            minLength: 1
+      requestBody:
+        required: false
+        description: >
+          Any body is IGNORED entirely. Content comes only from revision n, and source
+          is server-set to `restore`.
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: >
+            A new version was created whose content equals revision n's content. Applied
+            by the same single-statement CAS against the version that was read (zero
+            rows affected -> 409), so two concurrent restores cannot collide on
+            version+1. Restore-of-a-restore works.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestoreResponse'
+        '401':
+          description: Missing, malformed, expired, or non-access Bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: >
+            Document absent or foreign, OR revision_number unknown, non-integer,
+            overflowing, or belonging to a different document — including another
+            document of the SAME owner. Byte-identical body in every case; never 403.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: >
+            Either an AI edit for this document is currently non-terminal (one active
+            mutation per document), or the version CAS lost to a concurrent save or
+            restore. The client refetches and retries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error — generic client-safe message only.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token from POST /api/v1/auth/login.
+  schemas:
+    Error:
+      type: object
+      required:
+        - error_code
+        - message
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+    RestoreResponse:
+      type: object
+      required:
+        - document_id
+        - version
+        - revision_number
+        - restored_from
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        version:
+          type: integer
+          description: The NEW version; the prior version is untouched and still restorable.
+        revision_number:
+          type: integer
+          description: The new revision row written by this restore.
+        restored_from:
+          type: integer
+          description: The revision_number whose content was copied.
+        updated_at:
+          type: string
+          format: date-time

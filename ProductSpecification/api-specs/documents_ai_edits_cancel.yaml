@@ -1,0 +1,101 @@
+openapi: 3.0.3
+info:
+  title: Cancel an AI Edit
+  version: 1.0.0
+
+paths:
+  /api/v1/documents/{document_id}/ai-edits/{edit_id}/cancel:
+    post:
+      summary: Terminalize a non-terminal edit as cancelled
+      operationId: cancelDocumentAiEdit
+      tags:
+        - ai-edits
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: edit_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: >
+            The edit is now terminal `cancelled`. Cancel and worker completion resolve
+            through a SINGLE CAS on edit status, so exactly one terminal state wins. A
+            cancelled edit never applies content, never writes a revision, never writes
+            an assistant message and never charges quota — an in-flight provider result
+            arriving after this call cannot commit. Quota already charged is refunded,
+            idempotently per edit_id. Already-written chunk event rows stay committed
+            and replayable; the stream still receives exactly one terminal event.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiEditCancelledResponse'
+        '401':
+          description: Missing, malformed, expired, or non-access Bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: >
+            Document absent or foreign, OR edit_id absent or belonging to a different
+            document. Byte-identical body in every case; never 403.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: >
+            The edit is already terminal (done, error or an earlier cancel). Terminal
+            states are absorbing: the request is rejected with NO mutation and NO side
+            effect — no second refund, no illegal edge such as done -> cancelled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error — generic client-safe message only.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token from POST /api/v1/auth/login.
+  schemas:
+    Error:
+      type: object
+      required:
+        - error_code
+        - message
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+    AiEditCancelledResponse:
+      type: object
+      required:
+        - edit_id
+        - status
+      properties:
+        edit_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [cancelled]
