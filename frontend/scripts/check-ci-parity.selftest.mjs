@@ -7,12 +7,12 @@
 //
 // Cases are driven against FIXTURE workflows written to a temp dir, so the real ones are never
 // touched, and generated from REQUIRED itself so a gate cannot be added without a case.
-import { execFileSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { REQUIRED } from './ciRequiredGates.mjs'
+import { check, checkVerdict, countCase, reportAndExit, runNodeScript } from './selftestRunner.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const CHECK = resolve(here, 'check-ci-parity.mjs')
@@ -38,33 +38,27 @@ function run({ standalone = ALL, monorepo = ALL, pkg = packageJson(), raw = {} }
   if (monorepo !== null) writeFileSync(paths.monorepo, raw.monorepo ?? workflow(monorepo))
   writeFileSync(paths.pkg, pkg)
 
-  const flags = [`--standalone=${paths.standalone}`, `--monorepo=${paths.monorepo}`, `--package=${paths.pkg}`]
-  try {
-    const stdout = execFileSync(process.execPath, [CHECK, ...flags], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
-    return { code: 0, output: stdout, dir }
-  } catch (error) {
-    return { code: error.status, output: `${error.stdout ?? ''}${error.stderr ?? ''}`, dir }
-  }
+  const flags = [
+    `--standalone=${paths.standalone}`,
+    `--monorepo=${paths.monorepo}`,
+    `--package=${paths.pkg}`,
+  ]
+  return { dir, result: runNodeScript(CHECK, flags) }
 }
-
-const failures = []
-let casesRun = 0
 
 function expect({ what, code, quotes = [], ...setup }) {
-  casesRun += 1
-  const result = run(setup)
-  if (result.code !== code) {
-    failures.push(`  ${what}\n     expected exit ${code}, got ${result.code}. Output:\n${result.output}`)
-  }
-  for (const quote of quotes) {
-    if (!result.output.includes(quote)) {
-      failures.push(`  ${what} — quotes ${JSON.stringify(quote)}\n     absent from:\n${result.output}`)
-    }
-  }
-  rmSync(result.dir, { recursive: true, force: true })
+  const { dir, result } = run(setup)
+  checkVerdict({ what, result, code, quotes })
+  rmSync(dir, { recursive: true, force: true })
 }
 
-expect({ what: 'two complete, identical pipelines pass', code: 0 })
+expect({
+  what: 'two complete, identical pipelines pass',
+  code: 0,
+  // Pinned to the comparison branch's own line: exit 0 alone cannot tell a real pass from the
+  // no-workflows-here SKIP, which also exits 0 and also reads as success in a log.
+  quotes: ['CI parity OK — both pipelines run'],
+})
 
 // The floor's whole reason for existing: removing a gate from BOTH files keeps the sameness
 // comparison green, so only a named list can notice. One case per gate, generated from the list.
@@ -122,21 +116,76 @@ expect({
 // Both repository shapes that legitimately have one file, plus the one that has neither.
 expect({ what: 'the split-repo shape skips the comparison but keeps the floor', monorepo: null, code: 0, quotes: ['Required gates present'] })
 expect({ what: 'the split-repo shape still fails below the floor', monorepo: null, standalone: ALL.filter((s) => s !== 'lint'), code: 1, quotes: ['npm run lint'] })
-expect({ what: 'a monorepo workflow with no standalone copy fails', standalone: null, code: 1, quotes: ['is not'] })
+expect({
+  what: 'a monorepo workflow with no standalone copy fails',
+  standalone: null,
+  code: 1,
+  quotes: ['The standalone copy is what gates the split repo'],
+})
 expect({ what: 'neither workflow present is a clean skip', standalone: null, monorepo: null, code: 0, quotes: ['no frontend workflow here at all'] })
+
+// Conditioning the whole JOB is cheaper than conditioning eight steps and reads as ordinary
+// workflow hygiene. It also lives above the first `- `, where step chunking cannot see it.
+expect({
+  what: 'a job-level `if:` counts every gate under it as missing',
+  raw: { monorepo: `jobs:
+  gate:
+    if: false
+    steps:
+${ALL.map(step).join('')}` },
+  code: 1,
+  quotes: ['present but behind'],
+})
+
+// The mirror image, and the more likely one: the real monorepo file is TWO jobs, and the second is
+// exactly where `if: github.event_name == 'push'` gets written. Chunking that swallowed the next
+// job's keys into the previous job's last step made a gate nobody touched read as neutralized, and
+// CI hard-failed pointing at it — a false positive is how a gate gets deleted.
+expect({
+  what: "a SECOND job's `if:` leaves the first job's gates active",
+  raw: {
+    monorepo: `jobs:
+  gate:
+    steps:
+${ALL.map(step).join('')}  docker:
+    if: github.event_name == 'push'
+    needs: gate
+    steps:
+      - run: docker build .
+`,
+  },
+  code: 0,
+})
 
 // Generating from REQUIRED means an entry cannot exist without a case — and deleting an entry
 // deletes its case too, so the list is pinned by name as well.
-if (ALL.join() !== 'typecheck,test:coverage,build,lint,format:check,audit,ci:parity,check:ingress') {
-  failures.push(`  the required-gate list changed to: ${ALL.join()}`)
-}
+check(
+  'the required-gate list still names every gate',
+  ALL.join() === 'typecheck,test:coverage,build,lint,format:check,audit,ci:parity,check:ingress',
+  `the list changed to: ${ALL.join()}`,
+)
 
-if (failures.length > 0) {
-  console.error('CI parity self-test: the parity check does not behave as its callers assume.')
-  console.error(failures.join('\n'))
-  console.error('Fix check-ci-parity.mjs — do not relax these cases to make this pass.')
-  process.exit(1)
-}
+// The default path resolution, with no flags at all — the one CI actually takes. Every case above
+// overrides all three paths, so the `resolve(here, '../..')` the real run depends on is otherwise
+// never executed. It is the worst of the three motivating mutations to leave unpinned: a typo'd
+// default lands in the «no frontend workflow here at all» branch, which prints a plausible success
+// line and exits 0 forever, in exactly the repository shape this check is supposed to gate.
+countCase()
+const bare = runNodeScript(CHECK, [])
+const monorepoHere = existsSync(resolve(here, '../../.github/workflows/frontend-ci.yml'))
+const expected = monorepoHere ? 'CI parity OK — both pipelines run' : 'Required gates present'
+check(
+  'with no flags the check reads the real pipelines rather than skipping',
+  bare.code === 0 && bare.output.includes(expected),
+  `expected exit 0 mentioning ${JSON.stringify(expected)}, got ${bare.code}:
+${bare.output}`,
+)
 
-console.log(`CI parity self-test OK — ${casesRun} cases: one per required gate, plus if:/`)
-console.log('continue-on-error neutering, package.json hollowing, drift, and all three shapes.')
+reportAndExit({
+  subject: 'CI parity',
+  subjectIs: 'the parity check',
+  script: 'check-ci-parity.mjs',
+  tail:
+    'one per required gate, plus step- and job-level neutering, package.json hollowing,\n' +
+    'drift, all three repository shapes, and the real pipelines with no flags.',
+})

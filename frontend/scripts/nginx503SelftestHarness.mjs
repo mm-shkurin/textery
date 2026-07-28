@@ -1,12 +1,14 @@
-// The scaffolding behind check-nginx-503.selftest.mjs: how a fixture conf is built, how the guard is
-// invoked, how a verdict is recorded. Split out so the self-test file itself is nothing but its
-// cases — the cases are the part a reader has to audit, and they were being read past a screen of
-// temp-dir and child-process plumbing.
-import { execFileSync } from 'node:child_process'
+// The scaffolding behind check-nginx-503.selftest.mjs: how a fixture conf is built and how the guard
+// is invoked. Split out so the self-test file itself is nothing but its cases — the cases are the
+// part a reader has to audit, and they were being read past a screen of temp-dir plumbing.
+//
+// Judging a run (exit code + quoted offender) is not here; that is the same in both gate self-tests
+// and lives in selftestRunner.mjs.
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
+import { checkVerdict, runNodeScript } from './selftestRunner.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const GUARD = resolve(here, 'check-nginx-503.mjs')
@@ -37,15 +39,7 @@ export function runGuard({ dir, marker = MONOREPO_MARKER } = {}) {
     ...(dir === undefined ? [] : [`--dir=${dir}`]),
     ...(marker ? [`--monorepo-marker=${marker}`] : []),
   ]
-  try {
-    const stdout = execFileSync(process.execPath, [GUARD, ...flags], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    })
-    return { code: 0, output: stdout }
-  } catch (error) {
-    return { code: error.status, output: `${error.stdout ?? ''}${error.stderr ?? ''}` }
-  }
+  return runNodeScript(GUARD, flags)
 }
 
 function fixtureDir(confs) {
@@ -54,48 +48,14 @@ function fixtureDir(confs) {
   return dir
 }
 
-const failures = []
-let casesRun = 0
-
-export function check(what, condition, detail) {
-  if (condition) return
-  failures.push(`  ${what}\n     ${detail}`)
-}
-
-export function countCase() {
-  casesRun += 1
-}
-
 // `confs: null` means the directory itself is absent — a path under a temp parent that does exist,
 // which is what MOVED confs look like, as opposed to a repository that never had any.
 export function expectVerdict({ what, confs, code, quotes = [], marker = MONOREPO_MARKER }) {
-  countCase()
   const missing = confs === null
   const parent = missing ? mkdtempSync(join(tmpdir(), 'nginx-503-gone-')) : null
   const dir = missing ? join(parent, 'moved') : fixtureDir(confs)
-  const result = runGuard({ dir, marker })
 
-  check(what, result.code === code, `expected exit ${code}, got ${result.code}. Output:\n${result.output}`)
-  for (const quote of quotes) {
-    check(
-      `${what} — quotes ${JSON.stringify(quote)}`,
-      result.output.includes(quote),
-      `that string is absent from the guard's output:\n${result.output}`,
-    )
-  }
+  checkVerdict({ what, result: runGuard({ dir, marker }), code, quotes })
 
   rmSync(parent ?? dir, { recursive: true, force: true })
-}
-
-// Counted, never hardcoded: a printed constant is how this suite would acquire the disease it was
-// written to cure — a case deleted while debugging, and a PASS line that reads identically.
-export function reportAndExit(tail) {
-  if (failures.length > 0) {
-    console.error('nginx 503 guard self-test: the guard does not behave as its callers assume.')
-    console.error(failures.join('\n'))
-    console.error('Fix check-nginx-503.mjs — do not relax these cases to make this pass.')
-    process.exit(1)
-  }
-
-  console.log(`nginx 503 guard self-test OK — ${casesRun} cases: ${tail}`)
 }

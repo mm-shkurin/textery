@@ -25,8 +25,9 @@ const here = dirname(fileURLToPath(import.meta.url))
 // `env:` block would silently redirect the production scan and print the same reassuring OK line,
 // whereas a flag has to be typed into the step that runs it, where a reader sees it.
 function flag(name, fallback) {
-  const match = process.argv.slice(2).find((arg) => arg.startsWith(`--${name}=`))
-  return match ? resolve(match.slice(name.length + 3)) : fallback
+  const prefix = `--${name}=`
+  const match = process.argv.slice(2).find((arg) => arg.startsWith(prefix))
+  return match ? resolve(match.slice(prefix.length)) : fallback
 }
 
 const NGINX_DIR = flag('dir', resolve(here, '../../infra/docker/nginx'))

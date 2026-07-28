@@ -20,13 +20,11 @@ import {
   BACK_REFERENCE,
   CLEAN_CONF,
   REAL_MONOREPO_MARKER,
-  check,
   confDeclaring,
-  countCase,
   expectVerdict,
-  reportAndExit,
   runGuard,
 } from './nginx503SelftestHarness.mjs'
+import { check, countCase, reportAndExit } from './selftestRunner.mjs'
 
 // A conf that proxies to the origin and can answer nothing itself: the only shape that may pass.
 expectVerdict({ what: 'a clean conf passes', confs: { 'frontend.conf': CLEAN_CONF }, code: 0 })
@@ -162,8 +160,12 @@ check(
 ${real.output}`,
 )
 
-reportAndExit(
-  'one per scanned directive plus each benign near-miss, the clean conf, comments, the\n' +
+reportAndExit({
+  subject: 'nginx 503 guard',
+  subjectIs: 'the guard',
+  script: 'check-nginx-503.mjs',
+  tail:
+    'one per scanned directive plus each benign near-miss, the clean conf, comments, the\n' +
     'back-reference, a second conf, an empty directory, a moved directory, the split-repo skip,\n' +
     'and the real ingress with no flags.',
-)
+})

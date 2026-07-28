@@ -8,16 +8,63 @@
 // its own block neutralizes it, and the script bodies are checked separately.
 import { readFileSync } from 'node:fs'
 
-// A step begins at a `- ` list item and runs to the next one. Splitting this way keeps `if:` and
-// `continue-on-error:` attached to the step they modify — a whole-file scan cannot tell whose they
-// are, and that is exactly the distinction being made.
+// A step begins at a `- ` list item and runs to the next one, so `if:` and `continue-on-error:`
+// stay attached to the step they modify — a whole-file scan cannot tell whose they are, and that is
+// exactly the distinction being made. A step ends where the indentation stops being deeper than the `- ` that opened it. Without that
+// bound, the NEXT JOB's keys are swallowed into the previous job's last step: a second job carrying
+// the idiomatic `if: github.event_name == 'push'` made the first job's final gate read as
+// neutralized, and CI hard-failed pointing at a step nobody had touched.
 function steps(contents) {
   const chunks = []
+  let depth = null
+
   for (const line of contents.split('\n')) {
-    if (/^\s*-\s/.test(line)) chunks.push([line])
-    else if (chunks.length > 0) chunks[chunks.length - 1].push(line)
+    const indent = line.search(/\S/)
+    if (indent === -1) continue
+
+    if (/^\s*-\s/.test(line)) {
+      chunks.push({ lines: [line], depth: indent })
+      depth = indent
+    } else if (depth !== null && indent > depth) {
+      chunks[chunks.length - 1].lines.push(line)
+    } else {
+      depth = null
+    }
   }
-  return chunks.map((chunk) => chunk.join('\n'))
+
+  return chunks.map((chunk) => chunk.lines.join('\n'))
+}
+
+// A job-level `if:` or `continue-on-error:` neutralizes every step under it, and lives ABOVE the
+// first `- `, where step chunking cannot see it. Conditioning the whole job is cheaper than
+// conditioning eight steps and reads as ordinary workflow hygiene, which is exactly why it needs
+// saying. Attribution matters as much as detection: a SECOND job carrying the idiomatic
+// `if: github.event_name == 'push'` must not neutralize the first job's gates.
+//
+// Jobs are found by indentation rather than parsed: under `jobs:`, each key at the shallowest depth
+// opens one, and that job's own keys sit between there and its steps.
+function jobs(contents) {
+  const lines = contents.split('\n')
+  const jobsAt = lines.findIndex((line) => /^\s*jobs:\s*$/.test(line))
+  if (jobsAt === -1) return [{ header: '', body: contents }]
+
+  const body = lines.slice(jobsAt + 1).filter((line) => line.search(/\S/) !== -1)
+  const jobDepth = body.length > 0 ? body[0].search(/\S/) : 0
+  const found = []
+
+  for (const line of body) {
+    const indent = line.search(/\S/)
+    if (indent === jobDepth && /^\s*[\w-]+:\s*$/.test(line)) {
+      found.push({ header: [], steps: [] })
+      continue
+    }
+    if (found.length === 0) continue
+    const job = found[found.length - 1]
+    if (job.steps.length > 0 || /^\s*-\s/.test(line)) job.steps.push(line)
+    else job.header.push(line)
+  }
+
+  return found.map(({ header, steps }) => ({ header: header.join('\n'), body: steps.join('\n') }))
 }
 
 // `npm ci` and the docker build are setup and packaging, not quality gates, and the docker job
@@ -38,11 +85,14 @@ export function scanPipeline(path) {
   const active = []
   const neutralized = []
 
-  for (const step of steps(contents)) {
-    const match = step.match(RUNS_NPM_SCRIPT)
-    if (!match) continue
-    if (NEUTRALIZED.test(step)) neutralized.push(match[1])
-    else active.push(match[1])
+  for (const job of jobs(contents)) {
+    const jobIsDead = NEUTRALIZED.test(`\n${job.header}`)
+    for (const step of steps(job.body)) {
+      const match = step.match(RUNS_NPM_SCRIPT)
+      if (!match) continue
+      if (jobIsDead || NEUTRALIZED.test(step)) neutralized.push(match[1])
+      else active.push(match[1])
+    }
   }
 
   return { active: active.sort(), neutralized: neutralized.sort() }
