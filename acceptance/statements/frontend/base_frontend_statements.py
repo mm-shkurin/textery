@@ -63,6 +63,17 @@ class BaseFrontendStatements(FormAssertionsMixin):
         assert actual == expected, f"expected {label} to be '{expected}', got '{actual}'"
         return element
 
+    def _assert_not_visible(self, driver: WebDriver, locator: tuple[str, str], message: str) -> None:
+        """Wait until `locator` is absent or hidden, failing with `message` if it stays up.
+
+        The absence assertion was written out identically in four Statements classes, differing
+        only in locator and wording; centralising it keeps the timeout and the condition
+        (`invisibility_of_element_located`, which is satisfied by absent OR hidden) in one place.
+        """
+        WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(
+            ec.invisibility_of_element_located(locator), message
+        )
+
     # Auth-session storage keys (frontend/src/features/auth/utils/authSession.ts). The frontend
     # gates the whole type -> mode -> editor/workspace flow behind a session (Story 7, added
     # 2026-07-16): an unauthenticated CTA routes to /register, so without this the type card

@@ -3,10 +3,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.support import expected_conditions as ec
-from selenium.webdriver.support.wait import WebDriverWait
 
-from statements.frontend.base_frontend_statements import BaseFrontendStatements, WAIT_TIMEOUT_SECONDS
+from statements.frontend.base_frontend_statements import BaseFrontendStatements
 from statements.frontend.generation.mode_modal_statements import MODE_CARD_MANUAL, MODE_MODAL
 
 MANUAL_EDITOR_SELECTOR = "[data-testid='manual-editor']"
@@ -57,8 +55,8 @@ class ManualEditorStatements(BaseFrontendStatements):
         self._wait_for_visible(driver, MODE_CARD_MANUAL).click()
 
     def assert_mode_modal_is_closed(self, driver: WebDriver) -> None:
-        WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(
-            ec.invisibility_of_element_located(MODE_MODAL)
+        self._assert_not_visible(
+            driver, MODE_MODAL, "expected the mode-select modal to close, but it was still shown"
         )
 
     def assert_manual_editor_is_open_for_doklad(self, driver: WebDriver) -> None:

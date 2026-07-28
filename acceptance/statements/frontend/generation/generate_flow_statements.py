@@ -1,12 +1,16 @@
+from uuid import UUID
+
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.support import expected_conditions as ec
-from selenium.webdriver.support.wait import WebDriverWait
 
-from statements.frontend.base_frontend_statements import BaseFrontendStatements, WAIT_TIMEOUT_SECONDS
+from statements.frontend.base_frontend_statements import BaseFrontendStatements
 from statements.frontend.generation.composer_assertions import ComposerAssertionsMixin
-from statements.frontend.generation.composer_locators import TOPIC_INPUT, TOPIC_SEND_BUTTON
+from statements.frontend.generation.generation_flow_actions import (
+    CHAT_PANEL,
+    GENERATIONS_PATH,
+    GenerationFlowActionsMixin,
+)
 from statements.frontend.generation.mode_modal_statements import MODE_MODAL
 
 # Story 18 unifies the create flow: picking a document type no longer opens a mode-select
@@ -16,12 +20,6 @@ from statements.frontend.generation.mode_modal_statements import MODE_MODAL
 # until the user supplies one (an empty-topic POST is a backend 422). Confirmed against
 # story 01's own mockup 04, which has always put topic entry after the type pick.
 GENERATION_BREADCRUMB = (By.CSS_SELECTOR, "[data-testid='generation-breadcrumb']")
-GENERATIONS_PATH = "/api/v1/generations"
-
-# The workspace shell — rendered by ChatWorkspace for EVERY generation state, unlike the
-# breadcrumb (idle only) or the composer. That makes it the honest "did we leave the landing"
-# probe: if these are absent, the flow never reached the workspace at all.
-CHAT_PANEL = (By.CSS_SELECTOR, "[data-testid='chat-panel']")
 
 # The frontend mints one Idempotency-Key per logical create (generationApi.createGeneration),
 # and authorizedRequest replays the request VERBATIM — same key — on a 401. So a token expiry
@@ -43,20 +41,23 @@ EXPECTED_VOLUME_PAGES = 5
 EXPECTED_BREADCRUMB_TYPE_LABEL = "Доклад"
 
 
-class GenerateFlowStatements(ComposerAssertionsMixin, BaseFrontendStatements):
+def _is_uuid(value: str) -> bool:
+    try:
+        UUID(value)
+    except ValueError:
+        return False
+    return True
+
+
+class GenerateFlowStatements(
+    GenerationFlowActionsMixin, ComposerAssertionsMixin, BaseFrontendStatements
+):
     """Selenium DSL for the unified create flow (story 18, scenario 1.1).
 
     Picking a document type must land directly on the generation composer, with the
     story-5-era mode-select modal removed from the path entirely, and sending a topic
     must start exactly one generation carrying that topic and the picked type.
     """
-
-    def pick_document_type_for_doklad(self, driver: WebDriver, app_url: str) -> None:
-        # navigate_to_doklad_type_modal is the shared "click the CTA, then pick the doklad
-        # type card" entry point — exactly the spec's "When they pick a document type". A live
-        # session is required because the surface it lands on calls the API, which the backend
-        # answers with 401 for a seeded token (collapsing the flow back to the landing).
-        self.navigate_to_doklad_type_modal(driver, app_url, live_session=True)
 
     def assert_reached_generation_workspace(self, driver: WebDriver) -> None:
         """Precondition: the type pick left the landing and mounted the workspace at all.
@@ -100,29 +101,6 @@ class GenerateFlowStatements(ComposerAssertionsMixin, BaseFrontendStatements):
             "not from the document-type click"
         )
 
-    def send_topic(self, driver: WebDriver, topic: str) -> None:
-        """Type the topic and send it, then confirm the click was actually accepted.
-
-        The send button is `disabled={!topic.trim()}` and Chrome discards a click on a
-        disabled element SILENTLY — no exception. Waiting on visibility alone would let any
-        lag before React's controlled re-render produce a test that typed a topic, clicked
-        nothing, and failed a second later on a request count of zero. So the click waits for
-        clickability, and afterwards we pin that the UI left the idle branch: ChatWorkspace
-        swaps Composer for Progress the moment a generation exists, so a still-present topic
-        input means the submit never took — distinguishing a swallowed click from a genuinely
-        broken submit handler.
-        """
-        self._wait_for_visible(driver, TOPIC_INPUT).send_keys(topic)
-        WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(
-            ec.element_to_be_clickable(TOPIC_SEND_BUTTON),
-            "expected the send button to become enabled once a topic was typed, but it stayed disabled",
-        ).click()
-        WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(
-            ec.invisibility_of_element_located(TOPIC_INPUT),
-            "expected sending a topic to replace the composer with the generation progress view, "
-            "but the topic input is still shown — the send did not start a run",
-        )
-
     def assert_generation_surface_shown(self, driver: WebDriver) -> None:
         """The picked type is confirmed on screen and the composer is ready for a topic.
 
@@ -143,9 +121,8 @@ class GenerateFlowStatements(ComposerAssertionsMixin, BaseFrontendStatements):
         self._assert_send_button_idle(driver)
 
     def assert_no_mode_modal_shown(self, driver: WebDriver) -> None:
-        WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(
-            ec.invisibility_of_element_located(MODE_MODAL),
-            "expected no mode-select modal after picking a type, but it was shown",
+        self._assert_not_visible(
+            driver, MODE_MODAL, "expected no mode-select modal after picking a type, but it was shown"
         )
 
     def assert_exactly_one_generation_started(self, driver: WebDriver, topic: str) -> None:
@@ -169,9 +146,14 @@ class GenerateFlowStatements(ComposerAssertionsMixin, BaseFrontendStatements):
         requests = self._matching_requests_to(driver, GENERATIONS_PATH)
 
         keys = [self._request_header(request, IDEMPOTENCY_KEY_HEADER) for request in requests]
-        assert None not in keys, (
-            f"expected every POST {GENERATIONS_PATH} to carry an {IDEMPOTENCY_KEY_HEADER} header "
-            f"so a 401 replay collapses server-side, got keys {keys}"
+        # The key's VALUE is opaque (crypto.randomUUID inside createGeneration, never surfaced),
+        # but its format is not: the distinct-key count below is only a meaningful measure of
+        # "how many generations were started" if every key is a real minted UUID. A header of ""
+        # or a constant placeholder would pass a presence check and silently collapse two genuine
+        # creates into one — the exact under-count that would hide a double-billing regression.
+        assert all(key is not None and _is_uuid(key) for key in keys), (
+            f"expected every POST {GENERATIONS_PATH} to carry a UUID {IDEMPOTENCY_KEY_HEADER} "
+            f"header so a 401 replay collapses server-side, got keys {keys}"
         )
 
         distinct_keys = set(keys)

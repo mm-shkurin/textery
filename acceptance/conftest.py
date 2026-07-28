@@ -18,6 +18,7 @@ from statements.frontend.auth.verify_code_page_statements import VerifyCodePageS
 from statements.frontend.landing_page_statements import LandingPageStatements
 from statements.frontend.generation.chat_workspace_statements import ChatWorkspaceStatements
 from statements.frontend.generation.generate_flow_statements import GenerateFlowStatements
+from statements.frontend.generation.generating_state_statements import GeneratingStateStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
 from statements.generation_statements import GenerationStatements
 from statements.login_statements import LoginStatements
@@ -165,4 +166,9 @@ def chat_workspace_statements():
 @pytest.fixture
 def generate_flow_statements():
     return GenerateFlowStatements()
+
+
+@pytest.fixture
+def generating_state_statements():
+    return GeneratingStateStatements()
 

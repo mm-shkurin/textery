@@ -1,10 +1,8 @@
-from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 
 from statements.frontend.base_frontend_statements import BaseFrontendStatements
 from statements.frontend.generation.composer_assertions import ComposerAssertionsMixin
-
-CHAT_PANEL = (By.CSS_SELECTOR, "[data-testid='chat-panel']")
+from statements.frontend.generation.generation_flow_actions import CHAT_PANEL
 
 
 class ChatWorkspaceStatements(ComposerAssertionsMixin, BaseFrontendStatements):

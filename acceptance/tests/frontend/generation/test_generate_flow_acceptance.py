@@ -34,4 +34,5 @@ class TestGenerateFlowAcceptance(AbstractFrontendTest):
 
         generate_flow_statements.send_topic(webdriver, self.TOPIC)
 
+        generate_flow_statements.assert_send_started_a_run(webdriver)
         generate_flow_statements.assert_exactly_one_generation_started(webdriver, self.TOPIC)
