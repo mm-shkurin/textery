@@ -49,24 +49,15 @@ class DocumentStorageStatements:
         return await self._storage.find_by_idempotency_key(owner_id, key)
 
     async def save_content_if_version_matches(
-        self, document_id: UUID, owner_id: UUID, content: str, expected_version: int
-    ) -> Document | None:
-        return await self._storage.save_content_if_version_matches(
-            document_id=document_id,
-            owner_id=owner_id,
-            content=content,
-            expected_version=expected_version,
-            updated_at=datetime.now(UTC),
-        )
-
-    async def save_content_with_title(
         self,
         document_id: UUID,
         owner_id: UUID,
         content: str,
         expected_version: int,
-        title: str,
+        title: str | None = None,
     ) -> Document | None:
+        # One adapter method, one DSL method. `title=None` is the content-only
+        # autosave path (title omitted from the SET list, never wiped to NULL).
         return await self._storage.save_content_if_version_matches(
             document_id=document_id,
             owner_id=owner_id,
@@ -92,20 +83,44 @@ class DocumentStorageStatements:
 
     def assert_documents_match(self, actual: Document | None, expected: Document) -> None:
         assert actual is not None, "expected a document, got None"
+        # Every persisted field, so a column that silently fails to round-trip
+        # (as `title` did before it was listed here) cannot hide behind a subset.
         assert (
             actual.id,
             actual.owner_id,
             actual.document_type,
             actual.status,
+            actual.title,
             actual.content,
             actual.version,
             actual.idempotency_key,
+            actual.created_at,
+            actual.updated_at,
         ) == (
             expected.id,
             expected.owner_id,
             expected.document_type,
             expected.status,
+            expected.title,
             expected.content,
             expected.version,
             expected.idempotency_key,
+            expected.created_at,
+            expected.updated_at,
         ), f"stored document does not match: {actual.__dict__} != {expected.__dict__}"
+
+    def assert_stored_state(
+        self, actual: Document | None, *, title: str | None, content: str, version: int
+    ) -> None:
+        """Assert the full post-CAS state, not just the field under test.
+
+        A title assertion alone is satisfiable by a save that wrote the title but
+        dropped the content, and -- on the preserve-on-omit path -- by a CAS that
+        matched zero rows and did nothing at all. Pinning the version is what makes
+        "the save actually happened" observable.
+        """
+        assert actual is not None, "expected a stored document, got None"
+        assert (actual.title, actual.content, actual.version) == (title, content, version), (
+            f"stored state does not match: title={actual.title!r} content={actual.content!r} "
+            f"version={actual.version} != title={title!r} content={content!r} version={version}"
+        )

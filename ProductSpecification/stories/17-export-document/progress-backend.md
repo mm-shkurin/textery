@@ -848,7 +848,33 @@ filename & encoding → safety (SSRF, deadline, disclosure).
     the acceptance tree is outside type-check scope. Concretely `self._reread_after_blank_save = None`
     was left unannotated where its sibling one line above is `str | None`; under a checker the
     inferred `None` would reject the later DTO assignment.
-- [~] red-adapter db (padded title round-trip) — INSERTED by the premortem over `f0e6e7d` (CREDIBLE,
+- [x] red-adapter db (padded title round-trip) — ALREADY-GREEN regression guard confirmed live
+  against real Postgres (localhost:5432): predicted PASS, got PASS, first run. 55 passed / 0 failed /
+  0 skipped; the new test genuinely RAN (`-rs`: 3 collected, 3 passed, 0 skipped). mypy clean.
+  `test_should_round_trip_a_padded_title_byte_identically` saves `" Отчёт "` through the version-CAS
+  writer and asserts it reads back byte-identical after `expire_identity_map()` — the seam matters:
+  the session is `expire_on_commit=False` and the CAS `RETURNING` caches the row in the identity map,
+  so without a genuine SELECT re-hydration the assertion reads off the cached instance and the guard
+  is vacuous. No live bug — today's mapper passes `title` through unchanged; the value is that the
+  third door is CLOSED BEFORE green is written.
+  NON-VACUITY PROVEN BY MUTATION: test-review mutated `DocumentModel.to_domain` to
+  `title=self.title.strip()` → 1 failed, 2 passed. Only the padded test died, confirming both that
+  the guard bites AND the premise that it is the only test in the repo that can observe a mapper
+  strip. Mutation reverted (`git diff` over src/domain/usecase empty).
+  ⚠️ ASYMMETRY, recorded rather than papered over: a `.strip()` in `from_domain` would NOT be caught.
+  The title on this path is written by the CAS `update().values(...)` dict, which never routes
+  through `from_domain` — only the READ side is pinned. The docstring's claim to cover both
+  overstated by half and was narrowed.
+  test-review: 7 findings fixed. THE REAL ONE — `test_should_preserve_an_existing_title_on_a_content_only_save`
+  was satisfiable BY DOING NOTHING: it asserted only `title == "Привет"` after a second content-only
+  CAS, but an unchanged title is exactly what a CAS matching ZERO rows leaves behind. It now pins
+  `version=3` and the new content, so "the save actually happened" is observable. Also: all three
+  tests checked `title` while `content` and `version` — written by the same CAS call — went
+  unverified (new `assert_stored_state`); the shared `assert_documents_match` omitted `title`,
+  `created_at` and `updated_at`, so it could not have caught a title corruption (now all 10 persisted
+  fields); and `save_content_with_title` was byte-identical to `save_content_if_version_matches` plus
+  one kwarg, inventing a storage operation that does not exist — collapsed into the real one.
+  ORIGINAL RATIONALE — INSERTED by the premortem over `f0e6e7d` (CREDIBLE,
   and the reason it is a STEP rather than a note): the previous guard closed the two placements a
   green reaches for first — in-place mutation in `ExportDocument`, and `Document.__init__` — and
   left the third open. Squeezing two of three doors shut ROUTES the green toward the survivor:
@@ -866,7 +892,7 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   against real Postgres. It was previously recorded only as an OPTIONAL branch ("and/or") of an
   obligation whose other branch is already satisfied, so it read as discharged; and green may not
   write tests, so without this step green runs with the path open.
-- [ ] green-usecase — also FIX the Sc 3.2 acceptance Test 2 (review obligation 4): the blank save
+- [~] green-usecase — also FIX the Sc 3.2 acceptance Test 2 (review obligation 4): the blank save
   resubmits the SAME `DOCUMENT_CONTENT` and only checks `status_code == 200`, so a green that
   rejects or short-circuits the whole blank-title save — losing the content update — passes
   identically. Send distinct content on the blank save and assert it persisted (or that the version

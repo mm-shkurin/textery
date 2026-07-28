@@ -1,17 +1,18 @@
 class TestTitlePersistence:
-    """Scenario 3.1: a saved title round-trips through storage.
+    """Title persistence through storage (Scenarios 3.1 and 3.2).
 
     Write-here-read-there: the title is persisted through the version-CAS save
     path (`save_content_if_version_matches`) and read back through the export/get
     read path (`find_by_id_and_owner`). Pins the shared additive `documents.title`
-    column so the export filename can later be derived from it.
+    column so the export filename can later be derived from it. 3.1 covers the
+    round-trip and preserve-on-omit; 3.2 covers verbatim storage (no mapper strip).
     """
 
     async def test_should_round_trip_a_saved_title(self, document_storage_statements):
         owner_id = await document_storage_statements.given_an_account()
         document = await document_storage_statements.given_a_saved_document(owner_id)
 
-        await document_storage_statements.save_content_with_title(
+        await document_storage_statements.save_content_if_version_matches(
             document.id, owner_id, "<p>текст</p>", expected_version=1, title="Привет"
         )
         await document_storage_statements.commit()
@@ -20,8 +21,9 @@ class TestTitlePersistence:
         document_storage_statements.expire_identity_map()
 
         fetched = await document_storage_statements.find_by_id_and_owner(document.id, owner_id)
-        assert fetched is not None, "the saved document must read back"
-        assert fetched.title == "Привет", "the saved title must survive the round-trip"
+        document_storage_statements.assert_stored_state(
+            fetched, title="Привет", content="<p>текст</p>", version=2
+        )
 
     async def test_should_preserve_an_existing_title_on_a_content_only_save(
         self, document_storage_statements
@@ -33,7 +35,7 @@ class TestTitlePersistence:
         owner_id = await document_storage_statements.given_an_account()
         document = await document_storage_statements.given_a_saved_document(owner_id)
 
-        await document_storage_statements.save_content_with_title(
+        await document_storage_statements.save_content_if_version_matches(
             document.id, owner_id, "<p>первый</p>", expected_version=1, title="Привет"
         )
         await document_storage_statements.commit()
@@ -44,8 +46,32 @@ class TestTitlePersistence:
         await document_storage_statements.commit()
         document_storage_statements.expire_identity_map()
 
+        # Content and version are asserted alongside the title on purpose: an
+        # unchanged title is also what a CAS that matched ZERO rows leaves behind,
+        # so without version=3 this guard would be satisfiable by doing nothing.
         fetched = await document_storage_statements.find_by_id_and_owner(document.id, owner_id)
-        assert fetched is not None, "the document must read back"
-        assert fetched.title == "Привет", (
-            "a content-only save must not wipe the previously saved title"
+        document_storage_statements.assert_stored_state(
+            fetched, title="Привет", content="<p>второй</p>", version=3
+        )
+
+    async def test_should_round_trip_a_padded_title_byte_identically(
+        self, document_storage_statements
+    ):
+        # Scenario 3.2 guard. The export filename strips surrounding whitespace, but the
+        # STORED title stays verbatim (blank-title-semantics-decision.md: "Stripping here
+        # affects the filename only -- the stored title is untouched"). Every other title
+        # in the suite is unpadded, so a .strip() in DocumentModel.to_domain is the
+        # identity function there and invisible; this is the only test that can see it.
+        owner_id = await document_storage_statements.given_an_account()
+        document = await document_storage_statements.given_a_saved_document(owner_id)
+
+        await document_storage_statements.save_content_if_version_matches(
+            document.id, owner_id, "<p>текст</p>", expected_version=1, title=" Отчёт "
+        )
+        await document_storage_statements.commit()
+        document_storage_statements.expire_identity_map()
+
+        fetched = await document_storage_statements.find_by_id_and_owner(document.id, owner_id)
+        document_storage_statements.assert_stored_state(
+            fetched, title=" Отчёт ", content="<p>текст</p>", version=2
         )
