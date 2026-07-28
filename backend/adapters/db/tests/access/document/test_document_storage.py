@@ -44,12 +44,18 @@ class TestOwnerScoping:
             document.id, other_owner_id
         )
 
-        assert fetched is None, "another owner's document must read as absent, never returned"
+        document_storage_statements.assert_document_absent(
+            fetched, "another owner's document must read as absent, never returned"
+        )
 
     async def test_should_return_none_for_an_unknown_id(self, document_storage_statements):
         owner_id = await document_storage_statements.given_an_account()
 
-        assert await document_storage_statements.find_by_id_and_owner(uuid4(), owner_id) is None
+        fetched = await document_storage_statements.find_by_id_and_owner(uuid4(), owner_id)
+
+        document_storage_statements.assert_document_absent(
+            fetched, "an id that was never stored must read as absent"
+        )
 
 
 class TestIdempotencyKeyUniqueness:
@@ -82,7 +88,9 @@ class TestIdempotencyKeyUniqueness:
             second_owner, "shared-key"
         )
 
-        assert first.id != second.id, "the same key from two owners must yield two documents"
+        document_storage_statements.assert_distinct_documents(
+            first, second, "the same key from two owners must yield two documents"
+        )
 
     async def test_should_find_a_document_by_its_owner_and_key(self, document_storage_statements):
         owner_id = await document_storage_statements.given_an_account()
@@ -109,9 +117,10 @@ class TestSaveContentCompareAndSwap:
             document.id, owner_id, "<p>текст</p>", expected_version=1
         )
 
-        assert saved is not None, "a matching version must be accepted"
-        assert saved.content == "<p>текст</p>"
-        assert saved.version == 2, "a successful save advances the version by exactly one"
+        # The version pin is the "advances by exactly one" half of the contract.
+        document_storage_statements.assert_content_and_version(
+            saved, content="<p>текст</p>", version=2
+        )
 
     async def test_should_refuse_a_stale_version_and_leave_content_untouched(
         self, document_storage_statements
@@ -127,13 +136,15 @@ class TestSaveContentCompareAndSwap:
             document.id, owner_id, "<p>second</p>", expected_version=1
         )
 
-        assert refused is None, "a stale version must not write"
+        document_storage_statements.assert_save_refused(refused, "a stale version must not write")
         # "The first save's content must survive" is only meaningful against the DB's
         # bytes, so force the re-hydration rather than trusting the weak identity map.
         document_storage_statements.expire_identity_map()
         current = await document_storage_statements.find_by_id_and_owner(document.id, owner_id)
-        assert current.content == "<p>first</p>", "the first save's content must survive"
-        assert current.version == 2, "a refused save must not advance the version"
+        # The first save's content survives, and the refused save did not advance the version.
+        document_storage_statements.assert_content_and_version(
+            current, content="<p>first</p>", version=2
+        )
 
     async def test_should_refuse_a_save_against_another_owners_document(
         self, document_storage_statements
@@ -149,12 +160,14 @@ class TestSaveContentCompareAndSwap:
             document.id, other_owner_id, "<p>hijack</p>", expected_version=1
         )
 
-        assert refused is None, (
-            "a foreign document must not be writable even with a correct version"
+        document_storage_statements.assert_save_refused(
+            refused, "a foreign document must not be writable even with a correct version"
         )
         # `content == ""` is also the value Document.create set in Python, so read off
         # a cached instance this security guard could not fail even if the hijack write
         # HAD landed. Expiring makes it read the bytes Postgres actually holds.
         document_storage_statements.expire_identity_map()
         current = await document_storage_statements.find_by_id_and_owner(document.id, owner_id)
-        assert current.content == "", "the owner's content must be untouched"
+        # version=1 is the sharper half: a hijack write that landed would have advanced
+        # it to 2 even if it happened to store the same empty content.
+        document_storage_statements.assert_content_and_version(current, content="", version=1)

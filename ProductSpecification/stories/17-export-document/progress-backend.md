@@ -1093,6 +1093,70 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   signature, so adapters-discovery (b) inherits it. A compound `save_and_reread` DSL method would make
   forgetting the expire impossible (genuine hardening, restructures 5 tests) — `/refactor`'s call.
   ~8 raw inline asserts in `test_document_storage.py` are pre-existing and outside the RED diff.
+  refactor (commit follows this one): 2 refactorings. `document_storage_statements.py` was at 170/200
+  and could not absorb the new assertion helpers — split along the seam the file already had
+  (arrange/act vs assert) into a `DocumentStorageAssertions` base that `DocumentStorageStatements`
+  INHERITS, so all ~20 `assert_*` call sites and the conftest fixture are untouched (subclass
+  precedent from `f103a31`). And all 8 raw inline asserts relocated out of the
+  `test_document_storage.py` test class into 4 DSL helpers, each with 2+ callers — grep confirms zero
+  raw `assert` left. One deliberate STRENGTHENING flagged rather than smuggled: the foreign-owner
+  hijack guard asserted only `content == ""`; `assert_content_and_version` requires both, so it now
+  also pins `version=1` — the sharper half, since a hijack write that landed advances the version
+  even if it stored identical content. REJECTED the compound `save_and_reread` (test-review had
+  declined it too, for a different reason): the five title tests are not the same shape — two do
+  save→commit→SECOND save→commit before the expire, and the intent-carrying value differs in each,
+  so the compound method would reconstruct the test bodies as an argument list with the one-save
+  tests threading `None`s. 57 passed db (baseline, after R1, after R2); 532/2 backend; mypy clean
+  (298 files); ruff unchanged at the pre-existing 5.
+  ⚠️ PRE-EXISTING, outside this diff, noted by refactor: `verification_code_storage_statements.py`
+  is 209 lines — OVER the 200 hard limit.
+> REVIEW FINDINGS over `2cacaf7` — agent-review CONCERNS ×2, premortem 1 CREDIBLE + 3 REMOTE.
+> The premortem's CREDIBLE is the one that reorders the queue; it is promoted to a STEP below.
+> • **THE SAME PATHOLOGY THIS COMMIT CLOSED IS STANDING ONE LAYER UP (premortem, CREDIBLE).**
+>   `save_document.py:79` reads `update = TitleUpdate.of(title) if isinstance(title, str) else title`.
+>   `document_router.py:140` forwards `title=request.title` — a bare Pydantic `str | None` — so
+>   PRODUCTION ALWAYS ARRIVES ON THE `isinstance(title, str)` TRUE ARM, and that arm is executed by no
+>   test in the repo: every usecase call site launders it first (`save_title_statements.py:20`/`:32`
+>   both wrap in `TitleUpdate.of(...)` before calling `execute`), and grep confirms zero raw-`str`
+>   title arguments anywhere in `backend/usecase/tests`. Coverage reads 100% for the identical reason
+>   named in this commit's own message: one conditional expression, no branch arc. THE DETONATOR IS
+>   THE NEXT STEP: `green-adapter db (TitleUpdate unwrap)` deletes the transitional `str` arm. If the
+>   usecase/db half lands before guard (a2) maps the wire shape, a raw `""` falls to `else`
+>   UNWRAPPED, reaches `_update_values` as a `str`, fails `isinstance(title, TitleUpdate)`, and
+>   `new_title = ""` — NOT None — so the omit guard passes it through and the CAS runs
+>   `SET title = ''` over the stored title. Verbatim the incident Scenario 3.2 exists to prevent,
+>   reinstated by the step scheduled next, with every suite green: the usecase tests all pass VOs, the
+>   two guards landed here all pass `TitleUpdate`s, and the acceptance test that would catch it is
+>   skipped. PROMOTED TO A STEP below, ahead of the green.
+> • **`_last_updated_at` is recorded for saves the CAS REFUSES (agent-review).** The clock is captured
+>   BEFORE the delegate and unconditionally, so `assert_stored_state` would compare a surviving row's
+>   real `updated_at` against a timestamp never written — and it fails looking like an adapter
+>   durability bug rather than DSL misuse. `assert self._last_updated_at is not None` does not catch
+>   it: it proves SOME save ran, not that the LAST one landed. Not hypothetical — the two refused-save
+>   tests at `test_document_storage.py:128`/`:152` are exactly that shape, and this diff touched both.
+>   FIX (whoever next touches the DSL): capture the clock only when the delegate returns non-`None`,
+>   or have `assert_stored_state` take the returned document instead of reading instance state.
+> • **The new docstring overclaims in the same way this unit was correcting (agent-review).** It cites
+>   a reset `status` as an example of what the whole-`Document` comparison now catches — but
+>   `ALLOWED_STATUSES = (DRAFT_STATUS,)` has exactly one member and `ck_documents_status` is built
+>   from it, so no SET list can write a different status without the CHECK constraint rejecting the
+>   statement first; `document_type` is likewise pinned to `"эссе"` for every test by
+>   `given_a_saved_document`. Of the six "must not touch" columns only `id`, `owner_id`,
+>   `idempotency_key` and `created_at` discriminate. The `created_at` half is real and worth having —
+>   narrow the wording, per this unit's own standard that a docstring claiming more than the code
+>   delivers is worse than none.
+> • VERIFIED, NOT ASSUMED (agent-review): the `updated_at` exact-value pin is STABLE —
+>   `DocumentModel.updated_at` has no `onupdate`, no `server_default`, and grep over
+>   `src/migrations/` finds no trigger on the column; it is a Python-side constant round-tripped
+>   through `timestamptz` at matching microsecond resolution. Category-2 determinism as claimed.
+>   Both new guards were independently confirmed to bite: without the unwrap a `TitleUpdate` dataclass
+>   is bound to a `String` column and asyncpg raises; without the omit guard `preserve()` wipes.
+> • WATCH ITEM (agent-review, not a finding): `test_should_omit_the_title_from_the_set_list_for_a_
+>   preserve_update` has no mutant it ALONE kills today — every mutation killing it also kills the
+>   verbatim test or the pre-existing preserve test. It becomes load-bearing only after the `str` arm
+>   is deleted and the unwrap is a bare `title.value`, where `title.value or ""` would kill it and
+>   nothing else. CONFIRM that discrimination actually materialises during `green-adapter db` rather
+>   than assuming it.
   ORIGINAL STEP TEXT — COVERAGE GAP, proven by mutation, NOT the clear path.
   The green widened the CAS to `TitleUpdate | str | None` and unwraps at
   `document_storage.py:121` (`new_title = title.value if isinstance(title, TitleUpdate) else title`).
@@ -1115,7 +1179,23 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   SCOPE: distinct from adapters-discovery guard (b), which pins the `SET title = NULL` clear branch.
   This step pins the SET and OMIT arms, which are live TODAY. Discovery (b) should add only the NULL
   case on top of the widened DSL this step lands — do not re-derive the DSL change there.
-- [~] green-adapter db (TitleUpdate unwrap) — OWNS THE DB HALF OF THE UNION REMOVAL (assigned by the
+- [~] red-usecase (the raw-str arm of `_title_intent`) — PROMOTED FROM A REVIEW FINDING to a step,
+  and sequenced AHEAD of the green it protects (premortem over `2cacaf7`, CREDIBLE). `save_document.py:79`
+  is `update = TitleUpdate.of(title) if isinstance(title, str) else title`, and the rest route forwards
+  a bare Pydantic `str | None`, so production ALWAYS takes the `isinstance` TRUE arm — which no test
+  executes, because every usecase call site wraps in `TitleUpdate.of(...)` first. That is the same
+  untested-production-arm / covered-dead-arm shape, and the same 100%-coverage blind spot, that the
+  db step immediately above was written to close. It must be pinned BEFORE `green-adapter db` deletes
+  the transitional `str` arm, because that deletion is what turns it into `SET title = ''` over a
+  stored title.
+  THE STEP: add a SECOND DSL method to `save_title_statements.py` (e.g. `when_autosaving_with_a_wire_title`)
+  that passes the raw `str` straight to `SaveDocument.execute` WITHOUT the `TitleUpdate.of()` wrapper —
+  the existing method must keep pinning the VO arm, so this is an addition, not an edit. Parametrize
+  the same `("", "   ", " Отчёт ")` cases over it: blank forwards `preserve()`, padded forwards
+  `of(" Отчёт ")` verbatim.
+  KILL TEST (the step is not done until this is demonstrated): deleting
+  `TitleUpdate.of(title) if isinstance(title, str) else` must go RED.
+- [ ] green-adapter db (TitleUpdate unwrap) — OWNS THE DB HALF OF THE UNION REMOVAL (assigned by the
   agent-review pass over `83e4e48`, which found the removal had no owner anywhere: (a) never mentions
   it, (b) is scoped to `SET title = NULL`, and the red step above deliberately WIDENS the DSL). Once
   the db DSL speaks `TitleUpdate`, this green MUST delete the `str` arm from
