@@ -110,6 +110,40 @@ class TestExportFilenameFromCyrillicTitle(AbstractBackendTest):
         )
 
 
+class TestExportFilenameDefaultWithoutTitle(AbstractBackendTest):
+    """Scenario 3.2: A document with no title uses a default filename.
+
+    Given a document with no title
+    When it is exported
+    Then the attachment filename is a defined default, never empty or null.
+    """
+
+    @pytest.mark.parametrize("export_format", ["pdf", "docx"], ids=["pdf", "docx"])
+    async def test_untitled_document_exports_under_the_default_filename(
+        self, document_export_filename_statements, export_format
+    ):
+        response = await document_export_filename_statements.given_owner_exports_untitled_document(
+            export_format
+        )
+
+        document_export_filename_statements.assert_default_filename(response, export_format)
+
+    @pytest.mark.skip(reason="RED: blank-title save wipes the stored title (Scenario 3.2)")
+    @pytest.mark.parametrize(
+        "blank_title", ["", "   "], ids=["empty_title", "whitespace_title"]
+    )
+    async def test_blank_title_save_does_not_wipe_the_stored_title(
+        self, document_export_filename_statements, blank_title
+    ):
+        """A blank title carries no title intent, so it must not overwrite a stored
+        one -- the export filename still reflects the previously saved title."""
+        response = await document_export_filename_statements.given_owner_saves_a_blank_title_over_a_stored_title_and_exports(
+            blank_title
+        )
+
+        document_export_filename_statements.assert_filename_rfc5987_encoded_from_title(response)
+
+
 class TestExportDocumentFormatGuard(AbstractBackendTest):
     """Scenario 1.3: An unsupported or missing format is refused.
 

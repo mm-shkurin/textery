@@ -638,8 +638,42 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 > deliberate documented overwrite. Also unbounded: the `documents.title` column is `String()` with no
 > length cap and no usecase validation (contrast content's MAX_CONTENT_LENGTH) — a title length bound
 > is owned by Sc 3.6 (grapheme truncation) or the save-validation contract.
-- [ ] red-acceptance
-- [ ] design
+- [x] red-acceptance — RED confirmed live (BACKEND_PORT=8100): predicted == actual on all 4 cases,
+  first run, no loop. New class `TestExportFilenameDefaultWithoutTitle` (2 parametrized tests) +
+  statements `given_owner_exports_untitled_document` / `assert_default_filename` /
+  `given_owner_saves_a_blank_title_over_a_stored_title_and_exports`.
+  TEST 1 (`[pdf]`/`[docx]`) — the spec Gherkin, an ALREADY-GREEN regression guard (not a fabricated
+  RED, verified live): a freshly created document (persisted-null title, end to end) exported as
+  pdf/docx pins the FULL `Content-Disposition` literal `attachment; filename*=UTF-8''document.pdf` /
+  `...document.docx`. This RESOLVES the Sc 2.2 docx-extension carry-forward — Sc 3.1's green already
+  sources the extension from `ExportFormat.value`, and the extension is now parsed out of a pinned
+  filename token (never `startswith("attachment")`), so it cannot regress. Committed ENABLED per the
+  Sc 1.2 / 2.4 precedent.
+  TEST 2 (`[empty_title]`/`[whitespace_title]`) — the genuine RED, skip-marked. DECISION on the
+  empty-string carry-forward: a blank title (`""` or whitespace-only) carries NO title intent and
+  must NOT overwrite a stored one — same semantics as omitting the field, which the CAS `title is
+  None` guard already honours. Setup saves title "Привет Мир", then a content-only autosave
+  submitting a blank title, then exports; the filename must still be the Cyrillic RFC 5987 literal.
+  Actual: `[empty_title]` got `attachment; filename*=UTF-8''document.pdf` (CAS ran `SET title = ''`,
+  then `"" or "document"` → default); `[whitespace_title]` got `attachment; filename*=UTF-8''%20%20%20.pdf`
+  — whitespace-only doesn't merely wipe the title, it yields a garbage "effectively empty" filename,
+  which the spec's *"never empty or null"* clause forbids on its own terms.
+  test-review: A5/A7 + A27 + S11×2 fixed — `assert_default_filename` pinned only status +
+  disposition, leaving `content_type`/`content`/`body` unasserted (a route returning PDF bytes under
+  `document.docx` would have passed); now the full `ExportResponseDto` envelope is compared in one
+  frozen-dataclass equality (`ExpectedExportEnvelope`) plus a per-format magic-byte check
+  (`%PDF-` / `PK\x03\x04`), and Sc 3.1's `assert_filename_rfc5987_encoded_from_title` converges on
+  the same strict helper. 11 passed / 2 skipped / 0 failed.
+  ⚠️ FILE-SIZE GATE (blocks Sc 3.3): `document_export_filename_statements.py` is at 193/200 and
+  `test_export_document_acceptance.py` at 167/200 — Sc 3.3 must split before it can add.
+  ⚠️ HARNESS GOTCHA: `acceptance/clients/application/application_client.py:24` reads
+  `os.environ.get("BACKEND_PORT", "8000")` and pytest does NOT auto-load `infra/.env` — a bare
+  `pytest` silently targets 8000 and fails every test at connect, which reads as a regression.
+  GREEN must: normalize a blank title to None at the save boundary (`title.strip() or None`) so it
+  reaches the CAS as None and hits the existing preserve-on-omit branch. `design` decides whether
+  that lands in `SaveDocumentRequestDto`, `SaveDocument.execute`, or the domain — red-agent's read is
+  the usecase, keeping the rest DTO a dumb transport and the CAS guard on a single `is None`.
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
