@@ -826,7 +826,47 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   content-survival assertion PASSED before the test failed on the genuine RED reason
   (`%20%20%20.pdf`). So today's blank-title save does persist its content and increment the version
   normally — only the title is wiped. Skip marker restored.
-- [~] green-usecase — also FIX the Sc 3.2 acceptance Test 2 (review obligation 4): the blank save
+  ⚠️ FOLLOW-UPS from the review passes over `f0e6e7d` (agent-review CONCERNS ×4), for whichever step
+  next touches these files — none blocks green:
+  • The whole-entity guard detects an in-place mutation ONLY because `FakeDocumentRepository.save_new`
+    appends the caller's instance and `find_by_id_and_owner` returns that same object. The docstring
+    names that premise; NOTHING asserts it. A reasonable future hardening of the shared fake (return
+    a copy on read, mirroring a real repo's detached entity) turns the guard permanently green and
+    blind, with no failing test anywhere. The mutation proof was a point-in-time one; an identity pin
+    (`stored is` the arranged instance, or a test over the fake itself) makes it standing.
+  • The explicit raw-title pin is INERT for every param that currently runs — the three live params
+    are `"Привет Мир"` ×2 and `None`, where a constructor strip is the identity function. It bites
+    only on `"   "` and `" Отчёт "`, both skip-marked. Not a hole (green lifts them), but the
+    docstring claims a proof today's suite does not deliver — narrow the wording as the mapper-strip
+    claim already was.
+  • ~50 lines of new acceptance assertion code are reachable ONLY from the skipped test, so a wrong
+    key name or bad constant sits undetected until green. Also, the "whole document is pinned" comment
+    overstates: `{k: body.get(k) for k in expected} == expected` is a SUBSET comparison, so a new
+    response field — notably `title`, which story-5-extension adds — slips through unpinned, and
+    title survival is exactly what this scenario guards.
+  • "mypy clean" does NOT cover `acceptance/` — mypy is configured in `backend/pyproject.toml` and
+    the acceptance tree is outside type-check scope. Concretely `self._reread_after_blank_save = None`
+    was left unannotated where its sibling one line above is `str | None`; under a checker the
+    inferred `None` would reject the later DTO assignment.
+- [~] red-adapter db (padded title round-trip) — INSERTED by the premortem over `f0e6e7d` (CREDIBLE,
+  and the reason it is a STEP rather than a note): the previous guard closed the two placements a
+  green reaches for first — in-place mutation in `ExportDocument`, and `Document.__init__` — and
+  left the third open. Squeezing two of three doors shut ROUTES the green toward the survivor:
+  `.strip()` on the read side of the mapper (`document_model.py:84`, `title=self.title`), or the
+  write side at `:66`. Every read then returns the stripped value, an ordinary autosave is a
+  read-modify-write, and the next content-only save PERSISTS the wipe — verbatim the failure the ADR
+  forbids. Nothing in the repo can see it, because every title on a real write→read path is
+  UNPADDED, so `.strip()` is the identity function everywhere it could be observed: the usecase
+  guard's fake has no mapper (acknowledged); `test_should_round_trip_a_saved_title` and
+  `test_should_preserve_an_existing_title_on_a_content_only_save` both use `"Привет"`; the
+  acceptance filename assertion uses `"Привет Мир"` AND derives the header through the strip anyway;
+  and `padded_title_verbatim` pins what reaches the PORT and never re-reads. THE GUARD: save a
+  PADDED title (`" Отчёт "`) through the CAS and assert it reads back byte-identical after
+  `expire_identity_map()` — in `backend/adapters/db/tests/access/document/test_document_storage_title.py`,
+  against real Postgres. It was previously recorded only as an OPTIONAL branch ("and/or") of an
+  obligation whose other branch is already satisfied, so it read as discharged; and green may not
+  write tests, so without this step green runs with the path open.
+- [ ] green-usecase — also FIX the Sc 3.2 acceptance Test 2 (review obligation 4): the blank save
   resubmits the SAME `DOCUMENT_CONTENT` and only checks `status_code == 200`, so a green that
   rejects or short-circuits the whole blank-title save — losing the content update — passes
   identically. Send distinct content on the blank save and assert it persisted (or that the version
