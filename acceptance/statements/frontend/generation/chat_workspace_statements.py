@@ -4,23 +4,23 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 
 from statements.frontend.base_frontend_statements import BaseFrontendStatements
+from statements.frontend.generation import composer_locators
+from statements.frontend.generation.composer_locators import (  # noqa: F401
+    TOPIC_INPUT,
+    TOPIC_SEND_BUTTON,
+)
 
 CHAT_PANEL = (By.CSS_SELECTOR, "[data-testid='chat-panel']")
-TOPIC_INPUT = (By.CSS_SELECTOR, "[data-testid='topic-input']")
-TOPIC_SEND_BUTTON = (By.CSS_SELECTOR, "[data-testid='topic-send']")
 
 
 class ChatWorkspaceStatements(BaseFrontendStatements):
     # Per known-debt #8, the standalone generation-form page (mockup 04) was replaced
     # by a single doc-left/chat-right screen; the "form fields" for scenario 4.1 are
     # now a single free-text composer in the chat panel, mapped to `topic` on submit.
-    # Copy pulled from the actual built component
-    # (frontend/src/features/generation/components/ChatWorkspace.tsx `Composer`),
-    # not from the stale mockup 04 text.
-    EXPECTED_TOPIC_INPUT_PLACEHOLDER: ClassVar[str] = (
-        "Например: Влияние искусственного интеллекта на образование"
-    )
-    EXPECTED_SEND_BUTTON_TEXT: ClassVar[str] = "Сгенерировать"
+    # The expected copy now lives in composer_locators alongside the testids, because
+    # the story-18 create flow asserts the same composer.
+    EXPECTED_TOPIC_INPUT_PLACEHOLDER: ClassVar[str] = composer_locators.EXPECTED_TOPIC_INPUT_PLACEHOLDER
+    EXPECTED_SEND_BUTTON_TEXT: ClassVar[str] = composer_locators.EXPECTED_SEND_BUTTON_TEXT
 
     def navigate_to_chat_workspace_for_doklad(self, driver: WebDriver, app_url: str) -> None:
         # The origin has to be loaded before sessionStorage can be seeded, and the session has
