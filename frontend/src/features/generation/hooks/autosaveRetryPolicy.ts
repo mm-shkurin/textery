@@ -37,13 +37,21 @@ export function isTransientFailure(error: unknown): boolean {
 // rejection that is not an HttpError at all (a session expiry thrown before the request goes out)
 // never reached a server either.
 //
-// Measured 2026-07-28: the 503 carve-out is a claim about the INGRESS, not the application.
-// `backend/adapters/rest/src/error_handling/exception_handlers.py:64-77` returns 500 and it is the
-// only 5xx the origin emits; `infra/docker/nginx/frontend.conf` carries no `limit_req`/`limit_conn`/
-// `error_page`/`max_fails`/`proxy_next_upstream`, so nothing in front of it emits 503 either. The
-// carve-out is safe while no backend component emits 503 AFTER taking a write — add a rate limiter,
-// readiness probe, or WAF that answers 503 downstream of the origin and this branch starts
-// suppressing writes that are genuinely needed.
+// Measured 2026-07-28: the 503 carve-out is a claim about the INGRESS, not the application, and the
+// ingress is a CHAIN — every hop between the browser and the origin, not just the one conf below.
+//
+//   - the origin: `backend/adapters/rest/src/error_handling/exception_handlers.py:64-77` returns 500
+//     and it is the only 5xx emitted. No handler returns 503 (verified: no `503` in `backend/`).
+//     Unpinned by any test — owed to the backend session.
+//   - the container nginx, `infra/docker/nginx/frontend.conf`: carries nothing that can answer 503,
+//     and this is the one hop with a GATE — `frontend/scripts/check-nginx-503.mjs`
+//     (`npm run check:ingress`, a CI step) fails the build on any directive that could.
+//   - everything in front of that — a TLS terminator, WAF, rate limiter, the host/prod-copy reverse
+//     proxy: **no IaC source in this repo, therefore no gate.** Only the note in
+//     `infra/architecture.md` under Deploy notes. Add such a hop and this branch starts suppressing
+//     writes that are genuinely needed, with nothing red anywhere.
+//
+// The carve-out is safe while no component in that chain emits 503 AFTER taking a write.
 export function mayHaveLandedServerSide(error: unknown): boolean {
   return isTransientFailure(error) && !(isHttpError(error) && error.status === 503)
 }

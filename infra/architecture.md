@@ -95,6 +95,20 @@ and `backend/.env` on that host. Before exposing it publicly:
   out-of-band (no secret store wired yet — see Env var contract above).
 - Add the `worker` service back once `arq` background-job code exists (see
   `ProductSpecification/technology.md`); `redis` is already provisioned for it.
+- **Nothing in front of the origin may answer 503 to `/api/`.** The frontend's
+  autosave reads 503 as proof the write was never taken
+  (`mayHaveLandedServerSide` in
+  `frontend/src/features/generation/hooks/autosaveRetryPolicy.ts`), so on that
+  answer it can suppress the write and the editor shows «Сохранено» over
+  content the server never got. A TLS terminator, WAF, rate limiter
+  (`limit_req`), maintenance page (`error_page 503`) or upstream failover added
+  in front of this compose file all break that premise — and unlike the
+  container nginx, which `npm run check:ingress` scans on every CI run, **those
+  hops have no IaC source in this repo and therefore no gate**. Adding one is
+  the point at which the check has to be extended to cover it, in the same
+  commit. If a public-facing proxy is needed, add its config under `infra/`
+  first (`.claude/rules/infrastructure.md`: no hand-edits on the running host),
+  so there is a file the scan can read.
 
 ## Validated
 
