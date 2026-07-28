@@ -1356,6 +1356,88 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   and `TitleUpdate.preserve` tests still pass the VO UNLIFTED, so arm 1 keeps an unlaundered witness —
   if those two ever go away, arm 1's only coverage becomes DSL-constructed and the port narrowing loses
   its independent check.
+  refactor (commit follows this one): 3 refactorings, all proven by mutation rather than asserted.
+  (1) PRESERVE-DETECTION MOVED ONTO THE VO: the adapter was re-deriving what `preserve()` means by
+  null-testing the VO's raw field — the exact `str | None` ambiguity `TitleUpdate` exists to remove,
+  reconstructed one layer out. New `TitleUpdate.carries_a_value()` next to its `is_blank()` sibling;
+  `_update_values` collapsed to `if title is not None and title.carries_a_value()`. Both arms mutated:
+  `return True` → 1 failed / 368 passed (the same dedicated killer the green established), `return False`
+  → 5 failed / 364 passed. The two `None` tests are NOT redundant — the outer one is the ABSENT case
+  owned by the pending `green-usecase (port narrowing)`, left in place.
+  (2) DSL TYPE-LIFT REMOVED (the green had flagged it as deliberate; refactor judged the reversal
+  better and proved it). Two arguments beyond tidiness: the DSL was the only place in the repo
+  advertising a call shape NO production caller can make, so four tests documented a signature that does
+  not exist; and `isinstance(title, str)` would silently map a future `title=""` to `TitleUpdate.of("")`,
+  re-opening in tests the precise shape the green called "gone by construction". Proof the tests stay
+  byte-identical in what they assert: `git diff -U0` on the test file is EXACTLY four hunks, each only
+  the `title=` argument (`"Привет"` → `TitleUpdate.of("Привет")` ×3, `" Отчёт "` → `of(" Отчёт ")` ×1) —
+  no assertion, expected value, body or setup line changed, and `of(x).value is x`. This also retires the
+  green's own ⚠️ OBSERVATION: arm 1's unlaundered witness no longer depends on the two VO tests
+  surviving, because all five title tests now pass the VO directly.
+  (3) `= None` DEFAULT DROPPED from `TitleUpdate.value` — `TitleUpdate()` was a legal second, unnamed
+  door to the preserve state competing with `preserve()`. Nothing constructed it bare (verified).
+  Runs: 369 passed baseline and after each of the three (db + domain + usecase, real Postgres);
+  537 passed / 2 skipped full `backend/`; mypy clean (298 files); ruff byte-identical to the
+  pre-existing 5.
+  DECLINED, reported rather than silently deferred: `save_content_if_version_matches` takes
+  `content: str` while `DocumentContent` exists in the domain — primitive obsession on a port whose
+  SIBLING parameter is now VO-typed. NOT behavior-preserving: `DocumentContent` NFC-normalizes and
+  length-caps, so routing content through it changes what gets stored. Needs its own red/green.
+  DOCSTRING OVERCLAIM FIXED IN THIS COMMIT (both review passes landed it independently — see below):
+  `_update_values` claimed `save_content_if_version_matches(title="")` "cannot reach `SET title = ''`".
+  Reworded to state what the code actually delivers — the narrowing removes the SPELLING, not the path.
+> REVIEW FINDINGS over `2bb51a5` — agent-review CONCERNS ×2, premortem 3 CREDIBLE (all three NEW; the
+> premortem explicitly re-checked and confirmed the standing `6750132` REST-seam CREDIBLE is untouched
+> by this commit — `document_router.py:140` still forwards `request.title` raw and the usecase `str` arm
+> is intact). NOTE ON SEQUENCING: both passes read `2bb51a5` and therefore did NOT see the refactor,
+> which independently removed the DSL lift — that retires agent-review finding 2 and the DSL half of
+> premortem 1. The docstring half was fixed in the refactor commit. What remains open is recorded below.
+> • **"GONE BY CONSTRUCTION" IS FALSE — `SET title = ''` IS STILL REACHABLE (both passes, CREDIBLE).**
+>   MEASURED, not inferred, by running the narrowed `_update_values` directly:
+>   `of('')` → title in SET: True `''`; `of('   ')` → True `'   '`; `preserve()` → False; `None` → False.
+>   `TitleUpdate.of("")` is a legal, mypy-clean call that writes `''` TODAY, and `of("   ")` writes the
+>   value the ADR names as producing `%20%20%20.pdf`. The narrowing removed one SPELLING of the wipe
+>   (`str`), not the PATH. The only blank defense in the repo is `SaveDocument._title_intent` one layer
+>   up — a GUARD, which is exactly what the docstring claimed to have replaced. Incident: a
+>   create-with-title endpoint, an import, or an admin path builds the VO from wire input and calls the
+>   CAS directly (the ADR itself names those bypasses), and blank titles overwrite stored ones.
+>   MISSING GUARD, still open: no db test constructs a blank `TitleUpdate` — the five title tests are
+>   `"Привет"`, content-only omit, `" Отчёт "` padded, `of(" Отчёт ")`, `preserve()`. Name it
+>   `test_should_not_wipe_a_stored_title_for_a_blank_title_update`: save `"Привет"`, then save with
+>   `TitleUpdate.of("")`, assert `title == "Привет"` and `version == 3`. IT GOES RED TODAY. If the
+>   intended contract is instead "the adapter writes `''` and the usecase is the only guard", the fix is
+>   the docstring alone — the docstring was reworded that way in the refactor commit, so this now needs
+>   a DELIBERATE call: adopt the usecase-only-guard contract, or add the db guard.
+> • **`preserve()` AND THE ADR's `clear()` ARE THE SAME OBJECT — MOST SEVERE (premortem, CREDIBLE).**
+>   MEASURED: `TitleUpdate.preserve() == TitleUpdate(value=None)` → True. One-field frozen dataclass, so
+>   a `clear()` implemented the obvious way has NO free representation left. This commit is what makes it
+>   load-bearing: it deleted the `str` arm and blessed the surviving `| None`, and the very next pending
+>   work is the clear path (`SET title = NULL`). The failure is EQUALITY-SILENT:
+>   `assert_forwarded_title_update` compares by dataclass equality, so a usecase forwarding `preserve()`
+>   where `clear()` was meant — or the reverse — passes every existing usecase test. Either every
+>   content-only autosave issues `SET title = NULL` (mass wipe on next save), or the clear affordance
+>   no-ops and a cleared title returns on reopen forever. MISSING GUARDS, neither of which can pass with
+>   the current VO shape: domain `test_should_tell_a_clear_apart_from_a_preserve`
+>   (`assert TitleUpdate.clear() != TitleUpdate.preserve()`), and db
+>   `test_should_null_the_title_for_a_clear_update` beside the existing preserve/omit test, over the same
+>   stored title. THE CLEAR-PATH STEP MUST NOT START until `TitleUpdate` can carry a distinguishable
+>   third state (sentinel value, or an explicit intent field). This corroborates the ⚠️ already recorded
+>   on the `red-usecase (clear path)` step below, now with a measurement behind it.
+> • **THE PENDING `green-usecase (port narrowing)` IS UNFALSIFIABLE AT THE DB LAYER (premortem,
+>   CREDIBLE).** MEASURED: `preserve()` and `None` produce BYTE-IDENTICAL SET clauses — `preserve()`
+>   reaches `new_title is None` through arm 1 via `.value`, `None` through arm 2. This commit's own
+>   coverage note called that "a distinguishable path", but it is distinguishable only to a MUTATION of
+>   the arm, never to observable behavior. So "absent forwards `preserve()` instead of a bare `None`" has
+>   NO db test that can go RED on it — it would land green having proven nothing. MISSING GUARD: the
+>   proof must live where the states are distinguishable — a usecase test pinning the exact forwarded
+>   object for the ABSENT case (`title` omitted from `execute`), added as an `absent_preserves` param to
+>   `TITLE_INTENT_CASES` / `assert_forwarded_title_update`. `TITLE_INTENT_CASES` has no absent case at
+>   all today; the only thing pinning absent is the db
+>   `test_should_preserve_an_existing_title_on_a_content_only_save`, which per the measurement above
+>   cannot distinguish the two values the step is about. FOLD THIS INTO THE NEXT STEP.
+> • RETIRED BY THE REFACTOR, recorded for the audit trail (agent-review finding 2): the DSL `str` arm
+>   outlived its justification and type-laundered the narrowed port — a db test's `title="Привет"`
+>   type-checked and passed although the equivalent production call would not. Refactor (2) removed it.
 - [~] red-usecase (port narrowing: absent forwards `preserve()`, not a bare `None`) — BOTH review
   passes over `83e4e48` landed this independently, and it must precede the clear-path work because
   the clear path is what turns it into a mass wipe. `_title_intent` returns a bare `None` for the

@@ -11,7 +11,10 @@ class TitleUpdate:
     details never reach the usecase.
     """
 
-    value: str | None = None
+    # No default: `TitleUpdate()` would be a second, unnamed way to build the
+    # preserve state, which is the ambiguity the named factories below exist to
+    # remove. `preserve()` and `of()` are the only doors.
+    value: str | None
 
     @classmethod
     def preserve(cls) -> "TitleUpdate":
@@ -20,6 +23,16 @@ class TitleUpdate:
     @classmethod
     def of(cls, value: str) -> "TitleUpdate":
         return cls(value=value)
+
+    def carries_a_value(self) -> bool:
+        """Does this intent name a title to write, rather than preserve the stored one?
+
+        The three-state intent is what this VO exists to express, so reading it
+        must not mean null-testing `value` at the call site -- that is exactly the
+        `str | None` ambiguity the class replaces, re-derived one layer out.
+        `preserve()` is the only false case.
+        """
+        return self.value is not None
 
     def is_blank(self) -> bool:
         """Does this carry a value that is empty once whitespace is discounted?

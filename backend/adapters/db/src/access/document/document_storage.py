@@ -132,8 +132,14 @@ class SqlAlchemyDocumentStorage:
         A content-only autosave omits it, and SETting title = NULL unconditionally
         would silently wipe the user's title.
 
-        The unwrap is a bare `.value`: a raw `str` is no longer accepted, so
-        `save_content_if_version_matches(title="")` cannot reach `SET title = ''`.
+        Whether an intent names a title is `TitleUpdate`'s own question, asked as
+        `carries_a_value()` -- the adapter does not re-derive `preserve()` by
+        null-testing `value`.
+
+        A raw `str` is no longer accepted, which removes the SPELLING `title=""`
+        but NOT the path: `TitleUpdate.of("")` is a legal call and this method
+        writes `SET title = ''` for it. Blankness is decided one layer up, by
+        `SaveDocument._title_intent`; the adapter obeys the intent it is handed.
         The remaining `| None` is the not-yet-narrowed absent case, owned by
         `green-usecase (port narrowing)`.
         """
@@ -142,7 +148,6 @@ class SqlAlchemyDocumentStorage:
             "version": DocumentModel.version + 1,
             "updated_at": updated_at,
         }
-        new_title = title.value if title is not None else None
-        if new_title is not None:
-            values["title"] = new_title
+        if title is not None and title.carries_a_value():
+            values["title"] = title.value
         return values

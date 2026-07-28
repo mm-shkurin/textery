@@ -16,7 +16,11 @@ class TestTitlePersistence:
         document = await document_storage_statements.given_a_saved_document(owner_id)
 
         await document_storage_statements.save_content_if_version_matches(
-            document.id, owner_id, "<p>текст</p>", expected_version=1, title="Привет"
+            document.id,
+            owner_id,
+            "<p>текст</p>",
+            expected_version=1,
+            title=TitleUpdate.of("Привет"),
         )
         await document_storage_statements.commit()
         # Drop the identity map so the find is a genuine SELECT re-hydration, not the
@@ -39,7 +43,11 @@ class TestTitlePersistence:
         document = await document_storage_statements.given_a_saved_document(owner_id)
 
         await document_storage_statements.save_content_if_version_matches(
-            document.id, owner_id, "<p>первый</p>", expected_version=1, title="Привет"
+            document.id,
+            owner_id,
+            "<p>первый</p>",
+            expected_version=1,
+            title=TitleUpdate.of("Привет"),
         )
         await document_storage_statements.commit()
         # A subsequent content-only save (no title) at the advanced version.
@@ -69,7 +77,11 @@ class TestTitlePersistence:
         document = await document_storage_statements.given_a_saved_document(owner_id)
 
         await document_storage_statements.save_content_if_version_matches(
-            document.id, owner_id, "<p>текст</p>", expected_version=1, title=" Отчёт "
+            document.id,
+            owner_id,
+            "<p>текст</p>",
+            expected_version=1,
+            title=TitleUpdate.of(" Отчёт "),
         )
         await document_storage_statements.commit()
         document_storage_statements.expire_identity_map()
@@ -117,7 +129,11 @@ class TestTitlePersistence:
         document = await document_storage_statements.given_a_saved_document(owner_id)
 
         await document_storage_statements.save_content_if_version_matches(
-            document.id, owner_id, "<p>первый</p>", expected_version=1, title="Привет"
+            document.id,
+            owner_id,
+            "<p>первый</p>",
+            expected_version=1,
+            title=TitleUpdate.of("Привет"),
         )
         await document_storage_statements.commit()
         await document_storage_statements.save_content_if_version_matches(
