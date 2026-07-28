@@ -39,9 +39,6 @@ class DocumentStorageStatements:
         await self._session.commit()
         return document
 
-    async def save_new(self, document: Document) -> None:
-        await self._storage.save_new(document)
-
     async def find_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> Document | None:
         return await self._storage.find_by_id_and_owner(document_id, owner_id)
 
@@ -66,9 +63,6 @@ class DocumentStorageStatements:
             updated_at=datetime.now(UTC),
             title=title,
         )
-
-    async def rollback(self) -> None:
-        await self._session.rollback()
 
     async def commit(self) -> None:
         await self._session.commit()
