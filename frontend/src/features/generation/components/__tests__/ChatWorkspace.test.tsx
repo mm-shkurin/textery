@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { ChatWorkspace } from '../ChatWorkspace'
 import type { ComponentProps } from 'react'
 
@@ -32,7 +32,7 @@ describe('ChatWorkspace', () => {
   it('introduces the idle composer with the breadcrumb heading and no status badge', () => {
     renderWorkspace()
 
-    expect(screen.getByTestId('generation-breadcrumb')).toHaveTextContent('Доклад')
+    expect(screen.getByTestId('generation-breadcrumb')).toHaveTextContent(/^Доклад$/)
     expect(screen.getByText('Новая генерация')).toBeInTheDocument()
     expect(screen.queryByText('Новый запрос')).not.toBeInTheDocument()
   })
@@ -53,7 +53,7 @@ describe('ChatWorkspace', () => {
   it('names one and the same document type in the breadcrumb and the topic field', () => {
     renderWorkspace({ documentType: 'referat', documentTypeLabel: 'Реферат' })
 
-    expect(screen.getByTestId('generation-breadcrumb')).toHaveTextContent('Реферат')
+    expect(screen.getByTestId('generation-breadcrumb')).toHaveTextContent(/^Реферат$/)
     expect(screen.getByRole('textbox', { name: 'Тема реферата' })).toBeInTheDocument()
   })
 
@@ -73,19 +73,60 @@ describe('ChatWorkspace', () => {
     fireEvent.change(screen.getByTestId('topic-input'), { target: { value: '  Тема  ' } })
     fireEvent.click(screen.getByTestId('topic-send'))
 
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(onSubmit).toHaveBeenCalledWith('Тема')
+  })
+
+  // The send button is disabled while the topic is blank, but Composer's textarea fires onSend on
+  // Ctrl/Cmd+Enter with no disabled guard — so a whitespace-only topic reaches send() and the
+  // `if (trimmed)` there is the only thing stopping an empty-topic POST (backend 422). That false
+  // branch was the file's single uncovered branch: deleting the `if` left the whole suite green.
+  // RED, coverage-gap variant: the guard this pins already exists, so the test passes as written.
+  // Its bite was verified by deleting `if (trimmed)` from ChatWorkspace.send(), which produced
+  //   AssertionError: expected "vi.fn()" to not be called at all, but actually been called 1 times
+  //   Received: 1st vi.fn() call: Array [ "" ]   (ChatWorkspace.test.tsx:90:26)
+  // The guard was then restored; green-frontend removes this marker only.
+  it.skip('does not submit a whitespace-only topic sent with Ctrl/Cmd+Enter', () => {
+    const { onSubmit } = renderWorkspace()
+
+    const input = screen.getByTestId('topic-input')
+    fireEvent.change(input, { target: { value: '   ' } })
+
+    fireEvent.keyDown(input, { key: 'Enter', ctrlKey: true })
+    expect(onSubmit).not.toHaveBeenCalled()
+
+    // Cleared so the meta arm is judged on its own dispatch: without this the second
+    // `not.toHaveBeenCalled()` merely re-reads the ctrl arm's state and a meta-key
+    // regression would be invisible.
+    onSubmit.mockClear()
+    fireEvent.keyDown(input, { key: 'Enter', metaKey: true })
+    expect(onSubmit).not.toHaveBeenCalled()
+
+    // Control arm. Both negatives above also hold if Composer's onKeyDown is deleted outright,
+    // which would pin nothing about `if (trimmed)`. This asserts the same key combination does
+    // reach send() — and with the trimmed topic — so the silence above is the guard's doing.
+    fireEvent.change(input, { target: { value: '  Тема  ' } })
+    fireEvent.keyDown(input, { key: 'Enter', ctrlKey: true })
+    expect(onSubmit).toHaveBeenCalledTimes(1)
     expect(onSubmit).toHaveBeenCalledWith('Тема')
   })
 
   it('shows generated content and actual volumePages when completed', () => {
     renderWorkspace({ state: 'completed', content: '# Готовый текст', volumePages: 7 })
 
-    expect(screen.getByTestId('doc-body')).toHaveTextContent('Готовый текст')
-    expect(screen.getByText(/7 страниц/)).toBeInTheDocument()
+    // Anchored: '# Готовый текст' must arrive as a rendered heading, so the '#' is consumed and
+    // the body's whole text is exactly the title — a substring match would pass on raw markdown.
+    expect(screen.getByTestId('doc-body')).toHaveTextContent(/^Готовый текст$/)
+    expect(screen.getByText('Доклад · 7 страниц · создан только что')).toBeInTheDocument()
   })
 
   it('shows error message when failed', () => {
     renderWorkspace({ state: 'failed', error: 'Не удалось создать запрос' })
 
-    expect(screen.getByTestId('doc-error')).toHaveTextContent('Не удалось создать запрос')
+    const errorBlock = screen.getByTestId('doc-error')
+    expect(within(errorBlock).getByText('Не удалось создать запрос')).toBeInTheDocument()
+    expect(within(errorBlock).getByRole('heading')).toHaveTextContent(
+      /^Не удалось сгенерировать доклад$/,
+    )
   })
 })
