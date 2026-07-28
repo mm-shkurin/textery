@@ -101,26 +101,8 @@ class TestExportDocument:
             ("Привет Мир", "pdf", PDF_MEDIA_TYPE, "Привет Мир.pdf"),
             ("Привет Мир", "docx", DOCX_MEDIA_TYPE, "Привет Мир.docx"),
             (None, "pdf", PDF_MEDIA_TYPE, "document.pdf"),
-            pytest.param(
-                "   ",
-                "pdf",
-                PDF_MEDIA_TYPE,
-                "document.pdf",
-                marks=pytest.mark.skip(
-                    reason="RED: stem = document.title or 'document' -- '   ' is truthy, so it "
-                    "survives derivation and yields '   .pdf'"
-                ),
-            ),
-            pytest.param(
-                " Отчёт ",
-                "pdf",
-                PDF_MEDIA_TYPE,
-                "Отчёт.pdf",
-                marks=pytest.mark.skip(
-                    reason="RED: stem = document.title or 'document' -- ' Отчёт ' is truthy, so "
-                    "the padding survives derivation and yields ' Отчёт .pdf'"
-                ),
-            ),
+            ("   ", "pdf", PDF_MEDIA_TYPE, "document.pdf"),
+            (" Отчёт ", "pdf", PDF_MEDIA_TYPE, "Отчёт.pdf"),
         ],
         ids=[
             "cyrillic_title_pdf",

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from access.keyset_pagination import paginate_by_owner
 from document.document import Document
+from document.title_update import TitleUpdate
 from model.document.document_model import DocumentModel
 from shared.exceptions import ConflictException
 from shared.keyset_cursor import KeysetCursor
@@ -85,7 +86,10 @@ class SqlAlchemyDocumentStorage:
         content: str,
         expected_version: int,
         updated_at: datetime,
-        title: str | None = None,
+        # `str` is TRANSITIONAL, owned by adapters-discovery (b): the usecase
+        # forwards a TitleUpdate, but this adapter's own test DSL still speaks the
+        # raw string. The `SET title = NULL` (clear) branch arrives with that step.
+        title: TitleUpdate | str | None = None,
     ) -> Document | None:
         """Compare-and-swap the content. Returns the new state, or None if the
         version did not match (or the document is absent/foreign).
@@ -114,8 +118,9 @@ class SqlAlchemyDocumentStorage:
             "version": DocumentModel.version + 1,
             "updated_at": updated_at,
         }
-        if title is not None:
-            values["title"] = title
+        new_title = title.value if isinstance(title, TitleUpdate) else title
+        if new_title is not None:
+            values["title"] = new_title
         result = await self._session.execute(
             update(DocumentModel)
             .where(

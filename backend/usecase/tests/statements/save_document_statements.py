@@ -16,12 +16,6 @@ from statements.document_fakes import (
 AUTOSAVE_CONTENT = "<p>черновик</p>"
 
 
-# The `type: ignore[arg-type]` below is the RED marker at the type level:
-# `DocumentRepository.save_content_if_version_matches` still declares
-# `title: str | None`, which per the ADR can no longer express intent. RED must not
-# rewrite an existing port signature (that cascades into every adapter implementor)
-# -- GREEN widens it to `TitleUpdate` and deletes this, together with the two
-# matching markers in `save_title_statements`.
 class SaveStatements:
     def __init__(self) -> None:
         self.repository = FakeDocumentRepository()
@@ -29,7 +23,7 @@ class SaveStatements:
         self.unit_of_work = FakeUnitOfWork()
         self.clock = FakeClock()
         self.usecase = SaveDocument(
-            document_repository=self.repository,  # type: ignore[arg-type]
+            document_repository=self.repository,
             html_sanitizer=self.sanitizer,
             clock=self.clock,
             unit_of_work=self.unit_of_work,

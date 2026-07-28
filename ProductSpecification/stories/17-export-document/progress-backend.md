@@ -923,7 +923,34 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   against real Postgres. It was previously recorded only as an OPTIONAL branch ("and/or") of an
   obligation whose other branch is already satisfied, so it read as discharged; and green may not
   write tests, so without this step green runs with the path open.
-- [~] green-usecase — also FIX the Sc 3.2 acceptance Test 2 (review obligation 4): the blank save
+- [x] green-usecase — GREEN: usecase+domain 309 passed / 0 skipped / 0 failed; whole `backend/`
+  532 passed / 2 skipped / 0 failed (the 2 are pre-existing `importorskip` skips on
+  `htmldocx` / `weasyprint`, absent on the host — see carryover); adapters/rest 76 passed,
+  adapters/db 55 passed against real Postgres; mypy clean (280 files, run from `backend/`).
+  Production: port `DocumentRepository.save_content_if_version_matches` widened
+  `title: str | None` → `TitleUpdate | None`; `SaveDocument.execute` takes the VO and maps blank →
+  `TitleUpdate.preserve()` via a `strip() == ""` TEST (the stored value is never rewritten, per the
+  ADR's rejection of `title.strip() or None`); `ExportDocument` derives
+  `stem = (document.title or "").strip() or "document"` with the entity untouched;
+  `document_storage.py` unwraps the VO before the CAS `values` dict. All three
+  `# type: ignore[arg-type]` RED markers deleted — their disappearance is the proof the port
+  signature actually moved (mypy surfaced conformance errors at `document_wiring.py` the moment it
+  did). All four RED per-param skip marks deleted and the drop 4 → 0 verified with `-rs`.
+  ⚠️ DEVIATION, deliberate and scoped: `SaveDocument.execute` and the db storage accept
+  `TitleUpdate | str | None` at those two boundaries only — the domain port itself is
+  `TitleUpdate | None`, unpolluted. Both adapter boundaries are pinned by read-only tests that still
+  speak `str` (`test_save_document_title_router.py:57` asserts `execute(..., title="Привет Мир")`;
+  `document_storage_statements.py:54` forwards a bare `str`), and green may not edit tests —
+  but dropping the `str` arm without them ships `AttributeError` on every titled save. No
+  `type: ignore` was added in production code. `adapters-discovery` guards (a)/(b) remove the union;
+  until then the ADR's "`None` is ambiguous" argument is only half-enforced.
+  ⚠️ Discharged earlier, not here: review obligation 4 (acceptance Test 2 sends distinct content)
+  and the `assert_stored_document_unchanged` guard both landed in the
+  `red-usecase (export leaves the stored title untouched)` step — green wrote no tests.
+  test-coverage (usecase --focus): 100% line + branch on all four changed files, but the headline is
+  MISLEADING and the agent proved it by mutation — see the inserted `red-adapter db (TitleUpdate
+  unwrap)` step below.
+  ORIGINAL STEP TEXT follows — also FIX the Sc 3.2 acceptance Test 2 (review obligation 4): the blank save
   resubmits the SAME `DOCUMENT_CONTENT` and only checks `status_code == 200`, so a green that
   rejects or short-circuits the whole blank-title save — losing the content update — passes
   identically. Send distinct content on the blank save and assert it persisted (or that the version
@@ -953,6 +980,29 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   headline metric: a green that implements the strip and forgets the mark still reports
   "305 passed / 4 skipped / 0 failed". Nothing in the repo asserts a skip baseline, and with six
   skips live the count is not self-policing.
+- [~] red-adapter db (TitleUpdate unwrap) — COVERAGE GAP, proven by mutation, NOT the clear path.
+  The green widened the CAS to `TitleUpdate | str | None` and unwraps at
+  `document_storage.py:121` (`new_title = title.value if isinstance(title, TitleUpdate) else title`).
+  No test anywhere passes a `TitleUpdate` to the real storage: `document_storage_statements.py:54`
+  still declares `title: str | None`, and every usecase-layer title test runs against
+  `document_fakes`. So the `isinstance` TRUE arm — which is the ONLY arm production reaches, since
+  `SaveDocument.execute` now always forwards a VO — is executed by nothing, while the tests cover
+  the `str` arm that is explicitly TRANSITIONAL and dead in production. The coverage tools cannot
+  see this: line/branch coverage on `document_storage.py` reads 100% because a conditional
+  expression is one statement with no arc branch. PROOF: replacing the unwrap with
+  `new_title = None if isinstance(title, TitleUpdate) else title` — a mutant that silently DROPS
+  every title carried by a VO — leaves all 232 db+usecase tests green.
+  THE STEP: widen `save_content_if_version_matches` on `DocumentStorageStatements` to accept
+  `TitleUpdate | str | None` and pass it through, then add two cases to
+  `test_document_storage_title.py` against real Postgres: `TitleUpdate.of(" Отчёт ")` → the padded
+  value is written byte-identically (reuse `expire_identity_map()` before the read-back, per the
+  padded round-trip already in that file), and `TitleUpdate.preserve()` → `title` is OMITTED from
+  the SET list and an existing title survives with the version advanced. Both must go RED against
+  the mutant above.
+  SCOPE: distinct from adapters-discovery guard (b), which pins the `SET title = NULL` clear branch.
+  This step pins the SET and OMIT arms, which are live TODAY. Discovery (b) should add only the NULL
+  case on top of the widened DSL this step lands — do not re-derive the DSL change there.
+- [ ] green-adapter db (TitleUpdate unwrap)
 - [ ] red-usecase (clear path) — `null` clears: the ADR's new behavior, which no existing test
   covers. Inserted at design so the clear branch is driven by a test rather than smuggled into a
   green whose tests do not exercise it.

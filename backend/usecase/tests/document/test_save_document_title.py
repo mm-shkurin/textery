@@ -37,22 +37,8 @@ class TestSaveDocumentTitleIntent:
     @pytest.mark.parametrize(
         "submitted_title, expected_update",
         [
-            pytest.param(
-                "",
-                TitleUpdate.preserve(),
-                marks=pytest.mark.skip(
-                    reason="RED: SaveDocument.execute forwards TitleUpdate(value='') unchanged; "
-                    "no blank-to-preserve mapping exists"
-                ),
-            ),
-            pytest.param(
-                "   ",
-                TitleUpdate.preserve(),
-                marks=pytest.mark.skip(
-                    reason="RED: SaveDocument.execute forwards TitleUpdate(value='   ') unchanged; "
-                    "no blank-to-preserve mapping exists"
-                ),
-            ),
+            ("", TitleUpdate.preserve()),
+            ("   ", TitleUpdate.preserve()),
             (" Отчёт ", TitleUpdate.of(" Отчёт ")),
         ],
         ids=["empty_title_preserves", "whitespace_title_preserves", "padded_title_verbatim"],

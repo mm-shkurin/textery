@@ -4,6 +4,7 @@ from document.document import Document
 from document.document_content import MAX_CONTENT_LENGTH, DocumentContent
 from document.document_repository import DocumentRepository
 from document.html_sanitizer import HtmlSanitizer
+from document.title_update import TitleUpdate
 from shared.clock import Clock
 from shared.exceptions import ConflictException, NotFoundException, ValidationException
 from shared.unit_of_work import NullUnitOfWork, UnitOfWork
@@ -40,7 +41,11 @@ class SaveDocument:
         owner_id: UUID,
         content: str,
         version: int,
-        title: str | None = None,
+        # `str` is TRANSITIONAL and owned by adapters-discovery (a): the PUT route
+        # still hands the raw Pydantic field over, and only there can absent be
+        # told from an explicit null (`model_fields_set`). Until it maps the wire
+        # shape to a TitleUpdate itself, a raw string is read as "set this title".
+        title: TitleUpdate | str | None = None,
     ) -> Document:
         self._validate_version(version)
         # Length is checked here, before sanitizing: sanitizing first would make the
@@ -56,12 +61,28 @@ class SaveDocument:
             content=sanitized,
             expected_version=version,
             updated_at=self.clock.now(),
-            title=title,
+            title=self._title_intent(title),
         )
         if saved is None:
             return await self._explain_miss(document_id, owner_id, sanitized, version)
         await self.unit_of_work.commit()
         return saved
+
+    @staticmethod
+    def _title_intent(title: TitleUpdate | str | None) -> TitleUpdate | None:
+        """A blank title carries no title intent, so it must not overwrite one.
+
+        Blankness is TESTED (`strip() == ""`), never applied: the stored value is
+        forwarded byte-for-byte, so a legitimate `" Отчёт "` keeps its padding.
+        The rejected `title.strip() or None` would have trimmed every real title
+        as a side effect -- see decisions/blank-title-semantics-decision.md.
+        """
+        if title is None:
+            return None
+        update = TitleUpdate.of(title) if isinstance(title, str) else title
+        if update.value is not None and update.value.strip() == "":
+            return TitleUpdate.preserve()
+        return update
 
     def _validate_version(self, version: int) -> None:
         # bool is an int subclass in Python, and `True == 1`, so a JSON `true` would

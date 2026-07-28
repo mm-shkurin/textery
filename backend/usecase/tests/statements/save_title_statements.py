@@ -7,11 +7,6 @@ from statements.save_document_statements import AUTOSAVE_CONTENT, SaveStatements
 STORED_TITLE = "Привет Мир"
 
 
-# The two `type: ignore[arg-type]` below are the RED marker at the type level:
-# `SaveDocument.execute` still declares `title: str | None`, which per the ADR can
-# no longer express intent. RED must not rewrite an existing port signature (that
-# cascades into every adapter implementor) -- GREEN widens it to `TitleUpdate` and
-# deletes these, together with the matching marker in `save_document_statements`.
 class SaveTitleStatements(SaveStatements):
     """Save-boundary title intent: what `execute` forwards across the port."""
 
@@ -22,7 +17,7 @@ class SaveTitleStatements(SaveStatements):
             owner_id=owner_id,
             content=AUTOSAVE_CONTENT,
             version=1,
-            title=TitleUpdate.of(STORED_TITLE),  # type: ignore[arg-type]
+            title=TitleUpdate.of(STORED_TITLE),
         )
         return document
 
@@ -34,7 +29,7 @@ class SaveTitleStatements(SaveStatements):
             owner_id=owner_id,
             content=AUTOSAVE_CONTENT,
             version=2,
-            title=TitleUpdate.of(title),  # type: ignore[arg-type]
+            title=TitleUpdate.of(title),
         )
 
     def assert_forwarded_title_update(self, expected: TitleUpdate) -> None:

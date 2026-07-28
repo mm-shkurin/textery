@@ -43,6 +43,12 @@ class ExportDocument:
         # "document"; the extension IS the ExportFormat value (pdf/docx), so it
         # cannot drift from the format that drove the render. RFC 5987 encoding is
         # the rest adapter's concern -- this stays plain unicode.
-        stem = document.title or "document"
+        # The strip is DEFENSE IN DEPTH and belongs to the FILENAME ONLY: the
+        # save boundary only governs writes made through it, so a row written by
+        # a migration, an import, an admin tool, or before the blank-title green
+        # can still carry "   " or " Отчёт ". Derivation is where "never empty"
+        # is enforceable for every input. The stored entity is NOT rewritten --
+        # see decisions/blank-title-semantics-decision.md.
+        stem = (document.title or "").strip() or "document"
         filename = f"{stem}.{export_format.value}"
         return RenderedExport(content=content, media_type=media_type, filename=filename)

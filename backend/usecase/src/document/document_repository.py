@@ -3,6 +3,7 @@ from typing import Protocol
 from uuid import UUID
 
 from document.document import Document
+from document.title_update import TitleUpdate
 from shared.keyset_cursor import KeysetCursor
 
 
@@ -44,9 +45,15 @@ class DocumentRepository(Protocol):
         content: str,
         expected_version: int,
         updated_at: datetime,
-        title: str | None = None,
+        title: TitleUpdate | None = None,
     ) -> Document | None:
         """Compare-and-swap the content, returning the new state.
+
+        `title` is a `TitleUpdate`, not a `str | None`: once a blank title means
+        "preserve", a bare `None` can no longer tell "preserve" from "clear".
+        The value object names the intent, so the implementor maps the states to
+        SQL explicitly (omit from the SET list / `SET title = NULL` / `SET title
+        = ?`) -- see decisions/blank-title-semantics-decision.md.
 
         Returns `None` when nothing matched -- which conflates "absent",
         "foreign", and "stale version" on purpose. The caller re-reads to tell
