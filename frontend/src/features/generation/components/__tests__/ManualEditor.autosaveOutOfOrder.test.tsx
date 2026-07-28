@@ -5,6 +5,7 @@ import {
   CREATED_DOCUMENT_ID,
   CREATED_VERSION,
   defer,
+  editorContentHtml,
   flushMicrotasks,
   renderCreatedDocument,
   typeAndFireAutosave,
@@ -94,7 +95,7 @@ describe('ManualEditor — out-of-order autosaves reflect the latest edit and co
       SAVED_VERSION,
     )
     // The stale A response did not overwrite the editor's newer content.
-    expect(screen.getByTestId('editor-content-area').innerHTML).toBe(SECOND_CONTENT)
+    expect(editorContentHtml()).toBe(SECOND_CONTENT)
 
     // B — the save for the latest edit — resolves and settles the shown state.
     await act(async () => {
@@ -103,7 +104,7 @@ describe('ManualEditor — out-of-order autosaves reflect the latest edit and co
     await flushMicrotasks()
 
     // Final state reflects the latest edit (B): content preserved, status is exactly "saved".
-    expect(screen.getByTestId('editor-content-area').innerHTML).toBe(SECOND_CONTENT)
+    expect(editorContentHtml()).toBe(SECOND_CONTENT)
     // B settled the cycle — it must not chain a third write off its own resolve handler.
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
     // Strict status: the saved badge is the branch that rendered (asserted by its variant class —

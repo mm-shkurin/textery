@@ -30,8 +30,8 @@ export function shouldAdoptPersistedContent(
 
 // What the guard may remember as "saved" once a save resolves.
 //
-// `persistedContent` is the server's own copy (already sanitized: it strips <script> with its
-// contents and normalises void tags), and `currentContent` is what the editor holds AFTER the
+// `persistedContent` is the server's own copy (already sanitized — see shouldAdoptPersistedContent
+// above for what that rewriting does), and `currentContent` is what the editor holds AFTER the
 // resolve handler has decided whether to adopt it. Two keyings are both wrong and both silent:
 //
 //   - remembering what we SENT: after any sanitizing save the editor holds the adopted server form,

@@ -5,23 +5,21 @@ import { isTransientFailure } from '../../hooks/autosaveRetryPolicy'
 import * as documentApi from '../../api/documentApi'
 import {
   CREATED_DOCUMENT_ID,
-  CREATED_VERSION,
   crossDebounceBoundary,
   renderCreatedDocument,
-  typeAndFireAutosave,
   typeIntoEditor,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
 import {
-  EDITED_CONTENT,
-  EDITED_PLAIN,
   RETRY_VERSION,
   REVISED_CONTENT,
   REVISED_PLAIN,
   SAVED_CONTENT,
   SAVED_PLAIN,
   SAVED_VERSION,
+  echoSavedAtRetryVersion,
   playOutRetrySchedule,
+  saveBaselineThenTransientFailure,
 } from './ManualEditor.autosaveFixture'
 import {
   SAVED_BADGE_CLASS,
@@ -67,36 +65,12 @@ describe('ManualEditor — a revert after a TIMED-OUT save is still written (H9.
       // The client gave up waiting. Nothing here says the server did not commit EDITED_CONTENT —
       // that is precisely the point.
       .mockRejectedValueOnce(new RequestTimeoutError())
-      // Echoes back the content it was handed rather than a fixed body: a fixed body would differ
-      // from what a later save sent, and the resolve handler would adopt it into the editor,
-      // rewriting the user's text underneath the assertions as a pure artefact of the stub.
-      .mockImplementation(async (_documentId, content) => ({
-        status: 'saved',
-        version: RETRY_VERSION,
-        content,
-      }))
+      .mockImplementation(echoSavedAtRetryVersion)
 
-    // Baseline save: the guard now remembers SAVED_CONTENT as confirmed by the server.
-    await typeAndFireAutosave(SAVED_PLAIN)
-    expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
-      1,
-      CREATED_DOCUMENT_ID,
-      SAVED_CONTENT,
-      CREATED_VERSION,
-    )
-    expect(screen.getByText(SAVED_STATUS)).toHaveClass(SAVED_BADGE_CLASS)
-
-    // Edit #2 times out. Transient, so a backoff timer is pending and the cycle stays "in flight".
-    await typeAndFireAutosave(EDITED_PLAIN)
-    expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
-      2,
-      CREATED_DOCUMENT_ID,
-      EDITED_CONTENT,
-      SAVED_VERSION,
-    )
-    expect(screen.queryByTestId(SAVE_ERROR_TESTID)).toBeNull()
+    // Baseline save (the guard now remembers SAVED_CONTENT as confirmed by the server), then edit #2
+    // which TIMES OUT. Transient, so a backoff timer is pending and the cycle stays "in flight" —
+    // but unlike the sibling's 503 the server may well have committed it.
+    await saveBaselineThenTransientFailure()
 
     // The undo lands INSIDE the backoff window, so it can only queue.
     await typeIntoEditor(SAVED_PLAIN)

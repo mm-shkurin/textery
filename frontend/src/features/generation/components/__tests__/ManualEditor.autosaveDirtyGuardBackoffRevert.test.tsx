@@ -5,23 +5,20 @@ import { isTransientFailure } from '../../hooks/autosaveRetryPolicy'
 import * as documentApi from '../../api/documentApi'
 import {
   CREATED_DOCUMENT_ID,
-  CREATED_VERSION,
   crossDebounceBoundary,
   renderCreatedDocument,
-  typeAndFireAutosave,
   typeIntoEditor,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
 import {
-  EDITED_CONTENT,
-  EDITED_PLAIN,
-  RETRY_VERSION,
   REVISED_CONTENT,
   REVISED_PLAIN,
   SAVED_CONTENT,
   SAVED_PLAIN,
   SAVED_VERSION,
+  echoSavedAtRetryVersion,
   playOutRetrySchedule,
+  saveBaselineThenTransientFailure,
 } from './ManualEditor.autosaveFixture'
 import {
   SAVED_BADGE_CLASS,
@@ -76,39 +73,14 @@ describe('ManualEditor — reverting during a backoff wait writes nothing (H9.4 
       .mockResolvedValueOnce({ status: 'saved', version: SAVED_VERSION, content: SAVED_CONTENT })
       .mockRejectedValueOnce(DEFINITE_SERVER_REJECTION)
       // Deliberately still armed: if the retry or its chained re-save ever fires, it resolves and
-      // the call-count assertions below name exactly which one leaked. It ECHOES the content it was
-      // given rather than returning a fixed body — a fixed body would differ from what a later save
-      // sent, and the resolve handler would adopt it into the editor, rewriting the user's text
-      // underneath the assertions as a pure artefact of the stub.
-      .mockImplementation(async (_documentId, content) => ({
-        status: 'saved',
-        version: RETRY_VERSION,
-        content,
-      }))
+      // the call-count assertions below name exactly which one leaked.
+      .mockImplementation(echoSavedAtRetryVersion)
 
-    // Baseline save: the guard now remembers SAVED_CONTENT as confirmed by the server.
-    await typeAndFireAutosave(SAVED_PLAIN)
-    expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
-      1,
-      CREATED_DOCUMENT_ID,
-      SAVED_CONTENT,
-      CREATED_VERSION,
-    )
-    expect(screen.getByText(SAVED_STATUS)).toHaveClass(SAVED_BADGE_CLASS)
-
-    // Edit #2 is refused by the server with a 503. Transient, so no banner and no give-up: a backoff
-    // timer is pending and the save machinery stays "in flight" for its duration. Crucially the
-    // server told us it did NOT apply the write, so SAVED_CONTENT is still what it holds.
-    await typeAndFireAutosave(EDITED_PLAIN)
-    expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
-      2,
-      CREATED_DOCUMENT_ID,
-      EDITED_CONTENT,
-      SAVED_VERSION,
-    )
-    expect(screen.queryByTestId(SAVE_ERROR_TESTID)).toBeNull()
+    // Baseline save (the guard now remembers SAVED_CONTENT as confirmed by the server), then edit #2
+    // which the server REFUSES with a 503. Transient, so no banner and no give-up: a backoff timer
+    // is pending and the save machinery stays "in flight" for its duration. Crucially the server
+    // told us it did NOT apply the write, so SAVED_CONTENT is still what it holds.
+    await saveBaselineThenTransientFailure()
 
     // The undo lands INSIDE the backoff window, so it can only queue — save() never reaches the
     // guard from here.

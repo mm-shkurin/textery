@@ -1,10 +1,19 @@
-import { vi } from 'vitest'
-import { act } from '@testing-library/react'
+import { expect, vi } from 'vitest'
+import { act, screen } from '@testing-library/react'
+import * as documentApi from '../../api/documentApi'
+import type { SaveDocumentResult } from '../../api/documentApi'
 import {
+  CREATED_DOCUMENT_ID,
   CREATED_VERSION,
   RETRY_WINDOW_MS,
   flushMicrotasks,
+  typeAndFireAutosave,
 } from './ManualEditor.autosave.testSupport'
+import {
+  SAVED_BADGE_CLASS,
+  SAVED_STATUS,
+  SAVE_ERROR_TESTID,
+} from './ManualEditor.saveStatus.testSupport'
 
 // The autosave FIXTURE vocabulary: the text a failure suite types, the HTML it expects on the wire,
 // and the OCC versions those writes carry. A plain .ts module rather than more exports on
@@ -46,4 +55,44 @@ export async function playOutRetrySchedule() {
     await vi.advanceTimersByTimeAsync(RETRY_WINDOW_MS)
   })
   await flushMicrotasks()
+}
+
+// The tail stub the revert suites leave armed behind their scripted first two outcomes. It ECHOES
+// back the content it was handed rather than returning a fixed body: a fixed body would differ from
+// what a later save sent, and the resolve handler would adopt it into the editor, rewriting the
+// user's text underneath the assertions as a pure artefact of the stub.
+export async function echoSavedAtRetryVersion(
+  _documentId: string,
+  content: string,
+): Promise<SaveDocumentResult> {
+  return { status: 'saved', version: RETRY_VERSION, content }
+}
+
+// The prologue both revert suites open with: a baseline save the server confirms (so the dirty guard
+// has a remembered content at all), then an edit on top of it whose save fails TRANSIENTLY — no
+// banner, a backoff pending, the cycle still "in flight". Shared rather than respelled per file for
+// the same reason the fixture constants are: the two suites are deliberate inverse assertions over
+// one setup, and a per-file copy of the setup is how they drift into testing different things.
+// Parameter-free on purpose — WHICH failure the second save returns is scripted by each suite's own
+// mock before calling this, and that choice is the whole point of the pair.
+export async function saveBaselineThenTransientFailure() {
+  await typeAndFireAutosave(SAVED_PLAIN)
+  expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
+  expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
+    1,
+    CREATED_DOCUMENT_ID,
+    SAVED_CONTENT,
+    CREATED_VERSION,
+  )
+  expect(screen.getByText(SAVED_STATUS)).toHaveClass(SAVED_BADGE_CLASS)
+
+  await typeAndFireAutosave(EDITED_PLAIN)
+  expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
+  expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
+    2,
+    CREATED_DOCUMENT_ID,
+    EDITED_CONTENT,
+    SAVED_VERSION,
+  )
+  expect(screen.queryByTestId(SAVE_ERROR_TESTID)).toBeNull()
 }

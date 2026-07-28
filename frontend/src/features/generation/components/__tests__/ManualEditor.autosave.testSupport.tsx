@@ -50,7 +50,7 @@ export function useAutosaveFakeTimers() {
 // diagnostic and would otherwise print a real-looking failure into a passing run. Kept separate from
 // useAutosaveFakeTimers so silencing is a choice each suite makes, not a side effect of wanting fake
 // timers — the restore is handled by useAutosaveFakeTimers' restoreAllMocks.
-export function silenceConsoleError() {
+function silenceConsoleError() {
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
@@ -108,6 +108,13 @@ export async function typeIntoEditor(text: string) {
   await act(async () => {
     fireEvent.input(contentArea)
   })
+}
+
+// The editor's rendered HTML, read through the same test id typeIntoEditor writes through. Named so
+// a suite asserting what the editor holds after a save resolved does not respell the selector the
+// helper above already owns.
+export function editorContentHtml(): string {
+  return screen.getByTestId('editor-content-area').innerHTML
 }
 
 // Advances past the debounce boundary so a pending debounced autosave fires, then settles its
