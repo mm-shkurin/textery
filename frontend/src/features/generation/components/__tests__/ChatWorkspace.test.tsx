@@ -81,12 +81,13 @@ describe('ChatWorkspace', () => {
   // Ctrl/Cmd+Enter with no disabled guard — so a whitespace-only topic reaches send() and the
   // `if (trimmed)` there is the only thing stopping an empty-topic POST (backend 422). That false
   // branch was the file's single uncovered branch: deleting the `if` left the whole suite green.
-  // RED, coverage-gap variant: the guard this pins already exists, so the test passes as written.
-  // Its bite was verified by deleting `if (trimmed)` from ChatWorkspace.send(), which produced
+  // Coverage-gap variant: the guard this pins already exists, so the test passes as written.
+  // Its bite was verified by deleting `if (trimmed)` from ChatWorkspace.send(), which made the
+  // first `not.toHaveBeenCalled()` below fail with
   //   AssertionError: expected "vi.fn()" to not be called at all, but actually been called 1 times
-  //   Received: 1st vi.fn() call: Array [ "" ]   (ChatWorkspace.test.tsx:90:26)
-  // The guard was then restored; green-frontend removes this marker only.
-  it.skip('does not submit a whitespace-only topic sent with Ctrl/Cmd+Enter', () => {
+  //   Received: 1st vi.fn() call: Array [ "" ]
+  // The guard was then restored.
+  it('does not submit a whitespace-only topic sent with Ctrl/Cmd+Enter', () => {
     const { onSubmit } = renderWorkspace()
 
     const input = screen.getByTestId('topic-input')
