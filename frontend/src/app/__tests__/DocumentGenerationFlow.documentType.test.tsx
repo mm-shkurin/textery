@@ -50,4 +50,29 @@ describe('DocumentGenerationFlow — the workspace submits the picked type, not 
     expect(api.createGeneration).toHaveBeenCalledTimes(1)
     expect(api.createGeneration).toHaveBeenCalledWith(TOPIC, 'doklad')
   })
+
+  // A second Ctrl+Enter on the same topic bills the user twice: createGeneration mints a fresh
+  // crypto.randomUUID() per call, and that Idempotency-Key is scoped to the internal 401-replay,
+  // so two user-initiated submits carry two different keys and the backend cannot collapse them.
+  // The first generation then runs to completion unwatched, because the client polls the second.
+  //
+  // Nothing guards this deliberately. The send BUTTON is disabled only on a blank topic, never
+  // while a request is in flight, and Composer's onKeyDown has no in-flight check either. What
+  // actually stops the second dispatch today is render ordering: useGeneration.submit sets state
+  // to 'pending' synchronously, which swaps Composer for Progress before the next event is
+  // delivered. That is emergent, not asserted — moving setState('pending') behind the awaited
+  // createGeneration, or keeping Composer mounted during pending, silently reopens it.
+  it('bills one generation for a double Ctrl+Enter, not two', () => {
+    render(<App />)
+
+    fireEvent.click(screen.getByTestId('features-primary-cta-button'))
+    fireEvent.click(screen.getByTestId('type-card-doklad'))
+
+    const input = screen.getByTestId('topic-input')
+    fireEvent.change(input, { target: { value: TOPIC } })
+    fireEvent.keyDown(input, { key: 'Enter', ctrlKey: true })
+    fireEvent.keyDown(input, { key: 'Enter', ctrlKey: true })
+
+    expect(api.createGeneration).toHaveBeenCalledTimes(1)
+  })
 })
