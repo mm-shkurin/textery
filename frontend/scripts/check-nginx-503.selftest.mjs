@@ -15,7 +15,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { DIRECTIVES_THAT_CAN_EMIT_503 } from './nginx503Directives.mjs'
+import { DIRECTIVES, DIRECTIVES_THAT_CAN_EMIT_503 } from './nginx503Directives.mjs'
 import {
   BACK_REFERENCE,
   CLEAN_CONF,
@@ -37,9 +37,9 @@ expectVerdict({ what: 'a clean conf passes', confs: { 'frontend.conf': CLEAN_CON
 // who wants it gone has to say so in this file, where the reason it was scanned is written down.
 check(
   'the scanned list still covers every 503 route',
-  DIRECTIVES_THAT_CAN_EMIT_503.map((entry) => entry.directive).join() ===
+  DIRECTIVES.join() ===
     '503,limit_req,limit_conn,error_page,proxy_intercept_errors,max_fails,proxy_next_upstream,upstream',
-  `the list changed to: ${DIRECTIVES_THAT_CAN_EMIT_503.map((entry) => entry.directive).join()}`,
+  `the list changed to: ${DIRECTIVES.join()}`,
 )
 
 // One case per entry in the scanned list, generated FROM that list: a directive silently dropped
