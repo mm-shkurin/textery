@@ -1179,7 +1179,49 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   SCOPE: distinct from adapters-discovery guard (b), which pins the `SET title = NULL` clear branch.
   This step pins the SET and OMIT arms, which are live TODAY. Discovery (b) should add only the NULL
   case on top of the widened DSL this step lands — do not re-derive the DSL change there.
-- [~] red-usecase (the raw-str arm of `_title_intent`) — PROMOTED FROM A REVIEW FINDING to a step,
+- [x] red-usecase (the raw-str arm of `_title_intent`) — ALREADY-GREEN regression guard confirmed
+  live (not a fabricated RED): predicted PASS on unmutated production, got PASS, first run, no loop.
+  PREDICTED (unmutated): none — `_title_intent` already lifts a raw `str` via
+  `TitleUpdate.of(title) if isinstance(title, str) else title`, so the blank rule applies identically;
+  the arm is UNEXECUTED, not unimplemented. ACTUAL: 6 passed / 0 failed / 0 skipped in the target
+  file. PREDICTED (kill-mutant `update = title`): `AttributeError: 'str' object has no attribute
+  'is_blank'` at `save_document.py` `_title_intent`, all 3 NEW cases ERROR (not assertion-fail —
+  `is_blank()` is called before any branch, so blank and padded fail alike), 3 pre-existing VO-arm
+  cases stay green. ACTUAL: 3 failed / 3 passed, `AttributeError: 'str' object has no attribute
+  'is_blank'` at `save_document.py:80`, failing ids exactly `empty_title_preserves`,
+  `whitespace_title_preserves`, `padded_title_verbatim`. COMPARISON: type, message, location and
+  status all match on both predictions; zero NOs. Production restored and `6 passed` re-verified.
+  New: `save_title_statements.when_autosaving_with_a_wire_title` (raw `str` straight to
+  `SaveDocument.execute`, NO `TitleUpdate.of()` wrapper — an ADDITION; `when_autosaving_with_title`
+  is untouched and still pins the VO arm) + `test_should_apply_the_same_intent_to_a_raw_wire_string`
+  parametrized over `("", "   ", " Отчёт ")`.
+  KILL TEST DEMONSTRATED, and the new test is the SOLE killer: the 3 pre-existing VO-arm cases
+  survive the mutant. Step completion condition met.
+  NO DISABLE MARKER, deliberately — the test is green against real production code and must stay
+  enabled; skipping it would reproduce the exact blind spot the step exists to close.
+  test-review: 180 passed / 0 failed (`backend/usecase`), 2 in-diff findings fixed, both proven by
+  mutation. (1) The case table was copy-pasted verbatim between the two tests — proven a real defect,
+  not a style nit: editing ONLY the first table so `"   "` expected `of("   ")` produced 1 failure /
+  5 passed, i.e. the suite held two CONTRADICTORY specifications of the same rule and reported it as
+  one localized failure. Hoisted to `TITLE_INTENT_CASES` in the Statements with `pytest.param(id=…)`
+  so all 6 ids stay byte-identical; the same drift mutation now yields 2 failures, one per arm.
+  (2) The test class imported `TitleUpdate` only to build expectations — removed with the table move.
+  The two tests were deliberately NOT collapsed behind a `wrap: bool` flag: that reintroduces the very
+  conditional the new test exists to pin.
+  ⚠️ FOR `green-adapter db` (next): the mutant kills on TYPE (`AttributeError`), not on a silent wrong
+  value — stronger than the db step's silent-drop mutant, but it means this guard bites on type, not
+  intent. Once that green deletes the transitional `str` arm from the port, `SaveDocument.execute`
+  must still lift the wire string itself, or this test converts from green guard to genuine RED at
+  exactly that line — the intended tripwire.
+  ⚠️ REPORTED, NOT FIXED (pre-existing, outside this diff): check 16 (storage port reached from a
+  Statements) fires twice — `save_document_statements.py:21,49,136` (`FakeDocumentRepository` as a
+  base-class field for `given_a_document` setup and `_stored` read-back) and
+  `save_title_statements.py:61` (`assert_forwarded_title_update` reads `repository.title_updates`).
+  The prescribed fix ripples across the whole save suite via the inherited `SaveStatements` base, and
+  the second is in tension with this scenario's stated intent — the assertion belongs at the usecase's
+  PORT boundary (what `execute` forwards), not at stored state, since preserve-vs-clear SQL is the db
+  CAS's contract tested elsewhere. A deliberate design call, not a review side effect.
+  ORIGINAL STEP TEXT — PROMOTED FROM A REVIEW FINDING to a step,
   and sequenced AHEAD of the green it protects (premortem over `2cacaf7`, CREDIBLE). `save_document.py:79`
   is `update = TitleUpdate.of(title) if isinstance(title, str) else title`, and the rest route forwards
   a bare Pydantic `str | None`, so production ALWAYS takes the `isinstance` TRUE arm — which no test
@@ -1195,7 +1237,7 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   `of(" Отчёт ")` verbatim.
   KILL TEST (the step is not done until this is demonstrated): deleting
   `TitleUpdate.of(title) if isinstance(title, str) else` must go RED.
-- [ ] green-adapter db (TitleUpdate unwrap) — OWNS THE DB HALF OF THE UNION REMOVAL (assigned by the
+- [~] green-adapter db (TitleUpdate unwrap) — OWNS THE DB HALF OF THE UNION REMOVAL (assigned by the
   agent-review pass over `83e4e48`, which found the removal had no owner anywhere: (a) never mentions
   it, (b) is scoped to `SET title = NULL`, and the red step above deliberately WIDENS the DSL). Once
   the db DSL speaks `TitleUpdate`, this green MUST delete the `str` arm from

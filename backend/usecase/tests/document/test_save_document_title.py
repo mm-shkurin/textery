@@ -24,8 +24,7 @@ from uuid import uuid4
 
 import pytest
 
-from document.title_update import TitleUpdate
-from statements.save_title_statements import SaveTitleStatements
+from statements.save_title_statements import TITLE_INTENT_CASES, SaveTitleStatements
 
 
 @pytest.fixture
@@ -34,15 +33,7 @@ def statements():
 
 
 class TestSaveDocumentTitleIntent:
-    @pytest.mark.parametrize(
-        "submitted_title, expected_update",
-        [
-            ("", TitleUpdate.preserve()),
-            ("   ", TitleUpdate.preserve()),
-            (" Отчёт ", TitleUpdate.of(" Отчёт ")),
-        ],
-        ids=["empty_title_preserves", "whitespace_title_preserves", "padded_title_verbatim"],
-    )
+    @pytest.mark.parametrize("submitted_title, expected_update", TITLE_INTENT_CASES)
     async def test_should_preserve_on_a_blank_title_and_forward_a_real_title_verbatim(
         self, statements, submitted_title, expected_update
     ):
@@ -50,5 +41,25 @@ class TestSaveDocumentTitleIntent:
         document = await statements.given_a_titled_document(owner_id)
 
         await statements.when_autosaving_with_title(document, owner_id, submitted_title)
+
+        statements.assert_forwarded_title_update(expected_update)
+
+    @pytest.mark.parametrize("submitted_title, expected_update", TITLE_INTENT_CASES)
+    async def test_should_apply_the_same_intent_to_a_raw_wire_string(
+        self, statements, submitted_title, expected_update
+    ):
+        """The arm production takes, which the test above does NOT execute.
+
+        Every other call site wraps in `TitleUpdate.of(...)` before calling, so
+        the `isinstance(title, str)` TRUE arm of `_title_intent` is dead to the
+        suite while being the only arm the PUT route reaches. Line and branch
+        coverage cannot see the gap -- a conditional expression is one statement
+        with no arc -- so deleting `TitleUpdate.of(title) if isinstance(title,
+        str) else` reads 100% covered and green without this test.
+        """
+        owner_id = uuid4()
+        document = await statements.given_a_titled_document(owner_id)
+
+        await statements.when_autosaving_with_a_wire_title(document, owner_id, submitted_title)
 
         statements.assert_forwarded_title_update(expected_update)
