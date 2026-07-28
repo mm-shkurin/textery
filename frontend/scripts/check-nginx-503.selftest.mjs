@@ -46,12 +46,23 @@ check(
 // from the scan cannot leave the self-test still reporting the same number of green cases, because
 // there is no way to express an entry without a case. `return 503` leads — it is the case the guard
 // shipped unable to catch, printing OK over a conf that 503'd every request.
-for (const { directive, sample } of DIRECTIVES_THAT_CAN_EMIT_503) {
+for (const { directive, sample, nearMiss } of DIRECTIVES_THAT_CAN_EMIT_503) {
   expectVerdict({
     what: `\`${directive}\` fails`,
     confs: { 'frontend.conf': confDeclaring(sample) },
     code: 1,
     quotes: [sample, `\`${directive}\``],
+  })
+
+  // The other half of the boundary. An entry with a benign neighbouring form pins that form as
+  // PASSING: firing on `error_page 404 /index.html;` or a bare `upstream` block is not a harmless
+  // false positive, it is how the guard gets deleted — the author sees a commit that plainly cannot
+  // endanger an autosave failing a check that says it does, and concludes the check is wrong.
+  if (!nearMiss) continue
+  expectVerdict({
+    what: `\`${directive}\` does not fire on \`${nearMiss}\``,
+    confs: { 'frontend.conf': confDeclaring(nearMiss) },
+    code: 0,
   })
 }
 
@@ -119,6 +130,7 @@ ${real.output}`,
 )
 
 reportAndExit(
-  'one per scanned directive, plus the clean conf, comments, the back-reference, a second conf,\n' +
-    'an empty directory, a moved directory, the split-repo skip, and the real ingress with no flags.',
+  'one per scanned directive plus each benign near-miss, the clean conf, comments, the\n' +
+    'back-reference, a second conf, an empty directory, a moved directory, the split-repo skip,\n' +
+    'and the real ingress with no flags.',
 )

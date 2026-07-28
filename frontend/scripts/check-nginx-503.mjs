@@ -15,7 +15,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve } from 'node:path'
-import { DIRECTIVES } from './nginx503Directives.mjs'
+import { DIRECTIVES, firstFiring } from './nginx503Directives.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
@@ -75,10 +75,13 @@ for (const name of confs) {
     .map((line) => line.trim())
     .filter((line) => line.length > 0 && !line.startsWith('#'))
 
+  // Judged line by line against the whole file: two entries (`upstream`, and the codes an
+  // `error_page` maps) are only dangerous in company, and each entry owns its own boundary so the
+  // benign forms — an SPA `error_page 404`, a bare `upstream` block — do not fail the build. A
+  // guard that is wrong on first contact gets deleted rather than refined.
+  const conf = lines.join('\n')
   for (const line of lines) {
-    // First match only: `upstream` is a substring of `proxy_next_upstream`, so a line carrying one
-    // of the compound directives would otherwise be reported twice for the same offence.
-    const directive = DIRECTIVES.find((candidate) => line.includes(candidate))
+    const directive = firstFiring(line, conf)
     if (directive) offenders.push(`  ${name}: ${line}   (\`${directive}\`)`)
   }
 
