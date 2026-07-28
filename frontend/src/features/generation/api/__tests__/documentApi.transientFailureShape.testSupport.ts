@@ -9,9 +9,9 @@ import { saveDocument, type SaveDocumentResult } from '../documentApi'
 
 // One definition of the request under test, shared by the call and by the assertion that reads
 // the recorded fetch back — so a drifting literal cannot make the request assertion vacuous.
-export const SAVE_DOCUMENT_ID = 'doc-1'
-export const SAVE_CONTENT = '<p>ours</p>'
-export const SAVE_VERSION = 1
+const SAVE_DOCUMENT_ID = 'doc-1'
+const SAVE_CONTENT = '<p>ours</p>'
+const SAVE_VERSION = 1
 export const ACCESS_TOKEN = 'access-1'
 export const REFRESH_TOKEN = 'refresh-1'
 
@@ -54,7 +54,7 @@ export async function isStillPending(work: Promise<unknown>): Promise<boolean> {
 // The EXACT rejection, not just `.status`. `httpClient` throws this object literal verbatim
 // (httpClient.ts:141), so `toEqual` additionally fails on a body the transport invented and on a
 // stray `retryAfterSeconds` — the two other fields of `HttpError` a partial assertion would miss.
-export function expectHttpRejection(rejection: unknown, status: number): void {
+function expectHttpRejection(rejection: unknown, status: number): void {
   expect(isHttpError(rejection)).toBe(true)
   expect(rejection).toEqual({ status, body: {} })
 }
