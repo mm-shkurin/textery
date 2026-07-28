@@ -37,6 +37,10 @@ describe('generationApi createGeneration — the picked document type reaches th
     // one generation instead of billing the user for two.
     vi.stubGlobal('crypto', { randomUUID: () => 'idem-1' })
 
+    // @ts-expect-error createGeneration takes only a topic today — this second argument is the
+    // RED. Keeps `tsc -b` (and CI's typecheck/build) green while the test is skipped, and is
+    // self-removing: once green widens the signature, an unused @ts-expect-error is itself an
+    // error, so it cannot be left behind.
     const result = await createGeneration('Тема', 'referat')
 
     expect(result).toEqual({ generationId: 'gen-1', status: 'pending' })
