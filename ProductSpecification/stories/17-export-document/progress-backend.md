@@ -708,9 +708,38 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 > Title LENGTH bound (premortem CREDIBLE 3) is a restatement of the cap already carried forward to
 > Sc 3.6 / Infra 3.1 in c00c2f5 — no new obligation here beyond noting that truncating the filename
 > STEM in `ExportDocument` bounds the header regardless of what is stored.
-- [~] design
-- [ ] red-usecase
-- [ ] green-usecase
+- [x] design — see `decisions/blank-title-semantics-decision.md` (ADR). The title field is
+  THREE-STATE, distinguished by what the client SENT, not by the value alone: key absent → preserve;
+  `""`/whitespace-only → preserve; `null` → CLEAR (`SET title = NULL`); a real string → store
+  VERBATIM. Blank preserves because a blank title is the default shape of "nothing to say about the
+  title" (hydration race, partially-initialised form, client that always serialises the field) — a
+  wipe must not be the failure mode of an ordinary frontend bug, so clearing gets the shape a client
+  cannot send by accident. `null`-vs-absent is distinguishable ONLY via Pydantic `model_fields_set`
+  in the route (both collapse to `None`), which is the RFC 7396 merge-patch convention. REJECTED
+  `title.strip() or None` (review obligation 2): it silently trims every legitimate title
+  (`" Отчёт "` → `"Отчёт"`) and nothing in the suite can detect it — blankness is tested with
+  `title.strip() == ""`, the stored value is never rewritten. DEFENSE IN DEPTH (review obligation 3):
+  `ExportDocument` derives `stem = (document.title or "").strip() or "document"` INDEPENDENTLY of the
+  save boundary, because rows written before this green (today's `SET title = ''` is live) or by a
+  migration/import/admin tool bypass the save path and would reproduce `%20%20%20.pdf` forever.
+  PORT CHANGE: `title: str | None` can no longer express intent (`None` is now ambiguous between
+  preserve and clear) — a domain `TitleUpdate` VO (`preserve()` / `clear()` / `of(value)`) carries
+  the three states so Pydantic never reaches the usecase and the CAS maps them explicitly.
+  Review obligation 1 (no way to clear a title) is CLOSED by the `null` affordance; obligation 4
+  (Test 2 can't tell preserve from whole-save no-op) is scheduled below.
+- [~] red-usecase — blank-preserve + verbatim-store + the `TitleUpdate` three-state contract, and
+  the whitespace-title-default DERIVATION case in `test_export_document_usecase.py` (currently only
+  `cyrillic_title_pdf` / `cyrillic_title_docx` / `absent_title_default`). Do NOT re-pin
+  `title=None → "document.pdf"` — Sc 3.1 owns it.
+- [ ] green-usecase — also FIX the Sc 3.2 acceptance Test 2 (review obligation 4): the blank save
+  resubmits the SAME `DOCUMENT_CONTENT` and only checks `status_code == 200`, so a green that
+  rejects or short-circuits the whole blank-title save — losing the content update — passes
+  identically. Send distinct content on the blank save and assert it persisted (or that the version
+  advanced to 3).
+- [ ] red-usecase (clear path) — `null` clears: the ADR's new behavior, which no existing test
+  covers. Inserted at design so the clear branch is driven by a test rather than smuggled into a
+  green whose tests do not exercise it.
+- [ ] green-usecase (clear path)
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
