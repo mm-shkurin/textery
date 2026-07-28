@@ -17,7 +17,13 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve } from 'node:path'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const NGINX_DIR = resolve(here, '../../infra/docker/nginx')
+// Overridable ONLY so the guard can be pointed at fixture confs by its own self-test
+// (check-nginx-503.selftest.mjs). Without that seam nothing can prove this script still fails on a
+// conf that emits 503 — and a gate whose own correctness is untested reports OK forever once
+// somebody narrows the scan. CI sets nothing, so the default is the real ingress.
+const NGINX_DIR = process.env.NGINX_503_DIR
+  ? resolve(process.env.NGINX_503_DIR)
+  : resolve(here, '../../infra/docker/nginx')
 
 // In the split repo (gitverse slide_frontend) `frontend/` is the ROOT and `infra/` does not exist —
 // the same shape check check-ci-parity.mjs makes. Nothing to scan is not a failure there; the
