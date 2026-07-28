@@ -153,6 +153,20 @@ class BaseFrontendStatements(FormAssertionsMixin):
         return len(self._matching_requests_to(driver, path_substring, method))
 
     @staticmethod
+    def _request_header(request: dict, name: str) -> str | None:
+        """Case-insensitive header lookup on one CDP `request` object.
+
+        `Network.requestWillBeSent` reports headers exactly as they went on the wire, and
+        header names are case-insensitive there, so a literal dict lookup would silently
+        miss a differently-cased key and report the header as absent.
+        """
+        wanted = name.lower()
+        for key, value in (request.get("headers") or {}).items():
+            if key.lower() == wanted:
+                return value
+        return None
+
+    @staticmethod
     def _request_body(request: dict, label: str) -> dict:
         """Parses one CDP request's JSON post body, failing loudly if it carried none."""
         post_data = request.get("postData")

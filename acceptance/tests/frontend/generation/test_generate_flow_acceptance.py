@@ -2,19 +2,20 @@ import pytest
 
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
-# RED 1.1 (analytical; live run deferred to green-selenium). In the current build, picking a
-# document type routes to step='mode' and opens the mode-select modal (useFlowNavigation.selectType
-# -> setStep('mode'); DocumentGenerationFlow renders FlowLanding's mode modal), so neither the
-# generation breadcrumb nor the topic composer renders and assert_generation_surface_shown times
-# out with a selenium TimeoutException. Story 18 drops the mode modal so picking a type lands
-# directly on the composer. Un-skip + verify in green-selenium once the unified flow lands.
+# 1.1 live run is deferred to green-selenium: it needs a running backend (the flow issues a real
+# register -> verify -> login round trip, then a real generation POST) plus a browser, neither of
+# which the analytical phases have. The RED prediction this skip originally carried — a
+# TimeoutException from assert_generation_surface_shown because selectType routed to step='mode' —
+# is spent: useFlowNavigation.selectType now sets step='form' with mode='auto' and the mode modal
+# is gone, so the failure it named can no longer be produced. Un-skip in green-selenium.
 
 
 @pytest.mark.skip(
-    reason="RED 1.1: picking a doklad type still opens the mode-select modal (step='mode') "
-    "instead of landing on the generation composer — neither [data-testid='generation-breadcrumb'] "
-    "nor [data-testid='topic-input'] renders, so assert_generation_surface_shown times out "
-    "(selenium TimeoutException). Story 18 removes the mode modal and goes straight to generation."
+    reason="1.1 needs a live backend + browser, so the run is deferred to green-selenium. The "
+    "unified flow has landed (selectType -> step='form', mode='auto', no mode modal), so no "
+    "analytical failure is predicted; if the live stack is unhealthy the first failure will be "
+    "assert_reached_generation_workspace, whose AssertionError names the current URL so an "
+    "auth-collapse back to the landing is not misread as a routing regression."
 )
 class TestGenerateFlowAcceptance(AbstractFrontendTest):
     """UI Test Scenario 1.1: Selecting a type goes straight to generation.
@@ -37,8 +38,10 @@ class TestGenerateFlowAcceptance(AbstractFrontendTest):
     ):
         generate_flow_statements.pick_document_type_for_doklad(webdriver, app_url)
 
+        generate_flow_statements.assert_reached_generation_workspace(webdriver)
         generate_flow_statements.assert_generation_surface_shown(webdriver)
         generate_flow_statements.assert_no_mode_modal_shown(webdriver)
+        generate_flow_statements.assert_no_generation_started_yet(webdriver)
 
         generate_flow_statements.send_topic(webdriver, self.TOPIC)
 
