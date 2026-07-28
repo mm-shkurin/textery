@@ -46,9 +46,13 @@ export function useFlowNavigation() {
   }
 
   // The row carries the wire's Cyrillic type; the app speaks its own. An unrecognised value (the
-  // server added a type this build has never heard of) falls back to 'doklad' for the breadcrumb
-  // LABEL only — it is display text, and the document's real content comes from the GET either
-  // way. Refusing to open the document over an unfamiliar label would be the worse trade.
+  // server added a type this build has never heard of) falls back to 'doklad' rather than refusing
+  // to open the document over an unfamiliar label — the real content comes from the GET either way.
+  // NOTE: since scenario 1.1 threaded the type to the wire, `documentType` is no longer display-only
+  // — `submitGeneration` puts it on a POST. The fabricated 'doklad' cannot reach the wire today,
+  // because this path sets mode='manual' + openDocumentId and routes to ManualEditor, and every
+  // route back to the create path passes through `selectType`. Any NEW path into step='form' that
+  // skips `selectType` would inherit a silently fabricated wire value — thread a real type instead.
   const openDocumentFromHistory = (documentId: string, wireType: string) => {
     setDocumentType(documentTypeFromWire(wireType) ?? 'doklad')
     setMode('manual')
