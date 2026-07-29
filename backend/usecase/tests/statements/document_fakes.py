@@ -99,6 +99,7 @@ class FakeDocumentRepository:
         content: str,
         expected_version: int,
         updated_at: datetime,
+        *,
         title: TitleUpdate,
     ) -> Document | None:
         # REQUIRED, mirroring the port: the fake must not answer for the usecase.

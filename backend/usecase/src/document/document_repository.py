@@ -45,6 +45,7 @@ class DocumentRepository(Protocol):
         content: str,
         expected_version: int,
         updated_at: datetime,
+        *,
         title: TitleUpdate,
     ) -> Document | None:
         """Compare-and-swap the content, returning the new state.

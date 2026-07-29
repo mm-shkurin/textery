@@ -1837,7 +1837,7 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   > GREEN's job: add `*` to BOTH `document_repository.py:41` and `document_fakes.py:95`.
   > `SqlAlchemyDocumentStorage`'s mirror will then be structurally looser than its port — out of
   > this test's scope, already routed to the clear() step's `red-adapter db`.
-- [~] green-usecase (coverage: pin that the port's `title` has no default)
+- [x] green-usecase (coverage: pin that the port's `title` has no default)
   > COVERAGE FINDING over this green — percentages were clean and proved nothing, again (4th time).
   > `document_repository.py` 10/10 stmts, 0 branches (it is a Protocol); `document_storage.py` 42/42
   > stmts, 2/2 branches. Both 100%/100%. Removing a default REMOVES a state, so nothing is newly
@@ -1858,7 +1858,32 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   > TypeError, which is a constraint rather than a convention" — untrue while nothing checks it.
   > `SqlAlchemyDocumentStorage`'s mirror is db-layer (`red-adapter db`); left for the clear() step, and
   > lower-stakes since `SaveDocument` always passes explicitly.
-- [ ] green-acceptance (blank-title round trip) — PULLED FORWARD from the end of the scenario by the
+  > COVERAGE OVER THE GREEN ITSELF (the `*` separator) — percentages vacuous a 5th time, but the
+  > MUTATION now DIES, and that is the first time in this scenario it has. Numbers: usecase 188 passed,
+  > 754 stmts / 12 missed / 98% overall; the only touched production file,
+  > `document_repository.py`, is 10/10 stmts and 0 branches — it is a Protocol whose bodies are `...`,
+  > so there is no arc for coverage to measure and 100% asserts nothing. Adding `*` REMOVES states
+  > (the positional binding) exactly as removing the default did, so this was expected and the
+  > percentage was not consulted for the verdict.
+  > Two mutations, both KILLED, each by 2 tests (`[port]` and `[fake]`):
+  > (1) delete `*` from `document_repository.py` + `document_fakes.py` → 2 failed / 186 passed;
+  > (2) restore the previous green's `= TitleUpdate.preserve()` default on both → 2 failed / 186 passed.
+  > Mutation (2) is the one that SURVIVED 238/238 on the last pass. The structural test retro-actively
+  > pins `6d1ea08`'s content as well as this one — `EXPECTED_TITLE_PARAMETER` compares the whole
+  > `inspect.Parameter`, so kind, default and annotation all became falsifiable in one assertion.
+  > Coverage verdict for `usecase`: CLEAN. No reachable gap, no dead code, no red/green step to add.
+  > ONE MUTATION STILL SURVIVES, and it is db-layer: re-adding the default to
+  > `SqlAlchemyDocumentStorage.save_content_if_version_matches` leaves `adapters/db/tests` 55/55 GREEN.
+  > Separately, that adapter has no `*` at all today (`document_storage.py:83-91`), nor does the db test
+  > DSL's mirror (`document_storage_statements.py:61`) — so the real adapter is live, uncontrolled drift
+  > looser than the port it implements, not merely a hypothetical. WIDEN the already-routed
+  > `red-adapter db` step below: it was scoped to the `*` separator alone, and the mutation shows the
+  > DEFAULT is unpinned there too. Both carriers (`document_storage.py` and
+  > `document_storage_statements.py`) need the same whole-`inspect.Parameter` comparison this layer just
+  > got — the db layer already owns the idiom in `test_document_storage_cas_shape.py`. Reachable, not
+  > dead: `SaveDocument` passing `title=` explicitly is convention, and the signature is what would
+  > enforce it.
+- [~] green-acceptance (blank-title round trip) — PULLED FORWARD from the end of the scenario by the
   premortem over `83e4e48`: unskip `test_export_document_acceptance.py:141` (both `empty_title` and
   `whitespace_title` params) HERE, not after the clear path. It is the only test in the repo that
   exercises route → usecase → CAS → Postgres → export header for this scenario, ~50 lines of
@@ -1919,6 +1944,15 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   request-schema `description` in `document_dtos.py` (the OpenAPI surface). Story-5-extension owns
   the title editing UI and will never open this story's `decisions/` folder; those two artifacts are
   what a parallel frontend session actually reads.
+  (e) db PORT-SHAPE MIRROR — inserted by the coverage pass over the green-usecase step above, on
+  MUTATION evidence, not on a percentage. `SqlAlchemyDocumentStorage.save_content_if_version_matches`
+  (`document_storage.py:83-91`) and the db test DSL's mirror (`document_storage_statements.py:61`)
+  both declare `title` as POSITIONAL_OR_KEYWORD while the port it implements is now KEYWORD_ONLY —
+  live drift today, not hypothetical. Re-adding `= TitleUpdate.preserve()` to the adapter leaves
+  `adapters/db/tests` 55/55 GREEN, so the adapter's half of this contract is entirely unpinned.
+  Add the whole-`inspect.Parameter` comparison the usecase layer just got, in the idiom this layer
+  already owns (`test_document_storage_cas_shape.py`). `SaveDocument` always passing `title=`
+  explicitly is convention; the signature is what enforces it, so this is reachable, not dead.
 - [ ] green-acceptance
 > READ-MODEL NOTE (agent-review, verified): `DocumentResponseDto` and `DocumentSummaryDto` carry NO
 > `title` field, so the whole three-state contract is unobservable to any client except by exporting

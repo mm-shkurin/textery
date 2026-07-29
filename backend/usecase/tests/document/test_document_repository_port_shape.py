@@ -42,10 +42,6 @@ import pytest
 from statements.port_shape_statements import SAVE_SIGNATURE_CARRIERS, PortShapeStatements
 
 
-@pytest.mark.skip(
-    reason="RED: `title` is POSITIONAL_OR_KEYWORD on both DocumentRepository and "
-    "FakeDocumentRepository -- neither signature has a `*` separator, so KEYWORD_ONLY is unmet"
-)
 class TestSaveTitleIsARequiredKeywordOnlyArgument:
     @pytest.mark.parametrize("implementor", SAVE_SIGNATURE_CARRIERS)
     def test_title_has_no_default_and_cannot_be_passed_positionally(
