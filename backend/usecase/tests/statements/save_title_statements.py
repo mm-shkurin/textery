@@ -23,6 +23,17 @@ PADDED_TITLE = " Отчёт "
 # The second is the one the padded case below exists to catch, so without the
 # literal `value=` that case was guarding nothing. Writing the value out is what
 # makes both mutations red.
+#
+# These three constants name `value=` only, while `assert_forwarded_a_clear`
+# names both fields. That asymmetry is FORCED, not an oversight: `clears` does
+# not exist during red, so spelling it here -- at module scope, evaluated on
+# import -- raises `TypeError` at COLLECTION and errors every currently-passing
+# test in the file, which is the defect found in `65ec3fd`. The expectations are
+# not weaker for it: frozen-dataclass `__eq__` compares EVERY field, so
+# `TitleUpdate(value=None) == actual` already requires `actual.clears` to be
+# false once the field lands. The clear expectation can name both fields only
+# because it is built inside a method body, where the same `TypeError` fails one
+# test instead of erroring the module.
 PRESERVE_TITLE_UPDATE = TitleUpdate(value=None)
 
 # What the setup save forwards across the port. Named once so the setup step and
@@ -121,6 +132,38 @@ class SaveTitleStatements(SaveStatements):
             content=AUTOSAVE_CONTENT,
             version=2,
         )
+
+    async def when_autosaving_with_an_explicit_clear(
+        self, document: Document, owner_id: UUID
+    ) -> None:
+        """The deliberate erasure -- the wire's `"title": null`.
+
+        This is the ONE shape that must reach the CAS as `SET title = NULL`.
+        It is a third axis again, not another row in `TITLE_INTENT_CASES`: that
+        table is indexed by a submitted STRING, and no string spells "remove the
+        title".
+        """
+        await self.usecase.execute(
+            document_id=document.id,
+            owner_id=owner_id,
+            content=AUTOSAVE_CONTENT,
+            version=2,
+            title=TitleUpdate.clear(),
+        )
+
+    def assert_forwarded_a_clear(self) -> None:
+        """Built STRUCTURALLY and built HERE, never at import time.
+
+        Structurally, for the reason the whole expectation table is: an
+        expectation built from `TitleUpdate.clear()` would compare a factory call
+        to itself and pin the intent's NAME rather than what it is -- and this is
+        precisely the factory whose representation is under construction.
+
+        Here rather than as a module constant because in RED the discriminator
+        does not exist yet: evaluating it at import would ERROR the whole module
+        at collection instead of FAILING this one test.
+        """
+        self.assert_forwarded_title_update(TitleUpdate(value=None, clears=True))
 
     def assert_forwarded_title_update(self, expected: TitleUpdate) -> None:
         # The WHOLE recorded sequence, not just the last entry: the setup save

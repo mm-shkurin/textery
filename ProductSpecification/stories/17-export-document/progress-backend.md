@@ -1951,7 +1951,7 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 > • Seen and already tracked, not new: the client cannot express an explicit JSON `null` title
 >   (`application_client.py:128` omits the key when `title is None`), which the clear path will
 >   require — stated verbatim at `decisions/blank-title-semantics-decision.md:106`.
-- [~] red-usecase (clear path) — `null` clears: the ADR's new behavior, which no existing test
+- [x] red-usecase (clear path) — `null` clears: the ADR's new behavior, which no existing test
   covers. Inserted at design so the clear branch is driven by a test rather than smuggled into a
   green whose tests do not exercise it.
   ⚠️ MUST RESHAPE `TitleUpdate` FIRST — BOTH review passes over `60ab441` landed CREDIBLE on this,
@@ -1979,7 +1979,50 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   reopen the `SET title = ''` path. This is the ADR's own defense-in-depth argument applied to the
   WRITE side, where it was never made: pin that `of()` with a blank string is rejected or normalises
   to `preserve()`, so the invariant lives on the type rather than on one caller.
-- [ ] green-usecase (clear path)
+- [~] green-usecase (clear path)
+  > RED LANDED. Prediction matched on the first run, no loop, zero NOs across type/message/status for
+  > all 5 failing tests. New: `backend/domain/tests/document/test_title_update.py` — the FIRST
+  > `TitleUpdate` domain test that has ever existed — plus two Statements methods and one usecase test.
+  > Observed verbatim: `AttributeError: type object 'TitleUpdate' has no attribute 'clear'` at three
+  > sites, and `AssertionError: of('') must carry no title intent, so no caller can write a blank
+  > title` for all three blank ids.
+  > SHAPE CHOSEN FOR GREEN: a `clears` discriminator DEFAULTED to `False`, so every existing
+  > structural expectation (`TitleUpdate(value=None)`, `TitleUpdate(value=PADDED_TITLE)`) stays valid
+  > and still equals `preserve()` — the reshape therefore does not error the Statements module at
+  > import. `of("")` NORMALISES to preserve rather than raising: the ADR explicitly rejects failing the
+  > whole save over a blank title, since a content-only autosave riding along would lose its content.
+  > /test-review found the RED's own blindness and MEASURED it rather than arguing it: the two `!=`
+  > assertions pinned nothing — with `clear()` implemented as `TitleUpdate(value="__CLEARED__")`, a
+  > magic sentinel the db CAS would write as the user's literal title, ALL SIX domain tests passed.
+  > `!=` holds for an infinite family of wrong representations, including an INVERTED discriminator
+  > that flags `preserve()` instead. Replaced with three structural per-state pins naming both fields;
+  > distinctness is now a consequence of three pinned states. The blank-normalisation assertion had
+  > the same defect in factory-to-factory form (`== TitleUpdate.preserve()`): a green where both
+  > `of(blank)` and `preserve()` returned `clears=True` — every blank autosave a title wipe — passed
+  > all three params. Both mutants now die (1 failed / 5 failed respectively).
+  > Two detector findings DECLINED with reasons worth keeping: (1) adding `clears=False` to the three
+  > module-level constants in `save_title_statements.py` would `TypeError` at IMPORT and error every
+  > passing test in the file at collection — the `65ec3fd` defect — and is unnecessary, since frozen
+  > dataclass `__eq__` already compares every field; (2) widening the padded-title assertion in place
+  > would have converted the one LIVE regression guard into a RED test, killing the `strip()` tripwire
+  > exactly while green is being written. Added a separate RED-marked twin instead and left the guard
+  > live and unskipped.
+  > MYPY IS RED and deliberately so — 2 errors at `save_title_statements.py:140,155` (`has no
+  > attribute "clear"`, `Unexpected keyword argument "clears"`). Not silenced with `type: ignore`,
+  > because a suppression added in RED is what survives GREEN and hides drift later (this scenario has
+  > been bitten twice by decorative guards). They vanish when green lands the factory and the field.
+  > Note the asymmetry: the DOMAIN test's `TitleUpdate.clear()` calls are NOT flagged, only because
+  > mypy skips untyped function bodies.
+  > GREEN's job, explicitly: add the `clears` field + `clear()` factory, normalise `of(blank)` to
+  > preserve WITHOUT rewriting the stored value, and fix `document_fakes.save_content_if_version_matches`
+  > — it still branches on `carries_a_value()` and maps clear to "leave the title alone". RED left the
+  > fake alone on purpose: the corrected predicate needs `title.clears`, which would `AttributeError` on
+  > EVERY save in the suite and turn a targeted RED into a mass red. `assert_stored_title(document, None)`
+  > is what holds green to it.
+  > FLAGGED FORWARD to adapters-discovery: the usecase suite's clear-path coverage rests ENTIRELY on
+  > `assert_forwarded_a_clear`. `preserve()` and a bare `None` produce byte-identical SET clauses in the
+  > db CAS, so a clear that forwards correctly but is read as "leave it alone" stays invisible below the
+  > port — guard (b) is load-bearing, not a mirror.
 - [ ] adapters-discovery — REQUIRED guards, named by the review passes over the design commit
   (`97e8f53`); discovery must insert all four, none is optional:
   (a) rest route — TWO assertions in `test_save_document_title_router.py`, not one: a body of

@@ -66,6 +66,11 @@ class TestSaveDocumentTitleIntent:
         """
         owner_id = uuid4()
         document = await statements.given_a_titled_document(owner_id)
+        # The same precondition the three sibling tests state. Without it the two
+        # preserve params measure `assert_stored_title(STORED_TITLE)` against a
+        # title that may never have been stored, and a preserve over a `None`
+        # title is indistinguishable from a preserve over the title we meant.
+        await statements.assert_title_survived_the_setup_save(document)
 
         await statements.when_autosaving_with_a_wire_title(document, owner_id, submitted_title)
 
@@ -106,3 +111,27 @@ class TestSaveDocumentTitleIntent:
         # user-visible effect -- that sentinel CARRIES a value, so a fired default
         # replaces the stored title with the bogus marker instead of preserving.
         await statements.assert_stored_title(document, STORED_TITLE)
+
+    @pytest.mark.skip(reason="RED: TitleUpdate has no clear() -- the discriminator is gone")
+    async def test_should_forward_a_clear_and_null_the_stored_title(self, statements):
+        """The ADR's third state, which no test anywhere covers today.
+
+        An explicit `null` is the ONLY shape that removes a stored title. It has
+        to be asserted at BOTH ends of the same save: the forwarded intent pins
+        what `execute` asked the port for, and the stored title pins that the
+        request meant something -- a clear that forwards correctly and is then
+        read by the storage as "leave it alone" is the affordance silently
+        no-opping, and a user's deleted title returning on every reopen.
+
+        Neither half can pass today, and not for want of implementation: with a
+        single-field `TitleUpdate`, `clear()` has no representation left that is
+        not already `preserve()`. The discriminator has to come back first.
+        """
+        owner_id = uuid4()
+        document = await statements.given_a_titled_document(owner_id)
+        await statements.assert_title_survived_the_setup_save(document)
+
+        await statements.when_autosaving_with_an_explicit_clear(document, owner_id)
+
+        statements.assert_forwarded_a_clear()
+        await statements.assert_stored_title(document, None)
