@@ -3,7 +3,8 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from document.create_document import CreateDocument
-from document.resolve_owned_document import DocumentScope, resolve_owned_document
+from document.document_scope import DocumentScope
+from document.resolve_owned_document import resolve_owned_document
 from shared.exceptions import NotFoundException
 from statements.arranged import arranged
 from statements.document_fakes import FakeClock, FakeDocumentRepository

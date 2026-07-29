@@ -4,8 +4,6 @@ from document.document_repository import DocumentRepository
 from document.document_scope import DocumentScope
 from shared.exceptions import NotFoundException
 
-__all__ = ["REFUSAL_MESSAGE", "DocumentScope", "resolve_owned_document"]
-
 # The one canonical refusal body for all seven AI-edit endpoints. It names no
 # document and carries no instruction text: `not_found_exception_handler` logs
 # the exception verbatim at INFO, and the whole premise of a refused request is
