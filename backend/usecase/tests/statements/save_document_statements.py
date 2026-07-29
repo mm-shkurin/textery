@@ -12,7 +12,7 @@ from statements.document_fakes import (
     FakeHtmlSanitizer,
     FakeUnitOfWork,
 )
-from statements.document_state import state_of
+from statements.document_state import DocumentState
 
 AUTOSAVE_CONTENT = "<p>черновик</p>"
 
@@ -38,7 +38,7 @@ class SaveStatements:
         # Field-by-field state as of the last `remember_stored_state`, so a
         # "nothing was written" claim can be checked against what was actually
         # there rather than against the two fields someone thought to name.
-        self._snapshots: dict[UUID, tuple] = {}
+        self._snapshots: dict[UUID, DocumentState] = {}
 
     @property
     def saved(self) -> Document:
@@ -58,7 +58,8 @@ class SaveStatements:
 
     async def remember_stored_state(self, document: Document) -> None:
         """Freeze the stored state so a later refusal can be checked against it."""
-        self._snapshots[document.id] = state_of(await self._stored(document))
+        stored = await self._stored(document)
+        self._snapshots[document.id] = DocumentState.of(stored)
 
     async def when_saving(
         self, document: Document, owner_id: UUID, content: str, version: int = 1
@@ -158,15 +159,16 @@ class SaveStatements:
         )
 
     async def assert_response_matches_storage(self, document: Document) -> None:
-        stored = await self._stored(document)
-        assert state_of(stored) == state_of(self.saved), (
+        stored = DocumentState.of(await self._stored(document))
+        returned = DocumentState.of(self.saved)
+        assert stored == returned, (
             f"response and storage must not disagree on ANY field: "
-            f"stored {state_of(stored)!r} vs returned {state_of(self.saved)!r}"
+            f"stored {stored!r} vs returned {returned!r}"
         )
 
     async def assert_nothing_was_written(self, document: Document) -> None:
         expected = arranged(self._snapshots.get(document.id), "a remembered state")
-        stored = state_of(await self._stored(document))
+        stored = DocumentState.of(await self._stored(document))
         assert stored == expected, (
             f"a refused save must leave EVERY field as it was: expected {expected!r}, "
             f"got {stored!r}"

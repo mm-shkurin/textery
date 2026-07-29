@@ -1663,6 +1663,68 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   files`; ruff 5 errors + 3 would-reformat, byte-identical to the recorded HEAD baseline and none of
   them a file this unit touched. All touched files under the 200-line cap (statements 189/135, tests
   160/108, new document_state.py 38).
+  REFACTOR (own commit): `state_of(document) -> tuple` became a frozen `DocumentState` dataclass with
+  the ten fields NAMED and a `DocumentState.of()` factory, so a failing whole-entity assertion prints
+  `title=...` instead of a positional 10-tuple you have to count out to tell a `title` drift from an
+  `updated_at` one; `assert_response_matches_storage` stopped computing the state four times for one
+  comparison. Rejected as restraint: the symmetric `version: int = 1` defaults, the deliberately-paired
+  `when_autosaving_with_title`/`_with_a_wire_title` (the pair is what makes both `_title_intent` arms
+  separately visible), the refusal-message literals at the test site (that wording IS the Security 7.1
+  claim), and the `FakeClock`/`FakeUnitOfWork` duplication with `tests/fake/auth/` (the honest fix
+  relocates a shared fake and touches auth tests — outside this unit). Flagged, not done:
+  `export_document_statements.py` (~89, ~163) hand-rolls the same whole-`Document` comparison via
+  `dict(document.__dict__)` — `DocumentState.of()` now owns that concept and would drop straight in.
+> ⚠️ PROCESS INCIDENT, recorded so it is not mistaken for a code defect: the read-only premortem pass
+> patched `save_document_statements.py` to measure its finding, then `git checkout`-ed the file to
+> revert — CLOBBERING the concurrent /refactor pass's uncommitted edits to the same file and leaving
+> the tree red (9 failed) with `document_state.py` refactored and its call sites not. /refactor
+> re-applied the five lost edits; the orchestrator then re-verified independently before committing:
+> 181 passed / 0 failed / 0 skipped, mypy `Success: no issues found in 282 source files`, ruff 5
+> errors + 3 would-reformat (byte-identical to the HEAD baseline), and a tree-wide sweep confirmed no
+> leftover `PROBE` assertion in `backend/` or `acceptance/`. No behaviour was lost. A read-only pass
+> must measure on a scratch copy, never by editing then reverting a file another pass is holding.
+> REVIEW FINDINGS over `caed3a3` (agent-review CONCERNS ×3, premortem CONCERNS ×2 CREDIBLE) — the
+> sentinel itself is sound and BOTH passes say so; every finding lands on the test-review hardening
+> that rode along. They CONVERGE independently on the same most-severe one:
+> • **CREDIBLE (both passes, MEASURED) — `assert_response_matches_storage` cannot fail; it compares an
+>   object to itself.** `FakeDocumentRepository.save_content_if_version_matches` mutates and RETURNS the
+>   same `Document` instance it holds (`document_fakes.py:125-133`), `SaveDocument.execute` returns that
+>   object verbatim (`save_document.py:69`), and `_stored` reads it back out of the same list — so
+>   `stored is self.saved` and the two states are built off ONE object, equal by construction. Proven,
+>   not argued: inserting `assert stored is not self.saved` failed 3 of 3 call sites, including the TWO
+>   this commit newly added (boundary-content + replay). Worse, `document_state.py`'s own docstring
+>   DIAGNOSES this hazard and then claims the field-tuple fixes it — reading values twice off one
+>   identity is exactly as vacuous as `==`. This is the defect class the work unit set out to kill,
+>   fixed for `title=` and reintroduced for whole-entity comparison. MISSING GUARD: the fake must hand
+>   back a DISTINCT object from `save_content_if_version_matches` and `find_by_id_and_owner` (a copy, or
+>   `Document.reconstitute` from stored fields — the db suite already does this via
+>   `expire_identity_map()` for this very reason), then re-measure that a wrong-`title`/wrong-`updated_at`
+>   mutant turns the assertion red. Correct the docstring in the same edit.
+> • **CREDIBLE (premortem) — the invalid-version refusal has no "nothing was written" guard.**
+>   `test_should_reject_a_non_positive_version` (test_save_document_usecase.py:81-90) asserts only
+>   `assert_rejected_with("INVALID_VERSION")`, while the sibling `CONTENT_TOO_LONG` test three methods
+>   above gained BOTH `assert_nothing_was_written` and `assert_no_title_intent_was_forwarded` in this
+>   same commit. Both refusals reach the port through the same `execute` prologue; the asymmetry is the
+>   tell — the guard was built and then not applied where it applies equally. Two lines, both DSL
+>   methods already exist.
+> • CONCERNS (agent-review) — the new `assert_saved` line `saved.updated_at == self.clock.now()` passes
+>   on the mutant it names: `FakeClock.now()` returns a CONSTANT `_EPOCH` and `given_a_document` builds
+>   via `Document.create(created_at=self.clock.now())`, which sets `updated_at = created_at`. The
+>   document's "old" timestamp already IS `clock.now()`, so a usecase forwarding the stored value stays
+>   green. Fix: advance the fake clock between setup and save, or age the setup document
+>   (`stored_document(minutes_old=…)` already supports it).
+> • CONCERNS (agent-review, low) — `assert_no_title_intent_was_forwarded` asserts the ABSOLUTE
+>   `title_updates == []`, which holds only because `given_a_document` arranges via `save_new` (records
+>   nothing). Any test arranging with `given_a_titled_document` (goes through the CAS, appends one entry)
+>   would fail it spuriously, blaming the usecase for a setup artifact. Record a mark at the start of the
+>   `when_` and compare the delta.
+> • REMOTE, both passes, retired by the very next step: the fake now defaults to a value-writing sentinel
+>   while the port and `SqlAlchemyDocumentStorage:90` still default to the safe `preserve()` — a
+>   fake/real divergence a direct-fake caller could trip. The next green removes the port default and the
+>   sentinel together.
+> • UNTOUCHED standing finding (premortem, re-confirmed): the `6750132` REST-seam CREDIBLE is unaffected —
+>   `document_router.py:140` still forwards `request.title` raw, and `TitleUpdate.of("")` / `of("   ")`
+>   remain legal mypy-clean calls that write `''`/`'   '`. Nothing here narrows it.
 - [~] green-usecase (coverage: drop the port default, title required) — remove
   `= TitleUpdate.preserve()` from `DocumentRepository.save_content_if_version_matches`,
   `SqlAlchemyDocumentStorage.save_content_if_version_matches`, `document_fakes.py` and
