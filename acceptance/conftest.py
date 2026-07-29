@@ -17,6 +17,9 @@ from statements.frontend.auth.register_page_statements import RegisterPageStatem
 from statements.frontend.auth.verify_code_page_statements import VerifyCodePageStatements
 from statements.frontend.landing_page_statements import LandingPageStatements
 from statements.frontend.generation.chat_workspace_statements import ChatWorkspaceStatements
+from statements.frontend.generation.auto_editor_transition_statements import (
+    AutoEditorTransitionStatements,
+)
 from statements.frontend.generation.generate_flow_statements import GenerateFlowStatements
 from statements.frontend.generation.generating_state_statements import GeneratingStateStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
@@ -171,4 +174,9 @@ def generate_flow_statements():
 @pytest.fixture
 def generating_state_statements():
     return GeneratingStateStatements()
+
+
+@pytest.fixture
+def auto_editor_transition_statements():
+    return AutoEditorTransitionStatements()
 
