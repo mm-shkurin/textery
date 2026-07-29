@@ -1,22 +1,16 @@
-from dataclasses import dataclass
 from uuid import UUID
 
 from document.document_repository import DocumentRepository
+from document.document_scope import DocumentScope
+from shared.exceptions import NotFoundException
 
+__all__ = ["REFUSAL_MESSAGE", "DocumentScope", "resolve_owned_document"]
 
-@dataclass(frozen=True)
-class DocumentScope:
-    """A bounded projection of a document, for callers that only need to know it
-    exists and is theirs.
-
-    Deliberately not `Document`: nothing on the guard path needs `content`, and a
-    200 000-code-point field materialised on every request to all seven AI-edit
-    endpoints answers a yes/no question at the cost of the largest column in the
-    schema. See decisions/document-scope-guard-decision.md.
-    """
-
-    id: UUID
-    owner_id: UUID
+# The one canonical refusal body for all seven AI-edit endpoints. It names no
+# document and carries no instruction text: `not_found_exception_handler` logs
+# the exception verbatim at INFO, and the whole premise of a refused request is
+# that the caller has no claim to that id.
+REFUSAL_MESSAGE = "document not found"
 
 
 async def resolve_owned_document(
@@ -32,4 +26,7 @@ async def resolve_owned_document(
     reach the logs of a request whose whole point is that the caller has no claim
     to that id.
     """
-    raise NotImplementedError()
+    scope = await document_repository.find_scope_by_id_and_owner(document_id, owner_id)
+    if scope is None:
+        raise NotFoundException(REFUSAL_MESSAGE)
+    return scope

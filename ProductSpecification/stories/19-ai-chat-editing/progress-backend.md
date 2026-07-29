@@ -34,8 +34,16 @@ within their file, not across the story.
       goes through the real `CreateDocument` usecase, not a hand-built row. `version` is deliberately
       **not** on `DocumentScope` yet (the ADR lists it): no Statements line reads it until the
       base-version scenarios 2.x, and the domain field gate forbids an unread field. Add it there.
-- [~] green-usecase
-- [ ] adapters-discovery
+- [x] green-usecase — `resolve_owned_document` raises one id-free `NotFoundException("document not found")`
+      for both the absent and the foreign case. The read goes through a **new bounded port method**
+      `DocumentRepository.find_scope_by_id_and_owner -> DocumentScope | None` rather than a slice of
+      `find_by_id_and_owner`: the ADR rejects "resolver returning the full `Document`" because the
+      200 000-unit `content` is paid at the SELECT, so projecting after the load would implement the
+      rejected option while passing the test. `DocumentScope` moved to its own module (the port must
+      name it in a signature; importing from the guard module would be circular). `FakeDocumentRepository`
+      projects; the **db adapter has no `find_scope_by_id_and_owner` yet** — deliberately left for
+      adapters-discovery. `/test-coverage usecase --focus`: 100% lines and branches on all three new files.
+- [~] adapters-discovery
 - [ ] green-acceptance
 
 ### Scenario 1.2: An edit belonging to another document of the same owner is not found

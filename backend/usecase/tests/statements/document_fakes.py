@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from document.document import Document
+from document.document_scope import DocumentScope
 from shared.exceptions import ConflictException
 from shared.keyset_cursor import KeysetCursor
 
@@ -33,6 +34,20 @@ class FakeDocumentRepository:
             (d for d in self.documents if d.id == document_id and d.owner_id == owner_id),
             None,
         )
+
+    async def find_scope_by_id_and_owner(
+        self, document_id: UUID, owner_id: UUID
+    ) -> DocumentScope | None:
+        """Projects rather than returning the row, mirroring the bounded SELECT.
+
+        A fake that handed back the whole stored document would let a guard that
+        reads `content` on every request look correct here and only show up as a
+        latency regression in production.
+        """
+        stored = await self.find_by_id_and_owner(document_id, owner_id)
+        if stored is None:
+            return None
+        return DocumentScope(id=stored.id, owner_id=stored.owner_id)
 
     async def find_by_idempotency_key(
         self, owner_id: UUID, idempotency_key: str

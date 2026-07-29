@@ -3,6 +3,7 @@ from typing import Protocol
 from uuid import UUID
 
 from document.document import Document
+from document.document_scope import DocumentScope
 from shared.keyset_cursor import KeysetCursor
 
 
@@ -26,6 +27,19 @@ class DocumentRepository(Protocol):
         ...
 
     async def find_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> Document | None: ...
+
+    async def find_scope_by_id_and_owner(
+        self, document_id: UUID, owner_id: UUID
+    ) -> DocumentScope | None:
+        """The owner-scoped existence check, without the document body.
+
+        Separate from `find_by_id_and_owner` on purpose: the scope guard that
+        opens all seven AI-edit endpoints only needs to know the document exists
+        and is the caller's, and selecting `content` -- up to 200 000 code points
+        -- to answer that would be the largest column in the schema read on every
+        request. See 19-ai-chat-editing/decisions/document-scope-guard-decision.md.
+        """
+        ...
 
     async def find_by_idempotency_key(
         self, owner_id: UUID, idempotency_key: str

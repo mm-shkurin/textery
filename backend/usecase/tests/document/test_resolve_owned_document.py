@@ -1,11 +1,6 @@
-import pytest
-
 from statements.document_scope_guard_statements import DocumentScopeGuardStatements
 
 
-@pytest.mark.skip(
-    reason="RED: resolve_owned_document raises NotImplementedError -- the guard is not implemented"
-)
 class TestDocumentScopeGuard:
     """Every endpoint refuses an absent document indistinguishably from a foreign one.
 
