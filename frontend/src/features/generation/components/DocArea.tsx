@@ -2,7 +2,12 @@ import ReactMarkdown from 'react-markdown'
 import './ChatButton.css'
 import type { GenerationUiState } from '../hooks/useGeneration'
 import { formatRelativeTime } from '../formatRelativeTime'
-import { generatingTitle, type DocumentType } from '../../../shared/documentTypes'
+import {
+  generatingTitle,
+  generationFailedTitle,
+  topicPromptTitle,
+  type DocumentType,
+} from '../../../shared/documentTypes'
 
 interface DocAreaProps {
   state: GenerationUiState
@@ -54,7 +59,7 @@ export function DocArea({
     return (
       <div className="doc-placeholder" data-testid="doc-error">
         <div className="icon-circle">✕</div>
-        <h2>Не удалось сгенерировать доклад</h2>
+        <h2>{generationFailedTitle(documentType)}</h2>
         <p>{error ?? 'Попробуйте создать новый запрос — измените тему или требования.'}</p>
         <button
           type="button"
@@ -81,7 +86,7 @@ export function DocArea({
   }
   return (
     <div className="doc-placeholder">
-      <h2>Опишите тему доклада</h2>
+      <h2>{topicPromptTitle(documentType)}</h2>
       <p>Введите тему в панели слева — ИИ сгенерирует готовый текст.</p>
     </div>
   )

@@ -19,7 +19,18 @@ DOC_BODY = (By.CSS_SELECTOR, "[data-testid='doc-body']")
 DOC_ERROR = (By.CSS_SELECTOR, "[data-testid='doc-error']")
 
 # The full visible text of each generating surface, read off the built components rather than
-# a mockup. Pinned by equality, not substring: the doc area renders a placeholder in three of
+# a mockup.
+#
+# Both type-naming halves below are now COMPUTED, not literal: story 18 scenario 1.2 replaced the
+# hardcoded `доклад` with `generatingTitle(documentType)` / `writingProgressMessage(documentType)`
+# in `frontend/src/shared/documentTypes.ts`, so these constants transcribe that function's output
+# for the one type this scenario picks. Python cannot import the table, so the tie is a test on
+# the TS side: `ChatWorkspace.generatingCopy.test.tsx` renders `doklad` and asserts these exact
+# strings, expressly so a change to the template or to DOCUMENT_TYPE_ACCUSATIVE fails there rather
+# than surfacing here as an unrecognisable "generating state not shown". Change either side and
+# that test tells you the other one is stale.
+#
+# Pinned by equality, not substring: the doc area renders a placeholder in three of
 # the four generation states and they differ only by their copy, so a presence-only check
 # would pass on the idle placeholder — the one state that means the send never happened.
 EXPECTED_GENERATING_DOC_TEXT = (

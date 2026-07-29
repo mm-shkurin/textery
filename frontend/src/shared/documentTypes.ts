@@ -83,6 +83,25 @@ export function writingProgressMessage(documentType: DocumentType): string {
   return `ИИ пишет ${DOCUMENT_TYPE_ACCUSATIVE[documentType]}`
 }
 
+// The three phrases below are NOT the generating screen, but they share its chat panel and its doc
+// area within one session: the progress transcript keeps every step on screen, and a run moves
+// pending -> completed/failed without a remount. Leaving them hardcoded while the pending line
+// declines would have made one panel say `ИИ пишет реферат` and, a state later, `Пишу доклад` —
+// two document types named to the same user about the same run, which is worse than being
+// consistently wrong. They decline against tables that already exist, so nothing is owed for them.
+export function writtenProgressMessage(documentType: DocumentType): string {
+  return `Пишу ${DOCUMENT_TYPE_ACCUSATIVE[documentType]}`
+}
+
+export function generationFailedTitle(documentType: DocumentType): string {
+  return `Не удалось сгенерировать ${DOCUMENT_TYPE_ACCUSATIVE[documentType]}`
+}
+
+// The idle doc area's prompt, genitive like the composer heading it sits beside.
+export function topicPromptTitle(documentType: DocumentType): string {
+  return `Опишите тему ${DOCUMENT_TYPE_GENITIVE[documentType]}`
+}
+
 // The wire values the backend actually accepts — measured by curl against the live stack
 // 2026-07-17, not read from a spec:
 //   {"document_type":"doklad"} -> 422 {"error_code":"INVALID_DOCUMENT_TYPE"}

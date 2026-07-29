@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react'
 import type { GenerationUiState } from '../hooks/useGeneration'
-import { writingProgressMessage, type DocumentType } from '../../../shared/documentTypes'
+import {
+  writingProgressMessage,
+  writtenProgressMessage,
+  type DocumentType,
+} from '../../../shared/documentTypes'
 
 interface ProgressProps {
   state: GenerationUiState
@@ -23,7 +27,7 @@ export function Progress({ state, documentType }: ProgressProps) {
       )}
       {state === 'completed' && (
         <>
-          <ChatMsg text="Пишу доклад" />
+          <ChatMsg text={writtenProgressMessage(documentType)} />
           <ChatMsg done text="Готово!" />
         </>
       )}
