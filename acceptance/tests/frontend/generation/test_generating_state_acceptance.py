@@ -4,9 +4,17 @@ from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 # This was never a red-to-green transition. The subject of this scenario —
 # data-testid='generation-generating' on DocArea's pending branch — was added by scenario 1.1's
 # green-frontend explicitly for 1.2, so the behaviour already shipped and the honest RED prediction
-# was spent before it was written. green-selenium therefore removed the class-level skip and
-# changed nothing else; the test passed on that first un-skipped run, as three consecutive live
-# runs during red-selenium (10.9s / 12.8s / 12.0s) had already shown it would.
+# was spent before it was written. green-selenium therefore removed the class-level skip, rewrote
+# this comment and dropped the then-unused `import pytest`, and touched no code at all; the test
+# passed on that first un-skipped run, as three consecutive live runs during red-selenium
+# (10.9s / 12.8s / 12.0s) had already shown it would.
+#
+# NOTHING RUNS THIS FILE AUTOMATICALLY. `frontend-ci.yml` is vitest-only and path-filtered to
+# `frontend/**`; `backend-ci.yml`'s pytest step runs from the backend directory and never reaches
+# `acceptance/`. Un-skipping made this class executable, not executed: it runs only when someone
+# hand-builds the per-worktree stack (compose project `textery-fe`, `BACKEND_PORT=8100` exported,
+# `FRONTEND_PORT` deliberately NOT exported, `npm run dev` on 5173) and invokes pytest. A skip
+# marker at least announced itself in the run summary; a never-invoked file does not.
 #
 # What the RED protocol did buy, both found by running it rather than reasoning about it, and both
 # invisible to the renderer-level suite:
