@@ -1,17 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
-import {
-  CREATED_DOCUMENT_ID,
-  CREATED_VERSION,
-  renderCreatedDocument,
-  typeAndFireAutosave,
-  useAutosaveFailureFakeTimers,
-} from './ManualEditor.autosave.testSupport'
+import { useAutosaveFailureFakeTimers } from './ManualEditor.autosave.testSupport'
 import {
   ABANDONED_SAVE_LOG,
-  SAVED_CONTENT,
-  SAVED_PLAIN,
+  enterBackoffWindow,
   playOutRetrySchedule,
 } from './ManualEditor.autosaveFixture'
 import {
@@ -56,25 +49,10 @@ describe('ManualEditor — the interior of the autosave backoff window (H9.4)', 
   // me-save-status--retrying'". ManualEditorSaveStatus has no retrying branch; the badge inside the
   // window is byte-identical to the badge before any save was attempted.
   it.skip('tells the user a save attempt failed while the backoff ladder is still running', async () => {
-    const { container } = await renderCreatedDocument()
-
-    vi.mocked(documentApi.saveDocument).mockRejectedValue({ status: 503, body: {} })
-
-    await typeAndFireAutosave(SAVED_PLAIN)
-
-    // We are provably INSIDE the window, not past it: attempt 1 has fired and rejected, the ladder
-    // has not spent its remaining attempts, and the terminal banner is therefore still absent. If
-    // either of these two moved, the assertion below would be about the wrong instant.
-    expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    // …and the attempt that rejected really was the user's edit at the document's current OCC
-    // version, not some other write. Without this the badge assertion below could be describing a
-    // window opened by a save this test never asked for.
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
-      1,
-      CREATED_DOCUMENT_ID,
-      SAVED_CONTENT,
-      CREATED_VERSION,
-    )
+    // Provably INSIDE the window, not past it — enterBackoffWindow asserts attempt 1 fired, rejected,
+    // and carried the user's edit at the document's current OCC version. The absent banner is the
+    // other half: the ladder has not spent its remaining attempts, so this really is the interior.
+    const { container } = await enterBackoffWindow()
     expect(screen.queryByTestId(SAVE_ERROR_TESTID)).toBeNull()
 
     // And the document is genuinely unsaved at this instant — the browser guard is armed, which is
@@ -98,18 +76,7 @@ describe('ManualEditor — the interior of the autosave backoff window (H9.4)', 
   // "AssertionError: expected \"error\" to be called 1 times, but got 0 times". The []-scoped
   // cleanup clears the retry timer and returns; the abandoned write leaves no trace at all.
   it.skip('records that the write never landed when the editor unmounts mid-backoff', async () => {
-    const { unmount } = await renderCreatedDocument()
-
-    vi.mocked(documentApi.saveDocument).mockRejectedValue({ status: 503, body: {} })
-
-    await typeAndFireAutosave(SAVED_PLAIN)
-    expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
-      1,
-      CREATED_DOCUMENT_ID,
-      SAVED_CONTENT,
-      CREATED_VERSION,
-    )
+    const { unmount } = await enterBackoffWindow()
 
     // The edit is provably unpersisted at the instant we are about to walk away from it: the app's
     // own browser guard is armed. This is what makes the abandonment below matter — without it the

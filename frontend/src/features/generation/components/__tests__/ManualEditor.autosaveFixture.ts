@@ -1,5 +1,6 @@
 import { expect, vi } from 'vitest'
 import { act, screen } from '@testing-library/react'
+import type { HttpError } from '../../../../shared/api/httpClient'
 import * as documentApi from '../../api/documentApi'
 import type { SaveDocumentResult } from '../../api/documentApi'
 import {
@@ -7,6 +8,7 @@ import {
   CREATED_VERSION,
   RETRY_WINDOW_MS,
   flushMicrotasks,
+  renderCreatedDocument,
   typeAndFireAutosave,
 } from './ManualEditor.autosave.testSupport'
 import {
@@ -62,6 +64,40 @@ export async function playOutRetrySchedule() {
     await vi.advanceTimersByTimeAsync(RETRY_WINDOW_MS)
   })
   await flushMicrotasks()
+}
+
+// A server that transiently refuses every write. Typed as HttpError, not left as a bare object
+// literal: isTransientFailure narrows through isHttpError, so a fixture that quietly stopped
+// satisfying that shape would schedule NO retry at all — and a suite asserting what happens inside
+// the backoff window would then be observing a window that never opened.
+const TRANSIENT_SERVER_REJECTION: HttpError = { status: 503, body: {} }
+
+// Puts the editor INSIDE the H9.3 capped-backoff window and proves it got there. Renders a fresh
+// document, arms a server that transiently refuses every write, and lands one user edit — so by the
+// time this returns, attempt 1 has fired and been rejected while the ladder still has attempts left.
+//
+// The two assertions are the entry proof, not decoration: the count pins that we are past attempt 1
+// and not yet past the rest, and the OCC triple pins that the attempt which rejected really was the
+// user's edit at the document's current version rather than some other write the case never asked
+// for. Without them a case built on top of this could be describing the wrong instant, or a window
+// opened by something else entirely.
+//
+// Returns the render result so a case needing `container` or `unmount` reuses this same fixture.
+export async function enterBackoffWindow() {
+  const rendered = await renderCreatedDocument()
+
+  vi.mocked(documentApi.saveDocument).mockRejectedValue(TRANSIENT_SERVER_REJECTION)
+
+  await typeAndFireAutosave(SAVED_PLAIN)
+  expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
+  expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
+    1,
+    CREATED_DOCUMENT_ID,
+    SAVED_CONTENT,
+    CREATED_VERSION,
+  )
+
+  return rendered
 }
 
 // The tail stub the revert suites leave armed behind their scripted first two outcomes. It ECHOES

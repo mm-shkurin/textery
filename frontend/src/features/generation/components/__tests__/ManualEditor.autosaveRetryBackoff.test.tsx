@@ -17,6 +17,7 @@ import {
   SAVED_PLAIN,
   SAVED_VERSION,
   asParagraph,
+  enterBackoffWindow,
   playOutRetrySchedule,
 } from './ManualEditor.autosaveFixture'
 import {
@@ -97,18 +98,7 @@ describe('ManualEditor — a transient autosave failure retries on a capped back
   })
 
   it('stops retrying a persistently-failing transient autosave after a bounded number of attempts and shows the failure', async () => {
-    await renderCreatedDocument()
-
-    vi.mocked(documentApi.saveDocument).mockRejectedValue({ status: 503, body: {} })
-
-    await typeAndFireAutosave(SAVED_PLAIN)
-    expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
-      1,
-      CREATED_DOCUMENT_ID,
-      SAVED_CONTENT,
-      CREATED_VERSION,
-    )
+    await enterBackoffWindow()
 
     // Let the whole capped-backoff schedule play out. It retries automatically and gives up after
     // exactly MAX_AUTOSAVE_ATTEMPTS total attempts (initial + capped retries) — the window is sized
