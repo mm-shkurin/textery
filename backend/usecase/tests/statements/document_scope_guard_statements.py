@@ -94,14 +94,18 @@ class DocumentScopeGuardStatements:
         three properties: same exact type, byte-identical body, and a body that
         provably contains neither document id nor any instruction text.
         """
-        foreign = arranged(self._foreign_refusal, "foreign_refusal")
-        absent = arranged(self._absent_refusal, "absent_refusal")
-        assert (type(foreign), str(foreign)) == (NotFoundException, REFUSAL_MESSAGE), (
-            f"the foreign-document refusal is {type(foreign).__name__}('{foreign}'), expected "
-            f"NotFoundException('{REFUSAL_MESSAGE}')"
+        self._assert_is_the_canonical_refusal(
+            arranged(self._foreign_refusal, "foreign_refusal"), "foreign-document"
         )
-        assert (type(absent), str(absent)) == (NotFoundException, REFUSAL_MESSAGE), (
-            f"the absent-document refusal is {type(absent).__name__}('{absent}'), expected "
+        self._assert_is_the_canonical_refusal(
+            arranged(self._absent_refusal, "absent_refusal"), "absent-document"
+        )
+
+    def _assert_is_the_canonical_refusal(self, refusal: NotFoundException, which: str) -> None:
+        # Named once so the two refusals cannot drift apart: whatever "canonical"
+        # comes to mean, both are held to the same single expression of it.
+        assert (type(refusal), str(refusal)) == (NotFoundException, REFUSAL_MESSAGE), (
+            f"the {which} refusal is {type(refusal).__name__}('{refusal}'), expected "
             f"NotFoundException('{REFUSAL_MESSAGE}')"
         )
 
