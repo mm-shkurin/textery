@@ -6,8 +6,10 @@
 import { backoffDelay } from './autosaveRetryPolicy'
 import { describeSaveFailure } from './saveFailureMessages'
 
-// Structurally what `useRef` hands back, without depending on React's ref type.
-type MutableRef<T> = { current: T }
+// Structurally what `useRef` hands back, without depending on React's ref type. Exported because
+// autosaveAbandonment reads two of the very refs declared below (isSavingRef, retryTimerRef) and
+// has to spell their shape too — a second copy of the alias is a second thing to keep in step.
+export type MutableRef<T> = { current: T }
 
 export interface SaveCycleRefs {
   // True for the whole cycle INCLUDING the backoff gap, so an edit landing mid-wait only queues.

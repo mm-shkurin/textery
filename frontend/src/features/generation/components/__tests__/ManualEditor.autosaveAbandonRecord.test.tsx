@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { HttpError } from '../../../../shared/api/httpClient'
 import * as documentApi from '../../api/documentApi'
 import {
   CREATED_VERSION,
@@ -8,7 +7,11 @@ import {
   typeAndFireAutosave,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
-import { ABANDONED_SAVE_LOG, SAVED_PLAIN } from './ManualEditor.autosaveFixture'
+import {
+  ABANDONED_SAVE_LOG,
+  PRODUCTION_SERVER_ERROR,
+  SAVED_PLAIN,
+} from './ManualEditor.autosaveFixture'
 import { dispatchBeforeUnload } from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')
@@ -23,8 +26,6 @@ vi.mock('../../api/documentApi')
 //   - keying the record on "a retry timer exists" passes it too, and misses the FOUR in-flight
 //     request sub-windows the same ~7-second ladder contains, where retryTimerRef is null and the
 //     write is just as abandoned. The record has to key on "there is an unfinished write".
-
-const PRODUCTION_SERVER_ERROR: HttpError = { status: 500, body: {} }
 
 describe('ManualEditor — what the abandonment record must and must not say (H9.4 guards)', () => {
   useAutosaveFailureFakeTimers()

@@ -1,10 +1,11 @@
 import { useEffect } from 'react'
+import type { MutableRef } from './autosaveSaveCycle'
 
 // What the editor leaves behind when it dies with a write still unfinished (H9.4). Extracted from
 // useDocumentSave — which is at the 200-line limit — rather than grown inline.
-
-// Structurally what `useRef` hands back, without depending on React's ref type.
-type MutableRef<T> = { current: T }
+//
+// The ref shape comes from autosaveSaveCycle, which declares the two refs read below as part of
+// SaveCycleRefs: this file describes the same boxes, so it names their type once, over there.
 
 // The app has no reporting backend, so console.error is the whole of its diagnostics. Duplicated
 // nowhere: the tests import their own copy of this string from the autosave fixture, and the two are

@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
-import type { HttpError } from '../../../../shared/api/httpClient'
 import * as documentApi from '../../api/documentApi'
 import { MAX_AUTOSAVE_ATTEMPTS } from '../../hooks/useDocumentSave'
 import {
@@ -10,7 +9,11 @@ import {
   typeAndFireAutosave,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
-import { SAVED_PLAIN, playOutRetrySchedule } from './ManualEditor.autosaveFixture'
+import {
+  PRODUCTION_SERVER_ERROR,
+  SAVED_PLAIN,
+  playOutRetrySchedule,
+} from './ManualEditor.autosaveFixture'
 import {
   DIRTY_BADGE_CLASS,
   RETRYING_BADGE_CLASS,
@@ -36,12 +39,9 @@ vi.mock('../../api/documentApi')
 //   - and it must not survive the ladder's terminal exit, where the «не сохранено» banner
 //     appears and a stuck --retrying would contradict it on screen.
 
-// A 500, NOT the 503 the scenario's own fixture uses. 503 is the sole carve-out in
-// mayHaveLandedServerSide and the one 5xx this origin provably cannot emit (exception_handlers.py
-// returns 500 only, gated by `npm run check:ingress`). Driving the guards through 500 means the
-// retry-pending signal is validated on the branch production actually takes — the one that NULLS
-// the dirty guard's memory — rather than only on the branch that keeps it.
-const PRODUCTION_SERVER_ERROR: HttpError = { status: 500, body: {} }
+// The guards below are driven through PRODUCTION_SERVER_ERROR (500), NOT the 503 the scenario's own
+// fixture uses: the retry-pending signal is validated on the branch production actually takes. See
+// the constant's own note in ManualEditor.autosaveFixture.
 
 function badges(container: HTMLElement): NodeListOf<Element> {
   return container.querySelectorAll(SAVE_STATUS_BASE_SELECTOR)

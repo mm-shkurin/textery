@@ -72,6 +72,13 @@ export async function playOutRetrySchedule() {
 // the backoff window would then be observing a window that never opened.
 const TRANSIENT_SERVER_REJECTION: HttpError = { status: 503, body: {} }
 
+// The 5xx this origin can ACTUALLY emit — exception_handlers.py returns 500 only, gated by
+// `npm run check:ingress`. 503 above is the sole carve-out in mayHaveLandedServerSide and therefore
+// the one branch that KEEPS the dirty guard's memory; a suite driven through 500 exercises the
+// branch production really takes, the one that NULLS it. Shared rather than respelled per suite so
+// the H9.4 guard suites are provably talking about the same server.
+export const PRODUCTION_SERVER_ERROR: HttpError = { status: 500, body: {} }
+
 // Puts the editor INSIDE the H9.3 capped-backoff window and proves it got there. Renders a fresh
 // document, arms a server that transiently refuses every write, and lands one user edit — so by the
 // time this returns, attempt 1 has fired and been rejected while the ladder still has attempts left.
