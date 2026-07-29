@@ -45,6 +45,13 @@ export const REVISED_CONTENT = asParagraph(REVISED_PLAIN)
 export const SAVED_VERSION = CREATED_VERSION + 1
 export const RETRY_VERSION = SAVED_VERSION + 1
 
+// What the app must leave behind when a pending retry is abandoned by unmount. console.error is the
+// app's only diagnostic sink (there is no reporting backend), so this is the minimum viable record —
+// deliberately the same sink useDocumentSave already writes the rejection itself to. Lives with the
+// retry vocabulary rather than in the one suite that asserts it: GREEN and any later abandonment
+// suite must agree on this exact string, and a per-file copy is how they stop agreeing.
+export const ABANDONED_SAVE_LOG = 'Pending document save abandoned before it completed'
+
 // Runs the whole capped-backoff retry schedule to completion and settles whatever it fired, plus
 // any stale debounce armed during the wait. Extracted because the act/advanceTimersByTimeAsync/
 // flushMicrotasks composition is infrastructure the failure suites repeated verbatim — and because

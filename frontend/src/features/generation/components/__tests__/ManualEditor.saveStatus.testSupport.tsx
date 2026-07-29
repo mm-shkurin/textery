@@ -14,8 +14,26 @@ export const DIRTY_STATUS = 'Черновик, ещё не сохранён'
 // keeps a badge assertion from being tautological: `getByText(SAVED_STATUS).textContent` can only
 // ever equal SAVED_STATUS — the query already matched on it — whereas the variant class is an
 // independent fact about WHICH of ManualEditorSaveStatus's mutually exclusive branches rendered.
+export const SAVE_STATUS_BASE_CLASS = 'me-save-status'
 export const SAVED_BADGE_CLASS = 'me-save-status--saved'
 export const DIRTY_BADGE_CLASS = 'me-save-status--dirty'
+// The branch H9.4 demands and ManualEditorSaveStatus does not render yet: "a save attempt failed and
+// is being retried". Declared here beside its three siblings rather than inside the one suite that
+// asserts it, so the badge vocabulary stays in a single place — a per-suite copy of a modifier name
+// is exactly how one suite ends up asserting a class GREEN later renamed.
+export const RETRYING_BADGE_CLASS = 'me-save-status--retrying'
+
+// The badge's stable root element, found by the base class every branch renders. Derived from
+// SAVE_STATUS_BASE_CLASS rather than respelled as a literal '.me-save-status'.
+export const SAVE_STATUS_BASE_SELECTOR = `.${SAVE_STATUS_BASE_CLASS}`
+
+// The exact className a badge branch must carry: the base class plus exactly one modifier. Asserting
+// against this instead of a bare toHaveClass is what makes a badge assertion prove EXCLUSIVITY —
+// toHaveClass(RETRYING) still passes if the element also carries --dirty or --saved, which is the
+// most likely way a GREEN bolts a new branch on beside the old one instead of replacing it.
+export function badgeClassName(modifier: string): string {
+  return `${SAVE_STATUS_BASE_CLASS} ${modifier}`
+}
 
 // The save-failure banner's test id. Like the badge strings above it exists only as an inline JSX
 // literal in production, so the suite spells it once here instead of retyping it per assertion.
