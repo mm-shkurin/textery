@@ -1,15 +1,12 @@
-import pytest
-
 from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 
 
-# green-selenium removes this marker only — there is no production change owed, and the reason
-# is recorded rather than predicted because this contract was run live during red-selenium.
-#
-# NOT a red-to-green transition. The subject of this scenario — data-testid='generation-generating'
-# on DocArea's pending branch — was added by scenario 1.1's green-frontend explicitly for 1.2, so
-# the behaviour ships already and the honest RED prediction was spent before it was written. Three
-# consecutive live runs pass (10.9s / 12.8s / 12.0s) against the per-worktree stack.
+# This was never a red-to-green transition. The subject of this scenario —
+# data-testid='generation-generating' on DocArea's pending branch — was added by scenario 1.1's
+# green-frontend explicitly for 1.2, so the behaviour already shipped and the honest RED prediction
+# was spent before it was written. green-selenium therefore removed the class-level skip and
+# changed nothing else; the test passed on that first un-skipped run, as three consecutive live
+# runs during red-selenium (10.9s / 12.8s / 12.0s) had already shown it would.
 #
 # What the RED protocol did buy, both found by running it rather than reasoning about it, and both
 # invisible to the renderer-level suite:
@@ -20,9 +17,6 @@ from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 #      text is not the copy the component source reads.
 # The first prediction named the right assertion and the right failure type for the right reason
 # (the panel value was guessed, the doc-surface value was read off the component and held).
-@pytest.mark.skip(
-    reason="green-selenium is remove-marker-only; verified live in red-selenium, see the note above"
-)
 class TestGeneratingStateAcceptance(AbstractFrontendTest):
     """UI Test Scenario 1.2: A generating document shows progress.
 
