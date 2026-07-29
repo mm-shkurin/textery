@@ -19,6 +19,10 @@ generating-state DSL took for the same reason (`generating_state_locators.py`).
 # constant label decorating a choice the user never makes") and dropped its chip. The editor
 # arrived at by the same modeless flow owes the user the same honesty. Green makes the mode
 # chip conditional; the manual path keeps its own constant and its own assertion.
+#
+# CONCRETELY OWED BY GREEN, and it is two deletions in `ManualEditorBreadcrumb.tsx`, not one:
+# the hardcoded mode chip AND the `me-breadcrumb-sep` separator beside it. Today that component
+# renders "Доклад · Ручной режим"; drop only the chip and this equality fails on "Доклад ·".
 EXPECTED_AUTO_EDITOR_BREADCRUMB = "Доклад"
 
 # Deliberately NOT the shared WAIT_TIMEOUT_SECONDS (5s, tuned for a DOM change that is already
@@ -41,6 +45,30 @@ AUTO_TRANSITION_TIMEOUT_SECONDS = 30
 # this editor — two consecutive hard breaks — which Selenium's rendered `.text` reports back as
 # the blank line below. The green phase's conversion must produce that; anything that collapses
 # the breaks turns a structured doklad into one run-on paragraph, and this test is what says so.
+#
+# UNOBSERVED PREDICTION — green-selenium must CHARACTERIZE this, not assume it. The blank lines
+# above were derived ANALYTICALLY from the `inline*` schema and `HardBreakNode`; they have never
+# been read off a running browser. The assertion compares them against Selenium's
+# browser-normalised innerText over rendered `<br>`s, and Tiptap appends its own
+# `ProseMirror-trailingBreak` nodes — neither of which the derivation accounts for. So a
+# CORRECT conversion may still produce a whitespace-mismatched `.text`, and the failure message
+# would name the conversion, making "change the product until it matches" the cheapest path to
+# green. It is the wrong path. Rule for green-selenium: OBSERVE the actual `.text` first; if the
+# only difference is whitespace/blank-line count, that is a TEST-SIDE correction to this
+# constant, not product feedback. A difference in the WORDS is product feedback.
+#
+# DRIFT RISK — this is a hand transcription of `FAKE_DOKLAD_TEXT` in
+# `backend/adapters/generation_provider/src/provider/fake_provider.py`. Byte-identical today,
+# tied by nothing, and it crosses a lane boundary: whoever edits that constant works in the
+# backend worktree and will never see this file. Scenario 1.2 solved the analogous problem by
+# naming the tying test in its locators file; the equivalent tie here is owed and does not exist
+# yet, so until it does, a change to the fake provider surfaces here as an unrecognisable
+# "the editor opened with the wrong text".
+#
+# And the constant is only correct if the fake provider is the one answering: `runtime.py`
+# defaults `GENERATION_PROVIDER` to `"gigachat"` when the variable is UNSET, so a stack started
+# without `backend/.env` runs the real provider and fails this equality with a message naming
+# the conversion — a misattributed failure whose real cause is a missing env file.
 EXPECTED_GENERATED_TEXT = (
     "Введение\n\n"
     "Данный доклад посвящён теме, указанной пользователем. В работе рассматриваются "

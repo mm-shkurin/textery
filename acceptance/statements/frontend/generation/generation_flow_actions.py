@@ -30,6 +30,26 @@ CHAT_PANEL = (By.CSS_SELECTOR, "[data-testid='chat-panel']")
 GENERATIONS_PATH = "/api/v1/generations"
 
 
+def is_status_poll_path(path: str) -> bool:
+    """A status poll is GET {GENERATIONS_PATH}/<one segment> and nothing else.
+
+    `_matching_requests_to` matches a URL SUBSTRING, so the collection load
+    `GET /api/v1/generations` (a history list, no run id) lands in the same batch as a real
+    poll. Filtering by SHAPE before asserting cardinality is what stops an unrelated feature's
+    list request from failing a scenario with a message about the client's polling —
+    the assertion would be reporting a healthy client as a broken one.
+
+    Shared: scenario 1.2 asserts a poll IS on the wire, scenario 2.1 asserts the polls STOPPED
+    once the editor opened. Both need the same shape test, and a second copy is a second place
+    for the collection-load exclusion to be forgotten.
+    """
+    prefix = f"{GENERATIONS_PATH}/"
+    if not path.startswith(prefix):
+        return False
+    remainder = path[len(prefix) :]
+    return bool(remainder) and "/" not in remainder
+
+
 class GenerationFlowActionsMixin:
     """Pick a document type, then send a topic — the create flow up to the run starting."""
 

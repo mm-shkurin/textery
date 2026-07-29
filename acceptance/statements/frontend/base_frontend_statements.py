@@ -1,5 +1,3 @@
-import json
-import time
 from typing import ClassVar
 from urllib.parse import urlparse
 
@@ -18,14 +16,15 @@ from statements.frontend.frontend_form_assertions import (  # noqa: F401
     HintErrorSnapshot,
 )
 from statements.frontend.live_auth_session import issue_live_session
-
-REQUEST_LOG_SETTLE_SECONDS = 1
+# Re-exported for the Statements modules that import this from here; the CDP performance-log
+# helpers moved to request_log.py to keep both files under the 200-line limit.
+from statements.frontend.request_log import REQUEST_LOG_SETTLE_SECONDS, RequestLogMixin  # noqa: F401
 
 PRIMARY_CTA_BUTTON = (By.CSS_SELECTOR, "[data-testid='header-primary-cta-button']")
 TYPE_CARD_DOKLAD = (By.CSS_SELECTOR, "[data-testid='type-card-doklad']")
 
 
-class BaseFrontendStatements(FormAssertionsMixin):
+class BaseFrontendStatements(RequestLogMixin, FormAssertionsMixin):
     """Shared Selenium wait infrastructure for frontend Statements classes."""
 
     _DEFAULT_PORTS: ClassVar[dict[str, str]] = {"http": "80", "https": "443"}
@@ -130,56 +129,3 @@ class BaseFrontendStatements(FormAssertionsMixin):
         driver.get(app_url)
         self._wait_for_visible(driver, PRIMARY_CTA_BUTTON).click()
         self._wait_for_visible(driver, TYPE_CARD_DOKLAD).click()
-
-    def _matching_requests_to(
-        self, driver: WebDriver, path_substring: str, method: str = "POST"
-    ) -> list[dict]:
-        """Returns the CDP `request` objects for Network.requestWillBeSent events whose
-        URL contains `path_substring` and whose HTTP method matches `method` (default
-        "POST" — excludes CORS preflight OPTIONS requests to the same URL).
-        Requires the webdriver fixture to enable
-        `goog:loggingPrefs: {"performance": "ALL"}`. Sleeps briefly first
-        since CDP log delivery is asynchronous relative to the triggering
-        click.
-
-        WARNING: `driver.get_log` DRAINS the performance buffer — a second call returns
-        only events logged since the first. Callers that need both a count and the
-        payloads must take them from ONE call to this method, never from two helpers.
-        """
-        time.sleep(REQUEST_LOG_SETTLE_SECONDS)
-
-        requests = []
-        for entry in driver.get_log("performance"):
-            message = json.loads(entry["message"])["message"]
-            if message.get("method") != "Network.requestWillBeSent":
-                continue
-            request = message.get("params", {}).get("request", {})
-            url = request.get("url", "")
-            if path_substring in url and request.get("method") == method:
-                requests.append(request)
-        return requests
-
-    def _count_requests_to(self, driver: WebDriver, path_substring: str, method: str = "POST") -> int:
-        """Number of matching requests. See `_matching_requests_to` for the drain warning."""
-        return len(self._matching_requests_to(driver, path_substring, method))
-
-    @staticmethod
-    def _request_header(request: dict, name: str) -> str | None:
-        """Case-insensitive header lookup on one CDP `request` object.
-
-        `Network.requestWillBeSent` reports headers exactly as they went on the wire, and
-        header names are case-insensitive there, so a literal dict lookup would silently
-        miss a differently-cased key and report the header as absent.
-        """
-        wanted = name.lower()
-        for key, value in (request.get("headers") or {}).items():
-            if key.lower() == wanted:
-                return value
-        return None
-
-    @staticmethod
-    def _request_body(request: dict, label: str) -> dict:
-        """Parses one CDP request's JSON post body, failing loudly if it carried none."""
-        post_data = request.get("postData")
-        assert post_data is not None, f"expected {label} to carry a JSON body, got none"
-        return json.loads(post_data)

@@ -12,11 +12,15 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 from statements.frontend.base_frontend_statements import BaseFrontendStatements
 from statements.frontend.generation.auto_editor_transition_expectations import (
-    ARM_INTERACTION_WATCH_SCRIPT,
     AUTO_TRANSITION_TIMEOUT_SECONDS,
     EXPECTED_AUTO_EDITOR_BREADCRUMB,
     EXPECTED_GENERATED_TEXT,
-    READ_INTERACTION_WATCH_SCRIPT,
+)
+from statements.frontend.generation.auto_editor_transition_wire_statements import (
+    AutoEditorTransitionWireMixin,
+)
+from statements.frontend.generation.auto_editor_transition_witness import (
+    NoExtraClickWitnessMixin,
 )
 from statements.frontend.generation.generating_state_locators import (
     DOC_BODY,
@@ -27,26 +31,20 @@ from statements.frontend.generation.generation_flow_actions import GenerationFlo
 from statements.frontend.generation.manual_editor_statements import (
     EDITABLE_CONTENT,
     EDITOR_BREADCRUMB,
+    LOADING_SKELETON,
     MANUAL_EDITOR,
 )
+from statements.frontend.network_throttle_mixin import NetworkThrottleMixin
 
 
-class AutoEditorTransitionStatements(GenerationFlowActionsMixin, BaseFrontendStatements):
+class AutoEditorTransitionStatements(
+    GenerationFlowActionsMixin,
+    NoExtraClickWitnessMixin,
+    AutoEditorTransitionWireMixin,
+    NetworkThrottleMixin,
+    BaseFrontendStatements,
+):
     """Send a topic, then watch the editor arrive by itself."""
-
-    def watch_for_any_further_user_gesture(self, driver: WebDriver) -> None:
-        """Arm the "no extra click" half of the scenario so it can be ASSERTED, not assumed.
-
-        Without this the second Then is only a property of how the test happens to be written —
-        "we did not call click(), so no click happened" — which pins nothing about the product
-        and would keep passing if a `Открыть в редакторе` button were added and the test were
-        later updated to press it. Recording trusted events makes the claim an observation: the
-        browser itself reports whether the user did anything between the send and the editor.
-
-        Armed AFTER the send, because the send IS a user gesture and a legitimate one. The gap
-        between the two is a single WebDriver command in which nothing touches the page.
-        """
-        driver.execute_script(ARM_INTERACTION_WATCH_SCRIPT)
 
     def assert_editor_opened_by_itself(self, driver: WebDriver) -> None:
         """The editor appears, and it appears with no gesture from the user.
@@ -61,6 +59,21 @@ class AutoEditorTransitionStatements(GenerationFlowActionsMixin, BaseFrontendSta
             f"{MANUAL_EDITOR[1]} never appeared within "
             f"{AUTO_TRANSITION_TIMEOUT_SECONDS}s",
         )
+        # The shell is NOT the chunk. `manual_editor_statements.LOADING_SKELETON` renders INSIDE
+        # `[data-testid='manual-editor']`, so the wait above is satisfied while Tiptap +
+        # ProseMirror — the largest bundle in the app, fetched at exactly this moment — is still
+        # in flight. Every assertion after this point (the breadcrumb, the content) falls back to
+        # the shared 5s WAIT_TIMEOUT_SECONDS, so a slow chunk fetch would fail on
+        # `editor-content-area` and green would read that as "the conversion produced no text" —
+        # the misattributed failure this lane keeps paying to eliminate. The chunk gets the
+        # budget AUTO_TRANSITION_TIMEOUT_SECONDS was raised for in the first place, here, where
+        # it is actually spent.
+        WebDriverWait(driver, AUTO_TRANSITION_TIMEOUT_SECONDS).until(
+            ec.invisibility_of_element_located(LOADING_SKELETON),
+            "the editor shell mounted but its loading skeleton never cleared within "
+            f"{AUTO_TRANSITION_TIMEOUT_SECONDS}s — the ManualEditor lazy chunk did not arrive, "
+            "so nothing below this can speak about the transition",
+        )
         # Not just "an editor" — THE editor for the type this run picked. The shell alone is
         # satisfied by an editor opened for the wrong document type, or by one whose header
         # never resolved; the breadcrumb is what carries that identity.
@@ -68,21 +81,7 @@ class AutoEditorTransitionStatements(GenerationFlowActionsMixin, BaseFrontendSta
             driver, EDITOR_BREADCRUMB, EXPECTED_AUTO_EDITOR_BREADCRUMB, "editor breadcrumb"
         )
 
-        events = driver.execute_script(READ_INTERACTION_WATCH_SCRIPT)
-        # A None here is not "no events": it means the page context was replaced (a full reload
-        # or a real navigation), which would have discarded the watch — and an auto-transition
-        # that reloads the page is not the transition this scenario describes. Fail on it
-        # explicitly rather than let a lost witness read as a clean run.
-        assert events is not None, (
-            "the user-gesture watch is gone from the page, so the document was reloaded or "
-            "navigated between the send and the editor — this transition is not the in-place "
-            "one the scenario describes, and the no-extra-click claim is unverifiable"
-        )
-        assert events == [], (
-            "expected the user to make NO extra gesture between sending the topic and the "
-            f"editor opening, but the page received {events} — the editor was reached by "
-            "interacting with something, not by the generation completing"
-        )
+        self.assert_no_user_gesture_reached_the_page(driver)
 
     def assert_the_read_only_result_was_replaced(self, driver: WebDriver) -> None:
         """The surface BECAME the editor — the read-only completed view is not what is shown.
@@ -99,9 +98,14 @@ class AutoEditorTransitionStatements(GenerationFlowActionsMixin, BaseFrontendSta
 
         `generation-generating` is ruled out for the mirror-image reason. An auto-transition that
         opens the editor without tearing the run down leaves the spinner standing underneath it,
-        so the user is told the text is still being written while already holding it — and the
-        poll loop that outlived its own result keeps calling the backend. Absent this the test
-        passes on exactly that leak.
+        so the user is told the text is still being written while already holding it.
+
+        That is ALL this method claims, and the claim used to be larger. It said it also caught
+        the poll loop outliving its result; it cannot. Hiding the surface and calling
+        `stopPolling()` are independent lines in `useGeneration.ts`, so an implementation that
+        switches to the editor branch and forgets the teardown satisfies all three absence checks
+        here while polling forever. The leak is caught on the wire, by
+        `assert_the_poll_loop_stopped`.
         """
         self._assert_not_visible(
             driver,
@@ -133,9 +137,9 @@ class AutoEditorTransitionStatements(GenerationFlowActionsMixin, BaseFrontendSta
         The comparison is character-exact THROUGH the document, including the blank lines that
         separate the doklad's sections. See EXPECTED_GENERATED_TEXT for why the editor's
         inline-only schema leaves exactly one faithful rendering of those breaks, which makes
-        this a decision the test gets to fix rather than one it has to wait on. Only the outer
-        edges are stripped, matching `_assert_element_text_equals`, this lane's shared text
-        comparison: `.text` is browser-normalized innerText, so its leading/trailing whitespace
+        this a decision the test gets to fix rather than one it has to wait on. Compared through
+        `_assert_element_text_equals`, this lane's shared text comparison, which strips only the
+        outer edges: `.text` is browser-normalized innerText, so its leading/trailing whitespace
         carries no product meaning and pinning it would buy flakiness rather than strictness.
 
         And the surface is asserted EDITABLE, not merely populated. "The surface becomes the
@@ -143,10 +147,8 @@ class AutoEditorTransitionStatements(GenerationFlowActionsMixin, BaseFrontendSta
         that is the completed view wearing the editor's name, and needing one more action to
         start typing is exactly the extra step this scenario removes.
         """
-        editor = self._wait_for_visible(driver, EDITABLE_CONTENT)
-        actual = editor.text.strip()
-        assert actual == EXPECTED_GENERATED_TEXT, (
-            f"expected the editor to open loaded with the generated text, got '{actual}'"
+        editor = self._assert_element_text_equals(
+            driver, EDITABLE_CONTENT, EXPECTED_GENERATED_TEXT, "the text the editor opened with"
         )
         editable = editor.get_attribute("contenteditable")
         assert editable == "true", (

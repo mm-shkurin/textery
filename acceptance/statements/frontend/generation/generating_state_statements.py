@@ -8,6 +8,7 @@ from statements.frontend.generation.generation_flow_actions import (
     CHAT_PANEL,
     GENERATIONS_PATH,
     GenerationFlowActionsMixin,
+    is_status_poll_path,
 )
 from statements.frontend.generation.generating_state_locators import (
     DOC_BODY,
@@ -26,22 +27,6 @@ from statements.uuid_format import is_uuid
 # raising SLOW_LATENCY_MS can no longer turn a healthy client into a test that reports it
 # never polls. Whichever is larger wins, so the DOM budget is still the floor.
 POLL_SCAN_TIMEOUT_SECONDS = max(WAIT_TIMEOUT_SECONDS, 3 * SLOW_LATENCY_MS / 1000)
-
-
-def _is_status_poll_path(path: str) -> bool:
-    """A status poll is GET {GENERATIONS_PATH}/<one segment> and nothing else.
-
-    `_matching_requests_to` matches a URL SUBSTRING, so the collection load
-    `GET /api/v1/generations` (a history list, no run id) lands in the same batch as a real
-    poll. Filtering by SHAPE before asserting cardinality is what stops an unrelated feature's
-    list request from failing this scenario with a message about the client not polling —
-    the assertion would be reporting a healthy client as a broken one.
-    """
-    prefix = f"{GENERATIONS_PATH}/"
-    if not path.startswith(prefix):
-        return False
-    remainder = path[len(prefix) :]
-    return bool(remainder) and "/" not in remainder
 
 
 class GeneratingStateStatements(
@@ -154,7 +139,7 @@ class GeneratingStateStatements(
                         driver, GENERATIONS_PATH, method="GET"
                     )
                 )
-                if _is_status_poll_path(path)
+                if is_status_poll_path(path)
             }
 
         assert polled_paths, (

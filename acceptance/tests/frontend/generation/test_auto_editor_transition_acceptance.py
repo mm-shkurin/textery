@@ -37,14 +37,18 @@ class TestAutoEditorTransitionAcceptance(AbstractFrontendTest):
     Then the surface becomes the editor with the generated content loaded
     And the user made no extra click to get there
 
-    NOT throttled, unlike scenario 1.2, and the difference is the point: 1.2's subject is the
-    TRANSIENT pending surface, which the fake provider's zero-latency answer makes a few
-    milliseconds wide, so it had to widen the window with CDP latency to observe it at all.
-    2.1's subject is the TERMINAL state — once the editor is up it stays up, and waiting for it
-    is not a race. Throttling here would only serialise ~2.5s onto each of the create POST, the
-    status poll and the conversion POST, pushing a healthy run toward the timeout for no
-    observability gained. "Watching a generation complete" is established by
-    `assert_send_started_a_run`: the composer is gone, so a run is in flight.
+    Throttled, but only across ONE step, and the boundary is the point. 2.1's SUBJECT is the
+    terminal state — once the editor is up it stays up, so waiting for it is not a race and it
+    pays no latency. 2.1's INSTRUMENT is not terminal at all: the gesture watch has to be armed
+    while the run is still pending, and against the acceptance stack's zero-latency fake provider
+    that window is exactly as transient as 1.2's subject was. So the create POST is held open for
+    the arm (`hold_the_run_pending`) and the latency is dropped again the moment the watch is
+    live (`let_the_run_finish`), leaving the transition itself and the ManualEditor chunk fetch
+    unthrottled.
+
+    "Watching a generation complete" is therefore established twice over: the composer is gone
+    (`assert_send_started_a_run`) AND the generating surface is up at arm time — the second is
+    what makes an empty event list evidence rather than an artifact of arming too late.
     """
 
     TOPIC = "Влияние искусственного интеллекта на образование"
@@ -54,10 +58,22 @@ class TestAutoEditorTransitionAcceptance(AbstractFrontendTest):
     ):
         auto_editor_transition_statements.pick_document_type_for_doklad(webdriver, app_url)
 
+        auto_editor_transition_statements.hold_the_run_pending(webdriver)
         auto_editor_transition_statements.send_topic(webdriver, self.TOPIC)
         auto_editor_transition_statements.assert_send_started_a_run(webdriver)
         auto_editor_transition_statements.watch_for_any_further_user_gesture(webdriver)
+        auto_editor_transition_statements.let_the_run_finish(webdriver)
 
         auto_editor_transition_statements.assert_editor_opened_by_itself(webdriver)
         auto_editor_transition_statements.assert_the_read_only_result_was_replaced(webdriver)
         auto_editor_transition_statements.assert_editor_holds_the_generated_text(webdriver)
+
+        # The wire half, and it is not decoration: the two defects that hurt most here leave no
+        # mark on screen. A poll loop that outlived its result keeps hitting the backend every
+        # 5s behind a perfectly correct-looking editor, and a conversion driven off those ticks
+        # creates one duplicate document per tick — the user sees one editor and finds four to
+        # nine identical documents later. Asserted last because both need the editor to be up.
+        auto_editor_transition_statements.assert_the_conversion_created_exactly_one_document(
+            webdriver
+        )
+        auto_editor_transition_statements.assert_the_poll_loop_stopped(webdriver)
