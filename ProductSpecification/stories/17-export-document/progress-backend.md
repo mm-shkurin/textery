@@ -1812,8 +1812,32 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 >   `UNPASSED_TITLE_ARGUMENT` refs; `TitleUpdate` still a live import in `document_fakes.py`; no other
 >   Protocol implementor of `DocumentRepository` exists to have been missed (`SqlAlchemyGenerationStorage`
 >   only mentions the method in a docstring).
-- [~] red-usecase (coverage: pin that the port's `title` has no default)
-- [ ] green-usecase (coverage: pin that the port's `title` has no default)
+- [x] red-usecase (coverage: pin that the port's `title` has no default)
+  > RED landed as a STRUCTURAL test in the db layer's `test_document_storage_cas_shape.py` idiom:
+  > `test_document_repository_port_shape.py` + `port_shape_statements.py` reflect over
+  > `save_content_if_version_matches` on BOTH carriers (the port and `FakeDocumentRepository`) and
+  > compare the whole `inspect.Parameter` for `title` against a literal
+  > `EXPECTED_TITLE_PARAMETER` — pinning name, kind, annotation AND default in one comparison.
+  > Pinning `default`+`kind` alone would have let green satisfy the letter with `title: str | None`,
+  > the exact type `TitleUpdate` replaced. PREDICTION MATCHED EXACTLY (all fields YES): 2 failed
+  > (`[port]`, `[fake]`), 1 passed, because neither `document_repository.py:41` nor
+  > `document_fakes.py:95` has a `*` separator, so `kind` is POSITIONAL_OR_KEYWORD — confirming the
+  > agent-review LOW finding over `6d1ea08` that "required KEYWORD" was prose, not signature.
+  > Two red-side defects found and fixed before the marker: (1) `str(inspect.Parameter)` does not
+  > render `kind`, so expected and actual printed the IDENTICAL string and the message was
+  > non-diagnostic for the only field that differed — added `_spell()` rendering all four compared
+  > fields; (2) the parameter-order test is GREEN today (a satisfied invariant, not a RED test) and
+  > the class-level skip marker would have silently buried it — moved to its own unskipped class.
+  > /test-review then found all 3 of its cluster-A findings on that one RUNNING assertion:
+  > `list(parameters)` yields NAMES ONLY (a fake declaring `content: int` stayed green), neither
+  > side was a literal (a rename applied to both carriers passed — it pinned agreement while
+  > claiming to pin order), and the `Document | None` return was unpinned though the `None` arm IS
+  > the CAS miss. Split into three assertions failing for three different reasons, each verified
+  > falsifiable against throwaway reordered / retyped / `-> int` classes.
+  > GREEN's job: add `*` to BOTH `document_repository.py:41` and `document_fakes.py:95`.
+  > `SqlAlchemyDocumentStorage`'s mirror will then be structurally looser than its port — out of
+  > this test's scope, already routed to the clear() step's `red-adapter db`.
+- [~] green-usecase (coverage: pin that the port's `title` has no default)
   > COVERAGE FINDING over this green — percentages were clean and proved nothing, again (4th time).
   > `document_repository.py` 10/10 stmts, 0 branches (it is a Protocol); `document_storage.py` 42/42
   > stmts, 2/2 branches. Both 100%/100%. Removing a default REMOVES a state, so nothing is newly
