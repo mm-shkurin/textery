@@ -46,6 +46,43 @@ export function topicFieldLabel(documentType: DocumentType): string {
   return `Тема ${DOCUMENT_TYPE_GENITIVE[documentType]}`
 }
 
+// Lowercase nominative/accusative form, for copy that names the type as the object of a verb —
+// 'Готовим ваш доклад', 'ИИ пишет доклад'. Same reason as the genitive table above: the display
+// label is capitalised ('Доклад') and interpolating it mid-sentence reads as a proper noun.
+// Nominative and accusative coincide for all four (inanimate masculine and neuter), so one table
+// serves both positions; add an animate type and it will need its own.
+//
+// Deliberately NOT derived from WIRE_DOCUMENT_TYPE, which happens to hold the same four strings:
+// that map is a boundary translation owned by the backend's vocabulary, and this one is display
+// copy. Coupling them would mean a backend rename silently rewrites what the user reads.
+export const DOCUMENT_TYPE_ACCUSATIVE: Record<DocumentType, string> = {
+  doklad: 'доклад',
+  essay: 'эссе',
+  sochinenie: 'сочинение',
+  referat: 'реферат',
+}
+
+// 'ваш' agrees in gender with what follows — ваш доклад, ваше эссе — so the possessive cannot be
+// a constant in the phrase. Kept private: it is meaningless outside the one title it builds.
+const DOCUMENT_TYPE_POSSESSIVE: Record<DocumentType, string> = {
+  doklad: 'ваш',
+  essay: 'ваше',
+  sochinenie: 'ваше',
+  referat: 'ваш',
+}
+
+// The generating screen's title (mockup 05). Built here, next to the tables it declines against,
+// for the reason topicFieldLabel exists: it used to be the literal 'Готовим ваш доклад' in
+// DocArea, five lines from a status badge naming the real picked type.
+export function generatingTitle(documentType: DocumentType): string {
+  return `Готовим ${DOCUMENT_TYPE_POSSESSIVE[documentType]} ${DOCUMENT_TYPE_ACCUSATIVE[documentType]}`
+}
+
+// The generating progress line in the chat panel (mockup 05), the same screen's other half.
+export function writingProgressMessage(documentType: DocumentType): string {
+  return `ИИ пишет ${DOCUMENT_TYPE_ACCUSATIVE[documentType]}`
+}
+
 // The wire values the backend actually accepts — measured by curl against the live stack
 // 2026-07-17, not read from a spec:
 //   {"document_type":"doklad"} -> 422 {"error_code":"INVALID_DOCUMENT_TYPE"}

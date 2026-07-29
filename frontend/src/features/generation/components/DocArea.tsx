@@ -2,12 +2,17 @@ import ReactMarkdown from 'react-markdown'
 import './ChatButton.css'
 import type { GenerationUiState } from '../hooks/useGeneration'
 import { formatRelativeTime } from '../formatRelativeTime'
+import { generatingTitle, type DocumentType } from '../../../shared/documentTypes'
 
 interface DocAreaProps {
   state: GenerationUiState
   content: string | null
   volumePages: number | null
   error: string | null
+  // The id and its label, the pair ChatWorkspace already carries: `label` is the breadcrumb-style
+  // display form, while copy that names the type inside a sentence has to decline it, which only
+  // the id can look up.
+  documentType: DocumentType
   label: string
   createdAt: string | null
   onReset: () => void
@@ -18,6 +23,7 @@ export function DocArea({
   content,
   volumePages,
   error,
+  documentType,
   label,
   createdAt,
   onReset,
@@ -68,7 +74,7 @@ export function DocArea({
     return (
       <div className="doc-placeholder" data-testid="generation-generating">
         <div className="spinner" />
-        <h2>Готовим ваш доклад</h2>
+        <h2>{generatingTitle(documentType)}</h2>
         <p>Обычно занимает 1–2 минуты — страница обновится автоматически</p>
       </div>
     )

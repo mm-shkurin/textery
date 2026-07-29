@@ -25,7 +25,15 @@
 .doc-placeholder p {
   color: var(--text-secondary);
   font-size: 14px;
-  margin-bottom: 24px;
+}
+
+/* The 24px belongs to the gap before a button, not to the paragraph. Mockup 07 (failed) puts
+   `margin-bottom:24px` on the paragraph because a button follows it; mockup 05 (generating) has
+   no button and no margin. As one unconditional rule it left 24px of dead space under the
+   generating screen's last line, pushing the whole centred block off-centre in the one state
+   that has nothing below it. */
+.doc-placeholder p + .cw-btn {
+  margin-top: 24px;
 }
 
 .spinner {

@@ -83,7 +83,7 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
                 onSend={send}
               />
             ) : (
-              <Progress state={state} />
+              <Progress state={state} documentType={documentType} />
             )}
           </aside>
           <section className="doc-area" data-testid="doc-area">
@@ -93,6 +93,7 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
               volumePages={volumePages}
               createdAt={createdAt ?? null}
               error={error}
+              documentType={documentType}
               label={documentTypeLabel}
               onReset={reset}
             />
