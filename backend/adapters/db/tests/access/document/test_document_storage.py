@@ -2,6 +2,7 @@ from uuid import uuid4
 
 import pytest
 
+from document.title_update import TitleUpdate
 from shared.exceptions import ConflictException
 
 
@@ -114,7 +115,11 @@ class TestSaveContentCompareAndSwap:
         document = await document_storage_statements.given_a_saved_document(owner_id)
 
         saved = await document_storage_statements.save_content_if_version_matches(
-            document.id, owner_id, "<p>текст</p>", expected_version=1
+            document.id,
+            owner_id,
+            "<p>текст</p>",
+            expected_version=1,
+            title=TitleUpdate.preserve(),
         )
 
         # The version pin is the "advances by exactly one" half of the contract.
@@ -128,12 +133,20 @@ class TestSaveContentCompareAndSwap:
         owner_id = await document_storage_statements.given_an_account()
         document = await document_storage_statements.given_a_saved_document(owner_id)
         await document_storage_statements.save_content_if_version_matches(
-            document.id, owner_id, "<p>first</p>", expected_version=1
+            document.id,
+            owner_id,
+            "<p>first</p>",
+            expected_version=1,
+            title=TitleUpdate.preserve(),
         )
         await document_storage_statements.commit()
 
         refused = await document_storage_statements.save_content_if_version_matches(
-            document.id, owner_id, "<p>second</p>", expected_version=1
+            document.id,
+            owner_id,
+            "<p>second</p>",
+            expected_version=1,
+            title=TitleUpdate.preserve(),
         )
 
         document_storage_statements.assert_save_refused(refused, "a stale version must not write")
@@ -157,7 +170,11 @@ class TestSaveContentCompareAndSwap:
         document = await document_storage_statements.given_a_saved_document(owner_id)
 
         refused = await document_storage_statements.save_content_if_version_matches(
-            document.id, other_owner_id, "<p>hijack</p>", expected_version=1
+            document.id,
+            other_owner_id,
+            "<p>hijack</p>",
+            expected_version=1,
+            title=TitleUpdate.preserve(),
         )
 
         document_storage_statements.assert_save_refused(

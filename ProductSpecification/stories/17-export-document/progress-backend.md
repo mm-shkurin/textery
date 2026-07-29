@@ -1725,16 +1725,61 @@ filename & encoding → safety (SSRF, deadline, disclosure).
 > • UNTOUCHED standing finding (premortem, re-confirmed): the `6750132` REST-seam CREDIBLE is unaffected —
 >   `document_router.py:140` still forwards `request.title` raw, and `TitleUpdate.of("")` / `of("   ")`
 >   remain legal mypy-clean calls that write `''`/`'   '`. Nothing here narrows it.
-- [~] green-usecase (coverage: drop the port default, title required) — remove
-  `= TitleUpdate.preserve()` from `DocumentRepository.save_content_if_version_matches`,
-  `SqlAlchemyDocumentStorage.save_content_if_version_matches`, `document_fakes.py` and
-  `document_storage_statements.py`, making `title` a required keyword, and pass it explicitly at the db
-  test call sites that currently omit it (`test_document_storage.py:116,130,135,159` via the DSL, plus
-  `test_document_storage_cas_shape.py:72` and `test_document_storage_concurrency.py:70` which call the
-  storage directly — pass `TitleUpdate.preserve()`). This is the edit the green deferred; deferring it
-  is what put an unnamed state back on the port. Afterwards the docstring's "every call carries a named
-  intent" is true of the code and not just of the comment, and the `clear()` step below inherits a port
-  with no default to be mistaken for a clear.
+- [x] green-usecase (coverage: drop the port default, title required) — DONE. `title: TitleUpdate` is
+  now a REQUIRED keyword on both `DocumentRepository.save_content_if_version_matches` (port) and
+  `SqlAlchemyDocumentStorage.save_content_if_version_matches` (implementor); the port docstring now says
+  WHY there is no default rather than only asserting the property — a default IS the fourth unnamed
+  state ("argument absent"), and since `preserve()` and the coming `clear()` are dataclass-equal, a
+  default on the most-travelled save path is a silent clear waiting to happen. The
+  `UNPASSED_TITLE_ARGUMENT` sentinel was DELETED in the same edit, discharging the obligation the red
+  recorded — it existed only to compensate for the port default and would have become a second unnamed
+  state on the fake had it outlived it. Test infrastructure followed the signature with NO assertion
+  touched: the db DSL mirror de-defaulted, and `TitleUpdate.preserve()` now passed explicitly at
+  `test_document_storage.py` ×4, `test_document_storage_cas_shape.py:72`,
+  `test_document_storage_concurrency.py:70`, plus ONE the step did not enumerate —
+  `test_document_storage_title.py:54`, the content-only save inside
+  `test_should_preserve_an_existing_title_on_a_content_only_save`, which had been leaning on the DSL
+  default; semantics unchanged, the intent is now spelled.
+  GATES: usecase 181 passed / 0 failed / 0 skipped; db 57 passed / 0 failed / 0 skipped (real Postgres);
+  full `backend/` 538 passed / 0 failed / 2 skipped (the host-dependency `importorskip` pair —
+  weasyprint, htmldocx — per carryover, not RED leftovers); mypy `Success: no issues found in 299 source
+  files`; ruff 5 errors + 3 would-reformat, byte-identical to the HEAD baseline. Residual sweep: zero
+  `UNPASSED_TITLE_ARGUMENT` refs, zero `title: TitleUpdate = ` defaults anywhere in `backend/`.
+  ⚠️ ENVIRONMENT, not a code fault (flag for the next session): the db suite came up 18 failed / 39
+  passed on the first run with `column "title" of relation "documents" does not exist` — failures spread
+  across `test_history_paging.py` and idempotency tests this step never touches. The local dev Postgres
+  was one revision BEHIND head (`1a2b3c4d5e6f`; head is Sc 3.1's `a3b4c5d6e7f8` add-title-column), so
+  the DB was reset since the prior green recorded "db 57 passed". Fixed by `alembic upgrade head`
+  against the dev DB — the repo's own committed migration, no hand-edited infra. Anyone re-running this
+  suite on a fresh container must upgrade first. This is the same migration-harness quirk recorded at
+  Sc 3.1 green-adapter db: the db conftest does NOT run `alembic upgrade head` itself.
+  📎 BASELINE CORRECTION: mypy now reports 299 source files, not the 282 recorded at the previous two
+  steps. The file set was not touched by this change, so the older figure is stale — do not read the
+  movement as a regression; the verdict is `Success` either way. Also: ruff must be run from `backend/`
+  to match the baseline (from the repo root it picks up `acceptance/` and a different config scope,
+  reporting 24 errors / 79 would-reformat).
+- [~] red-usecase (coverage: pin that the port's `title` has no default)
+- [ ] green-usecase (coverage: pin that the port's `title` has no default)
+  > COVERAGE FINDING over this green — percentages were clean and proved nothing, again (4th time).
+  > `document_repository.py` 10/10 stmts, 0 branches (it is a Protocol); `document_storage.py` 42/42
+  > stmts, 2/2 branches. Both 100%/100%. Removing a default REMOVES a state, so nothing is newly
+  > reachable and there is no arc for coverage to miss — exactly the blind spot the earlier steps hit.
+  > MUTATION instead: re-added `= TitleUpdate.preserve()` to the port, `SqlAlchemyDocumentStorage`, AND
+  > `document_fakes.py` simultaneously, then ran `usecase/tests` + `adapters/db/tests` — **238/238 passed.**
+  > The mutation survives whole. This green's entire behavioral content is unpinned: nothing fails if it
+  > is reverted, so the next refactor or merge can silently undo it.
+  > Not caught by tooling either — mypy is configured in `backend/pyproject.toml` but `backend-ci.yml`
+  > runs `pytest` only (no mypy, no ruff step), and mypy would not flag it regardless: ADDING a default
+  > is legal, it only rejects the reverse direction. pytest is the sole guard and it is silent.
+  > Test it structurally, the idiom this codebase already uses (`test_document_storage_cas_shape.py`
+  > pins "must not SELECT"): assert
+  > `inspect.signature(DocumentRepository.save_content_if_version_matches).parameters["title"].default
+  > is inspect.Parameter.empty`. Scoped to the PORT, which is this layer and where the hazard lives —
+  > the docstring's "a default is itself a fourth, unnamed state" is the claim to make executable.
+  > Cover `document_fakes.py` in the same test: its comment asserts "an omitted argument is now a
+  > TypeError, which is a constraint rather than a convention" — untrue while nothing checks it.
+  > `SqlAlchemyDocumentStorage`'s mirror is db-layer (`red-adapter db`); left for the clear() step, and
+  > lower-stakes since `SaveDocument` always passes explicitly.
 - [ ] green-acceptance (blank-title round trip) — PULLED FORWARD from the end of the scenario by the
   premortem over `83e4e48`: unskip `test_export_document_acceptance.py:141` (both `empty_title` and
   `whitespace_title` params) HERE, not after the clear path. It is the only test in the repo that

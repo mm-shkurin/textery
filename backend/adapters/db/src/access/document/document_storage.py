@@ -87,7 +87,7 @@ class SqlAlchemyDocumentStorage:
         content: str,
         expected_version: int,
         updated_at: datetime,
-        title: TitleUpdate = TitleUpdate.preserve(),
+        title: TitleUpdate,
     ) -> Document | None:
         """Compare-and-swap the content. Returns the new state, or None if the
         version did not match (or the document is absent/foreign).

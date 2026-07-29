@@ -8,6 +8,7 @@ from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.document.document_storage import SqlAlchemyDocumentStorage
 from auth.account import Account
 from document.document import Document
+from document.title_update import TitleUpdate
 from session import create_engine, create_session_factory
 from statements.database_cleanup import truncate_all
 
@@ -75,6 +76,7 @@ class TestSaveIsASingleCompareAndSwapStatement:
                         content="<p>x</p>",
                         expected_version=1,
                         updated_at=datetime.now(UTC),
+                        title=TitleUpdate.preserve(),
                     )
                 finally:
                     event.remove(engine.sync_engine, "before_cursor_execute", record)

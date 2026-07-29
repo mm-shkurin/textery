@@ -52,7 +52,11 @@ class TestTitlePersistence:
         await document_storage_statements.commit()
         # A subsequent content-only save (no title) at the advanced version.
         await document_storage_statements.save_content_if_version_matches(
-            document.id, owner_id, "<p>второй</p>", expected_version=2
+            document.id,
+            owner_id,
+            "<p>второй</p>",
+            expected_version=2,
+            title=TitleUpdate.preserve(),
         )
         await document_storage_statements.commit()
         document_storage_statements.expire_identity_map()
