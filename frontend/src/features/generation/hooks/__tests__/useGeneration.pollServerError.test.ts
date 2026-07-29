@@ -3,7 +3,7 @@ import {
   ORIGIN_INTERNAL_ERROR_BODY,
   ORIGIN_PROVIDER_UNAVAILABLE_BODY,
 } from '../../../../shared/api/__tests__/originErrorBodies'
-import { resetSession, seedSession } from '../../../../shared/api/__tests__/originStubs'
+import { resetOriginStubs, seedSession } from '../../../../shared/api/__tests__/originStubs'
 import {
   driveUntilItGivesUp,
   expectGaveUpWith,
@@ -29,7 +29,7 @@ describe('useGeneration — a poll that gives up on a 5xx says which status it g
   })
 
   afterEach(() => {
-    resetSession()
+    resetOriginStubs()
     vi.useRealTimers()
   })
 

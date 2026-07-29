@@ -9,7 +9,7 @@ import {
   ACCESS_TOKEN,
   authorizationHeaders,
   requestLog,
-  resetSession,
+  resetOriginStubs,
   seedSession,
   stubOriginError,
 } from '../../../../shared/api/__tests__/originStubs'
@@ -38,7 +38,7 @@ interface Observed {
 
 describe('useGeneration server errors reach the user through the real send chain', () => {
   beforeEach(seedSession)
-  afterEach(resetSession)
+  afterEach(resetOriginStubs)
 
   // No assertion in here — a hook that reached 'idle' must be reported against the `it` that
   // claimed 'failed', not against a line inside a shared setup step.

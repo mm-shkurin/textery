@@ -10,7 +10,7 @@ import {
   ACCESS_TOKEN,
   authorizationHeaders,
   requestLog,
-  resetSession,
+  resetOriginStubs,
   seedSession,
   stubOriginError,
 } from '../../../../shared/api/__tests__/originStubs'
@@ -41,7 +41,7 @@ interface Observed {
 
 describe('ManualEditor init server errors reach the user through the real send chain', () => {
   beforeEach(seedSession)
-  afterEach(resetSession)
+  afterEach(resetOriginStubs)
 
   // No assertion in here: every failure is attributable to the `it` that made the claim.
   async function renderAndFail(

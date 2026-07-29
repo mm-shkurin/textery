@@ -10,7 +10,7 @@ import {
   ACCESS_TOKEN,
   authorizationHeaders,
   requestLog,
-  resetSession,
+  resetOriginStubs,
   seedSession,
   stubOriginError,
 } from '../../../../shared/api/__tests__/originStubs'
@@ -36,7 +36,7 @@ interface Observed {
 
 describe('useHistoryList server errors reach the user through the real send chain', () => {
   beforeEach(seedSession)
-  afterEach(resetSession)
+  afterEach(resetOriginStubs)
 
   // Gated on `isLoading` settling, NOT on `error` being non-null: waiting on the very value under
   // test lets a transient wrong string satisfy the gate, and leaves the terminal `error` read

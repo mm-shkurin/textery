@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
 import { REQUEST_TIMEOUT_MS } from '../../../../shared/api/httpClient'
 import {
-  ACCESS_TOKEN,
-  ORIGIN_INTERNAL_ERROR_BODY,
-  REFRESH_TOKEN,
+  originResponse,
+  resetOriginStubs,
+  seedSession,
   type FetchMock,
+} from '../../../../shared/api/__tests__/originStubs'
+import { ORIGIN_INTERNAL_ERROR_BODY } from '../../../../shared/api/__tests__/originErrorBodies'
+import {
   captureRejection,
   expectClassifiableAsTransient,
   expectClassifiableAsTransientByIdentity,
@@ -13,7 +15,6 @@ import {
   expectTransientButKnownNotToHaveLanded,
   isStillPending,
   saveUnderTest,
-  serverError,
 } from './documentApi.transientFailureShape.testSupport'
 
 // H9.4 — the seam between what `saveDocument` REJECTS WITH and what the autosave retry policy can
@@ -34,14 +35,8 @@ import {
 // `expectHttpRejection` in the testSupport module for why.
 
 describe('documentApi save rejection stays classifiable by the autosave retry policy', () => {
-  beforeEach(() => {
-    saveSession({ accessToken: ACCESS_TOKEN, refreshToken: REFRESH_TOKEN })
-  })
-
-  afterEach(() => {
-    clearSession()
-    vi.unstubAllGlobals()
-  })
+  beforeEach(seedSession)
+  afterEach(resetOriginStubs)
 
   // `mockImplementation`, deliberately NOT `mockResolvedValue`: the latter hands back ONE
   // already-constructed `Response` whose body stream is consumable once, so a second call gets a
@@ -49,9 +44,15 @@ describe('documentApi save rejection stays classifiable by the autosave retry po
   // `body used already` TypeError into `{}` — degrading a green that routed into `saveDocument`'s
   // 409 refetch-and-retry into a silently-wrong body instead of a failure. A fresh `Response`
   // per call keeps `expectSingleSaveRequest` the thing that catches an extra request.
-  function stubFetchWith(status: number, body?: Record<string, unknown>): FetchMock {
+  //
+  // `body` defaults to `{}` — a non-JSON error page, a proxy's own 502 — because that is the shape
+  // most of these cases are about. The origin's REAL 500 body is `{error_code, message}`
+  // (`exception_handlers.py:64-77`), and one case passes it explicitly: that field is what decides
+  // whether the server's own text reaches a user, so a fixture that only ever minted `{}` would
+  // leave the production shape unexercised.
+  function stubFetchWith(status: number, body: Record<string, unknown> = {}): FetchMock {
     const fetchMock: FetchMock = vi.fn()
-    fetchMock.mockImplementation(() => Promise.resolve(serverError(status, body)))
+    fetchMock.mockImplementation(() => Promise.resolve(originResponse(body, status)))
     vi.stubGlobal('fetch', fetchMock)
     return fetchMock
   }
@@ -123,12 +124,11 @@ describe('documentApi save rejection stays classifiable by the autosave retry po
 describe('documentApi save rejection keeps the timeout type across the send boundary', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-    saveSession({ accessToken: ACCESS_TOKEN, refreshToken: REFRESH_TOKEN })
+    seedSession()
   })
 
   afterEach(() => {
-    clearSession()
-    vi.unstubAllGlobals()
+    resetOriginStubs()
     vi.useRealTimers()
   })
 

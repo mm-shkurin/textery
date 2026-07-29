@@ -22,7 +22,10 @@ export function seedSession(): void {
   saveSession({ accessToken: ACCESS_TOKEN, refreshToken: REFRESH_TOKEN })
 }
 
-export function resetSession(): void {
+// Undoes EVERYTHING this fixture installs, not just the session: `stubOriginError` replaces the
+// global `fetch`, and a suite that cleared only the session would leak a refusing origin into the
+// next file. Named for the whole fixture rather than for the session half it started as.
+export function resetOriginStubs(): void {
   clearSession()
   vi.unstubAllGlobals()
 }

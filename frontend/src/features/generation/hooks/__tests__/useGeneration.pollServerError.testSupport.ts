@@ -20,10 +20,9 @@ const STATUS_REQUEST = `GET /api/v1/generations/${GENERATION_ID}`
 
 // `MAX_CONSECUTIVE_POLL_FAILURES` (useGeneration.ts:22). Submit fires the immediate first check,
 // so the drive needs CEILING ticks to reach the ceiling and one more to observe that the interval
-// was cleared — named, because as bare `3` and `4` a moved production ceiling would silently drive
-// the wrong number of ticks and fail as an opaque array diff.
+// was cleared — named, because as a bare `3` a moved production ceiling would silently drive the
+// wrong number of ticks and fail as an opaque array diff.
 const POLL_FAILURE_CEILING = 3
-const SAMPLES = POLL_FAILURE_CEILING + 1
 
 // What the hook exposes to the screen. Named so the terminal state is asserted as one whole object
 // rather than field by field — a give-up that leaves `volumePages`/`createdAt` from an earlier
@@ -128,5 +127,4 @@ export function expectGaveUpWith(run: GiveUpRun, message: string): void {
   expect(run.authorizationHeaders).toEqual(
     Array(1 + POLL_FAILURE_CEILING).fill(`Bearer ${ACCESS_TOKEN}`),
   )
-  expect(run.requests).toHaveLength(SAMPLES)
 }

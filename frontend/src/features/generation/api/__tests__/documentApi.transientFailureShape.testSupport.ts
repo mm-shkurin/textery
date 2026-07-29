@@ -6,43 +6,13 @@ import { expect } from 'vitest'
 import { RequestTimeoutError, isHttpError } from '../../../../shared/api/httpClient'
 import { isTransientFailure, mayHaveLandedServerSide } from '../../hooks/autosaveRetryPolicy'
 import { saveDocument, type SaveDocumentResult } from '../documentApi'
-import { originResponse } from '../../../../shared/api/__tests__/originStubs'
+import { ACCESS_TOKEN, type FetchMock } from '../../../../shared/api/__tests__/originStubs'
 
 // One definition of the request under test, shared by the call and by the assertion that reads
 // the recorded fetch back — so a drifting literal cannot make the request assertion vacuous.
 const SAVE_DOCUMENT_ID = 'doc-1'
 const SAVE_CONTENT = '<p>ours</p>'
 const SAVE_VERSION = 1
-// Re-exported, not re-typed: the token this file ASSERTS in the `Authorization` header must be the
-// same literal the suites SEED the session with, and a second copy is a copy that drifts.
-export { ACCESS_TOKEN, REFRESH_TOKEN } from '../../../../shared/api/__tests__/originStubs'
-import { ACCESS_TOKEN } from '../../../../shared/api/__tests__/originStubs'
-
-// A REAL `Response`, not a duck-typed `{ok, status, json}` literal. `performRequest` reads
-// `res.headers` (httpClient.ts:144), and a stub without it only survives on the `headers?.get`
-// optional chain — i.e. the fixture would be standing in for a contract it does not implement.
-// Minting the real thing also makes `headers`, `statusText` and `text()` behave, and lets the
-// mock be typed against `Response` so a future divergence is a tsc error.
-//
-// `body` defaults to `{}` — a non-JSON error page, a proxy's own 502 — because that is the shape
-// most of these cases are about. The origin's REAL 500 body is `{error_code, message}`
-// (`exception_handlers.py:64-77`), and one case passes it explicitly: after this green that field
-// is what decides whether the server's own text reaches a user, so a fixture that only ever mints
-// `{}` would leave the production shape unexercised under a comment claiming fidelity.
-export function serverError(status: number, body: Record<string, unknown> = {}): Response {
-  return originResponse(body, status)
-}
-
-// The origin's catch-all 500, verbatim (`exception_handlers.py:63-77`, measured 2026-07-28). Moved
-// to `shared/api/__tests__/originErrorBodies` once the history and `describeFailure` suites needed
-// the same body — re-exported here so this file's existing readers keep their import.
-export { ORIGIN_INTERNAL_ERROR_BODY } from '../../../../shared/api/__tests__/originErrorBodies'
-
-// Typed with the arguments `httpClient` actually passes, so the recorded call reads back as a
-// `[url, init]` tuple without a cast — a stub that drifted from the transport's call shape is a
-// tsc error rather than an `undefined` that quietly makes the request assertion vacuous.
-export type { FetchMock } from '../../../../shared/api/__tests__/originStubs'
-import type { FetchMock } from '../../../../shared/api/__tests__/originStubs'
 
 export function saveUnderTest(): Promise<SaveDocumentResult> {
   return saveDocument(SAVE_DOCUMENT_ID, SAVE_CONTENT, SAVE_VERSION)
