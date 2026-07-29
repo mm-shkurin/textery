@@ -53,14 +53,25 @@ within their file, not across the story.
       Check 3 (response shape): **rest** — none of the seven AI-edit routes exist (`router/` holds
       only `auth`, `document`, `generation`), which is what the acceptance disable marker says: a
       refusal cannot be told apart from an unrouted request.
-- [ ] red-adapter db — save through `save_new`, read back through `find_scope_by_id_and_owner`
-      against the real schema: the owner's own document resolves to its scope, another account's
-      does not, an absent id does not. The positive control is the point — a port method inherited
-      from the Protocol returns `None` for every input (the bodies are `"""doc"""` + `...`, which is
-      a concrete coroutine, not an abstract declaration), so a storage that "implements" the port by
-      inheriting it would refuse every user their own documents while mypy and the usecase suite
-      both stay green. Assert the SELECT does not read `content`.
-- [ ] green-adapter db — implement the bounded SELECT. Also close the shape that makes the above
+- [x] red-adapter db — 4 tests against the real Postgres schema, skipped at class level; all four
+      fail with `AttributeError: 'SqlAlchemyDocumentStorage' object has no attribute
+      'find_scope_by_id_and_owner'` when the marker is lifted. The absent-id case seeds a document
+      **for the asking owner** and then asks for a different id, so an `owner_id`-only predicate (or
+      a finder that echoed its arguments back as a scope) fails there; the foreign case seeds under
+      someone else, so an `id`-only predicate fails there — each predicate is held by the case that
+      can move without it. `/test-review` found the projection expectation was derived from
+      `dataclasses.fields(DocumentScope)`, i.e. a test that widens with the DTO it guards: it is now
+      the literal `["id", "owner_id"]`, matching the usecase side at
+      `document_scope_guard_statements.py:30`, and compared order-insensitively (`SELECT owner_id, id`
+      is a correct green). The content check is one compound step,
+      `assert_the_scope_was_resolved_without_reading_content` — split in two it was satisfiable by a
+      finder that emits one cheap non-content SELECT and returns `None`. SQL capture lives in a new
+      `statements/sql_recorder.py` listening on the **sync** engine (a listener on the `AsyncEngine`
+      never fires, and zero recorded statements reads as "no `content` was selected").
+      **Known duplication:** `test_document_storage_cas_shape.py` and
+      `test_generation_storage_cas_shape.py` each hand-roll the same recorder — fold both onto
+      `recording_sql` once this is green (they'd also gain the strict projection parsing).
+- [~] green-adapter db — implement the bounded SELECT. Also close the shape that makes the above
       failure silent: the Protocol bodies must `raise NotImplementedError` rather than `...`, and
       `backend-ci.yml` needs a mypy step (the config already exists in `backend/pyproject.toml` and
       would go red on this commit today).
