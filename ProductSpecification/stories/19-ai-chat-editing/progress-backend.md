@@ -105,12 +105,31 @@ within their file, not across the story.
       after we paid to avoid it. The ADR already lists `version` on the scope; add it at scenario 2.x
       as planned, and consider a usecase-level no-`content`-SELECT assertion (the recorder guard
       exists only at the adapter layer today).
-- [~] red-adapter rest — the seven AI-edit routes, each delegating to a usecase whose first
-      statement is `resolve_owned_document`. Per the ADR the refusal must precede validation and
-      version checks: a foreign document with a malformed instruction is 404, never 422; with a
-      would-have-been-correct `base_version` it is 404, never 409; and `.../stream` answers plain
-      non-streaming JSON, never a 200 `text/event-stream` carrying an error frame.
-- [ ] green-adapter rest — wire the routes and the usecases.
+- [x] red-adapter rest — 5 test methods, **37 parametrized items**, class-level skip marker; all 37
+      fail with `b'{"detail":"Not Found"}'` vs the canonical bytes (30) and `await_count 0 == 1` (7).
+      The production side is a router stub: seven providers, zero handlers.
+      `/test-review` found both of this scenario's recurring weaknesses still live. Byte-identity was
+      a `set()` cardinality check — seven routes that don't exist return the same bytes every time, so
+      it passed for exactly the state the scenario rules out; it is now seven independent equalities
+      against a `CANONICAL_REFUSAL_BYTES` literal (identity follows transitively, and a failure names
+      the diverging route). The stream test was worse: unskipped, **3 of its 4 assertions passed
+      against the missing route** — `headers.get("content-type", "")` let an *absent* header satisfy
+      the negative check, and `startswith("application/json")` admits `application/json-seq` and
+      `application/jsonlines`, both streaming types. Exact content-type now, on all seven routes.
+      Kwargs were `str(kwargs.get("document_id")) == document_id`: `.get()` degraded a missing kwarg
+      to `str(None)`, and `str()` accepted the raw path string or anything whose `__str__` matched —
+      now typed and structural, with the child identifiers (`edit_id`, `revision_number`) asserted
+      for the first time. Coverage widened 21 → 37: resolve-before-validate ran against the queue
+      route only, but `CANCEL_EDIT` and `RESTORE_REVISION` are equally free to declare a validated
+      body model FastAPI answers 422 from before the guard runs.
+      **Two constraints green must respect:** (1) the body-carrying routes cannot declare a Pydantic
+      body model as a handler parameter — FastAPI validates it before the handler body runs, so a
+      malformed `base_version` would 422 before `resolve_owned_document` is reached; accept the body
+      raw and validate *after* the guard, or hang validation off a dependency ordered behind it.
+      (2) the stream route must `await` the usecase **before** constructing the response —
+      `StreamingResponse(generator())` with a raise inside the generator commits a 200
+      `text/event-stream` status line before the guard's answer is known.
+- [~] green-adapter rest — wire the routes and the usecases.
 - [ ] green-acceptance
 
 ### Scenario 1.2: An edit belonging to another document of the same owner is not found
