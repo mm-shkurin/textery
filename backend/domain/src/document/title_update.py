@@ -1,5 +1,33 @@
 from dataclasses import dataclass
 
+from shared.exceptions import ValidationException
+
+INVALID_TITLE_INTENT_ERROR_CODE = "INVALID_TITLE_INTENT"
+
+# CLIENT-FACING, and the only handler in the stack that echoes `exc.message`
+# verbatim is the one this code routes to -- `validation_exception_handler`
+# returns `{"error_code": exc.error_code, "message": exc.message}` unsubstituted,
+# where the 404/409/500 handlers all swap in a fixed constant. So this sentence
+# is read by a client, and it says what was wrong without naming a domain class
+# or a constructor signature (Security 5.1 -- the same reason that file gives for
+# not echoing `str(exc)`). The developer-facing detail lives on
+# `_CONTRADICTION_DETAIL`, off the wire, exactly as `ExportFormat.parse` keeps its
+# internal ValueError text off the wire.
+INVALID_TITLE_INTENT_MESSAGE = "A title cannot be set and cleared at the same time."
+
+# STAGED, NOT YET DELIVERED ANYWHERE -- do not read the `from` chain below as a
+# working diagnostic. `validation_exception_handler` is the one handler in
+# `exception_handlers.py` with no `logger` call at all (404, 409 and 500 all log),
+# so this string currently reaches neither the wire (correct) nor the log (not
+# yet). It is kept rather than deleted because the missing log line is already
+# chartered to adapters-discovery, alongside the `_ERROR_CODE_STATUS_MAP` entry;
+# it becomes load-bearing the moment that guard lands. Until then nothing pins it
+# -- blanking this constant, or dropping the `from` clause, fails no test.
+_CONTRADICTION_DETAIL = (
+    "a clear carries no title to write: TitleUpdate(value=..., clears=True) "
+    "asks for an erasure and a write at once, and its readers disagree"
+)
+
 
 @dataclass(frozen=True)
 class TitleUpdate:
@@ -61,12 +89,17 @@ class TitleUpdate:
         resolve it oppositely -- the db CAS writes the value and ignores the flag,
         a clears-first reader nulls the column and discards the value. Raising is
         what stops "which consumer read it" from deciding a user's data.
+
+        It raises a `ValidationException`, never a builtin: the rest stack
+        registers handlers for that family only, so a `ValueError` here would
+        leave as a mute `500 INTERNAL_ERROR` telling the caller nothing, on the
+        same save whose content update is already lost.
         """
         if self.clears and self.value is not None:
-            raise ValueError(
-                "a clear carries no title to write: TitleUpdate(value=..., clears=True) "
-                "asks for an erasure and a write at once, and its readers disagree"
-            )
+            raise ValidationException(
+                error_code=INVALID_TITLE_INTENT_ERROR_CODE,
+                message=INVALID_TITLE_INTENT_MESSAGE,
+            ) from ValueError(_CONTRADICTION_DETAIL)
         if self.value is not None and self.value.strip() == "":
             object.__setattr__(self, "value", None)
 

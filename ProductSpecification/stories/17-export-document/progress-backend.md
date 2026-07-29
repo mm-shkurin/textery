@@ -2097,7 +2097,7 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   `pytest.raises(ValueError, ...)` assertions at `test_title_update_invariants.py:64,75` are part of
   this step's scope: they currently read as intent. Fold in the collection-time construction fix from
   the same review (parametrize over factory callables at `:85-87`) while in that file.
-- [~] green-usecase (typed refusal)
+- [x] green-usecase (typed refusal)
   > RED LANDED, all fields matched on the first run, no loop. Two RED tests, both in place on the
   > existing `pytest.raises(ValueError, ...)` assertions rather than in a new file — the step put those
   > two in scope precisely because they read as intent. Observed verbatim: `ValueError: a clear carries
@@ -2199,6 +2199,67 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   > CHARTER ADDED to adapters-discovery by these passes: a `_ERROR_CODE_STATUS_MAP` entry (422, matching
   > siblings), a log line on `validation_exception_handler`, and a guard that a message reaching that
   > handler carries no internal type names or constructor syntax.
+  > GREEN DONE, and it did NOT take the naive path. Following `ExportFormat.parse` as that VO actually
+  > BEHAVES (discard the internal text, raise with a short public constant, keep the detail on the
+  > `from` chain) rather than as the RED described it: three constants —
+  > `INVALID_TITLE_INTENT_ERROR_CODE`, a client-safe `INVALID_TITLE_INTENT_MESSAGE`
+  > ("A title cannot be set and cleared at the same time.", in register with
+  > "The format must be pdf or docx."), and a private `_CONTRADICTION_DETAIL` holding the previous
+  > 30-word developer-facing sentence verbatim. Raise is
+  > `ValidationException(...) from ValueError(_CONTRADICTION_DETAIL)` — `from <instance>` rather than a
+  > contrived try/raise/except round-trip: same `__cause__`, same traceback tail, no dead control flow.
+  > Both chartered test edits made: `REFUSAL_MESSAGE` now equals the client-safe sentence (still exact
+  > `==`, NOT weakened back to `match=`, both arms still sharing one constant so the per-arm-tail drift
+  > the RED guarded against stays dead), and the two markers removed with nothing else touched.
+  > 339 passed / 0 SKIPPED (was 337/2); `-rs` printed no skip section, and the two unskipped tests were
+  > verified BY NAME running green — `test_should_reject_a_flagged_value` and
+  > `test_should_reject_a_flagged_blank_before_normalising_it_away` — since the review noted the count
+  > alone cannot catch a half-unskipped green. mypy Success. Live-guard gap CLOSED and verified by
+  > deletion: removing the raise block gives 2 failed / 337 passed, exactly the two newly-live tests.
+  > COVERAGE — 100%/100% and VACUOUS AGAIN, for a reason worth recording because it is new: every
+  > mutation that matters here lives ON A LINE COVERAGE ALREADY COUNTS AS HIT. The `raise` executes in
+  > both refusal tests, so the `from` clause, the message text and the error-code literal are all
+  > "covered" no matter WHAT THEY CONTAIN. Percentage discarded; 13 mutations run, 9 caught, 4 survived
+  > — and all four survivors are one cluster.
+  > CAUGHT: internal 30-word detail put back on the client message (2 failed); leaking
+  > `TitleUpdate(value=..., clears=True)` into it (2); swapping message and detail so the internal text
+  > goes on the wire (2); `error_code` to a real neighbour `INVALID_DOCUMENT_TYPE` (2), to a near-miss
+  > `INVALID_TITLE` (2), and to an unmapped `INVALID_TITLE_INTENT_X` (2); dropping the message's
+  > trailing period (2); plain `ValueError` instead of `ValidationException` (2); a generic
+  > "Invalid request." (2). So the error code is pinned to the EXACT literal, near-miss included.
+  > SURVIVED, all four: dropping `from ...` entirely; `from None`; chaining an empty
+  > `ValueError("")`; and blanking `_CONTRADICTION_DETAIL` to `""`. **`grep -rn "__cause__" backend/`
+  > returns ZERO HITS ACROSS THE ENTIRE BACKEND.**
+  > ROOT CAUSE, and it outranks the mutation table: `validation_exception_handler` is the ONE handler in
+  > `exception_handlers.py` with NO `logger` call at all — 404 logs, 409 logs, 500 logs, validation
+  > returns without touching `logger`. So `_CONTRADICTION_DETAIL` reaches NEITHER the wire (correct) nor
+  > the log (not yet). The four mutations survive because there is genuinely nothing to pin. This also
+  > differs from the `ExportFormat.parse` precedent it cites: there `from error` chains a ValueError
+  > Python ACTUALLY RAISED from `cls(value)` — free, and carrying a real traceback. Here the ValueError
+  > is manufactured solely to carry a string to a consumer that does not exist yet.
+  > DECISION TAKEN (the coverage pass raised two mutually-exclusive remediations and asked): KEEP the
+  > chain. The missing `logger` call on `validation_exception_handler` was ALREADY chartered to
+  > adapters-discovery by the premortem over `cebb0e4`, so the chain becomes load-bearing the moment
+  > that guard lands, and deleting it now would only have to be rebuilt. What WAS false is the comment:
+  > it claimed the detail "reaches the log via the `from` chain". Corrected in place to say plainly that
+  > this is STAGED AND DELIVERED NOWHERE, that the handler has no logger, that the missing line is
+  > chartered, and that until then nothing pins it — blanking the constant or dropping the `from` clause
+  > fails no test.
+  > FLAGGED, tooling not code: `--focus`'s pathspec in
+  > `.claude/tech/python-fastapi-hex/templates/testing/coverage-commands.md` —
+  > `git diff HEAD --name-only -- 'backend/*/src/'` — returns EMPTY for a tree with
+  > `backend/domain/src/document/title_update.py` modified, so `--focus` silently analyses nothing.
+  > `'backend/**/src/**'` works. The same file's coverage command also omits `--cov-branch`, so the
+  > documented invocation has no branch columns at all. This is the second pass to hit the focus filter.
+- [~] red-usecase (the refusal message is client-SAFE, not merely stable) — INSERTED by the coverage
+  pass, and safe under any resolution of the chain question above. The message is currently pinned as
+  A STRING, not as a SAFE string: `==` against a literal detects DRIFT (removing one period kills it)
+  but cannot catch a green that edits the sentence AND its `REFUSAL_MESSAGE` pin in one stroke — which
+  is exactly what a "make the message more helpful" edit looks like. Assert the PROPERTY instead:
+  `INVALID_TITLE_INTENT_MESSAGE` contains no `(`, no `=`, and no domain class name, so the leak
+  mutation cannot be reintroduced by a coordinated edit. The safety rationale currently lives only in
+  prose comments.
+- [ ] green-usecase (the refusal message is client-SAFE, not merely stable)
   > RED LANDED. Prediction matched on the first run, no loop, zero NOs across type/message/status for
   > all 5 failing tests. New: `backend/domain/tests/document/test_title_update.py` — the FIRST
   > `TitleUpdate` domain test that has ever existed — plus two Statements methods and one usecase test.

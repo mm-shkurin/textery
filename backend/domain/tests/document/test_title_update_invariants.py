@@ -56,10 +56,16 @@ INVALID_TITLE_INTENT = "INVALID_TITLE_INTENT"
 # leaves twenty free: a green appending a per-arm tail ("...: value was blank" /
 # "...: value was set") satisfies both arms while telling the two callers
 # different things -- disarming the exact guard naming it once was meant to be.
-REFUSAL_MESSAGE = (
-    "a clear carries no title to write: TitleUpdate(value=..., clears=True) "
-    "asks for an erasure and a write at once, and its readers disagree"
-)
+#
+# The sentence pinned is the CLIENT-FACING one, not the developer-facing detail
+# the constructor used to raise. `validation_exception_handler` is the only
+# handler that echoes `exc.message` verbatim, so whatever stands here is what a
+# client reads -- and the detailed version named a domain class and a constructor
+# signature. The detail is not dropped: it rides the `from` chain into the log,
+# the idiom `ExportFormat.parse` already uses. Pinning it here would have frozen
+# an internal shape onto the wire and made the wire-safe fix turn a DOMAIN test
+# red for a REST-layer reason.
+REFUSAL_MESSAGE = "A title cannot be set and cleared at the same time."
 
 
 class TestTitleUpdateClosesTheConstructorDoor:
@@ -115,12 +121,6 @@ class TestTitleUpdateRefusesToCarryAValueAndAClearAtOnce:
     makes that 4xx possible at all: the exception type.
     """
 
-    @pytest.mark.skip(
-        reason="RED: observed FAILED -- `ValueError: a clear carries no title to write: "
-        "TitleUpdate(value=..., clears=True) asks for an erasure and a write at once, and its "
-        "readers disagree` propagates out of pytest.raises(ValidationException), which does not "
-        "catch it. title_update.py:66 raises a builtin, so this refusal maps to 500 INTERNAL_ERROR."
-    )
     def test_should_reject_a_flagged_value(self):
         with pytest.raises(ValidationException) as refusal:
             TitleUpdate(value="Привет", clears=True)
@@ -134,11 +134,6 @@ class TestTitleUpdateRefusesToCarryAValueAndAClearAtOnce:
             "only part of the pair a human reads"
         )
 
-    @pytest.mark.skip(
-        reason="RED: observed FAILED -- same verbatim `ValueError: a clear carries no title to "
-        "write: ...` propagating out of pytest.raises(ValidationException). Both arms of the "
-        "contradiction raise the same builtin, so both leave as 500 INTERNAL_ERROR."
-    )
     def test_should_reject_a_flagged_blank_before_normalising_it_away(self):
         """Order matters: normalise-then-check would silently ACCEPT this.
 
