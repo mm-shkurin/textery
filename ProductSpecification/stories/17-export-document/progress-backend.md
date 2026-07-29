@@ -1618,15 +1618,52 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   NOT DONE, per the constraints: no clear path, no `SET title = NULL`, no touch to the `str` arm, no
   attempt at absent-vs-explicit-null. The open finding stands unchanged — this collapse DOES pin
   explicit `null` → `preserve()`, since `execute`'s signature makes it the same call.
-- [~] red-usecase (coverage: absent-title guard made falsifiable) — make the fake stop answering for
-  the usecase. `document_fakes.save_content_if_version_matches` must not default `title` to
-  `preserve()`; give it a sentinel `_title_intent` can never produce (or drop the default and let
-  omission raise `TypeError`). Acceptance is a MUTATION, not a passing run: the
-  `intent = {} if title is None else {...}` mutant above must go RED on
-  `test_should_forward_preserve_when_no_title_is_submitted_at_all`, where today it is green. Note there
-  is no behaviour-red available — `execute` already forwards `preserve()` correctly; what is missing is
-  the ability to notice if it stopped.
-- [ ] green-usecase (coverage: drop the port default, title required) — remove
+- [x] red-usecase (coverage: absent-title guard made falsifiable) — DONE. Acceptance was a MUTATION,
+  not a failing run, and it was measured both ways: unmutated 181 passed / 0 failed / 0 skipped;
+  with the `intent = {} if title is None else {...}` mutant applied, 1 failed / 180 passed, failing
+  exactly `test_should_forward_preserve_when_no_title_is_submitted_at_all` — the test that was GREEN
+  under that same mutant before this step. Mutation reverted; back to 181 passed. Predicted ==
+  actual on all six reported fields, first run, no loop.
+  CHANGE: `document_fakes.py` — new module constant
+  `UNPASSED_TITLE_ARGUMENT = TitleUpdate(value="<no title argument was passed>")` replaces
+  `title: TitleUpdate = TitleUpdate.preserve()` as the fake CAS default. `_title_intent` can never
+  produce that value (it yields only `preserve()` or `of(<submitted title>)`), so an omitted argument
+  now records as ITSELF instead of as the answer the assertion is looking for. It deliberately
+  `carries_a_value()`, so a firing default also writes a visibly bogus stored title rather than
+  quietly preserving.
+  WHY NOT JUST DROP THE DEFAULT (the step's other option): the fake must stay structurally assignable
+  to the `DocumentRepository` Protocol, whose `title` still has a default — making the fake's parameter
+  required is a hard mypy assignability error until the PORT default goes. That is precisely the next
+  step, so the sentinel is the only option available before it.
+  ⚠️ THE SENTINEL IS A CONVENTION, NOT A CONSTRAINT (red-agent, and independently the test-review's
+  closing note): the guard holds only while no test ever submits that exact string as a title. The next
+  green must DELETE `UNPASSED_TITLE_ARGUMENT` together with the port default — leaving it behind
+  reintroduces a second unnamed state on the fake, the same shape of defect this red exists to remove.
+  Note also the deliberate divergence it creates in the meantime: the fake defaults to the sentinel
+  while the port (`document_repository.py:48`) and the real adapter (`document_storage.py:90`) still
+  default to `preserve()`.
+  test-review: ran and applied 8 findings across 5 files — this was NOT a no-op pass, and three of the
+  fixes closed guards that were silently vacuous. `assert versions == [version] * len(versions)`
+  derived its expectation from the actual and passed on an empty list → replaced with a literal
+  `assert_saves_landed_on_versions([2, 2])` pinning count and value; `assert_response_matches_storage`
+  compared only `content` despite its name → now compares all 10 fields via a new
+  `document_state.py` snapshot helper (38 lines); `assert_nothing_was_written` checked content+version
+  only → now diffs a full field snapshot taken at `given` time; the Security 7.1 foreign-owner test
+  asserted only the exception type and never that `"<p>hijack</p>"` missed the victim's document →
+  gained `assert_nothing_was_written`; three refusals discarded the `pytest.raises` value (any
+  `NotFoundException` from any cause passed) → now captured and message-asserted; no title test read
+  the stored title back → `TITLE_INTENT_CASES` now carries the expected stored value and each case
+  asserts it. Verified by mutation, not by the green tick: the absent-path mutant now fails **2**
+  tests (up from 1 — it newly goes red in `TestSaveHappyPath`, so the sentinel is guarded from the
+  untitled suite too), and a "refused save still writes content" mutant is now caught where it was
+  INVISIBLE before (the old two-field check never ran for the foreign-owner case at all). Declined:
+  P-16 (`self.repository` as a Statements field — the established pattern across all 25 Statements
+  files, a refactor not an assertion fix).
+  GATES: usecase 181 passed / 0 failed / 0 skipped; mypy `Success: no issues found in 281 source
+  files`; ruff 5 errors + 3 would-reformat, byte-identical to the recorded HEAD baseline and none of
+  them a file this unit touched. All touched files under the 200-line cap (statements 189/135, tests
+  160/108, new document_state.py 38).
+- [~] green-usecase (coverage: drop the port default, title required) — remove
   `= TitleUpdate.preserve()` from `DocumentRepository.save_content_if_version_matches`,
   `SqlAlchemyDocumentStorage.save_content_if_version_matches`, `document_fakes.py` and
   `document_storage_statements.py`, making `title` a required keyword, and pass it explicitly at the db

@@ -8,6 +8,22 @@ from shared.keyset_cursor import KeysetCursor
 
 _EPOCH = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
 
+# The fake must not answer for the usecase. While the fake defaulted `title` to
+# `preserve()`, an omitted argument was INDISTINGUISHABLE from the usecase
+# forwarding `preserve()` itself, so
+# `test_should_forward_preserve_when_no_title_is_submitted_at_all` pinned WHAT
+# reached the port but not WHO put it there -- MEASURED over the previous green:
+# rewriting `execute` to drop the `title=` kwarg on the absent path left the
+# usecase suite at 181 passed.
+#
+# This sentinel is a value `SaveDocument._title_intent` can never return: it
+# only ever yields `preserve()` (value=None) or `of(<submitted title>)`, and no
+# test submits this string. So an unpassed argument now shows up AS ITSELF
+# instead of as the answer the test was looking for. It is deliberately a
+# carries-a-value intent, so a default that fires also writes a visibly bogus
+# stored title rather than quietly preserving.
+UNPASSED_TITLE_ARGUMENT = TitleUpdate(value="<no title argument was passed>")
+
 
 def stored_document(
     owner_id: UUID, minutes_old: int = 0, content: str = "", title: str | None = None
@@ -99,7 +115,7 @@ class FakeDocumentRepository:
         content: str,
         expected_version: int,
         updated_at: datetime,
-        title: TitleUpdate = TitleUpdate.preserve(),
+        title: TitleUpdate = UNPASSED_TITLE_ARGUMENT,
     ) -> Document | None:
         # Recorded before the CAS guard so the intent the usecase forwarded is
         # observable regardless of whether the swap matched.

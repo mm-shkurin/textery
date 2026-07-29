@@ -12,6 +12,7 @@ from statements.document_fakes import (
     FakeHtmlSanitizer,
     FakeUnitOfWork,
 )
+from statements.document_state import state_of
 
 AUTOSAVE_CONTENT = "<p>черновик</p>"
 
@@ -33,6 +34,11 @@ class SaveStatements:
         # a `_saved`-overwriting field could not tell from a second advance.
         self._saves: list[Document] = []
         self._rejection: ValidationException | None = None
+        self._refusal: DomainException | None = None
+        # Field-by-field state as of the last `remember_stored_state`, so a
+        # "nothing was written" claim can be checked against what was actually
+        # there rather than against the two fields someone thought to name.
+        self._snapshots: dict[UUID, tuple] = {}
 
     @property
     def saved(self) -> Document:
@@ -47,7 +53,12 @@ class SaveStatements:
             created_at=self.clock.now(),
         )
         await self.repository.save_new(document)
+        await self.remember_stored_state(document)
         return document
+
+    async def remember_stored_state(self, document: Document) -> None:
+        """Freeze the stored state so a later refusal can be checked against it."""
+        self._snapshots[document.id] = state_of(await self._stored(document))
 
     async def when_saving(
         self, document: Document, owner_id: UUID, content: str, version: int = 1
@@ -79,25 +90,39 @@ class SaveStatements:
         ownership, and a stale version. Takes a raw `document_id` so the unknown-id
         case can present one that was never stored.
         """
-        with pytest.raises(error_type):
+        with pytest.raises(error_type) as error:
             await self.usecase.execute(
                 document_id=document_id, owner_id=owner_id, content=content, version=version
             )
+        self._refusal = error.value
 
     def assert_saved(self, content: str, version: int) -> None:
-        assert self.saved.content == content, (
-            f"expected the save to land {content!r}, got {self.saved.content!r}"
+        self.assert_saved_content(content, f"expected the save to land {content!r}")
+        assert self.saved.version == version, (
+            f"a successful save advances the version by one, expected {version}, "
+            f"got {self.saved.version}"
         )
-        assert self.saved.version == version, "a successful save advances the version by one"
+        assert self.saved.updated_at == self.clock.now(), (
+            "a successful save stamps the clock's time, not the document's old one"
+        )
 
     def assert_saved_content(self, content: str, why: str) -> None:
-        assert self.saved.content == content, why
+        assert self.saved.content == content, f"{why} (got {self.saved.content!r})"
 
-    def assert_every_save_landed_on_version(self, version: int) -> None:
-        versions = [save.version for save in self._saves]
-        assert versions == [version] * len(versions), (
-            f"no second version advance for a replay, expected every save at version "
-            f"{version}, got {versions}"
+    def assert_saves_landed_on_versions(self, versions: list[int]) -> None:
+        # The EXPECTED sequence is passed in whole, never derived from the actual
+        # one: `[version] * len(actual)` says only "all entries agree" and passes
+        # vacuously on an empty list, so it could not tell a replay that produced
+        # two saves at v2 from a usecase that saved once.
+        actual = [save.version for save in self._saves]
+        assert actual == versions, (
+            f"expected the saves to land on versions {versions}, got {actual}"
+        )
+
+    def assert_refused_with_message(self, message: str) -> None:
+        refusal = arranged(self._refusal, "_refusal")
+        assert str(refusal) == message, (
+            f"expected the refusal to read {message!r}, got {str(refusal)!r}"
         )
 
     def assert_sanitizer_saw(self, contents: list[str], why: str) -> None:
@@ -116,16 +141,42 @@ class SaveStatements:
 
     async def assert_stored_content(self, document: Document, content: str, why: str) -> None:
         stored = await self._stored(document)
-        assert stored.content == content, why
+        assert stored.content == content, f"{why} (got {stored.content!r})"
+
+    async def assert_stored_title(self, document: Document, title: str | None) -> None:
+        """The title as it actually sits in storage.
+
+        Independent of the forwarded-intent assertion on purpose: the intent
+        pins what `execute` ASKED for, this pins what the preserve-on-omit rule
+        then did with it. It is also the tripwire for an omitted `title=` kwarg
+        -- the fake's unpassed-argument sentinel carries a value, so a default
+        that fires lands a visibly bogus title here.
+        """
+        stored = await self._stored(document)
+        assert stored.title == title, (
+            f"expected the stored title to be {title!r}, got {stored.title!r}"
+        )
 
     async def assert_response_matches_storage(self, document: Document) -> None:
         stored = await self._stored(document)
-        assert stored.content == self.saved.content, "response and storage must not disagree"
+        assert state_of(stored) == state_of(self.saved), (
+            f"response and storage must not disagree on ANY field: "
+            f"stored {state_of(stored)!r} vs returned {state_of(self.saved)!r}"
+        )
 
     async def assert_nothing_was_written(self, document: Document) -> None:
-        stored = await self._stored(document)
-        assert stored.content == "", "an oversized save must not reach storage"
-        assert stored.version == 1, "a rejected save must not advance the version"
+        expected = arranged(self._snapshots.get(document.id), "a remembered state")
+        stored = state_of(await self._stored(document))
+        assert stored == expected, (
+            f"a refused save must leave EVERY field as it was: expected {expected!r}, "
+            f"got {stored!r}"
+        )
+
+    def assert_no_title_intent_was_forwarded(self) -> None:
+        assert self.repository.title_updates == [], (
+            f"a save rejected before the port must not reach it at all, "
+            f"got {self.repository.title_updates!r}"
+        )
 
     async def _stored(self, document: Document) -> Document:
         """Reads back as the document's own owner -- the only owner these

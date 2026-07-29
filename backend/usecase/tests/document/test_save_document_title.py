@@ -26,6 +26,7 @@ import pytest
 
 from statements.save_title_statements import (
     PRESERVE_TITLE_UPDATE,
+    STORED_TITLE,
     TITLE_INTENT_CASES,
     SaveTitleStatements,
 )
@@ -37,20 +38,22 @@ def statements():
 
 
 class TestSaveDocumentTitleIntent:
-    @pytest.mark.parametrize("submitted_title, expected_update", TITLE_INTENT_CASES)
+    @pytest.mark.parametrize("submitted_title, expected_update, expected_title", TITLE_INTENT_CASES)
     async def test_should_preserve_on_a_blank_title_and_forward_a_real_title_verbatim(
-        self, statements, submitted_title, expected_update
+        self, statements, submitted_title, expected_update, expected_title
     ):
         owner_id = uuid4()
         document = await statements.given_a_titled_document(owner_id)
+        await statements.assert_title_survived_the_setup_save(document)
 
         await statements.when_autosaving_with_title(document, owner_id, submitted_title)
 
         statements.assert_forwarded_title_update(expected_update)
+        await statements.assert_stored_title(document, expected_title)
 
-    @pytest.mark.parametrize("submitted_title, expected_update", TITLE_INTENT_CASES)
+    @pytest.mark.parametrize("submitted_title, expected_update, expected_title", TITLE_INTENT_CASES)
     async def test_should_apply_the_same_intent_to_a_raw_wire_string(
-        self, statements, submitted_title, expected_update
+        self, statements, submitted_title, expected_update, expected_title
     ):
         """The arm production takes, which the test above does NOT execute.
 
@@ -67,6 +70,7 @@ class TestSaveDocumentTitleIntent:
         await statements.when_autosaving_with_a_wire_title(document, owner_id, submitted_title)
 
         statements.assert_forwarded_title_update(expected_update)
+        await statements.assert_stored_title(document, expected_title)
 
     async def test_should_forward_preserve_when_no_title_is_submitted_at_all(self, statements):
         """Absence must be spelled `preserve()`, not a bare `None`.
@@ -91,7 +95,14 @@ class TestSaveDocumentTitleIntent:
         """
         owner_id = uuid4()
         document = await statements.given_a_titled_document(owner_id)
+        await statements.assert_title_survived_the_setup_save(document)
 
         await statements.when_autosaving_without_a_title(document, owner_id)
 
         statements.assert_forwarded_title_update(PRESERVE_TITLE_UPDATE)
+        # The second, independent tripwire for the same mutation. The forwarded
+        # intent above catches a usecase that dropped the `title=` kwarg because
+        # the fake's default is now a sentinel; this catches it again through the
+        # user-visible effect -- that sentinel CARRIES a value, so a fired default
+        # replaces the stored title with the bogus marker instead of preserving.
+        await statements.assert_stored_title(document, STORED_TITLE)

@@ -36,10 +36,17 @@ STORED_TITLE_UPDATE = TitleUpdate(value=STORED_TITLE)
 # same place. Copied per test, the two tables drift in silence: a copy claiming
 # blank means "clear" next to one claiming "preserve" fails only one of the two
 # tests, and the suite then asserts both halves of a contradiction.
+# Each case carries BOTH halves of the contract: the intent `execute` forwards
+# AND the title that then sits in storage. They are separate facts -- the intent
+# is the usecase's own boundary, the stored value is what preserve-on-omit did
+# with it -- and a case that pinned only the first would let a port-side wipe
+# through. Pairing them in one table is also what stops the two from drifting.
 TITLE_INTENT_CASES = [
-    pytest.param("", PRESERVE_TITLE_UPDATE, id="empty_title_preserves"),
-    pytest.param("   ", PRESERVE_TITLE_UPDATE, id="whitespace_title_preserves"),
-    pytest.param(PADDED_TITLE, TitleUpdate(value=PADDED_TITLE), id="padded_title_verbatim"),
+    pytest.param("", PRESERVE_TITLE_UPDATE, STORED_TITLE, id="empty_title_preserves"),
+    pytest.param("   ", PRESERVE_TITLE_UPDATE, STORED_TITLE, id="whitespace_title_preserves"),
+    pytest.param(
+        PADDED_TITLE, TitleUpdate(value=PADDED_TITLE), PADDED_TITLE, id="padded_title_verbatim"
+    ),
 ]
 
 
@@ -55,7 +62,17 @@ class SaveTitleStatements(SaveStatements):
             version=1,
             title=STORED_TITLE_UPDATE,
         )
+        await self.remember_stored_state(document)
         return document
+
+    async def assert_title_survived_the_setup_save(self, document: Document) -> None:
+        """The setup's own title actually landed.
+
+        Without this, every `preserve` expectation below is measured against a
+        title that may never have been stored -- `preserve()` over a `None` title
+        is indistinguishable from `preserve()` over the title we meant.
+        """
+        await self.assert_stored_title(document, STORED_TITLE)
 
     async def when_autosaving_with_title(
         self, document: Document, owner_id: UUID, title: str
