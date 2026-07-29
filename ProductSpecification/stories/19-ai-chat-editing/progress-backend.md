@@ -71,11 +71,25 @@ within their file, not across the story.
       **Known duplication:** `test_document_storage_cas_shape.py` and
       `test_generation_storage_cas_shape.py` each hand-roll the same recorder — fold both onto
       `recording_sql` once this is green (they'd also gain the strict projection parsing).
-- [~] green-adapter db — implement the bounded SELECT. Also close the shape that makes the above
-      failure silent: the Protocol bodies must `raise NotImplementedError` rather than `...`, and
-      `backend-ci.yml` needs a mypy step (the config already exists in `backend/pyproject.toml` and
-      would go red on this commit today).
-- [ ] red-adapter rest — the seven AI-edit routes, each delegating to a usecase whose first
+- [x] green-adapter db — `find_scope_by_id_and_owner` is `select(DocumentModel.id, DocumentModel.owner_id)`,
+      a **column projection** rather than `select(DocumentModel)` sliced afterwards, with both `id` and
+      `owner_id` in the WHERE — so the recorder's `["id", "owner_id"]` assertion holds at the SQL, not at
+      the DTO. 4/4 db tests green, full backend suite 509 passed. The silent-failure shape is closed on
+      both sides: the six `DocumentRepository` Protocol bodies now `raise NotImplementedError` (a `...`
+      body is a concrete coroutine returning `None`, i.e. an unimplemented port refuses every owner their
+      own document), and `backend-ci.yml` gained a mypy step — `mypy==1.19.0` and the `pyproject.toml`
+      config both already existed and nothing was running them. `/test-coverage db --focus`: 100% lines
+      and branches on `document_storage.py`. Two findings worth carrying:
+      (a) the tech template's coverage command omits `--cov-branch`
+      (`.claude/tech/python-fastapi-hex/templates/testing/coverage-commands.md:9,14`), so every past
+      "100% branch coverage" report from it measured nothing;
+      (b) this is now the only 1 of 17 usecase Protocol ports using `raise NotImplementedError` — the
+      other 16 still use `...`. The split state is the worst of both; decide once, project-wide.
+      **Environment:** the default `textery` database can no longer migrate on this branch
+      (`Can't locate revision identified by 'a3b4c5d6e7f8'` — a newer branch migrated it). A clean
+      `textery_s19` database now exists in the same `infra-postgres-1` container; point
+      `TEST_DATABASE_URL` there for db-layer runs.
+- [~] red-adapter rest — the seven AI-edit routes, each delegating to a usecase whose first
       statement is `resolve_owned_document`. Per the ADR the refusal must precede validation and
       version checks: a foreign document with a malformed instruction is 404, never 422; with a
       would-have-been-correct `base_version` it is 404, never 409; and `.../stream` answers plain

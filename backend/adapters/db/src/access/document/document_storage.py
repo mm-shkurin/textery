@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from access.keyset_pagination import paginate_by_owner
 from document.document import Document
+from document.document_scope import DocumentScope
 from model.document.document_model import DocumentModel
 from shared.exceptions import ConflictException
 from shared.keyset_cursor import KeysetCursor
@@ -55,6 +56,33 @@ class SqlAlchemyDocumentStorage:
         )
         model = result.scalar_one_or_none()
         return model.to_domain() if model else None
+
+    async def find_scope_by_id_and_owner(
+        self, document_id: UUID, owner_id: UUID
+    ) -> DocumentScope | None:
+        """The owner-scoped existence check, without the document body.
+
+        Selects the two projected columns explicitly instead of the entity: the
+        guard that opens all seven AI-edit endpoints only needs to know the
+        document exists and is the caller's, and `select(DocumentModel)` would
+        materialise `content` -- up to 200 000 code points, the largest column in
+        the schema -- on every request to answer a yes/no question. Projecting in
+        Python after a full read looks identical in the return value, which is why
+        the test watches the statement. See
+        19-ai-chat-editing/decisions/document-scope-guard-decision.md.
+
+        Both `id` and `owner_id` are predicates, as everywhere else here: a
+        foreign document falls out as `None` in SQL, indistinguishable from an
+        absent one.
+        """
+        result = await self._session.execute(
+            select(DocumentModel.id, DocumentModel.owner_id).where(
+                DocumentModel.id == document_id,
+                DocumentModel.owner_id == owner_id,
+            )
+        )
+        row = result.one_or_none()
+        return DocumentScope(id=row.id, owner_id=row.owner_id) if row else None
 
     async def find_by_idempotency_key(
         self, owner_id: UUID, idempotency_key: str

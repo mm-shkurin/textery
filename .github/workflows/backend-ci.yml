@@ -60,6 +60,13 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # The type checker was configured in backend/pyproject.toml but nothing ran
+      # it, so every annotation in the tree was decoration. It runs before the
+      # tests because a signature mismatch between a port and its adapter is
+      # cheaper to read as a mypy error than as an AttributeError three layers up.
+      - name: Type check
+        run: mypy
+
       - name: Run migrations
         working-directory: backend/adapters/db
         run: alembic upgrade head

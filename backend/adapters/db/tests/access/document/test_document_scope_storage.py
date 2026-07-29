@@ -1,12 +1,3 @@
-import pytest
-
-
-@pytest.mark.skip(
-    reason="RED: AttributeError: 'SqlAlchemyDocumentStorage' object has no attribute "
-    "'find_scope_by_id_and_owner'. The adapter satisfies DocumentRepository structurally, "
-    "so the missing bounded finder raises nothing at import or construction. Unskip in "
-    "green-adapter db."
-)
 class TestFindScopeByIdAndOwner:
     """Scenario 1.1: the bounded owner-scoped existence check, against the real schema.
 

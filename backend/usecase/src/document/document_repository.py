@@ -24,9 +24,10 @@ class DocumentRepository(Protocol):
         idempotency key. That is the replay signal: the DB unique constraint
         decides, so there is no check-then-insert window.
         """
-        ...
+        raise NotImplementedError
 
-    async def find_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> Document | None: ...
+    async def find_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> Document | None:
+        raise NotImplementedError
 
     async def find_scope_by_id_and_owner(
         self, document_id: UUID, owner_id: UUID
@@ -39,17 +40,18 @@ class DocumentRepository(Protocol):
         -- to answer that would be the largest column in the schema read on every
         request. See 19-ai-chat-editing/decisions/document-scope-guard-decision.md.
         """
-        ...
+        raise NotImplementedError
 
     async def find_by_idempotency_key(
         self, owner_id: UUID, idempotency_key: str
-    ) -> Document | None: ...
+    ) -> Document | None:
+        raise NotImplementedError
 
     async def list_by_owner(
         self, owner_id: UUID, limit: int, cursor: KeysetCursor | None
     ) -> list[Document]:
         """The owner's documents, newest first, starting after `cursor`."""
-        ...
+        raise NotImplementedError
 
     async def save_content_if_version_matches(
         self,
@@ -66,4 +68,4 @@ class DocumentRepository(Protocol):
         them apart, and a foreign document must be indistinguishable from an
         absent one anyway.
         """
-        ...
+        raise NotImplementedError
