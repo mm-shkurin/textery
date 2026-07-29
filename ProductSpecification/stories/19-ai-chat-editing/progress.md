@@ -7,9 +7,14 @@
 - [x] api-spec
 - [x] test-spec
 
-<!-- Scenario sections are bootstrapped from the test-spec on the next `/continue`.
-     Backend/Integration/Security/Load/Infrastructure scenarios go to
-     progress-backend.md; Frontend scenarios go to progress-frontend.md. -->
+Scenario checklists live in the split per-layer files:
+`progress-backend.md` (Backend + Integration + Security + Load + Infrastructure — 130
+scenarios, bootstrapped 2026-07-29) and `progress-frontend.md` (Frontend — 35 scenarios
+from `tests/02_UI_Tests*.md`, not bootstrapped yet; the frontend session creates it).
+
+Counting the `###` scenario headings across the test spec gives **165** scenarios
+(130 backend + 35 frontend), not the 156 `stories.md` carried from the test-spec phase;
+the rollup is corrected to 0/165 with this commit.
 
 ## Decisions
 
@@ -47,10 +52,12 @@
   them all while a third party billed for work nobody wanted — and the refund hid the
   spend from the quota counter.
 
-## Status Summary (as of 2026-07-28)
+## Status Summary (as of 2026-07-29)
 
 Spec phase complete: interview, story, mockups, api-spec, test-spec all `[x]`. Nothing is
-implemented — no backend, frontend, or migration code exists for this story yet. The next
-work unit bootstraps `progress-backend.md` from the test spec and starts the first backend
-scenario.
+implemented — no backend, frontend, or migration code exists for this story yet.
+`progress-backend.md` is bootstrapped (130 scenarios); the next backend work unit is
+`red-acceptance` for Backend Scenario 1.1 (`01_API_Tests.md` — every endpoint refuses an
+absent document indistinguishably from a foreign one). `progress-frontend.md` is still
+unbootstrapped and belongs to the frontend session.
 
