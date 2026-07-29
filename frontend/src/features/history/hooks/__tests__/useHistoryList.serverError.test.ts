@@ -73,9 +73,7 @@ describe('useHistoryList server errors reach the user through the real send chai
   // H9.4, `useHistoryList.ts:56`. The origin's catch-all 500 is measured and ENGLISH; the list's
   // own Russian fallback plus the status is what a person is shown instead. The case below stubbed
   // this same code with a hand-rolled Russian message, so the English was invisible here.
-  // RED: error is 'An unexpected error occurred. Please try again.' instead of
-  // 'Не удалось загрузить список (HTTP 500)'. Un-skip in green-frontend.
-  it.skip("does not show the catch-all 500's English text when the documents list fails", async () => {
+  it("does not show the catch-all 500's English text when the documents list fails", async () => {
     expectFailedWith(
       await loadAndObserve(ORIGIN_INTERNAL_ERROR_BODY),
       'Не удалось загрузить список (HTTP 500)',

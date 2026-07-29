@@ -78,9 +78,7 @@ describe('useGeneration server errors reach the user through the real send chain
   // `message` must not be what a Russian UI shows — the caller's fallback and the status are. The
   // case below used to stub this same code with a hand-rolled RUSSIAN message, which is why the
   // English never showed up in any test.
-  // RED: error is 'An unexpected error occurred. Please try again.' instead of
-  // 'Не удалось создать запрос (HTTP 500)'. Un-skip in green-frontend.
-  it.skip("does not show the catch-all 500's English text when creating the generation", async () => {
+  it("does not show the catch-all 500's English text when creating the generation", async () => {
     expectFailedWith(
       await submitAndObserve(ORIGIN_INTERNAL_ERROR_BODY),
       'Не удалось создать запрос (HTTP 500)',

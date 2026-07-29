@@ -33,7 +33,16 @@ export class VersionConflictError extends Error {
 export function describeFailure(error: unknown, fallback: string): string {
   if (isHttpError(error)) {
     const detail = error.body.detail ?? error.body.message
-    if (typeof detail === 'string' && detail.trim()) {
+    // The origin's catch-all 500 handler answers with a fixed ENGLISH sentence ("An unexpected
+    // error occurred. Please try again.") and the code INTERNAL_ERROR — rendering it verbatim puts
+    // English on a Russian screen at every call site at once. That body carries no reason, so
+    // nothing is lost by preferring the caller's fallback, which at least names the operation.
+    // Keyed on the code AND the status class, deliberately narrowly: a 5xx that EXPLAINS itself
+    // (a provider quota, a rejected size) keeps its text, because the message is the only place
+    // that explanation exists; a 4xx is a decided answer already addressed to the user; and a
+    // codeless 500 is not this handler's shape at all.
+    const isOriginCatchAll = error.status >= 500 && error.body.error_code === 'INTERNAL_ERROR'
+    if (!isOriginCatchAll && typeof detail === 'string' && detail.trim()) {
       return detail
     }
     // No usable text: a non-JSON error page, or a body shaped some third way. The status is the

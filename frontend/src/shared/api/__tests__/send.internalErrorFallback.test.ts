@@ -19,9 +19,7 @@ import {
 const FALLBACK = 'Не удалось выполнить операцию'
 
 describe('describeFailure — the origin catch-all 500 must not put English on a Russian screen', () => {
-  // RED: describeFailure returns 'An unexpected error occurred. Please try again.' (the body's
-  // own message) instead of `${FALLBACK} (HTTP 500)`. Un-skip in green-frontend.
-  it.skip("replaces the catch-all 500's English text with the caller's fallback and the status", () => {
+  it("replaces the catch-all 500's English text with the caller's fallback and the status", () => {
     expect(describeFailure({ status: 500, body: ORIGIN_INTERNAL_ERROR_BODY }, FALLBACK)).toBe(
       `${FALLBACK} (HTTP 500)`,
     )

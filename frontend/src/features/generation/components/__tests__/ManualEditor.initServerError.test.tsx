@@ -84,18 +84,14 @@ describe('ManualEditor init server errors reach the user through the real send c
   // This case exists because the one below it was, until now, stubbing an INTERNAL_ERROR 500 with a
   // hand-rolled RUSSIAN message. That fixture made "the origin's text reaches the user" look like a
   // proven good outcome while the live origin was putting an English sentence in front of a user.
-  // RED: the banner shows 'An unexpected error occurred. Please try again.' instead of
-  // CREATE_FAILED_MESSAGE + ' (HTTP 500)'. Un-skip in green-frontend.
-  it.skip("does not put the catch-all 500's English text on screen when creating the document", async () => {
+  it("does not put the catch-all 500's English text on screen when creating the document", async () => {
     const observed = await renderAndFail(ORIGIN_INTERNAL_ERROR_BODY)
     expectShowed(observed, `${CREATE_FAILED_MESSAGE} (HTTP 500)`, CREATE_REQUEST)
   })
 
   // The same for the LOAD half — a second catch (`useDocumentInit.ts:76`) with its own fallback, so
   // a fix applied to only one of them is visible here.
-  // RED: the banner shows 'An unexpected error occurred. Please try again.' instead of
-  // LOAD_FAILED_MESSAGE + ' (HTTP 500)'. Un-skip in green-frontend.
-  it.skip("does not put the catch-all 500's English text on screen when loading a document", async () => {
+  it("does not put the catch-all 500's English text on screen when loading a document", async () => {
     const observed = await renderAndFail(ORIGIN_INTERNAL_ERROR_BODY, EXISTING_DOCUMENT_ID)
     expectShowed(observed, `${LOAD_FAILED_MESSAGE} (HTTP 500)`, LOAD_REQUEST)
   })

@@ -37,9 +37,7 @@ describe('useGeneration — a poll that gives up on a 5xx says which status it g
   // give-up message must be the caller's Russian fallback plus the status — not the server's
   // sentence. This case previously stubbed the same code with a hand-rolled Russian message, which
   // is precisely how the English stayed invisible to the suite.
-  // RED: terminal.error is 'An unexpected error occurred. Please try again.' instead of
-  // 'Ошибка сети (HTTP 500)'. Un-skip in green-frontend.
-  it.skip("does not show the catch-all 500's English text when the poll gives up", async () => {
+  it("does not show the catch-all 500's English text when the poll gives up", async () => {
     expectGaveUpWith(await driveUntilItGivesUp(ORIGIN_INTERNAL_ERROR_BODY), 'Ошибка сети (HTTP 500)')
   })
 
