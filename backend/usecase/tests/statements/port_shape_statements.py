@@ -112,9 +112,11 @@ class PortShapeStatements:
     ) -> None:
         """Each carrier binds positional arguments to the names spelled above.
 
-        `title` and `updated_at` are adjacent, so a reorder would bind a
-        `datetime` to `title` and a `TitleUpdate` to `updated_at` with no
-        complaint from anything at runtime.
+        `title` is keyword-only, so it can no longer be mis-bound by a reorder
+        -- but the five names before the `*` still bind positionally, and two of
+        them are same-typed (`document_id` and `owner_id` are both `UUID`), so
+        swapping that pair would save one account's content onto another's
+        document with no complaint from anything at runtime.
         """
         actual = list(_save_parameters(implementor))
 

@@ -51,12 +51,12 @@ class TestSaveTitleIsARequiredKeywordOnlyArgument:
 
 
 class TestTheCarriersDeclareTheSameSaveSignature:
-    """Deliberately NOT skipped -- these are green today.
+    """Agreement between the carriers, split from what `title` itself must be.
 
-    The properties they pin already hold, so they are satisfied invariants, not
-    RED tests. They stay live rather than sharing the class above's marker,
-    because a passing assertion parked under a skip marker is an assertion that
-    has stopped running without anyone deciding it should.
+    These pin that the fake and the port say the SAME thing; the class above
+    pins WHAT they say about `title`. They fail for different reasons, so they
+    are separate classes -- a drifted fake and a wrongly-declared `title` are
+    two different defects and each should name itself in the failure output.
     """
 
     @pytest.mark.parametrize("implementor", SAVE_SIGNATURE_CARRIERS)

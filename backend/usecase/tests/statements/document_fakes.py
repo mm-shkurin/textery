@@ -117,7 +117,7 @@ class FakeDocumentRepository:
         stored.content = content
         stored.version += 1
         stored.updated_at = updated_at
-        # Preserve-on-omit, mirroring the real CAS: a title-less intent leaves the
+        # Preserve-on-`preserve()`, mirroring the real CAS: a title-less intent leaves the
         # existing title intact rather than wiping it.
         if title.carries_a_value():
             stored.title = title.value
