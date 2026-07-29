@@ -7,9 +7,12 @@ import { vi, type Mock } from 'vitest'
 import { clearSession, saveSession } from '../../../features/auth/utils/authSession'
 
 // One definition of the seeded session, so the `Authorization` header a suite ASSERTS is the same
-// literal the session was SEEDED with — a drifting copy makes the header assertion vacuous.
+// literal the session was SEEDED with — a drifting copy makes the header assertion vacuous. Only
+// the ACCESS token is exported: it is the one that shows up on the wire and therefore the one a
+// suite has to name. The refresh token is never asserted here — no suite in this family drives the
+// 401 replay path — so it stays module-private rather than offering an import nothing needs.
 export const ACCESS_TOKEN = 'access-1'
-export const REFRESH_TOKEN = 'refresh-1'
+const REFRESH_TOKEN = 'refresh-1'
 
 // Typed with the arguments `httpClient` actually passes, so recorded calls destructure as a
 // `[url, init]` tuple without a cast and a drift in the transport's call shape is a tsc error
