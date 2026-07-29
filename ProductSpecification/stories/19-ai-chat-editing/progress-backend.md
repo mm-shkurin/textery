@@ -172,7 +172,28 @@ within their file, not across the story.
       `.claude/rules/infrastructure.md`).
 - [S] green-adapter rest (coverage: seven AI-edit DI stubs raise NotImplementedError) — no production
       change to make; the stubs the red step pins were written in `d553f2d`.
-- [~] green-acceptance
+- [~] green-acceptance — **BLOCKED, and not by anything green-acceptance is allowed to change.**
+      This step may remove the disable marker and nothing else, but the marker is not what is
+      holding the test. Four things the test needs do not exist:
+      (1) **no AI-edit usecases at all** — `backend/usecase/src/` holds `auth`, `document`,
+      `generation`, `shared`; the seven providers in `document_edit_router.py` have nothing to be
+      bound to. Only the shared helper `resolve_owned_document` was built in this scenario.
+      (2) **the router is not mounted** — `main.py:116-119` includes generation/auth/oauth/document
+      only, and none of the seven providers appear in its `dependency_overrides` table. Both review
+      passes flagged this on `d553f2d` and again on `994285e`.
+      (3) **no tables** — `backend/adapters/db/migrations/versions/` has no chat-message and no
+      revision migration, and nothing under `adapters/db/src/` mentions `ai_edit`, `revision` or
+      `chat_message`.
+      (4) the assertions need a **real happy path on two of the seven routes**: the aftermath read
+      (`ai_edit_guard_statements.when_the_owner_reads_the_document_aftermath`) calls `list_messages`
+      and `list_revisions` as the rightful owner and pins each to `{"items": [], "next_cursor": None}`
+      with status 200 (`ai_edit_guard_assertions.py:28,85-94`). A guard that only ever refuses cannot
+      satisfy that — "no rows were created" is observed through those two endpoints working.
+      So the scenario's checklist has a sequencing gap: it went `red-usecase → green-usecase` for the
+      guard helper alone, then straight to the adapters, and never scheduled the seven usecases the
+      acceptance test drives. Closing it is a design call, not a green step — whether 1.1's acceptance
+      pulls the message/revision read paths forward, or whether 1.1 waits for the scenarios that own
+      them (4.x revisions, 6.x messages) and its acceptance runs last. Decide before proceeding.
 
 ### Scenario 1.2: An edit belonging to another document of the same owner is not found
 - [ ] red-acceptance
