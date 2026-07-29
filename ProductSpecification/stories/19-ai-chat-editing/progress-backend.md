@@ -153,9 +153,26 @@ within their file, not across the story.
       them the payload must be read *after* the guard (raw body, or a dependency ordered behind it),
       never as a declared model parameter; the module docstring says so at the point where the
       mistake would be made.
-- [~] red-adapter rest (coverage: seven AI-edit DI stubs raise NotImplementedError)
-- [ ] green-adapter rest (coverage: seven AI-edit DI stubs raise NotImplementedError)
-- [ ] green-acceptance
+- [x] red-adapter rest (coverage: seven AI-edit DI stubs raise NotImplementedError) — a **legitimate
+      no-red**: the stubs this pins were already written in `d553f2d`, so the test passed on its first
+      run (7 passed) and no marker was re-applied — a passing coverage test left skipped covers nothing.
+      Predicted "none / 7 passed", actual "none / 7 passed". Follows the auth precedent
+      (`test_login_post_router_di_stub.py`): direct module import, **not** `importorskip` — this test *is*
+      the composition-root guard and must fail loudly if the module stops importing. The message is
+      asserted against the string **literal**, never the module's `_WIRED_BY_COMPOSITION_ROOT` constant,
+      which would make the assertion tautological. `/test-review` found the provider roster was a
+      hand-transcribed snapshot: an eighth `get_*_usecase` stub added later would be invoked by no test
+      and stay silently uncovered — the same gap one level up from the one the test closes. The roster is
+      now discovered from the module (`dir()` filtered to `get_*_usecase`) and pinned against seven
+      literal names in `test_should_expose_exactly_the_seven_known_providers`; parametrize cases come
+      from a `name -> route` dict, so the provider/id pairing is structural rather than two hand-ordered
+      parallel lists. Router coverage 41/41 lines, 0 missed. Full rest suite 116 passed.
+      **Housekeeping:** a stray `infrastructure/agent-progress.log` exists alongside `infra/` — the
+      `test-runner` subagent still writes there; `infrastructure/` was superseded (see
+      `.claude/rules/infrastructure.md`).
+- [S] green-adapter rest (coverage: seven AI-edit DI stubs raise NotImplementedError) — no production
+      change to make; the stubs the red step pins were written in `d553f2d`.
+- [~] green-acceptance
 
 ### Scenario 1.2: An edit belonging to another document of the same owner is not found
 - [ ] red-acceptance
