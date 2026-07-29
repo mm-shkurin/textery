@@ -2141,6 +2141,64 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   > parametrizes over the FACTORIES, which this module's own docstring assigns to `test_title_update.py`
   > — the file resolved principle-vs-cap toward the cap without saying so. And `PADDED_TITLE` is defined
   > in both files, each commenting that it is "named once".
+  > REVIEW FINDINGS over `cebb0e4` (agent-review CONCERNS x3, premortem CONCERNS x3 CREDIBLE). BOTH
+  > passes independently reached the same top finding, and it INVERTS part of this RED's brief — read
+  > this before writing green. What DOES hold, checked by agent-review rather than assumed: no green
+  > can satisfy these assertions and still ship the 500. `ValidationException` is the only class of that
+  > name in the tree, `validation_exception_handler` is registered against it, subclass dispatch keeps
+  > any narrowing subclass inside the handled family, and NOTHING catches `ValueError` around
+  > `TitleUpdate` construction — `_title_intent` is called in an argument list outside every `try`, and
+  > `save_document.py:107`'s `except ValueError` wraps `DocumentContent`. The type flip breaks no caller.
+  > • **CREDIBLE, BOTH PASSES — the `==` pin freezes an INTERNAL-DETAIL message onto the WIRE, and
+  >   `ExportFormat.parse` (cited by this RED as the model) does the OPPOSITE of what was pinned.**
+  >   `validation_exception_handler` is the ONE handler that does not substitute a fixed body — it
+  >   echoes `exc.message` verbatim (`content={"error_code": exc.error_code, "message": exc.message}`).
+  >   The 404/409/500 handlers all use constants, and that file states why in its own comment: echoing
+  >   `str(exc)` "would put an internal id shape in the response, which Security 5.1 names explicitly as
+  >   a leak". So `REFUSAL_MESSAGE` — 30 words naming a domain class and its constructor signature
+  >   `TitleUpdate(value=..., clears=True)` — becomes the literal `message` a client reads. Every other
+  >   `ValidationException` message in the tree is a short client-safe constant
+  >   (`"The format must be pdf or docx."`, `"The version must be a positive integer."`,
+  >   `"Unsupported document type."`). And the model this RED cited catches the internal `ValueError`,
+  >   DISCARDS its text, and raises with a short public constant, keeping the detail only on the
+  >   `from error` chain for the log. The `match=` -> `==` widening was right IN KIND — the substring
+  >   hole was real — but it locked the developer-facing sentence in as the public one, and a domain test
+  >   now BLOCKS the wire-safe rewrite: the correct fix turns a domain test red for a rest-layer reason,
+  >   violating this RED's own architectural argument in the opposite direction. **GREEN MUST NOT keep
+  >   the message byte-identical** — that instruction in the note above is SUPERSEDED. Green: add a
+  >   client-safe `INVALID_TITLE_INTENT` message constant beside the existing ones, keep the current
+  >   sentence as the LOGGED detail on the `from error` chain, and relax the domain test's `==` to pin
+  >   the code plus the safe message. Settle this BEFORE green copies the string — after green it is a
+  >   wire-contract change rather than a string edit.
+  > • **CREDIBLE (agent-review #2) — the contradiction invariant now has ZERO LIVE GUARDS ANYWHERE.**
+  >   The diff CONVERTED the two live `pytest.raises(ValueError, match=...)` assertions in place instead
+  >   of adding alongside, so between this commit and green, DELETING
+  >   `if self.clears and self.value is not None: raise` from `title_update.py` entirely passes 337/337.
+  >   Grepped: no other test constructs a flagged non-`None` value. The sibling file states the exact
+  >   convention this broke, at `test_title_update.py:106-109` — "It stays as it is — unskipped and
+  >   passing — because it is the regression guard that must be live DURING red; this is the same fact
+  >   widened to the field that does not exist yet." The window is one work unit long but real, and
+  >   `/refactor` is chartered to touch this very file. Also worth knowing: green can flip the type and
+  >   FORGET one `@pytest.mark.skip` removal and the count stays 337 passed / 2 skipped — byte-identical
+  >   to the RED baseline. There is no arithmetic that catches a half-unskipped green. GREEN: restore a
+  >   live guard for the invariant, and verify the skip count by NAME not by arithmetic.
+  > • **CREDIBLE (premortem #2) — the refusal goes SILENT in the logs, and it reclassifies a SERVER bug
+  >   as a client error.** Today the bare `ValueError` reaches `unhandled_exception_handler`, which does
+  >   `logger.error(..., exc_info=exc)` — a traceback and an alertable line. After green it reaches
+  >   `validation_exception_handler`, which LOGS NOTHING (the 404/409 handlers both `logger.info`). The
+  >   RED treats the 500 purely as noise, but `(value=<str>, clears=True)` is NOT CLIENT-CONSTRUCTIBLE:
+  >   the client cannot simultaneously send a title and a null, so the contradiction can only ever be
+  >   produced by a ROUTE-MAPPING BUG ON OUR SIDE. The change converts our-fault into their-fault and
+  >   removes the only signal. Incident shape: a guard-(a2) regression inverts absent-vs-null, every save
+  >   400s, nothing pages, the dashboard shows a clean 4xx rate attributed to bad client payloads.
+  > • **CREDIBLE/LOW (both) — `INVALID_TITLE_INTENT` enters `_ERROR_CODE_STATUS_MAP` BY OMISSION and
+  >   defaults to 400 while all four siblings are 422.** `INVALID_DOCUMENT_TYPE`, `INVALID_IDEMPOTENCY_KEY`,
+  >   `INVALID_VERSION` and `INVALID_FORMAT` all map to 422; the map's own comment establishes that
+  >   absence is meant to be DELIBERATE ("CONTENT_TOO_LONG is absent deliberately: documents_save.yaml
+  >   specifies 400"). Here absence would be accidental. Named nowhere in this commit or in guards (a)-(e).
+  > CHARTER ADDED to adapters-discovery by these passes: a `_ERROR_CODE_STATUS_MAP` entry (422, matching
+  > siblings), a log line on `validation_exception_handler`, and a guard that a message reaching that
+  > handler carries no internal type names or constructor syntax.
   > RED LANDED. Prediction matched on the first run, no loop, zero NOs across type/message/status for
   > all 5 failing tests. New: `backend/domain/tests/document/test_title_update.py` — the FIRST
   > `TitleUpdate` domain test that has ever existed — plus two Statements methods and one usecase test.

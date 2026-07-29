@@ -3,9 +3,13 @@
 Added by `green-usecase (clear path)` in response to the review passes over
 `5ed1adb`, which converged on one fact: the RED pins the three states only
 THROUGH THE FACTORIES, while `TitleUpdate`'s constructor is public and
-unguarded. `test_title_update.py` owns the factory-level pins; this file owns
-the doors those pins leave open. Kept separate rather than appended so neither
-file approaches the 200-line cap.
+unguarded. The split is by SUBJECT, not by which factory a test happens to call
+to reach a state: `test_title_update.py` owns REPRESENTATION -- what object each
+factory is, asserted as `factory(...) == TitleUpdate(value=..., clears=...)`.
+This file owns what the TYPE guarantees whatever the caller did -- the doors
+those representation pins leave unguarded, and the predicates consumers ask of a
+state once they hold one. Kept in two files rather than appended so neither
+approaches the 200-line cap.
 
 Three findings, three classes:
 
@@ -35,10 +39,12 @@ from shared.exceptions import ValidationException
 
 PADDED_TITLE = " Отчёт "
 
-# The literal GREEN must produce, written out rather than imported from
-# `title_update`. An import of a constant that does not exist yet fails at
-# COLLECTION and errors the whole module -- the 65ec3fd defect -- taking down the
-# constructor-door guards above, which have nothing to do with this class.
+# Collection safety -- the 65ec3fd defect -- stated once for the two sites below
+# that obey it. Anything evaluated at MODULE or CLASS-BODY scope that GREEN has
+# not built yet raises during COLLECTION and ERRORS this whole module, taking
+# down all three classes instead of failing the one test that named the missing
+# thing. Hence the literal below rather than an import of it from
+# `title_update`, and lambdas in the closing `parametrize` rather than calls.
 INVALID_TITLE_INTENT = "INVALID_TITLE_INTENT"
 
 # Named once because both arms of the contradiction are ONE refusal spelled two
@@ -167,28 +173,17 @@ class TestTitleUpdatePredicatesAnswerForAllThreeStates:
     def test_should_answer_both_predicates(self, build_intent, erases, carries_a_value):
         """`clear()` being FALSE for `carries_a_value()` is the point.
 
-        Parametrized over LAMBDAS, never over constructed instances and never
-        over bare attribute references. A `pytest.param(TitleUpdate.clear(), ...)`
-        runs in the class body at IMPORT, so a future RED renaming or removing
-        `clear()` raises during collection and ERRORS the whole module -- taking
-        down `TestTitleUpdateClosesTheConstructorDoor` and
-        `TestTitleUpdateRefusesToCarryAValueAndAClearAtOnce`, which have nothing
-        to do with `clear()`. That is the 65ec3fd defect, and `test_title_update`
-        already states the convention against it in prose.
-
-        A bare `pytest.param(TitleUpdate.clear, ...)` defers only the CALL; the
-        ATTRIBUTE LOOKUP still runs in the class body, so a rename still raises
-        `AttributeError` at collection and still errors the module. That form
-        bought nothing against the defect it names. Only a lambda defers both,
-        which is why all three params are spelled the same way even though
-        `preserve` and `clear` take no argument -- turning that module-wide ERROR
-        back into one FAILING param.
-
         It is what makes a lone `if title.carries_a_value(): write` map a clear
         onto "leave the stored title alone" -- the no-op that returns a user's
         deleted title on every reopen. Pinning it here is what stops the next
         consumer from trusting the docstring's old claim that `preserve()` was
         the only false case.
+
+        All three params are spelled as lambdas -- including the two whose
+        factory takes no argument -- because only a lambda defers the attribute
+        LOOKUP as well as the call. A bare `pytest.param(TitleUpdate.clear, ...)`
+        still resolves the attribute in the class body, so a future RED renaming
+        `clear()` still errors the module under the rule stated at its head.
         """
         intent = build_intent()
         assert (intent.erases(), intent.carries_a_value()) == (erases, carries_a_value), (
