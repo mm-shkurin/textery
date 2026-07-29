@@ -6,11 +6,11 @@ pins has no behavioural witness. Commit `6d1ea08` removed
 `= TitleUpdate.preserve()` from `DocumentRepository.save_content_if_version_matches`
 so the argument became required -- and that change is invisible to every other
 guard in the repo. Re-adding the default to the port and to `document_fakes.py`
-leaves the entire suite green (measured: 238/238), because every call site
-already passes `title` explicitly, so no test ever exercises the omission the
-default would answer for. Nor would the type checker object: ADDING a default is
-legal, and CI runs `pytest --cov` with no mypy step at all. A decision nothing
-can notice being reverted is not pinned.
+left every suite green when the coverage pass over `6d1ea08` tried it, because
+every call site already passes `title` explicitly, so no test ever exercises the
+omission the default would answer for. Nor would the type checker object: ADDING
+a default is legal, and CI runs `pytest --cov` with no mypy step at all. A
+decision nothing can notice being reverted is not pinned.
 
 The port's own docstring and the commit that landed it claim three things about
 `title`, so all three are pinned here in one structural comparison against the
@@ -39,7 +39,7 @@ because the `None` arm IS the compare-and-swap miss; a carrier annotated
 
 import pytest
 
-from statements.port_shape_statements import TITLE_CARRIERS, PortShapeStatements
+from statements.port_shape_statements import SAVE_SIGNATURE_CARRIERS, PortShapeStatements
 
 
 @pytest.mark.skip(
@@ -47,7 +47,7 @@ from statements.port_shape_statements import TITLE_CARRIERS, PortShapeStatements
     "FakeDocumentRepository -- neither signature has a `*` separator, so KEYWORD_ONLY is unmet"
 )
 class TestSaveTitleIsARequiredKeywordOnlyArgument:
-    @pytest.mark.parametrize("implementor", TITLE_CARRIERS)
+    @pytest.mark.parametrize("implementor", SAVE_SIGNATURE_CARRIERS)
     def test_title_has_no_default_and_cannot_be_passed_positionally(
         self, implementor, port_shape_statements: PortShapeStatements
     ):
@@ -63,7 +63,7 @@ class TestTheCarriersDeclareTheSameSaveSignature:
     has stopped running without anyone deciding it should.
     """
 
-    @pytest.mark.parametrize("implementor", TITLE_CARRIERS)
+    @pytest.mark.parametrize("implementor", SAVE_SIGNATURE_CARRIERS)
     def test_the_save_arguments_are_declared_in_the_pinned_order(
         self, implementor, port_shape_statements: PortShapeStatements
     ):
@@ -76,7 +76,7 @@ class TestTheCarriersDeclareTheSameSaveSignature:
     ):
         port_shape_statements.assert_the_fake_declares_the_same_save_signature_as_the_port()
 
-    @pytest.mark.parametrize("implementor", TITLE_CARRIERS)
+    @pytest.mark.parametrize("implementor", SAVE_SIGNATURE_CARRIERS)
     def test_save_is_annotated_to_return_an_optional_document(
         self, implementor, port_shape_statements: PortShapeStatements
     ):

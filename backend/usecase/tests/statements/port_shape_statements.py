@@ -7,6 +7,7 @@ storage port. Rationale for pinning the shape at all lives in the test module.
 """
 
 import inspect
+from collections.abc import Mapping
 
 import pytest
 
@@ -24,7 +25,7 @@ _SAVE = "save_content_if_version_matches"
 _PORT = DocumentRepository
 _FAKE = FakeDocumentRepository
 
-TITLE_CARRIERS = [pytest.param(_PORT, id="port"), pytest.param(_FAKE, id="fake")]
+SAVE_SIGNATURE_CARRIERS = [pytest.param(_PORT, id="port"), pytest.param(_FAKE, id="fake")]
 
 # The whole `title` parameter, spelled structurally, so ONE comparison pins all
 # four properties `inspect.Parameter` carries -- name, kind, default and
@@ -54,7 +55,7 @@ def _save_signature(implementor: type) -> inspect.Signature:
     return inspect.signature(getattr(implementor, _SAVE))
 
 
-def _save_parameters(implementor: type) -> dict[str, inspect.Parameter]:
+def _save_parameters(implementor: type) -> Mapping[str, inspect.Parameter]:
     return _save_signature(implementor).parameters
 
 
@@ -74,7 +75,7 @@ def _spell(parameter: inspect.Parameter) -> str:
     )
 
 
-def _spell_all(parameters: dict[str, inspect.Parameter]) -> str:
+def _spell_all(parameters: Mapping[str, inspect.Parameter]) -> str:
     return "\n".join(f"    [{_spell(parameter)}]" for parameter in parameters.values())
 
 
