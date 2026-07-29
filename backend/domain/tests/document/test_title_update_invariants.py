@@ -31,8 +31,29 @@ Three findings, three classes:
 import pytest
 
 from document.title_update import TitleUpdate
+from shared.exceptions import ValidationException
 
 PADDED_TITLE = " Отчёт "
+
+# The literal GREEN must produce, written out rather than imported from
+# `title_update`. An import of a constant that does not exist yet fails at
+# COLLECTION and errors the whole module -- the 65ec3fd defect -- taking down the
+# constructor-door guards above, which have nothing to do with this class.
+INVALID_TITLE_INTENT = "INVALID_TITLE_INTENT"
+
+# Named once because both arms of the contradiction are ONE refusal spelled two
+# ways, and a message that drifted between them would let a green answer the two
+# callers differently -- the very failure mode the refusal exists to stop.
+#
+# The WHOLE message, asserted with `==` rather than handed to `raises(match=...)`.
+# `match` is an unanchored `re.search`, so a PREFIX there pins eight words and
+# leaves twenty free: a green appending a per-arm tail ("...: value was blank" /
+# "...: value was set") satisfies both arms while telling the two callers
+# different things -- disarming the exact guard naming it once was meant to be.
+REFUSAL_MESSAGE = (
+    "a clear carries no title to write: TitleUpdate(value=..., clears=True) "
+    "asks for an erasure and a write at once, and its readers disagree"
+)
 
 
 class TestTitleUpdateClosesTheConstructorDoor:
@@ -58,12 +79,60 @@ class TestTitleUpdateClosesTheConstructorDoor:
 
 
 class TestTitleUpdateRefusesToCarryAValueAndAClearAtOnce:
-    """The fourth point of the 2x2 is a contradiction, not a state."""
+    """The fourth point of the 2x2 is a contradiction, not a state.
 
+    The refusal must be a member of the TYPED family, not a builtin. The rest
+    stack registers handlers for `ValidationException` / `NotFoundException` /
+    `ConflictException` only (`error_handling/exception_handlers.py`); everything
+    else falls to `unhandled_exception_handler` and leaves as
+    `500 INTERNAL_ERROR` with a fixed generic message. A bare `ValueError` here
+    is therefore not "a validation error the client sees" -- it is an internal
+    server error the client is told nothing about and can only retry.
+
+    That retry is the cost, and it is the SAME cost `__post_init__` already
+    argues against one branch up: blank NORMALISES rather than raising precisely
+    because "a save must never fail over a blank title -- the content update
+    riding along with it would be lost". The contradiction arm raises on that
+    identical call and loses that identical content -- and as a 500, without even
+    naming why. The two arms must at least agree on what the client is told.
+
+    Not wire-reachable today: `document_router.py:140` passes `request.title` as
+    `str | None`, so `clears` is never set from outside. The pending
+    adapters-discovery guard (a2) charters that route to BUILD the intent from
+    wire input, which is the commit that makes a malformed payload reach here.
+    Pinned now, while the guard is cheap.
+
+    The HTTP outcome itself -- a 4xx carrying `{error_code, message}` rather than
+    a 500 -- is NOT pinned here. Handler registration lives in
+    `backend/adapters/rest`, a layer this step does not own; it belongs to
+    adapters-discovery alongside a2. What this file owns is the precondition that
+    makes that 4xx possible at all: the exception type.
+    """
+
+    @pytest.mark.skip(
+        reason="RED: observed FAILED -- `ValueError: a clear carries no title to write: "
+        "TitleUpdate(value=..., clears=True) asks for an erasure and a write at once, and its "
+        "readers disagree` propagates out of pytest.raises(ValidationException), which does not "
+        "catch it. title_update.py:66 raises a builtin, so this refusal maps to 500 INTERNAL_ERROR."
+    )
     def test_should_reject_a_flagged_value(self):
-        with pytest.raises(ValueError, match="a clear carries no title to write"):
+        with pytest.raises(ValidationException) as refusal:
             TitleUpdate(value="Привет", clears=True)
+        assert (refusal.value.error_code, refusal.value.message) == (
+            INVALID_TITLE_INTENT,
+            REFUSAL_MESSAGE,
+        ), (
+            "the refusal must NAME itself to the client -- an error_code is what the "
+            "rest handler echoes, and without one the caller cannot tell a malformed "
+            "title intent apart from any other rejected field, and the message is the "
+            "only part of the pair a human reads"
+        )
 
+    @pytest.mark.skip(
+        reason="RED: observed FAILED -- same verbatim `ValueError: a clear carries no title to "
+        "write: ...` propagating out of pytest.raises(ValidationException). Both arms of the "
+        "contradiction raise the same builtin, so both leave as 500 INTERNAL_ERROR."
+    )
     def test_should_reject_a_flagged_blank_before_normalising_it_away(self):
         """Order matters: normalise-then-check would silently ACCEPT this.
 
@@ -72,23 +141,48 @@ class TestTitleUpdateRefusesToCarryAValueAndAClearAtOnce:
         "the user emptied the field" with "the user asked for an erasure" would
         get its wipe honoured instead of refused.
         """
-        with pytest.raises(ValueError, match="a clear carries no title to write"):
+        with pytest.raises(ValidationException) as refusal:
             TitleUpdate(value="   ", clears=True)
+        assert (refusal.value.error_code, refusal.value.message) == (
+            INVALID_TITLE_INTENT,
+            REFUSAL_MESSAGE,
+        ), (
+            "the blank arm must refuse under the same CODE and the same MESSAGE as the "
+            "value arm -- one contradiction, one name, one sentence, however the caller "
+            "happened to spell it"
+        )
 
 
 class TestTitleUpdatePredicatesAnswerForAllThreeStates:
     """What consumers ASK, pinned per state -- `erases()` first, then `carries_a_value()`."""
 
     @pytest.mark.parametrize(
-        "intent, erases, carries_a_value",
+        "build_intent, erases, carries_a_value",
         [
-            pytest.param(TitleUpdate.preserve(), False, False, id="preserve"),
-            pytest.param(TitleUpdate.clear(), True, False, id="clear"),
-            pytest.param(TitleUpdate.of("Привет"), False, True, id="set"),
+            pytest.param(lambda: TitleUpdate.preserve(), False, False, id="preserve"),
+            pytest.param(lambda: TitleUpdate.clear(), True, False, id="clear"),
+            pytest.param(lambda: TitleUpdate.of("Привет"), False, True, id="set"),
         ],
     )
-    def test_should_answer_both_predicates(self, intent, erases, carries_a_value):
+    def test_should_answer_both_predicates(self, build_intent, erases, carries_a_value):
         """`clear()` being FALSE for `carries_a_value()` is the point.
+
+        Parametrized over LAMBDAS, never over constructed instances and never
+        over bare attribute references. A `pytest.param(TitleUpdate.clear(), ...)`
+        runs in the class body at IMPORT, so a future RED renaming or removing
+        `clear()` raises during collection and ERRORS the whole module -- taking
+        down `TestTitleUpdateClosesTheConstructorDoor` and
+        `TestTitleUpdateRefusesToCarryAValueAndAClearAtOnce`, which have nothing
+        to do with `clear()`. That is the 65ec3fd defect, and `test_title_update`
+        already states the convention against it in prose.
+
+        A bare `pytest.param(TitleUpdate.clear, ...)` defers only the CALL; the
+        ATTRIBUTE LOOKUP still runs in the class body, so a rename still raises
+        `AttributeError` at collection and still errors the module. That form
+        bought nothing against the defect it names. Only a lambda defers both,
+        which is why all three params are spelled the same way even though
+        `preserve` and `clear` take no argument -- turning that module-wide ERROR
+        back into one FAILING param.
 
         It is what makes a lone `if title.carries_a_value(): write` map a clear
         onto "leave the stored title alone" -- the no-op that returns a user's
@@ -96,7 +190,7 @@ class TestTitleUpdatePredicatesAnswerForAllThreeStates:
         consumer from trusting the docstring's old claim that `preserve()` was
         the only false case.
         """
+        intent = build_intent()
         assert (intent.erases(), intent.carries_a_value()) == (erases, carries_a_value), (
-            f"{intent!r} must answer erases()={erases} and "
-            f"carries_a_value()={carries_a_value}"
+            f"{intent!r} must answer erases()={erases} and carries_a_value()={carries_a_value}"
         )

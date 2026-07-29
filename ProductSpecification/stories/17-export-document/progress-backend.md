@@ -2086,7 +2086,7 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   >   today, but it is load-bearing prose on a data-loss path and the class docstring already leans on
   >   it ("the ONLY three the constructor can produce"). `dataclasses.replace` IS covered and is worth
   >   naming as the one that is.
-- [~] red-usecase (typed refusal) — INSERTED by the review passes over `e0621ec`, which BOTH ranked it
+- [x] red-usecase (typed refusal) — INSERTED by the review passes over `e0621ec`, which BOTH ranked it
   first and independently. `TitleUpdate.__post_init__` raises a bare `ValueError`; this stack maps
   anything outside `ValidationException` / `NotFoundException` / `ConflictException` to a
   `500 INTERNAL_ERROR`, so the moment guard (a2) has the route build the intent from wire input, a
@@ -2097,7 +2097,50 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   `pytest.raises(ValueError, ...)` assertions at `test_title_update_invariants.py:64,75` are part of
   this step's scope: they currently read as intent. Fold in the collection-time construction fix from
   the same review (parametrize over factory callables at `:85-87`) while in that file.
-- [ ] green-usecase (typed refusal)
+- [~] green-usecase (typed refusal)
+  > RED LANDED, all fields matched on the first run, no loop. Two RED tests, both in place on the
+  > existing `pytest.raises(ValueError, ...)` assertions rather than in a new file — the step put those
+  > two in scope precisely because they read as intent. Observed verbatim: `ValueError: a clear carries
+  > no title to write: TitleUpdate(value=..., clears=True) asks for an erasure and a write at once, and
+  > its readers disagree`, escaping `pytest.raises(ValidationException)` because `ValidationException`
+  > extends `DomainException(Exception)` and is not in `ValueError`'s hierarchy, so `pytest.raises` does
+  > not catch it and re-raises. `337 passed, 2 skipped` (baseline 339/0 — the 2 skips ARE the 2 new REDs,
+  > total unchanged). mypy deliberately kept GREEN: nothing in this RED references a symbol green has yet
+  > to create.
+  > HTTP OUTCOME DELIBERATELY NOT PINNED HERE, and both the red-agent and /test-review agreed
+  > independently: handler registration lives in `exception_handlers.py`, a layer this step does not
+  > own. A domain test has no app, no handler table and no response to assert; pinning 4xx here would
+  > import the rest layer into a domain test and invert the dependency flow. This file owns the
+  > PRECONDITION (the exception is a member of the handled family), adapters-discovery owns the OUTCOME,
+  > alongside the (a2) guard that makes it reachable. The premise checks out — `ValidationException` IS
+  > in the registered set, so the typed refusal is exactly what makes the later 4xx possible.
+  > /test-review found THREE things, one of them a defect in this RED's own fix:
+  > • **The collection-time fix was unfixed for two of its three params.** `pytest.param(TitleUpdate.clear,
+  >   ...)` defers the CALL but the ATTRIBUTE LOOKUP still runs in the class body, so a future RED
+  >   renaming `clear()` would still `AttributeError` at collection and still error the whole module —
+  >   the exact 65ec3fd defect the docstring claimed to have fixed. Only the `of` arm's lambda deferred
+  >   both. Verified in the interpreter (a bare ref raises at definition time, a lambda does not) and
+  >   respelled all three as lambdas.
+  > • **`match=REFUSAL_MESSAGE` was a real hole and self-defeating.** `match=` is `re.search` — an
+  >   unanchored substring. The prefix pinned 8 words of a 30-word message and left 22 free, which buys
+  >   exactly the failure the shared constant was introduced to prevent: a green emitting
+  >   `"<prefix>: value was blank"` on one arm and `"<prefix>: value was set"` on the other satisfies
+  >   BOTH arms while telling the two callers different things. Sharing the constant was right;
+  >   TRUNCATING it disarmed the guard. Widened to the whole message and switched to `==` on the parsed
+  >   `.message` field.
+  > • The test-local `INVALID_TITLE_INTENT` literal is SOUND and stays — and the stronger reason is not
+  >   the collection-time one: importing the constant would make the assertion TAUTOLOGICAL, comparing
+  >   production to itself and passing under any rename. The codebase already agrees (`test_page.py:39`,
+  >   `test_create_document_usecase.py:62` both use bare literals; the one importing file is the outlier).
+  > Skip markers verified EMPIRICALLY to sit on FAILED not ERRORED — run with a throwaway plugin
+  > stripping the marks, both report FAILED at `title_update.py:66`, the exact line the skip reasons cite.
+  > GREEN's job: swap the raise to `ValidationException(error_code="INVALID_TITLE_INTENT", ...)` and
+  > introduce that code as a production constant. Keep the message byte-identical — the RED now pins it
+  > with `==`, not a substring.
+  > NOTED, /refactor scope not assertion scope: `TestTitleUpdatePredicatesAnswerForAllThreeStates`
+  > parametrizes over the FACTORIES, which this module's own docstring assigns to `test_title_update.py`
+  > — the file resolved principle-vs-cap toward the cap without saying so. And `PADDED_TITLE` is defined
+  > in both files, each commenting that it is "named once".
   > RED LANDED. Prediction matched on the first run, no loop, zero NOs across type/message/status for
   > all 5 failing tests. New: `backend/domain/tests/document/test_title_update.py` — the FIRST
   > `TitleUpdate` domain test that has ever existed — plus two Statements methods and one usecase test.
