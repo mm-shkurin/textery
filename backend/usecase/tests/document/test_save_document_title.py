@@ -108,7 +108,6 @@ class TestSaveDocumentTitleIntent:
         # replaces the stored title with the bogus marker instead of preserving.
         await statements.assert_stored_title(document, STORED_TITLE)
 
-    @pytest.mark.skip(reason="RED: TitleUpdate has no clear() -- the discriminator is gone")
     async def test_should_forward_a_clear_and_null_the_stored_title(self, statements):
         """The ADR's third state, which no test anywhere covers today.
 

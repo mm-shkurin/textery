@@ -70,19 +70,31 @@ class SaveDocument:
 
     @staticmethod
     def _title_intent(title: TitleUpdate | str | None) -> TitleUpdate:
-        """A blank title carries no title intent, so it must not overwrite one.
+        """Turn what the caller passed into a named intent.
 
-        What "blank" means belongs to TitleUpdate, not here -- see its `is_blank`.
+        `None` here means ABSENT ONLY -- the `title` argument was not supplied.
+        It must NEVER be how an adapter spells an explicit wire `"title": null`:
+        only the route can tell absent from null (`model_fields_set`), and if it
+        forwards `None` for a null the erasure is silently converted into a
+        preserve and the whole clear path no-ops with every test green. A route
+        that means "clear" passes `TitleUpdate.clear()`.
 
         Absence is spelled `preserve()` rather than forwarded as a bare `None`:
         the port declares `None` unusable for intent, and the absent case is the
         most-travelled path of all, so it must not be the one still carrying the
         ambiguous value.
+
+        Blankness is NOT decided here any more. `TitleUpdate.__post_init__` folds
+        a blank string down to preserve on every construction path, so the guard
+        this method used to carry (`preserve() if update.is_blank() else update`)
+        became vacuously true for every value it could ever see -- a predicate
+        that cannot fire is not a defense, it is a comment that reads like one.
+        Deleted with `is_blank()` itself; the invariant now lives on the type,
+        where the constructor door is closed too.
         """
         if title is None:
             return TitleUpdate.preserve()
-        update = TitleUpdate.of(title) if isinstance(title, str) else title
-        return TitleUpdate.preserve() if update.is_blank() else update
+        return TitleUpdate.of(title) if isinstance(title, str) else title
 
     def _validate_version(self, version: int) -> None:
         # bool is an int subclass in Python, and `True == 1`, so a JSON `true` would

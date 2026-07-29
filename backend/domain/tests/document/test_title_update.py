@@ -54,27 +54,23 @@ PADDED_TITLE = " Отчёт "
 class TestTitleUpdateStatesAreDistinguishable:
     """Each of the ADR's three intents has ONE fixed, named representation."""
 
-    @pytest.mark.skip(reason="RED: TitleUpdate has no `clears` field -- the discriminator is gone")
     def test_should_represent_a_preserve_as_an_unflagged_absence(self):
         assert TitleUpdate.preserve() == TitleUpdate(value=None, clears=False), (
             "preserve names no title AND asks for no erasure -- it is the state that "
             "leaves storage alone, so the discriminator must be off"
         )
 
-    @pytest.mark.skip(reason="RED: TitleUpdate has no `clears` field -- the discriminator is gone")
     def test_should_represent_a_clear_as_a_flagged_absence(self):
         assert TitleUpdate.clear() == TitleUpdate(value=None, clears=True), (
             "a clear carries NO title to write -- the erasure is spelled by the flag, "
             "never by a sentinel value, which the CAS would store as the title itself"
         )
 
-    @pytest.mark.skip(reason="RED: TitleUpdate has no `clears` field -- the discriminator is gone")
     def test_should_represent_a_real_title_as_an_unflagged_value(self):
         assert TitleUpdate.of("Привет") == TitleUpdate(value="Привет", clears=False), (
             "a real title names the value to write and asks for no erasure"
         )
 
-    @pytest.mark.skip(reason="RED: TitleUpdate has no `clears` field -- the discriminator is gone")
     def test_should_tell_a_clear_apart_from_a_preserve(self):
         """The ADR-level fact the three pins above imply, stated once on its own.
 
@@ -91,9 +87,6 @@ class TestTitleUpdateStatesAreDistinguishable:
 class TestTitleUpdateRejectsABlankTitleAsAnIntent:
     """`of("")` and `of("   ")` are not a title -- they are the absence of one."""
 
-    @pytest.mark.skip(
-        reason="RED: of() accepts a blank title, so the rule lives only in SaveDocument"
-    )
     @pytest.mark.parametrize("raw", ["", "   ", "\t\n"], ids=["empty", "spaces", "control"])
     def test_should_normalise_a_blank_title_to_preserve(self, raw):
         """Structural, not `== preserve()`.
@@ -108,7 +101,6 @@ class TestTitleUpdateRejectsABlankTitleAsAnIntent:
             f"caller can write a blank title and no blank can be mistaken for a clear"
         )
 
-    @pytest.mark.skip(reason="RED: TitleUpdate has no `clears` field -- the discriminator is gone")
     def test_should_keep_a_padded_real_title_whole(self):
         """The byte-for-byte guard restated over BOTH fields.
 

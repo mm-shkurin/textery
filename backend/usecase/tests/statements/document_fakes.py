@@ -117,9 +117,13 @@ class FakeDocumentRepository:
         stored.content = content
         stored.version += 1
         stored.updated_at = updated_at
-        # Preserve-on-`preserve()`, mirroring the real CAS: a title-less intent leaves the
-        # existing title intact rather than wiping it.
-        if title.carries_a_value():
+        # All three intents, mirroring the real CAS. `erases()` is asked FIRST:
+        # both `clear()` and `preserve()` carry no value, so a `carries_a_value()`
+        # test alone maps them to the same "leave the title alone" and the clear
+        # path reads green while doing nothing.
+        if title.erases():
+            stored.title = None
+        elif title.carries_a_value():
             stored.title = title.value
         return stored
 

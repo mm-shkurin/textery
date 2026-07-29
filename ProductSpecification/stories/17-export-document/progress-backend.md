@@ -1979,7 +1979,54 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   reopen the `SET title = ''` path. This is the ADR's own defense-in-depth argument applied to the
   WRITE side, where it was never made: pin that `of()` with a blank string is rejected or normalises
   to `preserve()`, so the invariant lives on the type rather than on one caller.
-- [~] green-usecase (clear path)
+- [x] green-usecase (clear path)
+  > DONE. The three-state sum is now closed AT THE TYPE, which is what all four review findings over
+  > `5ed1adb` were asking for. `title_update.py` gained `clears: bool = False`, a `clear()` factory
+  > (a FLAG, never a sentinel value), and a `__post_init__` doing two things IN THIS ORDER: REJECT
+  > `clears=True` carrying a non-`None` value with `ValueError`, THEN NORMALISE an all-whitespace
+  > value to `None`. The order is load-bearing — normalise-first would silently accept
+  > `TitleUpdate(value="", clears=True)` as a legitimate clear.
+  > `is_blank()` DELETED, and with it the vacuous `_title_intent` line the premortem named: once the
+  > constructor normalises, the predicate cannot fire for any value the system can construct. Decided
+  > deliberately rather than left in — a guard that cannot fire is a comment that reads like a defense.
+  > `erases()` added as the behavioural predicate so consumers stop reading the raw `.clears` field
+  > (intent re-derived at the call site is the ambiguity the class exists to remove).
+  > `carries_a_value()`'s docstring corrected: its claim "preserve() is the only false case" inverted
+  > the moment `clear()` also became `value=None`; it now names both title-less states and says
+  > `erases()` must be asked first. `_title_intent`'s docstring now states `None` means ABSENT ONLY and
+  > an adapter must never pass it for an explicit wire null.
+  > NEW TESTS, declared: `test_title_update_invariants.py` (101 lines, kept separate so neither it nor
+  > `test_title_update.py` at 126 approaches the cap) — one class per previously-unpinned finding:
+  > blank normalisation THROUGH THE CONSTRUCTOR (plus a padded tripwire twin on that door), the
+  > flagged-value contradiction rejected, and `erases()`/`carries_a_value()` pinned across all three
+  > states. No RED assertion was touched; the padded tripwire stayed live and passing throughout.
+  > COVERAGE — MEANINGFUL FOR THE FIRST TIME IN THIS SCENARIO (the five prior passes were all vacuous
+  > 100%s over removed states). `title_update.py` went 2 -> 4 branches: the `raise` arm and the
+  > normalise arm are both NEW REAL ARCS and both are hit. `save_document.py` went 12 -> 10, exactly
+  > the two the deleted ternary owned. So 100%/100% here is a statement about arcs that EXIST.
+  > MUTATION anyway, because branch coverage cannot see ORDERING: 12 mutations, 10 KILLED, 2 survived
+  > and both proven EQUIVALENT. Kills: order swapped (1 failed — caught by exactly ONE test,
+  > `test_should_reject_a_flagged_blank_before_normalising_it_away`, the sole tripwire on the ordering);
+  > rejection arm deleted (2); normalise rewritten as `value.strip() or None` (3 — the ADR's forbidden
+  > trim); normalise narrowed to `== ""` (6); `erases()` constant False (2) and constant True (10, the
+  > blast radius coming from the fake now asking it first); `carries_a_value()` -> `not self.clears`
+  > (6); absent -> `clear()` (1); passed VO discarded (8); fake writing `""` instead of `None` (1).
+  > The two survivors are the green's own thesis, not a gap: RE-ADDING the deleted `_title_intent`
+  > blank guard leaves all 339 passing (the definition of a vacuous predicate — `of("")` already yields
+  > `preserve()` by dataclass equality), and bypassing `of()` for the raw constructor is a no-op by
+  > construction since `of()` IS `cls(value=value)`. Both confirm the invariant lives on the TYPE
+  > rather than on the factory or the caller. No test added to kill them: a test that pins an
+  > equivalent mutant pins an implementation detail.
+  > MYPY CLEARS — `Success: no issues found`, both RED errors gone with NO `type: ignore`, which was
+  > the RED's stated proof that green actually landed the field and the factory. `ruff check backend`
+  > unchanged at 5 pre-existing errors, untouched.
+  > ⚠️ HIGHEST-CONSEQUENCE UNCLOSED EDGE IN THE SCENARIO, named by the coverage pass and already routed
+  > to guard (b): the fake and the REAL adapter now DISAGREE about `clear()`. `FakeDocumentRepository`
+  > asks `erases()` first and nulls the column; `SqlAlchemyDocumentStorage._values_for` still only asks
+  > `carries_a_value()`, so a real clear falls into the OMIT branch and no-ops — the user's deleted
+  > title returns on reopen. `test_should_forward_a_clear_and_null_the_stored_title` passes against the
+  > fake and would pass whatever the real CAS did. This green added a ⚠️ comment in `document_storage.py`
+  > naming it and assigning it to adapters-discovery (b).
   > RED LANDED. Prediction matched on the first run, no loop, zero NOs across type/message/status for
   > all 5 failing tests. New: `backend/domain/tests/document/test_title_update.py` — the FIRST
   > `TitleUpdate` domain test that has ever existed — plus two Statements methods and one usecase test.
@@ -2086,7 +2133,7 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   >   prose about a data-loss path.
   > • REMOTE, noted not filed: no `xfail_strict` or skip-audit exists in any pytest config, so a green
   >   that removes four of five markers ships green with the clear path unexecuted.
-- [ ] adapters-discovery — REQUIRED guards, named by the review passes over the design commit
+- [~] adapters-discovery — REQUIRED guards, named by the review passes over the design commit
   (`97e8f53`); discovery must insert all four, none is optional:
   (a) rest route — TWO assertions in `test_save_document_title_router.py`, not one: a body of
   `{"content","version"}` with NO `title` key → `SaveDocument.execute(title=TitleUpdate.preserve())`

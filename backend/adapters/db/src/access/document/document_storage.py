@@ -134,12 +134,20 @@ class SqlAlchemyDocumentStorage:
         `carries_a_value()` -- the adapter does not re-derive `preserve()` by
         null-testing `value`.
 
-        A raw `str` is no longer accepted, which removes the SPELLING `title=""`
-        but NOT the path: `TitleUpdate.of("")` is a legal call and this method
-        writes `SET title = ''` for it. Blankness is decided one layer up, by
-        `SaveDocument._title_intent`; the adapter obeys the intent it is handed.
+        A raw `str` is no longer accepted, and the blank path is closed at the
+        source: `TitleUpdate.__post_init__` folds a blank value down to preserve
+        on EVERY construction path, so no intent reaching here can carry `""` and
+        `SET title = ''` is unreachable. Blankness is no longer decided one layer
+        up in `SaveDocument`; it is an invariant of the type, which is why an
+        adapter built by some other caller cannot reopen it.
+
         There is no `| None` arm: the absent case reaches here as `preserve()`,
-        so the intent is always named and this method has exactly two branches.
+        so the intent is always named.
+
+        ⚠️ STILL TWO BRANCHES, and the third state is UNMAPPED: `clear()` is also
+        `carries_a_value() == False`, so it currently falls into the omit branch
+        and no-ops. The `SET title = NULL` arm (ask `title.erases()` first) is
+        owned by the routed `adapters-discovery` (b) step.
         """
         values: dict[str, Any] = {
             "content": content,
