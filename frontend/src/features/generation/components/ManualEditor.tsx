@@ -20,6 +20,19 @@ interface ManualEditorProps {
   documentTypeLabel: string
   onBack: () => void
   existingDocumentId?: string
+  // The text of a COMPLETED GENERATION, when the editor was opened by the auto-transition
+  // (story 18, scenario 2.1) rather than from history or manual mode.
+  //
+  // Passed in rather than re-fetched: the flow is already holding this string — `useGeneration`
+  // read it out of the poll that observed completion — so asking the server for it again would
+  // be a re-read of something in hand (which scenario 2.3 exists to forbid) and would open the
+  // editor EMPTY for as long as that round trip takes, on top of text the user just watched
+  // being written.
+  //
+  // Its presence is the one discriminator for the whole auto path: it suppresses the
+  // create-a-blank-document init and drops the "Ручной режим" breadcrumb chip, because both are
+  // statements about a mode this user was never asked to choose.
+  generatedContent?: string
 }
 
 export function ManualEditor({
@@ -27,7 +40,9 @@ export function ManualEditor({
   documentTypeLabel,
   onBack,
   existingDocumentId,
+  generatedContent,
 }: ManualEditorProps) {
+  const fromGeneration = generatedContent !== undefined
   const [documentId, setDocumentId] = useState<string | null>(null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(true)
   // Init failing is worse than a save failing and must not be quieter: with no documentId there
@@ -68,9 +83,20 @@ export function ManualEditor({
     return () => window.removeEventListener('beforeunload', guard)
   }, [hasUnsavedChanges])
 
+  // Seeded ONCE, and the ref is the whole point: `editor` is null on the first render (Tiptap
+  // builds the instance in an effect), so this cannot be a render-time call, and re-running it
+  // on any later render would replace whatever the user has typed with the original generation.
+  const seededRef = useRef(false)
+  useEffect(() => {
+    if (seededRef.current || generatedContent === undefined || !editor) return
+    seededRef.current = true
+    editor.commands.setContent(generatedContent)
+  }, [editor, generatedContent])
+
   useDocumentInit({
     documentType,
     existingDocumentId,
+    fromGeneration,
     editor,
     setDocumentId,
     setVersion,
@@ -82,7 +108,11 @@ export function ManualEditor({
       <AppHeader />
       <div className="me-container">
         <div className="me-toolbar-row">
-          <ManualEditorBreadcrumb documentTypeLabel={documentTypeLabel} onBack={onBack} />
+          <ManualEditorBreadcrumb
+            documentTypeLabel={documentTypeLabel}
+            onBack={onBack}
+            showManualModeChip={!fromGeneration}
+          />
           <ExportControl
             documentId={documentId}
             hasUnsavedChanges={hasUnsavedChanges}

@@ -11,6 +11,17 @@ export const LOAD_FAILED_MESSAGE =
 interface UseDocumentInitParams {
   documentType: DocumentType
   existingDocumentId?: string
+  // The editor was opened on a COMPLETED GENERATION (story 18, scenario 2.1): its text is already
+  // in hand and no document exists yet on the server. Both API branches below are wrong for it —
+  // there is no id to GET, and `createDocument` would mint a SECOND, empty document unrelated to
+  // the generation, so the user's edits would land in the document the generation is not in.
+  //
+  // So this hook does nothing on that path, and the document is created by converting the
+  // generation instead. That conversion (`POST /api/v1/documents/from-generation`) is owned by
+  // this scenario's `red-frontend-api`/`green-frontend-api` steps and does not exist yet, which
+  // means until they land this editor has no `documentId` and cannot save — a real gap, recorded
+  // rather than papered over with the wrong POST.
+  fromGeneration?: boolean
   editor: Editor | null
   setDocumentId: (id: string) => void
   setVersion: (version: number) => void
@@ -31,6 +42,7 @@ interface UseDocumentInitParams {
 export function useDocumentInit({
   documentType,
   existingDocumentId,
+  fromGeneration,
   editor,
   setDocumentId,
   setVersion,
@@ -54,6 +66,7 @@ export function useDocumentInit({
 
   useEffect(() => {
     let cancelled = false
+    if (fromGeneration) return
     if (existingDocumentId) {
       getDocument(existingDocumentId)
         .then((result) => {
@@ -90,5 +103,5 @@ export function useDocumentInit({
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [documentType, existingDocumentId])
+  }, [documentType, existingDocumentId, fromGeneration])
 }

@@ -67,14 +67,14 @@ describe('DocumentGenerationFlow — a completed generation opens itself in the 
     vi.clearAllMocks()
   })
 
-  // RED, observed live 2026-07-29 (1 failed / 0 passed), at the `findByTestId` call below:
+  // The RED this was written against, observed 2026-07-29 (1 failed), at the `findByTestId` below:
   //
   //   TestingLibraryElementError: Unable to find an element by: [data-testid="manual-editor"]
   //
   // The printed DOM is the diagnosis in full: `<div class="doc-body markdown-body"
   // data-testid="doc-body"><p>Готовый текст доклада</p></div>` beside a `Создать новый доклад`
   // button. The generation completed, the text arrived, and the surface stayed read-only — there
-  // is no code path from `state === 'completed'` to the editor. Green removes this marker.
+  // is no code path from `state === 'completed'` to the editor. That path now exists.
   //
   // EVERYTHING BELOW THE `findByTestId` IS UNREACHABLE IN TODAY'S CODEBASE, so — as d4f34b7 did
   // for its en-dash risk — the assertions were executed elsewhere rather than trusted. A
@@ -87,7 +87,7 @@ describe('DocumentGenerationFlow — a completed generation opens itself in the 
   // was deleted. STILL UNVERIFIED, and unverifiable before green: that these hold on the AUTO
   // path (no such path exists), and the two `getGeneration` counts, which depend on a transition
   // that has not been written.
-  it.skip('replaces the read-only result with the editor without a further gesture', async () => {
+  it('replaces the read-only result with the editor without a further gesture', async () => {
     render(<App />)
 
     fireEvent.click(screen.getByTestId('features-primary-cta-button'))
