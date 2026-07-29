@@ -1,5 +1,4 @@
 import asyncio
-import os
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -9,6 +8,7 @@ from auth.account import Account
 from document.document import Document
 from session import create_engine, create_session_factory
 from statements.database_cleanup import truncate_all
+from statements.database_url import configure_test_database_url
 
 
 class TestConcurrentSavesResolveAtomically:
@@ -41,10 +41,7 @@ class TestConcurrentSavesResolveAtomically:
     """
 
     async def test_exactly_one_of_two_same_version_saves_wins(self):
-        os.environ.setdefault(
-            "TEST_DATABASE_URL", "postgresql://textery:change-me@localhost:5432/textery"
-        )
-        os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
+        configure_test_database_url()
         engine = create_engine()
         session_factory = create_session_factory(engine)
 

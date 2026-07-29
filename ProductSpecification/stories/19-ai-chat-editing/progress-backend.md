@@ -89,6 +89,22 @@ within their file, not across the story.
       (`Can't locate revision identified by 'a3b4c5d6e7f8'` — a newer branch migrated it). A clean
       `textery_s19` database now exists in the same `infra-postgres-1` container; point
       `TEST_DATABASE_URL` there for db-layer runs.
+      **Review-pass follow-ups (non-gating, both CONCERNS):**
+      (1) `FakeDocumentRepository` (`usecase/tests/statements/document_fakes.py`) is a bare class,
+      never bound to `DocumentRepository` — and mypy does not check unannotated test bodies
+      (`check_untyped_defs` is unset; turning it on today reports 30 latent errors). So the fake can
+      drift from the port with the usecase suite fully green, which is the same silent shape this step
+      closed on the adapter side. Cheapest fix: a module-level `_conforms: DocumentRepository =
+      FakeDocumentRepository()`.
+      (2) `backend-ci.yml` triggers only on `push: [main, dev]` and `pull_request`; this project uses
+      neither — work lands directly on the feature branch. The mypy step therefore does not run until
+      the story merges, i.e. after all seven endpoints it was added to protect. Widen the trigger.
+      (3) `DocumentScope` carries no `version`, but the write path is
+      `save_content_if_version_matches(expected_version=…)` — so the next endpoint author's cheapest
+      move is a second, full-entity `find_by_id_and_owner` right after the guard, reading `content`
+      after we paid to avoid it. The ADR already lists `version` on the scope; add it at scenario 2.x
+      as planned, and consider a usecase-level no-`content`-SELECT assertion (the recorder guard
+      exists only at the adapter layer today).
 - [~] red-adapter rest — the seven AI-edit routes, each delegating to a usecase whose first
       statement is `resolve_owned_document`. Per the ADR the refusal must precede validation and
       version checks: a foreign document with a malformed instruction is 404, never 422; with a

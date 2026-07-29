@@ -1,4 +1,3 @@
-import os
 import socket
 from collections.abc import AsyncIterator, Callable
 from urllib.parse import urlsplit
@@ -10,21 +9,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from session import create_engine, create_session_factory
 from statements.account_storage_statements import AccountStorageStatements
 from statements.database_cleanup import truncate_all
+from statements.database_url import (
+    TEST_DATABASE_URL_ENV_VAR,
+    configure_test_database_url,
+)
 from statements.generation_storage_statements import GenerationStorageStatements
 from statements.verification_code_storage_statements import VerificationCodeStorageStatements
 
-TEST_DATABASE_URL_ENV_VAR = "TEST_DATABASE_URL"
-DEFAULT_TEST_DATABASE_URL = "postgresql://textery:change-me@localhost:5432/textery"
 # Short on purpose: this is a liveness probe, not the connection itself. The
 # answer is "is anything listening", and anything listening answers instantly.
 _PROBE_TIMEOUT_SECONDS = 3
-
-
-def _test_database_url() -> str:
-    """Point the adapter's own `create_engine()` at the test database."""
-    os.environ.setdefault(TEST_DATABASE_URL_ENV_VAR, DEFAULT_TEST_DATABASE_URL)
-    os.environ["DATABASE_URL"] = os.environ[TEST_DATABASE_URL_ENV_VAR]
-    return os.environ[TEST_DATABASE_URL_ENV_VAR]
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -38,7 +32,7 @@ def require_database() -> None:
     checkout rather than a missing service. CI provides Postgres, so this probe
     passes there and gates nothing.
     """
-    parts = urlsplit(_test_database_url())
+    parts = urlsplit(configure_test_database_url())
     host, port = parts.hostname or "localhost", parts.port or 5432
     try:
         with socket.create_connection((host, port), timeout=_PROBE_TIMEOUT_SECONDS):
@@ -60,7 +54,7 @@ async def _engine_scoped(build: Callable[..., object]) -> AsyncIterator[object]:
     and five places to be forgotten. Cleanup is in a `finally` here, so a failing
     test no longer leaves its rows behind for the next one to trip over.
     """
-    _test_database_url()
+    configure_test_database_url()
     engine = create_engine()
     try:
         yield build(create_session_factory(engine))
@@ -71,7 +65,7 @@ async def _engine_scoped(build: Callable[..., object]) -> AsyncIterator[object]:
 
 @pytest_asyncio.fixture
 async def db_session():
-    _test_database_url()
+    configure_test_database_url()
     engine = create_engine()
     session_factory = create_session_factory(engine)
     try:

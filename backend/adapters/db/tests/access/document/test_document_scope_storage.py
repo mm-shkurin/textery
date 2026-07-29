@@ -2,12 +2,13 @@ class TestFindScopeByIdAndOwner:
     """Scenario 1.1: the bounded owner-scoped existence check, against the real schema.
 
     The positive control is the point of this class, not an afterthought.
-    `DocumentRepository` is a `Protocol` whose method bodies are a docstring plus
-    `...` -- a concrete coroutine returning `None`, not an abstract declaration.
-    A storage that "implements" the port by inheriting from it would therefore
-    answer `None` for every input: every user refused their own documents, while
-    mypy and the whole usecase suite (which runs against the Fake) stay green.
-    Only a real save read back through the real query catches that.
+    `DocumentRepository` is a `Protocol`, not an ABC: a storage that "implements"
+    the port by inheriting from it inherits concrete method bodies. Those bodies
+    now `raise NotImplementedError` -- they were `...`, which returns `None`, so
+    the inheriting storage answered `None` for every input and refused every user
+    their own documents while mypy and the whole usecase suite (which runs against
+    the Fake) stayed green. The raise turns that into a loud failure, but only a
+    real save read back through the real query proves the query itself resolves.
 
     The negative cases pin the guard's contract: a foreign document and an absent
     id must both fall out as `None` from the SQL predicate, so the usecase can

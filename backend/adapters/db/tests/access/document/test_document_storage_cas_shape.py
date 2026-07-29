@@ -1,15 +1,15 @@
-import os
 from datetime import UTC, datetime
 from uuid import uuid4
-
-from sqlalchemy import event
 
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.document.document_storage import SqlAlchemyDocumentStorage
 from auth.account import Account
 from document.document import Document
 from session import create_engine, create_session_factory
+from statements.cas_shape_statements import assert_is_a_single_compare_and_swap
 from statements.database_cleanup import truncate_all
+from statements.database_url import configure_test_database_url
+from statements.sql_recorder import recording_sql
 
 
 class TestSaveIsASingleCompareAndSwapStatement:
@@ -35,10 +35,7 @@ class TestSaveIsASingleCompareAndSwapStatement:
     """
 
     async def test_should_emit_one_update_and_never_read_first(self):
-        os.environ.setdefault(
-            "TEST_DATABASE_URL", "postgresql://textery:change-me@localhost:5432/textery"
-        )
-        os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
+        configure_test_database_url()
         engine = create_engine()
         session_factory = create_session_factory(engine)
 
@@ -59,16 +56,10 @@ class TestSaveIsASingleCompareAndSwapStatement:
             await SqlAlchemyDocumentStorage(setup).save_new(document)
             await setup.commit()
 
-        captured: list[str] = []
-
-        def record(conn, cursor, statement, parameters, context, executemany):
-            captured.append(" ".join(statement.split()).upper())
-
         try:
             async with session_factory() as session:
                 storage = SqlAlchemyDocumentStorage(session)
-                event.listen(engine.sync_engine, "before_cursor_execute", record)
-                try:
+                with recording_sql(session) as recorded:
                     await storage.save_content_if_version_matches(
                         document_id=document.id,
                         owner_id=account.id,
@@ -76,25 +67,11 @@ class TestSaveIsASingleCompareAndSwapStatement:
                         expected_version=1,
                         updated_at=datetime.now(UTC),
                     )
-                finally:
-                    event.remove(engine.sync_engine, "before_cursor_execute", record)
 
-            selects = [sql for sql in captured if sql.startswith("SELECT")]
-            updates = [sql for sql in captured if sql.startswith("UPDATE")]
-
-            assert selects == [], (
-                "save_content_if_version_matches must not SELECT. A read before the write is the "
-                f"read-compare-write pattern that loses concurrent updates. Got: {selects}"
-            )
-            assert len(updates) == 1, f"expected exactly one UPDATE, got {len(updates)}: {updates}"
-
-            statement = updates[0]
-            assert "VERSION =" in statement.split("WHERE", 1)[1], (
-                f"the version must be compared in the WHERE clause, not in Python. Got: {statement}"
-            )
-            assert "RETURNING" in statement, (
-                "the new row must come back from the same statement; a follow-up SELECT would "
-                f"re-open the race the CAS closes. Got: {statement}"
+            assert_is_a_single_compare_and_swap(
+                recorded,
+                "save_content_if_version_matches must not SELECT. A read before the write is "
+                "the read-compare-write pattern that loses concurrent updates.",
             )
         finally:
             await truncate_all(engine)

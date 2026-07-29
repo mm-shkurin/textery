@@ -37,6 +37,16 @@ class RecordedSql:
         )
         return self.statements[0]
 
+    def starting_with(self, verb: str) -> list[str]:
+        """The recorded statements whose leading keyword is `verb`.
+
+        Case-insensitive on the keyword only: the statements are kept case-preserved
+        so they read as SQL in a failure message, but SQLAlchemy's own casing is not
+        something a test should be pinning.
+        """
+        prefix = verb.upper() + " "
+        return [sql for sql in self.statements if sql.upper().startswith(prefix)]
+
     def selected_columns(self) -> list[str]:
         """The bare column names in the single statement's projection.
 

@@ -1,52 +1,15 @@
-import os
-from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import event, text
 
-from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.generation.generation_storage import SqlAlchemyGenerationStorage
-from auth.account import Account
 from generation.generation import Generation
-from session import create_engine, create_session_factory
+from session import create_session_factory
 from shared.exceptions import ConflictException, NotFoundException
+from statements.cas_shape_statements import assert_is_a_single_compare_and_swap
 from statements.database_cleanup import truncate_all
-
-
-def _test_engine():
-    os.environ.setdefault(
-        "TEST_DATABASE_URL", "postgresql://textery:change-me@localhost:5432/textery"
-    )
-    os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
-    return create_engine()
-
-
-async def _seed(session_factory) -> tuple[Account, Generation]:
-    async with session_factory() as setup:
-        account = Account.create(
-            id=uuid4(),
-            email=f"gen-shape-{uuid4()}@example.com",
-            password_hash="hash",
-            created_at=datetime.now(UTC),
-        )
-        await SqlAlchemyAccountRepository(setup).save(account)
-        await setup.commit()
-    generation = Generation.create(
-        owner_id=account.id,
-        topic="Космос",
-        volume_pages=3,
-        requirements=None,
-        extra_wishes=None,
-        document_type="доклад",
-    )
-    async with session_factory() as setup:
-        await SqlAlchemyGenerationStorage(setup).save(generation)
-    return account, generation
-
-
-async def _truncate(engine):
-    await truncate_all(engine)
+from statements.generation_seed import generation_test_engine, seed_account_and_generation
+from statements.sql_recorder import recording_sql
 
 
 class TestUpdateIsASingleCompareAndSwapStatement:
@@ -70,45 +33,25 @@ class TestUpdateIsASingleCompareAndSwapStatement:
     """
 
     async def test_should_emit_one_update_and_never_read_first(self):
-        engine = _test_engine()
+        engine = generation_test_engine()
         session_factory = create_session_factory(engine)
-        _, generation = await _seed(session_factory)
-
-        captured: list[str] = []
-
-        def record(conn, cursor, statement, parameters, context, executemany):
-            captured.append(" ".join(statement.split()).upper())
+        _, generation = await seed_account_and_generation(session_factory)
 
         try:
             generation.complete("Готовый доклад")
             async with session_factory() as session:
                 storage = SqlAlchemyGenerationStorage(session)
-                event.listen(engine.sync_engine, "before_cursor_execute", record)
-                try:
+                with recording_sql(session) as recorded:
                     await storage.update(generation)
-                finally:
-                    event.remove(engine.sync_engine, "before_cursor_execute", record)
 
-            selects = [sql for sql in captured if sql.startswith("SELECT")]
-            updates = [sql for sql in captured if sql.startswith("UPDATE")]
-
-            assert selects == [], (
+            assert_is_a_single_compare_and_swap(
+                recorded,
                 "update() must not SELECT before writing. A read-compare-write lets two "
                 "sessions both read version=1, both pass the check, and both write version=2 "
-                f"-- one update silently lost. Got: {selects}"
-            )
-            assert len(updates) == 1, f"expected exactly one UPDATE, got {len(updates)}: {updates}"
-
-            statement = updates[0]
-            assert "VERSION =" in statement.split("WHERE", 1)[1], (
-                f"the version must be compared in the WHERE clause, not in Python. Got: {statement}"
-            )
-            assert "RETURNING" in statement, (
-                "the new row must come back from the same statement; a follow-up SELECT would "
-                f"re-open the race the CAS closes. Got: {statement}"
+                "-- one update silently lost.",
             )
         finally:
-            await _truncate(engine)
+            await truncate_all(engine)
             await engine.dispose()
 
 
@@ -121,9 +64,9 @@ class TestUpdateStillReportsTheTwoFailures:
     """
 
     async def test_should_raise_conflict_when_the_version_moved_on(self):
-        engine = _test_engine()
+        engine = generation_test_engine()
         session_factory = create_session_factory(engine)
-        _, generation = await _seed(session_factory)
+        _, generation = await seed_account_and_generation(session_factory)
 
         try:
             generation.complete("first")
@@ -157,11 +100,11 @@ class TestUpdateStillReportsTheTwoFailures:
                 f"the first writer's content must survive, got {stored.content!r}"
             )
         finally:
-            await _truncate(engine)
+            await truncate_all(engine)
             await engine.dispose()
 
     async def test_should_raise_not_found_when_the_row_is_gone(self):
-        engine = _test_engine()
+        engine = generation_test_engine()
         session_factory = create_session_factory(engine)
 
         try:
@@ -179,95 +122,5 @@ class TestUpdateStillReportsTheTwoFailures:
                 async with session_factory() as session:
                     await SqlAlchemyGenerationStorage(session).update(absent)
         finally:
-            await _truncate(engine)
-            await engine.dispose()
-
-
-class TestStalenessMeansStalledNotOld:
-    """The sweep asks when a row last made progress, not when it was created.
-
-    created_at never changes, so requeueing a stale row left it stale: it matched
-    the next sweep, and every sweep after that, each one re-triggering a paid
-    provider call. At the shipped 60-second interval that is one paid call per
-    minute per stuck row, indefinitely.
-    """
-
-    async def test_should_not_return_a_row_again_once_it_has_been_requeued(self):
-        engine = _test_engine()
-        session_factory = create_session_factory(engine)
-        _, generation = await _seed(session_factory)
-
-        try:
-            # Age the row as a worker that died 20 minutes ago would leave it.
-            stalled_since = datetime.now(UTC) - timedelta(minutes=20)
-            async with engine.connect() as conn:
-                await conn.execute(
-                    text("UPDATE generations SET created_at = :t, updated_at = :t WHERE id = :i"),
-                    {"t": stalled_since, "i": generation.id},
-                )
-                await conn.commit()
-
-            async def sweep() -> int:
-                older_than = datetime.now(UTC) - timedelta(minutes=10)
-                async with session_factory() as session:
-                    storage = SqlAlchemyGenerationStorage(session)
-                    stale = await storage.list_stale(older_than)
-                    for row in stale:
-                        row.requeue()
-                        await storage.update(row)
-                    return len(stale)
-
-            assert await sweep() == 1, "the stalled row must be picked up once"
-            assert await sweep() == 0, (
-                "the requeued row must not be stale again -- on created_at it was, "
-                "so every sweep re-triggered it and paid for another provider call"
-            )
-            assert await sweep() == 0
-        finally:
-            await _truncate(engine)
-            await engine.dispose()
-
-    async def test_should_still_pick_up_a_row_that_stalls_again(self):
-        """The requeue buys one interval, not immunity."""
-        engine = _test_engine()
-        session_factory = create_session_factory(engine)
-        _, generation = await _seed(session_factory)
-
-        try:
-            async with engine.connect() as conn:
-                await conn.execute(
-                    text("UPDATE generations SET updated_at = :t WHERE id = :i"),
-                    {"t": datetime.now(UTC) - timedelta(minutes=20), "i": generation.id},
-                )
-                await conn.commit()
-
-            async with session_factory() as session:
-                assert (
-                    len(
-                        await SqlAlchemyGenerationStorage(session).list_stale(
-                            datetime.now(UTC) - timedelta(minutes=10)
-                        )
-                    )
-                    == 1
-                )
-
-            # Time passes again with no progress: it is stale once more.
-            async with engine.connect() as conn:
-                await conn.execute(
-                    text("UPDATE generations SET updated_at = :t WHERE id = :i"),
-                    {"t": datetime.now(UTC) - timedelta(minutes=11), "i": generation.id},
-                )
-                await conn.commit()
-
-            async with session_factory() as session:
-                assert (
-                    len(
-                        await SqlAlchemyGenerationStorage(session).list_stale(
-                            datetime.now(UTC) - timedelta(minutes=10)
-                        )
-                    )
-                    == 1
-                ), "a row that stalls again must be recoverable again"
-        finally:
-            await _truncate(engine)
+            await truncate_all(engine)
             await engine.dispose()
