@@ -25,8 +25,16 @@ within their file, not across the story.
       7 folded into this design as forced guards (bounded projection, write-side predicates,
       404-before-409/422 ordering, non-streaming stream refusal, mutation suppression, zero
       quota/queue effect, no foreign id in logs).
-- [~] red-usecase
-- [ ] green-usecase
+- [x] red-usecase — one test on `resolve_owned_document`, skipped at class level. `/test-review`
+      found the refusal identity was asserted *relatively* (`str(foreign) == str(absent)`), which the
+      house style at `save_document.py:96` would have satisfied while leaking the id; both refusals are
+      now pinned to the literal `REFUSAL_MESSAGE = "document not found"`, so the message must be
+      written to that string. The bounded projection is pinned by field name (`["id", "owner_id"]`) —
+      a later `content` field with a default would otherwise pass dataclass equality silently. Seeding
+      goes through the real `CreateDocument` usecase, not a hand-built row. `version` is deliberately
+      **not** on `DocumentScope` yet (the ADR lists it): no Statements line reads it until the
+      base-version scenarios 2.x, and the domain field gate forbids an unread field. Add it there.
+- [~] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
 

@@ -1,5 +1,6 @@
 import pytest
 
+from statements.document_scope_guard_statements import DocumentScopeGuardStatements
 from statements.generation_lifecycle_statements import GenerationLifecycleStatements
 from statements.generation_statements import GenerationStatements
 from statements.login_failed_attempt_statements import LoginFailedAttemptStatements
@@ -23,6 +24,11 @@ from statements.verify_account_idempotency_statements import (
     VerifyAccountIdempotencyStatements,
 )
 from statements.verify_account_statements import VerifyAccountStatements
+
+
+@pytest.fixture
+def document_scope_guard_statements():
+    return DocumentScopeGuardStatements()
 
 
 @pytest.fixture
