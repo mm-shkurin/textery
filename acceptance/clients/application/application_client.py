@@ -1,7 +1,6 @@
-import os
-
 import httpx
 
+from clients.backend_base_url import backend_base_url
 from clients.application.dto.auth.login_request_dto import LoginRequestDto
 from clients.application.dto.auth.login_response_dto import LoginResponseDto
 from clients.application.dto.auth.register_request_dto import RegisterRequestDto
@@ -17,8 +16,7 @@ from clients.application.dto.generation.generation_response_dto import Generatio
 
 class ApplicationClient:
     def __init__(self):
-        backend_port = os.environ.get("BACKEND_PORT", "8000")
-        self._client = httpx.AsyncClient(base_url=f"http://localhost:{backend_port}")
+        self._client = httpx.AsyncClient(base_url=backend_base_url())
 
     async def register(self, request: RegisterRequestDto) -> RegisterResponseDto:
         response = await self._client.post("/api/v1/auth/register", json=request.to_json())

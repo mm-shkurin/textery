@@ -11,6 +11,7 @@ from clients.application.dto.document.raw_response_dto import RawResponseDto
 from statements.ai_edit.ai_edit_guard_probes import DocumentAftermath, GuardProbe
 
 NOT_FOUND_STATUS = 404
+OK_STATUS = 200
 
 # The canonical refusal every AI-edit endpoint owes for an absent OR foreign document
 # (`Error {error_code, message}` in every 404 of the story-19 api-specs). The literal
@@ -82,8 +83,8 @@ def assert_no_edit_revision_or_message_created(
 
 
 def _assert_page_is_empty(response: RawResponseDto, probe: GuardProbe, row_kind: str) -> None:
-    assert response.status_code == 200, (
-        f"expected 200 reading the owner's own {row_kind} history after the refused "
+    assert response.status_code == OK_STATUS, (
+        f"expected {OK_STATUS} reading the owner's own {row_kind} history after the refused "
         f"{probe.endpoint!r}, got status_code={response.status_code}, "
         f"body={response.text!r}"
     )
@@ -95,8 +96,8 @@ def _assert_page_is_empty(response: RawResponseDto, probe: GuardProbe, row_kind:
 
 def _assert_document_unchanged(probe: GuardProbe, aftermath: DocumentAftermath) -> None:
     after = aftermath.document_after
-    assert after.status_code == 200, (
-        f"expected 200 re-reading the owner's own document after the refused "
+    assert after.status_code == OK_STATUS, (
+        f"expected {OK_STATUS} re-reading the owner's own document after the refused "
         f"{probe.endpoint!r}, got status_code={after.status_code}, body={after.text!r}"
     )
     assert after.body == probe.document_before.body, (

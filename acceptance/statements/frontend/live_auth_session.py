@@ -14,10 +14,11 @@ The verification code comes back in the register response body (the email adapte
 this environment), which is what makes the round trip scriptable at all.
 """
 
-import os
 import uuid
 
 import httpx
+
+from clients.backend_base_url import backend_base_url as _backend_base_url
 
 # Any password satisfying the registration policy; the account is throwaway.
 _PASSWORD = "Str0ng!Pass"
@@ -31,12 +32,6 @@ class LiveAuthSession:
         self.email = email
         self.access_token = access_token
         self.refresh_token = refresh_token
-
-
-def _backend_base_url() -> str:
-    # Mirrors ApplicationClient: the published backend port is per-checkout and lives in
-    # infra/.env, so it arrives here as an env var rather than a literal.
-    return f"http://localhost:{os.environ.get('BACKEND_PORT', '8000')}"
 
 
 def issue_live_session() -> LiveAuthSession:

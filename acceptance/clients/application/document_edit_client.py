@@ -1,7 +1,6 @@
-import os
-
 import httpx
 
+from clients.backend_base_url import backend_base_url
 from clients.application.dto.document.raw_response_dto import RawResponseDto
 
 DOCUMENTS_PATH = "/api/v1/documents"
@@ -18,8 +17,7 @@ class DocumentEditClient:
     """
 
     def __init__(self):
-        backend_port = os.environ.get("BACKEND_PORT", "8000")
-        self._client = httpx.AsyncClient(base_url=f"http://localhost:{backend_port}")
+        self._client = httpx.AsyncClient(base_url=backend_base_url())
 
     async def create_document(
         self, token: str, document_type: str, idempotency_key: str

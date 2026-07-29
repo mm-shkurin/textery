@@ -1,5 +1,6 @@
 from clients.application.application_client import ApplicationClient
 from clients.application.document_edit_client import DocumentEditClient
+from clients.application.dto.document.raw_response_dto import RawResponseDto
 from statements.ai_edit import ai_edit_endpoint_probes as probes
 from statements.ai_edit import ai_edit_guard_assertions as guard
 from statements.ai_edit.ai_edit_guard_probes import DocumentAftermath, GuardProbe
@@ -79,7 +80,7 @@ class AiEditGuardStatements:
         assert_is_valid_uuid(document_id, field_name="document_id")
         return str(document_id)
 
-    async def _read_document(self, token: str, document_id: str):
+    async def _read_document(self, token: str, document_id: str) -> RawResponseDto:
         response = await self._edit_client.get_document(token, document_id)
         assert response.status_code == 200, (
             f"setup: expected the owner to read their own document, got "

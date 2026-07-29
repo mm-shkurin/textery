@@ -12,13 +12,12 @@ freshly registered account owns exactly one document (created on editor mount), 
 endpoint identifies it without the app exposing an id to the DOM.
 """
 
-import os
-
 import httpx
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
 
+from clients.backend_base_url import backend_base_url as _backend_base_url
 from statements.frontend.base_frontend_statements import WAIT_TIMEOUT_SECONDS
 from statements.frontend.generation.manual_editor_line_break_statements import (
     ManualEditorLineBreakStatements,
@@ -32,10 +31,6 @@ _ACCESS_TOKEN_KEY = "textery.auth.accessToken"
 _REQUEST_TIMEOUT_SECONDS = 10
 # ProseMirror's view-only caret helper never reaches the model, so getHTML never serializes it;
 # assertions on the SAVED html need no caret-helper stripping, unlike the live-DOM ones.
-
-
-def _backend_base_url() -> str:
-    return f"http://localhost:{os.environ.get('BACKEND_PORT', '8000')}"
 
 
 class ManualEditorSavePayloadStatements(ManualEditorLineBreakStatements):
