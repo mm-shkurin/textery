@@ -72,7 +72,7 @@ export function scriptFetch(script: Array<() => Response>): FetchMock {
 // the WHOLE object by each caller rather than by picking `Authorization` out of it, because their
 // content is a branching fact — `httpClient` sends `Content-Type: application/json` only when there
 // is a body (httpClient.ts:133), and a partial check pins neither branch.
-export const AUTH_HEADER = { Authorization: `Bearer ${ACCESS_TOKEN}` }
+const AUTH_HEADER = { Authorization: `Bearer ${ACCESS_TOKEN}` }
 
 function expectRequest(fetchMock: FetchMock, nth: number, method: string): RequestInit {
   expect(
