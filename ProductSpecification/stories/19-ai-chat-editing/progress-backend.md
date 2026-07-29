@@ -13,8 +13,14 @@ within their file, not across the story.
 ## Backend Scenarios (01_API_Tests.md)
 
 ### Scenario 1.1: Every endpoint refuses an absent document indistinguishably from a foreign one
-- [~] red-acceptance
-- [ ] design
+- [x] red-acceptance — 7 endpoints parametrized, 7 failed then class-level skip marker. `/test-review`
+      found every assertion was satisfied by Starlette's fallback 404; both probe bodies are now pinned
+      to the canonical `{"error_code": "NOT_FOUND", "message": ...}` envelope, so byte-identity rests on
+      an anchor instead of on mutual agreement. green-acceptance must raise `NotFoundException` and let
+      the existing handler answer — a bare `HTTPException(404)` renders `{"detail": ...}` and fails.
+      "No edit is created" is verified indirectly via the owner's `GET /messages` (spec §3.1 coupling)
+      plus a whole-body `GET /documents/{id}` compare as the positive control.
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
