@@ -20,8 +20,12 @@ within their file, not across the story.
       the existing handler answer — a bare `HTTPException(404)` renders `{"detail": ...}` and fails.
       "No edit is created" is verified indirectly via the owner's `GET /messages` (spec §3.1 coupling)
       plus a whole-body `GET /documents/{id}` compare as the positive control.
-- [~] design
-- [ ] red-usecase
+- [x] design — Option B′ chosen, ADR at `decisions/document-scope-guard-decision.md`. Hazard scan
+      covered all 8 `_index.md` groups; 37 GAPs, 30 owned by other already-specified scenarios,
+      7 folded into this design as forced guards (bounded projection, write-side predicates,
+      404-before-409/422 ordering, non-streaming stream refusal, mutation suppression, zero
+      quota/queue effect, no foreign id in logs).
+- [~] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
