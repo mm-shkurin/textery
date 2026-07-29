@@ -20,6 +20,10 @@ export interface SaveCycleRefs {
   // it back to null ("unknown, never suppress").
   lastSavedContentRef: MutableRef<string | null>
   setIsSaving: (isSaving: boolean) => void
+  // "An attempt was rejected and another one is scheduled" — a strictly narrower fact than
+  // isSaving, which is already true before the FIRST request is even sent. Owned here because the
+  // two places it can change are the two exits and the retry gate, all of which live in this file.
+  setRetryPending: (retryPending: boolean) => void
   setSaveError: (error: string | null) => void
   onSaved: () => void
 }
@@ -32,11 +36,14 @@ export interface SaveCycle {
 
 export function createSaveCycle(refs: SaveCycleRefs): SaveCycle {
   // Shared by both exits: whichever way the cycle ends, the queue is dropped and the saving state is
-  // left. They differ only in what they say afterwards — clean, or a banner.
+  // left. Clearing the retry-pending flag belongs here for the same reason — BOTH exits end the
+  // ladder, including the terminal one, where a flag cleared only in the retry callback would leave
+  // «повторяем…» co-rendered with the «не сохранено» banner forever.
   const leaveSaving = () => {
     refs.saveAgainRequested.current = false
     refs.isSavingRef.current = false
     refs.setIsSaving(false)
+    refs.setRetryPending(false)
   }
 
   return {
@@ -69,6 +76,9 @@ export function createSaveCycle(refs: SaveCycleRefs): SaveCycle {
     // Re-fire on the capped backoff. The cycle stays "saving" across the gap (settle* is the only
     // thing that clears it), so `fire` is the sole writer and any edit in the gap only queues.
     scheduleRetry: (attempt: number, fire: () => void) => {
+      // Only reachable from the catch, so by construction an attempt has ALREADY been rejected —
+      // which is what makes this flag say something isSaving cannot.
+      refs.setRetryPending(true)
       refs.retryTimerRef.current = setTimeout(() => {
         refs.retryTimerRef.current = null
         fire()

@@ -48,7 +48,7 @@ describe('ManualEditor — the interior of the autosave backoff window (H9.4)', 
   // "expected 'me-save-status me-save-status--dirty' to be 'me-save-status
   // me-save-status--retrying'". ManualEditorSaveStatus has no retrying branch; the badge inside the
   // window is byte-identical to the badge before any save was attempted.
-  it.skip('tells the user a save attempt failed while the backoff ladder is still running', async () => {
+  it('tells the user a save attempt failed while the backoff ladder is still running', async () => {
     // Provably INSIDE the window, not past it — enterBackoffWindow asserts attempt 1 fired, rejected,
     // and carried the user's edit at the document's current OCC version. The absent banner is the
     // other half: the ladder has not spent its remaining attempts, so this really is the interior.
@@ -75,7 +75,7 @@ describe('ManualEditor — the interior of the autosave backoff window (H9.4)', 
   // RED 2026-07-29: fails at `expect(console.error).toHaveBeenCalledTimes(1)` —
   // "AssertionError: expected \"error\" to be called 1 times, but got 0 times". The []-scoped
   // cleanup clears the retry timer and returns; the abandoned write leaves no trace at all.
-  it.skip('records that the write never landed when the editor unmounts mid-backoff', async () => {
+  it('records that the write never landed when the editor unmounts mid-backoff', async () => {
     const { unmount } = await enterBackoffWindow()
 
     // The edit is provably unpersisted at the instant we are about to walk away from it: the app's

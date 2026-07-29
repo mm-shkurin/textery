@@ -105,7 +105,7 @@ export function ManualEditor({
     },
   })
 
-  const { isSaving, saveError, setVersion, noteEdit, save } = useDocumentSave({
+  const { isSaving, isRetryPending, saveError, setVersion, noteEdit, save } = useDocumentSave({
     documentId,
     editor,
     onSaved: () => setHasUnsavedChanges(false),
@@ -157,6 +157,7 @@ export function ManualEditor({
             documentId={documentId}
             hasUnsavedChanges={hasUnsavedChanges}
             isSaving={isSaving}
+            isRetryPending={isRetryPending}
             hasFailedToInitialize={Boolean(initError)}
             onSave={save}
           />

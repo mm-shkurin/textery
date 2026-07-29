@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 import { saveDocument } from '../api/documentApi'
 import { serializeEditorHtml } from '../components/serializeEditorHtml'
@@ -13,6 +13,7 @@ import {
   shouldAdoptPersistedContent,
 } from './autosaveDirtyGuard'
 import { createSaveCycle } from './autosaveSaveCycle'
+import { useAbandonedSaveRecord } from './autosaveAbandonment'
 import { CONFLICT_ERROR_MESSAGE, SAVE_ERROR_MESSAGE } from './saveFailureMessages'
 
 // Re-exported so callers (and the retry-backoff / failure-copy tests) keep importing the attempt
@@ -31,6 +32,9 @@ interface UseDocumentSaveParams {
 
 export interface DocumentSave {
   isSaving: boolean
+  // An attempt has been rejected and the capped backoff has another one scheduled. Strictly
+  // narrower than isSaving, which is true from before the first request is sent.
+  isRetryPending: boolean
   saveError: string | null
   version: number
   setVersion: (version: number) => void
@@ -55,6 +59,7 @@ export function useDocumentSave({
 }: UseDocumentSaveParams): DocumentSave {
   const [version, setVersion] = useState(initialVersion)
   const [isSaving, setIsSaving] = useState(false)
+  const [isRetryPending, setIsRetryPending] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const isSavingRef = useRef(false)
   const saveAgainRequested = useRef(false)
@@ -67,18 +72,13 @@ export function useDocumentSave({
     retryTimerRef,
     lastSavedContentRef,
     setIsSaving,
+    setRetryPending: setIsRetryPending,
     setSaveError,
     onSaved,
   })
-  // Cancel a pending backoff retry on unmount. Deliberately reads the ref directly rather than
-  // going through `cycle`: `cycle` is rebuilt every render, so depending on it would re-run this
-  // cleanup on every render and cancel a live retry.
-  useEffect(
-    () => () => {
-      if (retryTimerRef.current !== null) clearTimeout(retryTimerRef.current)
-    },
-    [],
-  )
+  // Cancels a pending backoff retry on unmount and records a write abandoned by it — see
+  // autosaveAbandonment.
+  useAbandonedSaveRecord(isSavingRef, retryTimerRef)
 
   // `attempt` is 1 for the initial save and increments on each transient retry. `isSavingRef` stays
   // true across the backoff wait so an edit or Сохранить click landing in the gap only QUEUES
@@ -151,6 +151,7 @@ export function useDocumentSave({
 
   return {
     isSaving,
+    isRetryPending,
     saveError,
     version,
     setVersion,

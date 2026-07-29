@@ -14,6 +14,10 @@
   color: var(--success);
 }
 
+.me-save-status--retrying {
+  color: var(--warning);
+}
+
 .me-save-status--failed {
   color: var(--error);
 }
