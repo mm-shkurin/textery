@@ -2023,6 +2023,69 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   > `assert_forwarded_a_clear`. `preserve()` and a bare `None` produce byte-identical SET clauses in the
   > db CAS, so a clear that forwards correctly but is read as "leave it alone" stays invisible below the
   > port — guard (b) is load-bearing, not a mirror.
+  > REVIEW FINDINGS over `5ed1adb` (agent-review CONCERNS x4, premortem CONCERNS x3 CREDIBLE). Both
+  > passes independently RE-RAN the falsifiability probes and both came back clean — a constant mapping
+  > `of(x) -> (x, False)`, a normalise-into-`clears` mutant, an inverted discriminator and a
+  > sentinel-valued clear ALL die against the six domain pins. What survives is elsewhere, and the
+  > through-line of BOTH passes is the same: **`clears=False` as a DEFAULT turns `TitleUpdate` from a
+  > three-state sum into a 2x2 product with a public constructor and no invariant.** The RED pins three
+  > of the four points and pins them ONLY THROUGH THE FACTORIES. This is the same argument the last
+  > three commits in this scenario spent themselves making about the port's default — a default is an
+  > unnamed extra state — now one layer in, where the extra state is CONTRADICTORY rather than merely
+  > redundant. The default is a RED-phase scaffold (without it `PRESERVE_TITLE_UPDATE =
+  > TitleUpdate(value=None)` at `save_title_statements.py:37` TypeErrors at import and errors the module
+  > at collection — the `65ec3fd` defect) and NO STEP SCHEDULES ITS REMOVAL. These are GREEN's brief:
+  > • **CREDIBLE (premortem #1) — moving the blank rule into `of()` RETIRES the only live blank guard
+  >   and replaces it with nothing on the constructor path.** `save_document.py:85`
+  >   (`return TitleUpdate.preserve() if update.is_blank() else update`) fires TODAY. After green,
+  >   `of("")` returns `value=None`, so `is_blank()` — which requires `value is not None` — is VACUOUSLY
+  >   FALSE for every value the suite can produce: zero tests go red if line 85 and `is_blank()` itself
+  >   are deleted, which is exactly what the next refactor pass reading "vacuously false predicate" will
+  >   do. The remaining blank door is then the CONSTRUCTOR, which is public, unguarded, and is the idiom
+  >   this very RED normalises (every expectation in the diff is `TitleUpdate(value=..., clears=...)`).
+  >   Guard (a) will make the rest route BUILD the intent itself; a route mapping `""` to
+  >   `TitleUpdate(value="")` instead of `of("")` reaches `_update_values`, `carries_a_value()` is True,
+  >   and the CAS writes `SET title = ''` — the precise regression this move exists to prevent. The
+  >   invariant did not move onto the TYPE, it moved onto ONE CLASSMETHOD ON the type. FIX: a
+  >   `__post_init__` that normalises or rejects `value.strip() == ""`, pinned by a domain test built
+  >   THROUGH THE CONSTRUCTOR not `of()`; or a usecase test passing a pre-built `TitleUpdate(value="   ")`
+  >   into `execute`. The VO arm of the `TitleUpdate | str | None` union has NO blank test at all today.
+  > • **CREDIBLE (premortem #2) — the fourth state `TitleUpdate(value="x", clears=True)` is representable,
+  >   unpinned, and the two consumers resolve it OPPOSITELY.** `document_storage.py:149` branches on
+  >   `carries_a_value()` and writes `"x"`, ignoring the clear; a green that fixes `document_fakes.py:122`
+  >   by checking `clears` first NULLS, discarding `"x"`. Adapter and fake disagree, and
+  >   `assert_forwarded_title_update` cannot see it — it asserts what was FORWARDED, never how it is READ.
+  >   FIX: `__post_init__` raise, pinned by a domain test; plus schedule dropping the default once the
+  >   module constants can name both fields.
+  > • **CREDIBLE (premortem #3) + (agent-review #2) — `carries_a_value()` has NO test anywhere and its
+  >   contract silently INVERTS under green.** Its docstring says "`preserve()` is the only false case";
+  >   after green `clear()` is also `value=None` and therefore also False. Both consumers
+  >   (`document_storage.py:149`, `document_fakes.py:122`) then omit the title column entirely and the
+  >   clear becomes a NO-OP. The fake and the CAS are each scheduled for repair, but NEITHER IS A PIN ON
+  >   THE PREDICATE — they are one adapter and one test double, and the fake's guard is authored by the
+  >   same green that edits it. The next consumer reads the docstring, trusts it, and reproduces the
+  >   no-op below every guard already planned. FIX: pin `carries_a_value()` across all three states in
+  >   `test_title_update.py` and correct the docstring; agent-review's variant — add a behavioural
+  >   predicate (`clear().erases() is True`) so consumers stop reaching for the raw `.clears` field,
+  >   which is intent re-derived at the call site, the very ambiguity the class docstring says it removes.
+  > • **CONCERNS (agent-review #1) — the usecase clear test never touches the arm production reaches, and
+  >   that arm CANNOT EXPRESS a clear.** `when_autosaving_with_an_explicit_clear` calls
+  >   `execute(title=TitleUpdate.clear())` — the VALUE-OBJECT arm — while its own docstring names it "the
+  >   wire's `title: null`", and this same diff establishes that the raw `str | None` arm is the only one
+  >   the PUT route reaches. On that arm `save_document.py:83` hardcodes `if title is None: return
+  >   TitleUpdate.preserve()`. If the adapter forwards `None` for a JSON null — the most natural Pydantic
+  >   mapping, and what `application_client.py:128` already does by omission — `_title_intent` silently
+  >   converts the erasure into a preserve and the whole clear path no-ops with every test green. ADJACENT
+  >   to guard (a) but not the same fact: (a) is a rest-route assertion, this is that the usecase's own
+  >   signature has no shape spelling clear from wire input. FIX: a `when_autosaving_with_a_wire_null`
+  >   statement, or an explicit `_title_intent` docstring note that `None` means ABSENT ONLY.
+  > • LOW (agent-review #4) — `document_storage.py:136-140` documents that `TitleUpdate.of("")` is a legal
+  >   call which this method writes `SET title = ''` for, and that blankness is decided one layer up by
+  >   `SaveDocument._title_intent`. Both sentences are exactly the invariant this RED inverts; left
+  >   as-is the adapter documents a defense that no longer exists in the place it names. Load-bearing
+  >   prose about a data-loss path.
+  > • REMOTE, noted not filed: no `xfail_strict` or skip-audit exists in any pytest config, so a green
+  >   that removes four of five markers ships green with the clear path unexecuted.
 - [ ] adapters-discovery — REQUIRED guards, named by the review passes over the design commit
   (`97e8f53`); discovery must insert all four, none is optional:
   (a) rest route — TWO assertions in `test_save_document_title_router.py`, not one: a body of

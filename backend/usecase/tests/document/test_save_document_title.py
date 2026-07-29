@@ -66,10 +66,6 @@ class TestSaveDocumentTitleIntent:
         """
         owner_id = uuid4()
         document = await statements.given_a_titled_document(owner_id)
-        # The same precondition the three sibling tests state. Without it the two
-        # preserve params measure `assert_stored_title(STORED_TITLE)` against a
-        # title that may never have been stored, and a preserve over a `None`
-        # title is indistinguishable from a preserve over the title we meant.
         await statements.assert_title_survived_the_setup_save(document)
 
         await statements.when_autosaving_with_a_wire_title(document, owner_id, submitted_title)

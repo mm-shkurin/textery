@@ -43,6 +43,13 @@ import pytest
 
 from document.title_update import TitleUpdate
 
+# Named once because the live `.value` tripwire and its RED twin below are ONE
+# fact stated over two fields -- the twin only covers the tripwire's case while
+# the bytes are identical, so written out per test they can drift in silence. A
+# plain `str`, so unlike a `TitleUpdate(...)` it is safe to evaluate at import
+# during RED.
+PADDED_TITLE = " Отчёт "
+
 
 class TestTitleUpdateStatesAreDistinguishable:
     """Each of the ADR's three intents has ONE fixed, named representation."""
@@ -110,9 +117,7 @@ class TestTitleUpdateRejectsABlankTitleAsAnIntent:
         passing -- because it is the regression guard that must be live DURING
         red; this is the same fact widened to the field that does not exist yet.
         """
-        padded = " Отчёт "
-
-        assert TitleUpdate.of(padded) == TitleUpdate(value=padded, clears=False), (
+        assert TitleUpdate.of(PADDED_TITLE) == TitleUpdate(value=PADDED_TITLE, clears=False), (
             "a real title keeps its padding and asks for no erasure"
         )
 
@@ -124,8 +129,6 @@ class TestTitleUpdateRejectsABlankTitleAsAnIntent:
         today by design -- it is the tripwire green must not trip, so unlike its
         widened twin above it carries no skip marker and stays live.
         """
-        padded = " Отчёт "
-
-        assert TitleUpdate.of(padded).value == padded, (
+        assert TitleUpdate.of(PADDED_TITLE).value == PADDED_TITLE, (
             "blankness is TESTED, never applied -- a real title keeps its padding"
         )
