@@ -1758,6 +1758,60 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   movement as a regression; the verdict is `Success` either way. Also: ruff must be run from `backend/`
   to match the baseline (from the repo root it picks up `acceptance/` and a different config scope,
   reporting 24 errors / 79 would-reformat).
+  REFACTOR (own commit): commit 6d1ea08 made two db tests DEAD BY CASCADE — when the port stopped
+  accepting a raw `str`, the two tests that existed only to cover the "VO arm" became BYTE-IDENTICAL
+  copies of their str-arm counterparts (same setup, same literals, same assertion; only name and
+  comment differed), and one of their comments — "every test in the repo passed a raw str" — had become
+  false. Deleted both, folding the VO-unwrap and SET-list-mechanism rationales into the surviving
+  tests' comments. Zero coverage loss: the bodies were identical. **db is now 55 passed, not 57 — the
+  delta is exactly those two deletions, nothing disabled or skipped** (verified independently by the
+  orchestrator). Also narrowed a stale DSL comment claiming the signature "MIRRORS the port exactly"
+  while deliberately omitting `updated_at`. Declined, with reasons worth keeping: a `save_content_only()`
+  DSL wrapper for the 8 repeated `TitleUpdate.preserve()` call sites (spelling the intent at every call
+  site is precisely what 6d1ea08 bought — a wrapper reopens a shorter door where intent is implied);
+  and hoisting the `if title.carries_a_value()` branch duplicated between `document_storage.py:149` and
+  `document_fakes.py:121` into a resolver ON `TitleUpdate` (right fix, wrong moment — its shape depends
+  on what `clear()` does, so it belongs to the clear-path step). FLAGGED, pre-existing, untouched here:
+  `test_document_storage_cas_shape.py` and `test_document_storage_concurrency.py` both hardcode the DSN
+  `postgresql://textery:change-me@localhost:5432/textery` — a hardcoded port violates the always-on
+  "NEVER hardcode port numbers" rule.
+> REVIEW FINDINGS over `6d1ea08` (agent-review CONCERNS ×1 + 2 low; premortem CONCERNS ×2 CREDIBLE).
+> Both passes CONVERGE, independently, on the same finding — and it is this green's own omission:
+> • **CREDIBLE (both) — the RED marker this green promised to delete is still in the tree, and it
+>   muzzles mypy on the shared fake.** `export_document_statements.py:49-62` carries two live
+>   `# type: ignore[arg-type]` suppressions on `ExportDocument(document_repository=...)` and
+>   `GetDocument(document_repository=...)`, under a comment that is now FACTUALLY FALSE: it says
+>   "`DocumentRepository` still declares `title: str | None` ... GREEN deletes both markers". The port
+>   has not declared `str | None` since `79f09d4`, and THIS commit narrowed it further. Proof they are
+>   dead: `save_document_statements.py:26-27` wires the SAME fake with NO ignore and mypy reports
+>   `Success`. They are not inert — `arg-type` is exactly the code that reports fake↔port protocol
+>   drift, so two of the wiring sites that check this work unit's own thesis are now permanently
+>   silent, and `[tool.mypy]` sets no `warn_unused_ignores`, so a stale ignore rots invisibly forever.
+>   FIX (two-line deletion + one setting): delete both ignores and the stale comment; add
+>   `warn_unused_ignores = true` to `[tool.mypy]` so the next RED marker that outlives its green fails
+>   the type check instead of rotting.
+> • **CREDIBLE (premortem) — the obligation this commit created has NO enforcer in CI.** Removing the
+>   default traded "caller omits → port supplies `preserve()`" for "caller omits → `TypeError` at call
+>   time". That is only safe if something catches the omission before runtime, and nothing does:
+>   `.github/workflows/backend-ci.yml` runs `pytest --cov` and nothing else — no mypy step, no ruff
+>   step — and it is path-filtered to `backend/**`, so `acceptance/` never runs in CI either. The
+>   commit's own mutation confirms pytest is blind (238/238 green with the default re-added everywhere).
+>   The scheduled structural signature test pins the PORT DECLARATION but cannot catch a CALL SITE that
+>   omits the argument on a path no unit test exercises — different guard, different failure. FIX: add
+>   a `mypy` step to backend-ci.yml (config already exists and passes, ~3 lines, zero cost).
+> • LOW (agent-review) — "required KEYWORD" is claimed in the commit message and in this file, but
+>   neither `document_repository.py:41` nor `document_storage.py:83` has a `*` separator, so `title` is
+>   positional-or-keyword. No caller is affected. If the prose is the intent, the structural test below
+>   must assert `KEYWORD_ONLY`, not merely `default is inspect.Parameter.empty` — otherwise it pins half
+>   the stated property.
+> • LOW (agent-review) — the DSL's "mirrors the port exactly" claim (narrowed by /refactor, above) is
+>   still worth watching: the DSL's positional slot 5 is `title` where the port's is `updated_at`, so a
+>   positional call would silently bind wrong. Nil consequence today — every call site uses keywords.
+> • CLEAN, checked and reported as such: all 9 reachable call sites pass `title` explicitly (including
+>   the `test_document_storage.py:144` site the diff's hunk boundaries obscure); zero residual
+>   `UNPASSED_TITLE_ARGUMENT` refs; `TitleUpdate` still a live import in `document_fakes.py`; no other
+>   Protocol implementor of `DocumentRepository` exists to have been missed (`SqlAlchemyGenerationStorage`
+>   only mentions the method in a docstring).
 - [~] red-usecase (coverage: pin that the port's `title` has no default)
 - [ ] green-usecase (coverage: pin that the port's `title` has no default)
   > COVERAGE FINDING over this green — percentages were clean and proved nothing, again (4th time).

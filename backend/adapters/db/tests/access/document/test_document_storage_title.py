@@ -36,9 +36,11 @@ class TestTitlePersistence:
         self, document_storage_statements
     ):
         # The CAS is the editor autosave path: after a title is set, every later
-        # content-only save (title omitted) must LEAVE the title intact. An
-        # unconditional .values(title=title) would SET title = NULL here and
-        # silently wipe the user's title -- data loss. This pins preserve-on-omit.
+        # content-only save must LEAVE the title intact. The mechanism is that
+        # `TitleUpdate.preserve()` carries no title intent, so the column stays OUT of
+        # the SET list; an unconditional .values(title=title) would SET title = NULL
+        # here and silently wipe the user's title -- data loss. This pins
+        # preserve-on-omit.
         owner_id = await document_storage_statements.given_an_account()
         document = await document_storage_statements.given_a_saved_document(owner_id)
 
@@ -72,11 +74,16 @@ class TestTitlePersistence:
     async def test_should_round_trip_a_padded_title_byte_identically(
         self, document_storage_statements
     ):
-        # Scenario 3.2 guard. The export filename strips surrounding whitespace, but the
-        # STORED title stays verbatim (blank-title-semantics-decision.md: "Stripping here
-        # affects the filename only -- the stored title is untouched"). Every other title
-        # in the suite is unpadded, so a .strip() in DocumentModel.to_domain is the
-        # identity function there and invisible; this is the only test that can see it.
+        # Scenario 3.2 guard, and the VO-unwrap arm in one. The export filename strips
+        # surrounding whitespace, but the STORED title stays verbatim
+        # (blank-title-semantics-decision.md: "Stripping here affects the filename only --
+        # the stored title is untouched"). Every other title in the suite is unpadded, so a
+        # .strip() in DocumentModel.to_domain is the identity function there and invisible;
+        # this is the only test that can see it. The padding also pins the adapter's unwrap
+        # of `TitleUpdate.value` byte-identically rather than merely non-None, so a mutant
+        # that drops the VO's value cannot stay green. That arm used to need its own test
+        # because the port also accepted a raw `str` and every test took the str door; now
+        # `TitleUpdate` is the only door, so this test IS the VO arm.
         owner_id = await document_storage_statements.given_an_account()
         document = await document_storage_statements.given_a_saved_document(owner_id)
 
@@ -93,64 +100,4 @@ class TestTitlePersistence:
         fetched = await document_storage_statements.find_by_id_and_owner(document.id, owner_id)
         document_storage_statements.assert_stored_state(
             fetched, document, title=" Отчёт ", content="<p>текст</p>", version=2
-        )
-
-    async def test_should_write_a_title_carried_by_a_title_update_verbatim(
-        self, document_storage_statements
-    ):
-        # The VO arm of the CAS unwrap. Production ALWAYS arrives here through a
-        # TitleUpdate (SaveDocument.execute forwards the VO), yet every test in the
-        # repo passed a raw str -- so the only arm production reaches was executed by
-        # nothing, and a mutant that drops the VO's value left all tests green. The
-        # title is padded so the unwrap is pinned byte-identically, not just non-None.
-        owner_id = await document_storage_statements.given_an_account()
-        document = await document_storage_statements.given_a_saved_document(owner_id)
-
-        await document_storage_statements.save_content_if_version_matches(
-            document.id,
-            owner_id,
-            "<p>текст</p>",
-            expected_version=1,
-            title=TitleUpdate.of(" Отчёт "),
-        )
-        await document_storage_statements.commit()
-        document_storage_statements.expire_identity_map()
-
-        fetched = await document_storage_statements.find_by_id_and_owner(document.id, owner_id)
-        document_storage_statements.assert_stored_state(
-            fetched, document, title=" Отчёт ", content="<p>текст</p>", version=2
-        )
-
-    async def test_should_omit_the_title_from_the_set_list_for_a_preserve_update(
-        self, document_storage_statements
-    ):
-        # TitleUpdate.preserve() carries no title intent: the column must stay out of
-        # the SET list so a stored title survives a content-only autosave. Content and
-        # version are pinned alongside it because an unchanged title is ALSO what a CAS
-        # matching zero rows leaves behind -- without version=3 the guard is satisfiable
-        # by the save not happening at all.
-        owner_id = await document_storage_statements.given_an_account()
-        document = await document_storage_statements.given_a_saved_document(owner_id)
-
-        await document_storage_statements.save_content_if_version_matches(
-            document.id,
-            owner_id,
-            "<p>первый</p>",
-            expected_version=1,
-            title=TitleUpdate.of("Привет"),
-        )
-        await document_storage_statements.commit()
-        await document_storage_statements.save_content_if_version_matches(
-            document.id,
-            owner_id,
-            "<p>второй</p>",
-            expected_version=2,
-            title=TitleUpdate.preserve(),
-        )
-        await document_storage_statements.commit()
-        document_storage_statements.expire_identity_map()
-
-        fetched = await document_storage_statements.find_by_id_and_owner(document.id, owner_id)
-        document_storage_statements.assert_stored_state(
-            fetched, document, title="Привет", content="<p>второй</p>", version=3
         )

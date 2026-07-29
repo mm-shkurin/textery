@@ -60,7 +60,8 @@ class DocumentStorageStatements(DocumentStorageAssertions):
         expected_version: int,
         title: TitleUpdate,
     ) -> Document | None:
-        # The signature MIRRORS the port exactly and the value is forwarded
+        # The signature MIRRORS the port's `title` parameter exactly -- required, no
+        # default, `TitleUpdate` only -- and the value is forwarded
         # UNCHANGED -- constructing or unwrapping a TitleUpdate here would launder
         # the very thing under test. A DSL that accepted a raw `str` would let a
         # test make a call no production caller can make, and would quietly lift a
