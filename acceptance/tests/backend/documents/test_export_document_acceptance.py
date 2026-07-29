@@ -138,7 +138,6 @@ class TestBlankTitleSaveDoesNotWipeStoredTitle(AbstractBackendTest):
     And the export filename still reflects it.
     """
 
-    @pytest.mark.skip(reason="RED: blank-title save wipes the stored title (Scenario 3.2)")
     @pytest.mark.parametrize(
         "blank_title", ["", "   "], ids=["empty_title", "whitespace_title"]
     )

@@ -46,6 +46,7 @@ from document_export_fixtures import (  # noqa: F401
     document_export_docx_statements,
     document_export_filename_statements,
     document_export_no_mutation_statements,
+    document_blank_title_save_statements,
 )
 
 # iPhone 12/13-class viewport — the smallest common real-device width the

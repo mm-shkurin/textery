@@ -1883,14 +1883,33 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   > got — the db layer already owns the idiom in `test_document_storage_cas_shape.py`. Reachable, not
   > dead: `SaveDocument` passing `title=` explicitly is convention, and the signature is what would
   > enforce it.
-- [~] green-acceptance (blank-title round trip) — PULLED FORWARD from the end of the scenario by the
+- [x] green-acceptance (blank-title round trip) — PULLED FORWARD from the end of the scenario by the
   premortem over `83e4e48`: unskip `test_export_document_acceptance.py:141` (both `empty_title` and
   `whitespace_title` params) HERE, not after the clear path. It is the only test in the repo that
   exercises route → usecase → CAS → Postgres → export header for this scenario, ~50 lines of
   assertion code are reachable only from it, and until it runs the scenario has zero executable proof
   of the round trip — this step's "4 → 0 skips" was verified over `backend/usecase`, a scope that
   cannot see the `acceptance/` tree. Rebuild the baked backend image first (see carryover).
-- [ ] red-usecase (clear path) — `null` clears: the ADR's new behavior, which no existing test
+  > DONE — GREEN on the first run against the rebuilt image: `test_export_document_acceptance.py`
+  > 13 passed, 0 skipped (was 11 passed + 2 skipped). Both params (`empty_title`, `whitespace_title`)
+  > pass, so the blank-title round trip route → usecase → CAS → Postgres → export header now has
+  > executable proof and the ~50 lines of assertion in `document_blank_title_save_statements.py`
+  > are reachable for the first time.
+  > TWO HARNESS DEFECTS the skip marker had been hiding — neither is production code, both had to be
+  > fixed for the test to run at all, so the "GREEN on the first run" above is about production only:
+  > (1) `document_blank_title_save_statements` was DEFINED in `document_export_fixtures.py:52` but
+  > never re-exported from `conftest.py`, so the test errored at setup with `fixture not found`. The
+  > `red-acceptance` that authored this test therefore never observed it run — the marker was applied
+  > before the fixture was wired, and a skipped test does not resolve its fixtures. Added the name to
+  > the existing `from document_export_fixtures import (...)` block (conftest 181 lines, still under
+  > the 200 cap).
+  > (2) The acceptance client reads `BACKEND_PORT` with a hardcoded `"8000"` default
+  > (`application_client.py:24`) while `infra/.env` sets `BACKEND_PORT=8100`, so a bare `pytest` run
+  > fails every test with `httpx.ConnectError`. Run acceptance as
+  > `BACKEND_PORT=$(grep '^BACKEND_PORT=' infra/.env | cut -d= -f2) python -m pytest ...`.
+  > Left as-is here (it is a pre-existing default, not this scenario's), but it is the same class as
+  > the flagged hardcoded DSN in the db tests — see the FLAGGED note on the 2e8d2a0 refactor above.
+- [~] red-usecase (clear path) — `null` clears: the ADR's new behavior, which no existing test
   covers. Inserted at design so the clear branch is driven by a test rather than smuggled into a
   green whose tests do not exercise it.
   ⚠️ MUST RESHAPE `TitleUpdate` FIRST — BOTH review passes over `60ab441` landed CREDIBLE on this,
