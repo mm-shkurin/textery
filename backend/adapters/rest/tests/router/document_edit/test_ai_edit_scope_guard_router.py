@@ -16,13 +16,6 @@ from ai_edit_routes import (
 PROBE_DOCUMENT_ID = UUID("8c7d6e5f-4a3b-4c2d-9e1f-0a9b8c7d6e5f")
 
 
-@pytest.mark.skip(
-    reason="RED: none of the seven AI-edit routes are declared, so every request falls "
-    'through to Starlette\'s unrouted 404 and renders b\'{"detail":"Not Found"}\' instead '
-    'of the canonical b\'{"error_code":"NOT_FOUND",...}\' bytes, with await_count=0 on '
-    "every usecase. 37 failures: 30 on the byte anchor, 7 on await_count. Remove in "
-    "green-adapter rest."
-)
 class TestAiEditRoutesRefuseUnresolvableDocument:
     """Scenario 1.1: Every endpoint refuses an absent document indistinguishably
     from a foreign one — REST adapter half.

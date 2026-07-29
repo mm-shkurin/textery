@@ -129,7 +129,32 @@ within their file, not across the story.
       (2) the stream route must `await` the usecase **before** constructing the response —
       `StreamingResponse(generator())` with a raise inside the generator commits a 200
       `text/event-stream` status line before the guard's answer is known.
-- [~] green-adapter rest — wire the routes and the usecases.
+- [x] green-adapter rest — seven handlers on the existing seven providers, each one statement:
+      path identifiers typed by FastAPI, owner id from `Depends(get_current_owner_id)`, awaited on
+      the route's usecase with `(document_id, owner_id)` plus the child identifier where the route
+      has one. No policy in the controller — the guard stays the usecase's first statement and the
+      refusal is rendered by the app's existing `not_found_exception_handler`. Both red-phase
+      constraints hold at the code, not by luck: (1) **no route declares a Pydantic body parameter**,
+      so FastAPI has nothing to validate before the handler body runs — all 15 resolve-before-validate
+      items (3 body-carrying routes × 5 disclosing bodies) reach the usecase with `await_count == 1`;
+      (2) `stream_ai_edit` awaits the usecase and returns its result directly — **no
+      `StreamingResponse` at all**, so no 200 `text/event-stream` status line can be committed before
+      the guard answers. 37/37 rest items green, full backend suite 546 passed.
+      `/test-coverage rest --focus` (with `--cov-branch` added by hand — the tech template still omits
+      it, see line 83): 34/41 lines, 0/0 branches — every handler is a single `return await`, so the
+      zero branch total is the design. The 7 uncovered lines are the DI provider stubs
+      (`raise NotImplementedError`), reachable and load-bearing; the coverage pair below pins them
+      following the `auth` precedent (`test_login_post_router_di_stub.py` asserts the exact message,
+      not merely the type). The same stub gap exists untested in `document_router.py` (4 lines) and
+      `generation_router.py` (1) — out of this scenario's scope, but they are the entire remainder
+      between `adapters/rest` and 100%.
+      **Carry into 2.x:** minimality means the body-carrying routes read **no** request payload today —
+      `message` / `base_version` / `revision_number` are not yet on the wire contract. When 2.x adds
+      them the payload must be read *after* the guard (raw body, or a dependency ordered behind it),
+      never as a declared model parameter; the module docstring says so at the point where the
+      mistake would be made.
+- [~] red-adapter rest (coverage: seven AI-edit DI stubs raise NotImplementedError)
+- [ ] green-adapter rest (coverage: seven AI-edit DI stubs raise NotImplementedError)
 - [ ] green-acceptance
 
 ### Scenario 1.2: An edit belonging to another document of the same owner is not found
