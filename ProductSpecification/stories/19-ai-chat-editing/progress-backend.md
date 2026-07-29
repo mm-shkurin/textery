@@ -43,7 +43,33 @@ within their file, not across the story.
       name it in a signature; importing from the guard module would be circular). `FakeDocumentRepository`
       projects; the **db adapter has no `find_scope_by_id_and_owner` yet** — deliberately left for
       adapters-discovery. `/test-coverage usecase --focus`: 100% lines and branches on all three new files.
-- [~] adapters-discovery
+- [x] adapters-discovery — Check 1 (ports): **db** — `SqlAlchemyDocumentStorage` has no
+      `find_scope_by_id_and_owner`, and because it satisfies `DocumentRepository` structurally
+      rather than by inheritance the gap is invisible at import and at construction; only mypy
+      sees it, and mypy runs nowhere (`backend-ci.yml` is pip/alembic/pytest). It is red **today**
+      on four already-shipped wiring sites (`document_wiring.py:17,25,30,36`). Check 2 (exceptions):
+      **rest** — `[S]`, `not_found_exception_handler` already maps `NotFoundException` to 404
+      `{"error_code": "NOT_FOUND", "message": ...}`, the exact envelope the acceptance probes pin.
+      Check 3 (response shape): **rest** — none of the seven AI-edit routes exist (`router/` holds
+      only `auth`, `document`, `generation`), which is what the acceptance disable marker says: a
+      refusal cannot be told apart from an unrouted request.
+- [ ] red-adapter db — save through `save_new`, read back through `find_scope_by_id_and_owner`
+      against the real schema: the owner's own document resolves to its scope, another account's
+      does not, an absent id does not. The positive control is the point — a port method inherited
+      from the Protocol returns `None` for every input (the bodies are `"""doc"""` + `...`, which is
+      a concrete coroutine, not an abstract declaration), so a storage that "implements" the port by
+      inheriting it would refuse every user their own documents while mypy and the usecase suite
+      both stay green. Assert the SELECT does not read `content`.
+- [ ] green-adapter db — implement the bounded SELECT. Also close the shape that makes the above
+      failure silent: the Protocol bodies must `raise NotImplementedError` rather than `...`, and
+      `backend-ci.yml` needs a mypy step (the config already exists in `backend/pyproject.toml` and
+      would go red on this commit today).
+- [ ] red-adapter rest — the seven AI-edit routes, each delegating to a usecase whose first
+      statement is `resolve_owned_document`. Per the ADR the refusal must precede validation and
+      version checks: a foreign document with a malformed instruction is 404, never 422; with a
+      would-have-been-correct `base_version` it is 404, never 409; and `.../stream` answers plain
+      non-streaming JSON, never a 200 `text/event-stream` carrying an error frame.
+- [ ] green-adapter rest — wire the routes and the usecases.
 - [ ] green-acceptance
 
 ### Scenario 1.2: An edit belonging to another document of the same owner is not found
