@@ -84,13 +84,10 @@ class SaveDocument:
         most-travelled path of all, so it must not be the one still carrying the
         ambiguous value.
 
-        Blankness is NOT decided here any more. `TitleUpdate.__post_init__` folds
-        a blank string down to preserve on every construction path, so the guard
-        this method used to carry (`preserve() if update.is_blank() else update`)
-        became vacuously true for every value it could ever see -- a predicate
-        that cannot fire is not a defense, it is a comment that reads like one.
-        Deleted with `is_blank()` itself; the invariant now lives on the type,
-        where the constructor door is closed too.
+        Blankness is NOT decided here. `TitleUpdate.__post_init__` folds a blank
+        string down to preserve on every construction path -- including the
+        constructor -- so re-testing it here could only ever be a guard that
+        cannot fire. The invariant lives on the type.
         """
         if title is None:
             return TitleUpdate.preserve()

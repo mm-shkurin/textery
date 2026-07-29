@@ -31,7 +31,16 @@ class TitleUpdate:
     clears: bool = False
 
     def __post_init__(self) -> None:
-        """Normalise blank, reject the contradiction -- on every construction path.
+        """Reject the contradiction, THEN normalise blank -- on every construction path.
+
+        That order is load-bearing and is why these are two statements rather
+        than one expression. Normalising first folds `(value="", clears=True)`
+        down to `(value=None, clears=True)`, which is indistinguishable from a
+        legitimate `clear()` -- so a caller confusing "the user emptied the
+        field" with "the user asked for an erasure" gets its wipe honoured
+        instead of refused. Exactly one test catches the swap:
+        `TestTitleUpdateRefusesToCarryAValueAndAClearAtOnce
+        ::test_should_reject_a_flagged_blank_before_normalising_it_away`.
 
         Blankness used to be decided by `SaveDocument._title_intent`, one caller
         deep. Anything else that built an intent -- the rest route mapping a

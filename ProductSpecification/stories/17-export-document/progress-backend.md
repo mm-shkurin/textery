@@ -2027,6 +2027,77 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   > title returns on reopen. `test_should_forward_a_clear_and_null_the_stored_title` passes against the
   > fake and would pass whatever the real CAS did. This green added a ⚠️ comment in `document_storage.py`
   > naming it and assigning it to adapters-discovery (b).
+  > REVIEW FINDINGS over `e0621ec` (agent-review CONCERNS x3, premortem CONCERNS x3 CREDIBLE). The
+  > DELETIONS were verified SAFE by an independent check rather than taken on the commit's word:
+  > `is_blank()` has ZERO remaining callers in `backend/` or `acceptance/`, and the vacuity argument
+  > holds on every realistic construction path — notably `dataclasses.replace` DOES run
+  > `__post_init__` (`replace(of("x"), clears=True)` raises; `replace(u, value="   ")` normalises), so
+  > both arms stay live under it. `copy.deepcopy`/`pickle` bypass `__init__` on a frozen dataclass, but
+  > can only reproduce an already-valid instance.
+  > • **CREDIBLE, BOTH PASSES INDEPENDENTLY, RANKED FIRST BY BOTH — the new refusal raises a bare
+  >   `ValueError`, which this stack turns into a 500.** `title_update.py:56-60` raises `ValueError`;
+  >   `exception_handlers.py:64` handles only `ValidationException` / `NotFoundException` /
+  >   `ConflictException`, so anything else falls to `unhandled_exception_handler` and emits
+  >   `500 INTERNAL_ERROR` with a generic message. Every other domain refusal in this story uses the
+  >   typed family — the sibling VO `ExportFormat.parse`, built two scenarios ago, raises
+  >   `ValidationException(error_code="INVALID_FORMAT")`. NOT wire-reachable today
+  >   (`document_router.py:140` passes `request.title` as `str | None`, so `clears` is never set), but
+  >   guard (a2) explicitly charters the route to BUILD the intent from wire input — that is the moment
+  >   a malformed payload reaches this raise, and a save that should be a 4xx becomes a logged 500 whose
+  >   retry loses the content riding along. Premortem's sharper point: `__post_init__`'s OWN docstring
+  >   justifies normalising-rather-than-raising on blank with "a save must never fail over a blank title
+  >   -- the content update riding along with it would be lost" — the contradiction arm then raises on
+  >   the same call and loses that same content. The reason blank does not raise is a reason this should
+  >   not either, or at least not as a 500. Made worse by direction: `test_title_update_invariants.py:64`
+  >   and `:75` both assert `pytest.raises(ValueError, ...)`, so the next person to fix the type has two
+  >   tests to change and will read them as intent. SCHEDULED as its own red/green step below rather
+  >   than folded in — swapping the exception type is a behaviour change, not a refactor.
+  > • **CREDIBLE (premortem #2) — the clear path is a no-op TWICE, and fixing the known one still ships
+  >   a dead feature.** Guard (b) covers the db half (`_update_values` asks only `carries_a_value()`).
+  >   The OTHER half is upstream and in a different module: `document_router.py:140` forwards
+  >   `request.title`, so a wire `"title": null` and an ABSENT title both arrive as `None` and
+  >   `_title_intent` maps both to `preserve()`. Guard (a) is the assertion that covers it — this is
+  >   recorded so nobody reads (b) alone as sufficient: repairing (b) yields a db module green on a
+  >   clear NO REQUEST CAN EVER PRODUCE. Also: no acceptance test anywhere sends `{"title": null}` over
+  >   HTTP and asserts the reopened document's title is null; that end-to-end assertion is the only one
+  >   BOTH no-ops fail. When it is added, state plainly that CI does not run it (path filter).
+  > • **CREDIBLE (premortem #3) — the deleted guard's reachability argument is now a CROSS-MODULE claim
+  >   with no local test.** This same commit rewrote `_update_values`' docstring in
+  >   `document_storage.py` to assert `SET title = ''` is unreachable — an assumption about a
+  >   DOMAIN-module invariant, held by a test in `backend/domain/tests/`, with ZERO guard in the db
+  >   module that goes red if the domain relaxes it. Before this commit the blank rule had a guard in
+  >   the usecase layer adjacent to the write; now the layer that would actually suffer the data loss
+  >   documents the assumption and verifies nothing. Note the verification offered (re-add the line, 339
+  >   still pass) proves only that no CURRENT test exercises it — which is what "vacuous" and "untested"
+  >   both look like. FIX: a db-module test round-tripping an intent built from `""` and asserting the
+  >   stored title is unchanged. Folded into guard (b)'s scope.
+  > • **MEDIUM (agent-review #2) — the new test file builds `TitleUpdate`s AT COLLECTION TIME, the exact
+  >   defect its sibling file states a convention against.** `test_title_update_invariants.py:85-87`
+  >   evaluates `preserve()` / `clear()` / `of("Привет")` inside the `@pytest.mark.parametrize`
+  >   decorator, i.e. in the class body at import. `test_title_update.py:35-39` states the rule in prose
+  >   and keeps `PADDED_TITLE` a plain `str` for precisely this reason. Blast radius is WORSE than the
+  >   case being guarded: a future RED renaming or removing `clear()` errors the module at collection and
+  >   takes down `TestTitleUpdateClosesTheConstructorDoor` and
+  >   `TestTitleUpdateRefusesToCarryAValueAndAClearAtOnce` with it — the two constructor-door guards this
+  >   commit exists to add, which have nothing to do with `clear()`. FIX: parametrize over factory
+  >   CALLABLES, or build inside the body. Folded into the scheduled step below.
+  > • LOW (agent-review #3) — `title_update.py:31`'s "on every construction path" is false for
+  >   `copy.deepcopy` and `pickle.loads`, which restore a frozen dataclass without `__init__`. Harmless
+  >   today, but it is load-bearing prose on a data-loss path and the class docstring already leans on
+  >   it ("the ONLY three the constructor can produce"). `dataclasses.replace` IS covered and is worth
+  >   naming as the one that is.
+- [~] red-usecase (typed refusal) — INSERTED by the review passes over `e0621ec`, which BOTH ranked it
+  first and independently. `TitleUpdate.__post_init__` raises a bare `ValueError`; this stack maps
+  anything outside `ValidationException` / `NotFoundException` / `ConflictException` to a
+  `500 INTERNAL_ERROR`, so the moment guard (a2) has the route build the intent from wire input, a
+  malformed payload turns a save into a 500 and its retry loses the content riding along. Pin the
+  refusal as the typed family the sibling VO `ExportFormat.parse` already uses
+  (`ValidationException(error_code=...)`), and pin the HTTP outcome as a 4xx carrying
+  `{error_code, message}` — the guard is the test, not the one-line type swap. The two
+  `pytest.raises(ValueError, ...)` assertions at `test_title_update_invariants.py:64,75` are part of
+  this step's scope: they currently read as intent. Fold in the collection-time construction fix from
+  the same review (parametrize over factory callables at `:85-87`) while in that file.
+- [ ] green-usecase (typed refusal)
   > RED LANDED. Prediction matched on the first run, no loop, zero NOs across type/message/status for
   > all 5 failing tests. New: `backend/domain/tests/document/test_title_update.py` — the FIRST
   > `TitleUpdate` domain test that has ever existed — plus two Statements methods and one usecase test.
@@ -2133,7 +2204,7 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   >   prose about a data-loss path.
   > • REMOTE, noted not filed: no `xfail_strict` or skip-audit exists in any pytest config, so a green
   >   that removes four of five markers ships green with the clear path unexecuted.
-- [~] adapters-discovery — REQUIRED guards, named by the review passes over the design commit
+- [ ] adapters-discovery — REQUIRED guards, named by the review passes over the design commit
   (`97e8f53`); discovery must insert all four, none is optional:
   (a) rest route — TWO assertions in `test_save_document_title_router.py`, not one: a body of
   `{"content","version"}` with NO `title` key → `SaveDocument.execute(title=TitleUpdate.preserve())`
