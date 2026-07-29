@@ -1909,6 +1909,48 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   > `BACKEND_PORT=$(grep '^BACKEND_PORT=' infra/.env | cut -d= -f2) python -m pytest ...`.
   > Left as-is here (it is a pre-existing default, not this scenario's), but it is the same class as
   > the flagged hardcoded DSN in the db tests — see the FLAGGED note on the 2e8d2a0 refactor above.
+> REVIEW FINDINGS over `65ec3fd` (agent-review CONCERNS ×1 + premortem CONCERNS ×2). Both passes
+> INDEPENDENTLY confirmed the test is NOT vacuous, which was the thing to check — it passed on the
+> first run with no production change, the exact shape a vacuous test has. Four reasons it is
+> falsifiable, worth keeping because they were expensive to establish: the client guards with
+> `if title is not None`, not `if title`, so `""` and `"   "` really reach the wire instead of
+> degrading into the already-passing omitted case; `assert_filename_rfc5987_encoded_from_title` is
+> EXACT equality against the full `Content-Disposition`, so a wiped title yields the sibling test's
+> `document.pdf` default and fails visibly; the two params are behaviourally distinct (a naive
+> `value == ""` implementation passes `empty_title` and fails `whitespace_title` with `%20%20%20.pdf`,
+> so both passing is real evidence, not one assertion counted twice); and the shared arrange writes
+> the title through the same endpoint, so a regression to "always preserve" collapses the export to
+> the default and also fails — it pins BOTH directions.
+> • **CREDIBLE (both passes converge) — the defect class this commit fixed has no guard, and it is
+>   silent by construction.** A `@pytest.mark.skip` test never resolves its fixtures, so a
+>   `red-acceptance` can author a test that is STRUCTURALLY INCAPABLE of running — missing fixture,
+>   misnamed fixture, unimportable Statements module — and see a clean suite for the whole life of the
+>   marker. `pytest --collect-only` does not resolve fixtures either. Premortem's added weight: the
+>   TDD contract says a `red-*` observes a predicted failure, but when a `red-*` ends in a skip
+>   marker that observation provably did not happen, and `progress.md` records `[x]` identically
+>   either way — the ledger cannot distinguish "seen RED for the stated reason" from "asserted RED and
+>   never run". FIX, mechanical half: a meta-test comparing the `@pytest.fixture` /
+>   `@pytest_asyncio.fixture` defs in `acceptance/*_fixtures.py` against `conftest.py`'s ImportFrom
+>   names. Both passes verified it lands GREEN today (`document_export_fixtures.py` 6 fixtures,
+>   `frontend_generation_fixtures.py` 11, zero drift after this commit) and goes RED the moment the
+>   pattern recurs. Judgement half, belongs in `.claude/guidelines/tdd-rules.md` not in a test: a skip
+>   marker may only be applied to a test observed to FAIL, never to one that ERRORs. Likeliest next
+>   trigger is the very next step — `red-usecase` (clear path) needs new acceptance-layer plumbing.
+> • **CREDIBLE (premortem) — the proof exists, is green, and nothing will ever run it.** This work
+>   unit's ENTIRE deliverable is a test in `acceptance/`, and `backend-ci.yml` is path-filtered to
+>   `backend/**`, so no job, hook or script executes `acceptance/tests/backend/**`. "13 passed, 0
+>   skipped" was observed once, manually, on one machine, behind an env-var incantation this file
+>   records in prose — that incantation is itself the tell that the run is not reproducible by
+>   automation. A future reader parses `[x] DONE — GREEN` as "this round trip is protected"; it is not.
+> • FLAGGED, not this story's work: after this commit,
+>   `acceptance/tests/backend/authorization/test_login_lockout_acceptance.py:6` holds the ONLY
+>   remaining `@pytest.mark.skip` in the repo. Its reason says a post-threshold correct-password login
+>   still returns 200 with a token pair. `failed_attempt_count` exists (migration `f7b8c9d0e1a2`) and
+>   `increment_failed_attempts` / `reset_failed_attempts` exist in `account_storage.py`, but the gate
+>   is NOT wired at `/login` — a half-built control that reads as a finished one. Story 5's.
+> • Seen and already tracked, not new: the client cannot express an explicit JSON `null` title
+>   (`application_client.py:128` omits the key when `title is None`), which the clear path will
+>   require — stated verbatim at `decisions/blank-title-semantics-decision.md:106`.
 - [~] red-usecase (clear path) — `null` clears: the ADR's new behavior, which no existing test
   covers. Inserted at design so the clear branch is driven by a test rather than smuggled into a
   green whose tests do not exercise it.
