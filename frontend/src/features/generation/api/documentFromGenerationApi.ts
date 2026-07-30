@@ -4,11 +4,18 @@
 // `title` (server-derived at conversion).
 //
 // It lives in its OWN module rather than beside its four siblings in documentApi.ts for a boring
-// mechanical reason worth recording: documentApi.ts stood at 182 lines against a 200-line hard
-// limit, and this function plus its type is 35. The choice was to split or to delete explanation
-// from the four existing clients to make room, and comments that were paid for by measured bugs
-// are worth more than co-location. `documentApi` re-exports both names, so callers (and the wire
-// test) still import from there.
+// mechanical reason worth recording — and the arithmetic is spelled out because the first version
+// of this note got it wrong and a reader who checks a wrong number concludes the note is stale and
+// merges the file back. documentApi.ts stood at 182 lines, but that 182 ALREADY CONTAINED the
+// 23-line RED stub this code replaced, so the addition is not 182 + n. Measured, not estimated:
+// 182 − 23 = 159 without the stub, plus this file's ~63 lines of content that would move back
+// (its 75 lines less this 11-line split note, which would have no reason to exist, and less the
+// `send` import documentApi.ts already has) = **222** against a 200-line hard limit. Over by 22,
+// which is not a margin any comment-trimming closes. The choice was to split or to delete
+// explanation from the four existing
+// clients to make room, and comments that were paid for by measured bugs are worth more than
+// co-location. `documentApi` re-exports both names, so callers (and the wire test) still import
+// from there.
 import { send } from '../../../shared/api/send'
 
 // The wire body, narrowed to the six fields this client surfaces. `document_type`, `created_at` and

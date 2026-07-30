@@ -1,6 +1,7 @@
-// HTTP client for the document API (create / read / save / export / create-from-generation — all
-// synchronous, no LLM/polling; the generation polling that FEEDS from-generation lives in
-// generationApi).
+// HTTP client for the document API. Four clients live HERE — create / read / save / export — and
+// create-from-generation is re-exported from documentFromGenerationApi at the bottom of this file
+// rather than defined here (that module's header records why it had to move). All synchronous, no
+// LLM/polling; the generation polling that FEEDS from-generation lives in generationApi.
 //
 // Every call goes through `send` → `authorizedRequest`, so it carries the access token and a 401
 // renews the session and replays rather than surfacing as a document failure the user did not
@@ -142,13 +143,6 @@ export async function exportDocument(documentId: string, format: ExportFormat): 
   )
 }
 
-// The from-generation client lives in its own module (200-line limit; see the note at its top)
-// and is re-exported here so callers keep one document-API import site.
-export {
-  createDocumentFromGeneration,
-  type DocumentFromGenerationResult,
-} from './documentFromGenerationApi'
-
 export async function getDocument(documentId: string): Promise<GetDocumentResult> {
   const data = await send<DocumentWire>(
     `/api/v1/documents/${documentId}`,
@@ -162,3 +156,10 @@ export async function getDocument(documentId: string): Promise<GetDocumentResult
     version: data.version,
   }
 }
+
+// The from-generation client lives in its own module (200-line limit; see the note at its top)
+// and is re-exported here so callers keep one document-API import site.
+export {
+  createDocumentFromGeneration,
+  type DocumentFromGenerationResult,
+} from './documentFromGenerationApi'

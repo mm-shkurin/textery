@@ -81,7 +81,9 @@ describe('documentApi createDocumentFromGeneration — the from-generation wire 
   //
   //   Error: not implemented (11111111-1111-4111-8111-111111111111, from-generation-abc)
   //
-  // `createDocumentFromGeneration` is a stub that throws before reaching fetch.
+  // At RED, `createDocumentFromGeneration` WAS a stub that threw before reaching fetch. Green has
+  // since replaced it with the real `send` call, so this trace is a record of what was observed,
+  // not a description of the code as it stands.
   it('posts the generation id under a client-supplied Idempotency-Key and maps the 201', async () => {
     const fetchMock = stubFetch(201)
 
