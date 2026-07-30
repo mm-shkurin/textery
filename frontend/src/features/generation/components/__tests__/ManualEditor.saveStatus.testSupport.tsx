@@ -1,3 +1,6 @@
+import { expect } from 'vitest'
+import { screen } from '@testing-library/react'
+
 // Save-status vocabulary shared by EVERY ManualEditor suite that observes whether the document
 // reads clean or dirty — autosave suites and plain-editor suites alike. It lives apart from
 // ManualEditor.autosave.testSupport because most of its consumers (dirty, saveStatus, initError,
@@ -33,6 +36,19 @@ export const SAVE_STATUS_BASE_SELECTOR = `.${SAVE_STATUS_BASE_CLASS}`
 // most likely way a GREEN bolts a new branch on beside the old one instead of replacing it.
 export function badgeClassName(modifier: string): string {
   return `${SAVE_STATUS_BASE_CLASS} ${modifier}`
+}
+
+// The two badge branches asserted EXCLUSIVELY: the element's full className must be the base plus
+// exactly one modifier. These exist so no suite reaches for a bare `toHaveClass(SAVED_BADGE_CLASS)`,
+// which — per badgeClassName's note above — still passes on an element carrying `--dirty` too, i.e.
+// proves the branch rendered but not that its siblings did not. Named helpers rather than a shared
+// spelling of `.className).toBe(...)` because "the document reads clean" is the fact a case means.
+export function expectSavedBadge() {
+  expect(screen.getByText(SAVED_STATUS).className).toBe(badgeClassName(SAVED_BADGE_CLASS))
+}
+
+export function expectDirtyBadge() {
+  expect(screen.getByText(DIRTY_STATUS).className).toBe(badgeClassName(DIRTY_BADGE_CLASS))
 }
 
 // The save-failure banner's test id. Like the badge strings above it exists only as an inline JSX

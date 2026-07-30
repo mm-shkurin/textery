@@ -11,11 +11,7 @@ import {
   renderCreatedDocument,
   typeAndFireAutosave,
 } from './ManualEditor.autosave.testSupport'
-import {
-  SAVED_BADGE_CLASS,
-  SAVED_STATUS,
-  SAVE_ERROR_TESTID,
-} from './ManualEditor.saveStatus.testSupport'
+import { SAVE_ERROR_TESTID, expectSavedBadge } from './ManualEditor.saveStatus.testSupport'
 
 // The autosave FIXTURE vocabulary: the text a failure suite types, the HTML it expects on the wire,
 // and the OCC versions those writes carry. A plain .ts module rather than more exports on
@@ -70,6 +66,41 @@ export function expectNoAbandonmentRecorded() {
   expect(console.error).not.toHaveBeenCalled()
 }
 
+// A server that confirms every write, echoing back the fixture's baseline content at the version one
+// past what the document was created at. Shared rather than respelled per case: the literal was
+// spelled twice inside a single suite and again across the sibling autosave files, and a per-site copy
+// is how one of them ends up arming a version the OCC assertions no longer describe.
+export function armServerConfirmsSavedContent() {
+  vi.mocked(documentApi.saveDocument).mockResolvedValue({
+    status: 'saved',
+    version: SAVED_VERSION,
+    content: SAVED_CONTENT,
+  })
+}
+
+// The baseline write, asserted on the wire: that exactly `nth` saves have gone out, and that the
+// `nth` one carried the document, the baseline bytes, and the version the document was created at.
+// Extracted because this OCC triple was spelled verbatim at four sites (twice in the abandonment
+// suites, twice inside this module) — and the triple only means anything if all four agree.
+export function expectBaselineSaveOnWire(nth = 1) {
+  expect(documentApi.saveDocument).toHaveBeenCalledTimes(nth)
+  expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
+    nth,
+    CREATED_DOCUMENT_ID,
+    SAVED_CONTENT,
+    CREATED_VERSION,
+  )
+}
+
+// "A debounce deadline is armed, and it is the ONLY timer outstanding." The exact count is provable
+// rather than a floor: useAutosave calls clearPending() before every setTimeout, so no matter how many
+// edits land at most one debounce timer exists — and a case that has not failed a save has no retry
+// ladder either. So `toBe(1)` rules out what `toBeGreaterThan(0)` waves through: a second debounce or
+// a stray retry timer armed beside the one the case is describing.
+export function expectDebounceStillArmed() {
+  expect(vi.getTimerCount()).toBe(1)
+}
+
 // Runs the whole capped-backoff retry schedule to completion and settles whatever it fired, plus
 // any stale debounce armed during the wait. Extracted because the act/advanceTimersByTimeAsync/
 // flushMicrotasks composition is infrastructure the failure suites repeated verbatim — and because
@@ -112,13 +143,7 @@ export async function enterBackoffWindow() {
   vi.mocked(documentApi.saveDocument).mockRejectedValue(TRANSIENT_SERVER_REJECTION)
 
   await typeAndFireAutosave(SAVED_PLAIN)
-  expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-  expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
-    1,
-    CREATED_DOCUMENT_ID,
-    SAVED_CONTENT,
-    CREATED_VERSION,
-  )
+  expectBaselineSaveOnWire()
 
   return rendered
 }
@@ -143,14 +168,8 @@ export async function echoSavedAtRetryVersion(
 // mock before calling this, and that choice is the whole point of the pair.
 export async function saveBaselineThenTransientFailure() {
   await typeAndFireAutosave(SAVED_PLAIN)
-  expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-  expect(documentApi.saveDocument).toHaveBeenNthCalledWith(
-    1,
-    CREATED_DOCUMENT_ID,
-    SAVED_CONTENT,
-    CREATED_VERSION,
-  )
-  expect(screen.getByText(SAVED_STATUS)).toHaveClass(SAVED_BADGE_CLASS)
+  expectBaselineSaveOnWire()
+  expectSavedBadge()
 
   await typeAndFireAutosave(EDITED_PLAIN)
   expect(documentApi.saveDocument).toHaveBeenCalledTimes(2)
