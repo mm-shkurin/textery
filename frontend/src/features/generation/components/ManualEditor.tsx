@@ -23,22 +23,17 @@ interface ManualEditorProps {
   documentTypeLabel: string
   onBack: () => void
   existingDocumentId?: string
-  // The text of a COMPLETED GENERATION, when the editor was opened by the auto-transition
-  // (story 18, scenario 2.1) rather than from history or manual mode.
+  // The id of the generation this editor was opened on, when the auto-transition opened it (story
+  // 18, scenario 2.1) rather than history or manual mode.
   //
-  // Passed in rather than re-fetched: the flow is already holding this string — `useGeneration`
-  // read it out of the poll that observed completion — so asking the server for it again would
-  // be a re-read of something in hand (which scenario 2.3 exists to forbid) and would open the
-  // editor EMPTY for as long as that round trip takes, on top of text the user just watched
-  // being written.
+  // The id, NOT the generated text. The text cannot be put in the editor directly: it is the
+  // model's markdown, which Tiptap renders as literal `##` characters, and it belongs to no
+  // document yet so nothing can save it. Converting the generation is what produces both the HTML
+  // and the document to hold it, and the conversion takes the id.
   //
   // Its presence is the one discriminator for the whole auto path: it suppresses the
   // create-a-blank-document init and drops the "Ручной режим" breadcrumb chip, because both are
   // statements about a mode this user was never asked to choose.
-  generatedContent?: string
-  // The id of the generation `generatedContent` came from. Travels alongside the text rather than
-  // being derived from it, because the CONVERSION takes the id: the text alone cannot be turned
-  // into a saveable document, and without a document there is no id to save against.
   generationId?: string
 }
 
@@ -47,10 +42,9 @@ export function ManualEditor({
   documentTypeLabel,
   onBack,
   existingDocumentId,
-  generatedContent,
   generationId,
 }: ManualEditorProps) {
-  const fromGeneration = generatedContent !== undefined
+  const fromGeneration = generationId !== undefined
   const [documentId, setDocumentId] = useState<string | null>(null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(true)
   // Init failing is worse than a save failing and must not be quieter: with no documentId there
@@ -96,10 +90,10 @@ export function ManualEditor({
   // `fromGeneration` is set.
   useGeneratedDocumentInit({
     generationId,
-    generatedContent,
     editor,
     setDocumentId,
     setVersion,
+    onReady: () => setHasUnsavedChanges(false),
     onError: setInitError,
   })
 

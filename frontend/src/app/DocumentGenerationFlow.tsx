@@ -105,7 +105,6 @@ export function DocumentGenerationFlow() {
               documentTypeLabel={documentTypeLabel}
               onBack={flow.backFromEditor}
               existingDocumentId={flow.openDocumentId ?? undefined}
-              generatedContent={generatedContent ?? undefined}
               generationId={flow.generation.generationId ?? undefined}
             />
           </Suspense>
