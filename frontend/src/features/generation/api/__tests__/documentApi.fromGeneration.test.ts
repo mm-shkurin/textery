@@ -82,7 +82,7 @@ describe('documentApi createDocumentFromGeneration — the from-generation wire 
   //   Error: not implemented (11111111-1111-4111-8111-111111111111, from-generation-abc)
   //
   // `createDocumentFromGeneration` is a stub that throws before reaching fetch.
-  it.skip('posts the generation id under a client-supplied Idempotency-Key and maps the 201', async () => {
+  it('posts the generation id under a client-supplied Idempotency-Key and maps the 201', async () => {
     const fetchMock = stubFetch(201)
 
     const result = await createDocumentFromGeneration(GENERATION_ID, IDEMPOTENCY_KEY)
@@ -144,7 +144,7 @@ describe('documentApi createDocumentFromGeneration — the from-generation wire 
   // `res.ok` alone today, so this passes for free on the shared transport — it is a pin against a
   // green that adds a `status === 201` check of its own to THIS client, which is the natural
   // mistake when writing a "created" mapper. The transport is what must stay status-agnostic.
-  it.skip('treats an idempotent 200 replay as success and maps it identically to a 201', async () => {
+  it('treats an idempotent 200 replay as success and maps it identically to a 201', async () => {
     stubFetch(200)
 
     const replayed = await createDocumentFromGeneration(GENERATION_ID, 'from-generation-xyz')
