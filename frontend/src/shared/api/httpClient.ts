@@ -42,6 +42,12 @@ export interface RequestOptions {
   method?: string
   headers?: Record<string, string>
   body?: unknown
+  // How to read a SUCCESSFUL body. Defaults to 'json' — every existing caller parses JSON. 'blob'
+  // is for a binary stream (the document export download): the same res.ok / 401-renewal / timeout
+  // guards apply, only the success read differs. It NEVER changes the error path — a non-ok
+  // response is still parsed as JSON into an HttpError, so a 4xx/5xx error body is never streamed
+  // out and downloaded as if it were the document.
+  responseType?: 'json' | 'blob'
 }
 
 // Client-side timeout for a single request. Its job is to stop a HUNG request (a proxy that
@@ -124,7 +130,7 @@ async function performRequest<T>(
   options: RequestOptions,
   signal: AbortSignal,
 ): Promise<T> {
-  const { method = 'GET', headers = {}, body } = options
+  const { method = 'GET', headers = {}, body, responseType = 'json' } = options
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     signal,
@@ -146,6 +152,13 @@ async function performRequest<T>(
       error.retryAfterSeconds = retryAfterSeconds
     }
     throw error
+  }
+  // Binary success: hand back the raw body untouched. Reached only past the `res.ok` guard, so a
+  // 4xx/5xx never gets here — its error page was already turned into an HttpError above, never a
+  // downloadable blob. No empty-body defence: `res.blob()` yields an empty Blob rather than
+  // throwing, so there is no SyntaxError to swallow.
+  if (responseType === 'blob') {
+    return (await res.blob()) as T
   }
   // The success path needs the same defence the error path has. A 204, or a 200 with an empty
   // body, makes `res.json()` throw a bare SyntaxError — which `isHttpError` rejects, so it falls

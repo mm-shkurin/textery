@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { Composer, MAX_TOPIC_LENGTH } from '../Composer'
+import { topicFieldLabel } from '../../../../shared/documentTypes'
 
-function renderComposer(topic: string) {
+function renderComposer(topic: string, topicLabel = topicFieldLabel('doklad')) {
   const setTopic = vi.fn()
   const onSend = vi.fn()
-  render(<Composer topic={topic} setTopic={setTopic} onSend={onSend} />)
+  render(<Composer topicLabel={topicLabel} topic={topic} setTopic={setTopic} onSend={onSend} />)
   return { setTopic, onSend }
 }
 
@@ -16,6 +17,26 @@ describe('Composer', () => {
     renderComposer('')
 
     expect(screen.getByRole('textbox', { name: 'Тема доклада' })).toBeInTheDocument()
+  })
+
+  // The heading used to be a hardcoded 'Тема доклада' lifted from the mockup, sitting directly
+  // under a breadcrumb that renders the type the user actually picked — so any non-доклад type
+  // showed two different type names on one screen, and the screen reader announced the wrong one.
+  it('names the field after the type the user picked, not the default', () => {
+    renderComposer('', topicFieldLabel('referat'))
+
+    expect(screen.getByRole('textbox', { name: 'Тема реферата' })).toBeInTheDocument()
+  })
+
+  // The required asterisk used to be a `::after` on the same heading. jsdom applies no CSS, so
+  // the test above stayed green while a real browser — which folds generated content into the
+  // accessible-name computation — announced 'Тема доклада *'. Keeping the marker in markup and
+  // aria-hidden is what makes the assertion above true outside jsdom too.
+  it('keeps the required marker out of the accessible name', () => {
+    renderComposer('')
+
+    const marker = screen.getByText('*', { exact: false, selector: '.composer-required-marker' })
+    expect(marker).toHaveAttribute('aria-hidden', 'true')
   })
 
   it('reports every keystroke to the caller', () => {

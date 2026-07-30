@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeAll, beforeEach, afterEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import App from '../app/App'
 import * as api from '../features/generation/api/generationApi'
@@ -8,10 +8,12 @@ import { saveSession, clearSession, getAccessToken } from '../features/auth/util
 vi.mock('../features/generation/api/generationApi')
 vi.mock('../features/generation/api/documentApi')
 
-function openModeModalForDoklad() {
+// Story 18 unified the create flow: the CTA opens the type modal, and picking a type goes
+// STRAIGHT to the generation workspace — no mode-select modal in between.
+function pickDokladType() {
   fireEvent.click(screen.getByTestId('features-primary-cta-button'))
   fireEvent.click(screen.getByTestId('type-card-doklad'))
-  expect(screen.getByTestId('mode-modal')).toBeInTheDocument()
+  expect(screen.getByTestId('chat-panel')).toBeInTheDocument()
 }
 
 // Both destinations behind the landing — the generation workspace and the manual editor — are
@@ -20,19 +22,6 @@ function openModeModalForDoklad() {
 // flow test below stops at the landing without it. Story 5's tests passed before this because
 // the flow was open to anonymous users, which changed by product decision, not by accident.
 describe('App step transitions', () => {
-  // DocumentGenerationFlow reaches ManualEditor through `lazy()`, so the first click that opens
-  // the editor also triggers a module load — compiling Tiptap and ProseMirror. In an isolated
-  // run that finishes in milliseconds; with the full suite competing for the same worker pool it
-  // ran past Testing Library's default 1000 ms `findBy` window and failed at random, which is
-  // worse than a slow test because it fails for a reason unrelated to the change under review.
-  //
-  // Importing the module here resolves the same promise `lazy()` awaits BEFORE any test runs, so
-  // the boundary settles in a microtask and the timing disappears from the assertions. This is
-  // load-order setup, not a mock: the component under test is the real one.
-  beforeAll(async () => {
-    await import('../features/generation/components/ManualEditor')
-  })
-
   beforeEach(() => {
     vi.mocked(api.createGeneration).mockReturnValue(new Promise(() => {}))
     vi.mocked(documentApi.createDocument).mockReturnValue(new Promise(() => {}))
@@ -90,22 +79,13 @@ describe('App step transitions', () => {
     expect(screen.getByTestId('header-logout-button')).toBeInTheDocument()
   })
 
-  it('walks landing -> type -> mode -> form and back to landing on close', () => {
+  it('walks landing -> type -> generation workspace, no mode modal in between', () => {
     render(<App />)
 
-    openModeModalForDoklad()
+    pickDokladType()
 
-    fireEvent.click(screen.getByTestId('mode-card-auto'))
     expect(screen.getByTestId('chat-panel')).toBeInTheDocument()
-  })
-
-  it('back button from mode modal returns to type modal', () => {
-    render(<App />)
-
-    openModeModalForDoklad()
-
-    fireEvent.click(screen.getByLabelText(/Назад к типу документа/))
-    expect(screen.getByTestId('type-modal')).toBeInTheDocument()
+    expect(screen.queryByTestId('mode-modal')).not.toBeInTheDocument()
   })
 
   it('closing the type modal returns to landing', () => {
@@ -117,48 +97,17 @@ describe('App step transitions', () => {
     expect(screen.queryByTestId('type-modal')).not.toBeInTheDocument()
   })
 
-  // `findBy`, not `getBy`: ManualEditor is behind a `lazy()` boundary (Tiptap is the heaviest
-  // dependency in the tree and manual mode is the only path that reaches it), so the editor
-  // appears one microtask after the click rather than in the same commit. The assertion is
-  // unchanged — only the wait for the chunk is new.
-  it('selecting manual mode opens a dedicated empty editor with a document-type breadcrumb', async () => {
-    render(<App />)
-
-    openModeModalForDoklad()
-
-    fireEvent.click(screen.getByTestId('mode-card-manual'))
-
-    expect(await screen.findByTestId('manual-editor')).toBeInTheDocument()
-    expect(screen.queryByTestId('mode-modal')).not.toBeInTheDocument()
-    expect(screen.getByTestId('editor-breadcrumb')).toHaveTextContent('Доклад · Ручной режим')
-  })
-
-  // RED (scenario 6.1): ManualEditor's onBack is wired to closeToLanding, which
-  // resets step to 'landing' and clears documentType/mode instead of returning
-  // to the mode modal. Predicted/actual: TestingLibraryElementError, unable to
-  // find [data-testid="mode-modal"] (rendered landing page instead).
-  it('back button from the manual editor returns to the mode modal, document type still scoped', async () => {
-    render(<App />)
-
-    openModeModalForDoklad()
-    fireEvent.click(screen.getByTestId('mode-card-manual'))
-    // Awaited for the lazy chunk, per the note on the preceding test.
-    expect(await screen.findByTestId('manual-editor')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByLabelText('Назад'))
-
-    expect(screen.queryByTestId('manual-editor')).not.toBeInTheDocument()
-    expect(screen.getByTestId('mode-modal')).toBeInTheDocument()
-    expect(screen.getByLabelText('Назад к типу документа: Доклад')).toBeInTheDocument()
-  })
+  // Story 18 removed the mode-select modal, and with it the manual-mode card that used to be the
+  // create-path entry into ManualEditor. The editor stays reachable from history (scenario 6.1
+  // will add a fresh blank-page entry), and its behaviour is covered by the ManualEditor.* suite;
+  // the App-level integration tests that drove it through the deleted mode modal are dropped here.
 
   // Signing out from inside the workspace must both drop the tokens AND unwind the flow.
   // Asserting only the tokens would pass while leaving the user's document on screen behind an
   // ended session; asserting only the screen would pass while leaving the tokens in storage.
   it('signing out from the workspace clears the session and returns to the landing', () => {
     render(<App />)
-    openModeModalForDoklad()
-    fireEvent.click(screen.getByTestId('mode-card-auto'))
+    pickDokladType()
     expect(screen.getByTestId('chat-panel')).toBeInTheDocument()
 
     fireEvent.click(screen.getByTestId('workspace-logout-button'))

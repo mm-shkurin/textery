@@ -26,8 +26,8 @@ const ManualEditor = lazy(() =>
 // useFlowNavigation.
 //
 // The landing is the public shopfront and stays open to anonymous visitors; gating it would be
-// gating marketing. Everything BEHIND it (type → mode → the workspace or the manual editor)
-// needs an account.
+// gating marketing. Everything BEHIND it (type → the generation workspace, or the editor opened
+// from history) needs an account.
 //
 // The gate below is CLIENT-SIDE ONLY: it decides what UI to render and protects nothing on its
 // own. Neither destination has a URL of its own — both are internal state — so the CTA is the
@@ -64,7 +64,25 @@ export function DocumentGenerationFlow() {
   if (step === 'form' && documentType && mode) {
     const documentTypeLabel = DOCUMENT_TYPE_LABELS[documentType]
 
-    if (mode === 'manual') {
+    // Story 18, scenario 2.1: a completed generation becomes the editor BY ITSELF. The user
+    // watched the text being written; making them press "открыть в редакторе" afterwards asks
+    // them to confirm the thing they already asked for, and the read-only render they would be
+    // confirming from is indistinguishable from the editor at a glance.
+    //
+    // Gated on `content` as well as on the state, deliberately: the whole point of the swap is
+    // that the generated text carries across it, and `doc-body` — the last surface still showing
+    // that text — goes away with the workspace. Opening an EMPTY editor here would not be a
+    // cosmetic miss, it would read as "it deleted my report", so a completed generation that
+    // somehow carries no text keeps the read-only surface rather than losing it silently.
+    const generatedContent = flow.generation.state === 'completed' ? flow.generation.content : null
+
+    // Named because the disjunction is not one idea but two, and nothing in the operator says so:
+    // the editor is either the mode the user CHOSE (the history-open path sets mode='manual') or
+    // the place a finished generation ARRIVED at (nobody chose anything). Neither side implies the
+    // other, and either alone is enough.
+    const opensEditor = mode === 'manual' || generatedContent !== null
+
+    if (opensEditor) {
       // ManualEditor takes no sign-out action: it had none on Story 5's branch, and a merge is
       // not the place to invent one. That leaves the editor as the one signed-in screen with no
       // way out of the session — a real gap, but a NEW one, created by combining the branches
@@ -73,12 +91,12 @@ export function DocumentGenerationFlow() {
       // fetched at the moment manual mode is chosen, and on a slow link that is a visible wait.
       // Boundary OUTSIDE Suspense so it catches both failures the lazy path can produce: a
       // rejected chunk fetch (offline mid-session) and a throw from inside the editor once it
-      // mounts. Recovery goes back to the mode modal — a real destination, not a reload into the
-      // same crash.
+      // mounts. Recovery goes back through backFromEditor (history for an opened document) — a
+      // real destination, not a reload into the same crash.
       return (
         <ErrorBoundary
           title="Редактор не удалось загрузить."
-          recoverLabel="Вернуться к выбору режима"
+          recoverLabel="Вернуться назад"
           onRecover={flow.backFromEditor}
         >
           <Suspense fallback={<p className="editor-loading">Загрузка редактора…</p>}>
@@ -87,6 +105,7 @@ export function DocumentGenerationFlow() {
               documentTypeLabel={documentTypeLabel}
               onBack={flow.backFromEditor}
               existingDocumentId={flow.openDocumentId ?? undefined}
+              generatedContent={generatedContent ?? undefined}
             />
           </Suspense>
         </ErrorBoundary>
@@ -95,13 +114,14 @@ export function DocumentGenerationFlow() {
 
     return (
       <ChatWorkspace
+        documentType={documentType}
         documentTypeLabel={documentTypeLabel}
         state={flow.generation.state}
         content={flow.generation.content}
         volumePages={flow.generation.volumePages}
         createdAt={flow.generation.createdAt}
         error={flow.generation.error}
-        onSubmit={flow.generation.submit}
+        onSubmit={flow.submitGeneration}
         onReset={flow.generation.reset}
         onLogoutClick={flow.handleLogout}
       />
@@ -110,16 +130,13 @@ export function DocumentGenerationFlow() {
 
   return (
     <FlowLanding
-      step={step as 'landing' | 'type' | 'mode'}
-      documentType={documentType}
+      step={step as 'landing' | 'type'}
       isAuthenticated={isAuthenticated}
       onPrimaryCtaClick={flow.startFlow}
       onLoginClick={flow.goToLogin}
       onLogoutClick={flow.handleLogout}
       onHistoryClick={flow.openHistory}
       onSelectType={flow.selectType}
-      onSelectMode={flow.selectMode}
-      onBackToType={flow.backToTypeModal}
       onClose={flow.closeToLanding}
     />
   )

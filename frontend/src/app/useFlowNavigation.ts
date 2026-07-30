@@ -2,11 +2,19 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { logout } from '../features/auth/utils/authSession'
 import { useAuthSession } from '../features/auth/hooks/useAuthSession'
-import { documentTypeFromWire, type DocumentType } from '../shared/documentTypes'
-import type { GenerationMode } from '../features/generation/components/ModeModal'
+import {
+  DEFAULT_DOCUMENT_TYPE,
+  documentTypeFromWire,
+  type DocumentType,
+} from '../shared/documentTypes'
 import { useGeneration } from '../features/generation/hooks/useGeneration'
 
-export type Step = 'landing' | 'type' | 'mode' | 'form' | 'history'
+// 'auto' generates from a topic, 'manual' opens the editor. Both are real destinations, not a
+// request flag — they are different screens. Story 18 dropped the mode-select modal, so on the
+// create path `mode` is always 'auto'; 'manual' now survives only on the history-open path.
+export type GenerationMode = 'auto' | 'manual'
+
+export type Step = 'landing' | 'type' | 'form' | 'history'
 
 // Every transition the flow can make, and the state they move between. Split from
 // DocumentGenerationFlow because the two were a state machine and its renderer sharing a file:
@@ -37,15 +45,14 @@ export function useFlowNavigation() {
     setOpenDocumentId(null)
   }
 
-  const backToModeModal = () => {
-    setStep('mode')
-    setMode(null)
-  }
-
   // The row carries the wire's Cyrillic type; the app speaks its own. An unrecognised value (the
-  // server added a type this build has never heard of) falls back to 'doklad' for the breadcrumb
-  // LABEL only — it is display text, and the document's real content comes from the GET either
-  // way. Refusing to open the document over an unfamiliar label would be the worse trade.
+  // server added a type this build has never heard of) falls back to 'doklad' rather than refusing
+  // to open the document over an unfamiliar label — the real content comes from the GET either way.
+  // NOTE: since scenario 1.1 threaded the type to the wire, `documentType` is no longer display-only
+  // — `submitGeneration` puts it on a POST. The fabricated 'doklad' cannot reach the wire today,
+  // because this path sets mode='manual' + openDocumentId and routes to ManualEditor, and every
+  // route back to the create path passes through `selectType`. Any NEW path into step='form' that
+  // skips `selectType` would inherit a silently fabricated wire value — thread a real type instead.
   const openDocumentFromHistory = (documentId: string, wireType: string) => {
     setDocumentType(documentTypeFromWire(wireType) ?? 'doklad')
     setMode('manual')
@@ -53,9 +60,13 @@ export function useFlowNavigation() {
     setStep('form')
   }
 
-  // Back from the editor goes to wherever the editor was opened FROM. Returning a history-opened
-  // document to the mode modal would offer to pick a mode for a document that already has one,
-  // and drop the visitor into a "create" flow they never started.
+  // Back from the editor goes to wherever the editor was opened FROM. A history-opened document
+  // returns to history — offering to pick a mode for a document that already has one, and dropping
+  // the visitor into a "create" flow they never started, would be wrong.
+  //
+  // A NEW (non-history) document returns to the type step: story 18 removed the mode-select modal,
+  // so 'mode' is no longer a destination. Going back to 'type' lets the user pick a different
+  // document type, and resets any in-flight generation so the poll is not left running.
   const backFromEditor = () => {
     if (openDocumentId) {
       setOpenDocumentId(null)
@@ -63,7 +74,9 @@ export function useFlowNavigation() {
       setStep('history')
       return
     }
-    backToModeModal()
+    generation.reset()
+    setMode(null)
+    setStep('type')
   }
 
   // The CTA sends a signed-out visitor to REGISTER, not to sign in. Someone clicking "create a
@@ -96,14 +109,24 @@ export function useFlowNavigation() {
     closeToLanding()
   }
 
+  // Story 18 1.1: picking a type goes STRAIGHT to generation. The mode-select modal is gone, so
+  // there is no intermediate 'mode' step and no mode to choose — the create path is always 'auto'.
+  // `openDocumentId` stays null, which is what tells the workspace to POST a new generation rather
+  // than GET an existing document.
   const selectType = (type: DocumentType) => {
     setDocumentType(type)
-    setStep('mode')
+    setMode('auto')
+    setStep('form')
   }
 
-  const selectMode = (selected: GenerationMode) => {
-    setMode(selected)
-    setStep('form')
+  // The composer only knows the topic; the type the user picked lives here, in flow state. This
+  // is the join, and it is the whole point of scenario 1.1 — with the mode modal gone the type
+  // card is the LAST choice before the POST, so if it is not carried across this seam the wire
+  // says 'доклад' no matter which card was pressed. The fallback is unreachable in practice
+  // (the workspace only renders at `step === 'form' && documentType`) and exists so the composer
+  // cannot post a typeless request.
+  const submitGeneration = (topic: string) => {
+    generation.submit(topic, documentType ?? DEFAULT_DOCUMENT_TYPE)
   }
 
   return {
@@ -113,8 +136,8 @@ export function useFlowNavigation() {
     openDocumentId,
     isAuthenticated,
     generation,
+    submitGeneration,
     openHistory: () => setStep('history'),
-    backToTypeModal: () => setStep('type'),
     backToLanding: () => setStep('landing'),
     closeToLanding,
     openDocumentFromHistory,
@@ -123,6 +146,5 @@ export function useFlowNavigation() {
     goToLogin,
     handleLogout,
     selectType,
-    selectMode,
   }
 }

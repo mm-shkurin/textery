@@ -3,10 +3,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.support import expected_conditions as ec
-from selenium.webdriver.support.wait import WebDriverWait
 
-from statements.frontend.base_frontend_statements import BaseFrontendStatements, WAIT_TIMEOUT_SECONDS
+from statements.frontend.base_frontend_statements import BaseFrontendStatements
 from statements.frontend.generation.mode_modal_statements import MODE_CARD_MANUAL, MODE_MODAL
 
 MANUAL_EDITOR_SELECTOR = "[data-testid='manual-editor']"
@@ -30,9 +28,9 @@ EXPECTED_PLACEHOLDER_TEXT = "Начните печатать…"
 # 2.1 asserts are the ones that actually work: the H3 heading (a mark, not a block node), bold,
 # and italic.
 TOOLBAR_BUTTON_ARIA_LABELS = {
-    "heading": ["Заголовок 3"],
-    "bold": ["Жирный"],
-    "italic": ["Курсив"],
+    "heading": "Заголовок 3",
+    "bold": "Жирный",
+    "italic": "Курсив",
 }
 # Scenario 2.1 asserts the three working named controls above (H3, bold, italic) individually by
 # aria-label. The toolbar carries 13 controls total (after the inert H1/H2/¶/list stubs were
@@ -46,7 +44,7 @@ def _toolbar_button_locator(aria_label: str) -> tuple[str, str]:
     return (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} .me-toolbar-btn[aria-label='{aria_label}']")
 
 
-BOLD_BUTTON = _toolbar_button_locator(TOOLBAR_BUTTON_ARIA_LABELS["bold"][0])
+BOLD_BUTTON = _toolbar_button_locator(TOOLBAR_BUTTON_ARIA_LABELS["bold"])
 
 
 class ManualEditorStatements(BaseFrontendStatements):
@@ -57,8 +55,8 @@ class ManualEditorStatements(BaseFrontendStatements):
         self._wait_for_visible(driver, MODE_CARD_MANUAL).click()
 
     def assert_mode_modal_is_closed(self, driver: WebDriver) -> None:
-        WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(
-            ec.invisibility_of_element_located(MODE_MODAL)
+        self._assert_not_visible(
+            driver, MODE_MODAL, "expected the mode-select modal to close, but it was still shown"
         )
 
     def assert_manual_editor_is_open_for_doklad(self, driver: WebDriver) -> None:
@@ -104,12 +102,11 @@ class ManualEditorStatements(BaseFrontendStatements):
         self._assert_toolbar_button_count(driver)
 
     def _assert_each_toolbar_button_is_enabled(self, driver: WebDriver) -> None:
-        for control_name, aria_labels in TOOLBAR_BUTTON_ARIA_LABELS.items():
-            for aria_label in aria_labels:
-                button = self._wait_for_visible(driver, _toolbar_button_locator(aria_label))
-                assert button.is_enabled(), (
-                    f"expected {control_name} toolbar control '{aria_label}' to be enabled"
-                )
+        for control_name, aria_label in TOOLBAR_BUTTON_ARIA_LABELS.items():
+            button = self._wait_for_visible(driver, _toolbar_button_locator(aria_label))
+            assert button.is_enabled(), (
+                f"expected {control_name} toolbar control '{aria_label}' to be enabled"
+            )
 
     def _assert_toolbar_button_count(self, driver: WebDriver) -> None:
         toolbar_buttons = driver.find_elements(*TOOLBAR_BUTTON)

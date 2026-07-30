@@ -23,6 +23,85 @@ export const DOCUMENT_TYPE_LABELS = Object.fromEntries(
   DOCUMENT_TYPES.map((t) => [t.id, t.name]),
 ) as Record<DocumentType, string>
 
+// Genitive forms, for copy that names the type inside a phrase — 'Тема доклада', not 'Тема
+// Доклад'. Russian declines, so a label cannot be concatenated into a sentence and stay
+// grammatical; the composer's field heading was a hardcoded 'Тема доклада' precisely because
+// interpolating `name` produces nonsense for every other type.
+//
+// Hand-written and exhaustive for the same reason as WIRE_DOCUMENT_TYPE below: this cannot be
+// derived from `name` by any rule (доклад -> доклада, эссе -> эссе, сочинение -> сочинения),
+// and adding a member to DocumentType without a form here is a compile error in the file that
+// has to know.
+export const DOCUMENT_TYPE_GENITIVE: Record<DocumentType, string> = {
+  doklad: 'доклада',
+  essay: 'эссе',
+  sochinenie: 'сочинения',
+  referat: 'реферата',
+}
+
+// The composer's field heading. Lives here rather than in the component so the phrase is built
+// from the same table the breadcrumb reads — the two sit five lines apart on screen, and naming
+// different types would be the visible bug.
+export function topicFieldLabel(documentType: DocumentType): string {
+  return `Тема ${DOCUMENT_TYPE_GENITIVE[documentType]}`
+}
+
+// Lowercase nominative/accusative form, for copy that names the type as the object of a verb —
+// 'Готовим ваш доклад', 'ИИ пишет доклад'. Same reason as the genitive table above: the display
+// label is capitalised ('Доклад') and interpolating it mid-sentence reads as a proper noun.
+// Nominative and accusative coincide for all four (inanimate masculine and neuter), so one table
+// serves both positions; add an animate type and it will need its own.
+//
+// Deliberately NOT derived from WIRE_DOCUMENT_TYPE, which happens to hold the same four strings:
+// that map is a boundary translation owned by the backend's vocabulary, and this one is display
+// copy. Coupling them would mean a backend rename silently rewrites what the user reads.
+export const DOCUMENT_TYPE_ACCUSATIVE: Record<DocumentType, string> = {
+  doklad: 'доклад',
+  essay: 'эссе',
+  sochinenie: 'сочинение',
+  referat: 'реферат',
+}
+
+// 'ваш' agrees in gender with what follows — ваш доклад, ваше эссе — so the possessive cannot be
+// a constant in the phrase. Kept private: it is meaningless outside the one title it builds.
+const DOCUMENT_TYPE_POSSESSIVE: Record<DocumentType, string> = {
+  doklad: 'ваш',
+  essay: 'ваше',
+  sochinenie: 'ваше',
+  referat: 'ваш',
+}
+
+// The generating screen's title (mockup 05). Built here, next to the tables it declines against,
+// for the reason topicFieldLabel exists: it used to be the literal 'Готовим ваш доклад' in
+// DocArea, five lines from a status badge naming the real picked type.
+export function generatingTitle(documentType: DocumentType): string {
+  return `Готовим ${DOCUMENT_TYPE_POSSESSIVE[documentType]} ${DOCUMENT_TYPE_ACCUSATIVE[documentType]}`
+}
+
+// The generating progress line in the chat panel (mockup 05), the same screen's other half.
+export function writingProgressMessage(documentType: DocumentType): string {
+  return `ИИ пишет ${DOCUMENT_TYPE_ACCUSATIVE[documentType]}`
+}
+
+// The three phrases below are NOT the generating screen, but they share its chat panel and its doc
+// area within one session: the progress transcript keeps every step on screen, and a run moves
+// pending -> completed/failed without a remount. Leaving them hardcoded while the pending line
+// declines would have made one panel say `ИИ пишет реферат` and, a state later, `Пишу доклад` —
+// two document types named to the same user about the same run, which is worse than being
+// consistently wrong. They decline against tables that already exist, so nothing is owed for them.
+export function writtenProgressMessage(documentType: DocumentType): string {
+  return `Пишу ${DOCUMENT_TYPE_ACCUSATIVE[documentType]}`
+}
+
+export function generationFailedTitle(documentType: DocumentType): string {
+  return `Не удалось сгенерировать ${DOCUMENT_TYPE_ACCUSATIVE[documentType]}`
+}
+
+// The idle doc area's prompt, genitive like the composer heading it sits beside.
+export function topicPromptTitle(documentType: DocumentType): string {
+  return `Опишите тему ${DOCUMENT_TYPE_GENITIVE[documentType]}`
+}
+
 // The wire values the backend actually accepts — measured by curl against the live stack
 // 2026-07-17, not read from a spec:
 //   {"document_type":"doklad"} -> 422 {"error_code":"INVALID_DOCUMENT_TYPE"}

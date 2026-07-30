@@ -36,6 +36,9 @@ from frontend_generation_fixtures import (  # noqa: F401
     manual_editor_save_queue_statements,
     manual_editor_popover_clip_statements,
     manual_editor_beforeunload_statements,
+    generate_flow_statements,
+    generating_state_statements,
+    auto_editor_transition_statements,
 )
 
 # Document-export Statements fixtures also live in their own module for the same
@@ -57,6 +60,10 @@ MOBILE_WINDOW_SIZE = "390,844"
 HANDOFF_CODE_TTL_ENV_VAR = "OAUTH_HANDOFF_CODE_TTL_SECONDS"
 PROVIDER_SECRET_ENV_VAR = "YANDEX_CLIENT_SECRET"
 MAX_TESTABLE_TTL_SECONDS = 10
+
+# Manual-editor Statements fixtures live in their own plugin module to keep this
+# root conftest under the 200-line file cap.
+pytest_plugins = ("statements.frontend.generation.manual_editor_fixtures",)
 
 
 @pytest_asyncio.fixture

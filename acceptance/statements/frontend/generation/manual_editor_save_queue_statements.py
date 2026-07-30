@@ -14,6 +14,7 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
 
 from statements.frontend.base_frontend_statements import WAIT_TIMEOUT_SECONDS
+from statements.frontend.network_throttle_mixin import NetworkThrottleMixin
 from statements.frontend.generation.manual_editor_save_payload_statements import (
     ManualEditorSavePayloadStatements,
     SAVE_BUTTON,
@@ -26,29 +27,8 @@ from statements.frontend.generation.manual_editor_statements import (
 
 SAVE_SPINNER = (By.CSS_SELECTOR, f"{MANUAL_EDITOR_SELECTOR} [data-testid='save-spinner']")
 
-# Enough latency that a human-speed type + click lands while the first PUT is still open.
-_SLOW_LATENCY_MS = 2500
 
-
-class ManualEditorSaveQueueStatements(ManualEditorSavePayloadStatements):
-    def throttle_network(self, driver) -> None:
-        driver.execute_cdp_cmd("Network.enable", {})
-        driver.execute_cdp_cmd(
-            "Network.emulateNetworkConditions",
-            {
-                "offline": False,
-                "latency": _SLOW_LATENCY_MS,
-                "downloadThroughput": -1,
-                "uploadThroughput": -1,
-            },
-        )
-
-    def clear_network_throttle(self, driver) -> None:
-        driver.execute_cdp_cmd(
-            "Network.emulateNetworkConditions",
-            {"offline": False, "latency": 0, "downloadThroughput": -1, "uploadThroughput": -1},
-        )
-
+class ManualEditorSaveQueueStatements(NetworkThrottleMixin, ManualEditorSavePayloadStatements):
     def click_save(self, driver) -> None:
         self._wait_for_visible(driver, SAVE_BUTTON).click()
 

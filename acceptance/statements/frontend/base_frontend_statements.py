@@ -1,5 +1,3 @@
-import json
-import time
 from typing import ClassVar
 from urllib.parse import urlparse
 
@@ -18,15 +16,15 @@ from statements.frontend.frontend_form_assertions import (  # noqa: F401
     HintErrorSnapshot,
 )
 from statements.frontend.live_auth_session import issue_live_session
-
-REQUEST_LOG_SETTLE_SECONDS = 1
+# Re-exported for the Statements modules that import this from here; the CDP performance-log
+# helpers moved to request_log.py to keep both files under the 200-line limit.
+from statements.frontend.request_log import REQUEST_LOG_SETTLE_SECONDS, RequestLogMixin  # noqa: F401
 
 PRIMARY_CTA_BUTTON = (By.CSS_SELECTOR, "[data-testid='header-primary-cta-button']")
 TYPE_CARD_DOKLAD = (By.CSS_SELECTOR, "[data-testid='type-card-doklad']")
-MODE_CARD_AUTO = (By.CSS_SELECTOR, "[data-testid='mode-card-auto']")
 
 
-class BaseFrontendStatements(FormAssertionsMixin):
+class BaseFrontendStatements(RequestLogMixin, FormAssertionsMixin):
     """Shared Selenium wait infrastructure for frontend Statements classes."""
 
     _DEFAULT_PORTS: ClassVar[dict[str, str]] = {"http": "80", "https": "443"}
@@ -63,6 +61,17 @@ class BaseFrontendStatements(FormAssertionsMixin):
         actual = element.text.strip()
         assert actual == expected, f"expected {label} to be '{expected}', got '{actual}'"
         return element
+
+    def _assert_not_visible(self, driver: WebDriver, locator: tuple[str, str], message: str) -> None:
+        """Wait until `locator` is absent or hidden, failing with `message` if it stays up.
+
+        The absence assertion was written out identically in four Statements classes, differing
+        only in locator and wording; centralising it keeps the timeout and the condition
+        (`invisibility_of_element_located`, which is satisfied by absent OR hidden) in one place.
+        """
+        WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(
+            ec.invisibility_of_element_located(locator), message
+        )
 
     # Auth-session storage keys (frontend/src/features/auth/utils/authSession.ts). The frontend
     # gates the whole type -> mode -> editor/workspace flow behind a session (Story 7, added
@@ -120,25 +129,3 @@ class BaseFrontendStatements(FormAssertionsMixin):
         driver.get(app_url)
         self._wait_for_visible(driver, PRIMARY_CTA_BUTTON).click()
         self._wait_for_visible(driver, TYPE_CARD_DOKLAD).click()
-
-    def _count_requests_to(self, driver: WebDriver, path_substring: str, method: str = "POST") -> int:
-        """Counts Network.requestWillBeSent CDP events whose URL contains
-        `path_substring` and whose HTTP method matches `method` (default
-        "POST" — excludes CORS preflight OPTIONS requests to the same URL).
-        Requires the webdriver fixture to enable
-        `goog:loggingPrefs: {"performance": "ALL"}`. Sleeps briefly first
-        since CDP log delivery is asynchronous relative to the triggering
-        click.
-        """
-        time.sleep(REQUEST_LOG_SETTLE_SECONDS)
-
-        count = 0
-        for entry in driver.get_log("performance"):
-            message = json.loads(entry["message"])["message"]
-            if message.get("method") != "Network.requestWillBeSent":
-                continue
-            request = message.get("params", {}).get("request", {})
-            url = request.get("url", "")
-            if path_substring in url and request.get("method") == method:
-                count += 1
-        return count

@@ -13,3 +13,9 @@ Enduring quirks and invariants promoted from completed scenarios. Read by `/cont
 **Where:** backend/adapters/rendering (tests + Dockerfile + both CI ci.yml `test` jobs), backend/requirements.txt.
 **Implication:** For any render dep, add it to requirements + both CI test jobs and confirm the suite actually RUNS (not skips) in CI; run red/green rendering-adapter tests in-container (`PYTHONPATH=domain/src:adapters/rendering/src:...`); never lift a RED skip into a permanent `skipif(unimportable)`.
 **From:** scenario 2.1 (export-valid-pdf)
+
+## Quirk: Selenium element.text reads whole-node subtree text
+**Quirk:** Selenium `element.text` on a `data-testid` node returns the whole subtree's text, so an interactive child nested inside a message node pollutes an exact-text acceptance pin; unit-level `toHaveTextContent` matches substrings and does NOT catch it.
+**Where:** ExportControl error banner; `manual_editor_export_error_statements.py` exact-text assertions.
+**Implication:** Keep testid nodes that acceptance pins by exact text free of text-bearing children (put siblings in a wrapper); at unit level assert whole-node text with `.toBe(el.textContent?.trim())`, not `toHaveTextContent`.
+**From:** scenario 3.2 (export-error)

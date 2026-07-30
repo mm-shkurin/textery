@@ -1,4 +1,7 @@
-// HTTP client for the manual-document API (create / read / save — synchronous, no LLM/polling).
+// HTTP client for the document API. Four clients live HERE — create / read / save / export — and
+// create-from-generation is re-exported from documentFromGenerationApi at the bottom of this file
+// rather than defined here (that module's header records why it had to move). All synchronous, no
+// LLM/polling; the generation polling that FEEDS from-generation lives in generationApi.
 //
 // Every call goes through `send` → `authorizedRequest`, so it carries the access token and a 401
 // renews the session and replays rather than surfacing as a document failure the user did not
@@ -120,6 +123,26 @@ export interface GetDocumentResult {
   version: number
 }
 
+// The two output formats the export endpoint accepts (documents_export.yaml, enum [pdf, docx]).
+export type ExportFormat = 'pdf' | 'docx'
+
+// GET /api/v1/documents/{id}/export?format= — owner-scoped, read-only, returns the rendered
+// document as a binary stream (documents_export.yaml). Routed through `send` like every other
+// document call, so it carries the session token and a 401 renews-and-replays rather than handing
+// the user a garbage download when their ~15-minute access token has expired. `responseType: 'blob'`
+// switches the SUCCESS read to res.blob() while keeping the res.ok / timeout / renewal guards the
+// shared stack owns — a 4xx/5xx is still an HttpError, never an error page streamed out as a file.
+//
+// Returns the Blob; triggering the browser download (object URL + anchor click) is scenario 5.1's
+// concern in the component, not this transport's.
+export async function exportDocument(documentId: string, format: ExportFormat): Promise<Blob> {
+  return await send<Blob>(
+    `/api/v1/documents/${documentId}/export?format=${format}`,
+    { method: 'GET', responseType: 'blob' },
+    'Не удалось экспортировать документ',
+  )
+}
+
 export async function getDocument(documentId: string): Promise<GetDocumentResult> {
   const data = await send<DocumentWire>(
     `/api/v1/documents/${documentId}`,
@@ -133,3 +156,10 @@ export async function getDocument(documentId: string): Promise<GetDocumentResult
     version: data.version,
   }
 }
+
+// The from-generation client lives in its own module (200-line limit; see the note at its top)
+// and is re-exported here so callers keep one document-API import site.
+export {
+  createDocumentFromGeneration,
+  type DocumentFromGenerationResult,
+} from './documentFromGenerationApi'

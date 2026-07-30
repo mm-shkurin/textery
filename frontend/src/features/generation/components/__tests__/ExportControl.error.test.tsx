@@ -1,0 +1,151 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitForElementToBeRemoved,
+} from '@testing-library/react'
+import * as documentApi from '../../api/documentApi'
+import { ExportControl } from '../ExportControl'
+
+// exportDocument is the only runtime import ExportControl pulls from documentApi; an ES module
+// namespace is frozen, so the mock must be declared via an explicit factory.
+vi.mock('../../api/documentApi', () => ({
+  exportDocument: vi.fn(),
+}))
+
+// The exact message the transport rejects with (documentApi.exportDocument passes this string to
+// `send` as the user-facing failure text). The inline error must surface this verbatim, not a
+// generic substitute, so a transport wording change is caught here.
+const EXPORT_ERROR_TEXT = 'Не удалось экспортировать документ'
+
+// A manually-settleable deferred so each test controls resolve-vs-reject timing (mirrors 3.1).
+function createDeferred() {
+  let resolve: (value: Blob) => void = () => {}
+  let reject: (reason: Error) => void = () => {}
+  const promise = new Promise<Blob>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
+
+function triggerExport() {
+  fireEvent.click(screen.getByTestId('export-control-trigger'))
+  fireEvent.click(screen.getByTestId('export-option-pdf'))
+}
+
+// Renders ExportControl with a single pending export in flight and fires the export gesture.
+// Returns the deferred so the test controls the resolve-vs-reject settle.
+function renderAndExport() {
+  const deferred = createDeferred()
+  vi.mocked(documentApi.exportDocument).mockReturnValue(deferred.promise)
+
+  render(<ExportControl documentId="doc-1" />)
+  triggerExport()
+
+  return deferred
+}
+
+describe('ExportControl export failure surfacing', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('shows no inline error before an export is triggered', () => {
+    vi.mocked(documentApi.exportDocument).mockReturnValue(new Promise(() => {}))
+
+    render(<ExportControl documentId="doc-1" />)
+
+    // Idle: nothing has failed, so no error and no retry may exist in the DOM.
+    expect(screen.queryByTestId('export-error')).toBeNull()
+    expect(screen.queryByTestId('export-retry')).toBeNull()
+  })
+
+  it('shows no inline error on the success path', async () => {
+    const deferred = renderAndExport()
+    // Falling edge of the spinner marks the settle; the success path must leave no error behind.
+    deferred.resolve(new Blob())
+    await waitForElementToBeRemoved(() => screen.queryByTestId('export-spinner'))
+
+    expect(screen.queryByTestId('export-error')).toBeNull()
+  })
+
+  it('surfaces an inline error with the transport message when the export rejects', async () => {
+    const deferred = renderAndExport()
+    deferred.reject(new Error(EXPORT_ERROR_TEXT))
+
+    // Rising edge: the rejection becomes a visible inline error carrying the exact wording.
+    const error = await screen.findByTestId('export-error')
+    expect(error).toBeVisible()
+    expect(error).toHaveTextContent(EXPORT_ERROR_TEXT)
+  })
+
+  it('scopes the error node text to exactly the localized message, excluding the nested retry label', async () => {
+    const deferred = renderAndExport()
+    deferred.reject(new Error(EXPORT_ERROR_TEXT))
+
+    // Whole-node text (what Selenium's element.text reads) must equal the message ALONE. The retry
+    // control must be a SIBLING of this node, not a child, so its "Повторить" label does not bleed
+    // into the error text. toHaveTextContent only matches substrings and would miss this.
+    const error = await screen.findByTestId('export-error')
+    expect(error.textContent?.trim()).toBe(EXPORT_ERROR_TEXT)
+    // Retry wiring stays intact: the control still exists and is reachable.
+    expect(screen.getByTestId('export-retry')).toBeVisible()
+  })
+
+  it('shows the localized failure text, not the raw transport message, when the export rejects', async () => {
+    const deferred = renderAndExport()
+    // A real network-layer failure surfaces as the transport's own English message.
+    deferred.reject(new Error('Failed to fetch'))
+
+    const error = await screen.findByTestId('export-error')
+    // The banner must present the localized constant regardless of the caught message. The retry
+    // label "Повторить" also lives inside this node, so scope the assertion to the leading text.
+    expect(error).toHaveTextContent(EXPORT_ERROR_TEXT)
+    expect(error).not.toHaveTextContent('Failed to fetch')
+  })
+
+  it('shows the localized failure text when the export rejects with a non-Error value', async () => {
+    const deferred = renderAndExport()
+    // A non-Error rejection (thrown string, undefined) must not leak its stringified form either.
+    deferred.reject('boom' as unknown as Error)
+
+    const error = await screen.findByTestId('export-error')
+    expect(error).toHaveTextContent(EXPORT_ERROR_TEXT)
+    expect(error).not.toHaveTextContent('boom')
+  })
+
+  it('offers a retry control labelled "Повторить" alongside the error', async () => {
+    const deferred = renderAndExport()
+    deferred.reject(new Error(EXPORT_ERROR_TEXT))
+
+    const retry = await screen.findByTestId('export-retry')
+    expect(retry).toBeVisible()
+    expect(retry).toHaveAccessibleName('Повторить')
+  })
+
+  it('re-dispatches the export and clears the error when retry succeeds', async () => {
+    const failed = createDeferred()
+    const retried = createDeferred()
+    vi.mocked(documentApi.exportDocument)
+      .mockReturnValueOnce(failed.promise)
+      .mockReturnValueOnce(retried.promise)
+
+    render(<ExportControl documentId="doc-1" />)
+    triggerExport()
+    failed.reject(new Error(EXPORT_ERROR_TEXT))
+    await screen.findByTestId('export-error')
+
+    fireEvent.click(screen.getByTestId('export-retry'))
+
+    // Retry is a genuine second dispatch carrying the same id and format, not decoration.
+    expect(documentApi.exportDocument).toHaveBeenCalledTimes(2)
+    expect(documentApi.exportDocument).toHaveBeenNthCalledWith(2, 'doc-1', 'pdf')
+
+    // On the retry's success the inline error is removed.
+    retried.resolve(new Blob())
+    await waitForElementToBeRemoved(() => screen.queryByTestId('export-error'))
+    expect(screen.queryByTestId('export-error')).toBeNull()
+  })
+})

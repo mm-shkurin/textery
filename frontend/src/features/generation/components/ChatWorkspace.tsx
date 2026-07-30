@@ -5,9 +5,15 @@ import type { GenerationUiState } from '../hooks/useGeneration'
 import { Composer, MAX_TOPIC_LENGTH } from './Composer'
 import { Progress } from './Progress'
 import { DocArea } from './DocArea'
+import { GenerationHeading } from './GenerationHeading'
 import { AppHeader } from '../../../shared/components/AppHeader'
+import { topicFieldLabel, type DocumentType } from '../../../shared/documentTypes'
 
 interface ChatWorkspaceProps {
+  // Both the id and its label, as ManualEditor already takes them: the label is what the
+  // breadcrumb shows, while the composer's heading needs the genitive form, which only the id
+  // can look up.
+  documentType: DocumentType
   documentTypeLabel: string
   state: GenerationUiState
   content: string | null
@@ -30,8 +36,8 @@ const BADGE: Record<GenerationUiState, string> = {
 }
 
 export function ChatWorkspace(props: ChatWorkspaceProps) {
-  const { documentTypeLabel, state, content, volumePages, createdAt, error, onSubmit, onReset } =
-    props
+  const { documentType, documentTypeLabel, state, content, volumePages, createdAt, error } = props
+  const { onSubmit, onReset } = props
   const { onLogoutClick } = props
   const [topic, setTopic] = useState('')
 
@@ -40,20 +46,44 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
     if (trimmed) onSubmit(trimmed)
   }
 
+  // The topic lives in this component's state, so `useGeneration.reset()` cannot reach it — it
+  // clears the generation, and the workspace is never unmounted across a reset (only the idle
+  // branch swaps Progress back for Composer). Without this the "Создать новый доклад" screen
+  // came back pre-filled with the topic that was just generated, send button already enabled:
+  // one keystroke re-bills the user for the document they already have. Clearing here keeps the
+  // topic owned by the one component that holds it.
+  const reset = () => {
+    setTopic('')
+    onReset()
+  }
+
   return (
     <div className="chat-page">
       <AppHeader onLogoutClick={onLogoutClick} />
       <div className="cw-container">
-        <div className={`cw-badge cw-badge-${state}`}>
-          <span className="cw-dot" />
-          {BADGE[state]}
-        </div>
+        {/* Two different mockups own this slot. Before anything is submitted the surface is
+            mockup 04 (breadcrumb naming the picked type + page title); from the moment a
+            generation exists it is mockups 05-07, whose status badge tells the user where the
+            run stands. Showing both at once would state the obvious twice. */}
+        {state === 'idle' ? (
+          <GenerationHeading documentTypeLabel={documentTypeLabel} />
+        ) : (
+          <div className={`cw-badge cw-badge-${state}`}>
+            <span className="cw-dot" />
+            {BADGE[state]}
+          </div>
+        )}
         <div className="cw-layout">
           <aside className="chat-panel" data-testid="chat-panel">
             {state === 'idle' ? (
-              <Composer topic={topic} setTopic={setTopic} onSend={send} />
+              <Composer
+                topicLabel={topicFieldLabel(documentType)}
+                topic={topic}
+                setTopic={setTopic}
+                onSend={send}
+              />
             ) : (
-              <Progress state={state} />
+              <Progress state={state} documentType={documentType} />
             )}
           </aside>
           <section className="doc-area" data-testid="doc-area">
@@ -63,8 +93,9 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
               volumePages={volumePages}
               createdAt={createdAt ?? null}
               error={error}
+              documentType={documentType}
               label={documentTypeLabel}
-              onReset={onReset}
+              onReset={reset}
             />
           </section>
         </div>

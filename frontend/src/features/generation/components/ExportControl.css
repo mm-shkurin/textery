@@ -1,0 +1,125 @@
+.me-export-control {
+  position: relative;
+  display: inline-flex;
+}
+
+.me-export-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.me-export-trigger:hover {
+  background: var(--bg-card-muted);
+}
+
+.me-export-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 128px;
+  padding: 6px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-surface-raised);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.me-export-option {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.me-export-option:hover {
+  background: var(--bg-card-muted);
+}
+
+/* Disabled = the in-flight lock (options, while an export is pending) and the no-document
+   trigger. Matches the editor toolbar's disabled convention (me-toolbar-btn:disabled):
+   faded + not-allowed, and hover must NOT re-tint or the control would look active mid-request. */
+.me-export-trigger:disabled,
+.me-export-option:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.me-export-trigger:disabled:hover {
+  background: var(--bg-surface);
+}
+
+.me-export-option:disabled:hover {
+  background: transparent;
+}
+
+/* In-flight indicator (scenario 3.1): mounted only while an export is pending, matching the
+   editor toolbar's save-spinner convention (.me-save-spinner). */
+.me-export-spinner {
+  align-self: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(17, 18, 20, 0.35);
+  border-top-color: var(--btn-primary-fg);
+  animation: me-export-spin 0.7s linear infinite;
+}
+
+@keyframes me-export-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Inline export failure (scenario 3.2): the transport's message plus a retry, shown until the
+   next dispatch succeeds. Danger colour uses the shared --error token (index.css), matching
+   every other error surface (auth, save-status, chat) — no divergent token or hex fallback. */
+.me-export-error-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.me-export-error {
+  color: var(--error);
+  font-size: 13px;
+}
+
+.me-export-retry {
+  padding: 4px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.me-export-retry:hover {
+  background: var(--bg-card-muted);
+}
+
+@media (max-width: 768px) {
+  .me-export-trigger,
+  .me-export-option {
+    min-height: 44px;
+  }
+}

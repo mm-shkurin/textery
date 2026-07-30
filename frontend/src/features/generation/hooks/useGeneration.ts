@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createGeneration, getGeneration } from '../api/generationApi'
 import { SessionExpiredError } from '../../auth/api/authorizedRequest'
+import type { DocumentType } from '../../../shared/documentTypes'
 
 export type GenerationUiState = 'idle' | 'pending' | 'completed' | 'failed'
 
@@ -26,7 +27,10 @@ export interface UseGeneration {
   volumePages: number | null
   createdAt: string | null
   error: string | null
-  submit: (topic: string) => void
+  // The document type the user picked travels with the topic: it is the ONE field that carries
+  // that choice to the backend, and dropping it here would generate a доклад whatever card was
+  // pressed. Optional for the same read-only-tests reason as createGeneration's parameter.
+  submit: (topic: string, documentType?: DocumentType) => void
   reset: () => void
 }
 
@@ -117,7 +121,7 @@ export function useGeneration(): UseGeneration {
   )
 
   const submit = useCallback(
-    async (topic: string) => {
+    async (topic: string, documentType?: DocumentType) => {
       setState('pending')
       setContent(null)
       setVolumePages(null)
@@ -127,7 +131,7 @@ export function useGeneration(): UseGeneration {
       attemptsRef.current = 0
       consecutiveFailuresRef.current = 0
       try {
-        const { generationId } = await createGeneration(topic)
+        const { generationId } = await createGeneration(topic, documentType)
         void poll(generationId) // immediate first check
         intervalRef.current = window.setInterval(() => {
           void poll(generationId)
