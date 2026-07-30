@@ -25,9 +25,13 @@ INVALID_TITLE_INTENT_MESSAGE = "A title cannot be set and cleared at the same ti
 # negatively, and deliberately so: `test_title_update_refusal_safety.py` asserts
 # it is non-blank AFTER `.strip()` -- so neither `""` nor `"   "` passes -- and
 # that it stays OFF the client message. Nothing else about it is pinned: any
-# non-blank sentence at all satisfies both assertions, so a rewrite that changed
-# what this says, or that leaked a password into it, fails no test. Dropping the
-# `from` clause below fails none either. Both gaps close with the log guard.
+# non-blank sentence that is not a SUBSTRING of that message satisfies both
+# assertions, so a rewrite that changed what this says, or that leaked a password
+# into it, fails no test. The carve-out is real rather than pedantic -- a detail
+# shortened to "title" or "clear" sits inside the client sentence and DOES fail --
+# but what that catches is only that the two strings differ, never anything about
+# what this one says. Dropping the `from` clause below fails none either. All of
+# it closes with the log guard.
 _CONTRADICTION_DETAIL = (
     "a clear carries no title to write: TitleUpdate(value=..., clears=True) "
     "asks for an erasure and a write at once, and its readers disagree"

@@ -2567,8 +2567,67 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   > Also false for this repo: the universal module-mapping table's "domain has no own tests; usecase
   > tests exercise domain" — `backend/domain/tests/` has 157 tests and is the ONLY suite covering
   > `title_update.py`'s `__post_init__` raise (L104 reads as uncovered under the usecase suite alone).
+  > `/refactor` RAN AND CHANGED ONE THING, and it is the same defect class this unit existed to fix:
+  > the production comment this commit REWROTE was itself false in the overstating direction. It said
+  > "any non-blank sentence at all satisfies both assertions" — but the second assertion is
+  > `_CONTRADICTION_DETAIL not in message`, so any detail that is a SUBSTRING of the client sentence
+  > fails. Verified live: `"title"` and `"clear"` both sit inside "A title cannot be set and cleared at
+  > the same time." and DO fail; `"a title"` does not (the message capitalises the A) and the comment's
+  > password example survives. Corrected to state the carve-out and then what it is worth — a substring
+  > hit pins only that the two strings differ, never anything about what the detail says. Declined, with
+  > reasons: splitting the 194/200 file (both parametrised methods share one `FORBIDDEN_FRAGMENTS` and
+  > one helper PRECISELY so the two echoed surfaces cannot drift; a split either duplicates the list or
+  > adds a third module, undoing the guarantee to buy headroom nothing needs); merging the two methods
+  > into one stacked parametrize (their docstrings carry different arguments and the per-surface failure
+  > name would be lost); deleting `erases()` as production-callerless (`document_storage.py` charters the
+  > `SET title = NULL` arm that will call it, and it is the named alternative to reading raw `.clears`);
+  > making `_CONTRADICTION_DETAIL` public for the test's import convenience (its privacy IS the subject
+  > matter). No test renamed, so production's by-name cross-reference at `title_update.py:73-74` still
+  > resolves. Suites flat: domain 157 + usecase 189 = 346 passed; full backend 514 passed / 57 skipped.
+  > REVIEW PASSES — agent-review CONCERNS x3, premortem CONCERNS x3. Both landed INDEPENDENTLY on the
+  > same #1, and it is a real hole in what this very commit shipped:
+  > • **CREDIBLE (both, #1) — the new `error_code` arm cannot fire on the only leak shape an `error_code`
+  >   can actually have.** `assert_carries_no_internal_shape` is applied to `error_code` with the fragment
+  >   set built for a PROSE message: `(`, `=`, and `TitleUpdate.__name__`. Error codes are
+  >   SCREAMING_SNAKE across the whole `_ERROR_CODE_STATUS_MAP`, so `(` and `=` can NEVER appear in one,
+  >   and the class name can never appear CONTIGUOUSLY because snake case separates it. The helper's
+  >   docstring excludes separated spellings on purpose — but that exclusion rests on "collapsing
+  >   separators would match the ordinary word 'title' in a sentence ABOUT titles", which is true of
+  >   English prose and FALSE of an identifier. Carried across surfaces unexamined, it removes the only
+  >   arm that could fire; what remains on the new method is the non-blank assert, three times. The unit's
+  >   own mutant evidence CONFIRMS this rather than refuting it: mutant (C) was
+  >   `"INVALID_TitleUpdate(clears=True)"`, a string no real edit produces, while the realistic edit the
+  >   method's own docstring names — a discriminating suffix, `INVALID_TITLE_UPDATE_CLEARS_WITH_VALUE` —
+  >   passes all three params. FIX: an `error_code`-specific fragment form (separator-tolerant
+  >   `TITLE_UPDATE`, or strip non-alpha before the containment test); the veto-its-own-subject argument
+  >   does not apply to an identifier. Better still, a NEGATIVE CONTROL asserting the fragment set is
+  >   non-vacuous on the surface it is applied to. Chartered as (g) below.
+  > • **CREDIBLE (premortem #2) — `INVALID_TITLE_INTENT` is a client contract with no pin outside
+  >   `backend/domain/tests/`.** It exists tree-wide in exactly two places: `title_update.py:5` and a
+  >   test-local literal at `test_title_update_invariants.py:48`. No rest test, no acceptance test, no
+  >   OpenAPI file names it. The sibling `==` dies to the same coordinated edit this file exists to
+  >   close, and this commit's new method pins only SHAPE while its docstring explicitly invites the
+  >   "make it more specific" rename. Incident: a frontend switching on the code shows a generic toast
+  >   after a rename, full suite green. DISTINCT from the chartered `_ERROR_CODE_STATUS_MAP` item —
+  >   that names the HTTP STATUS; nothing names the CODE STRING. Compounds the chartered silent-handler
+  >   finding: with no log line and no acceptance pin, a changed `error_code` is invisible on BOTH the
+  >   server and the test side. Chartered as (h) below.
+  > • **CREDIBLE (premortem #3) + (agent-review #2) — the casefold arm this commit introduced turns a
+  >   routine rename into a FALSE leak failure, and one assert was left behind by the same decision.**
+  >   Rename `TitleUpdate` → `Title` and the fragment becomes `title`, which is present in the shipped
+  >   message ("A title cannot be set…") AND in the shipped `error_code` (`INVALID_TITLE_INTENT`) — both
+  >   new arms fire on correct, safe production text, reporting a Security-5.1 leak that isn't. Under the
+  >   pre-commit case-SENSITIVE comparison neither fired, so this failure mode is CREATED here and then
+  >   doubled by the second surface; the unblock under time pressure is to delete the `domain-class-name`
+  >   param, retiring the guard's only prose arm permanently. Separately, `test_should_keep_the_developer
+  >   _detail_off_the_client_message` (line ~190) stayed `not in` WITHOUT casefold — one file, one commit,
+  >   two opposite answers to the same question. FIX: `.casefold()` on both sides of that assert, and a
+  >   discriminating-fragment check so a degenerate fragment fails as a fragment-list DEFECT with that
+  >   diagnosis rather than as six misleading leak failures. Chartered as (g) below.
+  > • FIXED IN THE REFACTOR COMMIT (agent-review #3): the production comment's "any non-blank sentence at
+  >   all" overstatement — see the `/refactor` note above.
 - [~] adapters-discovery — REQUIRED guards, named by the review passes over the design commit
-  (`97e8f53`); discovery must insert all four, none is optional:
+  (`97e8f53`); discovery must insert all of (a)-(h), none is optional:
   (a) rest route — TWO assertions in `test_save_document_title_router.py`, not one: a body of
   `{"content","version"}` with NO `title` key → `SaveDocument.execute(title=TitleUpdate.preserve())`
   AND `{"title": null}` → `TitleUpdate.clear()`. One alone passes under a constant mapping, and
@@ -2621,6 +2680,30 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   domain tripwire landed in `703def1`. If that work renames or relocates the private
   `_CONTRADICTION_DETAIL`, note that `test_title_update_refusal_safety.py` imports it, so a rename
   ERRORS the whole test module rather than failing one test; re-point the import, do not delete it.
+  (g) FRAGMENT-SET DISCRIMINATION for the refusal-safety guards — chartered by BOTH passes over
+  `202c0bc`, which reached it independently. The `error_code` arm added there is near-vacuous on the
+  surface it guards: `FORBIDDEN_FRAGMENTS` is `(`, `=` and `TitleUpdate.__name__`, and an error code
+  is SCREAMING_SNAKE, so the first two can never appear and the third can never appear CONTIGUOUSLY.
+  The realistic leak — the discriminating suffix the method's own docstring invites,
+  `INVALID_TITLE_UPDATE_CLEARS_WITH_VALUE` — passes every param. Insert: a separator-tolerant fragment
+  form for the identifier surface (strip non-alpha before the containment test, or add `TITLE_UPDATE`),
+  which is safe here because the veto-its-own-subject argument holds for English prose and NOT for an
+  identifier. Insert also a NEGATIVE CONTROL that the fragment set is discriminating — each fragment
+  absent from a known-safe baseline and from the current `error_code` — so a degenerate fragment fails
+  as a fragment-list DEFECT with that diagnosis. Without it, renaming `TitleUpdate` → `Title` makes the
+  fragment `title`, which IS in both the shipped message and the shipped code: six arms fire on safe
+  text, and the unblock under pressure is to delete the only prose arm the guard has. Same unit:
+  `.casefold()` on both sides of `test_should_keep_the_developer_detail_off_the_client_message`, which
+  `202c0bc` left case-SENSITIVE in the very commit that decided case-insensitivity.
+  (h) THE CODE STRING ITSELF IS A CLIENT CONTRACT and has no pin outside `backend/domain/tests/` —
+  premortem over `202c0bc`, and DISTINCT from (f), which names the HTTP STATUS. `INVALID_TITLE_INTENT`
+  exists in exactly two places tree-wide (`title_update.py:5` and a test-local literal at
+  `test_title_update_invariants.py:48`); no rest test, no acceptance test and no OpenAPI file names it,
+  so a rename is green everywhere while a frontend switching on it falls back to a generic toast.
+  Insert an assertion on the RESPONSE BODY's `error_code` for a set-and-clear save, at the rest or
+  acceptance tier — the shape guards in (g) pin how the code may LOOK, never which code it IS. This
+  compounds (f)'s silent handler: with no log line and no out-of-domain pin, a changed code is
+  invisible on both the server and the test side.
 - [ ] green-acceptance
 > READ-MODEL NOTE (agent-review, verified): `DocumentResponseDto` and `DocumentSummaryDto` carry NO
 > `title` field, so the whole three-state contract is unobservable to any client except by exporting
