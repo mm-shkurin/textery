@@ -49,6 +49,7 @@ class DocumentModel(Base):
     owner_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     document_type: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False)
+    title: Mapped[str | None] = mapped_column(String, nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False, default="")
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
@@ -62,6 +63,7 @@ class DocumentModel(Base):
             owner_id=document.owner_id,
             document_type=document.document_type,
             status=document.status,
+            title=document.title,
             content=document.content,
             version=document.version,
             idempotency_key=document.idempotency_key,
@@ -79,6 +81,7 @@ class DocumentModel(Base):
             owner_id=self.owner_id,
             document_type=self.document_type,
             status=self.status,
+            title=self.title,
             content=self.content,
             version=self.version,
             idempotency_key=self.idempotency_key,

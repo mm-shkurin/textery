@@ -37,6 +37,7 @@ class Document:
         idempotency_key: str,
         created_at: datetime,
         updated_at: datetime,
+        title: str | None = None,
     ) -> None:
         self.id = id
         self.owner_id = owner_id
@@ -47,6 +48,7 @@ class Document:
         self.idempotency_key = idempotency_key
         self.created_at = created_at
         self.updated_at = updated_at
+        self.title = title
 
     @classmethod
     def create(
@@ -88,6 +90,7 @@ class Document:
         idempotency_key: str,
         created_at: datetime,
         updated_at: datetime,
+        title: str | None = None,
     ) -> "Document":
         """Rehydrate a stored document, preserving every persisted field.
 
@@ -107,4 +110,5 @@ class Document:
             idempotency_key=idempotency_key,
             created_at=created_at,
             updated_at=updated_at,
+            title=title,
         )

@@ -16,38 +16,38 @@ from statements.frontend.auth.login_page_statements import LoginPageStatements
 from statements.frontend.auth.register_page_statements import RegisterPageStatements
 from statements.frontend.auth.verify_code_page_statements import VerifyCodePageStatements
 from statements.frontend.landing_page_statements import LandingPageStatements
-from statements.frontend.generation.chat_workspace_statements import ChatWorkspaceStatements
-from statements.frontend.generation.manual_editor_line_break_statements import (
-    ManualEditorLineBreakStatements,
-)
-from statements.frontend.generation.manual_editor_aria_statements import (
-    ManualEditorAriaStatements,
-)
-from statements.frontend.generation.manual_editor_beforeunload_statements import (
-    ManualEditorBeforeUnloadStatements,
-)
-from statements.frontend.generation.manual_editor_caret_statements import (
-    ManualEditorCaretStatements,
-)
-from statements.frontend.generation.manual_editor_placeholder_delete_statements import (
-    ManualEditorPlaceholderDeleteStatements,
-)
-from statements.frontend.generation.manual_editor_popover_clip_statements import (
-    ManualEditorPopoverClipStatements,
-)
-from statements.frontend.generation.manual_editor_save_payload_statements import (
-    ManualEditorSavePayloadStatements,
-)
-from statements.frontend.generation.manual_editor_save_queue_statements import (
-    ManualEditorSaveQueueStatements,
-)
-from statements.frontend.generation.manual_editor_statements import ManualEditorStatements
-from statements.frontend.generation.mode_modal_statements import ModeModalStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
 from statements.generation_statements import GenerationStatements
 from statements.login_statements import LoginStatements
 from statements.oauth_statements import OAuthStatements
 from statements.resend_statements import ResendStatements
+
+# Frontend generation fixtures live in their own module to keep this file under the
+# 200-line cap; re-imported here so pytest discovers them as conftest fixtures.
+from frontend_generation_fixtures import (  # noqa: F401
+    chat_workspace_statements,
+    mode_modal_statements,
+    manual_editor_statements,
+    manual_editor_line_break_statements,
+    manual_editor_save_payload_statements,
+    manual_editor_placeholder_delete_statements,
+    manual_editor_aria_statements,
+    manual_editor_caret_statements,
+    manual_editor_save_queue_statements,
+    manual_editor_popover_clip_statements,
+    manual_editor_beforeunload_statements,
+)
+
+# Document-export Statements fixtures also live in their own module for the same
+# reason; re-imported here so pytest discovers them as conftest fixtures.
+from document_export_fixtures import (  # noqa: F401
+    document_export_statements,
+    document_export_format_statements,
+    document_export_docx_statements,
+    document_export_filename_statements,
+    document_export_no_mutation_statements,
+    document_blank_title_save_statements,
+)
 
 # iPhone 12/13-class viewport — the smallest common real-device width the
 # "design for phone" scenarios must not horizontally overflow at.
@@ -178,57 +178,4 @@ def responsive_statements():
     return ResponsiveStatements()
 
 
-@pytest.fixture
-def chat_workspace_statements():
-    return ChatWorkspaceStatements()
-
-
-@pytest.fixture
-def mode_modal_statements():
-    return ModeModalStatements()
-
-
-@pytest.fixture
-def manual_editor_statements():
-    return ManualEditorStatements()
-
-
-@pytest.fixture
-def manual_editor_line_break_statements():
-    return ManualEditorLineBreakStatements()
-
-
-@pytest.fixture
-def manual_editor_save_payload_statements():
-    return ManualEditorSavePayloadStatements()
-
-
-@pytest.fixture
-def manual_editor_placeholder_delete_statements():
-    return ManualEditorPlaceholderDeleteStatements()
-
-
-@pytest.fixture
-def manual_editor_aria_statements():
-    return ManualEditorAriaStatements()
-
-
-@pytest.fixture
-def manual_editor_caret_statements():
-    return ManualEditorCaretStatements()
-
-
-@pytest.fixture
-def manual_editor_save_queue_statements():
-    return ManualEditorSaveQueueStatements()
-
-
-@pytest.fixture
-def manual_editor_popover_clip_statements():
-    return ManualEditorPopoverClipStatements()
-
-
-@pytest.fixture
-def manual_editor_beforeunload_statements():
-    return ManualEditorBeforeUnloadStatements()
 

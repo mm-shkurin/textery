@@ -5,6 +5,7 @@ from statements.generation_statements import GenerationStatements
 from statements.login_failed_attempt_statements import LoginFailedAttemptStatements
 from statements.login_lockout_statements import LoginLockoutStatements
 from statements.login_statements import LoginStatements
+from statements.port_shape_statements import PortShapeStatements
 from statements.refresh_statements import RefreshStatements
 from statements.register_atomic_write_statements import RegisterAtomicWriteStatements
 from statements.register_statements import RegisterStatements
@@ -103,6 +104,11 @@ def login_lockout_statements():
 @pytest.fixture
 def refresh_statements():
     return RefreshStatements()
+
+
+@pytest.fixture
+def port_shape_statements():
+    return PortShapeStatements()
 
 
 @pytest.fixture

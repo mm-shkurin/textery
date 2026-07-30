@@ -2,6 +2,7 @@ from uuid import uuid4
 
 import pytest
 
+from document.title_update import TitleUpdate
 from shared.exceptions import ConflictException
 
 
@@ -12,6 +13,14 @@ class TestSaveNewAndRead:
         owner_id = await document_storage_statements.given_an_account()
         document = await document_storage_statements.given_a_saved_document(owner_id)
 
+        # Makes the fresh SELECT explicit instead of accidental. The session is
+        # expire_on_commit=False, so an instance still in the identity map would be
+        # handed back with its in-memory values and this would compare x == x. Today
+        # it does not happen -- SQLAlchemy's identity map is WEAK-referencing and
+        # `save_new` keeps no reference to the model, so it is collected and the read
+        # really does hit Postgres. That is a refcounting accident, not a guarantee:
+        # anyone who later retains the model re-introduces the stale read silently.
+        document_storage_statements.expire_identity_map()
         fetched = await document_storage_statements.find_by_id_and_owner(document.id, owner_id)
 
         document_storage_statements.assert_documents_match(fetched, document)
@@ -36,12 +45,18 @@ class TestOwnerScoping:
             document.id, other_owner_id
         )
 
-        assert fetched is None, "another owner's document must read as absent, never returned"
+        document_storage_statements.assert_document_absent(
+            fetched, "another owner's document must read as absent, never returned"
+        )
 
     async def test_should_return_none_for_an_unknown_id(self, document_storage_statements):
         owner_id = await document_storage_statements.given_an_account()
 
-        assert await document_storage_statements.find_by_id_and_owner(uuid4(), owner_id) is None
+        fetched = await document_storage_statements.find_by_id_and_owner(uuid4(), owner_id)
+
+        document_storage_statements.assert_document_absent(
+            fetched, "an id that was never stored must read as absent"
+        )
 
 
 class TestIdempotencyKeyUniqueness:
@@ -74,12 +89,17 @@ class TestIdempotencyKeyUniqueness:
             second_owner, "shared-key"
         )
 
-        assert first.id != second.id, "the same key from two owners must yield two documents"
+        document_storage_statements.assert_distinct_documents(
+            first, second, "the same key from two owners must yield two documents"
+        )
 
     async def test_should_find_a_document_by_its_owner_and_key(self, document_storage_statements):
         owner_id = await document_storage_statements.given_an_account()
         document = await document_storage_statements.given_a_saved_document(owner_id, "key-lookup")
 
+        # As above: pins the read as a genuine SELECT rather than relying on the weak
+        # identity map having dropped the instance.
+        document_storage_statements.expire_identity_map()
         found = await document_storage_statements.find_by_idempotency_key(owner_id, "key-lookup")
 
         document_storage_statements.assert_documents_match(found, document)
@@ -95,12 +115,17 @@ class TestSaveContentCompareAndSwap:
         document = await document_storage_statements.given_a_saved_document(owner_id)
 
         saved = await document_storage_statements.save_content_if_version_matches(
-            document.id, owner_id, "<p>текст</p>", expected_version=1
+            document.id,
+            owner_id,
+            "<p>текст</p>",
+            expected_version=1,
+            title=TitleUpdate.preserve(),
         )
 
-        assert saved is not None, "a matching version must be accepted"
-        assert saved.content == "<p>текст</p>"
-        assert saved.version == 2, "a successful save advances the version by exactly one"
+        # The version pin is the "advances by exactly one" half of the contract.
+        document_storage_statements.assert_content_and_version(
+            saved, content="<p>текст</p>", version=2
+        )
 
     async def test_should_refuse_a_stale_version_and_leave_content_untouched(
         self, document_storage_statements
@@ -108,18 +133,31 @@ class TestSaveContentCompareAndSwap:
         owner_id = await document_storage_statements.given_an_account()
         document = await document_storage_statements.given_a_saved_document(owner_id)
         await document_storage_statements.save_content_if_version_matches(
-            document.id, owner_id, "<p>first</p>", expected_version=1
+            document.id,
+            owner_id,
+            "<p>first</p>",
+            expected_version=1,
+            title=TitleUpdate.preserve(),
         )
         await document_storage_statements.commit()
 
         refused = await document_storage_statements.save_content_if_version_matches(
-            document.id, owner_id, "<p>second</p>", expected_version=1
+            document.id,
+            owner_id,
+            "<p>second</p>",
+            expected_version=1,
+            title=TitleUpdate.preserve(),
         )
 
-        assert refused is None, "a stale version must not write"
+        document_storage_statements.assert_save_refused(refused, "a stale version must not write")
+        # "The first save's content must survive" is only meaningful against the DB's
+        # bytes, so force the re-hydration rather than trusting the weak identity map.
+        document_storage_statements.expire_identity_map()
         current = await document_storage_statements.find_by_id_and_owner(document.id, owner_id)
-        assert current.content == "<p>first</p>", "the first save's content must survive"
-        assert current.version == 2, "a refused save must not advance the version"
+        # The first save's content survives, and the refused save did not advance the version.
+        document_storage_statements.assert_content_and_version(
+            current, content="<p>first</p>", version=2
+        )
 
     async def test_should_refuse_a_save_against_another_owners_document(
         self, document_storage_statements
@@ -132,11 +170,21 @@ class TestSaveContentCompareAndSwap:
         document = await document_storage_statements.given_a_saved_document(owner_id)
 
         refused = await document_storage_statements.save_content_if_version_matches(
-            document.id, other_owner_id, "<p>hijack</p>", expected_version=1
+            document.id,
+            other_owner_id,
+            "<p>hijack</p>",
+            expected_version=1,
+            title=TitleUpdate.preserve(),
         )
 
-        assert refused is None, (
-            "a foreign document must not be writable even with a correct version"
+        document_storage_statements.assert_save_refused(
+            refused, "a foreign document must not be writable even with a correct version"
         )
+        # `content == ""` is also the value Document.create set in Python, so read off
+        # a cached instance this security guard could not fail even if the hijack write
+        # HAD landed. Expiring makes it read the bytes Postgres actually holds.
+        document_storage_statements.expire_identity_map()
         current = await document_storage_statements.find_by_id_and_owner(document.id, owner_id)
-        assert current.content == "", "the owner's content must be untouched"
+        # version=1 is the sharper half: a hijack write that landed would have advanced
+        # it to 2 even if it happened to store the same empty content.
+        document_storage_statements.assert_content_and_version(current, content="", version=1)

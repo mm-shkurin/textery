@@ -32,6 +32,12 @@ def app():
     async def raise_unauthorized():
         raise ValidationException(error_code="UNAUTHORIZED", message="Authentication is required.")
 
+    @application.get("/invalid-format")
+    async def raise_invalid_format():
+        raise ValidationException(
+            error_code="INVALID_FORMAT", message="The format must be pdf or docx."
+        )
+
     return application
 
 
@@ -99,4 +105,24 @@ class TestUnauthorizedStatusMapping:
         assert response.json() == {
             "error_code": "UNAUTHORIZED",
             "message": "Authentication is required.",
+        }
+
+
+class TestInvalidFormatStatusMapping:
+    """Story 17 Scenario 1.3: an unsupported/missing export format is a 422.
+
+    ExportFormat.parse raises ValidationException(error_code="INVALID_FORMAT").
+    The acceptance contract (red-acceptance f219201) demands 422, but
+    _ERROR_CODE_STATUS_MAP has no INVALID_FORMAT entry, so the handler defaults
+    it to 400. This rides the existing ValidationException handler once mapped.
+    """
+
+    async def test_should_map_invalid_format_to_422(self, client):
+        async with client as http:
+            response = await http.get("/invalid-format")
+
+        assert response.status_code == 422, f"got {response.status_code}: {response.text}"
+        assert response.json() == {
+            "error_code": "INVALID_FORMAT",
+            "message": "The format must be pdf or docx.",
         }

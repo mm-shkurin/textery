@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -7,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from access.keyset_pagination import paginate_by_owner
 from document.document import Document
+from document.title_update import TitleUpdate
 from model.document.document_model import DocumentModel
 from shared.exceptions import ConflictException
 from shared.keyset_cursor import KeysetCursor
@@ -85,6 +87,7 @@ class SqlAlchemyDocumentStorage:
         content: str,
         expected_version: int,
         updated_at: datetime,
+        title: TitleUpdate,
     ) -> Document | None:
         """Compare-and-swap the content. Returns the new state, or None if the
         version did not match (or the document is absent/foreign).
@@ -106,6 +109,7 @@ class SqlAlchemyDocumentStorage:
         reaches the version comparison, so a correct-version guess against someone
         else's id is indistinguishable from a wrong one.
         """
+        values = self._update_values(content, updated_at, title)
         result = await self._session.execute(
             update(DocumentModel)
             .where(
@@ -113,12 +117,43 @@ class SqlAlchemyDocumentStorage:
                 DocumentModel.owner_id == owner_id,
                 DocumentModel.version == expected_version,
             )
-            .values(
-                content=content,
-                version=DocumentModel.version + 1,
-                updated_at=updated_at,
-            )
+            .values(**values)
             .returning(DocumentModel)
         )
         model = result.scalar_one_or_none()
         return model.to_domain() if model else None
+
+    @staticmethod
+    def _update_values(content: str, updated_at: datetime, title: TitleUpdate) -> dict[str, Any]:
+        """The SET clause. `title` is included ONLY when the caller carries an intent.
+
+        A content-only autosave omits it, and SETting title = NULL unconditionally
+        would silently wipe the user's title.
+
+        Whether an intent names a title is `TitleUpdate`'s own question, asked as
+        `carries_a_value()` -- the adapter does not re-derive `preserve()` by
+        null-testing `value`.
+
+        A raw `str` is no longer accepted, and the blank path is closed at the
+        source: `TitleUpdate.__post_init__` folds a blank value down to preserve
+        on EVERY construction path, so no intent reaching here can carry `""` and
+        `SET title = ''` is unreachable. Blankness is no longer decided one layer
+        up in `SaveDocument`; it is an invariant of the type, which is why an
+        adapter built by some other caller cannot reopen it.
+
+        There is no `| None` arm: the absent case reaches here as `preserve()`,
+        so the intent is always named.
+
+        ⚠️ STILL TWO BRANCHES, and the third state is UNMAPPED: `clear()` is also
+        `carries_a_value() == False`, so it currently falls into the omit branch
+        and no-ops. The `SET title = NULL` arm (ask `title.erases()` first) is
+        owned by the routed `adapters-discovery` (b) step.
+        """
+        values: dict[str, Any] = {
+            "content": content,
+            "version": DocumentModel.version + 1,
+            "updated_at": updated_at,
+        }
+        if title.carries_a_value():
+            values["title"] = title.value
+        return values

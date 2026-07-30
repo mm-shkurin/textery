@@ -8,6 +8,17 @@ PyJWT==2.13.0
 # HTML sanitizer for manual-document content (story 5). Rust/ammonia binding.
 # bleach is archived/EOL since Jan 2023 and its own README points here.
 nh3==0.3.6
+# HTML -> PDF renderer for document export (story 17). Needs native Pango/cairo
+# libs, installed in infra/docker/backend.Dockerfile; cannot import on a host
+# without them, so its adapter tests run in-container.
+weasyprint==63.1
+# HTML -> DOCX renderer for document export (story 17, Sc 2.2). Both pure-Python
+# (no native OS libs), so unlike weasyprint they need no apt packages in CI or
+# the backend image -- adding them to this file is enough. htmldocx parses the
+# already-sanitized HTML into a python-docx Document; python-docx exposes
+# core_properties so the renderer can redact author/time metadata.
+python-docx==1.1.2
+htmldocx==0.0.6
 alembic==1.18.4
 pytest==9.1.1
 pytest-asyncio==1.4.0

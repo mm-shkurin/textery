@@ -4,6 +4,7 @@ from document.document import Document
 from document.document_content import MAX_CONTENT_LENGTH, DocumentContent
 from document.document_repository import DocumentRepository
 from document.html_sanitizer import HtmlSanitizer
+from document.title_update import TitleUpdate
 from shared.clock import Clock
 from shared.exceptions import ConflictException, NotFoundException, ValidationException
 from shared.unit_of_work import NullUnitOfWork, UnitOfWork
@@ -35,7 +36,16 @@ class SaveDocument:
         self.unit_of_work = unit_of_work or NullUnitOfWork()
 
     async def execute(
-        self, document_id: UUID, owner_id: UUID, content: str, version: int
+        self,
+        document_id: UUID,
+        owner_id: UUID,
+        content: str,
+        version: int,
+        # `str` is TRANSITIONAL and owned by adapters-discovery (a): the PUT route
+        # still hands the raw Pydantic field over, and only there can absent be
+        # told from an explicit null (`model_fields_set`). Until it maps the wire
+        # shape to a TitleUpdate itself, a raw string is read as "set this title".
+        title: TitleUpdate | str | None = None,
     ) -> Document:
         self._validate_version(version)
         # Length is checked here, before sanitizing: sanitizing first would make the
@@ -51,11 +61,37 @@ class SaveDocument:
             content=sanitized,
             expected_version=version,
             updated_at=self.clock.now(),
+            title=self._title_intent(title),
         )
         if saved is None:
             return await self._explain_miss(document_id, owner_id, sanitized, version)
         await self.unit_of_work.commit()
         return saved
+
+    @staticmethod
+    def _title_intent(title: TitleUpdate | str | None) -> TitleUpdate:
+        """Turn what the caller passed into a named intent.
+
+        `None` here means ABSENT ONLY -- the `title` argument was not supplied.
+        It must NEVER be how an adapter spells an explicit wire `"title": null`:
+        only the route can tell absent from null (`model_fields_set`), and if it
+        forwards `None` for a null the erasure is silently converted into a
+        preserve and the whole clear path no-ops with every test green. A route
+        that means "clear" passes `TitleUpdate.clear()`.
+
+        Absence is spelled `preserve()` rather than forwarded as a bare `None`:
+        the port declares `None` unusable for intent, and the absent case is the
+        most-travelled path of all, so it must not be the one still carrying the
+        ambiguous value.
+
+        Blankness is NOT decided here. `TitleUpdate.__post_init__` folds a blank
+        string down to preserve on every construction path -- including the
+        constructor -- so re-testing it here could only ever be a guard that
+        cannot fire. The invariant lives on the type.
+        """
+        if title is None:
+            return TitleUpdate.preserve()
+        return TitleUpdate.of(title) if isinstance(title, str) else title
 
     def _validate_version(self, version: int) -> None:
         # bool is an int subclass in Python, and `True == 1`, so a JSON `true` would

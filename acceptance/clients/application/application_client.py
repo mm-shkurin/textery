@@ -11,6 +11,10 @@ from clients.application.dto.auth.resend_response_dto import ResendResponseDto
 from clients.application.dto.auth.verify_request_dto import VerifyRequestDto
 from clients.application.dto.auth.verify_response_dto import VerifyResponseDto
 from clients.application.dto.auth.oauth_dtos import OAuthExchangeResponseDto, OAuthRedirectDto
+from clients.application.dto.document.create_document_response_dto import CreateDocumentResponseDto
+from clients.application.dto.document.export_response_dto import ExportResponseDto
+from clients.application.dto.document.get_document_response_dto import GetDocumentResponseDto
+from clients.application.dto.document.save_document_response_dto import SaveDocumentResponseDto
 from clients.application.dto.generation.generation_request_dto import CreateGenerationRequestDto
 from clients.application.dto.generation.generation_response_dto import GenerationResponseDto
 
@@ -81,6 +85,76 @@ class ApplicationClient:
     async def get_generation(self, generation_id: str) -> GenerationResponseDto:
         response = await self._client.get(f"/api/v1/generations/{generation_id}")
         return GenerationResponseDto(status_code=response.status_code, body=self._parsed_body(response))
+
+    async def create_document(
+        self, document_type: str, access_token: str, idempotency_key: str
+    ) -> CreateDocumentResponseDto:
+        response = await self._client.post(
+            "/api/v1/documents",
+            json={"document_type": document_type},
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Idempotency-Key": idempotency_key,
+            },
+        )
+        return CreateDocumentResponseDto(
+            status_code=response.status_code, body=self._parsed_body(response)
+        )
+
+    async def get_document(
+        self, document_id: str, access_token: str
+    ) -> GetDocumentResponseDto:
+        response = await self._client.get(
+            f"/api/v1/documents/{document_id}",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        return GetDocumentResponseDto(
+            status_code=response.status_code, body=self._parsed_body(response)
+        )
+
+    async def save_document(
+        self,
+        document_id: str,
+        content: str,
+        version: int,
+        access_token: str,
+        title: str | None = None,
+    ) -> SaveDocumentResponseDto:
+        # title is threaded in as the Cyrillic-filename scenario's source of truth.
+        # It is sent as an extra field on the save payload; whether the backend
+        # persists it (story-5-extension) or drops it via Pydantic extra="ignore"
+        # is exactly what the export filename assertion pins down.
+        payload: dict = {"content": content, "version": version}
+        if title is not None:
+            payload["title"] = title
+        response = await self._client.put(
+            f"/api/v1/documents/{document_id}",
+            json=payload,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        return SaveDocumentResponseDto(
+            status_code=response.status_code, body=self._parsed_body(response)
+        )
+
+    async def export_document(
+        self, document_id: str, export_format: str | None, access_token: str
+    ) -> ExportResponseDto:
+        # export_format is passed straight through so a test can exercise an
+        # unsupported value ("xml"); None omits the query param entirely, which is
+        # the "no format at all" case the format guard must also refuse.
+        params = {} if export_format is None else {"format": export_format}
+        response = await self._client.get(
+            f"/api/v1/documents/{document_id}/export",
+            params=params,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        return ExportResponseDto(
+            status_code=response.status_code,
+            body=self._parsed_body(response),
+            content_type=response.headers.get("content-type"),
+            content_disposition=response.headers.get("content-disposition"),
+            content=response.content,
+        )
 
     @staticmethod
     def _parsed_body(response: httpx.Response) -> dict | None:

@@ -1,8 +1,10 @@
+from urllib.parse import quote
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Response
 
 from document.create_document import CreateDocument
+from document.export_document import ExportDocument
 from document.get_document import GetDocument
 from document.list_documents import ListDocuments
 from document.save_document import SaveDocument
@@ -33,6 +35,10 @@ def get_save_document_usecase() -> SaveDocument:
 
 
 def get_list_documents_usecase() -> ListDocuments:
+    raise NotImplementedError("wired by the application composition root")
+
+
+def get_export_document_usecase() -> ExportDocument:
     raise NotImplementedError("wired by the application composition root")
 
 
@@ -90,6 +96,35 @@ async def get_document(
     return DocumentResponseDto.from_domain(document)
 
 
+@router.get("/{document_id}/export")
+async def export_document(
+    document_id: UUID,
+    format: str | None = None,
+    owner_id: UUID = Depends(get_current_owner_id),
+    usecase: ExportDocument = Depends(get_export_document_usecase),
+) -> Response:
+    rendered = await usecase.execute(
+        document_id=document_id, owner_id=owner_id, format=format
+    )
+    if rendered is None:
+        # Absent and foreign collapse to the same None, translated into the
+        # sanctioned 404 rather than leaking which case it was.
+        raise NotFoundException(f"document {document_id} not found")
+    # Stream the rendered bytes back verbatim as a binary attachment. media_type
+    # is threaded from the RenderedExport so a future DOCX export is typed
+    # correctly rather than mislabelled application/pdf.
+    #
+    # The filename is RFC 5987 percent-encoded. safe="" encodes control chars too
+    # (CR->%0D, LF->%0A), so a title carrying raw CRLF cannot inject a header line;
+    # unreserved chars and the dot stay literal, space -> %20, Cyrillic -> %XX.
+    encoded = quote(rendered.filename, safe="")
+    return Response(
+        content=rendered.content,
+        media_type=rendered.media_type,
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{encoded}"},
+    )
+
+
 @router.put("/{document_id}", response_model=DocumentResponseDto)
 async def save_document(
     document_id: UUID,
@@ -102,5 +137,6 @@ async def save_document(
         owner_id=owner_id,
         content=request.content,
         version=request.version,
+        title=request.title,
     )
     return DocumentResponseDto.from_domain(document)

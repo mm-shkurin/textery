@@ -12,6 +12,7 @@ _DB_SRC = os.path.join(_BACKEND_DIR, "adapters", "db", "src")
 _PROVIDER_SRC = os.path.join(_BACKEND_DIR, "adapters", "generation_provider", "src")
 _OAUTH_PROVIDER_SRC = os.path.join(_BACKEND_DIR, "adapters", "oauth_provider", "src")
 _SECURITY_SRC = os.path.join(_BACKEND_DIR, "adapters", "security", "src")
+_RENDERING_SRC = os.path.join(_BACKEND_DIR, "adapters", "rendering", "src")
 
 sys.path.insert(0, _APP_DIR)
 sys.path.insert(0, _REST_SRC)
@@ -21,6 +22,9 @@ sys.path.insert(0, _DB_SRC)
 sys.path.insert(0, _PROVIDER_SRC)
 sys.path.insert(0, _OAUTH_PROVIDER_SRC)
 sys.path.insert(0, _SECURITY_SRC)
+# The export wiring lazy-imports WeasyPrintPdfRenderer from here at request time;
+# without this root a real export 500s with ModuleNotFoundError: 'rendering'.
+sys.path.insert(0, _RENDERING_SRC)
 
 import asyncio
 import contextlib
@@ -32,6 +36,7 @@ from container import (
     create_complete_oauth_callback,
     create_create_document,
     create_exchange_handoff_code,
+    create_export_document,
     create_frontend_callback_url,
     create_generate_document,
     create_get_document,
@@ -72,6 +77,7 @@ from router.auth.oauth_router import (
 from router.auth.oauth_router import router as oauth_router
 from router.document.document_router import (
     get_create_document_usecase,
+    get_export_document_usecase,
     get_get_document_usecase,
     get_list_documents_usecase,
     get_save_document_usecase,
@@ -140,6 +146,7 @@ app.dependency_overrides[get_login_user_usecase] = create_login_user
 app.dependency_overrides[get_refresh_access_token_usecase] = create_refresh_access_token
 app.dependency_overrides[get_create_document_usecase] = create_create_document
 app.dependency_overrides[get_get_document_usecase] = create_get_document
+app.dependency_overrides[get_export_document_usecase] = create_export_document
 app.dependency_overrides[get_list_documents_usecase] = create_list_documents
 app.dependency_overrides[get_save_document_usecase] = create_save_document
 app.dependency_overrides[get_token_service] = create_token_service

@@ -1,9 +1,35 @@
-from datetime import UTC, datetime
-from uuid import UUID
+from datetime import UTC, datetime, timedelta
+from uuid import UUID, uuid4
 
 from document.document import Document
+from document.title_update import TitleUpdate
 from shared.exceptions import ConflictException
 from shared.keyset_cursor import KeysetCursor
+
+_EPOCH = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
+
+
+def stored_document(
+    owner_id: UUID, minutes_old: int = 0, content: str = "", title: str | None = None
+) -> Document:
+    """A persisted draft, `minutes_old` minutes older than the newest possible one.
+
+    `title` drives the export-filename derivation (Sc 3.1) and is passed straight
+    through the constructor now that the domain entity carries a `title` field.
+    """
+    stored_at = _EPOCH - timedelta(minutes=minutes_old)
+    return Document(
+        id=uuid4(),
+        owner_id=owner_id,
+        document_type="эссе",
+        status="draft",
+        content=content,
+        version=1,
+        idempotency_key=f"key-{uuid4()}",
+        created_at=stored_at,
+        updated_at=stored_at,
+        title=title,
+    )
 
 
 class FakeDocumentRepository:
@@ -17,6 +43,7 @@ class FakeDocumentRepository:
 
     def __init__(self) -> None:
         self.documents: list[Document] = []
+        self.title_updates: list[TitleUpdate] = []
 
     async def save_new(self, document: Document) -> None:
         clash = any(
@@ -72,14 +99,40 @@ class FakeDocumentRepository:
         content: str,
         expected_version: int,
         updated_at: datetime,
+        *,
+        title: TitleUpdate,
     ) -> Document | None:
+        # REQUIRED, mirroring the port: the fake must not answer for the usecase.
+        # A default here made an omitted argument indistinguishable from the
+        # usecase forwarding `preserve()` itself. The sentinel that stood in for
+        # this is gone with the port default it compensated for -- an omitted
+        # argument is now a TypeError, which is a constraint rather than a
+        # convention.
+        # Recorded before the CAS guard so the intent the usecase forwarded is
+        # observable regardless of whether the swap matched.
+        self.title_updates.append(title)
         stored = await self.find_by_id_and_owner(document_id, owner_id)
         if stored is None or stored.version != expected_version:
             return None
         stored.content = content
         stored.version += 1
         stored.updated_at = updated_at
+        # All three intents, mirroring the real CAS. `erases()` is asked FIRST:
+        # both `clear()` and `preserve()` carry no value, so a `carries_a_value()`
+        # test alone maps them to the same "leave the title alone" and the clear
+        # path reads green while doing nothing.
+        if title.erases():
+            stored.title = None
+        elif title.carries_a_value():
+            stored.title = title.value
         return stored
+
+
+async def seeded(*documents: Document) -> FakeDocumentRepository:
+    repository = FakeDocumentRepository()
+    for document in documents:
+        await repository.save_new(document)
+    return repository
 
 
 class FakeHtmlSanitizer:
@@ -99,14 +152,8 @@ class FakeHtmlSanitizer:
 
 
 class FakeClock:
-    def __init__(self, now: datetime | None = None) -> None:
-        self._now = now or datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
-
     def now(self) -> datetime:
-        return self._now
-
-    def advance_to(self, moment: datetime) -> None:
-        self._now = moment
+        return _EPOCH
 
 
 class FakeUnitOfWork:

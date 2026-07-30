@@ -3,6 +3,7 @@ from typing import Protocol
 from uuid import UUID
 
 from document.document import Document
+from document.title_update import TitleUpdate
 from shared.keyset_cursor import KeysetCursor
 
 
@@ -44,8 +45,23 @@ class DocumentRepository(Protocol):
         content: str,
         expected_version: int,
         updated_at: datetime,
+        *,
+        title: TitleUpdate,
     ) -> Document | None:
         """Compare-and-swap the content, returning the new state.
+
+        `title` is a `TitleUpdate`, not a `str | None`: once a blank title means
+        "preserve", a bare `None` can no longer tell "preserve" from "clear".
+        `None` is not accepted at all -- the absent case is spelled `preserve()`,
+        so every call carries a named intent and the implementor has no fourth,
+        unnamed state to map. It is REQUIRED and has no default: a default is
+        itself a fourth, unnamed state ("argument absent"), and since
+        `preserve()` and the coming `clear()` are indistinguishable by value, a
+        default on the app's most-travelled save path would be a silent clear
+        waiting to happen.
+        The value object names the intent, so the implementor maps the states to
+        SQL explicitly (omit from the SET list / `SET title = NULL` / `SET title
+        = ?`) -- see decisions/blank-title-semantics-decision.md.
 
         Returns `None` when nothing matched -- which conflates "absent",
         "foreign", and "stale version" on purpose. The caller re-reads to tell
