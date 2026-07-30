@@ -152,6 +152,7 @@ known-first-party = [
     "hashing",
     "model",
     "provider",
+    "refusal_guard",
     "rendering",
     "router",
     "sanitization",

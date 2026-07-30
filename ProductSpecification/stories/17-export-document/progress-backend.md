@@ -2746,7 +2746,7 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   > the rest wire mapping that makes `clear()` reachable at all, in that order so the CAS can honour a
   > clear before the route is able to send one. Then the error surface, then the docs, then the
   > end-to-end clear.
-- [~] green-usecase (the fragment set discriminates on the surface it guards) — closes (g). One unit,
+- [x] green-usecase (the fragment set discriminates on the surface it guards) — closes (g). One unit,
   test-only, same shape as the unit that landed `202c0bc`: no production behavior change, mutants are
   the evidence. (1) Give the `error_code` surface a separator-tolerant fragment form — strip non-alpha
   before the containment test, or add `TITLE_UPDATE` — so the realistic leak
@@ -2761,7 +2761,68 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   (must fail after; passes today) and by renaming the class to `Title` in a scratch probe (must report
   a fragment-list defect, not six leak failures). FILE CAP: the file is at 194/200 — this unit forces
   the split its sibling has been anticipating; split cleanly and keep every guard live.
-- [ ] red-adapter db (the clear arm is SQL, and the signature mirrors the port) — closes (b) + (e).
+  > GREEN LANDED, test-only — zero production files changed, verified by `git status` over
+  > `backend/domain/src` AND by `git ls-files --others` (two of the four changed files are NEW, so a
+  > bare `git diff HEAD` would have missed them).
+  > THE FRAGMENT SET MOVED OUT: new `backend/domain/tests/refusal_guard/fragments.py` (155 lines) owns
+  > the fragments and the three assert helpers, imported by both test modules — so the list cannot
+  > drift between the two echoed JSON keys, which is the guarantee the 194-line single file was holding
+  > together by proximity alone. Not a Statements class (there are none under `backend/`); it is this
+  > tier's inline-constant convention hoisted one directory up, mirroring `usecase/tests/fake`.
+  > `refusal_guard` added to ruff `known-first-party` in `backend/pyproject.toml`, or isort sorts the
+  > new import above `document`. The safety file drops 194 → 148; new
+  > `test_title_update_refusal_fragments.py` is 52. All three under cap, and the split the last two
+  > units kept anticipating is now DONE rather than deferred again.
+  > (1) FOURTH FRAGMENT `_as_identifier_spelling(TitleUpdate.__name__)` → `TITLE_UPDATE`, DERIVED from
+  > `__name__` so a class rename carries it. GENERAL SEPARATOR-STRIPPING WAS CONSIDERED AND REJECTED,
+  > and the reason is the sort that gets rediscovered painfully: stripping non-alpha turns `(` and `=`
+  > into EMPTY needles, and `"" in anything` is True — so the fix proposed for the identifier surface
+  > would have made two of the four fragments degenerate on the very surface it was hardening. The
+  > SCREAMING_SNAKE spelling has no such edge. The asymmetry is recorded at the fragment: the
+  > veto-its-own-subject carve-out is right for English prose and has NO purchase on an identifier,
+  > where `_` is the word separator and there is no ordinary-English reading of `TITLE_UPDATE` to
+  > protect.
+  > (2) NEGATIVE CONTROL `assert_fragment_discriminates(surface, baseline, forbidden)` — standalone as
+  > its own claim (4 fragments × 2 baselines) AND inlined as a PRECONDITION inside
+  > `assert_carries_no_internal_shape`, before the leak assertion. That placement is the whole trick:
+  > it is what makes a degenerate fragment report "FRAGMENT-LIST DEFECT, not a leak … do NOT 'fix' the
+  > refusal text it is accusing" instead of six Security-5.1 accusations against text that is fine.
+  > Baselines are FROZEN TEST-LOCAL COPIES, not the live constants — reading
+  > `INVALID_TITLE_INTENT_ERROR_CODE` here would invert the diagnosis exactly when it matters, telling
+  > you your fragment list is broken about a fragment that had just caught a real leak.
+  > (3) `.casefold()` on both sides of `test_should_keep_the_developer_detail_off_the_client_message`,
+  > left case-SENSITIVE by the commit that decided case-insensitivity.
+  > PROBES, each injected then restored (`git diff --quiet` after every one): `error_code` →
+  > `INVALID_TITLE_UPDATE_CLEARS_WITH_VALUE` = 1 failed, diagnosed as a LEAK — and it PASSED every param
+  > before this unit, which is the hole both review passes named; class renamed `TitleUpdate` → `Title`
+  > = 8 failed / 9 passed, every one carrying the fragment-list diagnosis and NOT one leak accusation
+  > against safe text; blank `_CONTRADICTION_DETAIL` = 1 failed, blank `error_code` = 4 failed — the
+  > previous unit's mutants still die.
+  > Tests: domain 167 passed / 0 failed (was 157 — 8 new control arms plus the split's arithmetic);
+  > usecase 189 / 0; domain+usecase 356 passed / 0 failed. The two refusal modules: 17 collected, 17
+  > passed. mypy domain+usecase Success, 159 files. ruff clean over all four changed files.
+  > Coverage: `title_update.py` 100% line + 100% branch under the domain suite; the helper module is
+  > 23 statements, ZERO branches, 100% covered — structurally it has no dead arm to find, since it is
+  > constants plus three linear asserts.
+  > TWO THINGS COVERAGE CANNOT SEE, read rather than measured, and deliberately NOT filed as steps:
+  > `_baseline_for` is a dict lookup whose two keys are both exercised, and an unknown surface KeyErrors
+  > rather than silently passing — the right failure direction. And the FAILURE SIDE of all four asserts
+  > is unexercised, necessarily, because all 17 tests pass. Worth knowing rather than fixing: the
+  > "FRAGMENT-LIST DEFECT" diagnostic is unproven prose that will render for the first time in the exact
+  > moment someone is under pressure to read it correctly. A meta-test asserting a test helper fails
+  > correctly is a cost this guard does not earn.
+  > STILL OPEN, and the next unit walks straight into it: `ruff check` over `backend/` reports 5 errors,
+  > all PRE-EXISTING — confirmed by stashing this unit's change and getting the same 5. Four are in
+  > `adapters/rendering`; the fifth is `F401 pytest imported but unused` in
+  > `test_save_document_title_router.py`, which is the file `red-adapter rest (the wire's null…)`
+  > rewrites. Fix it there, in the unit that is already editing the file.
+  > TOOLING DEFECT, now confirmed twice and worse than first recorded: the focus filter in
+  > `.claude/tech/python-fastapi-hex/templates/testing/coverage-commands.md` appears TWICE (Focus filter
+  > and Multi-module grouping) and both copies are broken the same way, AND both omit the untracked-file
+  > leg. This unit is the SECOND CONSECUTIVE run where the broken filter's empty output happened to be
+  > correct — which is the worst way for a broken filter to survive, since two accidental agreements
+  > read as evidence it works.
+- [~] red-adapter db (the clear arm is SQL, and the signature mirrors the port) — closes (b) + (e).
   Two behavior tests in `test_document_storage_title.py` (today: round-trip / preserve-on-omit / padded
   only): a save carrying `TitleUpdate.clear()` over a document with a stored title must read back
   `title is None` through `find_by_id_and_owner`, with `expire_identity_map()` first so it is a genuine
