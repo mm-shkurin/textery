@@ -2315,7 +2315,94 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   > 0 failed / 57 skipped — all 57 are the db adapter's env-gated Postgres skips
   > (`no database listening at localhost:5432`), none new, baseline was 507/57. mypy over
   > `backend/domain/src` Success (18 files); `ruff check` clean.
-- [~] green-usecase (the refusal message is client-SAFE, not merely stable)
+  > `/refactor` RAN AND CHANGED NOTHING — refactor commit skipped. Clusters M and T clean on the new
+  > file; cluster D produced three rows, all in files this unit did not touch, all dismissed with
+  > reasons worth keeping: (1) parametrising the two refusal tests in `test_title_update_invariants.py`
+  > would rename `test_should_reject_a_flagged_blank_before_normalising_it_away` to a `[blank-arm]` id
+  > and silently break the cross-reference PRODUCTION CODE makes to it BY NAME at
+  > `title_update.py:73-74` (cited twice more in this file), and the two bodies catch DIFFERENT mutants
+  > (value arm: the refusal must name itself; blank arm: normalise-then-check would ACCEPT
+  > `(value="   ", clears=True)` as a legitimate clear) — one merged message flattens two claims;
+  > (2) parametrising the three state-representation tests in `test_title_update.py` would convert
+  > in-body literals into param variables, which is exactly the weakening of the `==` drift pin this
+  > unit forbids; (3) `value: str | None` is a discriminated absence in the ADR's tri-state sum, and
+  > every alternative is a production behavior change, forbidden in RED. Also assessed and rejected:
+  > extracting the shared `refuse_a_flagged_value()`/`pytest.raises` shape needs a new module or
+  > `conftest.py` to save ~4 lines, and the 186-line sibling cannot host it.
+  > FILE-SIZE HEADROOM, for the next unit rather than this one: `test_title_update_invariants.py` is at
+  > 186/200, so the next guard added there forces the split its own header already anticipates.
+  > REVIEW PASSES — agent-review CONCERNS, premortem CONCERNS. Both confirmed the production edit is
+  > comment-only (RED honoured) and the kill-mutant story holds. Findings, ranked:
+  > • **CREDIBLE (agent-review #2), and it falsifies a claim this commit MADE: the needle vacuity guard
+  >   uses `!= ""` where the haystack correctly uses `.strip() != ""`.** Line 138 asserts
+  >   `_CONTRADICTION_DETAIL != ""` while line 118 asserts `message.strip() != ""` — and the haystack's
+  >   own docstring gives the reason, which applies identically to the needle: `"   " in <anything>` is
+  >   False, so a whitespace-blanked detail satisfies the bare `not in` just as vacuously as `""`.
+  >   VERIFIED by injecting `_CONTRADICTION_DETAIL = "   "`: 4 passed, mutant survives. So the commit
+  >   message's "blanking `_CONTRADICTION_DETAIL` now fails" is true only for the exact-empty spelling,
+  >   and the PRODUCTION comment added at `title_update.py:26-27` ("blanking this constant now fails a
+  >   test") is an overstatement in production code. FIX: `.strip()` on the needle too, and correct that
+  >   comment. Owned by green-usecase below.
+  > • **CREDIBLE (agent-review #1) — the shipped file's docstring states the OPPOSITE of its own central
+  >   rationale.** Lines 15-17 read "the `==` pin rules out every message except one, and survives any
+  >   rewrite" — the `==` pin DIES on any rewrite; that is the entire reason the pair is needed. The
+  >   commit message and this progress note both have it right; only the shipped file is wrong, and as
+  >   written it invites a future reader to conclude the `==` pin alone suffices, i.e. to delete this
+  >   very file. No test can guard a comment. One-word fix, owned by green-usecase below.
+  > • **CREDIBLE (premortem #2) — `error_code` is the OTHER verbatim-echoed field, and this unit guarded
+  >   only one of the two.** `exception_handlers.py:40-42` returns BOTH `error_code` and `message`
+  >   unsubstituted (pinned live by `test_should_return_400_with_error_code_and_message`), yet
+  >   `error_code`'s content is guarded only by a tuple `==` against a test-local literal at
+  >   `test_title_update_invariants.py:127` — precisely the coordinated-edit hole this unit exists to
+  >   close, left open one JSON key over. FIX: run the same three fragments plus the non-blank assert
+  >   over `refuse_a_flagged_value().error_code`; the helper already returns the whole exception, so it
+  >   is a second parametrised method, not a new file. Owned by green-usecase below.
+  > • **CREDIBLE (premortem #1) — `TitleUpdate.clear()` HAS ZERO NON-TEST CALLERS; `"title": null` is a
+  >   silent no-op, so `clears=True` is UNREACHABLE FROM HTTP.** Traced: `document_dtos.py:24`
+  >   (`title: str | None = None` collapses absent and explicit-null), `document_router.py:140` (passes
+  >   `request.title` straight through), `save_document.py:93` (`None` → `preserve()`). The ADR's
+  >   absent-vs-null distinction via `model_fields_set` was DESIGNED but never wired. This unit's
+  >   docstring and `title_update.py:7-15` both assert the refusal is CLIENT-FACING, and no request
+  >   produces it — the safety property is pinned on a surface with no producer, and the prose
+  >   confidence is what makes that easy to stop asking about. Incident shape: user clears a title,
+  >   gets 200, refetches, old title still there, no error and no log; filed as "the button does
+  >   nothing". CORRECTION TO THE PASS, which called this unowned: guards (a) and (c) of
+  >   adapters-discovery below ALREADY charter exactly this — (a) the two route assertions via
+  >   `model_fields_set`, (c) the acceptance-client sentinel. What the pass adds is the read-back half:
+  >   `grep` finds no acceptance test expressing explicit null AT ALL, so nothing asserts a cleared
+  >   title reads back as null end to end. Folded into (c). The finding still stands as a live
+  >   correctness fact about the tree — `clear()` has no non-test caller TODAY, and the docstring here
+  >   claiming the refusal is client-facing is ahead of the wiring.
+  > • **CREDIBLE/LOW (premortem #3) — the "FAMILY" the fragments rule out is narrower than the docstring
+  >   claims: syntax-shaped leaks plus ONE identifier.** "the value and the clears flag disagree — a
+  >   clear carries no title to write" contains no `(`, no `=`, not `TitleUpdate`, and is not the detail
+  >   verbatim, so all four tests pass while the message names our internal fields. The prose-leak axis
+  >   the file explicitly opens is closed for the class name and open for every field on it. Possible
+  >   fix: derive forbidden identifiers from `TitleUpdate.__dataclass_fields__` — but weigh first that
+  >   `value` is an ordinary English word and would false-positive legitimate rewrites; `clears` is the
+  >   one that matters.
+  > • **LOW (agent-review #3, #4)** — the `domain-class-name` arm is case-sensitive, so a lowercase or
+  >   hyphenated mention of the type passes it; and `forbidden` at line 91 is unannotated, invisible
+  >   today because mypy runs over `src` only, surfacing if the scope ever widens to `tests`.
+  > • **REMOTE, recorded because the failure mode is loud-then-tempting:** the test imports the PRIVATE
+  >   `_CONTRADICTION_DETAIL`, so the chartered log-line work cannot rename or relocate it without an
+  >   `ImportError` that ERRORS THE WHOLE MODULE rather than failing one test — the `65ec3fd`
+  >   collection-safety shape this file's own comment claims to avoid, reached via an import instead of
+  >   a construction. Loud, hence remote; but the fix under time pressure is "delete the import", which
+  >   also retires the haystack guard.
+  > • **ALSO CONFIRMED:** `INVALID_TITLE_INTENT` appears in exactly four places, all in
+  >   `title_update.py` and its two domain tests — no `_ERROR_CODE_STATUS_MAP` entry (400 while every
+  >   `INVALID_*` sibling is 422), no rest or acceptance reference. Chartered already, but the charter
+  >   names the MAP ENTRY, not a test that goes RED on the wrong status; no acceptance test asserts the
+  >   HTTP status for a set-and-clear save. Charter widened accordingly.
+- [~] green-usecase (the refusal message is client-SAFE, not merely stable) — SCOPE WIDENED by the
+  review passes over `703def1`, all four items inside this unit's own file: (i) `.strip()` on the
+  needle vacuity assert, and correct the production comment at `title_update.py:26-27` that now
+  overstates what is pinned; (ii) fix the docstring at lines 15-17, which states the opposite of the
+  orthogonality argument it is making; (iii) extend the property to `error_code`, the other
+  verbatim-echoed field, as a second parametrised method over the existing helper; (iv) decide the
+  case-sensitivity of the class-name arm. The production message itself still needs no change — the
+  property holds.
   > RED LANDED. Prediction matched on the first run, no loop, zero NOs across type/message/status for
   > all 5 failing tests. New: `backend/domain/tests/document/test_title_update.py` — the FIRST
   > `TitleUpdate` domain test that has ever existed — plus two Statements methods and one usecase test.
@@ -2442,7 +2529,10 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   (c) acceptance client — `application_client.py` currently spells absent as `title=None`
   (`if title is not None: payload["title"] = title`), so it CANNOT send explicit null: it collapses
   exactly the two shapes this contract separates. A sentinel is a precondition for any end-to-end
-  clear test.
+  clear test. WIDENED by the premortem over `703def1`: `grep` finds no acceptance test expressing
+  explicit null anywhere, so the READ-BACK half is unguarded too — after the sentinel, assert a
+  cleared title reads back as null end to end. Until this lands, `TitleUpdate.clear()` has ZERO
+  non-test callers and `"title": null` is a silent 200 no-op.
   (d) wire contract — propagate the three-state table to `endpoints.md` and to the PUT
   request-schema `description` in `document_dtos.py` (the OpenAPI surface). Story-5-extension owns
   the title editing UI and will never open this story's `decisions/` folder; those two artifacts are
@@ -2456,6 +2546,23 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   Add the whole-`inspect.Parameter` comparison the usecase layer just got, in the idiom this layer
   already owns (`test_document_storage_cas_shape.py`). `SaveDocument` always passing `title=`
   explicitly is convention; the signature is what enforces it, so this is reachable, not dead.
+  (f) REST ERROR SURFACE for the typed title refusal — chartered by the review passes over `cebb0e4`
+  and `e44e069`, widened by those over `703def1`, and not represented in (a)-(e) until now.
+  `INVALID_TITLE_INTENT` appears in exactly FOUR places, all of them
+  `backend/domain/src/document/title_update.py` and its two domain tests: no
+  `_ERROR_CODE_STATUS_MAP` entry, so it defaults to 400 while every `INVALID_*` sibling
+  (`INVALID_DOCUMENT_TYPE`, `INVALID_IDEMPOTENCY_KEY`, `INVALID_VERSION`, `INVALID_FORMAT`) maps to
+  422 — and that map's own comment establishes absence is meant to be DELIBERATE, so an accidental
+  omission reads as a decision. Insert: the 422 entry AND a test that goes red on the wrong status
+  (the charter previously named only the entry); a `logger` call on `validation_exception_handler`,
+  the ONE handler in `exception_handlers.py` with none at all — 404/409/500 all log — which is what
+  makes the `from ValueError(_CONTRADICTION_DETAIL)` chain load-bearing instead of staged-and-
+  delivered-nowhere, and which is also the only reason the premortem's "our-fault reclassified as
+  their-fault, silently" incident has no signal today; and a guard that a message reaching that
+  handler carries no internal type names or constructor syntax — the rest-layer counterpart to the
+  domain tripwire landed in `703def1`. If that work renames or relocates the private
+  `_CONTRADICTION_DETAIL`, note that `test_title_update_refusal_safety.py` imports it, so a rename
+  ERRORS the whole test module rather than failing one test; re-point the import, do not delete it.
 - [ ] green-acceptance
 > READ-MODEL NOTE (agent-review, verified): `DocumentResponseDto` and `DocumentSummaryDto` carry NO
 > `title` field, so the whole three-state contract is unobservable to any client except by exporting
