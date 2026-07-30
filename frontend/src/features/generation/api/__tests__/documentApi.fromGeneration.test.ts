@@ -72,8 +72,12 @@ describe('documentApi createDocumentFromGeneration — the from-generation wire 
   }
 
   // RED (2026-07-30), observed live, 2 failed / 0 passed — predicted verbatim, including the
-  // throw site (`documentApi.ts:165`, reached from line 80, the `await` below, so not one fetch
-  // assertion was evaluated):
+  // throw site: the `throw` inside `createDocumentFromGeneration`, reached from the `await` in the
+  // test body below, so not one fetch assertion was evaluated. Cited positionally on purpose —
+  // the first version of this comment named `documentApi.ts:165` and test line 80, and BOTH had
+  // already rotted by the end of this same work unit (test-review's comment expansion moved the
+  // call, and /refactor's header rewrite moved the throw to :167). Line numbers in a recorded
+  // trace are stale the moment anything above them is edited:
   //
   //   Error: not implemented (11111111-1111-4111-8111-111111111111, from-generation-abc)
   //

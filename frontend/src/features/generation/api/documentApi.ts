@@ -1,4 +1,6 @@
-// HTTP client for the manual-document API (create / read / save — synchronous, no LLM/polling).
+// HTTP client for the document API (create / read / save / export / create-from-generation — all
+// synchronous, no LLM/polling; the generation polling that FEEDS from-generation lives in
+// generationApi).
 //
 // Every call goes through `send` → `authorizedRequest`, so it carries the access token and a 401
 // renews the session and replays rather than surfacing as a document failure the user did not
