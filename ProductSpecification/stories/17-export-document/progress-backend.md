@@ -2251,7 +2251,7 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   > `backend/domain/src/document/title_update.py` modified, so `--focus` silently analyses nothing.
   > `'backend/**/src/**'` works. The same file's coverage command also omits `--cov-branch`, so the
   > documented invocation has no branch columns at all. This is the second pass to hit the focus filter.
-- [~] red-usecase (the refusal message is client-SAFE, not merely stable) — INSERTED by the coverage
+- [x] red-usecase (the refusal message is client-SAFE, not merely stable) — INSERTED by the coverage
   pass, and safe under any resolution of the chain question above. The message is currently pinned as
   A STRING, not as a SAFE string: `==` against a literal detects DRIFT (removing one period kills it)
   but cannot catch a green that edits the sentence AND its `REFUSAL_MESSAGE` pin in one stroke — which
@@ -2259,7 +2259,63 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   `INVALID_TITLE_INTENT_MESSAGE` contains no `(`, no `=`, and no domain class name, so the leak
   mutation cannot be reintroduced by a coordinated edit. The safety rationale currently lives only in
   prose comments.
-- [ ] green-usecase (the refusal message is client-SAFE, not merely stable)
+  > RED LANDED as an ALREADY-GREEN regression guard, and that was the prediction stated BEFORE running:
+  > the current message `"A title cannot be set and cleared at the same time."` already satisfies the
+  > property, so a green run alone could not tell a real guard from one that would also pass over an
+  > empty message. Verified TWICE, per the precedent at lines 1047 and 1182 — clean tree 4 passed, then
+  > with the kill-mutant `message=_CONTRADICTION_DETAIL` applied, 4 failed, the three parametrised arms
+  > by id (`call-or-constructor-syntax`, `keyword-argument-syntax`, `domain-class-name`) plus the detail
+  > test. Mutant restored from backup; `git diff --stat backend/domain/src/` empty.
+  > New file `backend/domain/tests/document/test_title_update_refusal_safety.py` (145 lines) rather than
+  > a third class in `test_title_update_invariants.py` — that file is already 187 lines, and the split is
+  > by SUBJECT anyway: invariants own what the type GUARANTEES, this owns what the refusal is SAFE TO
+  > SHOW.
+  > DESIGN POINT that is load-bearing: the property is asserted on the LIVE RAISED EXCEPTION's
+  > `.message`, not on the `INVALID_TITLE_INTENT_MESSAGE` constant. Asserting the constant would leave
+  > the `raise` free to pass some other string, and would pin a constant's safety rather than what a
+  > client actually receives. The production constants ARE imported here, unlike the deliberate
+  > test-local literal in the sibling — an import makes an EQUALITY assertion tautological, but a
+  > PROPERTY assertion over it is not: the claim is about whatever the symbol holds under any future
+  > edit. The two guards are orthogonal and neither subsumes the other — `==` rules out every message
+  > but one and dies on any rewrite; this rules out a FAMILY and survives every rewrite. Only the pair is
+  > closed under the coordinated "make it more helpful" edit.
+  > This also closes ONE of the four mutations the coverage pass over `e44e069` measured as SURVIVING:
+  > blanking `_CONTRADICTION_DETAIL` now fails, since `"" in anything` is True and the bare `not in`
+  > would have been vacuous. The other three survivors (`from` dropped, `from None`, empty chained
+  > `ValueError`) stay unpinned — they depend on the missing `logger` call already chartered to
+  > adapters-discovery.
+  > TEST-REVIEW FOUND A REAL DEFECT, not a nit: the author closed vacuity for the NEEDLE
+  > (`_CONTRADICTION_DETAIL != ""`) but not for the HAYSTACK. `"(" not in ""` is True, so a green that
+  > BLANKED `INVALID_TITLE_INTENT_MESSAGE` passed all three params — and the `==` drift pin does NOT
+  > cover it, because that pin compares against a test-LOCAL literal, so the very coordinated edit this
+  > file exists to catch blanks both sides and stays green. Fixed with `assert message.strip() != ""`
+  > before the property (`.strip()`, not `!= ""` — all-whitespace is equally vacuous) and the message
+  > bound once instead of re-invoking the helper per assert. Confirmed by injecting
+  > `INVALID_TITLE_INTENT_MESSAGE = "   "`: fails all three params now, survived before.
+  > Three more review fixes, all comment/wording: a comment misattached to `FLAGGED_VALUE` claiming
+  > collection-safety of a plain `str` (the claim belongs to the `TitleUpdate(...)` call in the helper);
+  > "the production constants ARE imported" when exactly one constant plus the class is imported; and a
+  > PRODUCTION comment at `title_update.py:24-25` that this very work unit FALSIFIED — it claimed
+  > "blanking this constant fails no test", which stopped being true the moment this guard landed.
+  > Corrected in place to say the pin is NEGATIVE ONLY (non-blank + off-the-wire), that the sentence
+  > itself is still unpinned, and that dropping the `from` clause still fails no test.
+  > DISMISSED by the review, with reasons worth keeping: pinning `str(exc)` as well — `ValidationException`
+  > passes `message` to `super().__init__`, so the two surfaces COULD diverge, but
+  > `validation_exception_handler` echoes `.message`, not `str(exc)`, so `str(exc)` is not a client-facing
+  > surface for this exception; pinning it widens the file past its single claim and duplicates the
+  > adapters-discovery log guard.
+  > SCOPE FACT confirmed by `find`, and it settles a recurring question: there are ZERO Statements
+  > classes anywhere under `backend/` — they live only in `acceptance/statements/`. So the
+  > "no assertions in the test class" / "move helpers to Statements" rules are scoped to the acceptance
+  > tier and do not apply to domain tests. All 18 files under `backend/domain/tests/` assert inline with
+  > module-level expected constants; this file matches that convention.
+  > NO SKIP MARKER — a live tripwire, same status as `test_should_keep_a_padded_real_title_byte_for_byte`.
+  > There is nothing for green to unskip, and the guard must be live to guard.
+  > Tests: domain 154 passed / 0 failed; usecase 189 passed / 0 failed; full backend 511 passed /
+  > 0 failed / 57 skipped — all 57 are the db adapter's env-gated Postgres skips
+  > (`no database listening at localhost:5432`), none new, baseline was 507/57. mypy over
+  > `backend/domain/src` Success (18 files); `ruff check` clean.
+- [~] green-usecase (the refusal message is client-SAFE, not merely stable)
   > RED LANDED. Prediction matched on the first run, no loop, zero NOs across type/message/status for
   > all 5 failing tests. New: `backend/domain/tests/document/test_title_update.py` — the FIRST
   > `TitleUpdate` domain test that has ever existed — plus two Statements methods and one usecase test.

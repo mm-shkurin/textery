@@ -21,8 +21,11 @@ INVALID_TITLE_INTENT_MESSAGE = "A title cannot be set and cleared at the same ti
 # so this string currently reaches neither the wire (correct) nor the log (not
 # yet). It is kept rather than deleted because the missing log line is already
 # chartered to adapters-discovery, alongside the `_ERROR_CODE_STATUS_MAP` entry;
-# it becomes load-bearing the moment that guard lands. Until then nothing pins it
-# -- blanking this constant, or dropping the `from` clause, fails no test.
+# it becomes load-bearing the moment that guard lands. Its CONTENT is pinned only
+# negatively, and deliberately so: `test_title_update_refusal_safety.py` asserts
+# it is non-blank and that it stays OFF the client message, so blanking it now
+# fails a test -- but no test pins the sentence itself, and dropping the `from`
+# clause still fails none. Both gaps close with the log guard, not before.
 _CONTRADICTION_DETAIL = (
     "a clear carries no title to write: TitleUpdate(value=..., clears=True) "
     "asks for an erasure and a write at once, and its readers disagree"
