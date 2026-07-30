@@ -26,7 +26,6 @@ export { SAVE_ERROR_MESSAGE, CONFLICT_ERROR_MESSAGE }
 interface UseDocumentSaveParams {
   documentId: string | null
   editor: Editor | null
-  initialVersion?: number
   onSaved: () => void
   onDirty: () => void
 }
@@ -41,7 +40,6 @@ export interface DocumentSave {
   // narrower than isSaving, which is true from before the first request is sent.
   isRetryPending: boolean
   saveError: string | null
-  version: number
   setVersion: (version: number) => void
   // Call on every edit: an edit landing mid-flight has to queue a re-save.
   noteEdit: () => void
@@ -58,11 +56,12 @@ export interface DocumentSave {
 export function useDocumentSave({
   documentId,
   editor,
-  initialVersion = 1,
   onSaved,
   onDirty,
 }: UseDocumentSaveParams): DocumentSave {
-  const [version, setVersion] = useState(initialVersion)
+  // Every document starts at version 1; useDocumentInit calls setVersion with the server's value
+  // for an existing document, and each save's resolve advances it.
+  const [version, setVersion] = useState(1)
   const [isSaving, setIsSaving] = useState(false)
   const [isRetryPending, setIsRetryPending] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -159,7 +158,6 @@ export function useDocumentSave({
     isSaving,
     isRetryPending,
     saveError,
-    version,
     setVersion,
     // An edit that lands while a save is already in flight must queue a re-save even without an
     // explicit second click: otherwise the in-flight save's resolve handler has no signal that

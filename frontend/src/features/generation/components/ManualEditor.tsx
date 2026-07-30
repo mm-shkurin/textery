@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import TextAlign from '@tiptap/extension-text-align'
@@ -8,11 +8,12 @@ import type { DocumentType } from '../../../shared/documentTypes'
 import { useDocumentInit } from '../hooks/useDocumentInit'
 import { useDocumentSave } from '../hooks/useDocumentSave'
 import { useAutosave } from '../hooks/useAutosave'
-import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
+import { useBeforeUnloadGuard } from '../hooks/useBeforeUnloadGuard'
 import { AppHeader } from '../../../shared/components/AppHeader'
 import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from './editorDomSync'
 import { ManualEditorToolbar } from './ManualEditorToolbar'
 import { ManualEditorBreadcrumb } from './ManualEditorBreadcrumb'
+import { ManualEditorErrorBanner } from './ManualEditorErrorBanner'
 
 // Re-exported: this was the message's home before the save machinery moved to useDocumentSave,
 // and tests and callers import it from here.
@@ -99,7 +100,7 @@ export function ManualEditor({
         'aria-multiline': 'true',
       },
       handleDOMEvents: {
-        input: (view, event) => flushDomObserverOnInput(view, event),
+        input: flushDomObserverOnInput,
         select: syncNativeSelectionToProseMirror,
       },
     },
@@ -128,22 +129,7 @@ export function ManualEditor({
     scheduleAutosave()
   }
 
-  // Unsaved work lives only in Tiptap's in-memory state, so a tab-close or refresh drops it
-  // silently. beforeunload's native "leave?" prompt is the browser's one built-in defence, shown
-  // only when a listener calls preventDefault. Arm it while dirty, and detach on clean/unmount with
-  // the same handler reference so a closed editor cannot keep blocking navigation.
-  useEffect(() => {
-    if (!hasUnsavedChanges) return
-    const guard = (event: BeforeUnloadEvent) => {
-      // preventDefault marks the event cancelled on current Chromium, but legacy Chrome/Edge and
-      // older Safari/Firefox only show the native "leave?" prompt when returnValue is also set —
-      // without it the guard would arm yet display nothing on a subset of supported browsers.
-      event.preventDefault()
-      event.returnValue = ''
-    }
-    window.addEventListener('beforeunload', guard)
-    return () => window.removeEventListener('beforeunload', guard)
-  }, [hasUnsavedChanges])
+  useBeforeUnloadGuard(hasUnsavedChanges)
 
   useDocumentInit({
     documentType,
@@ -169,18 +155,8 @@ export function ManualEditor({
             hasFailedToInitialize={Boolean(initError)}
             onSave={save}
           />
-          {initError && (
-            <div className="me-error-banner" role="alert" data-testid="me-init-error">
-              <PlaceholderImage className="me-error-banner-icon" />
-              {initError}
-            </div>
-          )}
-          {saveError && (
-            <div className="me-error-banner" role="alert" data-testid="me-save-error">
-              <PlaceholderImage className="me-error-banner-icon" />
-              {saveError}
-            </div>
-          )}
+          {initError && <ManualEditorErrorBanner testId="me-init-error" message={initError} />}
+          {saveError && <ManualEditorErrorBanner testId="me-save-error" message={saveError} />}
           <div className="me-content-area">
             <EditorContent editor={editor} />
           </div>

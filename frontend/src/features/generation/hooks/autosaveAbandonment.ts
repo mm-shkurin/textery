@@ -7,9 +7,13 @@ import type { MutableRef } from './autosaveSaveCycle'
 // The ref shape comes from autosaveSaveCycle, which declares the two refs read below as part of
 // SaveCycleRefs: this file describes the same boxes, so it names their type once, over there.
 
-// The app has no reporting backend, so console.error is the whole of its diagnostics. Duplicated
-// nowhere: the tests import their own copy of this string from the autosave fixture, and the two are
-// pinned to each other by the suites that assert it.
+// The app has no reporting backend, so console.error is the whole of its diagnostics.
+//
+// The autosave fixture holds an independently-written copy of this exact string, and that copy is
+// deliberate rather than an oversight: it is the tripwire. Nothing imports one from the other, so
+// rewording the message here does not quietly follow through to the assertions — it fails every
+// abandonment suite, which is the point at which the wording gets re-decided on purpose. Importing
+// the fixture's expectation from this constant would make those assertions tautological.
 export const ABANDONED_SAVE_LOG = 'Pending document save abandoned before it completed'
 
 // Cancel a pending backoff retry on unmount — an editor the user navigated away from must not fire a
