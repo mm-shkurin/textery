@@ -2626,7 +2626,7 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   >   diagnosis rather than as six misleading leak failures. Chartered as (g) below.
   > • FIXED IN THE REFACTOR COMMIT (agent-review #3): the production comment's "any non-blank sentence at
   >   all" overstatement — see the `/refactor` note above.
-- [~] adapters-discovery — REQUIRED guards, named by the review passes over the design commit
+- [x] adapters-discovery — REQUIRED guards, named by the review passes over the design commit
   (`97e8f53`); discovery must insert all of (a)-(h), none is optional:
   (a) rest route — TWO assertions in `test_save_document_title_router.py`, not one: a body of
   `{"content","version"}` with NO `title` key → `SaveDocument.execute(title=TitleUpdate.preserve())`
@@ -2704,6 +2704,132 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   acceptance tier — the shape guards in (g) pin how the code may LOOK, never which code it IS. This
   compounds (f)'s silent handler: with no log line and no out-of-domain pin, a changed code is
   invisible on both the server and the test side.
+  > DISCOVERY RESOLVED 2026-07-30. All eight chartered claims RE-VERIFIED against the live tree
+  > before inserting anything — none was stale, and one turned out to be understated.
+  > **Check 1 (ports): db — GAP, and it is a PRODUCTION gap, not the test-only pin (b) described.**
+  > `_update_values` (`document_storage.py:152-159`) builds the SET clause with exactly one arm,
+  > `if title.carries_a_value()`. `clear()` is `(value=None, clears=True)`, so `carries_a_value()` is
+  > FALSE for it and a clear falls into the same omit branch as `preserve()` — the column is left
+  > alone and the erasure is a silent no-op at the only layer where "clear" is an actual SQL
+  > statement. The adapter's own docstring says so at lines 147-150 and routes the fix here. So (b) is
+  > a red/green pair over PRODUCTION, not a missing assertion: green must ask `title.erases()` FIRST
+  > and emit `SET title = NULL`, then fall through to `carries_a_value()`. Predicate order is
+  > load-bearing for the same reason `__post_init__`'s is.
+  > **Check 1 (ports): db signature — GAP, live drift confirmed.** The port declares
+  > `*, title: TitleUpdate` (`document_repository.py:48-49`, KEYWORD_ONLY); the adapter
+  > (`document_storage.py:90`) and the db test DSL's mirror (`document_storage_statements.py:61`) both
+  > declare it POSITIONAL_OR_KEYWORD. Nothing fails today. Folded into the same db pair as (e).
+  > **Check 1 (ports): usecase signature — GAP.** `SaveDocument.execute` still carries the transitional
+  > `title: TitleUpdate | str | None = None` (`save_document.py:44-48`), and its own comment names this
+  > step as the owner of the removal. A permissive union never fails type-checking, so the step naming
+  > it remains the only guard — (a2).
+  > **Check 2 (exceptions): rest — GAP, both halves confirmed.** `_ERROR_CODE_STATUS_MAP`
+  > (`exception_handlers.py:17-24`) lists `INVALID_CREDENTIALS`/`INVALID_REFRESH_TOKEN` at 401 and
+  > `INVALID_DOCUMENT_TYPE`/`INVALID_IDEMPOTENCY_KEY`/`INVALID_VERSION`/`INVALID_FORMAT` at 422 —
+  > `INVALID_TITLE_INTENT` is absent, so it defaults to 400, alone among its siblings. And
+  > `validation_exception_handler` (line 38) has NO `logger` call while `not_found` (51) and `conflict`
+  > (58) both `logger.info` and `unhandled` (72) does `logger.error` — so the one refusal that can only
+  > be produced by OUR routing bug is the one refusal that pages nobody. Both are (f).
+  > **Check 3 (response shape): rest — GAP.** `SaveDocumentRequestDto.title` is `str | None = None`
+  > (`document_dtos.py:24`) and the PUT route forwards `title=request.title` raw
+  > (`document_router.py:140`). Absent and explicit null are the SAME value at that line, and
+  > `model_fields_set` — the only place they are distinguishable — is never consulted. So
+  > `TitleUpdate.clear()` still has ZERO non-test callers, and `{"title": null}` is a silent 200 no-op
+  > end to end: once at the route, and INDEPENDENTLY once at the CAS. Two unrelated defects on one
+  > path, which is why (a) and (b) are separate pairs and neither alone closes it.
+  > **Acceptance client:** `application_client.py:128` (`if title is not None: payload["title"] = title`)
+  > confirmed — it cannot spell explicit null, so no end-to-end clear test is even writable today. (c).
+  > **Wire contract:** `endpoints.md` mentions `title` once (line 15, the migration note); neither it
+  > nor the PUT request-schema `description` carries the three-state table. (d).
+  > STEP ORDER, and why: the domain guard runs FIRST because (g) hardens the very tripwire every later
+  > step's refusal leans on, and it is the cheapest. Then db — the no-op that loses user data — then
+  > the rest wire mapping that makes `clear()` reachable at all, in that order so the CAS can honour a
+  > clear before the route is able to send one. Then the error surface, then the docs, then the
+  > end-to-end clear.
+- [~] green-usecase (the fragment set discriminates on the surface it guards) — closes (g). One unit,
+  test-only, same shape as the unit that landed `202c0bc`: no production behavior change, mutants are
+  the evidence. (1) Give the `error_code` surface a separator-tolerant fragment form — strip non-alpha
+  before the containment test, or add `TITLE_UPDATE` — so the realistic leak
+  `INVALID_TITLE_UPDATE_CLEARS_WITH_VALUE` dies; the veto-its-own-subject argument that justifies
+  excluding separated spellings holds for English prose and NOT for an identifier, and that asymmetry
+  belongs written down where the decision lives. (2) Add a NEGATIVE CONTROL that each fragment is
+  discriminating — absent from a known-safe baseline sentence and from the current `error_code` — so a
+  degenerate fragment fails as a fragment-list DEFECT with that diagnosis, rather than as six
+  misleading Security-5.1 failures on safe text. (3) `.casefold()` on both sides of
+  `test_should_keep_the_developer_detail_off_the_client_message`, left case-SENSITIVE by the very
+  commit that decided case-insensitivity. VERIFY by injecting `INVALID_TITLE_UPDATE_CLEARS_WITH_VALUE`
+  (must fail after; passes today) and by renaming the class to `Title` in a scratch probe (must report
+  a fragment-list defect, not six leak failures). FILE CAP: the file is at 194/200 — this unit forces
+  the split its sibling has been anticipating; split cleanly and keep every guard live.
+- [ ] red-adapter db (the clear arm is SQL, and the signature mirrors the port) — closes (b) + (e).
+  Two behavior tests in `test_document_storage_title.py` (today: round-trip / preserve-on-omit / padded
+  only): a save carrying `TitleUpdate.clear()` over a document with a stored title must read back
+  `title is None` through `find_by_id_and_owner`, with `expire_identity_map()` first so it is a genuine
+  SELECT and not the cached RETURNING instance (the guard the round-trip test already needed); and the
+  negative twin — a `preserve()` save over that same stored title must leave it byte-identical, so
+  green cannot satisfy the first test by nulling unconditionally. Plus the whole-`inspect.Parameter`
+  comparison in `test_document_storage_cas_shape.py`, in the idiom that file owns, pinning the
+  adapter's `title` KEYWORD_ONLY against the port; re-adding a default or making it positional must go
+  red. Real Postgres — this suite is env-gated on `TEST_DATABASE_URL` and skips SILENTLY without it, so
+  confirm the RED actually RAN rather than skipped. The db conftest does not `alembic upgrade head`
+  (persistent stamped schema); the `title` column is already there from `a3b4c5d6e7f8`.
+- [ ] green-adapter db (the clear arm is SQL, and the signature mirrors the port) — `_update_values`
+  asks `title.erases()` FIRST and sets `values["title"] = None`, THEN falls through to
+  `carries_a_value()`. The order is load-bearing: a reader that asks `carries_a_value()` first keeps
+  no-oping, which is the bug. Correct the docstring's ⚠️ paragraph, which describes the two-branch
+  state this step ends. Make the adapter's `title` keyword-only to match the port, and the statements
+  mirror with it. Update `document_fakes.py` in the same unit — the fake's predicate is what the
+  usecase suite reads, and a fake that disagrees with the CAS has the two layers passing on opposite
+  semantics.
+- [ ] red-adapter rest (the wire's null is an erasure, absent is a preserve) — closes (a) + (a2).
+  TWO assertions in `test_save_document_title_router.py`, never one: a body of `{"content","version"}`
+  with NO `title` key → `execute(title=TitleUpdate.preserve())`, AND `{"title": null}` →
+  `execute(title=TitleUpdate.clear())`. Either alone passes under a constant mapping.
+  `model_fields_set` is the ONLY place absent and null are distinguishable, so a route that maps
+  null→preserve can go red nowhere else in the stack. Rewrite the existing assertion at line ~57
+  (`execute(..., title="Привет Мир")`) to expect `TitleUpdate.of("Привет Мир")` — that assertion is the
+  stated reason the `str` arm exists, so it is what must change before the arm can go.
+- [ ] green-adapter rest (the wire's null is an erasure, absent is a preserve) — the route BUILDS the
+  intent from `model_fields_set` and passes a `TitleUpdate`; then DELETE the `str` arm from
+  `SaveDocument.execute` and reduce `_title_intent` to what remains of it. Its docstring's warning
+  about a route forwarding `None` for a null stops being a warning and becomes history — say so. mypy
+  will not help: the union is permissive, so the arm's removal is proven only by the tests above.
+- [ ] red-adapter rest (the title refusal has a status, a log line, and a name) — closes (f) + (h).
+  Three tests. (1) STATUS: a `ValidationException(INVALID_TITLE_INTENT, ...)` through the real
+  `validation_exception_handler` returns 422, not the defaulted 400 — modeled on
+  `TestInvalidFormatStatusMapping`, which pinned the identical gap for `INVALID_FORMAT` in Sc 1.3.
+  (2) LOG: that handler emits a record carrying the developer detail — `caplog` asserting
+  `_CONTRADICTION_DETAIL` (via the `from ValueError` chain) reaches the log while the RESPONSE body
+  still does not. This is the assertion that makes the staged `from` clause load-bearing, and it is the
+  only signal for an incident whose cause is always our own routing bug. (3) NAME: the response body's
+  `error_code` equals `INVALID_TITLE_INTENT` exactly — the code string has no pin outside
+  `backend/domain/tests/` today, so a rename stays green everywhere while a client switching on it
+  falls back to a generic toast. The shape guards pin how the code may LOOK; this pins which code it IS.
+  NOTE for whoever writes (2): `test_title_update_refusal_safety.py` imports the private
+  `_CONTRADICTION_DETAIL`, so renaming or relocating it ERRORS that whole module at collection rather
+  than failing one test. Re-point the import; do not delete it.
+- [ ] green-adapter rest (the title refusal has a status, a log line, and a name) — add
+  `"INVALID_TITLE_INTENT": 422` to `_ERROR_CODE_STATUS_MAP` (the map's own comment establishes that
+  absence is meant to be DELIBERATE, so an accidental omission reads as a decision — this one was
+  accidental), and a `logger` call on `validation_exception_handler`, the one handler in the file with
+  none. Log the CAUSE chain, not `exc.message`: the message is what the client already has; the detail
+  is what the log is for. The response body is unchanged — the domain tripwire and the new rest-tier
+  guard both assert nothing internal reaches it.
+- [ ] refactor (the three-state contract reaches the people who read it) — closes (d). Propagate the
+  preserve / clear / set table to `endpoints.md` and to the PUT request-schema `description` in
+  `document_dtos.py` (the OpenAPI surface). Story-5-extension owns the title editing UI and will never
+  open this story's `decisions/` folder; those two artifacts are what a parallel frontend session
+  actually reads. Note the coupling the agent-review pass recorded: `DocumentResponseDto` and
+  `DocumentSummaryDto` carry no `title` at all, so the contract stays unobservable to a client except
+  by exporting and decoding `Content-Disposition` — exposing it is story-5-extension's call, not this
+  story's.
+- [ ] red-acceptance (a cleared title reads back as cleared) — closes (c). `application_client.py:128`
+  spells absent as `title=None` and so collapses the two shapes this whole contract separates; give it
+  a sentinel (or an explicit `clear=True`) so a test can send `{"title": null}` at all — that is a
+  precondition, not the test. Then: create, save WITH a title, export and see the title-derived
+  filename, save again with an explicit null, export again and see the DEFAULT `document.pdf` stem.
+  The filename is the read-back surface because the read DTOs carry no title (see the refactor step
+  above). `grep` finds no acceptance test expressing explicit null anywhere today; this is the first.
 - [ ] green-acceptance
 > READ-MODEL NOTE (agent-review, verified): `DocumentResponseDto` and `DocumentSummaryDto` carry NO
 > `title` field, so the whole three-state contract is unobservable to any client except by exporting
