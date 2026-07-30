@@ -16,8 +16,8 @@ import {
   SAVED_PLAIN,
   armServerConfirmsSavedContent,
   expectBaselineSaveOnWire,
-  expectNoAbandonmentRecorded,
 } from './ManualEditor.autosaveFixture'
+import { expectNoAbandonmentRecorded } from './ManualEditor.autosaveAbandonFixture'
 import {
   dispatchBeforeUnload,
   expectOnlyDirtyBadge,

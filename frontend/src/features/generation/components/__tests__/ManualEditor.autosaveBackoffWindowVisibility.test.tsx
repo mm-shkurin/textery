@@ -2,11 +2,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
 import { useAutosaveFailureFakeTimers } from './ManualEditor.autosave.testSupport'
+import { enterBackoffWindow, playOutRetrySchedule } from './ManualEditor.autosaveFixture'
 import {
-  enterBackoffWindow,
+  discardAttemptDiagnostics,
   expectAbandonmentRecorded,
-  playOutRetrySchedule,
-} from './ManualEditor.autosaveFixture'
+} from './ManualEditor.autosaveAbandonFixture'
 import {
   RETRYING_BADGE_CLASS,
   SAVE_ERROR_TESTID,
@@ -86,7 +86,7 @@ describe('ManualEditor — the interior of the autosave backoff window (H9.4)', 
 
     // Drop the rejection's own console.error on the floor: it is attempt 1's diagnostic and says
     // nothing about abandonment. Everything asserted after this line is caused by the unmount.
-    vi.mocked(console.error).mockClear()
+    discardAttemptDiagnostics()
 
     // In-app back. The user never leaves the page, so the beforeunload guard armed above is never
     // reached — and the []-scoped cleanup clears the pending retry timer on the way out.

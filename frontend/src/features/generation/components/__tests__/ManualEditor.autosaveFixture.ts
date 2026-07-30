@@ -43,28 +43,10 @@ export const REVISED_CONTENT = asParagraph(REVISED_PLAIN)
 export const SAVED_VERSION = CREATED_VERSION + 1
 export const RETRY_VERSION = SAVED_VERSION + 1
 
-// What the app must leave behind when a pending retry is abandoned by unmount. console.error is the
-// app's only diagnostic sink (there is no reporting backend), so this is the minimum viable record —
-// deliberately the same sink useDocumentSave already writes the rejection itself to. Lives with the
-// retry vocabulary rather than in the one suite that asserts it: GREEN and any later abandonment
-// suite must agree on this exact string, and a per-file copy is how they stop agreeing.
-export const ABANDONED_SAVE_LOG = 'Pending document save abandoned before it completed'
-
-// The abandonment record, asserted whole: it happened, it happened ONCE, and it is exactly this one
-// message. `toHaveBeenCalledWith` pins the FULL argument list rather than argument 0 alone — a stray
-// second argument is a different record — and the count is what separates "recorded" from "recorded
-// once per failed attempt already logged". Shared by every suite that observes the sink so the four
-// sites cannot drift into asserting three different notions of "recorded".
-export function expectAbandonmentRecorded() {
-  expect(console.error).toHaveBeenCalledTimes(1)
-  expect(console.error).toHaveBeenCalledWith(ABANDONED_SAVE_LOG)
-}
-
-// The negative twin, spelled once. The cases that assert it are the guards against a green that logs
-// unconditionally, and they must all mean the same thing: the sink was not touched at all.
-export function expectNoAbandonmentRecorded() {
-  expect(console.error).not.toHaveBeenCalled()
-}
+// The abandonment record's vocabulary — ABANDONED_SAVE_LOG, expectAbandonmentRecorded and its
+// negative twin — moved to ManualEditor.autosaveAbandonFixture.ts, together with the never-settling
+// server and the wire assertions the abandonment suites drive. This file was at 183 of 200 lines and
+// the record is a separable concern with its own three consumers.
 
 // A server that confirms every write, echoing back the fixture's baseline content at the version one
 // past what the document was created at. Shared rather than respelled per case: the literal was
@@ -125,6 +107,13 @@ const TRANSIENT_SERVER_REJECTION: HttpError = { status: 503, body: {} }
 // branch production really takes, the one that NULLS it. Shared rather than respelled per suite so
 // the H9.4 guard suites are provably talking about the same server.
 export const PRODUCTION_SERVER_ERROR: HttpError = { status: 500, body: {} }
+
+// That server, armed. A named arm beside the constant so a case narrating "the server refuses" does
+// not have to spell `vi.mocked(...).mockRejectedValue(...)` in its body — the same reason
+// armServerConfirmsSavedContent exists for the accepting server.
+export function armServerRefusesWithProductionError() {
+  vi.mocked(documentApi.saveDocument).mockRejectedValue(PRODUCTION_SERVER_ERROR)
+}
 
 // Puts the editor INSIDE the H9.3 capped-backoff window and proves it got there. Renders a fresh
 // document, arms a server that transiently refuses every write, and lands one user edit — so by the
