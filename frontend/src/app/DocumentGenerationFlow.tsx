@@ -76,7 +76,13 @@ export function DocumentGenerationFlow() {
     // somehow carries no text keeps the read-only surface rather than losing it silently.
     const generatedContent = flow.generation.state === 'completed' ? flow.generation.content : null
 
-    if (mode === 'manual' || generatedContent !== null) {
+    // Named because the disjunction is not one idea but two, and nothing in the operator says so:
+    // the editor is either the mode the user CHOSE (the history-open path sets mode='manual') or
+    // the place a finished generation ARRIVED at (nobody chose anything). Neither side implies the
+    // other, and either alone is enough.
+    const opensEditor = mode === 'manual' || generatedContent !== null
+
+    if (opensEditor) {
       // ManualEditor takes no sign-out action: it had none on Story 5's branch, and a merge is
       // not the place to invent one. That leaves the editor as the one signed-in screen with no
       // way out of the session — a real gap, but a NEW one, created by combining the branches

@@ -1,5 +1,8 @@
 import '@testing-library/jest-dom'
-import { configure } from '@testing-library/dom'
+// Imported from @testing-library/react, not @testing-library/dom: the latter is NOT declared in
+// package.json and resolves today only by hoisting through the former, so a lockfile or resolver
+// change would break this file. `configure` is re-exported, so this is the same function.
+import { configure } from '@testing-library/react'
 
 // Testing Library's default async budget is 1000ms, which is a fine budget for a state flush and
 // a bad one for a CHUNK LOAD. `DocumentGenerationFlow` lazy-imports ManualEditor (Tiptap +

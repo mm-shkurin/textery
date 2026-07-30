@@ -4,6 +4,7 @@ import './ManualEditor.css'
 import type { DocumentType } from '../../../shared/documentTypes'
 import { useDocumentInit } from '../hooks/useDocumentInit'
 import { useDocumentSave } from '../hooks/useDocumentSave'
+import { useSeedGeneratedContent } from '../hooks/useSeedGeneratedContent'
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
 import { AppHeader } from '../../../shared/components/AppHeader'
 import { useManualEditorInstance } from './useManualEditorInstance'
@@ -83,15 +84,7 @@ export function ManualEditor({
     return () => window.removeEventListener('beforeunload', guard)
   }, [hasUnsavedChanges])
 
-  // Seeded ONCE, and the ref is the whole point: `editor` is null on the first render (Tiptap
-  // builds the instance in an effect), so this cannot be a render-time call, and re-running it
-  // on any later render would replace whatever the user has typed with the original generation.
-  const seededRef = useRef(false)
-  useEffect(() => {
-    if (seededRef.current || generatedContent === undefined || !editor) return
-    seededRef.current = true
-    editor.commands.setContent(generatedContent)
-  }, [editor, generatedContent])
+  useSeedGeneratedContent(editor, generatedContent)
 
   useDocumentInit({
     documentType,
