@@ -16,14 +16,12 @@ import {
   SAVED_PLAIN,
   armServerConfirmsSavedContent,
   expectBaselineSaveOnWire,
-  expectDebounceStillArmed,
   expectNoAbandonmentRecorded,
 } from './ManualEditor.autosaveFixture'
 import {
-  DIRTY_STATUS,
-  SAVED_STATUS,
   dispatchBeforeUnload,
-  expectDirtyBadge,
+  expectOnlyDirtyBadge,
+  expectOnlySavedBadge,
   expectSavedBadge,
 } from './ManualEditor.saveStatus.testSupport'
 
@@ -57,8 +55,11 @@ const CLICK_AT_MS = AUTOSAVE_DEBOUNCE_MS / 2
 describe('ManualEditor — no abandonment record when the armed write had nothing left to write (H9.4)', () => {
   useAutosaveFailureFakeTimers()
 
-  // (a) Revert-to-saved inside the gap: Ctrl+Z, a Backspace of the one new character,
-  // bold-then-unbold. Both transactions run noteEdit -> scheduleAutosave, so the flag is set and the
+  // (a) Revert-to-saved inside the gap. The user-facing motions are Ctrl+Z, a Backspace of the one new
+  // character, bold-then-unbold — this case drives NONE of them: `typeIntoEditor` assigns textContent
+  // and fires `input`, so what is pinned is the shared consequence (a transaction restoring the saved
+  // bytes), not Tiptap's history or mark paths. Those remain unguarded here.
+  // The restoring transaction runs noteEdit -> scheduleAutosave, so the flag is set and the
   // deadline re-armed — while the editor's serialized HTML is byte-identical to what the server
   // confirmed. Had the timer been allowed to fire, `save()` would have hit
   // `if (isAlreadySaved(...)) { onSaved(); return }` (useDocumentSave.ts:186) and written NOTHING.
@@ -66,6 +67,7 @@ describe('ManualEditor — no abandonment record when the armed write had nothin
   // RED: expected "error" to not be called at all, but actually been called 1 times — the record is
   // ["Pending document save abandoned before it completed"]. hasPendingEditRef is still true because
   // the timer never fired, so the []-scoped cleanup logs over content the server provably holds.
+  // RED 2026-07-30, awaiting the H9.4 green that moves the clear site.
   it.skip('records nothing when the editor unmounts after an edit was reverted to the saved content', async () => {
     const { unmount } = await renderCreatedDocument()
 
@@ -87,16 +89,17 @@ describe('ManualEditor — no abandonment record when the armed write had nothin
     await typeIntoEditor(SAVED_PLAIN)
     // Exclusively dirty — the badge must have moved OFF «Сохранено», not merely acquired --dirty
     // alongside it, which is how a green that renders both branches would slip past a bare toHaveClass.
-    expectDirtyBadge()
-    expect(screen.queryByText(SAVED_STATUS)).toBeNull()
+    expectOnlyDirtyBadge()
     // The non-vacuity gate for the `false` above: ManualEditor registers the beforeunload listener
     // only while hasUnsavedChanges is true, so a regression that never arms it satisfies every
     // toBe(false) in this file. Observing true exactly here is what makes the earlier false mean
     // "stood down" instead of "was never there".
     expect(dispatchBeforeUnload()).toBe(true)
-    // Strictly inside the gap — a deadline IS armed, which is the window the settled-write twin
-    // (timer fired) and the untouched twin (no timer at all) both skip past.
-    expectDebounceStillArmed()
+    // "A deadline is armed" is deliberately NOT asserted via vi.getTimerCount(): the observed count
+    // here is 3, not 1 — every input event arms ProseMirror-internal ticks beside our debounce, so the
+    // global count is a third-party number that would fail for reasons pointing nowhere near this
+    // record. The armed deadline is proven by the record itself: hasPendingEditRef is written in
+    // exactly one place (useAutosave's arm), so a fired assertion below IS the timer's fingerprint.
     // ...and the armed write has nothing to carry: the editor holds the exact bytes asserted on the
     // wire above. This, not the dirty flag, is why the record must stay silent.
     expect(editorContentHtml()).toBe(SAVED_CONTENT)
@@ -118,6 +121,7 @@ describe('ManualEditor — no abandonment record when the armed write had nothin
   //
   // RED: expected "error" to not be called at all, but actually been called 1 times — same record,
   // same cause. The button bypasses the scheduler, so nothing clears the flag the keystroke set.
+  // RED 2026-07-30, awaiting the H9.4 green that moves the clear site.
   it.skip('records nothing when a manual save inside the debounce gap already persisted the edit', async () => {
     const { unmount } = await renderCreatedDocument()
 
@@ -143,11 +147,10 @@ describe('ManualEditor — no abandonment record when the armed write had nothin
     // in this case exactly as it is in case (a).
     expect(editorContentHtml()).toBe(SAVED_CONTENT)
     // The work IS on the server, and the app says so twice over — badge and browser guard agree.
-    expectSavedBadge()
-    expect(screen.queryByText(DIRTY_STATUS)).toBeNull()
+    expectOnlySavedBadge()
     expect(dispatchBeforeUnload()).toBe(false)
-    // Still short of the deadline the keystroke armed: the stale timer is what carries the flag.
-    expectDebounceStillArmed()
+    // Still short of the deadline the keystroke armed — the stale timer is what carries the flag. Not
+    // asserted via the global timer count, for the reason spelled out in case (a).
 
     unmount()
 

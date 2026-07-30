@@ -51,6 +51,22 @@ export function expectDirtyBadge() {
   expect(screen.getByText(DIRTY_STATUS).className).toBe(badgeClassName(DIRTY_BADGE_CLASS))
 }
 
+// The same two branches asserted exclusively at the DOCUMENT level, not just within one element's
+// className. badgeClassName's exclusivity is about the badge element it matched; it says nothing
+// about a second element rendering the other status beside it — which is how a green that renders
+// both branches (rather than switching between them) slips past a className assertion alone. The
+// pairing is spelled here rather than per case so "the document reads clean/dirty, and says so
+// once" is one claim with one name instead of a two-line idiom each suite re-assembles.
+export function expectOnlySavedBadge() {
+  expectSavedBadge()
+  expect(screen.queryByText(DIRTY_STATUS)).toBeNull()
+}
+
+export function expectOnlyDirtyBadge() {
+  expectDirtyBadge()
+  expect(screen.queryByText(SAVED_STATUS)).toBeNull()
+}
+
 // The save-failure banner's test id. Like the badge strings above it exists only as an inline JSX
 // literal in production, so the suite spells it once here instead of retyping it per assertion.
 export const SAVE_ERROR_TESTID = 'me-save-error'

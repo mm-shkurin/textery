@@ -92,14 +92,14 @@ export function expectBaselineSaveOnWire(nth = 1) {
   )
 }
 
-// "A debounce deadline is armed, and it is the ONLY timer outstanding." The exact count is provable
-// rather than a floor: useAutosave calls clearPending() before every setTimeout, so no matter how many
-// edits land at most one debounce timer exists — and a case that has not failed a save has no retry
-// ladder either. So `toBe(1)` rules out what `toBeGreaterThan(0)` waves through: a second debounce or
-// a stray retry timer armed beside the one the case is describing.
-export function expectDebounceStillArmed() {
-  expect(vi.getTimerCount()).toBe(1)
-}
+// Deliberately no `expectDebounceStillArmed()` helper here. It existed briefly, asserting
+// `vi.getTimerCount()).toBe(1)` on the argument that useAutosave calls clearPending() before every
+// setTimeout so at most one debounce timer can exist. That argument is sound about OUR timers and
+// wrong about the number: run un-skipped, a case with two input events reports 3 — every input event
+// arms ProseMirror-internal ticks too, the same third-party coupling the sibling debounce case already
+// rejected `toBe(1)` for. A global count cannot express "one autosave is pending"; the app has no
+// scoped signal for it, so cases assert the consequence (no request on the wire, and the record) and
+// leave the timer unasserted.
 
 // Runs the whole capped-backoff retry schedule to completion and settles whatever it fired, plus
 // any stale debounce armed during the wait. Extracted because the act/advanceTimersByTimeAsync/
