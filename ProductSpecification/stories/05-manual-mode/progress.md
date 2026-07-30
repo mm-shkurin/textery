@@ -14,6 +14,35 @@ cross-file rollup.
 > tracked here. The `Back`/`Sec` = 🔧 markers for Story 5 in `stories.md` are therefore
 > ahead of any tracked state.
 
+## Owed to the backend layer (recorded by the frontend session, 2026-07-28)
+
+Items the frontend layer discovered, cannot pin from its own side, and which have no
+`progress-backend.md` to live in yet. **Fold these into that file when it is
+bootstrapped** — they are not tracked anywhere else, and the frontend follow-up that
+raised them is already closed.
+
+- [ ] **No handler may return 503.** The autosave retry treats a 503 as PROOF the write was
+  never taken (`mayHaveLandedServerSide` in
+  `frontend/src/features/generation/hooks/autosaveRetryPolicy.ts`) and can suppress the
+  write on that answer — the editor then shows «Сохранено» over content the server never
+  got. Verified 2026-07-28: no `503` anywhere in `backend/`;
+  `backend/adapters/rest/src/error_handling/exception_handlers.py` returns 500 and it is
+  the only 5xx the origin emits. **Nothing pins that.** An `HTTPException(503)` for a
+  GigaChat/Yandex-unavailable path is a natural choice and would silently suppress
+  autosaves. Owed: an acceptance/API case asserting no handler emits 503 — or, if 503 is
+  genuinely wanted for provider outages, say so and the frontend carve-out gets dropped
+  instead (it costs one redundant PUT; keeping it costs the paragraph). The container
+  nginx half of the same premise IS gated, by `npm run check:ingress`; see
+  `infra/architecture.md` Deploy notes for the hops that are not. **The origin half is now gated
+  too**: `frontend/scripts/check-nginx-503.mjs` scans `backend/` for `503` on every
+  `npm run check:ingress`, so this checkbox is about the DELIBERATE case — deciding that a provider
+  outage should answer 503 — not about catching an accidental one. Reading `backend/` is not
+  editing it; the frontend is the layer that breaks when the claim lapses.
+
+  This bullet is load-bearing: `check-nginx-503.mjs` fails the build if this file stops saying
+  «No handler may return 503», so it cannot be tidied away silently while the docblock in
+  `autosaveRetryPolicy.ts` still cites it.
+
 ## Spec
 - [x] interview
 - [x] story

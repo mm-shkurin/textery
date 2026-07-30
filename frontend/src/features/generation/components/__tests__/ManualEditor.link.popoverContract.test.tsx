@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
-import { selectRange } from './ManualEditor.testSupport'
+import { paragraphTextNode, selectRange } from './ManualEditor.testSupport'
 import {
   expectSoleLink,
   openLinkPopover,
@@ -33,7 +33,7 @@ describe('ManualEditor link popover — captured range contract', () => {
   it('Применить acts on the range captured when the popover opened, not the caret moved elsewhere while it was open', async () => {
     const contentArea = await openLinkPopover()
 
-    selectRange(contentArea.firstChild as Node, 8, 8)
+    selectRange(paragraphTextNode(contentArea), 8, 8)
     fireEvent.select(contentArea)
 
     fireEvent.change(screen.getByTestId('link-url-input'), {
@@ -55,7 +55,7 @@ describe('ManualEditor link popover — captured range contract', () => {
     })
     fireEvent.click(screen.getByTestId('link-apply'))
 
-    selectRange(contentArea.firstChild as Node, 8, 8)
+    selectRange(paragraphTextNode(contentArea), 8, 8)
     fireEvent.select(contentArea)
 
     fireEvent.change(screen.getByTestId('link-url-input'), {

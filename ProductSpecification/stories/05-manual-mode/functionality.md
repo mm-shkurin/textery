@@ -1,138 +1,152 @@
 # Manual mode — what the editor actually does today
 
-A feature-level read of Story 5's frontend as it stands on `feature/05-manual-mode-frontend`.
-This is the complement to [`progress-frontend.md`](progress-frontend.md): that file tracks
-*which work units ran*, this one describes *what a visitor can do* and, just as importantly,
-what looks finished but isn't. Where the two disagree, the code wins — everything below was
-read from the source, not from the checkboxes.
+A feature-level read of Story 5's frontend on `features/story-5-frontend`, rewritten 2026-07-28
+against the source. Complement to [`progress-frontend.md`](progress-frontend.md): that file tracks
+*which work units ran*, this one describes *what a visitor can do* and what looks finished but is
+not. Where the two disagree, the code wins.
 
-Scope note (updated 2026-07-23): the stack is now reachable (backend :8100 + Postgres + Redis +
-vite :5173), and a substantial slice of this story HAS run in a real headless Chrome against a
-real server with a real register→verify→login session — see `progress-frontend.md`, the Track B
-`green-selenium-*` entries. Live-verified end to end: opening the editor (1.2), the empty-state
-placeholder incl. its `::before` paint (2.1), bold formatting (3.1), caret-driven toolbar state
-(3.2), the out-of-order save queue (4.2), line-break save round-trip, delete-to-empty placeholder
-return, the a11y role + aria-expanded highlight, the link-popover clip check, and the
-beforeunload guard arming/disarming. What is still jsdom-only are the scenarios whose
-`green-selenium`/`demo` rows remain `[S]` (1.1, 4.1, 5.1, 5.2, 6.1, 6.2, 7.x) — those have not
-yet been re-run live. The historical "76 jsdom tests, nothing in a real browser" note below is
-superseded.
+## Кратко по-русски: что готово, чего нет
+
+**Готово и работает** (28 из 38 фронтовых сценариев, 74%):
+
+- Ручной режим на равных с AI-генерацией: обе карточки в модалке живые, выбор создаёт документ
+  (`POST`) и сразу открывает редактор — без skeleton, с плейсхолдером и полным тулбаром.
+- Редактор на Tiptap с **полноценной блочной схемой** (миграция 2026-07-26): абзацы, заголовки
+  H1–H3, маркированные и нумерованные списки, цитаты, блоки кода, горизонтальная линия — это
+  настоящие узлы StarterKit, а не самодельные марки, как было раньше.
+- Форматирование: жирный, курсив, зачёркнутый, подчёркнутый, инлайн-код, выравнивание по центру,
+  ссылки (поповер для ввода URL, с нормализацией и отсевом опасных схем), undo/redo с реактивным
+  disabled.
+- Тулбар подсвечивает состояние **в точке курсора**, а не по документу целиком.
+- **Автосохранение** с дебаунсом — правки уходят на сервер без нажатия «Сохранить». Плюс ручная
+  кнопка. Статус: «Создание документа…» / «Черновик, ещё не сохранён» / «Сохранение…» /
+  «Сохранено».
+- Конкурентность решена структурно: в полёте всегда один запрос, правка во время запроса ставит
+  флаг «сохранить ещё раз», который срабатывает после ответа с актуальным контентом и версией.
+  Устаревший ответ не может перезаписать свежий — гонки просто не возникает.
+- OCC по версии: конфликт (409) не затирает чужую запись молча — идёт перечитывание и повтор.
+- Ошибки классифицируются по типу: transient (таймаут, 5xx) — повтор с backoff 1с/2с/4с, до 4
+  попыток; истёкшая сессия — не ретраится; остальное — баннер `role="alert"` под тулбаром,
+  контент при этом не трогается.
+- Защита от потери правок при закрытии вкладки: `beforeunload` включается, пока документ грязный,
+  и снимается после успешного сохранения.
+- Повторное открытие сохранённого документа компонентом умеет работать (GET + версия).
+
+**Не сделано** (10 сценариев открыты):
+
+- **Заголовок документа** — ни ввода, ни сохранения, ни проверки длины (E4.1, E4.2, E4.3/H9.1).
+- **Санитизация вставки** на клиенте — вставка форматированного текста из Word/веба не чистится
+  на фронте (E5.1).
+- **Счётчик слов и символов** (E7.1).
+- **Таблицы** (E8.1).
+- **Undo/redo поверх блочной структуры** — базовый undo есть, поведение на блоках не закреплено
+  (E6.1).
+- **Legacy-документы** (созданные в старой inline-схеме) — цикл load-edit-save без потери
+  контента не проверен (H10.1).
+- **Уход со страницы внутри приложения** — `beforeunload` ловит только закрытие вкладки; кнопка
+  «Назад» просто размонтирует редактор, роняя незасинканную правку (H10.3).
+- **H9.4 (частота сохранений)** — основное сделано, остаётся хвост follow-up'ов.
+- **Точки входа в список документов нет** — компонент умеет открыть существующий документ, но в
+  приложении нет UI, который бы это вызвал (история #12).
+
+Ниже — то же самое подробнее, с оговорками о том, что именно НЕ проверено.
 
 ## Getting into the editor
 
-Manual mode is offered alongside AI generation on the mode modal — both cards are live, neither
-carries a "скоро" badge. Choosing it creates a document immediately (`POST`) and drops the
-visitor into an empty editor: placeholder text, the full formatting toolbar, a breadcrumb
-carrying the document type, and a status line reading *Черновик, ещё не сохранён*. There is no
-intermediate loading skeleton — the editor is built unconditionally, so it appears at once.
+Manual mode is offered alongside AI generation on the mode modal — both cards live, no "скоро"
+badge. Choosing it creates a document immediately (`POST`) and drops the visitor into an empty
+editor: placeholder, full toolbar, a breadcrumb carrying the document type, and a status line.
+No intermediate skeleton — the editor is built unconditionally.
 
-"Назад" returns to the mode modal with the document type still scoped, rather than resetting to
-the landing page.
+"Назад" returns to the mode modal with the document type still scoped, not to the landing page.
 
 ## Writing and formatting
 
-The editor is Tiptap over a deliberately narrow document schema: `Document.extend({ content:
-'inline*' })`. The document holds inline content directly, with no paragraph or heading nodes at
-all. That single decision shapes everything else. Tiptap's stock block extensions — Blockquote,
-CodeBlock, HorizontalRule, Heading — are structurally unreachable under this schema, so each was
-re-implemented as a **Mark** rather than a Node: blockquote, code block, H3, and centre-alignment
-all wrap a line by applying a mark to it, not by nesting a block. `lineWrapMark.ts` is the shared
-factory for the simple single-tag cases; code block (nested `<pre><code>`) and centre-alignment
-(a `style` attribute rather than a semantic tag) each needed bespoke handling.
+**The inline-only schema is gone.** Until 2026-07-26 the document was `Document.extend({ content:
+'inline*' })`, which made every block-level Tiptap extension structurally unreachable and forced
+blockquote / code block / H3 / centre-alignment to be re-implemented as Marks. The block-schema
+migration (see `decisions/`) replaced all of that with StarterKit's standard node model: the
+document is `block+`, and paragraph, heading (1–3), bullet and ordered lists, blockquote, code
+block, horizontal rule and hard break are real nodes. Alignment is now a block attribute
+(`style="text-align: …"`) rather than a wrapping mark.
 
-Marks that were already inline fit without ceremony and are plain toggles: bold, italic,
-strikethrough, underline, inline code.
+Toolbar (13 controls): H3, bold, italic, strike, underline, inline code, blockquote, bullet list,
+ordered list, horizontal rule, centre-align, link, undo, redo. State follows the **cursor**, not
+the document — a button lights up (`aria-pressed`) only while the caret sits in text carrying that
+mark. Undo/redo are the only controls with a disabled rather than an active state.
 
-Toolbar state follows the cursor, not the document — a button lights up (`aria-pressed`) only
-while the caret sits inside text carrying that mark, and goes dark when the caret moves out.
-Undo and redo are the only controls with a disabled state rather than an active one; they grey
-out when there is nothing to unwind.
-
-**The five inert toolbar stubs were removed (2026-07-23).** H1, H2, paragraph, bullet list and
-ordered list were mockup-era stubs calling Tiptap's block-node commands (`toggleHeading`,
-`toggleBulletList`, …), which the `inline*` schema makes inert — they rendered but did nothing.
-They had no scenario of their own; showing them overstated the editor by a third. Removed from
-`TOOLBAR_ACTIONS` (and `ToolbarActionKey`) so the toolbar reflects real capability; scenario
-2.1's Gherkin and acceptance check were updated to the working named controls (H3, bold, italic).
-Restoring real headings/lists requires migrating the schema to block content — a separate story.
-Remaining note: italic works but still has no `testId`, so it is reachable by `aria-label`
-(`Курсив`) but not by the `toolbar-*` route its siblings use.
+Link ships inside StarterKit and is configured, not re-registered: `openOnClick: false`,
+`autolink: false`, `linkOnPaste: false`. The last two fire outside explicit user intent — autolink
+runs on any `docChanged`, so a server-returned bare host would silently gain an href nobody typed,
+and the next save would persist it.
 
 ## Saving
 
-Saving is manual — there is no autosave. The save button shows a spinner and disables itself
-while a request is in flight, and the status line moves between three states: *Создание
-документа…*, *Черновик, ещё не сохранён*, and *Сохранено*.
+**Autosave is live**, debounced, alongside the manual button. The status line moves between
+*Создание документа…*, *Черновик, ещё не сохранён*, *Сохранение…* and *Сохранено*.
 
-Concurrency is handled by making it structurally impossible rather than resolving it after the
-fact. Only one save is ever in flight; a save requested while one is running sets a flag that the
-in-flight save consumes when it settles, firing a fresh save with the then-current content and
-the version the server just returned. Saves stay strictly sequential, so there is no
-out-of-order response to reconcile and no client-side sequence comparison. The acceptance
-scenario asks for a stale response not to win; this design means the race never happens. That is
-a stronger guarantee than the Gherkin literally describes — and it also means two genuinely
-concurrent requests are never exercised.
+Concurrency is made structurally impossible rather than reconciled after the fact: only one save
+is ever in flight, and a save requested during one sets a flag the in-flight save consumes when it
+settles, firing a fresh save with the then-current content and the version the server just
+returned. There is no out-of-order response to compare — the race cannot happen. Stronger than the
+Gherkin asks for, and it also means two genuinely concurrent requests are never exercised.
 
-A failed save keeps the visitor's content untouched and raises an inline error banner
-(`role="alert"`) below the toolbar, cleared on the next successful save.
+Failures are classified rather than lumped together (H9.3): a request timeout or a 5xx retries on
+a capped backoff — 1s, 2s, 4s, four attempts total — while a session expiry or a 4xx does not,
+because waiting cannot heal it. A version conflict (409) refetches and retries rather than
+overwriting. Anything that exhausts the ladder raises the inline banner; content is never touched.
+
+A dirty-content guard (H9.4) suppresses a redundant PUT when the editor holds exactly what the
+server confirmed — the memory is recorded only when the editor still holds what was sent, and
+dropped whenever a failure leaves the server's content unknown.
+
+`beforeunload` is armed while the document is dirty and detached on clean/unmount, so a tab close
+or refresh raises the browser's native prompt. It does **not** cover in-app navigation.
 
 ## Reopening a saved document
 
-`ManualEditor` accepts an optional `existingDocumentId`. When present, it fetches the document,
-populates the editor with the stored content, and adopts the returned version so the next save
-targets the right base. It works, and it is tested.
-
-**It also has no entry point.** `App.tsx:43` renders `ManualEditor` with `documentType`,
-`documentTypeLabel` and `onBack` — never `existingDocumentId`. There is no document list or
-history UI in this story (that is story #12), so nothing in the running application can reach
-this path. The capability exists at the component boundary and stops there.
-
-## Links (scenario 7.9) — designed, not built
-
-The only frontend scenario still open. The URL-entry interaction was decided in
-[`decisions/link-url-input-decision.md`](decisions/link-url-input-decision.md): an inline popover
-rather than the `window.prompt` MVP the plan proposed. The reasoning is worth reading before
-implementing, because the deciding factor was not UX — it was that `ToolbarAction.run` returns
-`void` and discards `setLink`'s rejection, and that jsdom stubs `window.prompt`, so the only
-available evidence would be blind to the risk that made `prompt` cheap.
-
-Link ships inside StarterKit already, so it is registered and live today, just not on the
-toolbar — including `autolink` and `linkOnPaste`, both of which the ADR turns off.
+`ManualEditor` accepts an optional `existingDocumentId`: it fetches the document, populates the
+editor, and adopts the returned version so the next save targets the right base. Tested and
+working — **and still with no entry point.** `App.tsx` never passes it; there is no document list
+or history UI in this story (that is story #12). The capability stops at the component boundary.
 
 ## What is honestly not verified
 
-Worth stating plainly, because a green suite invites the opposite conclusion:
+Worth stating plainly, because a green suite invites the opposite conclusion.
 
-The **client/server round-trip is untested**. Every `*.parseHTML` test asserts that Tiptap
-re-parses markup Tiptap itself just rendered, inside one jsdom process. If the backend sanitises
-or re-serialises the HTML — and `target`/`rel` on an anchor is exactly what a sanitiser
-targets — every test stays green while the real reload diverges. `editor.getHTML()` is API
-surface, so the markup these scenarios produce is a contract nobody has checked against the
-other side.
+The **client/server round-trip is thinly tested**. `*.parseHTML` tests assert that Tiptap re-parses
+markup Tiptap itself rendered, inside one jsdom process. `editor.getHTML()` is API surface, so the
+markup these scenarios produce is a contract mostly checked on one side only. The autosave suites
+do exercise a sanitizing server (the adopted-content path), but not through the real backend.
 
-**Nothing protects unsaved work.** `beforeunload`, navigation blockers, `localStorage` — zero
-hits across `frontend/src`. Content lives only in Tiptap's in-memory state. The save-error banner
-tells the visitor their text is "сохранён локально в редакторе"; that is false, and has been
-recorded as an open BLOCK in [`carryover.md`](carryover.md) since scenario 5.2.
+**Nothing persists unsaved work locally.** No `localStorage`/`IndexedDB` anywhere in
+`frontend/src`; content lives only in Tiptap's in-memory state. The save-error banner still tells
+the visitor their text is "сохранён локально в редакторе" — false, recorded as an open BLOCK in
+[`carryover.md`](carryover.md) since scenario 5.2.
 
-**The status line can lie.** `setHasUnsavedChanges(true)` fires from exactly one place —
-ProseMirror's DOM `input` handler (`ManualEditor.tsx:118`). Toolbar actions dispatch transactions
-programmatically and never emit a DOM `input` event, so applying a format after a successful save
-leaves the document changed while the status still reads *Сохранено*. Proven by probe during
-7.9's premortem: the content assertion passed and the dirty-label assertion returned null. This
-is pre-existing across all seventeen actions rather than anything scenario 7.9 introduced, and it
-compounds the banner above: one lie about local persistence, one about remote.
+**In-app navigation drops a dirty document.** `beforeunload` guards browser unload only;
+`flow.backFromEditor` unmounts, the `[]`-scoped cleanup clears the pending timer, and a pending
+write is dropped with nothing beyond a `console.error` (H10.3, open).
 
-**Coverage numbers are not evidence of round-trips**, and twice now have not been. A mark whose
-`parseHTML` returns a bare tag rule is declarative data, so its "100%" is schema-build time, not
-parse time. A factory-extracted toggle shares source lines across five marks, so one mark's test
-paints all five green. Both patterns are documented with their scars in `carryover.md` and in
-7.6/7.7's progress notes.
+**The 503 premise is load-bearing and only partly gated.** The autosave treats a 503 as proof the
+write never landed and can suppress it on that answer. `npm run check:ingress` now scans both the
+container nginx conf and `backend/` on every build, but the hops with no IaC source — WAF, TLS
+terminator, host/prod-copy proxy — have no gate at all; see `infra/architecture.md` Deploy notes.
+
+**Coverage numbers are not evidence of round-trips**, twice demonstrated. A mark whose `parseHTML`
+returns a bare tag rule is declarative data, so its "100%" is schema-build time. A factory-extracted
+toggle shares source lines across marks, so one test paints several green. Both are in
+`carryover.md` with their scars.
+
+**CI is red at HEAD for unrelated reasons**: `npm run lint` (9 `react(only-export-components)`
+warnings under `--max-warnings=0`) and `npm run format:check` (13 files under
+`src/features/generation`). Pre-existing, not from the H9.4 work.
 
 ## Where the state of play lives
 
+- [`status-ru.md`](status-ru.md) — the same picture as prose in Russian: what works, what does not, what to know before calling it done.
 - [`progress-frontend.md`](progress-frontend.md) — per-scenario work-unit state, the source of truth for what runs next.
-- [`decisions/link-url-input-decision.md`](decisions/link-url-input-decision.md) — the 7.9 URL-input ADR.
+- [`progress.md`](progress.md) — story-level narrative, the Spec checklist, and items owed to the backend layer.
+- [`decisions/`](decisions/) — the block-schema migration and the 7.9 URL-input ADRs.
 - [`carryover.md`](carryover.md) — quirks and scars a future scenario will hit.
 - [`tests/02_UI_Tests.md`](tests/02_UI_Tests.md) — the Gherkin these scenarios implement.
-- [`plans/jazzy-stirring-key.md`](../../plans/jazzy-stirring-key.md) — the 7.x toolbar plan. Treat its dependency claims with suspicion: it says Underline and Link each need their own package; both ship inside StarterKit, and 7.7 spent a refactor round removing the duplicate registration that claim caused.

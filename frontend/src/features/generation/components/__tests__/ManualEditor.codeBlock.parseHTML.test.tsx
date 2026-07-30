@@ -34,7 +34,9 @@ describe('ManualEditor code block parseHTML', () => {
 
     const contentArea = await screen.findByTestId('editor-content-area')
     await waitFor(() => {
-      expect(contentArea.innerHTML).toBe('before<pre><code>hello world</code></pre>after')
+      expect(contentArea.innerHTML).toBe(
+        '<p>before</p><pre><code>hello world</code></pre><p>after</p>',
+      )
     })
   })
 })

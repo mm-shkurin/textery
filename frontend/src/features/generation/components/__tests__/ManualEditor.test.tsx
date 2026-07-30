@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { ManualEditor } from '../ManualEditor'
 import * as documentApi from '../../api/documentApi'
+import { DIRTY_STATUS } from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -24,7 +25,7 @@ describe('ManualEditor', () => {
     resolveCreate({ documentId: 'doc-1', status: 'draft', version: 7 })
 
     await waitFor(() => {
-      expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
+      expect(screen.getByText(DIRTY_STATUS)).toBeInTheDocument()
     })
   })
 })

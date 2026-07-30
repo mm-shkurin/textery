@@ -29,7 +29,7 @@ function renderReopenedEditor(content: string) {
   )
 }
 
-describe('ManualEditor alignCenter parseHTML', () => {
+describe('ManualEditor textAlign parseHTML', () => {
   // This file has two tests sharing the module-level documentApi mock; without
   // a reset, getDocument's call count leaks between them and
   // toHaveBeenCalledExactlyOnceWith fails on the second.
@@ -37,8 +37,12 @@ describe('ManualEditor alignCenter parseHTML', () => {
     vi.clearAllMocks()
   })
 
-  it('loading a saved document containing a centered <div> restores it as the alignCenter mark', async () => {
-    renderReopenedEditor('before<div style="text-align: center">hello world</div>after')
+  it('loading a saved paragraph with text-align: center restores its centered alignment', async () => {
+    // Block schema: alignment is a `textAlign` block attribute rendered as a
+    // `style="text-align: …"` on the paragraph/heading itself (the old wrapping
+    // <div> mark is retired). A saved centered paragraph round-trips as such;
+    // jsdom re-serialises the style with a trailing semicolon.
+    renderReopenedEditor('<p>before</p><p style="text-align: center">hello world</p><p>after</p>')
 
     await waitFor(() => {
       expect(documentApi.getDocument).toHaveBeenCalledExactlyOnceWith('doc-99')
@@ -47,18 +51,12 @@ describe('ManualEditor alignCenter parseHTML', () => {
     const contentArea = await screen.findByTestId('editor-content-area')
     await waitFor(() => {
       expect(contentArea.innerHTML).toBe(
-        'before<div style="text-align: center">hello world</div>after',
+        '<p>before</p><p style="text-align: center;">hello world</p><p>after</p>',
       )
     })
 
-    // Pins scenario 7.8's second clause: the toolbar button reflects the
-    // restored alignment. Do NOT copy the sibling underline test's rationale
-    // here ("innerHTML cannot tell an applied mark from raw passthrough") - it
-    // does not hold: under this editor's `content: 'inline*'` schema no Node
-    // owns `div`, so an unmatched wrapper is dropped rather than passed
-    // through, as the false-branch test below proves. The innerHTML assertion
-    // therefore already pins that getAttrs' true branch fired; this assertion
-    // covers the user-visible highlight, which innerHTML says nothing about.
+    // Pins that the toolbar button reflects the restored alignment: a collapsed
+    // cursor inside the centered paragraph lights the align-center control.
     const textNode = contentArea.childNodes[1].firstChild as Node
     selectRange(textNode, 1, 1)
     fireEvent.select(contentArea)
@@ -66,24 +64,22 @@ describe('ManualEditor alignCenter parseHTML', () => {
     expect(screen.getByTestId('toolbar-align-center')).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('loading a saved document containing a plain <div> does not apply the alignCenter mark', async () => {
-    renderReopenedEditor('before<div>hello world</div>after')
+  it('loading a saved paragraph with no alignment does not light the align-center control', async () => {
+    // False branch: a plain paragraph carries no textAlign attribute, so the
+    // align-center control stays inactive at a cursor inside it.
+    renderReopenedEditor('<p>before</p><p>hello world</p><p>after</p>')
 
     await waitFor(() => {
       expect(documentApi.getDocument).toHaveBeenCalledExactlyOnceWith('doc-99')
     })
 
-    // getAttrs' false branch: no text-align style, so the rule must decline
-    // the match. With no Node type owning `div` under this editor's
-    // `content: 'inline*'` schema, the wrapper is dropped and the text is
-    // inlined unwrapped.
     const contentArea = await screen.findByTestId('editor-content-area')
     await waitFor(() => {
-      expect(contentArea.innerHTML).toBe('beforehello worldafter')
+      expect(contentArea.innerHTML).toBe('<p>before</p><p>hello world</p><p>after</p>')
     })
 
-    const textNode = contentArea.firstChild as Node
-    selectRange(textNode, 8, 8)
+    const textNode = contentArea.childNodes[1].firstChild as Node
+    selectRange(textNode, 1, 1)
     fireEvent.select(contentArea)
 
     expect(screen.getByTestId('toolbar-align-center')).toHaveAttribute('aria-pressed', 'false')

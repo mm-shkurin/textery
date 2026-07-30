@@ -8,8 +8,8 @@ vi.mock('../../api/documentApi')
 // The sibling placeholder tests only drive the fresh create-empty path
 // (renderEditorWithDocumentCreated). Nothing exercised the REOPEN path
 // (existingDocumentId ⇒ useDocumentInit calls getDocument + editor.commands.setContent).
-// inlinePlaceholder.ts keys the empty-state decoration off state.doc.content.size,
-// recomputed on every state update — so it should be correct on reopen too, but that
+// blockPlaceholder.ts keys the empty-state decoration off whether the doc is a single
+// empty paragraph, recomputed on every state update — so it should be correct on reopen too, but that
 // was never pinned. These two LIVE characterization tests pin both polarities:
 // reopen-empty (setContent('') ⇒ size 0 ⇒ decoration present) and reopen-with-content
 // (setContent(non-empty) ⇒ size > 0 ⇒ decoration absent, guarding against setContent
@@ -31,7 +31,7 @@ describe('ManualEditor placeholder on reopen', () => {
     // Wait until setContent has applied the saved markup, so the absence assertions
     // run against the populated (size > 0) state rather than the transient empty mount.
     await waitFor(() => {
-      expect(contentArea.innerHTML).toBe('<strong>Saved</strong> content')
+      expect(contentArea.innerHTML).toBe('<p><strong>Saved</strong> content</p>')
     })
 
     expect(contentArea).not.toHaveClass('is-editor-empty')

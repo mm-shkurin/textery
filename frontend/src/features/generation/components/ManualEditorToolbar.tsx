@@ -11,6 +11,7 @@ interface ManualEditorToolbarProps {
   documentId: string | null
   hasUnsavedChanges: boolean
   isSaving: boolean
+  isRetryPending?: boolean
   hasFailedToInitialize?: boolean
   onSave: () => void
 }
@@ -20,6 +21,7 @@ export function ManualEditorToolbar({
   documentId,
   hasUnsavedChanges,
   isSaving,
+  isRetryPending = false,
   hasFailedToInitialize = false,
   onSave,
 }: ManualEditorToolbarProps) {
@@ -80,6 +82,7 @@ export function ManualEditorToolbar({
         <ManualEditorSaveStatus
           documentId={documentId}
           hasUnsavedChanges={hasUnsavedChanges}
+          isRetryPending={isRetryPending}
           hasFailedToInitialize={hasFailedToInitialize}
         />
         {/*

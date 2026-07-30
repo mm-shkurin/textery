@@ -39,13 +39,14 @@ describe('ManualEditor reopen flow', () => {
 
     const contentArea = await screen.findByTestId('editor-content-area')
     await waitFor(() => {
-      expect(contentArea.innerHTML).toBe('<strong>Saved</strong> content')
+      // Block schema: the loaded inline content auto-wraps into a paragraph.
+      expect(contentArea.innerHTML).toBe('<p><strong>Saved</strong> content</p>')
     })
 
     vi.mocked(documentApi.saveDocument).mockResolvedValue({
       status: 'saved',
       version: 4,
-      content: '<strong>Saved</strong> content',
+      content: '<p><strong>Saved</strong> content</p>',
     })
     const saveButton = screen.getByRole('button', { name: 'Сохранить' })
     saveButton.click()
@@ -53,7 +54,7 @@ describe('ManualEditor reopen flow', () => {
     await waitFor(() => {
       expect(documentApi.saveDocument).toHaveBeenCalledWith(
         'doc-99',
-        '<strong>Saved</strong> content',
+        '<p><strong>Saved</strong> content</p>',
         3,
       )
     })

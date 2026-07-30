@@ -1,6 +1,10 @@
 import { expect } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
-import { renderEditorWithDocumentCreated, selectRange } from './ManualEditor.testSupport'
+import {
+  paragraphTextNode,
+  renderEditorWithDocumentCreated,
+  selectRange,
+} from './ManualEditor.testSupport'
 
 // Renders a fresh editor, selects "hello" out of "hello world", opens the link
 // popover, types `url` and presses Применить. Returns the content area so each
@@ -34,7 +38,7 @@ export async function openLinkPopover() {
   contentArea.textContent = 'hello world'
   fireEvent.input(contentArea)
 
-  selectRange(contentArea.firstChild as Node, 0, 5)
+  selectRange(paragraphTextNode(contentArea), 0, 5)
   fireEvent.select(contentArea)
 
   fireEvent.click(screen.getByTestId('toolbar-link'))

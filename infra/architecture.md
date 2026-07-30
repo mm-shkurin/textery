@@ -95,6 +95,34 @@ and `backend/.env` on that host. Before exposing it publicly:
   out-of-band (no secret store wired yet — see Env var contract above).
 - Add the `worker` service back once `arq` background-job code exists (see
   `ProductSpecification/technology.md`); `redis` is already provisioned for it.
+- **Nothing in front of the origin may answer 503 to `/api/`.** The frontend's
+  autosave reads 503 as proof the write was never taken
+  (`mayHaveLandedServerSide` in
+  `frontend/src/features/generation/hooks/autosaveRetryPolicy.ts`), so on that
+  answer it can suppress the write and the editor shows «Сохранено» over
+  content the server never got. A TLS terminator, WAF, rate limiter
+  (`limit_req`), maintenance page (`error_page 503`) or upstream failover added
+  in front of this compose file all break that premise — and unlike the
+  container nginx, which `npm run check:ingress` scans on every CI run, **those
+  hops have no IaC source in this repo and therefore no gate**. Two exits, and
+  only these two:
+  - **If the hop has a config file**, put it in `infra/docker/nginx/` — that
+    exact directory, not `infra/` generally: `check-nginx-503.mjs` reads one
+    non-recursive directory, and `.github/workflows/frontend-ci.yml`'s path
+    filter is `infra/docker/**`, so a conf anywhere else is both unscanned and
+    unable to trigger the job that would scan it. Widen both in the same commit
+    if it has to live elsewhere.
+  - **If the hop has no config in this repo at all** — a cloud WAF, a managed
+    rate limiter, a TLS terminator you configure in someone's console — then no
+    scan is possible and the carve-out itself has to go: drop the `503` branch
+    in `mayHaveLandedServerSide` so every 5xx is treated as "may have landed".
+    That costs at most a redundant PUT. Leaving it in costs the paragraph.
+
+  Also note two paths that bypass the container nginx entirely, so its gate
+  never applies: the Vite dev proxy (`frontend/vite.config.ts`) and this file's
+  own published backend port (`docker-compose.yml`, `"${BACKEND_PORT}:8000"`).
+  Neither emits 503 today; both would need the same treatment if anything is
+  ever put in front of them.
 
 ## Validated
 

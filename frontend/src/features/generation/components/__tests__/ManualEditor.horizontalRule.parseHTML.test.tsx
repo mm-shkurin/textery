@@ -34,7 +34,7 @@ describe('ManualEditor horizontal rule parseHTML', () => {
 
     const contentArea = await screen.findByTestId('editor-content-area')
     await waitFor(() => {
-      expect(contentArea.innerHTML).toBe('before<hr>after')
+      expect(contentArea.innerHTML).toBe('<p>before</p><hr><p>after</p>')
     })
   })
 })

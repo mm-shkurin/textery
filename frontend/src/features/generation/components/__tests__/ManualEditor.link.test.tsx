@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
-import { renderEditorWithDocumentCreated, selectRange } from './ManualEditor.testSupport'
+import {
+  paragraphTextNode,
+  renderEditorWithDocumentCreated,
+  selectRange,
+} from './ManualEditor.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -12,7 +16,7 @@ describe('ManualEditor link toolbar', () => {
     contentArea.textContent = 'hello world'
     fireEvent.input(contentArea)
 
-    selectRange(contentArea.firstChild as Node, 0, 5)
+    selectRange(paragraphTextNode(contentArea), 0, 5)
     fireEvent.select(contentArea)
 
     const linkButton = screen.getByTestId('toolbar-link')
@@ -57,7 +61,7 @@ describe('ManualEditor link toolbar', () => {
     // link* — the assertion above alone is satisfied by a hardcoded
     // `isActive: () => true`. Moving the cursor out is what gives the clause
     // teeth, mirroring the bold/strike/underline deactivation tests.
-    selectRange(contentArea.lastChild as Node, 3, 3)
+    selectRange((contentArea.firstChild as HTMLElement).lastChild as Node, 3, 3)
     fireEvent.select(contentArea)
 
     expect(linkButton).toHaveAttribute('aria-pressed', 'false')

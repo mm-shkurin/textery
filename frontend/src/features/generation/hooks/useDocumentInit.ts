@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { Editor } from '@tiptap/react'
 import { createDocument, getDocument } from '../api/documentApi'
 import type { DocumentType } from '../../../shared/documentTypes'
+import { describeFailure } from '../../../shared/api/send'
 
 export const CREATE_FAILED_MESSAGE =
   'Не удалось создать документ. Проверьте соединение и обновите страницу — до этого сохранение недоступно.'
@@ -78,10 +79,14 @@ export function useDocumentInit({
         })
         .catch((error) => {
           if (cancelled) return
-          // `documentApi` already built text a person can read; the message is only replaced when
-          // it did not (a transport failure carries none). Either way the user learns that this
-          // editor cannot save, which is the fact that matters — they are about to type into it.
-          onError(error instanceof Error && error.message ? error.message : LOAD_FAILED_MESSAGE)
+          // `describeFailure`, not `error.message`: since `send` stopped flattening 5xx, a server
+          // error arrives as a bare `HttpError` OBJECT (httpClient.ts:141), which is not an
+          // `Error` and carries no `.message` — reading one would have silently discarded the
+          // server's own text and the status on exactly the failures worth reporting. The helper
+          // reads either shape and still falls back when there is nothing readable (a transport
+          // failure carries none). Either way the user learns that this editor cannot save, which
+          // is the fact that matters — they are about to type into it.
+          onError(describeFailure(error, LOAD_FAILED_MESSAGE))
         })
     } else {
       createDocument(documentType, idempotencyKeyRef.current)
@@ -96,7 +101,7 @@ export function useDocumentInit({
         })
         .catch((error) => {
           if (cancelled) return
-          onError(error instanceof Error && error.message ? error.message : CREATE_FAILED_MESSAGE)
+          onError(describeFailure(error, CREATE_FAILED_MESSAGE))
         })
     }
     return () => {

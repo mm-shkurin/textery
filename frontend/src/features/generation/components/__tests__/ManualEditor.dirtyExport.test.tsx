@@ -37,8 +37,9 @@ describe('ManualEditor dirty export save-first ordering', () => {
 
     // Give the editor real unsaved text so the stale-file bug is exercised concretely, not just via
     // the mount-time dirty flag: this is the exact string the save-first path must persist before
-    // the export renders stored html. (Empty-Document editor: getHTML() returns the raw inline text
-    // with no <p> wrapper — see ManualEditor.save.test.tsx.)
+    // the export renders stored html. The editor runs the StarterKit BLOCK schema (block-schema
+    // migration ADR, 2026-07-26), so typed text serializes inside a paragraph — the assertion below
+    // pins `<p>unsaved edit</p>`, not the bare string the old inline-Document schema produced.
     const contentArea = screen.getByTestId('editor-content-area')
     contentArea.textContent = 'unsaved edit'
     fireEvent.input(contentArea)
@@ -51,7 +52,7 @@ describe('ManualEditor dirty export save-first ordering', () => {
     // create response's version (7 from renderEditorWithDocumentCreated), and the export must
     // request the created document in the format the user picked.
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
-    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', 'unsaved edit', 7)
+    expect(documentApi.saveDocument).toHaveBeenCalledWith('doc-1', '<p>unsaved edit</p>', 7)
     expect(documentApi.exportDocument).toHaveBeenCalledWith('doc-1', 'pdf')
     expect(callOrder).toEqual(['save', 'export'])
   })

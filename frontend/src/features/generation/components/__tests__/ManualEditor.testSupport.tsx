@@ -2,6 +2,7 @@ import { expect, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { ManualEditor } from '../ManualEditor'
 import * as documentApi from '../../api/documentApi'
+import { DIRTY_STATUS } from './ManualEditor.saveStatus.testSupport'
 
 export async function renderEditorWithDocumentCreated(onBack = vi.fn()) {
   vi.mocked(documentApi.createDocument).mockResolvedValue({
@@ -11,7 +12,7 @@ export async function renderEditorWithDocumentCreated(onBack = vi.fn()) {
   })
   render(<ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={onBack} />)
   await waitFor(() => {
-    expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
+    expect(screen.getByText(DIRTY_STATUS)).toBeInTheDocument()
   })
   return onBack
 }
@@ -39,6 +40,21 @@ export async function renderEditorReopeningDocument(content: string, onBack = vi
     expect(documentApi.getDocument).toHaveBeenCalledWith('doc-reopen')
   })
   return screen.getByTestId('editor-content-area')
+}
+
+// The block-schema editor renders an empty trailing paragraph as the cursor's
+// landing block after a document that ends in a wrapper block (blockquote,
+// codeBlock) or a heading; ProseMirror paints its empty last textblock with a
+// cursor-helper <br>. It is stripped from the SAVED form (serializeEditorHtml)
+// but present in the live rendered innerHTML, so block-conversion assertions
+// that pin exact innerHTML include it.
+export const TRAILING_BREAK_P = '<p><br class="ProseMirror-trailingBreak"></p>'
+
+// After seeding text via `contentArea.textContent = ...; fireEvent.input`, the
+// content auto-wraps into a paragraph, so the editable text lives one level
+// deeper than the contenteditable root: root → <p> → text node.
+export function paragraphTextNode(contentArea: HTMLElement): Node {
+  return (contentArea.firstChild as HTMLElement).firstChild as Node
 }
 
 export function selectRange(node: Node, start: number, end: number) {

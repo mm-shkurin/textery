@@ -5,14 +5,24 @@ name: frontend-ci
 # fired on neither the branch the work happens on nor a PR that never opens — the pipeline was
 # green because it had never run. That is the same failure as the decoy frontend/.github/workflows
 # deleted in 81f3999, one layer up: a config that looks like a gate and gates nothing.
+# infra/docker/** is in the path filter because a frontend gate asserts over it: the
+# `nginx 503 guard` step below (frontend/scripts/check-nginx-503.mjs) pins that the container
+# nginx declares nothing that can answer 503, which is what mayHaveLandedServerSide's carve-out
+# rests on — the same claim, made over the conf's bytes rather than in a comment. Without this
+# path the gate would be armed and unreachable — the breaking commit touches only the conf, so
+# the job that would fail never runs. The whole of infra/docker/, not just nginx/: what the
+# running nginx loads is decided by frontend.Dockerfile's COPY lines, so a commit adding a second
+# conf or replacing the base image's nginx.conf changes the ingress from one directory out.
 on:
   push:
     paths:
       - 'frontend/**'
+      - 'infra/docker/**'
       - '.github/workflows/frontend-ci.yml'
   pull_request:
     paths:
       - 'frontend/**'
+      - 'infra/docker/**'
       - '.github/workflows/frontend-ci.yml'
 
 defaults:
@@ -38,6 +48,12 @@ jobs:
       # fails loudly instead, comparing the npm scripts each one runs.
       - name: CI parity
         run: npm run ci:parity
+
+      # mayHaveLandedServerSide reads 503 as proof an autosave never landed and can suppress the
+      # write on that answer, so a 503 from the ingress means «Сохранено» over content the server
+      # never got. This asserts the container nginx declares nothing that can emit one.
+      - name: nginx 503 guard
+        run: npm run check:ingress
 
       # Production dependencies only, high and above. Two moderate react-router advisories are
       # open today (GHSA-wrjc-x8rr-h8h6 backslash open redirect, GHSA-337j-9hxr-rhxg SSR

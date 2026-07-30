@@ -11,7 +11,7 @@
 // /auth/refresh client import a client that refreshes — a cycle), so the two layers are:
 //   httpClient      — transport, knows nothing
 //   send            — transport + session + human-readable refusal
-import { isHttpError, type RequestOptions } from './httpClient'
+import { RequestTimeoutError, isHttpError, type RequestOptions } from './httpClient'
 import { authorizedRequest, SessionExpiredError } from '../../features/auth/api/authorizedRequest'
 
 // A stale `version` on PUT — the lost-update guard firing (409 VERSION_CONFLICT). Kept as its
@@ -33,7 +33,16 @@ export class VersionConflictError extends Error {
 export function describeFailure(error: unknown, fallback: string): string {
   if (isHttpError(error)) {
     const detail = error.body.detail ?? error.body.message
-    if (typeof detail === 'string' && detail.trim()) {
+    // The origin's catch-all 500 handler answers with a fixed ENGLISH sentence ("An unexpected
+    // error occurred. Please try again.") and the code INTERNAL_ERROR — rendering it verbatim puts
+    // English on a Russian screen at every call site at once. That body carries no reason, so
+    // nothing is lost by preferring the caller's fallback, which at least names the operation.
+    // Keyed on the code AND the status class, deliberately narrowly: a 5xx that EXPLAINS itself
+    // (a provider quota, a rejected size) keeps its text, because the message is the only place
+    // that explanation exists; a 4xx is a decided answer already addressed to the user; and a
+    // codeless 500 is not this handler's shape at all.
+    const isOriginCatchAll = error.status >= 500 && error.body.error_code === 'INTERNAL_ERROR'
+    if (!isOriginCatchAll && typeof detail === 'string' && detail.trim()) {
       return detail
     }
     // No usable text: a non-JSON error page, or a body shaped some third way. The status is the
@@ -66,6 +75,23 @@ export async function send<T>(path: string, options: RequestOptions, fallback: s
       error.body.error_code === 'VERSION_CONFLICT'
     ) {
       throw new VersionConflictError()
+    }
+    // A failure whose OUTCOME IS UNKNOWN keeps its shape. A client-side deadline
+    // (`RequestTimeoutError`) and any 5xx are the two answers that do not tell us whether the
+    // server took the write — the autosave retry policy has to decide "retry?" and "may this have
+    // landed?" from `error.status` and from the timeout's identity (`autosaveRetryPolicy.ts`), and
+    // `new Error(describeFailure(...))` destroys both before the caller ever sees them: a status
+    // becomes a substring of a sentence, and a `RequestTimeoutError` becomes an `Error` whose
+    // message still reads 'Request timed out'. Flattening here is what made the whole H9.3/H9.4
+    // retry branch unreachable in production while every fixture that hand-rolled `{status: 5xx}`
+    // stayed green.
+    //
+    // Callers that only ever RENDER the failure must not read `.message` off these — `HttpError` is
+    // a bare object literal (httpClient.ts:141), not an `Error` — they call `describeFailure`
+    // instead, which handles both shapes and is the same text they were getting before.
+    // 4xx keeps flattening: those are decided answers, no caller has to classify them.
+    if (error instanceof RequestTimeoutError || (isHttpError(error) && error.status >= 500)) {
+      throw error
     }
     throw new Error(describeFailure(error, fallback))
   }

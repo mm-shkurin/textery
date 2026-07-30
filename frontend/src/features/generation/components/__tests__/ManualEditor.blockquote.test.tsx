@@ -1,18 +1,26 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
-import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
+import {
+  paragraphTextNode,
+  renderEditorWithDocumentCreated,
+  TRAILING_BREAK_P,
+} from './ManualEditor.testSupport'
 
 vi.mock('../../api/documentApi')
 
+// Block schema: blockquote is a real block node now, so toggling it wraps the
+// whole paragraph the selection sits in (not a partial inline range) in
+// <blockquote><p>…</p></blockquote>, and ProseMirror renders an empty trailing
+// paragraph as the cursor's landing block after the wrapper.
 describe('ManualEditor blockquote toolbar', () => {
-  it('applying a blockquote to selected text wraps it in <blockquote> and marks the blockquote button active', async () => {
+  it('applying a blockquote to a paragraph wraps its block in <blockquote> and marks the blockquote button active', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')
     contentArea.textContent = 'hello world'
     fireEvent.input(contentArea)
 
-    const textNode = contentArea.firstChild as Node
+    const textNode = paragraphTextNode(contentArea)
     const range = document.createRange()
     range.setStart(textNode, 0)
     range.setEnd(textNode, 5)
@@ -24,7 +32,9 @@ describe('ManualEditor blockquote toolbar', () => {
     const blockquoteButton = screen.getByTestId('toolbar-blockquote')
     fireEvent.click(blockquoteButton)
 
-    expect(contentArea.innerHTML).toBe('<blockquote>hello</blockquote> world')
+    expect(contentArea.innerHTML).toBe(
+      `<blockquote><p>hello world</p></blockquote>${TRAILING_BREAK_P}`,
+    )
     expect(blockquoteButton).toHaveAttribute('aria-pressed', 'true')
   })
 
@@ -35,7 +45,7 @@ describe('ManualEditor blockquote toolbar', () => {
     contentArea.textContent = 'hello world'
     fireEvent.input(contentArea)
 
-    const textNode = contentArea.firstChild as Node
+    const textNode = paragraphTextNode(contentArea)
     const cursorRange = document.createRange()
     cursorRange.setStart(textNode, 3)
     cursorRange.setEnd(textNode, 3)
@@ -47,18 +57,20 @@ describe('ManualEditor blockquote toolbar', () => {
     const blockquoteButton = screen.getByTestId('toolbar-blockquote')
     fireEvent.click(blockquoteButton)
 
-    expect(contentArea.innerHTML).toBe('<blockquote>hello world</blockquote>')
+    expect(contentArea.innerHTML).toBe(
+      `<blockquote><p>hello world</p></blockquote>${TRAILING_BREAK_P}`,
+    )
     expect(blockquoteButton).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('applying a blockquote with a collapsed cursor restores the cursor to its original position instead of leaving the whole line selected', async () => {
+  it('applying a blockquote with a collapsed cursor keeps the cursor at its original position instead of selecting the whole line', async () => {
     await renderEditorWithDocumentCreated()
 
     const contentArea = screen.getByTestId('editor-content-area')
     contentArea.textContent = 'hello world'
     fireEvent.input(contentArea)
 
-    const textNode = contentArea.firstChild as Node
+    const textNode = paragraphTextNode(contentArea)
     const cursorRange = document.createRange()
     cursorRange.setStart(textNode, 3)
     cursorRange.setEnd(textNode, 3)
@@ -70,7 +82,9 @@ describe('ManualEditor blockquote toolbar', () => {
     const blockquoteButton = screen.getByTestId('toolbar-blockquote')
     fireEvent.click(blockquoteButton)
 
-    expect(contentArea.innerHTML).toBe('<blockquote>hello world</blockquote>')
+    expect(contentArea.innerHTML).toBe(
+      `<blockquote><p>hello world</p></blockquote>${TRAILING_BREAK_P}`,
+    )
 
     const restoredSelection = window.getSelection()
     expect(restoredSelection?.isCollapsed).toBe(true)

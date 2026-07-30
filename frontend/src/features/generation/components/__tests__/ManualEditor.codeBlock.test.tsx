@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
-import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
+import {
+  paragraphTextNode,
+  renderEditorWithDocumentCreated,
+  TRAILING_BREAK_P,
+} from './ManualEditor.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -12,7 +16,7 @@ describe('ManualEditor code-block toolbar', () => {
     contentArea.textContent = 'hello world'
     fireEvent.input(contentArea)
 
-    const textNode = contentArea.firstChild as Node
+    const textNode = paragraphTextNode(contentArea)
     const cursorRange = document.createRange()
     cursorRange.setStart(textNode, 3)
     cursorRange.setEnd(textNode, 3)
@@ -24,7 +28,9 @@ describe('ManualEditor code-block toolbar', () => {
     const codeBlockButton = screen.getByTestId('toolbar-code-block')
     fireEvent.click(codeBlockButton)
 
-    expect(contentArea.innerHTML).toBe('<pre><code>hello world</code></pre>')
+    // Block schema: codeBlock is a real block node; converting the paragraph
+    // leaves an empty trailing paragraph as the cursor's landing block.
+    expect(contentArea.innerHTML).toBe(`<pre><code>hello world</code></pre>${TRAILING_BREAK_P}`)
     expect(codeBlockButton).toHaveAttribute('aria-pressed', 'true')
   })
 })

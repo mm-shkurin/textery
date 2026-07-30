@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { ManualEditor } from '../ManualEditor'
 import * as documentApi from '../../api/documentApi'
 import { CREATE_FAILED_MESSAGE, LOAD_FAILED_MESSAGE } from '../../hooks/useDocumentInit'
+import { DIRTY_STATUS } from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')
 
@@ -76,7 +77,7 @@ describe('ManualEditor initialisation failures', () => {
     render(<ManualEditor documentType="doklad" documentTypeLabel="Доклад" onBack={vi.fn()} />)
 
     await waitFor(() => {
-      expect(screen.getByText('Черновик, ещё не сохранён')).toBeInTheDocument()
+      expect(screen.getByText(DIRTY_STATUS)).toBeInTheDocument()
     })
     expect(screen.queryByTestId('me-init-error')).not.toBeInTheDocument()
   })

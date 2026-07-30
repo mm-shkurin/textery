@@ -1,16 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { EditorContent } from '@tiptap/react'
 import './ManualEditor.css'
 import type { DocumentType } from '../../../shared/documentTypes'
 import { useDocumentInit } from '../hooks/useDocumentInit'
 import { useDocumentSave } from '../hooks/useDocumentSave'
 import { useSeedGeneratedContent } from '../hooks/useSeedGeneratedContent'
-import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
+import { useAutosave } from '../hooks/useAutosave'
+import { useBeforeUnloadGuard } from '../hooks/useBeforeUnloadGuard'
 import { AppHeader } from '../../../shared/components/AppHeader'
 import { useManualEditorInstance } from './useManualEditorInstance'
 import { ManualEditorToolbar } from './ManualEditorToolbar'
 import { ManualEditorBreadcrumb } from './ManualEditorBreadcrumb'
 import { ExportControl } from './ExportControl'
+import { ManualEditorErrorBanner } from './ManualEditorErrorBanner'
 
 // Re-exported: this was the message's home before the save machinery moved to useDocumentSave,
 // and tests and callers import it from here.
@@ -59,30 +61,30 @@ export function ManualEditor({
 
   const editor = useManualEditorInstance(noteEditRef)
 
-  const { isSaving, saveError, setVersion, noteEdit, save } = useDocumentSave({
+  const {
+    hasPendingEditRef,
+    isSaving,
+    isRetryPending,
+    saveError,
+    setVersion,
+    noteEdit,
+    save,
+  } = useDocumentSave({
     documentId,
     editor,
     onSaved: () => setHasUnsavedChanges(false),
     onDirty: () => setHasUnsavedChanges(true),
   })
-  noteEditRef.current = noteEdit
+  // Every edit both marks the document dirty / queues a mid-flight re-save (noteEdit) AND resets
+  // the autosave debounce so a save fires once typing stops — no explicit Сохранить click needed.
+  // The manual button still calls `save` directly and is unaffected.
+  const scheduleAutosave = useAutosave(save, hasPendingEditRef)
+  noteEditRef.current = () => {
+    noteEdit()
+    scheduleAutosave()
+  }
 
-  // Unsaved work lives only in Tiptap's in-memory state, so a tab-close or refresh drops it
-  // silently. beforeunload's native "leave?" prompt is the browser's one built-in defence, shown
-  // only when a listener calls preventDefault. Arm it while dirty, and detach on clean/unmount with
-  // the same handler reference so a closed editor cannot keep blocking navigation.
-  useEffect(() => {
-    if (!hasUnsavedChanges) return
-    const guard = (event: BeforeUnloadEvent) => {
-      // preventDefault marks the event cancelled on current Chromium, but legacy Chrome/Edge and
-      // older Safari/Firefox only show the native "leave?" prompt when returnValue is also set —
-      // without it the guard would arm yet display nothing on a subset of supported browsers.
-      event.preventDefault()
-      event.returnValue = ''
-    }
-    window.addEventListener('beforeunload', guard)
-    return () => window.removeEventListener('beforeunload', guard)
-  }, [hasUnsavedChanges])
+  useBeforeUnloadGuard(hasUnsavedChanges)
 
   useSeedGeneratedContent(editor, generatedContent)
 
@@ -118,23 +120,14 @@ export function ManualEditor({
             documentId={documentId}
             hasUnsavedChanges={hasUnsavedChanges}
             isSaving={isSaving}
+            isRetryPending={isRetryPending}
             hasFailedToInitialize={Boolean(initError)}
             // save() REJECTS on failure so ExportControl can skip a stale export; the button has
             // nothing to await it, so swallow the rejection (the banner was set before the rethrow).
             onSave={() => void save().catch(() => {})}
           />
-          {initError && (
-            <div className="me-error-banner" role="alert" data-testid="me-init-error">
-              <PlaceholderImage className="me-error-banner-icon" />
-              {initError}
-            </div>
-          )}
-          {saveError && (
-            <div className="me-error-banner" role="alert" data-testid="me-save-error">
-              <PlaceholderImage className="me-error-banner-icon" />
-              {saveError}
-            </div>
-          )}
+          {initError && <ManualEditorErrorBanner testId="me-init-error" message={initError} />}
+          {saveError && <ManualEditorErrorBanner testId="me-save-error" message={saveError} />}
           <div className="me-content-area">
             <EditorContent editor={editor} />
           </div>

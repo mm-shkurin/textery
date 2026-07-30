@@ -1,59 +1,44 @@
 import { useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
-import { saveDocument } from '../api/documentApi'
-import { SessionExpiredError } from '../../auth/api/authorizedRequest'
-import { VersionConflictError } from '../../../shared/api/send'
+import { serializeEditorHtml } from '../components/serializeEditorHtml'
+import { MAX_AUTOSAVE_ATTEMPTS } from './autosaveRetryPolicy'
+import { isAlreadySaved } from './autosaveDirtyGuard'
+import { performWrite } from './autosaveWriteChain'
+import { createSaveCycle } from './autosaveSaveCycle'
+import type { MutableRef } from './autosaveSaveCycle'
+import { useAbandonedSaveRecord } from './autosaveAbandonment'
+import { CONFLICT_ERROR_MESSAGE, SAVE_ERROR_MESSAGE } from './saveFailureMessages'
 
-export const SAVE_ERROR_MESSAGE =
-  'Не удалось сохранить. Повторите — текст пока только в редакторе, не потеряйте вкладку.'
-
-// Deliberately does NOT say "попробуйте ещё раз": retrying is what just failed. Reopening is the
-// only action that can succeed, and it costs the text in this editor — so the message says that
-// outright rather than letting the user discover it by losing the paragraph twice.
-export const CONFLICT_ERROR_MESSAGE =
-  'Документ был изменён другим сохранением. Откройте его заново, чтобы увидеть актуальную версию — текст в этом редакторе не сохранён.'
-
-// What a failed save says. The default is for a network blip: retrying may recover, so it asks for
-// that — but it does NOT reassure the text is "сохранён локально": there is no persistence anywhere
-// (content lives only in Tiptap's in-memory state), so it warns the tab is the only copy instead.
-//
-// An expired session is not a failure of the save: the request was fine, the user is signed out.
-// `authorizedRequest` raises SessionExpiredError precisely so callers can tell the two apart, and
-// `send` goes out of its way to rethrow it untouched — but NOTHING narrowed it, so the whole
-// carve-out was unconsumed machinery and this catch flattened it right back into "check your
-// connection", telling a signed-out user to retry a button that cannot work until they sign in.
-// Its own message ("Сессия истекла. Войдите снова.") is the accurate thing to show.
-//
-// A VersionConflictError reaching here is the same mistake one branch over. `saveDocument` already
-// answers the FIRST 409 by refetching the version and retrying, so anything that arrives here has
-// survived that — a second writer landed during the retry, or the refetch itself failed. The
-// connection is not the problem, and reassuring the user their text is safe would be a promise this
-// branch cannot keep: another save holds the document, and the next click re-enters the same race.
-// Saying so lets the user reopen the document instead of clicking a button that will lose again.
-function describeSaveFailure(error: unknown): string {
-  if (error instanceof SessionExpiredError) return error.message
-  if (error instanceof VersionConflictError) return CONFLICT_ERROR_MESSAGE
-  return SAVE_ERROR_MESSAGE
-}
+// Re-exported so callers (and the retry-backoff / failure-copy tests) keep importing the attempt
+// ceiling and the failure copy from the save hook — one definition lives in autosaveRetryPolicy and
+// saveFailureMessages respectively, these are just their public surface here.
+export { MAX_AUTOSAVE_ATTEMPTS }
+export { SAVE_ERROR_MESSAGE, CONFLICT_ERROR_MESSAGE }
 
 interface UseDocumentSaveParams {
   documentId: string | null
   editor: Editor | null
-  initialVersion?: number
   onSaved: () => void
   onDirty: () => void
 }
 
 export interface DocumentSave {
+  // "An edit has been decided on but not sent yet", written by the debounce scheduler and read by the
+  // unmount abandonment record. Owned by useAbandonedSaveRecord, passed through here because the
+  // scheduler is wired up after this hook — see autosaveAbandonment and useAutosave.
+  hasPendingEditRef: MutableRef<boolean>
   isSaving: boolean
+  // An attempt has been rejected and the capped backoff has another one scheduled. Strictly
+  // narrower than isSaving, which is true from before the first request is sent.
+  isRetryPending: boolean
   saveError: string | null
-  version: number
   setVersion: (version: number) => void
   // Call on every edit: an edit landing mid-flight has to queue a re-save.
   noteEdit: () => void
-  // Resolves only after the save (and any queued re-save) fully completes, and REJECTS on failure.
-  // ExportControl awaits this on a dirty export: a save that resolved on failure would let a stale
-  // file ship, so the failure must propagate. The Save button consumes it fire-and-forget.
+  // Resolves only after the save — including any queued re-save and any backoff retry — fully
+  // completes, and REJECTS on terminal failure. ExportControl awaits this on a dirty export: a save
+  // that resolved on failure would let a stale file ship. The Save button consumes it
+  // fire-and-forget.
   save: () => Promise<void>
 }
 
@@ -67,80 +52,63 @@ export interface DocumentSave {
 export function useDocumentSave({
   documentId,
   editor,
-  initialVersion = 1,
   onSaved,
   onDirty,
 }: UseDocumentSaveParams): DocumentSave {
-  const [version, setVersion] = useState(initialVersion)
+  // Every document starts at version 1; useDocumentInit calls setVersion with the server's value
+  // for an existing document, and each save's resolve advances it.
+  const [version, setVersion] = useState(1)
   const [isSaving, setIsSaving] = useState(false)
+  const [isRetryPending, setIsRetryPending] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const isSavingRef = useRef(false)
   const saveAgainRequested = useRef(false)
-  // The promise of the currently in-flight save chain (including any queued re-save it spawns). A
-  // second save() call while one is running returns THIS, not an already-resolved promise, so a
-  // caller awaiting it (ExportControl on a dirty export) waits for the real persistence to settle.
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastSavedContentRef = useRef<string | null>(null)
+  // How a cycle ends and how the backoff timer is kept — see autosaveSaveCycle.
+  const cycle = createSaveCycle({
+    isSavingRef,
+    saveAgainRequested,
+    retryTimerRef,
+    lastSavedContentRef,
+    setIsSaving,
+    setRetryPending: setIsRetryPending,
+    setSaveError,
+    onSaved,
+  })
+  // Cancels a pending backoff retry on unmount and records a write abandoned by it — see
+  // autosaveAbandonment.
+  const hasPendingEditRef = useAbandonedSaveRecord(isSavingRef, retryTimerRef)
+
+  // The promise of the currently in-flight save chain. A second save() call while one is running
+  // returns THIS, so a caller awaiting it (ExportControl on a dirty export) waits for the real
+  // persistence to settle rather than an already-resolved promise.
   const inFlightRef = useRef<Promise<void> | null>(null)
 
+  // One attempt, its resolve handling, and the bounded retry ladder — see autosaveWriteChain.
   const performSave = (saveVersion: number): Promise<void> => {
     if (!documentId || !editor) return Promise.resolve()
-    isSavingRef.current = true
-    setIsSaving(true)
-    saveAgainRequested.current = false
-    // Captured before the round trip: the response's content is the SANITIZED persisted form,
-    // and telling whether to adopt it requires knowing what we actually sent.
-    const sent = editor.getHTML()
-    // .then(onFulfilled, onRejected) — NOT .then().catch(): onRejected must handle only THIS
-    // save's rejection, never the recursive performSave returned below (its own onRejected owns
-    // that). A trailing .catch would run twice for a queued re-save failure, doubling side effects.
-    return saveDocument(documentId, sent, saveVersion).then(
-      (result) => {
-        // The server's content is the source of truth — it strips <script> with its contents and
-        // normalises void tags (`<br />` -> `<br>`), measured 2026-07-17. Keeping ours would
-        // render markup the server does not have and re-send it on every later save.
-        //
-        // But adopt ONLY if the editor still holds exactly what we sent. Typing continues while
-        // the request is in flight, and setContent would delete those keystrokes — the worst
-        // possible trade for cosmetic agreement. If it changed, the next save re-sanitizes
-        // anyway, so nothing is lost by skipping.
-        if (result.content !== sent && editor.getHTML() === sent) {
-          editor.commands.setContent(result.content)
-        }
-        setVersion(result.version)
-        setSaveError(null)
-        if (saveAgainRequested.current) {
-          saveAgainRequested.current = false
-          // Return the re-save so this chain settles only after it does — the awaiting caller
-          // keeps waiting through the queued save, and its failure propagates out of here.
-          return performSave(result.version)
-        }
-        isSavingRef.current = false
-        setIsSaving(false)
-        onSaved()
+    return performWrite(
+      {
+        documentId,
+        editor,
+        cycle,
+        isSavingRef,
+        saveAgainRequested,
+        lastSavedContentRef,
+        setIsSaving,
+        setVersion,
+        setSaveError,
       },
-      (error) => {
-        // The banner tells the user WHAT happened; this is the only place the underlying error
-        // object survives at all. There is no reporting sink, so the console is the whole of the
-        // diagnostics — deleting it would leave a failed save with no trace anywhere.
-        console.error('Failed to save document', error)
-        // Don't auto-retry a queued edit after a real error (out of scope: that's
-        // autosave-retry behavior). Drop the queued flag so a stale retry doesn't
-        // fire later, but keep the user's latest content in the editor untouched
-        // so they can manually retry by clicking Save again.
-        saveAgainRequested.current = false
-        isSavingRef.current = false
-        setIsSaving(false)
-        setSaveError(describeSaveFailure(error))
-        // Rethrow so an awaiting caller (ExportControl) sees the failure and SKIPS the export —
-        // resolving here would ship a stale file. The banner side effects above already ran.
-        throw error
-      },
+      saveVersion,
     )
   }
 
   return {
+    hasPendingEditRef,
     isSaving,
+    isRetryPending,
     saveError,
-    version,
     setVersion,
     // An edit that lands while a save is already in flight must queue a re-save even without an
     // explicit second click: otherwise the in-flight save's resolve handler has no signal that
@@ -155,9 +123,22 @@ export function useDocumentSave({
       if (!documentId || !editor) return Promise.resolve()
       if (isSavingRef.current) {
         saveAgainRequested.current = true
-        // Return the in-flight chain, not a resolved promise: the queued re-save is folded into it
-        // (its resolve handler runs performSave again), so awaiting this waits for that too.
+        // The in-flight chain, not a resolved promise: the queued re-save is folded into it (its
+        // resolve handler runs performSave again), so awaiting this waits for that too.
         return inFlightRef.current ?? Promise.resolve()
+      }
+      // Nothing to write: the editor holds exactly what the server confirmed. This is what makes the
+      // stale debounce timer left armed by a mid-flight edit inert. Checked only when NO save is in
+      // flight — mid-flight the ref describes the PREVIOUS save, and skipping the queue there could
+      // strand the editor holding older content than the request already on the wire.
+      // Suppressing the write is only half the answer: an edit reverted to the saved content (undo,
+      // backspacing the one new character, bold-then-unbold) still ran onDirty on the way back, so
+      // returning bare here left hasUnsavedChanges true with nothing able to clear it — badge stuck
+      // dirty, beforeunload armed forever, and Сохранить a dead button routing into this same
+      // branch. The document genuinely IS clean, so say so.
+      if (isAlreadySaved(serializeEditorHtml(editor), lastSavedContentRef.current)) {
+        onSaved()
+        return Promise.resolve()
       }
       const promise = performSave(version)
       inFlightRef.current = promise

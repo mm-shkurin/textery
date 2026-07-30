@@ -36,11 +36,43 @@ from statements.frontend.generation.manual_editor_save_queue_statements import (
     ManualEditorSaveQueueStatements,
 )
 from statements.frontend.generation.manual_editor_statements import ManualEditorStatements
+from statements.frontend.generation.manual_editor_autosave_statements import (
+    ManualEditorAutosaveStatements,
+)
+from statements.frontend.generation.manual_editor_block_schema_statements import (
+    ManualEditorBlockSchemaStatements,
+)
+from statements.frontend.generation.manual_editor_list_statements import (
+    ManualEditorListStatements,
+)
+from statements.frontend.generation.manual_editor_conflict_reconcile_statements import (
+    ManualEditorConflictReconcileStatements,
+)
 from statements.frontend.generation.auto_editor_transition_statements import (
     AutoEditorTransitionStatements,
 )
 from statements.frontend.generation.generate_flow_statements import GenerateFlowStatements
 from statements.frontend.generation.generating_state_statements import GeneratingStateStatements
+
+
+@pytest.fixture
+def manual_editor_block_schema_statements():
+    return ManualEditorBlockSchemaStatements()
+
+
+@pytest.fixture
+def manual_editor_list_statements():
+    return ManualEditorListStatements()
+
+
+@pytest.fixture
+def manual_editor_autosave_statements():
+    return ManualEditorAutosaveStatements()
+
+
+@pytest.fixture
+def manual_editor_conflict_reconcile_statements():
+    return ManualEditorConflictReconcileStatements()
 
 
 @pytest.fixture

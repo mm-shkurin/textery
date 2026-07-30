@@ -39,6 +39,10 @@ from frontend_generation_fixtures import (  # noqa: F401
     generate_flow_statements,
     generating_state_statements,
     auto_editor_transition_statements,
+    manual_editor_block_schema_statements,
+    manual_editor_list_statements,
+    manual_editor_autosave_statements,
+    manual_editor_conflict_reconcile_statements,
 )
 
 # Document-export Statements fixtures also live in their own module for the same
