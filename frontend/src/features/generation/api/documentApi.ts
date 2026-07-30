@@ -140,6 +140,31 @@ export async function exportDocument(documentId: string, format: ExportFormat): 
   )
 }
 
+// The one NEW endpoint story 18 adds (documents_from_generation.yaml): a completed, caller-owned
+// generation becomes an editable Document, its markdown-ish body converted to sanitized HTML
+// server-side. Two additive fields over the shared story-5 DocumentResponse — `generation_id`
+// (nullable: null for a manually created document) and `title` (server-derived at conversion).
+//
+// `idempotencyKey` is a required parameter for the same reason it is on `createDocument`: minting
+// it inside would make the spec's replay branch unreachable by construction. Here the stake is
+// higher — the caller is a POLL LOOP, not a click, so "the same logical conversion" is a judgement
+// only the caller can make.
+export interface DocumentFromGenerationResult {
+  documentId: string
+  generationId: string | null
+  title: string
+  status: string
+  content: string
+  version: number
+}
+
+export async function createDocumentFromGeneration(
+  generationId: string,
+  idempotencyKey: string,
+): Promise<DocumentFromGenerationResult> {
+  throw new Error(`not implemented (${generationId}, ${idempotencyKey})`)
+}
+
 export async function getDocument(documentId: string): Promise<GetDocumentResult> {
   const data = await send<DocumentWire>(
     `/api/v1/documents/${documentId}`,
