@@ -1,8 +1,9 @@
 import { expect, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
-import { defer, flushMicrotasks } from './ManualEditor.autosave.testSupport'
-import { SAVE_BUTTON_LABEL } from './ManualEditor.saveStatus.testSupport'
+import { defer, editorContentHtml, flushMicrotasks } from './ManualEditor.autosave.testSupport'
+import { SAVED_CONTENT } from './ManualEditor.autosaveFixture'
+import { SAVE_BUTTON_LABEL, dispatchBeforeUnload } from './ManualEditor.saveStatus.testSupport'
 
 // The H9.4 ABANDONMENT vocabulary: what the app must and must not leave behind when the editor dies
 // with a write unfinished, plus the servers and the wire assertions the abandonment suites drive it
@@ -66,6 +67,23 @@ export function expectNoAbandonmentRecorded() {
 // useAutosaveFailureFakeTimers, and a raw reach into it says nothing about why.
 export function discardAttemptDiagnostics() {
   vi.mocked(console.error).mockClear()
+}
+
+// The premise every positive abandonment case needs and only two of them could state: there IS
+// unsent work, it is exactly the edit the case typed, and the app itself calls the document
+// unpersisted at this instant.
+//
+// Both halves are load-bearing and neither substitutes for the other. `dispatchBeforeUnload()` alone
+// reads true on a freshly created document with nothing typed at all — the untouched-document twin
+// asserts precisely that — so on its own it pins the case to a fact true in every window, including
+// the one with nothing to abandon. The content check alone says the editor holds the bytes but not
+// that the app agrees they are unsaved. Spelled once here because the two sites asserting it were
+// carrying the same claim under the same five-line rationale, the second site reduced to pointing at
+// the first ("for the same reason the debounce-gap case asserts it") — a back-reference is what a
+// name is for.
+export function expectUnsentEditHeldInEditor() {
+  expect(editorContentHtml()).toBe(SAVED_CONTENT)
+  expect(dispatchBeforeUnload()).toBe(true)
 }
 
 // A server that accepts the request and never answers — the write is in flight for the rest of the

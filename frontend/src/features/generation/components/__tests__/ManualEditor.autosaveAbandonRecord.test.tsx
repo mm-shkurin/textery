@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
-  editorContentHtml,
   renderCreatedDocument,
   renderFailedInitDocument,
   typeAndFireAutosave,
@@ -8,7 +7,6 @@ import {
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
 import {
-  SAVED_CONTENT,
   SAVED_PLAIN,
   armServerConfirmsSavedContent,
   armServerRefusesWithProductionError,
@@ -21,6 +19,7 @@ import {
   expectManualSaveCannotReachTheWire,
   expectNoAbandonmentRecorded,
   expectNoSaveOnWire,
+  expectUnsentEditHeldInEditor,
 } from './ManualEditor.autosaveAbandonFixture'
 import { dispatchBeforeUnload, expectOnlySavedBadge } from './ManualEditor.saveStatus.testSupport'
 
@@ -108,12 +107,9 @@ describe('ManualEditor — what the abandonment record must and must not say (H9
     // sent, so isSavingRef was never set; the edit exists only as a pending timer.
     await typeIntoEditor(SAVED_PLAIN)
     expectNoSaveOnWire()
-    // The edit is REAL and it is exactly the one this case names — the editor holds the typed
-    // paragraph, not merely an input event that fired. `dispatchBeforeUnload()` below cannot say
-    // this: its twin proves it reads true with nothing typed at all, so on its own it pins the
-    // case to a fact that is true in every window, including the one with nothing to abandon.
-    expect(editorContentHtml()).toBe(SAVED_CONTENT)
-    expect(dispatchBeforeUnload()).toBe(true)
+    // The edit is REAL and it is exactly the one this case names, and the app calls the document
+    // unpersisted while holding it. Why each half is needed is at the helper.
+    expectUnsentEditHeldInEditor()
 
     unmount()
 
@@ -178,11 +174,9 @@ describe('ManualEditor — what the abandonment record must and must not say (H9
     // button provably live and watching the wire stay empty is `useDocumentSave.ts:172`'s
     // `if (!documentId) return` observed from outside the component.
     await expectManualSaveCannotReachTheWire()
-    // The work is REAL and it is still only in the editor. Asserted for the same reason the
-    // debounce-gap case asserts it: dispatchBeforeUnload() below reads true on an untouched fresh
-    // document too, so on its own it cannot say anything was typed.
-    expect(editorContentHtml()).toBe(SAVED_CONTENT)
-    expect(dispatchBeforeUnload()).toBe(true)
+    // The work is REAL and it is still only in the editor — the whole of what is about to be lost,
+    // over a document that does not exist.
+    expectUnsentEditHeldInEditor()
 
     unmount()
 

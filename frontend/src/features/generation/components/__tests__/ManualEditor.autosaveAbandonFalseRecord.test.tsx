@@ -17,8 +17,12 @@ import {
   armServerConfirmsSavedContent,
   expectBaselineSaveOnWire,
 } from './ManualEditor.autosaveFixture'
-import { expectNoAbandonmentRecorded } from './ManualEditor.autosaveAbandonFixture'
 import {
+  expectNoAbandonmentRecorded,
+  expectNoSaveOnWire,
+} from './ManualEditor.autosaveAbandonFixture'
+import {
+  SAVE_BUTTON_LABEL,
   dispatchBeforeUnload,
   expectOnlyDirtyBadge,
   expectOnlySavedBadge,
@@ -131,14 +135,14 @@ describe('ManualEditor — no abandonment record when the armed write had nothin
     // case where the guard SHOULD be armed. Asserting it here is what stops the closing false below
     // from passing vacuously on a listener that was never registered.
     await typeIntoEditor(SAVED_PLAIN)
-    expect(documentApi.saveDocument).not.toHaveBeenCalled()
+    expectNoSaveOnWire()
     expect(dispatchBeforeUnload()).toBe(true)
 
     // Part-way through the window the user clicks Сохранить rather than waiting.
     await act(async () => {
       await vi.advanceTimersByTimeAsync(CLICK_AT_MS)
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
+    fireEvent.click(screen.getByRole('button', { name: SAVE_BUTTON_LABEL }))
     await flushMicrotasks()
 
     expectBaselineSaveOnWire()
