@@ -2395,7 +2395,7 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   >   `INVALID_*` sibling is 422), no rest or acceptance reference. Chartered already, but the charter
   >   names the MAP ENTRY, not a test that goes RED on the wrong status; no acceptance test asserts the
   >   HTTP status for a set-and-clear save. Charter widened accordingly.
-- [~] green-usecase (the refusal message is client-SAFE, not merely stable) — SCOPE WIDENED by the
+- [x] green-usecase (the refusal message is client-SAFE, not merely stable) — SCOPE WIDENED by the
   review passes over `703def1`, all four items inside this unit's own file: (i) `.strip()` on the
   needle vacuity assert, and correct the production comment at `title_update.py:26-27` that now
   overstates what is pinned; (ii) fix the docstring at lines 15-17, which states the opposite of the
@@ -2509,7 +2509,65 @@ filename & encoding → safety (SSRF, deadline, disclosure).
   >   prose about a data-loss path.
   > • REMOTE, noted not filed: no `xfail_strict` or skip-audit exists in any pytest config, so a green
   >   that removes four of five markers ships green with the clear path unexecuted.
-- [ ] adapters-discovery — REQUIRED guards, named by the review passes over the design commit
+  > GREEN LANDED, and the production change is comment-only as chartered — the refusal message itself
+  > needed nothing. All four widened items shipped in
+  > `backend/domain/tests/document/test_title_update_refusal_safety.py` (146 → 194 lines):
+  > (i) the needle assert is now `_CONTRADICTION_DETAIL.strip() != ""`, matching the haystack's own
+  > reasoning (`"   " in <anything>` is False, so a whitespace-blanked detail is exactly as vacuous as
+  > `""`); the production comment at `title_update.py:24-29` was corrected in place — "blanking this
+  > constant now fails a test" was true only for the exact-empty spelling, and it now states the pin is
+  > non-blank AFTER `.strip()` and that NOTHING ELSE about the constant is pinned (any non-blank
+  > sentence satisfies both asserts; dropping the `from` clause still fails nothing).
+  > (ii) the module docstring stated the OPPOSITE of its own orthogonality argument — corrected to say
+  > the `==` pin DIES on any rewrite (which is why this file must exist) and this file's property guard
+  > SURVIVES every rewrite (which is why it is useless as a drift detector). As shipped it invited a
+  > reader to delete the file it justifies.
+  > (iii) new second parametrised method `test_should_not_show_a_client_any_internal_shape_in_the_error_code`
+  > over `refuse_a_flagged_value().error_code` — the other verbatim-echoed field. Both methods now share a
+  > module-level `FORBIDDEN_FRAGMENTS` and one `assert_carries_no_internal_shape(surface, text, forbidden)`
+  > helper, so the fragment set CANNOT drift between the two echoed JSON keys.
+  > (iv) CASE-SENSITIVITY DECIDED — case-INSENSITIVE (`forbidden.casefold() not in text.casefold()`);
+  > `titleupdate`/`TITLEUPDATE` leaks exactly as much as the exact spelling, and casefold is a no-op on
+  > `(` and `=`. Left open DELIBERATELY, with the reason recorded in the helper: SEPARATED spellings
+  > (`title update`, `title-update`) are not caught, because collapsing separators would start matching
+  > the ordinary English word "title" in any legitimate rewrite of a sentence ABOUT titles — the guard
+  > would veto its own subject.
+  > MUTANTS, each injected / run / restored: (A) `_CONTRADICTION_DETAIL = "   "` → 1 failed (SURVIVED
+  > before this unit — this is the hole the unit was opened to close); (B) blank `error_code` → 3 failed;
+  > (C) `error_code = "INVALID_TitleUpdate(clears=True)"` → 3 failed; (D) message → `"A titleupdate
+  > cannot be set…"` → 1 failed, and it would have PASSED under a case-sensitive arm, which is the
+  > measurement behind decision (iv). `git diff backend/domain/src/` after the probes carried only the
+  > intended comment edit.
+  > Tests: domain 157 passed / 0 failed (was 154 — the three new `error_code` params); usecase 189
+  > passed / 0 failed; full backend 514 passed / 0 failed / 57 skipped (baseline 511/0/57, none new).
+  > mypy from `backend/domain`: Success, 18 files; `ruff check` clean on both changed paths.
+  > Coverage: `title_update.py` 100% line (27/27) + 100% branch (4/4); measured no-delta against a
+  > stashed baseline (154→157 tests, coverage FLAT) — the expected signature of a comment-only
+  > production edit plus a guard that pins an already-covered branch harder. `save_document.py` 100%/100%.
+  > No gap warrants a follow-up step.
+  > TWO CORRECTIONS TO THIS FILE'S OWN RECORD, both worth carrying: (1) the anticipated 200-cap split
+  > did NOT happen and was not needed — the scope named `test_title_update_invariants.py` (186/200) as
+  > the file this unit would push over, but all four items live in the refusal-safety file, now at
+  > 194/200. The cap pressure MOVED FILES rather than resolving: the invariants file keeps its 14 lines
+  > and the refusal-safety file now has 6, so the next guard added to EITHER forces a split.
+  > (2) the "all 57 skips are the db adapter's Postgres skips" claim repeated in earlier notes is wrong:
+  > 55 are `TEST_DATABASE_URL` env-gated, and TWO are optional-dependency skips (`No module named
+  > 'htmldocx'`, `No module named 'weasyprint'`). Counts match baseline, nothing new — but those two are
+  > the render deps of THIS story, and the carryover already warns that an importorskip whose dep is
+  > missing in the gating env skips forever. They are host-only skips; CI installs both.
+  > TOOLING DEFECT found by the coverage run, not fixed here (outside a coverage run's scope):
+  > `.claude/tech/python-fastapi-hex/templates/testing/coverage-commands.md` specifies the focus filter
+  > `git diff HEAD --name-only -- 'backend/*/src/' 'backend/adapters/*/src/'`, which returns ZERO files
+  > against a tree that genuinely has a modified `backend/domain/src/document/title_update.py` — the
+  > trailing-slash directory pathspec with `*` matches nothing. Working form:
+  > `git diff HEAD --name-only -- ':(glob)backend/*/src/**'`. Today the template's own trip-wire ("if the
+  > filter returns no classes but green wrote branches, the filter is wrong") stays SILENT, because this
+  > green wrote no branches — a silently-empty filter is indistinguishable from a correctly-empty one.
+  > On the next green that DOES add branches, this filter would skip the new code and report clean.
+  > Also false for this repo: the universal module-mapping table's "domain has no own tests; usecase
+  > tests exercise domain" — `backend/domain/tests/` has 157 tests and is the ONLY suite covering
+  > `title_update.py`'s `__post_init__` raise (L104 reads as uncovered under the usecase suite alone).
+- [~] adapters-discovery — REQUIRED guards, named by the review passes over the design commit
   (`97e8f53`); discovery must insert all four, none is optional:
   (a) rest route — TWO assertions in `test_save_document_title_router.py`, not one: a body of
   `{"content","version"}` with NO `title` key → `SaveDocument.execute(title=TitleUpdate.preserve())`

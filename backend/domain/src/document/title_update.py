@@ -23,9 +23,11 @@ INVALID_TITLE_INTENT_MESSAGE = "A title cannot be set and cleared at the same ti
 # chartered to adapters-discovery, alongside the `_ERROR_CODE_STATUS_MAP` entry;
 # it becomes load-bearing the moment that guard lands. Its CONTENT is pinned only
 # negatively, and deliberately so: `test_title_update_refusal_safety.py` asserts
-# it is non-blank and that it stays OFF the client message, so blanking it now
-# fails a test -- but no test pins the sentence itself, and dropping the `from`
-# clause still fails none. Both gaps close with the log guard, not before.
+# it is non-blank AFTER `.strip()` -- so neither `""` nor `"   "` passes -- and
+# that it stays OFF the client message. Nothing else about it is pinned: any
+# non-blank sentence at all satisfies both assertions, so a rewrite that changed
+# what this says, or that leaked a password into it, fails no test. Dropping the
+# `from` clause below fails none either. Both gaps close with the log guard.
 _CONTRADICTION_DETAIL = (
     "a clear carries no title to write: TitleUpdate(value=..., clears=True) "
     "asks for an erasure and a write at once, and its readers disagree"
