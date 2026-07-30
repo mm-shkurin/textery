@@ -10,10 +10,11 @@ import {
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
 import {
-  ABANDONED_SAVE_LOG,
   PRODUCTION_SERVER_ERROR,
   SAVED_CONTENT,
   SAVED_PLAIN,
+  expectAbandonmentRecorded,
+  expectNoAbandonmentRecorded,
 } from './ManualEditor.autosaveFixture'
 import { dispatchBeforeUnload } from './ManualEditor.saveStatus.testSupport'
 
@@ -46,8 +47,7 @@ describe('ManualEditor — what the abandonment record must and must not say (H9
 
     unmount()
 
-    expect(console.error).toHaveBeenCalledTimes(1)
-    expect(console.error).toHaveBeenCalledWith(ABANDONED_SAVE_LOG)
+    expectAbandonmentRecorded()
   })
 
   it('records nothing when the editor unmounts with every write settled', async () => {
@@ -66,7 +66,7 @@ describe('ManualEditor — what the abandonment record must and must not say (H9
 
     // The negative twin. console.error is the whole of this app's diagnostics; a record written on
     // every ordinary in-app back-out is how the one that matters becomes invisible.
-    expect(console.error).not.toHaveBeenCalled()
+    expectNoAbandonmentRecorded()
   })
 
   it('records the abandonment once, not once per failed attempt already logged', async () => {
@@ -79,8 +79,7 @@ describe('ManualEditor — what the abandonment record must and must not say (H9
 
     unmount()
 
-    expect(console.error).toHaveBeenCalledTimes(1)
-    expect(console.error).toHaveBeenCalledWith(ABANDONED_SAVE_LOG)
+    expectAbandonmentRecorded()
   })
 
   // The THIRD window, and the only one an ordinary user reaches without a 5xx first: the debounce
@@ -89,7 +88,8 @@ describe('ManualEditor — what the abandonment record must and must not say (H9
   // that timer in silence. ManualEditor.autosave.test.tsx:94 already proves the drop and asserts only
   // that no save fired; it does not spy console.error, so the silence is nobody's assertion.
   //
-  // RED 2026-07-29: fails at `expect(console.error).toHaveBeenCalledTimes(1)` with
+  // RED 2026-07-29: fails inside expectAbandonmentRecorded(), at
+  // `expect(console.error).toHaveBeenCalledTimes(1)`, with
   // `expected "error" to be called 1 times, but got 0 times`.
   it.skip('records the abandonment when the editor unmounts inside the debounce gap', async () => {
     const { unmount } = await renderCreatedDocument()
@@ -107,8 +107,7 @@ describe('ManualEditor — what the abandonment record must and must not say (H9
 
     unmount()
 
-    expect(console.error).toHaveBeenCalledTimes(1)
-    expect(console.error).toHaveBeenCalledWith(ABANDONED_SAVE_LOG)
+    expectAbandonmentRecorded()
   })
 
   // The debounce path's negative twin, and the guard that stops the cheap green — "log in the
@@ -136,6 +135,6 @@ describe('ManualEditor — what the abandonment record must and must not say (H9
 
     unmount()
 
-    expect(console.error).toHaveBeenCalledTimes(0)
+    expectNoAbandonmentRecorded()
   })
 })

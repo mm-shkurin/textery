@@ -54,6 +54,22 @@ export const RETRY_VERSION = SAVED_VERSION + 1
 // suite must agree on this exact string, and a per-file copy is how they stop agreeing.
 export const ABANDONED_SAVE_LOG = 'Pending document save abandoned before it completed'
 
+// The abandonment record, asserted whole: it happened, it happened ONCE, and it is exactly this one
+// message. `toHaveBeenCalledWith` pins the FULL argument list rather than argument 0 alone — a stray
+// second argument is a different record — and the count is what separates "recorded" from "recorded
+// once per failed attempt already logged". Shared by every suite that observes the sink so the four
+// sites cannot drift into asserting three different notions of "recorded".
+export function expectAbandonmentRecorded() {
+  expect(console.error).toHaveBeenCalledTimes(1)
+  expect(console.error).toHaveBeenCalledWith(ABANDONED_SAVE_LOG)
+}
+
+// The negative twin, spelled once. The cases that assert it are the guards against a green that logs
+// unconditionally, and they must all mean the same thing: the sink was not touched at all.
+export function expectNoAbandonmentRecorded() {
+  expect(console.error).not.toHaveBeenCalled()
+}
+
 // Runs the whole capped-backoff retry schedule to completion and settles whatever it fired, plus
 // any stale debounce armed during the wait. Extracted because the act/advanceTimersByTimeAsync/
 // flushMicrotasks composition is infrastructure the failure suites repeated verbatim — and because

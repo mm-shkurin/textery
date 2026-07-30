@@ -3,8 +3,8 @@ import { screen } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
 import { useAutosaveFailureFakeTimers } from './ManualEditor.autosave.testSupport'
 import {
-  ABANDONED_SAVE_LOG,
   enterBackoffWindow,
+  expectAbandonmentRecorded,
   playOutRetrySchedule,
 } from './ManualEditor.autosaveFixture'
 import {
@@ -72,7 +72,8 @@ describe('ManualEditor — the interior of the autosave backoff window (H9.4)', 
     expect(badge?.className).toBe(badgeClassName(RETRYING_BADGE_CLASS))
   })
 
-  // RED 2026-07-29: fails at `expect(console.error).toHaveBeenCalledTimes(1)` —
+  // RED 2026-07-29: fails inside expectAbandonmentRecorded(), at
+  // `expect(console.error).toHaveBeenCalledTimes(1)` —
   // "AssertionError: expected \"error\" to be called 1 times, but got 0 times". The []-scoped
   // cleanup clears the retry timer and returns; the abandoned write leaves no trace at all.
   it('records that the write never landed when the editor unmounts mid-backoff', async () => {
@@ -96,10 +97,7 @@ describe('ManualEditor — the interior of the autosave backoff window (H9.4)', 
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
 
     // So the abandonment must be recorded exactly once, through the app's only sink. Without this
-    // the user's last edit vanishes with no trace in the running system anywhere. toHaveBeenCalledWith
-    // pins the FULL argument list rather than argument 0 alone: this RED is the specification, and it
-    // decides the record is exactly this one message — a stray second argument is a different record.
-    expect(console.error).toHaveBeenCalledTimes(1)
-    expect(console.error).toHaveBeenCalledWith(ABANDONED_SAVE_LOG)
+    // the user's last edit vanishes with no trace in the running system anywhere.
+    expectAbandonmentRecorded()
   })
 })
