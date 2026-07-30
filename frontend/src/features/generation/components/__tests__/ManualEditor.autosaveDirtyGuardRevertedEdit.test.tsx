@@ -2,14 +2,16 @@ import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
 import {
-  CREATED_DOCUMENT_ID,
-  CREATED_VERSION,
   crossDebounceBoundary,
   flushMicrotasks,
-  renderCreatedDocument,
   typeIntoEditor,
   useAutosaveFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import {
+  CREATED_DOCUMENT_ID,
+  CREATED_VERSION,
+  renderCreatedDocument,
+} from './ManualEditor.autosaveRender.testSupport'
 import {
   EDITED_PLAIN,
   SAVED_CONTENT,

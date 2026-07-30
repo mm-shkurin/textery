@@ -5,10 +5,10 @@ import { MAX_AUTOSAVE_ATTEMPTS } from '../../hooks/useDocumentSave'
 import {
   defer,
   flushMicrotasks,
-  renderCreatedDocument,
   typeAndFireAutosave,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import { renderCreatedDocument } from './ManualEditor.autosaveRender.testSupport'
 import {
   PRODUCTION_SERVER_ERROR,
   SAVED_PLAIN,

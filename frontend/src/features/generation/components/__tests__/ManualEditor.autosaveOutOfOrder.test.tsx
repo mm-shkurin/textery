@@ -2,15 +2,17 @@ import { describe, expect, it, vi } from 'vitest'
 import { act, screen } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
 import {
-  CREATED_DOCUMENT_ID,
-  CREATED_VERSION,
   defer,
   editorContentHtml,
   flushMicrotasks,
-  renderCreatedDocument,
   typeAndFireAutosave,
   useAutosaveFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import {
+  CREATED_DOCUMENT_ID,
+  CREATED_VERSION,
+  renderCreatedDocument,
+} from './ManualEditor.autosaveRender.testSupport'
 import { RETRY_VERSION, SAVED_VERSION, asParagraph } from './ManualEditor.autosaveFixture'
 import {
   DIRTY_STATUS,

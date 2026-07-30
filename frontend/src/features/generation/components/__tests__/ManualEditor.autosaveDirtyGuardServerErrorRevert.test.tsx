@@ -3,12 +3,11 @@ import { screen } from '@testing-library/react'
 import type { HttpError } from '../../../../shared/api/httpClient'
 import { isTransientFailure } from '../../hooks/autosaveRetryPolicy'
 import * as documentApi from '../../api/documentApi'
+import { typeIntoEditor, useAutosaveFailureFakeTimers } from './ManualEditor.autosave.testSupport'
 import {
   CREATED_DOCUMENT_ID,
   renderCreatedDocument,
-  typeIntoEditor,
-  useAutosaveFailureFakeTimers,
-} from './ManualEditor.autosave.testSupport'
+} from './ManualEditor.autosaveRender.testSupport'
 import {
   SAVED_CONTENT,
   SAVED_PLAIN,

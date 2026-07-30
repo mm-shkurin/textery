@@ -3,7 +3,7 @@
 // `documentApi`. A plain .ts module: nothing here renders, and non-component exports on the
 // component-rendering support file trip react(only-export-components).
 import { expect, vi, type Mock } from 'vitest'
-import { CREATED_DOCUMENT_ID } from './ManualEditor.autosave.testSupport'
+import { CREATED_DOCUMENT_ID } from './ManualEditor.autosaveRender.testSupport'
 import { SAVED_VERSION } from './ManualEditor.autosaveFixture'
 
 export const ACCESS_TOKEN = 'access-1'

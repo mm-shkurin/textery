@@ -3,14 +3,13 @@ import { screen } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
 import { clearSession, saveSession } from '../../../auth/utils/authSession'
 import {
-  CREATED_VERSION,
   crossDebounceBoundary,
   editorContentHtml,
-  renderCreatedDocument,
   typeAndFireAutosave,
   typeIntoEditor,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import { CREATED_VERSION, renderCreatedDocument } from './ManualEditor.autosaveRender.testSupport'
 import {
   EDITED_CONTENT,
   EDITED_PLAIN,

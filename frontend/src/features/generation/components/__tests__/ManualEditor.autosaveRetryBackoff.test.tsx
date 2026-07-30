@@ -4,14 +4,16 @@ import { MAX_AUTOSAVE_ATTEMPTS, SAVE_ERROR_MESSAGE } from '../../hooks/useDocume
 import { RequestTimeoutError } from '../../../../shared/api/httpClient'
 import * as documentApi from '../../api/documentApi'
 import {
-  CREATED_DOCUMENT_ID,
-  CREATED_VERSION,
   flushMicrotasks,
-  renderCreatedDocument,
   typeAndFireAutosave,
   typeIntoEditor,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import {
+  CREATED_DOCUMENT_ID,
+  CREATED_VERSION,
+  renderCreatedDocument,
+} from './ManualEditor.autosaveRender.testSupport'
 import {
   SAVED_CONTENT,
   SAVED_PLAIN,

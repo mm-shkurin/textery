@@ -4,12 +4,14 @@ import { RequestTimeoutError } from '../../../../shared/api/httpClient'
 import { isTransientFailure } from '../../hooks/autosaveRetryPolicy'
 import * as documentApi from '../../api/documentApi'
 import {
-  CREATED_DOCUMENT_ID,
   crossDebounceBoundary,
-  renderCreatedDocument,
   typeIntoEditor,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import {
+  CREATED_DOCUMENT_ID,
+  renderCreatedDocument,
+} from './ManualEditor.autosaveRender.testSupport'
 import {
   RETRY_VERSION,
   REVISED_CONTENT,

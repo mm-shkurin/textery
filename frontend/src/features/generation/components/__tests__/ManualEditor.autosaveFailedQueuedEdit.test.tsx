@@ -3,15 +3,17 @@ import { act } from '@testing-library/react'
 import { RequestTimeoutError } from '../../../../shared/api/httpClient'
 import * as documentApi from '../../api/documentApi'
 import {
-  CREATED_DOCUMENT_ID,
-  CREATED_VERSION,
   RETRY_WINDOW_MS,
   defer,
   flushMicrotasks,
-  renderCreatedDocument,
   typeAndFireAutosave,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import {
+  CREATED_DOCUMENT_ID,
+  CREATED_VERSION,
+  renderCreatedDocument,
+} from './ManualEditor.autosaveRender.testSupport'
 
 vi.mock('../../api/documentApi')
 

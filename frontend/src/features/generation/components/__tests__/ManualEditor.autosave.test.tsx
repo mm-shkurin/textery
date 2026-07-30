@@ -3,13 +3,15 @@ import { act, screen } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
 import {
   AUTOSAVE_DEBOUNCE_MS,
-  CREATED_DOCUMENT_ID,
-  CREATED_VERSION,
   flushMicrotasks,
-  renderCreatedDocument,
   typeIntoEditor,
   useAutosaveFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import {
+  CREATED_DOCUMENT_ID,
+  CREATED_VERSION,
+  renderCreatedDocument,
+} from './ManualEditor.autosaveRender.testSupport'
 import { DIRTY_STATUS, SAVED_STATUS } from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')

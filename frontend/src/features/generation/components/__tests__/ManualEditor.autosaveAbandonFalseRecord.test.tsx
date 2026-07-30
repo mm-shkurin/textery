@@ -6,10 +6,10 @@ import {
   crossDebounceBoundary,
   editorContentHtml,
   flushMicrotasks,
-  renderCreatedDocument,
   typeIntoEditor,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import { renderCreatedDocument } from './ManualEditor.autosaveRender.testSupport'
 import {
   EDITED_PLAIN,
   SAVED_CONTENT,

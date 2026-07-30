@@ -4,19 +4,22 @@ import type { HttpError } from '../../../../shared/api/httpClient'
 import * as documentApi from '../../api/documentApi'
 import type { SaveDocumentResult } from '../../api/documentApi'
 import {
-  CREATED_DOCUMENT_ID,
-  CREATED_VERSION,
   RETRY_WINDOW_MS,
   flushMicrotasks,
-  renderCreatedDocument,
   typeAndFireAutosave,
 } from './ManualEditor.autosave.testSupport'
+import {
+  CREATED_DOCUMENT_ID,
+  CREATED_VERSION,
+  renderCreatedDocument,
+} from './ManualEditor.autosaveRender.testSupport'
 import { SAVE_ERROR_TESTID, expectSavedBadge } from './ManualEditor.saveStatus.testSupport'
 
 // The autosave FIXTURE vocabulary: the text a failure suite types, the HTML it expects on the wire,
-// and the OCC versions those writes carry. A plain .ts module rather than more exports on
-// ManualEditor.autosave.testSupport.tsx — that file exports a component-rendering helper, so every
-// non-component export added to it trips react(only-export-components). Nothing here needs JSX.
+// and the OCC versions those writes carry. Its own module rather than more exports on
+// ManualEditor.autosave.testSupport — that file is the timer/typing lifecycle, and fixture
+// vocabulary is a different subject. Nothing here needs JSX; the render helpers that do live in
+// ManualEditor.autosaveRender.testSupport.tsx.
 
 // The paragraph wrapper Tiptap's schema puts around one line of typed text. Naming the relationship
 // is what keeps `typeIntoEditor(SAVED_PLAIN)` and the `saveDocument(_, SAVED_CONTENT, _)` argument

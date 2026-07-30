@@ -2,15 +2,17 @@ import { describe, expect, it, vi } from 'vitest'
 import { act, screen } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
 import {
-  CREATED_DOCUMENT_ID,
-  CREATED_VERSION,
   crossDebounceBoundary,
   defer,
   flushMicrotasks,
-  renderCreatedDocument,
   typeIntoEditor,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import {
+  CREATED_DOCUMENT_ID,
+  CREATED_VERSION,
+  renderCreatedDocument,
+} from './ManualEditor.autosaveRender.testSupport'
 import { DIRTY_STATUS, SAVED_STATUS } from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')

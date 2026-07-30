@@ -2,11 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import { SAVE_ERROR_MESSAGE } from '../../hooks/useDocumentSave'
 import * as documentApi from '../../api/documentApi'
-import {
-  renderCreatedDocument,
-  typeAndFireAutosave,
-  useAutosaveFakeTimers,
-} from './ManualEditor.autosave.testSupport'
+import { typeAndFireAutosave, useAutosaveFakeTimers } from './ManualEditor.autosave.testSupport'
+import { renderCreatedDocument } from './ManualEditor.autosaveRender.testSupport'
 import { dispatchBeforeUnload } from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')

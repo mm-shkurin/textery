@@ -5,10 +5,10 @@ import * as documentApi from '../../api/documentApi'
 import {
   RETRY_WINDOW_MS,
   flushMicrotasks,
-  renderCreatedDocument,
   typeAndFireAutosave,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import { renderCreatedDocument } from './ManualEditor.autosaveRender.testSupport'
 
 vi.mock('../../api/documentApi')
 

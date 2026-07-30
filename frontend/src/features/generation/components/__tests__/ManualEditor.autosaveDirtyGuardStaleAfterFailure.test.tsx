@@ -4,13 +4,15 @@ import { CONFLICT_ERROR_MESSAGE, SAVE_ERROR_MESSAGE } from '../../hooks/useDocum
 import { VersionConflictError } from '../../../../shared/api/send'
 import * as documentApi from '../../api/documentApi'
 import {
-  CREATED_DOCUMENT_ID,
-  CREATED_VERSION,
   crossDebounceBoundary,
-  renderCreatedDocument,
   typeIntoEditor,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import {
+  CREATED_DOCUMENT_ID,
+  CREATED_VERSION,
+  renderCreatedDocument,
+} from './ManualEditor.autosaveRender.testSupport'
 import {
   EDITED_CONTENT,
   EDITED_PLAIN,

@@ -1,11 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
-  renderCreatedDocument,
-  renderFailedInitDocument,
   typeAndFireAutosave,
   typeIntoEditor,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import {
+  renderCreatedDocument,
+  renderFailedInitDocument,
+} from './ManualEditor.autosaveRender.testSupport'
 import {
   SAVED_PLAIN,
   armServerConfirmsSavedContent,

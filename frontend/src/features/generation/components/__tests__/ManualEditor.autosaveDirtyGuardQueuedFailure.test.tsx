@@ -3,14 +3,16 @@ import { act, screen } from '@testing-library/react'
 import { SAVE_ERROR_MESSAGE } from '../../hooks/useDocumentSave'
 import * as documentApi from '../../api/documentApi'
 import {
-  CREATED_DOCUMENT_ID,
   crossDebounceBoundary,
   defer,
   flushMicrotasks,
-  renderCreatedDocument,
   typeIntoEditor,
   useAutosaveFailureFakeTimers,
 } from './ManualEditor.autosave.testSupport'
+import {
+  CREATED_DOCUMENT_ID,
+  renderCreatedDocument,
+} from './ManualEditor.autosaveRender.testSupport'
 
 vi.mock('../../api/documentApi')
 
