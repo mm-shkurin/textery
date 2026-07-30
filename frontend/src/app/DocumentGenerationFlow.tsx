@@ -106,6 +106,7 @@ export function DocumentGenerationFlow() {
               onBack={flow.backFromEditor}
               existingDocumentId={flow.openDocumentId ?? undefined}
               generatedContent={generatedContent ?? undefined}
+              generationId={flow.generation.generationId ?? undefined}
             />
           </Suspense>
         </ErrorBoundary>

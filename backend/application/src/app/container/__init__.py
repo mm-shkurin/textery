@@ -24,6 +24,7 @@ from container.auth_wiring import (
 )
 from container.document_wiring import (
     create_create_document,
+    create_create_document_from_generation,
     create_export_document,
     create_get_document,
     create_list_documents,

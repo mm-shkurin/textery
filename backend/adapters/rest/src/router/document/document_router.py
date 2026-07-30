@@ -4,11 +4,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, Response
 
 from document.create_document import CreateDocument
+from document.create_document_from_generation import CreateDocumentFromGeneration
 from document.export_document import ExportDocument
 from document.get_document import GetDocument
 from document.list_documents import ListDocuments
 from document.save_document import SaveDocument
 from dto.document.document_dtos import (
+    CreateDocumentFromGenerationRequestDto,
     CreateDocumentRequestDto,
     DocumentResponseDto,
     DocumentSummaryDto,
@@ -39,6 +41,10 @@ def get_list_documents_usecase() -> ListDocuments:
 
 
 def get_export_document_usecase() -> ExportDocument:
+    raise NotImplementedError("wired by the application composition root")
+
+
+def get_create_document_from_generation_usecase() -> CreateDocumentFromGeneration:
     raise NotImplementedError("wired by the application composition root")
 
 
@@ -77,6 +83,34 @@ async def create_document(
     )
     # 201 for a fresh create, 200 for a replayed key. Set here rather than via the
     # decorator's status_code, which cannot vary per request.
+    response.status_code = 200 if result.is_replay else 201
+    return DocumentResponseDto.from_domain(result.document)
+
+
+@router.post("/from-generation", response_model=DocumentResponseDto)
+async def create_document_from_generation(
+    request: CreateDocumentFromGenerationRequestDto,
+    response: Response,
+    idempotency_key: str = Header(default="", alias="Idempotency-Key"),
+    owner_id: UUID = Depends(get_current_owner_id),
+    usecase: CreateDocumentFromGeneration = Depends(get_create_document_from_generation_usecase),
+) -> DocumentResponseDto:
+    """Convert a completed generation into the document the editor edits.
+
+    Declared above GET/PUT /{document_id} for the same reason list_documents is
+    declared above them: "from-generation" is a literal segment that a
+    parameterised path could otherwise swallow. It does not today -- this is a
+    POST and those are not -- but the ordering is the habit that keeps it true
+    when a POST /{document_id}/... is added.
+    """
+    result = await usecase.execute(
+        owner_id=owner_id,
+        generation_id=request.generation_id,
+        idempotency_key=idempotency_key,
+    )
+    # 201 for a fresh conversion, 200 when this generation was already converted
+    # (a replay, or the loser of a concurrent race). Set here rather than on the
+    # decorator, which cannot vary per request.
     response.status_code = 200 if result.is_replay else 201
     return DocumentResponseDto.from_domain(result.document)
 

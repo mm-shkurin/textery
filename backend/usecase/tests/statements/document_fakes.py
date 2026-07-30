@@ -51,9 +51,29 @@ class FakeDocumentRepository:
             and existing.idempotency_key == document.idempotency_key
             for existing in self.documents
         )
-        if clash:
-            raise ConflictException("document with this idempotency key already exists")
+        # BOTH unique constraints the real table carries. Mirroring only the
+        # idempotency one would let the conversion's replay and race tests pass
+        # against a storage that happily writes a second document for the same
+        # generation -- the exact duplicate the constraint exists to prevent.
+        # NULLs do not collide, matching Postgres: manual documents never contend.
+        generation_clash = document.generation_id is not None and any(
+            existing.generation_id == document.generation_id for existing in self.documents
+        )
+        if clash or generation_clash:
+            raise ConflictException("document violates a uniqueness constraint")
         self.documents.append(document)
+
+    async def find_by_generation_id(
+        self, owner_id: UUID, generation_id: UUID
+    ) -> Document | None:
+        return next(
+            (
+                d
+                for d in self.documents
+                if d.owner_id == owner_id and d.generation_id == generation_id
+            ),
+            None,
+        )
 
     async def find_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> Document | None:
         return next(

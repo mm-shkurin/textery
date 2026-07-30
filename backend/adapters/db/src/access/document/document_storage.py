@@ -34,18 +34,28 @@ class SqlAlchemyDocumentStorage:
         UnitOfWork port, the convention the auth slice follows. (The generation
         adapter still self-commits; that is story-1 surface, left alone.)
 
-        The `uq_documents_owner_idempotency_key` violation is mapped to
-        `ConflictException` so the create usecase can recognise a replay and
-        recover the original document. That mapping is the whole idempotency
-        mechanism: the DB constraint decides, not a check-then-insert, so there is
-        no TOCTOU window between the check and the insert.
+        A unique violation is mapped to `ConflictException` so the calling usecase
+        can recognise a replay and recover the original document. That mapping is
+        the whole idempotency mechanism: the DB constraint decides, not a
+        check-then-insert, so there is no TOCTOU window between the check and the
+        insert.
+
+        TWO constraints can raise it, and the exception deliberately does not say
+        which: `uq_documents_owner_idempotency_key` (this owner reused a key) and
+        `uq_documents_generation_id` (this generation is already a document).
+        Telling them apart from here would mean reading a driver-specific
+        constraint name off the wrapped error; the callers distinguish them by
+        which recovery read finds a row, which is the same answer without the
+        coupling. The message names both so a log line never asserts the wrong one.
         """
         self._session.add(DocumentModel.from_domain(document))
         try:
             await self._session.flush()
         except IntegrityError as error:
             raise ConflictException(
-                f"document with idempotency key {document.idempotency_key} already exists"
+                f"document {document.id} violates a uniqueness constraint "
+                f"(idempotency key {document.idempotency_key!r}, "
+                f"generation {document.generation_id})"
             ) from error
 
     async def find_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> Document | None:
@@ -65,6 +75,18 @@ class SqlAlchemyDocumentStorage:
             select(DocumentModel).where(
                 DocumentModel.owner_id == owner_id,
                 DocumentModel.idempotency_key == idempotency_key,
+            )
+        )
+        model = result.scalar_one_or_none()
+        return model.to_domain() if model else None
+
+    async def find_by_generation_id(
+        self, owner_id: UUID, generation_id: UUID
+    ) -> Document | None:
+        result = await self._session.execute(
+            select(DocumentModel).where(
+                DocumentModel.owner_id == owner_id,
+                DocumentModel.generation_id == generation_id,
             )
         )
         model = result.scalar_one_or_none()

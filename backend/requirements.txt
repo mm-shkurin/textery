@@ -19,6 +19,12 @@ weasyprint==63.1
 # core_properties so the renderer can redact author/time metadata.
 python-docx==1.1.2
 htmldocx==0.0.6
+# Markdown -> HTML for the generation-to-document conversion (story 18). The LLM
+# answers in markdown; the editor and every export downstream speak HTML, so the
+# conversion is what makes a generated document editable at all. Pure-Python, no
+# native libs. Its output is NOT trusted -- it goes through Nh3HtmlSanitizer like
+# any client-submitted content, because a markdown document may embed raw HTML.
+Markdown==3.7
 alembic==1.18.4
 pytest==9.1.1
 pytest-asyncio==1.4.0

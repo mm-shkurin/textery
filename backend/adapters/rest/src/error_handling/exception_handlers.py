@@ -22,6 +22,14 @@ _ERROR_CODE_STATUS_MAP = {
     "INVALID_IDEMPOTENCY_KEY": 422,
     "INVALID_VERSION": 422,
     "INVALID_FORMAT": 422,
+    # Generation-to-document conversion (documents_from_generation.yaml). The two
+    # 409s are refusals to convert, NOT the save path's version conflict, so they
+    # carry their own codes: routing them through ConflictException would answer
+    # with "The document was modified by another save", which is untrue and
+    # unactionable for a client that has not saved anything yet.
+    "GENERATION_NOT_COMPLETED": 409,
+    "IDEMPOTENCY_KEY_REUSED": 409,
+    "CONVERTED_CONTENT_TOO_LONG": 422,
     # CONTENT_TOO_LONG is absent deliberately: documents_save.yaml specifies 400 for
     # it, which is the default.
 }

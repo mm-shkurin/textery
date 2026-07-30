@@ -36,6 +36,7 @@ from container import (
     create_complete_oauth_callback,
     create_create_document,
     create_exchange_handoff_code,
+    create_create_document_from_generation,
     create_export_document,
     create_frontend_callback_url,
     create_generate_document,
@@ -77,6 +78,7 @@ from router.auth.oauth_router import (
 from router.auth.oauth_router import router as oauth_router
 from router.document.document_router import (
     get_create_document_usecase,
+    get_create_document_from_generation_usecase,
     get_export_document_usecase,
     get_get_document_usecase,
     get_list_documents_usecase,
@@ -147,6 +149,9 @@ app.dependency_overrides[get_refresh_access_token_usecase] = create_refresh_acce
 app.dependency_overrides[get_create_document_usecase] = create_create_document
 app.dependency_overrides[get_get_document_usecase] = create_get_document
 app.dependency_overrides[get_export_document_usecase] = create_export_document
+app.dependency_overrides[get_create_document_from_generation_usecase] = (
+    create_create_document_from_generation
+)
 app.dependency_overrides[get_list_documents_usecase] = create_list_documents
 app.dependency_overrides[get_save_document_usecase] = create_save_document
 app.dependency_overrides[get_token_service] = create_token_service

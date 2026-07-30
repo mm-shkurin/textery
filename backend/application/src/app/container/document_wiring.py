@@ -1,8 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from access.document.document_storage import SqlAlchemyDocumentStorage
+from access.generation.generation_storage import SqlAlchemyGenerationStorage
 from container.runtime import request_scoped
 from document.create_document import CreateDocument
+from document.create_document_from_generation import CreateDocumentFromGeneration
 from document.export_document import ExportDocument
 from document.get_document import GetDocument
 from document.list_documents import ListDocuments
@@ -60,5 +62,26 @@ def create_save_document(session: AsyncSession) -> SaveDocument:
         clock=SystemClock(),
         # One session across the repository and the unit of work, so the usecase's
         # commit is what makes the CAS durable.
+        unit_of_work=SqlAlchemyUnitOfWork(session),
+    )
+
+
+@request_scoped
+def create_create_document_from_generation(session: AsyncSession) -> CreateDocumentFromGeneration:
+    # MarkdownHtmlConverter lives in the rendering adapter beside the PDF/DOCX
+    # renderers, but unlike them it is pure-Python and imports cleanly on any
+    # host -- so it is a plain top-of-function import rather than the deferred
+    # one create_export_document needs.
+    from rendering.markdown_html_converter import MarkdownHtmlConverter
+
+    return CreateDocumentFromGeneration(
+        document_repository=SqlAlchemyDocumentStorage(session),
+        generation_storage=SqlAlchemyGenerationStorage(session),
+        markdown_converter=MarkdownHtmlConverter(),
+        html_sanitizer=Nh3HtmlSanitizer(),
+        clock=SystemClock(),
+        # The same session the repository holds, so the conversion's insert and
+        # its commit are one transaction -- and so the rollback in the replay
+        # recovery actually clears the poisoned session before it re-reads.
         unit_of_work=SqlAlchemyUnitOfWork(session),
     )

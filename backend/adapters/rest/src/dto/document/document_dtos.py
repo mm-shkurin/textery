@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, StrictInt
 
@@ -12,6 +13,19 @@ class CreateDocumentRequestDto(BaseModel):
     # NOT declared here: the domain's DocumentType owns it, so a bad value surfaces
     # as 422 {error_code: INVALID_DOCUMENT_TYPE} rather than Pydantic's envelope.
     document_type: str
+
+
+class CreateDocumentFromGenerationRequestDto(BaseModel):
+    """The conversion request body: one field, and it is an id the caller owns.
+
+    Nothing else is accepted. `title`, `content`, `status`, `version` and even a
+    spoofed `generation_id` on the response shape are server-derived, and
+    Pydantic's default extra="ignore" drops them -- so a client cannot seed a
+    document's text by POSTing it here. Same mass-assignment guard as
+    CreateDocumentRequestDto, for the same reason.
+    """
+
+    generation_id: UUID
 
 
 class SaveDocumentRequestDto(BaseModel):
@@ -62,6 +76,11 @@ class DocumentResponseDto(BaseModel):
     document_type: str
     status: str
     content: str
+    # Additive on the shape story 5 shipped (documents_from_generation.yaml says
+    # so explicitly): null for a manual document, set for a converted one. Existing
+    # consumers tolerate them because both are optional on the wire.
+    title: str | None = None
+    generation_id: str | None = None
     # Plain int: this is an output field built from the domain entity, never parsed
     # from client JSON, so there is no lax coercion to guard against here.
     version: int
@@ -78,6 +97,8 @@ class DocumentResponseDto(BaseModel):
             document_type=document.document_type,
             status=document.status,
             content=document.content,
+            title=document.title,
+            generation_id=str(document.generation_id) if document.generation_id else None,
             version=document.version,
             created_at=document.created_at,
             updated_at=document.updated_at,

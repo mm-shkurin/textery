@@ -10,12 +10,16 @@ ALLOWED_STATUSES = (DRAFT_STATUS,)
 
 
 class Document:
-    """Domain entity for a manually-authored (non-AI) document.
+    """Domain entity for an editable document.
 
-    No `generation_id`: a manual document has no Generation, and story #1 never
-    built a Document to share a link field with -- scenario 2.1's "no generation
-    is created or linked" is satisfied more strongly by the column's absence than
-    by a null in it.
+    `generation_id` is None for a manual document and set for one converted from
+    a completed Generation (story 18). The field was deliberately ABSENT while
+    manual mode was the only way in -- story 5's scenario 2.1 read "no generation
+    is created or linked", and a missing column said that more strongly than a
+    null. Story 18 made the link real: the auto path converts a generation into a
+    document exactly once, and that "exactly once" is enforced by a UNIQUE
+    constraint on this column, which needs the column to exist. A null still
+    carries the original meaning -- nothing generated this document.
 
     **This entity deliberately does not increment its own version.** There is no
     `save_content()` doing `self.version += 1`, because an entity that owns the
@@ -38,6 +42,7 @@ class Document:
         created_at: datetime,
         updated_at: datetime,
         title: str | None = None,
+        generation_id: UUID | None = None,
     ) -> None:
         self.id = id
         self.owner_id = owner_id
@@ -49,6 +54,7 @@ class Document:
         self.created_at = created_at
         self.updated_at = updated_at
         self.title = title
+        self.generation_id = generation_id
 
     @classmethod
     def create(
@@ -79,6 +85,46 @@ class Document:
         )
 
     @classmethod
+    def create_from_generation(
+        cls,
+        owner_id: UUID,
+        document_type: str,
+        generation_id: UUID,
+        content: str,
+        title: str,
+        idempotency_key: str,
+        created_at: datetime,
+    ) -> "Document":
+        """Build the editable draft that a completed generation becomes.
+
+        Sibling of `create`, not a parameter on it: the two differ in what they
+        are ALLOWED to accept, and collapsing them would hand the manual path a
+        `content` argument it must never have. `create`'s empty content is the
+        mass-assignment guard for manual documents (Security 2.1) -- a client
+        POSTing `content` to /documents cannot seed a document, because the
+        signature has nowhere to put it. Here content is server-derived: it is the
+        sanitized conversion of text the model wrote, and the request body carries
+        only a `generation_id`.
+
+        `title` is likewise server-derived (see derive_generated_title) and
+        `version` starts at 1 like any other draft -- the conversion is the
+        document's first state, not an edit of one.
+        """
+        return cls(
+            id=uuid4(),
+            owner_id=owner_id,
+            document_type=DocumentType(document_type).value,
+            status=DRAFT_STATUS,
+            content=content,
+            version=1,
+            idempotency_key=IdempotencyKey(idempotency_key).value,
+            created_at=created_at,
+            updated_at=created_at,
+            title=title,
+            generation_id=generation_id,
+        )
+
+    @classmethod
     def reconstitute(
         cls,
         id: UUID,
@@ -91,6 +137,7 @@ class Document:
         created_at: datetime,
         updated_at: datetime,
         title: str | None = None,
+        generation_id: UUID | None = None,
     ) -> "Document":
         """Rehydrate a stored document, preserving every persisted field.
 
@@ -111,4 +158,5 @@ class Document:
             created_at=created_at,
             updated_at=updated_at,
             title=title,
+            generation_id=generation_id,
         )

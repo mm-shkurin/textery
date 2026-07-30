@@ -35,6 +35,13 @@ class DocumentModel(Base):
         CheckConstraint(f"status IN ({_ALLOWED_STATUSES_SQL})", name="ck_documents_status"),
         CheckConstraint("version >= 1", name="ck_documents_version_positive"),
         UniqueConstraint("owner_id", "idempotency_key", name="uq_documents_owner_idempotency_key"),
+        # One document per generation, enforced by the database rather than by a
+        # check-then-insert in the usecase. This is the whole idempotency and
+        # race-safety mechanism for the conversion: a replay and a concurrent
+        # second request both lose the insert atomically, and the usecase answers
+        # by returning the row that won. NULLs do not collide in Postgres, so
+        # every manual document keeps its own row.
+        UniqueConstraint("generation_id", name="uq_documents_generation_id"),
         # Same shape as generations: owner_id then the keyset pair, DESC. Leads with
         # owner_id, so it covers plain by-owner lookups too -- hence no index=True.
         Index(
@@ -53,6 +60,7 @@ class DocumentModel(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False, default="")
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    generation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
@@ -67,6 +75,7 @@ class DocumentModel(Base):
             content=document.content,
             version=document.version,
             idempotency_key=document.idempotency_key,
+            generation_id=document.generation_id,
             created_at=document.created_at,
             updated_at=document.updated_at,
         )
@@ -85,6 +94,7 @@ class DocumentModel(Base):
             content=self.content,
             version=self.version,
             idempotency_key=self.idempotency_key,
+            generation_id=self.generation_id,
             created_at=self.created_at,
             updated_at=self.updated_at,
         )

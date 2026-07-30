@@ -25,6 +25,11 @@ const MAX_CONSECUTIVE_POLL_FAILURES = 3
 export interface UseGeneration {
   state: GenerationUiState
   content: string | null
+  // The id of the run currently being watched. Exposed because the completed generation has to be
+  // CONVERTED into a document before the editor can save anything, and that conversion
+  // (`POST /documents/from-generation`) takes the id — not the text. Null until `submit` gets the
+  // POST's response back, which is also the moment polling starts.
+  generationId: string | null
   volumePages: number | null
   createdAt: string | null
   error: string | null
@@ -38,6 +43,7 @@ export interface UseGeneration {
 export function useGeneration(): UseGeneration {
   const [state, setState] = useState<GenerationUiState>('idle')
   const [content, setContent] = useState<string | null>(null)
+  const [generationId, setGenerationId] = useState<string | null>(null)
   const [volumePages, setVolumePages] = useState<number | null>(null)
   const [createdAt, setCreatedAt] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -127,6 +133,7 @@ export function useGeneration(): UseGeneration {
     async (topic: string, documentType?: DocumentType) => {
       setState('pending')
       setContent(null)
+      setGenerationId(null)
       setVolumePages(null)
       setCreatedAt(null)
       setError(null)
@@ -135,6 +142,7 @@ export function useGeneration(): UseGeneration {
       consecutiveFailuresRef.current = 0
       try {
         const { generationId } = await createGeneration(topic, documentType)
+        setGenerationId(generationId)
         void poll(generationId) // immediate first check
         intervalRef.current = window.setInterval(() => {
           void poll(generationId)
@@ -152,6 +160,7 @@ export function useGeneration(): UseGeneration {
     stopPolling()
     setState('idle')
     setContent(null)
+    setGenerationId(null)
     setVolumePages(null)
     setCreatedAt(null)
     setError(null)
@@ -160,5 +169,5 @@ export function useGeneration(): UseGeneration {
   // Clean up any running interval on unmount.
   useEffect(() => stopPolling, [stopPolling])
 
-  return { state, content, volumePages, createdAt, error, submit, reset }
+  return { state, content, generationId, volumePages, createdAt, error, submit, reset }
 }

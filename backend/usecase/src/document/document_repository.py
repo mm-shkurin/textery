@@ -32,6 +32,23 @@ class DocumentRepository(Protocol):
         self, owner_id: UUID, idempotency_key: str
     ) -> Document | None: ...
 
+    async def find_by_generation_id(
+        self, owner_id: UUID, generation_id: UUID
+    ) -> Document | None:
+        """The document this generation was already converted into, if any.
+
+        Owner-scoped like everything else here, and safely so: a generation the
+        caller does not own is refused before the conversion ever reaches this
+        method, so an owner filter can never hide a row the caller is entitled to.
+
+        Read AFTER a failed insert, not before one. Reading first would be a
+        check-then-insert with a TOCTOU window between them -- and that window is
+        not theoretical here, because React StrictMode double-invokes the effect
+        that fires this request. The `uq_documents_generation_id` constraint
+        decides; this method only reports who won.
+        """
+        ...
+
     async def list_by_owner(
         self, owner_id: UUID, limit: int, cursor: KeysetCursor | None
     ) -> list[Document]:

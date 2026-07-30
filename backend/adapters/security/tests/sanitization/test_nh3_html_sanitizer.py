@@ -32,6 +32,16 @@ class TestEditorFormattingSurvives:
             "<i>курсив</i>",
             "<u>подчёркнутый</u>",
             "<p>строка<br>перенос</p>",
+            # The block half of the StarterKit schema story 5 migrated the editor
+            # to. Each of these has a toolbar button (Цитата, Блок кода,
+            # горизонтальная линейка, зачёркивание), and each was stripped on save
+            # until the allowlist caught up — the user formatted, saved, reloaded,
+            # and found a bare paragraph. Markdown conversion emits the same tags.
+            "<blockquote><p>Цитата</p></blockquote>",
+            "<pre><code>print(1)</code></pre>",
+            "<p>до</p><hr><p>после</p>",
+            "<p><s>вычеркнуто</s></p>",
+            "<p><code>inline</code></p>",
         ],
     )
     def test_should_preserve_allowed_formatting(self, sanitizer, markup):
@@ -120,3 +130,46 @@ class TestSanitizerIsTotal:
         result = sanitizer.sanitize("<p>a &lt; b</p>")
 
         assert "a &lt; b" in result
+
+
+class TestTextAlignmentSurvivesButOtherCssDoesNot:
+    """`style` is allowed on block tags for ONE property: text alignment.
+
+    nh3 filters tags, attributes and URL schemes but does not parse CSS, so
+    letting `style` through unexamined would hand over the whole property space.
+    The attribute filter is an allowlist of one property and four values; these
+    tests pin both halves, because a filter that only kept the good cases (or only
+    dropped the bad ones) would pass half of them.
+    """
+
+    @pytest.mark.parametrize("alignment", ["left", "right", "center", "justify"])
+    def test_should_preserve_every_alignment_the_editor_can_set(self, sanitizer, alignment):
+        markup = f'<p style="text-align: {alignment}">текст</p>'
+
+        assert sanitizer.sanitize(markup) == markup
+
+    @pytest.mark.parametrize(
+        "style",
+        [
+            "position: fixed; top: 0",
+            "background: url(http://evil.example/x)",
+            "display: none",
+            # The salvage trap: a real alignment with a payload riding along. The
+            # whole attribute is dropped rather than the good half kept, so no
+            # partial honouring can smuggle the second declaration through.
+            "text-align: center; position: fixed",
+            # Not an alignment the editor can produce, so not one worth risking a
+            # value the CSS parser might read differently than this filter does.
+            "text-align: url(javascript:alert(1))",
+        ],
+    )
+    def test_should_drop_any_style_that_is_not_a_plain_alignment(self, sanitizer, style):
+        result = sanitizer.sanitize(f'<p style="{style}">текст</p>')
+
+        assert result == "<p>текст</p>", f"{style!r} must not survive, got {result!r}"
+
+    def test_should_keep_the_paragraph_text_when_it_drops_the_style(self, sanitizer):
+        # Dropping the attribute must never drop the user's words with it.
+        result = sanitizer.sanitize('<p style="position: fixed">важный текст</p>')
+
+        assert "важный текст" in result

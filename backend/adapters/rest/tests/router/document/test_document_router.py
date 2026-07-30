@@ -54,6 +54,14 @@ class TestCreateDocumentRoute:
             "document_type": "эссе",
             "status": "draft",
             "content": "",
+            # Both null on the MANUAL create path, and asserted rather than
+            # omitted: `title` and `generation_id` are additive fields the
+            # conversion endpoint introduced (documents_from_generation.yaml), and
+            # a manual document must keep saying it was not generated. Pinning
+            # them here is what would catch a wiring mistake that let a
+            # client-supplied generation_id reach a manually created document.
+            "title": None,
+            "generation_id": None,
             "version": 1,
             "created_at": "2026-07-17T12:00:00Z",
             "updated_at": "2026-07-17T12:00:00Z",

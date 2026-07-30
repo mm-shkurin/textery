@@ -4,7 +4,7 @@ import './ManualEditor.css'
 import type { DocumentType } from '../../../shared/documentTypes'
 import { useDocumentInit } from '../hooks/useDocumentInit'
 import { useDocumentSave } from '../hooks/useDocumentSave'
-import { useSeedGeneratedContent } from '../hooks/useSeedGeneratedContent'
+import { useGeneratedDocumentInit } from '../hooks/useGeneratedDocumentInit'
 import { useAutosave } from '../hooks/useAutosave'
 import { useBeforeUnloadGuard } from '../hooks/useBeforeUnloadGuard'
 import { AppHeader } from '../../../shared/components/AppHeader'
@@ -36,6 +36,10 @@ interface ManualEditorProps {
   // create-a-blank-document init and drops the "Ручной режим" breadcrumb chip, because both are
   // statements about a mode this user was never asked to choose.
   generatedContent?: string
+  // The id of the generation `generatedContent` came from. Travels alongside the text rather than
+  // being derived from it, because the CONVERSION takes the id: the text alone cannot be turned
+  // into a saveable document, and without a document there is no id to save against.
+  generationId?: string
 }
 
 export function ManualEditor({
@@ -44,6 +48,7 @@ export function ManualEditor({
   onBack,
   existingDocumentId,
   generatedContent,
+  generationId,
 }: ManualEditorProps) {
   const fromGeneration = generatedContent !== undefined
   const [documentId, setDocumentId] = useState<string | null>(null)
@@ -86,7 +91,17 @@ export function ManualEditor({
 
   useBeforeUnloadGuard(hasUnsavedChanges)
 
-  useSeedGeneratedContent(editor, generatedContent)
+  // The auto path's init: seeds the generated text, converts it into a real Document, and adopts
+  // the server's HTML. Mutually exclusive with useDocumentInit below, which returns early when
+  // `fromGeneration` is set.
+  useGeneratedDocumentInit({
+    generationId,
+    generatedContent,
+    editor,
+    setDocumentId,
+    setVersion,
+    onError: setInitError,
+  })
 
   useDocumentInit({
     documentType,

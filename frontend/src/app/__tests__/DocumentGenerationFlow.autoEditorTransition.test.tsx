@@ -58,6 +58,19 @@ describe('DocumentGenerationFlow — a completed generation opens itself in the 
     // itself — not what the document endpoint says afterwards.
     vi.mocked(documentApi.createDocument).mockReturnValue(new Promise(() => {}))
     vi.mocked(documentApi.getDocument).mockReturnValue(new Promise(() => {}))
+    // The conversion green wired: the auto path turns the generation into a Document and adopts
+    // the SERVER's HTML. Left unstubbed it resolves `undefined` under the module auto-mock and the
+    // hook rejects on the missing fields — which is what this file's own header predicted green
+    // would own. It resolves the same text so the content assertion below stays about the
+    // TRANSITION rather than about markdown conversion, which the backend's suite pins.
+    vi.mocked(documentApi.createDocumentFromGeneration).mockResolvedValue({
+      documentId: 'doc-2-1',
+      generationId: GENERATION_ID,
+      title: TOPIC,
+      status: 'draft',
+      content: `<p>${GENERATED_TEXT}</p>`,
+      version: 1,
+    })
     window.history.pushState({}, '', '/')
     saveSession({ accessToken: 'access-1', refreshToken: 'refresh-1' })
   })

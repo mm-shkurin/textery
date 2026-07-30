@@ -47,3 +47,7 @@ htmlcov_*/
 .DS_Store
 Thumbs.db
 Desktop.ini
+# Hand-made backups taken before a credential rotation. They hold the same secrets
+# as .env, so they need the same rule: the blanket line above matches that exact
+# filename only, not a suffixed copy of it.
+.env.bak-*
