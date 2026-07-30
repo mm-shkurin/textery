@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import type { MutableRef } from './autosaveSaveCycle'
 
 // How long typing must be quiet before an edit autosaves. Landing a save exactly on this boundary
 // (not "somewhere after it") is what the E3.1 test pins, so the constant is the single source both
@@ -14,7 +15,14 @@ export const AUTOSAVE_DEBOUNCE_MS = 1000
 // rescheduled edit always fires the latest closure without re-arming the effect. The cleanup clears
 // a pending timer on unmount — an editor the user has navigated away from must not fire a write at
 // an abandoned document (and trigger a state update on an unmounted component).
-export function useAutosave(save: () => void): () => void {
+//
+// `hasPendingEdit` is the abandonment record's view of this hook (H9.4): set the moment an edit arms
+// the debounce, cleared only when the timer actually fires `save()`. Deliberately NOT cleared by the
+// unmount cleanup below — unmounting inside the gap is precisely the case the record exists for, and
+// the flag is what tells it apart from an untouched document. It is a separate boolean rather than
+// `timerRef !== null` because `clearPending` nulls that ref on unmount, which would make the record
+// depend on the order two []-scoped effect cleanups happen to run in.
+export function useAutosave(save: () => void, hasPendingEdit: MutableRef<boolean>): () => void {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const saveRef = useRef(save)
   saveRef.current = save
@@ -33,8 +41,10 @@ export function useAutosave(save: () => void): () => void {
 
   return () => {
     clearPending()
+    hasPendingEdit.current = true
     timerRef.current = setTimeout(() => {
       timerRef.current = null
+      hasPendingEdit.current = false
       saveRef.current()
     }, AUTOSAVE_DEBOUNCE_MS)
   }

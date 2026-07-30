@@ -87,11 +87,7 @@ describe('ManualEditor — what the abandonment record must and must not say (H9
   // yet — the save has been decided on but not started. useAutosave's own []-scoped cleanup drops
   // that timer in silence. ManualEditor.autosave.test.tsx:94 already proves the drop and asserts only
   // that no save fired; it does not spy console.error, so the silence is nobody's assertion.
-  //
-  // RED 2026-07-29: fails inside expectAbandonmentRecorded(), at
-  // `expect(console.error).toHaveBeenCalledTimes(1)`, with
-  // `expected "error" to be called 1 times, but got 0 times`.
-  it.skip('records the abandonment when the editor unmounts inside the debounce gap', async () => {
+  it('records the abandonment when the editor unmounts inside the debounce gap', async () => {
     const { unmount } = await renderCreatedDocument()
 
     // One edit, and the clock stays put — strictly inside AUTOSAVE_DEBOUNCE_MS. Nothing has been
@@ -119,10 +115,7 @@ describe('ManualEditor — what the abandonment record must and must not say (H9
   // freshly created document has never been saved, so the app already calls it dirty — meaning
   // "dirty" and "a write is pending" are different facts, and a green that keys the record on the
   // dirty flag (the nearest thing to hand) would log here. It must key on pending work instead.
-  //
-  // RED 2026-07-29: passes already — it is the escape guard for the case above, and lands skipped
-  // with its twin so the pair is un-skipped together by the green.
-  it.skip('records nothing when the editor unmounts with no edit pending at all', async () => {
+  it('records nothing when the editor unmounts with no edit pending at all', async () => {
     const { unmount } = await renderCreatedDocument()
 
     expect(documentApi.saveDocument).not.toHaveBeenCalled()

@@ -13,6 +13,7 @@ import {
   shouldAdoptPersistedContent,
 } from './autosaveDirtyGuard'
 import { createSaveCycle } from './autosaveSaveCycle'
+import type { MutableRef } from './autosaveSaveCycle'
 import { useAbandonedSaveRecord } from './autosaveAbandonment'
 import { CONFLICT_ERROR_MESSAGE, SAVE_ERROR_MESSAGE } from './saveFailureMessages'
 
@@ -31,6 +32,10 @@ interface UseDocumentSaveParams {
 }
 
 export interface DocumentSave {
+  // "An edit has been decided on but not sent yet", written by the debounce scheduler and read by the
+  // unmount abandonment record. Owned by useAbandonedSaveRecord, passed through here because the
+  // scheduler is wired up after this hook — see autosaveAbandonment and useAutosave.
+  hasPendingEditRef: MutableRef<boolean>
   isSaving: boolean
   // An attempt has been rejected and the capped backoff has another one scheduled. Strictly
   // narrower than isSaving, which is true from before the first request is sent.
@@ -78,7 +83,7 @@ export function useDocumentSave({
   })
   // Cancels a pending backoff retry on unmount and records a write abandoned by it — see
   // autosaveAbandonment.
-  useAbandonedSaveRecord(isSavingRef, retryTimerRef)
+  const hasPendingEditRef = useAbandonedSaveRecord(isSavingRef, retryTimerRef)
 
   // `attempt` is 1 for the initial save and increments on each transient retry. `isSavingRef` stays
   // true across the backoff wait so an edit or Сохранить click landing in the gap only QUEUES
@@ -150,6 +155,7 @@ export function useDocumentSave({
   }
 
   return {
+    hasPendingEditRef,
     isSaving,
     isRetryPending,
     saveError,
