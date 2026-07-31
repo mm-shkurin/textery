@@ -27,4 +27,6 @@ class AiEditRepository(Protocol):
         document -- the caller renders them identically, so the distinction must
         not survive the port.
         """
-        raise NotImplementedError
+        raise NotImplementedError(
+            "AiEditRepository.find_scope_by_id_and_document"
+        )

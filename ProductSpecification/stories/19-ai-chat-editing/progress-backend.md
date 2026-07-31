@@ -323,9 +323,37 @@ within their file, not across the story.
       (`.claude/tech/python-fastapi-hex/templates/testing/coverage-commands.md:38`) returned **zero**
       files while `git status` showed the new module modified — its pathspecs do not match this repo,
       and it fails silently into a clean report. That template has now produced two false all-clears.
-- [~] red-usecase (coverage: AiEditRepository port stub raises NotImplementedError)
-- [ ] green-usecase (coverage: AiEditRepository port stub raises NotImplementedError)
-- [ ] adapters-discovery
+- [x] red-usecase (coverage: AiEditRepository port stub raises NotImplementedError) — a **legitimate
+      no-red**, following the line-156 precedent: the body this pins was written in `dde7963a`, so both
+      items passed on the first run (2 passed) and **no marker was applied** — a passing coverage test
+      left skipped covers nothing. Predicted "none / 2 passed", actual "none / 2 passed". The subject
+      is a real empty subclass (`AdapterThatForgotToImplementThePort(AiEditRepository)`), which is the
+      incident shape itself, not the Protocol. Non-vacuity proved rather than assumed: against a mutant
+      port declared with a `...` body the call returns `None` and `pytest.raises` fails — the exact
+      "not found for every owner's own edit" the raising body exists to prevent.
+      `/test-review` found three of this family's weaknesses. (1) `pytest.raises` around an `await`
+      proves nothing about awaiting — if the body ever became a plain `def`, the raise still fires with
+      no coroutine created and the test stays green while the silent-coroutine hazard goes unguarded;
+      `inspect.iscoroutinefunction` is now asserted first. (2) The roster came from
+      `vars(AiEditRepository)`, which does not walk the MRO — a method arriving on a base Protocol (the
+      natural shape once this port is split) would be invisible, the roster equality would stay true,
+      and a new `...`-bodied method would slip in uncovered, which is the exact failure the pinned
+      literal roster was written to prevent; discovery now unions `vars()` across `__mro__` minus the
+      typing/builtins bases. (3) The bare `NotImplementedError` was asserted by type alone, so under a
+      second port method it could not tell which method raised, or that the raise came from the port
+      body at all — the rest DI-stub precedent already pins its message. Production now raises
+      `NotImplementedError("AiEditRepository.find_scope_by_id_and_document")` and the expectation is a
+      name→message dict of literals, never read back from the module.
+      `ai_edit_repository.py` 6/6 lines (was 5/6, L30 missed). Usecase suite 168 passed, 0 failed,
+      0 skipped.
+      **Rejected, flagged not dropped:** the placement detector wanted the fake subclass, the
+      invocation and the roster constants moved into an `AiEditPortStatements`. The stub family this
+      test joins keeps all of it inline and has already been through review; moving one member and not
+      the other buys no assertion strength. If the family moves, it moves as a pair.
+- [S] green-usecase (coverage: AiEditRepository port stub raises NotImplementedError) — no production
+      change to make; the raising body the red step pins was written in `dde7963a`, and `/test-review`'s
+      message literal landed with the red commit.
+- [~] adapters-discovery
 - [ ] green-acceptance
 
 ### Scenario 1.3: A revision belonging to another document of the same owner is not found
