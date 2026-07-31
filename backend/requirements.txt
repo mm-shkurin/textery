@@ -39,3 +39,8 @@ ruff==0.15.22
 # ruff is: mypy tightens inference in minor releases, so an unpinned version
 # turns "CI went red" into a question about which mypy the runner drew.
 mypy==1.19.0
+# Type stubs for Markdown, which ships none of its own. Not covered by mypy's
+# `ignore_missing_imports`: that setting silences packages with no stubs anywhere,
+# while a package with stubs available on PyPI is reported as installable instead
+# -- correctly, since silencing it would erase the types rather than find them.
+types-Markdown==3.7.0.20240822

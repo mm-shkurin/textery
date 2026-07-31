@@ -1,8 +1,6 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-import pytest
-
 from document.document import Document
 
 CREATED_AT = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)

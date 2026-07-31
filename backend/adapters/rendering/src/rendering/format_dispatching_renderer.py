@@ -15,9 +15,7 @@ class FormatDispatchingRenderer:
     correct-looking media type, so the failure is made explicit instead.
     """
 
-    def __init__(
-        self, pdf_renderer: DocumentRenderer, docx_renderer: DocumentRenderer
-    ) -> None:
+    def __init__(self, pdf_renderer: DocumentRenderer, docx_renderer: DocumentRenderer) -> None:
         self._renderers: dict[ExportFormat, DocumentRenderer] = {
             ExportFormat.PDF: pdf_renderer,
             ExportFormat.DOCX: docx_renderer,

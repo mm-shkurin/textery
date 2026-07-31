@@ -90,4 +90,7 @@ def _routes(app) -> dict[str, set[str]]:
     `_IncludedRouter` objects that carry no `path`, so walking `app.routes`
     reports only the four docs endpoints and would make this whole file vacuous.
     """
-    return {path: {verb.upper() for verb in operations} for path, operations in app.openapi()["paths"].items()}
+    return {
+        path: {verb.upper() for verb in operations}
+        for path, operations in app.openapi()["paths"].items()
+    }

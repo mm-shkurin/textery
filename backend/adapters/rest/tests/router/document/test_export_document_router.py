@@ -54,8 +54,7 @@ class TestExportDocumentAsPdfResponse:
         assert response.headers["content-type"] == "application/x-render-marker"
         assert response.content == b"%PDF-1.7 fake pdf bytes"
         assert (
-            response.headers["content-disposition"]
-            == "attachment; filename*=UTF-8''document.pdf"
+            response.headers["content-disposition"] == "attachment; filename*=UTF-8''document.pdf"
         )
 
 
@@ -64,9 +63,7 @@ class TestExportFilenameRfc5987:
     percent-encoded so a Cyrillic title survives the Content-Disposition header.
     """
 
-    async def test_should_encode_the_rendered_filename_per_rfc5987(
-        self, mocker, export_client
-    ):
+    async def test_should_encode_the_rendered_filename_per_rfc5987(self, mocker, export_client):
         # The usecase derives the plain-unicode filename onto RenderedExport.filename
         # ("Привет Мир.pdf"). The route must stop hard-coding filename=document.pdf and
         # instead emit the RFC 5987 extended form: filename*=UTF-8''<percent-encoded>.

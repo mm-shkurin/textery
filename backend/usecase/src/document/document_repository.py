@@ -32,9 +32,7 @@ class DocumentRepository(Protocol):
         self, owner_id: UUID, idempotency_key: str
     ) -> Document | None: ...
 
-    async def find_by_generation_id(
-        self, owner_id: UUID, generation_id: UUID
-    ) -> Document | None:
+    async def find_by_generation_id(self, owner_id: UUID, generation_id: UUID) -> Document | None:
         """The document this generation was already converted into, if any.
 
         Owner-scoped like everything else here, and safely so: a generation the

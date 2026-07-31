@@ -107,9 +107,7 @@ class PortShapeStatements:
             "See decisions/blank-title-semantics-decision.md."
         )
 
-    def assert_the_save_arguments_are_declared_in_the_pinned_order(
-        self, implementor: type
-    ) -> None:
+    def assert_the_save_arguments_are_declared_in_the_pinned_order(self, implementor: type) -> None:
         """Each carrier binds positional arguments to the names spelled above.
 
         `title` is keyword-only, so it can no longer be mis-bound by a reorder

@@ -63,9 +63,7 @@ class FakeDocumentRepository:
             raise ConflictException("document violates a uniqueness constraint")
         self.documents.append(document)
 
-    async def find_by_generation_id(
-        self, owner_id: UUID, generation_id: UUID
-    ) -> Document | None:
+    async def find_by_generation_id(self, owner_id: UUID, generation_id: UUID) -> Document | None:
         return next(
             (
                 d

@@ -47,15 +47,9 @@ class FakeGenerationStorage:
         self.generations = generations or []
         self.updated: list[Generation] = []
 
-    async def get_by_id_and_owner(
-        self, generation_id: UUID, owner_id: UUID
-    ) -> Generation | None:
+    async def get_by_id_and_owner(self, generation_id: UUID, owner_id: UUID) -> Generation | None:
         return next(
-            (
-                g
-                for g in self.generations
-                if g.id == generation_id and g.owner_id == owner_id
-            ),
+            (g for g in self.generations if g.id == generation_id and g.owner_id == owner_id),
             None,
         )
 

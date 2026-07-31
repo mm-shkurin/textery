@@ -62,12 +62,14 @@ class CreateDocumentFromGeneration:
         self, owner_id: UUID, generation_id: UUID, idempotency_key: str
     ) -> DocumentCreationResult:
         self._validate_key(idempotency_key)
-        generation = await self._load_completed_generation(owner_id, generation_id)
+        generation, generated_markdown = await self._load_completed_generation(
+            owner_id, generation_id
+        )
         document = Document.create_from_generation(
             owner_id=owner_id,
             document_type=generation.document_type,
             generation_id=generation_id,
-            content=self._convert(generation.content),
+            content=self._convert(generated_markdown),
             title=derive_generated_title(generation.topic),
             idempotency_key=idempotency_key,
             created_at=self.clock.now(),
@@ -87,13 +89,22 @@ class CreateDocumentFromGeneration:
                 error_code="INVALID_IDEMPOTENCY_KEY", message=self.INVALID_IDEMPOTENCY_KEY_MESSAGE
             ) from error
 
-    async def _load_completed_generation(self, owner_id: UUID, generation_id: UUID) -> Generation:
-        """The caller's own generation, refusing anything not ready to convert.
+    async def _load_completed_generation(
+        self, owner_id: UUID, generation_id: UUID
+    ) -> tuple[Generation, str]:
+        """The caller's own generation and its text, refusing anything not ready.
 
         Absent and foreign are ONE answer, and the storage read makes it
         structural: `get_by_id_and_owner` filters on owner in SQL, so a foreign
         generation returns None here exactly as a missing one does. A 403 would
         confirm the id exists to someone who guessed it.
+
+        Returns the content as a separate `str` rather than leaving the caller to
+        read `generation.content`, which is `str | None`. The emptiness check
+        below is what makes it a `str`, and returning it is what carries that
+        proof to the caller: the text cannot be reached except through the method
+        that established it is there. Re-reading the attribute afterwards would
+        put the guarantee back on a convention nothing enforces.
         """
         generation = await self.generation_storage.get_by_id_and_owner(generation_id, owner_id)
         if generation is None:
@@ -107,7 +118,7 @@ class CreateDocumentFromGeneration:
             raise ValidationException(
                 error_code="GENERATION_NOT_COMPLETED", message=self.NOT_COMPLETED_MESSAGE
             )
-        return generation
+        return generation, generation.content
 
     def _convert(self, generated_markdown: str) -> str:
         """Markdown from the model to storable, editor-shaped HTML.
