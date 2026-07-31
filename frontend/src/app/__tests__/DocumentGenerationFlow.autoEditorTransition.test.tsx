@@ -3,7 +3,13 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import App from '../App'
 import * as api from '../../features/generation/api/generationApi'
 import * as documentApi from '../../features/generation/api/documentApi'
-import { clearSession, saveSession } from '../../features/auth/utils/authSession'
+import { clearSession } from '../../features/auth/utils/authSession'
+import {
+  armCompletedGeneration,
+  GENERATED_TEXT,
+  GENERATION_ID,
+  TOPIC,
+} from './autoEditorTransition.fixture'
 
 // Story 18, scenario 2.1 — "When the text becomes ready, the surface becomes the editor, and the
 // user made no extra click to get there".
@@ -31,49 +37,8 @@ import { clearSession, saveSession } from '../../features/auth/utils/authSession
 vi.mock('../../features/generation/api/generationApi')
 vi.mock('../../features/generation/api/documentApi')
 
-const TOPIC = 'Влияние ИИ на образование'
-const GENERATION_ID = 'gen-2-1'
-const GENERATED_TEXT = 'Готовый текст доклада'
-
 describe('DocumentGenerationFlow — a completed generation opens itself in the editor', () => {
-  beforeEach(() => {
-    vi.mocked(api.createGeneration).mockResolvedValue({
-      generationId: GENERATION_ID,
-      status: 'pending',
-    })
-    // The first poll — `useGeneration.submit` fires one immediately — already observes completion,
-    // so the whole scenario resolves inside this render with no timer advanced. The generating
-    // state is 1.2's subject and is deliberately not re-pinned here.
-    vi.mocked(api.getGeneration).mockResolvedValue({
-      generationId: GENERATION_ID,
-      status: 'completed',
-      content: GENERATED_TEXT,
-      topic: TOPIC,
-      volumePages: 5,
-      documentType: 'доклад',
-      createdAt: '2026-07-29T10:00:00Z',
-    })
-    // Never settles: whatever green does about persisting the converted document, this test must
-    // not depend on it resolving. The claim under test is that the EDITOR SURFACE arrives by
-    // itself — not what the document endpoint says afterwards.
-    vi.mocked(documentApi.createDocument).mockReturnValue(new Promise(() => {}))
-    vi.mocked(documentApi.getDocument).mockReturnValue(new Promise(() => {}))
-    // The conversion green wired: the auto path turns the generation into a Document and adopts
-    // the SERVER's HTML. Left unstubbed it resolves `undefined` under the module auto-mock and the
-    // hook rejects on the missing fields — which is what this file's own header predicted green
-    // would own. It resolves the same text so the content assertion below stays about the
-    // TRANSITION rather than about markdown conversion, which the backend's suite pins.
-    vi.mocked(documentApi.createDocumentFromGeneration).mockResolvedValue({
-      documentId: 'doc-2-1',
-      generationId: GENERATION_ID,
-      title: TOPIC,
-      status: 'draft',
-      content: `<p>${GENERATED_TEXT}</p>`,
-      version: 1,
-    })
-    window.history.pushState({}, '', '/')
-    saveSession({ accessToken: 'access-1', refreshToken: 'refresh-1' })
-  })
+  beforeEach(armCompletedGeneration)
 
   afterEach(() => {
     clearSession()
