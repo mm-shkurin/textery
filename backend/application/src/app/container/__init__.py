@@ -38,6 +38,7 @@ from container.generation_wiring import (
     create_request_generation,
     run_stale_generation_sweep,
 )
+from container.health_wiring import create_check_health
 from container.oauth_wiring import (
     create_complete_oauth_callback,
     create_exchange_handoff_code,
@@ -57,6 +58,7 @@ __all__ = [
     "JWT_SECRET_ENV_VAR",
     "NoOpGenerationQueue",
     "STALE_AFTER_MINUTES_ENV_VAR",
+    "create_check_health",
     "create_complete_oauth_callback",
     "create_create_document",
     "create_create_document_from_generation",

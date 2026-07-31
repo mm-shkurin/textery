@@ -33,6 +33,7 @@ import logging
 from fastapi import FastAPI
 
 from container import (
+    create_check_health,
     create_complete_oauth_callback,
     create_create_document,
     create_create_document_from_generation,
@@ -61,6 +62,7 @@ from error_handling.exception_handlers import (
     unhandled_exception_handler,
     validation_exception_handler,
 )
+from logging_config import configure_logging
 from router.auth.auth_router import (
     get_login_user_usecase,
     get_refresh_access_token_usecase,
@@ -92,10 +94,18 @@ from router.generation.generation_router import (
     get_request_generation_usecase,
 )
 from router.generation.generation_router import router as generation_router
+from router.health.health_router import get_check_health_usecase
+from router.health.health_router import router as health_router
 from security.current_owner import get_token_service
 from shared.exceptions import ConflictException, NotFoundException, ValidationException
 
 SWEEP_INTERVAL_SECONDS = 60
+
+# Before the first logger is taken, and before `app` exists: handlers installed
+# after a record is emitted do not retroactively deliver it, and the composition
+# root's own import-time failures (an unset DATABASE_URL, a short JWT_SECRET) are
+# exactly the ones worth having formatted.
+configure_logging()
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +135,7 @@ app.include_router(generation_router)
 app.include_router(auth_router)
 app.include_router(oauth_router)
 app.include_router(document_router)
+app.include_router(health_router)
 # The three narrow handlers are suppressed below because Starlette types the
 # second argument as taking `Exception`, while it dispatches on the class given
 # in the first argument, so a handler narrowed to the class it is registered for
@@ -155,6 +166,7 @@ app.dependency_overrides[get_create_document_from_generation_usecase] = (
 app.dependency_overrides[get_list_documents_usecase] = create_list_documents
 app.dependency_overrides[get_save_document_usecase] = create_save_document
 app.dependency_overrides[get_token_service] = create_token_service
+app.dependency_overrides[get_check_health_usecase] = create_check_health
 app.dependency_overrides[get_start_oauth_usecase] = create_start_oauth
 app.dependency_overrides[get_complete_oauth_callback_usecase] = create_complete_oauth_callback
 app.dependency_overrides[get_exchange_handoff_code_usecase] = create_exchange_handoff_code

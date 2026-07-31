@@ -164,6 +164,8 @@ known-first-party = [
     "generation",
     "gigachat_fixtures",
     "hashing",
+    "health",
+    "logging_config",
     "model",
     "provider",
     "refusal_guard",
