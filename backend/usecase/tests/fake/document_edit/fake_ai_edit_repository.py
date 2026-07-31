@@ -47,7 +47,7 @@ class FakeAiEditRepository(AiEditRepository):
         self.failure = failure
 
     async def find_scope_by_id_and_document(
-        self, edit_id: UUID, document_id: UUID
+        self, *, edit_id: UUID, document_id: UUID
     ) -> AiEditScope | None:
         """Scoped by document, mirroring the real adapter's WHERE clause.
 

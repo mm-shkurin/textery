@@ -350,9 +350,16 @@ within their file, not across the story.
       invocation and the roster constants moved into an `AiEditPortStatements`. The stub family this
       test joins keeps all of it inline and has already been through review; moving one member and not
       the other buys no assertion strength. If the family moves, it moves as a pair.
-- [S] green-usecase (coverage: AiEditRepository port stub raises NotImplementedError) — no production
-      change to make; the raising body the red step pins was written in `dde7963a`, and `/test-review`'s
-      message literal landed with the red commit.
+- [x] green-usecase (coverage: AiEditRepository port stub raises NotImplementedError) — **not `[S]`,
+      and the correction is the record.** It was first marked `[S]` on the premise "no production change
+      to make", which the diff falsifies: `/test-review` demanded the bare `NotImplementedError` name
+      itself, so `raise NotImplementedError("AiEditRepository.find_scope_by_id_and_document")` — a
+      production change — landed inside the red commit `d065f5b3`. The message assertion never ran
+      against unmodified production, so the "2 passed on the first run" claim holds for the *raise* and
+      not for the *message*, and `[S]`'s "zero production files modified" condition was not met. The
+      work is done and green; what was wrong was the label and the story attached to it. Carry the
+      lesson rather than the excuse: a `/test-review` fix that reaches across into production turns a
+      no-red into a red+green in one commit, and the skip that follows inherits a false premise.
 - [~] adapters-discovery
 - [ ] green-acceptance
 

@@ -69,7 +69,9 @@ async def resolve_owned_edit(
         _log_refusal(DOCUMENT_SCOPE_REFUSAL_CAUSE, owner_id)
         raise
 
-    scope = await ai_edit_repository.find_scope_by_id_and_document(edit_id, document_id)
+    scope = await ai_edit_repository.find_scope_by_id_and_document(
+        edit_id=edit_id, document_id=document_id
+    )
     if scope is None:
         # The edit id is deliberately absent: the document resolved, so its id is
         # the caller's own, but an unresolved edit id must not reach our logs.

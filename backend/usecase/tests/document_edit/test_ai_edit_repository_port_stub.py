@@ -81,8 +81,13 @@ class TestAiEditRepositoryPortStub:
             "not what this test exercised"
         )
 
+        # Called by keyword because the port's scoping ids are keyword-only. That
+        # names this method's own parameters inside a parametrized body, which is
+        # deliberate: a second port method with a different signature must fail
+        # here rather than be waved through, and the roster assertion above already
+        # forces this test to be revisited when one arrives.
         with pytest.raises(NotImplementedError) as excinfo:
-            await method(uuid4(), uuid4())
+            await method(edit_id=uuid4(), document_id=uuid4())
 
         assert str(excinfo.value) == EXPECTED_PORT_METHODS[method_name], (
             f"unexpected NotImplementedError message from {method_name}: "
