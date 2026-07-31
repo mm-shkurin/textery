@@ -39,6 +39,12 @@ export function DocArea({
         <div className="doc-meta">
           {label} · {volumePages ?? '—'} страниц · {formatRelativeTime(createdAt)}
         </div>
+        {/* Server-supplied and user-influenced at once: the model writes this, answering a topic
+            the user typed. It is safe only because of two react-markdown DEFAULTS — no rehype-raw
+            (embedded HTML is escaped, not parsed) and the built-in urlTransform (a javascript:
+            href is neutralized). Both are now pinned by DocArea.markdownSafety.test.tsx; do not
+            add rehype-raw here without reading it. Tokens live in sessionStorage, so markup
+            injected on this line is a session handover, not a defacement. */}
         <div className="doc-body markdown-body" data-testid="doc-body">
           <ReactMarkdown>{content ?? ''}</ReactMarkdown>
         </div>
