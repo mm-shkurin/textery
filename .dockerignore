@@ -20,4 +20,11 @@ __pycache__
 htmlcov
 coverage.xml
 *.egg-info
+# `.env` alone left every suffixed copy in the build context. A hand-made backup
+# beside it -- `.env.bak-pre-key`, taken before a credential rotation -- would have
+# been copied into an image layer, and a pushed image is a pushed secret that no
+# .gitignore rule reaches. The example file is the one .env.* that is safe and
+# useful to ship, so it is re-included explicitly.
 .env
+.env.*
+!.env.example

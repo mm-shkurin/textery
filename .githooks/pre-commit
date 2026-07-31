@@ -1,0 +1,56 @@
+#!/bin/sh
+# Refuse to commit a file that carries real credentials.
+#
+# Why this exists on top of .gitignore: an ignore rule is a default, not a
+# barrier. `git add -f` walks straight past it, and so does an ignore file that
+# has not caught up with a new filename -- which is exactly how
+# `backend/.env.bak-pre-key` came to sit in the working tree holding the live JWT
+# signing key and Yandex client secret. It was never committed, but nothing in
+# the repository would have stopped it.
+#
+# This checks the STAGED set only. It cannot be fooled by a stale ignore rule,
+# because it asks what is about to be committed rather than what is supposed to
+# be excluded.
+#
+# Install (once per clone -- hooks are not carried by git):
+#     git config core.hooksPath .githooks
+#
+# Deliberate exception: `.env.example` and `.env.sample` are documentation. They
+# name every variable and carry `change-me` placeholders, never a real value.
+#
+# To commit something this refuses and you are certain is safe:
+#     git commit --no-verify
+# Prefer fixing the file over reaching for that flag.
+
+blocked=$(git diff --cached --name-only --diff-filter=ACMR \
+    | grep -E '(^|/)\.env($|\.)' \
+    | grep -vE '(^|/)\.env\.(example|sample)$')
+
+if [ -n "$blocked" ]; then
+    echo "pre-commit: refusing to commit environment files that may hold real secrets:" >&2
+    echo "$blocked" | sed 's/^/  /' >&2
+    echo >&2
+    echo "These match .env or a suffixed copy of it. Only .env.example and" >&2
+    echo ".env.sample are committable -- they carry placeholders, not values." >&2
+    echo >&2
+    echo "Unstage with:  git restore --staged <file>" >&2
+    exit 1
+fi
+
+# Private key material, whatever the filename. A rotation backup does not always
+# announce itself as one -- it can arrive as key.pem or id_rsa in a directory
+# nobody is watching.
+keyish=$(git diff --cached --name-only --diff-filter=ACMR \
+    | grep -E '\.(pem|key|p12|pfx)$|(^|/)id_(rsa|dsa|ecdsa|ed25519)$' \
+    | grep -vE 'russiantrustedca\.pem$')
+
+if [ -n "$keyish" ]; then
+    echo "pre-commit: refusing to commit files that look like private key material:" >&2
+    echo "$keyish" | sed 's/^/  /' >&2
+    echo >&2
+    echo "If this is a public certificate rather than a key, add it to the" >&2
+    echo "exception list in .githooks/pre-commit with a note saying why." >&2
+    exit 1
+fi
+
+exit 0
