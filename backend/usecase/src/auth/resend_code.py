@@ -1,6 +1,6 @@
 import logging
 from datetime import timedelta
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from auth.account_repository import AccountRepository
 from auth.email_validation import validate_email
@@ -84,7 +84,7 @@ class ResendCode:
                 message=self.COOLDOWN_MESSAGE,
             )
 
-    async def _issue_new_code(self, account_id) -> VerificationCode:
+    async def _issue_new_code(self, account_id: UUID) -> VerificationCode:
         # Insert-only supersession: a fresh code is persisted, no old row deleted or
         # mutated. find_active_by_account_id returns most-recent-wins, so the old
         # code stops verifying. A legal resend is always >=60s later, giving the new

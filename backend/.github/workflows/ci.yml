@@ -51,6 +51,28 @@ jobs:
       - name: Check types
         run: mypy
 
+      # Production code only, and a second invocation rather than a setting in
+      # pyproject.toml, because the flag cannot be scoped there. Per-module
+      # overrides match module names, and the layer roots are separate sys.path
+      # entries -- `usecase/src/auth/...` and `usecase/tests/auth/...` are both
+      # `auth.*`, so no pattern selects one without the other. Paths do separate
+      # them, and this is the only place paths can be given.
+      #
+      # What it catches: a signature annotated in part. `def _validate_state(self,
+      # state, provider_name, now) -> None` passes the default settings, because
+      # the return arrow alone makes it a typed function -- the body is then
+      # checked with every parameter an implicit Any, which propagates and hides
+      # the errors inside. Seven production functions were in that state, three of
+      # them in the OAuth callback.
+      - name: Check production signatures are fully annotated
+        run: >
+          mypy --disallow-incomplete-defs
+          domain/src usecase/src
+          adapters/rest/src adapters/db/src adapters/security/src
+          adapters/rendering/src adapters/generation_provider/src
+          adapters/oauth_provider/src
+          application/src
+
   # Blocking, not advisory. Every dependency here is pinned to an exact version,
   # which is what makes the build reproducible -- and also what makes a known
   # vulnerability sit in the lockfile until somebody looks. Nobody was looking.

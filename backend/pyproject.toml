@@ -147,9 +147,26 @@ files = [
     "application/tests",
 ]
 exclude = ['(^|/)conftest\.py$']
+# NOTE: `disallow_incomplete_defs` is deliberately NOT set here, and the omission
+# is not an oversight -- see the `strict-signatures` step in .github/workflows/ci.yml.
+# A half-annotated signature passes the default settings: `def _validate_state(
+# self, state, provider_name, now) -> None` counts as typed because of the return
+# arrow, so the body is checked with every parameter an implicit Any, which
+# propagates and swallows the errors inside it. Seven production functions were in
+# that state, three of them in the OAuth callback.
+#
+# The flag belongs on production code only: test parameters are pytest fixtures
+# whose types come from plugins and add nothing. It cannot be scoped here, because
+# per-module overrides match module names and the layer roots are separate sys.path
+# entries -- `usecase/src/auth/...` and `usecase/tests/auth/...` are both `auth.*`,
+# so no pattern selects one without the other. mypy also rejects partial-component
+# wildcards outright ("Patterns must be fully-qualified module names"). CI runs the
+# flag over the src roots as a second, path-scoped invocation instead.
+
 # Third-party packages without bundled stubs (asyncpg, nh3) would otherwise be
 # 20 import errors drowning the 3 real ones.
 ignore_missing_imports = true
+
 
 
 [tool.ruff.lint.isort]

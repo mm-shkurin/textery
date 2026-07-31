@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import literal, select, tuple_
@@ -8,11 +9,18 @@ from shared.keyset_cursor import KeysetCursor
 
 async def paginate_by_owner(
     session: AsyncSession,
-    model,
+    # Explicitly `type[Any]`, not left bare. What this needs is "a declarative
+    # class carrying owner_id, created_at and id", and SQLAlchemy gives no type
+    # that says so: a Protocol matches instances, while the reads below are on the
+    # class object, where each attribute is an InstrumentedAttribute rather than
+    # its mapped type. Declaring the Any is the honest version of what an omitted
+    # annotation meant anyway -- and it is greppable, so the next reader knows the
+    # looseness was chosen here rather than accidentally inherited.
+    model: type[Any],
     owner_id: UUID,
     limit: int,
     cursor: KeysetCursor | None,
-) -> list:
+) -> list[Any]:
     """One page of `model` rows owned by `owner_id`, newest first.
 
     Shared by the generation and document storages: the SQL is identical bar the

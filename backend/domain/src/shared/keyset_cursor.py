@@ -1,11 +1,22 @@
 import base64
 import binascii
 from datetime import datetime
+from typing import Protocol
 from uuid import UUID
 
 _SEPARATOR = "|"
 
 INVALID_CURSOR_MESSAGE = "The cursor is not valid."
+
+
+class KeysetAnchor(Protocol):
+    """Anything a cursor can be taken from: an entity with a creation instant and
+    an id. Structural on purpose -- `Generation` and `Document` both satisfy it
+    without a shared base class, and the domain has no inheritance to offer them.
+    """
+
+    created_at: datetime
+    id: UUID
 
 
 class KeysetCursor:
@@ -66,6 +77,13 @@ class KeysetCursor:
             raise ValueError(INVALID_CURSOR_MESSAGE) from error
 
     @classmethod
-    def of(cls, entity) -> "KeysetCursor":
-        """Anchor on any entity carrying `created_at` and `id`."""
+    def of(cls, entity: "KeysetAnchor") -> "KeysetCursor":
+        """Anchor on any entity carrying `created_at` and `id`.
+
+        Typed against a structural Protocol rather than left bare. "Any entity
+        carrying created_at and id" was true and unenforced: an implicit `Any`
+        made the two attribute reads below invisible to the type checker, so a
+        caller passing something without them found out at runtime, one page into
+        a history request.
+        """
         return cls(created_at=entity.created_at, id=entity.id)

@@ -29,6 +29,7 @@ sys.path.insert(0, _RENDERING_SRC)
 import asyncio
 import contextlib
 import logging
+from collections.abc import AsyncIterator
 
 from fastapi import FastAPI
 
@@ -121,7 +122,7 @@ async def _sweep_loop() -> None:
 
 
 @contextlib.asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     sweep_task = asyncio.create_task(_sweep_loop())
     try:
         yield
