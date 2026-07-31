@@ -41,12 +41,18 @@ def completions_payload():
 
 
 def patch_async_client(mocker, post_side_effect):
+    """Stand in for the provider's single pooled client.
+
+    No `__aenter__`/`__aexit__` doubles any more: the provider builds one client
+    and keeps it rather than entering `async with` per request, so a context
+    manager here would be scaffolding for a call that no longer happens. The
+    returned mock is the client itself, and the tests' assertions on
+    `client.post` are unchanged.
+    """
     client = MagicMock()
     client.post = AsyncMock(side_effect=post_side_effect)
-    context = MagicMock()
-    context.__aenter__ = AsyncMock(return_value=client)
-    context.__aexit__ = AsyncMock(return_value=None)
-    mocker.patch("provider.gigachat_provider.httpx.AsyncClient", return_value=context)
+    client.aclose = AsyncMock(return_value=None)
+    mocker.patch("provider.gigachat_provider.httpx.AsyncClient", return_value=client)
     return client
 
 

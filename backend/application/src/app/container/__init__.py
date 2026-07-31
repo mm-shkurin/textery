@@ -50,6 +50,7 @@ from container.runtime import (
     GENERATION_PROVIDER_ENV_VAR,
     JWT_SECRET_ENV_VAR,
     STALE_AFTER_MINUTES_ENV_VAR,
+    provider,
 )
 
 __all__ = [
@@ -79,5 +80,6 @@ __all__ = [
     "create_start_oauth",
     "create_token_service",
     "create_verify_account",
+    "provider",
     "run_stale_generation_sweep",
 ]

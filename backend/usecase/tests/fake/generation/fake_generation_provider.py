@@ -8,6 +8,7 @@ class FakeGenerationProvider:
         self.fail_times: int | None = None
         self.received_generations: list[Generation] = []
         self.call_count: int = 0
+        self.closed: bool = False
 
     async def generate(self, generation: Generation) -> str:
         self.received_generations.append(generation)
@@ -17,3 +18,13 @@ class FakeGenerationProvider:
         ):
             raise self.error_to_raise
         return self.content_to_return
+
+    async def aclose(self) -> None:
+        """Holds nothing open, but implements the method anyway.
+
+        A double that skips part of the port stops being a stand-in for it: mypy
+        flagged exactly this when `aclose` was added, which is the check earning
+        its keep -- the same drift that once let `FakeTokenService` quietly stop
+        implementing `TokenService`.
+        """
+        self.closed = True

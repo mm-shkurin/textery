@@ -20,6 +20,20 @@ COMPLETIONS_URL = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions"
 SCOPE = "GIGACHAT_API_PERS"
 CREDENTIALS_ENV_VAR = "GIGACHAT_CREDENTIALS"
 CA_BUNDLE_ENV_VAR = "GIGACHAT_CA_BUNDLE"
+# Split, where a single `timeout=30` scalar used to set all four httpx phases at
+# once. Connect and read want very different numbers here: failing to reach the
+# host is answered in seconds and retrying is cheap, while a completion for a
+# multi-page document is the model composing text and legitimately takes minutes.
+# Under one 30-second scalar a slow-but-working generation was indistinguishable
+# from an outage -- three attempts, three timeouts, and a row written `failed`
+# for a provider that was answering the whole time.
+CONNECT_TIMEOUT_SECONDS = 10.0
+READ_TIMEOUT_SECONDS = 180.0
+WRITE_TIMEOUT_SECONDS = 30.0
+POOL_TIMEOUT_SECONDS = 10.0
+# The token exchange is a small, fast call and gets its own read budget: waiting
+# three minutes on an OAuth handshake only delays the real failure.
+TOKEN_READ_TIMEOUT_SECONDS = 15.0
 # GigaChat's TLS cert chains to the Russian Minsvyaz trust CA, which is not in
 # most system trust stores. Bundled PEM fetched from gu-st.ru — GIGACHAT_CA_BUNDLE
 # overrides it, but this is the working default rather than disabling verification.
@@ -44,6 +58,53 @@ class GigaChatProvider:
         self._token: str | None = None
         self._token_expires_at: float = 0.0
         self._token_lock = asyncio.Lock()
+        self._client: httpx.AsyncClient | None = None
+        self._client_lock = asyncio.Lock()
+
+    async def _http_client(self) -> httpx.AsyncClient:
+        """The one client this provider uses, built on first call and kept.
+
+        It used to be constructed per request, inside `async with`, which threw
+        away the connection pool after every call -- so each generation paid a
+        fresh TCP connect and a full TLS handshake to a host it had just been
+        talking to. Worse, `verify=` here is a *path*: every construction made
+        httpx build an SSLContext and read and parse the bundled Russian trust-CA
+        PEM off disk. The token cache above was added to save one round-trip per
+        generation and was quietly handing the saving back.
+
+        Built lazily rather than in `__init__`: `container/runtime` constructs this
+        provider at import, where there is no running event loop, and httpx binds
+        its connection pool to the loop that first uses it.
+
+        The lock keeps a burst of concurrent generations on a cold cache from
+        building several clients and leaking all but the last. Second waiter
+        re-checks inside the lock, exactly as `_fetch_token` does.
+        """
+        async with self._client_lock:
+            if self._client is None:
+                self._client = httpx.AsyncClient(
+                    verify=self._verify,
+                    timeout=httpx.Timeout(
+                        connect=CONNECT_TIMEOUT_SECONDS,
+                        read=READ_TIMEOUT_SECONDS,
+                        write=WRITE_TIMEOUT_SECONDS,
+                        pool=POOL_TIMEOUT_SECONDS,
+                    ),
+                )
+            return self._client
+
+    async def aclose(self) -> None:
+        """Close the pooled connections. Called from the app's lifespan shutdown.
+
+        Idempotent, and safe on a provider that never served a request: a process
+        that exits without this leaves sockets for the OS to reap and httpx warns
+        about an unclosed client, which is noise in the log that outlives the run
+        that caused it.
+        """
+        async with self._client_lock:
+            if self._client is not None:
+                await self._client.aclose()
+                self._client = None
 
     async def generate(self, generation: Generation) -> str:
         try:
@@ -52,17 +113,17 @@ class GigaChatProvider:
                 f"{generation.document_type} на тему: {generation.topic} "
                 f"({generation.volume_pages} стр.)"
             )
-            async with httpx.AsyncClient(verify=self._verify, timeout=30) as client:
-                response = await client.post(
-                    COMPLETIONS_URL,
-                    headers={"Authorization": f"Bearer {token}"},
-                    json={
-                        "model": "GigaChat",
-                        "messages": [{"role": "user", "content": prompt}],
-                    },
-                )
-                response.raise_for_status()
-                return self._read_content(response)
+            client = await self._http_client()
+            response = await client.post(
+                COMPLETIONS_URL,
+                headers={"Authorization": f"Bearer {token}"},
+                json={
+                    "model": "GigaChat",
+                    "messages": [{"role": "user", "content": prompt}],
+                },
+            )
+            response.raise_for_status()
+            return self._read_content(response)
         except httpx.HTTPError as error:
             raise ProviderError(str(error)) from error
 
@@ -112,17 +173,21 @@ class GigaChatProvider:
 
     async def _mint_token(self) -> tuple[str, float]:
         try:
-            async with httpx.AsyncClient(verify=self._verify, timeout=30) as client:
-                response = await client.post(
-                    TOKEN_URL,
-                    headers={
-                        "Authorization": f"Basic {self._credentials}",
-                        "RqUID": str(uuid.uuid4()),
-                    },
-                    data={"scope": SCOPE},
-                )
-                response.raise_for_status()
-                token = self._read_access_token(response)
+            client = await self._http_client()
+            response = await client.post(
+                TOKEN_URL,
+                headers={
+                    "Authorization": f"Basic {self._credentials}",
+                    "RqUID": str(uuid.uuid4()),
+                },
+                data={"scope": SCOPE},
+                # Overrides the client's long read budget for this one call. The
+                # completion needs minutes; an OAuth handshake that has not
+                # answered in fifteen seconds is not going to.
+                timeout=TOKEN_READ_TIMEOUT_SECONDS,
+            )
+            response.raise_for_status()
+            token = self._read_access_token(response)
         except httpx.HTTPError as error:
             raise ProviderError(str(error)) from error
         # Expiry comes from our own clock plus a conservative TTL, not from the

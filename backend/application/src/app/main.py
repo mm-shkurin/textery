@@ -54,6 +54,7 @@ from container import (
     create_start_oauth,
     create_token_service,
     create_verify_account,
+    provider,
     run_stale_generation_sweep,
 )
 from error_handling.exception_handlers import (
@@ -128,6 +129,12 @@ async def lifespan(app: FastAPI):
         sweep_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await sweep_task
+        # The provider holds a pooled HTTP client for the life of the process, so
+        # something has to hand it back. Cancelled AFTER the sweep task, not
+        # before: the sweep drives generations through this same provider, and
+        # closing the pool out from under an in-flight request would turn an
+        # orderly shutdown into a logged failure.
+        await provider.aclose()
 
 
 app = FastAPI(lifespan=lifespan)

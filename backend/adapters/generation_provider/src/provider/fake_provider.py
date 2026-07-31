@@ -18,3 +18,9 @@ FAKE_DOKLAD_TEXT = (
 class FakeProvider:
     async def generate(self, generation: Generation) -> str:
         return FAKE_DOKLAD_TEXT
+
+    async def aclose(self) -> None:
+        """Nothing is held open. Present so the shutdown path can call the port
+        uniformly instead of testing which implementation it was handed.
+        """
+        return None
