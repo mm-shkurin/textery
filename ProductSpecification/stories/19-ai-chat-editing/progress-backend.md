@@ -295,7 +295,36 @@ within their file, not across the story.
       **House rule bent, deliberately:** the seeded edit goes straight onto the fake — story 19 has
       no queue usecase yet (§3 lands after this guard). `FakeAiEditRepository` records that this
       collapses into a `QueueAiEdit` call once it exists.
-- [~] green-usecase
+- [x] green-usecase — `resolve_owned_edit` is two statements and one catch: `resolve_owned_document`
+      first, then `find_scope_by_id_and_document(edit_id, document_id)`, `None` →
+      `NotFoundException(REFUSAL_MESSAGE)` with the constant imported from 1.1's helper. The step-1
+      refusal is caught **as `NotFoundException` only**, logged, and re-raised bare — never
+      `except Exception`, which the RED review passes named as the incident: a broad catch that
+      emits a refusal record would make a datastore outage read as a probing campaign in the one
+      channel built to attribute refusals, and no test in this scenario would have caught it.
+      `StorageUnavailableError` from either repository therefore passes straight through and emits
+      no record. `ai_edit_scope.py` and `ai_edit_repository.py` needed no body — they arrived
+      complete from the RED commit. The db adapter for this port is deliberately absent, left for
+      adapters-discovery. 166 passed, 0 failed (was 161 + 5 skipped).
+      One test-file change beyond the marker, flagged rather than hidden: removing the class-level
+      skip left `import pytest` unused, which ruff rejects as F401; the import line was deleted, no
+      assertion touched.
+      `/test-coverage usecase --focus` (with `--cov-branch` added by hand — the tech template still
+      omits it, see line 83): `resolve_owned_edit.py` 22/22 lines and **2/2 branches** — both sides
+      of the step-1 catch and the step-2 `is None`; `ai_edit_scope.py` 6/6. One real gap:
+      `ai_edit_repository.py:30`, the Protocol's `raise NotImplementedError` body, which is the
+      enforcement mechanism rather than dead code (a `...` body would answer "not found" for every
+      owner's own edit). Pinned by the coverage pair inserted below, following the `rest` DI-stub
+      precedent at line 156.
+      **Two findings carried:** (a) the same gap is open six times in 1.1's `document_repository.py`
+      (13/19 lines: L27, 30, 43, 48, 54, 71) — the entire remainder to 100%, and it interacts with
+      the undecided project-wide question at line 86, so it is worth pinning only once that lands;
+      (b) the tech template's focus filter
+      (`.claude/tech/python-fastapi-hex/templates/testing/coverage-commands.md:38`) returned **zero**
+      files while `git status` showed the new module modified — its pathspecs do not match this repo,
+      and it fails silently into a clean report. That template has now produced two false all-clears.
+- [~] red-usecase (coverage: AiEditRepository port stub raises NotImplementedError)
+- [ ] green-usecase (coverage: AiEditRepository port stub raises NotImplementedError)
 - [ ] adapters-discovery
 - [ ] green-acceptance
 

@@ -1,11 +1,8 @@
-import pytest
-
 from statements.ai_edit_refusal_log_statements import AiEditRefusalLogStatements
 from statements.ai_edit_scope_guard_statements import AiEditScopeGuardStatements
 from statements.ai_edit_store_failure_statements import AiEditStoreFailureStatements
 
 
-@pytest.mark.skip(reason="RED: resolve_owned_edit raises NotImplementedError")
 class TestAiEditScopeGuard:
     """An edit belonging to another document of the same owner is not found.
 
