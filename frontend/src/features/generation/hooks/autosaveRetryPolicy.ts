@@ -41,11 +41,22 @@ export function isTransientFailure(error: unknown): boolean {
 // ingress is a CHAIN — every hop between the browser and the origin, not just the one conf below.
 //
 //   - the origin: `backend/adapters/rest/src/error_handling/exception_handlers.py:64-77` returns 500
-//     and it is the only 5xx emitted. No handler returns 503 (verified: no `503` in `backend/`).
-//     Scanned on every `npm run check:ingress` (`check-nginx-503.mjs` greps `backend/` for 503), so
-//     an accidental one fails the build. The DELIBERATE case — deciding a provider outage should
-//     answer 503 — is owed to the backend session and tracked as a checkbox under «Owed to the
-//     backend layer» in `ProductSpecification/stories/05-manual-mode/progress.md`.
+//     and it is the only 5xx emitted ON THE API SURFACE. Scanned on every `npm run check:ingress`
+//     (`check-nginx-503.mjs` greps `backend/` for 503), so an accidental one fails the build. The
+//     DELIBERATE case — deciding a provider outage should answer 503 — is owed to the backend
+//     session and tracked as a checkbox under «Owed to the backend layer» in
+//     `ProductSpecification/stories/05-manual-mode/progress.md`.
+//
+//     Updated 2026-07-31: "no `503` anywhere in `backend/`" is no longer true and the note said it
+//     was. `GET /health` answers 503 when a dependency is down — unauthenticated, outside
+//     `/api/v1`, addressed to the orchestrator, so no autosave PUT can resolve to it. The scan now
+//     exempts that one route by path segment (`ingressPremiseFiles.mjs`), with both sides pinned.
+//
+//     That narrowing costs something, and it is the strongest live argument against this carve-out:
+//     a probe 503 is READ by an orchestrator, which pulls the instance, and the load balancer in
+//     front then answers 503 to requests already in flight — including a write the origin had
+//     already taken. That hop is the ungated one below. The exit named there (drop the carve-out)
+//     got closer today; it is a behaviour change owed to H9.4, not to a scan.
 //   - the container nginx, `infra/docker/nginx/frontend.conf`: carries nothing that can answer 503,
 //     and this is the one hop with a GATE — `frontend/scripts/check-nginx-503.mjs`
 //     (`npm run check:ingress`, a CI step) fails the build on any directive that could.

@@ -4,8 +4,8 @@
 //
 // These are the halves with no nginx directive to scan. They fail the same build, through the same
 // guard, and are exercised the same way: fixtures in a temp dir, exit code plus the quoted offender.
-import { mkdtempSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { CLEAN_CONF, expectVerdict } from './nginx503SelftestHarness.mjs'
 import { reportAndExit } from './selftestRunner.mjs'
@@ -15,12 +15,17 @@ import { reportAndExit } from './selftestRunner.mjs'
 const NOTES_WITHOUT_POINTER = join(mkdtempSync(join(tmpdir(), 'nginx-503-notes-')), 'architecture.md')
 writeFileSync(NOTES_WITHOUT_POINTER, '# Architecture\n\n## Deploy notes\n\n- nothing about 503 here\n')
 
-// A backend tree holding one source file, for the origin-scan cases.
+// A backend tree holding one source file, for the origin-scan cases. `name` may carry directories
+// — the probe exemption is keyed on a path SEGMENT, so a case that cannot nest cannot reach it.
 function backendFixture(name, contents) {
   const dir = mkdtempSync(join(tmpdir(), 'nginx-503-backend-'))
-  writeFileSync(join(dir, name), contents)
+  const path = join(dir, name)
+  mkdirSync(dirname(path), { recursive: true })
+  writeFileSync(path, contents)
   return dir
 }
+
+const PROBE_SOURCE = 'return JSONResponse(status_code=503, content={"status": "unavailable"})\n'
 
 // The ungated hops' only carrier. It lives in a doc, docs get restructured, and losing the bullet
 // is silent — so the scan reads it the same way it reads the confs' back-reference.
@@ -73,6 +78,27 @@ expectVerdict({
     'PORT = 5030\nTIMEOUT_MS = 1503\n# never return 503 — see mayHaveLandedServerSide\n',
   ),
   code: 0,
+})
+
+// The container probe is the one route whose 503 cannot be the answer to a write: unauthenticated,
+// outside `/api/v1`, and answered to the orchestrator. Exempt — otherwise the guard fires on the
+// one endpoint whose 503 IS its contract, and a guard that fires on correct code gets deleted.
+expectVerdict({
+  what: 'the container probe route may answer 503',
+  confs: { 'frontend.conf': CLEAN_CONF },
+  backend: backendFixture('router/health/health_router.py', PROBE_SOURCE),
+  code: 0,
+})
+
+// The exemption's own boundary, and the reason it is keyed on a path SEGMENT. A module merely
+// NAMED for health is application code on the versioned API — exactly where a provider-outage 503
+// would be added — and a filename-substring rule would have waved it through.
+expectVerdict({
+  what: 'a module named for health but not under a health/ directory still fires',
+  confs: { 'frontend.conf': CLEAN_CONF },
+  backend: backendFixture('router/health_metrics_api.py', PROBE_SOURCE),
+  code: 1,
+  quotes: ['the ORIGIN now mentions 503', 'status_code=503'],
 })
 
 reportAndExit({
