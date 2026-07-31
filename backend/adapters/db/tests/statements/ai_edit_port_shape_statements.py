@@ -4,18 +4,14 @@ Split out of `ai_edit_storage_statements` because none of this touches a session
 a row, or the database: it is introspection over two production symbols. Keeping
 it here lets its tests take a fixture that opens no connection, and leaves the
 storage DSL to the behaviour it actually seeds and reads.
-
-**Why the symbols resolve lazily.** `access/document_edit/ai_edit_storage.py`
-does not exist during RED. Importing it at module scope would raise inside the
-fixture, so pytest would report setup *errors* instead of failing tests -- a red
-that never reaches the call phase and reads like a broken checkout rather than an
-unimplemented adapter. Collapse to a module-scope import at GREEN.
 """
 
 import inspect
 from inspect import Parameter
 
 from document_edit.ai_edit_repository import AiEditRepository
+
+from access.document_edit.ai_edit_storage import SqlAlchemyAiEditStorage
 
 FINDER_NAME = "find_scope_by_id_and_document"
 
@@ -32,10 +28,16 @@ EXPECTED_FINDER_SIGNATURE = [
 ]
 
 
-def _storage_class():
-    from access.document_edit.ai_edit_storage import SqlAlchemyAiEditStorage
+def _signature_shape(function) -> list[tuple[str, object]]:
+    """The function's parameters as `(name, kind)` pairs, in declaration order.
 
-    return SqlAlchemyAiEditStorage
+    The comparable form of `EXPECTED_FINDER_SIGNATURE` above -- order included,
+    because position is half of what the keyword-only rule is pinning.
+    """
+    return [
+        (name, parameter.kind)
+        for name, parameter in inspect.signature(function).parameters.items()
+    ]
 
 
 class AiEditPortShapeStatements:
@@ -49,15 +51,14 @@ class AiEditPortShapeStatements:
         edit, and leaves the usecase suite green because it runs against the fake.
         The rule has to hold at the boundary it guards, not one frame short of it.
         """
-        storage_class = _storage_class()
         for owner, function in (
             ("AiEditRepository", getattr(AiEditRepository, FINDER_NAME)),
-            (storage_class.__name__, getattr(storage_class, FINDER_NAME)),
+            (
+                SqlAlchemyAiEditStorage.__name__,
+                getattr(SqlAlchemyAiEditStorage, FINDER_NAME),
+            ),
         ):
-            actual = [
-                (name, parameter.kind)
-                for name, parameter in inspect.signature(function).parameters.items()
-            ]
+            actual = _signature_shape(function)
             assert actual == EXPECTED_FINDER_SIGNATURE, (
                 f"{owner}.{FINDER_NAME} must declare exactly "
                 f"{EXPECTED_FINDER_SIGNATURE} -- both scoping ids keyword-only "
@@ -72,17 +73,17 @@ class AiEditPortShapeStatements:
         a forgotten method loud, protect nothing here. What actually has to be
         true is that the method is defined *on this class*, not inherited.
         """
-        storage_class = _storage_class()
-        assert AiEditRepository not in storage_class.__mro__, (
-            f"{storage_class.__name__} must satisfy AiEditRepository structurally, as "
+        name = SqlAlchemyAiEditStorage.__name__
+        assert AiEditRepository not in SqlAlchemyAiEditStorage.__mro__, (
+            f"{name} must satisfy AiEditRepository structurally, as "
             "SqlAlchemyDocumentStorage does -- inheriting the Protocol makes every "
             "unimplemented method a concrete body this suite would never notice."
         )
-        assert FINDER_NAME in vars(storage_class), (
-            f"{storage_class.__name__} must define {FINDER_NAME} itself; nothing else in "
+        assert FINDER_NAME in vars(SqlAlchemyAiEditStorage), (
+            f"{name} must define {FINDER_NAME} itself; nothing else in "
             "this codebase makes a missing implementation visible at runtime."
         )
-        assert inspect.iscoroutinefunction(getattr(storage_class, FINDER_NAME)), (
-            f"{storage_class.__name__}.{FINDER_NAME} must be `async def` -- the port is "
+        assert inspect.iscoroutinefunction(getattr(SqlAlchemyAiEditStorage, FINDER_NAME)), (
+            f"{name}.{FINDER_NAME} must be `async def` -- the port is "
             "awaited, and a plain `def` returning a value would await it as a non-awaitable."
         )

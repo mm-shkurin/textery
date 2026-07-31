@@ -1,9 +1,9 @@
 from uuid import UUID
 
+from document_edit.ai_edit_scope import AiEditScope
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from document_edit.ai_edit_scope import AiEditScope
 from model.document_edit.ai_edit_model import AiEditModel
 
 

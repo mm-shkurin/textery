@@ -7,13 +7,6 @@ through the writer usecase's port, read through the reader's -- but the writer i
 `given_a_queued_edit` to the real write->read flow when 3.1 lands; the adapters-
 discovery entry for 1.2 records the same deferral.
 
-**Why the production model is resolved lazily.**
-`model/document_edit/ai_edit_model.py` does not exist during RED. Importing it at
-module scope would raise inside the fixture, so pytest would report setup *errors*
-instead of failing tests -- a red that never reaches the call phase and reads, in
-a summary line, like a broken checkout rather than an unimplemented adapter.
-Collapse to a module-scope import at GREEN.
-
 The adapter's static shape guards (keyword-only ids, structural conformance) live
 in `ai_edit_port_shape_statements`: they touch no session and no row.
 """
@@ -23,6 +16,8 @@ from uuid import UUID, uuid4
 from document_edit.ai_edit_scope import AiEditScope
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access.document_edit.ai_edit_storage import SqlAlchemyAiEditStorage
+from model.document_edit.ai_edit_model import AiEditModel
 from statements.document_storage_statements import DocumentStorageStatements
 from statements.sql_recorder import WatchedRead, recording_sql
 
@@ -37,30 +32,22 @@ from statements.sql_recorder import WatchedRead, recording_sql
 AI_EDIT_SCOPE_COLUMNS = ["ai_edits.document_id", "ai_edits.id"]
 
 
-def _ai_edit_model():
-    from model.document_edit.ai_edit_model import AiEditModel
-
-    return AiEditModel
-
-
 class AiEditStorageStatements:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
         self._documents = DocumentStorageStatements(session)
+        self._storage = SqlAlchemyAiEditStorage(session)
 
-    def _storage(self):
-        from access.document_edit.ai_edit_storage import SqlAlchemyAiEditStorage
-
-        return SqlAlchemyAiEditStorage(self._session)
+    async def _given_a_document_of(self, owner_id: UUID) -> UUID:
+        return (await self._documents.given_a_saved_document(owner_id)).id
 
     async def _given_a_document(self) -> UUID:
-        owner_id = await self._documents.given_an_account()
-        return (await self._documents.given_a_saved_document(owner_id)).id
+        return await self._given_a_document_of(await self._documents.given_an_account())
 
     async def _given_a_queued_edit(self, document_id: UUID) -> UUID:
         """Seed one edit under `document_id`. See the module docstring's seam note."""
         edit_id = uuid4()
-        self._session.add(_ai_edit_model()(id=edit_id, document_id=document_id))
+        self._session.add(AiEditModel(id=edit_id, document_id=document_id))
         await self._session.commit()
         return edit_id
 
@@ -79,12 +66,12 @@ class AiEditStorageStatements:
         the *first* document -- the one the edit does not belong to.
         """
         owner_id = await self._documents.given_an_account()
-        document_id = (await self._documents.given_a_saved_document(owner_id)).id
-        other_document_id = (await self._documents.given_a_saved_document(owner_id)).id
+        document_id = await self._given_a_document_of(owner_id)
+        other_document_id = await self._given_a_document_of(owner_id)
         return document_id, await self._given_a_queued_edit(other_document_id)
 
     async def find_scope(self, edit_id: UUID, document_id: UUID) -> AiEditScope | None:
-        return await self._storage().find_scope_by_id_and_document(
+        return await self._storage.find_scope_by_id_and_document(
             edit_id=edit_id, document_id=document_id
         )
 

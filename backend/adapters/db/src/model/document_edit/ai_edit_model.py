@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -24,6 +24,13 @@ class AiEditModel(Base):
     """
 
     __tablename__ = "ai_edits"
+
+    # The index lives here as well as in the migration, because `Base.metadata` is
+    # what autogenerate compares the live database against: an index present only in
+    # the migration reads as one the model never asked for, and the next
+    # `--autogenerate` proposes dropping it. Every sibling model declares its indexes
+    # the same way for the same reason.
+    __table_args__ = (Index("ix_ai_edits_document_id", "document_id"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     document_id: Mapped[uuid.UUID] = mapped_column(
