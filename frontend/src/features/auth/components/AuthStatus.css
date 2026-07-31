@@ -17,9 +17,9 @@
    DISTINCT from .auth-form-error above: an amber boxed alert rather than plain red text, signalling
    "retry" instead of "your input was wrong". */
 .auth-network-error {
-  color: #b45309;
-  background: #fffbeb;
-  border: 1px solid #fcd34d;
+  color: var(--warning-fg);
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
   border-radius: var(--radius-sm);
   font-size: 15px;
   margin-top: 12px;
@@ -34,8 +34,8 @@
   align-items: center;
   gap: 10px;
   color: var(--error);
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: var(--error-soft-bg);
+  border: 1px solid var(--error-soft-border);
   border-radius: var(--radius-md);
   font-size: 15px;
   margin-bottom: 20px;
@@ -49,7 +49,7 @@
 /* display:block because <output> is inline; text-align and margin-top depend on it being block. */
 .auth-form-success {
   display: block;
-  color: #15803d;
+  color: var(--success-fg);
   font-size: 15px;
   margin-top: 12px;
   text-align: center;

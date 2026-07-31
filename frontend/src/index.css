@@ -51,6 +51,29 @@
   --warning: #f59e0b;
   --success: #22c55e;
   --error: #ef4444;
+
+  /* Status BANNERS, as opposed to the three status accents above. A boxed alert needs three
+     related colours, not one, and every place that drew one was writing its own triple: the
+     network-failure banner in AuthStatus.css carried #b45309/#fffbeb/#fcd34d inline, and the
+     oauth banner re-typed #ef4444 twice as rgba() rather than reading --error. Named here so a
+     second banner cannot invent a fourth amber. */
+  --warning-fg: #b45309;
+  --warning-bg: #fffbeb;
+  --warning-border: #fcd34d;
+  --success-fg: #15803d;
+  --error-soft-bg: rgba(239, 68, 68, 0.1);
+  --error-soft-border: rgba(239, 68, 68, 0.3);
+
+  /* Off-palette Figma values: exact numbers read from the file that are NOT one of the ten
+     `Pallete` swatches. They stay byte-exact — the point is not to round them into the palette
+     but to stop them being retyped per component, where a near-miss (#222222 vs #262728) reads
+     as intentional and nobody can tell which one the design meant. */
+  --text-near-black: #222222;
+  --text-hero: #1f1f1f;
+  --text-divider: #454748;
+  --accent-hero: #1252d3;
+  --accent-orb: #1e87ff;
+  --input-placeholder-fg: #fafdff;
 }
 
 * {

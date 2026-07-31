@@ -38,7 +38,7 @@
   left: 50%;
   top: 130px;
   transform: translateX(-50%);
-  background: #1e87ff;
+  background: var(--accent-orb);
   opacity: 0.25;
   filter: blur(30px);
 }

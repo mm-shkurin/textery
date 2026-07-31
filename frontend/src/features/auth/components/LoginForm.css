@@ -13,7 +13,7 @@
   align-items: center;
   gap: 14px;
   margin: 18px 0;
-  color: #454748;
+  color: var(--text-divider);
   font-size: 14px;
   font-weight: 500;
 }
@@ -44,7 +44,7 @@
   border: none;
   border-radius: var(--radius-md);
   padding: 0 8px;
-  color: #fafdff;
+  color: var(--input-placeholder-fg);
   font-size: 15px;
   font-weight: 400;
   font-family: inherit;

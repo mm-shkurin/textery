@@ -78,11 +78,11 @@
   font-size: 44px;
   font-weight: 600;
   line-height: 1.2;
-  color: #1f1f1f;
+  color: var(--text-hero);
 }
 
 .hero-title-accent {
-  color: #1252d3;
+  color: var(--accent-hero);
 }
 
 .hero-subtitle {
