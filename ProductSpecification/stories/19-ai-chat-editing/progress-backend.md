@@ -454,13 +454,27 @@ within their file, not across the story.
       `git ls-files --others --exclude-standard`. Third false all-clear from that template.
       **Left for `/refactor`:** the lazy production imports in both Statements files can collapse to
       module scope now that the modules exist.
-- [~] green-acceptance
-      *(Expect the same wall 1.1 hit: 1.2's acceptance seeds its edit through `POST /ai-edits`, which
-      is unmounted and has no usecase. Recorded here at discovery so it is not re-derived when the step
-      is reached.)*
+- [S] green-acceptance — **deferred to last, not skipped**, mirroring 1.1's disposition and by the same
+      2026-07-31 decision, which this step applies rather than re-opens: an acceptance test does not pull
+      the paths it depends on forward, it waits for the scenarios that own them. Re-scheduled as the
+      **Deferred: Scenario 1.2** entry at the very end of the backend scenario sections, so file order —
+      the only machine-readable part of the next-work-unit rule — agrees with the prose.
+      The blockage was re-verified against the tree at this step, not inherited from the discovery note:
+      `main.py:116-119` mounts generation/auth/oauth/document and **not** `document_edit_router`;
+      `usecase/src/document_edit/` holds the guard helper, the port and the scope and **none** of the
+      seven usecases; no file under `application/src` mentions `document_edit`, so nothing is wired even
+      if it were mounted. This step may remove the disable marker and nothing else, and the marker is
+      not what holds the test.
+      1.2 needs strictly more than 1.1. Its setup queues a **real** edit through `POST /ai-edits` —
+      deliberately, because a fabricated id is refused by any handler that merely fails to find it and
+      the path document id would never be consulted, which is the whole scenario — so it waits on
+      **3.1** for `QueueAiEdit`. Its aftermath read is a whole-body `GET /ai-edits/{edit_id}` under the
+      edit's own document, which waits on the state endpoint in **4.x**.
+      Everything 1.2 itself owns is done and green: the design and its ADR, the guard with all five
+      forced guards, the port, the `ai_edits` schema and the scoped finder.
 
 ### Scenario 1.3: A revision belonging to another document of the same owner is not found
-- [ ] red-acceptance
+- [~] red-acceptance
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase
@@ -1048,6 +1062,22 @@ Nothing else in 1.1 is outstanding.
 - [ ] green-acceptance (Scenario 1.1) — remove the class-level disable marker on the AI-edit guard
       acceptance test and run it; production code is out of scope for this step. Before starting,
       re-read the four blockers recorded at Scenario 1.1 and confirm each is now false.
+
+**Deferred: Scenario 1.2 green-acceptance** — same wall as 1.1, reached from the other side, and
+re-scheduled here for the same reason: file order is the only machine-readable part of the
+next-work-unit rule. Re-verified at the step rather than inherited from the note — `main.py:116-119`
+mounts generation/auth/oauth/document and not `document_edit_router`; `usecase/src/document_edit/`
+holds the guard helper, the port and the scope and none of the seven usecases; and no file under
+`application/src` mentions `document_edit`, so nothing is wired even if it were mounted. 1.2 needs
+strictly more than 1.1: its setup queues a **real** edit through `POST /ai-edits` (a fabricated id
+would be refused by any handler that merely fails to find it, and the path document id would never
+be consulted), so it waits on **3.1** for `QueueAiEdit`, and its aftermath read
+(`GET /ai-edits/{edit_id}` under the edit's own document, whole-body) waits on the state endpoint in
+**4.x**. Everything 1.2 owns is done: the guard, its five forced guards, the port, the schema and
+the finder. This line is the one step it owes.
+- [ ] green-acceptance (Scenario 1.2) — remove the class-level disable marker on the cross-document
+      acceptance test and run it; production code is out of scope for this step. Before starting,
+      re-verify the three blockers above against the tree rather than trusting this note.
 
 ## Integration Scenarios (06_Integration_Tests.md)
 
