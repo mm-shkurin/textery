@@ -123,3 +123,41 @@
     min-height: 44px;
   }
 }
+
+@media (max-width: 480px) {
+  /* ManualEditor.css stacks .me-toolbar-row at this width, so the control owns a full row now
+     rather than sharing one with the breadcrumb. Filling it makes the trigger a full-width
+     button instead of an inline pill floating on an empty line. */
+  .me-export-control {
+    display: flex;
+  }
+
+  .me-export-trigger {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* The menu is anchored to the trigger's right edge. Once the trigger spans the viewport,
+     `right: 0` alone leaves a 128px popover hanging off one end of a full-width control; giving
+     it both edges makes it drop as a full-width sheet under the button it belongs to. */
+  .me-export-menu {
+    left: 0;
+    right: 0;
+  }
+
+  /* The error bar is a message plus a retry button. Inline, a transport failure's own text
+     ("Не удалось экспортировать документ…") pushes Повторить off the right edge of a 375px
+     screen — the control the user needs is the one that leaves. Stacked, the message wraps and
+     the retry keeps a full-width target underneath it. */
+  .me-export-error-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .me-export-retry {
+    min-height: 44px;
+  }
+}
