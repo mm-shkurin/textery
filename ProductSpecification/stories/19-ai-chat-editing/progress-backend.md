@@ -360,8 +360,52 @@ within their file, not across the story.
       work is done and green; what was wrong was the label and the story attached to it. Carry the
       lesson rather than the excuse: a `/test-review` fix that reaches across into production turns a
       no-red into a red+green in one commit, and the skip that follows inherits a false premise.
-- [~] adapters-discovery
+- [x] adapters-discovery — Check 1 (ports): **db** — `AiEditRepository` has no implementation at all:
+      `adapters/db/src/access/` holds only `document/document_storage.py`, `model/` has no
+      `ai_edit_model.py`, `migrations/versions/` has no `ai_edits` table, and nothing under
+      `adapters/db/src` mentions `ai_edit`. The guard's whole scoping guarantee currently rests on a
+      `WHERE` clause that does not exist yet, which is what the premortem on `d065f5b3` called "100%
+      covered and 0% proven" — the covered line is the `raise`, executed only by a test-only subclass.
+      → `red-adapter db` / `green-adapter db` below.
+      Check 2 (exceptions): **rest** — `[S]`, `not_found_exception_handler` already maps
+      `NotFoundException` to the canonical 404 envelope, and 1.2 raises the same exception with the
+      same imported literal as 1.1. Nothing new to map.
+      Check 3 (response shape): **rest** — `[S]`, no new shape. 1.2's refusal is byte-identical to
+      1.1's by construction, and the three edit-scoped handlers already pass `edit_id` to their
+      usecase — pinned structurally, not by name order, in 1.1's `red-adapter rest` (line 108).
+      **Write-here-read-there, and why this pair cannot honour it yet:** the checklist wants the
+      adapter test to write through the writer usecase's port and read through the reader's. The
+      writer is `QueueAiEdit`, which scenario 3.1 owns and which does not exist — the same wall that
+      deferred 1.1's green-acceptance. The db test therefore seeds through the model directly, one
+      layer below the port, and says so at the seam; convert it to the real write→read flow when 3.1
+      lands.
+      **The table this needs is deliberately two columns.** `id` and `document_id` only — the domain
+      field gate applies to the schema too, and 3.1 adds `status`, `created_at`, `last_seq` and the
+      terminal fields when a Statements line first reads them. An additive migration later is cheaper
+      than a schema written against a spec no test has exercised.
+- [ ] red-adapter db — `find_scope_by_id_and_document` against the real Postgres schema. Three cases,
+      each held down by the one that can move without it (the `test_document_scope_storage.py`
+      precedent at the sibling port): a positive control (seed an edit, read the scope back through the
+      real query); an edit seeded under **another document of the same owner**, which an `id`-only
+      predicate would wrongly return; and an **absent edit id asked under a document that does have
+      edits**, which a `document_id`-only predicate — or a finder that echoes its arguments back as a
+      scope — would wrongly return. Pin the projection to the literal `["id", "document_id"]` through
+      `statements/sql_recorder.py` (it listens on the **sync** engine — a listener on the `AsyncEngine`
+      never fires, and zero recorded statements reads as a clean pass). Two guards the premortem named
+      that belong here rather than at the usecase layer: the real adapter will satisfy
+      `AiEditRepository` **structurally**, not by inheritance — as `SqlAlchemyDocumentStorage` does — so
+      the `raise NotImplementedError` body can never fire for it and only mypy sees a gap; and nothing
+      yet asserts `edit_id`/`document_id` are `KEYWORD_ONLY` on the port, so dropping the `*` leaves all
+      168 usecase tests green while a positional adapter binds the pair the other way round and returns
+      `None` for every owner's own edit.
+- [ ] green-adapter db — the `ai_edits` table (migration), the model, and a column projection
+      `select(AiEditModel.id, AiEditModel.document_id)` with **both** `id` and `document_id` in the
+      WHERE — not `select(AiEditModel)` sliced afterwards, so the recorder's assertion holds at the SQL
+      rather than at the DTO.
 - [ ] green-acceptance
+      *(Expect the same wall 1.1 hit: 1.2's acceptance seeds its edit through `POST /ai-edits`, which
+      is unmounted and has no usecase. Recorded here at discovery so it is not re-derived when the step
+      is reached.)*
 
 ### Scenario 1.3: A revision belonging to another document of the same owner is not found
 - [ ] red-acceptance
