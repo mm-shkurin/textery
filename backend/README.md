@@ -17,6 +17,8 @@ application → adapters → usecase → domain
 | `adapters/db` | Репозитории SQLAlchemy и миграции Alembic. | `usecase` |
 | `adapters/security` | Хеширование паролей (bcrypt), JWT, санитизация HTML (nh3). | `usecase` |
 | `adapters/generation_provider` | Интеграция с GigaChat и фейковый провайдер. | `usecase` |
+| `adapters/oauth_provider` | Вход через Yandex ID и фейковый провайдер. | `usecase` |
+| `adapters/rendering` | Экспорт документа: PDF (WeasyPrint), DOCX, Markdown→HTML. | `usecase` |
 | `application` | Точка входа и composition root — связывает всё вместе. | все модули |
 
 Внутренний слой никогда не импортирует внешний: `domain` не знает ни про
@@ -47,12 +49,17 @@ uvicorn main:app --app-dir application/src/app --reload
 | `POST /api/v1/auth/verify` | Подтверждение аккаунта кодом. | нет |
 | `POST /api/v1/auth/login` | Логин, выдаёт пару access/refresh. | нет |
 | `POST /api/v1/auth/refresh` | Обновление пары по refresh-токену. | нет |
+| `POST /api/v1/auth/resend-code` | Повторная отправка кода подтверждения (с кулдауном). | нет |
+| `GET /api/v1/auth/oauth/{provider}/start` | Шаг 1: редирект к провайдеру. | нет |
+| `GET /api/v1/auth/oauth/{provider}/callback` | Шаг 2: редирект обратно с одноразовым кодом передачи. | нет |
+| `POST /api/v1/auth/oauth/exchange` | Шаг 3: обмен кода передачи на пару токенов. | нет |
 | `POST /api/v1/generations` | Запустить генерацию документа. | да |
 | `GET /api/v1/generations` | История своих генераций (keyset-пагинация). | да |
 | `GET /api/v1/generations/{id}` | Статус и содержимое генерации. | да |
 | `POST /api/v1/documents` | Создать документ (идемпотентно по `Idempotency-Key`). | да |
 | `GET /api/v1/documents` | История своих документов. | да |
 | `GET /api/v1/documents/{id}` | Прочитать документ. | да |
+| `GET /api/v1/documents/{id}/export` | Выгрузить документ файлом (`?format=pdf` или `docx`). | да |
 | `PUT /api/v1/documents/{id}` | Сохранить содержимое (оптимистичная блокировка по `version`). | да |
 | `GET /health` | Готовность экземпляра: `200` — БД отвечает, `503` — нет. | нет |
 
@@ -75,6 +82,14 @@ uvicorn main:app --app-dir application/src/app --reload
 |------------|-------------|------------|
 | `DATABASE_URL` | да | Подключение к PostgreSQL (`postgresql+asyncpg://user:password@host:5432/db`). |
 | `JWT_SECRET` | да | Ключ подписи HS256. Минимум 32 байта — с более коротким приложение не стартует (RFC 7518 §3.2). Сгенерировать: `openssl rand -hex 32`. |
+| `YANDEX_CLIENT_ID` | да | Идентификатор приложения Yandex ID. Проверяется на импорте — **без него приложение не стартует**, независимо от `OAUTH_PROVIDER`. |
+| `YANDEX_CLIENT_SECRET` | да | Секрет приложения Yandex ID. Такая же проверка на старте. |
+| `YANDEX_REDIRECT_URI` | нет | Куда Yandex возвращает браузер. По умолчанию — адрес callback-страницы фронтенда. |
+| `OAUTH_PROVIDER` | нет | `yandex` (по умолчанию) или `fake` — вход без реального провайдера. Выбор `fake` меняет только способ получения личности и **не отменяет** проверку `YANDEX_*` выше. |
+| `OAUTH_FRONTEND_CALLBACK_URL` | нет | Страница фронтенда, куда уходит одноразовый код передачи. |
+| `OAUTH_HANDOFF_CODE_TTL_SECONDS` | нет | Срок жизни одноразового кода передачи. |
+| `OAUTH_RATE_LIMIT_MAX_REQUESTS` | нет | Потолок запросов на источник в окне (грубое ограничение злоупотреблений, не граница авторизации). |
+| `OAUTH_RATE_LIMIT_WINDOW_SECONDS` | нет | Длина этого окна. |
 | `GENERATION_PROVIDER` | нет | `gigachat` (по умолчанию) или `fake` — запуск без реальных доступов. |
 | `GIGACHAT_CREDENTIALS` | при `gigachat` | Доступы к GigaChat. |
 | `GIGACHAT_CA_BUNDLE` | нет | Переопределяет вшитый корневой сертификат, если цепочка GigaChat изменится. |
@@ -90,6 +105,9 @@ pytest domain usecase       # только быстрые тесты, без Б�
 ruff check .                # линтер
 ruff format --check .       # форматирование
 mypy                        # статическая проверка типов (конфиг в pyproject.toml)
+mypy --disallow-incomplete-defs domain/src usecase/src adapters/*/src application/src
+                            # то же по production-коду, но с запретом частично
+                            # аннотированных сигнатур (см. джоб `types` в CI)
 pip-audit -r requirements.txt   # известные уязвимости в зависимостях
 ```
 

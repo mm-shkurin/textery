@@ -8,6 +8,7 @@ import httpx
 
 from generation.generation import Generation
 from generation.generation_provider import ProviderError
+from provider.gigachat_responses import read_access_token, read_completion
 from shared.exceptions import ConfigurationException
 
 MISSING_CREDENTIALS_MESSAGE = "GIGACHAT_CREDENTIALS environment variable is not set"
@@ -123,35 +124,9 @@ class GigaChatProvider:
                 },
             )
             response.raise_for_status()
-            return self._read_content(response)
+            return read_completion(response)
         except httpx.HTTPError as error:
             raise ProviderError(str(error)) from error
-
-    @staticmethod
-    def _read_content(response: httpx.Response) -> str:
-        """Pull the completion text out of the response body.
-
-        Every way the body can disappoint us is a ProviderError, because that is
-        what the GenerationProvider port promises its callers. Only httpx.HTTPError
-        was caught before, so a 200 carrying an unexpected shape -- an error
-        envelope, a truncated body, a proxy's HTML -- raised KeyError, IndexError,
-        or JSONDecodeError straight through the port's contract and out of the
-        BackgroundTask, stranding the row in in_progress.
-
-        This is the remote edge of the system: the one place where the shape of
-        the data is somebody else's decision and can change without warning.
-        """
-        try:
-            payload = response.json()
-        except ValueError as error:
-            raise ProviderError(f"provider returned a body that is not JSON: {error}") from error
-        try:
-            return payload["choices"][0]["message"]["content"]
-        except (KeyError, IndexError, TypeError) as error:
-            raise ProviderError(
-                f"provider returned JSON without a completion at "
-                f"choices[0].message.content: {error}"
-            ) from error
 
     async def _fetch_token(self) -> str:
         """Return a valid OAuth token, minting one only when there isn't one.
@@ -187,7 +162,7 @@ class GigaChatProvider:
                 timeout=TOKEN_READ_TIMEOUT_SECONDS,
             )
             response.raise_for_status()
-            token = self._read_access_token(response)
+            token = read_access_token(response)
         except httpx.HTTPError as error:
             raise ProviderError(str(error)) from error
         # Expiry comes from our own clock plus a conservative TTL, not from the
@@ -197,16 +172,3 @@ class GigaChatProvider:
         # cache give up slightly early, which costs one extra handshake and never
         # an auth failure mid-generation.
         return token, self._clock() + _TOKEN_TTL_SECONDS - _TOKEN_EXPIRY_MARGIN_SECONDS
-
-    @staticmethod
-    def _read_access_token(response: httpx.Response) -> str:
-        try:
-            return response.json()["access_token"]
-        except ValueError as error:
-            raise ProviderError(
-                f"token endpoint returned a body that is not JSON: {error}"
-            ) from error
-        except (KeyError, TypeError) as error:
-            raise ProviderError(
-                f"token endpoint returned JSON without access_token: {error}"
-            ) from error
