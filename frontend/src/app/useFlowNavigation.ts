@@ -60,23 +60,25 @@ export function useFlowNavigation() {
     setStep('form')
   }
 
-  // Back from the editor goes to wherever the editor was opened FROM. A history-opened document
-  // returns to history — offering to pick a mode for a document that already has one, and dropping
-  // the visitor into a "create" flow they never started, would be wrong.
+  // Back from the editor goes to the list of the user's own works — from BOTH paths, and the
+  // generated one is the change here. It used to land on the type step, which renders the
+  // "Создание документа" modal over the landing: someone who had just finished a доклад was
+  // answered with a prompt to start another one, and the only route to the document they had
+  // just saved was to dismiss that modal and then find "Мои работы" in the header. Two
+  // non-obvious clicks away from the one thing they were most likely to want next.
   //
-  // A NEW (non-history) document returns to the type step: story 18 removed the mode-select modal,
-  // so 'mode' is no longer a destination. Going back to 'type' lets the user pick a different
-  // document type, and resets any in-flight generation so the poll is not left running.
+  // History is where the work they just did now IS (a completed generation becomes a Document),
+  // so it is both the honest destination and a forward-reachable one — the CTA in the landing
+  // header is still one click from here for anyone who did want to start again.
+  //
+  // The generation is reset either way: leaving it set would keep a poll running, and — since
+  // DocumentGenerationFlow suppresses `generationId` only when a history document is open — a
+  // live generation sitting in flow state is a trap for the next thing that opens the editor.
   const backFromEditor = () => {
-    if (openDocumentId) {
-      setOpenDocumentId(null)
-      setMode(null)
-      setStep('history')
-      return
-    }
     generation.reset()
+    setOpenDocumentId(null)
     setMode(null)
-    setStep('type')
+    setStep('history')
   }
 
   // The CTA sends a signed-out visitor to REGISTER, not to sign in. Someone clicking "create a

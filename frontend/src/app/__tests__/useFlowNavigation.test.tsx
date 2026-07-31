@@ -124,16 +124,17 @@ describe('useFlowNavigation', () => {
     expect(result.current.mode).toBeNull()
   })
 
-  // Story 18 removed the mode modal, so Back from a new (non-history) document returns to the type
-  // step — a valid, forward-reachable destination — not the retired 'mode' step. The selection is
-  // cleared so the user re-picks cleanly.
-  it('returns a newly created document to the type step', () => {
+  // Back from a GENERATED document goes to history too, not to the type step. 'type' renders the
+  // "Создание документа" modal, so finishing a доклад was answered by being asked to start
+  // another one — with the document just saved reachable only by dismissing that modal and
+  // hunting for "Мои работы". History is where that document now is.
+  it('returns a generated document to history, not to the create-a-document modal', () => {
     const { result } = renderFlow()
 
     act(() => result.current.selectType('doklad'))
     act(() => result.current.backFromEditor())
 
-    expect(result.current.step).toBe('type')
+    expect(result.current.step).toBe('history')
     expect(result.current.mode).toBeNull()
     expect(result.current.openDocumentId).toBeNull()
   })
