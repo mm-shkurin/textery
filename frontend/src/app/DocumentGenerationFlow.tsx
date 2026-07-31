@@ -105,7 +105,18 @@ export function DocumentGenerationFlow() {
               documentTypeLabel={documentTypeLabel}
               onBack={flow.backFromEditor}
               existingDocumentId={flow.openDocumentId ?? undefined}
-              generationId={flow.generation.generationId ?? undefined}
+              // The two ids are MUTUALLY EXCLUSIVE, and the editor resolves the collision the
+              // wrong way round: `fromGeneration` wins, so `useDocumentInit` returns early and
+              // the GET for the document the user actually clicked never fires. Passing both
+              // would open the previous generation's document over the chosen one.
+              //
+              // The collision is reachable: `openHistory` does not reset the generation, so a
+              // completed run is still in flow state while history is on screen. Decided here,
+              // at the seam that knows which path opened the editor, rather than left to
+              // whichever init hook happens to run first.
+              generationId={
+                flow.openDocumentId ? undefined : (flow.generation.generationId ?? undefined)
+              }
             />
           </Suspense>
         </ErrorBoundary>

@@ -30,6 +30,9 @@ export interface DocumentSummary {
   documentId: string
   documentType: string
   status: string
+  // What the row is actually called. Null for a manual document created before titles existed,
+  // which is why every consumer must fall back to the type label rather than render an empty row.
+  title: string | null
   version: number
   createdAt: string
   updatedAt: string
@@ -39,6 +42,7 @@ interface DocumentSummaryWire {
   document_id: string
   document_type: string
   status: string
+  title: string | null
   version: number
   created_at: string
   updated_at: string
@@ -86,6 +90,9 @@ export async function listDocuments(limit = 20, cursor?: string): Promise<Page<D
       documentId: item.document_id,
       documentType: item.document_type,
       status: item.status,
+      // `?? null` rather than a bare read: a backend that has not yet deployed the title field
+      // sends no key at all, and `undefined` would reach the row and render "undefined".
+      title: item.title ?? null,
       version: item.version,
       createdAt: item.created_at,
       updatedAt: item.updated_at,

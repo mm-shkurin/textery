@@ -9,6 +9,9 @@ const DOC = {
   documentId: 'doc-1',
   documentType: 'доклад',
   status: 'draft',
+  // Null on purpose for the shared fixture: it is the OLD shape, the manual document created
+  // before titles existed, so every test that does not care about titles exercises the fallback.
+  title: null,
   version: 2,
   createdAt: '2026-07-17T10:00:00Z',
   updatedAt: '2026-07-17T11:00:00Z',
@@ -121,30 +124,49 @@ describe('HistoryPage', () => {
     expect(screen.queryByTestId('history-documents-more')).not.toBeInTheDocument()
   })
 
-  it('switching tabs asks the other endpoint, not the same one again', async () => {
-    vi.mocked(historyApi.listDocuments).mockResolvedValue({ items: [DOC], nextCursor: null })
-    vi.mocked(historyApi.listGenerations).mockResolvedValue({
+  // The defect this list had: two documents of the same type were the same row. The type label
+  // is not an identity — a user with three докладов saw "Доклад / Доклад / Доклад" and could not
+  // reopen the one they had just generated. Asserted on TWO rows, because a single-row test
+  // passes on a component that renders the title of the first item for all of them.
+  it('names each row by its own title, so two documents of one type are distinguishable', async () => {
+    vi.mocked(historyApi.listDocuments).mockResolvedValue({
       items: [
-        {
-          generationId: 'gen-1',
-          status: 'completed',
-          topic: 'Квантовые компьютеры',
-          documentType: 'доклад',
-          volumePages: 5,
-          createdAt: '2026-07-17T09:00:00Z',
-        },
+        { ...DOC, title: 'Квантовые компьютеры' },
+        { ...DOC, documentId: 'doc-2', title: 'История Рима' },
       ],
       nextCursor: null,
     })
 
     renderPage()
+
+    const rows = await screen.findAllByTestId('history-document-row')
+    expect(rows[0]).toHaveTextContent('Квантовые компьютеры')
+    expect(rows[1]).toHaveTextContent('История Рима')
+  })
+
+  // A title that is present but blank is the same problem as an absent one, and `?? ''` would let
+  // it through: the row would render as an empty line with only a date beside it.
+  it('falls back to the type label when the title is blank, never an empty row', async () => {
+    vi.mocked(historyApi.listDocuments).mockResolvedValue({
+      items: [{ ...DOC, title: '   ' }],
+      nextCursor: null,
+    })
+
+    renderPage()
+
+    expect(await screen.findByTestId('history-document-row')).toHaveTextContent('Доклад')
+  })
+
+  // The generations tab is gone, and this asserts the removal rather than the absence of a
+  // testid: the endpoint must not be called at all. A tab that merely stopped rendering while the
+  // fetch stayed wired would still spend a request on every visit to this screen.
+  it('shows one list of works and never asks the generations endpoint', async () => {
+    vi.mocked(historyApi.listDocuments).mockResolvedValue({ items: [DOC], nextCursor: null })
+
+    renderPage()
     await screen.findByTestId('history-document-row')
 
-    fireEvent.click(screen.getByTestId('history-tab-generations'))
-
-    expect(await screen.findByTestId('history-generation-row')).toHaveTextContent(
-      'Квантовые компьютеры',
-    )
-    expect(screen.queryByTestId('history-document-row')).not.toBeInTheDocument()
+    expect(historyApi.listGenerations).not.toHaveBeenCalled()
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument()
   })
 })

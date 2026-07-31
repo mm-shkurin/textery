@@ -110,6 +110,14 @@ components:
         status:
           type: string
           enum: [draft]
+        title:
+          type: string
+          nullable: true
+          description: >-
+            What the document is called — for a converted generation, derived from the topic.
+            The only per-row field that identifies the work: without it every доклад renders
+            as the same row and the owner cannot reopen the one they want. Null for a manual
+            document that has never been titled; render the type label in that case.
         version:
           type: integer
           description: Pass as the CAS token to PUT /documents/{id}.

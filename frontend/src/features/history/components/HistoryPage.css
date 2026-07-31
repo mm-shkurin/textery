@@ -31,35 +31,14 @@
   margin: 0;
 }
 
-.history-tabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 8px;
-}
-
-.history-tab {
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 14px;
-  padding: 10px 14px;
-}
-
-.history-tab[aria-selected='true'] {
-  border-bottom-color: var(--text-primary);
-  color: var(--text-primary);
-}
-
 .history-list {
   display: flex;
   flex-direction: column;
 }
 
-/* A button for documents, a div for generations — the shared look must not depend on the tag,
-   since only one of them is clickable today. */
+/* Every row is a button now that the read-only generations list is gone, but the tag-independent
+   styling stays: `button.history-row` below carries only the interactive affordances, so a
+   non-clickable row would still look like part of the same list rather than unstyled. */
 .history-row {
   display: flex;
   justify-content: space-between;
@@ -148,16 +127,9 @@ button.history-row:hover {
     font-size: 19px;
   }
 
-  /* Two tabs at 14px fit 375px comfortably; splitting the width between them makes both a
-     full-height tap target rather than two small words with dead space around them. */
-  .history-tab {
-    flex: 1;
-    padding: 12px 8px;
-  }
-
-  /* The row stacks. Side by side, a long document type and the date compete for ~340px, and the
-     title's ellipsis wins by truncating the one fact that identifies the row. Stacked, the type
-     gets the full width and the date sits under it. */
+  /* The row stacks. Side by side, a long title and the meta line compete for ~340px, and the
+     title's ellipsis wins by truncating the one fact that identifies the row. Stacked, the title
+     gets the full width and the type + date sit under it. */
   .history-row {
     flex-direction: column;
     align-items: flex-start;
