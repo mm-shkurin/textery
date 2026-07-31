@@ -25,3 +25,9 @@ STATES_REACHABLE_WITHOUT_A_CANCEL = (
     DONE_STATUS,
     ERROR_STATUS,
 )
+
+# The same five states partitioned by whether the worker can still move them. A poll
+# that waits for an edit to settle needs both halves: it stops on a terminal state and
+# rejects anything in neither half as an unknown state, rather than looping on junk.
+TERMINAL_STATES = (DONE_STATUS, ERROR_STATUS, CANCELLED_STATUS)
+NON_TERMINAL_STATES = (QUEUED_STATUS, STREAMING_STATUS)

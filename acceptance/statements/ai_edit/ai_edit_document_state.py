@@ -40,21 +40,24 @@ async def read_revisions(
     client: DocumentEditClient, token: str, document_id: str, context: str
 ) -> RawResponseDto:
     response = await client.list_revisions(token, document_id)
-    assert_read_back_ok(response, document_id, "revision page", context)
+    assert_revision_page_read_back_ok(response, document_id, context)
     return response
 
 
-def assert_read_back_ok(
-    response: RawResponseDto, document_id: str, what: str, context: str
+def assert_revision_page_read_back_ok(
+    response: RawResponseDto, document_id: str, context: str
 ) -> None:
-    """The one read-back expectation, stated once.
+    """The revision-page read-back expectation, stated once for scenario 1.3.
 
-    It was previously written three times over — in the revision seed, in the document
-    seed and again in scenario 1.3's assertions — which is the same drift risk that put
-    the refusal envelope in a single shared function.
+    It consolidated the two spellings 1.3 itself carried — the baseline read and the
+    aftermath read — which is the same drift risk that put the refusal envelope in a
+    single shared function. It deliberately does NOT consolidate the other read-back
+    asserts in the DSL: `ai_edit_document_seed.read_document` and the seeds' own
+    "expected 200 reading ..." messages each carry setup-specific context, and a
+    `document_seed` -> `document_state` dependency would close an import cycle.
     """
     assert response.status_code == OK_STATUS, (
-        f"expected {OK_STATUS} with the owner reading their own {what} for document "
-        f"{document_id} {context}, got status_code={response.status_code}, "
+        f"expected {OK_STATUS} with the owner reading their own revision page for "
+        f"document {document_id} {context}, got status_code={response.status_code}, "
         f"body={response.text!r}"
     )

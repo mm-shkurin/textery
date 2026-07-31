@@ -5,6 +5,7 @@ from statements.ai_edit import ai_edit_document_seed as seed
 from statements.ai_edit import ai_edit_document_state as state
 from statements.ai_edit import ai_edit_revision_expectations as expected
 from statements.ai_edit import ai_edit_revision_seed as revision_seed
+from statements.ai_edit.ai_edit_cross_revision_assertions import AFTERMATH_CONTEXT
 from statements.ai_edit.ai_edit_cross_revision_probes import (
     CrossRevisionAftermath,
     CrossRevisionProbe,
@@ -13,7 +14,6 @@ from statements.ai_edit.ai_edit_cross_revision_probes import (
 from statements.authenticated_account import register_verify_and_login
 
 BASELINE_CONTEXT = "when the scenario's baseline was captured, before the probe"
-AFTERMATH_CONTEXT = "after the refused cross-document restore"
 
 
 class AiEditCrossRevisionStatements:
@@ -79,10 +79,10 @@ class AiEditCrossRevisionStatements:
         """
         aftermath = CrossRevisionAftermath(
             first_after=await self._read_state(
-                probe.setup.owner_token, probe.first_document_id, AFTERMATH_CONTEXT
+                probe.owner_token, probe.first_document_id, AFTERMATH_CONTEXT
             ),
             second_after=await self._read_state(
-                probe.setup.owner_token, probe.second_document_id, AFTERMATH_CONTEXT
+                probe.owner_token, probe.second_document_id, AFTERMATH_CONTEXT
             ),
         )
         guard.assert_no_new_version_on_either_document(probe, aftermath)

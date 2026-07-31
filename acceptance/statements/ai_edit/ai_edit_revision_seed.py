@@ -26,38 +26,21 @@ from clients.application.document_edit_client import DocumentEditClient
 from clients.application.dto.document.raw_response_dto import RawResponseDto
 from statements.ai_edit import ai_edit_queue_seed as queue_seed
 from statements.ai_edit.ai_edit_edit_states import (
-    CANCELLED_STATUS,
     DONE_STATUS,
-    ERROR_STATUS,
-    QUEUED_STATUS,
-    STREAMING_STATUS,
+    NON_TERMINAL_STATES,
+    TERMINAL_STATES,
 )
 from statements.ai_edit.ai_edit_http_status import OK_STATUS
-from statements.ai_edit.ai_edit_revision_expectations import (
+from statements.ai_edit.ai_edit_response_fields import DONE_EDIT_FIELDS
+from statements.ai_edit.ai_edit_vocabulary import (
     SEEDED_REVISION_NUMBER,
     VERSION_AFTER_ONE_AI_EDIT,
 )
 from statements.response_assertions import assert_iso_timestamp_within
 
-TERMINAL_STATES = (DONE_STATUS, ERROR_STATUS, CANCELLED_STATUS)
-NON_TERMINAL_STATES = (QUEUED_STATUS, STREAMING_STATUS)
 APPLY_TIMEOUT_SECONDS = 20.0
 POLL_INTERVAL_SECONDS = 0.25
 TERMINAL_EVENT_SEQ = 1
-
-# documents_ai_edits_get.yaml: `version`, `revision_number` and `changed` are present
-# only on a `done` edit, and `error_code` only on an `error` one. A done edit therefore
-# carries exactly these — an extra key is an undocumented disclosure, a missing one is
-# the edit not having applied.
-DONE_EDIT_FIELDS = {
-    "edit_id",
-    "status",
-    "created_at",
-    "version",
-    "revision_number",
-    "changed",
-    "last_seq",
-}
 
 
 @dataclass(frozen=True)

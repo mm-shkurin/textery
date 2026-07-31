@@ -45,9 +45,15 @@ class AiEditGuardStatements:
             endpoint=endpoint, foreign=foreign, absent=absent, setup=setup
         )
 
-    async def then_the_owner_reads_the_document_aftermath(
+    async def when_the_owner_reads_the_document_aftermath(
         self, probe: GuardProbe
     ) -> DocumentAftermath:
+        """An ACTION, not a Then: three HTTP reads, asserting nothing of its own.
+
+        It carried a `then_` name while the steps that actually assert carried `assert_`
+        ones — the mislabel scenarios 1.2 and 1.3 already fixed. Naming follows what the
+        step does.
+        """
         return DocumentAftermath(
             messages=await self._edit_client.list_messages(
                 probe.owner_token, probe.foreign_document_id
@@ -60,13 +66,13 @@ class AiEditGuardStatements:
             ),
         )
 
-    def assert_both_refused_as_not_found(self, probe: GuardProbe) -> None:
+    def then_both_are_refused_as_not_found(self, probe: GuardProbe) -> None:
         guard.assert_both_refused_as_not_found(probe)
 
-    def assert_response_bodies_byte_identical(self, probe: GuardProbe) -> None:
+    def then_the_two_response_bodies_are_byte_identical(self, probe: GuardProbe) -> None:
         guard.assert_response_bodies_byte_identical(probe)
 
-    def assert_no_edit_revision_or_message_created(
+    def then_no_edit_revision_or_message_is_created(
         self, probe: GuardProbe, aftermath: DocumentAftermath
     ) -> None:
         guard.assert_no_edit_revision_or_message_created(probe, aftermath)

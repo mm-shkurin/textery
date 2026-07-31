@@ -29,10 +29,10 @@ class TestDocumentScopeGuardAcceptance(AbstractBackendTest):
         probe = await ai_edit_guard_statements.when_the_endpoint_is_invoked_against_both(
             setup, endpoint
         )
-        aftermath = await ai_edit_guard_statements.then_the_owner_reads_the_document_aftermath(
+        aftermath = await ai_edit_guard_statements.when_the_owner_reads_the_document_aftermath(
             probe
         )
 
-        ai_edit_guard_statements.assert_both_refused_as_not_found(probe)
-        ai_edit_guard_statements.assert_response_bodies_byte_identical(probe)
-        ai_edit_guard_statements.assert_no_edit_revision_or_message_created(probe, aftermath)
+        ai_edit_guard_statements.then_both_are_refused_as_not_found(probe)
+        ai_edit_guard_statements.then_the_two_response_bodies_are_byte_identical(probe)
+        ai_edit_guard_statements.then_no_edit_revision_or_message_is_created(probe, aftermath)

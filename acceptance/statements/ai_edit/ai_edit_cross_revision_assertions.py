@@ -10,8 +10,8 @@ from statements.ai_edit import ai_edit_revision_expectations as expected
 from statements.ai_edit.ai_edit_cross_revision_probes import (
     CrossRevisionAftermath,
     CrossRevisionProbe,
-    DocumentState,
 )
+from statements.ai_edit.ai_edit_document_state import DocumentState
 from statements.ai_edit.ai_edit_guard_assertions import assert_is_the_canonical_refusal
 
 AFTERMATH_CONTEXT = "after the refused cross-document restore"
@@ -52,11 +52,11 @@ def assert_no_new_version_on_either_document(
     including one where the seed never recorded anything.
     """
     expected.assert_is_a_once_ai_edited_document(
-        aftermath.first_after, probe.setup.seed_window, AFTERMATH_CONTEXT
+        aftermath.first_after, probe.seed_window, AFTERMATH_CONTEXT
     )
     expected.assert_is_a_never_edited_document(aftermath.second_after, AFTERMATH_CONTEXT)
-    _assert_unchanged(probe, probe.setup.first_before, aftermath.first_after, "first")
-    _assert_unchanged(probe, probe.setup.second_before, aftermath.second_after, "second")
+    _assert_unchanged(probe, probe.first_before, aftermath.first_after, "first")
+    _assert_unchanged(probe, probe.second_before, aftermath.second_after, "second")
 
 
 def _assert_unchanged(

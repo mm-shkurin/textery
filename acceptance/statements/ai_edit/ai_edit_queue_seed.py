@@ -14,12 +14,19 @@ from clients.application.document_edit_client import DocumentEditClient
 from clients.application.dto.document.raw_response_dto import RawResponseDto
 from statements.ai_edit import ai_edit_document_seed as seed
 from statements.ai_edit.ai_edit_edit_states import QUEUED_STATUS
-from statements.ai_edit.ai_edit_endpoint_probes import PROBE_INSTRUCTION
 from statements.ai_edit.ai_edit_http_status import ACCEPTED_STATUS
 from statements.response_assertions import assert_is_valid_uuid
 from statements.test_data import TestData
 
 ACCEPTED_FIELDS = {"edit_id", "status"}
+
+# The seed's own instruction, deliberately NOT scenario 1.1's `PROBE_INSTRUCTION`. That
+# one is a throwaway payload aimed at a 404 and never applied to anything; this one is
+# the REAL edit scenario 1.3 depends on, and it must produce a non-empty change so the
+# edit reports `changed: true` and records revision 2 on a freshly created document.
+# Sharing the literal would let a change made for 1.1's benefit silently break 1.3's
+# premise.
+SEED_INSTRUCTION = "Напиши развёрнутое введение на несколько абзацев."
 
 
 @dataclass(frozen=True)
@@ -47,7 +54,7 @@ async def queue_edit_on(
     response = await client.queue_edit(
         token,
         document_id,
-        {"message": PROBE_INSTRUCTION, "base_version": seed.FIRST_VERSION},
+        {"message": SEED_INSTRUCTION, "base_version": seed.FIRST_VERSION},
         TestData.unique_idempotency_key(),
     )
     after = datetime.now(timezone.utc)

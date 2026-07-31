@@ -69,6 +69,6 @@ class AiEditCrossDocumentStatements:
         handed its result through the test class — an action wearing a Then name.
         """
         edit_state_after = await self._edit_client.get_edit(
-            probe.setup.owner_token, probe.first_document_id, probe.edit_id
+            probe.owner_token, probe.first_document_id, probe.edit_id
         )
         guard.assert_the_edit_survived_under_its_own_document(probe, edit_state_after)

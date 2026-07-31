@@ -10,6 +10,7 @@ reason it exists, and it can only pass once the real guard emits the real body.
 from clients.application.dto.document.raw_response_dto import RawResponseDto
 from statements.ai_edit.ai_edit_guard_probes import DocumentAftermath, GuardProbe
 from statements.ai_edit.ai_edit_http_status import NOT_FOUND_STATUS, OK_STATUS
+from statements.ai_edit.ai_edit_vocabulary import EMPTY_PAGE
 
 # The canonical refusal every AI-edit endpoint owes for an absent OR foreign document
 # (`Error {error_code, message}` in every 404 of the story-19 api-specs). The literal
@@ -19,11 +20,6 @@ EXPECTED_NOT_FOUND_BODY = {
     "error_code": "NOT_FOUND",
     "message": "The requested resource was not found.",
 }
-
-# MessagePage / RevisionPage are `{items, next_cursor}`. `next_cursor` is null on the
-# last page, and an empty page is a last page — so the whole page is pinned, not just
-# `items`, or an extra disclosing field would slip through unasserted.
-EMPTY_PAGE = {"items": [], "next_cursor": None}
 
 
 def assert_both_refused_as_not_found(probe: GuardProbe) -> None:

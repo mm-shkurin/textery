@@ -8,7 +8,6 @@ __all__ = [
     "CrossRevisionAftermath",
     "CrossRevisionProbe",
     "CrossRevisionSetup",
-    "DocumentState",
 ]
 
 
@@ -58,8 +57,16 @@ class CrossRevisionProbe:
     setup: CrossRevisionSetup
 
     @property
+    def owner_token(self) -> str:
+        return self.setup.owner_token
+
+    @property
     def revision_number(self) -> int:
         return self.setup.revision_number
+
+    @property
+    def seed_window(self) -> tuple[datetime, datetime]:
+        return self.setup.seed_window
 
     @property
     def first_document_id(self) -> str:
@@ -68,6 +75,14 @@ class CrossRevisionProbe:
     @property
     def second_document_id(self) -> str:
         return self.setup.second_document_id
+
+    @property
+    def first_before(self) -> DocumentState:
+        return self.setup.first_before
+
+    @property
+    def second_before(self) -> DocumentState:
+        return self.setup.second_before
 
 
 @dataclass(frozen=True)

@@ -23,25 +23,46 @@ PROBE_INSTRUCTION = "Сократи введение до одного абза�
 PROBE_BASE_VERSION = 1
 
 
+# The endpoint set is closed (`ALL_ENDPOINTS`), so the dispatch is a table rather than a
+# chain of string comparisons: the DSL name sits next to the client call it means, and a
+# name with no entry is caught by one lookup instead of falling off the end of a chain.
+_DOCUMENT_SCOPED_CALLS = {
+    SUBMIT_AN_INSTRUCTION: lambda client, token, document_id: client.queue_edit(
+        token,
+        document_id,
+        {"message": PROBE_INSTRUCTION, "base_version": PROBE_BASE_VERSION},
+        TestData.unique_idempotency_key(),
+    ),
+    READ_ITS_MESSAGES: lambda client, token, document_id: client.list_messages(
+        token, document_id
+    ),
+    READ_ITS_REVISIONS: lambda client, token, document_id: client.list_revisions(
+        token, document_id
+    ),
+    RESTORE_A_REVISION: lambda client, token, document_id: client.restore_revision(
+        token, document_id, PROBE_REVISION_NUMBER
+    ),
+}
+
+
 async def invoke(
     client: DocumentEditClient, endpoint: str, token: str, document_id: str
 ) -> RawResponseDto:
-    if endpoint == SUBMIT_AN_INSTRUCTION:
-        return await client.queue_edit(
-            token,
-            document_id,
-            {"message": PROBE_INSTRUCTION, "base_version": PROBE_BASE_VERSION},
-            TestData.unique_idempotency_key(),
-        )
     if endpoint in EDIT_SCOPED_ENDPOINTS:
         return await invoke_with_edit(client, endpoint, token, document_id, PROBE_EDIT_ID)
-    if endpoint == READ_ITS_MESSAGES:
-        return await client.list_messages(token, document_id)
-    if endpoint == READ_ITS_REVISIONS:
-        return await client.list_revisions(token, document_id)
-    if endpoint == RESTORE_A_REVISION:
-        return await client.restore_revision(token, document_id, PROBE_REVISION_NUMBER)
-    raise AssertionError(f"unknown endpoint under test: {endpoint!r}")
+    call = _DOCUMENT_SCOPED_CALLS.get(endpoint)
+    if call is None:
+        raise AssertionError(f"unknown endpoint under test: {endpoint!r}")
+    return await call(client, token, document_id)
+
+
+# All three take the same path triple, so the table maps the DSL name straight onto the
+# client method that spells that URL.
+_EDIT_SCOPED_CALLS = {
+    READ_THE_EVENT_STREAM: DocumentEditClient.stream_edit,
+    THE_EDIT_STATE_ENDPOINT: DocumentEditClient.get_edit,
+    CANCEL_THE_EDIT: DocumentEditClient.cancel_edit,
+}
 
 
 async def invoke_with_edit(
@@ -58,13 +79,10 @@ async def invoke_with_edit(
     scenarios exercise the same URLs — a divergence in path shape between them would
     let one pass while the other is silently probing something else.
     """
-    if endpoint == READ_THE_EVENT_STREAM:
-        return await client.stream_edit(token, document_id, edit_id)
-    if endpoint == THE_EDIT_STATE_ENDPOINT:
-        return await client.get_edit(token, document_id, edit_id)
-    if endpoint == CANCEL_THE_EDIT:
-        return await client.cancel_edit(token, document_id, edit_id)
-    raise AssertionError(f"not an edit-scoped endpoint: {endpoint!r}")
+    call = _EDIT_SCOPED_CALLS.get(endpoint)
+    if call is None:
+        raise AssertionError(f"not an edit-scoped endpoint: {endpoint!r}")
+    return await call(client, token, document_id, edit_id)
 
 
 def absent_document_id() -> str:

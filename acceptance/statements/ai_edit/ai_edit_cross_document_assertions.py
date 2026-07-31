@@ -16,17 +16,12 @@ from statements.ai_edit.ai_edit_edit_states import (
 )
 from statements.ai_edit.ai_edit_guard_assertions import assert_is_the_canonical_refusal
 from statements.ai_edit.ai_edit_http_status import OK_STATUS
+from statements.ai_edit.ai_edit_response_fields import (
+    DONE_ONLY_FIELDS,
+    KNOWN_FIELDS,
+    REQUIRED_FIELDS,
+)
 from statements.response_assertions import assert_iso_timestamp_within
-
-REQUIRED_FIELDS = {"edit_id", "status", "created_at"}
-KNOWN_FIELDS = REQUIRED_FIELDS | {
-    "version",
-    "revision_number",
-    "changed",
-    "error_code",
-    "last_seq",
-}
-DONE_ONLY_FIELDS = ("version", "revision_number", "changed")
 
 
 def assert_refused_as_not_found(probe: CrossDocumentProbe) -> None:
@@ -94,8 +89,8 @@ def _assert_identity_and_creation(
     assert_iso_timestamp_within(
         body.get("created_at"),
         f"created_at of edit {probe.edit_id}",
-        probe.setup.queued_before,
-        probe.setup.queued_after,
+        probe.queued_before,
+        probe.queued_after,
     )
     last_seq = body.get("last_seq")
     assert isinstance(last_seq, int) and not isinstance(last_seq, bool) and last_seq >= 0, (

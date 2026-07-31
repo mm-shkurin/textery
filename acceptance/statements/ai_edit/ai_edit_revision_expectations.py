@@ -21,7 +21,12 @@ from datetime import datetime
 
 from statements.ai_edit import ai_edit_document_seed as seed
 from statements.ai_edit.ai_edit_document_state import DocumentState
-from statements.ai_edit.ai_edit_guard_assertions import EMPTY_PAGE
+from statements.ai_edit.ai_edit_vocabulary import (
+    BASELINE_REVISION_NUMBER,
+    EMPTY_PAGE,
+    SEEDED_REVISION_NUMBER,
+    VERSION_AFTER_ONE_AI_EDIT,
+)
 from statements.response_assertions import (
     assert_iso_timestamp_within,
     parse_iso_timestamp,
@@ -34,10 +39,6 @@ REVISION_PAGE_FIELDS = {"items", "next_cursor"}
 # `restored_from` is "present only when source is restore" — neither seeded revision is a
 # restore, so its presence would itself be a defect and the field set is closed.
 REVISION_FIELDS = {"revision_number", "version", "source", "created_at"}
-
-BASELINE_REVISION_NUMBER = 1
-SEEDED_REVISION_NUMBER = 2
-VERSION_AFTER_ONE_AI_EDIT = 2
 
 
 @dataclass(frozen=True)
@@ -63,7 +64,7 @@ def assert_is_a_never_edited_document(state: DocumentState, context: str) -> Non
     assertion would be testing something else while staying green.
     """
     body = _assert_document_body(state, seed.FIRST_VERSION, context)
-    _assert_field(state, body, "content", seed.EMPTY_CONTENT, context)
+    _assert_field(state, "content", seed.EMPTY_CONTENT, context)
     created_at = parse_iso_timestamp(body.get("created_at"), "created_at")
     updated_at = parse_iso_timestamp(body.get("updated_at"), "updated_at")
     assert updated_at == created_at, (
@@ -107,16 +108,19 @@ def _assert_document_body(state: DocumentState, version: int, context: str) -> d
         f"{sorted(seed.DOCUMENT_FIELDS)} {context}, got {sorted(body)} in "
         f"body={state.document.text!r}"
     )
-    _assert_field(state, body, "document_id", state.document_id, context)
-    _assert_field(state, body, "document_type", seed.DOCUMENT_TYPE, context)
-    _assert_field(state, body, "status", seed.DRAFT_STATUS, context)
-    _assert_field(state, body, "version", version, context)
+    _assert_field(state, "document_id", state.document_id, context)
+    _assert_field(state, "document_type", seed.DOCUMENT_TYPE, context)
+    _assert_field(state, "status", seed.DRAFT_STATUS, context)
+    _assert_field(state, "version", version, context)
     return body
 
 
 def _assert_field(
-    state: DocumentState, body: dict, field: str, expected: object, context: str
+    state: DocumentState, field: str, expected: object, context: str
 ) -> None:
+    """`body` was a parameter, but every call site passed `state.document.body or {}` —
+    the same expression this derives, so the argument only repeated the receiver."""
+    body = state.document.body or {}
     assert body.get(field) == expected, (
         f"expected {field}={expected!r} on document {state.document_id} {context}, got "
         f"{body.get(field)!r} in body={state.document.text!r}"
@@ -140,10 +144,17 @@ def _assert_revision_page_is(
         f"last page {context}, got next_cursor={page.get('next_cursor')!r} in "
         f"body={state.revisions.text!r}"
     )
+    # Asserted once, up front: the comparison below and the per-row loop after it both
+    # iterate `items`, and a non-list would previously have been silently coerced to an
+    # empty list for the first and then iterated unguarded by the second.
     items = page.get("items")
+    assert isinstance(items, list), (
+        f"expected the revision page of document {state.document_id} to carry a list of "
+        f"items {context}, got {items!r} in body={state.revisions.text!r}"
+    )
     observed = [
         (item.get("revision_number"), item.get("version"), item.get("source"))
-        for item in (items if isinstance(items, list) else [])
+        for item in items
     ]
     wanted = [(row.revision_number, row.version, row.source) for row in expected]
     assert observed == wanted, (

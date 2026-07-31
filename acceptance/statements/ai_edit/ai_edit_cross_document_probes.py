@@ -40,8 +40,20 @@ class CrossDocumentProbe:
     setup: CrossDocumentSetup
 
     @property
+    def owner_token(self) -> str:
+        return self.setup.owner_token
+
+    @property
     def edit_id(self) -> str:
         return self.setup.edit_id
+
+    @property
+    def queued_before(self) -> datetime:
+        return self.setup.queued_before
+
+    @property
+    def queued_after(self) -> datetime:
+        return self.setup.queued_after
 
     @property
     def first_document_id(self) -> str:
