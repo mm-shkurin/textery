@@ -1,13 +1,3 @@
-import pytest
-
-
-@pytest.mark.skip(
-    reason="RED: no AI-edit db adapter at all -- ModuleNotFoundError: No module named "
-    "'model.document_edit.ai_edit_model' (the four seeding cases) and "
-    "'access.document_edit.ai_edit_storage' (the signature cases). GREEN adds the "
-    "two-column ai_edits model, its migration, and "
-    "SqlAlchemyAiEditStorage.find_scope_by_id_and_document."
-)
 class TestFindScopeByIdAndDocument:
     """Scenario 1.2: the bounded document-scoped existence check, against the real schema.
 
@@ -80,10 +70,6 @@ class TestFindScopeByIdAndDocument:
         )
 
 
-@pytest.mark.skip(
-    reason="RED: ModuleNotFoundError: No module named 'access.document_edit.ai_edit_storage'. "
-    "GREEN adds SqlAlchemyAiEditStorage with a keyword-only find_scope_by_id_and_document."
-)
 class TestAiEditStorageShape:
     """The adapter's static obligations to its port -- no database involved.
 

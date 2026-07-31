@@ -425,11 +425,36 @@ within their file, not across the story.
       production symbols are resolved lazily inside helpers so the six failures land in the call phase
       rather than as fixture setup errors. Both carry a "collapse at GREEN" note.
       **Left for `/refactor`:** duplication with `document_storage_statements`.
-- [~] green-adapter db — the `ai_edits` table (migration), the model, and a column projection
-      `select(AiEditModel.id, AiEditModel.document_id)` with **both** `id` and `document_id` in the
-      WHERE — not `select(AiEditModel)` sliced afterwards, so the recorder's assertion holds at the SQL
-      rather than at the DTO.
-- [ ] green-acceptance
+- [x] green-adapter db — migration `2b3c4d5e6f7a` (new head, down_revision `1a2b3c4d5e6f`), the model,
+      and `SqlAlchemyAiEditStorage.find_scope_by_id_and_document` as
+      `select(AiEditModel.id, AiEditModel.document_id)` with both ids in the WHERE — a column
+      projection, so the recorder's qualified literal holds at the SQL rather than at the DTO. Keyword-
+      only, and **structural** conformance (no Protocol inheritance), as `SqlAlchemyDocumentStorage`
+      does. `migrations/env.py` gained the model import — without it `Base.metadata` lacks the table and
+      autogenerate would propose dropping it. 6/6 target tests, full db suite 62 passed, 0 failed.
+      `alembic upgrade head` clean; `downgrade -1` then `upgrade head` both succeed.
+      **Both review-pass obligations shipped, verified against the live table** (`\d ai_edits`):
+      `ai_edits_pkey PRIMARY KEY (id)` and `ai_edits_document_id_fkey FOREIGN KEY (document_id)
+      REFERENCES documents(id) ON DELETE CASCADE`. **Neither is pinned by a test** — a later migration
+      could drop either and the suite stays green. `TRUNCATE_ALL` needed no entry, and this was
+      confirmed empirically rather than by reading: `count(*) from ai_edits` is 0 both before and after
+      a full 62-test run that seeds edits in 4 of them.
+      `/test-coverage db --focus` (with `--cov-branch` by hand): `ai_edit_storage.py` 12/12 lines,
+      `ai_edit_model.py` 9/9. **One number that proves less than it looks:** the finder's guard is a
+      ternary (`... if row else None`), and coverage.py instruments `if`/`while` statements, not
+      conditional expressions — so "0/0 branches" means *nothing was measured*, not *both arms ran*.
+      The `None` arm was checked by hand and is exercised by the two cross-document cases, which is the
+      authorization arm. On this stack, guard logic written as a ternary is invisible to `--cov-branch`
+      even when the flag is present.
+      **Tech-template defect, now root-caused:** the focus filter
+      (`.claude/tech/python-fastapi-hex/templates/testing/coverage-commands.md:38`) returned zero files
+      again, because `git diff HEAD --name-only` never lists **untracked** paths — so any green phase
+      that creates new files instead of editing existing ones always yields an empty filter, and an
+      empty filter reports clean. Fix is `git status --porcelain`, or union with
+      `git ls-files --others --exclude-standard`. Third false all-clear from that template.
+      **Left for `/refactor`:** the lazy production imports in both Statements files can collapse to
+      module scope now that the modules exist.
+- [~] green-acceptance
       *(Expect the same wall 1.1 hit: 1.2's acceptance seeds its edit through `POST /ai-edits`, which
       is unmounted and has no usecase. Recorded here at discovery so it is not re-derived when the step
       is reached.)*

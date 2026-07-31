@@ -13,6 +13,7 @@ from model.auth.account_model import AccountModel  # noqa: F401
 from model.auth.verification_code_model import VerificationCodeModel  # noqa: F401
 from model.base import Base
 from model.document.document_model import DocumentModel  # noqa: F401
+from model.document_edit.ai_edit_model import AiEditModel  # noqa: F401
 from model.generation.generation_model import GenerationModel  # noqa: F401
 from session import create_engine
 
