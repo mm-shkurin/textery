@@ -40,9 +40,7 @@ describe('ManualEditor legacy inline-only load (E1.2 back-compat guard)', () => 
     await waitFor(() => {
       // The premortem feared child-lifting would drop the surrounding text; it does not —
       // every run becomes its own paragraph, none lost.
-      expect(contentArea.innerHTML).toBe(
-        '<p>Leading text</p><p>Centered</p><p>Trailing text</p>',
-      )
+      expect(contentArea.innerHTML).toBe('<p>Leading text</p><p>Centered</p><p>Trailing text</p>')
     })
   })
 
@@ -62,8 +60,8 @@ describe('ManualEditor legacy inline-only load (E1.2 back-compat guard)', () => 
 
   it('a combined legacy document loses no text across every retired-mark form', async () => {
     const contentArea = await renderEditorReopeningDocument(
-      'Intro<br>line<div style="text-align:center">Centred</div>'
-        + '<h3>Heading</h3><blockquote>Quoted</blockquote>Outro',
+      'Intro<br>line<div style="text-align:center">Centred</div>' +
+        '<h3>Heading</h3><blockquote>Quoted</blockquote>Outro',
     )
     await waitFor(() => {
       expect(contentArea.querySelector('h3')).not.toBeNull()
@@ -72,8 +70,8 @@ describe('ManualEditor legacy inline-only load (E1.2 back-compat guard)', () => 
     // in order, each retired-mark form lands on its node, and the legacy centered <div>
     // still collapses to a plain <p> (alignment is ADR-defined-lossy, text is not).
     expect(contentArea.innerHTML).toBe(
-      '<p>Intro<br>line</p><p>Centred</p><h3>Heading</h3>'
-        + '<blockquote><p>Quoted</p></blockquote><p>Outro</p>',
+      '<p>Intro<br>line</p><p>Centred</p><h3>Heading</h3>' +
+        '<blockquote><p>Quoted</p></blockquote><p>Outro</p>',
     )
   })
 })

@@ -63,9 +63,7 @@ function stubCreateThenFailingStatus(statusBody: Record<string, unknown>): Fetch
   return fetchMock
 }
 
-export async function driveUntilItGivesUp(
-  statusBody: Record<string, unknown>,
-): Promise<GiveUpRun> {
+export async function driveUntilItGivesUp(statusBody: Record<string, unknown>): Promise<GiveUpRun> {
   const fetchMock = stubCreateThenFailingStatus(statusBody)
   const { result } = renderHook(() => useGeneration())
   const states: string[] = []

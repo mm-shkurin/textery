@@ -60,20 +60,13 @@ export function ManualEditor({
 
   const editor = useManualEditorInstance(noteEditRef)
 
-  const {
-    hasPendingEditRef,
-    isSaving,
-    isRetryPending,
-    saveError,
-    setVersion,
-    noteEdit,
-    save,
-  } = useDocumentSave({
-    documentId,
-    editor,
-    onSaved: () => setHasUnsavedChanges(false),
-    onDirty: () => setHasUnsavedChanges(true),
-  })
+  const { hasPendingEditRef, isSaving, isRetryPending, saveError, setVersion, noteEdit, save } =
+    useDocumentSave({
+      documentId,
+      editor,
+      onSaved: () => setHasUnsavedChanges(false),
+      onDirty: () => setHasUnsavedChanges(true),
+    })
   // Every edit both marks the document dirty / queues a mid-flight re-save (noteEdit) AND resets
   // the autosave debounce so a save fires once typing stops — no explicit Сохранить click needed.
   // The manual button still calls `save` directly and is unaffected.

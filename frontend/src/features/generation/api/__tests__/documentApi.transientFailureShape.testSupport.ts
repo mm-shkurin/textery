@@ -24,7 +24,9 @@ export function saveUnderTest(): Promise<SaveDocumentResult> {
 export async function captureRejection(work: Promise<unknown>): Promise<unknown> {
   return work.then(
     (value) => {
-      throw new Error(`expected saveDocument to reject, but it resolved with ${JSON.stringify(value)}`)
+      throw new Error(
+        `expected saveDocument to reject, but it resolved with ${JSON.stringify(value)}`,
+      )
     },
     (error: unknown) => error,
   )

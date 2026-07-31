@@ -1,10 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  createDocument,
-  getDocument,
-  saveDocument,
-  INVALID_VERSION_MESSAGE,
-} from '../documentApi'
+import { createDocument, getDocument, saveDocument, INVALID_VERSION_MESSAGE } from '../documentApi'
 import { clearSession, saveSession } from '../../../auth/utils/authSession'
 
 // Scenario H9.5 (08_Editor_Extension_Hazard_Tests.md §9.5): a version that is missing or
@@ -38,7 +33,10 @@ function expectFailedClosed(settled: Settled): void {
   expect((error as Error).message).toBe(INVALID_VERSION_MESSAGE)
 }
 
-function okJson(status: number, body: Record<string, unknown>): { ok: true; status: number; json: () => Promise<Record<string, unknown>> } {
+function okJson(
+  status: number,
+  body: Record<string, unknown>,
+): { ok: true; status: number; json: () => Promise<Record<string, unknown>> } {
   return { ok: true, status, json: async () => body }
 }
 
@@ -108,7 +106,14 @@ describe('documentApi version fail-closed (H9.5)', () => {
         status: 409,
         json: async () => ({ error_code: 'VERSION_CONFLICT', message: 'conflict' }),
       })
-      .mockResolvedValueOnce(okJson(200, { document_id: 'doc-1', status: 'draft', content: '<p>theirs</p>', version: 'abc' }))
+      .mockResolvedValueOnce(
+        okJson(200, {
+          document_id: 'doc-1',
+          status: 'draft',
+          content: '<p>theirs</p>',
+          version: 'abc',
+        }),
+      )
     vi.stubGlobal('fetch', fetchMock)
 
     expectFailedClosed(await settle(saveDocument('doc-1', '<p>ours</p>', 1)))

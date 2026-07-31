@@ -10,9 +10,7 @@ import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from './edi
 // handleDOMEvents needs `noteEdit`, and useDocumentSave needs the `editor` that useEditor returns —
 // a cycle in source order only. The ref breaks it: the input handler reads it when an edit happens,
 // which is long after the assignment in the component has run.
-export function useManualEditorInstance(
-  noteEditRef: MutableRefObject<() => void>,
-): Editor | null {
+export function useManualEditorInstance(noteEditRef: MutableRefObject<() => void>): Editor | null {
   return useEditor({
     // Tiptap v3 does not re-render on every editor transaction by default;
     // opt in so toolbar state (e.g. the bold button's aria-pressed) stays

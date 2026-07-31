@@ -36,24 +36,14 @@ describe('ManualEditor list toolbar', () => {
   it('exposes bulleted and numbered list controls that wrap the current block in the correct list node', async () => {
     await renderEditorWithDocumentCreated()
     const bulleted = applyListControl('Маркированный список')
-    expect(bulleted.innerHTML).toBe(
-      `<ul><li><p>grocery item</p></li></ul>${TRAILING_BREAK_P}`,
-    )
-    expect(screen.getByLabelText('Маркированный список')).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    expect(bulleted.innerHTML).toBe(`<ul><li><p>grocery item</p></li></ul>${TRAILING_BREAK_P}`)
+    expect(screen.getByLabelText('Маркированный список')).toHaveAttribute('aria-pressed', 'true')
 
     cleanup()
 
     await renderEditorWithDocumentCreated()
     const numbered = applyListControl('Нумерованный список')
-    expect(numbered.innerHTML).toBe(
-      `<ol><li><p>grocery item</p></li></ol>${TRAILING_BREAK_P}`,
-    )
-    expect(screen.getByLabelText('Нумерованный список')).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    expect(numbered.innerHTML).toBe(`<ol><li><p>grocery item</p></li></ol>${TRAILING_BREAK_P}`)
+    expect(screen.getByLabelText('Нумерованный список')).toHaveAttribute('aria-pressed', 'true')
   })
 })

@@ -53,8 +53,9 @@ describe('ManualEditor block-schema round-trip', () => {
     // Let setContent apply the loaded document before saving.
     await screen.findByTestId('editor-content-area')
     await waitFor(() => {
-      expect(screen.getByTestId('editor-content-area').querySelectorAll('p, h1, h2, h3').length)
-        .toBeGreaterThan(0)
+      expect(
+        screen.getByTestId('editor-content-area').querySelectorAll('p, h1, h2, h3').length,
+      ).toBeGreaterThan(0)
     })
 
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))

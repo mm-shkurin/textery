@@ -32,13 +32,6 @@ import { check, countCase, reportAndExit } from './selftestRunner.mjs'
 const NOTES_WITHOUT_POINTER = join(mkdtempSync(join(tmpdir(), 'nginx-503-notes-')), 'architecture.md')
 writeFileSync(NOTES_WITHOUT_POINTER, '# Architecture\n\n## Deploy notes\n\n- nothing about 503 here\n')
 
-// A backend tree holding one source file, for the origin-scan cases.
-function backendFixture(name, contents) {
-  const dir = mkdtempSync(join(tmpdir(), 'nginx-503-backend-'))
-  writeFileSync(join(dir, name), contents)
-  return dir
-}
-
 // A conf that proxies to the origin and can answer nothing itself: the only shape that may pass.
 expectVerdict({ what: 'a clean conf passes', confs: { 'frontend.conf': CLEAN_CONF }, code: 0 })
 

@@ -4,10 +4,7 @@ import {
   ORIGIN_PROVIDER_UNAVAILABLE_BODY,
 } from '../../../../shared/api/__tests__/originErrorBodies'
 import { resetOriginStubs, seedSession } from '../../../../shared/api/__tests__/originStubs'
-import {
-  driveUntilItGivesUp,
-  expectGaveUpWith,
-} from './useGeneration.pollServerError.testSupport'
+import { driveUntilItGivesUp, expectGaveUpWith } from './useGeneration.pollServerError.testSupport'
 
 // The POLL half of the H9.4 `send` carve-out. `useGeneration.serverError.test.ts` drives the real
 // chain only through `submit` — the `:140` catch — so the give-up catch at `useGeneration.ts:101`,
@@ -38,7 +35,10 @@ describe('useGeneration — a poll that gives up on a 5xx says which status it g
   // sentence. This case previously stubbed the same code with a hand-rolled Russian message, which
   // is precisely how the English stayed invisible to the suite.
   it("does not show the catch-all 500's English text when the poll gives up", async () => {
-    expectGaveUpWith(await driveUntilItGivesUp(ORIGIN_INTERNAL_ERROR_BODY), 'Ошибка сети (HTTP 500)')
+    expectGaveUpWith(
+      await driveUntilItGivesUp(ORIGIN_INTERNAL_ERROR_BODY),
+      'Ошибка сети (HTTP 500)',
+    )
   })
 
   // An EXPLAINED 5xx keeps its text: the carve-out is keyed on the catch-all code, not the status.

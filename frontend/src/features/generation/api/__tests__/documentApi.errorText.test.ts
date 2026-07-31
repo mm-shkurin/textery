@@ -18,10 +18,7 @@ describe('documentApi error text', () => {
   })
 
   function stubRefusal(status: number, body: unknown): void {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ ok: false, status, json: async () => body }),
-    )
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status, json: async () => body }))
   }
 
   // Deliberately 500, not 409: 409 is no longer a refusal to report but a protocol step the

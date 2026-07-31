@@ -34,9 +34,12 @@ describe('ExportControl save-first on dirty export', () => {
     // settle; the save is a manually-resolvable deferred so we control the ordering window.
     vi.mocked(documentApi.exportDocument).mockReturnValue(new Promise(() => {}))
     let resolveSave: () => void = () => {}
-    const save = vi.fn(() => new Promise<void>((resolve) => {
-      resolveSave = resolve
-    }))
+    const save = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSave = resolve
+        }),
+    )
 
     render(<ExportControl documentId="doc-1" hasUnsavedChanges save={save} />)
     triggerExport()
@@ -47,9 +50,7 @@ describe('ExportControl save-first on dirty export', () => {
 
     // Falling edge: once the save resolves, the export dispatches with the same id + format.
     resolveSave()
-    await waitFor(() =>
-      expect(documentApi.exportDocument).toHaveBeenCalledTimes(1),
-    )
+    await waitFor(() => expect(documentApi.exportDocument).toHaveBeenCalledTimes(1))
     expect(documentApi.exportDocument).toHaveBeenNthCalledWith(1, 'doc-1', 'pdf')
   })
 
@@ -76,9 +77,12 @@ describe('ExportControl save-first on dirty export', () => {
   it('skips the export and shows no generic export banner when the save rejects on a dirty export', async () => {
     vi.mocked(documentApi.exportDocument).mockReturnValue(new Promise(() => {}))
     let rejectSave: (reason?: unknown) => void = () => {}
-    const save = vi.fn(() => new Promise<void>((_, reject) => {
-      rejectSave = reject
-    }))
+    const save = vi.fn(
+      () =>
+        new Promise<void>((_, reject) => {
+          rejectSave = reject
+        }),
+    )
 
     render(<ExportControl documentId="doc-1" hasUnsavedChanges save={save} />)
     triggerExport()

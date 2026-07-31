@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { describeFailure } from '../send'
-import {
-  ORIGIN_INTERNAL_ERROR_BODY,
-  ORIGIN_PROVIDER_UNAVAILABLE_BODY,
-} from './originErrorBodies'
+import { ORIGIN_INTERNAL_ERROR_BODY, ORIGIN_PROVIDER_UNAVAILABLE_BODY } from './originErrorBodies'
 
 // H9.4. `describeFailure` renders `body.detail ?? body.message` verbatim, and the origin's
 // catch-all 500 body is measured, real, and ENGLISH: "An unexpected error occurred. Please try
@@ -37,15 +34,18 @@ describe('describeFailure — the origin catch-all 500 must not put English on a
   // text is addressed to the user; nothing about this scenario changes it.
   it('leaves 4xx text alone even when it carries the catch-all code', () => {
     expect(
-      describeFailure({ status: 400, body: { error_code: 'INTERNAL_ERROR', detail: 'Тема пуста' } }, FALLBACK),
+      describeFailure(
+        { status: 400, body: { error_code: 'INTERNAL_ERROR', detail: 'Тема пуста' } },
+        FALLBACK,
+      ),
     ).toBe('Тема пуста')
   })
 
   // A 500 with no code at all is not the catch-all shape and keeps its text — the branch must read
   // `error_code`, not "any 500 with a message".
   it('still renders the server text for a codeless 500', () => {
-    expect(describeFailure({ status: 500, body: { message: 'Хранилище недоступно' } }, FALLBACK)).toBe(
-      'Хранилище недоступно',
-    )
+    expect(
+      describeFailure({ status: 500, body: { message: 'Хранилище недоступно' } }, FALLBACK),
+    ).toBe('Хранилище недоступно')
   })
 })

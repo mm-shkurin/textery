@@ -22,7 +22,7 @@ const CONVERTED_HTML = '<h1>Доклад</h1><h2>Введение</h2><p>Пер�
 function renderGeneratedEditor() {
   return render(
     <ManualEditor
-      documentType="доклад"
+      documentType="doklad"
       documentTypeLabel="Доклад"
       onBack={() => {}}
       generationId={GENERATION_ID}
