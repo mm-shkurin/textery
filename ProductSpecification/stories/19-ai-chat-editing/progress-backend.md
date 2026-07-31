@@ -383,22 +383,44 @@ within their file, not across the story.
       field gate applies to the schema too, and 3.1 adds `status`, `created_at`, `last_seq` and the
       terminal fields when a Statements line first reads them. An additive migration later is cheaper
       than a schema written against a spec no test has exercised.
-- [ ] red-adapter db — `find_scope_by_id_and_document` against the real Postgres schema. Three cases,
-      each held down by the one that can move without it (the `test_document_scope_storage.py`
-      precedent at the sibling port): a positive control (seed an edit, read the scope back through the
-      real query); an edit seeded under **another document of the same owner**, which an `id`-only
-      predicate would wrongly return; and an **absent edit id asked under a document that does have
-      edits**, which a `document_id`-only predicate — or a finder that echoes its arguments back as a
-      scope — would wrongly return. Pin the projection to the literal `["id", "document_id"]` through
-      `statements/sql_recorder.py` (it listens on the **sync** engine — a listener on the `AsyncEngine`
-      never fires, and zero recorded statements reads as a clean pass). Two guards the premortem named
-      that belong here rather than at the usecase layer: the real adapter will satisfy
-      `AiEditRepository` **structurally**, not by inheritance — as `SqlAlchemyDocumentStorage` does — so
-      the `raise NotImplementedError` body can never fire for it and only mypy sees a gap; and nothing
-      yet asserts `edit_id`/`document_id` are `KEYWORD_ONLY` on the port, so dropping the `*` leaves all
-      168 usecase tests green while a positional adapter binds the pair the other way round and returns
-      `None` for every owner's own edit.
-- [ ] green-adapter db — the `ai_edits` table (migration), the model, and a column projection
+- [x] red-adapter db — 6 tests across two classes, both skipped at class level; all 6 fail with
+      `ModuleNotFoundError` — `model.document_edit.ai_edit_model` for the four query tests,
+      `access.document_edit.ai_edit_storage` for the two shape guards. Predicted type, both messages
+      and the 6-failed/0-passed count matched. **One prediction loop worth carrying:** the first
+      prediction named the parent package `access.document_edit`, but the actual named the full dotted
+      path — `adapters/db/tests` is on `pythonpath`, so the new *test* directory merges into the same
+      implicit namespace package as the production `access/` tree. Harmless today (already true of
+      `access/document` and `access/auth`), but a test-side module can shadow a production one by name.
+      `/test-review` found three strictness holes, each an instance of a weakness this family keeps
+      producing. (1) `sql_recorder.selected_columns()` stripped the table qualifier, so
+      `SELECT documents.id, documents.document_id FROM documents JOIN ai_edits …` — the two column
+      names read off the **wrong table** — satisfied an assertion whose entire claim is that the finder
+      read only its own columns; a new `qualified_selected_columns()` pins the literal
+      `["ai_edits.document_id", "ai_edits.id"]`, and `selected_columns()` delegates so 1.1's suite is
+      untouched. (2) The recorder guard was `assert self._recorded_sql.statements` — truthiness where
+      the count is deterministic, so a finder emitting a full-entity read **plus** a projection passed
+      it; now `len(...) == 1`, covering the zero case (listener never fired, which reads as a clean
+      pass) and the >1 case in one message. (3) The keyword-only check inspected `edit_id`/`document_id`
+      by name and ignored the rest of the signature — the 1.1 `dataclasses.fields()` lesson applied to
+      a signature, since an adapter growing a third positional same-typed UUID passed the very guard
+      built to stop transposition; the whole signature is now a hand-written positional literal.
+      Structural: `find_scope_watching_what_it_reads` returns a `WatchedScopeRead(scope, recorded)`
+      instead of stashing the recording on the instance, which had made the projection assertion
+      silently dependent on a different method having run first — and the likeliest way to trip it
+      reported "no SQL captured", misdiagnosing wiring as an adapter defect. The two static shape
+      guards moved to their own session-free `ai_edit_port_shape_statements.py`.
+      db suite 56 passed, 6 skipped; 1.1's document-scope projection test, the consumer of the
+      refactored recorder, still passes.
+      **Binding on green:** the qualified literal pins the table name `ai_edits`, which the ADR states
+      and no migration yet establishes — a differently-named table fails on the name, which is correct
+      but is now a pinned decision rather than an incidental one. `TRUNCATE_ALL` needs no change: the
+      FK to `documents` means `TRUNCATE … CASCADE` reaches it.
+      **Two seams recorded in code, not hidden:** `given_a_queued_edit` seeds through the model, one
+      layer below the port (`QueueAiEdit` is 3.1's — convert to the real write→read flow then); and
+      production symbols are resolved lazily inside helpers so the six failures land in the call phase
+      rather than as fixture setup errors. Both carry a "collapse at GREEN" note.
+      **Left for `/refactor`:** duplication with `document_storage_statements`.
+- [~] green-adapter db — the `ai_edits` table (migration), the model, and a column projection
       `select(AiEditModel.id, AiEditModel.document_id)` with **both** `id` and `document_id` in the
       WHERE — not `select(AiEditModel)` sliced afterwards, so the recorder's assertion holds at the SQL
       rather than at the DTO.

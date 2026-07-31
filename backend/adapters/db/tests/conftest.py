@@ -170,6 +170,21 @@ def document_storage_statements(db_session: AsyncSession):
 
 
 @pytest.fixture
+def ai_edit_storage_statements(db_session: AsyncSession):
+    from statements.ai_edit_storage_statements import AiEditStorageStatements
+
+    return AiEditStorageStatements(db_session)
+
+
+@pytest.fixture
+def ai_edit_port_shape_statements():
+    """No `db_session`: these guards read a signature and an MRO, never a row."""
+    from statements.ai_edit_port_shape_statements import AiEditPortShapeStatements
+
+    return AiEditPortShapeStatements()
+
+
+@pytest.fixture
 def history_paging_statements(db_session: AsyncSession):
     from statements.history_paging_statements import HistoryPagingStatements
 

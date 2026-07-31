@@ -54,6 +54,21 @@ class RecordedSql:
         `id`) so the expectation can be written as the field list it is pinning, but `*`
         normalises to `*` -- a `SELECT *` therefore fails the equality rather than
         slipping past a substring check.
+
+        Prefer `qualified_selected_columns` for a new assertion. Dropping the qualifier
+        discards the only evidence of *which* table was read, so a projection of two
+        same-named columns off a joined or wrong table satisfies the equality. This
+        bare form is kept for the document-scope suite, which pins it already.
+        """
+        return [expression.split(".")[-1] for expression in self.qualified_selected_columns()]
+
+    def qualified_selected_columns(self) -> list[str]:
+        """The projection with its table qualifier intact (`ai_edits.id`).
+
+        Only the SQLAlchemy label is normalised away (`ai_edits.id AS ai_edits_id` ->
+        `ai_edits.id`); the qualifier stays because it is the assertion's only witness
+        that the columns came off the table under test. `*` normalises to `*`, so a
+        `SELECT *` fails the equality rather than slipping past a substring check.
         """
         statement = self.the_only_statement()
         head = statement.upper()
@@ -71,8 +86,7 @@ class RecordedSql:
             # `col AS label` -> `col`; the label is SQLAlchemy's, not the schema's.
             without_label = expression.upper().split(" AS ", 1)[0]
             expression = expression[: len(without_label)].strip()
-            # `documents.id` -> `id`; the qualifier is the table under test either way.
-            columns.append(expression.split(".")[-1].strip('"').lower())
+            columns.append(expression.replace('"', "").lower())
         return columns
 
 
