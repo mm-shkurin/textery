@@ -230,13 +230,31 @@ within their file, not across the story.
       **Carry:** 1.1's `test_document_scope_guard_acceptance.py:28,31` has the same given/when
       mislabel this review fixed in 1.2 (a `given_` method performing the docstring's When) — left
       alone as prior-commit work; fix it when 1.1 is next touched. `acceptance/conftest.py` is 234
-      lines, over the 200-line limit, pre-existing.
+      lines, over the 200-line limit, pre-existing. *(conftest split and the 1.1 given/when fix landed
+      in the follow-up refactor commit `300c11c8`; the conftest note is resolved.)*
       **Local-only environment change, not committed:** `infra/.env` `POSTGRES_DB` was moved
       `textery → textery_s19` to get the backend to boot — the default `textery` database is migrated
       past this branch (`Can't locate revision 'b4c5d6e7f8a9'`, the same breakage line 88 recorded for
       db-layer runs, now blocking the application too). `infra/.env` is gitignored, so this does not
       travel with the commit; a fresh checkout on this host will hit the boot failure again.
-- [ ] design
+- [x] design — Option A chosen, ADR at `decisions/edit-scope-guard-decision.md`. A second shared
+      helper `resolve_owned_edit` over a bounded `AiEditRepository.find_scope_by_id_and_document`,
+      layered on 1.1's `resolve_owned_document` and importing its `REFUSAL_MESSAGE` constant so the
+      two refusals cannot drift. Rejected: a joined composite port method (ownership policy into
+      adapter SQL, guard stops being the usecase's first statement) and inline-per-usecase (three
+      authors, three chances to validate before resolving). Hazard scan covered all 8 `_index.md`
+      groups plus one synthesis pass over 11 flagged seams; 20 GAPs, 15 owned by already-specified
+      scenarios, 5 folded into the design as forced guards: (1) the AI-edit port is called **zero**
+      times when the document is unresolvable (spied — otherwise the edit lookup is itself an
+      unauthorized read and nothing goes red); (2) a raising/timing-out repository propagates and is
+      never rendered as the canonical 404 (a later broad `except` would map a DB outage onto
+      "document not found" and 1.2's own byte-identity assertion would pass); (3) `AiEditScope`
+      pinned by field name `["id", "document_id"]`; (4) the step-2 refusal asserted against the
+      imported literal, carrying no edit or document id; (5) step 2 emits its own log record with a
+      cause discriminator distinct from step 1, carrying only the caller's own ids — client-
+      indistinguishable, server-attributable. The two-read skew window was dismissed on evidence:
+      the codebase has no document delete and no owner transfer, so ownership cannot change between
+      the steps; the ADR names this helper as the place the cross-check goes if either ever lands.
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
