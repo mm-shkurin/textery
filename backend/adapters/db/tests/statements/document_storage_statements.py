@@ -8,7 +8,7 @@ from access.document.document_storage import SqlAlchemyDocumentStorage
 from auth.account import Account
 from document.document import Document
 from document.document_scope import DocumentScope
-from statements.sql_recorder import RecordedSql, recording_sql
+from statements.sql_recorder import WatchedRead, recording_sql
 
 # The columns the scope read is allowed to select, written out as the spec rather than
 # read off `DocumentScope`: a list derived from the DTO widens itself the day the DTO
@@ -26,10 +26,6 @@ class DocumentStorageStatements:
         self._session = session
         self._storage = SqlAlchemyDocumentStorage(session)
         self._accounts = SqlAlchemyAccountRepository(session)
-        # Starts empty rather than None: a compound assertion reached without the
-        # watching action then fails on "got 0 statements", which is what happened,
-        # instead of on a hidden-state guard the reader has to decode.
-        self._recorded_sql = RecordedSql()
 
     async def given_an_account(self) -> UUID:
         # documents.owner_id is a real FK, so a document needs a real account row.
@@ -74,11 +70,12 @@ class DocumentStorageStatements:
 
     async def find_scope_watching_what_it_reads(
         self, document_id: UUID, owner_id: UUID
-    ) -> DocumentScope | None:
+    ) -> WatchedRead[DocumentScope]:
         """Run the bounded finder while watching which columns it touches.
 
         A separate action from the plain finder, and opt-in: only the test that
-        asks what was read pays for the listener.
+        asks what was read pays for the listener. The recorder comes back beside
+        the answer rather than on a field of this class -- see `WatchedRead`.
 
         Why watch at all -- the whole reason this method exists next to
         `find_by_id_and_owner` is that it must not materialise `content`, and the
@@ -87,8 +84,7 @@ class DocumentStorageStatements:
         """
         with recording_sql(self._session) as recorded:
             scope = await self._storage.find_scope_by_id_and_owner(document_id, owner_id)
-        self._recorded_sql = recorded
-        return scope
+        return WatchedRead(scope, recorded)
 
     def assert_scope_matches(self, actual: DocumentScope | None, expected: Document) -> None:
         assert actual is not None, (
@@ -119,7 +115,7 @@ class DocumentStorageStatements:
         )
 
     def assert_the_scope_was_resolved_without_reading_content(
-        self, actual: DocumentScope | None, expected: Document
+        self, read: WatchedRead[DocumentScope], expected: Document
     ) -> None:
         """Both halves, or neither is worth anything.
 
@@ -134,13 +130,13 @@ class DocumentStorageStatements:
         parsed projection to the pinned column list settles both: `*` is not
         `["id", "owner_id"]`, and neither is a nine-column full-entity read.
         """
-        self.assert_scope_matches(actual, expected)
-        selected = sorted(self._recorded_sql.selected_columns())
+        self.assert_scope_matches(read.answer, expected)
+        selected = sorted(read.recorded.selected_columns())
         assert selected == SCOPE_COLUMNS, (
             f"the scope read must select exactly {SCOPE_COLUMNS}, but selected {selected}. "
             "It answers a yes/no question and runs on every request to all seven AI-edit "
             "endpoints; reading up to 200 000 code points of `content` to answer it is the "
-            f"option the ADR rejects. Statement: {self._recorded_sql.the_only_statement()}"
+            f"option the ADR rejects. Statement: {read.recorded.the_only_statement()}"
         )
 
     async def find_by_idempotency_key(self, owner_id: UUID, key: str) -> Document | None:

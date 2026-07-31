@@ -14,6 +14,7 @@ unrelated `content_hash`, a `WHERE` mention, or a table called `document_content
 
 from collections.abc import Iterator
 from contextlib import contextmanager
+from typing import NamedTuple
 
 from sqlalchemy import event
 
@@ -88,6 +89,23 @@ class RecordedSql:
             expression = expression[: len(without_label)].strip()
             columns.append(expression.replace('"', "").lower())
         return columns
+
+
+class WatchedRead[T](NamedTuple):
+    """What a watching action observed: the answer, and the SQL that produced it.
+
+    Returned by the action rather than stashed on the Statements instance. A hidden
+    field makes the projection assertion silently ordering-dependent on a *different*
+    method having run first, and the most likely way to trip that -- calling the plain
+    finder and then the compound assertion -- surfaces as "the recorder captured no
+    SQL", misdiagnosing a wiring mistake as an adapter defect.
+
+    Generic in the answer so it can live beside the recorder rather than once per
+    Statements class: the pairing is the recorder's own concern, the DTO is not.
+    """
+
+    answer: T | None
+    recorded: RecordedSql
 
 
 @contextmanager

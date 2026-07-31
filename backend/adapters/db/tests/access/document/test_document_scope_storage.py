@@ -61,10 +61,10 @@ class TestFindScopeByIdAndOwner:
         owner_id = await document_storage_statements.given_an_account()
         document = await document_storage_statements.given_a_saved_document(owner_id)
 
-        scope = await document_storage_statements.find_scope_watching_what_it_reads(
+        read = await document_storage_statements.find_scope_watching_what_it_reads(
             document.id, owner_id
         )
 
         document_storage_statements.assert_the_scope_was_resolved_without_reading_content(
-            scope, document
+            read, document
         )

@@ -18,14 +18,13 @@ The adapter's static shape guards (keyword-only ids, structural conformance) liv
 in `ai_edit_port_shape_statements`: they touch no session and no row.
 """
 
-from typing import NamedTuple
 from uuid import UUID, uuid4
 
 from document_edit.ai_edit_scope import AiEditScope
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from statements.document_storage_statements import DocumentStorageStatements
-from statements.sql_recorder import RecordedSql, recording_sql
+from statements.sql_recorder import WatchedRead, recording_sql
 
 # The projection the ADR pins, written out as the spec rather than derived from
 # `dataclasses.fields(AiEditScope)`: a list read off the DTO widens the day the DTO
@@ -37,27 +36,11 @@ from statements.sql_recorder import RecordedSql, recording_sql
 # `document_edit_scope_statements` carries the unqualified twin on the usecase side.
 AI_EDIT_SCOPE_COLUMNS = ["ai_edits.document_id", "ai_edits.id"]
 
-FINDER_NAME = "find_scope_by_id_and_document"
-
 
 def _ai_edit_model():
     from model.document_edit.ai_edit_model import AiEditModel
 
     return AiEditModel
-
-
-class WatchedScopeRead(NamedTuple):
-    """What the watching action observed: the answer, and the SQL that produced it.
-
-    Returned rather than stashed on the Statements instance. A hidden field makes
-    the projection assertion silently ordering-dependent on a *different* method
-    having run first, and the most likely way to trip it -- calling the plain
-    `find_scope` and then the compound assertion -- would surface as "the recorder
-    captured no SQL", misdiagnosing a wiring mistake as an adapter defect.
-    """
-
-    scope: AiEditScope | None
-    recorded: RecordedSql
 
 
 class AiEditStorageStatements:
@@ -115,10 +98,10 @@ class AiEditStorageStatements:
 
     async def find_scope_watching_what_it_reads(
         self, edit_id: UUID, document_id: UUID
-    ) -> WatchedScopeRead:
+    ) -> WatchedRead[AiEditScope]:
         with recording_sql(self._session) as recorded:
             scope = await self.find_scope(edit_id, document_id)
-        return WatchedScopeRead(scope, recorded)
+        return WatchedRead(scope, recorded)
 
     def assert_scope_matches(self, actual: AiEditScope | None, edit_id: UUID, document_id: UUID):
         assert actual is not None, (
@@ -149,7 +132,7 @@ class AiEditStorageStatements:
         )
 
     def assert_the_scope_was_resolved_reading_only_its_own_columns(
-        self, read: WatchedScopeRead, edit_id: UUID, document_id: UUID
+        self, read: WatchedRead[AiEditScope], edit_id: UUID, document_id: UUID
     ) -> None:
         """Identity and projection together, or neither is worth anything.
 
@@ -164,7 +147,7 @@ class AiEditStorageStatements:
         more is the full-entity read *plus* a projection, which is the shape this
         assertion exists to reject and must fail here by name, not further down.
         """
-        self.assert_scope_matches(read.scope, edit_id, document_id)
+        self.assert_scope_matches(read.answer, edit_id, document_id)
         assert len(read.recorded.statements) == 1, (
             f"the scope read must emit exactly one statement, got "
             f"{len(read.recorded.statements)}: {read.recorded.statements}. Zero means the "

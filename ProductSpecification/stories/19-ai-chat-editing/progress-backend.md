@@ -71,6 +71,11 @@ within their file, not across the story.
       **Known duplication:** `test_document_storage_cas_shape.py` and
       `test_generation_storage_cas_shape.py` each hand-roll the same recorder — fold both onto
       `recording_sql` once this is green (they'd also gain the strict projection parsing).
+      *(Stale as of 2026-07-31: both already import `recording_sql` and share
+      `statements/cas_shape_statements.py`; `grep before_cursor_execute` across `backend/` returns only
+      `sql_recorder.py`, so one recorder implementation exists. The fold happened at that green step and
+      the note was never updated — do not pick it up as open work. The "strict projection parsing" half
+      never applied: those two use `starting_with()` for statement-verb counting, a different guard.)*
 - [x] green-adapter db — `find_scope_by_id_and_owner` is `select(DocumentModel.id, DocumentModel.owner_id)`,
       a **column projection** rather than `select(DocumentModel)` sliced afterwards, with both `id` and
       `owner_id` in the WHERE — so the recorder's `["id", "owner_id"]` assertion holds at the SQL, not at
