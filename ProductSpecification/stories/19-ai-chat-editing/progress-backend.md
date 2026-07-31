@@ -255,8 +255,47 @@ within their file, not across the story.
       indistinguishable, server-attributable. The two-read skew window was dismissed on evidence:
       the codebase has no document delete and no owner transfer, so ownership cannot change between
       the steps; the ADR names this helper as the place the cross-check goes if either ever lands.
-- [ ] red-usecase
-- [ ] green-usecase
+- [x] red-usecase — 5 tests on `resolve_owned_edit`, one class, skipped at class level; all 5 fail
+      (3 × `NotImplementedError` from the stub, 2 × `AssertionError` naming the outage that was
+      expected to propagate). Predicted type, message and the 5-failed/0-passed count matched exactly.
+      Beyond the scenario's own case (a real edit under document A is not found under document B of
+      the same owner), each of the design's five forced guards is one test: the edit store is asked
+      **zero** times when the document cannot be resolved; a raising store propagates unchanged
+      instead of rendering the canonical 404; the projection is pinned to the literal
+      `["id", "document_id"]`; the refusal is pinned to the literal `"document not found"` and carries
+      no ids; the two refusals are distinguishable server-side.
+      `/test-review` found both of this family's recurring weaknesses again. The distinctness check
+      was `assert EDIT_SCOPE_REFUSAL_CAUSE != DOCUMENT_SCOPE_REFUSAL_CAUSE` — two constants declared
+      73 lines above in the same file, so it asserted the author typed two different strings and no
+      implementation could fail it; both operands are now read off the emitted records, which catches
+      a guard that stamps one shared cause. The step-1 record assertion was cause + two `not in`
+      substring checks with **no positive anchor**, so a record whose whole message was
+      `"document-scope-refused"` passed it. More generally every log assertion was `in`/`not in`
+      against an unconstrained message, so an id the guard must never record could ride along in text
+      while every check for the *enumerated* ids passed: the record contract is now one id-free
+      message literal compared with `==`, and all variance in structured `extra=` fields asserted as
+      a **whole mapping** over `("caller_id", "document_id", "edit_id")` with a sentinel for
+      must-be-absent — absence and presence now fail the same assertion. Forced guard (1) was proven
+      only on the refusal path; the document-store outage test now asserts it too, paired with a
+      positive control so the emptiness check cannot pass on an unwired spy. Both fakes are now bound
+      to their ports — the review-pass follow-up recorded at line 96 for `FakeDocumentRepository`,
+      applied here at birth rather than inherited. Verified by driving the Statements directly
+      against a reference implementation plus 12 mutants — all 12 caught; under the old assertions 5
+      of them passed.
+      **Binding on green:** logger `document_edit.resolve_owned_edit`, INFO, exactly one record per
+      refusal, causes `"document-scope-refused"` (step 1) and `"edit-scope-refused"` (step 2). Step
+      1's record carries **no** ids — the document id failed to resolve; step 2's carries the path
+      document id (proven the caller's) and **not** the edit id, which is the premortem's incident:
+      a harvested foreign edit id passes step 1 and would otherwise land in the log. Since 1.1's
+      helper emits nothing, step 1's record is emitted by `resolve_owned_edit` catching and
+      re-raising — `resolve_owned_document` stays untouched.
+      **Known duplication for `/refactor`:** the canonical-refusal and bounded-projection assertions
+      are near-duplicates of `document_scope_guard_statements.py:105-122`, with a second
+      `REFUSAL_MESSAGE` and a second `SCOPE_FIELD_NAMES` literal that can drift from 1.1's.
+      **House rule bent, deliberately:** the seeded edit goes straight onto the fake — story 19 has
+      no queue usecase yet (§3 lands after this guard). `FakeAiEditRepository` records that this
+      collapses into a `QueueAiEdit` call once it exists.
+- [~] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
 

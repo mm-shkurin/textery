@@ -1,5 +1,8 @@
 import pytest
 
+from statements.ai_edit_refusal_log_statements import AiEditRefusalLogStatements
+from statements.ai_edit_scope_guard_statements import AiEditScopeGuardStatements
+from statements.ai_edit_store_failure_statements import AiEditStoreFailureStatements
 from statements.document_scope_guard_statements import DocumentScopeGuardStatements
 from statements.generation_lifecycle_statements import GenerationLifecycleStatements
 from statements.generation_statements import GenerationStatements
@@ -29,6 +32,23 @@ from statements.verify_account_statements import VerifyAccountStatements
 @pytest.fixture
 def document_scope_guard_statements():
     return DocumentScopeGuardStatements()
+
+
+@pytest.fixture
+def ai_edit_scope_guard_statements():
+    return AiEditScopeGuardStatements()
+
+
+@pytest.fixture
+def ai_edit_store_failure_statements():
+    return AiEditStoreFailureStatements()
+
+
+@pytest.fixture
+def ai_edit_refusal_log_statements():
+    statements = AiEditRefusalLogStatements()
+    yield statements
+    statements.stop_collecting()
 
 
 @pytest.fixture
