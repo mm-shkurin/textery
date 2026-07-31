@@ -1,12 +1,9 @@
 import logging
 from uuid import UUID
 
-from statements.ai_edit_guard_base import (
-    ABSENT_DOCUMENT_ID,
-    CALLER_ID,
-    AiEditGuardBase,
-)
+from statements.ai_edit_guard_base import AiEditGuardBase
 from statements.arranged import arranged
+from statements.document_guard_contract import ABSENT_DOCUMENT_ID, CALLER_ID
 
 # The logger the guard emits under. Pinned as a literal so the record cannot be
 # moved to a logger nobody collects and stay green.

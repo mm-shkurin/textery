@@ -1,35 +1,33 @@
-from datetime import UTC, datetime
 from uuid import UUID
 
 from document_edit.ai_edit_scope import AiEditScope
 from document_edit.resolve_owned_edit import resolve_owned_edit
 
 from document.create_document import CreateDocument
+from document.document_repository import DocumentRepository
 from fake.document_edit.fake_ai_edit_repository import FakeAiEditRepository
 from shared.exceptions import NotFoundException
 from statements.arranged import arranged
 from statements.document_fakes import FakeClock, FakeDocumentRepository
+from statements.document_guard_contract import (
+    CALLER_ID,
+    EPOCH,
+    OTHER_ACCOUNT_ID,
+    captured,
+)
 
-_EPOCH = datetime(2026, 7, 29, 12, 0, tzinfo=UTC)
-
-CALLER_ID = UUID("00000000-0000-0000-0000-000000000001")
-OTHER_ACCOUNT_ID = UUID("00000000-0000-0000-0000-000000000002")
-ABSENT_DOCUMENT_ID = UUID("00000000-0000-0000-0000-000000000099")
 QUEUED_EDIT_ID = UUID("00000000-0000-0000-0000-0000000000e1")
-
-# The one canonical refusal body, written as a literal rather than imported from
-# `resolve_owned_document`: the test is the specification, so importing the
-# constant would make any future edit to it self-approving -- a rename of the
-# text would keep both 1.1 and 1.2 green while the acceptance suite's
-# byte-identity contract with the client silently changed.
-REFUSAL_MESSAGE = "document not found"
 
 # The bounded projection, pinned by literal name list rather than derived from
 # `dataclasses.fields(AiEditScope)`: a guard derived from the thing it guards
 # widens the moment the thing widens. An `instruction` or `diff` field added
 # later would still satisfy dataclass equality, and the promise that the guard
 # path never materialises edit content would die without a single red test.
-SCOPE_FIELD_NAMES = ["id", "document_id"]
+#
+# Qualified by scope name: 1.1 pins a list under the same bare `SCOPE_FIELD_NAMES`
+# with deliberately *different* values, and two same-named constants that must
+# stay different is the drift trap the qualified names close.
+AI_EDIT_SCOPE_FIELD_NAMES = ["id", "document_id"]
 
 
 class AiEditGuardBase:
@@ -43,7 +41,7 @@ class AiEditGuardBase:
     def __init__(self) -> None:
         self.document_repository = FakeDocumentRepository()
         self.ai_edit_repository = FakeAiEditRepository()
-        self._create_document = CreateDocument(self.document_repository, FakeClock(_EPOCH))
+        self._create_document = CreateDocument(self.document_repository, FakeClock(EPOCH))
         self._first_document_id: UUID | None = None
         self._second_document_id: UUID | None = None
         self._foreign_document_id: UUID | None = None
@@ -79,21 +77,45 @@ class AiEditGuardBase:
     def foreign_document_id(self) -> UUID:
         return arranged(self._foreign_document_id, "foreign_document_id")
 
-    async def resolve(self, document_id: UUID, edit_id: UUID = QUEUED_EDIT_ID) -> AiEditScope:
+    async def resolve(self, document_id: UUID) -> AiEditScope:
+        return await self.resolve_via(self.document_repository, document_id)
+
+    async def resolve_via(
+        self, document_repository: DocumentRepository, document_id: UUID
+    ) -> AiEditScope:
+        """The one place the guard's argument order is written down.
+
+        The outage statements used to rebuild this call themselves in order to
+        swap in a failing document repository, which pinned the order of five
+        arguments -- three of them same-typed UUIDs -- in two files at once.
+        Taking the repository as the parameter that actually varies leaves one
+        call site for the resolver in the whole test suite.
+        """
         return await resolve_owned_edit(
-            self.document_repository,
+            document_repository,
             self.ai_edit_repository,
-            document_id,
-            edit_id,
-            CALLER_ID,
+            document_id=document_id,
+            edit_id=QUEUED_EDIT_ID,
+            owner_id=CALLER_ID,
         )
 
-    async def refusal_of(self, document_id: UUID, edit_id: UUID = QUEUED_EDIT_ID) -> Exception:
-        try:
-            await self.resolve(document_id, edit_id)
-        except NotFoundException as refusal:
-            return refusal
-        raise AssertionError(
-            f"expected NotFoundException for edit {edit_id} under document {document_id}, "
-            f"but the guard returned"
+    def assert_edit_lookups(self, expected: list[tuple[UUID, UUID]], why: str) -> None:
+        """The edit store's call log, compared whole.
+
+        Both subclasses assert on this same spy from four methods, and every one
+        of them had its own copy of the comparison. Comparing the whole list --
+        rather than a count, or "the edit was not returned" -- is what makes the
+        ordering guard real: a guard that looked the edit up first and only then
+        checked the document would refuse identically and satisfy every other
+        assertion in this package, while having already performed an
+        unauthorized read. `why` carries each caller's stake into the failure.
+        """
+        lookups = self.ai_edit_repository.lookups
+        assert lookups == expected, f"expected edit lookups {expected}, got {lookups} -- {why}"
+
+    async def refusal_of(self, document_id: UUID) -> NotFoundException:
+        return await captured(
+            self.resolve(document_id),
+            NotFoundException,
+            f"NotFoundException for edit {QUEUED_EDIT_ID} under document {document_id}",
         )

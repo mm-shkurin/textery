@@ -1,19 +1,12 @@
-from uuid import UUID
+from collections.abc import Awaitable
 
-from document_edit.ai_edit_repository import AiEditRepository
-from document_edit.resolve_owned_edit import resolve_owned_edit
-
-from document.document_repository import DocumentRepository
 from fake.document_edit.fake_ai_edit_repository import (
     FailingDocumentScopeRepository,
     StorageUnavailableError,
 )
-from statements.ai_edit_guard_base import (
-    CALLER_ID,
-    QUEUED_EDIT_ID,
-    AiEditGuardBase,
-)
+from statements.ai_edit_guard_base import QUEUED_EDIT_ID, AiEditGuardBase
 from statements.arranged import arranged
+from statements.document_guard_contract import captured
 
 OUTAGE_MESSAGE = "ai_edits read timed out"
 
@@ -34,31 +27,20 @@ class AiEditStoreFailureStatements(AiEditGuardBase):
         self.ai_edit_repository.fail_every_lookup_with(StorageUnavailableError(OUTAGE_MESSAGE))
 
     async def request_the_edit_under_its_own_document(self) -> None:
-        self._raised = await self._capture(self.first_document_id, self.ai_edit_repository)
+        self._raised = await self._outage_from(self.resolve(self.first_document_id))
 
     async def request_the_edit_while_the_document_store_is_down(self) -> None:
         failing = FailingDocumentScopeRepository(StorageUnavailableError(OUTAGE_MESSAGE))
-        self._raised = await self._capture(self.first_document_id, self.ai_edit_repository, failing)
+        self._raised = await self._outage_from(self.resolve_via(failing, self.first_document_id))
 
-    async def _capture(
-        self,
-        document_id: UUID,
-        ai_edit_repository: AiEditRepository,
-        document_repository: DocumentRepository | None = None,
-    ) -> Exception:
-        try:
-            await resolve_owned_edit(
-                document_repository or self.document_repository,
-                ai_edit_repository,
-                document_id,
-                QUEUED_EDIT_ID,
-                CALLER_ID,
-            )
-        except Exception as raised:  # noqa: BLE001 - the guard under test is what may narrow it
-            return raised
-        raise AssertionError(
-            f"expected the store failure to propagate for edit {QUEUED_EDIT_ID}, "
-            f"but the guard returned"
+    async def _outage_from(self, resolution: Awaitable[object]) -> Exception:
+        # Caught as bare `Exception`, not `StorageUnavailableError`: narrowing the
+        # guard's error is exactly the defect under test, so the capture must be
+        # able to see whatever the guard actually let out.
+        return await captured(
+            resolution,
+            Exception,
+            f"the store failure to propagate for edit {QUEUED_EDIT_ID}",
         )
 
     def assert_the_outage_propagated_unchanged(self) -> None:
@@ -88,11 +70,10 @@ class AiEditStoreFailureStatements(AiEditGuardBase):
         lookup -- otherwise both assertions in this class would be satisfied by a
         fake nobody ever calls.
         """
-        lookups = self.ai_edit_repository.lookups
-        expected = [(QUEUED_EDIT_ID, self.first_document_id)]
-        assert lookups == expected, (
-            f"expected the edit lookup {expected} to have reached the store before it failed, "
-            f"got {lookups}"
+        self.assert_edit_lookups(
+            [(QUEUED_EDIT_ID, self.first_document_id)],
+            "the lookup must have reached the store before it failed, or both assertions "
+            "in this class would be satisfied by a fake nobody ever calls",
         )
 
     def assert_the_edit_store_was_never_asked(self) -> None:
@@ -103,8 +84,7 @@ class AiEditStoreFailureStatements(AiEditGuardBase):
         would pass `assert_the_outage_propagated_unchanged` while having already
         performed the unauthorized read the ADR forbids.
         """
-        lookups = self.ai_edit_repository.lookups
-        assert lookups == [], (
-            f"the AI-edit repository was called {len(lookups)} time(s) ({lookups}) while the "
-            f"document store was down -- step 2 must not run when step 1 did not resolve"
+        self.assert_edit_lookups(
+            [],
+            "the document store was down, and step 2 must not run when step 1 did not resolve",
         )

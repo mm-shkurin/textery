@@ -1,16 +1,16 @@
-from dataclasses import fields
-
 from document_edit.ai_edit_scope import AiEditScope
 
-from shared.exceptions import NotFoundException
 from statements.ai_edit_guard_base import (
-    ABSENT_DOCUMENT_ID,
+    AI_EDIT_SCOPE_FIELD_NAMES,
     QUEUED_EDIT_ID,
-    REFUSAL_MESSAGE,
-    SCOPE_FIELD_NAMES,
     AiEditGuardBase,
 )
 from statements.arranged import arranged
+from statements.document_guard_contract import (
+    ABSENT_DOCUMENT_ID,
+    assert_bounded_projection,
+    assert_is_the_canonical_refusal,
+)
 
 
 class AiEditScopeGuardStatements(AiEditGuardBase):
@@ -42,10 +42,8 @@ class AiEditScopeGuardStatements(AiEditGuardBase):
         neither the edit id nor the document id of a request whose whole premise
         is that the caller has no claim to that pair.
         """
-        refusal = arranged(self._cross_document_refusal, "cross_document_refusal")
-        assert (type(refusal), str(refusal)) == (NotFoundException, REFUSAL_MESSAGE), (
-            f"the cross-document refusal is {type(refusal).__name__}('{refusal}'), expected "
-            f"NotFoundException('{REFUSAL_MESSAGE}')"
+        assert_is_the_canonical_refusal(
+            arranged(self._cross_document_refusal, "cross_document_refusal"), "cross-document"
         )
 
     def assert_the_edit_resolved_to_its_bounded_scope(self) -> None:
@@ -60,10 +58,10 @@ class AiEditScopeGuardStatements(AiEditGuardBase):
         scope = arranged(self._resolved_scope, "resolved_scope")
         expected = AiEditScope(id=QUEUED_EDIT_ID, document_id=self.first_document_id)
         assert scope == expected, f"expected {expected}, got {scope}"
-        assert [field.name for field in fields(scope)] == SCOPE_FIELD_NAMES, (
-            f"AiEditScope must stay the bounded projection {SCOPE_FIELD_NAMES}, but carries "
-            f"{[field.name for field in fields(scope)]} -- no instruction text, diff or "
-            f"generated content may reach the guard path"
+        assert_bounded_projection(
+            scope,
+            AI_EDIT_SCOPE_FIELD_NAMES,
+            "no instruction text, diff or generated content may reach the guard path",
         )
 
     def assert_the_edit_store_was_never_asked(self) -> None:
@@ -74,15 +72,16 @@ class AiEditScopeGuardStatements(AiEditGuardBase):
         the document would refuse identically and pass every other assertion in
         this file, while having already performed an unauthorized read.
         """
-        lookups = self.ai_edit_repository.lookups
-        assert lookups == [], (
-            f"the AI-edit repository was called {len(lookups)} time(s) for a document the "
-            f"caller cannot resolve ({lookups}) -- the edit lookup is itself an unauthorized "
-            f"read, so step 1 must refuse before step 2 runs"
+        self.assert_edit_lookups(
+            [],
+            "the edit lookup for a document the caller cannot resolve is itself an "
+            "unauthorized read, so step 1 must refuse before step 2 runs",
         )
 
     def assert_the_edit_store_was_asked_once_for_the_probed_document(self) -> None:
         """The counterpart control: a resolvable document does reach step 2 exactly once."""
-        lookups = self.ai_edit_repository.lookups
-        expected = [(QUEUED_EDIT_ID, self.second_document_id)]
-        assert lookups == expected, f"expected edit lookups {expected}, got {lookups}"
+        self.assert_edit_lookups(
+            [(QUEUED_EDIT_ID, self.second_document_id)],
+            "a document the caller does resolve must reach step 2, exactly once and "
+            "scoped to the document that was probed",
+        )
