@@ -10,12 +10,12 @@ from statements.ai_edit.ai_edit_cross_document_probes import (
     CrossDocumentProbe,
     CrossDocumentSetup,
 )
+from statements.ai_edit.ai_edit_edit_states import QUEUED_STATUS
 from statements.ai_edit.ai_edit_http_status import ACCEPTED_STATUS
 from statements.authenticated_account import register_verify_and_login
 from statements.response_assertions import assert_is_valid_uuid
 from statements.test_data import TestData
 
-QUEUED_STATUS = "queued"
 ACCEPTED_FIELDS = {"edit_id", "status"}
 
 

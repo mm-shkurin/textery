@@ -3,7 +3,11 @@ from clients.application.document_edit_client import DocumentEditClient
 from statements.ai_edit import ai_edit_document_seed as seed
 from statements.ai_edit import ai_edit_endpoint_probes as probes
 from statements.ai_edit import ai_edit_guard_assertions as guard
-from statements.ai_edit.ai_edit_guard_probes import DocumentAftermath, GuardProbe
+from statements.ai_edit.ai_edit_guard_probes import (
+    DocumentAftermath,
+    GuardProbe,
+    GuardSetup,
+)
 from statements.authenticated_account import register_verify_and_login
 
 
@@ -12,34 +16,36 @@ class AiEditGuardStatements:
         self._client = client
         self._edit_client = edit_client
 
-    async def given_endpoint_invoked_against_a_foreign_and_an_absent_document(
-        self, endpoint: str
-    ) -> GuardProbe:
+    async def given_a_foreign_document_and_an_absent_document_id(self) -> GuardSetup:
         caller = await register_verify_and_login(self._client)
         owner = await register_verify_and_login(self._client)
         foreign_document_id = await seed.create_document_owned_by(
             self._edit_client, owner.access_token
         )
-        document_before = await seed.read_document(
-            self._edit_client, owner.access_token, foreign_document_id
-        )
-
-        foreign = await probes.invoke(
-            self._edit_client, endpoint, caller.access_token, foreign_document_id
-        )
-        absent = await probes.invoke(
-            self._edit_client, endpoint, caller.access_token, probes.absent_document_id()
-        )
-        return GuardProbe(
-            endpoint=endpoint,
-            foreign=foreign,
-            absent=absent,
+        return GuardSetup(
+            caller_token=caller.access_token,
             owner_token=owner.access_token,
             foreign_document_id=foreign_document_id,
-            document_before=document_before,
+            absent_document_id=probes.absent_document_id(),
+            document_before=await seed.read_document(
+                self._edit_client, owner.access_token, foreign_document_id
+            ),
         )
 
-    async def when_the_owner_reads_the_document_aftermath(
+    async def when_the_endpoint_is_invoked_against_both(
+        self, setup: GuardSetup, endpoint: str
+    ) -> GuardProbe:
+        foreign = await probes.invoke(
+            self._edit_client, endpoint, setup.caller_token, setup.foreign_document_id
+        )
+        absent = await probes.invoke(
+            self._edit_client, endpoint, setup.caller_token, setup.absent_document_id
+        )
+        return GuardProbe(
+            endpoint=endpoint, foreign=foreign, absent=absent, setup=setup
+        )
+
+    async def then_the_owner_reads_the_document_aftermath(
         self, probe: GuardProbe
     ) -> DocumentAftermath:
         return DocumentAftermath(

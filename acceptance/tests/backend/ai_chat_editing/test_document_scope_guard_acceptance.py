@@ -25,10 +25,11 @@ class TestDocumentScopeGuardAcceptance(AbstractBackendTest):
         And the two response bodies are byte-identical
         And no edit, revision or message is created
         """
-        probe = await ai_edit_guard_statements.given_endpoint_invoked_against_a_foreign_and_an_absent_document(
-            endpoint
+        setup = await ai_edit_guard_statements.given_a_foreign_document_and_an_absent_document_id()
+        probe = await ai_edit_guard_statements.when_the_endpoint_is_invoked_against_both(
+            setup, endpoint
         )
-        aftermath = await ai_edit_guard_statements.when_the_owner_reads_the_document_aftermath(
+        aftermath = await ai_edit_guard_statements.then_the_owner_reads_the_document_aftermath(
             probe
         )
 

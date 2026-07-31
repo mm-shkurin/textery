@@ -9,19 +9,14 @@ assertion.
 
 from clients.application.dto.document.raw_response_dto import RawResponseDto
 from statements.ai_edit.ai_edit_cross_document_probes import CrossDocumentProbe
+from statements.ai_edit.ai_edit_edit_states import (
+    DONE_STATUS,
+    ERROR_STATUS,
+    STATES_REACHABLE_WITHOUT_A_CANCEL,
+)
 from statements.ai_edit.ai_edit_guard_assertions import assert_is_the_canonical_refusal
 from statements.ai_edit.ai_edit_http_status import OK_STATUS
 from statements.response_assertions import assert_iso_timestamp_within
-
-DONE_STATUS = "done"
-ERROR_STATUS = "error"
-# documents_ai_edits_get.yaml enumerates five states. A queued edit legitimately
-# advances queued -> streaming -> done (or -> error) under the worker with nobody
-# cancelling it, so those four are the states reachable WITHOUT a cancel. `cancelled` is
-# the single state only a cancel can produce — asserting positive membership in this set,
-# rather than `!= "cancelled"`, also rejects a missing, misspelled or junk status that a
-# negative check would wave through.
-STATES_REACHABLE_WITHOUT_A_CANCEL = ("queued", "streaming", DONE_STATUS, ERROR_STATUS)
 
 REQUIRED_FIELDS = {"edit_id", "status", "created_at"}
 KNOWN_FIELDS = REQUIRED_FIELDS | {

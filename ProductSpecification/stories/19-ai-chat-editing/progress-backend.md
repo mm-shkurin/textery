@@ -175,8 +175,9 @@ within their file, not across the story.
 - [S] green-acceptance — **deferred to last, not skipped.** Decision (2026-07-31, user): 1.1's
       acceptance does **not** pull the message/revision read paths forward; it waits for the scenarios
       that own them (4.x revisions, 6.x messages) and runs after they land. Re-scheduled as the
-      trailing entry of this section — see "### Deferred: Scenario 1.1 green-acceptance" at the end of
-      the Backend Scenarios (01_API_Tests.md) section. The blockage analysis that forced the decision:
+      **Deferred** entry at the very end of the backend scenario sections (just above
+      "## Integration Scenarios"), so that file order — the only machine-readable part of the
+      next-work-unit rule — agrees with the prose. The blockage analysis that forced the decision:
       **BLOCKED, and not by anything green-acceptance is allowed to change.**
       This step may remove the disable marker and nothing else, but the marker is not what is
       holding the test. Four things the test needs do not exist:
@@ -352,16 +353,6 @@ within their file, not across the story.
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
-
-### Deferred: Scenario 1.1 green-acceptance
-Re-scheduled here by the 2026-07-31 decision above. Runs **after** the scenarios that own the
-message and revision read paths (4.x revisions, 6.x messages) have landed their usecases,
-migrations and router mounting — the aftermath assertion needs `GET /messages` and
-`GET /revisions` to answer `200 {"items": [], "next_cursor": None}` for the rightful owner,
-which a refusal-only guard cannot satisfy. Nothing else in 1.1 is outstanding: red-acceptance,
-design, red/green-usecase and red/green-adapter rest are all `[x]`.
-- [ ] green-acceptance (Scenario 1.1) — remove the class-level disable marker on the AI-edit
-      guard acceptance test and run it; production code is out of scope for this step.
 
 ## Backend Scenarios — Lifecycle and Streaming (01_API_Tests_Lifecycle.md)
 
@@ -826,6 +817,20 @@ design, red/green-usecase and red/green-adapter rest are all `[x]`.
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
+
+**Deferred: Scenario 1.1 green-acceptance** — re-scheduled here by the 2026-07-31 decision (see
+Scenario 1.1 above). Deliberately placed at the tail of every backend scenario section, not next to
+1.1: the next-work-unit rule is "first `[~]` or `[ ]` in file order", so prose saying "runs last"
+buys nothing unless the position agrees. It runs after the scenarios owning the message and revision
+read paths (4.x revisions, 6.x messages) have landed their usecases, migrations and router mounting —
+the aftermath assertion needs `GET /messages` and `GET /revisions` answering
+`200 {"items": [], "next_cursor": None}` for the rightful owner, which a refusal-only guard cannot
+satisfy. Not a `###` heading, so it does not inflate the scenario count in `stories.md`; Scenario 1.1
+counts as done because its own checklist is fully `[x]`/`[S]`, and this line is the one step it owes.
+Nothing else in 1.1 is outstanding.
+- [ ] green-acceptance (Scenario 1.1) — remove the class-level disable marker on the AI-edit guard
+      acceptance test and run it; production code is out of scope for this step. Before starting,
+      re-read the four blockers recorded at Scenario 1.1 and confirm each is now false.
 
 ## Integration Scenarios (06_Integration_Tests.md)
 
