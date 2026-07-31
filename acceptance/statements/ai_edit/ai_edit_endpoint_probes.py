@@ -4,6 +4,7 @@ from clients.application.document_edit_client import DocumentEditClient
 from clients.application.dto.document.raw_response_dto import RawResponseDto
 from statements.ai_edit.ai_edit_endpoints import (
     CANCEL_THE_EDIT,
+    EDIT_SCOPED_ENDPOINTS,
     READ_ITS_MESSAGES,
     READ_ITS_REVISIONS,
     READ_THE_EVENT_STREAM,
@@ -32,12 +33,8 @@ async def invoke(
             {"message": PROBE_INSTRUCTION, "base_version": PROBE_BASE_VERSION},
             TestData.unique_idempotency_key(),
         )
-    if endpoint == READ_THE_EVENT_STREAM:
-        return await client.stream_edit(token, document_id, PROBE_EDIT_ID)
-    if endpoint == THE_EDIT_STATE_ENDPOINT:
-        return await client.get_edit(token, document_id, PROBE_EDIT_ID)
-    if endpoint == CANCEL_THE_EDIT:
-        return await client.cancel_edit(token, document_id, PROBE_EDIT_ID)
+    if endpoint in EDIT_SCOPED_ENDPOINTS:
+        return await invoke_with_edit(client, endpoint, token, document_id, PROBE_EDIT_ID)
     if endpoint == READ_ITS_MESSAGES:
         return await client.list_messages(token, document_id)
     if endpoint == READ_ITS_REVISIONS:
@@ -45,6 +42,29 @@ async def invoke(
     if endpoint == RESTORE_A_REVISION:
         return await client.restore_revision(token, document_id, PROBE_REVISION_NUMBER)
     raise AssertionError(f"unknown endpoint under test: {endpoint!r}")
+
+
+async def invoke_with_edit(
+    client: DocumentEditClient,
+    endpoint: str,
+    token: str,
+    document_id: str,
+    edit_id: str,
+) -> RawResponseDto:
+    """Invoke one of the three edit-scoped endpoints with a caller-chosen edit id.
+
+    Scenario 1.1 passes an id that matches no row; scenario 1.2 passes a REAL edit id
+    that belongs to another document of the same owner. The dispatch is shared so both
+    scenarios exercise the same URLs — a divergence in path shape between them would
+    let one pass while the other is silently probing something else.
+    """
+    if endpoint == READ_THE_EVENT_STREAM:
+        return await client.stream_edit(token, document_id, edit_id)
+    if endpoint == THE_EDIT_STATE_ENDPOINT:
+        return await client.get_edit(token, document_id, edit_id)
+    if endpoint == CANCEL_THE_EDIT:
+        return await client.cancel_edit(token, document_id, edit_id)
+    raise AssertionError(f"not an edit-scoped endpoint: {endpoint!r}")
 
 
 def absent_document_id() -> str:

@@ -1,14 +1,10 @@
 from clients.application.application_client import ApplicationClient
 from clients.application.document_edit_client import DocumentEditClient
-from clients.application.dto.document.raw_response_dto import RawResponseDto
+from statements.ai_edit import ai_edit_document_seed as seed
 from statements.ai_edit import ai_edit_endpoint_probes as probes
 from statements.ai_edit import ai_edit_guard_assertions as guard
 from statements.ai_edit.ai_edit_guard_probes import DocumentAftermath, GuardProbe
 from statements.authenticated_account import register_verify_and_login
-from statements.response_assertions import assert_is_valid_uuid
-from statements.test_data import TestData
-
-DOCUMENT_TYPE = "доклад"
 
 
 class AiEditGuardStatements:
@@ -21,8 +17,12 @@ class AiEditGuardStatements:
     ) -> GuardProbe:
         caller = await register_verify_and_login(self._client)
         owner = await register_verify_and_login(self._client)
-        foreign_document_id = await self._given_document_owned_by(owner.access_token)
-        document_before = await self._read_document(owner.access_token, foreign_document_id)
+        foreign_document_id = await seed.create_document_owned_by(
+            self._edit_client, owner.access_token
+        )
+        document_before = await seed.read_document(
+            self._edit_client, owner.access_token, foreign_document_id
+        )
 
         foreign = await probes.invoke(
             self._edit_client, endpoint, caller.access_token, foreign_document_id
@@ -49,8 +49,8 @@ class AiEditGuardStatements:
             revisions=await self._edit_client.list_revisions(
                 probe.owner_token, probe.foreign_document_id
             ),
-            document_after=await self._read_document(
-                probe.owner_token, probe.foreign_document_id
+            document_after=await seed.read_document(
+                self._edit_client, probe.owner_token, probe.foreign_document_id
             ),
         )
 
@@ -64,26 +64,3 @@ class AiEditGuardStatements:
         self, probe: GuardProbe, aftermath: DocumentAftermath
     ) -> None:
         guard.assert_no_edit_revision_or_message_created(probe, aftermath)
-
-    async def _given_document_owned_by(self, token: str) -> str:
-        response = await self._edit_client.create_document(
-            token, DOCUMENT_TYPE, TestData.unique_idempotency_key()
-        )
-        assert response.status_code == 201, (
-            f"setup: expected 201 creating the other account's document, got "
-            f"status_code={response.status_code}, body={response.text!r}"
-        )
-        document_id = (response.body or {}).get("document_id")
-        # A well-formed id, not merely a present one: every probe interpolates this into
-        # its path, and a junk id would make all seven refusals 404 for the wrong reason
-        # — the guard would look green while never having been exercised.
-        assert_is_valid_uuid(document_id, field_name="document_id")
-        return str(document_id)
-
-    async def _read_document(self, token: str, document_id: str) -> RawResponseDto:
-        response = await self._edit_client.get_document(token, document_id)
-        assert response.status_code == 200, (
-            f"setup: expected the owner to read their own document, got "
-            f"status_code={response.status_code}, body={response.text!r}"
-        )
-        return response

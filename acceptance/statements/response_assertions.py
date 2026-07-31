@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Protocol
 from uuid import UUID
 
@@ -8,6 +8,9 @@ from statements.verification_code_assertions import (
 )
 
 SECRET_RESPONSE_FIELDS = ("password", "confirm_password", "password_hash")
+# Drift between the test host clock and the server clock only — the valid window is
+# already bracketed by the timestamps the caller captures around the HTTP call.
+TIMESTAMP_CLOCK_SKEW_TOLERANCE = timedelta(seconds=5)
 
 
 class HasStatusAndBody(Protocol):
@@ -54,6 +57,39 @@ def assert_is_valid_uuid(value: object, field_name: str) -> None:
         UUID(str(value))
     except (ValueError, AttributeError, TypeError) as error:
         raise AssertionError(f"expected {field_name} to be a valid UUID, got {value!r}") from error
+
+
+def parse_iso_timestamp(raw: object, field_name: str) -> datetime:
+    """Parse a wire timestamp, or fail naming the field. Never returns None."""
+    assert raw is not None, f"expected {field_name} in the response body, got None"
+    try:
+        parsed = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError as error:
+        raise AssertionError(
+            f"expected {field_name} to be an ISO-8601 timestamp, got {raw!r}"
+        ) from error
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def assert_iso_timestamp_within(
+    raw: object, field_name: str, earliest: datetime, latest: datetime
+) -> datetime:
+    """Bound a server timestamp to the window the test itself bracketed.
+
+    The determinism hierarchy classes server timestamps as *boundable*, not opaque:
+    the caller captures the clock either side of the HTTP call, so a non-null check
+    would accept a value from any point in history.
+    """
+    parsed = parse_iso_timestamp(raw, field_name)
+    lower = earliest - TIMESTAMP_CLOCK_SKEW_TOLERANCE
+    upper = latest + TIMESTAMP_CLOCK_SKEW_TOLERANCE
+    assert lower <= parsed <= upper, (
+        f"expected {field_name} within [{lower.isoformat()}, {upper.isoformat()}] "
+        f"(the window bracketing the request, plus a "
+        f"{TIMESTAMP_CLOCK_SKEW_TOLERANCE} clock-skew allowance), "
+        f"got {parsed.isoformat()}"
+    )
+    return parsed
 
 
 def assert_created_pending_account(response: HasStatusAndBody) -> dict:

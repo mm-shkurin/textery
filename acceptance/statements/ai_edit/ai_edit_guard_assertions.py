@@ -9,9 +9,7 @@ reason it exists, and it can only pass once the real guard emits the real body.
 
 from clients.application.dto.document.raw_response_dto import RawResponseDto
 from statements.ai_edit.ai_edit_guard_probes import DocumentAftermath, GuardProbe
-
-NOT_FOUND_STATUS = 404
-OK_STATUS = 200
+from statements.ai_edit.ai_edit_http_status import NOT_FOUND_STATUS, OK_STATUS
 
 # The canonical refusal every AI-edit endpoint owes for an absent OR foreign document
 # (`Error {error_code, message}` in every 404 of the story-19 api-specs). The literal
@@ -29,17 +27,20 @@ EMPTY_PAGE = {"items": [], "next_cursor": None}
 
 
 def assert_both_refused_as_not_found(probe: GuardProbe) -> None:
-    _assert_is_the_canonical_refusal(
+    assert_is_the_canonical_refusal(
         probe.foreign,
         f"{probe.endpoint!r} against a document owned by another account "
         f"(403, or any other body, would confirm it exists)",
     )
-    _assert_is_the_canonical_refusal(
+    assert_is_the_canonical_refusal(
         probe.absent, f"{probe.endpoint!r} against a document id that does not exist"
     )
 
 
-def _assert_is_the_canonical_refusal(response: RawResponseDto, what: str) -> None:
+def assert_is_the_canonical_refusal(response: RawResponseDto, what: str) -> None:
+    """The one refusal every AI-edit endpoint owes. Shared with scenario 1.2: a
+    cross-document edit id must be refused with the SAME body as an absent document,
+    so both scenarios must anchor to this single expectation, never to two copies."""
     assert response.status_code == NOT_FOUND_STATUS, (
         f"expected {NOT_FOUND_STATUS} refusing {what}, got "
         f"status_code={response.status_code}, body={response.text!r}"

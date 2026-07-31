@@ -16,6 +16,15 @@ READ_ITS_MESSAGES = "they read its messages"
 READ_ITS_REVISIONS = "they read its revisions"
 RESTORE_A_REVISION = "they restore a revision"
 
+# The three endpoints whose path carries an edit id below the document id. Scenario 1.2
+# probes exactly these: the path document id is authoritative, so an edit of another
+# document — even one the same account owns — is not found under it.
+EDIT_SCOPED_ENDPOINTS = (
+    READ_THE_EVENT_STREAM,
+    THE_EDIT_STATE_ENDPOINT,
+    CANCEL_THE_EDIT,
+)
+
 ALL_ENDPOINTS = (
     SUBMIT_AN_INSTRUCTION,
     READ_THE_EVENT_STREAM,

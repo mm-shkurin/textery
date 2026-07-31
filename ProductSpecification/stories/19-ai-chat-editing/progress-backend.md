@@ -172,7 +172,12 @@ within their file, not across the story.
       `.claude/rules/infrastructure.md`).
 - [S] green-adapter rest (coverage: seven AI-edit DI stubs raise NotImplementedError) — no production
       change to make; the stubs the red step pins were written in `d553f2d`.
-- [~] green-acceptance — **BLOCKED, and not by anything green-acceptance is allowed to change.**
+- [S] green-acceptance — **deferred to last, not skipped.** Decision (2026-07-31, user): 1.1's
+      acceptance does **not** pull the message/revision read paths forward; it waits for the scenarios
+      that own them (4.x revisions, 6.x messages) and runs after they land. Re-scheduled as the
+      trailing entry of this section — see "### Deferred: Scenario 1.1 green-acceptance" at the end of
+      the Backend Scenarios (01_API_Tests.md) section. The blockage analysis that forced the decision:
+      **BLOCKED, and not by anything green-acceptance is allowed to change.**
       This step may remove the disable marker and nothing else, but the marker is not what is
       holding the test. Four things the test needs do not exist:
       (1) **no AI-edit usecases at all** — `backend/usecase/src/` holds `auth`, `document`,
@@ -196,7 +201,40 @@ within their file, not across the story.
       them (4.x revisions, 6.x messages) and its acceptance runs last. Decide before proceeding.
 
 ### Scenario 1.2: An edit belonging to another document of the same owner is not found
-- [ ] red-acceptance
+- [x] red-acceptance — 3 parametrized items over the three edit-id-carrying routes
+      (`EDIT_SCOPED_ENDPOINTS`: stream / state / cancel), class-level skip marker. All 3 fail in the
+      **setup**, not at the assertion: `POST /api/v1/documents/{id}/ai-edits` is not mounted, so
+      queueing the seed edit answers Starlette's `{"detail":"Not Found"}` instead of 202. Predicted
+      exactly that (type, message and 3-failed/0-passed count all matched) — the same unmounted-router
+      wall that deferred 1.1's green-acceptance, reached one step earlier here because 1.2 needs a
+      *real* queued edit to exist before the cross-document probe means anything.
+      Reuse over restatement: 1.1's `invoke` now delegates to a shared `invoke_with_edit`, so both
+      scenarios build identical URLs, and the canonical-envelope assertion is imported from
+      `ai_edit_guard_assertions` rather than copied — a second copy of the envelope could drift while
+      both scenarios stayed green.
+      `/test-review` fixed seven violations. The load-bearing one is the aftermath assertion: the
+      red-agent had deliberately weakened the ADR's byte-identical compare to `status != "cancelled"`,
+      reasoning that a live worker legitimately advances `queued → streaming → done`. The reasoning
+      was sound but over-generalized — only `status` and `last_seq` actually move under the worker, and
+      a negative check is satisfied by `None`, a missing key, `"CANCELLED"`, or a `/stream` refusal
+      that terminalized the edit as `"error"`. It now pins positive membership in
+      `STATES_REACHABLE_WITHOUT_A_CANCEL = ("queued", "streaming", "done", "error")`, the exact key
+      set (so a handler leaking the *other* document's id fails), `created_at` bracketed to the queue
+      call, and the spec's status-coupled invariants (`version`/`revision_number`/`changed` null
+      unless `done`; `error_code` null unless `error`). Verified by driving the assertion directly
+      past the skip marker: both legitimate shapes pass, all ten wrong-system shapes are rejected.
+      Field coverage went 2/8, 1/7 and 1/2 → whole-response equality on all three response types.
+      Two new single-purpose Statements files (`ai_edit_document_seed.py`, `ai_edit_http_status.py`)
+      absorb the seeding and status literals that were duplicated across the two scenarios.
+      **Carry:** 1.1's `test_document_scope_guard_acceptance.py:28,31` has the same given/when
+      mislabel this review fixed in 1.2 (a `given_` method performing the docstring's When) — left
+      alone as prior-commit work; fix it when 1.1 is next touched. `acceptance/conftest.py` is 234
+      lines, over the 200-line limit, pre-existing.
+      **Local-only environment change, not committed:** `infra/.env` `POSTGRES_DB` was moved
+      `textery → textery_s19` to get the backend to boot — the default `textery` database is migrated
+      past this branch (`Can't locate revision 'b4c5d6e7f8a9'`, the same breakage line 88 recorded for
+      db-layer runs, now blocking the application too). `infra/.env` is gitignored, so this does not
+      travel with the commit; a fresh checkout on this host will hit the boot failure again.
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase
@@ -314,6 +352,16 @@ within their file, not across the story.
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
+
+### Deferred: Scenario 1.1 green-acceptance
+Re-scheduled here by the 2026-07-31 decision above. Runs **after** the scenarios that own the
+message and revision read paths (4.x revisions, 6.x messages) have landed their usecases,
+migrations and router mounting — the aftermath assertion needs `GET /messages` and
+`GET /revisions` to answer `200 {"items": [], "next_cursor": None}` for the rightful owner,
+which a refusal-only guard cannot satisfy. Nothing else in 1.1 is outstanding: red-acceptance,
+design, red/green-usecase and red/green-adapter rest are all `[x]`.
+- [ ] green-acceptance (Scenario 1.1) — remove the class-level disable marker on the AI-edit
+      guard acceptance test and run it; production code is out of scope for this step.
 
 ## Backend Scenarios — Lifecycle and Streaming (01_API_Tests_Lifecycle.md)
 
