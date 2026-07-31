@@ -22,6 +22,22 @@ DOCUMENT_SCOPE_REFUSAL_CAUSE = "document-scope-refused"
 EDIT_SCOPE_REFUSAL_CAUSE = "edit-scope-refused"
 
 
+def _log_refusal(cause: str, owner_id: UUID, document_id: UUID | None = None) -> None:
+    """Emit the refusal record, carrying only ids the caller has proven a claim to.
+
+    The optional `document_id` is the whole non-disclosure rule in one signature.
+    Step 1 refused precisely because the caller has no proven claim to the id in
+    the path, so that id must not reach our logs; step 2 refused with the document
+    already resolved as the caller's own, and recording it is what tells a probe
+    apart from a typo'd document id. Two hand-written `extra` dicts can drift on
+    that distinction -- one omitted argument cannot.
+    """
+    fields = {"refusal_cause": cause, "caller_id": str(owner_id)}
+    if document_id is not None:
+        fields["document_id"] = str(document_id)
+    _LOGGER.info(REFUSAL_LOG_MESSAGE, extra=fields)
+
+
 async def resolve_owned_edit(
     document_repository: DocumentRepository,
     ai_edit_repository: AiEditRepository,
@@ -50,28 +66,13 @@ async def resolve_owned_edit(
     try:
         await resolve_owned_document(document_repository, document_id, owner_id)
     except NotFoundException:
-        # No document id: step 1 refused precisely because the caller has no
-        # proven claim to the one in the path.
-        _LOGGER.info(
-            REFUSAL_LOG_MESSAGE,
-            extra={
-                "refusal_cause": DOCUMENT_SCOPE_REFUSAL_CAUSE,
-                "caller_id": str(owner_id),
-            },
-        )
+        _log_refusal(DOCUMENT_SCOPE_REFUSAL_CAUSE, owner_id)
         raise
 
     scope = await ai_edit_repository.find_scope_by_id_and_document(edit_id, document_id)
     if scope is None:
-        # The document did resolve, so its id is the caller's own and is
-        # recorded. The edit id is not: an unresolved id must not reach our logs.
-        _LOGGER.info(
-            REFUSAL_LOG_MESSAGE,
-            extra={
-                "refusal_cause": EDIT_SCOPE_REFUSAL_CAUSE,
-                "caller_id": str(owner_id),
-                "document_id": str(document_id),
-            },
-        )
+        # The edit id is deliberately absent: the document resolved, so its id is
+        # the caller's own, but an unresolved edit id must not reach our logs.
+        _log_refusal(EDIT_SCOPE_REFUSAL_CAUSE, owner_id, document_id=document_id)
         raise NotFoundException(REFUSAL_MESSAGE)
     return scope

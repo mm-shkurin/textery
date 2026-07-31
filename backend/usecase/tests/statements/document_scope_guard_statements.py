@@ -13,6 +13,7 @@ from statements.document_guard_contract import (
     OTHER_ACCOUNT_ID,
     assert_bounded_projection,
     assert_is_the_canonical_refusal,
+    captured,
 )
 
 # The bounded projection, pinned as a field list rather than only by equality: a
@@ -68,12 +69,10 @@ class DocumentScopeGuardStatements:
         self._absent_refusal = await self._refusal_of(ABSENT_DOCUMENT_ID)
 
     async def _refusal_of(self, document_id: UUID) -> NotFoundException:
-        try:
-            await resolve_owned_document(self._repository, document_id, CALLER_ID)
-        except NotFoundException as refusal:
-            return refusal
-        raise AssertionError(
-            f"expected NotFoundException for document {document_id}, but the guard returned"
+        return await captured(
+            resolve_owned_document(self._repository, document_id, CALLER_ID),
+            NotFoundException,
+            f"a refusal for document {document_id}",
         )
 
     async def resolve_the_callers_own_document(self) -> None:
