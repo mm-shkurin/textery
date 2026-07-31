@@ -37,10 +37,7 @@ class TestCrossDocumentEditAcceptance(AbstractBackendTest):
             setup, endpoint
         )
 
-        ai_edit_cross_document_statements.assert_refused_as_not_found(probe)
-        edit_state_after = await ai_edit_cross_document_statements.then_the_edit_is_read_back_under_its_own_document(
+        ai_edit_cross_document_statements.then_the_request_is_refused_as_not_found(probe)
+        await ai_edit_cross_document_statements.then_the_edit_is_unchanged_under_its_own_document(
             probe
-        )
-        ai_edit_cross_document_statements.assert_the_edit_survived_under_its_own_document(
-            probe, edit_state_after
         )

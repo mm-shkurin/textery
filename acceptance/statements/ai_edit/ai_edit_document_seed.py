@@ -87,6 +87,22 @@ def _assert_is_a_freshly_created_draft(
     )
 
 
+async def create_two_documents_owned_by(
+    client: DocumentEditClient, token: str
+) -> tuple[str, str]:
+    """The world both guard scenarios open on: two documents, ONE owner.
+
+    Scenarios 1.2 and 1.3 were each spelling this out themselves. Sharing it keeps the
+    premise identical between them — the refusal they probe must come from the path
+    document id being authoritative, never from an ownership difference, and that only
+    holds while both documents demonstrably belong to the same account.
+    """
+    return (
+        await create_document_owned_by(client, token),
+        await create_document_owned_by(client, token),
+    )
+
+
 async def read_document(
     client: DocumentEditClient, token: str, document_id: str
 ) -> RawResponseDto:

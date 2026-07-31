@@ -474,8 +474,62 @@ within their file, not across the story.
       forced guards, the port, the `ai_edits` schema and the scoped finder.
 
 ### Scenario 1.3: A revision belonging to another document of the same owner is not found
-- [~] red-acceptance
-- [ ] design
+- [x] red-acceptance — 1 test on the single revision-carrying route (`POST /revisions/{n}/restore`),
+      class-level skip marker. It fails in the **setup**, one wall earlier than 1.2's: a revision is
+      only recorded when an AI edit applies (§7.2), so the seed must queue a real edit first, and
+      `POST /ai-edits` is not mounted — Starlette's `{"detail":"Not Found"}` instead of 202. Predicted
+      type, message and the 1-failed/0-passed count matched exactly.
+      Reuse over restatement: the canonical-envelope assertion is imported from 1.1's
+      `ai_edit_guard_assertions.assert_is_the_canonical_refusal` (as 1.2 does), and 1.2's private
+      queue-seed was **extracted** to a shared `ai_edit_queue_seed.py` rather than copied — both
+      scenarios now queue through one strictly-asserted seed. New `ai_edit_revision_seed.py` drives
+      that edit to a terminal state on a bounded 20s poll, requires `done`, and cross-checks the
+      reported `revision_number` against the document's own `GET /revisions` page: taken from the edit
+      alone, a backend reporting a revision it never wrote would seed a scenario whose subject is
+      false and the refusal would be correct for the wrong reason.
+      "No new version is created on either document" is asserted, not implied: **both** documents are
+      read whole-body plus whole revision page before and after the probe and compared. Both, because
+      a handler that resolved the revision number and applied it to its *own* (first) document would
+      leave the path document untouched and pass a second-document check alone. The revision page is
+      pinned alongside the body because a restore writes its revision row in the same transaction as
+      the new version — an added row is the tell that it ran and then lost the version CAS.
+      `/test-review` found a **spec violation, not merely a loose assertion**, and it was live:
+      `documents_revisions_list.yaml` says the first mutation of a never-edited document writes **two**
+      revisions in one transaction — revision 1 carrying the pre-mutation content with source `manual`,
+      then revision 2 carrying the result. The seed asserted `revision_number >= 1`, which accepts
+      **revision 1**, i.e. a backend that wrote only the baseline and never applied the edit. The
+      scenario's whole subject ("a revision recorded on the first document") could have been false
+      while the cross-document 404 passed for the wrong reason. Now `== 2`, with `version == 2` and
+      `changed is True` — `changed: false` means no revision is recorded at all, so it is the premise
+      and is asserted rather than assumed.
+      Three more of this family's weaknesses were live. The entire "no new version" proof was
+      **relative only** (`after == before`), which a seed that recorded nothing satisfies perfectly;
+      both documents are now pinned to absolute spec-derived state as well — the second at version 1
+      with `EMPTY_PAGE`, the first at version 2 with the exact two-row page
+      `[(2,2,"ai"), (1,1,"manual")]`, newest first, `next_cursor` null, closed field sets. The relative
+      and absolute checks fail differently on purpose and both are kept. The premise "the second
+      document deliberately has no revisions" lived in a docstring and was **never asserted** — if a
+      revision leaked onto it the probed number would legitimately exist there and the 404 would be
+      testing something else. And the two baseline reads had no status guard, so an unvalidated error
+      body as `before` compared equal to an equal error body as `after`; all four reads are pinned to
+      200 through one helper.
+      Two values are deliberately not exact (determinism hierarchy cat. 4): the applied `content` is
+      model output, but it is **not** a presence check — the pre-edit value is known exactly (`""`) and
+      `changed: true` was required, so it is asserted to differ from that known value; `last_seq`
+      counts model-produced stream events and is bounded below by the terminal event.
+      **Carried mislabel fixed in both scenarios:** `then_both_documents_are_read_back` was an action
+      wearing a `then_` name, asserting nothing and threading its result back through the test class.
+      1.2 carried the identical defect (`then_the_edit_is_read_back_under_its_own_document`) and was
+      fixed with it, since it is the same defect class and the file was already open. 1.1 was left
+      alone — its 7 items were only required to keep collecting, and they do; bringing its naming in
+      line is a separate mechanical pass.
+      11 items collect (1.1: 7, 1.2: 3, 1.3: 1), 11 skipped, every marker intact. RED re-verified by
+      lifting each marker and restoring it: 1.3 still fails at `ai_edit_queue_seed.py:63`, and 1.2's
+      three items still fail at that same shared seed assertion — the extraction did not weaken it.
+      **Environment:** the backend had to be started for this run
+      (`docker compose -f infra/docker-compose.yml up -d --build backend`); `/health` answers 404 on
+      this build, so liveness was confirmed by the app answering on an API path instead.
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
