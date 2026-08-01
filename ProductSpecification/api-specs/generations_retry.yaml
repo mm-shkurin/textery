@@ -52,8 +52,11 @@ paths:
 
 
             Same key with a different source id is a conflict (409), not a silent
-            replay of the first.
-          schema: {type: string, minLength: 1, maxLength: 128}
+            replay of the first. Detecting that requires lineage the table does not have
+            today, so the migration also adds a nullable `source_generation_id` — the
+            replay path compares it against the path parameter. Without that column the
+            server could only ever answer 200 and the 409 would be unwritable.
+          schema: {type: string}
       responses:
         '201':
           description: A new generation was created and enqueued from the source's parameters.
@@ -65,8 +68,35 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/GenerationResponse'}
+        '400':
+          description: >-
+            MISSING_IDEMPOTENCY_KEY (absent or blank) or INVALID_IDEMPOTENCY_KEY (over
+            128 characters). Bounds are checked in the domain, not as a `Header(...)`
+            constraint, so a violation answers in this project's `{error_code, message}`
+            envelope rather than the framework's — same reason `list_generations` keeps
+            `limit` out of `Query(ge=…, le=…)`.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
         '401':
           description: Missing, malformed, expired, or non-access token; also any case where the check cannot complete.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+        '429':
+          description: >-
+            RETRY_LIMIT_REACHED — at most 5 retries per source generation. This is the
+            only endpoint in the story that spends money, and the fresh-key rule that
+            keeps the button alive after a second failure also means the idempotency
+            constraint bounds nothing: a scripted client can retry one failed row
+            forever.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+        '503':
+          description: >-
+            QUERY_TIMEOUT — same 3s statement deadline as the feed, same generic body
+            with a correlation id.
           content:
             application/json:
               schema: {$ref: '#/components/schemas/ErrorResponse'}

@@ -33,12 +33,18 @@ paths:
         - name: page
           in: query
           required: false
-          description: 1-based page number. Exact decimal integer; `2.5`, `1e3`, `+1` are 400.
-          schema: {type: integer, minimum: 1, maximum: 1000, default: 1}
+          description: >
+            1-based page number, 1..1000. Exact decimal integer; `2.5`, `1e3`, `+1` are
+            400. The bounds are documented here but enforced in the domain, not as
+            `Query(ge=…, le=…)` — a framework-level constraint answers in Pydantic's
+            envelope, and this project's 400s are `{error_code, message}`. Same reason
+            `list_generations` keeps `limit` out of the signature.
+          schema: {type: integer, default: 1}
         - name: limit
           in: query
           required: false
-          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+          description: 1..100, bounded in the domain for the same reason as `page`.
+          schema: {type: integer, default: 20}
         - name: sort
           in: query
           required: false
@@ -68,7 +74,12 @@ paths:
             Implemented as `ILIKE '%…%'` with no full-text index: a sequential scan of
             the caller's rows. Deliberate scope trade, recorded as debt; see
             `stories/12-my-projects/12_MyProjects_Notes.md`.
-          schema: {type: string, maxLength: 200}
+
+
+            The 200 bound is code points and is enforced in the domain — OpenAPI's
+            `maxLength` counts UTF-16 units, which disagrees on astral-plane input at
+            exactly the boundary the tests assert.
+          schema: {type: string}
       responses:
         '200':
           description: One page of the caller's feed.
@@ -140,11 +151,13 @@ components:
           type: integer
           description: >
             Count of the caller's rows matching `q`, over the same deduplicated
-            projection as `items` and read in the same snapshot — summing `items`
-            across every page equals this number exactly.
+            projection as `items` and read in the same snapshot. Over a **static** set,
+            summing `items` across every page equals this number exactly. Over a live
+            set it does not, and cannot: that is the offset trade named in the endpoint
+            description, and the reason the client dedupes on `(kind, id)`.
     ProjectItem:
       type: object
-      required: [kind, id, document_type, created_at, updated_at, preview]
+      required: [kind, id, document_type, status, retryable, created_at, updated_at, preview]
       properties:
         kind:
           type: string
@@ -173,16 +186,23 @@ components:
         document_type: {type: string, description: доклад | эссе | сочинение | реферат}
         status:
           type: string
+          enum: [draft, ready, pending, in_progress, completed, failed, recovering, unknown]
           description: >
-            Documents report their document status. Generations report
-            pending|in_progress|failed. A status this contract does not know fails
-            closed to `unknown` — never mapped onto a displayed one — and emits a log
-            signal carrying the id and the unrecognized value.
+            Documents report their document status. Generations report `pending`,
+            `in_progress`, `failed`, `completed` (the orphan case — completed but no
+            document was ever made from it, which is the row this feed exists to
+            rescue), or `recovering` (non-terminal past the stale threshold; the sweep
+            is re-running it). A status this contract does not know fails closed to
+            `unknown` — never mapped onto a displayed one — and emits a log signal
+            carrying the id and the unrecognized value. Always present: an implementation
+            that omitted the field on the unknown branch would satisfy a looser schema
+            while doing exactly what the fail-closed rule forbids.
         retryable:
           type: boolean
           description: >
-            True only for a `failed` generation. A pending/in_progress row is not
-            retryable: the existing stale sweep requeues it, and offering a retry there
-            would duplicate work that is still running.
+            True only for a `failed` generation that has not reached the per-source retry
+            ceiling. A pending/in_progress/recovering row is not retryable: the stale
+            sweep requeues it, and offering a retry there would duplicate work that is
+            still running. Always present — an absent key is not `false`.
         created_at: {type: string, format: date-time, description: UTC ISO-8601 with explicit offset.}
         updated_at: {type: string, format: date-time, description: UTC ISO-8601 with explicit offset.}

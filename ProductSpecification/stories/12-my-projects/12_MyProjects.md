@@ -72,9 +72,11 @@ section longer than the whole rest of the spec.
 - Search over `Document.content` uses `ILIKE '%…%'` with **no** full-text index — a conscious
   speed-vs-scope compromise, recorded in `.memory-bank/tasks/known-debt.md`; the replacement is
   `tsvector` + GIN with Russian morphology.
-- The unindexed scan's bound is **p95 < 800 ms** for a worst-case `q` against a seeded 500-row
-  account, asserted in a load scenario. A recorded baseline was the earlier wording and nothing
-  could go red on it.
+- The unindexed scan is bounded by **throughput**, not by a latency percentile — the project's
+  declared Load Challenge Profile is Throughput (`ExpectedLoad.md`), and per-request p95 is
+  explicitly out of scope for it. The load scenario asserts the feed sustains its rate with an
+  error-rate ceiling while searches run, and that the per-account cap sheds the excess as 429
+  rather than queueing it into the connection pool.
 - No in-memory state: no cached feed, `total`, page window, or idempotency record. Multi-instance
   deployment; the database is the only shared state.
 - Two new usecases — `ListProjects` over a new repository port, and `RetryGeneration`. Neither

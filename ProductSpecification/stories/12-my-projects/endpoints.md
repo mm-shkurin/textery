@@ -33,13 +33,29 @@ replay path short-circuits before any ownership logic, so a colliding key return
 account's generation. This mirrors `uq_documents_owner_idempotency_key`, which already
 exists on `documents`.
 
-**This forces a migration on `generations`.** The table has no `idempotency_key` column
-and no unique constraint today, even though `generations_create.yaml` documents the
-header as required — a pre-existing contract/code drift that story 12 is the first to
-actually depend on. So the story ships: a column + `uq_generations_owner_idempotency_key`,
-and `POST /generations` starts honouring the header it already advertises. This
-contradicts the story spec's "no migration is strictly required"; the spec was written
-before this endpoint existed and has been corrected.
+**This forces a migration on `generations`** — and unlike the `documents` one it
+"mirrors", this table is not empty and is written continuously by the sweep, so the shape
+matters:
+
+- `idempotency_key` is **nullable**. NOT NULL would abort the deploy on every existing
+  row; a backfilled `''` would collide on the first account with two generations. Legacy
+  rows keep NULL, and Postgres treats NULLs as distinct, so they neither collide nor are
+  constrained. New rows always carry a key because the endpoints require the header.
+- `source_generation_id`, nullable, self-referencing — without lineage the replay path
+  cannot tell a repeat of *this* retry from the same key used against a different source,
+  and the 409 in `generations_retry.yaml` would be unwritable.
+- The unique index is built `CONCURRENTLY`, under a `lock_timeout`. A plain build takes
+  `ACCESS EXCLUSIVE` over the whole table while every replica's sweep is issuing
+  `UPDATE`s against it — the `documents` precedent was a `create_table` on zero rows and
+  says nothing about this case.
+
+`POST /generations` also starts honouring the header it already advertises: a replayed key
+returns the existing generation (200) instead of creating a second. That is a behaviour
+change to a story-1 endpoint, so it carries its own acceptance scenarios rather than
+riding along.
+
+This contradicts the story spec's "no migration is strictly required"; the spec was
+written before this endpoint existed and has been corrected.
 
 **The old failed card stays** after a retry (the deferred ACTION). Nothing is deleted or
 mutated, the new generation is a separate row, and the feed shows both — which is what
@@ -63,9 +79,10 @@ storage-owned and already exists (the sweep needs it).
 | `preview` length | 200 code points | Enough for a first line; read as a SQL prefix so page bytes don't scale with document size. |
 | Recent-projects `N` | 4 | The grid mockup shows four. |
 | Search debounce | 300 ms | UI affordance only — the real bound is the per-account cap below. |
-| Statement timeout | 3 s | Below the gateway read timeout, so a client is never told 504 while the scan runs on. |
-| Search concurrency | 1 in-flight searching request per account (else 429 `SEARCH_BUSY`) | The content scan is unindexed; a browser debounce does nothing for a second tab or a scripted client. |
-| Response-time bound | p95 < 800 ms for a worst-case `q` against a seeded 500-row account | The load scenario asserts this. A recorded baseline was the earlier wording and nothing could go red on it. |
+| Statement timeout | 3 s, `SET LOCAL` | Below the gateway read timeout, so a client is never told 504 while the scan runs on. `SET LOCAL` because a bare `SET` on a pooled connection outlives the request: the next borrower inherits 3 s, and the first query to start failing would be the sweep's contended `UPDATE`. |
+| Search concurrency | 1 in-flight searching request per account (else 429 `SEARCH_BUSY`), slot in the database with a 10 s TTL | The content scan is unindexed; a browser debounce does nothing for a second tab or a scripted client, and an in-process counter bounds nothing across replicas. The TTL exists because a pod killed mid-scan would otherwise hold the account's only slot forever. |
+| Retry ceiling | 5 per source generation (else 429 `RETRY_LIMIT_REACHED`) | The fresh-key rule that keeps the button alive after a second failure also means idempotency bounds nothing. Every unpaid path here has a cap; this is the one that spends money. |
+| Load bound | sustained rate with an error-rate ceiling, not p95 | `ExpectedLoad.md` declares a **Throughput** profile and puts per-request latency percentiles out of scope. The scan's cost is bounded by the statement timeout and shed by the concurrency cap; the load scenario asserts rate and error rate. |
 
 ## Known gap, not closed here
 

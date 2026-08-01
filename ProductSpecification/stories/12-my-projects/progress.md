@@ -5,4 +5,5 @@
 - [x] story
 - [x] mockups
 - [x] api-spec
-- [~] test-spec
+- [x] test-spec (hazard scan: groups 1–8; all fired-trigger GAPs folded as named
+  scenarios, none dismissed — record in `tests/00_Hazard_Scan_Record.md`)
