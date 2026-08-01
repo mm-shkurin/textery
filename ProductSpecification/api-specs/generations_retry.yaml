@@ -1,0 +1,114 @@
+openapi: 3.0.3
+info:
+  title: Retry Generation
+  version: 1.0.0
+
+paths:
+  /api/v1/generations/{id}/retry:
+    post:
+      summary: Start a new generation from a failed one, reusing its stored parameters.
+      description: >
+        Exists because «Повторить» cannot be a plain re-`POST /generations`: that
+        endpoint takes parameters and no id, so the server has nothing to
+        ownership-check and the retry parameters would arrive from the browser. Here
+        the source generation is named by id, authorized against the caller, and its
+        parameters are copied **server-side** — there is no request body, so there is
+        no field a client could over-bind.
+
+
+        The source row is left untouched. The failed card stays in the feed next to the
+        new one; nothing is deleted or mutated, so a user never watches a row vanish
+        with nothing in its place.
+
+
+        Only a `failed` source may be retried. A pending/in_progress generation is
+        recovered by the existing stale sweep (`RequeueStaleGenerations`), and letting a
+        user retry it would run the same work twice and bill it twice.
+      operationId: retryGeneration
+      tags:
+        - generations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The failed generation to retry.
+          schema: {type: string, format: uuid}
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: >
+            Uniqueness is on **(owner_id, Idempotency-Key)**, enforced by a database
+            constraint — never on the key alone, which would let one account's replay
+            match another account's row, and never in process memory, which does nothing
+            across instances. A client-side in-flight lock is a UI affordance and does
+            not satisfy this.
+
+
+            Replaying the same key returns the generation it created (200). A new
+            attempt after the previous one reached a terminal state must use a fresh
+            key — otherwise the button goes silently dead on the second failure.
+
+
+            Same key with a different source id is a conflict (409), not a silent
+            replay of the first.
+          schema: {type: string, minLength: 1, maxLength: 128}
+      responses:
+        '201':
+          description: A new generation was created and enqueued from the source's parameters.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GenerationResponse'}
+        '200':
+          description: Idempotency-Key already seen for this account — the existing generation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GenerationResponse'}
+        '401':
+          description: Missing, malformed, expired, or non-access token; also any case where the check cannot complete.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+        '404':
+          description: >-
+            Source generation absent, or owned by another account. Byte-identical in
+            both cases — a foreign id must not be distinguishable from a missing one.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+        '409':
+          description: >-
+            NOT_RETRYABLE — the source is pending, in_progress or completed. Or
+            IDEMPOTENCY_KEY_REUSED — the same key was already used for a different
+            source generation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+        '500':
+          description: Internal server error
+
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error_code: {type: string}
+        message: {type: string}
+        correlation_id: {type: string}
+    GenerationResponse:
+      type: object
+      description: >-
+        Same shape `POST /api/v1/generations` returns, so the client's existing poll
+        path is unchanged. `owner_id`, `id`, `status` and `created_at` are all
+        server-assigned; none of them is reachable from this request.
+      required: [id, status, document_type, topic, created_at]
+      properties:
+        id: {type: string, format: uuid}
+        status: {type: string, enum: [pending, in_progress, completed, failed]}
+        document_type: {type: string}
+        topic: {type: string}
+        volume_pages: {type: integer}
+        created_at: {type: string, format: date-time}

@@ -6,7 +6,7 @@
 
 - **Offset pagination over a live set.** A row created or edited between two page requests
   shifts every later row by one — the client sees a duplicate or misses a row. Not fixable
-  with offset; the mitigation is client-side dedupe by `id` and an honest note in the
+  with offset; the mitigation is client-side dedupe by `(kind, id)` and an honest note in the
   contract. The keyset alternative was rejected because `updated_at`/`title`/`type` are all
   mutable anchors (see `interview.md`).
 - **Two sources, one identity space.** `Document.id` and `Generation.id` are separate UUID
@@ -118,9 +118,14 @@ the debt has a number attached.
 
 ### Infrastructure Notes
 
-No new infrastructure. No migration is strictly required for the endpoint itself; a
-`preview` derived at query time avoids a schema change, at the cost of computing it per
-request. If it is ever materialized, that becomes a migration and a backfill.
+No new infrastructure. The read endpoint itself needs no schema change — a `preview`
+derived at query time avoids one, at the cost of computing it per request; materializing
+it later would be a migration plus a backfill.
+
+The story does carry one migration, for the retry path rather than the feed:
+`generations` gains an `idempotency_key` column and
+`uq_generations_owner_idempotency_key`. See `endpoints.md` — the contract has advertised
+that header as required since story 1, and nothing has enforced it.
 
 ### Integration Notes
 

@@ -18,7 +18,16 @@ paths:
         the same document is served twice or never. `created_at` cannot move. The
         `id` tiebreak is load-bearing too: `created_at` alone is not unique, and a page
         boundary between two rows sharing a timestamp would drop or repeat one.
+
+
+        **Deprecated** as of story 12 in favour of `GET /api/v1/projects`, which merges
+        documents with the generations that never became one and adds search and four
+        sort orders. Behaviour here is unchanged and stays supported; the endpoint is
+        removed only once the frontend has migrated. The reasoning above is exactly why
+        this contract was not extended instead — search and mutable-key sorting cannot
+        ride a keyset cursor.
       operationId: listDocuments
+      deprecated: true
       tags:
         - documents
       security:
