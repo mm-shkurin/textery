@@ -1,0 +1,72 @@
+<!-- Shared fragment reference for the three «Мои проекты» screens.
+     Not a screen itself — kept so the header/toolbar/sprite markup has one
+     source to copy from and the three files can't drift apart silently. -->
+
+<!-- SPRITE: paste once per screen, right after <body> -->
+<svg style="display:none">
+  <symbol id="folder" viewBox="0 0 52 64">
+    <path fill="currentColor" opacity=".35" d="M4 8a6 6 0 0 1 6-6h20l18 18v36a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6V8z"/>
+    <path fill="currentColor" d="M30 2l18 18H36a6 6 0 0 1-6-6V2z"/>
+  </symbol>
+</svg>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo"><div class="logo-mark">T<span>AI</span></div>Textery</div>
+  <div class="header-actions">
+    <button class="icon-btn"><i data-lucide="bell"></i></button>
+    <div class="avatar">АИ</div>
+    <i data-lucide="chevron-down"></i>
+  </div>
+</div>
+
+<!-- TOOLBAR — search, filter, sort, create, view switch -->
+<div class="toolbar-row">
+  <div class="search"><i data-lucide="search"></i>Поиск проектов…</div>
+  <div class="round-btn"><i data-lucide="filter"></i></div>
+  <div class="round-btn"><i data-lucide="arrow-up-down"></i></div>
+  <div class="spacer"></div>
+  <button class="btn btn-primary"><i data-lucide="sparkles"></i>Создать проект</button>
+  <div class="view-switch">
+    <div class="active"><i data-lucide="layout-grid"></i></div>
+    <div><i data-lucide="list"></i></div>
+  </div>
+</div>
+
+<!-- CATEGORY CHIPS -->
+<div class="chips">
+  <div class="chip active"><i data-lucide="database"></i>Все</div>
+  <div class="chip"><i data-lucide="book-open"></i>Учебные</div>
+  <div class="chip"><i data-lucide="file-text"></i>Деловые</div>
+</div>
+
+<!-- CARD (grid view) -->
+<div class="proj">
+  <div class="thumb"><svg class="f-blue"><use href="#folder"/></svg></div>
+  <div class="body">
+    <span class="badge b-blue">Реферат</span>
+    <div class="title">Влияние искусственного интеллекта на рынок труда</div>
+    <div class="date">15 июля</div>
+  </div>
+</div>
+
+<!-- ROW (list view) -->
+<div class="row">
+  <div class="glyph"><svg class="f-blue"><use href="#folder"/></svg></div>
+  <div>
+    <div class="name">Влияние искусственного интеллекта на рынок труда</div>
+    <span class="badge b-blue">Реферат</span>
+  </div>
+  <div class="date">15 июля 2026</div>
+  <div class="date">Учебные</div>
+  <div class="more"><i data-lucide="more-horizontal"></i></div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="logo"><div class="logo-mark">T<span>AI</span></div>Textery</div>
+  <div>© 2026 Textery. Все права защищены.</div>
+  <div class="foot-links">
+    <span>Условия использования</span><span>Политика конфиденциальности</span><span>Поддержка</span>
+  </div>
+</div>

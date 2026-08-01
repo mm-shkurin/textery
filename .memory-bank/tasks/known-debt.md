@@ -227,3 +227,24 @@ page, not worth a dedicated red/green cycle right now. Deprioritized, not delete
 **Resurfaces:** whenever scenario 1.1 (landing hero) gets touched again — drop the
 subheading assertion (or restore the subheading in the component, if it's coming back)
 and get the Selenium suite green again.
+## 14. Project search uses `ILIKE` over `content`, not a Postgres full-text index
+Decided 2026-08-01 during story 12's `/interview`. The «Мои проекты» search box must match
+on title, generation topic, **and document body**. Body search is implemented as
+`ILIKE '%term%'` over `content` — up to 200,000 characters per document, no index.
+
+Two consequences, both known and accepted for the sprint:
+- **No morphology.** Russian is heavily inflected; «рефератов» does not match «реферат».
+  The user searching for a word they remember in a different form finds nothing and
+  concludes the document is gone.
+- **Linear scan.** Cost grows with total content size, not with result count. Fine at
+  tens of documents per owner, not fine later.
+
+The correct fix is `tsvector` + a GIN index with the `russian` text-search configuration,
+maintained on write. That is a migration plus backfill plus its own scenarios — it did not
+fit the week, and shipping the screen without body search at all was judged worse than
+shipping it approximate.
+
+**Resurfaces:** first complaint that search "doesn't find" a document the user knows
+exists (that is the morphology gap, not a bug), or the first list-latency measurement that
+implicates the search predicate. Also revisit if `/projects` acquires load scenarios —
+`ExpectedLoad.md` has no profile for this endpoint yet.
