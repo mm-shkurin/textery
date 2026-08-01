@@ -6,7 +6,7 @@ info:
 paths:
   /api/v1/generations:
     post:
-      summary: Submit a new document generation request (доклад)
+      summary: Submit a new document generation request
       operationId: createGeneration
       tags:
         - generations
@@ -76,8 +76,21 @@ components:
       properties:
         document_type:
           type: string
-          enum: [доклад]
-          description: Only "доклад" is accepted in this story; stories #2-#4 add the rest.
+          enum: [доклад, эссе, сочинение, реферат]
+          description: >-
+            All four types are accepted by the server — the domain allowlist has
+            carried them since story 1, and documents_create.yaml already listed
+            them. This enum said [доклад] until story #4 and was wrong against
+            the running system: a client trusting it expected 422 for эссе and
+            got 201.
+
+            Which types are reachable from the UI is a separate, client-side
+            question: the type modal enables a card per story (#4 реферат, #2
+            эссе, #3 сочинение). Card availability is UX, not authorization —
+            a disabled card does not close the API path.
+
+            What differs per type is the generated text, not the contract: the
+            prompt template is chosen server-side from this value.
         topic:
           type: string
           minLength: 1
