@@ -1,0 +1,163 @@
+openapi: 3.0.3
+info:
+  title: List Projects (merged feed)
+  version: 1.0.0
+
+paths:
+  /api/v1/projects:
+    get:
+      summary: The caller's own work as one feed — documents plus unconverted generations.
+      description: >
+        Scoped to the Bearer token's account: `owner_id` is a query predicate, never a
+        parameter. A foreign row is absent, byte-identically to one that does not exist.
+
+
+        Replaces `GET /documents` and `GET /generations` for the «Мои проекты» screen.
+        Those are keyset-paginated and cannot be extended to serve it: search, four sort
+        criteria, and merging two tables each need a mutable or cross-table anchor, and a
+        keyset anchor must be immutable. Hence offset paging — a deliberate trade, revisited
+        when one owner's item count reaches thousands. See `stories/12-my-projects/`.
+
+
+        Membership: every `Document`, plus only `Generation` rows with no linked document, so
+        a converted generation appears exactly once, as its document. Both arms are read in
+        one query/transaction — a conversion committing mid-request cannot make an item
+        appear twice or vanish.
+
+
+        Ordering runs over the merged set, never per-arm, and is total: the requested key,
+        then `kind`, then `id`. `id` alone is NOT a tiebreak — document and generation ids
+        come from different tables and can collide, which under offset paging is how a row
+        gets served twice or skipped. Text ordering is pinned in the query
+        (`COLLATE "ru-RU-x-icu"`), never inherited from the database, session, or a restored
+        dump, or two instances answer the same request differently. The collation's
+        availability is asserted at startup, not per-request.
+      operationId: listProjects
+      tags:
+        - projects
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: >
+            Case-insensitive search over document title, document text, and generation
+            topic. Both sides are NFC-normalized, so a title stored in NFD is found by its
+            NFC form and vice versa. `%`, `_` and the escape character are escaped as
+            literals (`ESCAPE '\'`) — otherwise `q=%` degenerates into a full scan. Trimmed;
+            empty or whitespace-only is absent, not "match nothing".
+
+
+            Document text is matched with `ILIKE` and no full-text index: accepted debt, no
+            morphology, to be replaced by `tsvector` + GIN (Russian configuration). It is
+            this endpoint's dominant cost and the reason for the length cap and the
+            statement timeout.
+          schema:
+            type: string
+            maxLength: 200
+        - name: sort
+          in: query
+          required: false
+          description: >
+            Four criteria, five orders. An unknown value is 422, never a silent fallback: a
+            client that misspells a sort must not be told a different order is the one it
+            asked for. `updated_desc` and `title_asc` are only safe because paging is
+            offset-based — no keyset cursor may later be introduced over a mutable column
+            without re-deciding this endpoint.
+          schema:
+            type: string
+            enum: [created_desc, created_asc, updated_desc, title_asc, type_asc]
+            default: created_desc
+        - name: page
+          in: query
+          required: false
+          description: >
+            1-based. A page past the end of the filtered set is an empty `items` with a
+            correct `total` — a valid answer, not an error. Above `projects_page_max` it is
+            422: without a ceiling, `page=1000000` is a legal request that makes the database
+            count and discard millions of merged rows at the cost of the search path.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          description: >-
+            Above the maximum is 422, deliberately not a silent clamp — a client asking for
+            500 and receiving 50 without being told will page as if it had 500.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: >-
+            A page of the merged feed. Zero matches is a 200 with empty `items`, never a 404.
+          content:
+            application/json:
+              schema:
+                $ref: './projects_schemas.yaml#/components/schemas/ProjectListResponse'
+        '401':
+          description: >-
+            Missing, malformed, expired, or non-access token. Token verification that errors
+            or times out resolves here too — never to a served feed.
+          content:
+            application/json:
+              schema:
+                $ref: './projects_schemas.yaml#/components/schemas/ErrorResponse'
+        '422':
+          description: >-
+            Unknown `sort` (INVALID_SORT), `limit` outside 1..50 (INVALID_LIMIT), `page`
+            below 1 or above `projects_page_max` (INVALID_PAGE), `q` over its maximum
+            (INVALID_QUERY).
+          content:
+            application/json:
+              schema:
+                $ref: './projects_schemas.yaml#/components/schemas/ErrorResponse'
+        '503':
+          description: >-
+            Search exceeded its statement timeout and was aborted (SEARCH_TIMEOUT) — bounded
+            failure, never a hung request. The query is cancelled rather than left running,
+            its connection released, and a log signal carrying owner id and query length is
+            emitted; the happy path emits none.
+          content:
+            application/json:
+              schema:
+                $ref: './projects_schemas.yaml#/components/schemas/ErrorResponse'
+        '500':
+          description: >-
+            Internal error, including either arm of the merged read failing. The feed is
+            never served half-populated: a failed generation arm must not render as "no
+            unfinished generations".
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  # Response schemas live in projects_schemas.yaml — split for the 200-line file limit.
+
+x-config:
+  description: >-
+    Environment-varying values, each a named key with an explicit default. Boot fails fast
+    naming the key when one is unset — an unset statement timeout is an untimed sequential
+    scan in production, silently fine in a small dev database. The timeout is pinned strictly
+    below the gateway/client read timeout; larger, and the caller aborts first while the scan
+    runs on orphaned.
+  projects_search_statement_timeout_ms: 3000
+  projects_search_query_max_chars: 200
+  projects_preview_max_code_points: 200
+  projects_page_size_default: 20
+  projects_page_size_max: 50
+  projects_page_max: 500
+  projects_recent_items: 4
+  projects_sort_collation: ru-RU-x-icu
+x-paging-stability: >-
+  Offset paging is unstable under concurrent writes: a row inserted into an already-fetched
+  window shifts the rest by one, so one item is skipped. Accepted at this scale, and pinned
+  rather than left silent — the documented outcome is skip (never duplicate), bounded to one
+  item per insert.

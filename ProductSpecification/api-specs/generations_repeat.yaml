@@ -1,0 +1,147 @@
+openapi: 3.0.3
+info:
+  title: Repeat Generation
+  version: 1.0.0
+
+paths:
+  /api/v1/generations/{generation_id}/repeat:
+    post:
+      summary: Re-run a failed or stalled generation with the same parameters.
+      description: >
+        The «Повторить» button on a project card. Creates a NEW generation copying the
+        source's `document_type`, `topic`, `volume_pages`, `requirements`, and
+        `extra_wishes`. The source row is never mutated — it stays in the feed as the
+        record of what failed.
+
+
+        Why this exists instead of the client re-posting to `POST /generations`: that
+        endpoint's exactly-once guarantee rests on `Idempotency-Key`, and the existing
+        caller mints `crypto.randomUUID()` per call (`generationApi.ts`). Two clicks, two
+        keys, two rows — the unique constraint never fires, and the user is billed twice.
+        Making the client derive a stable key moves a correctness guarantee into the
+        browser, where a second tab or a retry-on-network-error breaks it again.
+
+
+        Here the identity of the operation is the SOURCE generation, which the server
+        already has: at most one repeat of a given source may be outstanding. The rule is
+        a database uniqueness constraint over `(repeat_of_generation_id)` for non-failed
+        children — enforced in the database, not in memory, because the backend runs as
+        multiple instances. There is no `Idempotency-Key` header: a request that carries
+        no client-derived identity cannot have that identity derived wrongly.
+
+
+        Repeat-after-repeat still works: if the previous repeat itself FAILED, it is no
+        longer outstanding, so a second repeat creates a second child. Collapsing that
+        would strand the user on a card whose button silently does nothing — the exact
+        failure story 18 removed the dead "Генерации" tab over.
+
+
+        Empty body by design: every parameter comes from the source row. There is nothing
+        for a client to over-bind — no `owner_id`, no `status`, no `id`. A body is ignored.
+      operationId: repeatGeneration
+      tags:
+        - generations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: generation_id
+          in: path
+          required: true
+          description: >-
+            The source generation, resolved under the owner predicate. Another account's
+            id answers byte-identically to an id that does not exist.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: A new generation was created and enqueued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationResponse'
+        '200':
+          description: >-
+            A repeat of this source is already outstanding — returns that generation
+            rather than creating a second one. This is the double-click answer, and the
+            two-tabs answer, and the retry-after-a-lost-response answer: all three are the
+            same request, and all three get the same generation id back.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationResponse'
+        '401':
+          description: Missing, malformed, expired, or non-access token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: >-
+            No such generation for this caller — absent and foreign are indistinguishable
+            (NOT_FOUND).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: >-
+            The source is not repeatable at the moment the server handles the request
+            (NOT_REPEATABLE). The server re-reads its status; the rendered card is not
+            trusted, because it may have been on screen for ten minutes. Two cases:
+            the source has since completed and become a document (repeating it would
+            duplicate work the user already has), or it is still `pending`/`in_progress`
+            and has not yet crossed `generation_stale_after`. The response carries the
+            source's current status so the client can refresh the feed instead of showing
+            a dead end.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
+          nullable: true
+          description: The source generation's current status, on NOT_REPEATABLE only.
+    GenerationResponse:
+      type: object
+      description: Same shape as generations_create.yaml returns.
+      properties:
+        generation_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, in_progress, completed, failed]
+        document_type:
+          type: string
+        topic:
+          type: string
+        volume_pages:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        repeat_of_generation_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            The source this run was copied from. Null for a generation created directly.
+            Carries the uniqueness constraint that makes the repeat exactly-once.

@@ -13,9 +13,10 @@
 - **«Недавние проекты» duplicates «Все проекты».** Accepted per mockup. Under an active
   search or a non-default sort the section loses its meaning — behaviour pinned at
   `/test-spec`.
-- **Repeat («Повторить») semantics.** Whether the failed card disappears, stays, or is
-  replaced changes what the user sees immediately after clicking. Unpinned → each layer will
-  invent a different answer. `/api-spec` decides.
+- **Repeat («Повторить») semantics — resolved at `/api-spec`.** The source card stays: the
+  server never mutates it, and it is the record of what failed. After a click the feed holds
+  exactly one original card and exactly one new card; a double-click, a second tab, and a
+  retry after a lost response all return the same child generation (200 replay).
 - **Converted generation must not double-appear.** The feed rule is "generations with no
   linked document". If the link column is null for legacy rows converted before story 18's
   `generation_id` landed, those will surface twice — check the back-fill before trusting the

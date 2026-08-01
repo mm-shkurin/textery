@@ -7,7 +7,14 @@ paths:
   /api/v1/generations:
     get:
       summary: The caller's own generation history, newest first. Keyset-paginated.
+      deprecated: true
       description: >
+        DEPRECATED since story 12 in favour of `GET /api/v1/projects`. Unconverted
+        generations now reach the user as cards in the merged feed; this endpoint has no
+        remaining caller. Kept working and untouched until a cleanup task removes it.
+        `GET /generations/{id}` is unaffected.
+
+
         Scoped to the Bearer token's account — `owner_id` is a query predicate, never
         a parameter, so a caller cannot ask for someone else's history. This spec was
         originally written as an unscoped stand-in ("no auth exists yet"); that premise

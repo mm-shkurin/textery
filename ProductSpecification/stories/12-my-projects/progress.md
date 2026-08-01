@@ -8,8 +8,8 @@ checklists live in `progress-backend.md` and `progress-frontend.md` (created onc
 - [x] interview
 - [x] story — `12_MyProjects.md` + `12_MyProjects_Notes.md`; hazard scan over all 8 groups, every GAP folded or dismissed (record in the Notes file)
 - [x] mockups — `mockups/desktop/{01-projects-grid,02-projects-list,03-search-empty}.html`, `mockups/mobile/01-projects-grid.html`
-- [~] api-spec
-- [ ] test-spec
+- [x] api-spec — `endpoints.md`; `api-specs/projects_list.yaml` + `api-specs/generations_repeat.yaml`; `documents_list.yaml`/`generations_list.yaml` marked deprecated. Folded the agent-review/premortem findings from the story commit
+- [~] test-spec
 
 ## Decisions
 

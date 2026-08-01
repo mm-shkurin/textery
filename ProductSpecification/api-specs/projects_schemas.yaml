@@ -1,0 +1,108 @@
+# Shared schemas for the «Мои проекты» feed (story 12).
+#
+# Split out of projects_list.yaml only to respect the repo's 200-line-per-file limit;
+# it is one contract in two files. projects_list.yaml $refs into here.
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      description: >-
+        The project's generic shape, used by every failure family here. No SQL text, stack
+        frame, class name, or file path reaches it; in logs those appear only as a fixed
+        redaction token keyed by a correlation id.
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+    ProjectListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectSummary'
+        total:
+          type: integer
+          description: >-
+            Items in the filtered set, not on this page — the client needs it to know there
+            is a page 2, which is why offset paging replaced the cursor. Under an active `q`
+            the count runs the same predicate, so it shares the search path's timeout and
+            cancellation; it is not a second unbounded scan.
+        page:
+          type: integer
+        limit:
+          type: integer
+    ProjectSummary:
+      type: object
+      description: >-
+        Summary projection, no `content`: `documents_save.yaml` caps content at 200,000
+        characters, so a page of full documents is multi-megabyte for a screen that renders
+        titles.
+      required: [kind, id, title, document_type, status, can_repeat, created_at, updated_at]
+      properties:
+        kind:
+          type: string
+          enum: [document, generation]
+          description: >-
+            The client keys rows on `(kind, id)` and never infers kind from shape: ids come
+            from two tables and can collide, and a React `key={id}` would silently reuse a
+            node. An unrecognised kind renders a neutral non-interactive card, never a
+            crashed feed.
+        id:
+          type: string
+          format: uuid
+          description: >-
+            String-serialized — a numeric id above 2^53 would round in a browser's JSON parse
+            and collapse two projects onto one key.
+        title:
+          type: string
+          nullable: true
+          description: >-
+            A document's title, null when never titled. For a generation, its topic: a
+            generation has no title column, and an absent value on one arm is what would
+            leave `title_asc` undefined over the union.
+        preview:
+          type: string
+          nullable: true
+          description: >-
+            First line of an untitled document; null for a generation and for a titled
+            document. Server-derived only — a client-supplied value is rejected, not merged.
+            Markup is stripped to plain text BEFORE truncation: stored content is sanitized
+            HTML, and cutting HTML at an offset hands the browser an unbalanced tag.
+            Truncation is bounded in code points and snaps back to a grapheme boundary, so an
+            emoji ZWJ sequence or a combining-accent letter astride the limit never becomes
+            U+FFFD or a lone combining mark.
+        document_type:
+          type: string
+          description: >-
+            On both arms — a generation carries the type it was requested with, so `type_asc`
+            has a value over the whole union. A value outside the four domain types renders
+            as a neutral card rather than being coerced.
+        status:
+          type: string
+          enum: [draft, pending, in_progress, failed, stale]
+          description: >-
+            `draft` for a document; for a generation its live state, or `stale` once it has
+            sat in `pending`/`in_progress` past `generation_stale_after` — a dead worker must
+            not leave a card that spins forever and can never be repeated. `completed` never
+            appears: such a generation is either converted (listed as its document) or, if
+            conversion failed, still unconverted and therefore repeatable.
+        can_repeat:
+          type: boolean
+          description: >-
+            Whether `POST /generations/{id}/repeat` is offered. Server-computed, never
+            derived client-side from `status`: a client computing it from an enum it does not
+            fully know would offer repeat on an unknown status (fail-open).
+        created_at:
+          type: string
+          format: date-time
+          description: UTC; converted to the viewer's local zone at render only.
+        updated_at:
+          type: string
+          format: date-time
+          description: >-
+            UTC. Equal to `created_at` for a generation — generations are not edited, and
+            `updated_desc` must still order the whole union.
+
