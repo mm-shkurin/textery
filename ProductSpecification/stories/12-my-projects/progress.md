@@ -9,7 +9,9 @@ checklists live in `progress-backend.md` and `progress-frontend.md` (created onc
 - [x] story — `12_MyProjects.md` + `12_MyProjects_Notes.md`; hazard scan over all 8 groups, every GAP folded or dismissed (record in the Notes file)
 - [x] mockups — `mockups/desktop/{01-projects-grid,02-projects-list,03-search-empty}.html`, `mockups/mobile/01-projects-grid.html`
 - [x] api-spec — `endpoints.md`; `api-specs/projects_list.yaml` + `api-specs/generations_repeat.yaml`; `documents_list.yaml`/`generations_list.yaml` marked deprecated. Folded the agent-review/premortem findings from the story commit
-- [~] test-spec
+- [x] test-spec — `tests/{01..06}_*.md` + `tests/extended/*`; 81 scenarios (API 31,
+  UI 25, Security 11, Integration 6, Infra 5, Load 3). Bootstrapped
+  `progress-backend.md` (56) and `progress-frontend.md` (25)
 
 ## Decisions
 
