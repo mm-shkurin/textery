@@ -10,6 +10,9 @@
 | 16 | OAuth sign-in: VK ID + Yandex ID (frontend-first, backend WIP) | ✅ | · | · | ✅ | · | n/a | · | 14/14 | 100% |
 | 17 | Export document to PDF / DOCX | ✅ | 🔧 | — | ✅ | — | — | — | 14/45 | 31% |
 | 18 | Generate → edit (unify generate + manual, drop mode modal) | ✅ | — | — | 🔧 | — | — | — | 2/13 | 15% |
+| 4  | Auto-generate: реферат                    | 🔧   | —    | —    | —   | —     | —    | —     | 0/0   | 0% |
+| 2  | Auto-generate: эссе                       | 🔧   | —    | —    | —   | —     | —    | —     | 0/0   | 0% |
+| 3  | Auto-generate: сочинение                  | 🔧   | —    | —    | —   | —     | —    | —     | 0/0   | 0% |
 
 # Backlog — Core sequence (build order, decided 2026-07-06)
 
@@ -20,9 +23,6 @@ types) may run in any order relative to each other and may interleave with #5–
 
 | #  | Story                                    | Spec | Back | Intg | Front | Sec | Load | Infra | Tests | %  |
 |----|-------------------------------------------|------|------|------|-----|-------|------|-------|-------|----|
-| 2  | Auto-generate: эссе                       |      |      |      |     |       |      |       |       |    |
-| 3  | Auto-generate: сочинение                  |      |      |      |     |       |      |       |       |    |
-| 4  | Auto-generate: реферат                    |      |      |      |     |       |      |       |       |    |
 | 6  | Model switching (per-tariff AI model choice) |      |      |      |     |       |      |       |       |    |
 | 8  | Billing (tariffs + mocked subscription payment) |      |      |      |     |       |      |       |       |    |
 
