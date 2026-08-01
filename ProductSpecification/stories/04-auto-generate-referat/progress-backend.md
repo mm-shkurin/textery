@@ -11,12 +11,22 @@ that can be red.
 ## Backend Scenarios (tests/01_API_Tests.md)
 
 ### Scenario 1.1: A реферат prompt asks for the реферат structure
-- [~] red-acceptance
-- [ ] design
+- [S] red-acceptance — the prompt has no black-box surface. The acceptance layer is
+  HTTP-only with no compile dependency on `backend/` (no file under `acceptance/`
+  imports it). No endpoint returns the prompt: `POST /api/v1/generations` returns
+  `generation_id`/`status`/`created_at` plus echoed request fields, `GET
+  /api/v1/generations/{id}` returns status and content — and Security scenario 2.1 of
+  this same story requires the prompt not be written verbatim even to the log. The
+  outbound side is no better: the DSL table's GigaChat stub server does not exist
+  (`acceptance/conftest.py` has no provider-stub fixture; `gigachat_provider.py` posts
+  to a module-level `COMPLETIONS_URL` on the live Sber host). The spec's own DSL settles
+  it — "the prompt is built for it" is a direct in-process call on a pure domain
+  component. Covered by `red-usecase` / `green-usecase` below.
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
-- [ ] green-acceptance
+- [S] green-acceptance — nothing to turn green; see `red-acceptance` above.
 
 ### Scenario 1.2: A реферат prompt forbids a bibliography
 - [ ] red-acceptance
