@@ -11,6 +11,7 @@ import {
 } from './ManualEditor.autosave.testSupport'
 import { renderCreatedDocument } from './ManualEditor.autosaveRender.testSupport'
 import {
+  EDITED_CONTENT,
   EDITED_PLAIN,
   SAVED_CONTENT,
   SAVED_PLAIN,
@@ -20,13 +21,13 @@ import {
 import {
   expectNoAbandonmentRecorded,
   expectNoSaveOnWire,
+  expectUnsentEditHeldInEditor,
 } from './ManualEditor.autosaveAbandonFixture'
 import {
   SAVE_BUTTON_LABEL,
   dispatchBeforeUnload,
   expectOnlyDirtyBadge,
   expectOnlySavedBadge,
-  expectSavedBadge,
 } from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')
@@ -85,20 +86,42 @@ describe('ManualEditor — no abandonment record when the armed write had nothin
     await typeIntoEditor(SAVED_PLAIN)
     await crossDebounceBoundary()
     expectBaselineSaveOnWire()
-    expectSavedBadge()
+    // Exclusively clean, the mirror of the exclusively-dirty assertion after the revert below and of
+    // case (b)'s post-click baseline: a bare expectSavedBadge passes on a document rendering BOTH
+    // branches, which is precisely the shape this case then asserts has switched.
+    expectOnlySavedBadge()
     expect(dispatchBeforeUnload()).toBe(false)
 
-    // Type one more word and take it straight back out, clock frozen inside the debounce window.
+    // Type one more word, clock frozen inside the debounce window. THIS is the genuinely-dirty
+    // instant of the case: the editor holds bytes the server does not, nothing has been sent, and
+    // the browser guard must be armed. It is the non-vacuity gate for the `false` above —
+    // ManualEditor registers the beforeunload listener only while hasUnsavedChanges is true, so a
+    // regression that never arms it satisfies every toBe(false) in this file. Observing true while
+    // the document is really dirty is what makes the earlier false mean "stood down" instead of
+    // "was never there"; observing it AFTER the revert would have pinned a defect as specification
+    // (see the note below).
     await typeIntoEditor(EDITED_PLAIN)
+    // The bytes, not just the guard: this is what makes the revert below a REVERT. Without it, a
+    // typeIntoEditor that silently failed to change the content would leave the closing
+    // `toBe(SAVED_CONTENT)` passing over an editor that never left the saved bytes — the case would
+    // then assert "no record over an untouched document", which is the OTHER twin's subject.
+    expect(editorContentHtml()).toBe(EDITED_CONTENT)
+    expect(dispatchBeforeUnload()).toBe(true)
+
+    // ...and take it straight back out, still inside the window.
     await typeIntoEditor(SAVED_PLAIN)
     // Exclusively dirty — the badge must have moved OFF «Сохранено», not merely acquired --dirty
     // alongside it, which is how a green that renders both branches would slip past a bare toHaveClass.
     expectOnlyDirtyBadge()
-    // The non-vacuity gate for the `false` above: ManualEditor registers the beforeunload listener
-    // only while hasUnsavedChanges is true, so a regression that never arms it satisfies every
-    // toBe(false) in this file. Observing true exactly here is what makes the earlier false mean
-    // "stood down" instead of "was never there".
-    expect(dispatchBeforeUnload()).toBe(true)
+    // What the browser guard reports HERE is deliberately not asserted, in either direction.
+    // Today it reads armed: the restoring transaction runs noteEdit -> onDirty, and hasUnsavedChanges
+    // is cleared only by save() reaching `isAlreadySaved -> onSaved`, which an unmount inside the gap
+    // never reaches — so closing the tab over a document whose bytes the server provably holds shows
+    // «Leave site?». That is a defect (premortem CREDIBLE #4 on `ccd830c`), distinct from the fresh-
+    // document `useState(true)` twin filed on `264fab2`. Asserting `true` would commit this suite to
+    // it as intended behavior and forbid the fix; asserting `false` would fail here for a reason
+    // outside this case's subject — the abandonment RECORD, not the browser guard — and so would
+    // conflate two greens. It stays unasserted, and named, until the dirty-flag item is taken.
     // "A deadline is armed" is deliberately NOT asserted via vi.getTimerCount(): the observed count
     // here is 3, not 1 — every input event arms ProseMirror-internal ticks beside our debounce, so the
     // global count is a third-party number that would fail for reasons pointing nowhere near this
@@ -133,10 +156,13 @@ describe('ManualEditor — no abandonment record when the armed write had nothin
 
     // One edit, deadline armed, nothing sent — genuinely unsent work, and the one moment in this
     // case where the guard SHOULD be armed. Asserting it here is what stops the closing false below
-    // from passing vacuously on a listener that was never registered.
+    // from passing vacuously on a listener that was never registered. Stated through the shared
+    // compound rather than a bare dispatchBeforeUnload: the guard alone reads true on a freshly
+    // created document with nothing typed, so the editor's bytes are what tie the armed guard to
+    // THIS case's edit — the same premise the positive abandonment cases assert.
     await typeIntoEditor(SAVED_PLAIN)
     expectNoSaveOnWire()
-    expect(dispatchBeforeUnload()).toBe(true)
+    expectUnsentEditHeldInEditor()
 
     // Part-way through the window the user clicks Сохранить rather than waiting.
     await act(async () => {
