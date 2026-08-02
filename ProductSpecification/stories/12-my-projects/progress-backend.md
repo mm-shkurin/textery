@@ -23,13 +23,19 @@ not silently resolved in code:
    exit path; its body tests only the deadline (first hit: Scenario 10.3).
 7. `status: running` (API 1.9) is not in the contract enum — `in_progress` is.
 8. One 409 code for "not failed": `NOT_RETRYABLE` or `GENERATION_NOT_FAILED`.
+9. `POST /generations/{id}/retry` has no request body and no idempotency header, so a
+   client that double-fires the button has no slot to carry a key. Either the contract
+   grows one, or the collapse must be derived server-side from `(owner, source, state)`.
+   Raised by the group-8 scan at 1.1's `design` step; first hit: Scenario 11.4.
 
 ## Backend Scenarios (01_API_Tests.md)
 
 ### Scenario 1.1 The feed shows the caller's documents and nothing of anyone else's
 - [x] red-acceptance
-- [~] design
-- [ ] red-usecase
+- [x] design (Option A — see `decisions/project-feed-read-model-decision.md`; hazard scan:
+  groups 1–8, 8 GAPs folded into the design, 5 folded as Scenarios 11.1–11.5, 1 dismissed
+  to Scenario 10.6, group 8's UI sub-triggers dismissed as out of altitude)
+- [~] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
@@ -651,6 +657,52 @@ not silently resolved in code:
 - [ ] green-acceptance
 
 ### Scenario 10.14 Each degraded path emits a distinguishable signal
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Discovered by the hazard scan at Scenario 1.1's `design` step (2026-08-02)
+
+Five fired triggers whose forced guard no existing scenario carries. Folded here as named
+scenarios rather than dismissed; the guards the *design* absorbed are recorded in
+`decisions/project-feed-read-model-decision.md` instead. Group in brackets.
+
+### Scenario 11.1 A document written before generation_id existed shows its work once [group 4]
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 11.2 A feed requested with no limit is capped at the server default [group 6]
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 11.3 A row inserted between two page requests is neither skipped nor served twice [groups 3, 6]
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 11.4 Two retries fired before the first responds create exactly one generation [groups 2, 8]
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 11.5 Retry is re-checked on the server, not trusted from the retryable flag [group 8]
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase
