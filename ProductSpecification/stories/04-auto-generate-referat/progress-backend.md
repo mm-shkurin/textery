@@ -26,8 +26,17 @@ that can be red.
   design-preview hazard scan (groups 1–8 dispatched; 8 dismissed as out of altitude).
   Nine in-scope GAPs folded in as named forced guards G1–G9; six pipeline-altitude
   findings recorded and mapped to the scenarios that own them.
-- [~] red-usecase
-- [ ] green-usecase
+- [x] red-usecase — `backend/domain/tests/generation/test_referat_prompt.py` (pure
+  domain module, so the test lives in `domain/tests`, not `usecase/tests`).
+  `PromptRequest` carries only `document_type` and `topic` so far — the ADR's other
+  three fields arrive with the scenarios that read them (1.2–1.6, G2/G3), rather than
+  sitting unreferenced. `/test-review` scoped each obligation to the sentence raising
+  its section, so "введение **with** актуальность и цель" is a real assertion; the
+  tightened fragments (`актуальность темы`, `цель работы`, `разделы по теме`,
+  `выводы`, `во введении`/`в заключении`, topic interpolated) are now the
+  specification green must satisfy. Substring checks by design — the golden `==` is
+  scenario 1.3's job (G6).
+- [~] green-usecase
 - [ ] adapters-discovery
 - [S] green-acceptance — nothing to turn green; see `red-acceptance` above.
 
