@@ -26,7 +26,6 @@ from statements.resend_statements import ResendStatements
 # 200-line cap; re-imported here so pytest discovers them as conftest fixtures.
 from frontend_generation_fixtures import (  # noqa: F401
     chat_workspace_statements,
-    mode_modal_statements,
     manual_editor_statements,
     manual_editor_line_break_statements,
     manual_editor_save_payload_statements,
