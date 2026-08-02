@@ -17,7 +17,7 @@ in would widen what this scenario validates.
 """
 
 from dataclasses import dataclass
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from clients.application.application_client import ApplicationClient
 from clients.application.dto.project.project_list_response_dto import (
@@ -54,13 +54,9 @@ class ProjectFeedStatements:
     EXPECTED_TOTAL: ClassVar[int] = 1
     # projects_list.yaml: `kind` is the source table, never a status.
     DOCUMENT_KIND: ClassVar[str] = "document"
-    # A document that was created and never saved has empty content, so its
-    # server-derived preview is the empty string -- not a truncation of anything.
-    EXPECTED_PREVIEW: ClassVar[str] = NEW_DOCUMENT_CONTENT
     # Documents are never retryable: retryable is true only for a failed generation
     # under its retry ceiling (projects_list.yaml).
     EXPECTED_RETRYABLE: ClassVar[bool] = False
-    EXPECTED_TITLE: ClassVar[Optional[str]] = NEW_DOCUMENT_TITLE
 
     def __init__(self, client: ApplicationClient):
         self._client = client
@@ -147,8 +143,10 @@ class ProjectFeedStatements:
                 ProjectItemDto(
                     kind=self.DOCUMENT_KIND,
                     id=document.id,
-                    title=self.EXPECTED_TITLE,
-                    preview=self.EXPECTED_PREVIEW,
+                    title=NEW_DOCUMENT_TITLE,
+                    # A document created and never saved has empty content, so its
+                    # server-derived preview is the empty string -- not a truncation.
+                    preview=NEW_DOCUMENT_CONTENT,
                     document_type=SUPPORTED_DOCUMENT_TYPE,
                     status=NEW_DOCUMENT_STATUS,
                     retryable=self.EXPECTED_RETRYABLE,

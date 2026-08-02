@@ -50,21 +50,16 @@ async def authenticated_access_token(client: ApplicationClient) -> str:
             confirm_password=ACCOUNT_PASSWORD,
         )
     )
-    code = (register_response.body or {}).get("verification_code")
-    assert code is not None, (
-        f"setup: expected registration to issue a verification_code, got "
-        f"status_code={register_response.status_code}, body={register_response.body}"
+    code = _required(
+        register_response, "verification_code", "registration to issue a verification_code"
     )
     await client.verify(VerifyRequestDto(email=email, code=code))
     login_response = await client.login(
         LoginRequestDto(email=email, password=ACCOUNT_PASSWORD)
     )
-    token = (login_response.body or {}).get("access_token")
-    assert token is not None, (
-        f"setup: expected login to issue an access_token, got "
-        f"status_code={login_response.status_code}, body={login_response.body}"
+    return _required(
+        login_response, "access_token", "login to issue an access_token"
     )
-    return token
 
 
 async def create_document_owned_by(
@@ -75,18 +70,32 @@ async def create_document_owned_by(
         access_token=access_token,
         idempotency_key=str(uuid.uuid4()),
     )
-    body = response.body or {}
-    document_id = body.get("document_id")
-    assert document_id is not None, (
-        f"setup: expected document creation to return a document_id, got "
-        f"status_code={response.status_code}, body={response.body}"
+    document_id = _required(
+        response, "document_id", "document creation to return a document_id"
     )
-    created_at = body.get("created_at")
-    assert created_at is not None, (
-        f"setup: expected document creation to report created_at, got "
-        f"status_code={response.status_code}, body={response.body}"
+    created_at = _required(
+        response, "created_at", "document creation to report created_at"
     )
     return CreatedDocument(id=document_id, created_at=_as_utc_instant(created_at))
+
+
+def _required(response, key: str, expectation: str):
+    """Read a key setup depends on, or fail naming the response that withheld it.
+
+    The whole body is checked for presence first: a `(body or {}).get(key)` reads a
+    response that carried no JSON at all as "the key is missing", which reports the
+    wrong cause when the real failure was a 500 or a route miss.
+    """
+    assert response.body is not None, (
+        f"setup: expected {expectation}, got no parseable body "
+        f"(status_code={response.status_code})"
+    )
+    value = response.body.get(key)
+    assert value is not None, (
+        f"setup: expected {expectation}, got "
+        f"status_code={response.status_code}, body={response.body}"
+    )
+    return value
 
 
 def _as_utc_instant(raw: str) -> datetime:
