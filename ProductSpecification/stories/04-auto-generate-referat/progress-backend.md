@@ -22,8 +22,11 @@ that can be red.
   to a module-level `COMPLETIONS_URL` on the live Sber host). The spec's own DSL settles
   it — "the prompt is built for it" is a direct in-process call on a pure domain
   component. Covered by `red-usecase` / `green-usecase` below.
-- [~] design
-- [ ] red-usecase
+- [x] design — ADR `decisions/prompt-builder-decision.md`, revised after the
+  design-preview hazard scan (groups 1–8 dispatched; 8 dismissed as out of altitude).
+  Nine in-scope GAPs folded in as named forced guards G1–G9; six pipeline-altitude
+  findings recorded and mapped to the scenarios that own them.
+- [~] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [S] green-acceptance — nothing to turn green; see `red-acceptance` above.
