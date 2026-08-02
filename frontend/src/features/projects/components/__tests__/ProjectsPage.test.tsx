@@ -59,7 +59,7 @@ describe('ProjectsPage', () => {
   // findAllByTestId('project-card') never resolves. The message is vitest's rather than testing
   // library's "Unable to find an element" because setup.ts sets asyncUtilTimeout to 5000, exactly
   // vitest's default testTimeout, so the outer timeout wins the race.
-  it.skip('shows each project as a card carrying its type, its name, and its date', async () => {
+  it('shows each project as a card carrying its type, its name, and its date', async () => {
     mockFeed([DOCUMENT, GENERATION], 2)
 
     render(<ProjectsPage />)
