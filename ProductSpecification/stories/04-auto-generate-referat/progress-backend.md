@@ -36,8 +36,14 @@ that can be red.
   `выводы`, `во введении`/`в заключении`, topic interpolated) are now the
   specification green must satisfy. Substring checks by design — the golden `==` is
   scenario 1.3's job (G6).
-- [~] green-usecase
-- [ ] adapters-discovery
+- [x] green-usecase — `prompt_template.py`: `_referat` builder, `_plain` placeholder
+  shared by the other three types, `_TEMPLATES` dispatch, import-time assertion against
+  `SUPPORTED_DOCUMENT_TYPES`. 180 domain / 702 backend passed, 0 failed; the доклад
+  adapter golden stayed green because `GigaChatProvider` was not touched. `_plain` is
+  **not** byte-identical to today's provider f-string — that string interpolates
+  `volume_pages`, and `PromptRequest` has no such field yet. Scenario 1.3 must add the
+  field before its golden can land.
+- [~] adapters-discovery
 - [S] green-acceptance — nothing to turn green; see `red-acceptance` above.
 
 ### Scenario 1.2: A реферат prompt forbids a bibliography

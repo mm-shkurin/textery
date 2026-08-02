@@ -1,7 +1,5 @@
 import re
 
-import pytest
-
 from document.document_type import REFERAT
 from generation.prompt_template import PromptRequest, build_prompt
 
@@ -43,7 +41,6 @@ def _sentence_with(prompt: str, marker: str) -> str:
     return sentences[0]
 
 
-@pytest.mark.skip(reason="RED: build_prompt raises NotImplementedError -- no реферат template")
 class TestAReferatPromptAsksForTheReferatStructure:
     """A реферат is graded on its shape, so the prompt has to dictate that shape.
 
