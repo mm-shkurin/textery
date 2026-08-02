@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1400">
+<title>Textery — Объём меньше запрошенного</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="pages.css">
+<style>
+  .volume{display:flex; align-items:center; gap:10px; background:#fffbeb;
+    border:1px solid #fde68a; color:#92400e; border-radius:var(--radius-md);
+    padding:11px 14px; font-size:12.5px; margin-bottom:20px;}
+  .volume i{width:16px; height:16px; flex:0 0 16px;}
+  .vbar{height:6px; border-radius:999px; background:var(--border-subtle); overflow:hidden;
+    margin-top:10px;}
+  .vbar > span{display:block; height:100%; width:60%; background:#f59e0b; border-radius:999px;}
+</style>
+</head>
+<body>
+  <!-- Расхождение объёма: заказано 5 страниц, получилось 3.
+       Показываем факт — и только. Никакой автоматической догенерации в этой истории нет,
+       поэтому и кнопки «дописать» здесь быть не должно: она обещала бы то, чего нет. -->
+  <div class="topbar">
+    <div class="logo"><div class="logo-mark"><i data-lucide="sparkles" style="width:16px;height:16px;"></i></div>Textery</div>
+    <div class="header-actions">
+      <button class="icon-btn"><i data-lucide="bell"></i></button>
+      <div class="avatar">АИ</div><i data-lucide="chevron-down"></i>
+    </div>
+  </div>
+
+  <div class="crumbs">
+    <div class="back"><i data-lucide="arrow-left" style="width:15px;height:15px;"></i>Мои проекты</div>
+    <span class="muted">/</span><span class="tag">Доклад</span>
+    <span class="title">Экология городов</span>
+    <div class="right">
+      <button class="btn btn-ghost" style="padding:10px 20px;"><i data-lucide="settings-2"></i>Параметры страницы</button>
+      <button class="btn btn-ghost" style="padding:10px 20px;"><i data-lucide="download"></i>Скачать</button>
+    </div>
+  </div>
+
+  <div class="fmtbar">
+    <i data-lucide="heading-1"></i><i data-lucide="heading-2"></i><div class="sep"></div>
+    <i data-lucide="bold"></i><i data-lucide="italic"></i><i data-lucide="underline"></i>
+    <div class="sep"></div><i data-lucide="list"></i><i data-lucide="align-left"></i>
+    <div class="sep"></div><i data-lucide="separator-horizontal"></i>
+  </div>
+
+  <div class="layout">
+    <div class="pages">
+      <div class="cap">СТРАНИЦЫ</div>
+      <div class="volume" style="display:block;">
+        <div style="display:flex; gap:8px; align-items:flex-start;">
+          <i data-lucide="alert-triangle"></i>
+          <div><b>3 из запрошенных 5</b><br>Объём меньше заказанного.</div>
+        </div>
+        <div class="vbar"><span></span></div>
+      </div>
+      <div class="page-item active">
+        <div class="sq"><i data-lucide="file-text" style="width:15px;height:15px;"></i></div>
+        <div>Страница 1<div class="st">Активная</div></div>
+      </div>
+      <div class="page-item"><div class="sq"><i data-lucide="file-text" style="width:15px;height:15px;"></i></div>Страница 2</div>
+      <div class="page-item"><div class="sq"><i data-lucide="file-text" style="width:15px;height:15px;"></i></div>Страница 3</div>
+      <div class="add"><i data-lucide="separator-horizontal" style="width:15px;height:15px;"></i>Вставить разрыв страницы</div>
+    </div>
+
+    <div class="doc-wrap">
+      <div class="doc">
+        <div class="sheet a4">
+          <h1>Экология городов</h1>
+          <h3>Введение</h3>
+          <p>Урбанизация последних десятилетий изменила характер антропогенной нагрузки на природные системы. Плотность застройки, транспортные потоки и промышленные объекты формируют специфическую городскую среду, устойчивость которой требует отдельного изучения.</p>
+          <p>Цель доклада — обобщить современные подходы к оценке экологического состояния городских территорий и выделить показатели, наиболее чувствительные к изменениям.</p>
+          <h3>1. Источники нагрузки</h3>
+          <p>Основными источниками загрязнения городской среды остаются автомобильный транспорт, теплоэнергетика и строительная деятельность. Их вклад различается по сезонам и по районам города.</p>
+          <p>Отдельного рассмотрения заслуживает шумовое воздействие, которое редко попадает в сводные оценки, но существенно влияет на качество жизни населения.</p>
+          <p>Наблюдения показывают, что распределение нагрузки внутри города неравномерно: различия между районами достигают порядка величины, что делает средние по городу показатели малоинформативными.</p>
+        </div>
+        <div class="sheet-gap">— разрыв страницы —</div>
+        <div class="sheet short">
+          <div class="running-head">Экология городов</div>
+          <h3>2. Показатели и методы оценки</h3>
+          <p>Для оценки состояния городской среды применяется набор индикаторов, охватывающих качество воздуха, состояние зелёных насаждений и уровень шума. Их совместный анализ позволяет получить более полную картину, чем каждый показатель по отдельности.</p>
+          <div class="folio">2</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span>612 слов · Все изменения сохранены</span>
+    <span><span class="warn"><i data-lucide="alert-triangle"></i>3 из запрошенных 5</span> · Страница 1 из 3 · A4, книжная</span>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

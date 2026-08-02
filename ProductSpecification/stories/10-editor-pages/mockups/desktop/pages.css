@@ -1,0 +1,119 @@
+/* Story 10 — editor pages shell. Extends theme.css (story-18 light system). */
+
+body{background:var(--bg-sunken);}
+
+/* ---- chrome carried over from story 18's editor ---- */
+.topbar{background:var(--bg-surface); border-bottom:1px solid var(--border-subtle);
+  padding:14px 28px; display:flex; align-items:center; justify-content:space-between;}
+.topbar .logo{font-size:22px;}
+.topbar .logo-mark{background:var(--accent); width:34px; height:34px;}
+.crumbs{background:var(--bg-surface); border-bottom:1px solid var(--border-subtle);
+  padding:14px 28px; display:flex; align-items:center; gap:12px; font-size:14px;}
+.crumbs .back{display:flex; align-items:center; gap:8px; color:var(--text-secondary);}
+.crumbs .tag{background:var(--accent-soft); color:var(--accent); border-radius:6px;
+  padding:3px 10px; font-size:12.5px; font-weight:600;}
+.crumbs .title{font-weight:600;}
+.crumbs .right{margin-left:auto; display:flex; align-items:center; gap:12px;}
+.fmtbar{background:var(--bg-surface); border-bottom:1px solid var(--border-subtle);
+  padding:10px; display:flex; justify-content:center; gap:6px; color:var(--text-secondary);}
+.fmtbar i{width:18px; height:18px;}
+.fmtbar .sep{width:1px; background:var(--border-subtle); margin:0 8px;}
+.fmtbar .on{color:var(--accent);}
+
+.layout{display:grid; grid-template-columns:240px 1fr; min-height:calc(100vh - 160px);}
+.layout.with-panel{grid-template-columns:240px 1fr 340px;}
+
+/* ---- page rail ---- */
+.pages{background:var(--bg-surface); border-right:1px solid var(--border-subtle);
+  padding:20px 16px;}
+.pages .cap{font-size:11px; letter-spacing:.08em; color:var(--text-muted);
+  display:flex; justify-content:space-between; margin-bottom:14px;}
+.page-item{display:flex; align-items:center; gap:10px; padding:12px;
+  border-radius:var(--radius-md); margin-bottom:8px; color:var(--text-secondary);}
+.page-item.active{background:var(--accent-soft); color:var(--accent);}
+.page-item .sq{width:28px; height:28px; border-radius:8px; background:var(--bg-sunken);
+  display:flex; align-items:center; justify-content:center;}
+.page-item.active .sq{background:var(--accent); color:#fff;}
+.page-item .st{font-size:11.5px; color:var(--accent);}
+/* Not "add a page": pages are derived from content height, never created by hand.
+   The only page action the user has is inserting an explicit break. */
+.pages .add{color:var(--text-secondary); display:flex; align-items:center; gap:8px;
+  padding:12px; font-size:13px;}
+.pages .setup{margin-top:18px; border-top:1px solid var(--border-subtle); padding-top:14px;}
+
+/* ---- sheets ---- */
+.doc-wrap{padding:36px; overflow:auto;}
+/* A4 portrait at 96dpi ≈ 794x1123 px; scaled to 720px wide for the mockup. */
+.sheet{width:720px; margin:0 auto 28px; background:var(--bg-surface);
+  border-radius:6px; box-shadow:var(--shadow-card); position:relative;
+  padding:73px 55px 73px 82px;}
+.sheet.a4{min-height:1018px;}
+.sheet.short{min-height:420px;}
+.sheet .folio{position:absolute; bottom:26px; left:0; right:0; text-align:center;
+  font-size:12px; color:var(--text-muted);}
+.sheet .running-head{position:absolute; top:26px; left:82px; right:55px;
+  font-size:12px; color:var(--text-muted); border-bottom:1px solid var(--border-subtle);
+  padding-bottom:6px;}
+.sheet-gap{text-align:center; font-size:11px; color:var(--text-muted); margin:-14px 0 14px;}
+.doc h1{font-size:26px; margin-bottom:22px;}
+.doc h3{font-size:16px; margin:22px 0 12px;}
+.doc p{margin-bottom:12px; color:#1e293b; text-align:justify;}
+.doc ul{margin:0 0 12px 20px; color:#1e293b;}
+
+/* ---- manual page break marker ---- */
+.brk{display:flex; align-items:center; gap:10px; margin:20px 0;
+  color:var(--accent); font-size:12px; font-weight:600;}
+.brk::before,.brk::after{content:''; flex:1; border-top:1.5px dashed var(--accent);}
+.brk.selected{background:var(--accent-soft); border-radius:6px; padding:4px 8px;}
+
+/* ---- status bar ---- */
+.statusbar{display:flex; justify-content:space-between; padding:10px 28px;
+  font-size:12.5px; color:var(--text-muted); background:var(--bg-surface);
+  border-top:1px solid var(--border-subtle);}
+.statusbar .warn{color:#b45309; display:inline-flex; align-items:center; gap:6px;}
+.statusbar .warn i{width:14px; height:14px;}
+
+/* ---- page setup panel ---- */
+.panel{background:var(--bg-surface); border-left:1px solid var(--border-subtle);
+  padding:22px 20px; overflow:auto;}
+.panel h2{font-size:16px; margin-bottom:4px;}
+.panel .hint{color:var(--text-secondary); font-size:12.5px; margin-bottom:20px;}
+.panel .field{margin-bottom:18px;}
+.panel .label{font-weight:600; font-size:12.5px; margin-bottom:7px; display:block;}
+.panel .input,.panel .select{padding:10px 12px; font-size:13px;}
+.margins{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.margins .sub{font-size:11px; color:var(--text-muted); margin-bottom:4px; display:block;}
+.err{border-color:var(--danger) !important;}
+.err-msg{color:var(--danger); font-size:11.5px; margin-top:6px; display:flex;
+  align-items:center; gap:5px;}
+.err-msg i{width:13px; height:13px;}
+.toggle{display:flex; align-items:center; justify-content:space-between;
+  padding:11px 0; border-top:1px solid var(--border-subtle); font-size:13px;}
+.sw{width:38px; height:22px; border-radius:999px; background:var(--accent);
+  position:relative; flex:0 0 38px;}
+.sw::after{content:''; position:absolute; top:3px; right:3px; width:16px; height:16px;
+  border-radius:50%; background:#fff;}
+.sw.off{background:var(--border-strong);}
+.sw.off::after{right:auto; left:3px;}
+.panel .actions{margin-top:22px;}
+
+/* ---- banners ---- */
+.banner{border-radius:var(--radius-md); padding:12px 14px; font-size:12.5px;
+  display:flex; gap:10px; align-items:flex-start; margin-bottom:18px;}
+.banner i{width:16px; height:16px; flex:0 0 16px; margin-top:1px;}
+.banner.danger{background:#fef2f2; color:#991b1b; border:1px solid #fecaca;}
+.banner .retry{color:var(--danger); font-weight:600; margin-top:6px; display:block;}
+
+/* ---- measuring / skeleton ---- */
+.sheet.measuring{display:flex; align-items:center; justify-content:center;
+  flex-direction:column; gap:14px; color:var(--text-muted); min-height:520px;}
+.spinner{width:26px; height:26px; border-radius:50%; border:2.5px solid var(--border-subtle);
+  border-top-color:var(--accent);}
+.skeleton-line{height:11px; border-radius:4px; background:var(--bg-sunken);}
+.pages .skeleton{height:52px; border-radius:var(--radius-md); background:var(--bg-sunken);
+  margin-bottom:8px;}
+
+/* ---- empty ---- */
+.empty-hint{color:var(--text-muted); font-size:14px;}
+.caret{display:inline-block; width:1.5px; height:17px; background:var(--text-primary);
+  vertical-align:-3px;}

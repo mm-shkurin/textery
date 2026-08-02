@@ -1,0 +1,116 @@
+/* Textery — light design system (story-18 redesign, 2026-07-28) */
+:root{
+  --bg-page:#f2f4f7; --bg-surface:#ffffff; --bg-sunken:#f7f8fa;
+  --border-subtle:#e6e8ec; --border-strong:#d3d7de;
+  --text-primary:#0f172a; --text-secondary:#64748b; --text-muted:#94a3b8;
+  --accent:#1552f0; --accent-hover:#1243c8; --accent-soft:#e8effe;
+  --danger:#ef4444; --radius-lg:16px; --radius-md:10px; --radius-sm:8px;
+  --shadow-card:0 1px 2px rgba(15,23,42,.04);
+  --shadow-modal:0 24px 64px rgba(15,23,42,.18);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{background:var(--bg-page); color:var(--text-primary);
+  font-family:'Inter',system-ui,sans-serif; line-height:1.5; font-size:14px;}
+
+/* ---- header ---- */
+.header{max-width:1640px; margin:24px auto 0; background:var(--bg-surface);
+  border-radius:var(--radius-lg); box-shadow:var(--shadow-card);
+  padding:20px 32px; display:flex; align-items:center; justify-content:space-between;}
+.logo{display:flex; align-items:center; gap:12px; font-size:26px; font-weight:700;
+  letter-spacing:-.02em;}
+.logo-mark{width:38px; height:38px; border-radius:11px; background:#0b1220; color:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700;}
+.logo-mark span{background:var(--accent); border-radius:4px; padding:0 3px;
+  font-size:9px; margin-left:2px;}
+.header-actions{display:flex; align-items:center; gap:16px; color:var(--text-secondary);}
+.avatar{width:42px; height:42px; border-radius:50%; background:var(--accent); color:#fff;
+  display:flex; align-items:center; justify-content:center; font-weight:600; font-size:14px;}
+.icon-btn{background:none; border:none; color:var(--text-secondary); cursor:pointer;
+  display:flex; align-items:center;}
+.icon-btn i{width:20px; height:20px;}
+
+/* ---- shell ---- */
+.page{max-width:1640px; margin:0 auto; padding:24px;}
+.card{background:var(--bg-surface); border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-card); padding:32px;}
+.two-col{display:grid; grid-template-columns:1fr 340px; gap:24px; align-items:start;}
+
+/* ---- typography ---- */
+h1{font-size:26px; font-weight:700; letter-spacing:-.02em;}
+h2{font-size:19px; font-weight:700;}
+.subtitle{color:var(--text-secondary); margin-top:6px;}
+.muted{color:var(--text-muted);}
+
+/* ---- progress ---- */
+.progress{height:6px; border-radius:999px; background:var(--border-subtle);
+  margin-top:24px; overflow:hidden;}
+.progress > span{display:block; height:100%; background:var(--accent); border-radius:999px;}
+
+/* ---- form ---- */
+.field{margin-bottom:22px;}
+.label{font-weight:600; font-size:13px; margin-bottom:8px; display:block;}
+.label .req{color:var(--danger);}
+.label .opt{color:var(--text-muted); font-weight:400;}
+.input,.select{width:100%; padding:14px 16px; border:1px solid var(--border-strong);
+  border-radius:var(--radius-md); font-family:inherit; font-size:14px;
+  color:var(--text-primary); background:var(--bg-surface);}
+.input::placeholder{color:var(--text-muted);}
+.select{appearance:none; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2364748b' stroke-width='2'><path d='M4 6l4 4 4-4'/></svg>");
+  background-repeat:no-repeat; background-position:right 14px center;}
+.grid-2{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+.dropzone{border:1.5px dashed var(--border-strong); border-radius:12px; padding:40px;
+  text-align:center; color:var(--text-secondary);}
+.dropzone i{width:26px; height:26px; color:var(--text-secondary);}
+.dropzone .hint{font-size:12px; color:var(--text-muted); margin-top:6px;}
+.dropzone .add{color:var(--accent); font-weight:600; margin-top:14px; display:block;}
+
+/* ---- buttons ---- */
+.btn{border:none; border-radius:var(--radius-md); padding:14px 26px; font-family:inherit;
+  font-weight:600; font-size:14px; cursor:pointer; display:inline-flex;
+  align-items:center; gap:8px;}
+.btn i{width:16px; height:16px;}
+.btn-primary{background:var(--accent); color:#fff;}
+.btn-primary:hover{background:var(--accent-hover);}
+.btn-ghost{background:var(--bg-surface); color:var(--text-primary);
+  border:1px solid var(--border-strong);}
+.btn-soft{background:var(--bg-sunken); color:var(--text-secondary);
+  border:1px solid var(--border-subtle); width:100%; justify-content:center;}
+.actions{display:flex; justify-content:flex-end; gap:14px; margin-top:28px;}
+
+/* ---- step badge ---- */
+.step{display:flex; align-items:center; gap:12px; margin-bottom:24px;}
+.step-num{width:26px; height:26px; border-radius:50%; background:var(--bg-sunken);
+  border:1px solid var(--border-subtle); color:var(--text-secondary); font-size:12px;
+  font-weight:600; display:flex; align-items:center; justify-content:center;}
+
+/* ---- side panel ---- */
+.side h2{font-size:16px; margin-bottom:18px;}
+.side p{color:var(--text-secondary); margin-bottom:14px;}
+.side b{color:var(--text-primary);}
+.side-list{list-style:none;}
+.side-list li{padding-left:18px; position:relative; margin-bottom:14px;}
+.side-list li::before{content:''; position:absolute; left:0; top:7px; width:6px; height:6px;
+  border-radius:50%; background:var(--accent);}
+.side-list .t{font-weight:600; font-size:13px;}
+.side-list .d{color:var(--text-secondary); font-size:12.5px;}
+.note{background:var(--bg-sunken); border-radius:var(--radius-sm); padding:14px;
+  font-size:12.5px; color:var(--text-secondary); margin-top:20px;}
+.side-foot{margin-top:18px; font-size:12.5px; color:var(--text-muted);}
+
+/* ---- modal ---- */
+.overlay{position:fixed; inset:0; background:rgba(15,23,42,.28);
+  display:flex; align-items:center; justify-content:center;}
+.modal{background:var(--bg-surface); border-radius:20px; box-shadow:var(--shadow-modal);
+  width:660px; padding:40px; position:relative;}
+.modal-close{position:absolute; top:22px; right:22px; background:none; border:none;
+  cursor:pointer; color:var(--text-secondary);}
+.modal h1{text-align:center;}
+.modal .subtitle{text-align:center; margin-bottom:28px;}
+.group-title{font-weight:700; font-size:16px; margin:24px 0 14px;}
+.type-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+.type-card{border-radius:14px; padding:14px; cursor:pointer; min-height:150px;
+  display:flex; flex-direction:column; justify-content:flex-end;}
+.type-card .t{font-weight:700; font-size:13.5px; display:flex;
+  align-items:center; justify-content:space-between;}
+.type-card .d{font-size:11.5px; color:#334155; margin-top:4px;}
+.type-card i{width:14px; height:14px;}

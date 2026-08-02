@@ -1,5 +1,15 @@
 # UI Conventions — Textery
 
+> **Two design systems live in this repo. Read this first.**
+>
+> Everything below the "Dark system (stories 1, 5, 7, 16, 17)" heading describes the
+> original dark theme. It is **historical** for any screen inside the authenticated
+> product. In 2026-07-28 the customer supplied a new **light** design, adopted by story 18
+> and continued by story 10; its tokens live in
+> `stories/18-generate-then-edit/mockups/desktop/theme.css`. New authenticated-product
+> mockups use the light system — see "Light system (current)" at the end of this file.
+> The dark rules still apply to the pre-auth landing until that is redesigned too.
+
 Single authority for all mockup design rules. Bootstrapped 2026-07-06 during story 1's
 `/mockups`, from three reference images in `.memory-bank/`: `Landing.png` (Textery's own
 rough landing wireframe — logo, hero, feature cards), `Тип Работы.png` and
@@ -14,6 +24,8 @@ throughout; no light-mode variant is planned.
 - **Product tone**: modern AI-SaaS, calm and professional (not garish) — dark surfaces,
   a single indigo→violet gradient as the one accent, generous whitespace, rounded
   corners everywhere.
+
+## Dark system (stories 1, 5, 7, 16, 17) — historical for in-product screens
 
 ## Color Palette (dark theme only)
 
@@ -121,3 +133,76 @@ pages have been built) — story 1's screens don't need them (no sidebar, no aut
 shared web components in `ProductSpecification/ui/components/` yet either, since nothing
 has repeated across 2+ stories yet. Both will be extracted the first time a pattern from
 this story (e.g., the header bar, the status badge) actually repeats in story #2+.
+
+---
+
+## Light system (current) — stories 18, 10
+
+Adopted 2026-07-28 from the customer's design. Tokens are shared, not re-declared per
+story: copy `theme.css` next to the mockups and `<link>` it. Story 10 adds a second
+stylesheet, `pages.css`, for the paginated-editor shell.
+
+### Tokens
+
+| Token | Value |
+|-------|-------|
+| `--bg-page` / `--bg-surface` / `--bg-sunken` | `#f2f4f7` / `#ffffff` / `#f7f8fa` |
+| `--border-subtle` / `--border-strong` | `#e6e8ec` / `#d3d7de` |
+| `--text-primary` / `--text-secondary` / `--text-muted` | `#0f172a` / `#64748b` / `#94a3b8` |
+| `--accent` / `--accent-hover` / `--accent-soft` | `#1552f0` / `#1243c8` / `#e8effe` |
+| `--danger` | `#ef4444` |
+| radius | `--radius-lg 16px`, `--radius-md 10px`, `--radius-sm 8px` |
+
+Primary buttons are **accent-filled with white text** here — not the dark system's
+white-on-dark. Desktop mockup width is `1400px` (story 18 used `1640px`; story 10
+narrowed it so a page rail plus an A4 sheet plus a settings panel fit without stretching).
+
+### Editor shell (story 18 → story 10)
+
+Top bar → breadcrumb bar → format bar → three-column body → status bar. Story 18's third
+column is the AI chat; story 10's is the page-setup panel. Only one right-hand column is
+open at a time.
+
+### Paginated document (new in story 10)
+
+- **Sheet.** White card, `6px` radius, `--shadow-card`, one element per page. Desktop
+  renders A4 portrait at `720px` wide (real ratio, scaled); mobile fills the viewport
+  width. Padding *is* the page margin — the ГОСТ preset 20/10/20/30 mm renders as
+  `73px 55px 73px 82px` at that scale.
+- **Sheet gap.** Sheets are separated by page background plus a centred `— разрыв
+  страницы —` caption, so a break is legible without hovering.
+- **Folio.** Page number absolutely positioned at the sheet's bottom centre. Absent on
+  sheet 1 by default (`skip_number_on_first_page`).
+- **Running head.** Top of the sheet, muted, with a hairline rule under it.
+- **Page rail.** 240px left column listing pages. It is **navigation, not authoring** —
+  pages are derived from content height and cannot be created by hand. The action is
+  «Вставить разрыв страницы», never «Добавить страницу» (story 18's mockup had the
+  latter; it contradicts the model and was corrected here).
+- **Manual break marker.** Accent dashed rule with a centred label, selectable like a
+  block. Desktop shows a side popover with «Удалить разрыв»; mobile shows full-width
+  action buttons beneath it (44px touch targets).
+
+### Measuring state
+
+The document font must be loaded before layout is measured, so a paginated editor has a
+real pre-layout state: spinner, «Готовим страницы…», skeleton lines in the sheet and
+skeleton chips in the rail, and **no page count** in the status bar. It must be
+distinguishable from both an error and an empty document.
+
+### Two error channels, visually distinct
+
+- **Inline field errors** — a `--danger` border plus a red caption under the field, for
+  values the server rejected at the boundary (422). The caption states the arithmetic
+  («Сверху и снизу вместе — 150 мм при высоте листа 148 мм»), not just "invalid".
+- **Banner** — a red block at the top of the settings panel for a save that did not reach
+  the server (network / 5xx), carrying a «Повторить» action.
+
+Never render the two the same way: one means "your values are wrong", the other means
+"your values are fine but unsaved".
+
+### Mobile adaptations
+
+- Page rail → horizontal chip strip under the format bar.
+- Settings panel → bottom sheet with a grabber, `max-height: 88vh`.
+- Status bar → fixed to the bottom edge.
+- All touch targets ≥ 44px.
