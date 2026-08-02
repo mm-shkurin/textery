@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { listProjects, type ProjectSummary } from '../api/projectsApi'
-import { ProjectCard } from './ProjectCard'
+import { ProjectCard, projectKey } from './ProjectCard'
 
 // The «Мои проекты» feed. Scenario 1.1 only: the cards, and nothing around them — no search, no
 // sort, no view toggle, no paging control. Those arrive with their own scenarios and their own
@@ -24,10 +24,8 @@ export function ProjectsPage() {
   return (
     <div className="projects-page" data-testid="projects-page">
       {items.map((project) => (
-        // Keyed on (kind, id), never on id alone: the two arms of the feed come from different
-        // tables and their ids CAN collide, which would collapse a document and a generation onto
-        // one node.
-        <ProjectCard key={`${project.kind}-${project.id}`} project={project} />
+        // Keyed on `projectKey`, never on id alone — see the comment on that function.
+        <ProjectCard key={projectKey(project)} project={project} />
       ))}
     </div>
   )
