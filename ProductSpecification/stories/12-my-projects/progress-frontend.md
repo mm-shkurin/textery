@@ -14,8 +14,8 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
 
 ### 1.1: The feed renders the user's work as cards
 - [S] red-selenium — backend-gated (`GET /api/v1/projects` does not exist), deferred to the full-stack selenium pass
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
