@@ -27,8 +27,8 @@ not silently resolved in code:
 ## Backend Scenarios (01_API_Tests.md)
 
 ### Scenario 1.1 The feed shows the caller's documents and nothing of anyone else's
-- [~] red-acceptance
-- [ ] design
+- [x] red-acceptance
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
