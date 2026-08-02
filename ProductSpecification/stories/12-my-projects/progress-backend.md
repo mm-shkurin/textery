@@ -23,18 +23,20 @@ not silently resolved in code:
    exit path; its body tests only the deadline (first hit: Scenario 10.3).
 7. `status: running` (API 1.9) is not in the contract enum — `in_progress` is.
 8. One 409 code for "not failed": `NOT_RETRYABLE` or `GENERATION_NOT_FAILED`.
-9. `POST /generations/{id}/retry` has no request body and no idempotency header, so a
-   client that double-fires the button has no slot to carry a key. Either the contract
-   grows one, or the collapse must be derived server-side from `(owner, source, state)`.
-   Raised by the group-8 scan at 1.1's `design` step; first hit: Scenario 11.4.
+The group-8 scan at 1.1's `design` step raised a #9 — that the retry endpoint has no slot
+for an idempotency key — and it was **false**: `api-specs/generations_retry.yaml` declares
+a required `Idempotency-Key` header keyed on `(owner_id, Idempotency-Key)`, with
+`IDEMPOTENCY_KEY_REUSED` and a 200 replay. Struck rather than answered; a scan reading
+only the design draft could not see the contract.
 
 ## Backend Scenarios (01_API_Tests.md)
 
 ### Scenario 1.1 The feed shows the caller's documents and nothing of anyone else's
 - [x] red-acceptance
 - [x] design (Option A — see `decisions/project-feed-read-model-decision.md`; hazard scan:
-  groups 1–8, 8 GAPs folded into the design, 5 folded as Scenarios 11.1–11.5, 1 dismissed
-  to Scenario 10.6, group 8's UI sub-triggers dismissed as out of altitude)
+  groups 1–8, 8 GAPs folded into the design, 3 folded as Scenarios 11.1–11.3, 1 dismissed
+  to Scenario 10.6, 2 withdrawn as duplicates of 8.3/8.5 and 7.2/7.4, group 8's UI
+  sub-triggers dismissed as out of altitude)
 - [~] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
@@ -666,9 +668,10 @@ not silently resolved in code:
 
 ### Discovered by the hazard scan at Scenario 1.1's `design` step (2026-08-02)
 
-Five fired triggers whose forced guard no existing scenario carries. Folded here as named
+Three fired triggers whose forced guard no existing scenario carries. Folded here as named
 scenarios rather than dismissed; the guards the *design* absorbed are recorded in
-`decisions/project-feed-read-model-decision.md` instead. Group in brackets.
+`decisions/project-feed-read-model-decision.md` instead. Group in brackets. (5.5 pins
+omitted/empty/repeated for `sort` and `q` only, which is why 11.2 is not a duplicate of it.)
 
 ### Scenario 11.1 A document written before generation_id existed shows its work once [group 4]
 - [ ] red-acceptance
@@ -694,21 +697,9 @@ scenarios rather than dismissed; the guards the *design* absorbed are recorded i
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
-### Scenario 11.4 Two retries fired before the first responds create exactly one generation [groups 2, 8]
-- [ ] red-acceptance
-- [ ] design
-- [ ] red-usecase
-- [ ] green-usecase
-- [ ] adapters-discovery
-- [ ] green-acceptance
-
-### Scenario 11.5 Retry is re-checked on the server, not trusted from the retryable flag [group 8]
-- [ ] red-acceptance
-- [ ] design
-- [ ] red-usecase
-- [ ] green-usecase
-- [ ] adapters-discovery
-- [ ] green-acceptance
+Group 8's other two fired triggers were folded and then withdrawn: "two retries before the
+first responds" is 8.3 + 8.5, and "retry re-checked on the server" is 7.2 + 7.4. Both
+already carry their guard.
 
 ## Integration Scenarios (06_Integration_Tests.md)
 
