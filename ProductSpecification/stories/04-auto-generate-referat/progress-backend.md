@@ -43,7 +43,34 @@ that can be red.
   **not** byte-identical to today's provider f-string — that string interpolates
   `volume_pages`, and `PromptRequest` has no such field yet. Scenario 1.3 must add the
   field before its golden can land.
-- [~] adapters-discovery
+- [x] adapters-discovery — all three checks resolved `[S]`; no `red-adapter` /
+  `green-adapter` step inserted.
+  - Check 1 (ports): none. The scenario's unit is `build_prompt` in
+    `backend/domain/src/generation/prompt_template.py` — a pure function taking a
+    `PromptRequest` and returning a string. It has no constructor and no injected
+    port, so there is no outbound adapter to find, and no write-here-read-there
+    flow to reproduce. `RequestGeneration`'s two ports (`GenerationStorage`,
+    `GenerationQueue`) are untouched by this scenario: it adds no field to
+    `Generation` and changes nothing that is persisted or enqueued.
+  - Check 1, deliberate non-gap: `GigaChatProvider.generate` still composes its own
+    f-string prompt and does **not** call `build_prompt`, so a real реферат
+    generation today still gets the доклад-shaped wording. That is not an
+    insufficiency this scenario may fix — Scenario 2.1 ("The provider sends the
+    prompt it was given") owns the substitution, and doing it here would leave 2.1
+    with a green adapter and nothing to redden. Recorded rather than left implicit
+    so the gap is not read as an oversight.
+  - Check 2 (exceptions): none new. `build_prompt` raises no domain exception; the
+    only failure mode is a `KeyError` on a document type absent from `_TEMPLATES`,
+    and the module's import-time assertion against `SUPPORTED_DOCUMENT_TYPES` makes
+    that unreachable at runtime rather than something the REST error handler must
+    map. Rejection of an unsupported type happens earlier, in `Generation.create`,
+    and is already mapped — Scenario 3.3 is its test.
+  - Check 3 (response shape): `[S]`. No endpoint returns the prompt, so no inbound
+    adapter response shape moves. This is the same finding that made
+    `red-acceptance` `[S]` above, re-checked from the adapter side rather than
+    assumed from it: `generation_router.py` returns `generation_id`/`status`/
+    `created_at` plus echoed request fields, and Security scenario 2.1 requires the
+    prompt stay out of even the log.
 - [S] green-acceptance — nothing to turn green; see `red-acceptance` above.
 
 ### Scenario 1.2: A реферат prompt forbids a bibliography
