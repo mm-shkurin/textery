@@ -8,7 +8,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
 ## Backend Scenarios (01_API_Tests.md)
 
 ### Scenario 2.1: A never-configured document reads as unconfigured, not as the defaults
-- [~] red-acceptance
+- [x] red-acceptance
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase
