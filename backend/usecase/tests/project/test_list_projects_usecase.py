@@ -17,9 +17,7 @@ class TestProjectFeedIsOwnerScoped:
     And the other account's documents are absent.
     """
 
-    async def test_should_return_exactly_the_callers_own_documents(
-        self, project_feed_statements
-    ):
+    async def test_should_return_exactly_the_callers_own_documents(self, project_feed_statements):
         project_feed_statements.given_two_accounts_each_with_documents()
 
         feed = await project_feed_statements.when_the_caller_requests_their_projects()

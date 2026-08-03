@@ -61,17 +61,11 @@ class ProjectFeedStatements:
         self._other_accounts_items: tuple[ProjectItem, ...] = ()
 
     def given_two_accounts_each_with_documents(self) -> None:
-        self._own_items = self._documents_of(
-            self._caller_id, count=_DOCUMENTS_PER_ACCOUNT
-        )
-        self._other_accounts_items = self._documents_of(
-            uuid4(), count=_DOCUMENTS_PER_ACCOUNT
-        )
+        self._own_items = self._documents_of(self._caller_id, count=_DOCUMENTS_PER_ACCOUNT)
+        self._other_accounts_items = self._documents_of(uuid4(), count=_DOCUMENTS_PER_ACCOUNT)
 
     async def when_the_caller_requests_their_projects(self) -> ServedFeed:
-        page = await self._usecase.execute(
-            owner_id=self._caller_id, request=ProjectPageRequest()
-        )
+        page = await self._usecase.execute(owner_id=self._caller_id, request=ProjectPageRequest())
         return ServedFeed(
             page=page,
             own_items=self._own_items,
@@ -80,9 +74,7 @@ class ProjectFeedStatements:
 
     async def when_an_unresolved_caller_requests_their_projects(self) -> ValidationException:
         with pytest.raises(ValidationException) as excinfo:
-            await self._usecase.execute(
-                owner_id=cast(UUID, None), request=ProjectPageRequest()
-            )
+            await self._usecase.execute(owner_id=cast(UUID, None), request=ProjectPageRequest())
         return excinfo.value
 
     def assert_exactly_the_callers_own_items_are_returned(self, feed: ServedFeed) -> None:
