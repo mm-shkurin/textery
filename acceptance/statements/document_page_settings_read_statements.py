@@ -5,9 +5,9 @@ from typing import ClassVar
 from clients.application.dto.document.get_document_response_dto import (
     GetDocumentResponseDto,
 )
-from statements.document_export_statements import (
+from statements.document_arrange_statements import (
     SUPPORTED_DOCUMENT_TYPE,
-    DocumentExportStatements,
+    DocumentArrangeStatements,
 )
 
 # The whole state a freshly created document is in, pinned as literals rather than
@@ -40,13 +40,13 @@ class NeverConfiguredDocumentRead:
     stamped_no_later_than: datetime
 
 
-class DocumentPageSettingsReadStatements(DocumentExportStatements):
+class DocumentPageSettingsReadStatements(DocumentArrangeStatements):
     """Scenario 2.1 statements (a never-configured document reads as unconfigured).
 
-    Subclasses DocumentExportStatements to reuse `_authenticated_access_token` and
-    `_create_document_owned_by` — the same account+document arrange every document
-    scenario shares, exactly as DocumentExportNoMutationStatements does. Kept in its
-    own module so both files stay under the 200-line cap.
+    Subclasses DocumentArrangeStatements for `_authenticated_access_token` and
+    `_create_document_owned_by` — the account+document arrange every document
+    scenario shares. This scenario reads a document and never exports one, so it
+    takes the neutral arrange rather than the export contract.
     """
 
     # The read-side page-settings key on GET /documents/{id}
