@@ -83,7 +83,19 @@ that can be red.
   nor the outbound side of the prompt is observable over HTTP. This scenario adds one
   negative instruction to the same string, which changes nothing about that.
   Covered by `red-usecase` / `green-usecase` below.
-- [ ] design
+- [x] design — Option A (one negative sentence inside `_referat` only), recorded by
+  revising the existing ADR `decisions/prompt-builder-decision.md` rather than opening a
+  second one: it already governs 1.1–1.6. Option B (a shared ban constant appended by
+  `build_prompt` for every type) was rejected — scenario 1.3 pins a golden `==` on the
+  доклад prompt as byte-identical to the pre-story `GigaChatProvider` f-string, and a
+  global append would redden it while story 1 is being finished elsewhere against that
+  exact output. All eight hazard groups re-dispatched from scratch (group 2 clear, group
+  8 re-derived and dismissed as a block, groups 1/3/4/5/6/7 fired). Four in-scope GAPs
+  folded in as G10–G13, G5 widened; six pipeline-altitude findings recorded and mapped.
+  The one worth reading before `red-usecase`: **G2 is disjunctive** ("the ceiling holds
+  *or* `PromptBuildError`"), so it is satisfied either way and cannot go red when
+  реферат flips from one to the other — G10 is the non-disjunctive half, and it is this
+  scenario's to carry because this is the change that grows `_referat`.
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
