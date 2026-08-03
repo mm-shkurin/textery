@@ -17,8 +17,8 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
 - [x] red-frontend
 - [x] green-frontend
 - [x] red-frontend-api
-- [~] green-frontend-api
-- [ ] align-design
+- [x] green-frontend-api
+- [~] align-design
 - [ ] green-selenium
 - [ ] demo
 

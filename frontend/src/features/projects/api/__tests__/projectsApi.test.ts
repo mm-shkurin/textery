@@ -58,11 +58,6 @@ describe('projectsApi', () => {
     updated_at: '2026-07-15T09:00:00Z',
   }
 
-  // RED 2026-08-02 — `listProjects` is still the stub, so this fails with
-  // `Error: Not implemented` (projectsApi.ts:45) before `fetch` is ever called. Skipped rather
-  // than left failing so the committed green suite stays green; green-frontend-api removes the
-  // `.skip`.
-  //
   // The Authorization header is asserted here, not left to the `saveSession` in `beforeEach` to
   // imply: the feed is owner-scoped, and a client that sent no header at all would satisfy the
   // path and the mapping test alike while 401-ing against the real backend.
@@ -72,7 +67,7 @@ describe('projectsApi', () => {
   // would then never 401-renew-and-replay — the feed would be the one authenticated screen that
   // breaks on an expired token. Pinning that needs a 401-then-200 stub, which belongs with the
   // rest of the failure surface in scenario 4.2 (`red-frontend-api` there), not here.
-  it.skip('sends a GET to the merged feed path carrying the session', async () => {
+  it('sends a GET to the merged feed path carrying the session', async () => {
     const fetchMock = stubFetchJson({ items: [], total: 0, page: 1, limit: 20 })
 
     await listProjects()
@@ -95,10 +90,7 @@ describe('projectsApi', () => {
     expect(init.body).toBeUndefined()
   })
 
-  // RED 2026-08-02 — same stub, same `Error: Not implemented` (projectsApi.ts:45); the mapping
-  // this pins does not exist yet, `projectsApi.ts` has no wire interface at all. Removed by
-  // green-frontend-api.
-  it.skip('maps every project wire field onto its camelCase counterpart', async () => {
+  it('maps every project wire field onto its camelCase counterpart', async () => {
     stubFetchJson({ items: [PROJECT_WIRE], total: 1, page: 1, limit: 20 })
 
     const page = await listProjects()
