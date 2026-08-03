@@ -39,12 +39,19 @@ describe('projectsApi', () => {
   // A generation, not a document: it is the arm that carries the fields a document-shaped
   // fixture would leave untested — `can_repeat: true`, and a `preview` that is null while the
   // title is present. Both are server-computed and neither may be re-derived on this side.
+  //
+  // `document_type` is Cyrillic because that is what the wire actually carries: the frontend
+  // asked for Latin ids and the backend kept Cyrillic, so `shared/documentTypes.ts` translates
+  // at the boundary (`WIRE_DOCUMENT_TYPE`) and `ProjectCard` calls `documentTypeLabelFromWire`.
+  // The mapping under test is a pass-through on this field, so no assertion here can catch a
+  // wrong vocabulary — which is exactly why the fixture has to be right: it is what green's
+  // implementation, the MSW handlers, and scenario 1.5's unknown-type arm all get read from.
   const PROJECT_WIRE = {
     kind: 'generation',
     id: '9f1c2b74-0000-4000-8000-00000000abcd',
     title: 'Квантовые вычисления',
     preview: null,
-    document_type: 'referat',
+    document_type: 'реферат',
     status: 'failed',
     can_repeat: true,
     created_at: '2026-07-15T09:00:00Z',
@@ -57,10 +64,14 @@ describe('projectsApi', () => {
   // `.skip`.
   //
   // The Authorization header is asserted here, not left to the `saveSession` in `beforeEach` to
-  // imply: the feed is owner-scoped, and a client written with a bare `fetch` instead of `send`
-  // would satisfy the path and the mapping test alike while 401-ing against the real backend.
-  // Pinning the header is what forces the call through `send` -> `authorizedRequest`, and with it
-  // the 401-renew-and-replay every other authenticated client already gets.
+  // imply: the feed is owner-scoped, and a client that sent no header at all would satisfy the
+  // path and the mapping test alike while 401-ing against the real backend.
+  //
+  // What this does NOT pin: that the call goes through `send` -> `authorizedRequest`. A bare
+  // `fetch` with a hand-built `Bearer ${getAccessToken()}` satisfies every assertion below, and
+  // would then never 401-renew-and-replay — the feed would be the one authenticated screen that
+  // breaks on an expired token. Pinning that needs a 401-then-200 stub, which belongs with the
+  // rest of the failure surface in scenario 4.2 (`red-frontend-api` there), not here.
   it.skip('sends a GET to the merged feed path carrying the session', async () => {
     const fetchMock = stubFetchJson({ items: [], total: 0, page: 1, limit: 20 })
 
@@ -99,7 +110,7 @@ describe('projectsApi', () => {
           id: '9f1c2b74-0000-4000-8000-00000000abcd',
           title: 'Квантовые вычисления',
           preview: null,
-          documentType: 'referat',
+          documentType: 'реферат',
           status: 'failed',
           canRepeat: true,
           createdAt: '2026-07-15T09:00:00Z',
