@@ -26,11 +26,11 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
 - [x] red-frontend (coverage: older project's date carries the year) — assert the mockup's own
   literal (`2 сентября 2025`, no ` г.`); `{day, month, year}` on ru-RU emits the era suffix, so a
   test written to satisfy the branch rather than the mockup would enshrine it
-- [~] green-frontend (coverage: older project's date carries the year) — one assertion covers one
+- [x] green-frontend (coverage: older project's date carries the year) — one assertion covers one
   month, so a fix that hand-rolls a Russian genitive month table ships eleven unread entries.
   Keep the formatter and strip the suffix (or omit `year` and append it), do not replace
   `toLocaleDateString`
-- [ ] red-frontend (a second older year, a second month) — `/^16 декабря 2024$/`, the mockup's own
+- [~] red-frontend (a second older year, a second month) — `/^16 декабря 2024$/`, the mockup's own
   literal, pins a second month and a second year in one assertion and kills the hand-rolled-table
   fix as a green option
 - [ ] green-frontend (a second older year, a second month)

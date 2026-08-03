@@ -148,11 +148,7 @@ describe('ProjectsPage card date for a project from an older year', () => {
   // era suffix — '2 сентября 2025 г.' — and the mockup renders '2 сентября 2025'. A substring
   // assertion, or one written to match what the code already does, would pass and enshrine the
   // suffix on every card older than this year.
-  // RED (2026-08-03): fails with
-  //   expect(element).toHaveTextContent(/^2 сентября 2025$/)
-  //   Expected element to have text content matching: /^2 сентября 2025$/
-  //   Received: 2 сентября 2025 г.
-  it.skip('renders the year for an older project, in the mockup’s format and without the era suffix', async () => {
+  it('renders the year for an older project, in the mockup’s format and without the era suffix', async () => {
     mockFeed([OLDER_YEAR_PROJECT], 1)
 
     render(<ProjectsPage />)

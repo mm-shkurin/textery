@@ -72,12 +72,13 @@ export function ProjectCard({ project }: ProjectCardProps) {
 //
 // The wire sends UTC ISO; toLocaleDateString renders it in the reader's zone, and the year is
 // compared in that same zone so a 31 December evening does not read as next year's.
+//
+// The year is appended by hand rather than asked of the formatter: ru-RU's `year: 'numeric'`
+// emits the era suffix ('2 сентября 2025 г.') and the mockup does not. The formatter still owns
+// the day and the genitive month, which is the part worth not hand-rolling.
 function formatCardDate(iso: string): string {
   const date = new Date(iso)
+  const dayAndMonth = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
   const showYear = date.getFullYear() !== new Date().getFullYear()
-  return date.toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    ...(showYear ? { year: 'numeric' } : {}),
-  })
+  return showYear ? `${dayAndMonth} ${date.getFullYear()}` : dayAndMonth
 }
