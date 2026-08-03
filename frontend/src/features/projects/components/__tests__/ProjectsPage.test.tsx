@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { ProjectsPage } from '../ProjectsPage'
 import * as projectsApi from '../../api/projectsApi'
@@ -34,6 +34,22 @@ const GENERATION: ProjectSummary = {
   canRepeat: true,
   createdAt: '2026-06-02T09:00:00Z',
   updatedAt: '2026-06-02T09:00:00Z',
+}
+
+// A wire `document_type` this client has never heard of. The server owns that vocabulary and can
+// add a member before the frontend learns it, so `documentTypeFromWire` returns null by design —
+// and every other fixture in this file is a KNOWN type, which is why the card's accent fallback
+// has never actually rendered.
+const UNKNOWN_TYPE_PROJECT: ProjectSummary = {
+  kind: 'document',
+  id: '7',
+  title: 'Курсовая работа по микроэкономике',
+  preview: null,
+  documentType: 'курсовая',
+  status: 'draft',
+  canRepeat: false,
+  createdAt: '2026-07-15T09:00:00Z',
+  updatedAt: '2026-07-15T09:00:00Z',
 }
 
 // `total` is passed, never derived from `items.length` — the two differ the moment paging enters
@@ -95,5 +111,39 @@ describe('ProjectsPage', () => {
       /^Открытие кофейни в спальном районе$/,
     )
     expect(within(generationCard).getByTestId('project-card-date')).toHaveTextContent(/^2 июня$/)
+  })
+})
+
+describe('ProjectsPage card accent for an unfamiliar document type', () => {
+  // The clock is pinned because the card's date format branches on `getFullYear() !== now`, and
+  // every fixture in this file is dated 2026. Without this the suite green-passes only while the
+  // wall clock agrees with the fixtures. `setSystemTime` alone — not `useFakeTimers` — because the
+  // component resolves a mocked promise, and a fully faked timer queue would stall `findBy*`.
+  beforeEach(() => {
+    vi.setSystemTime(new Date('2026-08-03T12:00:00.000Z'))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.clearAllMocks()
+  })
+
+  // The accent is asserted on the ANCESTOR of the badge, not on the badge itself: the stylesheet
+  // colours the chip through `.project-card-accent-blue .project-card-type`, so the card carrying
+  // the class is what decides whether the badge is tinted or renders as a transparent, unstyled
+  // chip. Both halves are asserted — the fallback accent present, AND no other accent present —
+  // because asserting only the first would pass on a card that somehow wore two accents, and the
+  // point of the fallback is that exactly one tint is chosen.
+  it('gives a project of an unknown wire type the blue fallback accent rather than no accent', async () => {
+    mockFeed([UNKNOWN_TYPE_PROJECT], 1)
+
+    render(<ProjectsPage />)
+
+    const card = await screen.findByTestId('project-card')
+
+    expect(card).toHaveClass('project-card-accent-blue')
+    expect(card).not.toHaveClass('project-card-accent-purple')
+    expect(card).not.toHaveClass('project-card-accent-teal')
+    expect(within(card).getByTestId('project-card-type')).toBeInTheDocument()
   })
 })
