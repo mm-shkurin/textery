@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { listProjects, type ProjectSummary } from '../api/projectsApi'
 import { ProjectCard, projectKey } from './ProjectCard'
+import './ProjectsPage.css'
 
 // The «Мои проекты» feed. Scenario 1.1 only: the cards, and nothing around them — no search, no
 // sort, no view toggle, no paging control. Those arrive with their own scenarios and their own

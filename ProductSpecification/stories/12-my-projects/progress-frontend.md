@@ -18,7 +18,13 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
 - [x] green-frontend
 - [x] red-frontend-api
 - [x] green-frontend-api
-- [~] align-design
+- [x] align-design
+- [~] red-frontend (coverage: unknown wire type gets blue accent)
+- [ ] green-frontend (coverage: unknown wire type gets blue accent)
+- [ ] red-frontend (coverage: older project's date carries the year)
+- [ ] green-frontend (coverage: older project's date carries the year)
+- [ ] red-frontend (coverage: unmount mid-flight sets no state)
+- [ ] green-frontend (coverage: unmount mid-flight sets no state)
 - [ ] green-selenium
 - [ ] demo
 

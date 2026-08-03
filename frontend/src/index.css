@@ -22,6 +22,10 @@
   --bg-surface-raised: var(--neutral-000);
   --bg-card: var(--neutral-000);
   --bg-card-muted: #d2e2f2;
+  /* The recessed fill behind a surface's own inset areas — a card's thumbnail well, a table head.
+     Named here rather than in the one sheet that first needed it (ProjectsPage.css) because it is
+     a palette fact, and the second screen to want a sunken area would otherwise retype it. */
+  --bg-sunken: #f7f8fa;
   --bg-inverse: var(--neutral-950);
   --border-subtle: #d5e6f7;
   --border-strong: var(--blue-200);
@@ -39,6 +43,9 @@
   --radius-md: 10px;
   --radius-lg: 16px;
   --radius-pill: 999px;
+  /* The one elevation a resting surface gets. A token because "a card's shadow" is a single
+     design decision and every component that draws one must move together when it changes. */
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04);
   /* The UI Kit draws no gradient accent — a button's second variant is a flat colour swap
      (#004ee0 <-> #e3f2ff). The gradient tokens stay defined because older screens still
      reference them, but they now resolve to the flat brand blues rather than violet. */
