@@ -52,6 +52,22 @@ const UNKNOWN_TYPE_PROJECT: ProjectSummary = {
   updatedAt: '2026-07-15T09:00:00Z',
 }
 
+// Dated in a year that is not the pinned "now". Every other fixture in this file is 2026, which is
+// why the card's with-the-year date format has never once rendered. The literal is lifted from the
+// mockup (mockups/desktop/01-projects-grid.html: `<div class="date">2 сентября 2025</div>`) so the
+// assertion is anchored to the design, not to whatever the formatter happens to emit.
+const OLDER_YEAR_PROJECT: ProjectSummary = {
+  kind: 'document',
+  id: '9',
+  title: 'Экономика замкнутого цикла',
+  preview: null,
+  documentType: 'реферат',
+  status: 'draft',
+  canRepeat: false,
+  createdAt: '2025-09-02T09:00:00Z',
+  updatedAt: '2025-09-02T09:00:00Z',
+}
+
 // `total` is passed, never derived from `items.length` — the two differ the moment paging enters
 // (test 3.x), and a helper that computes it cannot express a wrong-total bug.
 function mockFeed(items: ProjectSummary[], total: number) {
@@ -113,22 +129,6 @@ describe('ProjectsPage', () => {
     expect(within(generationCard).getByTestId('project-card-date')).toHaveTextContent(/^2 июня$/)
   })
 })
-
-// Dated in a year that is not the pinned "now". Every other fixture in this file is 2026, which is
-// why the card's with-the-year date format has never once rendered. The literal is lifted from the
-// mockup (mockups/desktop/01-projects-grid.html: `<div class="date">2 сентября 2025</div>`) so the
-// assertion is anchored to the design, not to whatever the formatter happens to emit.
-const OLDER_YEAR_PROJECT: ProjectSummary = {
-  kind: 'document',
-  id: '9',
-  title: 'Экономика замкнутого цикла',
-  preview: null,
-  documentType: 'реферат',
-  status: 'draft',
-  canRepeat: false,
-  createdAt: '2025-09-02T09:00:00Z',
-  updatedAt: '2025-09-02T09:00:00Z',
-}
 
 describe('ProjectsPage card date for a project from an older year', () => {
   // Pinned for the same reason as the accent block below, but here the pin IS the test: an
