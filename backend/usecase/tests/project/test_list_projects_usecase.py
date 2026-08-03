@@ -1,12 +1,3 @@
-import pytest
-
-
-@pytest.mark.skip(
-    reason="RED: ListProjects.execute is a stub -- both the caller's feed and the "
-    "unresolved-owner refusal fail with NotImplementedError at "
-    "usecase/src/project/list_projects.py:27 (the second because "
-    "pytest.raises(ValidationException) does not catch it)."
-)
 class TestProjectFeedIsOwnerScoped:
     """Scenario 1.1: The feed shows the caller's documents and nothing of anyone else's.
 

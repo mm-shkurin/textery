@@ -38,8 +38,8 @@ only the design draft could not see the contract.
   to Scenario 10.6, 2 withdrawn as duplicates of 8.3/8.5 and 7.2/7.4, group 8's UI
   sub-triggers dismissed as out of altitude)
 - [x] red-usecase
-- [~] green-usecase
-- [ ] adapters-discovery
+- [x] green-usecase
+- [~] adapters-discovery
 - [ ] green-acceptance
 
 ### Scenario 1.2 A generation that became a document appears once, as the document
