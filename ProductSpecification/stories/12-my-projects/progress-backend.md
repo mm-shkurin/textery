@@ -37,8 +37,8 @@ only the design draft could not see the contract.
   groups 1–8, 8 GAPs folded into the design, 3 folded as Scenarios 11.1–11.3, 1 dismissed
   to Scenario 10.6, 2 withdrawn as duplicates of 8.3/8.5 and 7.2/7.4, group 8's UI
   sub-triggers dismissed as out of altitude)
-- [~] red-usecase
-- [ ] green-usecase
+- [x] red-usecase
+- [~] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
