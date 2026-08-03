@@ -26,7 +26,6 @@ from statements.resend_statements import ResendStatements
 # 200-line cap; re-imported here so pytest discovers them as conftest fixtures.
 from frontend_generation_fixtures import (  # noqa: F401
     chat_workspace_statements,
-    mode_modal_statements,
     manual_editor_statements,
     manual_editor_line_break_statements,
     manual_editor_save_payload_statements,
@@ -54,6 +53,11 @@ from document_export_fixtures import (  # noqa: F401
     document_export_filename_statements,
     document_export_no_mutation_statements,
     document_blank_title_save_statements,
+)
+
+# Story-10 page-settings Statements fixtures, split out for the same reason.
+from document_page_settings_fixtures import (  # noqa: F401
+    document_page_settings_read_statements,
 )
 
 # iPhone 12/13-class viewport — the smallest common real-device width the
