@@ -23,10 +23,10 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
 - [S] green-frontend (coverage: unknown wire type gets blue accent) — zero production files need
   modification: the fallback shipped with `ProjectCard` in 1ad55a5a and was untested, not
   unwritten, so the red test passes on arrival and there is no red state to hand off
-- [~] red-frontend (coverage: older project's date carries the year) — assert the mockup's own
+- [x] red-frontend (coverage: older project's date carries the year) — assert the mockup's own
   literal (`2 сентября 2025`, no ` г.`); `{day, month, year}` on ru-RU emits the era suffix, so a
   test written to satisfy the branch rather than the mockup would enshrine it
-- [ ] green-frontend (coverage: older project's date carries the year)
+- [~] green-frontend (coverage: older project's date carries the year)
 - [ ] red-frontend (unknown type's badge carries the wire string) — the accent test asserts only
   that the badge EXISTS, so an empty chip passes; `documentTypeLabelFromWire`'s unknown arm was
   rendered by that fixture and never looked at

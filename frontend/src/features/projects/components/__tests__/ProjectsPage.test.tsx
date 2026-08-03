@@ -114,6 +114,55 @@ describe('ProjectsPage', () => {
   })
 })
 
+// Dated in a year that is not the pinned "now". Every other fixture in this file is 2026, which is
+// why the card's with-the-year date format has never once rendered. The literal is lifted from the
+// mockup (mockups/desktop/01-projects-grid.html: `<div class="date">2 сентября 2025</div>`) so the
+// assertion is anchored to the design, not to whatever the formatter happens to emit.
+const OLDER_YEAR_PROJECT: ProjectSummary = {
+  kind: 'document',
+  id: '9',
+  title: 'Экономика замкнутого цикла',
+  preview: null,
+  documentType: 'реферат',
+  status: 'draft',
+  canRepeat: false,
+  createdAt: '2025-09-02T09:00:00Z',
+  updatedAt: '2025-09-02T09:00:00Z',
+}
+
+describe('ProjectsPage card date for a project from an older year', () => {
+  // Pinned for the same reason as the accent block below, but here the pin IS the test: an
+  // "older year" fixture is only older relative to a now, and an unpinned clock would silently
+  // turn this scenario into the current-year one the moment the calendar rolled into 2025+1.
+  beforeEach(() => {
+    vi.setSystemTime(new Date('2026-08-03T12:00:00.000Z'))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.clearAllMocks()
+  })
+
+  // Anchored `/^…$/` against the MOCKUP's literal, not against the formatter's output. That
+  // distinction is the whole test: `toLocaleDateString('ru-RU', {…, year: 'numeric'})` emits the
+  // era suffix — '2 сентября 2025 г.' — and the mockup renders '2 сентября 2025'. A substring
+  // assertion, or one written to match what the code already does, would pass and enshrine the
+  // suffix on every card older than this year.
+  // RED (2026-08-03): fails with
+  //   expect(element).toHaveTextContent(/^2 сентября 2025$/)
+  //   Expected element to have text content matching: /^2 сентября 2025$/
+  //   Received: 2 сентября 2025 г.
+  it.skip('renders the year for an older project, in the mockup’s format and without the era suffix', async () => {
+    mockFeed([OLDER_YEAR_PROJECT], 1)
+
+    render(<ProjectsPage />)
+
+    const card = await screen.findByTestId('project-card-document-9')
+
+    expect(within(card).getByTestId('project-card-date')).toHaveTextContent(/^2 сентября 2025$/)
+  })
+})
+
 describe('ProjectsPage card accent for an unfamiliar document type', () => {
   // The clock is pinned because the card's date format branches on `getFullYear() !== now`, and
   // every fixture in this file is dated 2026. Without this the suite green-passes only while the
