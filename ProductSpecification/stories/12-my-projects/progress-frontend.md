@@ -23,8 +23,23 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
 - [S] green-frontend (coverage: unknown wire type gets blue accent) — zero production files need
   modification: the fallback shipped with `ProjectCard` in 1ad55a5a and was untested, not
   unwritten, so the red test passes on arrival and there is no red state to hand off
-- [~] red-frontend (coverage: older project's date carries the year)
+- [~] red-frontend (coverage: older project's date carries the year) — assert the mockup's own
+  literal (`2 сентября 2025`, no ` г.`); `{day, month, year}` on ru-RU emits the era suffix, so a
+  test written to satisfy the branch rather than the mockup would enshrine it
 - [ ] green-frontend (coverage: older project's date carries the year)
+- [ ] red-frontend (unknown type's badge carries the wire string) — the accent test asserts only
+  that the badge EXISTS, so an empty chip passes; `documentTypeLabelFromWire`'s unknown arm was
+  rendered by that fixture and never looked at
+- [ ] green-frontend (unknown type's badge carries the wire string)
+- [ ] red-frontend (a prototype-named wire type is still unknown) — `documentTypeFromWire` looks up
+  an `Object.fromEntries` map, so `documentTypeFromWire('constructor')` returns a truthy Function,
+  takes the recognised arm, and ships `project-card-accent-undefined`: an untinted well and a
+  blank badge. Verified in this repo's node. The vocabulary is server-owned and free-form
+- [ ] green-frontend (a prototype-named wire type is still unknown)
+- [ ] red-frontend (the card test's clock is pinned) — `/^15 июля$/` in the pre-existing card test
+  reads the wall clock against a hardcoded 2026 fixture, so it fails on 1 Jan 2027 with no code
+  change. `vi.setSystemTime`, as the new accent block already does
+- [ ] green-frontend (the card test's clock is pinned)
 - [ ] red-frontend (coverage: unmount mid-flight sets no state)
 - [ ] green-frontend (coverage: unmount mid-flight sets no state)
 - [ ] green-selenium
