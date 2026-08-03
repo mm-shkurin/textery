@@ -74,7 +74,15 @@ that can be red.
 - [S] green-acceptance — nothing to turn green; see `red-acceptance` above.
 
 ### Scenario 1.2: A реферат prompt forbids a bibliography
-- [ ] red-acceptance
+- [S] red-acceptance — no acceptance surface, for the reason scenario 1.1 records at
+  length: the DSL's "when the prompt is built for it" is an in-process call on a pure
+  domain function, and nothing black-box can see the result. Re-checked rather than
+  inherited — `grep -rl prompt acceptance/` still returns only three *frontend*
+  statement files (UI placeholder copy, not the generation prompt), and
+  `acceptance/conftest.py` still has no provider-stub fixture, so neither the inbound
+  nor the outbound side of the prompt is observable over HTTP. This scenario adds one
+  negative instruction to the same string, which changes nothing about that.
+  Covered by `red-usecase` / `green-usecase` below.
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase
