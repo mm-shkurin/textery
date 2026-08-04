@@ -128,6 +128,16 @@ only the design draft could not see the contract.
      acceptance test. Guard named: a spec-vs-DTO test comparing `ProjectItemDto.model_fields`
      against the `required` set of `#/components/schemas/ProjectItem` in `projects_list.yaml`.
      Belongs to the `red-adapter rest` pair below.
+  **Decision on finding 1 (2026-08-04): keep the pair, do NOT mark it `[S]`.** The green's
+  production change lands in `domain` (`ProjectItem` widens to the ADR's nine fields), not in
+  `usecase` — so "zero usecase production files" is true of the layer, not of the work. Marking
+  it `[S]` would defer the VO widening to `green-adapter db`, which leaves this unit's `RED:`
+  skip alive across work units — exactly finding 5. Keeping the pair kills the skip in the unit
+  that opened it. The green owes, in the same commit: no defaults on any new field (finding 3's
+  named shape guard), the corrected `ProjectItem` docstring (finding 2), and the fixed
+  `ProjectItem(id=…)` call sites in `project_feed_statements._documents_of` and
+  `project_feed_storage.list_feed` — the latter getting only what its committed tests demand,
+  since the real projection is `red/green-adapter db`'s job.
   5. *premortem, credible* — `reason="RED: …"` skips outlive their green commit in this repo,
      demonstrably: `test_login_lockout_acceptance.py` has carried one since 2026-07-22 and
      `test_auto_editor_transition_acceptance.py` since 2026-07-29. This is the only usecase-layer
