@@ -50,10 +50,9 @@ class ServedFeed:
 class ProjectFeedStatements:
     def __init__(self) -> None:
         self._repository = FakeProjectFeedRepository()
-        self._search_slots = FakeSearchSlots()
         self._usecase = ListProjects(
             project_feed_repository=self._repository,
-            search_slots=self._search_slots,
+            search_slots=FakeSearchSlots(),
             clock=FakeClock(_FIXED_NOW),
         )
         self._caller_id = uuid4()
