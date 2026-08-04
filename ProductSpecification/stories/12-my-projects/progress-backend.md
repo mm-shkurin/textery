@@ -60,9 +60,19 @@ only the design draft could not see the contract.
   `UNAUTHORIZED`, so nothing can emit `UNAUTHENTICATED` through the route. Whether 1.1
   should have reused `UNAUTHORIZED` rather than minting a synonym is open and owed a
   contract answer.
-- [ ] red-adapter rest (GET /api/v1/projects envelope)
-- [ ] green-adapter rest (GET /api/v1/projects envelope)
-- [ ] green-acceptance
+- [x] red-adapter rest (GET /api/v1/projects envelope) — pins `items` and the row's `id`
+  only, both as whole-dict equality. `page`, `limit`, `total` and every `ProjectItem` field
+  beyond `id` stay unpinned because the domain has no source for them yet.
+- [ ] green-adapter rest (GET /api/v1/projects envelope) — must also assert the composition
+  root resolves `get_list_projects_usecase` to a `ListProjects` holding a real
+  `ProjectFeedRepository`; `SqlAlchemyProjectFeedRepository` is registered in no container,
+  and `green-acceptance` is remove-marker-only, so a wiring gap found there has no phase
+  left to fix it in (precedent: `tests/router/generation/test_generation_router_wiring.py`)
+- [ ] green-acceptance — BLOCKED as the steps above currently stand. 1.1's acceptance test
+  parses the whole envelope through `ProjectListBodyDto.from_json`, so it raises `KeyError`
+  on `page`/`total`/`kind`/`title`/… which no layer emits yet. Either the domain widening
+  is scheduled as further red/green passes under 1.1, or the acceptance assertion narrows
+  to what the scenario claims. Decision owed before this step is reachable.
 
 ### Scenario 1.2 A generation that became a document appears once, as the document
 - [ ] red-acceptance
