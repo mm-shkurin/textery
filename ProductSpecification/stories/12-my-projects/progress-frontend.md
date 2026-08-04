@@ -62,13 +62,43 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   resolution of a review finding against the red, not a green convenience. Note it dissolves the
   card-collapse pair below: `—` occupies a line, so no `min-height` is needed. Guard the INPUT
   (`typeof iso !== 'string'`), not the epoch value
-- [ ] red-frontend (a numeric or otherwise non-string updatedAt renders no date) — the shape that
-  passes BOTH guards the pair above pins: `new Date(1755000000)` is a valid, non-NaN, non-null Date
-  reading `21 января 1970`, so epoch-seconds from the backend would render a confident wrong date on
-  every card. A `typeof iso !== 'string'` check ahead of `new Date` closes null, undefined and this in
-  one line. Also close the converse hole: nothing yet distinguishes an input guard from an
-  epoch-VALUE guard (`getTime() === 0` satisfies both current tests while blanking a real 1970 date)
-- [ ] green-frontend (a numeric or otherwise non-string updatedAt renders no date)
+- [~] red-frontend (a numeric updatedAt, and a real 1970 date, are told apart) — **note revised after
+  4abe463e: the production line this step called for is already shipped, untested.** The green wrote
+  `typeof iso !== 'string'` when its two tests only forced `iso == null`, so the numeric arm
+  (`new Date(1755000000)` — a valid, non-NaN, non-null Date reading `21 января 1970`) returns `—`
+  today with zero assertions on it. This red is now two fixtures, not one:
+  a numeric `updatedAt` asserting `/^—$/`, and `'1970-01-01T00:00:00Z'` asserting `/^1 января 1970$/`.
+  The second is the one that matters — it is the only thing that makes the green's headline argument
+  true. Appending `|| date.getTime() === 0` to the validity guard passes all 9 current tests while
+  blanking a genuine 1970 date, which is the bug the commit message says it refused to write
+- [S] green-frontend (a numeric updatedAt, and a real 1970 date, are told apart) — zero production
+  files need modification; the guard shipped early in 4abe463e. Confirm at the work unit rather than
+  trusting this line
+- [ ] red-frontend (a sentinel timestamp does not render as a real date) — premortem on 4abe463e, the
+  arm that survives every guard now shipped: `'0001-01-01T00:00:00Z'` renders `1 января 1` and
+  `'9999-12-31T23:59:59Z'` renders `1 января 10000`. Both are strings, both are valid Dates. These are
+  the two most common backend null-timestamp sentinels (`LocalDate.MIN`, `DateTime.MinValue`, Postgres
+  `±infinity`). The 9999 arm is the worse one — 1.4's «Недавние проекты» rail sorts on `updated_at`, so
+  one sentinel row takes the top slot permanently and the user's real newest work never surfaces.
+  Wants a bounded plausible year, not another shape check
+- [ ] green-frontend (a sentinel timestamp does not render as a real date)
+- [ ] red-frontend-api (the mapper does not silently produce an item with an absent updatedAt) —
+  premortem on 4abe463e. Before this commit a broken wire contract rendered `Invalid Date NaN` on every
+  card: wrong, but loud and diagnosable from one screenshot. It now renders `—` on every card, which
+  looks intentional and could sit in production unnoticed. `projects_schemas.yaml` declares
+  `updated_at` required; if the real endpoint lands with `updatedAt`, omits it on the `generation` arm,
+  or nests it, `projectsApi.ts` maps `undefined` and every card degrades identically. Nothing
+  distinguishes one unusable row from a broken contract. The red belongs at the mapper, not the card
+- [ ] green-frontend-api (the mapper does not silently produce an item with an absent updatedAt)
+- [ ] red-frontend (formatRelativeTime does not claim an unusable createdAt was just created) —
+  premortem on 4abe463e, the third divergent contract and the only one that states a false fact rather
+  than declining to state one. `frontend/src/features/generation/formatRelativeTime.ts` returns
+  `'создан только что'` for BOTH `null` and an invalid date, rendered at `DocArea.tsx:40` — so the exact
+  wire condition this scenario exists to handle tells the user a six-month-old document was created
+  seconds ago. Worse, `formatRelativeTime.test.ts:21,25` pin that behaviour, so the reconciliation pass
+  would land with a green test guarding the lie. This step must REWRITE those two assertions; flag it
+  as a deliberate test change the way 4abe463e did, or it reads as green-phase convenience
+- [ ] green-frontend (formatRelativeTime does not claim an unusable createdAt was just created)
 - [S] red-frontend (an unusable date does not collapse the card's height) — dissolved by the em-dash
   contract, not deferred. The premortem raised this on 5b723153 against the EMPTY-element contract,
   which leaves `.project-card-date` at zero height (`ProjectsPage.css`: plain block flow,
