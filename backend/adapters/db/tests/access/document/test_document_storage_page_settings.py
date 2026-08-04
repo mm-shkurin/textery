@@ -21,10 +21,7 @@ layer where it is *decided*; this is the layer where it is *stored*, and the two
 failure modes have nothing to do with each other.
 """
 
-import pytest
 
-
-@pytest.mark.skip(reason="RED: column documents.page_settings does not exist")
 class TestConfiguredPageSettingsSurviveTheMapper:
     """Guard (a): a nine-key object seeded into the column reaches the domain intact."""
 
@@ -44,7 +41,6 @@ class TestConfiguredPageSettingsSurviveTheMapper:
         )
 
 
-@pytest.mark.skip(reason="RED: column documents.page_settings does not exist")
 class TestPageSettingsColumnIsNullableWithNoDefault:
     """Guard (b): the column's shape is what carries "never configured", so it is pinned.
 
@@ -98,7 +94,6 @@ class TestPageSettingsColumnIsNullableWithNoDefault:
         document_storage_statements.assert_column_is_sql_null(stored)
 
 
-@pytest.mark.skip(reason="RED: column documents.page_settings does not exist")
 class TestStoredEmptyObjectStaysDistinctFromSqlNull:
     """Guard (c): `{}` and SQL NULL must not read back the same.
 

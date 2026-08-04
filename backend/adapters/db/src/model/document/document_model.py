@@ -1,5 +1,7 @@
 import uuid
+from dataclasses import asdict
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import (
     CheckConstraint,
@@ -11,10 +13,11 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from document.document import ALLOWED_STATUSES, Document
+from document.page_settings import PageSettings
 from document.document_type import SUPPORTED_DOCUMENT_TYPES
 from model.base import Base
 
@@ -61,6 +64,10 @@ class DocumentModel(Base):
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
     generation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    # Nullable with no default: SQL NULL is the only way a document nobody has
+    # ever configured can say so, and a server default would write a
+    # configured-looking empty object into every legacy row at once.
+    page_settings: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
@@ -78,6 +85,9 @@ class DocumentModel(Base):
             generation_id=document.generation_id,
             created_at=document.created_at,
             updated_at=document.updated_at,
+            page_settings=(
+                asdict(document.page_settings) if document.page_settings is not None else None
+            ),
         )
 
     def to_domain(self) -> Document:
@@ -97,4 +107,13 @@ class DocumentModel(Base):
             generation_id=self.generation_id,
             created_at=self.created_at,
             updated_at=self.updated_at,
+            # `is not None`, not truthiness. A stored `{}` is an empty
+            # *configured* object and only SQL NULL means "never configured";
+            # `PageSettings(**blob) if blob else None` would collapse the two,
+            # because `{}` is falsy. With nine required fields, `{}` raises
+            # TypeError here -- which is admissible until `from_stored` arrives
+            # in 2.3/2.4 -- while silently reading it as absent is not.
+            page_settings=(
+                PageSettings(**self.page_settings) if self.page_settings is not None else None
+            ),
         )
