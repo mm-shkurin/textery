@@ -263,4 +263,6 @@ class TestAReferatPromptForbidsABibliography:
         # them mistyped inside `список` or `источники` ships a corrupted
         # instruction and still passes a hand-typed expected literal carrying the
         # same mistake. Only the character class over the whole string catches it.
-        assert latin_lookalikes == [], f"non-Cyrillic letters in the built prompt: {latin_lookalikes}"
+        assert latin_lookalikes == [], (
+            f"non-Cyrillic letters in the built prompt: {latin_lookalikes}"
+        )
