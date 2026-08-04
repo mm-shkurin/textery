@@ -17,7 +17,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   exceptions: [S], None → NotFoundException → 404 already mapped in document_router;
   response shape: rest — DocumentResponseDto has no page_settings and carries title/generation_id
   the frozen 8-key assertion rejects)
-- [ ] red-adapter db — the mapper seam. Three guards the review passes named:
+- [x] red-adapter db — the mapper seam. Three guards the review passes named:
   (a) a configured row seeded directly, `commit()` + `expire_identity_map()`, re-read through
   `find_by_id_and_owner`, asserting all nine keys by `==` against a separately built object — a
   to_domain that forgets the twelfth kwarg reads every configured document back as unconfigured
