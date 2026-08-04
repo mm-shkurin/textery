@@ -53,6 +53,25 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   to enable, not one: `new Date(null)` is the epoch, a *valid* Date, so an `isNaN(getTime())` check
   alone fixes the malformed arm and leaves `null` rendering `1 января 1970`. Both were verified to fail
   independently on their own received value
+- [ ] red-frontend (a numeric or otherwise non-string updatedAt renders no date) — the shape that
+  passes BOTH guards the pair above pins: `new Date(1755000000)` is a valid, non-NaN, non-null Date
+  reading `21 января 1970`, so epoch-seconds from the backend would render a confident wrong date on
+  every card. A `typeof iso !== 'string'` check ahead of `new Date` closes null, undefined and this in
+  one line. Also close the converse hole: nothing yet distinguishes an input guard from an
+  epoch-VALUE guard (`getTime() === 0` satisfies both current tests while blanking a real 1970 date)
+- [ ] green-frontend (a numeric or otherwise non-string updatedAt renders no date)
+- [ ] red-frontend (an unusable date does not collapse the card's height) — premortem on 5b723153. The
+  empty-element contract leaves `.project-card-date` at zero height (`ProjectsPage.css`: plain block
+  flow, `font-size`/`color` only, no `min-height`), so the card sits ~14px shorter than its row
+  neighbours — the alignment the title's line-clamp comment exists to protect. `align-design` for 1.1
+  is already `[x]` and no queued step re-runs it
+- [ ] green-frontend (an unusable date does not collapse the card's height)
+- [ ] red-frontend (История's formatDate does not render the epoch as a real date) — premortem on
+  5b723153, cross-screen. `HistoryPage.tsx` guards with `Number.isNaN(d.getTime())`, which is `false`
+  for `new Date(null)`, so a null `updated_at` renders `1 января 1970` there today — the exact epoch
+  half this story discovered, live in a screen this story did not touch. Its `'—'` arm has no test at
+  all (grep for `'—'` in the history tests returns nothing)
+- [ ] green-frontend (История's formatDate does not render the epoch as a real date)
 - [ ] red-frontend-api (the wire mapper does not transpose created_at and updated_at) — agent-review
   AND premortem both found this on 43f7e498, independently. The card-level de-alias landed above
   `vi.mock('../../api/projectsApi')`, so `projectsApi.ts`'s two adjacent mapping lines can still be
