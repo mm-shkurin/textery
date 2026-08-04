@@ -91,14 +91,21 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   `formatCardDate`, not another shape check. The lower bound must sit at or below 1970 —
   `EPOCH_DATE_PROJECT` pins `1 января 1970` as a genuinely renderable date. Both arms must go green
   from one change: a lower-bound-only fix leaves `1 января 10000` rendering
-- [~] red-frontend-api (the mapper does not silently produce an item with an absent updatedAt) —
+- [x] red-frontend-api (the mapper does not silently produce an item with an absent updatedAt) —
   premortem on 4abe463e. Before this commit a broken wire contract rendered `Invalid Date NaN` on every
   card: wrong, but loud and diagnosable from one screenshot. It now renders `—` on every card, which
   looks intentional and could sit in production unnoticed. `projects_schemas.yaml` declares
   `updated_at` required; if the real endpoint lands with `updatedAt`, omits it on the `generation` arm,
   or nests it, `projectsApi.ts` maps `undefined` and every card degrades identically. Nothing
   distinguishes one unusable row from a broken contract. The red belongs at the mapper, not the card
-- [ ] green-frontend-api (the mapper does not silently produce an item with an absent updatedAt)
+- [~] green-frontend-api (the mapper does not silently produce an item with an absent updatedAt) —
+  contract chosen by the red: `listProjects` REJECTS the whole page with
+  `Error('Сервер вернул проект без даты изменения.')`, mirroring `INVALID_VERSION_MESSAGE` /
+  `parseVersion` in `generation/api/documentApi.ts`. Rejecting beats dropping the row — a serializer
+  that omits a required field on one item is broken for all of them, and a silently short page hides
+  that as well as an em dash does. Green MUST export the message constant from `projectsApi.ts`; the
+  test currently holds it as a local `EXPECTED_MESSAGE` only because RED may not touch production, and
+  the `/refactor` after green replaces the literal with the import or the two definitions drift
 - [ ] red-frontend (formatRelativeTime does not claim an unusable createdAt was just created) —
   premortem on 4abe463e, the third divergent contract and the only one that states a false fact rather
   than declining to state one. `frontend/src/features/generation/formatRelativeTime.ts` returns

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { listProjects } from '../projectsApi'
 import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { PROJECT_WIRE, stubFetchJson } from './projectsWireFixtures'
 
 // Scenario 1.1 — «Мои проекты» feed client. The transport is stubbed: `GET /api/v1/projects`
 // does not exist on the backend yet, so nothing here may reach a real server.
@@ -25,38 +26,6 @@ describe('projectsApi', () => {
     clearSession()
     vi.unstubAllGlobals()
   })
-
-  function stubFetchJson(body: unknown): ReturnType<typeof vi.fn> {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => body,
-    })
-    vi.stubGlobal('fetch', fetchMock)
-    return fetchMock
-  }
-
-  // A generation, not a document: it is the arm that carries the fields a document-shaped
-  // fixture would leave untested — `can_repeat: true`, and a `preview` that is null while the
-  // title is present. Both are server-computed and neither may be re-derived on this side.
-  //
-  // `document_type` is Cyrillic because that is what the wire actually carries: the frontend
-  // asked for Latin ids and the backend kept Cyrillic, so `shared/documentTypes.ts` translates
-  // at the boundary (`WIRE_DOCUMENT_TYPE`) and `ProjectCard` calls `documentTypeLabelFromWire`.
-  // The mapping under test is a pass-through on this field, so no assertion here can catch a
-  // wrong vocabulary — which is exactly why the fixture has to be right: it is what green's
-  // implementation, the MSW handlers, and scenario 1.5's unknown-type arm all get read from.
-  const PROJECT_WIRE = {
-    kind: 'generation',
-    id: '9f1c2b74-0000-4000-8000-00000000abcd',
-    title: 'Квантовые вычисления',
-    preview: null,
-    document_type: 'реферат',
-    status: 'failed',
-    can_repeat: true,
-    created_at: '2026-07-15T09:00:00Z',
-    updated_at: '2026-07-15T09:00:00Z',
-  }
 
   // The Authorization header is asserted here, not left to the `saveSession` in `beforeEach` to
   // imply: the feed is owner-scoped, and a client that sent no header at all would satisfy the
