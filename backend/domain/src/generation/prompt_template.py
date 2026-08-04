@@ -33,9 +33,10 @@ class PromptRequest:
     merely unused by today's templates.
     """
 
-    def __init__(self, document_type: str, topic: str) -> None:
+    def __init__(self, document_type: str, topic: str, volume_pages: int) -> None:
         self.document_type = document_type
         self.topic = topic
+        self.volume_pages = volume_pages
 
 
 def _referat(request: PromptRequest) -> str:

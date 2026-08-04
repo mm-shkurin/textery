@@ -315,7 +315,59 @@ that can be red.
   accident of interpreter invocation) → **1.4**, whose sentence it is. Log disclosure of
   `topic` through the error path → Security 2.1 / 2.2, already recorded. Migration
   `d0e1f2a3b4c5`'s unfiltered bulk rewrite still has no owning scenario and needs a task.
-- [ ] red-usecase
+- [x] red-usecase — `TestADokladPromptIsUnchangedByTheMoveIntoTheDomain`, 49 cases
+  (33 written, grown to 49 by `/test-review`). 41 red / 8 green when the skip marker is
+  stripped; 187 domain passed, 49 skipped, 0 failed with it on; ruff clean. Predictions
+  matched on all 33 originals — `AssertionError` on the goldens missing ` (5 стр.)`,
+  `ImportError: cannot import name 'PromptBuildError'` on the G3/G4 cases, and
+  `AssertionError: _plain fixed overhead moved, got 14 bytes … assert 14 == 27` on G15.
+  The доклад adapter golden stayed green; `GigaChatProvider` was not touched.
+
+  **One line of production code landed during RED**, and it is the sanctioned kind:
+  `PromptRequest.__init__` gained `volume_pages: int` and its assignment, nothing else —
+  no volume clause in `_plain`, no validation, no `PromptBuildError`. Without it the
+  shared helper's third argument is a `TypeError` and all ten existing 1.1/1.2 tests go
+  red for the duration of this phase. `tdd-rules.md` names a new field on a request DTO as
+  allowed plumbing.
+
+  **Four things `/test-review` caught that would have shipped a guard asserting nothing:**
+  - **G15 was blind to its own hazard.** Measuring `splitlines()[0]` isolates the ban
+    correctly but also discards any second line `_plain` itself grows — and "a sentence
+    added to `_plain`" is the entire reason G15 exists. It would have sat at 27 bytes
+    while the template doubled. Now measures the whole prompt and subtracts a
+    `BAN_LINE_BYTES` derived from the already-pinned `BAN_SENTENCE` rather than hand-typed.
+  - **G16 had an unfirable assertion.** `leaked = [n for n in FORBIDDEN_GENERATION_FIELDS
+    if n in accepted]` runs after the line pinning `accepted` to exactly three names, so it
+    could never be non-empty. Worse, a signature says nothing about *instance attributes* —
+    an `__init__` taking the three declared parameters can still assign `self.owner_id`,
+    which passes every assertion while putting a server-owned field one attribute access
+    from a template. Split into a structural `(name, kind)` comparison and an
+    attribute-tuple assertion, with `FORBIDDEN_GENERATION_FIELDS` itself pinned against
+    `Generation.__init__`'s real signature — a rename on the entity would otherwise have
+    emptied the guard silently.
+  - **G9 was relative.** `second == first` passes for a builder that memoizes the *wrong*
+    string. Both calls now pin to `GOLDEN_PROMPTS[document_type]`, which turned the three
+    `_plain` types red and asserts *which* string is repeated. Added the half of G9 the ADR
+    states and the first draft omitted: `_TEMPLATES` compared by key **and callable
+    identity**, and a `deepcopy` baseline for the mutation check — a shallow copy compares
+    equal after an in-place field mutation, latent today and live once 1.6 adds two fields.
+  - **14 bare `pytest.raises` were existence-only.** `PromptBuildError` is a family, so
+    raising `UnsupportedDocumentTypeError` for `volume_pages=-3` passed. Now
+    `type(exc) is PromptBuildError` plus `str(exc) ==` a named constant. Both messages were
+    decided here rather than deferred: they name the field and carry **no interpolation
+    slot**, which is structurally what keeps the user's `topic` out of the log line
+    `generate_document.py:69-75` writes. A new test pins `PromptBuildError`'s base class,
+    which the ADR assigns to this scenario and nothing asserted.
+
+  Eight cases are green and stay green: the four Cyrillic (G13) and two G16 ratchets are
+  behaviour-pinning by nature, and реферат's golden and determinism cases pass because
+  `_referat` interpolates no volume — which is precisely the claim G6 makes about the one
+  template this scenario leaves alone.
+
+  **G14 is deliberately absent from this file.** It drives `GigaChatProvider`, so a domain
+  test carrying it would invert the dependency rule — and would resolve at runtime anyway,
+  since every layer root shares one `pythonpath`. It belongs to an adapter test and will
+  arrive as a discovered step at `adapters-discovery`.
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
