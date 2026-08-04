@@ -76,8 +76,20 @@ export function ProjectCard({ project }: ProjectCardProps) {
 // The year is appended by hand rather than asked of the formatter: ru-RU's `year: 'numeric'`
 // emits the era suffix ('2 сентября 2025 г.') and the mockup does not. The formatter still owns
 // the day and the genitive month, which is the part worth not hand-rolling.
+//
+// `updatedAt: string` is a compile-time claim about a runtime JSON body from an endpoint the
+// backend has not built, so both guards below are about values the type system says cannot arrive.
+// The INPUT is guarded, not the resulting epoch value: `new Date(null)` is a perfectly valid Date
+// reading 1 января 1970, which no `isNaN` check catches and which the user reads as a real edit
+// date. A `getTime() === 0` guard would satisfy the same two tests while blanking a genuine
+// 1970-01-01 — a different bug. `—` rather than an empty slot, matching `HistoryPage`'s
+// `formatDate`, which has shipped that placeholder for the same condition since before this screen.
+const UNUSABLE_DATE = '—'
+
 function formatCardDate(iso: string): string {
+  if (typeof iso !== 'string') return UNUSABLE_DATE
   const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return UNUSABLE_DATE
   const dayAndMonth = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
   const year = date.getFullYear()
   const showYear = year !== new Date().getFullYear()

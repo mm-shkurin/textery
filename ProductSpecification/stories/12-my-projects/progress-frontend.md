@@ -49,7 +49,7 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   year-showing branch and concatenates two failure tokens; `null` renders `1 января 1970`, which
   reads as a real date. `projectsApi.ts` passes `item.updated_at` through unvalidated against an
   endpoint the backend has not built
-- [~] green-frontend (an unparseable updatedAt does not render `Invalid Date NaN`) — two skipped tests
+- [x] green-frontend (an unparseable updatedAt does not render `Invalid Date NaN`) — two skipped tests
   to enable, not one: `new Date(null)` is the epoch, a *valid* Date, so an `isNaN(getTime())` check
   alone fixes the malformed arm and leaves `null` rendering `1 января 1970`. Both were verified to fail
   independently on their own received value.
@@ -69,12 +69,13 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   one line. Also close the converse hole: nothing yet distinguishes an input guard from an
   epoch-VALUE guard (`getTime() === 0` satisfies both current tests while blanking a real 1970 date)
 - [ ] green-frontend (a numeric or otherwise non-string updatedAt renders no date)
-- [ ] red-frontend (an unusable date does not collapse the card's height) — premortem on 5b723153. The
-  empty-element contract leaves `.project-card-date` at zero height (`ProjectsPage.css`: plain block
-  flow, `font-size`/`color` only, no `min-height`), so the card sits ~14px shorter than its row
-  neighbours — the alignment the title's line-clamp comment exists to protect. `align-design` for 1.1
-  is already `[x]` and no queued step re-runs it
-- [ ] green-frontend (an unusable date does not collapse the card's height)
+- [S] red-frontend (an unusable date does not collapse the card's height) — dissolved by the em-dash
+  contract, not deferred. The premortem raised this on 5b723153 against the EMPTY-element contract,
+  which leaves `.project-card-date` at zero height (`ProjectsPage.css`: plain block flow,
+  `font-size`/`color` only, no `min-height`) and drops the card ~14px below its row neighbours. `—`
+  occupies a line, so the box the alignment depends on is there without a `min-height`. Re-open if the
+  placeholder ever becomes empty again
+- [S] green-frontend (an unusable date does not collapse the card's height) — see above
 - [ ] red-frontend (История's formatDate does not render the epoch as a real date) — premortem on
   5b723153, cross-screen. `HistoryPage.tsx` guards with `Number.isNaN(d.getTime())`, which is `false`
   for `new Date(null)`, so a null `updated_at` renders `1 января 1970` there today — the exact epoch

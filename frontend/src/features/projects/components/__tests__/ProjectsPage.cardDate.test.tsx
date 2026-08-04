@@ -78,30 +78,19 @@ describe('ProjectsPage card date for a project whose updatedAt is unusable', () 
   // hide that the year-showing branch is what produces the second failure token.
   pinClockTo('2026-08-03T12:00:00.000Z')
 
-  // What SHOULD render is nothing. `12_MyProjects.md` and every mockup under `mockups/desktop/`
+  // What SHOULD render is an em dash. `12_MyProjects.md` and every mockup under `mockups/desktop/`
   // are silent on an unusable date — `01-projects-grid.html` renders `<div class="date">…</div>`
-  // with a real date on every card and has no absent-date state — so this pins the card showing no
-  // date TEXT, with the element itself kept (empty) rather than omitted.
+  // with a real date on every card and has no absent-date state — and the red phase read that
+  // silence as the spec's silence, pinning an empty element. The user overruled it on review:
+  // `HistoryPage.tsx`'s `formatDate` already returns '—' for an invalid date and is on screen in
+  // production today, so an empty element here would be a THIRD contract for the same condition
+  // (empty here, em dash in История, 'создан только что' in `formatRelativeTime`). These two
+  // assertions were rewritten to '—' in green as the recorded resolution of that finding. The em
+  // dash also occupies a line, which dissolves the collapsed-card-height risk the empty contract
+  // carried.
   //
-  // TWO CAVEATS ON THAT CONTRACT, both raised against this commit and neither yet resolved. The
-  // green phase owns the decision; these tests are what has to change if it goes the other way.
-  //
-  // 1. Keeping the node was originally justified by 'the date slot is a grid row in projects.css'.
-  //    That is false. `.project-card-body` is plain block flow and `.project-card-date` sets only
-  //    `font-size`/`color` with no `min-height`, so an empty div is zero-height and omitting the
-  //    node lays out identically. The real risk runs the other way: a zero-height date collapses
-  //    the card ~14px shorter than its row neighbours, which is the alignment the title's
-  //    line-clamp comment exists to protect. If the empty-element contract stands, the green owes
-  //    `.project-card-date` a `min-height`; `align-design` for 1.1 is already `[x]` and no queued
-  //    step re-runs it.
-  // 2. '—' is NOT an invented placeholder. `HistoryPage.tsx`'s `formatDate` already returns it for
-  //    an invalid date, and it is on screen in production today. Reading mockup silence as spec
-  //    silence pins a THIRD contract (empty here, em dash in История, 'создан только что' in
-  //    `formatRelativeTime`) without overruling the precedent.
-  //
-  // `toBeEmptyDOMElement` rather than `toHaveTextContent('')` on purpose — the latter is a
-  // substring match against the empty string and passes on 'Invalid Date NaN', i.e. on exactly the
-  // bug these tests exist to catch.
+  // Anchored `/^—$/` rather than `toHaveTextContent('—')` on purpose — the latter is a substring
+  // match and would pass on '— Invalid Date NaN', i.e. on exactly the bug these tests catch.
   //
   // The two bad-timestamp fixtures are two `it`s rather than one carrying both, for the reason the
   // older-year block above already splits its pair: one test stops at its first failing assertion,
@@ -111,17 +100,17 @@ describe('ProjectsPage card date for a project whose updatedAt is unusable', () 
   // '1 января 1970'. Split, both failures are on screen at once and neither can be fixed silently;
   // the anti-half-fix property lives in both fixtures being pinned, not in sharing an `it`.
 
-  // RED: fails with `expect(element).toBeEmptyDOMElement()` / Received: "Invalid Date NaN".
-  // `formatCardDate` in ProjectCard.tsx does `new Date(iso)` with no validity check, and
-  // `NaN !== currentYear` sends it down the year-SHOWING branch, concatenating two failure tokens.
-  it.skip('renders no date text when updatedAt is unparseable, never a failure token', async () => {
+  // RED: failed with Received: "Invalid Date NaN". `formatCardDate` in ProjectCard.tsx did
+  // `new Date(iso)` with no validity check, and `NaN !== currentYear` sent it down the
+  // year-SHOWING branch, concatenating two failure tokens.
+  it('renders a placeholder when updatedAt is unparseable, never a failure token', async () => {
     mockFeed([UNPARSEABLE_DATE_PROJECT], 1)
 
     render(<ProjectsPage />)
 
     const card = await screen.findByTestId('project-card-document-15')
 
-    expect(within(card).getByTestId('project-card-date')).toBeEmptyDOMElement()
+    expect(within(card).getByTestId('project-card-date')).toHaveTextContent(/^—$/)
 
     // The card is still a card. A green fix that bails out of `ProjectCard` early — returning
     // null, or dropping the body — would satisfy the assertion above by rendering nothing at all,
@@ -131,17 +120,17 @@ describe('ProjectsPage card date for a project whose updatedAt is unusable', () 
     )
   })
 
-  // RED: fails with `expect(element).toBeEmptyDOMElement()` / Received: "1 января 1970".
-  // `new Date(null)` is the epoch — a VALID Date — so no validity check catches it, and 1970 is
-  // not the pinned now, so the year branch renders it in full as a plausible-looking edit date.
-  it.skip('renders no date text when updatedAt is missing, never the epoch', async () => {
+  // RED: failed with Received: "1 января 1970". `new Date(null)` is the epoch — a VALID Date — so
+  // no validity check catches it, and 1970 is not the pinned now, so the year branch rendered it
+  // in full as a plausible-looking edit date. Only an INPUT guard closes this arm.
+  it('renders a placeholder when updatedAt is missing, never the epoch', async () => {
     mockFeed([MISSING_DATE_PROJECT], 1)
 
     render(<ProjectsPage />)
 
     const card = await screen.findByTestId('project-card-document-17')
 
-    expect(within(card).getByTestId('project-card-date')).toBeEmptyDOMElement()
+    expect(within(card).getByTestId('project-card-date')).toHaveTextContent(/^—$/)
 
     // Same anti-early-return pin as its sibling, for the same reason.
     expect(within(card).getByTestId('project-card-title')).toHaveTextContent(/^Проект без даты$/)
