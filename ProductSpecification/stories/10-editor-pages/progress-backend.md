@@ -77,7 +77,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   `test_should_return_200_with_the_stored_document`'s lone `["version"] == 2` into the full 9-key
   write body: the same version-is-on-both-DTOs hole this scenario's own PUT guard was raised for,
   still open one class below it.
-- [~] red-adapter rest (agent-review: the FOURTH wire row is unpinned and the docstring argues it
+- [x] red-adapter rest (agent-review: the FOURTH wire row is unpinned and the docstring argues it
   away on a false premise. `TestSaveDocumentTitleIntent` says blankness "could only pin a guard that
   cannot fire" because `TitleUpdate.__post_init__` folds a blank to preserve — but that invariant
   only fires on the `of()` path, and the route decides WHICH constructor is called. Mutation:
@@ -88,11 +88,24 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   chose preserve. Parametrize over `""` AND `"   "`: whitespace is truthy, so it survives
   `not request.title` but not `not request.title.strip()`. This lands BEFORE green deliberately —
   green is written against this contract.)
-- [ ] green-adapter rest (premortem: title absent-vs-null via `model_fields_set`; PUT 404)
-  Two constraints from agent-review, both checkable: (i) the rest suite must come back **95 passed,
-  0 skipped** — four markers, not three; nothing fails if green lifts only three, the guard is
-  prose. (ii) `document_router.py` is at 179 lines and the mapping adds ~8; under the 200 cap but
-  with no room for the `_ERROR_CODE_STATUS_MAP`/log work chartered nearby.
+  RED landed, prediction matched first run — and `/test-review` then falsified the parametrize
+  rationale ABOVE, which is the second time in this scenario a convincing docstring turned out not
+  to be true. `not request.title.strip()` catches `""` too (`"".strip()` is `""`, falsy), so BOTH
+  named mis-spellings are caught by `""` alone and the stated reason for the second parameter was
+  wrong. `"   "` still earns its place, for a different variant: `if request.title and not
+  request.title.strip()` — the ADR's REJECTED "blank clears" reading, spelled with a `None` guard —
+  lets falsy `""` fall through to `of("")`, which folds to preserve and passes. Only the whitespace
+  case catches it. Verified against six route implementations with a throwaway unskipped probe,
+  since the class is skip-marked and a suite run proves nothing about it.
+- [~] green-adapter rest (premortem: title absent-vs-null via `model_fields_set`; PUT 404)
+  Two constraints from agent-review, both checkable: (i) the rest suite must come back **97 passed,
+  0 skipped** (restated from 95/0 — the blank row added two parametrized cases). Four marker SITES,
+  not three: the class-level one in `test_save_document_title_router.py` plus three method-level
+  ones in `test_save_document_router.py`. Nothing fails if green lifts only three — the guard is
+  prose, so check the number. (ii) `document_router.py` is at 179 lines and the mapping adds ~8;
+  under the 200 cap but with no room for the `_ERROR_CODE_STATUS_MAP`/log work chartered nearby.
+  (iii) `if request.title is None` is the ONLY spelling that passes all four rows — the blank arm
+  exists to make that true.
 - [ ] red-adapter rest (agent-review: the PUT-404 guard asserts the TEST FIXTURE's wiring, not the
   production app's. `conftest.document_app:29` registers `not_found_exception_handler` itself, so
   commenting out `main.py:155` leaves the ENTIRE backend suite green — 641 passed — while every

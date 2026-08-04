@@ -7,17 +7,18 @@ from document.title_update import TitleUpdate
 
 @pytest.mark.skip(
     reason="RED: expected await not found — the PUT route forwards request.title raw, so all "
-    "three wire shapes reach SaveDocument.execute as title=None / title='<str>' instead of "
-    "TitleUpdate.preserve() / clear() / of(...)"
+    "four wire shapes reach SaveDocument.execute as title=None / title='' / title='<str>' "
+    "instead of TitleUpdate.preserve() / clear() / of(...)"
 )
 class TestSaveDocumentTitleIntent:
     """The three-state title contract, at the ONE layer that can express it.
 
     `decisions/blank-title-semantics-decision.md` (story 17) makes the title field
     three-state and distinguishes the states by what the client SENT, not by the
-    value alone:
+    value alone. Four wire shapes map onto those three states:
 
         key absent        -> preserve the stored title
+        "title": ""/"   " -> preserve the stored title
         "title": null     -> explicit clear, SET title = NULL
         "title": "Отчёт"  -> store verbatim
 
@@ -32,14 +33,20 @@ class TestSaveDocumentTitleIntent:
     request can produce it -- so a user who clears a title keeps the old one in
     history and in the export filename, with the domain and usecase suites green.
 
-    Both mappings are asserted, not one: the ADR calls for it by name, because a
+    Every mapping is asserted, not one: the ADR calls for it by name, because a
     route that mapped every shape to a single constant intent satisfies any one of
-    these three methods on its own.
+    these methods on its own.
 
-    Blankness ("" and whitespace-only) is deliberately NOT re-asserted here. It is
-    an invariant of the type -- `TitleUpdate.__post_init__` folds a blank down to
-    preserve on every construction path -- so the route needs no branch for it and
-    a test here could only pin a guard that cannot fire.
+    Blankness ("" and whitespace-only) is asserted here too, as the ADR's second
+    row. An earlier revision of this docstring argued it away -- blankness is an
+    invariant of the type, `TitleUpdate.__post_init__` folds a blank down to
+    preserve on every construction path, so the route needs no branch and a test
+    here could only pin a guard that cannot fire -- and that argument was FALSE.
+    The fold runs only on the arm that CARRIES a value. `clear()` is spelled by a
+    FLAG, with `value=None`, so a route that hands a blank string to `clear()`
+    never presents that string to `__post_init__` at all and nothing folds. The
+    route decides WHICH constructor is called, and that decision is what is
+    unpinned without the blank arm below.
     """
 
     async def test_should_map_an_absent_title_to_preserve(self, mocker, save_client, owner_id):
@@ -58,6 +65,58 @@ class TestSaveDocumentTitleIntent:
             response = await client.put(
                 f"/api/v1/documents/{document.id}",
                 json={"content": "<p>saved</p>", "version": 1},
+            )
+
+        assert response.status_code == 200, f"got {response.status_code}: {response.text}"
+        usecase.execute.assert_awaited_once_with(
+            document_id=document.id,
+            owner_id=owner_id,
+            content="<p>saved</p>",
+            version=1,
+            title=TitleUpdate.preserve(),
+        )
+
+    @pytest.mark.parametrize("blank", ["", "   "], ids=["empty", "whitespace-only"])
+    async def test_should_map_a_blank_title_to_preserve(
+        self, mocker, save_client, owner_id, blank
+    ):
+        """The ADR's second row: a blank title is no intent, never an erasure.
+
+        It is what a mount/hydration race, a half-initialised form or a client
+        that always serialises the field emits -- the default shape of "I have
+        nothing to say about the title". The ADR chose preserve precisely so that
+        silent data loss is not the failure mode of an ordinary frontend bug.
+
+        BOTH blanks are exercised, and that is not thoroughness theatre -- each
+        catches a wrong green the other lets through. Spelling the null arm
+        `if not request.title` instead of `if request.title is None` routes `""`
+        into `clear()`, while `"   "` is truthy and survives it untouched. The
+        ADR's rejected "blank clears" reading is the mirror image: spelled with a
+        truthiness guard so `None.strip()` cannot raise -- `if request.title and
+        not request.title.strip()` -- it lets a falsy `""` slip past into `of()`,
+        which folds it to preserve, and reaches `clear()` only for `"   "`. Drop
+        either case and one of those two goes green. A spelling that clears on
+        every blank, and the 422-on-blank the ADR also rejected, are caught by
+        either case alone -- those are not what the second parameter is for.
+
+        The expectation is genuinely distinguishable from the clear below: both
+        carry `value=None` and only `clears` separates them, which is exactly the
+        field a mis-routed blank flips. A correct route needs no blank branch of
+        its own -- handing `""` to `of()` folds it here -- but it must not hand it
+        to `clear()`, and only asserting the intent that arrives can tell those
+        two apart.
+
+        Blankness is TESTED, never applied: the ADR forbids trimming, so a
+        legitimate `" Отчёт "` is a set intent carrying its padding byte for byte,
+        not a blank and not a rewrite.
+        """
+        document = a_document(owner_id)
+        usecase = a_usecase(mocker, SaveDocument, returns=document)
+
+        async with save_client(usecase) as client:
+            response = await client.put(
+                f"/api/v1/documents/{document.id}",
+                json={"content": "<p>saved</p>", "version": 1, "title": blank},
             )
 
         assert response.status_code == 200, f"got {response.status_code}: {response.text}"
