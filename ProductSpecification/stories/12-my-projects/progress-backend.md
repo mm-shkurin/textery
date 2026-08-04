@@ -39,7 +39,24 @@ only the design draft could not see the contract.
   sub-triggers dismissed as out of altitude)
 - [x] red-usecase
 - [x] green-usecase
-- [~] adapters-discovery
+- [x] adapters-discovery (Check 1 ports: `ProjectFeedRepository` has no implementation in
+  any adapter module — the document is written through `DocumentStorage` (db) by the
+  create-document usecase and must be read back through `ProjectFeedRepository.list_feed`
+  (db), so the pair runs that write-port → read-port flow, not a same-port round-trip.
+  `SearchSlots` → `[S]`: `ListProjects.execute` calls neither `acquire` nor `release` in
+  1.1; the port is constructor-frozen for 10.1 and an implementation is owed there.
+  Check 2 exceptions: `ValidationException(UNAUTHENTICATED)` is absent from
+  `_ERROR_CODE_STATUS_MAP` in `error_handling/exception_handlers.py`, whose `.get(code, 400)`
+  default answers 400 where `projects_list.yaml` declares 401 — rest pair.
+  Check 3 response shape: `GET /api/v1/projects` is registered on no router and no
+  `ProjectItem`/`ProjectListBody` DTO exists, while the acceptance test compares the whole
+  parsed envelope (`items`, `page`, `limit`, `total`) — rest pair.)
+- [ ] red-adapter db
+- [ ] green-adapter db
+- [ ] red-adapter rest (UNAUTHENTICATED → 401)
+- [ ] green-adapter rest (UNAUTHENTICATED → 401)
+- [ ] red-adapter rest (GET /api/v1/projects envelope)
+- [ ] green-adapter rest (GET /api/v1/projects envelope)
 - [ ] green-acceptance
 
 ### Scenario 1.2 A generation that became a document appears once, as the document
