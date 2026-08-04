@@ -67,11 +67,7 @@ interface ProjectPageWire {
 // `_params` is unread on purpose: search, sort and paging query building belong to scenarios
 // 2.x/3.x, and building a default `?limit=20` here would pre-decide a contract they own.
 export async function listProjects(_params?: ListProjectsParams): Promise<ProjectPage> {
-  const data = await send<ProjectPageWire>(
-    '/api/v1/projects',
-    {},
-    'Не удалось загрузить проекты',
-  )
+  const data = await send<ProjectPageWire>('/api/v1/projects', {}, 'Не удалось загрузить проекты')
   return {
     items: data.items.map((item) => ({
       kind: item.kind,

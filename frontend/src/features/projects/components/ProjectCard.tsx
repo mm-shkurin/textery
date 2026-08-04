@@ -79,6 +79,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
 function formatCardDate(iso: string): string {
   const date = new Date(iso)
   const dayAndMonth = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
-  const showYear = date.getFullYear() !== new Date().getFullYear()
-  return showYear ? `${dayAndMonth} ${date.getFullYear()}` : dayAndMonth
+  const year = date.getFullYear()
+  const showYear = year !== new Date().getFullYear()
+  return showYear ? `${dayAndMonth} ${year}` : dayAndMonth
 }
