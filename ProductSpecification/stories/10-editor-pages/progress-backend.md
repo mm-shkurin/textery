@@ -53,7 +53,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   test. The old `["version"] == 2` survived that mutation, because `version` is on both DTOs.
 - [S] green-adapter rest (coverage: PUT response asserts version only, not shape) — no
   implementation needed; regression guard over already-correct code, no production file changed.
-- [~] red-adapter rest (premortem: PUT's title-erasure path is unreachable from HTTP. The route
+- [x] red-adapter rest (premortem: PUT's title-erasure path is unreachable from HTTP. The route
   forwards `title=request.title` raw; `SaveDocumentRequestDto.title` is `str | None = None`, so an
   omitted title and an explicit wire `"title": null` both arrive as `None` and both map to
   `TitleUpdate.preserve()`. `SaveDocument`'s own docstring forbids exactly this, and
@@ -64,7 +64,20 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   filename, with green domain and usecase suites. This one is a REAL red, not a regression guard.
   Also: PUT has no `side_effect` test at all — a `NotFoundException` on the write path (deleted or
   foreign document, still-open editor tab) is unasserted, and autosave treats 500 as retryable.)
-- [ ] green-adapter rest (premortem: title absent-vs-null via `model_fields_set`; PUT 404)
+  RED landed 6 failing / 2 passing, split by which half it was: the title contract is genuinely red
+  on all three arms, the PUT 404 was NOT — `not_found_exception_handler` is already registered
+  (`main.py:155`), so that gap was a missing assertion, not a missing mapping. Both 404 tests ship
+  unskipped as regression guards, with a negative control so a route that 404s unconditionally
+  cannot satisfy them. **GREEN removes FOUR markers, not three:** three pre-existing tests in
+  `test_save_document_router.py` assert the WHOLE `execute` call including `title=None` /
+  `title="Новое имя"`, so they encode the contract GREEN deletes. They were restated in the new
+  contract and skipped alongside — left alone they would have handed GREEN a suite it could only
+  pass by editing tests, which is the rule that stops expectations being corrected to match the
+  code. No assertion was loosened in the move. `/test-review` additionally expanded
+  `test_should_return_200_with_the_stored_document`'s lone `["version"] == 2` into the full 9-key
+  write body: the same version-is-on-both-DTOs hole this scenario's own PUT guard was raised for,
+  still open one class below it.
+- [~] green-adapter rest (premortem: title absent-vs-null via `model_fields_set`; PUT 404)
 - [ ] red-adapter rest (agent-review: PUT's whole-body guard seeds the fixture with the SAME
   content string the request sends, so the `content` key cannot distinguish the stored document
   from the request echoed back. Verified by mutation: adding `dto.content = request.content` to
