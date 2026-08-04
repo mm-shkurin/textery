@@ -76,11 +76,50 @@ only the design draft could not see the contract.
   provider's `raise NotImplementedError` stub — deliberately left uncovered, as it is in
   `document_router`, `generation_router`, `health_router` and `security/current_owner`, and
   the wiring test already pins that the override making it unreachable is installed.
-- [~] green-acceptance — BLOCKED as the steps above currently stand. 1.1's acceptance test
-  parses the whole envelope through `ProjectListBodyDto.from_json`, so it raises `KeyError`
-  on `page`/`total`/`kind`/`title`/… which no layer emits yet. Either the domain widening
-  is scheduled as further red/green passes under 1.1, or the acceptance assertion narrows
-  to what the scenario claims. Decision owed before this step is reachable.
+- [x] widening decision (2026-08-04) — the blockage recorded below is resolved in favour of
+  **widening the domain**, not narrowing the acceptance assertion. `test_project_feed_acceptance.py`
+  and `ProjectFeedStatements` were written at red-acceptance and passed `/test-review`; the
+  whole-envelope equality is what makes "the feed shows the caller's documents" a real claim
+  rather than an id-only check, so weakening it would retire the scenario's own strictness to
+  make a step reachable. The per-field deferral notes in `ProjectItem`, `ProjectPage` and
+  `ProjectItemDto` ("each arrives with the scenario that first asserts one") point here: 1.1's
+  acceptance test IS the first assertion of every one of those fields. The widening follows the
+  ADR's declared shape (`decisions/project-feed-read-model-decision.md`: `ProjectItem(kind, id,
+  title, preview, document_type, status, retryable, created_at, updated_at)`,
+  `ProjectPage(items, page, limit, total)`), and is scheduled as the red/green passes below —
+  row shape first, then the envelope counters, each through usecase → db → rest.
+  Deliberately NOT pulled in: `sort`/`q` on `ProjectPageRequest` (3.x), the grapheme-aware
+  preview trim beyond an empty-content document (no test pressure in 1.1), the generations arm
+  (1.2/1.3), and real LIMIT/OFFSET paging behaviour (2.1/2.2) — 1.1 only pins the
+  unparameterised defaults `page=1`, `limit=20` and a `total` that is a true count, not
+  `len(items)`.
+- [~] red-usecase (the feed row carries the contract's full shape) — `ProjectItem` widens to
+  `kind`, `title`, `preview`, `document_type`, `status`, `retryable`, `created_at`,
+  `updated_at` alongside `id`; the usecase test pins that `ListProjects.execute` returns them
+  through unchanged from the port.
+- [ ] green-usecase (the feed row carries the contract's full shape)
+- [ ] red-adapter db (every row field projected from the documents arm) — `title`, `preview`
+  (empty content ⇒ `''`), `document_type`, `status`, the two timestamps read from
+  `DocumentModel`; `kind` the literal `document`; `retryable` false for every document.
+- [ ] green-adapter db (every row field projected from the documents arm)
+- [ ] red-adapter rest (the envelope emits every `ProjectItem` field) — `ProjectItemDto` widens
+  to the contract's nine fields, timestamps serialized as UTC ISO-8601 with an explicit offset
+  (the acceptance DTO's `parse_feed_timestamp` rejects a naive string).
+- [ ] green-adapter rest (the envelope emits every `ProjectItem` field)
+- [ ] red-usecase (the envelope carries page, limit and total) — `ProjectPage` widens to
+  `(items, page, limit, total)` and `ProjectPageRequest` grows the contract's unparameterised
+  defaults `page=1`, `limit=20`; the usecase test pins that they reach the caller.
+- [ ] green-usecase (the envelope carries page, limit and total)
+- [ ] red-adapter db (total is a counted total, not `len(items)`) — the window count of the
+  ADR, so a page holding one row of one still reports the true count and an owner with nothing
+  reports zero.
+- [ ] green-adapter db (total is a counted total, not `len(items)`)
+- [ ] red-adapter rest (the envelope emits page, limit and total)
+- [ ] green-adapter rest (the envelope emits page, limit and total)
+- [ ] green-acceptance — was BLOCKED as the steps above originally stood: 1.1's acceptance test
+  parses the whole envelope through `ProjectListBodyDto.from_json`, so it raised `KeyError` on
+  `page`/`total`/`kind`/`title`/… which no layer emitted. The widening passes above are what
+  unblock it; this step stays a remove-marker-only run.
 
 ### Scenario 1.2 A generation that became a document appears once, as the document
 - [ ] red-acceptance
