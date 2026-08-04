@@ -4,7 +4,9 @@ import { ProjectsPage } from '../ProjectsPage'
 import { mockFeed, pinClockTo } from './feedTestHarness'
 import {
   EDITED_LONG_AFTER_CREATION_PROJECT,
+  EPOCH_DATE_PROJECT,
   MISSING_DATE_PROJECT,
+  NUMERIC_DATE_PROJECT,
   OLDER_YEAR_PROJECT,
   SECOND_OLDER_YEAR_PROJECT,
   UNPARSEABLE_DATE_PROJECT,
@@ -134,5 +136,63 @@ describe('ProjectsPage card date for a project whose updatedAt is unusable', () 
 
     // Same anti-early-return pin as its sibling, for the same reason.
     expect(within(card).getByTestId('project-card-title')).toHaveTextContent(/^Проект без даты$/)
+  })
+
+  // The third shape of a bad `updated_at`, and the one the guard was written wide enough to catch
+  // without ever being asked to: epoch millis as a NUMBER. `new Date(1755000000)` is valid,
+  // non-NaN and non-null, and reads '21 января 1970' — so neither the malformed fixture's check
+  // nor the missing one's would stop it. The green above wrote `typeof iso !== 'string'` when its
+  // two tests only forced `iso == null`; this test is what makes that line load-bearing instead of
+  // generous. Narrowing it back to a null check is now a failure rather than a passing
+  // simplification.
+  //
+  // RED: passes on arrival — `typeof iso !== 'string'` already catches it. A regression pin on an
+  // untested arm, not a red state.
+  it('renders a placeholder when updatedAt arrives as epoch millis, never a 1970 date', async () => {
+    mockFeed([NUMERIC_DATE_PROJECT], 1)
+
+    render(<ProjectsPage />)
+
+    const card = await screen.findByTestId('project-card-document-19')
+
+    expect(within(card).getByTestId('project-card-date')).toHaveTextContent(/^—$/)
+
+    // Same anti-early-return pin as its two siblings, for the same reason.
+    expect(within(card).getByTestId('project-card-title')).toHaveTextContent(
+      /^Проект с числовой датой$/,
+    )
+  })
+})
+
+// Its own block rather than a fourth `it` in the unusable-date one above, because it is the exact
+// opposite claim: this timestamp is USABLE. Filing it under "unusable" would put a test asserting a
+// real rendered date under a heading promising a placeholder, and the next reader would have to
+// read the body to find out which. The describe name is the only summary most failures get.
+describe('ProjectsPage card date for a project genuinely edited on the epoch', () => {
+  // Pinned for the same reason as every block above, and one specific to this one: the assertion
+  // expects the year to be SHOWN, which is a claim about 1970 differing from now.
+  pinClockTo('2026-08-03T12:00:00.000Z')
+
+  // The converse hole of the two placeholder tests above, and the only test in this file that
+  // fails on it. Every guard those two forced is a guard on the INPUT — the shape of the value the
+  // wire sent. The cheapest way to satisfy both while writing something else entirely is
+  // `|| date.getTime() === 0` on the validity check: it passes all nine tests that existed before
+  // this one, because no fixture had ever been a real 1970 date, and it silently blanks the card of
+  // any user whose work genuinely carries that timestamp. An absent date and a 1970 date are
+  // different facts and the card must not merge them.
+  //
+  // RED: this test PASSES on arrival — the shipped input guard is already correct, and there is no
+  // red state to hand to green. Its worth was established by mutation instead: with
+  // `|| date.getTime() === 0` appended to the validity guard, this test failed with
+  // `Expected /^1 января 1970$/, Received: —` and the other six in this file stayed green. That
+  // one-line mutation is the whole reason the fixture exists.
+  it('renders a genuine 1970 timestamp as a real date, not as the placeholder', async () => {
+    mockFeed([EPOCH_DATE_PROJECT], 1)
+
+    render(<ProjectsPage />)
+
+    const card = await screen.findByTestId('project-card-document-21')
+
+    expect(within(card).getByTestId('project-card-date')).toHaveTextContent(/^1 января 1970$/)
   })
 })

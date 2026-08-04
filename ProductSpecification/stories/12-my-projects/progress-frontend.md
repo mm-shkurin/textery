@@ -62,7 +62,7 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   resolution of a review finding against the red, not a green convenience. Note it dissolves the
   card-collapse pair below: `—` occupies a line, so no `min-height` is needed. Guard the INPUT
   (`typeof iso !== 'string'`), not the epoch value
-- [~] red-frontend (a numeric updatedAt, and a real 1970 date, are told apart) — **note revised after
+- [x] red-frontend (a numeric updatedAt, and a real 1970 date, are told apart) — **note revised after
   4abe463e: the production line this step called for is already shipped, untested.** The green wrote
   `typeof iso !== 'string'` when its two tests only forced `iso == null`, so the numeric arm
   (`new Date(1755000000)` — a valid, non-NaN, non-null Date reading `21 января 1970`) returns `—`
@@ -121,7 +121,14 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
 - [ ] green-frontend-api (the wire mapper does not transpose created_at and updated_at)
 - [ ] red-frontend (a 31 December evening does not read as next year) — the invariant
   `formatCardDate`'s own comment names, with zero assertions: no fixture has a UTC year differing
-  from its local year. Wants the TZ pinned in the vitest config, so it lands with that
+  from its local year. The TZ pin this step wanted has ALREADY LANDED — `test.env.TZ =
+  'Europe/Moscow'` in `vite.config.ts`, pulled forward by the epoch fixture in the cardDate unit,
+  which could not be made zone-independent and would otherwise have been red on a US-zone runner.
+  Moscow, not UTC, precisely so this step stays writable: it is UTC+3, so a UTC year and a local
+  year can still differ. What REMAINS for this step is unchanged and is the whole of its substance
+  — a fixture at a late-December evening UTC (e.g. `2025-12-31T21:00:00Z`, which renders
+  `1 января 2026` under the pin) plus the assertion that the card shows the LOCAL year, and the
+  `formatCardDate` fix if it is red
 - [ ] green-frontend (a 31 December evening does not read as next year)
 - [ ] red-frontend (unknown type's badge carries the wire string) — the accent test asserts only
   that the badge EXISTS, so an empty chip passes; `documentTypeLabelFromWire`'s unknown arm was

@@ -133,3 +133,51 @@ export const MISSING_DATE_PROJECT: ProjectSummary = {
   createdAt: '2026-07-15T09:00:00Z',
   updatedAt: null as unknown as string,
 }
+
+// A NUMBER where the wire contract promises an ISO string — an epoch-millis body, the single most
+// common way a JSON timestamp arrives wrong, and the one shape neither fixture above covers.
+// `new Date(1755000000)` is valid, non-NaN and non-null; it reads '21 января 1970'. So it is caught
+// by neither an `isNaN` check nor a null check — only by the `typeof iso !== 'string'` INPUT guard,
+// which shipped in the same green as the two fixtures above while nothing asserted this arm of it.
+// Same `as unknown as string` cast as its two siblings, for the same reason: `updatedAt: string` is
+// a compile-time claim about a runtime JSON body from an endpoint the backend has not built.
+export const NUMERIC_DATE_PROJECT: ProjectSummary = {
+  kind: 'document',
+  id: '19',
+  title: 'Проект с числовой датой',
+  preview: null,
+  documentType: 'реферат',
+  status: 'draft',
+  canRepeat: false,
+  createdAt: '2026-07-15T09:00:00Z',
+  updatedAt: 1755000000 as unknown as string,
+}
+
+// The CONVERSE of every fixture above: a genuine, well-formed, perfectly usable timestamp that
+// happens to be the epoch. It must render as a real date — the user really did edit this on
+// 1 января 1970 as far as the card is concerned, and declining to say so would be the same class of
+// lie as rendering '1 января 1970' for an absent one, in the other direction.
+//
+// The reason it is pinned at all: appending `|| date.getTime() === 0` to `formatCardDate`'s
+// validity guard passes all nine tests that existed before this fixture, while blanking this card.
+// That mutation is an epoch-VALUE guard wearing an input guard's clothes, and it is exactly the fix
+// the previous green's comment says it refused to write — with nothing in the suite enforcing the
+// refusal. This fixture is the enforcement.
+//
+// The instant is `T00:00:00Z` and cannot be moved: only the exact epoch triggers the mutation, so
+// unlike every other fixture here it cannot be nudged to midday UTC. That makes the assertion
+// timezone-dependent — west of UTC this date renders '31 декабря 1969', verified by running the
+// suite under America/New_York, where it was the ONLY failure. The zone is therefore pinned to
+// Europe/Moscow in `vite.config.ts` (`test.env.TZ`); this fixture is why that pin landed here
+// rather than in the later step that had queued it.
+export const EPOCH_DATE_PROJECT: ProjectSummary = {
+  kind: 'document',
+  id: '21',
+  title: 'Проект из 1970 года',
+  preview: null,
+  documentType: 'реферат',
+  status: 'draft',
+  canRepeat: false,
+  createdAt: '2026-07-15T09:00:00Z',
+  updatedAt: '1970-01-01T00:00:00Z',
+}
