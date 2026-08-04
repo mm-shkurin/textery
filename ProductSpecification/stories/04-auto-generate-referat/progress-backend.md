@@ -117,7 +117,29 @@ that can be red.
 
   The ban sentence is pinned in the ADR's Model section — G11 asserts its position and
   G13 its character class, and neither is writable against an unquoted string.
-- [ ] red-usecase
+- [x] red-usecase — `backend/domain/tests/generation/test_referat_prompt.py`, class
+  `TestAReferatPromptForbidsABibliography`, 7 methods (5 written, 2 added by
+  `/test-review`). Predicted and actual failures matched on all five originals —
+  AssertionError on the last line, AssertionError `342 == 446` on the byte overhead,
+  `ValueError: substring not found` on the position guard, and `ImportError: cannot
+  import name '_BAN_DEFERRED'` on the two derived-set guards.
+  `TYPES_REQUIRING_SOURCE_BAN` / `_BAN_DEFERRED` are imported **inside** `_ban_scope()`,
+  not at module scope: a module-level import of a not-yet-existing name is a *collection*
+  error, which no skip marker can silence, so it would have reddened scenario 1.1's three
+  passing tests for the duration of this RED.
+  Two fail-opens `/test-review` closed are worth carrying into green:
+  - `_BAN_DEFERRED` was subtracted but never asserted, so a `_BAN_DEFERRED` grown to cover
+    everything left both iterating tests looping an empty list — green with the ban
+    shipped nowhere. Both operands are now pinned by their own test, and the equality is
+    `tuple(...) == SUPPORTED_DOCUMENT_TYPES` rather than `set(...) == set(...)`, which
+    passed on a reordering or a duplicate, i.e. on a hand-maintained list again.
+  - G6's доклад golden is scenario 1.3's, and 1.3 is unstarted — so the ADR's deliberate
+    G12/G6 tension had only one side. `test_should_leave_the_deferred_type_s_prompt_free_of_the_ban`
+    is the other side, in the file that owns the scope.
+  One cross-check: the ADR's Edge Cases row for an empty `topic` (`PromptBuildError`)
+  contradicts G10's own "with `topic` empty" wording, which would have made the overhead
+  test unwritable. Built with a one-character probe topic and its UTF-8 length subtracted
+  back out — same 446-byte constant, valid under either reading.
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
