@@ -140,7 +140,37 @@ that can be red.
   contradicts G10's own "with `topic` empty" wording, which would have made the overhead
   test unwritable. Built with a one-character probe topic and its UTF-8 length subtracted
   back out — same 446-byte constant, valid under either reading.
-- [ ] green-usecase
+- [x] green-usecase — `TYPES_REQUIRING_SOURCE_BAN = SUPPORTED_DOCUMENT_TYPES` (a derivation,
+  not a hand-listed tuple), `_BAN_DEFERRED = (DOKLAD,)`, and `BAN_SENTENCE` appended as its
+  own last line in `build_prompt` rather than inside each template. Appending centrally is
+  what makes the scope actually derived: a fifth long-form type joins
+  `SUPPORTED_DOCUMENT_TYPES` and carries the ban with no human step, which is the hazard
+  G12 exists to close. Per-template appends would have re-created the hand-maintained list
+  one level down. `_referat` and `_plain` are untouched, so 1.3's goldens land on the
+  pre-change text plus the ban line. 187 passed, 0 skipped.
+
+  Coverage on the touched file: 21 statements, 0 missed, 2 branches, 0 partial — **100%**.
+  `build_prompt`'s `if` is the file's only instrumented branch point and both arms are
+  asserted (реферат/эссе/сочинение true, доклад false).
+
+  **This is a deviation from the recorded design**, and it is deliberate rather than
+  drift. The `design` step above chose Option A (the ban inside `_referat` only) and
+  rejected Option B (a shared constant appended by `build_prompt` for every type). What
+  landed is neither: a central append **gated by the derived set**. Option A's rejection
+  of B rested on a claim the 2026-08-04 ADR correction had already found false — a global
+  append would redden 1.3's доклад golden, except 1.3 is unstarted and the only доклад
+  golden today is on `GigaChatProvider`'s own f-string. And the same correction's widening
+  to all four types is what makes per-template emission the weaker option. The ADR's Model
+  section ("its own sentence on its own line, last") is a statement about the built prompt
+  and does not name the emission site; the Option A/B rows still do, and need reconciling
+  along with the Edge Cases row flagged below.
+
+  Two notes for scenario 2.1: `_requires_ban`'s first clause
+  (`document_type in TYPES_REQUIRING_SOURCE_BAN`) is a tautology at its only call site —
+  `build_prompt` subscripts `_TEMPLATES` first, so an out-of-set type raises `KeyError`
+  before the predicate runs — and it is kept only because deleting it would leave
+  `TYPES_REQUIRING_SOURCE_BAN` read by nothing. When доклад leaves `_BAN_DEFERRED` after
+  story 1 lands, `_requires_ban` degenerates to `True` and the conditional can go entirely.
 - [ ] adapters-discovery
 - [ ] green-acceptance
 

@@ -6,6 +6,24 @@ from document.document_type import (
     SUPPORTED_DOCUMENT_TYPES,
 )
 
+# Every supported type requires the ban: the harm (a student submits a document
+# carrying invented sources) does not depend on which type was asked for. Written
+# as a derivation rather than a hand-listed tuple on purpose -- a hand-maintained
+# list is forgotten by the same developer who forgets to wire the ban into a fifth
+# type's template, which defeats the guard it is supposed to be.
+TYPES_REQUIRING_SOURCE_BAN = SUPPORTED_DOCUMENT_TYPES
+
+# A scheduling freeze, not a judgement about доклад: story 1 is being finished in
+# textery-editor / textery-projects against today's доклад output, so changing that
+# text now reddens their tests for a reason unrelated to their work. The unblock
+# condition is story 1 landing; the follow-up belongs to scenario 2.1.
+_BAN_DEFERRED = (DOKLAD,)
+
+# Its own sentence on its own line, last, consistent with `_referat`'s
+# one-marker-per-section contract -- folded into a neighbouring sentence it would
+# still satisfy a substring check while losing the position the guard asserts.
+BAN_SENTENCE = "Не включай список литературы и не ссылайся на источники."
+
 
 class PromptRequest:
     """The narrow view of a generation a template is allowed to see.
@@ -56,5 +74,19 @@ assert set(_TEMPLATES) == set(SUPPORTED_DOCUMENT_TYPES), (
 )
 
 
+def _requires_ban(document_type: str) -> bool:
+    return document_type in TYPES_REQUIRING_SOURCE_BAN and document_type not in _BAN_DEFERRED
+
+
 def build_prompt(request: PromptRequest) -> str:
-    return _TEMPLATES[request.document_type](request)
+    """The prompt the model receives, ban included.
+
+    The ban is appended here rather than inside each template so that its scope is
+    the declared set and nothing else: a fifth long-form type joins
+    SUPPORTED_DOCUMENT_TYPES and carries the ban with no human step, which is the
+    whole point of deriving the scope instead of listing it.
+    """
+    prompt = _TEMPLATES[request.document_type](request)
+    if _requires_ban(request.document_type):
+        return f"{prompt}\n{BAN_SENTENCE}"
+    return prompt

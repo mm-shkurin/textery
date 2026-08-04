@@ -1,8 +1,6 @@
 import re
 import unicodedata
 
-import pytest
-
 from document.document_type import DOKLAD, REFERAT, SUPPORTED_DOCUMENT_TYPES
 from generation.prompt_template import PromptRequest, build_prompt
 
@@ -166,14 +164,6 @@ class TestAReferatPromptAsksForTheReferatStructure:
         assert missing == [], f"заключение sentence '{zaklyuchenie}' is missing: {missing}"
 
 
-@pytest.mark.skip(
-    reason="RED: _referat emits no ban -- last line is 'В заключении сформулируй выводы "
-    "по проделанной работе.', fixed overhead is 342 bytes not 446, "
-    "the hostile-topic prompt's last line is that same выводы sentence, and "
-    "TYPES_REQUIRING_SOURCE_BAN / _BAN_DEFERRED do not exist, so the scope, "
-    "per-type, deferred-type and Cyrillic tests all fail at the deferred import "
-    "(ImportError: cannot import name '_BAN_DEFERRED' from 'generation.prompt_template')"
-)
 class TestAReferatPromptForbidsABibliography:
     """A model asked for a реферат volunteers a bibliography, and its entries do not exist.
 
