@@ -393,7 +393,7 @@ that can be red.
   `.claude/tech/python-fastapi-hex/templates/testing/coverage-commands.md:38,44` do not
   match `backend/domain/src/generation/prompt_template.py`; they will silently return
   empty for every nested-package file in this repo. Needs a task.
-- [ ] red-usecase (coverage: volume_pages of True is rejected, not rendered) — 100%
+- [x] red-usecase (coverage: volume_pages of True is rejected, not rendered) — 100%
   branch coverage is misleading on `_is_renderable_volume`: branch counters record
   whether the `if` was taken, not which operand decided it. `None` short-circuits on the
   left, `0`/`-3`/`11` reach `isinstance(volume_pages, bool)` and it always answers
@@ -402,7 +402,34 @@ that can be red.
   so without the guard a prompt reads `... (True стр.)` — a Latin-lettered artifact billed
   to the model. The red is one entry: add `True` to `UNRENDERABLE_VOLUMES`
   (`test_referat_prompt.py:127`), which flows into the existing per-type refusal test.
-- [ ] green-usecase (coverage: volume_pages of True is rejected, not rendered)
+
+  **Written as its own test, not as a fifth entry in `UNRENDERABLE_VOLUMES`.** `True` is
+  the only unrenderable volume that is *inside* the accepted range; the other four are
+  refused by the comparison. Sitting beside `-3` it reads as another out-of-range value,
+  and the next reader deletes the `isinstance(..., bool)` arm as redundant — which is the
+  mutant. `test_should_refuse_a_boolean_volume_the_range_check_cannot_catch` in
+  `test_prompt_build_refusals.py`, parametrized over all four types. 4 passed; 4 failed
+  with `Failed: DID NOT RAISE PromptBuildError` when the operand is deleted, which is the
+  real red here. 90 passed in the generation suite.
+
+  **`/test-review` found the first draft asserted the raise but not the harm.** The
+  comment named `(True стр.)` reaching a prompt and then checked only that an exception
+  came out. It now also builds at the numeric twin (`int(True)` is 1) and pins
+  `twin_prompt.count("(1 стр.)") == 1` — `count`, not `in`, so a duplicated clause cannot
+  pass. That build replaced a `MIN_VOLUME_PAGES <= True <= MAX_VOLUME_PAGES` precondition
+  which restated two constants and ran no production code. Three more: the obsolete
+  `_prompt_build_error()` deferred-import helper is gone (`PromptBuildError` exists now,
+  so its justification had become false); `prompt_request`/`prompt_for` widened
+  `str`/`int` → `object`, since `volume_pages: int` asserted the opposite of what this
+  test proves (mypy counts `bool` as `int`) and `None` is not an `int` at all — the lie
+  survived only because parametrize launders values through an untyped param; and the
+  message constants stay retyped rather than imported, because importing them would make
+  three assertions tautologies that pass for any message, including one that grew an
+  interpolation slot and logged the user's `topic`.
+- [S] green-usecase (coverage: volume_pages of True is rejected, not rendered) — nothing
+  to implement. The guard shipped with 1.3's GREEN; the gap was that no test let its
+  `bool` operand decide the outcome. The step exists because branch coverage cannot see
+  the difference.
 - [ ] adapters-discovery
 - [ ] green-acceptance
 

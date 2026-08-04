@@ -11,6 +11,7 @@ it.
 """
 
 import unicodedata
+from typing import cast
 
 from generation.generation import MAX_VOLUME_PAGES
 from generation.prompt_template import (
@@ -43,8 +44,8 @@ BAN_LINE_BYTES = len(("\n" + BAN_SENTENCE).encode("utf-8"))
 
 def prompt_request(
     document_type: str,
-    topic: str = TOPIC,
-    volume_pages: int = VOLUME_PAGES,
+    topic: object = TOPIC,
+    volume_pages: object = VOLUME_PAGES,
 ) -> PromptRequest:
     """The request every build in these files is composed from.
 
@@ -53,19 +54,37 @@ def prompt_request(
     constructing it inline there would put the reasoning below in two shapes, one of
     which a future field addition would be edited out of.
 
-    `volume_pages` is passed on every build rather than defaulted inside
-    `PromptRequest`: an optional field defaulting to `None` would make every one of
-    scenario 1.1/1.2's builds raise once the range guard below lands, so the
+    The *default* `volume_pages` is a renderable value rather than `None`, so that
+    scenario 1.1/1.2's builds keep succeeding: an optional field defaulting to
+    `None` would make every one of them raise once the range guard landed, and the
     seven tests routing through here would go red for a reason that has nothing to
-    do with what they assert.
+    do with what they assert. Passing an *unrenderable* value explicitly is a
+    supported use, and 1.3's refusal guards depend on it.
+
+    Both parameters are typed `object` rather than `str`/`int` for that reason. The
+    narrow annotations were a lie the refusal tests already contradict -- `None` is
+    not an `int`, and `bool` *is* one to mypy, so `volume_pages: int` asserted the
+    exact opposite of what the bool guard exists to prove. `object` states what the
+    helper is: a pass-through for values under test, renderable or not.
+
+    The two `cast`s are where that honesty stops and `PromptRequest.__init__`'s own
+    annotations begin. They are not a silencing of a real error: the refusal guards
+    exist precisely because the hydration path constructs a request whose fields do
+    not match those annotations, so the cast is the test-side statement that an
+    unrenderable value is *constructible* -- which is the premise
+    `_reject_unrenderable_fields` is written against.
     """
-    return PromptRequest(document_type=document_type, topic=topic, volume_pages=volume_pages)
+    return PromptRequest(
+        document_type=document_type,
+        topic=cast(str, topic),
+        volume_pages=cast(int, volume_pages),
+    )
 
 
 def prompt_for(
     document_type: str,
-    topic: str = TOPIC,
-    volume_pages: int = VOLUME_PAGES,
+    topic: object = TOPIC,
+    volume_pages: object = VOLUME_PAGES,
 ) -> str:
     """The built prompt, exactly as the model would receive it.
 
@@ -82,8 +101,8 @@ def ban_scope():
     helper because neither existed and a module-level import of a missing name is a
     *collection* error that no skip marker can silence -- but scenario 1.2 landed
     both, so the local import and its `noqa` were guarding nothing and hiding a real
-    coupling. `_prompt_build_error` in `test_prompt_build_refusals.py` keeps the
-    deferred form, because `PromptBuildError` genuinely does not exist yet.
+    coupling. `test_prompt_build_refusals.py` has since shed its own deferred
+    `PromptBuildError` import for the same reason and on the same evidence.
     """
     return TYPES_REQUIRING_SOURCE_BAN, _BAN_DEFERRED
 

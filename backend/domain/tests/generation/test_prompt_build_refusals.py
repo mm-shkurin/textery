@@ -2,6 +2,7 @@ import pytest
 
 from document.document_type import SUPPORTED_DOCUMENT_TYPES
 from generation.generation import MAX_VOLUME_PAGES
+from generation.prompt_template import PromptBuildError
 from prompt_fixtures import prompt_for
 from shared.exceptions import DomainException, ValidationException
 
@@ -18,20 +19,14 @@ UNRENDERABLE_TOPICS = (None, "", "   ")
 # `topic` would put user text in the log through the error path. Asserting `==` on
 # a constant with no interpolation slot is what makes that structural rather than
 # a promise -- a message that grew a value would no longer equal this string.
+#
+# Retyped here rather than imported from `prompt_template`, deliberately. Importing
+# the production constant would turn every assertion below into
+# `str(exc) == the string the code just raised` -- a tautology that passes for any
+# message the implementation happens to hold, including one that grew a slot and
+# quoted the rejected `topic`. The duplication *is* the guard; do not de-duplicate it.
 VOLUME_PAGES_ERROR_MESSAGE = "volume_pages is not renderable in a prompt"
 TOPIC_ERROR_MESSAGE = "topic is not renderable in a prompt"
-
-
-def _prompt_build_error() -> type[Exception]:
-    """`PromptBuildError`, imported at call time rather than at module scope.
-
-    The name did not exist when these guards were written, and a module-level
-    import of a missing name is a *collection* error, which reddens every other
-    test in this file and cannot be silenced by a skip marker.
-    """
-    from generation.prompt_template import PromptBuildError  # noqa: PLC0415
-
-    return PromptBuildError
 
 
 class TestAPromptRefusesAFieldItCannotRender:
@@ -53,14 +48,14 @@ class TestAPromptRefusesAFieldItCannotRender:
         # but a guard written inside `_plain` alone would let реферат keep building
         # from a request no caller should have been allowed to construct, and G3 is
         # stated per type, so the day эссе gets its own template the hole is silent.
-        with pytest.raises(_prompt_build_error()) as exc_info:
+        with pytest.raises(PromptBuildError) as exc_info:
             prompt_for(document_type, volume_pages=volume_pages)
 
         # `type(...) is`, not `isinstance`: `PromptBuildError` is deliberately the
         # base of a family, so an implementation that raised
         # `UnsupportedDocumentTypeError` for a `volume_pages` of `-3` would satisfy
         # `pytest.raises` alone while reporting the wrong field to the call site.
-        assert type(exc_info.value) is _prompt_build_error(), (
+        assert type(exc_info.value) is PromptBuildError, (
             f"a bad volume must raise the base PromptBuildError itself, got "
             f"{type(exc_info.value).__name__}"
         )
@@ -81,10 +76,10 @@ class TestAPromptRefusesAFieldItCannotRender:
         # hydrated generation carries whatever the row holds. `на тему: None` has
         # been reachable since 1.1; it is guarded here because this is the scenario
         # that first builds the exception to raise.
-        with pytest.raises(_prompt_build_error()) as exc_info:
+        with pytest.raises(PromptBuildError) as exc_info:
             prompt_for(document_type, topic=topic)
 
-        assert type(exc_info.value) is _prompt_build_error(), (
+        assert type(exc_info.value) is PromptBuildError, (
             f"a bad topic must raise the base PromptBuildError itself, got "
             f"{type(exc_info.value).__name__}"
         )
@@ -95,8 +90,58 @@ class TestAPromptRefusesAFieldItCannotRender:
             f"unexpected refusal message: {str(exc_info.value)!r}"
         )
 
+    @pytest.mark.parametrize("document_type", SUPPORTED_DOCUMENT_TYPES)
+    def test_should_refuse_a_boolean_volume_the_range_check_cannot_catch(self, document_type):
+        # Its own test rather than a fifth member of UNRENDERABLE_VOLUMES, because
+        # `True` is the one unrenderable volume that is *inside* the accepted range.
+        # The other four are refused by the range comparison; a reader who saw
+        # `True` sitting beside `-3` would reasonably assume the same branch covers
+        # it, and would delete the type check as redundant.
+        #
+        # The numeric twin is what makes that assumption checkable rather than
+        # folklore, and it is checked against the production builder rather than
+        # against the two bound constants: `MIN_VOLUME_PAGES <= True <=
+        # MAX_VOLUME_PAGES` restates arithmetic that is true of the constants alone
+        # and exercises no code. Building at `int(True)` states the same premise by
+        # observing it -- if this build raised, `True` would be out of range and the
+        # bool arm below would be the redundancy the reader suspected.
+        numeric_twin = int(True)
+        twin_prompt = prompt_for(document_type, volume_pages=numeric_twin)
+
+        # And this is the harm itself, asserted rather than described. It is a
+        # *rendered* harm: `True == 1`, so with the bool arm gone `_plain` builds
+        # `... (True стр.)` and `_referat` builds `(True стр.).` -- Latin letters in
+        # a Russian prompt, billed to the provider and shipped to the student. The
+        # refusal below produces no string to inspect, so the clause is pinned here,
+        # on the one input that differs from `True` by type alone. `count(...) == 1`
+        # rather than `in`: the clause appears exactly once, and an implementation
+        # that emitted it twice or appended a second volume clause would satisfy a
+        # containment check.
+        #
+        # Only the clause, not the character class: `test_prompt_goldens.py`'s
+        # `test_should_spell_every_type_s_prompt_entirely_in_cyrillic` already owns
+        # the no-Latin-letters guard per type, and restating it here at volume 1
+        # instead of volume 5 would assert nothing that guard does not.
+        assert twin_prompt.count(f"({numeric_twin} стр.)") == 1, (
+            f"the volume clause must render the digit exactly once, got {twin_prompt!r}"
+        )
+
+        # Same numeric value, `bool` instead of `int` -- and now it must be refused.
+        with pytest.raises(PromptBuildError) as exc_info:
+            prompt_for(document_type, volume_pages=True)
+
+        assert type(exc_info.value) is PromptBuildError, (
+            f"a bool volume must raise the base PromptBuildError itself, got "
+            f"{type(exc_info.value).__name__}"
+        )
+        # The same message as every other unrenderable volume: the call site maps on
+        # the type, and a bool is not a distinct user-facing failure mode.
+        assert str(exc_info.value) == VOLUME_PAGES_ERROR_MESSAGE, (
+            f"unexpected refusal message: {str(exc_info.value)!r}"
+        )
+
     def test_should_raise_a_build_failure_the_call_site_must_not_retry(self):
-        error = _prompt_build_error()
+        error = PromptBuildError
 
         # The base class is 1.3's to choose, not green's to happen upon. Deferring
         # the call-site *mapping* to G5/2.1 does not defer the *default*:
