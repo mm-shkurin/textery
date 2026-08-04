@@ -44,12 +44,15 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   modification: `ProjectCard.tsx` already reads `project.updatedAt`. Verified discriminating by
   swapping the line to `createdAt` — exactly the new test failed (`5 марта 2024` against
   `/^15 июля$/`), the other four stayed green, which is the aliasing this step existed to kill
-- [ ] red-frontend (an unparseable updatedAt does not render `Invalid Date NaN`) — premortem finding
+- [x] red-frontend (an unparseable updatedAt does not render `Invalid Date NaN`) — premortem finding
   on ce3e04a5, not otherwise queued. `NaN !== currentYear` is true, so a bad date takes the
   year-showing branch and concatenates two failure tokens; `null` renders `1 января 1970`, which
   reads as a real date. `projectsApi.ts` passes `item.updated_at` through unvalidated against an
   endpoint the backend has not built
-- [ ] green-frontend (an unparseable updatedAt does not render `Invalid Date NaN`)
+- [~] green-frontend (an unparseable updatedAt does not render `Invalid Date NaN`) — two skipped tests
+  to enable, not one: `new Date(null)` is the epoch, a *valid* Date, so an `isNaN(getTime())` check
+  alone fixes the malformed arm and leaves `null` rendering `1 января 1970`. Both were verified to fail
+  independently on their own received value
 - [ ] red-frontend-api (the wire mapper does not transpose created_at and updated_at) — agent-review
   AND premortem both found this on 43f7e498, independently. The card-level de-alias landed above
   `vi.mock('../../api/projectsApi')`, so `projectsApi.ts`'s two adjacent mapping lines can still be
