@@ -51,7 +51,7 @@ only the design draft could not see the contract.
   Check 3 response shape: `GET /api/v1/projects` is registered on no router and no
   `ProjectItem`/`ProjectListBody` DTO exists, while the acceptance test compares the whole
   parsed envelope (`items`, `page`, `limit`, `total`) — rest pair.)
-- [ ] red-adapter db
+- [x] red-adapter db
 - [ ] green-adapter db
 - [ ] red-adapter rest (UNAUTHENTICATED → 401)
 - [ ] green-adapter rest (UNAUTHENTICATED → 401)

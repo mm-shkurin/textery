@@ -176,6 +176,13 @@ def document_storage_statements(db_session: AsyncSession):
 
 
 @pytest.fixture
+def project_feed_statements(db_session: AsyncSession):
+    from statements.project_feed_statements import ProjectFeedStatements
+
+    return ProjectFeedStatements(db_session)
+
+
+@pytest.fixture
 def history_paging_statements(db_session: AsyncSession):
     from statements.history_paging_statements import HistoryPagingStatements
 
