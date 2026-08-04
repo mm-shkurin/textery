@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from document_router_fixtures import CREATED_AT_ON_THE_WIRE, a_generated_document
+from document_router_fixtures import CREATED_AT_ON_THE_WIRE, a_document, a_generated_document
 
 from document.save_document import SaveDocument
 
@@ -76,4 +76,56 @@ class TestSaveDocumentResponseShape:
             content="<p>c</p>",
             version=1,
             title="Новое имя",
+        )
+
+
+class TestSaveDocumentRoute:
+    async def test_should_return_200_with_the_stored_document(self, mocker, save_client, owner_id):
+        document = a_document(owner_id, content="<p>saved</p>", version=2)
+        usecase = mocker.create_autospec(SaveDocument, instance=True)
+        usecase.execute.return_value = document
+
+        async with save_client(usecase) as client:
+            response = await client.put(
+                f"/api/v1/documents/{document.id}",
+                json={"content": "<p>saved</p>", "version": 1},
+            )
+
+        assert response.status_code == 200, f"got {response.status_code}: {response.text}"
+        assert response.json()["version"] == 2
+        usecase.execute.assert_awaited_once_with(
+            document_id=document.id,
+            owner_id=owner_id,
+            content="<p>saved</p>",
+            version=1,
+            title=None,
+        )
+
+    async def test_should_ignore_server_owned_fields_in_the_save_body(
+        self, mocker, save_client, owner_id
+    ):
+        # Scenario 5.4: only content and version are ever applied.
+        document = a_document(owner_id, version=2)
+        usecase = mocker.create_autospec(SaveDocument, instance=True)
+        usecase.execute.return_value = document
+
+        async with save_client(usecase) as client:
+            response = await client.put(
+                f"/api/v1/documents/{document.id}",
+                json={
+                    "content": "<p>x</p>",
+                    "version": 1,
+                    "document_type": "реферат",
+                    "id": str(uuid4()),
+                    "status": "completed",
+                },
+            )
+
+        assert response.status_code == 200, f"got {response.status_code}: {response.text}"
+        usecase.execute.assert_awaited_once_with(
+            document_id=document.id,
+            owner_id=owner_id,
+            content="<p>x</p>",
+            version=1,
+            title=None,
         )
