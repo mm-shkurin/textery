@@ -11,7 +11,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
 - [x] red-acceptance
 - [x] design (see ADR `decisions/page-settings-read-tristate-decision.md`; hazard scan: groups 1–8,
   5 GAPs folded into the ADR's Edge Cases, group 8 dismissed as out of altitude)
-- [ ] red-usecase
+- [x] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
