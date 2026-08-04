@@ -432,7 +432,50 @@ that can be red.
   to implement. The guard shipped with 1.3's GREEN; the gap was that no test let its
   `bool` operand decide the outcome. The step exists because branch coverage cannot see
   the difference.
-- [ ] adapters-discovery
+- [x] adapters-discovery — Check 1 produces one pair (G14); Checks 2 and 3 resolve `[S]`.
+  Re-run from scratch rather than inherited from 1.2, because this scenario changed
+  `build_prompt`'s output for all four types and added its first raise.
+  - Check 1 (ports): `generation_provider` — **G14, the assertion the ADR routed here at
+    1.3's red-usecase**. `build_prompt` itself is still a pure function with no injected
+    port, so this is not an outbound-port gap in the usual sense; it is the second live
+    composer. `GigaChatProvider.generate` builds its own f-string at
+    `gigachat_provider.py:113-116`, and after this scenario the two definitions of the
+    доклад prompt agree byte-for-byte — which is precisely the claim "unchanged by the
+    move" makes and precisely what nothing asserts. Each is pinned only by its own golden,
+    so either can be edited alone with nothing red. Golden-vs-golden cannot force the
+    agreement; only an assertion whose two sides are the two composers can. Steps
+    inserted below; scoped to доклад alone per the ADR (the provider appends no ban, so
+    parameterizing over `SUPPORTED_DOCUMENT_TYPES` is red on arrival for the other three
+    with no defect present, and the cheapest escape from that red is to unban them).
+  - Check 1, the deliberate non-gap, restated once more: `grep -rn "build_prompt" backend/
+    acceptance/` still returns nothing outside `backend/domain/`. No production code calls
+    the builder, so no реферат generation in production carries the ban or the refusals
+    this scenario shipped. That substitution is 2.1's; making it here would leave 2.1 with
+    a green adapter and nothing to redden.
+  - Check 2 (exceptions): `[S]`. `PromptBuildError` is new and genuinely unmapped —
+    `generate_document.py:59` catches bare `Exception` and retries, so a deterministic
+    build failure would burn both attempts and a backoff sleep. But it is unreachable
+    today for the reason Check 1 records: nothing outside the domain calls `build_prompt`,
+    so no inbound adapter can see the exception. Mapping it now would be a guard against a
+    call that does not exist. It becomes 2.1's obligation the moment the substitution
+    lands, and both review passes over `7c840827` named it — recorded there, not opened
+    here.
+  - Check 3 (response shape): `[S]`. Unchanged and re-checked from the adapter side. No
+    endpoint returns the prompt; `generation_router.py` returns
+    `generation_id`/`status`/`created_at` plus echoed request fields, and Security 2.1
+    requires the prompt stay out of even the log. This scenario's `red-acceptance` is `[S]`
+    for the same reason, so there is no disabled test to read a shape from.
+- [ ] red-adapter generation_provider (G14: the two live composers agree on the доклад
+  prompt) — drive `GigaChatProvider.generate` and assert the posted `content` equals
+  `build_prompt(...)` built from the same `Generation`, not against a hand-typed literal.
+  Home is `backend/adapters/generation_provider/tests/`: a domain or usecase test driving
+  the provider inverts the dependency rule, and would resolve at runtime anyway because
+  `backend/pyproject.toml` puts every layer root on one `pythonpath` — so the violation
+  would land silently.
+- [ ] green-adapter generation_provider (G14) — expected `[S]`: the composers already
+  agree for доклад after this scenario's GREEN, so the red is a mutation red (edit either
+  composer alone), not a missing-behavior red. Resolve it from what the red actually
+  reports rather than from this prediction.
 - [ ] green-acceptance
 
 ### Scenario 1.4: Every supported document type yields a prompt
