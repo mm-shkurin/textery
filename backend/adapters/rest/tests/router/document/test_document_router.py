@@ -3,6 +3,7 @@ from uuid import uuid4
 from document_router_fixtures import CREATED_AT_ON_THE_WIRE, a_document
 
 from document.document_creation_result import DocumentCreationResult
+from document.save_document import SaveDocument
 
 
 class TestCreateDocumentRoute:
@@ -131,8 +132,8 @@ class TestGetDocumentRoute:
 class TestSaveDocumentRoute:
     async def test_should_return_200_with_the_stored_document(self, mocker, save_client, owner_id):
         document = a_document(owner_id, content="<p>saved</p>", version=2)
-        usecase = mocker.Mock()
-        usecase.execute = mocker.AsyncMock(return_value=document)
+        usecase = mocker.create_autospec(SaveDocument, instance=True)
+        usecase.execute.return_value = document
 
         async with save_client(usecase) as client:
             response = await client.put(
@@ -155,8 +156,8 @@ class TestSaveDocumentRoute:
     ):
         # Scenario 5.4: only content and version are ever applied.
         document = a_document(owner_id, version=2)
-        usecase = mocker.Mock()
-        usecase.execute = mocker.AsyncMock(return_value=document)
+        usecase = mocker.create_autospec(SaveDocument, instance=True)
+        usecase.execute.return_value = document
 
         async with save_client(usecase) as client:
             response = await client.put(

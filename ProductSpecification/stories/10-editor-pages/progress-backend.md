@@ -47,9 +47,13 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
 - [S] green-adapter rest (coverage: POST /from-generation response body unasserted) — no
   implementation needed; the red half was a regression guard over already-correct code, and no
   production file changed.
-- [~] red-adapter rest (coverage: PUT response asserts version only, not shape)
-- [ ] green-adapter rest (coverage: PUT response asserts version only, not shape)
-- [ ] red-adapter rest (premortem: from-generation's refusal branches are pinned zero times —
+- [x] red-adapter rest (coverage: PUT response asserts version only, not shape) — no RED; guard
+  verified by mutation instead: flipping PUT's `response_model` to `GetDocumentResponseDto` (the
+  plausible mis-edit — same `"/{document_id}"` literal, 40 lines apart) fails the new whole-body
+  test. The old `["version"] == 2` survived that mutation, because `version` is on both DTOs.
+- [S] green-adapter rest (coverage: PUT response asserts version only, not shape) — no
+  implementation needed; regression guard over already-correct code, no production file changed.
+- [~] red-adapter rest (premortem: from-generation's refusal branches are pinned zero times —
   `NotFoundException` → 404, `ValidationException(GENERATION_NOT_COMPLETED)` → 422 with the
   `error_code` the client branches on. `useGeneration` calls this from a poll loop, so a 500
   where a 422 was expected is a retry storm rather than a message. Also: `TestBearerIsRequired`

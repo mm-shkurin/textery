@@ -33,7 +33,12 @@ def a_document(owner_id: UUID, content: str = "", version: int = 1) -> Document:
     )
 
 
-def a_generated_document(owner_id: UUID, generation_id: UUID) -> Document:
+def a_generated_document(
+    owner_id: UUID,
+    generation_id: UUID,
+    content: str = "<p>сгенерированный текст</p>",
+    version: int = 1,
+) -> Document:
     """A document that came from a generation, so `title` and `generation_id` are set.
 
     Both are non-null on purpose. The editor's documentFromGenerationApi.ts types
@@ -45,8 +50,8 @@ def a_generated_document(owner_id: UUID, generation_id: UUID) -> Document:
         owner_id=owner_id,
         document_type="эссе",
         status="draft",
-        content="<p>сгенерированный текст</p>",
-        version=1,
+        content=content,
+        version=version,
         idempotency_key="gen-key-1",
         created_at=CREATED_AT,
         updated_at=CREATED_AT,
