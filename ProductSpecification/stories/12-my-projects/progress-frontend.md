@@ -74,14 +74,18 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
 - [S] green-frontend (a numeric updatedAt, and a real 1970 date, are told apart) — zero production
   files need modification; the guard shipped early in 4abe463e. Confirm at the work unit rather than
   trusting this line
-- [ ] red-frontend (a sentinel timestamp does not render as a real date) — premortem on 4abe463e, the
+- [x] red-frontend (a sentinel timestamp does not render as a real date) — premortem on 4abe463e, the
   arm that survives every guard now shipped: `'0001-01-01T00:00:00Z'` renders `1 января 1` and
   `'9999-12-31T23:59:59Z'` renders `1 января 10000`. Both are strings, both are valid Dates. These are
   the two most common backend null-timestamp sentinels (`LocalDate.MIN`, `DateTime.MinValue`, Postgres
   `±infinity`). The 9999 arm is the worse one — 1.4's «Недавние проекты» rail sorts on `updated_at`, so
   one sentinel row takes the top slot permanently and the user's real newest work never surfaces.
   Wants a bounded plausible year, not another shape check
-- [ ] green-frontend (a sentinel timestamp does not render as a real date)
+- [~] green-frontend (a sentinel timestamp does not render as a real date) — two `it.skip` in
+  `ProjectsPage.cardDateBounds.test.tsx`; the fix is a bounded plausible-year branch in
+  `formatCardDate`, not another shape check. The lower bound must sit at or below 1970 —
+  `EPOCH_DATE_PROJECT` pins `1 января 1970` as a genuinely renderable date. Both arms must go green
+  from one change: a lower-bound-only fix leaves `1 января 10000` rendering
 - [ ] red-frontend-api (the mapper does not silently produce an item with an absent updatedAt) —
   premortem on 4abe463e. Before this commit a broken wire contract rendered `Invalid Date NaN` on every
   card: wrong, but loud and diagnosable from one screenshot. It now renders `—` on every card, which
