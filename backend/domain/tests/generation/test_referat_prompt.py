@@ -45,12 +45,21 @@ BAN_SENTENCE = "Не включай список литературы и не с
 OVERHEAD_PROBE_TOPIC = "а"
 
 # The реферат template's fixed overhead: the built prompt less the interpolated
-# topic, measured in UTF-8 bytes. The unit is named because the template is Cyrillic --
-# the same string is 244 code points and 446 bytes, so a code-point bound and a
-# byte bound differ by ~1.8x on exactly this text and a bare len() would silently
-# assert the wrong one. Adding a sixth sentence moves this number, whether or not
-# the user's fields are anywhere near their caps.
-REFERAT_FIXED_OVERHEAD_BYTES = 446
+# topic *and* the interpolated volume, measured in UTF-8 bytes. The unit is named
+# because the template is Cyrillic -- a code-point bound and a byte bound differ by
+# ~1.8x on exactly this text and a bare len() would silently assert the wrong one.
+# Adding a sixth sentence moves this number, whether or not the user's fields are
+# anywhere near their caps.
+#
+# Derived, not measured: 446 was the volume-less template's overhead (448 bytes at
+# the one-character probe topic, less that topic's 2). `_referat` now carries the
+# same ` ({volume_pages} стр.)` clause `_plain` does, which is 12 UTF-8 bytes with
+# the volume itself excluded -- ` (`, ` `, `стр.` at 2 bytes per Cyrillic letter,
+# `)`. 446 + 12 = 458 with the volume still counted; the volume is now subtracted
+# back out the way `PLAIN_FIXED_OVERHEAD_BYTES` subtracts it, so that a change from
+# a one-digit to a two-digit `volume_pages` cannot move a constant that claims to
+# bound the *fixed* part. 458 - 1 = 457.
+REFERAT_FIXED_OVERHEAD_BYTES = 457
 
 # A topic that countermands the ban, so that ordering is asserted rather than
 # assumed: a prompt where this text follows the ban has shipped the last word to
@@ -85,8 +94,14 @@ GOLDEN_PROMPTS = {
         "сочинение на тему: Как работает фотосинтез (5 стр.)\n"
         "Не включай список литературы и не ссылайся на источники."
     ),
+    # The volume clause is on реферат too, before the sentence-ending period, the
+    # way доклад/`_plain` reads it. `GigaChatProvider` sends ` ({volume_pages} стр.)`
+    # for every type today with no branching, and `volume_pages` is required on the
+    # request, validated 1..10, and echoed back in the response DTO -- a реферат
+    # prompt that omitted it would be the one type that refuses to build on a bad
+    # volume and then never states the good one.
     REFERAT: (
-        "Напиши реферат на тему: Как работает фотосинтез.\n"
+        "Напиши реферат на тему: Как работает фотосинтез (5 стр.).\n"
         "Во введении обоснуй актуальность темы и сформулируй цель работы.\n"
         "В основной части раскрой разделы по теме.\n"
         "В заключении сформулируй выводы по проделанной работе.\n"
@@ -331,15 +346,6 @@ class TestAReferatPromptForbidsABibliography:
             f"prompt's last line must be the ban verbatim, got: {prompt}"
         )
 
-    def test_should_keep_the_template_s_fixed_overhead_at_its_declared_size(self):
-        probe = _prompt_for(REFERAT, topic=OVERHEAD_PROBE_TOPIC)
-
-        overhead_bytes = len(probe.encode("utf-8")) - len(OVERHEAD_PROBE_TOPIC.encode("utf-8"))
-
-        assert overhead_bytes == REFERAT_FIXED_OVERHEAD_BYTES, (
-            f"реферат fixed overhead moved, got {overhead_bytes} bytes: {probe}"
-        )
-
     def test_should_emit_the_ban_after_every_user_interpolated_field(self):
         prompt = _prompt_for(REFERAT, topic=HOSTILE_TOPIC)
 
@@ -418,20 +424,26 @@ class TestAReferatPromptForbidsABibliography:
 
 @pytest.mark.skip(
     reason=(
-        "RED: 41 of 49 fail. Goldens for доклад/эссе/сочинение assert "
-        "'... (5 стр.)' against a _plain that emits no volume clause, and the "
-        "determinism guard fails on the same three for the same reason now that it "
-        "pins both calls to the golden rather than to each other; the volume, topic "
-        "and base-class guards raise ImportError: cannot import name "
-        "'PromptBuildError' from 'generation.prompt_template'; the _plain "
-        "overhead is 15/14 bytes against a declared 27. "
-        "The 8 that pass are ratchets, not oversights: the four Cyrillic "
-        "character-class cases and the two PromptRequest field-set cases pin "
-        "behaviour this scenario must not lose (G13, G16 -- the ADR predicts G16 "
-        "green, 'adding owner_id today turns no test red'), and реферат's golden "
-        "and determinism cases pass because _referat interpolates no volume, which "
-        "is precisely the claim G6 makes for the template this scenario leaves "
-        "alone."
+        "RED: 52 of 68 fail. Goldens for all four types assert '... (5 стр.)' "
+        "against templates that emit no volume clause -- реферат's golden joined "
+        "them this scenario, because both review passes over 7690851a found that "
+        "GigaChatProvider sends the clause for every type with no branching "
+        "(gigachat_provider.py:113-116) while the new _referat dropped it, making "
+        "реферат the one type that refuses to build on a bad volume_pages and then "
+        "never states the good one. The determinism guard fails on all four for the "
+        "same reason now that it pins both calls to the golden; the new volume guard "
+        "fails on all 8 of its type x digit-width cases; the реферат overhead is "
+        "445 bytes against a declared 457 (446 for the volume-less template, plus "
+        "12 for the clause, less the 1-byte volume now subtracted back out); the "
+        "_plain overhead is 15/14 against a declared 27; the volume, topic and "
+        "base-class guards raise ImportError: cannot import name 'PromptBuildError' "
+        "from 'generation.prompt_template'. "
+        "The 16 that pass are 9 untouched scenario 1.1/1.2 cases plus 7 ratchets: "
+        "the four Cyrillic character-class cases and the two PromptRequest field-set "
+        "cases pin behaviour this scenario must not lose (G13, G16 -- the ADR "
+        "predicts G16 green), and the digit-width case pins that VOLUME_PAGES and "
+        "VOLUME_PAGES_TWO_DIGIT are actually a pair, which MAX_VOLUME_PAGES dropping "
+        "to 9 would silently end."
     )
 )
 class TestADokladPromptIsUnchangedByTheMoveIntoTheDomain:
@@ -594,6 +606,67 @@ class TestADokladPromptIsUnchangedByTheMoveIntoTheDomain:
             f"_plain fixed overhead moved, got {overhead_bytes} bytes: {built!r}"
         )
 
+    def test_should_keep_the_referat_template_s_fixed_overhead_at_its_declared_size(self):
+        # Moved into this class from the реферат class above, where it passed. It is
+        # a claim about the goldened text, and this scenario changes that text: left
+        # where it was it would be an unskipped red, and the only way to green it
+        # would be to edit the constant during GREEN, which is the one thing the
+        # goldens exist to forbid.
+        probe = _prompt_for(REFERAT, topic=OVERHEAD_PROBE_TOPIC)
+
+        overhead_bytes = (
+            len(probe.encode("utf-8"))
+            - len(OVERHEAD_PROBE_TOPIC.encode("utf-8"))
+            - len(str(VOLUME_PAGES).encode("utf-8"))
+        )
+
+        assert overhead_bytes == REFERAT_FIXED_OVERHEAD_BYTES, (
+            f"реферат fixed overhead moved, got {overhead_bytes} bytes: {probe}"
+        )
+
+    @pytest.mark.parametrize("document_type", SUPPORTED_DOCUMENT_TYPES)
+    @pytest.mark.parametrize("volume_pages", (VOLUME_PAGES, VOLUME_PAGES_TWO_DIGIT))
+    def test_should_state_the_requested_volume_in_every_type_s_prompt(
+        self, document_type, volume_pages
+    ):
+        # The guard whose absence let the omission through. Every golden above pins
+        # one type's whole string, so a type that silently dropped the volume clause
+        # was caught only if someone noticed while typing that type's golden -- and
+        # for реферат nobody did: the clause was written out of `_referat` in 1.1 and
+        # both review passes over 7690851a had to find it by reading
+        # `gigachat_provider.py:113-116` and diffing the branch-free behaviour there
+        # against the new template.
+        #
+        # Stated as a cross-type invariant rather than as four more golden bytes so
+        # that a fifth type cannot join `SUPPORTED_DOCUMENT_TYPES` with a template
+        # that quietly discards a required, range-validated, DTO-echoed field. Both
+        # digit widths, because a clause built by slicing or padding a fixed-width
+        # number would satisfy the single-digit arm alone.
+        prompt = _prompt_for(document_type, volume_pages=volume_pages)
+
+        assert str(volume_pages) in prompt, (
+            f"the {document_type} prompt does not communicate volume_pages="
+            f"{volume_pages}, a field the request requires and the response echoes: "
+            f"{prompt!r}"
+        )
+
+    def test_should_probe_the_overhead_at_two_distinct_digit_widths(self):
+        # `VOLUME_PAGES_TWO_DIGIT` is `MAX_VOLUME_PAGES`, which is 10 today. Lower the
+        # cap to 9 -- a plausible product change, not a contrivance -- and the
+        # digit-width dimension of the two guards above degenerates into two
+        # single-digit cases that can never disagree, with nothing red to say so. A
+        # module-level `assert` would not say it either: it fires at collection and
+        # reddens the whole file, which reads as a broken import rather than as the
+        # dimension it is.
+        assert len(str(VOLUME_PAGES)) == 1, (
+            f"VOLUME_PAGES must be the one-digit half of the pair, got {VOLUME_PAGES}"
+        )
+        assert len(str(VOLUME_PAGES_TWO_DIGIT)) == 2, (
+            f"VOLUME_PAGES_TWO_DIGIT must be the two-digit half of the pair, got "
+            f"{VOLUME_PAGES_TWO_DIGIT} -- MAX_VOLUME_PAGES has dropped below 10 and "
+            f"the digit-width dimension of the overhead guards is now vacuous"
+        )
+
     @pytest.mark.parametrize("document_type", SUPPORTED_DOCUMENT_TYPES)
     def test_should_spell_every_type_s_prompt_entirely_in_cyrillic(self, document_type):
         # Restated per type at G6's scope, because this scenario goldens `на тему:`
@@ -622,6 +695,16 @@ class TestADokladPromptIsUnchangedByTheMoveIntoTheDomain:
             f"PromptRequest's field set is the reason the 'method on Generation' "
             f"option was rejected; it must be declared, not grown: got {accepted}"
         )
+        # The tuple above pins `(name, kind)` and nothing else, so a GREEN author who
+        # wrote `volume_pages: int | None = None` would satisfy every assertion in
+        # this file while making the field omissible -- and an omitted volume is the
+        # exact hole the new volume guard above exists to close, since a request that
+        # never carried the value cannot state it in the prompt.
+        assert parameters["volume_pages"].default is inspect.Parameter.empty, (
+            f"volume_pages must be required, not defaulted: it is range-validated, "
+            f"echoed in the response DTO and now interpolated into every template, "
+            f"got default {parameters['volume_pages'].default!r}"
+        )
 
     def test_should_keep_the_entity_s_server_owned_fields_out_of_a_template_s_reach(self):
         generation_fields = tuple(inspect.signature(Generation.__init__).parameters)
@@ -641,7 +724,8 @@ class TestADokladPromptIsUnchangedByTheMoveIntoTheDomain:
         # all -- an `__init__` taking exactly the three declared names can still
         # assign `self.owner_id`, which every signature assertion passes while
         # putting a server-owned field one attribute access from a template.
-        attributes = tuple(vars(_prompt_request(DOKLAD)))
+        request = _prompt_request(DOKLAD)
+        attributes = tuple(vars(request))
 
         assert attributes == EXPECTED_PROMPT_REQUEST_ATTRIBUTES, (
             f"PromptRequest carries attributes it does not declare: {attributes}"
@@ -649,4 +733,17 @@ class TestADokladPromptIsUnchangedByTheMoveIntoTheDomain:
         leaked = [name for name in FORBIDDEN_GENERATION_FIELDS if name in attributes]
         assert leaked == [], (
             f"these Generation fields must be structurally unreachable from a template: {leaked}"
+        )
+        # `vars()` and `hasattr` say different things and both are kept. `vars()`
+        # states that the *instance* carries exactly three entries -- the thing that
+        # would show up in the deepcopy baseline the determinism guard takes, and the
+        # thing a `__dict__` dump into a log would print. `hasattr` states the threat
+        # model this guard was actually written against: what a template can *reach*
+        # through `request.owner_id`. A class attribute or a `@property def owner_id`
+        # is invisible to `vars()` and resolves fine inside an f-string, so the
+        # `vars()` form alone passes the exact leak it is named for.
+        reachable = [name for name in FORBIDDEN_GENERATION_FIELDS if hasattr(request, name)]
+        assert reachable == [], (
+            f"these Generation fields resolve on a PromptRequest -- a template can "
+            f"interpolate them however they are declared: {reachable}"
         )
