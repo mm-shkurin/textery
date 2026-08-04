@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from wiring_support import wired_on_one_session
 
 from access.project.project_feed_storage import SqlAlchemyProjectFeedRepository
 from container.project_wiring import create_list_projects
@@ -18,29 +18,21 @@ class TestCreateListProjectsWiresARealRepository:
     """
 
     async def test_should_wire_a_real_feed_repository_on_the_request_session(self):
-        sentinel_session = MagicMock()
-        sentinel_session.close = AsyncMock()
+        async with wired_on_one_session(create_list_projects) as (usecase, sentinel_session):
+            assert isinstance(usecase, ListProjects), (
+                f"expected create_list_projects to build a real ListProjects, got {usecase!r}"
+            )
 
-        with patch("container.runtime.session_factory", return_value=sentinel_session):
-            usecase_generator = create_list_projects()
-            usecase = await usecase_generator.__anext__()
-            try:
-                assert isinstance(usecase, ListProjects), (
-                    f"expected create_list_projects to build a real ListProjects, got {usecase!r}"
-                )
+            repository = usecase._project_feed_repository
 
-                repository = usecase._project_feed_repository
-
-                assert isinstance(repository, SqlAlchemyProjectFeedRepository), (
-                    "expected a real SqlAlchemyProjectFeedRepository so the feed reads "
-                    f"the database rather than a stub, got {repository!r}"
-                )
-                assert repository._session is sentinel_session, (
-                    "expected the feed repository to be backed by the request scope's "
-                    f"single session, got a different object {repository._session!r}"
-                )
-            finally:
-                await usecase_generator.aclose()
+            assert isinstance(repository, SqlAlchemyProjectFeedRepository), (
+                "expected a real SqlAlchemyProjectFeedRepository so the feed reads "
+                f"the database rather than a stub, got {repository!r}"
+            )
+            assert repository._session is sentinel_session, (
+                "expected the feed repository to be backed by the request scope's "
+                f"single session, got a different object {repository._session!r}"
+            )
 
 
 class TestTheCompositionRootServesTheFeed:
