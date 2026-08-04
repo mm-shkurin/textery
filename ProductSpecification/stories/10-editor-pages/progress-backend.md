@@ -55,6 +55,18 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
 - [ ] green-acceptance
 
 ### Scenario 2.3: A stored object missing a later-added key reads as that key's default
+
+**Constraint carried from 2.1's premortem (2026-08-04) — read before starting.**
+`PageSettingsDto.from_domain` (`get_document_response_dto.py`) enumerates exactly nine keys
+positionally. `documents_get.yaml` promises the opposite: an object carrying a key this version
+does not define is *preserved*. The day `from_stored` gains that tolerance, the read model
+silently drops the tenth key — and because the client echoes back what it read, the next PUT
+overwrites the preserved object with the truncated one. Preserved in storage, invisible on the
+wire, then destroyed. It is unreachable today only because the mapper raises `TypeError` on an
+extra key, which is precisely why 2.3/2.4 will not think to revisit the DTO: their brief is the
+mapper, and the DTO will look already-done. Also resolve `documents_get.yaml`'s
+`additionalProperties: false` against its own "preserved" prose — they contradict.
+
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase
