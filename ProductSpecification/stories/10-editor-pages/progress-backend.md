@@ -36,7 +36,14 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   AND the stored geometry — the second is what forbids hardcoding `page_settings: None` on the read.
   The rest adapter has no Statements layer (none of its five router tests do); assertions stay
   inline, per the sibling shape.
-- [~] green-adapter rest
+- [x] green-adapter rest — `GetDocumentResponseDto` + nested `PageSettingsDto`; exactly one
+  decorator changed. GET/PUT sit on the same path literal 40 lines apart and from-generation
+  shares the response model, so a replace-all would have silently narrowed a write route with
+  the suite still green — all three write routes re-read by eye after the edit.
+- [~] red-adapter rest (coverage: POST /from-generation response body unasserted)
+- [ ] green-adapter rest (coverage: POST /from-generation response body unasserted)
+- [ ] red-adapter rest (coverage: PUT response asserts version only, not shape)
+- [ ] green-adapter rest (coverage: PUT response asserts version only, not shape)
 - [ ] green-acceptance
 
 ### Scenario 2.2: Stored page settings round-trip unchanged

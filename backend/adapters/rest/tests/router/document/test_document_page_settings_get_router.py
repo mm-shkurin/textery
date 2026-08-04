@@ -1,6 +1,5 @@
 from uuid import UUID
 
-import pytest
 from document_router_fixtures import CREATED_AT, CREATED_AT_ON_THE_WIRE
 
 from document.document import Document
@@ -108,13 +107,6 @@ def expected_body(page_settings: dict | None) -> dict:
     }
 
 
-@pytest.mark.skip(
-    reason="RED: GET /documents/{id} is wired to the shared DocumentResponseDto, which has "
-    "no 'page_settings' field and carries 'title'/'generation_id' — documents_get.yaml "
-    "declares neither. Body has 9 keys, not the declared 8: left contains "
-    "{'title': None, 'generation_id': None}, right contains {'page_settings': ...}. "
-    "Needs GetDocumentResponseDto (see decisions/page-settings-read-tristate-decision.md)."
-)
 class TestGetDocumentPageSettingsResponseShape:
     """Scenario 2.1: a never-configured document reads as unconfigured, not as the defaults.
 

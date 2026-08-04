@@ -16,6 +16,7 @@ from dto.document.document_dtos import (
     DocumentSummaryDto,
     SaveDocumentRequestDto,
 )
+from dto.document.get_document_response_dto import GetDocumentResponseDto
 from dto.shared.page_dto import PageDto
 from security.current_owner import get_current_owner_id
 from shared.exceptions import NotFoundException
@@ -115,19 +116,23 @@ async def create_document_from_generation(
     return DocumentResponseDto.from_domain(result.document)
 
 
-@router.get("/{document_id}", response_model=DocumentResponseDto)
+@router.get("/{document_id}", response_model=GetDocumentResponseDto)
 async def get_document(
     document_id: UUID,
     owner_id: UUID = Depends(get_current_owner_id),
     usecase: GetDocument = Depends(get_get_document_usecase),
-) -> DocumentResponseDto:
+) -> GetDocumentResponseDto:
+    """The read shape only. GetDocumentResponseDto — not the shared
+    DocumentResponseDto the three write routes return — because documents_get.yaml
+    declares page_settings and declares neither title nor generation_id.
+    """
     document = await usecase.execute(document_id=document_id, owner_id=owner_id)
     if document is None:
         # Absent and foreign are the same answer: the usecase's repository filters
         # on owner_id in SQL, so there is no branch here that could tell them apart
         # even by accident.
         raise NotFoundException(f"document {document_id} not found")
-    return DocumentResponseDto.from_domain(document)
+    return GetDocumentResponseDto.from_domain(document)
 
 
 @router.get("/{document_id}/export")
