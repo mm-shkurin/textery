@@ -45,6 +45,7 @@ from container.oauth_wiring import (
     create_frontend_callback_url,
     create_start_oauth,
 )
+from container.project_wiring import UnlimitedSearchSlots, create_list_projects
 from container.runtime import (
     DEFAULT_STALE_AFTER_MINUTES,
     GENERATION_PROVIDER_ENV_VAR,
@@ -59,6 +60,7 @@ __all__ = [
     "JWT_SECRET_ENV_VAR",
     "NoOpGenerationQueue",
     "STALE_AFTER_MINUTES_ENV_VAR",
+    "UnlimitedSearchSlots",
     "create_check_health",
     "create_complete_oauth_callback",
     "create_create_document",
@@ -71,6 +73,7 @@ __all__ = [
     "create_get_generation",
     "create_list_documents",
     "create_list_generations",
+    "create_list_projects",
     "create_login_user",
     "create_refresh_access_token",
     "create_register_user",

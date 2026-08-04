@@ -1,16 +1,10 @@
 from uuid import uuid4
 
-import pytest
-
 from project.project_item import ProjectItem
 from project.project_page import ProjectPage, ProjectPageRequest
 from security.current_owner import UNAUTHORIZED_MESSAGE
 
 
-@pytest.mark.skip(
-    reason="RED: GET /api/v1/projects is registered on no router, so every request to "
-    "the feed answers Starlette's route-miss 404 {'detail': 'Not Found'}."
-)
 class TestListProjects:
     """Story 12 Scenario 1.1: the caller's feed is served at GET /api/v1/projects.
 

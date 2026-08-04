@@ -46,6 +46,7 @@ from container import (
     create_get_generation,
     create_list_documents,
     create_list_generations,
+    create_list_projects,
     create_login_user,
     create_refresh_access_token,
     create_register_user,
@@ -98,6 +99,8 @@ from router.generation.generation_router import (
 from router.generation.generation_router import router as generation_router
 from router.health.health_router import get_check_health_usecase
 from router.health.health_router import router as health_router
+from router.project.project_router import get_list_projects_usecase
+from router.project.project_router import router as project_router
 from security.current_owner import get_token_service
 from shared.exceptions import ConflictException, NotFoundException, ValidationException
 
@@ -144,6 +147,7 @@ app.include_router(auth_router)
 app.include_router(oauth_router)
 app.include_router(document_router)
 app.include_router(health_router)
+app.include_router(project_router)
 # The three narrow handlers are suppressed below because Starlette types the
 # second argument as taking `Exception`, while it dispatches on the class given
 # in the first argument, so a handler narrowed to the class it is registered for
@@ -175,6 +179,7 @@ app.dependency_overrides[get_list_documents_usecase] = create_list_documents
 app.dependency_overrides[get_save_document_usecase] = create_save_document
 app.dependency_overrides[get_token_service] = create_token_service
 app.dependency_overrides[get_check_health_usecase] = create_check_health
+app.dependency_overrides[get_list_projects_usecase] = create_list_projects
 app.dependency_overrides[get_start_oauth_usecase] = create_start_oauth
 app.dependency_overrides[get_complete_oauth_callback_usecase] = create_complete_oauth_callback
 app.dependency_overrides[get_exchange_handoff_code_usecase] = create_exchange_handoff_code

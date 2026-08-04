@@ -63,12 +63,20 @@ only the design draft could not see the contract.
 - [x] red-adapter rest (GET /api/v1/projects envelope) — pins `items` and the row's `id`
   only, both as whole-dict equality. `page`, `limit`, `total` and every `ProjectItem` field
   beyond `id` stay unpinned because the domain has no source for them yet.
-- [ ] green-adapter rest (GET /api/v1/projects envelope) — must also assert the composition
-  root resolves `get_list_projects_usecase` to a `ListProjects` holding a real
-  `ProjectFeedRepository`; `SqlAlchemyProjectFeedRepository` is registered in no container,
-  and `green-acceptance` is remove-marker-only, so a wiring gap found there has no phase
-  left to fix it in (precedent: `tests/router/generation/test_generation_router_wiring.py`)
-- [ ] green-acceptance — BLOCKED as the steps above currently stand. 1.1's acceptance test
+- [x] green-adapter rest (GET /api/v1/projects envelope) — route + `ProjectItemDto`/
+  `ProjectPageDto` (only `items` and `id`; `page`/`limit`/`total` stay unemitted), plus the
+  owed wiring test `backend/application/tests/test_project_feed_wiring.py`:
+  `create_list_projects` (`@request_scoped`) builds a real `ListProjects` over
+  `SqlAlchemyProjectFeedRepository`, `SystemClock` and a new `UnlimitedSearchSlots`, and
+  `main.app` overrides `get_list_projects_usecase` with it. `UnlimitedSearchSlots` grants
+  unconditionally — it exists only to satisfy the ADR's frozen constructor; the real
+  DB-backed per-account slot is owed at 10.1, and it must be DB-backed because the backend
+  runs multi-instance. Coverage 96% lines / 100% branches on the rest module; the only
+  uncovered touched lines are that class's `acquire`/`release` (10.1's work) and the
+  provider's `raise NotImplementedError` stub — deliberately left uncovered, as it is in
+  `document_router`, `generation_router`, `health_router` and `security/current_owner`, and
+  the wiring test already pins that the override making it unreachable is installed.
+- [~] green-acceptance — BLOCKED as the steps above currently stand. 1.1's acceptance test
   parses the whole envelope through `ProjectListBodyDto.from_json`, so it raises `KeyError`
   on `page`/`total`/`kind`/`title`/… which no layer emits yet. Either the domain widening
   is scheduled as further red/green passes under 1.1, or the acceptance assertion narrows
