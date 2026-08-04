@@ -1,9 +1,3 @@
-import pytest
-
-
-@pytest.mark.skip(
-    reason="RED: SqlAlchemyProjectFeedRepository.list_feed raises NotImplementedError"
-)
 class TestProjectFeedRepositoryListFeed:
     """Scenario 1.1: the feed shows the caller's documents and nothing of anyone else's.
 

@@ -52,7 +52,8 @@ only the design draft could not see the contract.
   `ProjectItem`/`ProjectListBody` DTO exists, while the acceptance test compares the whole
   parsed envelope (`items`, `page`, `limit`, `total`) — rest pair.)
 - [x] red-adapter db
-- [ ] green-adapter db
+- [x] green-adapter db (documents arm only — the ADR's generations arm arrives with the
+  scenario that first seeds a generation, so it cannot ship under zero test pressure)
 - [ ] red-adapter rest (UNAUTHENTICATED → 401)
 - [ ] green-adapter rest (UNAUTHENTICATED → 401)
 - [ ] red-adapter rest (GET /api/v1/projects envelope)
