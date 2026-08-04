@@ -8,6 +8,23 @@
 
 import { send } from '../../../shared/api/send'
 
+// FAIL-CLOSED CONTRACT. `updated_at` is declared required by projects_schemas.yaml, and `send`
+// casts the JSON blindly — so an absent field would map to `updatedAt: undefined` and every card
+// would render the same `—` a legitimately unusable date shows, making a broken endpoint look
+// deliberate. Exported so the test asserts against ONE definition of the message, never a drifting
+// inline copy (mirrors `INVALID_VERSION_MESSAGE` in `documentApi.ts`).
+export const MISSING_UPDATED_AT_MESSAGE = 'Сервер вернул проект без даты изменения.'
+
+// Guards the field being ABSENT, not merely `=== undefined`: a serializer that renames the key,
+// emits `null`, or emits `''` for a required field is at least as common as one that drops it, and
+// all three map to the same unusable date. Anything that is not a non-empty string fails closed.
+function parseUpdatedAt(raw: unknown): string {
+  if (typeof raw !== 'string' || raw === '') {
+    throw new Error(MISSING_UPDATED_AT_MESSAGE)
+  }
+  return raw
+}
+
 // Summary projection — no `content`. See ProductSpecification/api-specs/projects_schemas.yaml.
 export interface ProjectSummary {
   kind: string
@@ -78,7 +95,7 @@ export async function listProjects(_params?: ListProjectsParams): Promise<Projec
       status: item.status,
       canRepeat: item.can_repeat,
       createdAt: item.created_at,
-      updatedAt: item.updated_at,
+      updatedAt: parseUpdatedAt(item.updated_at),
     })),
     total: data.total,
     page: data.page,

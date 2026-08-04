@@ -98,7 +98,12 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   `updated_at` required; if the real endpoint lands with `updatedAt`, omits it on the `generation` arm,
   or nests it, `projectsApi.ts` maps `undefined` and every card degrades identically. Nothing
   distinguishes one unusable row from a broken contract. The red belongs at the mapper, not the card
-- [~] green-frontend-api (the mapper does not silently produce an item with an absent updatedAt) —
+- [x] green-frontend-api (the mapper does not silently produce an item with an absent updatedAt) —
+  shipped as `parseUpdatedAt` + exported `MISSING_UPDATED_AT_MESSAGE`. The guard is
+  `typeof raw !== 'string' || raw === ''`, not `=== undefined`: agent-review on dbed4e02 showed the
+  narrow check passes the test while mapping `null` straight through to the same em dash the guard
+  exists to prevent. Only `updated_at` is guarded — the other eight required fields are deliberately
+  left for the shaping decision below. Original note follows: 
   contract chosen by the red: `listProjects` REJECTS the whole page with
   `Error('Сервер вернул проект без даты изменения.')`, mirroring `INVALID_VERSION_MESSAGE` /
   `parseVersion` in `generation/api/documentApi.ts`. Rejecting beats dropping the row — a serializer
@@ -106,6 +111,19 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   that as well as an em dash does. Green MUST export the message constant from `projectsApi.ts`; the
   test currently holds it as a local `EXPECTED_MESSAGE` only because RED may not touch production, and
   the `/refactor` after green replaces the literal with the import or the two definitions drift
+- [~] red-frontend (a rejected listProjects does not look like an empty feed) — premortem on dbed4e02,
+  and now live rather than hypothetical: the green above ships the rejection, and `ProjectsPage.tsx`'s
+  only consumer is `listProjects().then(page => setItems(page.items))` with no `.catch` and no error
+  state. A serializer renaming `updated_at` therefore renders an unhandled promise rejection plus a
+  page visually identical to «у вас пока нет проектов» — strictly quieter than the `—` the mapper
+  guard was written to eliminate. Assert an error element is present AND the feed holds zero cards
+- [ ] green-frontend (a rejected listProjects does not look like an empty feed)
+- [ ] red-frontend-api (an absent required field other than updated_at is not mapped through) — the
+  shaping decision agent-review raised on dbed4e02 and this step defers no further: nine fields are
+  required in `projects_schemas.yaml`, one is guarded. `can_repeat` absent fails OPEN — «Повторить» is
+  silently never offered. Decide the guard's shape here (one message per field does not extend to
+  nine) before adding arms one at a time
+- [ ] green-frontend-api (an absent required field other than updated_at is not mapped through)
 - [ ] red-frontend (formatRelativeTime does not claim an unusable createdAt was just created) —
   premortem on 4abe463e, the third divergent contract and the only one that states a false fact rather
   than declining to state one. `frontend/src/features/generation/formatRelativeTime.ts` returns

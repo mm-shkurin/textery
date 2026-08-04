@@ -54,11 +54,7 @@ describe('projectsApi wire contract', () => {
     vi.unstubAllGlobals()
   })
 
-  // RED: fails at the `toEqual` below — `listProjects` RESOLVES, so the settlement is
-  // `{ rejected: false, value: … }` where a rejection carrying EXPECTED_MESSAGE was expected. The
-  // resolved page maps the absent `updated_at` to `updatedAt: undefined`, which the card then
-  // paints as `—`. Un-skip in green-frontend-api once the mapper fails closed.
-  it.skip('rejects a project whose required updated_at is absent instead of mapping undefined', async () => {
+  it('rejects a project whose required updated_at is absent instead of mapping undefined', async () => {
     const fetchMock = stubFetchJson({
       items: [PROJECT_WIRE_WITHOUT_UPDATED_AT],
       total: 1,
