@@ -35,12 +35,10 @@ class TestGetDocumentReportsPageSettingsUnresolved:
     async def test_should_report_a_never_configured_document_as_unconfigured(self):
         owner_id = uuid4()
         document = stored_document(owner_id)
-
         document_id = document.id
+        usecase = GetDocument(await seeded(document))
 
-        found = await GetDocument(await seeded(document)).execute(
-            document_id=document_id, owner_id=owner_id
-        )
+        found = await usecase.execute(document_id=document_id, owner_id=owner_id)
 
         assert found.id == document_id, (
             "the assertion below is only about page settings if this is the document "
@@ -57,10 +55,9 @@ class TestGetDocumentReportsPageSettingsUnresolved:
         owner_id = uuid4()
         document = configured_document(owner_id, configured_page_settings())
         document_id = document.id
+        usecase = GetDocument(await seeded(document))
 
-        found = await GetDocument(await seeded(document)).execute(
-            document_id=document_id, owner_id=owner_id
-        )
+        found = await usecase.execute(document_id=document_id, owner_id=owner_id)
 
         assert found.id == document_id, "the settings below must belong to this document"
         assert found.page_settings == configured_page_settings(), (

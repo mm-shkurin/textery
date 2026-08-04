@@ -40,12 +40,17 @@ _READ_SIDE_CONTRACT = [
 ]
 
 
-@pytest.mark.skip(
-    reason="RED: Document carries no page_settings — "
-    "AttributeError: 'Document' object has no attribute 'page_settings'; "
-    "TypeError: Document.reconstitute() got an unexpected keyword argument 'page_settings'"
-)
-class TestDocumentPageSettingsAbsentUntilConfigured:
+class TestPageSettingsIsTheReadContractAndCarriesNoPreset:
+    """The value-object half, which runs NOW — deliberately not skip-marked.
+
+    These three touch `PageSettings` only, and this commit lands it complete, so the
+    RED reason on the sibling class ('Document carries no page_settings') never fires
+    for them. Skipping them anyway would suppress green-capable guards — and
+    `test_should_give_no_key_a_default` is the one that fails the instant a green
+    phase writes `page_size: str = "A4"`, which is the story's central prohibition.
+    Under a shared skip marker that line could land unnoticed.
+    """
+
     def test_should_declare_exactly_the_nine_read_side_keys(self):
         # get_type_hints, not `field.type`: the latter is whatever the annotation
         # was spelled as, which is a string under PEP 563 and an object without it.
@@ -90,6 +95,13 @@ class TestDocumentPageSettingsAbsentUntilConfigured:
         with pytest.raises(dataclasses.FrozenInstanceError):
             configured_page_settings().page_size = "A4"  # type: ignore[misc]
 
+
+@pytest.mark.skip(
+    reason="RED: Document carries no page_settings — "
+    "AttributeError: 'Document' object has no attribute 'page_settings'; "
+    "TypeError: Document.reconstitute() got an unexpected keyword argument 'page_settings'"
+)
+class TestDocumentPageSettingsAbsentUntilConfigured:
     def test_should_leave_a_new_document_unconfigured(self):
         document = Document.create(
             owner_id=uuid4(),
