@@ -93,11 +93,18 @@ only the design draft could not see the contract.
   (1.2/1.3), and real LIMIT/OFFSET paging behaviour (2.1/2.2) — 1.1 only pins the
   unparameterised defaults `page=1`, `limit=20` and a `total` that is a true count, not
   `len(items)`.
-- [~] red-usecase (the feed row carries the contract's full shape) — `ProjectItem` widens to
+- [x] red-usecase (the feed row carries the contract's full shape) — `ProjectItem` widens to
   `kind`, `title`, `preview`, `document_type`, `status`, `retryable`, `created_at`,
   `updated_at` alongside `id`; the usecase test pins that `ListProjects.execute` returns them
-  through unchanged from the port.
-- [ ] green-usecase (the feed row carries the contract's full shape)
+  through unchanged from the port. One assertion, `asdict(page.items[0]) == _EXPECTED_ROW`,
+  so a dropped field, a substituted one and an invented tenth all fail. `retryable` is seeded
+  `True` on a `document` row — a pair the db arm will never emit — so a usecase that hardcoded
+  the contract's document default `False` instead of forwarding the port's value cannot pass.
+  `ProjectKind`/`ProjectStatus` enums deliberately NOT introduced: nothing here constrains the
+  value *set*; the fail-closed unknown-status rule is first asserted in the db arm (1.7).
+- [ ] green-usecase (the feed row carries the contract's full shape) — must also patch
+  `ProjectFeedStatements._documents_of`, which builds `ProjectItem(id=uuid4())` and breaks the
+  moment the constructor widens (tdd-rules setup-method carve-out).
 - [ ] red-adapter db (every row field projected from the documents arm) — `title`, `preview`
   (empty content ⇒ `''`), `document_type`, `status`, the two timestamps read from
   `DocumentModel`; `kind` the literal `document`; `retryable` false for every document.
