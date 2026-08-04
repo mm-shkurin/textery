@@ -77,13 +77,58 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   `test_should_return_200_with_the_stored_document`'s lone `["version"] == 2` into the full 9-key
   write body: the same version-is-on-both-DTOs hole this scenario's own PUT guard was raised for,
   still open one class below it.
-- [~] green-adapter rest (premortem: title absent-vs-null via `model_fields_set`; PUT 404)
+- [~] red-adapter rest (agent-review: the FOURTH wire row is unpinned and the docstring argues it
+  away on a false premise. `TestSaveDocumentTitleIntent` says blankness "could only pin a guard that
+  cannot fire" because `TitleUpdate.__post_init__` folds a blank to preserve — but that invariant
+  only fires on the `of()` path, and the route decides WHICH constructor is called. Mutation:
+  spelling the null check `if not request.title` instead of `if request.title is None` routes
+  `{"title": ""}` into `clear()`, where `__post_init__` never sees the value — 95 passed, 0 failed.
+  A silent title wipe from the most ordinary frontend bug, and story 17's
+  `blank-title-semantics-decision.md` has a FOUR-row wire table naming this exact failure as why it
+  chose preserve. Parametrize over `""` AND `"   "`: whitespace is truthy, so it survives
+  `not request.title` but not `not request.title.strip()`. This lands BEFORE green deliberately —
+  green is written against this contract.)
+- [ ] green-adapter rest (premortem: title absent-vs-null via `model_fields_set`; PUT 404)
+  Two constraints from agent-review, both checkable: (i) the rest suite must come back **95 passed,
+  0 skipped** — four markers, not three; nothing fails if green lifts only three, the guard is
+  prose. (ii) `document_router.py` is at 179 lines and the mapping adds ~8; under the 200 cap but
+  with no room for the `_ERROR_CODE_STATUS_MAP`/log work chartered nearby.
+- [ ] red-adapter rest (agent-review: the PUT-404 guard asserts the TEST FIXTURE's wiring, not the
+  production app's. `conftest.document_app:29` registers `not_found_exception_handler` itself, so
+  commenting out `main.py:155` leaves the ENTIRE backend suite green — 641 passed — while every
+  document 404 in production becomes a 500 and autosave retries it forever. Only the acceptance
+  suite catches it, on the export route, and it needs a live backend. Either pin the production
+  registry in the unit suite or narrow the docstring to what the test actually claims: "the route
+  does not swallow `NotFoundException`". Also the nit next to it — the negative control builds
+  `a_document(uuid4(), ...)` instead of taking the `owner_id` fixture, contradicting `a_document`'s
+  own docstring, which exists to stop that drift.)
+- [ ] green-adapter rest (agent-review: the production handler registry, or an honest docstring)
+- [ ] red-usecase (premortem CREDIBLE: the replay branch swallows a title intent and answers 200.
+  `_explain_miss`'s predicate is `current.content == sanitized and current.version == version + 1`
+  — content and version only. A title-only change carries UNCHANGED CONTENT BY DEFINITION, so the
+  "identical content" precondition that makes this branch rare for a content edit is the normal
+  state for a rename or a clear. Proved against the real `SaveDocument` + fake repo: both a
+  `TitleUpdate.of("Новое имя")` and a `TitleUpdate.clear()` at a stale version return 200 with
+  `title='Старое имя'` and raise nothing — the editor reverts the field in front of the user, no
+  409, nothing logged. The two halves have never met: the replay test
+  (`test_save_document_usecase.py:145`) passes no title at all — `save_document_statements.py:64`
+  omits the kwarg — and every title test saves at a MATCHING version, so the CAS always hits.
+  The deeper gap is that nothing states what SHOULD happen (409, or apply the intent); the replay
+  rule was written when title was inert. **Sequencing:** scenarios 4.7/4.8 pin this invariant for
+  `page_settings`. When they land green, "the replay rule is guarded" reads as true while the title
+  half stays open — the queued work CONCEALS this gap rather than closing it.)
+- [ ] green-usecase (premortem: the replay branch must not silently discard a title intent)
 - [ ] red-adapter rest (agent-review: PUT's whole-body guard seeds the fixture with the SAME
   content string the request sends, so the `content` key cannot distinguish the stored document
   from the request echoed back. Verified by mutation: adding `dto.content = request.content` to
   the route leaves 91 passed. `DocumentResponseDto.from_domain`'s docstring claims scenario 7.2 is
   structural — "the response cannot show unsanitized content, because it never has access to it" —
-  and that is the invariant the mutation breaks. Fix: request `<p>raw</p>`, stored `<p>sanitized</p>`.)
+  and that is the invariant the mutation breaks. Fix: request `<p>raw</p>`, stored `<p>sanitized</p>`.
+  Now TWO call sites, not one: agent-review re-confirmed on 2026-08-05 that
+  `test_should_return_200_with_the_stored_document` seeds the same `"<p>saved</p>"` it sends, and
+  with a correct green applied `dto.content = request.content` still leaves 95 passed. Fixing the
+  first site does close the mutation, so the second is redundancy rather than a surviving hole —
+  but its `content` key contributes nothing to the invariant it sits beside. Cover both.)
 - [ ] green-adapter rest (agent-review: the content key must prove sanitization, not echo)
 - [ ] red-adapter rest (premortem: from-generation's refusal branches are pinned zero times —
   `NotFoundException` → 404, `ValidationException(GENERATION_NOT_COMPLETED)` → 422 with the

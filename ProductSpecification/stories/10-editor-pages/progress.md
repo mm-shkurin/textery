@@ -82,6 +82,22 @@ Both were accepted on merit by `/refactor` and lost to the collision above:
   Import the literal — do NOT derive it: `CREATED_AT.isoformat()` yields `+00:00`, pydantic emits
   `Z`, so a derived expectation is wrong rather than merely tautological.
 
+## This story cashes in another story's risk acceptance (2026-08-05)
+
+Story 17 deferred its `clears`-at-the-real-CAS gap — `document_storage._update_values` asks only
+`carries_a_value()`, so a `TitleUpdate.clear()` falls into the omit branch and the erasure no-ops,
+while the fake (`document_fakes.py:169-173`) asks `erases()` first and honours it. The usecase test
+`test_should_forward_a_clear_and_null_the_stored_title` therefore passes against a fake the real
+adapter contradicts. The deferral was accepted on a stated premise: *not wire-reachable today,
+because the route passes `request.title` as `str | None` and `clears` is never set.*
+
+**`green-adapter rest` is the commit that expires that premise.** The moment the route constructs
+`TitleUpdate.clear()`, the no-op becomes reachable from HTTP. Story 17 has the fix in flight
+(`progress-backend.md:2825`, `red-adapter db … closes (b)`, at `[~]`) — this is a note about
+ORDERING, not a second charter: if story 10's green lands first, the clear path is wire-reachable
+and silently broken in the window between them. Nothing in either story's progress recorded the
+dependency until now. Do not fix it here — it is story 17's file and another worktree's branch.
+
 ## Notes for later scenarios
 
 - Pagination is measured in a real browser. jsdom reports every element as zero-height, so
