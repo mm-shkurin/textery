@@ -79,9 +79,9 @@ class TestPageSettingsColumnIsNullableWithNoDefault:
     async def test_should_add_the_column_without_writing_into_existing_rows(
         self, document_storage_statements
     ):
-        upgrade = document_storage_statements.page_settings_migration_upgrade_source()
+        upgrades = document_storage_statements.page_settings_migration_upgrades()
 
-        document_storage_statements.assert_migration_adds_the_column_without_backfilling(upgrade)
+        document_storage_statements.assert_migration_adds_the_column_without_backfilling(upgrades)
 
     async def test_should_leave_a_document_the_write_path_never_configured_sql_null(
         self, document_storage_statements

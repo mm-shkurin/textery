@@ -1,92 +1,32 @@
 import ast
 import json
 from dataclasses import asdict
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from access.auth.account_storage import SqlAlchemyAccountRepository
-from access.document.document_storage import SqlAlchemyDocumentStorage
-from auth.account import Account
 from document.document import Document
 from document.page_settings import PageSettings
-from document.title_update import TitleUpdate
-from statements.document_storage_assertions import DocumentStorageAssertions
+from statements.document_core_statements import DocumentCoreStatements
 from statements.page_settings_fakes import configured_page_settings
 
 
-class DocumentStorageStatements(DocumentStorageAssertions):
+class DocumentStorageStatements(DocumentCoreStatements):
     """DSL for the document storage adapter's tests -- the arrange and act half.
 
-    The assertions live on `DocumentStorageAssertions`, inherited rather than
-    delegated so every call site stays `document_storage_statements.assert_*`.
+    The entry point every test fixture builds, and the end of a four-link chain:
+    `DocumentRowAssertions` <- `DocumentPageSettingsAssertions` <-
+    `DocumentStorageAssertions` <- `DocumentCoreStatements` <- this. Inherited
+    rather than delegated at every link so all of it stays reachable as
+    `document_storage_statements.<verb>`, and split at all only to keep each file
+    under the 200-line cap.
+
+    What this link itself owns is scenario 2.1: seeding the `page_settings`
+    column, and reading it back by the three routes the guards need -- through the
+    mapper, raw from Postgres, and out of the migration script.
     """
-
-    def __init__(self, session: AsyncSession) -> None:
-        super().__init__()
-        self._session = session
-        self._storage = SqlAlchemyDocumentStorage(session)
-        self._accounts = SqlAlchemyAccountRepository(session)
-
-    async def given_an_account(self) -> UUID:
-        # documents.owner_id is a real FK, so a document needs a real account row.
-        account = Account.create(
-            id=uuid4(),
-            email=f"owner-{uuid4()}@example.com",
-            password_hash="hash",
-            created_at=datetime.now(UTC),
-        )
-        await self._accounts.save(account)
-        return account.id
-
-    async def given_a_saved_document(self, owner_id: UUID, idempotency_key: str = "") -> Document:
-        document = Document.create(
-            owner_id=owner_id,
-            document_type="эссе",
-            idempotency_key=idempotency_key or f"key-{uuid4()}",
-            created_at=datetime.now(UTC),
-        )
-        await self._storage.save_new(document)
-        await self._session.commit()
-        return document
-
-    async def find_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> Document | None:
-        return await self._storage.find_by_id_and_owner(document_id, owner_id)
-
-    async def find_by_idempotency_key(self, owner_id: UUID, key: str) -> Document | None:
-        return await self._storage.find_by_idempotency_key(owner_id, key)
-
-    async def save_content_if_version_matches(
-        self,
-        document_id: UUID,
-        owner_id: UUID,
-        content: str,
-        expected_version: int,
-        title: TitleUpdate,
-    ) -> Document | None:
-        # The signature MIRRORS the port's `title` parameter exactly -- required, no
-        # default, `TitleUpdate` only -- and the value is forwarded
-        # UNCHANGED -- constructing or unwrapping a TitleUpdate here would launder
-        # the very thing under test. A DSL that accepted a raw `str` would let a
-        # test make a call no production caller can make, and would quietly lift a
-        # future `title=""` back into the `SET title = ''` shape the adapter
-        # deleted by construction. `TitleUpdate.preserve()` is the content-only
-        # autosave path (title omitted from the SET list), and it is spelled at
-        # every call site rather than defaulted here: the port has no default, so
-        # neither does its DSL mirror.
-        self._last_updated_at = datetime.now(UTC)
-        return await self._storage.save_content_if_version_matches(
-            document_id=document_id,
-            owner_id=owner_id,
-            content=content,
-            expected_version=expected_version,
-            updated_at=self._last_updated_at,
-            title=title,
-        )
 
     async def given_a_configured_document(self, owner_id: UUID) -> Document:
         """A row whose `page_settings` column holds a full nine-key object.
@@ -156,34 +96,59 @@ class DocumentStorageStatements(DocumentStorageAssertions):
         row = result.first()
         return (row[0], row[1], row[2]) if row else None
 
-    def page_settings_migration_upgrade_source(self) -> str | None:
-        """The source of `upgrade()` in the revision that adds `documents.page_settings`.
+    def page_settings_migration_upgrades(self) -> list[str]:
+        """The `upgrade()` source of EVERY revision that mentions `documents.page_settings`.
 
-        Read as text because the property under guard -- "this migration writes
-        nothing into rows that already exist" -- is not observable in the database
-        the suite connects to. That database is already at head, so every row any
-        test can create post-dates the migration, and a data backfill is invisible
-        to every query. Actually re-running the migration against a populated table
-        would mean driving alembic through a downgrade on a database this suite
-        shares across tests, dropping a column out from under whatever else is
-        running; the revision script is the honest place to observe it instead.
+        Read from the revision scripts because the property under guard -- "this
+        migration writes nothing into rows that already exist" -- is not observable
+        in the database the suite connects to. That database is already at head, so
+        every row any test can create post-dates the migration, and a data backfill
+        is invisible to every query. Re-running the migration against a populated
+        table would mean driving alembic through a downgrade on a database this
+        suite shares across tests, dropping a column out from under whatever else
+        is running.
+
+        Every revision, not the first. The earlier form returned the first match in
+        `sorted(versions.glob("*.py"))` and stopped -- but revision filenames here
+        are hand-chosen hex, so alphabetical order says nothing about lineage. A
+        backfill living in a second revision (an index, a type fix, a "seed the
+        preset" follow-up) was never parsed at all, and the guard reported green
+        on the additive one it happened to read first.
         """
         versions = Path(__file__).resolve().parents[2] / "migrations" / "versions"
+        upgrades = []
         for revision in sorted(versions.glob("*.py")):
             source = revision.read_text(encoding="utf-8")
             if "page_settings" not in source:
                 continue
-            upgrade = next(
-                (
-                    node
-                    for node in ast.parse(source).body
-                    if isinstance(node, ast.FunctionDef) and node.name == "upgrade"
-                ),
-                None,
-            )
+            upgrade = self._upgrade_source_in(source)
             if upgrade is not None:
-                return ast.get_source_segment(source, upgrade)
-        return None
+                upgrades.append(upgrade)
+        return upgrades
+
+    @staticmethod
+    def _upgrade_source_in(source: str) -> str | None:
+        """The text of the top-level `upgrade()` in one revision file, if it has one.
+
+        Split from the search above because that method was doing two things at
+        once: deciding WHICH revision is the page-settings one, and digging
+        `upgrade()` out of a file. The second is an AST walk whose mechanics say
+        nothing about page settings, and inlining it put a three-clause generator
+        predicate inside the loop body.
+
+        Returning None rather than raising when there is no `upgrade()` keeps the
+        caller's behaviour: such a revision is skipped and the search continues to
+        the next file, rather than the whole lookup reporting "no migration".
+        """
+        upgrade = next(
+            (
+                node
+                for node in ast.parse(source).body
+                if isinstance(node, ast.FunctionDef) and node.name == "upgrade"
+            ),
+            None,
+        )
+        return ast.get_source_segment(source, upgrade) if upgrade is not None else None
 
     async def page_settings_read_outcome(
         self, document_id: UUID, owner_id: UUID
@@ -214,25 +179,3 @@ class DocumentStorageStatements(DocumentStorageAssertions):
         if document is None:
             return ("read", "no-document")
         return ("read", "absent" if document.page_settings is None else "present")
-
-    async def commit(self) -> None:
-        await self._session.commit()
-
-    def expire_identity_map(self) -> None:
-        """Force the next find to be a genuine SELECT, not an identity-map hit.
-
-        The session is expire_on_commit=False, so an unexpired instance in the
-        identity map is handed back with its IN-MEMORY values and a read-back
-        asserts x == x. Measured, that staleness is real: holding a strong
-        reference to the model and corrupting the row in raw SQL, the find returns
-        the stale `''` while a find after expire_all() returns the corrupted value.
-
-        It does NOT currently bite these tests: SQLAlchemy's identity map holds WEAK
-        references, and neither `save_new` nor the CAS keeps a reference to the model
-        (`model.to_domain()` is returned and the local dies), so the instance is
-        collected and the map is empty by the time the find runs. That makes today's
-        reads genuine by refcounting accident. This call turns the accident into a
-        stated guarantee -- it costs one no-op and it is what keeps the read honest
-        if anyone ever retains the model.
-        """
-        self._session.expire_all()
