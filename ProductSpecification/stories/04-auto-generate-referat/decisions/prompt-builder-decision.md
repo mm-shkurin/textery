@@ -2,8 +2,30 @@
 
 **Date**: 2026-08-01 (revised 2026-08-02 after the scenario 1.1 design-preview hazard
 scan; revised again 2026-08-03 after the scenario 1.2 scan added G10–G13, widened G5 and
-recorded six further out-of-diff findings)
+recorded six further out-of-diff findings; corrected 2026-08-04 after the review passes
+over that revision — see "Corrections" below)
 **Scenarios**: 1.1–1.6, 2.1
+
+## Corrections (2026-08-04)
+
+The `agent-review` and `premortem` passes over commit `9c004c94` found that the 1.2
+revision asserted four things that are not true, and that its central scoping decision was
+an accident rather than a judgement. Recorded here rather than silently rewritten,
+because the rest of this file is what the next reader trusts.
+
+| Claim as written 2026-08-03 | What is actually true |
+|---|---|
+| Option B "would redden scenario 1.3's доклад golden" | Scenario 1.3 is entirely unstarted. The only доклад golden today is `backend/adapters/generation_provider/tests/provider/test_gigachat_provider_generate.py:51` — a golden on `GigaChatProvider`'s **own** f-string, and the provider does not call `build_prompt` yet (scenario 2.1 owns that substitution). A global append to `build_prompt` would redden nothing today. Option A is still chosen, on the corrected reasoning below. |
+| G10 asserts at `topic`/`requirements`/`extra_wishes` caps | `PromptRequest.__init__` takes `document_type` and `topic` only. The other fields arrive with the scenarios that read them. G10 as written was unrunnable, and its realistic downgrade to topic-only would have made it vacuous. Restated below. |
+| список/литературы/источники are spelled "entirely from characters with Latin homoglyphs" | False. `п`, `и`, `к`, `л`, `ы`, `ч`, `н` have no Latin homoglyph, and no word in the three satisfies "entirely". The G13 guard is still right; the rationale under it was wrong and would have misled whoever wrote the test into accepting a presence check on a subword. |
+| The unknown-type path is unreachable (Schema note) / is reachable and retried (out-of-diff row) | Both are in this file and they contradict. Reconciled: the CHECK constraint makes an out-of-set `document_type` unreachable from **steady-state data**, and the hydration path plus a deploy step make it reachable **in transit**. So the `KeyError`-is-retried finding stands, and the Schema note's "not reachable" is true only of the narrower claim it makes. Neither sentence is deleted; the scope of each is now stated. |
+
+The scoping decision the premortem caught: Option A confined the ban to `_referat` for
+reasons that were entirely about test mechanics, and never argued that эссе and сочинение
+do not need it. They route to `_plain`, they are accepted by the API today (Security 3.1
+pins that open deliberately), and a fabricated bibliography harms a student in an эссе
+exactly as much as in a реферат. **Decided 2026-08-04: all four types require the ban.**
+See `TYPES_REQUIRING_SOURCE_BAN` under Model.
 
 Moving prompt composition out of `GigaChatProvider` needs a home, and the hazard scan
 turned two of the obvious choices into liabilities: passing the `Generation` entity lets a
@@ -39,6 +61,28 @@ deterministic, so purity survives.
   This is not the in-memory state `.claude/rules/coding-rules.md` bans: divergence across
   instances requires a runtime write, and there is none. An import-time assertion pins
   `set(_TEMPLATES) == set(SUPPORTED_DOCUMENT_TYPES)`.
+- `TYPES_REQUIRING_SOURCE_BAN` — **equals `SUPPORTED_DOCUMENT_TYPES`.** Every type gets
+  the ban, because the harm (a student submits a document carrying invented sources) does
+  not depend on which of the four was asked for. Written as an equality rather than a
+  hand-listed tuple on purpose: a hand-maintained list defeats its own guard, since the
+  developer who forgets to wire the ban into a fifth type's template is the same one who
+  forgets to add it to the list.
+- `_BAN_DEFERRED` — `(DOKLAD,)`, and this is a **scheduling** exclusion, not a judgement
+  about доклад. Story 1 is being finished in `textery-editor` / `textery-projects`
+  against today's доклад output, so changing that text now reddens their tests for a
+  reason unrelated to their work. The unblock condition is story 1 landing; the follow-up
+  belongs to scenario 2.1, which is already rewriting the provider hand-off.
+  The two guards over this are deliberately in tension, and the tension is the alarm:
+  G12 asserts every type in `TYPES_REQUIRING_SOURCE_BAN - _BAN_DEFERRED` carries the ban,
+  while G6's доклад golden pins the frozen text. Emptying `_BAN_DEFERRED` before story 1
+  lands turns G6 red — which is exactly the coordination check that ought to fire, rather
+  than a comment nobody reads.
+- The ban sentence itself, pinned here because G11 asserts its position and G13 its
+  character class, and neither is writable against an unquoted string:
+  `Не включай список литературы и не ссылайся на источники.`
+  Emitted as its own sentence on its own line, last, consistent with `_referat`'s
+  one-marker-per-section contract — a ban folded into an existing sentence would break
+  the `_sentence_with` helper the 1.1 tests already rely on.
 - `GenerationProvider.generate` — port changes from taking a `Generation` to taking the
   built prompt. `GigaChatProvider` composes no text.
 - Call site: `GenerateDocument.execute`, **once, after `mark_in_progress()` and before the
@@ -100,10 +144,10 @@ block, groups 1/3/4/5/6/7 fired).
 | G7 | The live `ck_generations_document_type` allowlist equals `SUPPORTED_DOCUMENT_TYPES` — growing the tuple without a follow-up migration is red at build time. |
 | G8 | The unsupported-type failure emits a signal naming `generation.id` and the offending `document_type`, distinct from the retry-exhaustion signal; the persisted `error_message` and any client-visible payload equal the sanctioned constant and carry no fragment of the raw type, no exception class name, no traceback marker. |
 | G9 | `build_prompt` on the same request twice returns an identical string, and module state (`_TEMPLATES` keys and callable identities) is unchanged across a batch of calls across all four types. This is the guard the nonce rejection rests on. |
-| G10 | `build_prompt` for **реферат specifically**, with `topic`/`requirements`/`extra_wishes` each at their exact cap (500 / 2000 / 2000), **returns** — it does not raise — and the built string is at or under a ceiling pinned as a named constant in an **explicit unit**. The unit is `len(prompt.encode("utf-8"))`: the template is Cyrillic, so a code-point ceiling and a byte ceiling differ by ~2× on exactly this text, and an unstated unit makes the bound unfalsifiable. Goes red when template text grows past the remaining headroom — which is the point, because "each obligation gets its own sentence" invites more sentences and реферат already carries the largest fixed overhead of the four types. |
+| G10 | **Restated 2026-08-04** — the 2026-08-03 wording asserted at `requirements`/`extra_wishes` caps, which `PromptRequest` does not carry, so it was unrunnable and would have been quietly downgraded to something vacuous. As it stands now: assert the реферат template's **fixed overhead** — the built prompt's length with `topic` empty — against a named constant, in `len(...encode("utf-8"))` bytes. The unit is explicit because the template is Cyrillic and a code-point bound and a byte bound differ by ~2× on exactly this text. This is writable against today's two-field `PromptRequest`, and it is the half that actually guards the hazard: adding a sixth sentence moves the fixed overhead and turns the assertion red, whether or not the user's fields are at their caps. The at-caps composed-prompt assertion is the **other** half and belongs to whichever scenario adds `requirements`/`extra_wishes` to `PromptRequest` (1.6) — recorded there rather than presupposed here. |
 | G11 | The ban is emitted **after every user-interpolated field** in the built prompt. Asserted on position, not presence: a prompt that contains the ban sentence while a hostile `topic` preceding it countermands the ban satisfies the scenario's own substring assertion and has still failed. Neither G1 (delimiter token) nor G2 (length) would go red on it, and scenario 1.2 is the scenario that chooses the ban's position, so the ordering guard has no other owner. |
-| G12 | The ban is asserted over a **declared set** of types that require it, not over the literal `REFERAT`. The existing exhaustiveness machinery (`set(_TEMPLATES) == set(SUPPORTED_DOCUMENT_TYPES)`, G6, G7) pins that every type *has* a template and that its text is stable — none of it pins that a type needing the ban *carries* it. A fifth long-form type routed to `_plain` would ship with no ban, at boot, with every test green: fail-open in the permissive direction. |
-| G13 | Every letter in the built реферат prompt is Cyrillic (`unicodedata.name(ch)` starts with `CYRILLIC` for each alphabetic character). `список`, `литературы` and `источники` are spelled entirely from characters with Latin homoglyphs — `с`, `е`, `о`, `р`, `а` — so a single Latin `c` typed into the template renders identically, ships a corrupted instruction to the model, and passes a hand-typed expected literal carrying the same homoglyph. A presence assertion cannot catch this; only a character-class assertion can. |
+| G12 | **Restated 2026-08-04** — the earlier wording said "a declared set" without declaring one, which relocated the fail-open instead of closing it: a hand-maintained list is forgotten by the same developer who forgets the ban. As it stands now: assert the ban over `TYPES_REQUIRING_SOURCE_BAN - _BAN_DEFERRED`, where the first **is** `SUPPORTED_DOCUMENT_TYPES` (an equality, so a fifth type joins it with no human step) and the second is the story-1 freeze. A fifth long-form type therefore arrives already inside the asserted set and goes red until its template carries the ban. Paired with G6's доклад golden, which goes red if `_BAN_DEFERRED` is emptied before story 1 lands. |
+| G13 | Every alphabetic character in the built prompt is Cyrillic (`unicodedata.name(ch)` starts with `CYRILLIC`). **Rationale corrected 2026-08-04**: the earlier claim that список/литературы/источники are spelled "entirely" from homoglyph-bearing characters is false — `п`, `и`, `к`, `л`, `ы`, `ч`, `н` have no Latin lookalike. The real hazard is narrower and still real: `с`, `о`, `р`, `а`, `е` **do** have identical Latin glyphs, and one of them mistyped inside `список` or `источники` renders the same, ships a corrupted instruction, and passes a hand-typed expected literal that carries the same mistake. Because only *some* characters are substitutable, a presence check on a subword is **not** an adequate substitute — which is precisely what the wrong rationale would have licensed. Only the character-class assertion over the whole string catches it. |
 
 ## Out-of-Diff Findings
 

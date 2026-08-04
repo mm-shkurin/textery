@@ -96,6 +96,27 @@ that can be red.
   *or* `PromptBuildError`"), so it is satisfied either way and cannot go red when
   реферат flips from one to the other — G10 is the non-disjunctive half, and it is this
   scenario's to carry because this is the change that grows `_referat`.
+
+  **Corrected 2026-08-04** after the review passes over `9c004c94` — see the ADR's
+  "Corrections" section. Four claims in the first revision were false (the Option B
+  rejection mechanism, G10's field surface, G13's homoglyph rationale, and an unreconciled
+  contradiction about unknown-type reachability), and the scoping was an accident rather
+  than a judgement. Two things changed that `red-usecase` must build against, not just
+  read past:
+  - **The ban applies to all four types**, not реферат alone. Decided against the
+    premortem's Incident 1: эссе and сочинение route to `_plain`, the API accepts them
+    today (Security 3.1 pins that open on purpose), and an invented bibliography harms a
+    student in an эссе exactly as much as in a реферат. `TYPES_REQUIRING_SOURCE_BAN`
+    **equals** `SUPPORTED_DOCUMENT_TYPES` so a fifth type cannot arrive outside it.
+    доклад is excluded through `_BAN_DEFERRED` — a scheduling freeze for story 1, guarded
+    by G6's golden, not a judgement about доклад.
+  - **G10 and G12 were rewritten to be runnable.** G10 now asserts the реферат template's
+    fixed overhead in UTF-8 bytes against a named constant (writable against today's
+    two-field `PromptRequest`); the at-caps half moves to 1.6, which is the scenario that
+    adds the fields. G12 asserts over the derived set rather than a hand-listed one.
+
+  The ban sentence is pinned in the ADR's Model section — G11 asserts its position and
+  G13 its character class, and neither is writable against an unquoted string.
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery

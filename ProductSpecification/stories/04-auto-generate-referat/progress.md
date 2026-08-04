@@ -38,9 +38,21 @@ From `interview.md`, settled before any code:
 
 ## Open
 
-- The реферат and доклад outputs must be distinguishable to a reader. Nothing in the
-  automated suite can prove this — the stub returns a fixture regardless of the prompt.
-  Judge one real generation by hand before calling the story done.
+Two separate hand judgements, deliberately split — the premortem over commit `9c004c94`
+caught that one checkbox was carrying both, and that the two are **anti**-correlated: a
+реферат that volunteers a список литературы is *more* distinguishable from a доклад, so a
+reviewer working the distinguishability item alone ticks it and never looks for
+fabricated sources. Nothing in the automated suite can settle either one — the stub
+returns a fixture regardless of the prompt.
+
+- [ ] The реферат and доклад outputs are distinguishable to a reader. Judge one real
+  generation of each by hand.
+- [ ] The generated реферат carries **no** список литературы, no источники section and no
+  numbered source entries. This is the item scenario 1.2's whole purpose rests on: the
+  ban is an instruction to a third-party model, and no test in this repo can prove the
+  model obeyed it. Judge one real generation by hand, looking specifically for invented
+  sources — the failure mode is a plausible-looking bibliography with ISBNs that do not
+  exist, in a document a student may submit for a grade.
 
 ## Load / Infrastructure
 
