@@ -171,8 +171,32 @@ that can be red.
   before the predicate runs — and it is kept only because deleting it would leave
   `TYPES_REQUIRING_SOURCE_BAN` read by nothing. When доклад leaves `_BAN_DEFERRED` after
   story 1 lands, `_requires_ban` degenerates to `True` and the conditional can go entirely.
-- [ ] adapters-discovery
-- [ ] green-acceptance
+- [x] adapters-discovery — all three checks resolved `[S]`; no `red-adapter` /
+  `green-adapter` step inserted. Re-run from scratch rather than inherited from 1.1,
+  because this scenario did change `build_prompt`'s output.
+  - Check 1 (ports): none. The unit is still `build_prompt` — a pure function over a
+    `PromptRequest`, no constructor, no injected port, so there is no outbound adapter
+    and no write-here-read-there flow. This scenario added three module constants and a
+    conditional append; it persists nothing and enqueues nothing.
+  - Check 1, the deliberate non-gap, restated because it is now sharper than it was at
+    1.1: `grep -rn "build_prompt\|BAN_SENTENCE" backend/ acceptance/` returns **nothing
+    outside `backend/domain/`**. `GigaChatProvider.generate` still composes its own
+    f-string (`gigachat_provider.py:113-116`), so no реферат generation in production
+    carries the ban this scenario just shipped. That is scenario 2.1's substitution to
+    make; doing it here would leave 2.1 with a green adapter and nothing to redden.
+    The premortem over `f5ae0842` is right that every artifact around this checkbox reads
+    as though the ban ships today — that is a reporting hazard, not an adapter one, and
+    the guard it names (a provider-level test asserting `BAN_SENTENCE` in the posted
+    payload for a **реферат**) belongs to 2.1. Recorded there rather than opened here.
+  - Check 2 (exceptions): none new. `build_prompt` still raises no domain exception.
+    `_requires_ban` is a pure boolean and adds no failure mode; the only way out remains
+    a `KeyError` on a type absent from `_TEMPLATES`, which the import-time assertion
+    keeps unreachable. `PromptBuildError` does not exist yet — 1.4 / 3.3 own it.
+  - Check 3 (response shape): `[S]`. Unchanged and re-checked from the adapter side: no
+    endpoint returns the prompt, so no inbound response shape moves. `generation_router.py`
+    returns `generation_id`/`status`/`created_at` plus echoed request fields, and Security
+    scenario 2.1 requires the prompt stay out of even the log.
+- [S] green-acceptance — nothing to turn green; see `red-acceptance` above.
 
 ### Scenario 1.3: A доклад prompt is unchanged by the move into the domain
 - [ ] red-acceptance
