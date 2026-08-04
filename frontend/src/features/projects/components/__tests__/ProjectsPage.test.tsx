@@ -68,6 +68,24 @@ const OLDER_YEAR_PROJECT: ProjectSummary = {
   updatedAt: '2025-09-02T09:00:00Z',
 }
 
+// A SECOND older-year fixture, and the reason it is not redundant with the one above: one
+// assertion pins one month and one year, so the cheapest way to satisfy it is a hand-rolled
+// Russian genitive month table — eleven of whose entries no test would ever read. This fixture
+// picks a different month AND a different year, both lifted from the same mockup
+// (mockups/desktop/01-projects-grid.html: `<div class="date">16 декабря 2024</div>`), so the
+// table has to be right twice before it is cheaper than keeping `toLocaleDateString`.
+const SECOND_OLDER_YEAR_PROJECT: ProjectSummary = {
+  kind: 'document',
+  id: '11',
+  title: 'История отечественной архитектуры',
+  preview: null,
+  documentType: 'реферат',
+  status: 'draft',
+  canRepeat: false,
+  createdAt: '2024-12-16T12:00:00Z',
+  updatedAt: '2024-12-16T12:00:00Z',
+}
+
 // `total` is passed, never derived from `items.length` — the two differ the moment paging enters
 // (test 3.x), and a helper that computes it cannot express a wrong-total bug.
 function mockFeed(items: ProjectSummary[], total: number) {
@@ -156,6 +174,21 @@ describe('ProjectsPage card date for a project from an older year', () => {
     const card = await screen.findByTestId('project-card-document-9')
 
     expect(within(card).getByTestId('project-card-date')).toHaveTextContent(/^2 сентября 2025$/)
+  })
+
+  // The same format, a second month and a second year — deliberately a separate `it` rather than a
+  // second assertion above, so a failure names WHICH date the formatter got wrong instead of
+  // stopping at the first. Anchored against the mockup's literal for the same reason as its
+  // sibling: '16 декабря 2024 г.' is what ru-RU's `year: 'numeric'` would emit, and the design
+  // does not carry the era suffix.
+  it('renders a second older year in the same format, pinning a second genitive month', async () => {
+    mockFeed([SECOND_OLDER_YEAR_PROJECT], 1)
+
+    render(<ProjectsPage />)
+
+    const card = await screen.findByTestId('project-card-document-11')
+
+    expect(within(card).getByTestId('project-card-date')).toHaveTextContent(/^16 декабря 2024$/)
   })
 })
 

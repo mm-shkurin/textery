@@ -30,11 +30,14 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   month, so a fix that hand-rolls a Russian genitive month table ships eleven unread entries.
   Keep the formatter and strip the suffix (or omit `year` and append it), do not replace
   `toLocaleDateString`
-- [~] red-frontend (a second older year, a second month) — `/^16 декабря 2024$/`, the mockup's own
+- [x] red-frontend (a second older year, a second month) — `/^16 декабря 2024$/`, the mockup's own
   literal, pins a second month and a second year in one assertion and kills the hand-rolled-table
   fix as a green option
-- [ ] green-frontend (a second older year, a second month)
-- [ ] red-frontend (the card shows updatedAt, not createdAt) — every fixture sets the two to the
+- [S] green-frontend (a second older year, a second month) — zero production files need modification:
+  the previous unit's `formatCardDate` appends `getFullYear()` to a `toLocaleDateString` day+month, so
+  it is month- and year-agnostic and the assertion is satisfied on arrival. Same precedent as the
+  unknown-wire-type accent pair above — a regression pin, not a red state
+- [~] red-frontend (the card shows updatedAt, not createdAt) — every fixture sets the two to the
   same string, so swapping the field the card reads leaves the whole suite green. `12_MyProjects.md`
   makes them equal only at birth and names `updated_at` a sort key
 - [ ] green-frontend (the card shows updatedAt, not createdAt)
