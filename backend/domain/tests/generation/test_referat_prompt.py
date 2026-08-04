@@ -92,6 +92,29 @@ def _types_requiring_the_ban_now():
     return sorted(set(requiring) - set(deferred))
 
 
+def _last_line(prompt: str) -> str:
+    """The final line of `prompt`.
+
+    Named because three separate guards assert on it and the ban's *position* is
+    the contract -- spelled inline, a change to what "last" means (trailing
+    newline, \\r\\n) is three edits in three shapes, one of them negated.
+    """
+    return prompt.splitlines()[-1]
+
+
+def _non_cyrillic_letters(prompt: str) -> list[str]:
+    """The letters of `prompt` that are not Cyrillic, in order.
+
+    `name(ch, "")` rather than `name(ch)`: an unnamed code point makes the bare
+    call raise ValueError, which surfaces as a test *error* whose message names
+    unicodedata rather than the offending prompt. With the default it fails the
+    startswith and is reported as the violation it is.
+    """
+    return [
+        ch for ch in prompt if ch.isalpha() and not unicodedata.name(ch, "").startswith("CYRILLIC")
+    ]
+
+
 def _sentence_with(prompt: str, marker: str) -> str:
     """The single sentence of `prompt` carrying `marker`.
 
@@ -166,7 +189,7 @@ class TestAReferatPromptForbidsABibliography:
         # its own sentence on its own line, last, per `_referat`'s
         # one-marker-per-section contract. Folded into a neighbouring sentence it
         # would still satisfy a substring check.
-        assert prompt.splitlines()[-1] == BAN_SENTENCE, (
+        assert _last_line(prompt) == BAN_SENTENCE, (
             f"prompt's last line must be the ban verbatim, got: {prompt}"
         )
 
@@ -181,20 +204,19 @@ class TestAReferatPromptForbidsABibliography:
 
     def test_should_emit_the_ban_after_every_user_interpolated_field(self):
         prompt = _prompt_for(REFERAT, topic=HOSTILE_TOPIC)
-        lines = prompt.splitlines()
 
         # Position, not presence -- but pinned to exact line indices rather than
         # to a `<` between two runtime offsets. Both operands are deterministic
         # (fixed template, fixed topic, no clock, no I/O), and the inequality form
         # also passes on a template that emits the ban twice or splices further
         # user text in after the first occurrence.
-        assert lines[-1] == BAN_SENTENCE, (
+        assert _last_line(prompt) == BAN_SENTENCE, (
             f"ban must be the prompt's last line verbatim, got: {prompt}"
         )
         assert prompt.count(BAN_SENTENCE) == 1, (
             f"ban must be emitted exactly once, got {prompt.count(BAN_SENTENCE)}: {prompt}"
         )
-        assert [i for i, line in enumerate(lines) if HOSTILE_TOPIC in line] == [0], (
+        assert [i for i, line in enumerate(prompt.splitlines()) if HOSTILE_TOPIC in line] == [0], (
             f"the topic must be interpolated once, on the first line, got: {prompt}"
         )
 
@@ -221,7 +243,7 @@ class TestAReferatPromptForbidsABibliography:
         # would accept the ban folded into a neighbouring sentence for эссе and
         # сочинение -- two of the three types -- while rejecting it for реферат.
         without_ban = [
-            t for t in _types_requiring_the_ban_now() if _prompt_for(t).splitlines()[-1] != BAN_SENTENCE
+            t for t in _types_requiring_the_ban_now() if _last_line(_prompt_for(t)) != BAN_SENTENCE
         ]
 
         assert without_ban == [], f"these types require the ban and do not carry it: {without_ban}"
@@ -244,12 +266,7 @@ class TestAReferatPromptForbidsABibliography:
         latin_lookalikes = [
             (document_type, ch)
             for document_type in _types_requiring_the_ban_now()
-            for ch in _prompt_for(document_type)
-            # `name(ch, "")` rather than `name(ch)`: an unnamed code point makes the
-            # bare call raise ValueError, which surfaces as a test *error* whose
-            # message names unicodedata rather than the offending prompt. With the
-            # default it fails the startswith and is reported as the violation it is.
-            if ch.isalpha() and not unicodedata.name(ch, "").startswith("CYRILLIC")
+            for ch in _non_cyrillic_letters(_prompt_for(document_type))
         ]
 
         # `с о р а е` render identically to their Latin counterparts, so one of
