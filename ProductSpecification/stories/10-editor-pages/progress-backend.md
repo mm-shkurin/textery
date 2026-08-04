@@ -30,10 +30,13 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   Also refresh `document_storage_assertions.assert_stored_state` — its "six columns the CAS must
   NOT touch" docstring is stale at seven.
 - [x] green-adapter db — JSONB NULL column + additive migration, no server default, no backfill
-- [ ] red-adapter rest — GetDocumentResponseDto, the eight keys of documents_get.yaml, wired to
+- [x] red-adapter rest — GetDocumentResponseDto, the eight keys of documents_get.yaml, wired to
   `GET /{document_id}` only; the shared DocumentResponseDto stays as-is for the three write-shaped
-  routes whose own spec mandates title/generation_id
-- [ ] green-adapter rest
+  routes whose own spec mandates title/generation_id. Two methods, both red: null-for-unconfigured
+  AND the stored geometry — the second is what forbids hardcoding `page_settings: None` on the read.
+  The rest adapter has no Statements layer (none of its five router tests do); assertions stay
+  inline, per the sibling shape.
+- [~] green-adapter rest
 - [ ] green-acceptance
 
 ### Scenario 2.2: Stored page settings round-trip unchanged
