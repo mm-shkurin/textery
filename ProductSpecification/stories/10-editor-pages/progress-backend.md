@@ -40,9 +40,14 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   decorator changed. GET/PUT sit on the same path literal 40 lines apart and from-generation
   shares the response model, so a replace-all would have silently narrowed a write route with
   the suite still green — all three write routes re-read by eye after the edit.
-- [~] red-adapter rest (coverage: POST /from-generation response body unasserted)
-- [ ] green-adapter rest (coverage: POST /from-generation response body unasserted)
-- [ ] red-adapter rest (coverage: PUT response asserts version only, not shape)
+- [x] red-adapter rest (coverage: POST /from-generation response body unasserted) — no RED, and
+  that is the honest outcome: the route was already correct, only the assertion was missing. Three
+  tests, passing first run. The load-bearing one pins `title`/`generation_id` at NON-NULL values —
+  the sibling manual-create test pins both at `None`, which a drop-and-redefault would survive.
+- [S] green-adapter rest (coverage: POST /from-generation response body unasserted) — no
+  implementation needed; the red half was a regression guard over already-correct code, and no
+  production file changed.
+- [~] red-adapter rest (coverage: PUT response asserts version only, not shape)
 - [ ] green-adapter rest (coverage: PUT response asserts version only, not shape)
 - [ ] green-acceptance
 

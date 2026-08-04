@@ -86,6 +86,11 @@ def save_client(document_app):
 
 
 @pytest.fixture
+def from_generation_client(document_app):
+    return _client_factory(document_app, "get_create_document_from_generation_usecase")
+
+
+@pytest.fixture
 def list_client(document_app):
     return _client_factory(document_app, "get_list_documents_usecase")
 
