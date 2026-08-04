@@ -13,7 +13,27 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   5 GAPs folded into the ADR's Edge Cases, group 8 dismissed as out of altitude)
 - [x] red-usecase
 - [x] green-usecase
-- [ ] adapters-discovery
+- [x] adapters-discovery (ports: db — insufficient, no column and to_domain passes 11 kwargs;
+  exceptions: [S], None → NotFoundException → 404 already mapped in document_router;
+  response shape: rest — DocumentResponseDto has no page_settings and carries title/generation_id
+  the frozen 8-key assertion rejects)
+- [ ] red-adapter db — the mapper seam. Three guards the review passes named:
+  (a) a configured row seeded directly, `commit()` + `expire_identity_map()`, re-read through
+  `find_by_id_and_owner`, asserting all nine keys by `==` against a separately built object — a
+  to_domain that forgets the twelfth kwarg reads every configured document back as unconfigured
+  and NOTHING currently fails, because reconstitute defaults it to None;
+  (b) migration shape: `documents.page_settings` nullable, `server_default is None`, and applying
+  it to a table with existing rows leaves them SQL NULL — a `server_default=text("'{}'::jsonb")`
+  reflex backfills every legacy document irreversibly;
+  (c) stored `{}` stays distinguishable from SQL NULL — `PageSettings(**blob) if blob else None`
+  is the path of least resistance and `{}` is falsy, which is exactly the conflation the ADR forbids.
+  Also refresh `document_storage_assertions.assert_stored_state` — its "six columns the CAS must
+  NOT touch" docstring is stale at seven.
+- [ ] green-adapter db — JSONB NULL column + additive migration, no server default, no backfill
+- [ ] red-adapter rest — GetDocumentResponseDto, the eight keys of documents_get.yaml, wired to
+  `GET /{document_id}` only; the shared DocumentResponseDto stays as-is for the three write-shaped
+  routes whose own spec mandates title/generation_id
+- [ ] green-adapter rest
 - [ ] green-acceptance
 
 ### Scenario 2.2: Stored page settings round-trip unchanged
