@@ -37,11 +37,20 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   the previous unit's `formatCardDate` appends `getFullYear()` to a `toLocaleDateString` day+month, so
   it is month- and year-agnostic and the assertion is satisfied on arrival. Same precedent as the
   unknown-wire-type accent pair above — a regression pin, not a red state
-- [~] red-frontend (the card shows updatedAt, not createdAt) — every fixture sets the two to the
+- [x] red-frontend (the card shows updatedAt, not createdAt) — every fixture sets the two to the
   same string, so swapping the field the card reads leaves the whole suite green. `12_MyProjects.md`
   makes them equal only at birth and names `updated_at` a sort key
-- [ ] green-frontend (the card shows updatedAt, not createdAt)
-- [ ] red-frontend (a 31 December evening does not read as next year) — the invariant
+- [S] green-frontend (the card shows updatedAt, not createdAt) — zero production files need
+  modification: `ProjectCard.tsx` already reads `project.updatedAt`. Verified discriminating by
+  swapping the line to `createdAt` — exactly the new test failed (`5 марта 2024` against
+  `/^15 июля$/`), the other four stayed green, which is the aliasing this step existed to kill
+- [ ] red-frontend (an unparseable updatedAt does not render `Invalid Date NaN`) — premortem finding
+  on ce3e04a5, not otherwise queued. `NaN !== currentYear` is true, so a bad date takes the
+  year-showing branch and concatenates two failure tokens; `null` renders `1 января 1970`, which
+  reads as a real date. `projectsApi.ts` passes `item.updated_at` through unvalidated against an
+  endpoint the backend has not built
+- [ ] green-frontend (an unparseable updatedAt does not render `Invalid Date NaN`)
+- [~] red-frontend (a 31 December evening does not read as next year) — the invariant
   `formatCardDate`'s own comment names, with zero assertions: no fixture has a UTC year differing
   from its local year. Wants the TZ pinned in the vitest config, so it lands with that
 - [ ] green-frontend (a 31 December evening does not read as next year)

@@ -86,6 +86,25 @@ const SECOND_OLDER_YEAR_PROJECT: ProjectSummary = {
   updatedAt: '2024-12-16T12:00:00Z',
 }
 
+// The only fixture in this file whose `createdAt` and `updatedAt` are NOT the same string. Every
+// other one aliases them, which means the card could be reading `createdAt` and the whole suite
+// would stay green. `12_MyProjects.md` makes the two equal only at birth ("its `updated_at` equal
+// to its `created_at`") and names `updated_at` a sort key — they diverge on the first save, and
+// the feed's job is telling recently-touched work apart. The two dates are chosen to format
+// differently: the creation renders with a year ('5 марта 2024'), the edit without one
+// ('15 июля'), so a card reading the wrong field cannot accidentally satisfy the assertion.
+const EDITED_LONG_AFTER_CREATION_PROJECT: ProjectSummary = {
+  kind: 'document',
+  id: '13',
+  title: 'Цифровизация городского транспорта',
+  preview: null,
+  documentType: 'реферат',
+  status: 'draft',
+  canRepeat: false,
+  createdAt: '2024-03-05T12:00:00Z',
+  updatedAt: '2026-07-15T12:00:00Z',
+}
+
 // `total` is passed, never derived from `items.length` — the two differ the moment paging enters
 // (test 3.x), and a helper that computes it cannot express a wrong-total bug.
 function mockFeed(items: ProjectSummary[], total: number) {
@@ -189,6 +208,34 @@ describe('ProjectsPage card date for a project from an older year', () => {
     const card = await screen.findByTestId('project-card-document-11')
 
     expect(within(card).getByTestId('project-card-date')).toHaveTextContent(/^16 декабря 2024$/)
+  })
+})
+
+describe('ProjectsPage card date for a project edited long after it was created', () => {
+  // Pinned for the same reason as the older-year block: the assertion below expects the EDIT date
+  // to render without a year, which is only true while "now" is 2026.
+  beforeEach(() => {
+    vi.setSystemTime(new Date('2026-08-03T12:00:00.000Z'))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.clearAllMocks()
+  })
+
+  // A de-aliasing regression pin, not a new behaviour: `ProjectCard` already calls
+  // `formatCardDate(project.updatedAt)`. What was missing is any test that could tell — all four
+  // existing fixtures set `createdAt === updatedAt`, so swapping the field the card reads left the
+  // suite green. This test fails on that swap ('5 марта 2024' ≠ '15 июля') and is the only thing
+  // in the file that does.
+  it('renders the date the project was last edited, not the date it was created', async () => {
+    mockFeed([EDITED_LONG_AFTER_CREATION_PROJECT], 1)
+
+    render(<ProjectsPage />)
+
+    const card = await screen.findByTestId('project-card-document-13')
+
+    expect(within(card).getByTestId('project-card-date')).toHaveTextContent(/^15 июля$/)
   })
 })
 
