@@ -15,8 +15,6 @@ See `decisions/page-settings-read-tristate-decision.md`.
 
 from uuid import uuid4
 
-import pytest
-
 from document.get_document import GetDocument
 from statements.document_fakes import (
     STORED_AT,
@@ -27,10 +25,6 @@ from statements.document_fakes import (
 from statements.page_settings_fakes import configured_page_settings
 
 
-@pytest.mark.skip(
-    reason="RED: Document.__init__ has no page_settings parameter — "
-    "TypeError: Document.__init__() got an unexpected keyword argument 'page_settings'"
-)
 class TestGetDocumentReportsPageSettingsUnresolved:
     async def test_should_report_a_never_configured_document_as_unconfigured(self):
         owner_id = uuid4()

@@ -96,11 +96,6 @@ class TestPageSettingsIsTheReadContractAndCarriesNoPreset:
             configured_page_settings().page_size = "A4"  # type: ignore[misc]
 
 
-@pytest.mark.skip(
-    reason="RED: Document carries no page_settings — "
-    "AttributeError: 'Document' object has no attribute 'page_settings'; "
-    "TypeError: Document.reconstitute() got an unexpected keyword argument 'page_settings'"
-)
 class TestDocumentPageSettingsAbsentUntilConfigured:
     def test_should_leave_a_new_document_unconfigured(self):
         document = Document.create(
