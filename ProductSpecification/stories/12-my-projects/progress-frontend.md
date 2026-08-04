@@ -50,7 +50,14 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   reads as a real date. `projectsApi.ts` passes `item.updated_at` through unvalidated against an
   endpoint the backend has not built
 - [ ] green-frontend (an unparseable updatedAt does not render `Invalid Date NaN`)
-- [~] red-frontend (a 31 December evening does not read as next year) — the invariant
+- [ ] red-frontend-api (the wire mapper does not transpose created_at and updated_at) — agent-review
+  AND premortem both found this on 43f7e498, independently. The card-level de-alias landed above
+  `vi.mock('../../api/projectsApi')`, so `projectsApi.ts`'s two adjacent mapping lines can still be
+  swapped with the whole repo green: `PROJECT_WIRE` in `projectsApi.test.ts` aliases the pair the same
+  way the four card fixtures did. `historyApi.test.ts` already de-aliases its own `DOCUMENT_WIRE` —
+  same fix, distinct timestamps
+- [ ] green-frontend-api (the wire mapper does not transpose created_at and updated_at)
+- [ ] red-frontend (a 31 December evening does not read as next year) — the invariant
   `formatCardDate`'s own comment names, with zero assertions: no fixture has a UTC year differing
   from its local year. Wants the TZ pinned in the vitest config, so it lands with that
 - [ ] green-frontend (a 31 December evening does not read as next year)

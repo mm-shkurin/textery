@@ -116,6 +116,23 @@ function mockFeed(items: ProjectSummary[], total: number) {
   })
 }
 
+// Called from inside a `describe`, never at file scope — the first block below is deliberately
+// left on the real clock, and a top-level pin would silently cover it. The instant stays at the
+// call site rather than baked in here, because "older year" and "renders without a year" are both
+// claims about a fixture's date RELATIVE to this now; a reader of the block has to see it.
+// `setSystemTime` alone — not `useFakeTimers` — because the component resolves a mocked promise,
+// and a fully faked timer queue would stall `findBy*`.
+function pinClockTo(instant: string) {
+  beforeEach(() => {
+    vi.setSystemTime(new Date(instant))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.clearAllMocks()
+  })
+}
+
 describe('ProjectsPage', () => {
   afterEach(() => {
     vi.clearAllMocks()
@@ -171,14 +188,7 @@ describe('ProjectsPage card date for a project from an older year', () => {
   // Pinned for the same reason as the accent block below, but here the pin IS the test: an
   // "older year" fixture is only older relative to a now, and an unpinned clock would silently
   // turn this scenario into the current-year one the moment the calendar rolled into 2025+1.
-  beforeEach(() => {
-    vi.setSystemTime(new Date('2026-08-03T12:00:00.000Z'))
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.clearAllMocks()
-  })
+  pinClockTo('2026-08-03T12:00:00.000Z')
 
   // Anchored `/^…$/` against the MOCKUP's literal, not against the formatter's output. That
   // distinction is the whole test: `toLocaleDateString('ru-RU', {…, year: 'numeric'})` emits the
@@ -214,14 +224,7 @@ describe('ProjectsPage card date for a project from an older year', () => {
 describe('ProjectsPage card date for a project edited long after it was created', () => {
   // Pinned for the same reason as the older-year block: the assertion below expects the EDIT date
   // to render without a year, which is only true while "now" is 2026.
-  beforeEach(() => {
-    vi.setSystemTime(new Date('2026-08-03T12:00:00.000Z'))
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.clearAllMocks()
-  })
+  pinClockTo('2026-08-03T12:00:00.000Z')
 
   // A de-aliasing regression pin, not a new behaviour: `ProjectCard` already calls
   // `formatCardDate(project.updatedAt)`. What was missing is any test that could tell — all four
@@ -241,17 +244,9 @@ describe('ProjectsPage card date for a project edited long after it was created'
 
 describe('ProjectsPage card accent for an unfamiliar document type', () => {
   // The clock is pinned because the card's date format branches on `getFullYear() !== now`, and
-  // every fixture in this file is dated 2026. Without this the suite green-passes only while the
-  // wall clock agrees with the fixtures. `setSystemTime` alone — not `useFakeTimers` — because the
-  // component resolves a mocked promise, and a fully faked timer queue would stall `findBy*`.
-  beforeEach(() => {
-    vi.setSystemTime(new Date('2026-08-03T12:00:00.000Z'))
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.clearAllMocks()
-  })
+  // this block's fixture is dated 2026. Without this the suite green-passes only while the wall
+  // clock agrees with the fixture.
+  pinClockTo('2026-08-03T12:00:00.000Z')
 
   // The accent is asserted on the ANCESTOR of the badge, not on the badge itself: the stylesheet
   // colours the chip through `.project-card-accent-blue .project-card-type`, so the card carrying
