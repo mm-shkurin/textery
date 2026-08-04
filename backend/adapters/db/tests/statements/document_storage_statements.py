@@ -8,7 +8,6 @@ from uuid import UUID
 from sqlalchemy import text
 
 from document.document import Document
-from document.page_settings import PageSettings
 from statements.document_core_statements import DocumentCoreStatements
 from statements.page_settings_fakes import configured_page_settings
 
@@ -43,11 +42,12 @@ class DocumentStorageStatements(DocumentCoreStatements):
         called twice at the call site -- once to seed and once as the expectation
         -- which put a non-DSL factory in the test body for no gain: there is one
         configured object in this story and both halves must be the same one.
-        `the_configured_page_settings()` below is what the assertion compares to.
+        `assert_page_settings_round_tripped` reads the same factory for its
+        expectation, so the two halves cannot drift.
         """
         document = await self.given_a_saved_document(owner_id)
         await self._seed_stored_page_settings(
-            document.id, json.dumps(asdict(self.the_configured_page_settings()))
+            document.id, json.dumps(asdict(configured_page_settings()))
         )
         return document
 
@@ -61,11 +61,6 @@ class DocumentStorageStatements(DocumentCoreStatements):
         document = await self.given_a_saved_document(owner_id)
         await self._seed_stored_page_settings(document.id, "{}")
         return document
-
-    def the_configured_page_settings(self) -> PageSettings:
-        """The one off-preset object this suite seeds and expects, shared with the
-        domain and usecase layers via `page_settings_fakes`."""
-        return configured_page_settings()
 
     async def _seed_stored_page_settings(self, document_id: UUID, blob: str | None) -> None:
         await self._session.execute(

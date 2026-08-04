@@ -36,9 +36,7 @@ class TestConfiguredPageSettingsSurviveTheMapper:
 
         fetched = await document_storage_statements.find_by_id_and_owner(document.id, owner_id)
 
-        document_storage_statements.assert_page_settings_round_tripped(
-            fetched, document, document_storage_statements.the_configured_page_settings()
-        )
+        document_storage_statements.assert_page_settings_round_tripped(fetched, document)
 
 
 class TestPageSettingsColumnIsNullableWithNoDefault:
