@@ -252,12 +252,10 @@ that can be red.
     golden asserts the first call only, so a builder that memoized into a mutated buffer,
     or normalized `document_type` in place, passes every golden while the retry's second
     attempt sends a different string than its first.
-  - **G14** — the provider and the domain agree, asserted between the two **live
-    composers** rather than two hand-typed literals. This is the sharpest finding of the
-    scan (four groups reached it independently): until 2.1 there are two independently
-    editable definitions of the same text — `_plain` and `gigachat_provider.py:113-116` —
-    each pinned by its own golden, so either can be edited alone with nothing red and this
-    scenario's whole claim dies silently.
+  - **G4** — `topic` `None` / empty / whitespace-only → `PromptBuildError`. Added after
+    the review passes over `db5113d8`, which caught that the owner sweep assigned G3 and
+    missed G4 while the argument for G4 is stronger: `_plain` has interpolated `topic`
+    since 1.1, so `на тему: None` is reachable today.
   - **G15** — `_plain`'s fixed overhead in UTF-8 bytes against a named constant. G10
     covers `_referat`, the one template this scenario does not change.
   - **G16** — `PromptRequest.__init__`'s accepted parameter set is exactly the three
@@ -276,6 +274,41 @@ that can be red.
   ADR's `PromptRequest` bullet, which now names which scenario each field arrives with.
   `_plain`'s docstring carries a third copy of the same stale claim — that one is a source
   change and belongs to `green-usecase`.
+
+  **Corrected after the review passes over `db5113d8`**, before `red-usecase` could build
+  against any of it:
+  - **G14 does not belong to `red-usecase` and is not per-type.** It drives
+    `GigaChatProvider`, so it is an adapter test under
+    `backend/adapters/generation_provider/tests/` — a domain or usecase test importing an
+    adapter inverts the dependency rule, and it would resolve at runtime anyway because
+    `backend/pyproject.toml` puts every layer root on one `pythonpath`, so the violation
+    lands silently. And it is assertable for **доклад alone**: the provider appends no
+    ban, `build_prompt` appends one for every type outside `_BAN_DEFERRED`, so
+    parameterizing it like G6/G13 is red on arrival for the other three with no defect
+    present — and the cheapest escape from that red is to widen `_BAN_DEFERRED`, which
+    unbans them. That escape is already blocked by `test_referat_prompt.py:227`, but the
+    scope note keeps an author from reaching for it and backing it out.
+  - **G15's terms had to be stated**, because G10's do not transfer. `_referat` hardcodes
+    its type name so it has one fixed overhead; `_plain` interpolates `document_type`
+    (12 / 8 / 18 bytes) and `volume_pages` (1–2 digits), so there is no single constant.
+    Assert `len(built) - len(document_type) - len(str(volume_pages))` against one constant
+    covering all three types. Pinning one type at one volume is the cheap exit that made
+    G10's first formulation unwritable.
+  - **`red-usecase` must update the existing tests, and no step said so.**
+    `test_referat_prompt.py:51` is the single `PromptRequest(document_type=..., topic=...)`
+    call site that all seven 1.1/1.2 tests route through. A required `volume_pages` makes
+    it a `TypeError`; an optional one defaulting to `None` makes G3 raise for every one of
+    them. Either way the RED phase edits a green test file — worth naming, given how
+    carefully that file's own comments were written to avoid reddening 1.1.
+  - **`PromptBuildError`'s base class is now pinned in the ADR** rather than left to the
+    implementation. Deferring the call-site *mapping* to G5/2.1 does not defer the
+    *default*: `generate_document.py:61` catches bare `Exception` and retries, so an
+    unmapped build failure is retried as if transient — deterministic, so attempt 2 burns
+    the budget for nothing.
+  - Two smaller corrections: the ADR revision table's own second row was false (it sent
+    the reader to fix two sections that never said what it claimed), and G13's rationale
+    said three homoglyph-bearing characters appear in the newly-goldened fragments when it
+    is four.
 
   **Routed elsewhere, not folded in**: G17 (the import-time `_TEMPLATES` completeness
   check is a bare `assert`, which `python -O` strips, so the fifth-type guard holds by
