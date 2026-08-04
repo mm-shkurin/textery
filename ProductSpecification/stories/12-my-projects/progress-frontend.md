@@ -52,7 +52,16 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
 - [~] green-frontend (an unparseable updatedAt does not render `Invalid Date NaN`) — two skipped tests
   to enable, not one: `new Date(null)` is the epoch, a *valid* Date, so an `isNaN(getTime())` check
   alone fixes the malformed arm and leaves `null` rendering `1 января 1970`. Both were verified to fail
-  independently on their own received value
+  independently on their own received value.
+
+  **CONTRACT DECIDED (user, on the 5b723153 review passes): render `—`, not an empty element.**
+  `HistoryPage.tsx`'s `formatDate` already returns `—` for an invalid date and it is shipped; the red
+  read mockup silence as spec silence and pinned a third contract. This green therefore REWRITES both
+  skipped tests to assert `/^—$/` instead of `toBeEmptyDOMElement()` before enabling them — a test
+  change the green phase would normally be forbidden, allowed here only because it is the recorded
+  resolution of a review finding against the red, not a green convenience. Note it dissolves the
+  card-collapse pair below: `—` occupies a line, so no `min-height` is needed. Guard the INPUT
+  (`typeof iso !== 'string'`), not the epoch value
 - [ ] red-frontend (a numeric or otherwise non-string updatedAt renders no date) — the shape that
   passes BOTH guards the pair above pins: `new Date(1755000000)` is a valid, non-NaN, non-null Date
   reading `21 января 1970`, so epoch-seconds from the backend would render a confident wrong date on
