@@ -215,7 +215,73 @@ that can be red.
   which is an adapter test, not an acceptance one, and which asserts the pre-story text
   the provider still composes. That test is 2.1's to move, not this scenario's to
   reinterpret as its acceptance surface. Covered by `red-usecase` / `green-usecase`.
-- [ ] design
+- [x] design — Option A, recorded by revising the existing ADR
+  `decisions/prompt-builder-decision.md` (it already governs 1.1–1.6) rather than opening
+  a second one. All eight hazard groups re-dispatched from scratch; group 3 dismissed as a
+  block (a pure deterministic builder has no shared state, no persistence, no read path).
+  Seventeen GAPs collapsed to seven distinct guards across the seams.
+
+  **The design.** `PromptRequest` gains `volume_pages`, `_plain` gains the
+  ` ({volume_pages} стр.)` clause and so becomes byte-identical to the provider's
+  f-string, and golden `==` lands for all four types (G6), not доклад alone: доклад bare,
+  эссе/сочинение/реферат with `"\n" + BAN_SENTENCE`.
+
+  Two alternatives rejected. Goldening доклад only contradicts G6 and the ADR's own
+  "asserted lossless for every type, not asserted for one and assumed for the rest".
+  Goldening доклад against the volume-less text and letting 2.1 reconcile does not assert
+  the scenario's sentence — "exactly the text the provider composed before this story" —
+  and would leave 2.1 free to drop the page count with nothing going red.
+
+  **The decision the scan forced.** `volume_pages` is `int | None` end to end
+  (`generation_request_dto.py` defaults it to `None`; `Generation.__init__`, the hydration
+  path, applies no range check — only `create` does), and this is the change that makes it
+  *render*. Five of eight groups independently flagged the same hazard: `_plain` emitting
+  `доклад на тему: X (None стр.)` / `(0 стр.)` / `(-3 стр.)` to a billed third-party model.
+  Decided to guard it here rather than defer to 1.6 — 1.3 puts the field on the object, so
+  1.3 owns it. This is what finally puts `PromptBuildError` in the code; the ADR has
+  specified it since 2026-08-01 and `grep` has never found it. **Scope limit**: 1.3 raises
+  it and does not map it at the call site. That mapping is G5's, and `build_prompt` still
+  has no caller until 2.1.
+
+  **Guards `red-usecase` must carry**, beyond the four goldens:
+  - **G3** — `volume_pages` `None` / `0` / negative / above `MAX_VOLUME_PAGES` →
+    `PromptBuildError`, asserted for a `_plain` type, not only for реферат. Subsumes the
+    injection hazard group 5 raised on the same field: an enforced `int` cannot carry a
+    newline, so no forged instruction line is reachable through it.
+  - **G9** — `build_prompt(r) == build_prompt(r)` and `r` unmutated, all four types. A
+    golden asserts the first call only, so a builder that memoized into a mutated buffer,
+    or normalized `document_type` in place, passes every golden while the retry's second
+    attempt sends a different string than its first.
+  - **G14** — the provider and the domain agree, asserted between the two **live
+    composers** rather than two hand-typed literals. This is the sharpest finding of the
+    scan (four groups reached it independently): until 2.1 there are two independently
+    editable definitions of the same text — `_plain` and `gigachat_provider.py:113-116` —
+    each pinned by its own golden, so either can be edited alone with nothing red and this
+    scenario's whole claim dies silently.
+  - **G15** — `_plain`'s fixed overhead in UTF-8 bytes against a named constant. G10
+    covers `_referat`, the one template this scenario does not change.
+  - **G16** — `PromptRequest.__init__`'s accepted parameter set is exactly the three
+    names. Its narrowness is the entire reason the "method on `Generation`" option was
+    rejected, and adding `owner_id` today turns no test red. 1.6 grows the field set
+    again, so the ratchet has to exist before then.
+  - **G13** — restated as per-type, matching G6's scope. This scenario goldens `на тему:`
+    and `стр.` for the first time, and three of the five homoglyph-bearing characters
+    appear in those two fragments.
+
+  **Corrected in the ADR**, because a 1.3 author reading it would have been misled into
+  reverting the ban: the Edge Cases row promising эссе/сочинение goldens byte-identical to
+  the pre-change f-string (false since the 2026-08-04 ban widening — and the cheapest fix
+  for the resulting red, adding them to `_BAN_DEFERRED`, silently unbans half the types
+  that need it); the Rejected/Chosen rows still placing the ban inside `_referat`; and the
+  ADR's `PromptRequest` bullet, which now names which scenario each field arrives with.
+  `_plain`'s docstring carries a third copy of the same stale claim — that one is a source
+  change and belongs to `green-usecase`.
+
+  **Routed elsewhere, not folded in**: G17 (the import-time `_TEMPLATES` completeness
+  check is a bare `assert`, which `python -O` strips, so the fifth-type guard holds by
+  accident of interpreter invocation) → **1.4**, whose sentence it is. Log disclosure of
+  `topic` through the error path → Security 2.1 / 2.2, already recorded. Migration
+  `d0e1f2a3b4c5`'s unfiltered bulk rewrite still has no owning scenario and needs a task.
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery

@@ -3,8 +3,42 @@
 **Date**: 2026-08-01 (revised 2026-08-02 after the scenario 1.1 design-preview hazard
 scan; revised again 2026-08-03 after the scenario 1.2 scan added G10–G13, widened G5 and
 recorded six further out-of-diff findings; corrected 2026-08-04 after the review passes
-over that revision — see "Corrections" below)
+over that revision — see "Corrections" below; revised again 2026-08-04 after the scenario
+1.3 scan added G14–G17, gave G3 and G9 an owner, and corrected three claims the ban's
+implementation had made stale — see "Revision (scenario 1.3)")
 **Scenarios**: 1.1–1.6, 2.1
+
+## Revision (scenario 1.3, 2026-08-04)
+
+Scenario 1.3 is the golden `==` on the built prompt, and drafting it surfaced that three
+statements in this file describe a design that no longer matches the code. All eight
+hazard groups were re-dispatched from scratch against the 1.3 design (group 3 dismissed as
+a block — a pure deterministic builder has no shared state, no persistence and no read
+path); seventeen GAPs collapsed to seven distinct guards across the seams.
+
+| Claim as written before this revision | What is actually true |
+|---|---|
+| Edge Cases: "эссе / сочинение — rendered through the same pre-change f-string today, so each gets its own golden `==` too" | False since the 2026-08-04 ban widening in the Corrections section directly above. эссе and сочинение now carry the ban, so their goldens are the pre-change text **plus** `"\n" + BAN_SENTENCE`. Only доклад is byte-identical, and only because `_BAN_DEFERRED` freezes it. A 1.3 author who trusted this row would have pinned the wrong string, found it red, and "fixed" it by widening `_BAN_DEFERRED` — silently reverting the ban for two of the four types. |
+| Rejected table / "Chosen": the ban lives inside `_referat` (Option A) | The ban ships in `build_prompt`, gated by `_requires_ban` over the derived set (commit `f5ae0842`). Option A's rejection of a central append rested on "it would redden 1.3's доклад golden", which the Corrections section above had already found false. Per-template emission was the weaker option once the ban applied to all four types: it re-creates the hand-maintained list one level down, since whoever adds a fifth type writes a fresh template function and must remember the ban line inside it. |
+| `_plain`'s docstring: "kept as-is so that the goldens for доклад/эссе/сочинение land against the pre-refactor text" | Same stale claim, second copy, in the source file rather than here. Two of its three types now differ from the pre-refactor text by one line. |
+
+Two guards that had no owning scenario now have one, because 1.3 is the scenario that
+makes them writable:
+
+- **G3** (`volume_pages` at `None` / `0` / negative / above `MAX_VOLUME_PAGES` →
+  `PromptBuildError`) belongs to **1.3**. It was unowned, and five of the eight hazard
+  groups independently flagged the same thing: 1.3 is the change that makes the field
+  *render*, so it is the change that makes `доклад на тему: X (None стр.)` reachable. The
+  value is `int | None` the whole way down — `generation_request_dto.py` defaults it to
+  `None`, and `Generation.__init__` (the hydration path) applies no range check, only
+  `create` does. This finally puts `PromptBuildError` in the code; the ADR has specified
+  it since 2026-08-01 and `grep` has never found it.
+  **Scope limit**: 1.3 raises it, and does **not** map it at the call site. That mapping
+  is G5's, and `build_prompt` has no caller until 2.1.
+- **G9** (determinism and no mutation) belongs to **1.3**. Also unowned. A golden asserts
+  the first call only, so a builder that memoized into a mutated buffer, or that
+  normalized `document_type` in place, passes every golden while the retry's second
+  attempt sends a different string than the first.
 
 ## Corrections (2026-08-04)
 
@@ -49,7 +83,11 @@ deterministic, so purity survives.
 - `PromptRequest` — new value object carrying only `document_type`, `topic`,
   `volume_pages`, `requirements`, `extra_wishes`. Deliberately not the `Generation`
   entity: `owner_id`, `content` and `error_message` are structurally unreachable from a
-  template rather than merely unused by today's templates.
+  template rather than merely unused by today's templates. The fields arrive with the
+  scenarios that read them — `document_type`/`topic` at 1.1, `volume_pages` at **1.3**
+  (it is what makes `_plain` byte-identical to the provider's f-string), and
+  `requirements`/`extra_wishes` at 1.6. G16 is the ratchet that keeps the list from
+  growing past this one.
 - `build_prompt(request)` — pure, stateless, no clock, no I/O. NFC-normalizes
   `document_type` before the lookup, because `Generation.__init__` (the storage
   hydration path) does not normalize.
@@ -123,7 +161,7 @@ below is the guard that closes it.
 | User text contains the delimiter token | User text is NFC-normalized first, then the token is stripped **to fixpoint** — one pass can splice a fresh occurrence out of the surrounding text. Asserted at maximum field lengths, not only on short fixtures. |
 | A fifth document type is added without a template | Import-time assertion fails at boot, plus a test on the same equality. Never a worker failure. |
 | доклад | Byte-identical to the string `GigaChatProvider` composed before this story, pinned by a golden `==` test — story 1 is being finished elsewhere against that exact output. |
-| эссе / сочинение | Rendered through the same pre-change f-string today, so each gets its own golden `==` too. The refactor is asserted lossless for every type, not asserted for one and assumed for the rest. |
+| эссе / сочинение | **Corrected 2026-08-04 (1.3).** Each gets its own golden `==` — the refactor is asserted lossless for every type, not asserted for one and assumed for the rest — but the expected text is the pre-change f-string **plus** `"\n" + BAN_SENTENCE`, not the pre-change f-string alone. They route to `_plain` and they are in `TYPES_REQUIRING_SOURCE_BAN`; only доклад is byte-identical, and only for as long as `_BAN_DEFERRED` holds it. Writing these goldens against the bare pre-change text makes them red on arrival, and the cheapest-looking fix — adding эссе and сочинение to `_BAN_DEFERRED` — silently reverts the ban for half the types that need it. |
 
 ## Forced Guards
 
@@ -147,7 +185,11 @@ block, groups 1/3/4/5/6/7 fired).
 | G10 | **Restated 2026-08-04** — the 2026-08-03 wording asserted at `requirements`/`extra_wishes` caps, which `PromptRequest` does not carry, so it was unrunnable and would have been quietly downgraded to something vacuous. As it stands now: assert the реферат template's **fixed overhead** — the built prompt's length with `topic` empty — against a named constant, in `len(...encode("utf-8"))` bytes. The unit is explicit because the template is Cyrillic and a code-point bound and a byte bound differ by ~2× on exactly this text. This is writable against today's two-field `PromptRequest`, and it is the half that actually guards the hazard: adding a sixth sentence moves the fixed overhead and turns the assertion red, whether or not the user's fields are at their caps. The at-caps composed-prompt assertion is the **other** half and belongs to whichever scenario adds `requirements`/`extra_wishes` to `PromptRequest` (1.6) — recorded there rather than presupposed here. |
 | G11 | The ban is emitted **after every user-interpolated field** in the built prompt. Asserted on position, not presence: a prompt that contains the ban sentence while a hostile `topic` preceding it countermands the ban satisfies the scenario's own substring assertion and has still failed. Neither G1 (delimiter token) nor G2 (length) would go red on it, and scenario 1.2 is the scenario that chooses the ban's position, so the ordering guard has no other owner. |
 | G12 | **Restated 2026-08-04** — the earlier wording said "a declared set" without declaring one, which relocated the fail-open instead of closing it: a hand-maintained list is forgotten by the same developer who forgets the ban. As it stands now: assert the ban over `TYPES_REQUIRING_SOURCE_BAN - _BAN_DEFERRED`, where the first **is** `SUPPORTED_DOCUMENT_TYPES` (an equality, so a fifth type joins it with no human step) and the second is the story-1 freeze. A fifth long-form type therefore arrives already inside the asserted set and goes red until its template carries the ban. Paired with G6's доклад golden, which goes red if `_BAN_DEFERRED` is emptied before story 1 lands. |
-| G13 | Every alphabetic character in the built prompt is Cyrillic (`unicodedata.name(ch)` starts with `CYRILLIC`). **Rationale corrected 2026-08-04**: the earlier claim that список/литературы/источники are spelled "entirely" from homoglyph-bearing characters is false — `п`, `и`, `к`, `л`, `ы`, `ч`, `н` have no Latin lookalike. The real hazard is narrower and still real: `с`, `о`, `р`, `а`, `е` **do** have identical Latin glyphs, and one of them mistyped inside `список` or `источники` renders the same, ships a corrupted instruction, and passes a hand-typed expected literal that carries the same mistake. Because only *some* characters are substitutable, a presence check on a subword is **not** an adequate substitute — which is precisely what the wrong rationale would have licensed. Only the character-class assertion over the whole string catches it. |
+| G14 | The provider and the domain agree on the prompt, asserted between the two **live composers** rather than between two hand-typed literals: drive `GigaChatProvider.generate` and assert the posted `content` equals `build_prompt(...)` built from the same `Generation`. Until 2.1 substitutes one for the other there are two independently-editable definitions of the same text — `_plain` and the f-string at `gigachat_provider.py:113-116` — each pinned by its own golden, so **either can be edited alone with nothing red** and this scenario's whole claim ("unchanged by the move") dies silently. Four hazard groups reached this from different directions. Golden-vs-golden cannot force it; only an assertion whose two sides are the two composers can. |
+| G15 | `_plain`'s fixed overhead in UTF-8 bytes against a named constant, in the same terms G10 uses for `_referat`. G10 covers the one template 1.3 does **not** change; this scenario adds the ` ({volume_pages} стр.)` clause to the other three, and nothing currently bounds their length. |
+| G16 | `PromptRequest.__init__`'s accepted parameter set is exactly `(document_type, topic, volume_pages)` — inspected, not implied — and a `Generation`'s `owner_id`, `content`, `error_message`, `id`, `status` and `version` cannot reach it. The narrowness of this object is the entire reason the "method on `Generation`" option was rejected, and adding `owner_id` to it today turns no test red. The field set grows again at 1.6, so the ratchet must exist before then, not after. |
+| G17 | The `_TEMPLATES` completeness check fails at boot as a **raised, named exception**, not a bare `assert`. `python -O` / `PYTHONOPTIMIZE` strips `assert` statements, so the guard that makes a fifth type a build failure instead of a worker failure currently holds by accident of how the interpreter is invoked. **Owner: 1.4** — "every supported document type yields a prompt" is that scenario's sentence. |
+| G13 | **Scope restated 2026-08-04 (1.3)**: asserted per type over every built prompt in `SUPPORTED_DOCUMENT_TYPES`, matching G6's scope rather than the ban sentence alone. 1.3 goldens `на тему:` and `стр.` for the first time, and `с`, `о`, `р`, `а`, `е` — three of which appear in those two fragments — are exactly the homoglyph-bearing characters the rationale below names. Every alphabetic character in the built prompt is Cyrillic (`unicodedata.name(ch)` starts with `CYRILLIC`). **Rationale corrected 2026-08-04**: the earlier claim that список/литературы/источники are spelled "entirely" from homoglyph-bearing characters is false — `п`, `и`, `к`, `л`, `ы`, `ч`, `н` have no Latin lookalike. The real hazard is narrower and still real: `с`, `о`, `р`, `а`, `е` **do** have identical Latin glyphs, and one of them mistyped inside `список` or `источники` renders the same, ships a corrupted instruction, and passes a hand-typed expected literal that carries the same mistake. Because only *some* characters are substitutable, a presence check on a subword is **not** an adequate substitute — which is precisely what the wrong rationale would have licensed. Only the character-class assertion over the whole string catches it. |
 
 ## Out-of-Diff Findings
 
