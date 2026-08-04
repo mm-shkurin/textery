@@ -58,3 +58,28 @@ def a_generated_document(
         title="Влияние климата на урожайность",
         generation_id=generation_id,
     )
+
+
+def a_usecase(mocker, spec, returns=None):
+    """An autospecced double for `spec`, with `execute` pre-stubbed to `returns`.
+
+    Autospec rather than a bare `Mock()`: a free-form mock accepts any keyword, so
+    a route that renamed or dropped an argument still satisfies
+    `execute.assert_awaited_once_with(...)` and fails only in production wiring --
+    the assertion checks the test's own spelling against itself. Going through this
+    factory makes that structural instead of a discipline every call site has to
+    remember and re-justify in a comment.
+
+    `spec` stays a parameter rather than being pinned to one usecase so the rest of
+    this directory -- where the doubles are still bare `Mock()` + `AsyncMock` --
+    can move onto it a file at a time.
+
+    `execute` arrives an `AsyncMock` because autospec follows the real signature. A
+    test that needs the usecase to raise sets `.execute.side_effect` on the returned
+    double; the stubbed return value is ignored once it does. Unannotated on
+    purpose: no module in this backend types `mocker`, and the only static type the
+    return has is `Any`.
+    """
+    usecase = mocker.create_autospec(spec, instance=True)
+    usecase.execute.return_value = returns
+    return usecase

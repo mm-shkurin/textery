@@ -1,5 +1,5 @@
 import pytest
-from document_router_fixtures import a_document
+from document_router_fixtures import a_document, a_usecase
 
 from document.save_document import SaveDocument
 from document.title_update import TitleUpdate
@@ -52,11 +52,7 @@ class TestSaveDocumentTitleIntent:
         landing into a candidate mass wipe.
         """
         document = a_document(owner_id)
-        # Autospecced against the real SaveDocument, not a bare Mock: a free-form
-        # mock accepts any keyword, so a route that renamed or dropped `title`
-        # would still satisfy assert_awaited_once_with and fail only in production.
-        usecase = mocker.create_autospec(SaveDocument, instance=True)
-        usecase.execute.return_value = document
+        usecase = a_usecase(mocker, SaveDocument, returns=document)
 
         async with save_client(usecase) as client:
             response = await client.put(
@@ -84,8 +80,7 @@ class TestSaveDocumentTitleIntent:
         that compared `value` alone would pass under today's route.
         """
         document = a_document(owner_id)
-        usecase = mocker.create_autospec(SaveDocument, instance=True)
-        usecase.execute.return_value = document
+        usecase = a_usecase(mocker, SaveDocument, returns=document)
 
         async with save_client(usecase) as client:
             response = await client.put(
@@ -110,8 +105,7 @@ class TestSaveDocumentTitleIntent:
         three states are decided in the one place that can tell them apart.
         """
         document = a_document(owner_id)
-        usecase = mocker.create_autospec(SaveDocument, instance=True)
-        usecase.execute.return_value = document
+        usecase = a_usecase(mocker, SaveDocument, returns=document)
 
         async with save_client(usecase) as client:
             response = await client.put(

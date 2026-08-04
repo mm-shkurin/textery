@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from document_router_fixtures import a_document
+from document_router_fixtures import a_document, a_usecase
 
 from document.save_document import SaveDocument
 from shared.exceptions import NotFoundException
@@ -35,7 +35,7 @@ class TestSaveDocumentNotFound:
         self, mocker, save_client
     ):
         document_id = uuid4()
-        usecase = mocker.create_autospec(SaveDocument, instance=True)
+        usecase = a_usecase(mocker, SaveDocument)
         usecase.execute.side_effect = NotFoundException(f"document {document_id} not found")
 
         async with save_client(usecase) as client:
@@ -61,8 +61,7 @@ class TestSaveDocumentNotFound:
         the assertion above while proving nothing about `NotFoundException`.
         """
         document = a_document(uuid4(), content="<p>saved</p>", version=2)
-        usecase = mocker.create_autospec(SaveDocument, instance=True)
-        usecase.execute.return_value = document
+        usecase = a_usecase(mocker, SaveDocument, returns=document)
 
         async with save_client(usecase) as client:
             response = await client.put(

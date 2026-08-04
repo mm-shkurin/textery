@@ -1,7 +1,12 @@
 from uuid import uuid4
 
 import pytest
-from document_router_fixtures import CREATED_AT_ON_THE_WIRE, a_document, a_generated_document
+from document_router_fixtures import (
+    CREATED_AT_ON_THE_WIRE,
+    a_document,
+    a_generated_document,
+    a_usecase,
+)
 
 from document.save_document import SaveDocument
 from document.title_update import TitleUpdate
@@ -40,8 +45,7 @@ class TestSaveDocumentResponseShape:
         document = a_generated_document(
             owner_id, generation_id, content="<p>отредактировано</p>", version=2
         )
-        usecase = mocker.create_autospec(SaveDocument, instance=True)
-        usecase.execute.return_value = document
+        usecase = a_usecase(mocker, SaveDocument, returns=document)
 
         async with save_client(usecase) as client:
             response = await client.put(
@@ -68,11 +72,7 @@ class TestSaveDocumentResponseShape:
     ):
         generation_id = uuid4()
         document = a_generated_document(owner_id, generation_id, version=2)
-        # Autospecced against the real SaveDocument, not a bare AsyncMock: a route
-        # that invented an argument name, or dropped one, would be accepted by a
-        # free-form mock and only fail in production wiring.
-        usecase = mocker.create_autospec(SaveDocument, instance=True)
-        usecase.execute.return_value = document
+        usecase = a_usecase(mocker, SaveDocument, returns=document)
 
         async with save_client(usecase) as client:
             response = await client.put(
@@ -97,8 +97,7 @@ class TestSaveDocumentRoute:
     @pytest.mark.skip(reason=_RED_TITLE_INTENT)
     async def test_should_return_200_with_the_stored_document(self, mocker, save_client, owner_id):
         document = a_document(owner_id, content="<p>saved</p>", version=2)
-        usecase = mocker.create_autospec(SaveDocument, instance=True)
-        usecase.execute.return_value = document
+        usecase = a_usecase(mocker, SaveDocument, returns=document)
 
         async with save_client(usecase) as client:
             response = await client.put(
@@ -138,8 +137,7 @@ class TestSaveDocumentRoute:
     ):
         # Scenario 5.4: only content and version are ever applied.
         document = a_document(owner_id, version=2)
-        usecase = mocker.create_autospec(SaveDocument, instance=True)
-        usecase.execute.return_value = document
+        usecase = a_usecase(mocker, SaveDocument, returns=document)
 
         async with save_client(usecase) as client:
             response = await client.put(
