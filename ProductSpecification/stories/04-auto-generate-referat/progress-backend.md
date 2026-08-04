@@ -199,7 +199,22 @@ that can be red.
 - [S] green-acceptance — nothing to turn green; see `red-acceptance` above.
 
 ### Scenario 1.3: A доклад prompt is unchanged by the move into the domain
-- [ ] red-acceptance
+- [S] red-acceptance — no acceptance surface, re-checked rather than inherited from 1.1
+  and 1.2. This scenario is a golden `==` on the built prompt, which is the *least*
+  black-box-observable assertion in the story: an equality on a string no endpoint
+  returns and no log may contain (Security 2.1). Both halves re-verified today —
+  `grep -rln prompt acceptance/` still returns only three *frontend* statement files
+  (`chat_workspace_statements.py`, `composer_assertions.py`,
+  `generate_flow_statements.py`, all UI placeholder copy, not the generation prompt),
+  and `acceptance/conftest.py`'s fixture list still has no provider stub, so the
+  outbound side is unobservable too.
+  One distinction worth stating, because it is the tempting shortcut here: this
+  scenario's golden text *is* reachable from a test — but through
+  `GigaChatProvider`'s own f-string, in
+  `backend/adapters/generation_provider/tests/provider/test_gigachat_provider_generate.py:51`,
+  which is an adapter test, not an acceptance one, and which asserts the pre-story text
+  the provider still composes. That test is 2.1's to move, not this scenario's to
+  reinterpret as its acceptance surface. Covered by `red-usecase` / `green-usecase`.
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase
