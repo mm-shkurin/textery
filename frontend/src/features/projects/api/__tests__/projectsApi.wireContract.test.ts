@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { listProjects } from '../projectsApi'
+import { listProjects, MISSING_UPDATED_AT_MESSAGE } from '../projectsApi'
 import { clearSession, saveSession } from '../../../auth/utils/authSession'
 import { PROJECT_WIRE_WITHOUT_UPDATED_AT, stubFetchJson } from './projectsWireFixtures'
 
@@ -25,10 +25,14 @@ import { PROJECT_WIRE_WITHOUT_UPDATED_AT, stubFetchJson } from './projectsWireFi
 // that "helpfully" read the camelCase key would resolve, and that is a defect — guessing at an
 // undeclared contract is how a client stops noticing that the server changed.
 //
-// The expected message is a literal here only because RED may not touch production. GREEN exports
-// it from `projectsApi.ts` (as `INVALID_VERSION_MESSAGE` is exported from `documentApi.ts`) and
-// the refactor that follows replaces this literal with that import — one definition, no drift.
-const EXPECTED_MESSAGE = 'Сервер вернул проект без даты изменения.'
+// The expected message is IMPORTED from production, not re-declared here (same as
+// `documentApi.versionFailClosed.test.ts` imports `INVALID_VERSION_MESSAGE`): one definition, no
+// drift when the wording is edited. This deliberately stops pinning the exact Russian STRING — an
+// edit to the copy no longer reddens this test. What the assertion still pins is the thing the
+// test is about: that the rejection carries the mapper's OWN guard message and not `send`'s
+// 'Не удалось загрузить проекты' transport fallback, which is a separate literal in a separate
+// module. Copy review is not this test's job; telling a contract guard apart from a transport
+// failure is.
 
 type Settled = { rejected: false; value: unknown } | { rejected: true; error: unknown }
 
@@ -71,6 +75,6 @@ describe('projectsApi wire contract', () => {
     // re-asserted here.
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/projects')
-    expect(settled).toEqual({ rejected: true, error: new Error(EXPECTED_MESSAGE) })
+    expect(settled).toEqual({ rejected: true, error: new Error(MISSING_UPDATED_AT_MESSAGE) })
   })
 })
