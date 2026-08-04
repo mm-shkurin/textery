@@ -53,7 +53,26 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   test. The old `["version"] == 2` survived that mutation, because `version` is on both DTOs.
 - [S] green-adapter rest (coverage: PUT response asserts version only, not shape) — no
   implementation needed; regression guard over already-correct code, no production file changed.
-- [~] red-adapter rest (premortem: from-generation's refusal branches are pinned zero times —
+- [~] red-adapter rest (premortem: PUT's title-erasure path is unreachable from HTTP. The route
+  forwards `title=request.title` raw; `SaveDocumentRequestDto.title` is `str | None = None`, so an
+  omitted title and an explicit wire `"title": null` both arrive as `None` and both map to
+  `TitleUpdate.preserve()`. `SaveDocument`'s own docstring forbids exactly this, and
+  `test_save_document_title.py` says the absent-vs-null split "is the rest adapter's
+  (`model_fields_set`) and is covered by its own steps" — `grep -rn model_fields_set
+  backend/adapters/rest/` returns NOTHING. `TitleUpdate.clear()` is constructed only by tests; no
+  route can produce it. A user who clears a title keeps the old one in history and in the export
+  filename, with green domain and usecase suites. This one is a REAL red, not a regression guard.
+  Also: PUT has no `side_effect` test at all — a `NotFoundException` on the write path (deleted or
+  foreign document, still-open editor tab) is unasserted, and autosave treats 500 as retryable.)
+- [ ] green-adapter rest (premortem: title absent-vs-null via `model_fields_set`; PUT 404)
+- [ ] red-adapter rest (agent-review: PUT's whole-body guard seeds the fixture with the SAME
+  content string the request sends, so the `content` key cannot distinguish the stored document
+  from the request echoed back. Verified by mutation: adding `dto.content = request.content` to
+  the route leaves 91 passed. `DocumentResponseDto.from_domain`'s docstring claims scenario 7.2 is
+  structural — "the response cannot show unsanitized content, because it never has access to it" —
+  and that is the invariant the mutation breaks. Fix: request `<p>raw</p>`, stored `<p>sanitized</p>`.)
+- [ ] green-adapter rest (agent-review: the content key must prove sanitization, not echo)
+- [ ] red-adapter rest (premortem: from-generation's refusal branches are pinned zero times —
   `NotFoundException` → 404, `ValidationException(GENERATION_NOT_COMPLETED)` → 422 with the
   `error_code` the client branches on. `useGeneration` calls this from a poll loop, so a 500
   where a 422 was expected is a retry storm rather than a message. Also: `TestBearerIsRequired`

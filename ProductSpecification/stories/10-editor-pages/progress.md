@@ -48,6 +48,40 @@ why `progress-backend.md`'s first scenarios are contract work with nothing on sc
   produce identical artifacts, and this one was skipped. If a scenario below turns out to
   need a guard the spec named but the tests never pinned, this is why.
 
+## Orchestration lesson (2026-08-04)
+
+`/refactor` and the two pre-commit review passes are documented as safe to run
+concurrently because the passes read the *immutable behavior commit*. That is not what
+they actually do: both `agent-review` and `premortem` verify their findings by **mutation
+testing** — editing production files in the working tree, running the suite, and reverting.
+During the `red-adapter rest (PUT)` unit that collided with `/refactor` mid-edit; `/refactor`
+correctly detected a foreign process rewriting its files and stopped, and its in-flight work
+was reverted by the other agent's `git checkout`. Only finding 1 survived (committed
+separately as `0bfae4dd`).
+
+**Run the review passes serially against `/refactor` in this repo**, or give them a
+worktree. The mutation testing is worth keeping — it is what turned "the test passes" into
+"the test fails when I break the thing it guards", and it caught two findings a read-only
+pass would have missed.
+
+## Refactor findings raised but not applied (2026-08-04)
+
+Both were accepted on merit by `/refactor` and lost to the collision above:
+
+- **A shared usecase-double factory.** `Mock()` + `AsyncMock` repeats ~25 times across
+  `backend/adapters/rest/tests/router/document/`; only 4 sites use `create_autospec`. Every
+  `execute.assert_awaited_once_with(...)` against a bare `Mock` checks the test's own spelling
+  against itself — a free-form mock accepts any keyword, so a renamed argument satisfies the
+  assertion and fails only in production wiring. `a_usecase(mocker, spec, returns=None)` in
+  `document_router_fixtures.py` makes autospec structural instead of per-call discipline.
+  Caveat for whoever does it: `test_document_router_auth_and_types.py:71` uses `Mock()` as a
+  *token service*, not a usecase — that one must stay bare.
+- **`test_document_list_router.py:11,21,48`** re-declares the `2026-07-17T12:00:00Z` literal and
+  its matching `datetime` locally instead of importing `CREATED_AT` / `CREATED_AT_ON_THE_WIRE`.
+  That module exists to keep the pair matched, and for this file the invariant is unenforced.
+  Import the literal — do NOT derive it: `CREATED_AT.isoformat()` yields `+00:00`, pydantic emits
+  `Z`, so a derived expectation is wrong rather than merely tautological.
+
 ## Notes for later scenarios
 
 - Pagination is measured in a real browser. jsdom reports every element as zero-height, so
