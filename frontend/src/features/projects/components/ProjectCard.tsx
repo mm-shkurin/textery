@@ -86,12 +86,29 @@ export function ProjectCard({ project }: ProjectCardProps) {
 // `formatDate`, which has shipped that placeholder for the same condition since before this screen.
 const UNUSABLE_DATE = '—'
 
+// A backend sentinel (`0001-01-01T00:00:00Z`, `9999-12-31T23:59:59Z` — what LocalDate.MIN,
+// datetime.min and DateTime.MaxValue serialize to when a nullable column is mapped through a
+// non-nullable field) arrives as a perfectly shaped, perfectly parseable ISO string. Neither shape
+// guard above can see it; only its VALUE is wrong. So the year is bounded.
+//
+// The bounds are fixed constants, deliberately generous, and NOT derived from the current clock.
+// `new Date().getFullYear()` as the ceiling would blank the date of a project the user edited
+// seconds ago whenever their clock runs minutes behind the server's, and would do it to every
+// project on every 31 December evening. The floor sits strictly below 1970 because
+// `1970-01-01T00:00:00Z` is a genuinely renderable instant whose `getFullYear()` is 1969 in any
+// negative-offset zone — a floor AT 1970 would blank a real date.
+const EARLIEST_PLAUSIBLE_YEAR = 1900
+const LATEST_PLAUSIBLE_YEAR = 2200
+
 function formatCardDate(iso: string): string {
   if (typeof iso !== 'string') return UNUSABLE_DATE
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return UNUSABLE_DATE
+  const parsedYear = date.getFullYear()
+  if (parsedYear < EARLIEST_PLAUSIBLE_YEAR || parsedYear > LATEST_PLAUSIBLE_YEAR) {
+    return UNUSABLE_DATE
+  }
   const dayAndMonth = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
-  const year = date.getFullYear()
-  const showYear = year !== new Date().getFullYear()
-  return showYear ? `${dayAndMonth} ${year}` : dayAndMonth
+  const showYear = parsedYear !== new Date().getFullYear()
+  return showYear ? `${dayAndMonth} ${parsedYear}` : dayAndMonth
 }

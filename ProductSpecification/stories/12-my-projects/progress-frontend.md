@@ -81,12 +81,17 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   `±infinity`). The 9999 arm is the worse one — 1.4's «Недавние проекты» rail sorts on `updated_at`, so
   one sentinel row takes the top slot permanently and the user's real newest work never surfaces.
   Wants a bounded plausible year, not another shape check
-- [~] green-frontend (a sentinel timestamp does not render as a real date) — two `it.skip` in
+- [x] green-frontend (a sentinel timestamp does not render as a real date) — shipped as
+  `EARLIEST_PLAUSIBLE_YEAR = 1900` / `LATEST_PLAUSIBLE_YEAR = 2200`, both fixed constants.
+  The ceiling is deliberately NOT `new Date().getFullYear()`: both review passes on 9efff61f
+  showed a clock-anchored ceiling blanks the date on a project the user just edited whenever the
+  client clock trails the server, and on every 31 December evening. The floor sits below 1970
+  because `EPOCH_DATE_PROJECT` reads 1969 in any negative-offset zone. Original note follows: two `it.skip` in
   `ProjectsPage.cardDateBounds.test.tsx`; the fix is a bounded plausible-year branch in
   `formatCardDate`, not another shape check. The lower bound must sit at or below 1970 —
   `EPOCH_DATE_PROJECT` pins `1 января 1970` as a genuinely renderable date. Both arms must go green
   from one change: a lower-bound-only fix leaves `1 января 10000` rendering
-- [ ] red-frontend-api (the mapper does not silently produce an item with an absent updatedAt) —
+- [~] red-frontend-api (the mapper does not silently produce an item with an absent updatedAt) —
   premortem on 4abe463e. Before this commit a broken wire contract rendered `Invalid Date NaN` on every
   card: wrong, but loud and diagnosable from one screenshot. It now renders `—` on every card, which
   looks intentional and could sit in production unnoticed. `projects_schemas.yaml` declares

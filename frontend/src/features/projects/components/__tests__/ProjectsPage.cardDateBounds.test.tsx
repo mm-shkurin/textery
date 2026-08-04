@@ -31,7 +31,7 @@ describe('ProjectsPage card date for a project whose updatedAt is a backend sent
   // Anchored `/^—$/` and not `toHaveTextContent('—')`, for the reason the sibling file states: the
   // latter is a substring match and would pass on '— 1 января 1'.
   // RED: failed with `Expected /^—$/, Received: "1 января 1"`.
-  it.skip('renders a placeholder when updatedAt is the min-value sentinel, never year 1', async () => {
+  it('renders a placeholder when updatedAt is the min-value sentinel, never year 1', async () => {
     mockFeed([MIN_SENTINEL_DATE_PROJECT], 1)
 
     render(<ProjectsPage />)
@@ -59,7 +59,7 @@ describe('ProjectsPage card date for a project whose updatedAt is a backend sent
   // `updated_at` descending, so one row carrying this sentinel pins itself to the top slot forever
   // and the user's real newest work never surfaces.
   // RED: failed with `Expected /^—$/, Received: "1 января 10000"`.
-  it.skip('renders a placeholder when updatedAt is the max-value sentinel, never year 10000', async () => {
+  it('renders a placeholder when updatedAt is the max-value sentinel, never year 10000', async () => {
     mockFeed([MAX_SENTINEL_DATE_PROJECT], 1)
 
     render(<ProjectsPage />)
