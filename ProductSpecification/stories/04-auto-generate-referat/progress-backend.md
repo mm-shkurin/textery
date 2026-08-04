@@ -465,13 +465,50 @@ that can be red.
     `generation_id`/`status`/`created_at` plus echoed request fields, and Security 2.1
     requires the prompt stay out of even the log. This scenario's `red-acceptance` is `[S]`
     for the same reason, so there is no disabled test to read a shape from.
-- [ ] red-adapter generation_provider (G14: the two live composers agree on the доклад
-  prompt) — drive `GigaChatProvider.generate` and assert the posted `content` equals
-  `build_prompt(...)` built from the same `Generation`, not against a hand-typed literal.
-  Home is `backend/adapters/generation_provider/tests/`: a domain or usecase test driving
-  the provider inverts the dependency rule, and would resolve at runtime anyway because
-  `backend/pyproject.toml` puts every layer root on one `pythonpath` — so the violation
-  would land silently.
+- [x] red-adapter generation_provider (G14: the two live composers agree on the доклад
+  prompt) — `test_gigachat_provider_prompt_agreement.py` (85 lines). Drives
+  `GigaChatProvider.generate` and asserts the posted `content` equals `build_prompt(...)`
+  from the same `Generation`; both sides are live composers, no hand-typed literal. Home
+  is the adapter: a domain or usecase test driving the provider inverts the dependency
+  rule, and would resolve at runtime anyway because `backend/pyproject.toml` puts every
+  layer root on one `pythonpath` — so the violation would land silently. 27 passed in the
+  adapter suite, 276 across adapter + domain, 772 / 2 skipped across `pytest backend/`.
+
+  **Predicted PASS, actual PASS.** The composers already agree for доклад, so the real
+  red is a mutation red. Three mutations, each restored bit-for-bit: provider alone (extra
+  space after `на тему:`) → `AssertionError`; domain alone (`на тему:` → `по теме:` in
+  `_plain`) → `AssertionError`; and the decisive one — **the provider f-string edited
+  together with its own golden**, which is exactly the edit G14 says is invisible today →
+  `1 failed, 26 passed`, the sole failure being this test. Every pre-existing guard,
+  including the provider's own golden, moved with the mutation and stayed green. The
+  domain side was already somewhat pinned (mutation 2 also reddens `_plain`'s golden); the
+  provider side was the genuinely open one.
+
+  **`/test-review` found the assertion self-destructs at 2.1.** The moment the provider
+  delegates to `build_prompt`, both sides of the `==` become the same call and the
+  comparison is a tautology that passes forever covering nothing — with no test edit to
+  notice. Verified: under a simulated 2.1 provider the agreement assertion goes green.
+  Independence is now asserted by a second method that fails loudly with an instruction to
+  **delete the file**, not to silence the guard — substitution is what makes G14
+  structurally unnecessary, and that is the correct resolution, not a skip marker.
+
+  Three more from the same pass. The доклад scope was riding on a shared
+  `build_generation()` default that four other test files also use — any of them could
+  legitimately retarget it and silently re-scope this assertion into a defect-free red
+  whose cheapest escape is widening `_BAN_DEFERRED`; the scope is now executable
+  (`build_doklad_generation()` asserts the type). The completions call was picked
+  positionally (`_token_call, completions_call = ...`) with nothing pinning that call 2 is
+  the completion; a `posted_completion_messages(client)` fixture now locates it by
+  `COMPLETIONS_URL` and requires exactly one match, so "no completion posted" and "more
+  than one" become named failures. And `messages[0]["content"]` was a shallow index — a
+  prepended system message would give a misleading red, or a false green if it carried the
+  доклад text; the whole `messages` list is now compared in one strict equality.
+
+  **Two findings left for `/refactor`, deliberately**: `test_fake_provider.py:7` holds a
+  verbatim duplicate of `build_generation` that would drift from the доклад scope
+  unnoticed, and `test_gigachat_provider_generate.py:51`'s hand-typed golden is coupled to
+  the fixture's topic/pages. Narrowing that golden would have *reduced* strictness, so
+  `/test-review` correctly declined it.
 - [ ] green-adapter generation_provider (G14) — expected `[S]`: the composers already
   agree for доклад after this scenario's GREEN, so the red is a mutation red (edit either
   composer alone), not a missing-behavior red. Resolve it from what the red actually
