@@ -49,6 +49,20 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   production file changed.
 - [~] red-adapter rest (coverage: PUT response asserts version only, not shape)
 - [ ] green-adapter rest (coverage: PUT response asserts version only, not shape)
+- [ ] red-adapter rest (premortem: from-generation's refusal branches are pinned zero times —
+  `NotFoundException` → 404, `ValidationException(GENERATION_NOT_COMPLETED)` → 422 with the
+  `error_code` the client branches on. `useGeneration` calls this from a poll loop, so a 500
+  where a 422 was expected is a retry storm rather than a message. Also: `TestBearerIsRequired`
+  claims "every document endpoint" and exercises POST /documents only — parametrize it over the
+  write routes rather than adding a fourth near-copy.)
+- [ ] green-adapter rest (premortem: refusal branches + auth on the write routes)
+- [ ] red-adapter db (premortem: the replay is asserted only against a mock that was told the
+  answer. `backend/adapters/db/tests/access/document/` has zero occurrences of `generation_id` —
+  nothing asserts a second `save_new` on a used generation raises `ConflictException`, nor that
+  `find_by_generation_id` returns the winner and `None` for a foreign owner. That translation is
+  what `_recover_existing` rolls back and re-reads on, and a fake raising because the test told
+  it to does not test that Postgres does.)
+- [ ] green-adapter db (premortem: the generation-id uniqueness translation)
 - [ ] green-acceptance
 
 ### Scenario 2.2: Stored page settings round-trip unchanged

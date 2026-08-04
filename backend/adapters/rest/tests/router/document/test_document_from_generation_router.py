@@ -32,8 +32,11 @@ class TestCreateDocumentFromGenerationRoute:
             )
 
         assert response.status_code == 201, f"got {response.status_code}: {response.text}"
-        # Whole-body equality, not key-by-key: this is the only assertion in the
-        # suite that would fail if a key were REMOVED from DocumentResponseDto.
+        # Whole-body equality, not key-by-key: this and the replay test's twin are
+        # what fail if a key is REMOVED from DocumentResponseDto. Verified by
+        # mutation -- deleting title/generation_id from the DTO fails both, because
+        # pydantic's extra="ignore" makes from_domain drop the kwarg silently rather
+        # than raise. Neither is redundant; do not delete one as "covered by the other".
         assert response.json() == {
             "document_id": str(document.id),
             "document_type": "эссе",
