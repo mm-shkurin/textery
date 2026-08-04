@@ -102,9 +102,38 @@ only the design draft could not see the contract.
   the contract's document default `False` instead of forwarding the port's value cannot pass.
   `ProjectKind`/`ProjectStatus` enums deliberately NOT introduced: nothing here constrains the
   value *set*; the fail-closed unknown-status rule is first asserted in the db arm (1.7).
-- [ ] green-usecase (the feed row carries the contract's full shape) — must also patch
+- [~] green-usecase (the feed row carries the contract's full shape) — must also patch
   `ProjectFeedStatements._documents_of`, which builds `ProjectItem(id=uuid4())` and breaks the
   moment the constructor widens (tdd-rules setup-method carve-out).
+  **Review-pass findings on `df9abbdc`, to settle at this step** (both passes returned
+  CONCERNS; surfaced, not auto-fixed):
+  1. *agent-review, high* — the assertion is arguably a tautology. The fake returns the seeded
+     instances and `execute` is a bare `return await …list_feed(...)`, so
+     `asdict(page.items[0]) == _EXPECTED_ROW` reduces to a frozen-dataclass round trip. The
+     green will therefore modify **zero** usecase production files — only the domain VO — which
+     is the `[S]` shape in `tdd-rules.md`. Decide at green: either mark this pair `[S]` and let
+     `red-adapter db` carry the field pressure where the values are actually produced, or keep
+     it as the domain-widening vehicle and say so explicitly.
+  2. *agent-review, medium* — `ProjectItem`'s committed docstring says `kind` is deferred to
+     scenario 1.8 and the other fields to "the scenario that first asserts one". The green makes
+     that docstring false; correct it in the same commit.
+  3. *premortem, credible* — the cheapest green gives the eight new fields **defaults**, so
+     `ProjectItem(id=…)` stays legal and `project_feed_storage.list_feed` keeps emitting hollow
+     rows with every test green. Guard named: a shape statement asserting the field names equal
+     the nine contract names AND every `default`/`default_factory` is `MISSING`
+     (`port_shape_statements.py` already has the reflection idiom).
+  4. *premortem, credible* — `ProjectItemDto.from_domain` returns `cls(id=item.id)`; Pydantic
+     does not object to source fields a DTO ignores, so it keeps compiling and keeps serializing
+     `id` alone after the domain widens. The only test that would notice is 1.1's skipped
+     acceptance test. Guard named: a spec-vs-DTO test comparing `ProjectItemDto.model_fields`
+     against the `required` set of `#/components/schemas/ProjectItem` in `projects_list.yaml`.
+     Belongs to the `red-adapter rest` pair below.
+  5. *premortem, credible* — `reason="RED: …"` skips outlive their green commit in this repo,
+     demonstrably: `test_login_lockout_acceptance.py` has carried one since 2026-07-22 and
+     `test_auto_editor_transition_acceptance.py` since 2026-07-29. This is the only usecase-layer
+     test asserting field pass-through, so a surviving skip loses the whole claim. Guard named: a
+     meta-test over collected items failing on any `RED:` skip outside an allowlist. Out of
+     scope for story 12 — belongs to a task.
 - [ ] red-adapter db (every row field projected from the documents arm) — `title`, `preview`
   (empty content ⇒ `''`), `document_type`, `status`, the two timestamps read from
   `DocumentModel`; `kind` the literal `document`; `retryable` false for every document.
