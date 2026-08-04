@@ -1,13 +1,10 @@
-from datetime import UTC, datetime
 from uuid import UUID
 
 import pytest
+from document_router_fixtures import CREATED_AT, CREATED_AT_ON_THE_WIRE
 
 from document.document import Document
 from document.page_settings import PageSettings
-
-CREATED_AT = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
-CREATED_AT_ON_THE_WIRE = "2026-07-17T12:00:00Z"
 
 # Pinned rather than uuid4(): the expected body must be a literal the route has
 # to produce, not a value read back out of the object the route was handed. With

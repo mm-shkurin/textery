@@ -1,23 +1,4 @@
-from datetime import UTC, datetime
-from uuid import UUID, uuid4
-
-from document.document import Document
-
-CREATED_AT = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
-
-
-def a_document(owner_id: UUID, content: str = "", version: int = 1) -> Document:
-    return Document.reconstitute(
-        id=uuid4(),
-        owner_id=owner_id,
-        document_type="эссе",
-        status="draft",
-        content=content,
-        version=version,
-        idempotency_key="key-1",
-        created_at=CREATED_AT,
-        updated_at=CREATED_AT,
-    )
+from document_router_fixtures import a_document
 
 
 class TestSaveDocumentTitleRoute:

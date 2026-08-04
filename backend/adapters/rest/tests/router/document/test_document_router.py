@@ -1,32 +1,8 @@
-from datetime import UTC, datetime
-from uuid import UUID, uuid4
+from uuid import uuid4
 
-from document.document import Document
+from document_router_fixtures import CREATED_AT_ON_THE_WIRE, a_document
+
 from document.document_creation_result import DocumentCreationResult
-
-CREATED_AT = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
-
-
-def a_document(owner_id: UUID, content: str = "", version: int = 1) -> Document:
-    """A stored document owned by the account the Bearer override resolves to.
-
-    The owner is a parameter, not a module constant read from `conftest`: three
-    conftest modules sit on this suite's import path, so `from conftest import
-    OWNER_ID` binds whichever one landed there first -- possibly a different
-    constant than the fixture the client override actually uses. The generation
-    slice's conftest documents that hazard; this file was doing it anyway.
-    """
-    return Document.reconstitute(
-        id=uuid4(),
-        owner_id=owner_id,
-        document_type="эссе",
-        status="draft",
-        content=content,
-        version=version,
-        idempotency_key="key-1",
-        created_at=CREATED_AT,
-        updated_at=CREATED_AT,
-    )
 
 
 class TestCreateDocumentRoute:
@@ -63,8 +39,8 @@ class TestCreateDocumentRoute:
             "title": None,
             "generation_id": None,
             "version": 1,
-            "created_at": "2026-07-17T12:00:00Z",
-            "updated_at": "2026-07-17T12:00:00Z",
+            "created_at": CREATED_AT_ON_THE_WIRE,
+            "updated_at": CREATED_AT_ON_THE_WIRE,
         }, f"unexpected body {response.json()}"
         usecase.execute.assert_awaited_once_with(
             owner_id=owner_id, document_type="эссе", idempotency_key="key-1"
