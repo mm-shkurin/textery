@@ -5,6 +5,8 @@ from document.document_type import (
     SOCHINENIE,
     SUPPORTED_DOCUMENT_TYPES,
 )
+from generation.generation import MAX_VOLUME_PAGES, MIN_VOLUME_PAGES
+from shared.exceptions import DomainException
 
 # Every supported type requires the ban: the harm (a student submits a document
 # carrying invented sources) does not depend on which type was asked for. Written
@@ -23,6 +25,26 @@ _BAN_DEFERRED = (DOKLAD,)
 # one-marker-per-section contract -- folded into a neighbouring sentence it would
 # still satisfy a substring check while losing the position the guard asserts.
 BAN_SENTENCE = "Не включай список литературы и не ссылайся на источники."
+
+
+# The two refusal messages. They name the offending *field* and never interpolate
+# its *value*: `generate_document.py` interpolates the caught error into the log, so
+# a message quoting the rejected `topic` would put user text in the log through the
+# error path.
+VOLUME_PAGES_ERROR_MESSAGE = "volume_pages is not renderable in a prompt"
+TOPIC_ERROR_MESSAGE = "topic is not renderable in a prompt"
+
+
+class PromptBuildError(DomainException):
+    """A prompt cannot be built from this request, and retrying will not help.
+
+    Derives from the domain base rather than from `ValidationException`: the
+    latter drags in `error_code`/`message` and the REST handler's 422 mapping,
+    which is meaningless on a worker-only `BackgroundTask` path. The base being a
+    domain exception is what lets the call site map every build failure to a
+    terminal `fail()` instead of letting the catch-all retry a value that cannot
+    change on attempt 2.
+    """
 
 
 class PromptRequest:
@@ -47,7 +69,7 @@ def _referat(request: PromptRequest) -> str:
     tests that read one sentence at a time.
     """
     return (
-        f"Напиши реферат на тему: {request.topic}.\n"
+        f"Напиши реферат на тему: {request.topic} ({request.volume_pages} стр.).\n"
         "Во введении обоснуй актуальность темы и сформулируй цель работы.\n"
         "В основной части раскрой разделы по теме.\n"
         "В заключении сформулируй выводы по проделанной работе."
@@ -55,12 +77,15 @@ def _referat(request: PromptRequest) -> str:
 
 
 def _plain(request: PromptRequest) -> str:
-    """The wording GigaChatProvider composes today, minus the volume clause.
+    """The wording GigaChatProvider composes today, volume clause included.
 
-    Kept as-is so that the goldens for доклад/эссе/сочинение (scenario 1.3) land
-    against the pre-refactor text rather than against something invented here.
+    Byte-identical to `gigachat_provider.py`'s f-string, which is what makes the
+    доклад golden a statement about the move rather than about a rewording. эссе
+    and сочинение differ from the pre-refactor text by the ban line alone, which
+    `build_prompt` appends -- they are in `TYPES_REQUIRING_SOURCE_BAN` and outside
+    `_BAN_DEFERRED`.
     """
-    return f"{request.document_type} на тему: {request.topic}"
+    return f"{request.document_type} на тему: {request.topic} ({request.volume_pages} стр.)"
 
 
 _TEMPLATES = {
@@ -79,6 +104,33 @@ def _requires_ban(document_type: str) -> bool:
     return document_type in TYPES_REQUIRING_SOURCE_BAN and document_type not in _BAN_DEFERRED
 
 
+def _is_renderable_volume(volume_pages) -> bool:
+    """`bool` is excluded explicitly: `True` is an `int` and would render as `True стр.`."""
+    if not isinstance(volume_pages, int) or isinstance(volume_pages, bool):
+        return False
+    return MIN_VOLUME_PAGES <= volume_pages <= MAX_VOLUME_PAGES
+
+
+def _is_renderable_topic(topic) -> bool:
+    return isinstance(topic, str) and topic.strip() != ""
+
+
+def _reject_unrenderable_fields(request: PromptRequest) -> None:
+    """Guards both fields before any template sees them.
+
+    Checked here rather than inside `_plain`, which is the only template that
+    interpolates `document_type`: a guard living in one template lets the other
+    keep building from a request no caller should have been allowed to construct,
+    and the hole is silent the day a type gets its own template. Both fields reach
+    here unvalidated because `Generation.__init__` -- the storage hydration path --
+    applies neither the range check nor the required-topic check that `create` does.
+    """
+    if not _is_renderable_volume(request.volume_pages):
+        raise PromptBuildError(VOLUME_PAGES_ERROR_MESSAGE)
+    if not _is_renderable_topic(request.topic):
+        raise PromptBuildError(TOPIC_ERROR_MESSAGE)
+
+
 def build_prompt(request: PromptRequest) -> str:
     """The prompt the model receives, ban included.
 
@@ -87,6 +139,7 @@ def build_prompt(request: PromptRequest) -> str:
     SUPPORTED_DOCUMENT_TYPES and carries the ban with no human step, which is the
     whole point of deriving the scope instead of listing it.
     """
+    _reject_unrenderable_fields(request)
     prompt = _TEMPLATES[request.document_type](request)
     if _requires_ban(request.document_type):
         return f"{prompt}\n{BAN_SENTENCE}"

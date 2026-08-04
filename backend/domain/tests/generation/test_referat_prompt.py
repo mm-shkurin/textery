@@ -422,30 +422,6 @@ class TestAReferatPromptForbidsABibliography:
         )
 
 
-@pytest.mark.skip(
-    reason=(
-        "RED: 52 of 68 fail. Goldens for all four types assert '... (5 стр.)' "
-        "against templates that emit no volume clause -- реферат's golden joined "
-        "them this scenario, because both review passes over 7690851a found that "
-        "GigaChatProvider sends the clause for every type with no branching "
-        "(gigachat_provider.py:113-116) while the new _referat dropped it, making "
-        "реферат the one type that refuses to build on a bad volume_pages and then "
-        "never states the good one. The determinism guard fails on all four for the "
-        "same reason now that it pins both calls to the golden; the new volume guard "
-        "fails on all 8 of its type x digit-width cases; the реферат overhead is "
-        "445 bytes against a declared 457 (446 for the volume-less template, plus "
-        "12 for the clause, less the 1-byte volume now subtracted back out); the "
-        "_plain overhead is 15/14 against a declared 27; the volume, topic and "
-        "base-class guards raise ImportError: cannot import name 'PromptBuildError' "
-        "from 'generation.prompt_template'. "
-        "The 16 that pass are 9 untouched scenario 1.1/1.2 cases plus 7 ratchets: "
-        "the four Cyrillic character-class cases and the two PromptRequest field-set "
-        "cases pin behaviour this scenario must not lose (G13, G16 -- the ADR "
-        "predicts G16 green), and the digit-width case pins that VOLUME_PAGES and "
-        "VOLUME_PAGES_TWO_DIGIT are actually a pair, which MAX_VOLUME_PAGES dropping "
-        "to 9 would silently end."
-    )
-)
 class TestADokladPromptIsUnchangedByTheMoveIntoTheDomain:
     """Moving prompt composition into the domain must not reword a single prompt.
 

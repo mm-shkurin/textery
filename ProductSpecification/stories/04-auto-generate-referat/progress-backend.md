@@ -368,7 +368,41 @@ that can be red.
   test carrying it would invert the dependency rule — and would resolve at runtime anyway,
   since every layer root shares one `pythonpath`. It belongs to an adapter test and will
   arrive as a discovered step at `adapters-discovery`.
-- [ ] green-usecase
+- [x] green-usecase — `prompt_template.py` (146 lines): `PromptBuildError(DomainException)`,
+  the two no-interpolation-slot message constants, `_reject_unrenderable_fields(request)`
+  called at the top of `build_prompt`, and the ` ({volume_pages} стр.)` clause on both
+  `_plain` and `_referat`. 68 passed in the scenario file (was 52 failing), 245 domain,
+  767 passed / 2 skipped across `pytest backend/` — the 2 are pre-existing
+  optional-dependency skips (`htmldocx`, `weasyprint`) in the rendering adapter. Coverage
+  on the touched file: 39/39 lines, 8/8 branches.
+
+  **The guard sits in `build_prompt`, not `PromptRequest.__init__`** — the ADR does not
+  say which, but the test's `_prompt_request` helper constructs requests with bad values
+  and expects the raise from the build call, so `__init__` was never available. It runs
+  *before* the `_TEMPLATES` dispatch so it covers every type, not only the templates that
+  interpolate the field.
+
+  **Three things the ADR leaves open, decided here.** Volume is checked before topic
+  (unobservable — no test violates both — so it follows the Edge Cases table's order).
+  Both guards are type-and-value (`isinstance` plus range) rather than value-only, which
+  is what makes `None` fall out without its own branch, but also rejects a `"5"` volume
+  the ADR never rules on. And `bool` is excluded from the volume type, which the ADR's
+  Edge Cases row does not mention — see the coverage steps below.
+
+  **`--focus` returned no files and had to be overridden.** The pathspecs in
+  `.claude/tech/python-fastapi-hex/templates/testing/coverage-commands.md:38,44` do not
+  match `backend/domain/src/generation/prompt_template.py`; they will silently return
+  empty for every nested-package file in this repo. Needs a task.
+- [ ] red-usecase (coverage: volume_pages of True is rejected, not rendered) — 100%
+  branch coverage is misleading on `_is_renderable_volume`: branch counters record
+  whether the `if` was taken, not which operand decided it. `None` short-circuits on the
+  left, `0`/`-3`/`11` reach `isinstance(volume_pages, bool)` and it always answers
+  `False`, so no test ever lets that operand decide. Deleting it leaves 68 passing — the
+  mutant survives. It is reachable, not defensive: `MIN_VOLUME_PAGES = 1` and `True == 1`,
+  so without the guard a prompt reads `... (True стр.)` — a Latin-lettered artifact billed
+  to the model. The red is one entry: add `True` to `UNRENDERABLE_VOLUMES`
+  (`test_referat_prompt.py:127`), which flows into the existing per-type refusal test.
+- [ ] green-usecase (coverage: volume_pages of True is rejected, not rendered)
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
