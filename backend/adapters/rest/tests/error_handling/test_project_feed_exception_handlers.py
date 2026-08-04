@@ -28,10 +28,6 @@ def client(app):
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
 
-@pytest.mark.skip(
-    reason="RED: _ERROR_CODE_STATUS_MAP has no UNAUTHENTICATED entry, "
-    "so the handler defaults to 400"
-)
 class TestUnauthenticatedStatusMapping:
     """Story 12 Scenario 1.1: an unresolved owner fails closed as 401, not 400.
 

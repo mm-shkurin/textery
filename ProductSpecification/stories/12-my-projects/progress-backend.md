@@ -55,7 +55,11 @@ only the design draft could not see the contract.
 - [x] green-adapter db (documents arm only — the ADR's generations arm arrives with the
   scenario that first seeds a generation, so it cannot ship under zero test pressure)
 - [x] red-adapter rest (UNAUTHENTICATED → 401)
-- [ ] green-adapter rest (UNAUTHENTICATED → 401)
+- [x] green-adapter rest (UNAUTHENTICATED → 401) — the entry is dead on the planned
+  wiring: `get_current_owner_id` returns a non-optional `UUID` or raises the already-mapped
+  `UNAUTHORIZED`, so nothing can emit `UNAUTHENTICATED` through the route. Whether 1.1
+  should have reused `UNAUTHORIZED` rather than minting a synonym is open and owed a
+  contract answer.
 - [ ] red-adapter rest (GET /api/v1/projects envelope)
 - [ ] green-adapter rest (GET /api/v1/projects envelope)
 - [ ] green-acceptance
