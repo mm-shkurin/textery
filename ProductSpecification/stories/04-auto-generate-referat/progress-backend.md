@@ -400,8 +400,10 @@ that can be red.
   `False`, so no test ever lets that operand decide. Deleting it leaves 68 passing — the
   mutant survives. It is reachable, not defensive: `MIN_VOLUME_PAGES = 1` and `True == 1`,
   so without the guard a prompt reads `... (True стр.)` — a Latin-lettered artifact billed
-  to the model. The red is one entry: add `True` to `UNRENDERABLE_VOLUMES`
-  (`test_referat_prompt.py:127`), which flows into the existing per-type refusal test.
+  to the model. (The coverage pass proposed adding `True` to `UNRENDERABLE_VOLUMES` — see
+  the next paragraph for why that was rejected. Its pointer `test_referat_prompt.py:127`
+  had also gone stale in the 9ed69580 split; the tuple now lives in
+  `test_prompt_build_refusals.py`.)
 
   **Written as its own test, not as a fifth entry in `UNRENDERABLE_VOLUMES`.** `True` is
   the only unrenderable volume that is *inside* the accepted range; the other four are

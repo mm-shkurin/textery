@@ -29,6 +29,37 @@ VOLUME_PAGES_ERROR_MESSAGE = "volume_pages is not renderable in a prompt"
 TOPIC_ERROR_MESSAGE = "topic is not renderable in a prompt"
 
 
+def assert_refusal(
+    exc_info: pytest.ExceptionInfo[PromptBuildError], expected_message: str
+) -> None:
+    """The two things every refusal in this file must be, asserted together.
+
+    Extracted because the pair was written out three times: a wording change to
+    either failure text used to be three edits, and a fourth refusal guard could
+    have been added with only one of the two halves. The `with pytest.raises(...)`
+    act stays inline at each call site -- folding it in here would hide which
+    request is being built, which is the one thing the three guards differ on.
+
+    `type(...) is`, not `isinstance`: `PromptBuildError` is deliberately the base
+    of a family, so an implementation that raised `UnsupportedDocumentTypeError`
+    for a `volume_pages` of `-3` would satisfy `pytest.raises` alone while
+    reporting the wrong field to the call site.
+
+    `==` on a constant with no interpolation slot, which is also what keeps the
+    rejected value out of the message: `generate_document.py` interpolates the
+    caught error into the log, so a message that quoted the offending field would
+    put user-supplied text there through the error path. It matters most on
+    `topic`, which is free user text the natural implementation would quote.
+    """
+    assert type(exc_info.value) is PromptBuildError, (
+        f"a refused field must raise the base PromptBuildError itself, got "
+        f"{type(exc_info.value).__name__}"
+    )
+    assert str(exc_info.value) == expected_message, (
+        f"unexpected refusal message: {str(exc_info.value)!r}"
+    )
+
+
 class TestAPromptRefusesAFieldItCannotRender:
     """Rendering `volume_pages` puts a user-controlled `int | None` into the prompt.
 
@@ -51,21 +82,7 @@ class TestAPromptRefusesAFieldItCannotRender:
         with pytest.raises(PromptBuildError) as exc_info:
             prompt_for(document_type, volume_pages=volume_pages)
 
-        # `type(...) is`, not `isinstance`: `PromptBuildError` is deliberately the
-        # base of a family, so an implementation that raised
-        # `UnsupportedDocumentTypeError` for a `volume_pages` of `-3` would satisfy
-        # `pytest.raises` alone while reporting the wrong field to the call site.
-        assert type(exc_info.value) is PromptBuildError, (
-            f"a bad volume must raise the base PromptBuildError itself, got "
-            f"{type(exc_info.value).__name__}"
-        )
-        # `==` on a constant with no interpolation slot, which is also what keeps
-        # the rejected value out of the message: `generate_document.py` interpolates
-        # the caught error into the log, so a message that quoted `volume_pages`
-        # would put a user-supplied value there through the error path.
-        assert str(exc_info.value) == VOLUME_PAGES_ERROR_MESSAGE, (
-            f"unexpected refusal message: {str(exc_info.value)!r}"
-        )
+        assert_refusal(exc_info, VOLUME_PAGES_ERROR_MESSAGE)
 
     @pytest.mark.parametrize("document_type", SUPPORTED_DOCUMENT_TYPES)
     @pytest.mark.parametrize("topic", UNRENDERABLE_TOPICS)
@@ -79,16 +96,7 @@ class TestAPromptRefusesAFieldItCannotRender:
         with pytest.raises(PromptBuildError) as exc_info:
             prompt_for(document_type, topic=topic)
 
-        assert type(exc_info.value) is PromptBuildError, (
-            f"a bad topic must raise the base PromptBuildError itself, got "
-            f"{type(exc_info.value).__name__}"
-        )
-        # The exact-equality form matters more here than on the volume: `topic` is
-        # free user text, and the natural implementation quotes the offending value.
-        # A message equal to this constant cannot have quoted anything.
-        assert str(exc_info.value) == TOPIC_ERROR_MESSAGE, (
-            f"unexpected refusal message: {str(exc_info.value)!r}"
-        )
+        assert_refusal(exc_info, TOPIC_ERROR_MESSAGE)
 
     @pytest.mark.parametrize("document_type", SUPPORTED_DOCUMENT_TYPES)
     def test_should_refuse_a_boolean_volume_the_range_check_cannot_catch(self, document_type):
@@ -130,15 +138,9 @@ class TestAPromptRefusesAFieldItCannotRender:
         with pytest.raises(PromptBuildError) as exc_info:
             prompt_for(document_type, volume_pages=True)
 
-        assert type(exc_info.value) is PromptBuildError, (
-            f"a bool volume must raise the base PromptBuildError itself, got "
-            f"{type(exc_info.value).__name__}"
-        )
         # The same message as every other unrenderable volume: the call site maps on
         # the type, and a bool is not a distinct user-facing failure mode.
-        assert str(exc_info.value) == VOLUME_PAGES_ERROR_MESSAGE, (
-            f"unexpected refusal message: {str(exc_info.value)!r}"
-        )
+        assert_refusal(exc_info, VOLUME_PAGES_ERROR_MESSAGE)
 
     def test_should_raise_a_build_failure_the_call_site_must_not_retry(self):
         error = PromptBuildError

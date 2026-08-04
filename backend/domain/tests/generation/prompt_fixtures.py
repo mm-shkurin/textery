@@ -94,7 +94,7 @@ def prompt_for(
     return build_prompt(prompt_request(document_type, topic=topic, volume_pages=volume_pages))
 
 
-def ban_scope():
+def ban_scope() -> tuple[tuple[str, ...], tuple[str, ...]]:
     """`(TYPES_REQUIRING_SOURCE_BAN, _BAN_DEFERRED)`, exactly as the module declares them.
 
     Both names are imported at module scope. They were once imported inside this
@@ -107,7 +107,7 @@ def ban_scope():
     return TYPES_REQUIRING_SOURCE_BAN, _BAN_DEFERRED
 
 
-def types_requiring_the_ban_now():
+def types_requiring_the_ban_now() -> list[str]:
     """The types whose template must carry the ban today.
 
     Pure derivation, no assertion: the two operands are pinned by
