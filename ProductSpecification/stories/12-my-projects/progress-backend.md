@@ -54,7 +54,7 @@ only the design draft could not see the contract.
 - [x] red-adapter db
 - [x] green-adapter db (documents arm only — the ADR's generations arm arrives with the
   scenario that first seeds a generation, so it cannot ship under zero test pressure)
-- [ ] red-adapter rest (UNAUTHENTICATED → 401)
+- [x] red-adapter rest (UNAUTHENTICATED → 401)
 - [ ] green-adapter rest (UNAUTHENTICATED → 401)
 - [ ] red-adapter rest (GET /api/v1/projects envelope)
 - [ ] green-adapter rest (GET /api/v1/projects envelope)
