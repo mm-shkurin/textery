@@ -5,10 +5,54 @@ scan; revised again 2026-08-03 after the scenario 1.2 scan added G10–G13, wide
 recorded six further out-of-diff findings; corrected 2026-08-04 after the review passes
 over that revision — see "Corrections" below; revised again 2026-08-04 after the scenario
 1.3 scan added G14–G17, gave G3 and G9 an owner, and corrected three claims the ban's
-implementation had made stale — see "Revision (scenario 1.3)")
+implementation had made stale — see "Revision (scenario 1.3)"; revised again 2026-08-05
+after the scenario 1.4 scan overturned G17's prescribed mechanism and added G18 — see
+"Revision (scenario 1.4)")
 **Scenarios**: 1.1–1.6, 2.1
 
-## Revision (scenario 1.3, 2026-08-04)
+## Revision (scenario 1.4, 2026-08-05)
+
+All eight hazard groups re-dispatched from scratch against the 1.4 design (group 8
+dismissed as a block — a domain prompt-template design has no client surface, derived
+rather than assumed). Groups 1–7 fired, 21 GAPs. Two things changed that are not
+bookkeeping.
+
+**1. G17's prescribed mechanism was wrong, and this revision reverses it.** The full
+argument is in G17's restated row. Short form: the boot-time raise it mandated trades a
+missing dict entry for a fleet-wide outage, and the pre-deploy catch it was reaching for
+is obtainable from a test instead. Option D — runtime `PromptBuildError` plus a
+completeness *test* — was chosen over the boot raise (Option A), over "runtime refusal and
+nothing else" (Option C), and over test-only-with-the-retry-mapping-deferred (Option B).
+This matters beyond 1.4 because G17 was written by the 1.3 scan and read as settled; a
+scenario author implementing it verbatim would have shipped the outage.
+
+**2. G5 is the seam guard every group flagged, it already exists here, and it is still
+unimplemented — but 2.1 can make it unsatisfiable as written.** Groups 1, 2, 3, 4, 5, 6
+and 7 each independently flagged "a `PromptBuildError` retried on a value that cannot
+change on attempt 2", each assuming another pass owned it. It is not a new guard: it is
+**G5**, written at the 1.1 scan. `grep -rn PromptBuildError` outside `backend/domain/`
+still returns nothing, so G5 has never been implemented, and
+`generate_document.py`'s `except Exception` retries the error with a 1.0–1.5s backoff.
+
+The new part is a **placement obligation on 2.1**. G5 asserts "provider called **zero**
+times", which presumes the prompt is built at the call site — the usecase — before the
+provider is reached. If 2.1 substitutes `build_prompt` *inside* `GigaChatProvider.generate`
+(the obvious reading of "the provider sends the prompt it was given"), the provider is
+necessarily called before the build can fail, and G5 becomes unsatisfiable as written —
+the likeliest outcome being that whoever meets the red quietly weakens G5 rather than
+noticing the placement caused it. So 2.1 carries two named obligations, recorded here
+rather than left to that scenario's discretion:
+
+- Compose the prompt **outside the retryable region** — in the usecase before the provider
+  call, or at minimum before `gigachat_provider.py`'s `try`. This is the compute-then-commit
+  mitigation, and it makes the whole retry-of-an-unchangeable-value class structurally
+  impossible instead of dependent on catch ordering. It also keeps G5 literally true.
+- If the build nonetheless ends up inside the adapter, an adapter test must assert
+  `GigaChatProvider.generate` propagates `PromptBuildError` **unwrapped** — not as
+  `ProviderError`, not as `httpx.HTTPError`. Without it, 2.1 is free to widen that
+  handler and the usecase-side guard stays green while never firing.
+
+
 
 Scenario 1.3 is the golden `==` on the built prompt, and drafting it surfaced that three
 statements in this file describe a design that no longer matches the code. All eight
@@ -210,7 +254,8 @@ block, groups 1/3/4/5/6/7 fired).
 | G14 | The provider and the domain agree on the prompt, asserted between the two **live composers** rather than between two hand-typed literals: drive `GigaChatProvider.generate` and assert the posted `content` equals `build_prompt(...)` built from the same `Generation`. Until 2.1 substitutes one for the other there are two independently-editable definitions of the same text — `_plain` and the f-string at `gigachat_provider.py:113-116` — each pinned by its own golden, so **either can be edited alone with nothing red** and this scenario's whole claim ("unchanged by the move") dies silently. Four hazard groups reached this from different directions. Golden-vs-golden cannot force it; only an assertion whose two sides are the two composers can. **Scoped 2026-08-04 to доклад alone, and the scope is load-bearing**: the provider appends no ban, `build_prompt` appends one for every type outside `_BAN_DEFERRED`, so parameterizing G14 over `SUPPORTED_DOCUMENT_TYPES` the way G6 and G13 are parameterized makes it red on arrival for эссе/сочинение/реферат with no defect present — and the cheapest escape from that red is to widen `_BAN_DEFERRED`, i.e. to unban them. (That escape is already blocked: `test_referat_prompt.py:227` asserts `tuple(_BAN_DEFERRED) == (DOKLAD,)`. The scope note exists so a 1.3 author does not reach for it honestly and then have to back it out.) The other three types stay unpinned across the two composers until 2.1 removes one of them. **Home: an adapter test under `backend/adapters/generation_provider/tests/`, not `red-usecase`** — it drives `GigaChatProvider`, and a domain or usecase test importing an adapter inverts the dependency rule. It resolves at runtime only because `backend/pyproject.toml` puts every layer root on one `pythonpath`, so the violation would land silently. |
 | G15 | `_plain`'s overhead in UTF-8 bytes against a named constant. G10 covers the one template 1.3 does **not** change; this scenario adds the ` ({volume_pages} стр.)` clause to the other three, and nothing currently bounds their length. **Terms stated 2026-08-04, because G10's do not transfer**: `_referat` hardcodes its type name, so it has one genuinely fixed overhead. `_plain` interpolates `document_type`, whose byte length differs per type (`доклад` 12, `эссе` 8, `сочинение` 18), and `volume_pages`, whose digit count is 1 or 2. Assert `len(built) - len(document_type) - len(str(volume_pages))` in UTF-8 bytes against **one** constant covering all three `_plain` types, in the same subtract-the-variable-part style the реферат overhead test already uses for its probe topic. A per-type constant table is the acceptable alternative; pinning one type at one volume is not — it is vacuous for the other two and blind to a digit-width change, and that cheap exit is exactly what made G10's first formulation unwritable. |
 | G16 | `PromptRequest.__init__`'s accepted parameter set is exactly `(document_type, topic, volume_pages)` — inspected, not implied — and a `Generation`'s `owner_id`, `content`, `error_message`, `id`, `status` and `version` cannot reach it. The narrowness of this object is the entire reason the "method on `Generation`" option was rejected, and adding `owner_id` to it today turns no test red. **It is a ratchet on *what* may be added, not on *whether***: 1.6 legitimately grows the set to five with `requirements`/`extra_wishes`, and updating G16's expected tuple is that scenario's job. What G16 forbids is a field arriving from `Generation` without a scenario deciding it should — the guard goes red either way, and the difference is whether an author has a design telling them the growth was planned. |
-| G17 | The `_TEMPLATES` completeness check fails at boot as a **raised, named exception**, not a bare `assert`. `python -O` / `PYTHONOPTIMIZE` strips `assert` statements, so the guard that makes a fifth type a build failure instead of a worker failure currently holds by accident of how the interpreter is invoked. **Owner: 1.4** — "every supported document type yields a prompt" is that scenario's sentence. |
+| G17 | **Restated 2026-08-05 (1.4) — the earlier wording prescribed the wrong mechanism.** It read: "fails at boot as a raised, named exception, not a bare `assert`". The diagnosis was right (`python -O` strips `assert`, so the fifth-type guard holds by accident of interpreter invocation) but the prescribed cure was worse than the disease: a module-scope raise means a deploy where `SUPPORTED_DOCUMENT_TYPES` gains a fifth type before `_TEMPLATES` does takes down **every instance at import** — including generations of the four types that work — so the blast radius of one missing dict entry is the whole service. `ImportError` specifically is also the wrong class: it is the one exception routinely swallowed by optional-import `try/except ImportError` in loaders and DI wiring, which converts a fail-closed crash into a silent skip. As it stands now, two halves: (a) `build_prompt` raises `PromptBuildError(f"no prompt template for {document_type}")` on the missing key, so the failure is named, terminal and scoped to the one affected request; (b) the bare `assert` is **deleted** and replaced by a domain test that removes a template and asserts the refusal — so a missing template is red in CI *before* deploy, which is the pre-deploy catch the boot-raise was reaching for, with no production crash path at all. Note (b) is what makes this different from "just delete the check": the completeness claim survives, it moves from an `-O`-strippable runtime statement into a test, which `-O` cannot strip. **Owner: 1.4.** |
+| G18 | The per-type assertion over `SUPPORTED_DOCUMENT_TYPES` is **type-discriminating, not truthiness**. "A non-empty prompt is produced for every one of them" is satisfied by a mojibake prompt, a replacement-character prompt, and a prompt whose Cyrillic type name was decoded under the wrong charset — so `assert built` admits a fifth type on a check that cannot fail for any reason a reader would care about. Assert per type that the built prompt carries that type's own text and lands on the correct side of the ban branch (`BAN_SENTENCE` present for every type in `TYPES_REQUIRING_SOURCE_BAN - _BAN_DEFERRED`, absent for доклад while the freeze holds). The ban table has no completeness assertion of its own anywhere — G12 asserts the ban over the derived set, but nothing asserts *per type* which side it landed on, so a fifth type silently inherits "ban applies" with no case exercising it. **Owner: 1.4.** |
 | G13 | **Scope restated 2026-08-04 (1.3)**: asserted per type over every built prompt in `SUPPORTED_DOCUMENT_TYPES`, matching G6's scope rather than the ban sentence alone. 1.3 goldens `на тему:` and `стр.` for the first time, and `с`, `о`, `р`, `а`, `е` — **four** of which appear in those two fragments (`а` and `е` in `на тему:`, `с` and `р` in `стр.`) — are exactly the homoglyph-bearing characters the rationale below names. Every alphabetic character in the built prompt is Cyrillic (`unicodedata.name(ch)` starts with `CYRILLIC`). **Rationale corrected 2026-08-04**: the earlier claim that список/литературы/источники are spelled "entirely" from homoglyph-bearing characters is false — `п`, `и`, `к`, `л`, `ы`, `ч`, `н` have no Latin lookalike. The real hazard is narrower and still real: `с`, `о`, `р`, `а`, `е` **do** have identical Latin glyphs, and one of them mistyped inside `список` or `источники` renders the same, ships a corrupted instruction, and passes a hand-typed expected literal that carries the same mistake. Because only *some* characters are substitutable, a presence check on a subword is **not** an adequate substitute — which is precisely what the wrong rationale would have licensed. Only the character-class assertion over the whole string catches it. |
 
 ## Out-of-Diff Findings
@@ -238,3 +283,18 @@ Added by the scenario 1.2 scan (2026-08-03):
 | Strip-to-fixpoint is a repeat-until-stable loop over user text. G1 asserts it is *correct* at maximum field lengths; nothing asserts it is *bounded in time*. On nested/overlapping delimiter fragments at the 2000-char cap the cost is super-linear in input length — ReDoS-shaped, on a per-request hot path. A field cap bounds n; it does not bound n². | Backend 1.5 / 1.6 (the scenarios that implement the stripping) |
 | Raw newline injection in `topic`. `_referat` is a `\n`-delimited instruction list, so a `topic` containing `\n` / `\r\n` / ` ` forges an additional instruction line. G1 covers the delimiter **token** only. The scan's finding is that **neither** 1.2 nor 1.5 currently carries this — 1.5's spec has to be widened from "the delimiter token" to "any line-structuring character". | Backend 1.5 — spec widening required, not merely implementation |
 | Nothing validates the returned content against the ban. The scenario asserts the prompt *instructs*; a model that ignores it produces a реферат with an invented bibliography, which is persisted and rendered unchallenged. No automated guard is possible while the provider is a fixture-returning stub. | `progress.md` § Open — judge one real generation by hand before the story is called done |
+
+Added by the scenario 1.4 scan (2026-08-05). Findings already recorded by the 1.1–1.3
+scans (outbound idempotency, the sweep-vs-deadline margin, 4xx-retried-like-5xx, the
+error-path log leak) are **not** repeated here — they fired again, and their existing rows
+above still hold.
+
+| Finding | Owner |
+|---------|-------|
+| **`topic` is length-capped in code points but never NFC-normalized**, unlike `Email` and `Password`, which both normalize *before* their length check. The same visual Cyrillic topic therefore passes or fails `MAX_TOPIC_LENGTH` depending on composition form, and reaches the template in whichever form it arrived — on text where G10/G15 already make the UTF-8 byte length load-bearing. | No scenario owns this. G1 covers non-NFC *delimiters*, not the cap itself |
+| **`_reject_unrenderable_fields` has no maximum `topic` length at all.** `Generation.create` caps at 500, but the hydration path bypasses `create` — the same bypass the function's own docstring documents for the range check. Once 2.1 substitutes the builder into the provider, an unbounded `topic` is interpolated and shipped downstream. A boundary-only cap cannot close this. | No scenario owns this. 3.3 owns boundary rejection of the *document type*, not `topic` length |
+| **`Generation`'s status lifecycle is driven by raw setters with no transition graph**, and `__init__` accepts `status` as a free-form `str`. `FAILED` is not absorbing, skip and reverse edges (`PENDING → COMPLETED`, `FAILED → PENDING`) are reachable, and an entity can be constructed directly into a terminal state or into a status outside the four. Adding a new terminal edge (G5's `fail()`) writes into this lifecycle without pinning it. | Backend 3.2 (end-to-end completion) — the scenario that exercises the lifecycle |
+| **Poison message: nothing asserts one permanently-unbuildable generation does not block the ones queued behind it.** G5 covers the single failing item terminating; it says nothing about the queue making progress past it. | Load scenarios / Backend 3.2 |
+| **Retry storm: G5 is a single-caller guard.** A systemic cause — a migration leaving `volume_pages` null across many rows — makes many in-flight generations fail deterministically and re-issue against GigaChat in lockstep, against the downstream rate limit `ExpectedLoad.md` names as the binding constraint. Nothing drives M concurrent callers through one failure and asserts attempts are capped and spread. | Load scenarios |
+| **A 200 with an empty body flows into `generation.complete(content)`**, landing the row `completed` with an empty document the client cannot distinguish from a real result. The provider's failure modes are enumerated only for `httpx.HTTPError`. | Integration 2.1 (a provider error ends the generation as failed) |
+| **N-1 deploy ordering for the fifth type.** Adding a type needs both the code tuple and the `ck_generations_document_type` CHECK to change; during a rolling deploy of a multi-instance backend both orderings occur (new code writing a fifth-type row the old CHECK rejects; old code reading a row whose type it does not define). G7 asserts the two agree at build time, not across a deploy, and no unknown-enum policy exists for the *read* side — `Generation.__init__` hydrating an unknown type has no stated behaviour. | No scenario owns this. G7 covers the build-time half only |

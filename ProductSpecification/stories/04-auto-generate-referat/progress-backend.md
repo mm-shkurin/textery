@@ -598,8 +598,35 @@ that can be red.
   only in-process. `design` should decide whether the check becomes an explicit raise at
   import or a test-only obligation.
 - [S] green-acceptance — nothing to turn green; see `red-acceptance` above.
-- [~] design
-- [ ] red-usecase
+- [x] design — **Option D**, recorded by revising the existing ADR
+  `decisions/prompt-builder-decision.md` (it already governs 1.1–1.6) rather than opening a
+  second one. All eight hazard groups re-dispatched from scratch; group 8 dismissed as a
+  block (no client surface, derived not assumed). Groups 1–7 fired, 21 GAPs.
+  **The scan reversed this scenario's own inherited instruction.** G17, written by the 1.3
+  scan and read as settled, mandated that the completeness check "fails at boot as a
+  raised, named exception". Implementing it verbatim would have traded a missing dict
+  entry for a fleet-wide outage: a module-scope raise means a deploy where
+  `SUPPORTED_DOCUMENT_TYPES` gains a fifth type before `_TEMPLATES` does takes down every
+  instance at import, killing generations of the four types that work. `ImportError` was
+  additionally the wrong class — the one exception routinely swallowed by optional-import
+  `try/except`, turning fail-closed into a silent skip. Option D keeps the pre-deploy catch
+  the boot-raise was reaching for, but moves it into a test (which `-O` cannot strip) and
+  makes the runtime failure a scoped `PromptBuildError` instead of a process crash.
+  **G5 is the seam guard, it already existed, and it has never been implemented.** All
+  seven live groups independently flagged "a `PromptBuildError` retried on a value that
+  cannot change on attempt 2", each assuming another pass owned it. It is not a new guard —
+  it is G5 from the 1.1 scan. `grep -rn PromptBuildError` outside `backend/domain/` still
+  returns nothing. The new part is a placement obligation on 2.1: G5 asserts "provider
+  called **zero** times", which presumes the build happens at the call site, so nesting
+  `build_prompt` inside `GigaChatProvider.generate` would make G5 unsatisfiable as written
+  and invite whoever meets the red to weaken it. Both obligations are named in the ADR.
+  New guards folded in: **G17 restated**, **G18** (the per-type assertion must be
+  type-discriminating, not truthiness — `assert built` is satisfied by a mojibake prompt,
+  and the ban table has no per-type completeness assertion of its own).
+  Seven pipeline-altitude findings recorded and mapped; four that fired again were left to
+  their existing rows rather than duplicated. Two of the seven — `topic` NFC normalization
+  and the absent `topic` length cap on the hydration path — have **no owning scenario**.
+- [~] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
 
