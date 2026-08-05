@@ -4,6 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, StrictInt
 
 from document.document import Document
+from document.title_update import TitleUpdate
 
 
 class CreateDocumentRequestDto(BaseModel):
@@ -41,6 +42,21 @@ class SaveDocumentRequestDto(BaseModel):
     # calls "non-integer". StrictInt also rejects JSON `true`, which would otherwise
     # arrive as 1 (bool subclasses int).
     version: StrictInt
+
+    def title_update(self) -> TitleUpdate:
+        """The wire's four rows onto the three-state intent (story 17's ADR): absent
+        and ""/"   " preserve, null clears, a real title sets VERBATIM.
+
+        Decided HERE -- absent and an explicit null both arrive as `title=None` and
+        only `model_fields_set` tells them apart. No blank branch (`__post_init__`
+        folds a blank given to `of()`; one routed into `clear()` skips that fold and
+        wipes a title) and no `.strip()` -- `" Отчёт "` keeps its padding.
+        """
+        if "title" not in self.model_fields_set:
+            return TitleUpdate.preserve()
+        if self.title is None:
+            return TitleUpdate.clear()
+        return TitleUpdate.of(self.title)
 
 
 class DocumentSummaryDto(BaseModel):
