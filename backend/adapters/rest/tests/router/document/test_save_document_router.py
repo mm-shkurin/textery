@@ -1,6 +1,5 @@
 from uuid import uuid4
 
-import pytest
 from document_router_fixtures import (
     CREATED_AT_ON_THE_WIRE,
     a_document,
@@ -10,17 +9,6 @@ from document_router_fixtures import (
 
 from document.save_document import SaveDocument
 from document.title_update import TitleUpdate
-
-# Every `title=` expectation below moved from the raw Pydantic field to the intent
-# `SaveDocument.execute` is meant to receive -- see the three-state contract in
-# test_save_document_title_router.py. The three tests carrying one are skipped with
-# it: they assert the WHOLE call, so they cannot state the new contract and stay
-# green, and leaving them on the old one would hand green-adapter a suite it can
-# only pass by editing tests.
-_RED_TITLE_INTENT = (
-    "RED: the PUT route forwards request.title raw, so this call still arrives with "
-    "the Pydantic field instead of a TitleUpdate"
-)
 
 
 class TestSaveDocumentResponseShape:
@@ -66,7 +54,6 @@ class TestSaveDocumentResponseShape:
             "updated_at": CREATED_AT_ON_THE_WIRE,
         }, f"unexpected body {response.json()}"
 
-    @pytest.mark.skip(reason=_RED_TITLE_INTENT)
     async def test_should_call_the_save_usecase_with_the_path_id_and_the_bearer_owner(
         self, mocker, save_client, owner_id
     ):
@@ -94,7 +81,6 @@ class TestSaveDocumentResponseShape:
 
 
 class TestSaveDocumentRoute:
-    @pytest.mark.skip(reason=_RED_TITLE_INTENT)
     async def test_should_return_200_with_the_stored_document(self, mocker, save_client, owner_id):
         document = a_document(owner_id, content="<p>saved</p>", version=2)
         usecase = a_usecase(mocker, SaveDocument, returns=document)
@@ -131,7 +117,6 @@ class TestSaveDocumentRoute:
             title=TitleUpdate.preserve(),
         )
 
-    @pytest.mark.skip(reason=_RED_TITLE_INTENT)
     async def test_should_ignore_server_owned_fields_in_the_save_body(
         self, mocker, save_client, owner_id
     ):

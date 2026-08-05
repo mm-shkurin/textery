@@ -9,6 +9,7 @@ from document.export_document import ExportDocument
 from document.get_document import GetDocument
 from document.list_documents import ListDocuments
 from document.save_document import SaveDocument
+from document.title_update import TitleUpdate
 from dto.document.document_dtos import (
     CreateDocumentFromGenerationRequestDto,
     CreateDocumentRequestDto,
@@ -162,6 +163,22 @@ async def export_document(
     )
 
 
+def _title_update(request: SaveDocumentRequestDto) -> TitleUpdate:
+    """The wire's four rows onto the three-state intent (story 17's ADR): absent
+    and ""/"   " preserve, null clears, a real title sets VERBATIM.
+
+    Decided HERE -- absent and an explicit null both arrive as `title=None` and
+    only `model_fields_set` tells them apart. No blank branch (`__post_init__`
+    folds a blank given to `of()`; one routed into `clear()` skips that fold and
+    wipes a title) and no `.strip()` -- `" Отчёт "` keeps its padding.
+    """
+    if "title" not in request.model_fields_set:
+        return TitleUpdate.preserve()
+    if request.title is None:
+        return TitleUpdate.clear()
+    return TitleUpdate.of(request.title)
+
+
 @router.put("/{document_id}", response_model=DocumentResponseDto)
 async def save_document(
     document_id: UUID,
@@ -174,6 +191,6 @@ async def save_document(
         owner_id=owner_id,
         content=request.content,
         version=request.version,
-        title=request.title,
+        title=_title_update(request),
     )
     return DocumentResponseDto.from_domain(document)

@@ -97,7 +97,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   lets falsy `""` fall through to `of("")`, which folds to preserve and passes. Only the whitespace
   case catches it. Verified against six route implementations with a throwaway unskipped probe,
   since the class is skip-marked and a suite run proves nothing about it.
-- [~] green-adapter rest (premortem: title absent-vs-null via `model_fields_set`; PUT 404)
+- [x] green-adapter rest (premortem: title absent-vs-null via `model_fields_set`; PUT 404)
   Two constraints from agent-review, both checkable: (i) the rest suite must come back **97 passed,
   0 skipped** (restated from 95/0 — the blank row added two parametrized cases). Four marker SITES,
   not three: the class-level one in `test_save_document_title_router.py` plus three method-level
@@ -133,7 +133,24 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   skips because no Postgres is up in this worktree, 3 rendering import guards, 8 rest RED markers).
   The 598/11 figure excluded `backend/adapters/db` entirely. The rest-suite number green is actually
   checked against (97/0) was verified and is correct; the sweep baseline beside it was not.
-- [ ] red-adapter rest (agent-review: the set arm cannot catch a route that trims, and the class
+  GREEN landed on all six constraints. A module-level `_title_update(request) -> TitleUpdate` in
+  `document_router.py` decides the three states — `"title" not in request.model_fields_set` →
+  `preserve()`, `request.title is None` → `clear()`, else `of(request.title)` — and the PUT route
+  passes its result. **97 passed, 0 skipped**, exactly; sweep 649 passed / 65 skipped, the delta
+  from 641/73 being precisely the eight executions the four markers were hiding, with nothing else
+  moving. All four marker sites lifted, and with them the `_RED_TITLE_INTENT` constant and two
+  now-unused `import pytest` lines. No `.strip()`: probed directly, `" Отчёт "` reaches the port as
+  `TitleUpdate(value=' Отчёт ', clears=False)` — padding byte for byte — and `null` is the only row
+  producing `clears=True`.
+  Coverage carries a warning worth more than its number. All three arcs of `_title_update` are
+  covered, `BrPart 0`, branches 16/16 — but the parametrized blank pair traverses the SAME arc as
+  the set test (`is None` false → `of()`), so branch coverage would read 16/16 without it. Coverage
+  is NOT the guard on how line 177 is spelled; the two blank rows are the whole guard. Anyone
+  deleting them as "redundant by coverage" re-opens the `if not request.title` silent wipe with a
+  green suite and a green coverage report.
+  Constraint (ii) has now cashed: `document_router.py` is **196 lines**, four under the cap. The
+  `_ERROR_CODE_STATUS_MAP`/log work chartered nearby no longer fits — it needs an extraction first.
+- [~] red-adapter rest (agent-review: the set arm cannot catch a route that trims, and the class
   docstring claims it can. `test_should_map_a_wire_title_to_a_set_intent` sends `"Привет Мир"` —
   no leading or trailing space — so every value-rewriting transform is the identity on it:
   `of(request.title.strip())`, `of(request.title.strip() or "")` (the spelling `title_update.py`
@@ -155,6 +172,17 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   is the exact wrong green row 2 exists to forbid. This is the same defect class the commit was
   written to correct, reintroduced by the correction.)
 - [ ] green-adapter rest (agent-review: the padded set arm — forward the title byte for byte)
+- [ ] refactor-usecase (the transitional `str` arm is now dead in production). `SaveDocument.execute`
+  still declares `title: TitleUpdate | str | None = None`, and `_title_intent` still maps a raw
+  `str` and a bare `None`. The comment at `save_document.py:44-47` calls that spelling TRANSITIONAL
+  and owned by adapters-discovery (a) — "the PUT route still hands the raw Pydantic field over".
+  As of `green-adapter rest` it does not: the route is the ONLY production caller passing `title=`
+  (verified — `document_wiring.py` merely constructs the usecase; nothing else calls `execute` with
+  a title), and it now always passes a `TitleUpdate`. Both non-`TitleUpdate` arms are therefore
+  reachable from tests only. Narrowing the signature requires editing `save_title_statements.py`
+  and the usecase tests that still pass raw strings, which is why this is its own step and not a
+  refactor tacked onto a behavior commit. Until it runs, that comment is stale in the other
+  direction — it describes a route that no longer exists.
 - [ ] red-adapter rest (agent-review: the PUT-404 guard asserts the TEST FIXTURE's wiring, not the
   production app's. `conftest.document_app:29` registers `not_found_exception_handler` itself, so
   commenting out `main.py:155` leaves the ENTIRE backend suite green — 641 passed — while every

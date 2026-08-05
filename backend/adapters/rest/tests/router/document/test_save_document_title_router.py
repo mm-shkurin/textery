@@ -5,11 +5,6 @@ from document.save_document import SaveDocument
 from document.title_update import TitleUpdate
 
 
-@pytest.mark.skip(
-    reason="RED: expected await not found — the PUT route forwards request.title raw, so all "
-    "four wire shapes reach SaveDocument.execute as title=None / title='' / title='<str>' "
-    "instead of TitleUpdate.preserve() / clear() / of(...)"
-)
 class TestSaveDocumentTitleIntent:
     """The three-state title contract, at the ONE layer that can express it.
 
