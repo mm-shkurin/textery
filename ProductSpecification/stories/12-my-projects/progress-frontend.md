@@ -135,14 +135,61 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   unhandled rejection this step existed to remove, and `grep SessionExpiredError frontend/src`
   shows no redirect or auth-context handler to hand it to — rendering the sentence inline is the
   whole of this codebase's sign-out affordance today (`saveFailureMessages.ts:33`)
-- [~] red-frontend (the error banner is announced, not just displayed) — premortem on cc1bc733. The
+- [x] red-frontend (the error banner is announced, not just displayed) — premortem on cc1bc733. The
   load-failure test asserts `findByTestId` + `textContent` and nothing else, so a green satisfying it
   exactly has no reason to add `role="alert"` — and every sibling error surface in the repo carries one
   (`LoginForm.tsx:84`, `LoginForm.tsx:93`, `OAuthErrorBanner.tsx:44`, `VerifyCodeForm.tsx:130`,
   `ExportControl.tsx:139`, `LinkPopover.tsx:140`). Unannounced, the feed simply never populates for an
   assistive-tech user: indistinguishable from an empty account, which is the exact defect this scenario
   exists to kill, unfixed for the users who need it most. Assert via `findByRole('alert')`
-- [ ] green-frontend (the error banner is announced, not just displayed)
+- [~] green-frontend (the error banner is announced, not just displayed) — the test reaches the banner
+  ONLY by `findByRole('alert')` and asserts `.textContent` on the node the role query returned, so a
+  `role` on an empty live region beside the visible sentence does not pass, and a `role` on a wrapper
+  containing the cards does not either. Add the role to the element that already carries the message
+- [ ] red-frontend (the timeout arm does not paint English on a Russian screen) — agent-review on
+  6a205042. `send.ts:93` re-throws `RequestTimeoutError` with its type intact and
+  `httpClient.ts:70-75` builds it as `super('Request timed out')`; `describeFailure`'s last line is
+  `error instanceof Error && error.message ? error.message : fallback`, so a timeout takes the
+  `.message` branch and paints literally `Request timed out` into `projects-error`.
+  `LOAD_FAILURE_FALLBACK` is bypassed on precisely the failure a real user hits most (slow network)
+  and honoured on the one that needs a serializer regression
+- [ ] green-frontend (the timeout arm does not paint English on a Russian screen)
+- [ ] red-frontend-api (the two arms this commit was designed around are asserted) — premortem on
+  6a205042, and the sharpest of the round: the ONLY rejection any test exercises is a plain
+  `new Error(...)`, which is the single branch where `describeFailure` and the `e.message` the step
+  note asked for are indistinguishable. So the whole deliberate divergence — the reason for 26 lines
+  of commit message and 12 of in-file comment — is invisible to the suite, and a later refactor
+  toward the 4.2 retry affordance reintroduces both defects green. Two arms owed: `SessionExpiredError`
+  asserting «Сессия истекла. Войдите снова.» (NOT the screen fallback), and a bare 5xx `HttpError`
+  **object literal** (`httpClient.ts:141`, not an `Error`) asserting `Не удалось загрузить проекты
+  (HTTP 500)` and explicitly not containing `undefined`. `mockFeedRejection` wraps its argument in
+  `new Error` and structurally cannot express either — widen the harness first
+- [ ] green-frontend-api (the two arms this commit was designed around are asserted)
+- [ ] red-frontend (a pending load is not an empty account) — premortem on 6a205042, blast radius 100%
+  of loads rather than the failure minority. `ProjectsPage` models two states (`items`, `error`) where
+  the load has three: `useState<ProjectSummary[]>([])` makes pending and empty-resolved literally the
+  same value, and `error === null` holds during pending exactly as on success. Harmless-looking while
+  the in-flight window is visually blank; the moment 2.3 lands the empty-state affordance, every user
+  on a slow connection reads «у вас пока нет проектов» before their projects arrive — this scenario's
+  own defect, reintroduced on the pending path. `feedTestHarness` has no `mockFeedPending`, so the
+  state is not merely untested, it is not expressible: render against `new Promise(() => {})` and
+  assert both the error surface and the empty-state affordance absent
+- [ ] green-frontend (a pending load is not an empty account)
+- [ ] align-design (the failure is styled as a failure, not as helper text) — BOTH review passes on
+  6a205042 raised this independently. `.projects-error` uses `var(--text-muted)`, the same token
+  `.project-card-date` uses for a de-emphasised timestamp — no background, no border, no icon. The
+  direct analogue is `HistoryPage.css:86-93`, also a page-level load-failure banner:
+  `background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: var(--error)`. On an
+  otherwise blank page one line of grey text reads as an empty state. The DOM now tells broken from
+  empty; the pixels barely do. No jsdom surface — this is a styling review item, which is why it is an
+  `align-design` step and not a red/green pair
+- [ ] refactor (`error` gains a writer that clears it) — agent-review on 6a205042. `setError` is called
+  in exactly one place and never reset. Guarded by construction today (deps are `[]`, one load per
+  mount), so no test is owed and none would fail. It stops being guarded at the first scenario giving
+  the effect a dependency — 2.x/3.x add `q`/`sort`/`page`, already anticipated by the `_params` comment
+  in `projectsApi.ts`, and 4.2 adds explicit retry. At that point a failed load followed by a
+  successful one renders a fresh feed under a stale banner: a page claiming both that it broke and
+  that here are your projects. Three lines now, a bug found by 4.2 otherwise
 - [ ] red-frontend (a failed load does not also offer the empty state) — agent-review on cc1bc733:
   `expect(queryAllByTestId('project-card')).toHaveLength(0)` cannot fail. `useState([])` has exactly one
   writer, inside `.then`; on a rejection it never runs, so zero cards holds for every implementation,
