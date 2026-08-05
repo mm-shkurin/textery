@@ -5,9 +5,8 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from project.project_item import ProjectItem
-
 from error_handling.exception_handlers import validation_exception_handler
+from project.project_item import ProjectItem
 from router.project import project_router as project_router_module
 from security.current_owner import get_current_owner_id, get_token_service
 from shared.exceptions import InvalidTokenException, ValidationException

@@ -30,13 +30,26 @@ EXPECTED_FIELD_NAMES = [
 ]
 
 
-def _fields() -> tuple[dataclasses.Field, ...]:
-    return dataclasses.fields(ProjectItem)
+def _defaulted_fields() -> dict[str, object]:
+    """Every ProjectItem field that would be omittable at a call site, by name.
+
+    A dataclass expresses "has a default" two ways -- `default` and
+    `default_factory` -- and either one makes the field omittable, so both are
+    checked and whichever is present is what gets reported.
+    """
+    return {
+        field.name: (
+            field.default if field.default is not dataclasses.MISSING else field.default_factory
+        )
+        for field in dataclasses.fields(ProjectItem)
+        if field.default is not dataclasses.MISSING
+        or field.default_factory is not dataclasses.MISSING
+    }
 
 
 class ProjectItemShapeStatements:
     def assert_the_row_declares_exactly_the_contract_fields(self) -> None:
-        actual = [field.name for field in _fields()]
+        actual = [field.name for field in dataclasses.fields(ProjectItem)]
 
         assert actual == EXPECTED_FIELD_NAMES, (
             f"ProjectItem must declare exactly these fields, in this order: "
@@ -46,16 +59,7 @@ class ProjectItemShapeStatements:
         )
 
     def assert_no_field_carries_a_default(self) -> None:
-        defaulted = {
-            field.name: (
-                field.default
-                if field.default is not dataclasses.MISSING
-                else field.default_factory
-            )
-            for field in _fields()
-            if field.default is not dataclasses.MISSING
-            or field.default_factory is not dataclasses.MISSING
-        }
+        defaulted = _defaulted_fields()
 
         assert defaulted == {}, (
             f"No ProjectItem field may carry a default or default_factory -- got "

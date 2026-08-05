@@ -39,9 +39,7 @@ class TestListProjects:
     ):
         project_id = uuid4()
         usecase = mocker.Mock()
-        usecase.execute = mocker.AsyncMock(
-            return_value=ProjectPage(items=(feed_row(project_id),))
-        )
+        usecase.execute = mocker.AsyncMock(return_value=ProjectPage(items=(feed_row(project_id),)))
 
         async with feed_client(usecase) as client:
             response = await client.get("/api/v1/projects")

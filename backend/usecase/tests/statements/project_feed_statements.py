@@ -82,8 +82,8 @@ class ProjectFeedStatements:
         self._other_accounts_items: tuple[ProjectItem, ...] = ()
 
     def given_two_accounts_each_with_documents(self) -> None:
-        self._own_items = self._documents_of(self._caller_id, count=_DOCUMENTS_PER_ACCOUNT)
-        self._other_accounts_items = self._documents_of(uuid4(), count=_DOCUMENTS_PER_ACCOUNT)
+        self._own_items = self._documents_of(self._caller_id)
+        self._other_accounts_items = self._documents_of(uuid4())
 
     async def when_the_caller_requests_their_projects(self) -> ServedFeed:
         page = await self._usecase.execute(owner_id=self._caller_id, request=ProjectPageRequest())
@@ -153,7 +153,12 @@ class ProjectFeedStatements:
             "the feed statement must not run when the owner could not be resolved"
         )
 
-    def _documents_of(self, owner_id: UUID, count: int) -> tuple[ProjectItem, ...]:
-        items = tuple(_a_document_owned_by_nobody_in_particular() for _ in range(count))
+    def _documents_of(self, owner_id: UUID) -> tuple[ProjectItem, ...]:
+        # The count is read here rather than passed in: every caller wanted the same
+        # constant, and the two "guard the guard" assertions above compare against it
+        # too. Seeding and asserting from one place is what keeps them from drifting.
+        items = tuple(
+            _a_document_owned_by_nobody_in_particular() for _ in range(_DOCUMENTS_PER_ACCOUNT)
+        )
         self._repository.seed(owner_id, *items)
         return items

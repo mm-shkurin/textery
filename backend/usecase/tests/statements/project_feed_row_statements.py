@@ -63,9 +63,7 @@ class ProjectFeedRowStatements:
         self._repository.seed(self._caller_id, ProjectItem(**_EXPECTED_ROW))
 
     async def when_the_caller_requests_their_projects(self) -> ProjectPage:
-        return await self._usecase.execute(
-            owner_id=self._caller_id, request=ProjectPageRequest()
-        )
+        return await self._usecase.execute(owner_id=self._caller_id, request=ProjectPageRequest())
 
     def assert_the_row_reaches_the_caller_unchanged(self, page: ProjectPage) -> None:
         # Guard the guard: the field comparison below reads `page.items[0]`, so an
