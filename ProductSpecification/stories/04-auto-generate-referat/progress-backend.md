@@ -550,12 +550,58 @@ that can be red.
   **Scenario 1.3 is now complete.**
 
 ### Scenario 1.4: Every supported document type yields a prompt
-- [~] red-acceptance
-- [ ] design
+- [S] red-acceptance — decided on this scenario's own merits, not inherited from 1.1–1.3,
+  because the spec's note names what looks like a black-box consequence: "a type without a
+  template would raise inside the worker — after enqueue, consuming the retry budget,
+  landing as `failed`". That consequence is **not reachable today, and not reachable by any
+  HTTP input**:
+  - **`build_prompt` has no production caller.** `grep -rn "build_prompt" backend/ acceptance/`
+    outside `*/tests/*` returns exactly two hits, both in
+    `backend/domain/src/generation/prompt_template.py` — its own `def` at line 134 and a
+    docstring mention at line 85. Nothing in the worker path calls it, so nothing in the
+    worker path can raise from a missing template.
+  - **The acceptance stack's provider builds no prompt at all.** `GENERATION_PROVIDER=fake`
+    selects `FakeProvider` (`container/runtime.py:22`), whose `generate` returns the
+    constant `FAKE_DOKLAD_TEXT` and never touches `PromptRequest`. The premise that
+    "prompt-building still happens in the worker" does not hold for `fake`. The other
+    implementation, `GigaChatProvider`, still composes its own text — the substitution is
+    2.1's obligation, as the ADR and scenario 1.3's `adapters-discovery` both record.
+  - **Even after the substitution lands, no request can select a template-less type.** The
+    two sets are the same set by construction: `_TEMPLATES` is keyed by
+    `DOKLAD/ESSE/SOCHINENIE/REFERAT` and `prompt_template.py:98` asserts
+    `set(_TEMPLATES) == set(SUPPORTED_DOCUMENT_TYPES)` at import. A type outside that tuple
+    is rejected before enqueue by `Generation`'s own guard
+    (`generation.py:26`, "document_type must be one of: …") — which is scenario **3.3**'s
+    sentence, not this one. So the `failed` landing this scenario describes has no input
+    that produces it: supported types always have a template, unsupported types never reach
+    the worker.
+  - **No endpoint enumerates the supported types.** The full router surface is auth, oauth,
+    documents, generations, health — none of them returns
+    `SUPPORTED_DOCUMENT_TYPES`, so "each document type the domain supports" cannot even be
+    driven from a black-box client without hard-coding the tuple, which would pin a copy
+    rather than the domain's own list.
+  - The spec's own DSL settles it the same way it settled 1.1–1.3: "each document type the
+    domain supports" → *"Parametrized over `SUPPORTED_DOCUMENT_TYPES`"*, and "the prompt is
+    built for it" → a direct in-process call. Covered by `red-usecase` / `green-usecase`
+    below, in `backend/domain/tests/generation/`.
+
+  **Coverage is not lost to a neighbour** — the black-box halves of this territory are
+  already owned: **3.2** ("a реферат generation completes end to end … records its type as
+  реферат") owns "a request for a supported type produces content over HTTP", and **3.3**
+  ("an unsupported document type is still rejected") owns the rejection. Writing an HTTP
+  test here would be one of those two under a different name.
+
+  **G17 stays with this scenario and needs a domain-layer step, not an acceptance one.**
+  Routed here by 1.3: the completeness check at `prompt_template.py:98` is a bare `assert`,
+  which `python -O` strips — so the fifth-type guard currently holds by accident of
+  interpreter invocation. That is precisely this scenario's sentence, and it is testable
+  only in-process. `design` should decide whether the check becomes an explicit raise at
+  import or a test-only obligation.
+- [S] green-acceptance — nothing to turn green; see `red-acceptance` above.
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
-- [ ] green-acceptance
 
 ### Scenario 1.5: The topic cannot displace the template's instructions
 - [ ] red-acceptance
