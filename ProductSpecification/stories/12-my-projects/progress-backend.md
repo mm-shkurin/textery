@@ -168,7 +168,7 @@ only the design draft could not see the contract.
   files at 100% line and branch (`project_item.py`, `project_response_dto.py`);
   `project_feed_storage.py` unmeasurable without a local Postgres (session-level skip), no gap
   opened by this green.
-- [~] red-adapter db (every row field projected from the documents arm) — `title`, `preview`
+- [x] red-adapter db (every row field projected from the documents arm) — `title`, `preview`
   (empty content ⇒ `''`), `document_type`, `status`, the two timestamps read from
   `DocumentModel`; `kind` the literal `document`; `retryable` false for every document.
   **Review-pass findings on `0a4f6420`, to settle at this step** (both passes returned
@@ -208,7 +208,27 @@ only the design draft could not see the contract.
      outliving their green). Also out of scope and worth a decision: `backend-ci.yml` runs
      neither ruff nor mypy, and mypy reports 6 pre-existing errors — the `**_EXPECTED_ROW`
      unpack in `project_feed_row_statements.py:63` became untypeable with this widening.
-- [ ] green-adapter db (every row field projected from the documents arm)
+  **How the red settled them (2026-08-05):** (1) the seeded document has a NULL title —
+  `Document.create` never sets one — and the expectation pins `title=None`, not `''`; the green
+  owes `ProjectItem.title: str | None`, since the frozen dataclass enforces nothing at runtime
+  and the annotation is a lie until then. (2) `assert_feed_holds_only` no longer imports
+  `unprojected_row`; it asserts the tuple of row **ids**, which is the owner-predicate claim and
+  survives the green unchanged, while the nine-field expectation lives in a new
+  `assert_row_is_projected_from` built in the test tree. `unprojected_row` now has zero importers
+  outside its own module — **the green must delete it**. (3) the expectation pins
+  `kind="document"` and `status="draft"`, so the `''` placeholders cannot survive. (4) both
+  timestamps are pinned to fixed seeded literals 37 minutes apart, with `utcoffset() ==
+  timedelta(0)` — not `tzinfo is not None`, which would wave through a `+05:00` row naming the
+  same instant at a different wall clock, and not `updated_at` read off the entity, which
+  `Document.create` sets equal to `created_at` so a projection emitting one column twice would
+  have passed.
+  **Environment note (2026-08-05):** the db adapter suite was session-skipped on this machine
+  for want of a Postgres, so every earlier unit's "62 skipped" hid 60 unrun db tests. Docker
+  Desktop was started and `infra/docker-compose.yml`'s `postgres` service brought up; the suite
+  now genuinely executes. Whole-backend counts change accordingly: **713 passed, 4 skipped**
+  (the 2 remaining skips beyond this step's RED pair are pre-existing). Any future run reporting
+  ~653/62 is a run with no database, not a green suite.
+- [~] green-adapter db (every row field projected from the documents arm)
 - [ ] red-adapter rest (the envelope emits every `ProjectItem` field) — `ProjectItemDto` widens
   to the contract's nine fields, timestamps serialized as UTC ISO-8601 with an explicit offset
   (the acceptance DTO's `parse_feed_timestamp` rejects a naive string).
