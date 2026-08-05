@@ -163,11 +163,11 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   present at first paint announces on load
 - [S] green-frontend (no live region exists before anything has failed) — see above; zero production
   files need modification
-- [ ] manual AT verification checkpoint (the failure banner is actually announced) — the guard the
-  `[S]` pair above cannot be: drive the projects feed to a failed load with a real screen reader and
-  confirm the sentence is spoken. Nothing in jsdom distinguishes «role present» from «announced», and
-  an untestable decision needs a recorded verification rather than a comment. If it is NOT announced,
-  the fix is the always-mounted-empty region and the decision above is reopened
+  (the manual verification this pair traded a test for is NOT a step here — see «Manual Verifications»
+  at the end of this file. It is deliberately outside the executable ordering: `workflow.md` selects
+  the first `[~]`/`[ ]` as the next work unit, and a step requiring a real screen reader either stalls
+  `/continue` or gets fabricated `[x]` by an agent that cannot drive NVDA, which is strictly worse
+  than never running it)
 - [~] red-frontend (the timeout arm does not paint English on a Russian screen) — agent-review on
   6a205042. `send.ts:93` re-throws `RequestTimeoutError` with its type intact and
   `httpClient.ts:70-75` builds it as `super('Request timed out')`; `describeFailure`'s last line is
@@ -550,3 +550,20 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
 - [ ] align-design
 - [ ] green-selenium
 - [ ] demo
+
+## Manual Verifications
+
+Not work units. `workflow.md` selects the first `[~]`/`[ ]` entry above as the next unit to
+dispatch; these require a human at a real machine, so they live outside that ordering — a manual
+step inside it either stalls `/continue` or gets a fabricated `[x]` from an agent that cannot
+perform it, which is worse than never running it. **A story must not move to the Done table in
+`stories.md` while any box here is unticked.**
+
+- [ ] The failed-load banner on «Мои проекты» is actually announced (scenario 1.1) — drive the feed
+  to a failed load with a real screen reader (NVDA or VoiceOver) and confirm the sentence is spoken.
+  This is the guard the `[S]` live-region pair traded a test for. `role="alert"` inserted into the
+  DOM *already containing its text* is the shape assistive tech routinely does not announce; the
+  reliable shape is a region already mounted whose content changes. jsdom returns the identical pass
+  either way, and there is no axe layer in `frontend/` or `acceptance/` to fail on it. If it is NOT
+  announced, the fix is the always-mounted-empty region and the conditional-mounting decision
+  recorded on the `[S]` pair is reopened.
