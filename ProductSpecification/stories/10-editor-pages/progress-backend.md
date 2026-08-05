@@ -148,8 +148,36 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   is NOT the guard on how line 177 is spelled; the two blank rows are the whole guard. Anyone
   deleting them as "redundant by coverage" re-opens the `if not request.title` silent wipe with a
   green suite and a green coverage report.
-  Constraint (ii) has now cashed: `document_router.py` is **196 lines**, four under the cap. The
-  `_ERROR_CODE_STATUS_MAP`/log work chartered nearby no longer fits — it needs an extraction first.
+  Constraint (ii) cashed at the behavior commit: `document_router.py` hit **196 lines**, four under
+  the cap, and the `_ERROR_CODE_STATUS_MAP`/log work chartered nearby no longer fit.
+  **Superseded by the refactor commit `3f676865` — the router is back to 179 and that work fits
+  again.** `/refactor` found feature envy (`_title_update` read `request.model_fields_set` and
+  `request.title`, nothing of its own) and moved the mapping onto
+  `SaveDocumentRequestDto.title_update()`, which is what `coding-detail.md:39`/`:57` prescribe
+  ("Request DTOs own their conversions"; "convert DTO via conversion method"). Three arms and the
+  docstring moved verbatim, `request.` → `self.` the only body edit; net −1 line across both files;
+  no test touched. Re-verified after the move, since the suite cannot see it: `" Отчёт "` returns
+  `TitleUpdate(value=' Отчёт ', clears=False)`, equal to the input at length 7, and `null` is still
+  the only row with `clears=True`. 97/0 rest, 649/65 sweep — identical to `80dadf62`.
+  The two review passes ran against the refactored HEAD and both returned CONCERNS. Their findings
+  are chartered below; the four heaviest, in severity order:
+  (a) **"Store verbatim" is pinned by nothing.** agent-review mutated the set line and ran the FULL
+  suite per mutant: `.strip()`, `.strip() or ""`, `[:120]`, `html.escape`, NFKC and whitespace-collapse
+  each returned **649 passed**; only an `.upper()` control went red. The set arm's `"Привет Мир"` has
+  internal space only, so every value-rewriting transform is the identity on it.
+  (b) **`model_fields_set` is not serialization-stable, and the flip runs the wrong way.** Proved on
+  the shipped DTO: `D(content='c', version=1)` → `preserve()`, but
+  `D.model_validate(that.model_dump())` → **`clear()`** — because `model_dump()` emits an explicit
+  `title: None`. `model_copy()` is safe; `model_dump(exclude_unset=True)` is safe. Nothing in the repo
+  round-trips it today (grepped), so this is a missing guard, not a live bug — but the absent row is
+  "the shape almost every save in the app has", and it degrades toward erasure, not toward preserve.
+  Passing the declared default explicitly (`title=None`) also inverts the meaning of omitting it.
+  (c) **The clear path has no observability and no undo.** `logger.` appears zero times across the
+  document router, storage and usecase; there is no revision/audit table, and `_update_values`
+  overwrites `title` in place. A wipe would be unreportable, uncountable and unrecoverable.
+  (d) **`title_update()` has one production caller and zero direct test callers** — every assertion
+  reaches it through HTTP against an autospec'd mock. That is what makes (a), (b) and the story-17
+  collision below all invisible at once.
 - [~] red-adapter rest (agent-review: the set arm cannot catch a route that trims, and the class
   docstring claims it can. `test_should_map_a_wire_title_to_a_set_intent` sends `"Привет Мир"` —
   no leading or trailing space — so every value-rewriting transform is the identity on it:
@@ -170,8 +198,53 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   blank are distinguishable — they differ by VALUE. Read literally the sentence tells green that
   `""` arrives as `None`, i.e. that the blank case is already covered by the absent branch, which
   is the exact wrong green row 2 exists to forbid. This is the same defect class the commit was
-  written to correct, reintroduced by the correction.)
-- [ ] green-adapter rest (agent-review: the padded set arm — forward the title byte for byte)
+  written to correct, reintroduced by the correction.
+  **RESCOPED 2026-08-06 by the agent-review pass on `3f676865` — `" Отчёт "` is NOT enough.** That
+  arm was measured against six mutants of the set line, whole suite per mutant: it catches `.strip()`
+  and whitespace-collapse, and **`[:120]`, `html.escape` and NFKC still pass at 650**. One adversarial
+  arm catches four of the five: `" <Отчёт>  №ﬁ1  "` — padding, escapable chars, a compatibility
+  ligature (`ﬁ`, which NFKC expands to `fi`) and a double space, expecting
+  `TitleUpdate.of(" <Отчёт>  №ﬁ1  ")` byte for byte. Truncation still escapes any arm shorter than a
+  plausible cap, and length is deliberately not this row's business — it stays with the cap gap in
+  `progress.md`. Use the hostile arm, not the polite one.
+  Docstring scope widens too: it is not only lines 25-27. Lines 22-29 now describe the PRE-green
+  route — "The route forwards `title=request.title` raw today", and "`TitleUpdate.clear()` is today
+  constructed only by tests — no HTTP request can produce it". Both were made false by `80dadf62`,
+  and the second is the more dangerous kind of stale: its CONSEQUENCE clause still reads as true for
+  an unrelated downstream reason (the db arm drops the clear — see `progress.md:83-96`), so a reader
+  who half-checks it confirms the wrong story. The mapping also no longer lives in the route at all;
+  it is `SaveDocumentRequestDto.title_update()`. Rewrite the whole block against HEAD.)
+- [ ] green-adapter rest (agent-review: the hostile set arm — forward the title byte for byte)
+- [ ] red-adapter rest (premortem CREDIBLE: `model_fields_set` describes how the DTO was BUILT, not
+  what the client sent, and the failure runs toward erasure. Proved against the shipped DTO:
+  `d = SaveDocumentRequestDto(content='c', version=1)` → `preserve()`, but
+  `SaveDocumentRequestDto.model_validate(d.model_dump())` → **`clear()`**, because `model_dump()`
+  emits an explicit `title: None`. `model_dump(exclude_unset=True)` and `model_copy()` both survive.
+  The same trap fires in plain construction: passing the field's own declared default
+  (`title=None`) means CLEAR, while omitting the kwarg means PRESERVE — so the safest-looking
+  spelling is the destructive one. Nothing round-trips this DTO today (grepped across `backend/`,
+  `acceptance/`, `frontend/`), so this is a guard gap rather than a live bug; the incident is the
+  day someone adds a save queue, an offline outbox, a request replay or a BFF hop and every
+  content-only autosave in the app silently becomes a title erasure with the suite still green.
+  Test: `SaveDocumentRequestDto.model_validate(d.model_dump()).title_update() == d.title_update()`
+  for the absent row. It fails today — that is the point. Note this is the FIRST test to call
+  `title_update()` directly; every existing assertion reaches it through HTTP against an autospec'd
+  mock, which is precisely why the mutants in (a) survive. The docstring at `document_dtos.py:47-53`
+  explains `model_fields_set` at length and never warns it is not serialization-stable — fix that
+  in the same pass.)
+- [ ] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve)
+- [ ] red-adapter rest (premortem CREDIBLE: the erasure path is silent. `logger.` appears ZERO times
+  across `backend/adapters/rest/src/router/document/`, `backend/adapters/db/src/access/document/`
+  and `backend/usecase/src/document/`; there is no revision or audit table
+  (`document_model.py` is the only document table) and `_update_values` overwrites `title` in place.
+  So if a title is wiped in production it cannot be reported, counted, reproduced or recovered —
+  the only undo is a database restore. The one observability guard in flight is aimed at a branch
+  this route CANNOT reach: story 17 queues an `INVALID_TITLE_INTENT` → 422 log on
+  `validation_exception_handler`, but `preserve()`/`clear()`/`of()` never produce the
+  `__post_init__` contradiction, so that line fires zero times for PUT while the destructive path
+  stays mute. Test: a `caplog` assertion that a `clears=True` save records the document id and the
+  title it replaced. Sequencing — this wants to land BEFORE the story-17 db arm makes clears real.)
+- [ ] green-adapter rest (premortem: a clear must leave a trace that names what it replaced)
 - [ ] refactor-usecase (the transitional `str` arm is now dead in production). `SaveDocument.execute`
   still declares `title: TitleUpdate | str | None = None`, and `_title_intent` still maps a raw
   `str` and a bare `None`. The comment at `save_document.py:44-47` calls that spelling TRANSITIONAL

@@ -137,8 +137,49 @@ recorded and not applied. Nothing pins `documents_save.yaml` against `SaveDocume
 no acceptance test drives blank-preserves / null-clears over real HTTP — every assertion in this
 contract stops at an autospec mock.
 
+**Correction (2026-08-06, agent-review on `3f676865`): the blank-preserves half of that last
+sentence is false.** `acceptance/tests/backend/documents/test_export_document_acceptance.py:144`
+(`test_blank_title_save_does_not_wipe_the_stored_title`) is parametrized over `""` and `"   "`,
+drives a real HTTP PUT against a stored Cyrillic title, and asserts survival through the export
+`Content-Disposition` header — by its own statements class the only black-box observation of the
+stored title that exists. That guard was NOT run against this behavior change (the sweep was
+`backend/` only — no Postgres, no live backend in this worktree), and the sentence above told the
+next reader there was nothing to run. It should still pass by construction (blank → `preserve()` →
+the storage omits the column) but that is reasoning, not a run; **verify it when a backend is up.**
+This is the fourth unqualified absolute in this scenario falsified by the pass that checked it, and
+it was written by the commit whose own notes say "Stop writing them."
+
+The null-clears half IS true, and structurally so: `acceptance/clients/application/application_client.py:128-129`
+builds the save payload as `{"content", "version"}` and adds `title` only `if title is not None`, so
+the acceptance client **cannot express `"title": null` at all**. The one wire shape this scenario
+exists to enable is unreachable end-to-end until that client learns an omit-vs-null distinction —
+a change in `acceptance/`, outside this layer's file ownership, so it is recorded and not applied.
+
 ## Notes for later scenarios
 
+- **The editor cannot read a title, so `null` is the only thing it can send back** (premortem
+  CREDIBLE, 2026-08-06). `GetDocumentResponseDto` has no `title` field — deliberately, per its own
+  docstring — and `frontend/.../documentApi.ts`'s `GetDocumentResult` mirrors that. A client that
+  cannot read the title holds `null` for it, and the idiomatic `useState<string | null>(null)` +
+  `JSON.stringify({content, version, title})` emits `"title": null` — which scenario 2.1 just made
+  DESTRUCTIVE. The blank-fold safety net catches the other spelling only: `""`/`"   "` preserve, but
+  a `string | null` field serialises to `null`, not `""`. Today the harm is masked because the db
+  arm drops the clear; story 17's `green-adapter db` removes that mask, and then a user who opens a
+  titled document, types one word and lets autosave fire loses the title. **Before the frontend
+  phase sends `title` at all, decide the omit-vs-null rule and pin it** — either a frontend contract
+  test asserting the key is ABSENT when the editor holds no title, or put `title` on the read model
+  so the client has something to round-trip. Story 17 calls exposing it "what turns the ADR's
+  conceded residual live"; the inverse is the actual risk — NOT exposing it is what makes `null`
+  the client's only option.
+- **Story 17 is queued to rebuild this same mapping in the router** (premortem CREDIBLE). Its
+  `[ ] green-adapter rest` (`17-export-document/progress-backend.md:2853`) says "the route BUILDS
+  the intent from `model_fields_set`", but `3f676865` moved that mapping onto
+  `SaveDocumentRequestDto.title_update()`. Different files → git merges both cleanly, leaving two
+  implementations with the DTO's orphaned, and no test can tell which one production runs (nothing
+  calls `title_update()` directly). Story 17's planned RED has only two rows — absent and null, no
+  blank — so if its copy wins, the blank-preserve fold silently stops being pinned against the code
+  that actually executes. Both branches also queue the identical `SaveDocument.execute` `str`-arm
+  deletion. Whichever lands second must reconcile, not re-add.
 - Pagination is measured in a real browser. jsdom reports every element as zero-height, so
   unit tests can cover the settings value object and the break-decision logic given
   *supplied* heights — "does it break in the right place" only has meaning in Selenium.
