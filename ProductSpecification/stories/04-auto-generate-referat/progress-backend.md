@@ -624,8 +624,38 @@ that can be red.
   type-discriminating, not truthiness — `assert built` is satisfied by a mojibake prompt,
   and the ban table has no per-type completeness assertion of its own).
   Seven pipeline-altitude findings recorded and mapped; four that fired again were left to
-  their existing rows rather than duplicated. Two of the seven — `topic` NFC normalization
-  and the absent `topic` length cap on the hydration path — have **no owning scenario**.
+  their existing rows rather than duplicated.
+
+  **Corrected the same day, after both review passes over `dd9b0f72` reached the same two
+  holes independently.** The design as first committed was right about G17 and
+  under-specified about what replaces it:
+  - **G17(b) dropped the completeness claim rather than moving it.** A test that removes a
+    template and asserts the refusal exercises the *refusal mechanism*; it is green whether
+    `_TEMPLATES` covers `SUPPORTED_DOCUMENT_TYPES` or not, so the fifth-type hazard passes
+    it unchanged. The deleted `assert` was a set **equality**, catching both directions.
+    G17(b) now requires two tests, the second an explicit `set(_TEMPLATES) ==
+    set(SUPPORTED_DOCUMENT_TYPES)`. Leaning on the parametrized suites to catch it
+    incidentally is what G14's scoping already showed evaporates.
+  - **G5 had no owner, and this scenario is the one removing the loud guard.** It is now
+    assigned to 1.4's `red-usecase` / `green-usecase`. G5 has been re-flagged by seven
+    hazard groups across three scans and never implemented, precisely because its row named
+    nobody. Deleting the module `assert` while `PromptBuildError` is still swallowed by
+    `generate_document.py`'s `except Exception` — retried on backoff, then surfaced as
+    "попробуйте позже", advice that is false forever, at a severity shared with routine
+    provider blips — is paying for the reversal on credit. **1.4 carries both halves or
+    neither.**
+  Also corrected: the 2.1 obligations said "2.1" unqualified where the story has three
+  (Backend, Integration, Security) — they are **Backend 2.1**'s, and are now copied inline
+  under that scenario's block rather than living only in the ADR; the "or at minimum before
+  `gigachat_provider.py`'s `try`" fallback was withdrawn as self-contradictory (it sanctions
+  the provider being called, which is exactly what G5 forbids); the NFC row cited
+  `Email`/`Password` backwards (both cap *then* normalize, deliberately — `DocumentContent`
+  is the right precedent, with its post-NFC re-cap) and is reassigned from unowned to
+  **Backend 1.5**, whose spec the 1.2 scan already widens over the same surface; and G18's
+  mojibake rationale was narrowed, since G13 already guards that half.
+
+  Left genuinely unowned, and it is a note rather than a guard: the hydration path applies
+  no `topic` length cap at all.
 - [~] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
@@ -647,6 +677,31 @@ that can be red.
 - [ ] green-acceptance
 
 ### Scenario 2.1: The provider sends the prompt it was given
+
+**Two obligations placed on this scenario by 1.4's design (2026-08-05), copied here from
+`decisions/prompt-builder-decision.md` because this file — not the ADR — is what a work
+unit's author is obliged to read.** Note this is *Backend* 2.1; the story also has an
+Integration 2.1 and a Security 2.1, and the ADR's first draft said "2.1" unqualified.
+
+1. **Compose the prompt in the usecase, before the provider call** — not inside
+   `GigaChatProvider.generate`. G5 asserts that a `PromptBuildError` means the provider was
+   called **zero** times; a build anywhere inside the provider means it was called exactly
+   once, so nesting the substitution there makes G5 unsatisfiable as written, and the
+   cheapest escape from that red is to weaken G5. Composing upstream also makes the whole
+   retry-of-an-unchangeable-value class structurally impossible rather than dependent on
+   catch ordering.
+2. **If the build nonetheless lands inside the adapter**, an adapter test must assert
+   `GigaChatProvider.generate` propagates `PromptBuildError` **unwrapped** — not as
+   `ProviderError`, not as `httpx.HTTPError`. Without it this scenario is free to widen
+   that handler and the usecase-side guard stays green while never firing. Taking this
+   path is a respecification of G5's count and must be recorded as one.
+
+Also inherited: G14's guard test
+(`test_gigachat_provider_prompt_agreement.py`) contains a ratchet that fails with an
+instruction to **delete the file** once the provider delegates to `build_prompt` —
+substitution is what makes G14 structurally unnecessary. Deleting it is this scenario's
+job; silencing it is not.
+
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase
