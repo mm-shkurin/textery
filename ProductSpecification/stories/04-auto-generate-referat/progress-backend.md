@@ -509,11 +509,32 @@ that can be red.
   unnoticed, and `test_gigachat_provider_generate.py:51`'s hand-typed golden is coupled to
   the fixture's topic/pages. Narrowing that golden would have *reduced* strictness, so
   `/test-review` correctly declined it.
-- [ ] green-adapter generation_provider (G14) — expected `[S]`: the composers already
-  agree for доклад after this scenario's GREEN, so the red is a mutation red (edit either
-  composer alone), not a missing-behavior red. Resolve it from what the red actually
-  reports rather than from this prediction.
-- [ ] green-acceptance
+- [S] green-adapter generation_provider (G14) — the prediction held, and it was checked
+  rather than assumed. There is no disable marker in
+  `test_gigachat_provider_prompt_agreement.py` to remove: the red landed the file enabled
+  because its red was a mutation red, so GREEN had nothing to enable and nothing to
+  implement. Both G14 methods pass on the untouched tree (2 passed), the adapter module is
+  27 passed / 0 failed, and `pytest backend/` is 716 passed / 59 skipped / 0 failed.
+  Writing the provider→`build_prompt` substitution here would have been the *wrong* green:
+  that substitution is Scenario 2.1's behavior, and doing it now would leave 2.1 with a
+  green adapter and nothing to redden.
+  The skip count moved from the red run's `772 / 2` to `716 / 59` — environmental, not a
+  regression: every extra skip is a `backend/adapters/db` integration test reporting
+  `no database listening at localhost:5432` (Postgres was up during red, down now), plus
+  the two pre-existing `htmldocx`/`weasyprint` optional-dependency skips. No
+  `generation_provider`, domain or usecase test is skipped.
+  `/test-coverage generation_provider --focus` confirmed the empty focus diff is correct
+  rather than a broken filter (green wrote no code at all): adapter sits at 95/97
+  statements (98%) and 8/8 branches (100%), 0 partial. The two uncovered statements are
+  both older than this work unit and out of its scope — `fake_provider.py:26` (`aclose`'s
+  `return None`, reachable from `application/src/app/container/runtime.py:23`, introduced
+  `e5cd85ef`) and `gigachat_provider.py:167` (the `ProviderError` on the *token* handshake
+  — `TestGenerateProviderError` covers the completions call, not the OAuth one; introduced
+  `bbdcfdf9`). The latter has a natural owner already on the board, Integration Scenario
+  2.1 "A provider error still ends the generation as failed"; no steps were pre-written
+  under it. No steps were added to this scenario either — attributing foreign code to 1.3
+  would be a false claim of coverage.
+- [~] green-acceptance
 
 ### Scenario 1.4: Every supported document type yields a prompt
 - [ ] red-acceptance
