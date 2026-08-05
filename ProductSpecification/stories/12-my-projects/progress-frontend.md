@@ -142,10 +142,22 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   `ExportControl.tsx:139`, `LinkPopover.tsx:140`). Unannounced, the feed simply never populates for an
   assistive-tech user: indistinguishable from an empty account, which is the exact defect this scenario
   exists to kill, unfixed for the users who need it most. Assert via `findByRole('alert')`
-- [~] green-frontend (the error banner is announced, not just displayed) — the test reaches the banner
+- [x] green-frontend (the error banner is announced, not just displayed) — the test reaches the banner
   ONLY by `findByRole('alert')` and asserts `.textContent` on the node the role query returned, so a
   `role` on an empty live region beside the visible sentence does not pass, and a `role` on a wrapper
-  containing the cards does not either. Add the role to the element that already carries the message
+  containing the cards does not either. Add the role to the element that already carries the message.
+  Shipped as one attribute on the existing `<p>`; the `error !== null &&` guard is unchanged
+- [~] red-frontend (no live region exists before anything has failed) — premortem on 9f8c652a, the
+  tempting green it named: dropping the `error !== null &&` guard so the banner is always mounted
+  passes ALL THREE suites, because nothing in the feature asserts the error surface is ABSENT on a
+  successful load (no `queryByRole`, no `toBeNull` anywhere under the feature's `__tests__`). This
+  repo already wrote the hazard down at `auth/components/RegisterForm.tsx:65` — an assertive region
+  present at first paint announces on load, which is why the role there appears only in the error
+  state. The green above kept the guard by instruction, not by test. Assert
+  `expect(screen.queryByRole('alert')).toBeNull()` in `ProjectsPage.feed.test.tsx` after the cards
+  have arrived, so the DOM is settled — by role, not testid: the testid version passes on a
+  role-carrying element that lost its testid
+- [ ] green-frontend (no live region exists before anything has failed)
 - [ ] red-frontend (the timeout arm does not paint English on a Russian screen) — agent-review on
   6a205042. `send.ts:93` re-throws `RequestTimeoutError` with its type intact and
   `httpClient.ts:70-75` builds it as `super('Request timed out')`; `describeFailure`'s last line is
@@ -172,8 +184,25 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   the in-flight window is visually blank; the moment 2.3 lands the empty-state affordance, every user
   on a slow connection reads «у вас пока нет проектов» before their projects arrive — this scenario's
   own defect, reintroduced on the pending path. `feedTestHarness` has no `mockFeedPending`, so the
-  state is not merely untested, it is not expressible: render against `new Promise(() => {})` and
-  assert both the error surface and the empty-state affordance absent
+  state is not merely untested, it is not expressible: render against `new Promise(() => {})`.
+
+  **RE-SPECIFIED after agent-review on 9f8c652a**, which caught this note repeating the defect that
+  generated it. The original text asked to assert the empty-state affordance ABSENT — but that
+  affordance is scenario 2.3 and does not exist in `ProjectsPage.tsx` today, so the assertion has zero
+  writers and holds for every implementation forever: verbatim the vacuous-assertion finding that
+  produced the `a failed load does not also offer the empty state` step above. Assert instead that a
+  pending affordance is PRESENT (which is falsifiable today, and is what 4.1's skeleton wants
+  anyway); the error-surface-absent half stays as written. Defer the empty-state-absent half to 2.3
+- [ ] refactor (the RED evidence in this feature cannot discriminate) — agent-review on 9f8c652a,
+  systemic rather than one file. `src/test/setup.ts` sets `asyncUtilTimeout: 5000`, exactly vitest's
+  default `testTimeout`, so on every missing-element red the OUTER timeout wins the race and Testing
+  Library's «Unable to find role/testid» message with its DOM dump is never printed. Every red in this
+  scenario therefore recorded the same evidence — `Test timed out in 5000ms` — which is identical
+  output for the real defect, for `vi.mock` failing to apply, and for the component rendering nothing
+  at all. Every prediction/actual match in this scenario's history is weaker than it reads. Drop
+  `asyncUtilTimeout` below `testTimeout` so the DOM dump survives; while there, disambiguate the two
+  near-identical `describe` titles (`ProjectsPage error surface when listProjects rejects` vs
+  `ProjectsPage when listProjects rejects`) that a CI log cannot tell apart
 - [ ] green-frontend (a pending load is not an empty account)
 - [ ] align-design (the failure is styled as a failure, not as helper text) — BOTH review passes on
   6a205042 raised this independently. `.projects-error` uses `var(--text-muted)`, the same token

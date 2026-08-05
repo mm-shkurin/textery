@@ -36,7 +36,7 @@ describe('ProjectsPage error surface when listProjects rejects', () => {
   // reached the `.textContent` assertion. Note what did NOT appear: no unhandled rejection, because
   // the `.catch` from the previous green already swallows it. The page shows the sentence; it just
   // does not say it.
-  it.skip('announces the load failure through a live region, not only on screen', async () => {
+  it('announces the load failure through a live region, not only on screen', async () => {
     mockFeedRejection(MISSING_UPDATED_AT_MESSAGE)
 
     render(<ProjectsPage />)

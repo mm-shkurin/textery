@@ -46,7 +46,12 @@ export function ProjectsPage() {
   return (
     <div className="projects-page" data-testid="projects-page">
       {error !== null && (
-        <p className="projects-error" data-testid="projects-error">
+        // `role="alert"` sits on the element that carries the sentence, not on a wrapper or an
+        // always-present empty region: an assistive-technology user hears the failure only if the
+        // words are inside the live region at the moment it appears. The guard above stays for the
+        // same reason `RegisterForm.tsx:65` only renders its role in the error state — an assertive
+        // region mounted at first paint announces on load, before anything has gone wrong.
+        <p className="projects-error" data-testid="projects-error" role="alert">
           {error}
         </p>
       )}
