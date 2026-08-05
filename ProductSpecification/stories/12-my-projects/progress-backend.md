@@ -171,6 +171,43 @@ only the design draft could not see the contract.
 - [~] red-adapter db (every row field projected from the documents arm) — `title`, `preview`
   (empty content ⇒ `''`), `document_type`, `status`, the two timestamps read from
   `DocumentModel`; `kind` the literal `document`; `retryable` false for every document.
+  **Review-pass findings on `0a4f6420`, to settle at this step** (both passes returned
+  CONCERNS; surfaced, not auto-fixed):
+  1. *both passes, high — verified against the yaml* — "the contract's **nine** required
+     fields" is false. `api-specs/projects_list.yaml` `#/components/schemas/ProjectItem`
+     declares `required: [kind, id, document_type, status, retryable, created_at, updated_at,
+     preview]` — **eight** names — and `title: {type: string, nullable: true}` with "Null/blank
+     sorts last under title_asc". The green typed `title: str` and the shape guard pins it
+     required, so the domain now forbids a state the contract permits and Scenario 3.3
+     ("Untitled projects sort last by title") depends on. This step must decide `title:
+     str | None` and seed a NULL-titled document, rather than coercing NULL to `''` — which
+     would destroy the null/blank distinction 3.3 asks about. Named guard: a shape assertion
+     tying each field's annotation to the schema's `required`/`nullable`, read from the yaml
+     rather than hand-copied into `EXPECTED_FIELD_NAMES` (the drift guard is what drifted).
+  2. *both passes, high* — `project_feed_storage_statements.assert_feed_is_owner_scoped` now
+     builds its expectation from `unprojected_row`, imported from the module under test, so
+     both sides of the equality are one code path and the assertion has collapsed to
+     `document.id == row_id`. Change `_UNPROJECTED_TIME` to 2099 and it stays green. This step
+     replaces that expectation with a row built in the test tree from the seeded `Document`.
+  3. *both passes, credible* — `unprojected_row` emits `kind=""` and `status=""`, values
+     neither contract enum admits (`status` has an explicit fail-closed-to-`unknown` rule that
+     a blank violates). Harmless only while `ProjectItemDto` serializes `id` alone — one line
+     from the wire, and the db suite is session-skipped without a local Postgres so CI never
+     executes the path. The projection this step lands removes the factory; if any placeholder
+     survives it, it must be one that fails loudly.
+  4. *premortem, credible* — the shape guard reflects over field *names* and defaults only,
+     never `field.type`. A naive `datetime` from a `TIMESTAMP WITHOUT TIME ZONE` column keeps
+     both shape tests green and breaks the contract's "UTC ISO-8601 with explicit offset".
+     Named guard: assert `tzinfo is not None` on the timestamps of a row leaving the port —
+     this step's arm, since it is the first to read them from `DocumentModel`.
+  5. *premortem, remote; refactor-agent, adjacent* — the `statements` package collision is
+     fixed by instance (rename), not by class: `db/tests/statements/` and
+     `usecase/tests/statements/` are still one importable top-level package. Guard would be a
+     meta-test on duplicate importable names, or `--import-mode=importlib`. Out of scope for
+     story 12 — belongs to a task, alongside finding 5 of the previous unit (`RED:` skips
+     outliving their green). Also out of scope and worth a decision: `backend-ci.yml` runs
+     neither ruff nor mypy, and mypy reports 6 pre-existing errors — the `**_EXPECTED_ROW`
+     unpack in `project_feed_row_statements.py:63` became untypeable with this widening.
 - [ ] green-adapter db (every row field projected from the documents arm)
 - [ ] red-adapter rest (the envelope emits every `ProjectItem` field) — `ProjectItemDto` widens
   to the contract's nine fields, timestamps serialized as UTC ISO-8601 with an explicit offset
