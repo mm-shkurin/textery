@@ -228,7 +228,7 @@ only the design draft could not see the contract.
   now genuinely executes. Whole-backend counts change accordingly: **713 passed, 4 skipped**
   (the 2 remaining skips beyond this step's RED pair are pre-existing). Any future run reporting
   ~653/62 is a run with no database, not a green suite.
-- [~] red-adapter db (amendment — `title` and `preview` carry a real document's values)
+- [x] red-adapter db (amendment — `title` and `preview` carry a real document's values)
   **Why this step exists.** Both review passes on `f1d8ee78` returned CONCERNS on the same
   point, and it is correct: the red pins `title=None` and `preview=""`, but the only seeded
   document comes from `Document.create`, which hardcodes `title=None` and `content=""`, and
@@ -266,7 +266,39 @@ only the design draft could not see the contract.
   hardcoding it cannot be caught until a second document status exists — the contract already
   lists `ready`. Belongs to whichever scenario introduces one, together with the ADR's
   fail-closed-to-`unknown` rule for the document arm.
-- [ ] green-adapter db (every row field projected from the documents arm)
+  **How the amendment settled it (2026-08-05):** the second document is seeded through
+  `Document.create_from_generation` — the only factory that accepts `content` and `title`,
+  since `create`'s missing `content` parameter is the manual path's mass-assignment guard —
+  and under an account of its own, so each test still reads a one-row page (1.1 owns neither
+  ordering nor paging, and a two-row page would force an assertion on a sequence no scenario
+  has specified). Row expectations moved to a new
+  `db/tests/statements/project_feed_row_expectations.py`, mixed into the Statements class:
+  a 200-line split, not a seam. Both row assertions compare the **whole page**
+  (`page == ProjectPage(items=(...,))`), restoring the page-level guard the collapsed
+  expectation had dropped. `SEEDED_STATUS` became
+  `EXPECTED_STATUS_OF_ANY_SEEDED_DOCUMENT`, carrying at the constant the reason importing
+  `DRAFT_STATUS` to "remove the duplication" would recreate the mirror. RED confirmed against
+  a live Postgres: all three methods failed on the first run, the titled row coming back
+  `title=''`, `preview=''` for a document seeded `title='Весна в городе'`,
+  `content='Короткий текст.'` — the placeholder-equals-expectation hole, observed rather than
+  argued. Timestamps failed on the *instants* (1970 vs the seeded 2026-03-01T09:15Z and
+  +37min), not the offset: the placeholder is already tz-aware UTC, so that half of the guard
+  correctly stayed silent.
+  **`/test-review` (2026-08-05):** one fix applied — `SEEDED_UPDATED_AT` was
+  `SEEDED_CREATED_AT + timedelta(minutes=37)`, a calculation in an expected value; it is now
+  the literal `datetime(2026, 3, 1, 9, 52, 0, tzinfo=UTC)`. Dismissed: `retryable=False` is
+  strict but unfalsifiable at 1.1 (no column to read; deferred to 1.2/1.3, recorded at the
+  constant); `assert_feed_holds_only`'s id-only comparison is the owner-predicate claim, and
+  tightening it would rebuild the removed mirror; the injected storage adapters *are* this
+  layer's subject.
+  **Open, for the green:** `ProjectItem.title` is annotated `str` while the contract declares
+  it nullable and the expectation pins `None` — a frozen dataclass enforces nothing at
+  runtime, so the annotation is a lie until the green widens it to `str | None`. Coercing NULL
+  to `''` instead would destroy the null/blank distinction 3.3 depends on. The green must also
+  delete `unprojected_row`, which now has zero importers outside its own module.
+  **Out of scope, follow-up:** `assert_feed_refuses_an_unresolved_owner` combines action and
+  assertion; splitting it edits `test_project_feed_storage.py`, untouched by this amendment.
+- [~] green-adapter db (every row field projected from the documents arm)
 - [ ] red-adapter rest (the envelope emits every `ProjectItem` field) — `ProjectItemDto` widens
   to the contract's nine fields, timestamps serialized as UTC ISO-8601 with an explicit offset
   (the acceptance DTO's `parse_feed_timestamp` rejects a naive string).
