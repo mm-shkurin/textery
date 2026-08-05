@@ -228,7 +228,45 @@ only the design draft could not see the contract.
   now genuinely executes. Whole-backend counts change accordingly: **713 passed, 4 skipped**
   (the 2 remaining skips beyond this step's RED pair are pre-existing). Any future run reporting
   ~653/62 is a run with no database, not a green suite.
-- [~] green-adapter db (every row field projected from the documents arm)
+- [~] red-adapter db (amendment — `title` and `preview` carry a real document's values)
+  **Why this step exists.** Both review passes on `f1d8ee78` returned CONCERNS on the same
+  point, and it is correct: the red pins `title=None` and `preview=""`, but the only seeded
+  document comes from `Document.create`, which hardcodes `title=None` and `content=""`, and
+  the production placeholder is `_UNPROJECTED_TEXT = ""`. Expectation equals placeholder, so a
+  green that never selects `documents.title`/`documents.content` at all — emitting both as
+  literals — passes. The commit applied the right standard to `document_type`/`status` and did
+  not apply it to the two fields where the mirror is a constant rather than an echo. `preview`
+  is the worse half: the contract makes it *derived* (required, non-nullable, bounded at 200
+  code points, HTML stripped), and after `f1d8ee78` none of that derivation is under any test
+  pressure. The green cannot repair this — a green may not change tests — so the amendment runs
+  first. Seed a second document carrying a non-NULL title and non-empty content, and pin
+  `row.title` and `row.preview` against those seeded values. 1.1 owes only the reading of the
+  columns; the grapheme-aware 200-code-point trim stays 6.2's and the markup strip stays 6.3's.
+  Also fold in while here:
+  - *agent-review, medium* — the whole-page equality went out with the collapsed expectation.
+    `assert_feed_holds_only` now asserts a tuple of ids and `assert_row_is_projected_from`
+    compares `page.items`, so no db test compares a whole `ProjectPage` any more. The collapse
+    being repaired was the `unprojected_row` import; `page == ProjectPage(items=(expected,))`
+    would have fixed that while keeping the page-level guard the deleted comment existed to
+    provide ("an assertion that reaches past the page into one field would keep passing while
+    `page`/`limit`/`total` arrive unchecked").
+  - *agent-review, low* — `SEEDED_STATUS` is not seeded and cannot be: `Document.create`
+    refuses a status parameter by design and hardcodes `DRAFT_STATUS`. The hand-written
+    `"draft"` is still not a mirror, so the assertion holds, but the name and the commit
+    message both claim a seeding that does not happen — and a reader who later "fixes the
+    duplication" by importing `DRAFT_STATUS` recreates exactly the mirror the comment warns
+    against. Rename, or say so at the constant.
+  **Checked and dismissed:** premortem's CREDIBLE 2 (the identity map masks the read, because
+  `expire_on_commit=False` leaves the seeded `DocumentModel` resident, so an ORM entity select
+  would re-assert the values Python wrote). The guard it asks for is already there —
+  `ProjectFeedStorageStatements.list_feed` calls `self._session.expire_all()` before reading,
+  with a comment giving that exact reason. The concern is real in kind and already answered.
+  **Carried, not actionable now:** `status` is pinned only against `"draft"` because
+  `ALLOWED_STATUSES = ("draft",)` and `ck_documents_status` rejects anything else, so a green
+  hardcoding it cannot be caught until a second document status exists — the contract already
+  lists `ready`. Belongs to whichever scenario introduces one, together with the ADR's
+  fail-closed-to-`unknown` rule for the document arm.
+- [ ] green-adapter db (every row field projected from the documents arm)
 - [ ] red-adapter rest (the envelope emits every `ProjectItem` field) — `ProjectItemDto` widens
   to the contract's nine fields, timestamps serialized as UTC ISO-8601 with an explicit offset
   (the acceptance DTO's `parse_feed_timestamp` rejects a naive string).
