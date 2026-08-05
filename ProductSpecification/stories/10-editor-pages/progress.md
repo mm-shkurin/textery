@@ -98,6 +98,45 @@ ORDERING, not a second charter: if story 10's green lands first, the clear path 
 and silently broken in the window between them. Nothing in either story's progress recorded the
 dependency until now. Do not fix it here — it is story 17's file and another worktree's branch.
 
+## Two title-shaped gaps the route change makes reachable (2026-08-05)
+
+Both surfaced by the premortem pass over `08080394`, both verified, and neither fixable inside
+this story's own files — recorded here rather than chartered as a 2.1 step.
+
+**The title field has no length cap on the path a user controls.** `SaveDocumentRequestDto.title`
+(`document_dtos.py:38`) is a bare `str | None` with no `max_length`; `TitleUpdate.__post_init__`
+validates the contradiction and blankness but not length; `documents.title` is an unbounded
+`String`; and `documents_save.yaml` declares no `title` property at all, so there is no `maxLength`
+and no 400 row. The cap exists only on the path a user CANNOT influence —
+`generated_title.py:8`, `MAX_GENERATED_TITLE_LENGTH = 120`, whose comment names this exact harm
+("a title that long is not a title, it is the first paragraph, and it would push every history row
+and every Content-Disposition header out of shape"). Probed with the correct green applied: a PUT
+carrying a 50,000-character Cyrillic title returns **200 OK** and reaches the port as
+`TitleUpdate.of(<50000 chars>)`. The export route's `quote(rendered.filename, safe="")`
+(`document_router.py:157`) expands each Cyrillic character to 6 bytes, so that document's
+`Content-Disposition` becomes ~300 KB — past a default 4 KB `proxy_buffer_size` at roughly 700
+characters, and every export of that document then fails at the proxy on every retry. What makes it
+unrecoverable rather than merely ugly is the risk already recorded above: the one wire shape that
+would remove the title (`"title": null`) no-ops at the real CAS until story 17 closes it, and there
+is no title editor in the frontend — so recovery is a database edit. Scenario 2.1 is page settings;
+title length belongs with the 3.x validation scenarios or with story 17, and the owner should be
+named before either ships.
+
+**`documents_save.yaml` is silent on `title`, and its neighbour says the opposite.** The
+three-state contract `08080394` pins lives only in a test docstring and in story 17's
+`blank-title-semantics-decision.md`. The `SaveDocumentRequest` schema declares `content`, `version`
+and `page_settings` — the asymmetry is stark inside that one file, since `page_settings` carries a
+twelve-line tri-state description warning "do not collapse them" while `title`, now a four-shape
+field one of whose shapes is destructive, carries nothing. Worse, `documents_from_generation.yaml:92`
+lists `title` among the fields "the client cannot set through the body", so a reader of the specs
+concludes the reverse of what this scenario establishes. The concrete cost is a frontend session in
+its own worktree implementing "clear the title" the obvious way — send `""` — which after green is
+`preserve()`: the clear button does nothing, forever, with the whole backend suite green. The fix
+lives in `ProductSpecification/api-specs/`, outside this story's documentation boundary, so it is
+recorded and not applied. Nothing pins `documents_save.yaml` against `SaveDocumentRequestDto`, and
+no acceptance test drives blank-preserves / null-clears over real HTTP — every assertion in this
+contract stops at an autospec mock.
+
 ## Notes for later scenarios
 
 - Pagination is measured in a real browser. jsdom reports every element as zero-height, so

@@ -104,8 +104,57 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   ones in `test_save_document_router.py`. Nothing fails if green lifts only three — the guard is
   prose, so check the number. (ii) `document_router.py` is at 179 lines and the mapping adds ~8;
   under the 200 cap but with no room for the `_ERROR_CODE_STATUS_MAP`/log work chartered nearby.
-  (iii) `if request.title is None` is the ONLY spelling that passes all four rows — the blank arm
-  exists to make that true.
+  (iii) `if request.title is None` is the spelling the four rows were built to force — the blank arm
+  exists to make that true. Stated as "the ONLY spelling" when it was written; agent-review
+  falsified the absolute (`if not isinstance(request.title, str)` also passes 5/5). The practical
+  claim stands — both mis-spellings the rows were aimed at are caught — but this is the THIRD
+  unqualified absolute in this scenario to be falsified by the pass that checked it. Stop writing
+  them.
+  (iv) **premortem CREDIBLE — the four marker sites are spelled TWO ways, and the obvious grep finds
+  only three.** `test_save_document_router.py:20` holds a shared `_RED_TITLE_INTENT` constant used
+  at :69/:97/:134; the class-level marker at `test_save_document_title_router.py:8` is an inline
+  literal sharing no token with it, rewritten fresh by this commit. `grep -rn _RED_TITLE_INTENT
+  backend/adapters/rest/` returns exactly the three whose removal leaves the whole four-row contract
+  dark. Proved: correct green applied, only the three greppable markers lifted → **92 passed, 5
+  skipped, 0 failed** — a clean green with its own contract disabled. Lifting the fourth → 97 passed.
+  Nothing fails; the count is the only guard, and this scenario's prose count has already been wrong
+  once (95, corrected to 97 by this commit). Check the NUMBER, and prefer moving the class marker
+  onto the shared constant so one grep enumerates all four.
+  (v) **agent-review — green must forward `request.title` RAW; it must not trim.** `TitleUpdate.of(
+  request.title.strip())` passes all four rows today (5/5 with the class unskipped; 646 passed
+  across the backend), because the set arm sends `"Привет Мир"` — internal space only, so `.strip()`
+  is the identity on it. `title_update.py`'s own `__post_init__` docstring names the rejected
+  spelling by hand ("the rejected `value.strip() or None` would have trimmed every real title as a
+  side effect"), and the padded guards that do exist — `test_title_update.py:112`/`:124` and
+  `test_document_storage_title.py:95` — sit BELOW the route, so a route that trims before calling
+  `of()` never presents the padding to any of them.
+  (vi) Recording correction: this commit's message reports the unit sweep as 598 passed / 11 skipped.
+  It does not reproduce — `pytest backend/` at `08080394` is **641 passed, 73 skipped** (62 db-adapter
+  skips because no Postgres is up in this worktree, 3 rendering import guards, 8 rest RED markers).
+  The 598/11 figure excluded `backend/adapters/db` entirely. The rest-suite number green is actually
+  checked against (97/0) was verified and is correct; the sweep baseline beside it was not.
+- [ ] red-adapter rest (agent-review: the set arm cannot catch a route that trims, and the class
+  docstring claims it can. `test_should_map_a_wire_title_to_a_set_intent` sends `"Привет Мир"` —
+  no leading or trailing space — so every value-rewriting transform is the identity on it:
+  `of(request.title.strip())`, `of(request.title.strip() or "")` (the spelling `title_update.py`
+  rejects BY NAME) and `of(unicodedata.normalize("NFKC", ...))` each pass 5/5. Meanwhile lines
+  109-111, added by `08080394`, assert the opposite in prose: "Blankness is TESTED, never applied:
+  the ADR forbids trimming, so a legitimate `" Отчёт "` is a set intent carrying its padding byte
+  for byte." Nothing in this file pins that. Fix: parametrize the set arm over `"Привет Мир"` AND
+  `" Отчёт "`, expecting `TitleUpdate.of(" Отчёт ")` exactly — that is what the ADR's row 4
+  "store verbatim" actually costs. Length is NOT this row's business; see the cap gap in
+  `progress.md`.
+  While in this class, correct the docstring defect the same pass found: lines 25-27 still say
+  "Pydantic collapses the first two to `None`", which was true when the table had three rows and
+  became false the moment this commit inserted blank as row 2. Measured against
+  `SaveDocumentRequestDto`: absent → `title=None`, `fields_set` without `title`; `""` → `title=''`;
+  `"   "` → `title='   '`; null → `title=None` WITH `title` in `fields_set`. Pydantic collapses
+  rows 1 and 3, not 1 and 2, and `model_fields_set` is therefore not "the only place" absent and
+  blank are distinguishable — they differ by VALUE. Read literally the sentence tells green that
+  `""` arrives as `None`, i.e. that the blank case is already covered by the absent branch, which
+  is the exact wrong green row 2 exists to forbid. This is the same defect class the commit was
+  written to correct, reintroduced by the correction.)
+- [ ] green-adapter rest (agent-review: the padded set arm — forward the title byte for byte)
 - [ ] red-adapter rest (agent-review: the PUT-404 guard asserts the TEST FIXTURE's wiring, not the
   production app's. `conftest.document_app:29` registers `not_found_exception_handler` itself, so
   commenting out `main.py:155` leaves the ENTIRE backend suite green — 641 passed — while every
