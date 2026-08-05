@@ -111,13 +111,19 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   that as well as an em dash does. Green MUST export the message constant from `projectsApi.ts`; the
   test currently holds it as a local `EXPECTED_MESSAGE` only because RED may not touch production, and
   the `/refactor` after green replaces the literal with the import or the two definitions drift
-- [~] red-frontend (a rejected listProjects does not look like an empty feed) — premortem on dbed4e02,
+- [x] red-frontend (a rejected listProjects does not look like an empty feed) — premortem on dbed4e02,
   and now live rather than hypothetical: the green above ships the rejection, and `ProjectsPage.tsx`'s
   only consumer is `listProjects().then(page => setItems(page.items))` with no `.catch` and no error
   state. A serializer renaming `updated_at` therefore renders an unhandled promise rejection plus a
   page visually identical to «у вас пока нет проектов» — strictly quieter than the `—` the mapper
   guard was written to eliminate. Assert an error element is present AND the feed holds zero cards
-- [ ] green-frontend (a rejected listProjects does not look like an empty feed)
+- [~] green-frontend (a rejected listProjects does not look like an empty feed) — the RED run showed a
+  second, independent symptom of the same missing `.catch`: an **Unhandled Rejection**
+  (`Сервер вернул проект без даты изменения.`) alongside the timeout. Both vanish with one fix.
+  The test pins the mapper's message verbatim onto the screen via `data-testid="projects-error"`;
+  render the caught error's `.message` rather than hardcoding this one constant into the component —
+  scenario 4.2 («A failed load offers a retry without blanking the page») arrives wanting a retry
+  affordance and would have to undo a hardcoded string
 - [ ] red-frontend-api (an absent required field other than updated_at is not mapped through) — the
   shaping decision agent-review raised on dbed4e02 and this step defers no further: nine fields are
   required in `projects_schemas.yaml`, one is guarded. `can_repeat` absent fails OPEN — «Повторить» is

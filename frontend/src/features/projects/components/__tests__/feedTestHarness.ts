@@ -16,6 +16,14 @@ export function mockFeed(items: ProjectSummary[], total: number) {
   })
 }
 
+// The other half of the contract `listProjects` actually has: it REJECTS on a broken wire body
+// (`MISSING_UPDATED_AT_MESSAGE`), and every caller of `mockFeed` above only ever exercises the
+// resolving half. Takes the message rather than an Error so the call site reads as the failure it
+// is naming, and so the caller passes the exported constant instead of a drifting inline copy.
+export function mockFeedRejection(message: string) {
+  vi.mocked(projectsApi.listProjects).mockRejectedValue(new Error(message))
+}
+
 // Called from inside a `describe`, never at file scope — the feed-rendering suite
 // (`ProjectsPage.feed.test.tsx`) is deliberately left on the real clock, and a top-level pin would
 // silently cover it. The instant stays at the call site rather than baked in here, because "older
