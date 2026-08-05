@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import select
@@ -6,6 +7,37 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from model.document.document_model import DocumentModel
 from project.project_item import ProjectItem
 from project.project_page import ProjectPage, ProjectPageRequest
+
+_UNPROJECTED_TEXT = ""
+_UNPROJECTED_TIME = datetime(1970, 1, 1, tzinfo=UTC)
+
+
+def unprojected_row(row_id: UUID) -> ProjectItem:
+    """A feed row with its id projected and nothing else.
+
+    `ProjectItem` carries the contract's nine fields and permits no default, so
+    this statement -- which selects `documents.id` alone -- has to name the eight
+    it does not yet project. They are placeholders, deliberately conspicuous ones,
+    and no test pins them: the SELECT that reads the real columns is the next
+    `red/green-adapter db` pair's work, and inventing the projection here would
+    ship a mapping under zero test pressure.
+
+    The factory is exported rather than inlined so the adapter's own tests can say
+    "the id, and nothing projected yet" without restating placeholder literals that
+    would then have to be edited in two places when the projection lands.
+    """
+    return ProjectItem(
+        kind=_UNPROJECTED_TEXT,
+        id=row_id,
+        title=_UNPROJECTED_TEXT,
+        preview=_UNPROJECTED_TEXT,
+        document_type=_UNPROJECTED_TEXT,
+        status=_UNPROJECTED_TEXT,
+        retryable=False,
+        created_at=_UNPROJECTED_TIME,
+        updated_at=_UNPROJECTED_TIME,
+    )
+
 
 MISSING_OWNER_REFUSAL = (
     "list_feed requires a resolved owner_id: None would drop the owner predicate "
@@ -53,4 +85,4 @@ class SqlAlchemyProjectFeedRepository:
         # Built from the whole result set, not from a first row: an owner who owns
         # nothing is the path every new account hits first, and `scalar_one()` or
         # `rows[0]` would raise there instead of yielding an empty page.
-        return ProjectPage(items=tuple(ProjectItem(id=row_id) for row_id in result.scalars()))
+        return ProjectPage(items=tuple(unprojected_row(row_id) for row_id in result.scalars()))

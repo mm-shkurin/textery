@@ -1,8 +1,11 @@
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+
+from project.project_item import ProjectItem
 
 from error_handling.exception_handlers import validation_exception_handler
 from router.project import project_router as project_router_module
@@ -63,6 +66,33 @@ def feed_client(project_app):
 def unauthenticated_feed_client(project_app):
     """No owner override -- the real Bearer dependency runs."""
     return _client_factory(project_app, "get_list_projects_usecase", override_owner=False)
+
+
+@pytest.fixture
+def feed_row():
+    """Build a complete domain row carrying the given id.
+
+    `ProjectItem` permits no field to be absent, so the eight fields this router
+    test does not assert still have to be supplied. They are filled with values no
+    assertion reads, and deliberately not with contract-plausible ones: what the
+    serializer emits for them is pinned by the scenario that adds them to the
+    envelope, not here.
+    """
+
+    def _make(project_id):
+        return ProjectItem(
+            kind="",
+            id=project_id,
+            title="",
+            preview="",
+            document_type="",
+            status="",
+            retryable=False,
+            created_at=datetime(1970, 1, 1, tzinfo=UTC),
+            updated_at=datetime(1970, 1, 1, tzinfo=UTC),
+        )
+
+    return _make
 
 
 @pytest.fixture

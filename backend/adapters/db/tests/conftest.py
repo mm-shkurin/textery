@@ -177,9 +177,13 @@ def document_storage_statements(db_session: AsyncSession):
 
 @pytest.fixture
 def project_feed_statements(db_session: AsyncSession):
-    from statements.project_feed_statements import ProjectFeedStatements
+    # Named for the storage adapter, not for the feed: `statements` is a top-level
+    # package in BOTH this tree and the usecase tests', so two same-named modules
+    # under it are one importable name. Whichever tree imported first won, and a
+    # whole-suite run handed this fixture the usecase Statements.
+    from statements.project_feed_storage_statements import ProjectFeedStorageStatements
 
-    return ProjectFeedStatements(db_session)
+    return ProjectFeedStorageStatements(db_session)
 
 
 @pytest.fixture

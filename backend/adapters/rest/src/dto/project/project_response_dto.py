@@ -9,11 +9,11 @@ from project.project_page import ProjectPage
 class ProjectItemDto(BaseModel):
     """One feed row on the wire.
 
-    `id` alone, because `id` alone is what the domain `ProjectItem` carries.
-    projects_list.yaml also declares kind, title, preview, document_type, status,
-    retryable and the timestamps required -- each arrives with the scenario that
-    first asserts it, so that its value is produced where a usecase test can reach
-    it rather than invented in this serializer.
+    `id` alone. The domain `ProjectItem` now carries all nine fields
+    projects_list.yaml declares required, but nothing yet asserts them on the
+    *wire*: serializing a field here would emit whatever the storage adapter
+    happens to hold, and today that is a placeholder, not a projection. Each field
+    is added to this DTO by the scenario that first asserts it in the envelope.
     """
 
     id: UUID

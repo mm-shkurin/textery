@@ -1,6 +1,3 @@
-import pytest
-
-
 class TestProjectFeedIsOwnerScoped:
     """Scenario 1.1: The feed shows the caller's documents and nothing of anyone else's.
 
@@ -38,10 +35,6 @@ class TestProjectFeedRowCarriesTheContractShape:
     And the usecase neither drops, defaults nor derives any of them.
     """
 
-    @pytest.mark.skip(
-        reason="RED: TypeError: ProjectItem.__init__() got an unexpected keyword argument "
-        "'kind' -- the VO carries only `id`, not the contract's nine fields"
-    )
     async def test_should_serve_every_contract_field_through_from_the_port(
         self, project_feed_row_statements
     ):

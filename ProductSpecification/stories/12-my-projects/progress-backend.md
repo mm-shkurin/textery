@@ -102,7 +102,7 @@ only the design draft could not see the contract.
   the contract's document default `False` instead of forwarding the port's value cannot pass.
   `ProjectKind`/`ProjectStatus` enums deliberately NOT introduced: nothing here constrains the
   value *set*; the fail-closed unknown-status rule is first asserted in the db arm (1.7).
-- [~] green-usecase (the feed row carries the contract's full shape) — must also patch
+- [x] green-usecase (the feed row carries the contract's full shape) — must also patch
   `ProjectFeedStatements._documents_of`, which builds `ProjectItem(id=uuid4())` and breaks the
   moment the constructor widens (tdd-rules setup-method carve-out).
   **Review-pass findings on `df9abbdc`, to settle at this step** (both passes returned
@@ -144,7 +144,31 @@ only the design draft could not see the contract.
      test asserting field pass-through, so a surviving skip loses the whole claim. Guard named: a
      meta-test over collected items failing on any `RED:` skip outside an allowlist. Out of
      scope for story 12 — belongs to a task.
-- [ ] red-adapter db (every row field projected from the documents arm) — `title`, `preview`
+  **How the green settled each finding (2026-08-05):** (1) pair kept, per the decision above —
+  the production change is `ProjectItem` widening to the ADR's nine fields in `domain`, and the
+  `RED:` skip died in the same unit that opened it. (2) `ProjectItem`'s docstring rewritten: it
+  now says all nine fields live here from 1.1 onward and none carries a default, replacing the
+  per-field deferral text that the widening made false. (3) shape guard shipped —
+  `usecase/tests/project/test_project_item_shape.py` + `statements/project_item_shape_statements.py`
+  reflect over `dataclasses.fields(ProjectItem)`, pinning the nine names in declaration order and
+  asserting every `default`/`default_factory` is `MISSING`, so no future default can restore the
+  hollow-row hole. (4) NOT done here — the `ProjectItemDto`-vs-`projects_list.yaml` spec test is
+  the `red-adapter rest` pair's, as recorded; `ProjectItemDto` still emits `id` alone and its
+  docstring now says why (nothing asserts the other eight on the wire, and the storage adapter
+  holds placeholders, not a projection). Call sites widened rather than defaulted:
+  `project_feed_statements._a_document_owned_by_nobody_in_particular`, the rest router test's
+  `feed_row` fixture, and `project_feed_storage.unprojected_row` — the last a named, exported
+  factory whose docstring declares the eight fields it does not project yet, replaced wholesale by
+  the `red/green-adapter db` pair below. Also fixed in passing: `db/tests/conftest.py`'s
+  `project_feed_statements` fixture imported `statements.project_feed_statements`, a name that
+  collides with the usecase tests' identically-named module under the same top-level `statements`
+  package — a whole-suite run handed the db fixture the usecase Statements. Now imports
+  `statements.project_feed_storage_statements.ProjectFeedStorageStatements` (class renamed to
+  match its file). Tests: 653 passed, 62 skipped (whole backend). Coverage: touched production
+  files at 100% line and branch (`project_item.py`, `project_response_dto.py`);
+  `project_feed_storage.py` unmeasurable without a local Postgres (session-level skip), no gap
+  opened by this green.
+- [~] red-adapter db (every row field projected from the documents arm) — `title`, `preview`
   (empty content ⇒ `''`), `document_type`, `status`, the two timestamps read from
   `DocumentModel`; `kind` the literal `document`; `retryable` false for every document.
 - [ ] green-adapter db (every row field projected from the documents arm)

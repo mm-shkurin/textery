@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from uuid import UUID
 
 
@@ -11,12 +12,26 @@ class ProjectItem:
     served twice has to surface as a difference rather than passing a `contains`
     check.
 
-    `id` alone is the identity here. `kind` -- and with it the whole
-    document/generation discriminator -- is absent because no assertion in 1.1
-    reads it; scenario 1.8 ("a document and a generation sharing an id are two
-    distinct items") is the first test that does, and it adds the field. The
-    contract's other fields (title, preview, document_type, status, retryable, the
-    timestamps) are likewise deferred to the scenario that first asserts one.
+    All nine fields the contract declares
+    (api-specs/projects_list.yaml #/components/schemas/ProjectItem) live here from
+    1.1 onward, and not one of them carries a default. 1.1's own row assertion is
+    the first test that reads them all: it compares the whole row `asdict` against
+    the contract's literals, so a field this VO did not carry -- or carried with a
+    default the usecase could silently fall back to -- fails it by name. A default
+    would also keep `ProjectItem(id=...)` legal, which is exactly how the storage
+    adapter went on emitting hollow id-only rows with every test green; the shape
+    statement in the usecase tests pins that no field ever regains one.
+
+    Values are the storage adapter's to project. This VO forbids absence; it does
+    not derive anything.
     """
 
+    kind: str
     id: UUID
+    title: str
+    preview: str
+    document_type: str
+    status: str
+    retryable: bool
+    created_at: datetime
+    updated_at: datetime

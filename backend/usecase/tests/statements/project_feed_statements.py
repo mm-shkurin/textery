@@ -38,6 +38,28 @@ _UNAUTHENTICATED_ERROR_CODE = "UNAUTHENTICATED"
 _UNAUTHENTICATED_MESSAGE = "Authentication is required to view your projects."
 
 
+def _a_document_owned_by_nobody_in_particular() -> ProjectItem:
+    """A complete row whose only distinguishing field is its id.
+
+    This scenario's claim is owner scoping, and it is made by identity alone: the
+    multiset and disjointness assertions compare rows, and a fresh `id` already
+    makes every row distinct. The remaining eight fields are filled because
+    `ProjectItem` allows no field to be absent -- not because anything here reads
+    them. What the fields must *contain* is pinned by `ProjectFeedRowStatements`.
+    """
+    return ProjectItem(
+        kind="document",
+        id=uuid4(),
+        title="",
+        preview="",
+        document_type="",
+        status="draft",
+        retryable=False,
+        created_at=_FIXED_NOW,
+        updated_at=_FIXED_NOW,
+    )
+
+
 @dataclass(frozen=True)
 class ServedFeed:
     """What the caller got back, plus what they were entitled to."""
@@ -132,6 +154,6 @@ class ProjectFeedStatements:
         )
 
     def _documents_of(self, owner_id: UUID, count: int) -> tuple[ProjectItem, ...]:
-        items = tuple(ProjectItem(id=uuid4()) for _ in range(count))
+        items = tuple(_a_document_owned_by_nobody_in_particular() for _ in range(count))
         self._repository.seed(owner_id, *items)
         return items

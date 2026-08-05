@@ -1,6 +1,5 @@
 from uuid import uuid4
 
-from project.project_item import ProjectItem
 from project.project_page import ProjectPage, ProjectPageRequest
 from security.current_owner import UNAUTHORIZED_MESSAGE
 
@@ -36,12 +35,12 @@ class TestListProjects:
     """
 
     async def test_should_serve_the_callers_feed_as_a_json_envelope_of_items(
-        self, mocker, feed_client
+        self, mocker, feed_client, feed_row
     ):
         project_id = uuid4()
         usecase = mocker.Mock()
         usecase.execute = mocker.AsyncMock(
-            return_value=ProjectPage(items=(ProjectItem(id=project_id),))
+            return_value=ProjectPage(items=(feed_row(project_id),))
         )
 
         async with feed_client(usecase) as client:

@@ -6,10 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.document.document_storage import SqlAlchemyDocumentStorage
-from access.project.project_feed_storage import SqlAlchemyProjectFeedRepository
+from access.project.project_feed_storage import (
+    SqlAlchemyProjectFeedRepository,
+    unprojected_row,
+)
 from auth.account import Account
 from document.document import Document
-from project.project_item import ProjectItem
 from project.project_page import ProjectPage, ProjectPageRequest
 
 MISSING_OWNER_REFUSAL = (
@@ -25,7 +27,7 @@ _REFUSAL_NAMES_THE_MISSING_OWNER = (
 )
 
 
-class ProjectFeedStatements:
+class ProjectFeedStorageStatements:
     """DSL for the feed read model's storage adapter.
 
     The write half deliberately goes through `SqlAlchemyDocumentStorage` -- the
@@ -76,7 +78,11 @@ class ProjectFeedStatements:
         # Compared as a whole page, not as `page.items`: `ProjectPage` grows `page`,
         # `limit` and `total` with the paging scenarios, and an assertion that reaches
         # past the page into one field would keep passing while those arrive unchecked.
-        expected = ProjectPage(items=(ProjectItem(id=document.id),))
+        # `unprojected_row` names the eight fields this statement does not project
+        # yet. Their values are not this test's claim -- the id and the owner
+        # predicate are -- and the coming projection pair replaces the factory and
+        # this expectation together.
+        expected = ProjectPage(items=(unprojected_row(document.id),))
         assert page == expected, _FEED_IS_OWNER_SCOPED
 
     async def assert_feed_refuses_an_unresolved_owner(self) -> None:

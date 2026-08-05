@@ -7,6 +7,7 @@ from statements.login_lockout_statements import LoginLockoutStatements
 from statements.login_statements import LoginStatements
 from statements.port_shape_statements import PortShapeStatements
 from statements.project_feed_row_statements import ProjectFeedRowStatements
+from statements.project_item_shape_statements import ProjectItemShapeStatements
 from statements.project_feed_statements import ProjectFeedStatements
 from statements.refresh_statements import RefreshStatements
 from statements.register_atomic_write_statements import RegisterAtomicWriteStatements
@@ -116,6 +117,11 @@ def project_feed_statements():
 @pytest.fixture
 def project_feed_row_statements():
     return ProjectFeedRowStatements()
+
+
+@pytest.fixture
+def project_item_shape_statements():
+    return ProjectItemShapeStatements()
 
 
 @pytest.fixture
