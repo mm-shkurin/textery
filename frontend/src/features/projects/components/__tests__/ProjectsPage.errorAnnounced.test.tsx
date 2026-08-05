@@ -13,7 +13,7 @@ vi.mock('../../api/projectsApi')
 // test has. This one asks whether the thing it says is DELIVERED, and so it may only reach the
 // banner the way assistive technology does: by role. Reaching it by testid here would make the two
 // tests the same test written twice, and neither would pin the announcement.
-describe('ProjectsPage error surface when listProjects rejects', () => {
+describe('ProjectsPage announces a rejected load to assistive technology', () => {
   resetFeedMocks()
 
   // Queried with `findByRole('alert')` and never with `findByTestId`: a `<p data-testid=

@@ -11,7 +11,7 @@ vi.mock('../../api/projectsApi')
 // Its own file rather than a block in `ProjectsPage.feed.test.tsx`: every test there mocks a
 // RESOLVING `listProjects` and asserts what the cards say. This one is about the other half of the
 // client's contract — the rejection `parseUpdatedAt` ships — and about the page, not a card.
-describe('ProjectsPage when listProjects rejects', () => {
+describe('ProjectsPage shows a rejected load instead of an empty feed', () => {
   resetFeedMocks()
 
   // BOTH halves are asserted, and neither alone is the test. The failure this pins is not "no

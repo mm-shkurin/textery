@@ -40,6 +40,17 @@ export default defineConfig({
     // ignored by Node — it still resolved Asia/Omsk — so a `TZ=UTC vitest` script would be a
     // silent no-op and the pin would be a lie.
     env: { TZ: 'Europe/Moscow' },
+    // Strictly above setup.ts's `asyncUtilTimeout: 5000`, and that gap is the whole point. The two
+    // were equal (5000 is vitest's default here), so on every red where an element never arrives the
+    // two deadlines tied and the OUTER one won: vitest killed the test before Testing Library could
+    // raise its own «Unable to find role/testid» error with the rendered-DOM dump. The recorded
+    // evidence was `Test timed out in 5000ms` — identical output whether the element is genuinely
+    // missing, `vi.mock` failed to apply, or the component rendered nothing at all. Story 12's
+    // scenario 1.1 recorded three prediction matches against that string before this was raised.
+    //
+    // Raised here rather than lowering asyncUtilTimeout: that 5000 is a measured chunk-load budget
+    // (see setup.ts), so cutting it would trade unreadable failures for flaky ones.
+    testTimeout: 10000,
     setupFiles: ['./src/test/setup.ts'],
     coverage: {
       provider: 'v8',

@@ -147,18 +147,28 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   `role` on an empty live region beside the visible sentence does not pass, and a `role` on a wrapper
   containing the cards does not either. Add the role to the element that already carries the message.
   Shipped as one attribute on the existing `<p>`; the `error !== null &&` guard is unchanged
-- [~] red-frontend (no live region exists before anything has failed) — premortem on 9f8c652a, the
-  tempting green it named: dropping the `error !== null &&` guard so the banner is always mounted
-  passes ALL THREE suites, because nothing in the feature asserts the error surface is ABSENT on a
-  successful load (no `queryByRole`, no `toBeNull` anywhere under the feature's `__tests__`). This
-  repo already wrote the hazard down at `auth/components/RegisterForm.tsx:65` — an assertive region
-  present at first paint announces on load, which is why the role there appears only in the error
-  state. The green above kept the guard by instruction, not by test. Assert
-  `expect(screen.queryByRole('alert')).toBeNull()` in `ProjectsPage.feed.test.tsx` after the cards
-  have arrived, so the DOM is settled — by role, not testid: the testid version passes on a
-  role-carrying element that lost its testid
-- [ ] green-frontend (no live region exists before anything has failed)
-- [ ] red-frontend (the timeout arm does not paint English on a Russian screen) — agent-review on
+- [S] red-frontend (no live region exists before anything has failed) — **DECIDED BY USER on the
+  65294a49 review passes: conditional mounting stands; this pair is skipped and the verification it
+  wanted moves outside jsdom.** Three agents converged here. `tdd-rules.md:15-16` settles the
+  mechanics — the `error !== null &&` guard is already in production, so the assertion passes against
+  HEAD and ZERO production files need modification, which is the definition of `[S]` for both halves.
+  What the premortem raised beyond that is not resolvable by any test in this repo: a `role="alert"`
+  inserted into the DOM *already containing its text* is the shape assistive tech routinely does not
+  announce (the reliable shape is a region already mounted whose content changes), and jsdom returns
+  the identical pass either way — there is no axe layer in `frontend/` or `acceptance/` to fail on it.
+  The always-mounted-empty region was the alternative and was declined. Original note follows: the
+  tempting green the premortem named — dropping the guard so the banner is always mounted — passes ALL
+  THREE suites, because nothing in the feature asserts the error surface is ABSENT on a successful
+  load. `auth/components/RegisterForm.tsx:65` documents the opposite hazard: an assertive region
+  present at first paint announces on load
+- [S] green-frontend (no live region exists before anything has failed) — see above; zero production
+  files need modification
+- [ ] manual AT verification checkpoint (the failure banner is actually announced) — the guard the
+  `[S]` pair above cannot be: drive the projects feed to a failed load with a real screen reader and
+  confirm the sentence is spoken. Nothing in jsdom distinguishes «role present» from «announced», and
+  an untestable decision needs a recorded verification rather than a comment. If it is NOT announced,
+  the fix is the always-mounted-empty region and the decision above is reopened
+- [~] red-frontend (the timeout arm does not paint English on a Russian screen) — agent-review on
   6a205042. `send.ts:93` re-throws `RequestTimeoutError` with its type intact and
   `httpClient.ts:70-75` builds it as `super('Request timed out')`; `describeFailure`'s last line is
   `error instanceof Error && error.message ? error.message : fallback`, so a timeout takes the
@@ -193,7 +203,16 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   produced the `a failed load does not also offer the empty state` step above. Assert instead that a
   pending affordance is PRESENT (which is falsifiable today, and is what 4.1's skeleton wants
   anyway); the error-surface-absent half stays as written. Defer the empty-state-absent half to 2.3
-- [ ] refactor (the RED evidence in this feature cannot discriminate) — agent-review on 9f8c652a,
+- [x] refactor (the RED evidence in this feature cannot discriminate) — **pulled ahead of the four
+  remaining reds and done, on agent-review's ordering argument: repairing the measuring instrument
+  after every remaining measurement is worth nothing.** Fixed by RAISING `testTimeout` to 10000 in
+  `vite.config.ts`, not by lowering `asyncUtilTimeout` — that 5000 is a measured chunk-load budget
+  (see `setup.ts`) and cutting it trades unreadable failures for flaky ones. Verified by breaking a
+  query on purpose: the run now prints `TestingLibraryElementError: Unable to find role="marquee"`
+  with the full rendered-DOM dump where it previously printed only `Test timed out in 5000ms`. The
+  two `describe` titles were disambiguated in the same pass — `ProjectsPage announces a rejected load
+  to assistive technology` vs `ProjectsPage shows a rejected load instead of an empty feed`. Original
+  note follows: agent-review on 9f8c652a,
   systemic rather than one file. `src/test/setup.ts` sets `asyncUtilTimeout: 5000`, exactly vitest's
   default `testTimeout`, so on every missing-element red the OUTER timeout wins the race and Testing
   Library's «Unable to find role/testid» message with its DOM dump is never printed. Every red in this
