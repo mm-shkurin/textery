@@ -117,13 +117,41 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   state. A serializer renaming `updated_at` therefore renders an unhandled promise rejection plus a
   page visually identical to «у вас пока нет проектов» — strictly quieter than the `—` the mapper
   guard was written to eliminate. Assert an error element is present AND the feed holds zero cards
-- [~] green-frontend (a rejected listProjects does not look like an empty feed) — the RED run showed a
+- [x] green-frontend (a rejected listProjects does not look like an empty feed) — the RED run showed a
   second, independent symptom of the same missing `.catch`: an **Unhandled Rejection**
   (`Сервер вернул проект без даты изменения.`) alongside the timeout. Both vanish with one fix.
   The test pins the mapper's message verbatim onto the screen via `data-testid="projects-error"`;
   render the caught error's `.message` rather than hardcoding this one constant into the component —
   scenario 4.2 («A failed load offers a retry without blanking the page») arrives wanting a retry
-  affordance and would have to undo a hardcoded string
+  affordance and would have to undo a hardcoded string.
+
+  **Shipped differently from this note, deliberately.** The catch routes through
+  `describeFailure(failure, LOAD_FAILURE_FALLBACK)` (`shared/api/send.ts`), the same call
+  `useGeneration.ts:111` makes — not `e.message`. Two reasons the note did not know: `send.ts:93`
+  re-throws a 5xx as a bare `HttpError` **object literal**, so `.message` renders `undefined` on a
+  path no test exercises; and `SessionExpiredError` reaches `describeFailure` with its type intact
+  and returns its own «Сессия истекла. Войдите снова.» instead of being retitled with this screen's
+  fallback. It is NOT re-thrown: re-throwing inside the catch of a floating promise recreates the
+  unhandled rejection this step existed to remove, and `grep SessionExpiredError frontend/src`
+  shows no redirect or auth-context handler to hand it to — rendering the sentence inline is the
+  whole of this codebase's sign-out affordance today (`saveFailureMessages.ts:33`)
+- [~] red-frontend (the error banner is announced, not just displayed) — premortem on cc1bc733. The
+  load-failure test asserts `findByTestId` + `textContent` and nothing else, so a green satisfying it
+  exactly has no reason to add `role="alert"` — and every sibling error surface in the repo carries one
+  (`LoginForm.tsx:84`, `LoginForm.tsx:93`, `OAuthErrorBanner.tsx:44`, `VerifyCodeForm.tsx:130`,
+  `ExportControl.tsx:139`, `LinkPopover.tsx:140`). Unannounced, the feed simply never populates for an
+  assistive-tech user: indistinguishable from an empty account, which is the exact defect this scenario
+  exists to kill, unfixed for the users who need it most. Assert via `findByRole('alert')`
+- [ ] green-frontend (the error banner is announced, not just displayed)
+- [ ] red-frontend (a failed load does not also offer the empty state) — agent-review on cc1bc733:
+  `expect(queryAllByTestId('project-card')).toHaveLength(0)` cannot fail. `useState([])` has exactly one
+  writer, inside `.then`; on a rejection it never runs, so zero cards holds for every implementation,
+  before and after green. The claim the commit actually intends is untested — «у вас пока нет проектов»
+  lives only in prose today, so the moment 2.3 lands the empty state, a page rendering BOTH the error
+  and the empty-state invitation passes the current test with the precise confusion it was written to
+  eliminate. Pin the empty-state affordance ABSENT on the error path; ordering against 2.3 is the open
+  question, not whether the assertion is owed
+- [ ] green-frontend (a failed load does not also offer the empty state)
 - [ ] red-frontend-api (an absent required field other than updated_at is not mapped through) — the
   shaping decision agent-review raised on dbed4e02 and this step defers no further: nine fields are
   required in `projects_schemas.yaml`, one is guarded. `can_repeat` absent fails OPEN — «Повторить» is

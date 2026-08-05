@@ -40,6 +40,14 @@
   }
 }
 
+/* The feed is a grid, so a message dropped into it would otherwise occupy one card's column and
+   wrap at card width. It spans the whole row instead — it is about the page, not about an item. */
+.projects-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--text-muted);
+}
+
 .project-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);

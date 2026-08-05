@@ -33,7 +33,7 @@ describe('ProjectsPage when listProjects rejects', () => {
   // race `ProjectsPage.feed.test.tsx` documents). The run ALSO reported one Unhandled Rejection —
   // `Error: Сервер вернул проект без даты изменения.` escaping the un-caught `.then` — which is the
   // second half of this step's finding observed live rather than argued.
-  it.skip('shows an error instead of a feed that looks empty', async () => {
+  it('shows an error instead of a feed that looks empty', async () => {
     mockFeedRejection(MISSING_UPDATED_AT_MESSAGE)
 
     render(<ProjectsPage />)
