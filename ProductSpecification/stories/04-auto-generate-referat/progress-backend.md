@@ -534,10 +534,23 @@ that can be red.
   2.1 "A provider error still ends the generation as failed"; no steps were pre-written
   under it. No steps were added to this scenario either — attributing foreign code to 1.3
   would be a false claim of coverage.
-- [~] green-acceptance
+- [S] green-acceptance — follows `red-acceptance` `[S]`, but re-checked rather than
+  waved through, because a green-acceptance step's only legitimate action is to remove a
+  disable marker from a test the red phase left disabled: there is no such test.
+  `grep -rln 'referat\|реферат' acceptance/` returns nothing at all, and no acceptance
+  file names this scenario — the only `Scenario 1.3` hits under `acceptance/` belong to
+  other stories (password policy, export format guard, the auth verify-code screen).
+  One new piece of evidence, stronger than the red note's: the acceptance stack runs
+  `GENERATION_PROVIDER=fake` (`acceptance/statements/frontend/generation/auto_editor_transition_expectations.py:35`),
+  so `GigaChatProvider` — one of the two composers whose agreement this scenario asserts —
+  is never wired into the acceptance process at all. The assertion is not merely hard to
+  observe over HTTP; the object under test does not exist in that stack. `conftest.py`'s
+  fixture list still contains no provider stub (its `provider_secret` fixture is the
+  Yandex OAuth secret for the log-leak invariant, not a GigaChat stub).
+  **Scenario 1.3 is now complete.**
 
 ### Scenario 1.4: Every supported document type yields a prompt
-- [ ] red-acceptance
+- [~] red-acceptance
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase
