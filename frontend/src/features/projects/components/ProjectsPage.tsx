@@ -1,13 +1,8 @@
 import { useEffect, useState } from 'react'
-import { listProjects, type ProjectSummary } from '../api/projectsApi'
+import { listProjects, LOAD_FAILURE_FALLBACK, type ProjectSummary } from '../api/projectsApi'
 import { describeFailure } from '../../../shared/api/send'
 import { ProjectCard, projectKey } from './ProjectCard'
 import './ProjectsPage.css'
-
-// Same sentence `listProjects` hands `send` as its fallback. It is only reached for a failure that
-// carries no text of its own — a bare `HttpError` from a 5xx, which `send` rethrows unflattened and
-// which is NOT an `Error`, so reading `.message` off it would render "undefined" on the page.
-const LOAD_FAILURE_FALLBACK = 'Не удалось загрузить проекты'
 
 // The «Мои проекты» feed. Scenario 1.1 only: the cards, and nothing around them — no search, no
 // sort, no view toggle, no paging control. Those arrive with their own scenarios and their own
@@ -31,7 +26,9 @@ export function ProjectsPage() {
         // The unmount flag guards this path too, not just the resolve above: a rejection is just as
         // able to arrive after teardown as a resolution.
         if (cancelled) return
-        // `describeFailure`, never `failure.message`. It is the same routing `useGeneration` uses
+        // `describeFailure`, never `failure.message`: a 5xx arrives here as a bare `HttpError`
+        // object literal, which is NOT an `Error`, so `.message` would paint "undefined" on the
+        // page. It is the same routing `useGeneration` uses
         // (useGeneration.ts:111), and it is what keeps the `SessionExpiredError` carve-out
         // (send.ts:62) intact HERE: an expired session keeps its own "Сессия истекла. Войдите
         // снова." rather than being retitled with this screen's fallback and blamed on the feed.

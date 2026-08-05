@@ -15,6 +15,13 @@ import { send } from '../../../shared/api/send'
 // inline copy (mirrors `INVALID_VERSION_MESSAGE` in `documentApi.ts`).
 export const MISSING_UPDATED_AT_MESSAGE = 'Сервер вернул проект без даты изменения.'
 
+// The transport fallback `send` falls back to when the failure carries no text of its own — a bare
+// `HttpError` from a 5xx, which `send` rethrows unflattened and which is NOT an `Error`. Exported
+// for the same reason as the message above: `ProjectsPage` hands this exact sentence to
+// `describeFailure` as its fallback, and an inline copy there would drift the moment either is
+// edited.
+export const LOAD_FAILURE_FALLBACK = 'Не удалось загрузить проекты'
+
 // Guards the field being ABSENT, not merely `=== undefined`: a serializer that renames the key,
 // emits `null`, or emits `''` for a required field is at least as common as one that drops it, and
 // all three map to the same unusable date. Anything that is not a non-empty string fails closed.
@@ -84,7 +91,7 @@ interface ProjectPageWire {
 // `_params` is unread on purpose: search, sort and paging query building belong to scenarios
 // 2.x/3.x, and building a default `?limit=20` here would pre-decide a contract they own.
 export async function listProjects(_params?: ListProjectsParams): Promise<ProjectPage> {
-  const data = await send<ProjectPageWire>('/api/v1/projects', {}, 'Не удалось загрузить проекты')
+  const data = await send<ProjectPageWire>('/api/v1/projects', {}, LOAD_FAILURE_FALLBACK)
   return {
     items: data.items.map((item) => ({
       kind: item.kind,
