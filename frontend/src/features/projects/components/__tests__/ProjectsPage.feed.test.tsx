@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { ProjectsPage } from '../ProjectsPage'
-import { mockFeed } from './feedTestHarness'
+import { mockFeed, resetFeedMocks } from './feedTestHarness'
 import { DOCUMENT, GENERATION } from './projectFixtures'
 
 // `GET /api/v1/projects` does not exist on the backend yet — this suite builds against a mock of
@@ -9,9 +9,7 @@ import { DOCUMENT, GENERATION } from './projectFixtures'
 vi.mock('../../api/projectsApi')
 
 describe('ProjectsPage', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
+  resetFeedMocks()
 
   // Asserted on TWO projects, and on all three fields of each, because every cheaper version of
   // this test passes on a broken feed: one card would pass on a component that renders the first

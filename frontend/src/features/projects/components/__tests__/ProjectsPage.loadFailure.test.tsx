@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { ProjectsPage } from '../ProjectsPage'
-import { mockFeedRejection } from './feedTestHarness'
+import { mockFeedRejection, resetFeedMocks } from './feedTestHarness'
 import { MISSING_UPDATED_AT_MESSAGE } from '../../api/projectsApi'
 
 // `GET /api/v1/projects` does not exist on the backend yet — this suite builds against a mock of
@@ -12,9 +12,7 @@ vi.mock('../../api/projectsApi')
 // RESOLVING `listProjects` and asserts what the cards say. This one is about the other half of the
 // client's contract — the rejection `parseUpdatedAt` ships — and about the page, not a card.
 describe('ProjectsPage when listProjects rejects', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
+  resetFeedMocks()
 
   // BOTH halves are asserted, and neither alone is the test. The failure this pins is not "no
   // error is shown" and not "cards are missing" — it is that the two are indistinguishable: with

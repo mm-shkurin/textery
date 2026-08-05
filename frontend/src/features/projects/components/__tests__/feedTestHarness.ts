@@ -24,6 +24,23 @@ export function mockFeedRejection(message: string) {
   vi.mocked(projectsApi.listProjects).mockRejectedValue(new Error(message))
 }
 
+// The teardown every suite in this directory needs and three of them hand-rolled byte-identically
+// (`ProjectsPage.feed`, `.loadFailure`, `.errorAnnounced`), while `pinClockTo` below already owned
+// a fourth copy — so the one piece of per-suite infrastructure the harness did not expose was the
+// one nobody could avoid writing. Called from inside a `describe` for the same reason `pinClockTo`
+// is: registering `afterEach` at file scope would attach it to every block in the file, including
+// any future block that deliberately keeps a mock across cases.
+//
+// `clearAllMocks`, not `resetAllMocks`: the suites mock `projectsApi` as a MODULE
+// (`vi.mock('../../api/projectsApi')`), and reset would strip the auto-mock's implementations, not
+// merely the recorded calls — every `mockFeed*` call would then have to re-establish more than the
+// return value it means to state.
+export function resetFeedMocks() {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+}
+
 // Called from inside a `describe`, never at file scope — the feed-rendering suite
 // (`ProjectsPage.feed.test.tsx`) is deliberately left on the real clock, and a top-level pin would
 // silently cover it. The instant stays at the call site rather than baked in here, because "older
@@ -31,12 +48,17 @@ export function mockFeedRejection(message: string) {
 // a reader of the block has to see it. `setSystemTime` alone — not `useFakeTimers` — because the
 // component resolves a mocked promise, and a fully faked timer queue would stall `findBy*`.
 export function pinClockTo(instant: string) {
+  // Delegated rather than repeated: the mock teardown this used to inline is the same teardown
+  // `resetFeedMocks` states, and the two callers that pin the clock (`.accent`, `.cardDateBounds`)
+  // document that they rely on it for isolation. Order between the two hooks is immaterial —
+  // restoring the clock and clearing recorded calls touch nothing in common.
+  resetFeedMocks()
+
   beforeEach(() => {
     vi.setSystemTime(new Date(instant))
   })
 
   afterEach(() => {
     vi.useRealTimers()
-    vi.clearAllMocks()
   })
 }

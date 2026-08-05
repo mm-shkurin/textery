@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { ProjectsPage } from '../ProjectsPage'
-import { mockFeedRejection } from './feedTestHarness'
+import { mockFeedRejection, resetFeedMocks } from './feedTestHarness'
 import { MISSING_UPDATED_AT_MESSAGE } from '../../api/projectsApi'
 
 // `GET /api/v1/projects` does not exist on the backend yet — this suite builds against a mock of
@@ -14,9 +14,7 @@ vi.mock('../../api/projectsApi')
 // banner the way assistive technology does: by role. Reaching it by testid here would make the two
 // tests the same test written twice, and neither would pin the announcement.
 describe('ProjectsPage error surface when listProjects rejects', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
+  resetFeedMocks()
 
   // Queried with `findByRole('alert')` and never with `findByTestId`: a `<p data-testid=
   // "projects-error">` satisfies the sibling test exactly while carrying no live region, and a
