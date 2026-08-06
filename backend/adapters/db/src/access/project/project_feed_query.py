@@ -13,7 +13,16 @@ from project.project_status import DOCUMENT_KIND, GENERATION_KIND
 # arms cannot drift into projecting the same values in a different order -- a
 # UNION matches by position, not by label, so that mistake type-checks and
 # silently swaps two columns of the answer.
-_COLUMNS = ("kind", "id", "title", "preview_source", "document_type", "status", "created_at", "updated_at")
+_COLUMNS = (
+    "kind",
+    "id",
+    "title",
+    "preview_source",
+    "document_type",
+    "status",
+    "created_at",
+    "updated_at",
+)
 
 
 def _documents_arm(owner_id: UUID) -> Select:

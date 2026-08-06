@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 
 from project.project_item import ProjectItem
-from project.project_sort import ProjectSort
 from project.project_query import ProjectQuery
+from project.project_sort import ProjectSort
 from shared.exceptions import ValidationException
 
 # Both bounds are domain constants, not `Query(ge=..., le=...)` on the route.

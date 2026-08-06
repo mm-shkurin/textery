@@ -33,6 +33,12 @@ _ERROR_CODE_STATUS_MAP = {
     # unactionable for a client that has not saved anything yet.
     "GENERATION_NOT_COMPLETED": 409,
     "IDEMPOTENCY_KEY_REUSED": 409,
+    # «Повторить» (generations_retry.yaml). NOT_RETRYABLE is a refusal to start
+    # work on a row in the wrong state; RETRY_LIMIT_REACHED is the per-source
+    # ceiling, which is a rate limit rather than a malformed request and so
+    # answers 429 like the other shed paths.
+    "NOT_RETRYABLE": 409,
+    "RETRY_LIMIT_REACHED": 429,
     "CONVERTED_CONTENT_TOO_LONG": 422,
     # CONTENT_TOO_LONG is absent deliberately: documents_save.yaml specifies 400 for
     # it, which is the default.

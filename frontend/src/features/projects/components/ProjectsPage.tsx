@@ -3,6 +3,7 @@ import { useProjectView } from '../useProjectView'
 import { ProjectsToolbar } from './ProjectsToolbar'
 import { ProjectsFeed } from './ProjectsFeed'
 import { ProjectsPager } from './ProjectsPager'
+import { useRetryGeneration } from '../useRetryGeneration'
 import type { ProjectSummary } from '../api/projectsApi'
 import './ProjectsPage.css'
 import './ProjectsScreen.css'
@@ -27,6 +28,7 @@ interface ProjectsPageProps {
 export function ProjectsPage({ onOpenDocument, onCreateProject, onBack }: ProjectsPageProps = {}) {
   const feed = useProjectsFeed()
   const [view, setView] = useProjectView()
+  const retry = useRetryGeneration(feed.reload)
 
   const searching = feed.q.trim() !== ''
   // Only worth a section when it is a shortcut to something not already on screen. The mockup
@@ -129,7 +131,14 @@ export function ProjectsPage({ onOpenDocument, onCreateProject, onBack }: Projec
       {feed.items.length > 0 && (
         <section className="projects-section">
           {showRecent && <h2 className="projects-section-title">Все проекты</h2>}
-          <ProjectsFeed items={feed.items} view={view} onOpen={open} />
+          <ProjectsFeed
+            items={feed.items}
+            view={view}
+            onOpen={open}
+            onRetry={retry.retry}
+            retryingId={retry.pendingId}
+            retryError={retry.error}
+          />
         </section>
       )}
 

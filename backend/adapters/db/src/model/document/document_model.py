@@ -17,8 +17,8 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from document.document import ALLOWED_STATUSES, Document
-from document.page_settings import PageSettings
 from document.document_type import SUPPORTED_DOCUMENT_TYPES
+from document.page_settings import PageSettings
 from model.base import Base
 
 _ALLOWED_STATUSES_SQL = ", ".join(repr(status) for status in ALLOWED_STATUSES)

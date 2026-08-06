@@ -36,6 +36,7 @@ from container.generation_wiring import (
     create_get_generation,
     create_list_generations,
     create_request_generation,
+    create_retry_generation,
     run_stale_generation_sweep,
 )
 from container.health_wiring import create_check_health
@@ -73,6 +74,7 @@ __all__ = [
     "create_get_generation",
     "create_list_documents",
     "create_list_generations",
+    "create_retry_generation",
     "create_list_projects",
     "create_login_user",
     "create_refresh_access_token",

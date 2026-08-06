@@ -13,6 +13,9 @@ interface ProjectCardProps {
   // same row without two elements answering to the same identity lookup.
   testIdPrefix?: string
   onOpen?: (project: ProjectSummary) => void
+  onRetry?: (generationId: string) => void
+  retrying?: boolean
+  retryError?: string | null
 }
 
 // A project's identity, in one place because both consumers of it explain the same hazard: the
@@ -46,7 +49,14 @@ function accentClass(wireDocumentType: string): string {
 // One card. Two nested testids on purpose: `project-card` is what the feed is counted by, and
 // `project-card-{kind}-{id}` is what an individual card is FETCHED by — identity, not position,
 // because a positional lookup cannot fail on a swap.
-export function ProjectCard({ project, testIdPrefix, onOpen }: ProjectCardProps) {
+export function ProjectCard({
+  project,
+  testIdPrefix,
+  onOpen,
+  retrying = false,
+  retryError = null,
+  onRetry,
+}: ProjectCardProps) {
   const namespaced = (name: string) => (testIdPrefix ? `${testIdPrefix}-${name}` : name)
   const openable = onOpen !== undefined && project.kind === 'document'
   return (
@@ -89,6 +99,32 @@ export function ProjectCard({ project, testIdPrefix, onOpen }: ProjectCardProps)
         <div className="project-card-date" data-testid={namespaced('project-card-date')}>
           {formatCardDate(project.updatedAt)}
         </div>
+        {/* `retryable` is read as the server sent it and never recomputed from `status`: a client
+            deriving it from an enum it may not fully know would offer the button on a status it
+            does not recognise, which is fail-open on a paid operation. */}
+        {project.retryable && onRetry !== undefined && (
+          <button
+            type="button"
+            className="project-card-retry"
+            data-testid={namespaced('project-card-retry')}
+            // Disabled while its own request is in flight — the guard against a double-click is
+            // in the hook, but a button that stays live through the wait invites one.
+            disabled={retrying}
+            onClick={(event) => {
+              // The card itself is clickable for documents; without this the retry would also
+              // trigger whatever the card does.
+              event.stopPropagation()
+              onRetry(project.id)
+            }}
+          >
+            {retrying ? 'Повторяем…' : 'Повторить'}
+          </button>
+        )}
+        {retryError !== null && (
+          <p className="project-card-retry-error" data-testid={namespaced('project-card-retry-error')} role="alert">
+            {retryError}
+          </p>
+        )}
       </div>
     </div>
   )

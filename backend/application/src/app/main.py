@@ -52,6 +52,7 @@ from container import (
     create_register_user,
     create_request_generation,
     create_resend_code,
+    create_retry_generation,
     create_save_document,
     create_start_oauth,
     create_token_service,
@@ -95,6 +96,7 @@ from router.generation.generation_router import (
     get_get_generation_usecase,
     get_list_generations_usecase,
     get_request_generation_usecase,
+    get_retry_generation_usecase,
 )
 from router.generation.generation_router import router as generation_router
 from router.health.health_router import get_check_health_usecase
@@ -163,6 +165,7 @@ app.add_exception_handler(Exception, unhandled_exception_handler)
 app.dependency_overrides[get_request_generation_usecase] = create_request_generation
 app.dependency_overrides[get_get_generation_usecase] = create_get_generation
 app.dependency_overrides[get_list_generations_usecase] = create_list_generations
+app.dependency_overrides[get_retry_generation_usecase] = create_retry_generation
 app.dependency_overrides[get_generate_document_usecase] = create_generate_document
 app.dependency_overrides[get_register_user_usecase] = create_register_user
 app.dependency_overrides[get_verify_account_usecase] = create_verify_account

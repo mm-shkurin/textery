@@ -176,38 +176,3 @@
   opacity: 0.5;
   cursor: default;
 }
-
-/* The list view is the same components in one column: switching re-renders data already in
-   hand, so the rows must not need markup of their own. */
-.projects-view-list {
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-
-.projects-view-list .project-card {
-  display: flex;
-  align-items: center;
-}
-
-.projects-view-list .project-card-thumb {
-  width: 96px;
-  height: 76px;
-  flex: none;
-}
-
-.projects-view-list .project-card-body {
-  padding: 10px 16px;
-}
-
-.projects-view-list .project-card-title {
-  -webkit-line-clamp: 1;
-}
-
-.project-card-openable {
-  cursor: pointer;
-}
-
-.project-card-openable:focus-visible {
-  outline: 2px solid var(--accent, #1552f0);
-  outline-offset: 2px;
-}

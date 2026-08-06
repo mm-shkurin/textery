@@ -10,6 +10,9 @@ interface ProjectsFeedProps {
   // does, and two elements answering to `project-card-document-1` make an identity lookup
   // ambiguous — the one thing that testid exists to prevent.
   testIdPrefix?: string
+  onRetry?: (generationId: string) => void
+  retryingId?: string | null
+  retryError?: { id: string; message: string } | null
 }
 
 /**
@@ -19,7 +22,15 @@ interface ProjectsFeedProps {
  * data already in hand, never a refetch, and a second component tree would be a second place for
  * a card to drift.
  */
-export function ProjectsFeed({ items, view, onOpen, testIdPrefix }: ProjectsFeedProps) {
+export function ProjectsFeed({
+  items,
+  view,
+  onOpen,
+  testIdPrefix,
+  onRetry,
+  retryingId = null,
+  retryError = null,
+}: ProjectsFeedProps) {
   return (
     <div
       className={`projects-page projects-view-${view}`}
@@ -33,6 +44,11 @@ export function ProjectsFeed({ items, view, onOpen, testIdPrefix }: ProjectsFeed
           project={project}
           testIdPrefix={testIdPrefix}
           onOpen={onOpen}
+          onRetry={onRetry}
+          retrying={retryingId === project.id}
+          // Scoped to the card that failed: a page-level banner would leave the user hunting for
+          // which of twenty cards the sentence is about.
+          retryError={retryError?.id === project.id ? retryError.message : null}
         />
       ))}
     </div>

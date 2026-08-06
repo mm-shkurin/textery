@@ -128,3 +128,62 @@
 .project-card-accent-teal .project-card-folder {
   color: #45c7b7;
 }
+
+/* The list view is the same components in one column: switching re-renders data already in
+   hand, so the rows must not need markup of their own. */
+.projects-view-list {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.projects-view-list .project-card {
+  display: flex;
+  align-items: center;
+}
+
+.projects-view-list .project-card-thumb {
+  width: 96px;
+  height: 76px;
+  flex: none;
+}
+
+.projects-view-list .project-card-body {
+  padding: 10px 16px;
+}
+
+.projects-view-list .project-card-title {
+  -webkit-line-clamp: 1;
+}
+
+/* Card affordances: opening a document, and the «Повторить» control on a failed generation.
+   They live here with the rest of the card rather than in ProjectsScreen.css, which owns the
+   page chrome — and which the split was made to keep under the 200-line cap. */
+.project-card-openable {
+  cursor: pointer;
+}
+
+.project-card-openable:focus-visible {
+  outline: 2px solid var(--accent, #1552f0);
+  outline-offset: 2px;
+}
+
+.project-card-retry {
+  margin-top: 10px;
+  padding: 6px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  cursor: pointer;
+  font: inherit;
+}
+
+.project-card-retry:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.project-card-retry-error {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
