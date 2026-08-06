@@ -408,6 +408,63 @@ only the design draft could not see the contract.
   docstring says the scenario adding a field also adds it to these dicts), so it breaks the
   moment the DTO widens. Expected work, not a defect.
 - [~] green-adapter rest (the envelope emits every `ProjectItem` field)
+  **Review-pass findings on `8c9f567c`** (both CONCERNS; surfaced, not auto-fixed). `/refactor`
+  applied nothing — the near-duplicate row constructions ARE the contrast the scenario pins,
+  and a conftest assertion helper would replace a working mirror of the sibling file with a
+  new abstraction.
+  1. *premortem, CREDIBLE — the serializer is never forced to **convert** to UTC, only to
+     carry an offset.* `projects_list.yaml` makes two claims, "**UTC** ISO-8601 **with
+     explicit offset**", and the whole-body equality pins only the second. Both seeds are
+     `tzinfo=UTC` — the identity case for `astimezone(UTC)` — so the test cannot tell a
+     normalizing serializer from an echoing one, and Pydantic verifiably echoes: a
+     `+07:00` input serializes as `+07:00`, which passes `fromisoformat` and passes "explicit
+     offset" while not being UTC. A Postgres session-TZ change (a container without `TZ=UTC`,
+     a `PGTZ`, a pooler default) then ships `+03:00` with every backend test green, and the
+     frontend's day-grouping is off by the offset. This is a **third** timestamp hole,
+     distinct from the two the red recorded: those argue which UTC spelling and how much
+     precision; neither asks whether the value is UTC at all. The ADR's edge-case table
+     already flags zone-type divergence between the arms, and 1.2 adds a second column.
+     Guard: a third seed with `created_at=datetime(2026, 3, 14, 16, 26, 53,
+     tzinfo=timezone(timedelta(hours=7)))` expecting `"2026-03-14T09:26:53Z"` — RED on a
+     pass-through serializer. (`parse_feed_timestamp` does assert `utcoffset() ==
+     timedelta(0)`, but only fires in an environment already misconfigured — after the
+     incident, not before.)
+  2. *premortem, CREDIBLE — `Cache-Control: no-store` is pinned by nothing, anywhere.*
+     `grep -rni "cache-control\|no-store" backend acceptance` returns two hits: the router
+     line that sets it (`project_router.py:35`) and the acceptance statements docstring
+     explaining why it is deliberately *not* asserted (deferred to 10.6). The header is the
+     one item `projects_list.yaml` lists under the 200's `headers:` block, and this step
+     rewrites the same handler's return path — a header set by a bare side-effect line above
+     the return is exactly what a rewrite drops. The failure class is cross-account
+     disclosure via a shared cache. Guard: `assert response.headers["Cache-Control"] ==
+     "no-store"` in `test_project_list_router.py`'s envelope test — one line, in a file this
+     green already edits, and narrower than pulling 10.6's acceptance assertion forward.
+  3. *agent-review, medium — `"retryable": False` does not pin the JSON **type**.* `False ==
+     0` in Python, so a DTO declaring `retryable: int` serializes `0`/`1` and the whole-body
+     equality still passes. The docstring's claim that a substituted value fails is true for
+     eight of the nine fields and false for this one — and it sits precisely in the field the
+     commit's own "Pydantic is where the annotation is enforced" argument claims to cover
+     (Pydantic *raises* on `title=None` under a narrow annotation, but silently *coerces* a
+     bool). Premortem rates it REMOTE because the acceptance DTO already carries
+     `assert isinstance(retryable, bool)` with that exact rationale, so an `int` DTO fails at
+     green-acceptance. Guard, one line at this tier: `isinstance(row["retryable"], bool)`.
+  4. *premortem, borderline — `status` and `kind` reach the wire as unvalidated `str`.* The
+     ADR says explicitly they must not be bare `str` ("an unconstrained field is what let the
+     fail-closed rule be written for generations only"), and both seeds carry contract-legal
+     values, so a `status: str` DTO passes identically. The asymmetry is the finding, not the
+     missing mapping: the commit invoked the enforcement-point argument for `title` and
+     declined it here. Adjacent to the CARRIED fail-closed rule but not the same ask — a
+     constrained DTO field is testable today. Guard: a REST test seeding `status="teapot"`
+     asserting the response is not a 200 pass-through.
+  **Checked and closed out:** the red's two recorded contract questions are both REMOTE. `Z`
+  vs `+00:00` is spec debt — amend `projects_list.yaml` to name `Z`. Sub-second precision
+  enforces its own deadline: Pydantic 2.13.4 preserves microseconds and emits a fixed 6-digit
+  fraction, never a variable-length one, so green-acceptance goes RED on a mismatch either
+  way rather than staying silent.
+  **REMOTE, cheap to fold in if this green touches the literals:** the contract says ids are
+  unique *within* a kind and instructs clients to dedupe on `(kind, id)`; the two seeds use
+  distinct UUIDs, so a two-row test that could have pinned the cross-kind collision for free
+  chose not to. Not worth its own step — `list[ProjectItemDto]` is not where it would break.
 - [ ] red-usecase (the envelope carries page, limit and total) — `ProjectPage` widens to
   `(items, page, limit, total)` and `ProjectPageRequest` grows the contract's unparameterised
   defaults `page=1`, `limit=20`; the usecase test pins that they reach the caller.
