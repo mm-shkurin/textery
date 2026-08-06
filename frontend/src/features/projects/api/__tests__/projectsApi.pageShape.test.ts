@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { listProjects } from '../projectsApi'
+import { INVALID_PAGE_MESSAGE, listProjects } from '../projectsApi'
 import { clearSession, saveSession } from '../../../auth/utils/authSession'
 import { settle, stubFetchJson } from './projectsWireFixtures'
 
@@ -27,12 +27,12 @@ import { settle, stubFetchJson } from './projectsWireFixtures'
 // GREEN OWES TWO THINGS, not one:
 //   1. export this message constant from `projectsApi.ts` (the literal below is local ONLY because
 //      RED may not touch production code; the `/refactor` after green replaces it with the import,
-//      or the two definitions drift — same sequence as `MISSING_UPDATED_AT_MESSAGE`);
+//      or the two definitions drift — same sequence as `MISSING_UPDATED_AT_MESSAGE`)
+//      — DONE in the paired green: imported as `INVALID_PAGE_MESSAGE`, no local literal remains;
 //   2. add that constant to `FEED_AUTHORED_MESSAGES` in `api/loadFailureMessages.ts`. Without it
 //      the guard reaches `describeLoadFailure` as a plain `Error` whose message is not on the
 //      allow-list and degrades to the generic `LOAD_FAILURE_FALLBACK` — safe, but this sentence
-//      would then never reach the screen at all.
-const EXPECTED_MESSAGE = 'Сервер вернул некорректный список проектов.'
+//      would then never reach the screen at all — DONE in the paired green.
 
 describe('projectsApi page shape', () => {
   beforeEach(() => {
@@ -46,8 +46,8 @@ describe('projectsApi page shape', () => {
 
   // RED (verified unskipped): rejected with
   // `TypeError: Cannot read properties of undefined (reading 'map')` instead of an `Error` carrying
-  // the Russian guard message. Enable by removing `.skip` in the paired green.
-  it.skip('rejects a successful response carrying no items instead of throwing an engine message', async () => {
+  // the Russian guard message. Enabled in the paired green.
+  it('rejects a successful response carrying no items instead of throwing an engine message', async () => {
     // `{}` is what `httpClient.ts:167` hands the mapper for a 204, an empty 200 body, or a body
     // that fails to parse — not a hypothetical shape, the literal value that line produces.
     const fetchMock = stubFetchJson({})
@@ -58,6 +58,6 @@ describe('projectsApi page shape', () => {
     // rejected before any request went out, or if a 401-renew-and-replay fired a second call.
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/projects')
-    expect(settled).toEqual({ rejected: true, error: new Error(EXPECTED_MESSAGE) })
+    expect(settled).toEqual({ rejected: true, error: new Error(INVALID_PAGE_MESSAGE) })
   })
 })

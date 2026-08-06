@@ -314,8 +314,27 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   contract exists to stop exactly this class of serializer breakage from looking deliberate — it
   guards a field of an item but not the presence of `items`, so the weaker input gets the worse
   rendering. Pair with the shaping decision the deferred nine-required-fields step below owes
-- [~] green-frontend-api (a 200 with no `items` renders a JS engine message to the user)
-- [ ] red-frontend (a 4xx's server-authored Russian explanation reaches the user) — **BOTH review
+- [x] green-frontend-api (a 200 with no `items` renders a JS engine message to the user) — shipped as
+  the exported `INVALID_PAGE_MESSAGE` («Сервер вернул некорректный список проектов.») plus a guard in
+  `listProjects` ahead of the `.map`, and the constant added to `FEED_AUTHORED_MESSAGES`. **Two
+  changes, not one**, and the second is the load-bearing half: since 7baba471 `ProjectsPage` renders a
+  plain `Error`'s `.message` only if it is on that allow-list, so an api-level green with the list
+  untouched would degrade the new sentence to `LOAD_FAILURE_FALLBACK` and the guard would never reach
+  the screen it was written for — the api test would still be green. The failure mode the
+  `refactor (FEED_AUTHORED_MESSAGES cannot be under-filled)` step below predicts is exactly this, and
+  this work unit is the first entry that could have been lost to it.
+  **The guard is `!Array.isArray(data.items)`, not a presence or truthiness check** — decided by both
+  review passes on the red (0e32c8e1) and settled before implementation. The red's single `{}` fixture
+  is satisfied by `data.items === undefined`, which leaves `{"items": null}`, `items: 42` and an
+  envelope like `{"items": {"results": [...]}}` reaching `.map` and painting the same English engine
+  string the guard exists to remove. `parseUpdatedAt` one line away already refuses to narrow to
+  `=== undefined` for the same reason; matching that standard here keeps the file to one fail-closed
+  rule rather than two. The non-array arms are NOT covered by a fixture — a follow-up red owns them,
+  and the fixtures here were deliberately not widened. `total`/`page`/`limit` stay unguarded (recorded
+  separate decision, same shaping question as the deferred nine-required-fields step).
+  Suite after: 652 passed, 3 skipped (down from 4 — the `.skip` removal accounted for), 175 test files
+  passed / 1 skipped; `npx tsc --noEmit` clean. `projectsApi.ts` is 128 lines
+- [~] red-frontend (a 4xx's server-authored Russian explanation reaches the user) — **BOTH review
   passes on 7baba471, and it is a regression that commit introduced rather than an inherited gap.**
   `send.ts` re-throws raw only for `RequestTimeoutError` and `isHttpError(error) && error.status >= 500`;
   every 4xx falls to `throw new Error(describeFailure(error, fallback))`, so it arrives at the page as a

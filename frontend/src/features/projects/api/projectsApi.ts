@@ -22,6 +22,15 @@ export const MISSING_UPDATED_AT_MESSAGE = 'Сервер вернул проек�
 // edited.
 export const LOAD_FAILURE_FALLBACK = 'Не удалось загрузить проекты'
 
+// Same fail-closed contract as above, one level up: the PAGE, not a field of an item.
+// `httpClient.ts:167` turns a 204, an empty 200 or an unparseable success body into `{}`, so
+// `data.items` would be `undefined` and `.map` would throw a `TypeError` from inside this module —
+// downstream of `send`, therefore reaching `ProjectsPage`'s catch as a real `Error` carrying an
+// English JS engine string. Rejecting, not resolving `items: []`: an empty resolve makes a broken
+// endpoint indistinguishable from a user with no projects and would invite them to create their
+// first one on top of a server fault.
+export const INVALID_PAGE_MESSAGE = 'Сервер вернул некорректный список проектов.'
+
 // Guards the field being ABSENT, not merely `=== undefined`: a serializer that renames the key,
 // emits `null`, or emits `''` for a required field is at least as common as one that drops it, and
 // all three map to the same unusable date. Anything that is not a non-empty string fails closed.
@@ -92,6 +101,14 @@ interface ProjectPageWire {
 // 2.x/3.x, and building a default `?limit=20` here would pre-decide a contract they own.
 export async function listProjects(_params?: ListProjectsParams): Promise<ProjectPage> {
   const data = await send<ProjectPageWire>('/api/v1/projects', {}, LOAD_FAILURE_FALLBACK)
+  // `Array.isArray`, not a presence or truthiness check, for the same reason `parseUpdatedAt`
+  // guards more than `=== undefined`: `null`, a number, or a nested `{results: [...]}` envelope
+  // are all plausible serializer breakages, and every one of them reaches `.map` and paints the
+  // engine string this guard exists to keep off a Russian-only screen. Only `items` is guarded —
+  // `total`/`page`/`limit` are a recorded separate decision.
+  if (!Array.isArray(data.items)) {
+    throw new Error(INVALID_PAGE_MESSAGE)
+  }
   return {
     items: data.items.map((item) => ({
       kind: item.kind,

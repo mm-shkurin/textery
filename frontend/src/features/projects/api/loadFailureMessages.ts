@@ -3,7 +3,11 @@
 // routes over: both `LOAD_FAILURE_FALLBACK` and `MISSING_UPDATED_AT_MESSAGE` are authored in
 // `projectsApi.ts`, and the component was importing the latter for no reason other than to fill the
 // allow-list below.
-import { LOAD_FAILURE_FALLBACK, MISSING_UPDATED_AT_MESSAGE } from './projectsApi'
+import {
+  INVALID_PAGE_MESSAGE,
+  LOAD_FAILURE_FALLBACK,
+  MISSING_UPDATED_AT_MESSAGE,
+} from './projectsApi'
 import { describeFailure } from '../../../shared/api/send'
 import { isHttpError } from '../../../shared/api/httpClient'
 import { SessionExpiredError } from '../../auth/api/authorizedRequest'
@@ -42,7 +46,10 @@ import { SessionExpiredError } from '../../auth/api/authorizedRequest'
 // `readonly` so the fail-closed direction cannot be widened at runtime: an allow-list that another
 // module can `push` onto is an allow-list that can be made to leak the English text arm 3 exists to
 // keep off this screen.
-const FEED_AUTHORED_MESSAGES: readonly string[] = [MISSING_UPDATED_AT_MESSAGE]
+const FEED_AUTHORED_MESSAGES: readonly string[] = [
+  MISSING_UPDATED_AT_MESSAGE,
+  INVALID_PAGE_MESSAGE,
+]
 
 export function describeLoadFailure(failure: unknown): string {
   if (isHttpError(failure) || failure instanceof SessionExpiredError) {
