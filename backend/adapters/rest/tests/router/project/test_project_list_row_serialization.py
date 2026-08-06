@@ -2,7 +2,6 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from project.project_item import ProjectItem
-from project.project_page import ProjectPage
 
 _DOCUMENT_ROW = ProjectItem(
     kind="document",
@@ -84,12 +83,9 @@ class TestListProjectsRowSerialization:
     """
 
     async def test_should_emit_every_project_item_field_for_each_feed_row(
-        self, mocker, feed_client
+        self, feed_serving, feed_client
     ):
-        usecase = mocker.Mock()
-        usecase.execute = mocker.AsyncMock(
-            return_value=ProjectPage(items=(_DOCUMENT_ROW, _GENERATION_ROW))
-        )
+        usecase = feed_serving(_DOCUMENT_ROW, _GENERATION_ROW)
 
         async with feed_client(usecase) as client:
             response = await client.get("/api/v1/projects")

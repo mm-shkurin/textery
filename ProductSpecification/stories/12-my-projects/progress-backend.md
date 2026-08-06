@@ -603,6 +603,68 @@ only the design draft could not see the contract.
   unique *within* a kind and instructs clients to dedupe on `(kind, id)`; the two seeds use
   distinct UUIDs, so a two-row test that could have pinned the cross-kind collision for free
   chose not to. Not worth its own step — `list[ProjectItemDto]` is not where it would break.
+  **Review-pass findings on `ca62dbc9`** (both CONCERNS; surfaced, not auto-fixed). `/refactor`
+  applied two changes — a `feed_serving(*rows)` conftest fixture collapsing the character-identical
+  usecase-double assembly at 6 of 7 sites (the 401 test keeps its bare `AsyncMock()`, since handing
+  it a `ProjectPage` would install the page it exists to prove is never fetched), and a corrected
+  `contract_row` docstring, which had falsely claimed to be the directory's single `ProjectItem`
+  construction site. It declined routing the row-serialization module's literals through the
+  builders: that scenario earns "every field reaches the wire" by holding a hand-written domain row
+  and its hand-written wire form side by side, and sourcing both from conftest would make it assert
+  that conftest agrees with conftest. Flagged: `conftest.py` is at 188/200 — the next fixture must
+  split it (infrastructure fixtures vs row builders), not append.
+  1. *both passes, high/CREDIBLE — the naive-timestamp refusal is the whole-page outage this very
+     file forbids two tests later.* `test_should_refuse_a_naive_timestamp_rather_than_shift_it`
+     asserts `pytest.raises(ValueError)` and nothing about the wire. It escapes only because the
+     test harness's `project_app` registers a handler for `ValidationException` alone; `main.py:161`
+     registers `unhandled_exception_handler` for bare `Exception`, so in production one naive
+     `created_at` on one row returns 500 for that caller's **entire feed**, on every request, until
+     the row is edited. The status test seeds two rows and asserts `len(items) == 2` under the
+     docstring "a per-row problem must never become a per-page failure"; the timestamp branch is
+     held to the opposite rule with no argument for the asymmetry. The refusal itself is defensible
+     (the ADR rejects naive columns at the schema) — what is unguarded is the blast radius. Owed at
+     the green: seed the naive row on a **two-row** page and assert what the caller actually
+     receives, then make the refuse-the-row vs refuse-the-page choice deliberately.
+  2. *agent-review, medium — the naive refusal is pinned for `created_at` only.* `match=r"created_at
+     must be timezone-aware"` plus a naive seed on that field alone. A green guarding `created_at`
+     and running a plain `astimezone(UTC)` on `updated_at` passes all four tests and reproduces on
+     `updated_at` exactly the invisible wrong-instant shift the docstring describes — the same
+     first-timestamp-only asymmetry the conversion test seeds two opposite offsets to close.
+  3. *both passes, high/CREDIBLE — the contract's log signal on the unknown branch is guarded by
+     nothing.* `projects_list.yaml` says an unknown status fails closed to `unknown` "**and emits a
+     log signal carrying the id and the unrecognized value**". The RED pins the mapping and the
+     surviving row count and drops the clause; its docstring paraphrases the contract line minus
+     that half. `grep -rn "caplog\|logger"` over the project rest tests and DTO is empty. Fail-closed
+     without a signal is fail-**silent**: the day a new status ships, rows render `unknown`, no error
+     rate moves, and nobody can say when it started. Owed: a `caplog` assertion in the test that
+     already exists.
+  4. *premortem, CREDIBLE — the legal direction of the status enum is pinned by nothing.* The green
+     must introduce a known-status set in REST — a second copy of the contract's eight-member enum —
+     and across the whole rest suite only `ready` and `failed` ever cross the serializer. An
+     allowlist short by `draft`, `pending`, `in_progress`, `completed` or `recovering` passes 90/90
+     while rendering every in-flight generation as `unknown`. Not hypothetical: a real
+     `ALLOWED_STATUSES = ("draft",)` already exists in the db layer. Owed: a parametrize over the
+     eight yaml enum members asserting each reaches the wire unchanged.
+  5. *premortem, CREDIBLE — sub-second precision, again, and this time with a mechanism.* Every
+     datetime literal in the entire rest suite has `microsecond=0`; Postgres `timestamptz` does not.
+     `strftime("%Y-%m-%dT%H:%M:%SZ")` and `isoformat().replace("+00:00","Z")` agree on every fixture
+     and disagree on real data. The red reached hard for one blind spot in these literals (both
+     seeds UTC) and walked past its neighbour in the same lines. Owed: one seed with a nonzero
+     microsecond, pinning its wire form. (This supersedes the "settle it before green-acceptance"
+     note above — settle it here.)
+  6. *agent-review, low-medium — the one unskipped test seeds a contract-illegal row.*
+     `contract_row(_ID_TWO, status="failed", retryable=True)` keeps the default `kind="document"`,
+     and the contract makes `retryable` true only for a failed **generation**. Same class of fixture
+     illegality `bfd11431` went out of its way to remove, in a fixture whose docstring now promises
+     legality by name. One keyword: `kind="generation"`.
+  7. *agent-review, low — the `Cache-Control` assertion cannot render its own failure message.*
+     `response.headers["Cache-Control"]` raises `KeyError` before the assertion evaluates, so the
+     exact mutant it was written to catch (deleting the router line) reports a `KeyError` rather
+     than the message. Use `.get(...)` in the assertion itself.
+  **Rated REMOTE:** `Cache-Control` absent on 4xx/5xx (the contract names it only under the 200, and
+  error bodies are not per-account content); `contract_row`/`expected_row` drift as a tenth field
+  lands (a dropped field fails the whole-row equality loudly); the conversion test's seeds landing
+  exactly on `expected_row`'s defaults (editing conftest breaks it loudly, not silently).
 - [ ] red-usecase (the envelope carries page, limit and total) — `ProjectPage` widens to
   `(items, page, limit, total)` and `ProjectPageRequest` grows the contract's unparameterised
   defaults `page=1`, `limit=20`; the usecase test pins that they reach the caller.

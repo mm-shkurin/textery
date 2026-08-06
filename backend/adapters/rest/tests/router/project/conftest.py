@@ -7,6 +7,7 @@ from httpx import ASGITransport, AsyncClient
 
 from error_handling.exception_handlers import validation_exception_handler
 from project.project_item import ProjectItem
+from project.project_page import ProjectPage
 from router.project import project_router as project_router_module
 from security.current_owner import get_current_owner_id, get_token_service
 from shared.exceptions import InvalidTokenException, ValidationException
@@ -68,15 +69,45 @@ def unauthenticated_feed_client(project_app):
 
 
 @pytest.fixture
+def feed_serving(mocker):
+    """A usecase double whose `execute` serves the given rows as one page.
+
+    The double is returned rather than wired into the client, because two tests
+    read it back afterwards -- `assert_awaited_once_with` for the owner-scoping
+    predicate, `assert_not_awaited` for the unauthenticated refusal.
+
+    Only the *frame* is shared. The rows stay at each call site: what a scenario
+    seeds is what it pins, and burying that under a wrapper is what this fixture
+    exists to undo. The 401 test builds its own bare `AsyncMock` instead of using
+    this -- handing it a `ProjectPage` would install a page it exists to prove is
+    never fetched.
+    """
+
+    def _make(*rows):
+        usecase = mocker.Mock()
+        usecase.execute = mocker.AsyncMock(return_value=ProjectPage(items=rows))
+        return usecase
+
+    return _make
+
+
+@pytest.fixture
 def contract_row():
     """Build a contract-legal domain row carrying the given id.
 
-    The single `ProjectItem` construction site for this directory: the VO permits
-    no field to be absent, so a tenth field added to the contract has to be
-    supplied in exactly one place here rather than in every test that seeds a row.
-    Callers replace only the fields their assertion names; the rest stay at legal
-    constants, so a row that tripped a *different* rule cannot make a failure
-    ambiguous.
+    The `ProjectItem` construction site for every row a test *varies*: the VO
+    permits no field to be absent, so a tenth contract field lands here once
+    rather than in each test that seeds a row. Callers replace only the fields
+    their assertion names; the rest stay at legal constants, so a row that
+    tripped a *different* rule cannot make a failure ambiguous.
+
+    Not the only construction site in the directory --
+    `test_project_list_row_serialization.py` builds its two rows inline and on
+    purpose. That scenario's whole claim is "every field reaches the wire", and
+    it earns it by holding a hand-written domain row and its hand-written wire
+    form side by side in one file, neither one sourced from here. A tenth field
+    must therefore be added there too; that second edit is the price of the
+    independence, not an oversight.
     """
 
     def _make(project_id, **overrides):

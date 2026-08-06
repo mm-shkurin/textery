@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from project.project_page import ProjectPage, ProjectPageRequest
+from project.project_page import ProjectPageRequest
 from security.current_owner import UNAUTHORIZED_MESSAGE
 
 
@@ -35,11 +35,10 @@ class TestListProjects:
     """
 
     async def test_should_serve_the_callers_feed_as_a_json_envelope_of_items(
-        self, mocker, feed_client, feed_row
+        self, feed_serving, feed_client, feed_row
     ):
         project_id = uuid4()
-        usecase = mocker.Mock()
-        usecase.execute = mocker.AsyncMock(return_value=ProjectPage(items=(feed_row(project_id),)))
+        usecase = feed_serving(feed_row(project_id))
 
         async with feed_client(usecase) as client:
             response = await client.get("/api/v1/projects")
@@ -69,7 +68,7 @@ class TestListProjects:
         }, f"unexpected body {response.json()}"
 
     async def test_should_scope_the_read_to_the_bearer_resolved_owner(
-        self, mocker, feed_client, owner_id
+        self, feed_serving, feed_client, owner_id
     ):
         """The feed is per-account: owner_id is a predicate, never a parameter.
 
@@ -77,8 +76,7 @@ class TestListProjects:
         the owner would still answer a well-formed 200 with whatever the port
         handed back -- the isolation claim lives in the argument, not the shape.
         """
-        usecase = mocker.Mock()
-        usecase.execute = mocker.AsyncMock(return_value=ProjectPage(items=()))
+        usecase = feed_serving()
 
         async with feed_client(usecase) as client:
             await client.get("/api/v1/projects")
@@ -89,6 +87,10 @@ class TestListProjects:
         self, mocker, unauthenticated_feed_client
     ):
         """projects_list.yaml: the request fails closed, never as an empty 200."""
+        # Built bare rather than through `feed_serving`: handing this double a
+        # `ProjectPage` would install the very page the test exists to prove is
+        # never fetched, and an empty-tuple page would read as an expected result
+        # rather than an unreached one.
         usecase = mocker.Mock()
         usecase.execute = mocker.AsyncMock()
 

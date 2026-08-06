@@ -3,9 +3,6 @@ from uuid import UUID
 
 import pytest
 
-from project.project_page import ProjectPage
-
-
 _ID_ONE = UUID("11111111-1111-4111-8111-111111111111")
 _ID_TWO = UUID("22222222-2222-4222-8222-222222222222")
 
@@ -35,24 +32,15 @@ class TestListProjectsWireContract:
     @pytest.mark.skip(reason="RED: ProjectItemDto echoes the source offset instead of "
                              "converting to UTC")
     async def test_should_convert_a_non_utc_timestamp_to_utc(
-        self, mocker, feed_client, contract_row, expected_row
+        self, feed_serving, feed_client, contract_row, expected_row
     ):
         """projects_list.yaml: timestamps are UTC ISO-8601. Converted, not echoed."""
-        usecase = mocker.Mock()
-        usecase.execute = mocker.AsyncMock(
-            return_value=ProjectPage(
-                items=(
-                    contract_row(
-                        _ID_ONE,
-                        created_at=datetime(
-                            2026, 3, 14, 16, 26, 53, tzinfo=_SEVEN_HOURS_EAST
-                        ),
-                        updated_at=datetime(
-                            2026, 3, 15, 13, 4, 7, tzinfo=_FIVE_HOURS_WEST
-                        ),
-                    ),
-                )
-            )
+        usecase = feed_serving(
+            contract_row(
+                _ID_ONE,
+                created_at=datetime(2026, 3, 14, 16, 26, 53, tzinfo=_SEVEN_HOURS_EAST),
+                updated_at=datetime(2026, 3, 15, 13, 4, 7, tzinfo=_FIVE_HOURS_WEST),
+            ),
         )
 
         async with feed_client(usecase) as client:
@@ -69,7 +57,7 @@ class TestListProjectsWireContract:
     @pytest.mark.skip(reason="RED: ProjectItemDto accepts a naive datetime and emits it "
                              "offset-less")
     async def test_should_refuse_a_naive_timestamp_rather_than_shift_it(
-        self, mocker, feed_client, contract_row
+        self, feed_serving, feed_client, contract_row
     ):
         """A naive value has no instant, and guessing one is worse than failing.
 
@@ -89,11 +77,8 @@ class TestListProjectsWireContract:
         wraps a field validator's message in its own "Value error, ..." envelope,
         and the substring survives either implementation.
         """
-        usecase = mocker.Mock()
-        usecase.execute = mocker.AsyncMock(
-            return_value=ProjectPage(
-                items=(contract_row(_ID_ONE, created_at=datetime(2026, 3, 14, 16, 26, 53)),)
-            )
+        usecase = feed_serving(
+            contract_row(_ID_ONE, created_at=datetime(2026, 3, 14, 16, 26, 53)),
         )
 
         with pytest.raises(ValueError, match=r"created_at must be timezone-aware"):
@@ -101,7 +86,7 @@ class TestListProjectsWireContract:
                 await client.get("/api/v1/projects")
 
     async def test_should_emit_retryable_as_a_json_boolean(
-        self, mocker, feed_client, contract_row, expected_row
+        self, feed_serving, feed_client, contract_row, expected_row
     ):
         """`False == 0` in Python, so the sibling dict equality cannot see an int.
 
@@ -112,14 +97,9 @@ class TestListProjectsWireContract:
         polarity in one assertion, where `isinstance` pins only the type and would
         pass a row whose value was inverted.
         """
-        usecase = mocker.Mock()
-        usecase.execute = mocker.AsyncMock(
-            return_value=ProjectPage(
-                items=(
-                    contract_row(_ID_ONE, retryable=False),
-                    contract_row(_ID_TWO, status="failed", retryable=True),
-                )
-            )
+        usecase = feed_serving(
+            contract_row(_ID_ONE, retryable=False),
+            contract_row(_ID_TWO, status="failed", retryable=True),
         )
 
         async with feed_client(usecase) as client:
@@ -146,7 +126,7 @@ class TestListProjectsWireContract:
     @pytest.mark.skip(reason="RED: ProjectItemDto forwards an unrecognised status "
                              "verbatim instead of mapping it to `unknown`")
     async def test_should_fail_an_unknown_status_closed_without_blanking_the_page(
-        self, mocker, feed_client, contract_row, expected_row
+        self, feed_serving, feed_client, contract_row, expected_row
     ):
         """projects_list.yaml: an unrecognised status becomes `unknown`, always present.
 
@@ -158,11 +138,9 @@ class TestListProjectsWireContract:
         become a per-page failure, so the expectation is a two-element list
         compared whole -- the row count is asserted, not implied.
         """
-        usecase = mocker.Mock()
-        usecase.execute = mocker.AsyncMock(
-            return_value=ProjectPage(
-                items=(contract_row(_ID_ONE, status="teapot"), contract_row(_ID_TWO, status="ready"))
-            )
+        usecase = feed_serving(
+            contract_row(_ID_ONE, status="teapot"),
+            contract_row(_ID_TWO, status="ready"),
         )
 
         async with feed_client(usecase) as client:
