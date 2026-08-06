@@ -36,6 +36,62 @@ From `interview.md`, settled before any code:
   эссе and сочинение stay reachable over the API until #2/#3 — deliberate, recorded as a
   passing security scenario so nobody "fixes" it with a gate those stories would remove.
 
+## What Works Today (2026-08-06)
+
+Written as capabilities rather than as a checklist — the checklists live in
+`progress-backend.md`, and a reader asking "what does this story actually do yet"
+should not have to reconstruct it from ticked boxes.
+
+**The one thing to read first: none of it is wired to a real generation.** The domain
+builds the prompt correctly and the usecase calls it — and then **discards the result**
+(`generate_document.py:77`). `GigaChatProvider` still composes its own f-string, so a
+реферат generated in production today still gets доклад-shaped wording, with no
+bibliography ban and none of the refusals below. That is deliberate: substituting the
+builder into the provider is Backend Scenario 2.1's behaviour, and doing it earlier would
+leave 2.1 with a green adapter and nothing to redden. Everything that follows is real,
+tested and inert until 2.1 lands.
+
+**Composing a реферат prompt.** `build_prompt` is a pure domain function over a
+three-field request (`document_type`, `topic`, `volume_pages`). реферат gets its own
+structural template — введение with актуальность and цель, разделы по теме, заключение
+with выводы — while доклад, эссе and сочинение share a plain template that is
+byte-identical to the string the GigaChat adapter has been composing since story 1. That
+byte-identity is asserted between the two live composers, not between two hand-typed
+literals, so neither can be edited alone.
+
+**Refusing to invent sources.** Every supported type except доклад carries a sentence
+forbidding a список литературы. The scope is *derived* from `SUPPORTED_DOCUMENT_TYPES`
+rather than hand-listed, so a fifth long-form type added later carries the ban with no
+human step. доклад is excluded through a named freeze for story 1, not a judgement about
+доклад. Note the limit of what this can prove: the ban is an instruction to a third-party
+model, and no test here can show the model obeyed it — that is the open hand-judgement
+below.
+
+**Refusing to build a prompt it cannot phrase.** A `volume_pages` that is absent, zero,
+negative, out of range or a boolean, and a `topic` that is absent, empty or
+whitespace-only, all raise `PromptBuildError` instead of rendering `(None стр.)` or
+`на тему: None` into a billed request. These are reachable because the storage hydration
+path applies none of `create`'s validation, so the guard sits in the builder rather than
+at the entity boundary.
+
+**Failing a doomed generation once, cheaply.** A prompt that cannot be built is
+terminal on the first failure: the provider is called **zero** times, no backoff is
+awaited, and the row is written `failed` with the sanctioned message. Before this, the
+retry loop spent both attempts and a backoff sleep re-phrasing an identical request from
+an identical row, then billed the provider for a request that could not be phrased.
+
+**Catching a missing template before deploy rather than at boot.** Adding a fifth
+document type without its template is red in CI, via a set-equality test that `python -O`
+cannot strip — where the previous guard was a bare `assert` that `-O` removes. At
+runtime a missing template is a scoped `PromptBuildError` for the one affected request,
+deliberately **not** a module-scope raise: that would take every instance down at import
+over one missing dict entry, killing generations of the types that work.
+
+**What is specified but not built.** Topic hardening — the delimiting, the length cap on
+the hydration path, NFC normalization, and the line-break handling that keeps a
+multi-line topic from forging an instruction line — is designed (guards G19–G28) and
+unimplemented. Until it lands, a `topic` is interpolated raw.
+
 ## Open
 
 Two separate hand judgements, deliberately split — the premortem over commit `9c004c94`
