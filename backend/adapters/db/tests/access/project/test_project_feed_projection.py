@@ -1,16 +1,6 @@
-import pytest
-
 from statements.project_feed_storage_statements import ProjectFeedStorageStatements
 
 
-@pytest.mark.skip(
-    reason="RED: AssertionError: every ProjectItem field must be projected from the "
-    "document row -- kind, title, preview, document_type, status, retryable and both "
-    "timestamps; and AssertionError: title and preview must be READ from documents.title "
-    "and documents.content, not emitted as literals: a document seeded with a non-NULL "
-    "title and non-empty content must surface both; and AssertionError: the row's "
-    "timestamps must be the document's own, not a placeholder instant"
-)
 class TestProjectFeedRepositoryProjection:
     """Scenario 1.1: every row field is projected from the documents arm.
 

@@ -1,43 +1,21 @@
-from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import Row, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from model.document.document_model import DocumentModel
 from project.project_item import ProjectItem
 from project.project_page import ProjectPage, ProjectPageRequest
 
-_UNPROJECTED_TEXT = ""
-_UNPROJECTED_TIME = datetime(1970, 1, 1, tzinfo=UTC)
+# The `kind` discriminator of the documents arm. A literal, and correctly so:
+# there is no `documents.kind` column to read -- the value says which arm of the
+# ADR's UNION ALL the row came from, and the generations arm will name its own.
+_DOCUMENT_KIND = "document"
 
-
-def unprojected_row(row_id: UUID) -> ProjectItem:
-    """A feed row with its id projected and nothing else.
-
-    `ProjectItem` carries the contract's nine fields and permits no default, so
-    this statement -- which selects `documents.id` alone -- has to name the eight
-    it does not yet project. They are placeholders, deliberately conspicuous ones,
-    and no test pins them: the SELECT that reads the real columns is the next
-    `red/green-adapter db` pair's work, and inventing the projection here would
-    ship a mapping under zero test pressure.
-
-    The factory is exported rather than inlined so the adapter's own tests can say
-    "the id, and nothing projected yet" without restating placeholder literals that
-    would then have to be edited in two places when the projection lands.
-    """
-    return ProjectItem(
-        kind=_UNPROJECTED_TEXT,
-        id=row_id,
-        title=_UNPROJECTED_TEXT,
-        preview=_UNPROJECTED_TEXT,
-        document_type=_UNPROJECTED_TEXT,
-        status=_UNPROJECTED_TEXT,
-        retryable=False,
-        created_at=_UNPROJECTED_TIME,
-        updated_at=_UNPROJECTED_TIME,
-    )
-
+# A document is never retryable; only a failed generation is, and that column
+# arrives with the generations arm (1.2/1.3). Named rather than inlined so the
+# literal `False` in the row factory is not read as an oversight.
+_DOCUMENTS_ARE_NEVER_RETRYABLE = False
 
 MISSING_OWNER_REFUSAL = (
     "list_feed requires a resolved owner_id: None would drop the owner predicate "
@@ -80,9 +58,42 @@ class SqlAlchemyProjectFeedRepository:
             raise ValueError(MISSING_OWNER_REFUSAL)
 
         result = await self._session.execute(
-            select(DocumentModel.id).where(DocumentModel.owner_id == owner_id)
+            select(
+                DocumentModel.id,
+                DocumentModel.title,
+                DocumentModel.content,
+                DocumentModel.document_type,
+                DocumentModel.status,
+                DocumentModel.created_at,
+                DocumentModel.updated_at,
+            ).where(DocumentModel.owner_id == owner_id)
         )
         # Built from the whole result set, not from a first row: an owner who owns
         # nothing is the path every new account hits first, and `scalar_one()` or
         # `rows[0]` would raise there instead of yielding an empty page.
-        return ProjectPage(items=tuple(unprojected_row(row_id) for row_id in result.scalars()))
+        return ProjectPage(items=tuple(_row_of(row) for row in result))
+
+
+def _row_of(row: Row) -> ProjectItem:
+    """One feed row, every field but the two arm discriminators read from SQL.
+
+    `status` is the stored column rather than the domain's `DRAFT_STATUS`: the
+    check constraint admits only `draft` today, so no test can yet tell a read
+    from a hardcode -- but a projection that reads the column keeps telling the
+    truth on the day the contract's `ready` arrives.
+
+    `preview` is the content verbatim, and `''` rather than NULL for a document
+    with none, because `documents.content` is NOT NULL and defaults to `''`. The
+    200-code-point trim (6.2) and the markup strip (6.3) are not 1.1's to derive.
+    """
+    return ProjectItem(
+        kind=_DOCUMENT_KIND,
+        id=row.id,
+        title=row.title,
+        preview=row.content,
+        document_type=row.document_type,
+        status=row.status,
+        retryable=_DOCUMENTS_ARE_NEVER_RETRYABLE,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )

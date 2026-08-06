@@ -28,7 +28,11 @@ class ProjectItem:
 
     kind: str
     id: UUID
-    title: str
+    # Nullable, as the contract declares it: `title` is absent from the schema's
+    # `required` list and a manually created document has none. Coercing NULL to
+    # `''` here would destroy the null/blank distinction the `title_asc` ordering
+    # of scenario 3.3 depends on.
+    title: str | None
     preview: str
     document_type: str
     status: str

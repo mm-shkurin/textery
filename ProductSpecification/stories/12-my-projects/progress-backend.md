@@ -298,8 +298,27 @@ only the design draft could not see the contract.
   delete `unprojected_row`, which now has zero importers outside its own module.
   **Out of scope, follow-up:** `assert_feed_refuses_an_unresolved_owner` combines action and
   assertion; splitting it edits `test_project_feed_storage.py`, untouched by this amendment.
-- [~] green-adapter db (every row field projected from the documents arm)
-- [ ] red-adapter rest (the envelope emits every `ProjectItem` field) — `ProjectItemDto` widens
+- [x] green-adapter db (every row field projected from the documents arm) — `list_feed` selects
+  `id, title, content, document_type, status, created_at, updated_at` from `documents` and maps
+  each `Row` through a module-private `_row_of`; `unprojected_row`, `_UNPROJECTED_TEXT` and
+  `_UNPROJECTED_TIME` are gone. A **column** select, not an ORM-entity select: `Row` tuples
+  cannot be answered from the identity map at all, a stronger guarantee than the
+  `expire_all()` the Statements already does, and it keeps the statement shaped for the ADR's
+  eventual `UNION ALL`. `ProjectItem.title` widened `str` → `str | None` with the
+  no-coercion warning on the field — NULL must not become `''` or 3.3 loses the null/blank
+  distinction. Only two fields stay literals, each behind a named constant carrying its
+  reason: `_DOCUMENT_KIND` (the UNION-ALL arm discriminator, no column exists) and
+  `_DOCUMENTS_ARE_NEVER_RETRYABLE` (a generations-arm field, 1.2/1.3). `status` is read from
+  the column rather than emitted as `"draft"` — the ADR's fail-closed-to-`unknown` rule stays
+  unbuilt, still CARRIED and still untestable while `ck_documents_status` admits only one
+  value. Timestamps needed no coercion layer: both columns are `DateTime(timezone=True)`, so
+  the driver returns tz-aware UTC. Coverage 100% line **and** branch on both touched files;
+  the db module sits at 96%, the remainder pre-existing and outside this step. Two gaps a
+  coverage number cannot see, both checked by hand: the `title` widening produces no branch,
+  so the NULL-only arm alone would still have read 100% — it is genuinely pinned by the
+  seeded-title test; and the zero-row page has no test here, invisible because an empty
+  generator exit is not a reported arc, and it belongs to Scenario 2.3.
+- [~] red-adapter rest (the envelope emits every `ProjectItem` field) — `ProjectItemDto` widens
   to the contract's nine fields, timestamps serialized as UTC ISO-8601 with an explicit offset
   (the acceptance DTO's `parse_feed_timestamp` rejects a naive string).
 - [ ] green-adapter rest (the envelope emits every `ProjectItem` field)
