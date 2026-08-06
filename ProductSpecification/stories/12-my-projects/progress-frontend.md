@@ -191,7 +191,19 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   `.message` branch and paints literally `Request timed out` into `projects-error`.
   `LOAD_FAILURE_FALLBACK` is bypassed on precisely the failure a real user hits most (slow network)
   and honoured on the one that needs a serializer regression
-- [~] green-frontend (the timeout arm does not paint English on a Russian screen) — **BOTH review
+- [x] green-frontend (the timeout arm does not paint English on a Russian screen) — shipped as a
+  module-local `describeLoadFailure(failure)` in `ProjectsPage.tsx` holding an
+  `OPAQUE_TRANSPORT_FAILURES = [RequestTimeoutError]` list: anything IN the list gets
+  `LOAD_FAILURE_FALLBACK`, anything else falls through to `describeFailure` untouched. A positive
+  type list rather than "stop preferring `.message` here" precisely so the `SessionExpiredError`
+  carve-out below survives by construction — it is not in the list, so it still paints its own
+  sentence, and the reason is now a comment beside the list since no assertion guards it yet.
+  NOT put in `projectsApi.ts`: the suite declares `vi.mock('../../api/projectsApi')`, so an exported
+  helper there is automocked to `undefined` in every feed test — exported constants survive
+  automocking, functions do not. The shape generalises for the next step: `HttpError` is an object
+  literal and `instanceof` cannot see it, so its arm lands as a sibling predicate inside the same
+  function and the call site does not move again. Full frontend suite: 650 passed, 0 failed.
+  Original note follows: **BOTH review
   passes on f9d4410f converged on the same trap, so read this before writing the fix.** The RED
   demands that one `Error` subclass with a truthy `.message` paint the fallback instead of its
   message. `SessionExpiredError` is structurally indistinguishable at `send.ts:52`'s predicate, and
@@ -208,7 +220,7 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   5xx arm below then has to extend again — prefer a shape that generalises. The
   `SessionExpiredError` assertion owed by the `red-frontend-api` step below is the named missing
   guard for all of this, and both passes argued it is scheduled one step too late
-- [ ] red-frontend-api (the two arms this commit was designed around are asserted) — premortem on
+- [~] red-frontend-api (the two arms this commit was designed around are asserted) — premortem on
   6a205042, and the sharpest of the round: the ONLY rejection any test exercises is a plain
   `new Error(...)`, which is the single branch where `describeFailure` and the `e.message` the step
   note asked for are indistinguishable. So the whole deliberate divergence — the reason for 26 lines

@@ -1,8 +1,34 @@
 import { useEffect, useState } from 'react'
 import { listProjects, LOAD_FAILURE_FALLBACK, type ProjectSummary } from '../api/projectsApi'
 import { describeFailure } from '../../../shared/api/send'
+import { RequestTimeoutError } from '../../../shared/api/httpClient'
 import { ProjectCard, projectKey } from './ProjectCard'
 import './ProjectsPage.css'
+
+// Failure types that reach this screen carrying ENGLISH text of their own. `send.ts:93` re-throws
+// `RequestTimeoutError` by identity so the autosave retry policy can still classify it, and its
+// message is the transport-layer literal `httpClient.ts:70-75` hardcodes ("Request timed out") —
+// which `describeFailure`'s last line then prefers over the caller's fallback, painting English on
+// a Russian-only screen on the failure a real user hits most.
+//
+// A TYPE LIST, deliberately, rather than "stop preferring `Error.message` in this catch": that
+// wording would also swallow `SessionExpiredError`, whose own «Сессия истекла. Войдите снова.» is
+// this codebase's entire sign-out affordance here (no route redirects on it), retitling an expired
+// session as a generic feed error with a retry that can never succeed. Anything not listed keeps
+// `describeFailure`'s routing unchanged, including the bare-object-literal `HttpError` a 5xx
+// arrives as.
+//
+// NOT fixed at `send.ts:52`: that line is shared by `useDocumentInit`, `useGeneration`, the
+// ManualEditor save path and the auth forms, and its non-`HttpError` arm has no characterization
+// test anywhere — an app-wide wording change there would go unnoticed by the suite.
+const OPAQUE_TRANSPORT_FAILURES = [RequestTimeoutError]
+
+function describeLoadFailure(failure: unknown): string {
+  if (OPAQUE_TRANSPORT_FAILURES.some((type) => failure instanceof type)) {
+    return LOAD_FAILURE_FALLBACK
+  }
+  return describeFailure(failure, LOAD_FAILURE_FALLBACK)
+}
 
 // The «Мои проекты» feed. Scenario 1.1 only: the cards, and nothing around them — no search, no
 // sort, no view toggle, no paging control. Those arrive with their own scenarios and their own
@@ -36,7 +62,7 @@ export function ProjectsPage() {
         // `ManualEditor` shows it in exactly the same banner (saveFailureMessages.ts:33) and no
         // route in the app redirects on it. There is no polling loop or retry timer here to stop,
         // which is the only other thing the generation hook's branch does with the type.
-        setError(describeFailure(failure, LOAD_FAILURE_FALLBACK))
+        setError(describeLoadFailure(failure))
       })
     return () => {
       cancelled = true

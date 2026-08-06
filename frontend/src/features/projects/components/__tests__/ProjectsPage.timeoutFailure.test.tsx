@@ -38,7 +38,7 @@ describe('ProjectsPage renders a timed-out load in the user’s language', () =>
   // timeout, it is fluent in the wrong language, which is why every earlier assertion in this
   // scenario (element present, role present) holds green while this one fails. First red in the
   // scenario to produce a real value-vs-value diff rather than a missing element.
-  it.skip('shows the Russian load-failure sentence when the request times out', async () => {
+  it('shows the Russian load-failure sentence when the request times out', async () => {
     mockFeedFailure(new RequestTimeoutError())
 
     render(<ProjectsPage />)
