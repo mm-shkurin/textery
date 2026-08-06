@@ -220,7 +220,44 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   5xx arm below then has to extend again — prefer a shape that generalises. The
   `SessionExpiredError` assertion owed by the `red-frontend-api` step below is the named missing
   guard for all of this, and both passes argued it is scheduled one step too late
-- [~] red-frontend-api (the two arms this commit was designed around are asserted) — premortem on
+- [~] red-frontend (the offline user gets English too, and the list cannot reach them) — **BOTH review
+  passes on bcabd515 found this independently, and it is sharper than the timeout it follows.** A
+  dropped connection, failed DNS, or offline device does not produce a `RequestTimeoutError` — `fetch`
+  rejects with a bare `TypeError('Failed to fetch')` (Firefox: «NetworkError when attempting to fetch
+  resource.») long before the 25s `REQUEST_TIMEOUT_MS` deadline. `send.ts:96` flattens it —
+  `throw new Error(describeFailure(error, fallback))` — so the type is DESTROYED one layer above the
+  page. `describeLoadFailure` therefore cannot ever match it: this is not a missing list entry, it is
+  a case `OPAQUE_TRANSPORT_FAILURES` structurally cannot express, while the comment above the list
+  reads as though the transport class is closed. And it is the commit's own justification undone —
+  «the failure a real user hits most (slow network)» is a `TypeError` far more often than a 25s
+  timeout. The guard exists on two other screens and was not carried across:
+  `LoginForm.networkError.test.tsx:80` and `ExportControl.error.test.tsx:101` both assert
+  `.not.toContain('Failed to fetch')`. One `mockFeedFailure(new Error('Failed to fetch'))` case.
+  Expect it RED, and note it cannot go green by extending the list — the green here inverts the
+  design to an allow-list of Russian-bearing types, or accepts the `send.ts` change bcabd515 declined
+- [ ] green-frontend (the offline user gets English too, and the list cannot reach them)
+- [ ] red-frontend-api (a 200 with no `items` renders a JS engine message to the user) — agent-review
+  on bcabd515. `projectsApi.ts:96` does `data.items.map(...)` with no shape check, and
+  `httpClient.ts:167` deliberately turns an empty or unparseable SUCCESSFUL body into `{}`
+  (`await res.json().catch(() => ({}))`). A 204, an empty 200, or any body missing `items` therefore
+  throws `TypeError` INSIDE `listProjects` — downstream of `send`, so it reaches the catch as a real
+  `Error` and the banner paints `Cannot read properties of undefined (reading 'map')`. English, and
+  an internal engine string, on the Russian screen. The file's own fail-closed `parseUpdatedAt`
+  contract exists to stop exactly this class of serializer breakage from looking deliberate — it
+  guards a field of an item but not the presence of `items`, so the weaker input gets the worse
+  rendering. Pair with the shaping decision the deferred nine-required-fields step below owes
+- [ ] green-frontend-api (a 200 with no `items` renders a JS engine message to the user)
+- [ ] red-frontend-api (`send` re-throws `RequestTimeoutError` with its type intact) — premortem on
+  bcabd515: the fix is load-bearing on a contract NOTHING tests. The timeout test declares
+  `vi.mock('../../api/projectsApi')`, so `send.ts` never executes in that suite — the real type is
+  injected at the mock boundary, ABOVE the layer carrying the contract. `shared/api/__tests__/` has
+  `httpClient.timeout.test.ts` (constructs the error) and `send.internalErrorFallback.test.ts` (the
+  500 arm); neither asserts the re-throw preserves identity. Flatten that branch to
+  `throw new Error(describeFailure(...))` and all 650 tests stay green while production regresses to
+  English. `await expect(send(...)).rejects.toBeInstanceOf(RequestTimeoutError)` on a timing-out
+  transport. NOTE: this one lives in `shared/api/`, not in the projects feature
+- [ ] green-frontend-api (`send` re-throws `RequestTimeoutError` with its type intact)
+- [ ] red-frontend-api (the two arms this commit was designed around are asserted) — premortem on
   6a205042, and the sharpest of the round: the ONLY rejection any test exercises is a plain
   `new Error(...)`, which is the single branch where `describeFailure` and the `e.message` the step
   note asked for are indistinguishable. So the whole deliberate divergence — the reason for 26 lines
