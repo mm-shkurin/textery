@@ -4,15 +4,12 @@
 // access token and a 401 renews the session and replays it, instead of surfacing as a generation
 // failure the user did nothing to cause.
 import { send } from '../../../shared/api/send'
+import { EMPTY_PARAMETERS, type GenerationParameters } from '../generationParameters'
 import {
   DEFAULT_DOCUMENT_TYPE,
   WIRE_DOCUMENT_TYPE,
   type DocumentType,
 } from '../../../shared/documentTypes'
-
-// No UI control exists yet for volume — every request asks for a fixed 5-page document
-// until the product adds a page-count selector.
-const DEFAULT_VOLUME_PAGES = 5
 
 export interface CreateGenerationResult {
   generationId: string
@@ -55,6 +52,9 @@ interface GenerationStatusWire extends CreateGenerationWire {
 export async function createGeneration(
   topic: string,
   documentType: DocumentType = DEFAULT_DOCUMENT_TYPE,
+  // Defaulted for the same read-only-tests reason `documentType` is, and because an untouched
+  // form must still send what the client sent before these fields existed.
+  parameters: GenerationParameters = EMPTY_PARAMETERS,
 ): Promise<CreateGenerationResult> {
   const data = await send<CreateGenerationWire>(
     '/api/v1/generations',
@@ -68,7 +68,12 @@ export async function createGeneration(
         // with 422 INVALID_DOCUMENT_TYPE. Map here, same as documentApi.createDocument does.
         document_type: WIRE_DOCUMENT_TYPE[documentType],
         topic,
-        volume_pages: DEFAULT_VOLUME_PAGES,
+        volume_pages: parameters.volumePages,
+        // Omitted rather than sent as "": the contract types both as optional, and an empty
+        // string is a value the user chose to leave blank — which the prompt builder would then
+        // have to re-interpret as absence. Deciding it here keeps one meaning of "not filled in".
+        ...(parameters.requirements.trim() ? { requirements: parameters.requirements.trim() } : {}),
+        ...(parameters.extraWishes.trim() ? { extra_wishes: parameters.extraWishes.trim() } : {}),
       },
     },
     'Не удалось создать запрос',

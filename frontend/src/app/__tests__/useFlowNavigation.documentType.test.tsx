@@ -67,6 +67,10 @@ describe('useFlowNavigation — the picked document type reaches the generation 
     // the topic alongside the type stops a future refactor from swapping the parameter order
     // and still "passing".
     expect(api.createGeneration).toHaveBeenCalledTimes(1)
-    expect(api.createGeneration).toHaveBeenCalledWith('Тема', 'referat')
+    // `undefined` for the parameters, and that is the claim: this test calls
+    // `submitGeneration` directly, without the form, so nothing has supplied them —
+    // and the client must fall back to its own defaults rather than the hook
+    // inventing a value on the way past.
+    expect(api.createGeneration).toHaveBeenCalledWith('Тема', 'referat', undefined)
   })
 })

@@ -4,6 +4,7 @@ import App from '../App'
 import * as api from '../../features/generation/api/generationApi'
 import * as documentApi from '../../features/generation/api/documentApi'
 import { clearSession, saveSession } from '../../features/auth/utils/authSession'
+import { EMPTY_PARAMETERS } from '../../features/generation/generationParameters'
 
 // Story 18, scenario 1.1 — the RENDER-level half of "the type the user picked is the type that
 // gets generated".
@@ -48,7 +49,10 @@ describe('DocumentGenerationFlow — the workspace submits the picked type, not 
     fireEvent.click(screen.getByTestId('topic-send'))
 
     expect(api.createGeneration).toHaveBeenCalledTimes(1)
-    expect(api.createGeneration).toHaveBeenCalledWith(TOPIC, 'doklad')
+    // The parameters object travels with the topic: these tests drive the real
+    // Composer, so an untouched form sends its defaults rather than nothing. Asserted
+    // by value — a client that dropped the argument would still call with two.
+    expect(api.createGeneration).toHaveBeenCalledWith(TOPIC, 'doklad', EMPTY_PARAMETERS)
   })
 
   // A second Ctrl+Enter on the same topic bills the user twice: createGeneration mints a fresh

@@ -7,6 +7,7 @@ import {
   documentTypeFromWire,
   type DocumentType,
 } from '../shared/documentTypes'
+import type { GenerationParameters } from '../features/generation/generationParameters'
 import { useGeneration } from '../features/generation/hooks/useGeneration'
 
 // 'auto' generates from a topic, 'manual' opens the editor. Both are real destinations, not a
@@ -127,8 +128,8 @@ export function useFlowNavigation() {
   // says 'доклад' no matter which card was pressed. The fallback is unreachable in practice
   // (the workspace only renders at `step === 'form' && documentType`) and exists so the composer
   // cannot post a typeless request.
-  const submitGeneration = (topic: string) => {
-    generation.submit(topic, documentType ?? DEFAULT_DOCUMENT_TYPE)
+  const submitGeneration = (topic: string, parameters?: GenerationParameters) => {
+    generation.submit(topic, documentType ?? DEFAULT_DOCUMENT_TYPE, parameters)
   }
 
   return {

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { ChatWorkspace } from '../ChatWorkspace'
 import type { ComponentProps } from 'react'
+import { EMPTY_PARAMETERS } from '../../generationParameters'
 
 type WorkspaceProps = ComponentProps<typeof ChatWorkspace>
 
@@ -82,7 +83,7 @@ describe('ChatWorkspace', () => {
     fireEvent.click(screen.getByTestId('topic-send'))
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
-    expect(onSubmit).toHaveBeenCalledWith('Тема')
+    expect(onSubmit).toHaveBeenCalledWith('Тема', EMPTY_PARAMETERS)
   })
 
   // The send button is disabled while the topic is blank, but Composer's textarea fires onSend on
@@ -117,7 +118,7 @@ describe('ChatWorkspace', () => {
     typeTopic('  Тема  ')
     fireEvent.keyDown(input, { key: 'Enter', ctrlKey: true })
     expect(onSubmit).toHaveBeenCalledTimes(1)
-    expect(onSubmit).toHaveBeenCalledWith('Тема')
+    expect(onSubmit).toHaveBeenCalledWith('Тема', EMPTY_PARAMETERS)
   })
 
   it('shows generated content and actual volumePages when completed', () => {

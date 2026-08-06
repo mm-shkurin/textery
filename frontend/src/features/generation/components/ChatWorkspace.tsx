@@ -3,6 +3,7 @@ import './ChatWorkspace.css'
 import './ChatWorkspaceDoc.css'
 import type { GenerationUiState } from '../hooks/useGeneration'
 import { Composer, MAX_TOPIC_LENGTH } from './Composer'
+import { EMPTY_PARAMETERS, type GenerationParameters } from '../generationParameters'
 import { Progress } from './Progress'
 import { DocArea } from './DocArea'
 import { GenerationHeading } from './GenerationHeading'
@@ -20,7 +21,7 @@ interface ChatWorkspaceProps {
   volumePages: number | null
   createdAt?: string | null
   error: string | null
-  onSubmit: (topic: string) => void
+  onSubmit: (topic: string, parameters: GenerationParameters) => void
   onReset: () => void
   // The workspace is where a signed-in user actually spends their time, and it replaces the
   // landing entirely — so without a sign-out here, the only way out of a session on a shared
@@ -40,10 +41,11 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
   const { onSubmit, onReset } = props
   const { onLogoutClick } = props
   const [topic, setTopic] = useState('')
+  const [parameters, setParameters] = useState<GenerationParameters>(EMPTY_PARAMETERS)
 
   const send = () => {
     const trimmed = topic.trim().slice(0, MAX_TOPIC_LENGTH)
-    if (trimmed) onSubmit(trimmed)
+    if (trimmed) onSubmit(trimmed, parameters)
   }
 
   // The topic lives in this component's state, so `useGeneration.reset()` cannot reach it — it
@@ -54,6 +56,10 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
   // topic owned by the one component that holds it.
   const reset = () => {
     setTopic('')
+    // The parameters are cleared with the topic and for the same reason: a "Создать новый"
+    // screen carrying the previous run's требования and объём invites one keystroke to re-bill
+    // the user for a document they already have, this time with settings they never re-read.
+    setParameters(EMPTY_PARAMETERS)
     onReset()
   }
 
@@ -79,6 +85,8 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
               <Composer
                 topicLabel={topicFieldLabel(documentType)}
                 topic={topic}
+                parameters={parameters}
+                setParameters={setParameters}
                 setTopic={setTopic}
                 onSend={send}
               />
