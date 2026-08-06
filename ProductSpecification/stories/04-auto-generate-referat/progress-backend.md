@@ -749,7 +749,69 @@ that can be red.
   `execute` into the `BackgroundTask` context and strands the row `in_progress` until the
   sweep — exactly what the in-loop `except Exception` was written to prevent. Recorded here
   for those scenarios rather than opened as a 1.4 step.
-- [~] adapters-discovery
+- [x] adapters-discovery — all three checks resolved `[S]`; no `red-adapter` /
+  `green-adapter` step inserted. Re-run from scratch rather than inherited from 1.3,
+  because this scenario is the first in the story to put `build_prompt` on a production
+  path and the first to add a terminal branch to a usecase.
+  - Check 1 (ports): `[S]`. `GenerateDocument` injects two ports, and this scenario
+    changed what happens *between* them, not what either carries. `GenerationProvider` is
+    the port this scenario deliberately does **not** reach — G5's assertion is that it is
+    called zero times, so there is no provider behaviour to implement. `GenerationStorage`
+    receives one extra `update` call on a path that already existed: `_fail_terminally`
+    writes the same `status='failed'` + `error_message` the retry-exhaustion path has
+    written since story 1. No field was added to `Generation`, nothing new is persisted,
+    and no write-here-read-there flow appeared — the row is written and read by the same
+    usecase through the same port.
+  - Check 1, a gap found and deliberately **not** claimed for this scenario: the db
+    adapter's only `update` test is
+    `test_generation_storage.py:46 test_should_persist_status_and_content_after_update`,
+    which drives `complete("Готовый доклад")` and asserts `("completed", content)`.
+    **Nothing anywhere asserts a non-`None` `error_message` survives the persistence
+    boundary** — `assert_fetched_status_and_content` has no `error_message` parameter, and
+    the one REST test that names the field (`test_generation_get_router.py:44`) pins it to
+    `None`. So the column added by migration `a1b2c3d4e5f6` and exposed by
+    `generation_response_dto.py` is crossed by no test in the failing direction, and a
+    mapping that dropped it on write would be green everywhere. It is real, and it is
+    **not 1.4's**: that write and its shape are story 1's, unchanged by this scenario,
+    which only added a second caller. Recorded here rather than opened as a step, on the
+    1.3 precedent that declined to attribute `fake_provider.py:26` and
+    `gigachat_provider.py:167` to a scenario that did not write them. Its natural owner is
+    Integration Scenario 2.1 ("A provider error still ends the generation as failed"),
+    which is the scenario whose sentence is about a failed row.
+  - Check 2 (exceptions): `[S]`, and this is a *different* `[S]` from 1.3's — worth saying,
+    because the checkbox text is identical and the reasoning has inverted.
+    `PromptBuildError` is no longer unreachable: `grep -rn PromptBuildError backend/` now
+    returns `generate_document.py:10,78` outside the domain, where 1.3 recorded that it
+    returned nothing. It is `[S]` because it is **handled rather than propagated** — the
+    usecase catches it and converts it into a persisted `failed` row, so it never escapes
+    `execute` and no inbound adapter's error handler can see it. There is no controller
+    path at all: `execute` runs in a `BackgroundTask`, after the response for
+    `POST /api/v1/generations` has already been sent. Mapping it in the REST error handler
+    would be a guard against a call that cannot happen.
+    The inverse hazard, named here because this is where it would be missed: the `[S]`
+    holds *because* the catch sits in the usecase. **Backend 2.1 moves the composition
+    into the provider call path**, and if the build ends up inside
+    `GigaChatProvider.generate`, `PromptBuildError` becomes an adapter-originating
+    exception — and 2.1's own inherited obligation (recorded under its heading) already
+    requires an adapter test asserting it propagates *unwrapped*. This `[S]` is scoped to
+    today's placement and does not transfer.
+  - Check 3 (response shape): `[S]`. No inbound response shape moves, and the
+    `red-acceptance` finding it rests on was decided on this scenario's own merits above,
+    not inherited: no HTTP input can reach this branch at all. A supported type always has
+    a template (`_TEMPLATES` and `SUPPORTED_DOCUMENT_TYPES` are asserted equal by
+    `test_prompt_type_coverage.py`), and an unsupported type is rejected by
+    `Generation.create` before enqueue — scenario 3.3's sentence. The two observable
+    fields a build failure would move, `status` and `error_message`, are both already on
+    `generation_response_dto.py` and returned by `GET /api/v1/generations/{id}`; this
+    scenario adds no field and changes no shape.
+
+  One stale claim corrected in the same commit, because 1.4's own green is what falsified
+  it: `generation_prompt_failure_statements.py:22` still read "only the ceiling path raises
+  `PromptBuildError` today, the lookup is a bare subscript raising `KeyError`. G17(a) makes
+  green convert it." Green converted it. Left as written, the next reader of that fixture
+  would believe the two paths still differ in exception type and could "fix" the
+  unsupported-type case toward a `KeyError` that no longer occurs.
+  **Scenario 1.4 is now complete.**
 
 ### Scenario 1.5: The topic cannot displace the template's instructions
 - [ ] red-acceptance

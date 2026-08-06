@@ -19,8 +19,8 @@ from statements.generation_row_fields import (
 # before any template is selected; an unsupported type clears both renderability
 # guards and fails at the `_TEMPLATES` lookup. G5 requires both -- an
 # unknown-type-only fixture leaves the ceiling path's retry behaviour unasserted.
-# Note the tense: only the ceiling path raises `PromptBuildError` today, the lookup
-# is a bare subscript raising `KeyError`. G17(a) makes green convert it.
+# Both raise `PromptBuildError` since 1.4's green: `_select_template` replaced the
+# bare `_TEMPLATES` subscript that used to raise `KeyError` here (G17(a)).
 UNSUPPORTED_TYPE = "диссертация"
 OVER_CEILING_VOLUME_PAGES = MAX_VOLUME_PAGES + 1
 
