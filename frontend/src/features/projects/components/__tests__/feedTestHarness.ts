@@ -21,7 +21,17 @@ export function mockFeed(items: ProjectSummary[], total: number) {
 // resolving half. Takes the message rather than an Error so the call site reads as the failure it
 // is naming, and so the caller passes the exported constant instead of a drifting inline copy.
 export function mockFeedRejection(message: string) {
-  vi.mocked(projectsApi.listProjects).mockRejectedValue(new Error(message))
+  mockFeedFailure(new Error(message))
+}
+
+// The rejection `mockFeedRejection` structurally cannot express. `send.ts:93` re-throws a
+// `RequestTimeoutError` and any 5xx `HttpError` WITH THEIR TYPE INTACT — a plain `new Error(msg)` is
+// the one shape where every branch of `describeFailure` collapses to the same output, so a suite
+// that can only produce it can never see the branches the divergence was written for. Takes
+// `unknown`, not `Error`: a bare `HttpError` is an object literal (`httpClient.ts:141`) and is not
+// an `Error` at all, which is precisely the distinction under test.
+export function mockFeedFailure(failure: unknown) {
+  vi.mocked(projectsApi.listProjects).mockRejectedValue(failure)
 }
 
 // The teardown every suite in this directory needs and three of them hand-rolled byte-identically

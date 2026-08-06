@@ -168,14 +168,30 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   the first `[~]`/`[ ]` as the next work unit, and a step requiring a real screen reader either stalls
   `/continue` or gets fabricated `[x]` by an agent that cannot drive NVDA, which is strictly worse
   than never running it)
-- [~] red-frontend (the timeout arm does not paint English on a Russian screen) — agent-review on
+- [x] red-frontend (the timeout arm does not paint English on a Russian screen) — RED reproduced from
+  scratch rather than trusting the interrupted run's recorded evidence, and it held byte-for-byte:
+  `AssertionError: expected 'Request timed out' to be 'Не удалось загрузить проекты'`. No
+  `Unable to find`, no 5000ms timeout, no unhandled rejection — the banner mounts and is found
+  immediately, so this is the first red in the scenario producing a value-vs-value diff rather than a
+  missing element. The rejection is a REAL `RequestTimeoutError`, not an `Error('Request timed out')`
+  stand-in: the type is the reason the text survives `send.ts:93`, so imitating the text would test
+  nothing. `mockFeedRejection` structurally could not express it, so the harness gained
+  `mockFeedFailure(failure: unknown)` — `unknown`, not `Error`, because a bare `HttpError` is an
+  object literal (`httpClient.ts:141`) and is not an `Error` at all; `mockFeedRejection` now delegates.
+  **`/test-review`'s one proposed fix was DECLINED**: it wanted the sibling's
+  `expect(queryAllByTestId('project-card')).toHaveLength(0)` added here, which is the assertion this
+  very file already rules vacuous below («a failed load does not also offer the empty state») —
+  `items` has one writer, inside `.then`, so zero cards holds on any rejection for every
+  implementation. The sibling's copy is a defect with its own remediation step, not a standard to
+  spread to a third file; the declension is recorded in-test so a later reader does not re-add it.
+  Original note follows: agent-review on
   6a205042. `send.ts:93` re-throws `RequestTimeoutError` with its type intact and
   `httpClient.ts:70-75` builds it as `super('Request timed out')`; `describeFailure`'s last line is
   `error instanceof Error && error.message ? error.message : fallback`, so a timeout takes the
   `.message` branch and paints literally `Request timed out` into `projects-error`.
   `LOAD_FAILURE_FALLBACK` is bypassed on precisely the failure a real user hits most (slow network)
   and honoured on the one that needs a serializer regression
-- [ ] green-frontend (the timeout arm does not paint English on a Russian screen)
+- [~] green-frontend (the timeout arm does not paint English on a Russian screen)
 - [ ] red-frontend-api (the two arms this commit was designed around are asserted) — premortem on
   6a205042, and the sharpest of the round: the ONLY rejection any test exercises is a plain
   `new Error(...)`, which is the single branch where `describeFailure` and the `e.message` the step
