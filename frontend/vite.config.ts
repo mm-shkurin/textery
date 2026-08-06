@@ -64,14 +64,19 @@ export default defineConfig({
       // the run when coverage DROPS — which is how historyApi.ts sat at 0% while every caller
       // mocked it and the suite stayed green. Raise these as coverage rises; never lower them to
       // make a run pass.
-      // Ratcheted to sit ~1 pt under the measured 96.75 / 91.89 / 99.44 / 98.50. One point is
+      // Ratcheted to sit ~1 pt under the measured 96.69 / 92.17 / 98.78 / 98.35. One point is
       // deliberate on both sides: tighter and an unrelated refactor turns the build red for
       // rounding, looser and a real regression slips through — which is exactly how historyApi.ts
       // sat at 0% while every caller mocked it and the suite stayed green. Raise as coverage
       // rises; never lower to make a red run pass.
+      //
+      // The measured numbers dipped once and the floors did NOT follow: story 12's «Мои проекты»
+      // landed with almost no tests and dropped the aggregate to 92.37 / 86 / 94.16 / 94.55, which
+      // is what these four turned red on. They stayed where they were and the feature got its
+      // tests; that is the direction this gate is only useful in.
       thresholds: {
         statements: 95,
-        branches: 90,
+        branches: 91,
         functions: 98,
         lines: 97,
       },

@@ -14,10 +14,12 @@ export interface RetryState {
  * click and removed on failure is indistinguishable, for the second it exists, from work that
  * actually started — and on this screen "it started" means a model was billed.
  *
- * The idempotency key is minted once per SOURCE and kept until that source's attempt reaches a
- * terminal outcome, so a double-click, a second tab and a re-send after a lost response all
- * collapse onto one generation. A fresh key is minted only after a failure, which is what keeps
- * the button alive instead of replaying the failed attempt forever.
+ * The idempotency key is minted once per SOURCE and kept until an attempt for that source is
+ * CONFIRMED, so a double-click, a second tab and a re-send after a lost response all collapse onto
+ * one generation. It survives a failure on purpose: the failure this guards is the one where the
+ * request reached the server and only the response was lost, and a fresh key there would bill a
+ * second generation for work already running. It is dropped on success, because the user's next
+ * «Повторить» on that row is a new command rather than a replay of the one that landed.
  */
 export function useRetryGeneration(onRetried: () => void) {
   const [state, setState] = useState<RetryState>({ pendingId: null, error: null })
@@ -40,7 +42,9 @@ export function useRetryGeneration(onRetried: () => void) {
       setState({ pendingId: generationId, error: null })
       try {
         await retryGeneration(generationId, key)
-        // The attempt reached the server; the next one is a NEW attempt and needs its own key.
+        // Confirmed. The next click on this row is a NEW attempt and needs its own key — reusing
+        // this one would have the server collapse it onto the generation just produced, and the
+        // button would look broken.
         keys.current.delete(generationId)
         setState({ pendingId: null, error: null })
         // Refetch rather than splice the new row in locally: the server decides the order, and a
