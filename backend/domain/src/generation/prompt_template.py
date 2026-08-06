@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from document.document_type import (
     DOKLAD,
     ESSE,
@@ -100,7 +102,7 @@ def _requires_ban(document_type: str) -> bool:
     return document_type in TYPES_REQUIRING_SOURCE_BAN and document_type not in _BAN_DEFERRED
 
 
-def _select_template(document_type: str):
+def _select_template(document_type: str) -> Callable[[PromptRequest], str]:
     """A missing template refuses this one request, and does not fail at import.
 
     The completeness of `_TEMPLATES` over `SUPPORTED_DOCUMENT_TYPES` used to be a

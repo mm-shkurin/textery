@@ -82,8 +82,7 @@ class GenerateDocument:
             # backoff on a value that cannot change, and bill the provider for a
             # request that cannot be phrased. Terminal on the first failure instead.
             logger.error("generation %s cannot be phrased as a prompt: %s", generation.id, error)
-            generation.fail(GENERIC_FAILURE_MESSAGE)
-            await self._storage.update(generation)
+            await self._fail_terminally(generation)
             return
 
         last_error: Exception | None = None
@@ -118,6 +117,13 @@ class GenerateDocument:
             MAX_PROVIDER_ATTEMPTS,
             last_error,
         )
+        await self._fail_terminally(generation)
+
+    async def _fail_terminally(self, generation: Generation) -> None:
+        # The row's last write, shared by both terminal paths -- an unphraseable
+        # prompt and an exhausted attempt budget. What differs between them is the
+        # log line, which each caller keeps; what must not differ is the state the
+        # user is left in, so the message and the persist live in one place.
         generation.fail(GENERIC_FAILURE_MESSAGE)
         await self._storage.update(generation)
 
