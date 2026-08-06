@@ -53,6 +53,13 @@ SEEDED_UPDATED_AT = datetime(2026, 3, 1, 9, 52, 0, tzinfo=UTC)
 SEEDED_TITLE = "Весна в городе"
 SEEDED_CONTENT = "Короткий текст."
 
+# The envelope a default (unparameterised) feed request owes for one seeded row.
+# Named rather than inlined so that a change to the domain's default page size is
+# a change to one constant here and not to a bare 20 in an assertion.
+EXPECTED_FIRST_PAGE = 1
+EXPECTED_DEFAULT_LIMIT = 20
+EXPECTED_TOTAL_FOR_ONE_SEEDED_DOCUMENT = 1
+
 _ROW_CARRIES_THE_CONTRACT_FIELDS = (
     "every ProjectItem field must be projected from the document row -- kind, "
     "title, preview, document_type, status, retryable and both timestamps"
@@ -113,7 +120,14 @@ def _expected_page(document_id: UUID, title: str | None, preview: str) -> Projec
                 created_at=SEEDED_CREATED_AT,
                 updated_at=SEEDED_UPDATED_AT,
             ),
-        )
+        ),
+        # Stated, not defaulted. The page-level counters are part of what the feed
+        # owes, and leaving them to `ProjectPage`'s defaults would let a repository
+        # that returned `total=0` beside a one-row page pass this assertion -- the
+        # exact shape a client uses to decide there is no page 2.
+        page=EXPECTED_FIRST_PAGE,
+        limit=EXPECTED_DEFAULT_LIMIT,
+        total=EXPECTED_TOTAL_FOR_ONE_SEEDED_DOCUMENT,
     )
 
 

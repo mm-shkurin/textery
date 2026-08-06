@@ -21,7 +21,7 @@ export const MIN_SENTINEL_DATE_PROJECT: ProjectSummary = {
   preview: null,
   documentType: 'реферат',
   status: 'draft',
-  canRepeat: false,
+  retryable: false,
   createdAt: '2026-07-15T09:00:00Z',
   updatedAt: '0001-01-01T00:00:00Z',
 }
@@ -42,7 +42,7 @@ export const MAX_SENTINEL_DATE_PROJECT: ProjectSummary = {
   preview: null,
   documentType: 'реферат',
   status: 'draft',
-  canRepeat: false,
+  retryable: false,
   createdAt: '2026-07-15T09:00:00Z',
   updatedAt: '9999-12-31T23:59:59Z',
 }
