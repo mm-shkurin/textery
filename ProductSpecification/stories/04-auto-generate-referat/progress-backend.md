@@ -927,6 +927,43 @@ that can be red.
   whose existing row already owns it — noted there because this scenario *widens the
   population* reaching that edge and 3.2 lands after it. Mutual exclusion on a second
   activation → Backend 3.2 / 3.4, existing row.
+
+  **Corrected the same day, after both review passes over `1a76bc74` reached the same false
+  premise independently — `red-usecase` must build against the corrected form, not the
+  first.** Full reasoning in the ADR's "Corrections (2026-08-06)"; the three that change
+  what gets written:
+  - **Line-structuring characters are replaced by a space, not refused.** The design's
+    availability cost was accepted on "the composer is a single-line input, so only
+    API-crafted rows are affected". It is a `<textarea rows={4}>` whose `onKeyDown`
+    intercepts only Ctrl/Cmd+Enter (`Composer.tsx:38-49`), and `ChatWorkspace.tsx:45` trims
+    the edges without touching interior breaks — so a user typing a two-line topic produces
+    exactly the `\n` G20 was about to refuse, and would be told "попробуйте позже" about a
+    condition that never resolves. **A forged delimiter is hostile; a line break is
+    punctuation**, and the first draft treated them as one hazard. Replacement costs none
+    of what made stripping unacceptable: substituting a space is a single linear pass that
+    **cannot regenerate its own input** — a space is not a line break — so the fixpoint is
+    reached by construction. No loop, no iteration cap, no partial-output fail-open, no memo
+    incentive. All five dissolved hazards stay dissolved.
+  - **The raw-length check runs before any normalization (G19c).** Step order was
+    normalize → re-cap → refuse, plus G23's NFKC fold: two full passes over a string the
+    hydration path never caps. That is the sweep-requeue hazard this design claims to have
+    dissolved, preserved at O(n) on an unbounded n instead of O(n²) on a bounded one.
+  - **G19's fixture was unsatisfiable and G28's rationale was false.** G19 required one
+    string both "wholly Cyrillic" and "over the cap only after NFC" — no character in
+    U+0400–U+052F grows under NFC, so the composition-form half was unwritable, the exact
+    failure mode G10 and G16 shipped with. G28 claimed `except Exception` retries a
+    non-`PromptBuildError` from the build and double-bills; that `except` is *inside* the
+    loop and wraps only `provider.generate`, so the real consequence is the row stranded
+    `in_progress` in the `BackgroundTask` until the sweep — and the prescribed "exactly two
+    `storage.update` calls" would have gone red for that case for the wrong reason.
+
+  Two smaller: G20's count must use `str.splitlines()` (`split("\n")` is blind to
+  U+2028/2029/0085/`\v`/`\f`, the set the widening exists for) and must be **derived** over
+  `PromptRequest.__init__`'s string fields so 1.6's `requirements`/`extra_wishes` are red
+  until covered; G24's corpus must itself be NFC or a decomposed entry is red on arrival.
+  A new out-of-diff row records the accept/refuse seam — a topic refused at build time was
+  accepted with a 201 — assigned to **Backend 3.1**, since moving the rule into
+  `Generation.create` changes the request contract.
 - [~] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery

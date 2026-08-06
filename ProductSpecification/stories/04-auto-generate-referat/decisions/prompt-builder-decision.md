@@ -118,6 +118,87 @@ touching the error path, which is the exact "each pass assumed the other owned i
 this catalogue exists to break. Mutual exclusion on a second activation → Backend 3.2 /
 3.4 (existing row).
 
+### Corrections (2026-08-06, same day, after the review passes over `1a76bc74`)
+
+Both passes independently reached the same false premise, and it was the premise the
+whole availability trade rested on. Corrected before `red-usecase` could build against it.
+
+**1. The composer is not a single-line input, so refusing line breaks refuses ordinary
+users — and line-structuring characters are therefore collapsed, not refused.** The
+paragraph above read "the composer is a single-line input with `maxLength=500`, so no row
+the UI can produce is affected; only API-crafted rows are". False:
+`frontend/src/features/generation/components/Composer.tsx:38-49` is a `<textarea rows={4}>`
+whose `onKeyDown` intercepts only **Ctrl/Cmd**+Enter for send, so a plain Enter inserts a
+newline, and `ChatWorkspace.tsx:45` trims the edges without touching interior breaks. A
+user typing a two-line topic produces exactly the `\n` G20 was about to refuse — the
+refused population is a routine UI path, not a legacy edge, and the failure they would get
+is `GENERIC_FAILURE_MESSAGE`, i.e. "попробуйте позже" about a condition that is
+deterministic forever.
+
+The fix is not to widen the refusal's blast radius but to notice that the two hazards were
+being treated as one. **A forged delimiter is hostile; a line break is punctuation.**
+Line-structuring characters (`\n`, `\r\n`, U+2028, U+2029, U+0085, `\v`, `\f`) are
+**replaced by a single space** before the delimiter check; a forged delimiter still
+refuses. This costs none of what made stripping unacceptable: replacing a character with a
+space is a **single linear pass that cannot regenerate its own input** — a space is not a
+line break, so one pass reaches the fixpoint by construction. There is no loop, no
+iteration cap, no partial-output fail-open and no memo incentive. The four dissolved
+hazards stay dissolved; what is given up is only the claim that 1.5 refuses *everything*
+it touches.
+
+G20's assertion is unchanged in substance and stronger in form: it always asserted on the
+**built prompt's line count**, not on the topic's contents, and that is exactly the
+assertion that holds under replacement. Only its refusal clause moves.
+
+**2. The refusal seam is still wrong for the cases that do refuse, and 1.5 does not fix
+it — it names it.** A topic refused at build time was accepted at `POST /generations` with
+a 201, because `generation_request_dto.py` applies no such rule and `Generation.create`
+does not either. The user is told "try later" about something that can never succeed. The
+honest scope statement: 1.5 owns the *prompt*, and moving validation into `create` changes
+the API's accept/reject contract, which is **Backend 3.1**'s sentence ("A реферат request
+is accepted"). Recorded as a new out-of-diff row with that owner rather than annexed here
+— but G28 is amended to assert the persisted `error_message` for a `PromptBuildError` is
+**distinguishable from the retry-exhaustion message**, because the premortem is right that
+G28 as first written pinned "accept, then fail with retry-shaped advice" as correct.
+
+**3. Normalization must not run before the cap.** Design step order was NFC-normalize →
+re-cap → refuse, and G23 adds an NFKC fold. On the hydration path `topic` has **no** cap
+at all, so that is two full `unicodedata.normalize` passes over an unbounded string, still
+synchronous, still after `mark_in_progress()`. The event-loop hazard the revision above
+declares dissolved was preserved with a smaller constant: O(n) on an unbounded n instead
+of O(n²) on a bounded one. **A raw-length pre-check now runs first**, before any
+normalization, and G19 gains the assertion that a grossly over-cap hydrated topic refuses
+with `unicodedata.normalize` never called.
+
+**4. G19's fixture requirements were mutually unsatisfiable** — the exact failure mode
+G10 and G16 were first specified with. The row required a fixture both "wholly Cyrillic"
+and "under the cap before NFC, over it after". No character in U+0400–U+052F grows under
+NFC, so no wholly-Cyrillic string can cross the cap by normalizing. Split: the MAX/MAX+1
+boundary fixture is wholly Cyrillic (that is where the code-point-vs-byte unit distinction
+matters); the growth fixture uses a character that actually grows and need not be Cyrillic.
+
+**5. G28's rationale named a failure that cannot occur.** It said `except Exception`
+retries a non-`PromptBuildError` escaping the build and bills the provider twice. That
+`except` is *inside* the retry loop and wraps only `provider.generate`; `_compose_prompt`
+is outside it. The real consequence is the opposite and worse: the exception escapes
+`execute()` into the `BackgroundTask` with the row already persisted `in_progress`, where
+nothing answers for it until the sweep. G28's assertion is rewritten to that.
+
+**Three smaller ones.** `test_referat_ban.py:227` is 84 lines past EOF (the file is 143
+lines; the `_BAN_DEFERRED` ratchet is at ~103) — a dangling citation under an analogy G22
+restates three times. G20's line count must use `str.splitlines()`, since
+`split("\n")` is blind to U+2028/2029/0085/`\v`/`\f`, which is the exact set the widening
+exists for. And G24's corpus must be NFC to begin with, or a legitimately-decomposed entry
+is red on arrival with no defect present.
+
+**The "dissolved" list is five, and it is enumerated once.** The first draft said "five"
+in one sentence, "four" in the next, and named two different four-member sets across the
+two artifacts — in a record whose entire purpose is that a future author reinstating
+stripping recovers the *full* list. Canonically: (1) the wall-clock/iteration bound, (2)
+fail-closed behaviour at an iteration cap, (3) `sanitize(sanitize(x)) == sanitize(x)`,
+(4) the module-level-memo assertion, (5) the sweep-requeue amplification. All five, and
+the replacement in correction 1 reinstates none of them.
+
 ## Revision (scenario 1.4, 2026-08-05)
 
 All eight hazard groups re-dispatched from scratch against the 1.4 design (group 8
@@ -391,16 +472,16 @@ fired). All ten are **Backend 1.5's** unless a row says otherwise.
 
 | ID | Guard |
 |----|-------|
-| G19 | `topic` at `MAX_TOPIC_LENGTH` builds; at `MAX_TOPIC_LENGTH + 1`, hydrated via `Generation.__init__`, → `PromptBuildError`. **Non-disjunctive** — one branch asserted, not G2's "holds *or* raises", which is why G2 cannot cover this. Plus the composition-form half: a decomposed topic **under** the cap before NFC and **over** it after → refused by the post-NFC check, so the cap is not bypassable by choosing a normal form. The fixture must be wholly Cyrillic, so the code-point cap and the UTF-8 byte overhead G10/G15 pin are visibly different quantities rather than one self-equal number. This is the ADR's own twice-recorded unowned row (`_reject_unrenderable_fields` has no `topic` cap at all), reached independently by groups 1, 5, 6, 7 and 8, and it lands here because 1.5 is the scenario that starts doing arithmetic on the topic's length. |
-| G20 | The built prompt's line count equals the template's own, for every hostile-topic fixture and every type in `SUPPORTED_DOCUMENT_TYPES`; a `topic` containing `\n`, `\r\n`, U+2028, U+2029, U+0085, `\v` or `\f` → `PromptBuildError`. **Asserted on the built prompt, not on the topic**, which is the only form that catches a line break introduced downstream of the check. This is the spec widening the 1.2 scan required and which the scan itself recorded as carried by neither 1.2 nor 1.5. |
+| G19 | Three fixtures, and the third was added by the corrections below. **(a)** `topic` at `MAX_TOPIC_LENGTH` builds; at `MAX_TOPIC_LENGTH + 1`, hydrated via `Generation.__init__`, → `PromptBuildError`. **Non-disjunctive** — one branch asserted, not G2's "holds *or* raises", which is why G2 cannot cover this. This fixture is **wholly Cyrillic**, so the code-point cap and the UTF-8 byte overhead G10/G15 pin are visibly different quantities rather than one self-equal number. **(b)** The composition-form half: a topic **under** the cap before NFC and **over** it after → refused by the post-NFC check, so the cap is not bypassable by choosing a normal form. **This fixture must not be wholly Cyrillic** — no character in U+0400–U+052F grows under NFC, so requiring both properties of one string (as the first draft did) makes the half unwritable, which is precisely how G10 and G16 were first specified. **(c)** A grossly over-cap hydrated topic refuses with `unicodedata.normalize` **never called** — the raw-length pre-check runs ahead of any normalization. Without (c) the design's own step order does two full normalization passes over an unbounded string on the event loop after `mark_in_progress()`, which is the sweep-requeue hazard this revision claims to have dissolved, preserved with a smaller constant. This guard is the ADR's own twice-recorded unowned row (`_reject_unrenderable_fields` has no `topic` cap at all), reached independently by groups 1, 5, 6, 7 and 8. |
+| G20 | The built prompt's line count — counted with `str.splitlines()`, **not** `split("\n")`, which is blind to U+2028/2029/0085/`\v`/`\f` and so blind to the exact set this widening exists for — equals the template's own, for every hostile fixture and every type in `SUPPORTED_DOCUMENT_TYPES`. A `topic` containing `\n`, `\r\n`, U+2028, U+2029, U+0085, `\v` or `\f` has each replaced by a single space (**corrected 2026-08-06 from "→ `PromptBuildError`"** — the composer is a `<textarea>`, so a line break is ordinary punctuation from a routine UI path, not a hostile artefact; see Corrections). **Asserted on the built prompt, not on the topic**, which is the only form that catches a line break introduced downstream of the check — and the form that is unchanged by the switch from refusal to replacement. **Parametrized over every user-controlled string field `PromptRequest` carries, derived from `PromptRequest.__init__`'s signature rather than hand-listed**, so the fourth and fifth fields 1.6 adds (`requirements`, `extra_wishes` — both `str \| None`, both reaching the composed prompt per the ceiling row) are red until covered. Hand-listing here would open a silent hole in a later scenario, which is the shape G27 exists to break; the codebase's own precedent for deriving rather than listing is `TYPES_REQUIRING_SOURCE_BAN`. |
 | G21 | The built prompt contains exactly one opening and one closing delimiter, at the expected offsets, for every type in `SUPPORTED_DOCUMENT_TYPES`. G1 asserts the token is absent from the *user text*; this asserts the *structure of the output*, which is what a forgery actually attacks — a template that forgets a closing token, or a refusal that lets one of a spliced pair through, leaves an unbalanced structure G1 is green on. |
-| G22 | The delimiter contains **no alphabetic character**, asserted on the constant itself. G13 asserts every alphabetic character in the built prompt is Cyrillic, so a Latin-lettered delimiter is red on arrival with no defect present — and the cheapest fix is widening G13's character class, which permanently re-opens the homoglyph hazard G13 exists to close. G22 blocks that escape the way `test_referat_ban.py:227` blocks the `_BAN_DEFERRED` one. Corollary worth stating because it removes a guard rather than adding one: a non-alphabetic token has no case, so the case-folding hazard group 1 raised (an exact-match strip missing a case variant; a case-insensitive one meeting the Turkish `I`) cannot arise. |
+| G22 | The delimiter contains **no alphabetic character**, asserted on the constant itself. G13 asserts every alphabetic character in the built prompt is Cyrillic, so a Latin-lettered delimiter is red on arrival with no defect present — and the cheapest fix is widening G13's character class, which permanently re-opens the homoglyph hazard G13 exists to close. G22 blocks that escape the way `test_referat_ban.py`'s `_BAN_DEFERRED` ratchet (~line 103, in `TestTheBanScopeIsDerived`) blocks the widen-the-freeze one. **Citation corrected 2026-08-06**: this row first cited `test_referat_ban.py:227`, which is 84 lines past that file's EOF — a dangling anchor under an analogy G22 restates three times. Corollary worth stating because it removes a guard rather than adding one: a non-alphabetic token has no case, so the case-folding hazard group 1 raised (an exact-match strip missing a case variant; a case-insensitive one meeting the Turkish `I`) cannot arise. |
 | G23 | A **compatibility-form** delimiter (fullwidth variants, U+2039/U+203A) and a `Cf`-interrupted delimiter → `PromptBuildError`. The refusal decides on the **NFKC fold** of the topic while the emitted topic is **NFC**: NFC does not fold compatibility equivalents, so an NFC-only check passes a fullwidth forgery through as inert text that becomes the token the moment any consumer normalizes differently — or that the model simply reads as visually identical. |
-| G24 | A corpus of realistic Cyrillic topics — `«»` quotes, em/en dashes, parentheses, digits, `ё`, ordinary punctuation — round-trips into the built prompt **byte-identically**. The counterweight without which the delimiter choice is a coincidence rather than a decision: a delimiter drawn from characters that occur in real Russian academic topics mutilates valid input silently and turns nothing else in this table red. `«»` is the specific trap — idiomatic in Russian topic titles and an otherwise attractive delimiter. |
+| G24 | A corpus of realistic Cyrillic topics — `«»` quotes, em/en dashes, parentheses, digits, `ё`, ordinary punctuation — round-trips into the built prompt **byte-identically**. **The corpus entries must themselves be NFC** (added 2026-08-06): a legitimately-decomposed entry (`и` + U+0306) is transformed by a correct implementation, so it would be red on arrival with no defect present, and the cheapest escape is to weaken the assertion from byte-identity to something vaguer. The corpus doubles as the counterweight to G23's NFKC fold, which folds real Russian typography (ligatures, fullwidth digits) and would otherwise refuse benign topics with nothing going red. The counterweight without which the delimiter choice is a coincidence rather than a decision: a delimiter drawn from characters that occur in real Russian academic topics mutilates valid input silently and turns nothing else in this table red. `«»` is the specific trap — idiomatic in Russian topic titles and an otherwise attractive delimiter. |
 | G25 | After `_compose_prompt(generation)`, `generation.topic` is byte-identical to the hydrated value, and no `storage.update` call carries a topic differing from the one read — for a topic that *is* transformed on the way into the prompt. Normalization happens on a local inside `build_prompt` and never on the entity. The worker holds the `Generation` across a ~363 s window and every terminal path persists it, so in-place normalization blind-writes the user's stored topic with sanitized text: an irreversible overwrite of persisted user data, invisible to every prompt-level assertion. G9 is green either way — it constrains the builder's inputs and module state, not the caller's entity, and `PromptRequest` is constructed fresh at the call site. |
 | G26 | A `topic` non-blank before normalization and blank after → `PromptBuildError`, not a blank topic slot. Reachable because `_is_renderable_topic` runs *before* normalization and uses a bare `.strip()`, which — unlike `Generation._required_topic` — does not remove `Cf` format characters. Without it a `Cf`-only topic renders `на тему:  (5 стр.)` and is billed. This is the `DocumentContent` re-cap pattern applied to renderability rather than to length: check, transform, **re-check**. |
 | G27 | Two halves, and the second is the one that has never existed anywhere in this repo. **(a)** A ratchet over the module's *whole* `PromptBuildError` message family asserting each is a fixed string with **no interpolation slot** — not the current per-message opt-in, under which any message 1.5 adds is guarded only by what 1.5 itself writes. The in-file precedent points the wrong way: `_select_template` raises `f"no prompt template for {document_type}"`, so an author copying the nearest sibling copies the interpolating one. **(b)** Seed a sentinel inside `topic`, drive **every** `PromptBuildError` family through `GenerateDocument.execute`, and assert the sentinel is absent from `str(exc)`, from `caplog` at error level, and from the persisted `error_message` (which must equal the sanctioned constant). `grep -rln caplog` over `backend/domain/tests/` and `backend/usecase/tests/` returns one unrelated file, so no captured-log assertion exists at any level today. **Kept here even though Security 2.1/2.2 own a widened version** — deliberately, because Security 2.1 as specified asserts absence at info level on the happy path and would go green while never touching the error path, which is exactly the shape where each pass assumes the other owned it. |
-| G28 | G5's parametrization extended to **every** refusal reason 1.5 introduces — over-cap topic, line-structuring character, forged delimiter, blank-after-normalization — each asserting provider called zero times, `sleep` awaited zero times, exactly two `storage.update` calls. G5's own row already demands its fixture reach the error by more than one call path "because the two arrive from different call paths"; by that argument a third and fourth path added here are unasserted. `generate_document.py`'s `except Exception` retries anything the pre-loop `except PromptBuildError` misses, so a refusal raised as some other class — a `ValueError` out of `unicodedata`, say — is retried twice against a value that cannot change and bills the provider. |
+| G28 | G5's parametrization extended to **every** refusal reason 1.5 introduces — over-cap topic (raw and post-NFC), forged delimiter, blank-after-normalization — each asserting provider called zero times, `sleep` awaited zero times, exactly two `storage.update` calls. (Line-structuring characters are no longer a refusal reason; see Corrections.) G5's own row already demands its fixture reach the error by more than one call path "because the two arrive from different call paths"; by that argument the paths added here are unasserted. **Rationale corrected 2026-08-06 — the first version named a failure that cannot occur.** It said `generate_document.py`'s `except Exception` retries a non-`PromptBuildError` escaping the build and bills the provider twice. That `except` is *inside* the retry loop and wraps only `await self._provider.generate(generation)`; `_compose_prompt` is at line 77, outside it. So a `ValueError` out of `unicodedata` is retried **zero** times and bills nothing — and the real consequence is worse in the other direction: it escapes `execute()` into the `BackgroundTask` with the row already persisted `in_progress` at line 74, where nothing answers for it until the stale sweep. Left as written, this row would have sent `red-usecase` after a double-bill that cannot happen while leaving the stranded-row path unasserted, and the prescribed "exactly two `storage.update` calls" would have gone red for that case for the wrong reason (the true count is one). **Second half, added the same day**: assert the persisted `error_message` for a `PromptBuildError` is **distinguishable from the retry-exhaustion message**. As first written G28 pinned "accept the request, then fail it with retry-shaped advice" as correct behaviour — `_fail_terminally` writes `GENERIC_FAILURE_MESSAGE` ("попробуйте позже") for a condition that is deterministic forever, at a severity shared with routine provider blips. |
 
 **Dissolved by Option D, not skipped.** Four gaps the scan raised have no guard because
 the design removed the mechanism, and they are recorded rather than dropped so that
@@ -449,4 +530,9 @@ above still hold.
 | **Poison message: nothing asserts one permanently-unbuildable generation does not block the ones queued behind it.** G5 covers the single failing item terminating; it says nothing about the queue making progress past it. | Load scenarios / Backend 3.2 |
 | **Retry storm: G5 is a single-caller guard.** A systemic cause — a migration leaving `volume_pages` null across many rows — makes many in-flight generations fail deterministically and re-issue against GigaChat in lockstep, against the downstream rate limit `ExpectedLoad.md` names as the binding constraint. Nothing drives M concurrent callers through one failure and asserts attempts are capped and spread. | Load scenarios |
 | **A 200 with an empty body flows into `generation.complete(content)`**, landing the row `completed` with an empty document the client cannot distinguish from a real result. The provider's failure modes are enumerated only for `httpx.HTTPError`. | Integration 2.1 (a provider error ends the generation as failed) |
+Added by the scenario 1.5 scan and its review passes (2026-08-06):
+
+| Finding | Owner |
+|---------|-------|
+| **The accept/refuse seam is split across two layers with no guard that they agree.** A topic 1.5 refuses at build time was accepted at `POST /api/v1/generations` with a 201 — `generation_request_dto.py` declares `topic: str \| None` with no pattern, and `Generation.create` checks length and blankness only. The user therefore gets an accepted request that fails deterministically with "попробуйте позже". Moving the rule into `create` is the fix, and it changes the API's accept/reject contract — a `ValidationException`/422 where there is a 201 today — which is a contract decision this scenario does not own. The guard, when it lands: a test parametrized over every 1.5 refusal reason asserting `Generation.create` rejects the same input `build_prompt` rejects, so the two validation sets cannot drift. | **Backend 3.1** ("A реферат request is accepted") — the scenario whose sentence is the request contract. G28's amended second half is 1.5's partial mitigation, not a substitute |
 | **N-1 deploy ordering for the fifth type.** Adding a type needs both the code tuple and the `ck_generations_document_type` CHECK to change; during a rolling deploy of a multi-instance backend both orderings occur (new code writing a fifth-type row the old CHECK rejects; old code reading a row whose type it does not define). G7 asserts the two agree at build time, not across a deploy, and no unknown-enum policy exists for the *read* side — `Generation.__init__` hydrating an unknown type has no stated behaviour. | No scenario owns this. G7 covers the build-time half only |
