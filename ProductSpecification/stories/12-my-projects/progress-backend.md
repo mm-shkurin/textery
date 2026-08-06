@@ -321,6 +321,58 @@ only the design draft could not see the contract.
 - [~] red-adapter rest (the envelope emits every `ProjectItem` field) — `ProjectItemDto` widens
   to the contract's nine fields, timestamps serialized as UTC ISO-8601 with an explicit offset
   (the acceptance DTO's `parse_feed_timestamp` rejects a naive string).
+  **Review-pass findings on `6bed7cb0`** (both passes CONCERNS; surfaced, not auto-fixed).
+  The fact that sharpens the first three: `GET /api/v1/projects` is **live** — `main.py:150`
+  mounts `project_router` and `:182` overrides the provider with the real
+  `SqlAlchemyProjectFeedRepository` — so the statement 1.1 is building executes on every
+  authenticated call today. These are not "when the feed ships" risks.
+  1. *both passes, high/CREDIBLE — the bounded SQL fetch has no owner.* The select now names
+     `DocumentModel.content` (`Text`, unbounded) with no `substr` and no `LIMIT`, while
+     `ProjectItemDto` still emits `id` alone — so every request materialises the full text of
+     every document the caller owns and discards all of it. This is the ADR's own motivating
+     cost ("page bytes scale with stored document size") and its Edge Cases table separates the
+     two obligations explicitly: "The SQL prefix is a bounded *fetch*; the grapheme-aware trim
+     happens in the domain." The deferral list covered the trim and dropped the fetch bound.
+     6.2's step list has no `adapter db` step, so nothing schedules it; the trap is that 6.2
+     lands the domain-side trim, `preview` is declared correct on the wire, and the SELECT
+     stays unbounded forever. Owed: a db test seeding oversized content that pins `preview` is
+     already bounded before it reaches the domain — scheduled as itself, at 2.1 with the
+     `LIMIT`, not assumed to arrive with 6.2.
+  2. *premortem, CREDIBLE — `ProjectPageRequest` is accepted and discarded.* `list_feed` binds
+     `request` and never reads it. When 2.1/2.2 widen it with `page`/`limit` (or 3.x with
+     `sort`/`q`) before the statement honours them, the parameter arrives populated and is
+     dropped in silence — a client paging forever through page 1, answered 200 throughout.
+     This commit's own design sets the opposite standard for exactly this shape:
+     `MISSING_OWNER_REFUSAL` exists because a forwarded `None` serves "a well-formed, empty 200
+     to a caller whose identity was never established". The asymmetry is the finding. Owed:
+     `assert_feed_refuses_a_request_it_cannot_honor`, beside the owner refusal.
+  3. *premortem, CREDIBLE — no default `ORDER BY`.* Postgres row order is arbitrary and
+     unstable in practice (plan flip, an UPDATE relocating a tuple), so the list reshuffles
+     between refreshes. 3.x defers the *selectable* order; having a deterministic default at
+     all is not the same thing, and the ADR specifies an allowlisted `ORDER BY` plus a
+     `(kind, id)` tiebreak. Worse in combination with #2: `LIMIT`/`OFFSET` over an unordered
+     statement can show a row on page 1 and page 2, or on neither — a silent drop. Owed before
+     2.1 adds paging, not after: a multi-row test pinning the default order and the tiebreak.
+     (Every db test today seeds one row per owner by design, so none observes ordering.)
+  4. *agent-review, medium — the `title: str | None` widening is enforced by nothing.*
+     Dataclasses do not validate annotations, `project_item_shape_statements.py` reflects over
+     `field.name`/`field.default` and never `field.type`, and `backend-ci.yml` runs `pytest
+     --cov` and no type checker. The seeded-title test pins the *value*, which passes
+     identically under `title: str`. Relevant here: at this step the annotation *is* enforced
+     (Pydantic), so a narrow `title: str` on `ProjectItemDto` fails at runtime on any untitled
+     document rather than at a gate.
+  5. *agent-review, low — `_row_of`'s docstring explains why reading the `status` column is
+     right and never says the fail-closed-to-`unknown` mapping is still owed.* A reader of the
+     function comes away thinking `status` is finished; the CARRIED note lives only in this
+     file's prose. One clause at the projection site closes it. Premortem adds the sharper
+     half: the guard is a note, not a test, and the day story 1 adds `ready` to
+     `ALLOWED_STATUSES` the `ck_documents_status` constraint widens automatically with nothing
+     going RED to remind anyone.
+  **Checked and dismissed:** premortem's identity-map masking (REMOTE, raised and answered
+  twice — `expire_all()` plus the column select, which makes `Row` tuples unanswerable from
+  the identity map by construction) and the `title` widening breaking a live consumer (REMOTE
+  — no consumer reads it; this step is where `None` first reaches serialization and it is
+  written to expect it).
 - [ ] green-adapter rest (the envelope emits every `ProjectItem` field)
 - [ ] red-usecase (the envelope carries page, limit and total) — `ProjectPage` widens to
   `(items, page, limit, total)` and `ProjectPageRequest` grows the contract's unparameterised
