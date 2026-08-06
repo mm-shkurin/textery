@@ -450,14 +450,72 @@ only the design draft could not see the contract.
   `Z`, so an echoing serializer goes RED where the two identity-case UTC seeds cannot see it;
   adds `isinstance(row["retryable"], bool)` so `False == 0` stops hiding an `int`; adds
   `assert response.headers["Cache-Control"] == "no-store"` to the envelope test, narrower
-  than pulling 10.6's acceptance assertion forward; and seeds `status="teapot"` asserting the
-  response is not a 200 pass-through. The enum-legal filler correction rides along, since
-  that last assertion is what breaks the sibling literal.
+  than pulling 10.6's acceptance assertion forward; and pins the unknown-`status` behaviour
+  as **corrected below**. The enum-legal filler correction already rode along in `bfd11431`.
+  **Corrected before the red is written (2026-08-06)** — both review passes on `0ddfb895`
+  independently caught that the bullet above originally planned to seed `status="teapot"`
+  and assert "the response is **not** a 200 pass-through". That contradicts the contract it
+  cites. `projects_list.yaml` says a status the contract does not know "**fails closed to
+  `unknown`** — never mapped onto a displayed one", and is "**always present**: an
+  implementation that omitted the field on the unknown branch would satisfy a looser schema
+  while doing exactly what the fail-closed rule forbids". Fail-closed here means **200 with
+  `status: "unknown"`**, not a non-200. Worse, premortem traced where the rejecting reading
+  leads: `ProjectItemDto` is constructed per row inside the response path with no per-row
+  isolation, and `ProjectPageDto.from_domain` maps the whole tuple — so a `ValidationError`
+  on one row reaches `unhandled_exception_handler` (registered as the catch-all in
+  `main.py`) and blanks the **entire page** with a 500, for every request, until that row is
+  edited. One bad row, one user's whole feed gone. The CARRIED item is the `unknown`
+  *mapping*; what is unguarded is the **blast-radius rule** — a per-row problem must never
+  become a per-page failure. So the amendment seeds a **two-row** page, row 1 carrying
+  `status="teapot"` and row 2 legal, asserting `200`, `len(items) == 2`, and
+  `items[0]["status"] == "unknown"`. The original wording would have been satisfied by the
+  500 that *is* the failure mode.
 - [ ] green-adapter rest amendment (the wire pins what the whole-body equality cannot) —
-  expected shape: an `astimezone(UTC)` field serializer, and constrained `status`/`kind`
-  types on the DTO. The constrained type is entangled with the CARRIED fail-closed-to-
-  `unknown` rule — settle at the green whether the DTO rejects an unknown value or maps it,
-  and record which, because the ADR requires the *document* arm to fail closed too.
+  expected shape: a tz-aware-guarded `astimezone(UTC)` field serializer, and a `status`/`kind`
+  treatment that **maps** an unknown value to `unknown` rather than rejecting it (see the
+  correction above — a constrained `Literal`/`Enum` field that raises is the outage, not the
+  guard). Record at the green which mechanism carries the mapping, because the ADR requires
+  the *document* arm to fail closed too.
+  **Two further findings from the `0ddfb895` passes, to settle here:**
+  1. *agent-review — the naive-timestamp case is worse than uncovered, and the planned fix
+     would hide it.* The DTO docstring says timestamps serialize with an explicit offset,
+     "Pydantic's default form for a **tz-aware** `datetime`" — the qualifier is load-bearing
+     and unflagged. A naive value serializes `"2026-01-01T12:00:00"`, offset-less, which
+     `parse_feed_timestamp` would at least catch. But `astimezone(UTC)` **does not raise** on
+     a naive datetime: Python assumes system local time, so the planned serializer converts a
+     visible contract violation into an invisible one — a well-formed `Z` string naming the
+     wrong instant, shifted by the deploy host's offset, passing in a UTC container and wrong
+     on a developer machine. The ORM columns are `DateTime(timezone=True)` so the ordinary
+     path is aware; the feed is a hand-written cross-table projection, which is exactly where
+     awareness gets dropped. The serializer must be `astimezone` **guarded by a naive
+     rejection**, and the red should seed a naive row expecting that rejection.
+  2. *agent-review, low — the `retryable` docstring claims an inbound strictness the field
+     does not have.* "Declared `bool` rather than left to coercion" describes `strict=True`;
+     the plain declaration coerces `1`/`0`/`'yes'`/`'no'` happily and raises only on `2` or
+     `'maybe'`. The sentence's narrow claim (an `int`-typed field would *emit* `0`/`1`) is
+     true, but the framing will be trusted later — the commit message repeats it verbatim.
+     Note that the scheduled `isinstance` guard pins the **wire** type and would not catch
+     this.
+  **Checked and dismissed:** `extra='forbid'` on either DTO (agent-review, minor — the
+  router test's docstring justifies its whole-body equality by saying an invented field must
+  fail, and Pydantic's default `extra='ignore'` silently drops a stray keyword instead, so
+  the guard is one-directional; real, but out of altitude for the DTO step).
+  **The unbounded-preview finding is now a wire concern, not a storage one** (premortem,
+  CREDIBLE). It was raised against `6bed7cb0` as "the bounded SQL fetch has no owner": the db
+  arm selects `DocumentModel.content` whole and `_row_of` sets `preview=row.content`
+  verbatim. Until this step that died at the DTO boundary, because `ProjectItemDto` carried
+  `id` alone. `0ddfb895` is the line that puts it on the wire. Two costs, one line: the page
+  payload now grows as *rows × full document size*, which is what the contract forbids in as
+  many words ("Read as a bounded prefix in SQL, so the bytes a page reads do not grow with
+  stored document size"), with no `LIMIT` and no 3 s `QUERY_TIMEOUT`/503 backstop
+  implemented; and every document's **full body text** now leaves the server on a *list*
+  endpoint — into browser memory, client error-reporting payloads, and any proxy that samples
+  bodies. The contract's "bounded prefix" wording is a confidentiality choice, not only a
+  size one. 6.2 and 6.3 own the preview *derivation*; nothing owns the *bound*, and the
+  route is live. Owed, and not covered by the amendment above: a db statement test seeding
+  ~5 000 code points asserting `len(preview) <= 200` and that the compiled statement selects
+  a bounded expression, plus the matching wire assertion here. Grep confirms neither exists
+  at any tier today.
   **Review-pass findings on `8c9f567c`** (both CONCERNS; surfaced, not auto-fixed). `/refactor`
   applied nothing — the near-duplicate row constructions ARE the contrast the scenario pins,
   and a conftest assertion helper would replace a working mirror of the sibling file with a
