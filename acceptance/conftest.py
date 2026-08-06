@@ -26,7 +26,6 @@ from statements.resend_statements import ResendStatements
 # 200-line cap; re-imported here so pytest discovers them as conftest fixtures.
 from frontend_generation_fixtures import (  # noqa: F401
     chat_workspace_statements,
-    mode_modal_statements,
     manual_editor_statements,
     manual_editor_line_break_statements,
     manual_editor_save_payload_statements,
@@ -55,6 +54,9 @@ from document_export_fixtures import (  # noqa: F401
     document_export_no_mutation_statements,
     document_blank_title_save_statements,
 )
+
+# Story-12 projects-feed Statements fixtures, same 200-line-cap reason.
+from project_feed_fixtures import project_feed_statements  # noqa: F401
 
 # iPhone 12/13-class viewport — the smallest common real-device width the
 # "design for phone" scenarios must not horizontally overflow at.

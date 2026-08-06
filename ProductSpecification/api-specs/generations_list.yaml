@@ -18,9 +18,17 @@ paths:
         Ordered by `created_at DESC, id DESC`. The `id` tiebreak is load-bearing:
         `created_at` alone is not unique, and a page boundary between two rows sharing a
         timestamp would drop or repeat one.
+
+
+        **Deprecated** as of story 12 in favour of `GET /api/v1/projects`. This endpoint
+        has no caller today — story 18 removed the separate «Генерации» tab, because a
+        generation and its document are one piece of work and were being listed twice.
+        `/projects` shows the only generations that still need showing: the ones no
+        document was ever made from. Behaviour here is unchanged and stays supported.
       security:
         - bearerAuth: []
       operationId: listGenerations
+      deprecated: true
       tags:
         - generations
       parameters:

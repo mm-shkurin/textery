@@ -17,6 +17,7 @@ from clients.application.dto.document.get_document_response_dto import GetDocume
 from clients.application.dto.document.save_document_response_dto import SaveDocumentResponseDto
 from clients.application.dto.generation.generation_request_dto import CreateGenerationRequestDto
 from clients.application.dto.generation.generation_response_dto import GenerationResponseDto
+from clients.application.dto.project.project_list_response_dto import ProjectListResponseDto
 
 
 class ApplicationClient:
@@ -154,6 +155,18 @@ class ApplicationClient:
             content_type=response.headers.get("content-type"),
             content_disposition=response.headers.get("content-disposition"),
             content=response.content,
+        )
+
+    async def list_projects(self, access_token: str) -> ProjectListResponseDto:
+        # No query params: the feed's defaults (page 1, limit 20, created_desc) are
+        # what an unparameterised call must apply, and the composition scenarios
+        # assert against exactly that default page.
+        response = await self._client.get(
+            "/api/v1/projects",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        return ProjectListResponseDto(
+            status_code=response.status_code, body=self._parsed_body(response)
         )
 
     @staticmethod

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1640">
+<title>Textery — Мои проекты · ничего не найдено</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="projects.css">
+<style>
+  /* filled search input — the empty state is only reachable with a live query */
+  .search.filled{color:var(--text-primary); border:1px solid var(--border-strong);}
+  .search .clear{margin-left:auto; color:var(--text-muted); cursor:pointer;}
+  .search .clear i{width:16px; height:16px;}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo"><div class="logo-mark">T<span>AI</span></div>Textery</div>
+  <div class="header-actions">
+    <button class="icon-btn"><i data-lucide="bell"></i></button>
+    <div class="avatar">АИ</div>
+    <i data-lucide="chevron-down"></i>
+  </div>
+</div>
+
+<div class="page">
+  <h1>Мои проекты</h1>
+  <div class="subtitle">Все ваши рефераты, курсовые, статьи и другие работы — в одном месте</div>
+
+  <div class="toolbar-row">
+    <div class="search filled"><i data-lucide="search"></i>квантовая механика
+      <span class="clear"><i data-lucide="x"></i></span></div>
+    <div class="round-btn"><i data-lucide="filter"></i></div>
+    <div class="round-btn"><i data-lucide="arrow-up-down"></i></div>
+    <div class="spacer"></div>
+    <button class="btn btn-primary"><i data-lucide="sparkles"></i>Создать проект</button>
+    <div class="view-switch">
+      <div class="active"><i data-lucide="layout-grid"></i></div>
+      <div><i data-lucide="list"></i></div>
+    </div>
+  </div>
+
+  <div class="chips">
+    <div class="chip active"><i data-lucide="database"></i>Все</div>
+    <div class="chip"><i data-lucide="book-open"></i>Учебные</div>
+    <div class="chip"><i data-lucide="file-text"></i>Деловые</div>
+  </div>
+
+  <!-- STATE A — search returned nothing -->
+  <div class="empty">
+    <div class="art"><i data-lucide="search-x"></i></div>
+    <h2>Ничего не найдено</h2>
+    <p>По запросу «квантовая механика» нет ни одного проекта.
+       Попробуйте другое слово или сбросьте фильтры.</p>
+    <div class="empty-actions">
+      <button class="btn btn-ghost"><i data-lucide="x"></i>Сбросить поиск</button>
+      <button class="btn btn-primary"><i data-lucide="sparkles"></i>Создать проект</button>
+    </div>
+  </div>
+
+  <!-- STATE B — account has no projects at all (no query typed).
+       Same block, different copy: the two are distinct states and must not be
+       collapsed — "нет проектов" and "нет совпадений" call for different actions. -->
+  <div class="section-title">Вариант: у пользователя ещё нет проектов</div>
+  <div class="empty">
+    <div class="art"><i data-lucide="folder-plus"></i></div>
+    <h2>Здесь пока пусто</h2>
+    <p>Создайте первый проект — Textery напишет черновик по вашей теме,
+       а вы отредактируете его как в обычном документе.</p>
+    <div class="empty-actions">
+      <button class="btn btn-primary"><i data-lucide="sparkles"></i>Создать проект</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="logo"><div class="logo-mark">T<span>AI</span></div>Textery</div>
+  <div>© 2026 Textery. Все права защищены.</div>
+  <div class="foot-links">
+    <span>Условия использования</span><span>Политика конфиденциальности</span><span>Поддержка</span>
+  </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

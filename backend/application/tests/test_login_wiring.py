@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from wiring_support import wired_on_one_session
 
 from container.auth_wiring import create_login_user
 from session import SqlAlchemyUnitOfWork
@@ -20,30 +20,22 @@ class TestCreateLoginUserSharesOneSession:
     """
 
     async def test_should_wire_a_real_uow_sharing_the_repository_session(self):
-        sentinel_session = MagicMock()
-        sentinel_session.close = AsyncMock()
+        async with wired_on_one_session(create_login_user) as (login, sentinel_session):
+            assert isinstance(login.unit_of_work, SqlAlchemyUnitOfWork), (
+                "expected create_login_user to wire a real SqlAlchemyUnitOfWork so "
+                "the failed-attempt commit is not a silent no-op, got "
+                f"{login.unit_of_work!r}"
+            )
 
-        with patch("container.runtime.session_factory", return_value=sentinel_session):
-            login_generator = create_login_user()
-            login = await login_generator.__anext__()
-            try:
-                assert isinstance(login.unit_of_work, SqlAlchemyUnitOfWork), (
-                    "expected create_login_user to wire a real SqlAlchemyUnitOfWork so "
-                    "the failed-attempt commit is not a silent no-op, got "
-                    f"{login.unit_of_work!r}"
-                )
+            account_session = login.account_repository._session
+            unit_of_work_session = login.unit_of_work._session
 
-                account_session = login.account_repository._session
-                unit_of_work_session = login.unit_of_work._session
-
-                assert account_session is sentinel_session, (
-                    "expected the account repository to be backed by the wiring's "
-                    f"single session, got a different object {account_session!r}"
-                )
-                assert unit_of_work_session is sentinel_session, (
-                    "expected the UnitOfWork to share the wiring's single session so the "
-                    f"failed-attempt increment and its commit are one transaction, got "
-                    f"{unit_of_work_session!r}"
-                )
-            finally:
-                await login_generator.aclose()
+            assert account_session is sentinel_session, (
+                "expected the account repository to be backed by the wiring's "
+                f"single session, got a different object {account_session!r}"
+            )
+            assert unit_of_work_session is sentinel_session, (
+                "expected the UnitOfWork to share the wiring's single session so the "
+                f"failed-attempt increment and its commit are one transaction, got "
+                f"{unit_of_work_session!r}"
+            )

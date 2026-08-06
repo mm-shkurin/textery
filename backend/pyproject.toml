@@ -184,6 +184,7 @@ known-first-party = [
     "health",
     "logging_config",
     "model",
+    "project",
     "provider",
     "refusal_guard",
     "rendering",

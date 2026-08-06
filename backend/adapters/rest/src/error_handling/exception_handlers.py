@@ -18,6 +18,10 @@ _ERROR_CODE_STATUS_MAP = {
     "INVALID_REFRESH_TOKEN": 401,
     "UNVERIFIED": 403,
     "UNAUTHORIZED": 401,
+    # projects_list.yaml declares 401 for an owner that cannot be resolved, and
+    # ListProjects.execute refuses one with this code. Without the entry the
+    # default answers 400, telling the client its request was malformed.
+    "UNAUTHENTICATED": 401,
     "INVALID_DOCUMENT_TYPE": 422,
     "INVALID_IDEMPOTENCY_KEY": 422,
     "INVALID_VERSION": 422,
