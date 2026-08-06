@@ -220,7 +220,22 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   5xx arm below then has to extend again — prefer a shape that generalises. The
   `SessionExpiredError` assertion owed by the `red-frontend-api` step below is the named missing
   guard for all of this, and both passes argued it is scheduled one step too late
-- [~] red-frontend (the offline user gets English too, and the list cannot reach them) — **BOTH review
+- [x] red-frontend (the offline user gets English too, and the list cannot reach them) — RED as
+  predicted: `AssertionError: expected 'Failed to fetch' to be 'Не удалось загрузить проекты'`.
+  Landed as `ProjectsPage.transportFailure.test.tsx`, with two assertions — exact `.textContent`
+  equality, plus the `document.body` guard the two sibling screens use.
+  **The note below was wrong about one thing and the red corrected it**: the page does NOT catch a
+  `TypeError`. A bare `TypeError` matches none of `send.ts`'s carve-outs (no `status`, so
+  `isHttpError` is false), falls to `send.ts:96`, and is re-thrown as a plain
+  `Error('Failed to fetch')` — the message copied across by `describeFailure`. So this test rejects
+  with that plain `Error`, and rejecting with a `TypeError` would have been the UNFAITHFUL stand-in
+  here, testing a shape the page can never see. That inverts the sibling's reasoning without
+  contradicting it: `timeoutFailure` constructs the real `RequestTimeoutError` precisely because
+  `send.ts:93` re-throws THAT one by identity. `/test-review` found nothing to fix and explicitly
+  declined two "tightenings" that would have loosened the test — `.trim()` on the textContent
+  comparison (the bare form fails on stray whitespace the trimmed form swallows) and `not.toBe` in
+  place of `not.toContain` (negated-contains is the stronger of the two).
+  Original note follows: **BOTH review
   passes on bcabd515 found this independently, and it is sharper than the timeout it follows.** A
   dropped connection, failed DNS, or offline device does not produce a `RequestTimeoutError` — `fetch`
   rejects with a bare `TypeError('Failed to fetch')` (Firefox: «NetworkError when attempting to fetch
@@ -235,7 +250,14 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   `.not.toContain('Failed to fetch')`. One `mockFeedFailure(new Error('Failed to fetch'))` case.
   Expect it RED, and note it cannot go green by extending the list — the green here inverts the
   design to an allow-list of Russian-bearing types, or accepts the `send.ts` change bcabd515 declined
-- [ ] green-frontend (the offline user gets English too, and the list cannot reach them)
+- [~] green-frontend (the offline user gets English too, and the list cannot reach them) — the red
+  confirmed this cannot go green by extending `OPAQUE_TRANSPORT_FAILURES`: there is no surviving type
+  to list, the flattening happened a layer above. Two live options — (a) invert `describeLoadFailure`
+  to an ALLOW-list of types whose message is Russian-bearing, on which `SessionExpiredError` must
+  stay (its «Сессия истекла. Войдите снова.» is this codebase's whole sign-out affordance here), or
+  (b) the `send.ts` change bcabd515 declined, whose cost is unchanged: four features share that line
+  and its non-HttpError arm has no characterization test. The second assertion (`document.body` must
+  not contain `Failed to fetch`) never executed in the red — it has to hold too
 - [ ] red-frontend-api (a 200 with no `items` renders a JS engine message to the user) — agent-review
   on bcabd515. `projectsApi.ts:96` does `data.items.map(...)` with no shape check, and
   `httpClient.ts:167` deliberately turns an empty or unparseable SUCCESSFUL body into `{}`
