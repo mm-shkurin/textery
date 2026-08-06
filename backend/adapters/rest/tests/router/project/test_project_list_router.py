@@ -18,8 +18,9 @@ class TestListProjects:
     arrived with the row-serialization scenario next door
     (`test_project_list_row_serialization.py`), which is where their *contract*
     values are pinned; the values here are the `feed_row` fixture's deliberately
-    implausible fillers, so this test keeps asserting the envelope shape rather
-    than restating that scenario. `page`, `limit` and `total` are NOT pinned:
+    implausible fillers -- legal-but-dull for the two enum-shaped fields, empty
+    for the free-form ones -- so this test keeps asserting the envelope shape
+    rather than restating that scenario. `page`, `limit` and `total` are NOT pinned:
     `ProjectPage` carries `items` alone, and a router that derived `total` from
     `len(items)` would be wrong under the offset paging the read-model decision
     chose. Each arrives with the scenario that first asserts it.
@@ -47,12 +48,12 @@ class TestListProjects:
         assert response.json() == {
             "items": [
                 {
-                    "kind": "",
+                    "kind": "document",
                     "id": str(project_id),
                     "title": "",
                     "preview": "",
                     "document_type": "",
-                    "status": "",
+                    "status": "ready",
                     "retryable": False,
                     "created_at": "1970-01-01T00:00:00Z",
                     "updated_at": "1970-01-01T00:00:00Z",

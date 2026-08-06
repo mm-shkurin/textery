@@ -76,16 +76,22 @@ def feed_row():
     assertion reads, and deliberately not with contract-plausible ones: what the
     serializer emits for them is pinned by the scenario that adds them to the
     envelope, not here.
+
+    `kind` and `status` are the exception. projects_list.yaml declares them as
+    enums, so `""` is not an implausible value but an *illegal* one -- a fixture
+    that cannot occur in production would quietly outlive the day those fields
+    grow constrained types. They carry the least interesting legal member
+    instead; the free-form fields stay implausible.
     """
 
     def _make(project_id):
         return ProjectItem(
-            kind="",
+            kind="document",
             id=project_id,
             title="",
             preview="",
             document_type="",
-            status="",
+            status="ready",
             retryable=False,
             created_at=datetime(1970, 1, 1, tzinfo=UTC),
             updated_at=datetime(1970, 1, 1, tzinfo=UTC),
