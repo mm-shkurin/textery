@@ -15,6 +15,7 @@ should not touch it.
 """
 
 from container.auth_wiring import (
+    create_account_existence,
     create_login_user,
     create_refresh_access_token,
     create_register_user,
@@ -83,6 +84,7 @@ __all__ = [
     "create_resend_code",
     "create_save_document",
     "create_start_oauth",
+    "create_account_existence",
     "create_token_service",
     "create_verify_account",
     "provider",

@@ -62,6 +62,26 @@ def create_resend_code(session: AsyncSession) -> ResendCode:
     )
 
 
+class _AccountExistence:
+    """The `AccountExistence` port over the account repository.
+
+    An adapter of two lines rather than handing the rest layer the repository
+    itself: the auth boundary needs one yes/no answer, and a dependency that
+    could also read an email or reset a lockout counter invites a route to do it.
+    """
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._accounts = SqlAlchemyAccountRepository(session)
+
+    async def exists(self, account_id) -> bool:
+        return await self._accounts.find_by_id(account_id) is not None
+
+
+@request_scoped
+def create_account_existence(session: AsyncSession) -> _AccountExistence:
+    return _AccountExistence(session)
+
+
 def create_token_service() -> TokenService:
     """The already-built JWT service, for the rest layer's Bearer dependency.
 

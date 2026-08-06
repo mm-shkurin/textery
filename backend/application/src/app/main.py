@@ -34,6 +34,7 @@ from collections.abc import AsyncIterator
 from fastapi import FastAPI
 
 from container import (
+    create_account_existence,
     create_check_health,
     create_complete_oauth_callback,
     create_create_document,
@@ -103,7 +104,7 @@ from router.health.health_router import get_check_health_usecase
 from router.health.health_router import router as health_router
 from router.project.project_router import get_list_projects_usecase
 from router.project.project_router import router as project_router
-from security.current_owner import get_token_service
+from security.current_owner import get_account_existence, get_token_service
 from shared.exceptions import ConflictException, NotFoundException, ValidationException
 
 SWEEP_INTERVAL_SECONDS = 60
@@ -181,6 +182,7 @@ app.dependency_overrides[get_create_document_from_generation_usecase] = (
 app.dependency_overrides[get_list_documents_usecase] = create_list_documents
 app.dependency_overrides[get_save_document_usecase] = create_save_document
 app.dependency_overrides[get_token_service] = create_token_service
+app.dependency_overrides[get_account_existence] = create_account_existence
 app.dependency_overrides[get_check_health_usecase] = create_check_health
 app.dependency_overrides[get_list_projects_usecase] = create_list_projects
 app.dependency_overrides[get_start_oauth_usecase] = create_start_oauth

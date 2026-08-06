@@ -24,6 +24,13 @@ EXPECTED_PROMPT_REQUEST_SIGNATURE = (
     ("document_type", inspect.Parameter.POSITIONAL_OR_KEYWORD),
     ("topic", inspect.Parameter.POSITIONAL_OR_KEYWORD),
     ("volume_pages", inspect.Parameter.POSITIONAL_OR_KEYWORD),
+    # Added 2026-08-06, deliberately and not by drift. These two are the fields
+    # the USER fills in beside the topic, and the whole reason this view exists is
+    # to admit user input while excluding server-owned state -- so widening it
+    # here is the guard working, not the guard being worked around. They had been
+    # validated, stored and echoed back for weeks while never reaching the model.
+    ("requirements", inspect.Parameter.POSITIONAL_OR_KEYWORD),
+    ("extra_wishes", inspect.Parameter.POSITIONAL_OR_KEYWORD),
 )
 
 # The attributes a built `PromptRequest` may carry. Asserted separately from the
@@ -31,7 +38,13 @@ EXPECTED_PROMPT_REQUEST_SIGNATURE = (
 # three declared parameters can still assign `self.owner_id` from a module-level
 # lookup, which satisfies every signature assertion while putting a server-owned
 # field one attribute access away from a template.
-EXPECTED_PROMPT_REQUEST_ATTRIBUTES = ("document_type", "topic", "volume_pages")
+EXPECTED_PROMPT_REQUEST_ATTRIBUTES = (
+    "document_type",
+    "topic",
+    "volume_pages",
+    "requirements",
+    "extra_wishes",
+)
 
 
 class TestPromptRequestCarriesOnlyTheFieldsATemplateMayRead:

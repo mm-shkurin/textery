@@ -37,6 +37,8 @@ def _compose_prompt(generation: Generation) -> str:
             document_type=generation.document_type,
             topic=generation.topic,
             volume_pages=generation.volume_pages,
+            requirements=generation.requirements,
+            extra_wishes=generation.extra_wishes,
         )
     )
 

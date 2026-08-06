@@ -1,9 +1,25 @@
+from typing import Protocol
 from uuid import UUID
 
 from fastapi import Depends, Header
 
 from auth.token_service import TokenService
 from shared.exceptions import InvalidTokenException, ValidationException
+
+
+class AccountExistence(Protocol):
+    """Answers whether an account id still names a real account.
+
+    A port of its own rather than the whole `AccountRepository`, because this is
+    all the auth boundary is allowed to want: a dependency that could also read
+    an email or bump a failed-attempt counter invites a route to do it.
+    """
+
+    async def exists(self, account_id: UUID) -> bool: ...
+
+
+def get_account_existence() -> AccountExistence:
+    raise NotImplementedError("wired by the application composition root")
 
 _BEARER_PREFIX = "bearer "
 
@@ -14,9 +30,10 @@ def get_token_service() -> TokenService:
     raise NotImplementedError("wired by the application composition root")
 
 
-def get_current_owner_id(
+async def get_current_owner_id(
     authorization: str | None = Header(default=None),
     token_service: TokenService = Depends(get_token_service),
+    accounts: AccountExistence = Depends(get_account_existence),
 ) -> UUID:
     """Resolve the caller's account id from the Authorization header.
 
@@ -30,10 +47,24 @@ def get_current_owner_id(
     wrong-type. Distinguishing them tells an attacker which half of the header
     they got right.
 
-    No DB lookup: the signature is the proof, so a round-trip per request buys
-    nothing it does not already give. This also uses the TokenService **port**
-    directly rather than going through a usecase, which keeps the "usecases must
-    not call usecases" rule intact -- rest -> usecase is the allowed direction.
+    **The account is confirmed to exist.** This reverses an earlier decision
+    recorded here -- "no DB lookup: the signature is the proof" -- and the reason
+    is measured, not theoretical. A JWT stays valid for its whole lifetime, so a
+    token minted for an account that has since been deleted (or that belonged to
+    a database this deployment no longer has) still verifies. Observed on the
+    running stack 2026-08-06: such a token produced
+    `ForeignKeyViolationError on generations_owner_id_fkey` -> **500** on
+    `POST /api/v1/generations`, while `documents` -- which carries no foreign key
+    on `owner_id` -- would have accepted the write and stored rows under an owner
+    that does not exist. One 500 and one silent corruption from the same cause.
+
+    The signature is still the proof of *authenticity*; what it cannot prove is
+    that the subject is still there. The cost is one primary-key lookup per
+    authenticated request, which is the cheapest read the database has.
+
+    This uses the TokenService and AccountExistence **ports** directly rather than
+    going through a usecase, which keeps the "usecases must not call usecases"
+    rule intact -- rest -> usecase is the allowed direction.
     """
     if not authorization or not authorization.lower().startswith(_BEARER_PREFIX):
         raise _unauthorized()
@@ -43,9 +74,16 @@ def get_current_owner_id(
     try:
         # read_access_subject, not read_refresh_subject: it enforces type == "access",
         # so a 7-day refresh token cannot be presented here as a document credential.
-        return token_service.read_access_subject(token)
+        owner_id = token_service.read_access_subject(token)
     except InvalidTokenException as error:
         raise _unauthorized() from error
+    if not await accounts.exists(owner_id):
+        # The same refusal as a bad signature, deliberately: telling the caller
+        # that the token was well-formed but the account is gone distinguishes a
+        # deleted account from a forged token, and nothing the client can do about
+        # either differs.
+        raise _unauthorized()
+    return owner_id
 
 
 def _unauthorized() -> ValidationException:
