@@ -7,7 +7,7 @@ from document.document_type import (
     SOCHINENIE,
     SUPPORTED_DOCUMENT_TYPES,
 )
-from generation.prompt_template import _TEMPLATES
+from generation.prompt_templates_by_type import TEMPLATES
 from prompt_fixtures import BAN_SENTENCE, last_line, prompt_for
 
 # Which side of the ban each type lands on, **declared by hand** -- the one place
@@ -42,7 +42,7 @@ class TestEverySupportedDocumentTypeYieldsAPrompt:
     def test_should_hold_a_template_for_exactly_the_supported_types(self):
         # G17(b), and the half that the removal test in the refusal file does *not*
         # cover: that test exercises the refusal mechanism and is green whether
-        # `_TEMPLATES` covers `SUPPORTED_DOCUMENT_TYPES` or not, so the named hazard
+        # `TEMPLATES` covers `SUPPORTED_DOCUMENT_TYPES` or not, so the named hazard
         # -- a fifth type added to the tuple before the dict -- passes it unchanged.
         # This is the deleted module-scope `assert`'s claim, moved somewhere
         # `python -O` cannot strip it.
@@ -70,8 +70,8 @@ class TestEverySupportedDocumentTypeYieldsAPrompt:
             f"{sorted(EXPECTED_BAN_SIDE)}"
         )
 
-        missing = sorted(set(SUPPORTED_DOCUMENT_TYPES) - set(_TEMPLATES))
-        stale = sorted(set(_TEMPLATES) - set(SUPPORTED_DOCUMENT_TYPES))
+        missing = sorted(set(SUPPORTED_DOCUMENT_TYPES) - set(TEMPLATES))
+        stale = sorted(set(TEMPLATES) - set(SUPPORTED_DOCUMENT_TYPES))
 
         assert missing == [], f"these supported document types have no prompt template: {missing}"
         assert stale == [], (
@@ -106,7 +106,7 @@ class TestEverySupportedDocumentTypeYieldsAPrompt:
         # The naming check alone is a tautology for реферат: `_referat` hardcodes
         # "реферат" in `Напиши реферат на тему:` rather than interpolating
         # `request.document_type`. Rewrite the dispatch to a constant
-        # `_TEMPLATES[REFERAT](request)` and that parameter still passes -- the
+        # `TEMPLATES[REFERAT](request)` and that parameter still passes -- the
         # "fifth key pointed at `_referat`" hazard this test is named for, green on
         # the one type it is easiest to check. Distinctness closes it: a dispatch
         # that ignores the request makes every prompt identical.

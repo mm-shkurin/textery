@@ -1,7 +1,8 @@
 import pytest
 
 from document.document_type import REFERAT, SUPPORTED_DOCUMENT_TYPES
-from generation.prompt_template import _TEMPLATES, PromptBuildError
+from generation.prompt_template import PromptBuildError
+from generation.prompt_templates_by_type import TEMPLATES
 from prompt_fixtures import assert_refusal, prompt_for
 
 # A type that is in no tuple and no dict. Spelled as a literal rather than derived,
@@ -48,11 +49,11 @@ class TestAMissingTemplateRefusesInTheRequest:
             f"refusal tests in this file assert nothing, got {SUPPORTED_DOCUMENT_TYPES}"
         )
         # The other half of the premise: the type must also be absent from the dict
-        # under test. A `_TEMPLATES` that grew a "диссертация" key would build a
+        # under test. A `TEMPLATES` that grew a "диссертация" key would build a
         # prompt here and turn both refusals into a different, silent failure.
-        assert UNSUPPORTED_TYPE not in _TEMPLATES, (
+        assert UNSUPPORTED_TYPE not in TEMPLATES, (
             f"{UNSUPPORTED_TYPE} must have no prompt template or there is nothing to "
-            f"refuse, got keys {sorted(_TEMPLATES)}"
+            f"refuse, got keys {sorted(TEMPLATES)}"
         )
 
     def test_should_refuse_a_document_type_that_has_no_template(self):
@@ -71,7 +72,7 @@ class TestAMissingTemplateRefusesInTheRequest:
         # The same refusal reached from the direction the hazard actually arrives
         # from: the type is supported, the dict entry is not there. `monkeypatch`
         # restores the key at teardown, so the other files' goldens are unaffected.
-        monkeypatch.delitem(_TEMPLATES, REFERAT)
+        monkeypatch.delitem(TEMPLATES, REFERAT)
 
         # Same two claims as the sibling above, not just the message: the type of the
         # raised error is half of G17(a)'s contract, and asserting it on one of the

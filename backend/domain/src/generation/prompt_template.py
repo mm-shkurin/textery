@@ -1,14 +1,23 @@
 from collections.abc import Callable
 
-from document.document_type import (
-    DOKLAD,
-    ESSE,
-    REFERAT,
-    SOCHINENIE,
-    SUPPORTED_DOCUMENT_TYPES,
-)
+from document.document_type import DOKLAD, SUPPORTED_DOCUMENT_TYPES
 from generation.generation import MAX_VOLUME_PAGES, MIN_VOLUME_PAGES
+from generation.prompt_request import PromptRequest
+
+# The per-type texts live next door; this module owns the rules that apply to all
+# of them. Re-exported because every caller imports `PromptRequest` from here.
+from generation.prompt_templates_by_type import TEMPLATES
 from shared.exceptions import DomainException
+
+__all__ = [
+    "BAN_SENTENCE",
+    "PromptBuildError",
+    "PromptRequest",
+    "TOPIC_ERROR_MESSAGE",
+    "TYPES_REQUIRING_SOURCE_BAN",
+    "VOLUME_PAGES_ERROR_MESSAGE",
+    "build_prompt",
+]
 
 # Every supported type requires the ban: the harm (a student submits a document
 # carrying invented sources) does not depend on which type was asked for. Written
@@ -49,55 +58,6 @@ class PromptBuildError(DomainException):
     """
 
 
-class PromptRequest:
-    """The narrow view of a generation a template is allowed to see.
-
-    Deliberately not the `Generation` entity: `owner_id`, `content` and
-    `error_message` are structurally unreachable from a template rather than
-    merely unused by today's templates.
-    """
-
-    def __init__(self, document_type: str, topic: str, volume_pages: int) -> None:
-        self.document_type = document_type
-        self.topic = topic
-        self.volume_pages = volume_pages
-
-
-def _referat(request: PromptRequest) -> str:
-    """Each obligation gets its own sentence.
-
-    A marker (`во введении`, `в заключении`) names its section exactly once, so
-    the instruction attached to it is unambiguous both to the model and to the
-    tests that read one sentence at a time.
-    """
-    return (
-        f"Напиши реферат на тему: {request.topic} ({request.volume_pages} стр.).\n"
-        "Во введении обоснуй актуальность темы и сформулируй цель работы.\n"
-        "В основной части раскрой разделы по теме.\n"
-        "В заключении сформулируй выводы по проделанной работе."
-    )
-
-
-def _plain(request: PromptRequest) -> str:
-    """The wording GigaChatProvider composes today, volume clause included.
-
-    Byte-identical to `gigachat_provider.py`'s f-string, which is what makes the
-    доклад golden a statement about the move rather than about a rewording. эссе
-    and сочинение differ from the pre-refactor text by the ban line alone, which
-    `build_prompt` appends -- they are in `TYPES_REQUIRING_SOURCE_BAN` and outside
-    `_BAN_DEFERRED`.
-    """
-    return f"{request.document_type} на тему: {request.topic} ({request.volume_pages} стр.)"
-
-
-_TEMPLATES = {
-    DOKLAD: _plain,
-    ESSE: _plain,
-    SOCHINENIE: _plain,
-    REFERAT: _referat,
-}
-
-
 def _requires_ban(document_type: str) -> bool:
     return document_type in TYPES_REQUIRING_SOURCE_BAN and document_type not in _BAN_DEFERRED
 
@@ -105,7 +65,7 @@ def _requires_ban(document_type: str) -> bool:
 def _select_template(document_type: str) -> Callable[[PromptRequest], str]:
     """A missing template refuses this one request, and does not fail at import.
 
-    The completeness of `_TEMPLATES` over `SUPPORTED_DOCUMENT_TYPES` used to be a
+    The completeness of `TEMPLATES` over `SUPPORTED_DOCUMENT_TYPES` used to be a
     module-scope `assert`, which `python -O` strips, and whose raising replacement
     would take every instance down at import over one missing dict entry -- for
     types that work as well as for the one that does not. The claim now lives in
@@ -113,7 +73,7 @@ def _select_template(document_type: str) -> Callable[[PromptRequest], str]:
     cannot reach it, and the runtime failure is named, terminal and scoped to the
     request that asked for the missing type.
     """
-    template = _TEMPLATES.get(document_type)
+    template = TEMPLATES.get(document_type)
     if template is None:
         raise PromptBuildError(f"no prompt template for {document_type}")
     return template
@@ -133,10 +93,10 @@ def _is_renderable_topic(topic) -> bool:
 def _reject_unrenderable_fields(request: PromptRequest) -> None:
     """Guards both fields before any template sees them.
 
-    Checked here rather than inside `_plain`, which is the only template that
-    interpolates `document_type`: a guard living in one template lets the other
-    keep building from a request no caller should have been allowed to construct,
-    and the hole is silent the day a type gets its own template. Both fields reach
+    Checked here rather than inside any one template: a guard living in one
+    template lets the other three keep building from a request no caller should
+    have been allowed to construct, and the hole is silent the day a type gets a
+    template of its own -- which эссе and сочинение both just did. Both fields reach
     here unvalidated because `Generation.__init__` -- the storage hydration path --
     applies neither the range check nor the required-topic check that `create` does.
     """

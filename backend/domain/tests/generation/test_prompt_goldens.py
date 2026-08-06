@@ -9,7 +9,8 @@ from document.document_type import (
     SOCHINENIE,
     SUPPORTED_DOCUMENT_TYPES,
 )
-from generation.prompt_template import _TEMPLATES, build_prompt
+from generation.prompt_template import build_prompt
+from generation.prompt_templates_by_type import TEMPLATES
 from prompt_fixtures import (
     VOLUME_PAGES,
     VOLUME_PAGES_TWO_DIGIT,
@@ -21,19 +22,33 @@ from prompt_fixtures import (
 # The prompt each type must build, byte for byte. Hand-typed rather than composed
 # from the module's own constants: a golden assembled out of `_plain`'s f-string
 # would move with it, which is the one thing this scenario exists to forbid. The
-# доклад text is the string `GigaChatProvider` composed before this story
-# (`gigachat_provider.py:113-116`); the other three are that same text plus the ban
-# line, because they are in `TYPES_REQUIRING_SOURCE_BAN` and outside `_BAN_DEFERRED`
-# -- writing them against the bare pre-change text is red on arrival, and the
-# cheapest-looking fix (widening `_BAN_DEFERRED`) silently unbans half the types.
+# доклад text is still the string `GigaChatProvider` composed before this story:
+# it is the one type frozen on `_plain` until story 1 lands, and it is the reason
+# `_BAN_DEFERRED` exists. The other three carry the ban line, because they are in
+# `TYPES_REQUIRING_SOURCE_BAN` and outside `_BAN_DEFERRED` -- writing any of them
+# without it is red on arrival, and the cheapest-looking fix (widening
+# `_BAN_DEFERRED`) silently unbans half the types.
 GOLDEN_PROMPTS = {
     DOKLAD: "доклад на тему: Как работает фотосинтез (5 стр.)",
+    # эссе and сочинение each have a template of their own now. They rode `_plain`
+    # only because nothing had been written for them — a bare noun phrase, which a
+    # model answers with an encyclopedia entry, making the user's type choice
+    # cosmetic. The two differ deliberately: эссе argues a personal thesis and is
+    # read for its reasoning, сочинение answers the question the topic poses and is
+    # read for whether its examples support the answer.
     ESSE: (
-        "эссе на тему: Как работает фотосинтез (5 стр.)\n"
+        "Напиши эссе на тему: Как работает фотосинтез (5 стр.).\n"
+        "Во вступлении сформулируй тезис — собственную позицию по теме.\n"
+        "В основной части приведи аргументы в поддержку тезиса и рассмотри "
+        "возражение против него.\n"
+        "В заключении вернись к тезису и подведи итог рассуждения.\n"
         "Не включай список литературы и не ссылайся на источники."
     ),
     SOCHINENIE: (
-        "сочинение на тему: Как работает фотосинтез (5 стр.)\n"
+        "Напиши сочинение на тему: Как работает фотосинтез (5 стр.).\n"
+        "Во вступлении объясни, как ты понимаешь тему, и сформулируй основную мысль.\n"
+        "В основной части раскрой основную мысль и подкрепи её примерами.\n"
+        "В заключении сформулируй вывод, который следует из приведённых примеров.\n"
         "Не включай список литературы и не ссылайся на источники."
     ),
     # The volume clause is on реферат too, before the sentence-ending period, the
@@ -52,14 +67,19 @@ GOLDEN_PROMPTS = {
 }
 
 
-class TestADokladPromptIsUnchangedByTheMoveIntoTheDomain:
-    """Moving prompt composition into the domain must not reword a single prompt.
+class TestEveryTypeBuildsItsGoldenPrompt:
+    """The exact text each type sends, pinned byte for byte.
 
-    Story 1 is being finished elsewhere against the exact доклад text
-    `GigaChatProvider` composes today, so a refactor that "improves" the wording
-    changes what a live model returns for work already signed off. The goldens
-    below pin all four types rather than доклад alone -- the refactor is asserted
-    lossless for every type, not asserted for one and assumed for the rest.
+    доклад is the claim this class was written for and still carries: story 1 is
+    being finished against the exact text `GigaChatProvider` composed, so a
+    refactor that "improves" the wording changes what a live model returns for
+    work already signed off. Its golden is therefore a freeze, not a preference.
+
+    The other three are goldens of a different kind: эссе and сочинение were
+    rewritten on purpose when they stopped sharing the plain template, so their
+    entries record a decision rather than preserve one. Both kinds belong here —
+    what the class asserts is that no prompt changes without someone editing the
+    text that says what it is.
 
     Rendering `volume_pages` is what makes the доклад text byte-identical. That it
     also puts a user-controlled `int | None` into the prompt for the first time is
@@ -84,7 +104,7 @@ class TestADokladPromptIsUnchangedByTheMoveIntoTheDomain:
         # in-place mutation of a field's *value*. Latent while all three fields are
         # `str`/`int`, but 1.6 adds two more and the guard would rot silently.
         before = copy.deepcopy(vars(request))
-        templates_before = dict(_TEMPLATES)
+        templates_before = dict(TEMPLATES)
 
         first = build_prompt(request)
         second = build_prompt(request)
@@ -104,12 +124,12 @@ class TestADokladPromptIsUnchangedByTheMoveIntoTheDomain:
         assert vars(request) == before, (
             f"build_prompt mutated its request: {before} -> {vars(request)}"
         )
-        # The other half of G9 as the ADR states it. `_TEMPLATES` is the module state
+        # The other half of G9 as the ADR states it. `TEMPLATES` is the module state
         # the nonce rejection rests on: compared by key *and* callable identity, so a
         # builder that rebound a template to a memoizing wrapper is caught even
         # though the key set is unchanged.
-        assert dict(_TEMPLATES) == templates_before, (
-            f"build_prompt rewrote module state: {templates_before} -> {dict(_TEMPLATES)}"
+        assert dict(TEMPLATES) == templates_before, (
+            f"build_prompt rewrote module state: {templates_before} -> {dict(TEMPLATES)}"
         )
 
     @pytest.mark.parametrize("document_type", SUPPORTED_DOCUMENT_TYPES)
