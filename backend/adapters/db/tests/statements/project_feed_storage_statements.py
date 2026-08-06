@@ -19,7 +19,13 @@ from statements.project_feed_row_expectations import (
     ProjectFeedRowExpectations,
 )
 
-MISSING_OWNER_REFUSAL = (
+# Hand-written, and deliberately NOT imported from
+# `access.project.project_feed_storage`, which holds a constant of the same value:
+# importing it would make the expectation and the value under test one symbol, and a
+# refusal raised with the wrong message would stay green. Underscore-prefixed like
+# every other message constant here, so the name cannot be mistaken for the
+# production one at a glance.
+_MISSING_OWNER_REFUSAL = (
     "list_feed requires a resolved owner_id: None would drop the owner predicate "
     "and read every account's rows"
 )
@@ -132,4 +138,4 @@ class ProjectFeedStorageStatements(ProjectFeedRowExpectations):
         with pytest.raises(ValueError) as refusal:
             await self._feed.list_feed(None, ProjectPageRequest())
 
-        assert str(refusal.value) == MISSING_OWNER_REFUSAL, _REFUSAL_NAMES_THE_MISSING_OWNER
+        assert str(refusal.value) == _MISSING_OWNER_REFUSAL, _REFUSAL_NAMES_THE_MISSING_OWNER

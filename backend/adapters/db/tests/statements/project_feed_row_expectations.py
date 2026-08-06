@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 from document.document import Document
 from project.project_item import ProjectItem
@@ -85,19 +86,25 @@ _TIMESTAMPS_ARE_THE_STORED_INSTANTS = (
 )
 
 
-def _expected_page(document: Document, title: str | None, preview: str) -> ProjectPage:
+def _expected_page(document_id: UUID, title: str | None, preview: str) -> ProjectPage:
     """The whole page the feed owes for one seeded document.
 
     Built here in the test tree, never imported from
     `access.project.project_feed_storage`: importing the module's own row factory
     is what had collapsed the previous expectation into `document.id == row_id`,
     with both sides of the equality one code path.
+
+    Takes the id rather than the entity to keep that separation visible in the
+    signature: identity is the only thing this expectation may draw from the
+    object the test built, and every other field is stated as a literal above. An
+    entity parameter would leave the door open to reading a second field off it
+    later and quietly restoring the mirror.
     """
     return ProjectPage(
         items=(
             ProjectItem(
                 kind="document",
-                id=document.id,
+                id=document_id,
                 title=title,
                 preview=preview,
                 document_type=SEEDED_DOCUMENT_TYPE,
@@ -127,7 +134,7 @@ class ProjectFeedRowExpectations:
         content is -- this case alone cannot pin that the column is read at all,
         which is why `assert_titled_row_is_projected_from` exists.
         """
-        assert page == _expected_page(document, title=None, preview=""), (
+        assert page == _expected_page(document.id, title=None, preview=""), (
             f"{_ROW_CARRIES_THE_CONTRACT_FIELDS}; {_PAGE_HOLDS_EXACTLY_THE_EXPECTED_ROW}"
         )
 
@@ -141,7 +148,7 @@ class ProjectFeedRowExpectations:
         NULL nor empty, so only a SELECT that reads `documents.title` and
         `documents.content` can satisfy it.
         """
-        assert page == _expected_page(document, title=SEEDED_TITLE, preview=SEEDED_CONTENT), (
+        assert page == _expected_page(document.id, title=SEEDED_TITLE, preview=SEEDED_CONTENT), (
             f"{_TITLED_ROW_CARRIES_THE_STORED_TEXT}; {_PAGE_HOLDS_EXACTLY_THE_EXPECTED_ROW}"
         )
 

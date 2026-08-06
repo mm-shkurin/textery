@@ -1,5 +1,7 @@
 import pytest
 
+from statements.project_feed_storage_statements import ProjectFeedStorageStatements
+
 
 @pytest.mark.skip(
     reason="RED: AssertionError: every ProjectItem field must be projected from the "
@@ -24,7 +26,7 @@ class TestProjectFeedRepositoryProjection:
     """
 
     async def test_should_project_every_contract_field_from_the_document(
-        self, project_feed_statements
+        self, project_feed_statements: ProjectFeedStorageStatements
     ):
         owner_id = await project_feed_statements.given_an_account()
         document = await project_feed_statements.given_a_document_written_by_its_owner(owner_id)
@@ -34,7 +36,7 @@ class TestProjectFeedRepositoryProjection:
         project_feed_statements.assert_row_is_projected_from(page, document)
 
     async def test_should_project_title_and_preview_from_a_document_that_carries_them(
-        self, project_feed_statements
+        self, project_feed_statements: ProjectFeedStorageStatements
     ):
         # The case the method above structurally cannot make. There the seeded
         # document is `Document.create`'s -- title NULL, content '' -- so the
@@ -50,7 +52,9 @@ class TestProjectFeedRepositoryProjection:
 
         project_feed_statements.assert_titled_row_is_projected_from(page, document)
 
-    async def test_should_keep_both_timestamps_tz_aware(self, project_feed_statements):
+    async def test_should_keep_both_timestamps_tz_aware(
+        self, project_feed_statements: ProjectFeedStorageStatements
+    ):
         # Split from the field assertion on purpose: whole-page equality compares
         # instants, and two `datetime`s can be equal while one is naive only when
         # the other is too -- so an all-naive projection would satisfy equality
