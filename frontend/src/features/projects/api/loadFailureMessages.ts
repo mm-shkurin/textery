@@ -46,10 +46,7 @@ import { SessionExpiredError } from '../../auth/api/authorizedRequest'
 // `readonly` so the fail-closed direction cannot be widened at runtime: an allow-list that another
 // module can `push` onto is an allow-list that can be made to leak the English text arm 3 exists to
 // keep off this screen.
-const FEED_AUTHORED_MESSAGES: readonly string[] = [
-  MISSING_UPDATED_AT_MESSAGE,
-  INVALID_PAGE_MESSAGE,
-]
+const FEED_AUTHORED_MESSAGES: readonly string[] = [MISSING_UPDATED_AT_MESSAGE, INVALID_PAGE_MESSAGE]
 
 export function describeLoadFailure(failure: unknown): string {
   if (isHttpError(failure) || failure instanceof SessionExpiredError) {

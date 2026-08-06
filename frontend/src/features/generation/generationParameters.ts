@@ -32,5 +32,9 @@ export const EMPTY_PARAMETERS: GenerationParameters = {
 
 /** True when the volume is an integer inside the range the server accepts. */
 export function isVolumeAcceptable(volumePages: number): boolean {
-  return Number.isInteger(volumePages) && volumePages >= MIN_VOLUME_PAGES && volumePages <= MAX_VOLUME_PAGES
+  return (
+    Number.isInteger(volumePages) &&
+    volumePages >= MIN_VOLUME_PAGES &&
+    volumePages <= MAX_VOLUME_PAGES
+  )
 }

@@ -83,7 +83,10 @@ export function ProjectCard({
       <div className="project-card-thumb">
         <ProjectFolderIcon className="project-card-folder" />
       </div>
-      <div className="project-card-body" data-testid={namespaced(`project-card-${projectKey(project)}`)}>
+      <div
+        className="project-card-body"
+        data-testid={namespaced(`project-card-${projectKey(project)}`)}
+      >
         {/* The LABEL the rest of the app uses ('Реферат'), never the wire's Cyrillic 'реферат':
             the history list shipped the raw field once and named one document two ways
             depending on which screen you looked at. */}
@@ -121,7 +124,11 @@ export function ProjectCard({
           </button>
         )}
         {retryError !== null && (
-          <p className="project-card-retry-error" data-testid={namespaced('project-card-retry-error')} role="alert">
+          <p
+            className="project-card-retry-error"
+            data-testid={namespaced('project-card-retry-error')}
+            role="alert"
+          >
             {retryError}
           </p>
         )}

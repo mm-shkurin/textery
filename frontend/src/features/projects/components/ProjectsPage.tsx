@@ -35,8 +35,7 @@ export function ProjectsPage({ onOpenDocument, onCreateProject, onBack }: Projec
   // draws «Недавние проекты» above a list that repeats them; repeating four cards a user can
   // already see costs a screenful and buys nothing, so the section appears once the page holds
   // more than it would show.
-  const showRecent =
-    !searching && feed.sort === 'created_desc' && feed.items.length > RECENT_COUNT
+  const showRecent = !searching && feed.sort === 'created_desc' && feed.items.length > RECENT_COUNT
 
   const open = (project: ProjectSummary) => {
     // Only a document has an editor to open. A generation card is a record of work that never
@@ -48,7 +47,12 @@ export function ProjectsPage({ onOpenDocument, onCreateProject, onBack }: Projec
     <div className="projects-screen" data-testid="projects-screen">
       <div className="projects-header">
         {onBack !== undefined && (
-          <button type="button" className="projects-back" data-testid="projects-back" onClick={onBack}>
+          <button
+            type="button"
+            className="projects-back"
+            data-testid="projects-back"
+            onClick={onBack}
+          >
             Назад
           </button>
         )}
@@ -97,11 +101,18 @@ export function ProjectsPage({ onOpenDocument, onCreateProject, onBack }: Projec
         // Two empty states, never one. "Nothing matched" offers to clear the query; "no work
         // yet" offers to create a project. Shipping one for both strands a new user on a
         // search-reset button that does nothing.
-        <div className="projects-empty" data-testid={searching ? 'projects-empty-search' : 'projects-empty-none'}>
+        <div
+          className="projects-empty"
+          data-testid={searching ? 'projects-empty-search' : 'projects-empty-none'}
+        >
           {searching ? (
             <>
               <p>Ничего не найдено.</p>
-              <button type="button" data-testid="projects-clear-search" onClick={() => feed.update({ q: '' })}>
+              <button
+                type="button"
+                data-testid="projects-clear-search"
+                onClick={() => feed.update({ q: '' })}
+              >
                 Сбросить поиск
               </button>
             </>

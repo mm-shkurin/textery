@@ -21,7 +21,14 @@ export interface FeedState {
   error: string | null
 }
 
-const EMPTY: FeedState = { items: [], total: 0, page: 1, limit: DEFAULT_LIMIT, loading: true, error: null }
+const EMPTY: FeedState = {
+  items: [],
+  total: 0,
+  page: 1,
+  limit: DEFAULT_LIMIT,
+  loading: true,
+  error: null,
+}
 
 /**
  * The feed's data and the URL that describes it.
