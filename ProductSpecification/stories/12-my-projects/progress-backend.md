@@ -443,7 +443,7 @@ only the design draft could not see the contract.
   `*_di_stub.py` test asserting the un-overridden dependency raises. The project feed router
   has no such sibling — a real inconsistency with the established pattern, belonging to the
   router step rather than the DTO step.
-- [ ] red-adapter rest amendment (the wire pins what the whole-body equality cannot) — the
+- [x] red-adapter rest amendment (the wire pins what the whole-body equality cannot) — the
   four review-pass findings above, all of which survived a mutant or are structurally
   invisible to dict equality, folded into one red rather than four. Seeds a third row whose
   `created_at` carries a non-UTC offset (`tzinfo=timezone(timedelta(hours=7))`) expecting
@@ -470,7 +470,37 @@ only the design draft could not see the contract.
   `status="teapot"` and row 2 legal, asserting `200`, `len(items) == 2`, and
   `items[0]["status"] == "unknown"`. The original wording would have been satisfied by the
   500 that *is* the failure mode.
-- [ ] green-adapter rest amendment (the wire pins what the whole-body equality cannot) —
+  **How the red landed (2026-08-06):** new
+  `rest/tests/router/project/test_project_list_wire_contract.py` (178 lines), four tests, three
+  skipped `RED:` and one green guard. The three RED failures were observed against an unskipped
+  throwaway copy, not argued: `created_at` came back `'2026-03-14T16:26:53+07:00'` for a seed at
+  `+07:00` (offset echoed, never converted); the naive seed produced `Failed: DID NOT RAISE
+  ValueError`; the `teapot` row came back `'teapot'` where the contract demands `'unknown'`.
+  Two offsets are seeded, one east (`+07:00`) and one west (`-05:00`) on `updated_at`, because a
+  single eastern seed cannot tell a real conversion from a fixed −7h shift, and because the
+  guarantee is "timestamps", not "the first timestamp". The `retryable` test is deliberately NOT
+  skipped: the DTO already declares `bool`, so it is a guard over behaviour a surviving mutant
+  proved unpinned, and it asserts with `is False`/`is True` rather than `==` or `isinstance` —
+  `0 is False` is `False` for a JSON-decoded int, so identity pins type *and* polarity in one
+  assertion where `isinstance` would wave through an inverted value. `Cache-Control: no-store`
+  landed as one line in `test_project_list_router.py`'s envelope test, as scheduled.
+  **`/test-review` (2026-08-06):** two fixes. (1) All three per-field assertions became whole-row
+  list equality, so a green that converts the timestamps or maps the status while corrupting one
+  of the other eight fields now fails; the `retryable` test keeps its identity reads *in addition*
+  to equality, since dict equality is structurally incapable of seeing a JSON `0`. Re-verified
+  after widening: each diff still isolates the one guarantee its test names, so the RED did not go
+  ambiguous. (2) `pytest.raises(match="created_at")` → `match=r"created_at must be timezone-aware"`
+  — the message decided now rather than deferred to the green, left unanchored so it holds whether
+  a hand-rolled validator or Pydantic's `Value error, …` envelope carries it. The row builders
+  moved into `conftest.py` (`contract_row`/`expected_row`, with `feed_row` now delegating to
+  `contract_row`): the whole-row expectations had pushed the file past the 200-line limit, and the
+  move leaves exactly one `ProjectItem` construction site in the directory, so a tenth contract
+  field is added in one place. Dismissed: the repeated usecase-double assembly (real duplication,
+  zero strictness effect — handed to `/refactor`); the `RED:` markers (this repo's convention); the
+  absent REST Statements tier (settled at the previous step); and binding `_row`'s defaults to the
+  sibling's expectation literal, which would make one code path of both sides of that equality.
+  Tests: 90 passed, 3 skipped (rest module).
+- [~] green-adapter rest amendment (the wire pins what the whole-body equality cannot) —
   expected shape: a tz-aware-guarded `astimezone(UTC)` field serializer, and a `status`/`kind`
   treatment that **maps** an unknown value to `unknown` rather than rejecting it (see the
   correction above — a constrained `Literal`/`Enum` field that raises is the outage, not the

@@ -68,31 +68,82 @@ def unauthenticated_feed_client(project_app):
 
 
 @pytest.fixture
-def feed_row():
-    """Build a complete domain row carrying the given id.
+def contract_row():
+    """Build a contract-legal domain row carrying the given id.
 
-    `ProjectItem` permits no field to be absent, so the eight fields this router
-    test does not assert still have to be supplied. They are filled with values no
-    assertion reads, and deliberately not with contract-plausible ones: what the
-    serializer emits for them is pinned by the scenario that adds them to the
-    envelope, not here.
+    The single `ProjectItem` construction site for this directory: the VO permits
+    no field to be absent, so a tenth field added to the contract has to be
+    supplied in exactly one place here rather than in every test that seeds a row.
+    Callers replace only the fields their assertion names; the rest stay at legal
+    constants, so a row that tripped a *different* rule cannot make a failure
+    ambiguous.
+    """
 
-    `kind` and `status` are the exception. projects_list.yaml declares them as
-    enums, so `""` is not an implausible value but an *illegal* one -- a fixture
-    that cannot occur in production would quietly outlive the day those fields
-    grow constrained types. They carry the least interesting legal member
-    instead; the free-form fields stay implausible.
+    def _make(project_id, **overrides):
+        fields = {
+            "kind": "document",
+            "id": project_id,
+            "title": "Экология города",
+            "preview": "Первый абзац доклада.",
+            "document_type": "доклад",
+            "status": "ready",
+            "retryable": False,
+            "created_at": datetime(2026, 3, 14, 9, 26, 53, tzinfo=UTC),
+            "updated_at": datetime(2026, 3, 15, 18, 4, 7, tzinfo=UTC),
+        }
+        fields.update(overrides)
+        return ProjectItem(**fields)
+
+    return _make
+
+
+@pytest.fixture
+def expected_row():
+    """The wire form of `contract_row`'s defaults, with the same fields replaced.
+
+    Written out by hand rather than derived from `contract_row` or from
+    `ProjectItemDto`: an expectation the serializer under test produced would make
+    both sides of the equality one code path and pin nothing. Tests that compare
+    whole rows through this builder fail when a green fixes the field it names but
+    drops or corrupts one of the other eight.
+    """
+
+    def _make(project_id, **overrides):
+        fields = {
+            "kind": "document",
+            "id": str(project_id),
+            "title": "Экология города",
+            "preview": "Первый абзац доклада.",
+            "document_type": "доклад",
+            "status": "ready",
+            "retryable": False,
+            "created_at": "2026-03-14T09:26:53Z",
+            "updated_at": "2026-03-15T18:04:07Z",
+        }
+        fields.update(overrides)
+        return fields
+
+    return _make
+
+
+@pytest.fixture
+def feed_row(contract_row):
+    """The envelope test's row: legal, but deliberately implausible.
+
+    The free-form fields carry values no assertion reads -- what the serializer
+    emits for them is pinned by the row-serialization scenario, not by the
+    envelope test. `kind` and `status` are the exception: projects_list.yaml
+    declares them as enums, so `""` would be not merely dull but *illegal*, and a
+    fixture that cannot occur in production would quietly outlive the day those
+    fields grow constrained types. They keep `contract_row`'s legal members.
     """
 
     def _make(project_id):
-        return ProjectItem(
-            kind="document",
-            id=project_id,
+        return contract_row(
+            project_id,
             title="",
             preview="",
             document_type="",
-            status="ready",
-            retryable=False,
             created_at=datetime(1970, 1, 1, tzinfo=UTC),
             updated_at=datetime(1970, 1, 1, tzinfo=UTC),
         )

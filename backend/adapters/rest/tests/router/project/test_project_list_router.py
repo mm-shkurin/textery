@@ -45,6 +45,13 @@ class TestListProjects:
             response = await client.get("/api/v1/projects")
 
         assert response.status_code == 200, f"got {response.status_code}: {response.text}"
+        # Per-account content behind a shared proxy. Pinned here rather than left
+        # to scenario 10.6's acceptance assertion, which is many scenarios away:
+        # deleting the header line from the router leaves the whole rest suite
+        # green today, so it is covered by nothing.
+        assert response.headers["Cache-Control"] == "no-store", (
+            f"got {response.headers.get('Cache-Control')!r}"
+        )
         assert response.json() == {
             "items": [
                 {
