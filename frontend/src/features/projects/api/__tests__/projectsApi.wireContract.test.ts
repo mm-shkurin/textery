@@ -1,0 +1,68 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { listProjects, MISSING_UPDATED_AT_MESSAGE } from '../projectsApi'
+import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import {
+  expectSingleFeedRequest,
+  PROJECT_WIRE_WITHOUT_UPDATED_AT,
+  settle,
+  stubFetchJson,
+} from './projectsWireFixtures'
+
+// Scenario 1.1 — the wire contract of the «Мои проекты» feed, at the mapper.
+//
+// WHY THIS EXISTS, and why it is not a card test. `formatCardDate` now renders `—` for any
+// unusable date, which is right for one row whose date genuinely cannot be shown. It is wrong as
+// the answer to a BROKEN ENDPOINT: `projects_schemas.yaml` declares `updated_at` required, so if
+// the real endpoint lands with `updatedAt`, omits the field on the `generation` arm, or nests it,
+// `projectsApi.ts` maps `undefined` and EVERY card renders `—` identically. That looks deliberate
+// — it is the same glyph a legitimately unusable row shows — and would sit in production
+// unnoticed. Before the em-dash landed the same break rendered `Invalid Date NaN`: wrong, but
+// loud. The guard belongs where the contract is read, not where it is painted.
+//
+// FAIL-CLOSED CONTRACT, mirroring `documentApi`'s `parseVersion` (the codebase's only other
+// required-wire-field guard): a required field that is absent is not a value to map, it is a
+// broken response, and the whole call REJECTS with an Error carrying an exact, human-readable
+// message — never resolves with `updatedAt: undefined`, and never falls back to a differently
+// named key. Rejecting the page rather than dropping the row is deliberate: a serializer that
+// omits a required field on one item is broken for all of them, and a silently short page hides
+// that just as well as an em dash does. The fixture keeps every other field valid by deriving
+// itself from `PROJECT_WIRE`, so nothing but the missing required key can be what fails; a mapper
+// that "helpfully" read the camelCase key would resolve, and that is a defect — guessing at an
+// undeclared contract is how a client stops noticing that the server changed.
+//
+// The expected message is IMPORTED from production, not re-declared here (same as
+// `documentApi.versionFailClosed.test.ts` imports `INVALID_VERSION_MESSAGE`): one definition, no
+// drift when the wording is edited. This deliberately stops pinning the exact Russian STRING — an
+// edit to the copy no longer reddens this test. What the assertion still pins is the thing the
+// test is about: that the rejection carries the mapper's OWN guard message and not `send`'s
+// 'Не удалось загрузить проекты' transport fallback, which is a separate literal in a separate
+// module. Copy review is not this test's job; telling a contract guard apart from a transport
+// failure is.
+
+describe('projectsApi wire contract', () => {
+  beforeEach(() => {
+    saveSession({ accessToken: 'access-1', refreshToken: 'refresh-1' })
+  })
+
+  afterEach(() => {
+    clearSession()
+    vi.unstubAllGlobals()
+  })
+
+  it('rejects a project whose required updated_at is absent instead of mapping undefined', async () => {
+    const fetchMock = stubFetchJson({
+      items: [PROJECT_WIRE_WITHOUT_UPDATED_AT],
+      total: 1,
+      page: 1,
+      limit: 20,
+    })
+
+    const settled = await settle(listProjects())
+
+    // Exactly one call, to the feed path — the rationale lives with the shared helper. The
+    // request's full shape (method, headers, absent body) is pinned by `projectsApi.test.ts`; only
+    // what this claim rests on is re-asserted here.
+    expectSingleFeedRequest(fetchMock)
+    expect(settled).toEqual({ rejected: true, error: new Error(MISSING_UPDATED_AT_MESSAGE) })
+  })
+})

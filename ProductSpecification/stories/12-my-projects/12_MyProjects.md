@@ -57,6 +57,7 @@ section longer than the whole rest of the spec.
   button (the sweep owns recovery).
 - **Loading** — skeleton (absent from the mockups; design before frontend scenarios).
 - **Error** — list failed to load, retry affordance that does not clear `q`/`sort`.
+- **Mobile grid** — single-column layout (`mockups/mobile/01-projects-grid.html`).
 
 ## Core Requirements
 
@@ -97,5 +98,7 @@ section longer than the whole rest of the spec.
 - OPEN (product): «Мои проекты» and the shipped «Мои работы» (`frontend/src/features/history/`)
   list the same rows. Whether the new page replaces that one is undecided; the deprecation of
   `GET /documents` implies it should.
+- Frontend reuses `frontend/src/features/history/` (`HistoryPage`, `useHistoryList`, `historyApi`)
+  rather than adding a parallel list stack; grid rendering and the view toggle are new.
 - ACTION (design): icons for эссе and сочинение are missing from the kit — placeholder teal
   folders in the mockups.

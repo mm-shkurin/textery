@@ -7,7 +7,15 @@ paths:
   /api/v1/documents:
     get:
       summary: The caller's own document history, newest first. Keyset-paginated.
+      deprecated: true
       description: >
+        DEPRECATED since story 12 in favour of `GET /api/v1/projects`, which serves the
+        same rows merged with unconverted generations, plus search and four sort criteria.
+        Not removed and not changed: it works, it is covered by tests, and removal is a
+        separate cleanup once the frontend has actually migrated. `GET /documents/{id}`
+        is unaffected — `/projects` does not replace it.
+
+
         Scoped to the Bearer token's account — `owner_id` is a query predicate, never a
         parameter, so a caller cannot ask for someone else's history.
 

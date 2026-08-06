@@ -49,7 +49,8 @@ And offers no retry action
 Given a signed-in user on the projects page
 When they look at the category tabs, the per-project actions menu and the business document types
 Then each is shown as unavailable
-And none of them responds to a click
+And each is announced as unavailable
+And none of them responds to a click or takes keyboard focus
 ```
 
 ---
@@ -194,6 +195,14 @@ Then the retry button stays unavailable for the stated interval
 And it is not clickable on the next paint
 ```
 
+### 5.5 Retrying work that has since finished refreshes instead of dead-ending
+```gherkin
+Given a card rendered while its generation was still unfinished
+When the generation finishes and the user then clicks retry
+Then no new project appears
+And the feed shows the work's current state
+```
+
 ---
 
 ## 6. State Persistence
@@ -210,6 +219,21 @@ Then the same search, sort order and page are still applied
 Given a signed-in user who searched, sorted and paged forward
 When they reload the page
 Then the same search, sort order and page are still applied
+```
+
+### 6.3 The chosen view survives a reload
+```gherkin
+Given a signed-in user who has switched to list view
+When they reload the page
+Then the list view is shown
+```
+
+### 6.4 A corrupted stored view falls back to the default
+```gherkin
+Given the stored view preference holds a value the app does not recognise
+When the user opens the projects page
+Then the default view is shown
+And the feed is not empty
 ```
 
 ---
@@ -259,6 +283,14 @@ And an error with a retry affordance is shown for the failed page only
 And the whole-page error state is not shown
 ```
 
+### 7.7 Repeated retries against a failing backend back off
+```gherkin
+Given the projects request keeps failing
+When the user retries several times in a row
+Then the interval between attempts grows
+And the attempts stop at the cap
+```
+
 ### 7.6 A row repeated across two pages is rendered once
 ```gherkin
 Given the first page and the next page share an item of the same kind and id
@@ -292,3 +324,10 @@ Then the editor opens with that document
 | `no new data is fetched` | No outgoing request observed during the interaction |
 | `the stale threshold` | `GENERATION_STALE_AFTER_MINUTES`, default 10 |
 | `the same search, sort order and page are still applied` | Restored from the URL query string |
+| `opens the projects page` | Navigates to `/projects` through the UI, never by typing a URL |
+| `a card` / `a row` | `[data-testid='project-card']` / `[data-testid='project-row']` |
+| `the feed region` | `[data-testid='projects-feed']` |
+| `a no-matches message` / `a no-projects-yet message` | `[data-testid='projects-empty-search']` / `[data-testid='projects-empty-none']` |
+| `announced as unavailable` | `aria-disabled` and not reachable by keyboard focus |
+| `the stored view preference` | Per-device client storage key for the grid/list choice |
+| `fewer requests than characters` | Requests counted at the network layer over the typing window |

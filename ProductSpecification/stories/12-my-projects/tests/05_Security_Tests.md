@@ -1,8 +1,9 @@
 # Мои проекты — Security Tests
 
 Attack surface: one owner-scoped read whose filtering, ordering and searching are all
-driven by client input, plus one write that names a resource by id. Generic 401 handling,
-security headers, CORS and HTTPS are cross-cutting and tested globally — not here.
+driven by client input, one write that names a resource by id, and user-authored text
+rendered into two new surfaces. Generic 401 handling, security headers, CORS and HTTPS are
+cross-cutting and tested globally — not here.
 
 ---
 
@@ -25,9 +26,10 @@ Then the reported total counts only their own
 ### 1.3 An owner supplied by the client is ignored
 ```gherkin
 Given an authenticated user
-When they request their projects while supplying another account's owner identifier as a parameter
+When they request their projects while supplying another account's owner identity
+      in the query, the body, and a header
 Then their own feed is returned
-And the supplied identifier has no effect
+And the supplied identity has no effect
 ```
 
 ---
@@ -37,13 +39,21 @@ And the supplied identifier has no effect
 ### 2.1 Search input reaching the query cannot alter it
 ```gherkin
 Given an authenticated user
-When they search using SQL metacharacters, quote-breaking payloads and comment sequences
+When they search using SQL metacharacters, quote-breaking payloads, comment sequences
+      and statement terminators
 Then the search returns matches for the literal text or nothing
 And no error exposing query structure is returned
 And their other projects remain intact
 ```
 
-### 2.2 A sort value cannot reach the query as a column name
+### 2.2 Wildcards cannot widen the search
+```gherkin
+Given a search term consisting of pattern metacharacters and the escape character
+When the caller searches for it
+Then only items containing those characters literally are returned
+```
+
+### 2.3 A sort value cannot reach the query as a column name
 ```gherkin
 Given an authenticated user
 When they request their projects with a sort value crafted to look like a column expression
@@ -53,7 +63,7 @@ And no ordering derived from that value is applied
 
 ---
 
-## 3. Stored Cross-Site Scripting
+## 3. Stored Cross-Site Scripting and Output Encoding
 
 ### 3.1 Markup stored in any echoed field is neutralized
 ```gherkin
@@ -62,7 +72,22 @@ And a document whose body carries a script payload
 And a generation whose topic carries a script payload
 When the caller requests their projects
 Then every echoed field is returned neutralized
-And rendering the feed executes nothing
+And rendering the feed in both views executes nothing
+```
+
+### 3.2 A preview cut from stored markup cannot reopen a tag
+```gherkin
+Given a document whose stored markup would be cut mid-tag at the preview limit
+When the caller requests their projects
+Then the preview carries no markup at all
+```
+
+### 3.3 The echoed search query renders as text
+```gherkin
+Given a search term carrying script markup
+When the user searches for it
+Then the query is echoed as text
+And no script executes
 ```
 
 ---
@@ -99,6 +124,14 @@ And carries a server-assigned status and identifier
 And none of the supplied values is stored
 ```
 
+### 5.2 Server-owned list fields cannot be supplied by the caller
+```gherkin
+Given a list request supplying a preview, a kind, and an owner
+When the caller requests their projects
+Then the returned items carry server-derived values
+And the supplied ones are ignored
+```
+
 ---
 
 ## 6. Abuse Limits
@@ -116,6 +149,7 @@ And no further generation is created
 Given an authenticated user
 When they issue searches faster than the per-account allowance
 Then the excess is refused as too many requests
+And every accepted request is answered or refused within the statement deadline
 And other accounts' requests are unaffected
 ```
 
@@ -167,8 +201,13 @@ And nothing supplied by the client appears in any preview
 
 | DSL Statement | Technical Implementation |
 |---------------|-------------------------|
-| `supplying another account's owner identifier as a parameter` | `?owner_id=…` appended — must be ignored, not honoured |
+| `supplying another account's owner identity` | `?owner_id=…` as query param, body field, and `X-Owner-Id` header — must be ignored, not honoured |
 | `refused as a bad request` | 400 `INVALID_SORT` with `{error_code, message}` |
 | `refused as too many requests` | 429 `SEARCH_BUSY` / `RETRY_LIMIT_REACHED` |
-| `byte-identical` | Same status, headers and body bytes for absent and foreign |
+| `byte-identical` | Same status, headers and body bytes for absent and foreign (404) |
+| `pattern metacharacters` | `%`, `_`, and the `ESCAPE` character |
+| `no script executes` | Rendered as escaped text; no dialog, no injected node |
+| `a sentinel value` | A marker string planted in the DB error path and in document content |
+| `a fixed redaction marker` | Fixed redaction token plus a correlation id |
+| `the statement deadline` | 3 s, `SET LOCAL` per request |
 | `the ceiling` | 5 retries per source generation |

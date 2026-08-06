@@ -1,9 +1,12 @@
 # Мои проекты — Integration Tests
 
-Covers the two seams this story adds outside its own request handler: «Повторить» →
-background job queue → worker (the outbound half of the idempotency guarantee asserted
-inbound in `01_API_Tests.md` section 8), and the retry path running beside the existing
-stale-generation sweep, which writes the same rows continuously.
+The feed itself calls nothing external. «Повторить» does. Covers the three seams this story
+adds outside its own request handler: «Повторить» → background job queue → worker (the
+outbound half of the idempotency guarantee asserted inbound in `01_API_Tests.md` section 8),
+the retry path running beside the existing stale-generation sweep, which writes the same
+rows continuously, and the retry reaching the model provider itself. Those overlaps are the
+integration risk this story introduces, so they are tested here, not left to the two
+components' own suites.
 
 ---
 
@@ -196,6 +199,46 @@ And the second delivery is a no-op
 
 ---
 
+## 4. Retry Reaching the Model Provider
+
+### 4.1 A retry produces a real generation with the source's parameters
+```gherkin
+Given a failed generation owned by the caller
+When they retry it
+And the provider answers successfully
+Then a new generation completes with the source's type, topic, and volume
+```
+
+### 4.2 A retry whose provider call fails leaves a failed generation, not a lost one
+```gherkin
+Given a failed generation owned by the caller
+When they retry it and the provider returns an error
+Then the new generation is recorded as failed
+And it appears in the feed as retryable
+```
+
+### 4.3 A retry whose provider call times out does not hang the request
+```gherkin
+Given a failed generation owned by the caller
+When they retry it and the provider does not answer
+Then the retry request is answered promptly
+And the generation's outcome is reflected in the feed once it resolves
+```
+
+---
+
+## 5. Feed Consistency With the Conversion Flow
+
+### 5.1 A document created from a generation replaces it in the feed
+```gherkin
+Given a completed generation shown in the feed
+When it is converted into a document
+And the caller reloads their projects
+Then the work is shown once, as the document
+```
+
+---
+
 ## DSL Technical Reference
 
 | DSL Statement | Technical Implementation |
@@ -210,3 +253,6 @@ And the second delivery is a no-op
 | `recovery` | Outbox drain or the stale-generation sweep, whichever the design adopts |
 | `set aside` | Dead-lettered, or driven to terminal `failed` by a bounded attempt count (story 1 owns the cap) |
 | `a holder that disappears` | Sweep lease with expiry, released without operator action |
+| `the provider` | The model provider behind generation (story 1), driven through the existing Fake |
+| `the provider is called once` | Call count asserted on the Fake |
+| `converted into a document` | `POST /api/v1/documents/from-generation` |

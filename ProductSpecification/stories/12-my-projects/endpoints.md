@@ -9,6 +9,15 @@ Contracts: `api-specs/projects_list.yaml`, `api-specs/generations_retry.yaml`.
 `documents_list.yaml` and `generations_list.yaml` gained `deprecated: true` and a note
 pointing here; neither changed behaviour.
 
+**Two endpoints, not three.** No separate "recent projects" call — that section is the
+first four items of the same page. A second request for a slice of data already in hand is
+the kind of endpoint the MVP rule exists to refuse.
+
+**`preview` is a new field, `total` is a new concept.** The keyset endpoints deliberately
+omit `total` (counting per page is the scan a cursor avoids); offset paging needs it, and
+it therefore shares the search path's statement timeout and cancellation rather than being
+a second unbounded count.
+
 ## Decisions this step had to make
 
 **«Повторить» is its own endpoint, not a re-`POST /generations`.** The story spec said

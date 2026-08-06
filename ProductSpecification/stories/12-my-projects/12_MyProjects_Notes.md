@@ -21,6 +21,11 @@
 - **A generation that completes while the user is on the list page** should stop being a
   "failed/unfinished" card and become a document — but the list is not live. The stale card
   stays until refresh. Acceptable; worth a note in the frontend scenarios.
+- **Legacy converted generations may have a null link.** The feed rule is "generations with no
+  linked document". A generation converted before story 18's `generation_id` column landed has
+  that link null and would surface twice. Check the back-fill — or assert no such rows exist —
+  before trusting the predicate. This is a *different* guard from the concurrent-conversion
+  snapshot one; neither covers the other.
 - **Search matches content the user cannot see.** A hit inside a 200 000-character document
   body returns a card whose title and preview contain none of the query text — it looks like
   a false positive. Consider surfacing a matched snippet later.
@@ -37,6 +42,8 @@
   click them; they must look disabled, not broken.
 - Sorting by type shows a Cyrillic ordering that will look arbitrary to a user unless the
   server pins an explicit, product-decided order.
+- The grid/list preference is per-device client storage. A corrupt stored value must fall back
+  to grid, not render an empty region.
 
 ### Technical Warnings
 
@@ -61,6 +68,13 @@
   breaks the frontend that still calls `GET /documents` today.
 - Multi-instance deployment: no in-memory caching of the feed, of `total`, or of a page
   window. State lives in the database.
+- **`key={id}` in React silently reuses a node** when a document and a generation share a UUID.
+  Same reason the item key is `(kind, id)` — the collision is invisible until it corrupts a row.
+- **Response-shape evolution.** Adding `preview` and `kind` to the projection: old frontend
+  builds must tolerate unknown fields, and the new frontend must tolerate `preview: null`
+  during a rolling deploy.
+- The search path's statement timeout is infrastructure-adjacent (a DB setting or a per-query
+  `SET LOCAL`). It belongs in `infra/`, never hand-set on a running database.
 
 ---
 
@@ -87,6 +101,9 @@
   case/morphology gap (`рефератов` ≠ `реферат` today).
 - A materialized "projects" view (or a projection table maintained on write) would collapse
   the merge and make every sort indexable — worth it only if the row counts justify it.
+- A single `projects` read model (view or table) is worth considering if the merged query grows
+  more branches.
+- Relative dates ("2 дня назад") in the list view, where the date column is narrow.
 - Keyset pagination becomes viable again for the two immutable sort orders
   (`created_desc`/`created_asc`) if deep paging ever hurts before the full rewrite.
 

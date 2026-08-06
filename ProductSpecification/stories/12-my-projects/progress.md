@@ -1,12 +1,31 @@
 # Story 12: Мои проекты (list/search/sort, grid + list view) — Progress
 
+Shared story-level narrative, decisions, and Spec checklist. Per-layer scenario checklists
+live in `progress-backend.md` and `progress-frontend.md`. `ProductSpecification/stories.md`
+is the cross-file rollup.
+
 ## Spec
 - [x] interview
 - [x] story
 - [x] mockups
 - [x] api-spec
 - [x] test-spec (hazard scan: groups 1–8; all fired-trigger GAPs folded as named
-  scenarios, none dismissed — record in `tests/00_Hazard_Scan_Record.md`)
+  scenarios, none dismissed — record in `tests/00_Hazard_Scan_Record.md`, and a second
+  scan record in `12_MyProjects_Notes.md`)
+
+## Decisions
+
+- **New `GET /api/v1/projects` instead of extending the existing list endpoints.** Search +
+  4 sort orders + merging failed generations into one feed all break the keyset cursor,
+  whose anchor must be immutable. `GET /api/v1/generations` and `GET /api/v1/documents` get
+  marked deprecated and stay working. Reasoning in `interview.md`.
+- **Merge reconciliation (2026-08-06).** The backend and frontend branches were specced
+  independently and disagreed. The backend contract won: the write route is
+  `POST /api/v1/generations/{id}/retry` (not `/repeat`), the item field is `retryable`
+  (not `can_repeat`), validation failures are 400 (not 422), and `limit` tops out at 100
+  (not 50). The frontend's `projects_schemas.yaml` split is dropped —
+  `projects_list.yaml` carries its schemas inline. Frontend client code still reads
+  `can_repeat` and is corrected as part of bringing `dev` to a working state.
 
 ## Функциональное состояние на 2026-08-06
 

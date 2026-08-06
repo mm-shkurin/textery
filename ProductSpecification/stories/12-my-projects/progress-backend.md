@@ -904,6 +904,38 @@ only the design draft could not see the contract.
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
+### Scenario 1.12 A conversion committing during the read is still counted once
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 1.13 A generation converted before the document link existed does not appear twice
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 1.14 A completed generation whose conversion failed is a retryable feed item
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 1.15 One arm failing fails the whole request
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
 ### Scenario 2.1 Paging a static feed returns every row exactly once
 - [ ] red-acceptance
 - [ ] design
@@ -953,6 +985,14 @@ only the design draft could not see the contract.
 - [ ] green-acceptance
 
 ### Scenario 2.7 One page costs a fixed number of storage queries whatever the feed's size
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 2.8 An insert during paging skips at most one item
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase
@@ -1016,6 +1056,14 @@ only the design draft could not see the contract.
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
+### Scenario 3.8 Ordering is total when a document and a generation collide on both key and id
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
 ### Scenario 4.1 Search matches title, generation topic and document content
 - [ ] red-acceptance
 - [ ] design
@@ -1065,6 +1113,14 @@ only the design draft could not see the contract.
 - [ ] green-acceptance
 
 ### Scenario 4.7 Case-folding does not depend on the session's locale
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 4.8 Changing the sort under an active search returns the same set from its first page
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase
@@ -1185,6 +1241,14 @@ only the design draft could not see the contract.
 - [ ] green-acceptance
 
 ### Scenario 7.4 Retrying a generation in an unrecognized status is refused
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 7.5 Retrying a generation that has since become a document is refused with its current status
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase
@@ -1483,6 +1547,14 @@ Group 8's other two fired triggers were folded and then withdrawn: "two retries 
 first responds" is 8.3 + 8.5, and "retry re-checked on the server" is 7.2 + 7.4. Both
 already carry their guard.
 
+### Scenario 8.15 A source whose retry already succeeded can be retried again
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
 ## Integration Scenarios (06_Integration_Tests.md)
 
 ### Scenario 1.1 An accepted retry enqueues exactly one job for the new generation
@@ -1637,6 +1709,38 @@ already carry their guard.
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
+### Scenario 4.1 Retry Reaching the Model Provider — a retry produces a real generation with the source's parameters
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 4.2 A retry whose provider call fails leaves a failed generation, not a lost one
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 4.3 A retry whose provider call times out does not hang the request
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 5.1 A document created from a generation replaces it in the feed
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
 ## Security Scenarios (05_Security_Tests.md)
 
 ### Scenario 1.1 No parameter combination reveals another account's rows
@@ -1759,6 +1863,38 @@ already carry their guard.
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
+### Scenario 2.2 Wildcards cannot widen the search
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 3.2 A preview cut from stored markup cannot reopen a tag
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 3.3 The echoed search query renders as text
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 5.2 Server-owned list fields cannot be supplied by the caller
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
 ## Load Scenarios (03_Load_Tests.md)
 
 ### Scenario 1.1 The projects feed sustains its request rate under concurrent users
@@ -1778,6 +1914,14 @@ already carry their guard.
 - [ ] green-acceptance
 
 ### Scenario 2.2 Excess concurrent searches are shed rather than queued
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 2.3 Abandoned searches do not accumulate
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase
@@ -1852,6 +1996,22 @@ already carry their guard.
 - [ ] green-acceptance
 
 ### Scenario 4.1 Reclaiming an expired search slot leaves live slots intact
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 3.3 A database without the pinned collation is rejected at startup
+- [ ] red-acceptance
+- [ ] design
+- [ ] red-usecase
+- [ ] green-usecase
+- [ ] adapters-discovery
+- [ ] green-acceptance
+
+### Scenario 3.4 The search deadline does not outlive its request
 - [ ] red-acceptance
 - [ ] design
 - [ ] red-usecase

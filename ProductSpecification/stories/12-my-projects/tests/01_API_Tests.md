@@ -6,6 +6,13 @@
 
 Endpoints: `GET /api/v1/projects` (read), `POST /api/v1/generations/{id}/retry` (write).
 
+> **Merge note (backend/frontend spec reconciliation).** The frontend branch's spec set
+> named the write `POST /generations/{id}/repeat` and made a *stale* generation repeatable.
+> Both readings are rejected here in favour of the implemented backend contract: the route
+> is `/retry`, and a non-terminal generation past the stale threshold is `recovering` and
+> **not** retryable — the sweep requeues it, and offering a retry there would duplicate work
+> that is still running (see 1.5, 7.2, and `06_Integration_Tests.md` 2.2).
+
 ## 1. Feed Composition
 
 ### 1.1 The feed shows the caller's documents and nothing of anyone else's
@@ -105,6 +112,36 @@ When the caller requests their projects
 Then no unrecognized-status signal is emitted
 ```
 
+### 1.12 A conversion committing during the read is still counted once
+```gherkin
+Given a generation being converted into a document
+When the projects feed is read while that conversion commits
+Then the work appears exactly once in the returned page
+```
+
+### 1.13 A generation converted before the document link existed does not appear twice
+```gherkin
+Given a legacy generation whose document link was never back-filled
+When the caller requests their projects
+Then the work appears exactly once
+```
+
+### 1.14 A completed generation whose conversion failed is a retryable feed item
+```gherkin
+Given a generation that completed but whose conversion to a document failed
+When the caller requests their projects
+Then the item is present with a defined status
+And the item is offered as retryable
+```
+
+### 1.15 One arm failing fails the whole request
+```gherkin
+Given the generation source cannot be read
+When the caller requests their projects
+Then the request fails
+And no partially populated page is returned
+```
+
 ---
 
 ## 2. Paging
@@ -166,6 +203,14 @@ Then the projects repository is invoked the same, constant number of times for b
 And the number does not grow with the count of items on the page
 ```
 
+### 2.8 An insert during paging skips at most one item
+```gherkin
+Given the caller reads the first page of their projects
+When an item that sorts into that page is created before they read the second
+Then the second page omits at most one item
+And no item is returned twice
+```
+
 ---
 
 ## 3. Sorting
@@ -225,6 +270,14 @@ Then each item appears exactly once across the walk
 And repeating the walk yields the same items in the same order
 ```
 
+### 3.8 Ordering is total when a document and a generation collide on both key and id
+```gherkin
+Given a document and a generation sharing an id value and a creation instant
+When the caller pages through the feed twice
+Then both reads return the same order
+And the kind breaks the tie, so neither row is served twice nor skipped
+```
+
 ---
 
 ## 4. Search
@@ -265,6 +318,14 @@ Given the caller owns projects matching a search term across several pages
 When they request the second page of that search under a non-default sort order
 Then the returned items are the second page of the filtered feed in that order
 And the reported total is the filtered count, not the unfiltered one
+```
+
+### 4.8 Changing the sort under an active search returns the same set from its first page
+```gherkin
+Given a search that matches several items
+When the caller changes the sort order without changing the query
+Then the results are the same set in the new order
+And the response is the first page
 ```
 
 ### 4.6 Search never crosses account boundaries
@@ -435,6 +496,14 @@ And the source row is unchanged
 And the feed reports that row as not retryable
 ```
 
+### 7.5 Retrying a generation that has since become a document is refused with its current status
+```gherkin
+Given a generation that has since completed and become a document
+When the caller retries it from a card rendered before that happened
+Then the request is refused as a conflict
+And the refusal carries the source's current status
+```
+
 ---
 
 ## 8. Retry — Side-Effect Safety
@@ -558,6 +627,14 @@ When the request returns
 Then no generation exists for that key
 And no idempotency record survives without its generation
 And the source's retry budget is unchanged
+```
+
+### 8.15 A source whose retry already succeeded can be retried again
+```gherkin
+Given a failed generation whose retry completed and became a document
+When the caller retries the source once more with a fresh key
+Then a new generation is created
+And the completed retry is not returned in its place
 ```
 
 ---

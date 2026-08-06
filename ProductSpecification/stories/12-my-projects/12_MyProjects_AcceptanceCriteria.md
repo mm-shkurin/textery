@@ -139,4 +139,32 @@ live in the main file.
   back on an unfiltered page 1.
 - `GET /documents` and `GET /generations` are marked `deprecated: true` in their contracts and
   behave exactly as before — no response-shape change, no new required parameter.
+- «Повторить» is **not optimistic**: no new card renders until the retry response confirms it.
+  On failure the feed returns to its exact pre-click state with an inline retryable error on the
+  original card — no phantom card survives a reload. Each failure mode is asserted separately:
+  timeout, 4xx (surface, no auto-retry), 5xx (surface with retry), malformed body.
+- The feed's error-state retry uses a **capped attempt count with exponential backoff plus
+  jitter** — never a fixed-tick hammer against a failing dependency.
+- A corrupt persisted view preference falls back to the default view rather than rendering
+  nothing.
+- `retryable` is **server-computed** and never derived client-side from `status`: a client
+  computing it from an enum it may not fully know would offer «Повторить» on an unknown status,
+  which is fail-open.
+- The category tabs, the `···` actions menu, and the business document types render **inert** —
+  not clickable, not focusable, and disabled to assistive tech.
+
+### Operability & rolling deploy
+
+- The pinned ordering collation's **availability** is asserted at boot: a database without it
+  fails loudly at startup, not per request.
+- The accepted offset-paging degradation is **pinned, not silent**: read page 1, insert a row
+  sorting into the fetched window, read page 2 — the item is **skipped, never duplicated**, and
+  bounded to one per insert, so a later paging change goes red rather than quiet.
+- Response-shape evolution is tolerated both ways during a rolling deploy: old frontend builds
+  ignore the new `preview`/`kind` fields, and the new frontend tolerates `preview: null`.
+- If either source arm of the merged read fails, the request fails **as a whole** — the feed
+  never renders a silently half-populated page. The timeout/abort branch emits a distinguishable
+  log signal (owner id, query length) and a counter; the happy path emits neither.
+- `total` rides the same predicate as the page query, so it shares that path's statement timeout
+  and cancellation — it is not a second unbounded count per keystroke.
 
