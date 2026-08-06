@@ -13,6 +13,15 @@ dist-ssr
 *.local
 coverage
 
+# The env file .env.example tells you to create. Ignored HERE and not only in the monorepo root:
+# `frontend/` is split to the root of a separate repository (gitverse slide_frontend), where the
+# root .gitignore does not travel and this file is the only one there is — so an entry that exists
+# only upstairs protects one of the two repository shapes. `*.local` above covers `.env.local` and
+# nothing else.
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
