@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 
 from document.document_type import DocumentType
 from document.idempotency_key import IdempotencyKey
+from document.page_settings import PageSettings
 
 DRAFT_STATUS = "draft"
 
@@ -43,6 +44,7 @@ class Document:
         updated_at: datetime,
         title: str | None = None,
         generation_id: UUID | None = None,
+        page_settings: PageSettings | None = None,
     ) -> None:
         self.id = id
         self.owner_id = owner_id
@@ -55,6 +57,12 @@ class Document:
         self.updated_at = updated_at
         self.title = title
         self.generation_id = generation_id
+        # `None` is "nobody has configured this document", NOT "configured to
+        # today's preset" -- the two must stay distinguishable all the way to the
+        # wire, so nothing here constructs a default. Deliberately absent from
+        # `create`/`create_from_generation`: same mass-assignment guard shape as
+        # status/content/version.
+        self.page_settings = page_settings
 
     @classmethod
     def create(
@@ -138,6 +146,7 @@ class Document:
         updated_at: datetime,
         title: str | None = None,
         generation_id: UUID | None = None,
+        page_settings: PageSettings | None = None,
     ) -> "Document":
         """Rehydrate a stored document, preserving every persisted field.
 
@@ -159,4 +168,5 @@ class Document:
             updated_at=updated_at,
             title=title,
             generation_id=generation_id,
+            page_settings=page_settings,
         )

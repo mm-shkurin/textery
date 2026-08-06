@@ -58,6 +58,11 @@ from document_export_fixtures import (  # noqa: F401
 # Story-12 projects-feed Statements fixtures, same 200-line-cap reason.
 from project_feed_fixtures import project_feed_statements  # noqa: F401
 
+# Story-10 page-settings Statements fixtures, split out for the same reason.
+from document_page_settings_fixtures import (  # noqa: F401
+    document_page_settings_read_statements,
+)
+
 # iPhone 12/13-class viewport — the smallest common real-device width the
 # "design for phone" scenarios must not horizontally overflow at.
 MOBILE_WINDOW_SIZE = "390,844"

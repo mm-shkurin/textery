@@ -1,18 +1,16 @@
 import uuid
 from typing import ClassVar, Optional
 
-from clients.application.application_client import ApplicationClient
-from clients.application.dto.auth.login_request_dto import LoginRequestDto
-from clients.application.dto.auth.register_request_dto import RegisterRequestDto
-from clients.application.dto.auth.verify_request_dto import VerifyRequestDto
 from clients.application.dto.document.export_response_dto import ExportResponseDto
+from statements.document_arrange_statements import (
+    ACCOUNT_PASSWORD,  # noqa: F401  (re-exported: imported from here by callers)
+    SUPPORTED_DOCUMENT_TYPE,
+    DocumentArrangeStatements,
+)
 from statements.export_envelope import assert_export_attachment
 
-ACCOUNT_PASSWORD = "Str0ng!Pass"
-SUPPORTED_DOCUMENT_TYPE = "доклад"
 
-
-class DocumentExportStatements:
+class DocumentExportStatements(DocumentArrangeStatements):
     # The sanctioned generic not-found shape (api-specs/documents_export.yaml 404 +
     # error_handling/exception_handlers.py NOT_FOUND_MESSAGE). A non-existent id and a
     # foreign id both resolve to this — never 403, which would confirm the id exists.
@@ -43,33 +41,6 @@ class DocumentExportStatements:
             content=cls.EXPECTED_NOT_FOUND_BYTES,
         )
 
-    def __init__(self, client: ApplicationClient):
-        self._client = client
-
-    async def _authenticated_access_token(self) -> str:
-        email = f"user-{uuid.uuid4()}@example.com"
-        register_response = await self._client.register(
-            RegisterRequestDto(
-                email=email,
-                password=ACCOUNT_PASSWORD,
-                confirm_password=ACCOUNT_PASSWORD,
-            )
-        )
-        code = register_response.body.get("verification_code")
-        assert code is not None, (
-            f"setup: expected registration to issue a verification_code, got body="
-            f"{register_response.body}"
-        )
-        await self._client.verify(VerifyRequestDto(email=email, code=code))
-        login_response = await self._client.login(
-            LoginRequestDto(email=email, password=ACCOUNT_PASSWORD)
-        )
-        token = (login_response.body or {}).get("access_token")
-        assert token is not None, (
-            f"setup: expected login to issue an access_token, got body={login_response.body}"
-        )
-        return token
-
     async def given_authenticated_user_exports_nonexistent_document_as_pdf(
         self,
     ) -> ExportResponseDto:
@@ -80,19 +51,6 @@ class DocumentExportStatements:
             export_format="pdf",
             access_token=access_token,
         )
-
-    async def _create_document_owned_by(self, access_token: str) -> str:
-        response = await self._client.create_document(
-            document_type=SUPPORTED_DOCUMENT_TYPE,
-            access_token=access_token,
-            idempotency_key=str(uuid.uuid4()),
-        )
-        document_id = (response.body or {}).get("document_id")
-        assert document_id is not None, (
-            f"setup: expected document creation to return a document_id, got "
-            f"status_code={response.status_code}, body={response.body}"
-        )
-        return document_id
 
     async def given_document_owned_by_another_account_exported_as_pdf(
         self,

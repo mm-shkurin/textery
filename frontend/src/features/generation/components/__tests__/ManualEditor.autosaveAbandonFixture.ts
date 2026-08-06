@@ -69,9 +69,13 @@ export function discardAttemptDiagnostics() {
   vi.mocked(console.error).mockClear()
 }
 
-// The premise every positive abandonment case needs and only two of them could state: there IS
-// unsent work, it is exactly the edit the case typed, and the app itself calls the document
-// unpersisted at this instant.
+// The premise every abandonment case needs and only two of them could state: there IS unsent work,
+// it is exactly the edit the case typed, and the app itself calls the document unpersisted at this
+// instant.
+//
+// `content` defaults to the fixture's baseline because that is the edit every positive case types.
+// The negative suite's revert case reaches the same premise holding EDITED_CONTENT instead — same
+// claim, different bytes — so WHICH bytes is the parameter and the compound stays one name.
 //
 // Both halves are load-bearing and neither substitutes for the other. `dispatchBeforeUnload()` alone
 // reads true on a freshly created document with nothing typed at all — the untouched-document twin
@@ -81,8 +85,8 @@ export function discardAttemptDiagnostics() {
 // carrying the same claim under the same five-line rationale, the second site reduced to pointing at
 // the first ("for the same reason the debounce-gap case asserts it") — a back-reference is what a
 // name is for.
-export function expectUnsentEditHeldInEditor() {
-  expect(editorContentHtml()).toBe(SAVED_CONTENT)
+export function expectUnsentEditHeldInEditor(content: string = SAVED_CONTENT) {
+  expect(editorContentHtml()).toBe(content)
   expect(dispatchBeforeUnload()).toBe(true)
 }
 

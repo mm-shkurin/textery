@@ -10,6 +10,7 @@
 | 16 | OAuth sign-in: VK ID + Yandex ID (frontend-first, backend WIP) | ✅ | · | · | ✅ | · | n/a | · | 14/14 | 100% |
 | 17 | Export document to PDF / DOCX | ✅ | 🔧 | — | ✅ | — | — | — | 14/45 | 31% |
 | 18 | Generate → edit (unify generate + manual, drop mode modal) | ✅ | — | — | 🔧 | — | — | — | 2/13 | 15% |
+| 10 | Editor pages (pagination, page setup, headers/footers) | ✅ | 🔧 | — | — | — | — | — | 0/70 | 0% |
 | 12 | Мои проекты (list/search/sort, grid + list view) | ✅ | 🔧 | — | 🔧 | — | — | — | 1/177 | 1% |
 
 # Backlog — Core sequence (build order, decided 2026-07-06)
@@ -35,7 +36,6 @@ types) may run in any order relative to each other and may interleave with #5–
 | #  | Story                                | Spec | Back | Intg | Front | Sec | Load | Infra | Tests | %  |
 |----|----------------------------------------|------|------|------|-----|-------|------|-------|-------|----|
 | 9  | Landing & Marketing                    |      |      |      |     |       |      |       |       |    |
-| 10 | Text Editor polish (formatting, autosave) |      |      |      |     |       |      |       |       |    |
 | 11 | Document Management (rename/delete/duplicate) |      |      |      |     |       |      |       |       |    |
 | 13 | Profile management                     |      |      |      |     |       |      |       |       |    |
 | 14 | Analytics Event Tracking                |      |      |      |     |       |      |       |       |    |

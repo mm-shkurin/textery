@@ -212,6 +212,45 @@ Needed once: real worker redelivery/retry semantics (scenarios 3.2, 5.4-5.6), ho
 scaling of generation processing beyond one ASGI process, or removing the unused
 Redis service becomes worth doing instead of leaving it as a placeholder.
 
+## 14. Editor↔PDF page equality is not guaranteed — two layout engines, divergence unmeasured
+Decided 2026-08-01 during story 10's interview. Story 10 requires WYSIWYG: a page in the
+editor must hold the same text as that page of the exported PDF. It cannot hold by
+construction today — the editor is laid out by the user's browser (Blink) while the PDF
+is laid out by `WeasyPrintPdfRenderer`, an independent Python engine. Two engines break
+lines and round line-heights differently, and the drift accumulates down the document.
+The identified fix is to print the PDF with headless Chromium via Playwright, so both
+sides share one engine; that was costed (≈400 MB image growth, a rewritten `rendering`
+adapter, a rebuilt SSRF guard — `_blocked_url_fetcher` is WeasyPrint-specific and has no
+Chromium equivalent, and Chromium additionally executes scripts — plus re-verifying
+story 17's shipped export scenarios) and **deliberately deferred**: until pagination
+exists in the editor there is nothing to compare, and the divergence on a typical 5–10
+page реферат may turn out to be zero, in which case a working renderer would have been
+replaced for nothing.
+**Resurfaces:** the moment story 10's editor pagination is shippable. The next step is a
+measurement — same document, editor page boundaries vs. exported PDF page boundaries, on
+real documents at several lengths — and the engine swap is decided on those numbers, not
+in advance. Do NOT write an acceptance test asserting editor/PDF page equality before
+this is settled; it would encode a guarantee the system does not currently make. Note
+that DOCX can never carry the guarantee at all (Word repaginates on open) — that is a
+property of the format, not part of this debt.
+
+## 15. Only one document font — font choice is not a user setting yet
+Decided 2026-08-01 during story 10's interview. Page setup in story 10 lets the user
+change sheet size, orientation, margins, size and line height, but **not the typeface**.
+Reason: Times New Roman is Monotype's and may not be embedded or redistributed, so every
+offered font must first be licence-cleared for embedding, and each one has to ship in the
+repo as a webfont — the editor and the renderer must draw with the byte-identical file or
+the page geometry diverges (a Linux container has no Times and would silently substitute
+different metrics). The bundled default is **Liberation Serif** (SIL OFL, metrically
+compatible with Times New Roman, full Cyrillic) — chosen so a document keeps its Word
+page count while staying legally shippable.
+**Resurfaces:** when the font-choice setting is actually wanted. Owed then: an
+OFL/embedding-cleared family per offered face (Liberation Sans/Mono are the natural
+Arial/Courier substitutes), each bundled as a webfont and referenced by both the editor's
+`@font-face` and the export renderer, plus a `font_family` key in `page_settings` with a
+closed allowlist — an open string would let a document request a font the renderer does
+not have, which fails silently as a metric substitution rather than as an error.
+
 ## 12. CLOSED 2026-07-10 — Landing page acceptance test red — `hero-subheading` testid no longer exists
 Found 2026-07-10 during scenario 4.1's premortem pass. `test_should_display_hero_and_primary_cta`
 (`acceptance/tests/frontend/landing/test_landing_page_acceptance.py`) times out on

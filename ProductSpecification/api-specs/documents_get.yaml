@@ -84,9 +84,58 @@ components:
         version:
           type: integer
           description: Optimistic-concurrency token; required on subsequent PUT.
+        page_settings:
+          allOf:
+            - $ref: '#/components/schemas/PageSettings'
+          nullable: true
+          description: >
+            Page geometry, or null when the document has never been configured — the
+            client then renders the default preset. Defaults are NOT materialized into
+            the response, so "never configured" and "configured to the current
+            defaults" remain distinguishable; a later change to the preset therefore
+            reaches old documents rather than being frozen into them.
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
+    PageSettings:
+      type: object
+      additionalProperties: false
+      description: >
+        Page geometry for the whole document. Read-side contract; the writable
+        definition with full validation rules lives in documents_save.yaml. A stored
+        object missing a key added in a later release reads as that key's default; one
+        carrying a key or enum constant this version does not define is preserved and
+        read as the default, never crashing and never downgrading the whole object.
+      properties:
+        page_size:
+          type: string
+          enum: [A4, A5, Letter]
+        orientation:
+          type: string
+          enum: [portrait, landscape]
+        margins_mm:
+          type: object
+          additionalProperties: false
+          required: [top, right, bottom, left]
+          properties:
+            top: {type: number}
+            right: {type: number}
+            bottom: {type: number}
+            left: {type: number}
+        font_size_pt:
+          type: number
+        line_height:
+          type: number
+        header_text:
+          type: string
+          nullable: true
+        footer_text:
+          type: string
+          nullable: true
+        show_page_numbers:
+          type: boolean
+        skip_number_on_first_page:
+          type: boolean

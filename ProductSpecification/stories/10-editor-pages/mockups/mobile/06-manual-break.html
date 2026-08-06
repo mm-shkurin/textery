@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375">
+<title>Textery — Ручной разрыв страницы</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="pages.css">
+</head>
+<body>
+  <!-- Разрыв — часть контента, а не номер страницы: правка выше перегоняет текст,
+       разрыв остаётся на своём месте. На телефоне подсказка десктопа заменена
+       на действия под маркером (тач-цели ≥44px). -->
+  <div class="topbar">
+    <i data-lucide="arrow-left"></i>
+    <div class="t">История ИИ</div>
+    <span class="tag">Реферат</span>
+    <i data-lucide="more-vertical"></i>
+  </div>
+
+  <div class="fmtbar">
+    <i data-lucide="heading-1"></i><i data-lucide="heading-2"></i>
+    <i data-lucide="bold"></i><i data-lucide="italic"></i><i data-lucide="underline"></i>
+    <i data-lucide="list"></i><i data-lucide="align-left"></i>
+    <i data-lucide="separator-horizontal" class="on"></i><i data-lucide="settings-2"></i>
+  </div>
+
+  <div class="strip">
+    <div class="chip active"><i data-lucide="file-text"></i>Стр. 1</div>
+    <div class="chip"><i data-lucide="scissors"></i>Стр. 2</div>
+    <div class="chip"><i data-lucide="file-text"></i>Стр. 3</div>
+    <div class="chip"><i data-lucide="file-text"></i>Стр. 4</div>
+  </div>
+
+  <div class="doc-wrap">
+    <div class="doc">
+      <div class="sheet short">
+        <h1>История ИИ</h1>
+        <h3>Введение</h3>
+        <p>Данный реферат посвящён истории искусственного интеллекта. Целью работы является комплексное исследование ключевых аспектов темы.</p>
+        <p>Для достижения цели определены задачи: изучить теоретические основы, проанализировать состояние проблемы и сформулировать выводы.</p>
+
+        <div class="brk selected">Разрыв страницы</div>
+        <div class="brk-actions">
+          <div class="a"><i data-lucide="corner-down-left"></i>Перейти</div>
+          <div class="a danger"><i data-lucide="trash-2"></i>Удалить разрыв</div>
+        </div>
+        <p class="empty-hint" style="text-align:center; margin-top:6px;">
+          Всё, что ниже, начинается с новой страницы.
+        </p>
+      </div>
+
+      <div class="sheet a4">
+        <div class="running-head">История ИИ</div>
+        <h3>1. Теоретические основы</h3>
+        <p>Исследуемая область представляет собой сложный многоаспектный феномен, привлекавший внимание учёных на протяжении нескольких десятилетий.</p>
+        <p>Среди основополагающих работ следует выделить труды ведущих специалистов, сформировавших концептуальную базу для последующих исследований.</p>
+        <div class="folio">2</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span>415 слов · 1 разрыв</span>
+    <span>Стр. 1 из 4 · A4</span>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

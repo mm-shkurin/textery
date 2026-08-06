@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375">
+<title>Textery — Параметры страницы не сохранены</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="pages.css">
+</head>
+<body>
+  <!-- Два разных отказа, различимых на глаз:
+       баннер — сохранение не дошло (сеть / 5xx), с повтором;
+       подписи под полями — сервер отклонил значения на границе (422).
+       Разбивка листа осталась прежней: откат к последней принятой геометрии. -->
+  <div class="topbar">
+    <i data-lucide="arrow-left"></i>
+    <div class="t">История ИИ</div>
+    <span class="tag">Реферат</span>
+    <i data-lucide="more-vertical"></i>
+  </div>
+
+  <div class="strip">
+    <div class="chip active"><i data-lucide="file-text"></i>Стр. 1</div>
+    <div class="chip"><i data-lucide="file-text"></i>Стр. 2</div>
+    <div class="chip"><i data-lucide="file-text"></i>Стр. 3</div>
+  </div>
+
+  <div class="doc-wrap">
+    <div class="sheet short">
+      <h1>История ИИ</h1>
+      <p>Разбивка осталась прежней — она соответствует параметрам, сохранённым на сервере, а не набранным ниже.</p>
+    </div>
+  </div>
+
+  <div class="overlay"></div>
+  <div class="bottom-sheet">
+    <div class="grabber"></div>
+    <h2>Параметры страницы</h2>
+    <div class="hint">Применяются ко всему документу и к скачиваемым файлам.</div>
+
+    <div class="banner danger">
+      <i data-lucide="wifi-off"></i>
+      <div>
+        Не удалось сохранить — нет связи с сервером. Набранные значения не потеряны.
+        <span class="retry">Повторить</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="label">Размер листа</span>
+      <select class="select"><option>A5 — 148 × 210 мм</option></select>
+    </div>
+
+    <div class="field">
+      <span class="label">Поля, мм</span>
+      <div class="margins">
+        <div><span class="sub">Сверху</span><input class="input err" value="80"></div>
+        <div><span class="sub">Справа</span><input class="input" value="10"></div>
+        <div><span class="sub">Снизу</span><input class="input err" value="70"></div>
+        <div><span class="sub">Слева</span><input class="input" value="30"></div>
+      </div>
+      <div class="err-msg"><i data-lucide="alert-circle"></i>
+        Сверху и снизу вместе — 150 мм при высоте листа 148 мм. Текст не поместится.
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="label">Кегль, пт <span class="opt">8–72</span></span>
+      <input class="input err" value="96">
+      <div class="err-msg"><i data-lucide="alert-circle"></i>Допустимо от 8 до 72.</div>
+    </div>
+
+    <div class="field">
+      <span class="label">Верхний колонтитул <span class="opt">до 200 символов</span></span>
+      <input class="input err" value="История искусственного интеллекта: от формальных моделей…">
+      <div class="err-msg"><i data-lucide="alert-circle"></i>212 из 200 символов. Сократите — текст не обрезается автоматически.</div>
+    </div>
+
+    <div class="sheet-actions">
+      <button class="btn btn-ghost">Отменить</button>
+      <button class="btn btn-primary">Применить</button>
+    </div>
+  </div>
+
+  <div class="statusbar" style="z-index:5;">
+    <span class="warn"><i data-lucide="alert-triangle"></i>Параметры не сохранены</span>
+    <span>Стр. 1 из 3 · A4</span>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

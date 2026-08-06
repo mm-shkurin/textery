@@ -2,11 +2,19 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from document.document import Document
+from document.page_settings import PageSettings
 from document.title_update import TitleUpdate
 from shared.exceptions import ConflictException
 from shared.keyset_cursor import KeysetCursor
 
-_EPOCH = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
+# Public: tests that assert a stored document was NOT modified need a literal to
+# compare against. Comparing `found.updated_at` to `document.updated_at` cannot
+# work -- the fake repository hands back the very instance it was seeded with, so
+# both sides of that comparison are the same attribute and a usecase that stamped
+# the field would satisfy it.
+STORED_AT = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
+
+_EPOCH = STORED_AT
 
 
 def stored_document(
@@ -16,6 +24,13 @@ def stored_document(
 
     `title` drives the export-filename derivation (Sc 3.1) and is passed straight
     through the constructor now that the domain entity carries a `title` field.
+
+    Deliberately says nothing about page settings: every document built here is one
+    nobody has configured, which is exactly the state story 10 scenario 2.1 has to
+    keep distinguishable from a configured one. The configured counterpart is
+    `configured_document` below -- kept separate rather than added as a parameter
+    here so that a factory whose page_settings argument stops being accepted breaks
+    only the tests that are about page settings.
     """
     stored_at = _EPOCH - timedelta(minutes=minutes_old)
     return Document(
@@ -29,6 +44,22 @@ def stored_document(
         created_at=stored_at,
         updated_at=stored_at,
         title=title,
+    )
+
+
+def configured_document(owner_id: UUID, page_settings: PageSettings) -> Document:
+    """A persisted draft whose page geometry someone has actually set."""
+    return Document(
+        id=uuid4(),
+        owner_id=owner_id,
+        document_type="эссе",
+        status="draft",
+        content="<p>сохранено</p>",
+        version=3,
+        idempotency_key=f"key-{uuid4()}",
+        created_at=_EPOCH,
+        updated_at=_EPOCH,
+        page_settings=page_settings,
     )
 
 

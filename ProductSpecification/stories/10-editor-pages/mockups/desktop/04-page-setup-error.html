@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1400">
+<title>Textery — Параметры страницы не сохранены</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="pages.css">
+</head>
+<body>
+  <!-- Два РАЗНЫХ отказа на одном экране, они не должны выглядеть одинаково:
+       1) баннер сверху — сохранение не дошло (сеть / 5xx), есть повтор;
+       2) подписи под полями — сервер отклонил значения на границе (422).
+       Вёрстка при этом откатилась к последней принятой геометрии:
+       браузер не остаётся свёрстанным по параметрам, которых на сервере нет. -->
+  <div class="topbar">
+    <div class="logo"><div class="logo-mark"><i data-lucide="sparkles" style="width:16px;height:16px;"></i></div>Textery</div>
+    <div class="header-actions">
+      <button class="icon-btn"><i data-lucide="bell"></i></button>
+      <div class="avatar">АИ</div><i data-lucide="chevron-down"></i>
+    </div>
+  </div>
+
+  <div class="crumbs">
+    <div class="back"><i data-lucide="arrow-left" style="width:15px;height:15px;"></i>Мои проекты</div>
+    <span class="muted">/</span><span class="tag">Реферат</span>
+    <span class="title">История ИИ</span>
+    <div class="right">
+      <button class="btn btn-primary" style="padding:10px 20px;"><i data-lucide="settings-2"></i>Параметры страницы</button>
+      <button class="btn btn-ghost" style="padding:10px 20px;"><i data-lucide="download"></i>Скачать</button>
+    </div>
+  </div>
+
+  <div class="fmtbar">
+    <i data-lucide="heading-1"></i><i data-lucide="heading-2"></i><div class="sep"></div>
+    <i data-lucide="bold"></i><i data-lucide="italic"></i><i data-lucide="underline"></i>
+    <div class="sep"></div><i data-lucide="list"></i><i data-lucide="align-left"></i>
+    <div class="sep"></div><i data-lucide="separator-horizontal"></i>
+  </div>
+
+  <div class="layout with-panel">
+    <div class="pages">
+      <div class="cap">СТРАНИЦЫ</div>
+      <div class="page-item active">
+        <div class="sq"><i data-lucide="file-text" style="width:15px;height:15px;"></i></div>
+        <div>Страница 1<div class="st">Активная</div></div>
+      </div>
+      <div class="page-item"><div class="sq"><i data-lucide="file-text" style="width:15px;height:15px;"></i></div>Страница 2</div>
+      <div class="page-item"><div class="sq"><i data-lucide="file-text" style="width:15px;height:15px;"></i></div>Страница 3</div>
+      <div class="add"><i data-lucide="separator-horizontal" style="width:15px;height:15px;"></i>Вставить разрыв страницы</div>
+    </div>
+
+    <div class="doc-wrap">
+      <div class="doc">
+        <div class="sheet a4" style="width:600px; padding:60px 46px 60px 68px;">
+          <h1 style="font-size:22px;">История ИИ</h1>
+          <h3 style="font-size:15px;">Введение</h3>
+          <p style="font-size:13px;">Данный реферат посвящён истории искусственного интеллекта. Актуальность темы обусловлена стремительным развитием технологий и необходимостью глубокого осмысления происходящих изменений.</p>
+          <p style="font-size:13px;">Разбивка на страницы осталась прежней — она соответствует параметрам, которые сейчас сохранены на сервере, а не тем, что набраны в панели справа.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Параметры страницы</h2>
+      <div class="hint">Применяются ко всему документу и к скачиваемым файлам.</div>
+
+      <div class="banner danger">
+        <i data-lucide="wifi-off"></i>
+        <div>
+          Не удалось сохранить параметры — нет связи с сервером.
+          Набранные значения сохранены на этой странице.
+          <span class="retry">Повторить</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="label">Размер листа</span>
+        <select class="select"><option>A5 — 148 × 210 мм</option></select>
+      </div>
+
+      <div class="field">
+        <span class="label">Ориентация</span>
+        <select class="select"><option>Альбомная</option></select>
+      </div>
+
+      <div class="field">
+        <span class="label">Поля, мм</span>
+        <div class="margins">
+          <div><span class="sub">Сверху</span><input class="input err" value="80"></div>
+          <div><span class="sub">Справа</span><input class="input" value="10"></div>
+          <div><span class="sub">Снизу</span><input class="input err" value="70"></div>
+          <div><span class="sub">Слева</span><input class="input" value="30"></div>
+        </div>
+        <div class="err-msg"><i data-lucide="alert-circle"></i>
+          Сверху и снизу вместе — 150 мм при высоте листа 148 мм. Текст не поместится.
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="label">Кегль, пт <span class="opt">8–72</span></span>
+        <input class="input err" value="96">
+        <div class="err-msg"><i data-lucide="alert-circle"></i>Допустимо от 8 до 72.</div>
+      </div>
+
+      <div class="field">
+        <span class="label">Интерлиньяж <span class="opt">1,0–3,0</span></span>
+        <input class="input" value="1,5">
+      </div>
+
+      <div class="field">
+        <span class="label">Верхний колонтитул <span class="opt">до 200 символов</span></span>
+        <input class="input err" value="История искусственного интеллекта: от формальных моделей вычислимости середины двадцатого века…">
+        <div class="err-msg"><i data-lucide="alert-circle"></i>212 из 200 символов. Сократите — текст не обрезается автоматически.</div>
+      </div>
+
+      <div class="toggle">Нумеровать страницы<div class="sw"></div></div>
+      <div class="toggle">Не печатать номер на первой<div class="sw"></div></div>
+
+      <div class="actions" style="justify-content:space-between;">
+        <button class="btn btn-ghost" style="padding:12px 18px;">Отменить</button>
+        <button class="btn btn-primary" style="padding:12px 22px;">Применить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span>415 слов · <span class="warn"><i data-lucide="alert-triangle"></i>Параметры не сохранены</span></span>
+    <span>Страница 1 из 3 · A4, книжная</span>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>
