@@ -500,7 +500,7 @@ only the design draft could not see the contract.
   absent REST Statements tier (settled at the previous step); and binding `_row`'s defaults to the
   sibling's expectation literal, which would make one code path of both sides of that equality.
   Tests: 90 passed, 3 skipped (rest module).
-- [~] green-adapter rest amendment (the wire pins what the whole-body equality cannot) —
+- [x] green-adapter rest amendment (the wire pins what the whole-body equality cannot) —
   expected shape: a tz-aware-guarded `astimezone(UTC)` field serializer, and a `status`/`kind`
   treatment that **maps** an unknown value to `unknown` rather than rejecting it (see the
   correction above — a constrained `Literal`/`Enum` field that raises is the outage, not the
@@ -665,6 +665,87 @@ only the design draft could not see the contract.
   error bodies are not per-account content); `contract_row`/`expected_row` drift as a tenth field
   lands (a dropped field fails the whole-row equality loudly); the conversion test's seeds landing
   exactly on `expected_row`'s defaults (editing conftest breaks it loudly, not silently).
+  **Coverage pass on the amendment green (2026-08-06):** `project_response_dto.py` is at
+  **100% line and 100% branch** — no uncovered line, no half-taken branch. The number is not
+  the finding. Two mutants the suite does not kill, both of them the `ca62dbc9` premortem's
+  findings 4 and 5 still standing after the green that was supposed to settle them:
+  1. **Five of the eight statuses are pinned by nothing.** Rewriting a `ProjectStatus` member's
+     value so the contract's spelling no longer resolves — i.e. simulating an allowlist short
+     by that member — leaves the suite green for `DRAFT`, `PENDING`, `IN_PROGRESS`, `COMPLETED`
+     and `RECOVERING` (93 passed each). Only `READY` (5 failures) and `FAILED` (2) are held.
+     `_fail_closed_to_unknown` is what hides them: a missing member does not raise, it renders
+     `unknown`, so a too-narrow enum is indistinguishable from a correct one at every tier
+     below acceptance. The fail-closed rule and the enum's legal direction must be tested
+     together — the first one silences the second.
+  2. **Sub-second precision is unpinned.** Appending `.replace(microsecond=0)` to `_as_utc`'s
+     return — a truncating serializer — leaves all 93 green, because every datetime literal in
+     the rest suite has `microsecond=0` and Postgres `timestamptz` does not.
+  Mutants that *are* killed, recorded so they are not re-litigated: dropping `astimezone(UTC)`
+  (1 failure), dropping the naive guard (1), guarding/converting `created_at` while leaving
+  `updated_at` a pass-through (1 — finding 2's asymmetry is genuinely closed), and unrecognising
+  either `ProjectKind` member (5 and 1) or `UNKNOWN`'s own wire value (1).
+  Still unguarded and *not* a coverage gap in this file, so no step below: the contract's log
+  signal on the unknown branch (finding 3) — `_fail_closed_to_unknown` emits none and
+  `grep -rn caplog` over the project rest tests is still empty.
+  **How the green landed (2026-08-06):** all three skips removed, all three pass; 93 passed /
+  0 skipped in the rest module, 721 passed / 2 skipped whole-backend, no regression. Two
+  `StrEnum`s land in the DTO module — `ProjectKind` (`document`|`generation`) and
+  `ProjectStatus` (the contract's eight values, `unknown` among them) — so neither field
+  reaches the wire as a bare `str`, per the ADR; `StrEnum` members serialize to their value,
+  so the wire form is unchanged for legal input.
+  **The mechanism carrying the unknown-status mapping** (recorded because the ADR requires the
+  *document* arm to fail closed too): a `@field_validator("status", mode="before")` named
+  `_fail_closed_to_unknown`, doing `ProjectStatus(value)` and returning `ProjectStatus.UNKNOWN`
+  on `ValueError`. It is **kind-agnostic** — it sits on the single DTO both UNION arms serialize
+  through and branches on nothing, so the document arm fails closed exactly as the generation arm
+  does, which is the ADR's edge-case row (`ALLOWED_STATUSES = ("draft",)` today against a
+  contract that can emit `ready`). It is a `before` validator rather than a translation inside
+  `from_domain` because the router declares `response_model=ProjectPageDto` and FastAPI
+  **re-validates** the returned model — a `from_domain`-only mapping would be undone by that
+  second pass. Being a mapping and not a rejection, it cannot raise into `main.py`'s catch-all,
+  so one bad row cannot blank the page; the two-row assertion is what confirms it.
+  Timestamps: `@field_validator("created_at", "updated_at")` `_as_utc` rejects a naive value
+  (`tzinfo is None or tzinfo.utcoffset(value) is None`) with
+  `ValueError(f"{info.field_name} must be timezone-aware")` **before** `astimezone(UTC)` — the
+  guard is not redundant with the conversion, since `astimezone` silently reads a naive value as
+  host-local time. The field name comes from `ValidationInfo.field_name`, so `updated_at` names
+  itself; the coverage pass then killed the mutant that guards `created_at` alone, so finding 2's
+  first-timestamp-only asymmetry is genuinely closed rather than argued.
+  **Two obligations the green identified and deliberately did not perform**, both needing tests a
+  green may not write: (a) the ADR places `ProjectStatus`/`ProjectKind` in the **domain**, and they
+  are defined in the REST DTO module — `ProjectItem.status`/`.kind` are still bare `str`, and
+  moving the enums inward has no failing test driving it; (b) the contract's log signal on the
+  unknown branch is still unemitted, and a `before` validator cannot see sibling fields, so the
+  row id is not reachable from where the mapping happens — the emission will likely have to live
+  in `from_domain` (which holds the whole `ProjectItem`) while the mapping stays in the validator.
+  **Judged, not overlooked:** `ProjectKind` has no fail-closed member, so an unrecognised `kind`
+  **will** raise and blank the page — the failure mode the status test exists to forbid. Held to
+  be correct: the contract declares no `unknown` kind, and `kind` is the adapter's own
+  discriminator over two hard-coded UNION arms, not stored data a migration can widen. Recorded in
+  the class docstring so a later disagreement has something to argue with.
+- [~] red-adapter rest (coverage: every contract status reaches the wire unchanged)
+- [ ] green-adapter rest (coverage: every contract status reaches the wire unchanged)
+- [ ] red-adapter rest (coverage: nonzero microsecond survives serialization)
+- [ ] green-adapter rest (coverage: nonzero microsecond survives serialization)
+- [ ] red-adapter rest (the unknown branch signals, and a naive row costs one row not the page) —
+  the three `ca62dbc9` review findings the amendment green could not carry, since each needs a
+  test. (i) The contract's `status` clause has two halves and only one is built: an unrecognised
+  value must also "emit a log signal carrying the id and the unrecognized value" — a `caplog`
+  assertion on the existing two-row unknown test, plus the production move the green named (the
+  emission in `from_domain`, which holds the whole `ProjectItem`, while the mapping stays in the
+  `before` validator that cannot see the id). (ii) The naive-timestamp refusal is asserted only as
+  `pytest.raises`, which observes the exception escaping `ASGITransport` and nothing about the
+  served response; in production it lands in `main.py:161`'s catch-all and returns 500 for that
+  caller's **whole feed**, on every request, forever — the exact blast radius the status test two
+  functions later forbids in as many words. Seed the naive row on a **two-row** page and assert
+  what the caller actually receives, which forces the refuse-the-row vs refuse-the-page choice to
+  be made rather than inherited. (iii) Two test-hygiene fixes that must ride a red because they
+  touch tests: `contract_row(_ID_TWO, status="failed", retryable=True)` keeps the default
+  `kind="document"` and the contract makes `retryable` true only for a failed **generation** — the
+  same fixture illegality `bfd11431` removed, in a fixture whose docstring now promises legality;
+  and `response.headers["Cache-Control"]` raises `KeyError` before its own assertion message can
+  render, defeating the very mutant it was written to catch (use `.get(...)` inside the assertion).
+- [ ] green-adapter rest (the unknown branch signals, and a naive row costs one row not the page)
 - [ ] red-usecase (the envelope carries page, limit and total) — `ProjectPage` widens to
   `(items, page, limit, total)` and `ProjectPageRequest` grows the contract's unparameterised
   defaults `page=1`, `limit=20`; the usecase test pins that they reach the caller.

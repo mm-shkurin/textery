@@ -29,8 +29,6 @@ class TestListProjectsWireContract:
     directions); or an unknown `status` forwarded verbatim.
     """
 
-    @pytest.mark.skip(reason="RED: ProjectItemDto echoes the source offset instead of "
-                             "converting to UTC")
     async def test_should_convert_a_non_utc_timestamp_to_utc(
         self, feed_serving, feed_client, contract_row, expected_row
     ):
@@ -54,8 +52,6 @@ class TestListProjectsWireContract:
             f"got {response.json()['items']!r}"
         )
 
-    @pytest.mark.skip(reason="RED: ProjectItemDto accepts a naive datetime and emits it "
-                             "offset-less")
     async def test_should_refuse_a_naive_timestamp_rather_than_shift_it(
         self, feed_serving, feed_client, contract_row
     ):
@@ -123,8 +119,6 @@ class TestListProjectsWireContract:
             f"{type(items[1]['retryable']).__name__} {items[1]['retryable']!r}"
         )
 
-    @pytest.mark.skip(reason="RED: ProjectItemDto forwards an unrecognised status "
-                             "verbatim instead of mapping it to `unknown`")
     async def test_should_fail_an_unknown_status_closed_without_blanking_the_page(
         self, feed_serving, feed_client, contract_row, expected_row
     ):
