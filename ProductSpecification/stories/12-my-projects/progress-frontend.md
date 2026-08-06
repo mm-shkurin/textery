@@ -283,7 +283,28 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   (b) the `send.ts` change bcabd515 declined, whose cost is unchanged: four features share that line
   and its non-HttpError arm has no characterization test. The second assertion (`document.body` must
   not contain `Failed to fetch`) never executed in the red — it has to hold too
-- [~] red-frontend-api (a 200 with no `items` renders a JS engine message to the user) — agent-review
+- [x] red-frontend-api (a 200 with no `items` renders a JS engine message to the user) — RED exactly
+  as predicted, and the run makes the leak concrete:
+  `AssertionError: expected TypeError { message: "Cannot read properties of undefined (reading
+  'map')" } to deeply equal Error { message: "Сервер вернул некорректный список проектов." }`.
+  Landed as `projectsApi.pageShape.test.ts` (a sibling of `projectsApi.wireContract.test.ts`, this
+  feature's split convention), one `it.skip`, stubbing the literal `{}` that `httpClient.ts:167`
+  produces for a 204 / empty 200 / unparseable body — not a hypothetical shape. It reuses the
+  sibling's capture-the-settlement helper so the assertion pins outcome, error TYPE and message
+  together: `.rejects.toThrow()` would pass on the `TypeError` itself.
+  **The green owes TWO changes, and the second is the one that is easy to miss**: (1) export the
+  message constant from `projectsApi.ts` — the test holds `EXPECTED_MESSAGE` locally only because
+  RED may not touch production, and the `/refactor` after green replaces the literal with the import
+  or the two definitions drift, same sequence `MISSING_UPDATED_AT_MESSAGE` went through; (2) add
+  that constant to `FEED_AUTHORED_MESSAGES` in `api/loadFailureMessages.ts`. Since 7baba471 the page
+  renders a plain `Error`'s message ONLY if it is on that allow-list, so a guard that rejects
+  correctly but is not listed degrades to the generic `LOAD_FAILURE_FALLBACK` — fails in the safe
+  direction (no English leak) but this sentence never reaches the screen and step (1) buys nothing.
+  Do NOT resolve `items: []` instead: that makes a broken endpoint render identically to a user
+  with no projects, the exact confusion this scenario exists to kill, and 2.3's empty state would
+  then invite the user to create a first project on top of a server fault. Full frontend suite:
+  651 passed, 0 failed, 4 skipped (174 files passed, 2 skipped); `tsc --noEmit` clean.
+  Original note follows: agent-review
   on bcabd515. `projectsApi.ts:96` does `data.items.map(...)` with no shape check, and
   `httpClient.ts:167` deliberately turns an empty or unparseable SUCCESSFUL body into `{}`
   (`await res.json().catch(() => ({}))`). A 204, an empty 200, or any body missing `items` therefore
@@ -293,7 +314,38 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   contract exists to stop exactly this class of serializer breakage from looking deliberate — it
   guards a field of an item but not the presence of `items`, so the weaker input gets the worse
   rendering. Pair with the shaping decision the deferred nine-required-fields step below owes
-- [ ] green-frontend-api (a 200 with no `items` renders a JS engine message to the user)
+- [~] green-frontend-api (a 200 with no `items` renders a JS engine message to the user)
+- [ ] red-frontend (a 4xx's server-authored Russian explanation reaches the user) — **BOTH review
+  passes on 7baba471, and it is a regression that commit introduced rather than an inherited gap.**
+  `send.ts` re-throws raw only for `RequestTimeoutError` and `isHttpError(error) && error.status >= 500`;
+  every 4xx falls to `throw new Error(describeFailure(error, fallback))`, so it arrives at the page as a
+  plain `Error` whose `.message` is ALREADY the server's Russian `detail`. In the new three-arm
+  `describeLoadFailure` that plain `Error` matches neither `isHttpError` nor `SessionExpiredError` nor
+  `FEED_AUTHORED_MESSAGES`, and lands on `LOAD_FAILURE_FALLBACK`. Before 7baba471 it rendered. A 403
+  «Проект принадлежит другому пользователю» is now the generic sentence with a retry that can never
+  succeed — and both the commit message and the `isHttpError` arm's comment assert this arm keeps the
+  4xx detail, which is true of the 5xx half only. The comment is authoritative in tone and a maintainer
+  will trust it over tracing `send.ts`: the narration is part of the defect. The design question this
+  step must actually settle, and which 7baba471 resolved silently: at this screen a flattened 4xx and a
+  flattened transport failure are the SAME SHAPE (plain `Error`, truthy Russian-or-English `.message`),
+  so an assertion that a 4xx detail renders collides head-on with the transport test enabled in that
+  same commit. Whatever distinguishes them cannot be the type
+- [ ] green-frontend (a 4xx's server-authored Russian explanation reaches the user)
+- [ ] red-frontend (an English 5xx body does not reach the Russian screen) — premortem on 7baba471, the
+  leak that survives the arm added to stop leaks. `describeFailure` returns `detail` verbatim for any
+  5xx that is not `error_code === 'INTERNAL_ERROR'` (`send.ts`, deliberately: a 5xx that EXPLAINS itself
+  keeps its text). Correct for autosave; on this Russian-only feed «Upstream provider quota exceeded»
+  paints in English through the `isHttpError` arm. The `document.body` non-disclosure assertion added in
+  31933cd4 is bound to the literal `'Failed to fetch'` and cannot see it. Reject with
+  `{status: 503, body: {detail: '<English>'}}`; decide here whether this screen accepts server 5xx prose
+  at all
+- [ ] green-frontend (an English 5xx body does not reach the Russian screen)
+- [ ] refactor (`FEED_AUTHORED_MESSAGES` cannot be under-filled) — agent-review on 7baba471. The list is
+  hand-maintained and its failure mode is silent: omitting a guard message produces no type error, no
+  test failure, no runtime signal, just a lost diagnostic. The `green-frontend-api` step directly above
+  adds the second entry, so the first chance to lose one is the very next work unit. Have `projectsApi.ts`
+  export its guard messages as one frozen array and let `loadFailureMessages.ts` consume THAT rather than
+  re-listing members — omission becomes structurally impossible instead of a review duty
 - [ ] red-frontend-api (`send` re-throws `RequestTimeoutError` with its type intact) — premortem on
   bcabd515: the fix is load-bearing on a contract NOTHING tests. The timeout test declares
   `vi.mock('../../api/projectsApi')`, so `send.ts` never executes in that suite — the real type is

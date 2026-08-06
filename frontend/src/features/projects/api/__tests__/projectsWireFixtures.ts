@@ -39,6 +39,24 @@ const { updated_at, ...EVERY_OTHER_FIELD } = PROJECT_WIRE
 
 export const PROJECT_WIRE_WITHOUT_UPDATED_AT = { ...EVERY_OTHER_FIELD, updatedAt: updated_at }
 
+// The settlement of a promise, captured rather than asserted on directly. Shared for the same
+// reason as the wire fixtures above: both fail-closed suites in this directory need it, and a
+// second hand-copied definition drifts the moment the shape changes.
+export type Settled = { rejected: false; value: unknown } | { rejected: true; error: unknown }
+
+// Capture the settlement rather than `.rejects.toThrow()`: that would pass on ANY thrown value —
+// including `send`'s generic 'Не удалось загрузить проекты' transport fallback and the engine's own
+// `TypeError`, the two outcomes these suites most need to tell apart from a real mapper guard.
+// Comparing the whole settlement in one `toEqual` then pins outcome, error type and message
+// together: an `Error` and a plain object carrying the same `message` are not equal, and neither is
+// a different message.
+export async function settle(promise: Promise<unknown>): Promise<Settled> {
+  return promise.then(
+    (value) => ({ rejected: false as const, value }),
+    (error: unknown) => ({ rejected: true as const, error }),
+  )
+}
+
 // The transport stub every api test here shares. `GET /api/v1/projects` does not exist on the
 // backend yet, so nothing in this directory may reach a real server. Returns the mock so the caller
 // can pin how many times it was called and with what.

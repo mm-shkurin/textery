@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { listProjects, MISSING_UPDATED_AT_MESSAGE } from '../projectsApi'
 import { clearSession, saveSession } from '../../../auth/utils/authSession'
-import { PROJECT_WIRE_WITHOUT_UPDATED_AT, stubFetchJson } from './projectsWireFixtures'
+import { PROJECT_WIRE_WITHOUT_UPDATED_AT, settle, stubFetchJson } from './projectsWireFixtures'
 
 // Scenario 1.1 — the wire contract of the «Мои проекты» feed, at the mapper.
 //
@@ -33,20 +33,6 @@ import { PROJECT_WIRE_WITHOUT_UPDATED_AT, stubFetchJson } from './projectsWireFi
 // 'Не удалось загрузить проекты' transport fallback, which is a separate literal in a separate
 // module. Copy review is not this test's job; telling a contract guard apart from a transport
 // failure is.
-
-type Settled = { rejected: false; value: unknown } | { rejected: true; error: unknown }
-
-// Capture the settlement rather than `.rejects.toThrow()`: that would pass on ANY thrown value,
-// including the generic 'Не удалось загрузить проекты' transport fallback — the one outcome this
-// test most needs to tell apart from a real contract guard. Comparing the whole settlement in one
-// `toEqual` then pins outcome, error type and message together: an `Error` and a plain object
-// carrying the same `message` are not equal, and neither is a different message.
-async function settle(promise: Promise<unknown>): Promise<Settled> {
-  return promise.then(
-    (value) => ({ rejected: false as const, value }),
-    (error: unknown) => ({ rejected: true as const, error }),
-  )
-}
 
 describe('projectsApi wire contract', () => {
   beforeEach(() => {
