@@ -10,9 +10,9 @@
 | 16 | OAuth sign-in: VK ID + Yandex ID (frontend-first, backend WIP) | ✅ | · | · | ✅ | · | n/a | · | 14/14 | 100% |
 | 17 | Export document to PDF / DOCX | ✅ | 🔧 | — | ✅ | — | — | — | 14/45 | 31% |
 | 18 | Generate → edit (unify generate + manual, drop mode modal) | ✅ | — | — | 🔧 | — | — | — | 2/13 | 15% |
-| 2  | Auto-generate: эссе                       | 🔧   | —    | —    | —   | —     | —    | —     | 0/0   | 0% |
-| 3  | Auto-generate: сочинение                  | 🔧   | —    | —    | —   | —     | —    | —     | 0/0   | 0% |
-| 4  | Auto-generate: реферат                    | ✅   | 🔧   | —    | —   | —     | n/a  | n/a   | 4/27  | 15% |
+| 2  | Auto-generate: эссе                       | 🔧   | 🔧   | —    | 🔧   | —     | —    | —     | 0/0   | 0% |
+| 3  | Auto-generate: сочинение                  | 🔧   | 🔧   | —    | 🔧   | —     | —    | —     | 0/0   | 0% |
+| 4  | Auto-generate: реферат                    | ✅   | 🔧   | —    | 🔧   | —     | n/a  | n/a   | 4/27  | 15% |
 | 10 | Editor pages (pagination, page setup, headers/footers) | ✅ | 🔧 | — | — | — | — | — | 0/70 | 0% |
 | 12 | Мои проекты (list/search/sort, grid + list view) | ✅ | 🔧 | — | 🔧 | — | — | — | 1/177 | 1% |
 
