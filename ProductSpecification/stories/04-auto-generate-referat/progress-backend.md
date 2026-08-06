@@ -814,7 +814,41 @@ that can be red.
   **Scenario 1.4 is now complete.**
 
 ### Scenario 1.5: The topic cannot displace the template's instructions
-- [ ] red-acceptance
+- [S] red-acceptance — **one leg of the 1.1–1.4 argument has fallen away and this is the
+  first scenario that has to notice.** Those four all leaned, to some degree, on
+  `build_prompt` having no production caller. It has one now:
+  `generate_document.py:35`, shipped by 1.4's own green. The `[S]` still holds, but on the
+  remaining legs, re-derived rather than carried over:
+  - **The built prompt is discarded before it reaches anything observable.**
+    `_compose_prompt`'s return value is dropped on the floor at `generate_document.py:77`
+    — deliberately, so Backend 2.1 has a substitution to redden. `provider.generate` still
+    receives the `Generation`, and `GigaChatProvider` composes its own f-string. So the
+    string this scenario makes claims about exists in production for the duration of one
+    statement and is then garbage.
+  - **And after 2.1 lands, the acceptance stack still cannot see it**, which is the leg
+    that matters because it does not expire. The stack runs `GENERATION_PROVIDER=fake`
+    (`auto_editor_transition_expectations.py:35`), and `FakeProvider.generate` returns a
+    canned constant without touching `PromptRequest`. The object whose behaviour this
+    scenario constrains is not wired into the acceptance process at all — not merely hard
+    to assert over HTTP. `acceptance/conftest.py` still has no provider-stub fixture, so
+    the outbound side is closed too, and re-checked today rather than assumed:
+    `grep -rln prompt acceptance/` returns three *frontend* statement files (UI
+    placeholder copy, not the generation prompt) and `grep -rln 'referat\|реферат'
+    acceptance/` returns nothing at all.
+  - **No endpoint returns the prompt**, and Security 2.1 of this story requires it stay
+    out of even the log — so the inbound side is closed by specification, not just by
+    today's router surface.
+  - The spec's DSL settles it the same way it settled 1.1–1.4: "when the prompt is built
+    for it" is a direct in-process call on a pure domain function. Covered by
+    `red-usecase` / `green-usecase` below.
+
+  **Coverage is not lost to a neighbour, and here that is load-bearing rather than a
+  formality.** This scenario is prompt-injection in substance: a hostile `topic` trying to
+  displace the template's instructions. The black-box half of exactly that territory is
+  already owned by **Security Scenario 1.1, "A hostile topic does not take over the
+  generation"**, with Security 1.2 covering the other user-controlled fields. Writing an
+  HTTP test here would be Security 1.1 under a different heading — and would be the *worse*
+  version of it, since it would have to assert through `FakeProvider`'s canned string.
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase
