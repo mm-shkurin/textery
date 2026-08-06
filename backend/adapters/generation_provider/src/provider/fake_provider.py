@@ -1,5 +1,3 @@
-from generation.generation import Generation
-
 FAKE_DOKLAD_TEXT = (
     "Введение\n\n"
     "Данный доклад посвящён теме, указанной пользователем. В работе рассматриваются "
@@ -16,7 +14,13 @@ FAKE_DOKLAD_TEXT = (
 
 
 class FakeProvider:
-    async def generate(self, generation: Generation) -> str:
+    async def generate(self, prompt: str) -> str:  # noqa: ARG002
+        """The same text for every prompt.
+
+        `prompt` is unread and deliberately still in the signature: the fake
+        stands in for the port, and a fake whose shape drifts from the port stops
+        being able to catch a caller that passes the wrong thing.
+        """
         return FAKE_DOKLAD_TEXT
 
     async def aclose(self) -> None:

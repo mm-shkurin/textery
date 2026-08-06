@@ -18,9 +18,10 @@ import { clearSession, saveSession } from '../../features/auth/utils/authSession
 // was CALLED with the picked type.
 //
 // 'referat' rather than the default on purpose: with 'doklad' the assertion would pass against
-// the hardcoded value it exists to rule out. It is not reachable through the type modal today
-// (`available: false` in shared/documentTypes.ts), which is exactly why the guard belongs at
-// this seam rather than in a click-driven test.
+// the hardcoded value it exists to rule out. It is reachable through the type modal now — all
+// four types became selectable once the backend could produce them — but the guard still belongs
+// at this seam: a click-driven test proves the modal reports the right id, and this one proves
+// the id survives the trip from `selectType` through `submitGeneration` to the wire.
 vi.mock('../../features/generation/api/generationApi')
 
 const navigate = vi.fn()

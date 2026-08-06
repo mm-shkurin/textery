@@ -28,9 +28,9 @@ def _compose_prompt(generation: Generation) -> str:
     """Composed here, at the call site, and not inside the provider.
 
     Placement is the guard: a build nested in `GenerationProvider.generate` means
-    the provider was called before the request could be refused. Backend 2.1 owns
-    handing this text to the provider; what this scenario needs is that the
-    refusal happens here, once, before the retry loop.
+    the provider was called before the request could be refused. The refusal
+    happens here, once, before the retry loop — and since scenario 2.1 the result
+    is also what the provider is handed, so this is the only composer there is.
     """
     return build_prompt(
         PromptRequest(
@@ -74,7 +74,7 @@ class GenerateDocument:
         await self._storage.update(generation)
 
         try:
-            _compose_prompt(generation)
+            prompt = _compose_prompt(generation)
         except PromptBuildError as error:
             # Before the loop, and never inside it. A build failure is deterministic
             # -- attempt 2 phrases the identical request from the identical row --
@@ -88,7 +88,7 @@ class GenerateDocument:
         last_error: Exception | None = None
         for attempt in range(1, MAX_PROVIDER_ATTEMPTS + 1):
             try:
-                content = await self._provider.generate(generation)
+                content = await self._provider.generate(prompt)
             except Exception as error:
                 # Every exception, not just ProviderError. The row is already
                 # persisted as in_progress by this point, so anything that escapes

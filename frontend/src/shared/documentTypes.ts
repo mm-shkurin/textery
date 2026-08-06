@@ -6,11 +6,17 @@ export interface DocumentTypeOption {
   available: boolean
 }
 
+// All four are selectable. `available` stays on the option rather than being deleted: it is the
+// modal's «скоро» affordance, and the next type to be specced before it can be generated needs it
+// again. Three of these were false because the backend could not produce them — it can now:
+// `SUPPORTED_DOCUMENT_TYPES` has admitted all four since story 1, and since scenario 2.1 every one
+// of them reaches the model through the domain's own `build_prompt`, which carries реферат's
+// section template and the invented-sources ban.
 export const DOCUMENT_TYPES: DocumentTypeOption[] = [
   { id: 'doklad', name: 'Доклад', available: true },
-  { id: 'essay', name: 'Эссе', available: false },
-  { id: 'sochinenie', name: 'Сочинение', available: false },
-  { id: 'referat', name: 'Реферат', available: false },
+  { id: 'essay', name: 'Эссе', available: true },
+  { id: 'sochinenie', name: 'Сочинение', available: true },
+  { id: 'referat', name: 'Реферат', available: true },
 ]
 
 export const DEFAULT_DOCUMENT_TYPE: DocumentType = 'doklad'

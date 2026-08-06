@@ -6,7 +6,6 @@ from collections.abc import Callable
 
 import httpx
 
-from generation.generation import Generation
 from generation.generation_provider import ProviderError
 from provider.gigachat_responses import read_access_token, read_completion
 from shared.exceptions import ConfigurationException
@@ -107,13 +106,17 @@ class GigaChatProvider:
                 await self._client.aclose()
                 self._client = None
 
-    async def generate(self, generation: Generation) -> str:
+    async def generate(self, prompt: str) -> str:
+        """Post the prompt this adapter was handed, and return the completion.
+
+        It composes nothing. The prompt is built once, in the domain
+        (`generation/prompt_template.py`), because a second composer here was free
+        to drift from it — and did: the domain's реферат template and its
+        invented-sources ban never reached the model while this method wrote its
+        own f-string from the entity.
+        """
         try:
             token = await self._fetch_token()
-            prompt = (
-                f"{generation.document_type} на тему: {generation.topic} "
-                f"({generation.volume_pages} стр.)"
-            )
             client = await self._http_client()
             response = await client.post(
                 COMPLETIONS_URL,

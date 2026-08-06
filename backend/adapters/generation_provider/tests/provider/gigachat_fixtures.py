@@ -6,12 +6,10 @@ Named _fixtures rather than conftest: these are helpers the tests call, not pyte
 fixtures they request, and a conftest would make them ambient.
 """
 
-import uuid
 from unittest.mock import AsyncMock, MagicMock
 
 from document.document_type import DOKLAD
-from generation.generation import Generation
-from generation.prompt_template import PromptRequest
+from generation.prompt_template import PromptRequest, build_prompt
 from provider.gigachat_provider import CA_BUNDLE_ENV_VAR, COMPLETIONS_URL, CREDENTIALS_ENV_VAR
 
 ACCESS_TOKEN = "tok-abc-123"
@@ -58,60 +56,15 @@ def patch_async_client(mocker, post_side_effect):
     return client
 
 
-def build_generation(document_type: str = DOKLAD):
-    """The entity the provider tests drive `generate()` with.
-
-    `document_type` is a parameter with the domain's own `DOKLAD` as the default
-    rather than a retyped `"доклад"` literal: a hand-typed copy of a domain
-    constant in scaffolding is exactly what the prompt-agreement test exists to
-    eliminate on the prompt side.
-    """
-    return Generation.create(
-        owner_id=uuid.uuid4(),
-        topic="Космос",
-        volume_pages=3,
-        requirements=None,
-        extra_wishes=None,
-        document_type=document_type,
-    )
-
-
-def build_doklad_generation():
-    """A generation whose type is доклад, and which proves it before returning.
-
-    The prompt-agreement test's scope is доклад **by decision, not by accident**:
-    the provider appends no source ban while `build_prompt` appends one for every
-    type outside `_BAN_DEFERRED`, so the two composers are comparable over доклад
-    and nowhere else. Riding on `build_generation()`'s default would leave that
-    decision expressed only in a docstring, and four other test files share that
-    default -- any of them could legitimately retarget it, silently re-scoping the
-    agreement assertion into a red that has no defect behind it, whose cheapest
-    escape is to widen `_BAN_DEFERRED` (i.e. to unban the other three types).
-
-    The guard lives here rather than in the test class so a default change breaks
-    loudly at the scaffolding instead of quietly changing what the test covers.
-    """
-    generation = build_generation(document_type=DOKLAD)
-    assert generation.document_type == DOKLAD, (
-        "the prompt-agreement scope is доклад by decision; see this function's docstring"
-    )
-    return generation
-
-
-def request_from(generation) -> PromptRequest:
-    """The domain composer's input, read off the same entity the provider saw.
-
-    Reading the fields from `generation` rather than restating them is what keeps
-    both sides of the agreement assertion live: a scaffolding change moves both,
-    and only a genuine divergence between the two composers can separate them.
-    Lives beside `build_generation` -- its mirror -- so a change to the entity's
-    fields is visibly paired with the helper that reads them back.
-    """
-    return PromptRequest(
-        document_type=generation.document_type,
-        topic=generation.topic,
-        volume_pages=generation.volume_pages,
-    )
+# What the provider is handed since scenario 2.1: composed text, not an entity.
+# Built by the domain from a real request rather than hand-typed, so it stays the
+# shape production actually sends -- but the provider tests assert only that this
+# exact string is posted back, never what is in it. What goes into a prompt is the
+# domain's claim and is pinned by the prompt goldens; this module's claim is that
+# the transport does not touch it.
+PROMPT = build_prompt(
+    PromptRequest(document_type=DOKLAD, topic="Космос", volume_pages=3)
+)
 
 
 def set_credentials(monkeypatch):

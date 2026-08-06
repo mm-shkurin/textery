@@ -1,7 +1,7 @@
 import httpx
 
 from gigachat_fixtures import (
-    build_generation,
+    PROMPT,
     completions_payload,
     json_response,
     patch_async_client,
@@ -38,8 +38,8 @@ class TestHttpClientReuse:
         patch_async_client(mocker, _two_generations_worth(2))
         provider = GigaChatProvider()
 
-        await provider.generate(build_generation())
-        await provider.generate(build_generation())
+        await provider.generate(PROMPT)
+        await provider.generate(PROMPT)
 
         assert httpx.AsyncClient.call_count == 1
 
@@ -73,7 +73,7 @@ class TestConfiguredTimeouts:
         patch_async_client(mocker, _two_generations_worth(1))
         provider = GigaChatProvider()
 
-        await provider.generate(build_generation())
+        await provider.generate(PROMPT)
 
         timeout = httpx.AsyncClient.call_args.kwargs["timeout"]
         assert timeout.connect == CONNECT_TIMEOUT_SECONDS
@@ -88,7 +88,7 @@ class TestConfiguredTimeouts:
         client = patch_async_client(mocker, _two_generations_worth(1))
         provider = GigaChatProvider()
 
-        await provider.generate(build_generation())
+        await provider.generate(PROMPT)
 
         token_call = client.post.await_args_list[0]
         assert token_call.kwargs["timeout"] == TOKEN_READ_TIMEOUT_SECONDS
@@ -100,7 +100,7 @@ class TestAclose:
         set_credentials(monkeypatch)
         client = patch_async_client(mocker, _two_generations_worth(1))
         provider = GigaChatProvider()
-        await provider.generate(build_generation())
+        await provider.generate(PROMPT)
 
         await provider.aclose()
 
@@ -121,7 +121,7 @@ class TestAclose:
         set_credentials(monkeypatch)
         client = patch_async_client(mocker, _two_generations_worth(1))
         provider = GigaChatProvider()
-        await provider.generate(build_generation())
+        await provider.generate(PROMPT)
 
         await provider.aclose()
         await provider.aclose()

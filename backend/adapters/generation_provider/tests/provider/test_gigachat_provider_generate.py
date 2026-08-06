@@ -8,7 +8,7 @@ from gigachat_fixtures import (
     ACCESS_TOKEN,
     CREDENTIALS,
     GENERATED_CONTENT,
-    build_generation,
+    PROMPT,
     completions_payload,
     json_response,
     non_json_response,
@@ -31,9 +31,7 @@ class TestGenerateHappyPath:
             mocker,
             [json_response(token_payload()), json_response(completions_payload())],
         )
-        generation = build_generation()
-
-        result = await GigaChatProvider().generate(generation)
+        result = await GigaChatProvider().generate(PROMPT)
 
         assert result == GENERATED_CONTENT
         assert client.post.await_count == 2
@@ -48,10 +46,19 @@ class TestGenerateHappyPath:
 
         assert completions_call.args[0] == COMPLETIONS_URL
         assert completions_call.kwargs["headers"] == {"Authorization": f"Bearer {ACCESS_TOKEN}"}
-        expected_prompt = "доклад на тему: Космос (3 стр.)"
+        # The posted content is `PROMPT` itself, not a literal restating it.
+        # Since scenario 2.1 this adapter composes nothing: it is handed the text
+        # the domain built and its only claim is that it sends that text back
+        # unaltered. Comparing against a hand-typed sentence would let the adapter
+        # reword, append to, or truncate the prompt and still pass as long as the
+        # literal was edited to match — which is precisely the second composer
+        # that 2.1 removed.
+        #
+        # The whole `messages` list, not `messages[0]["content"]`: indexing 0 would
+        # let a prepended system message pass unnoticed.
         assert completions_call.kwargs["json"] == {
             "model": "GigaChat",
-            "messages": [{"role": "user", "content": expected_prompt}],
+            "messages": [{"role": "user", "content": PROMPT}],
         }
 
 
@@ -69,7 +76,7 @@ class TestGenerateMalformedProviderBody:
         patch_async_client(mocker, [json_response(token_payload()), non_json_response()])
 
         with pytest.raises(ProviderError, match="not JSON"):
-            await GigaChatProvider().generate(build_generation())
+            await GigaChatProvider().generate(PROMPT)
 
     @pytest.mark.parametrize(
         ("payload", "case"),
@@ -88,7 +95,7 @@ class TestGenerateMalformedProviderBody:
         patch_async_client(mocker, [json_response(token_payload()), json_response(payload)])
 
         with pytest.raises(ProviderError, match="choices\\[0\\].message.content") as exc_info:
-            await GigaChatProvider().generate(build_generation())
+            await GigaChatProvider().generate(PROMPT)
 
         assert type(exc_info.value) is ProviderError, (
             f"{case}: expected the port's declared error type, got {type(exc_info.value)}"
@@ -105,7 +112,7 @@ class TestFetchTokenMalformedBody:
         patch_async_client(mocker, [json_response({"error": "invalid_client"})])
 
         with pytest.raises(ProviderError, match="access_token"):
-            await GigaChatProvider().generate(build_generation())
+            await GigaChatProvider().generate(PROMPT)
 
     async def test_should_raise_provider_error_when_the_token_body_is_not_json(
         self, monkeypatch, mocker
@@ -114,7 +121,7 @@ class TestFetchTokenMalformedBody:
         patch_async_client(mocker, [non_json_response("Expecting value")])
 
         with pytest.raises(ProviderError, match="not JSON"):
-            await GigaChatProvider().generate(build_generation())
+            await GigaChatProvider().generate(PROMPT)
 
 
 class TestGenerateProviderError:
@@ -126,7 +133,7 @@ class TestGenerateProviderError:
         patch_async_client(mocker, [json_response(token_payload()), http_error])
 
         with pytest.raises(ProviderError) as exc_info:
-            await GigaChatProvider().generate(build_generation())
+            await GigaChatProvider().generate(PROMPT)
 
         assert type(exc_info.value) is ProviderError
         assert str(exc_info.value) == str(http_error)

@@ -1,7 +1,7 @@
 import asyncio
 
 from gigachat_fixtures import (
-    build_generation,
+    PROMPT,
     completions_payload,
     json_response,
     patch_async_client,
@@ -37,8 +37,8 @@ class TestTokenCaching:
         )
         provider = GigaChatProvider()
 
-        await provider.generate(build_generation())
-        await provider.generate(build_generation())
+        await provider.generate(PROMPT)
+        await provider.generate(PROMPT)
 
         # One token + two completions, not one token per generation.
         assert posted_urls(client) == [TOKEN_URL, COMPLETIONS_URL, COMPLETIONS_URL]
@@ -57,9 +57,9 @@ class TestTokenCaching:
         now = [1000.0]
         provider = GigaChatProvider(clock=lambda: now[0])
 
-        await provider.generate(build_generation())
+        await provider.generate(PROMPT)
         now[0] += _TOKEN_TTL_SECONDS  # past the cached token's margin-adjusted expiry
-        await provider.generate(build_generation())
+        await provider.generate(PROMPT)
 
         assert posted_urls(client) == [TOKEN_URL, COMPLETIONS_URL, TOKEN_URL, COMPLETIONS_URL], (
             "an expired token must be re-minted, not reused"
@@ -78,9 +78,9 @@ class TestTokenCaching:
         now = [1000.0]
         provider = GigaChatProvider(clock=lambda: now[0])
 
-        await provider.generate(build_generation())
+        await provider.generate(PROMPT)
         now[0] += 60  # a minute later: well inside the ~30 minute TTL
-        await provider.generate(build_generation())
+        await provider.generate(PROMPT)
 
         assert posted_urls(client).count(TOKEN_URL) == 1
 
@@ -99,7 +99,7 @@ class TestTokenCaching:
         provider = GigaChatProvider()
 
         await asyncio.gather(
-            provider.generate(build_generation()), provider.generate(build_generation())
+            provider.generate(PROMPT), provider.generate(PROMPT)
         )
 
         assert posted_urls(client).count(TOKEN_URL) == 1, (
