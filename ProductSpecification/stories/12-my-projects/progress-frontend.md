@@ -191,7 +191,23 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   `.message` branch and paints literally `Request timed out` into `projects-error`.
   `LOAD_FAILURE_FALLBACK` is bypassed on precisely the failure a real user hits most (slow network)
   and honoured on the one that needs a serializer regression
-- [~] green-frontend (the timeout arm does not paint English on a Russian screen)
+- [~] green-frontend (the timeout arm does not paint English on a Russian screen) — **BOTH review
+  passes on f9d4410f converged on the same trap, so read this before writing the fix.** The RED
+  demands that one `Error` subclass with a truthy `.message` paint the fallback instead of its
+  message. `SessionExpiredError` is structurally indistinguishable at `send.ts:52`'s predicate, and
+  `ProjectsPage.tsx:31-38` documents that the `.message` branch is the ONLY thing delivering
+  «Сессия истекла. Войдите снова.» to this screen — which is the app's entire sign-out affordance
+  here, since no route redirects on it. So a green phrased as "stop preferring `Error.message` in
+  this catch" passes the suite and converts an expired session into a generic feed error with a
+  retry that can never succeed. `grep SessionExpired frontend/src/features/projects/` returns the
+  production file only: the carve-out lives in a comment, not an assertion. Two further notes:
+  (a) fixing this at `send.ts:52` changes user-visible text in `useDocumentInit`, `useGeneration`,
+  the ManualEditor save path and the auth forms at once — `describeFailure`'s non-HttpError arm has
+  no characterization test anywhere, so nothing would go red; keep the fix inside `ProjectsPage`'s
+  catch; (b) the cheapest passing green is a per-type test on `RequestTimeoutError` alone, which the
+  5xx arm below then has to extend again — prefer a shape that generalises. The
+  `SessionExpiredError` assertion owed by the `red-frontend-api` step below is the named missing
+  guard for all of this, and both passes argued it is scheduled one step too late
 - [ ] red-frontend-api (the two arms this commit was designed around are asserted) — premortem on
   6a205042, and the sharpest of the round: the ONLY rejection any test exercises is a plain
   `new Error(...)`, which is the single branch where `describeFailure` and the `e.message` the step
