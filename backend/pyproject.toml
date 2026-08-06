@@ -32,6 +32,7 @@ pythonpath = [
     # `statements` directories carry no `__init__.py`, so they merge into one
     # implicit namespace package rather than shadowing each other.
     "domain/tests",
+    "domain/tests/generation",
     "usecase/tests",
     "adapters/db/tests",
     "adapters/rest/tests",
@@ -117,6 +118,7 @@ mypy_path = [
     "adapters/rendering/src",
     "application/src/app",
     "domain/tests",
+    "domain/tests/generation",
     "usecase/tests",
     "adapters/db/tests",
     "adapters/rest/tests",
@@ -185,6 +187,7 @@ known-first-party = [
     "logging_config",
     "model",
     "project",
+    "prompt_fixtures",
     "provider",
     "refusal_guard",
     "rendering",

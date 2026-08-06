@@ -4,8 +4,10 @@ import random
 from collections.abc import Awaitable, Callable
 from uuid import UUID
 
+from generation.generation import Generation
 from generation.generation_provider import GenerationProvider
 from generation.generation_storage import GenerationStorage
+from generation.prompt_template import PromptBuildError, PromptRequest, build_prompt
 
 MAX_PROVIDER_ATTEMPTS = 2
 GENERIC_FAILURE_MESSAGE = "Не удалось сгенерировать документ. Попробуйте позже."
@@ -20,6 +22,23 @@ _RETRY_BASE_DELAY_SECONDS = 1.0
 _RETRY_JITTER_SECONDS = 0.5
 
 logger = logging.getLogger(__name__)
+
+
+def _compose_prompt(generation: Generation) -> str:
+    """Composed here, at the call site, and not inside the provider.
+
+    Placement is the guard: a build nested in `GenerationProvider.generate` means
+    the provider was called before the request could be refused. Backend 2.1 owns
+    handing this text to the provider; what this scenario needs is that the
+    refusal happens here, once, before the retry loop.
+    """
+    return build_prompt(
+        PromptRequest(
+            document_type=generation.document_type,
+            topic=generation.topic,
+            volume_pages=generation.volume_pages,
+        )
+    )
 
 
 class GenerateDocument:
@@ -54,6 +73,18 @@ class GenerateDocument:
         generation.mark_in_progress()
         await self._storage.update(generation)
 
+        try:
+            _compose_prompt(generation)
+        except PromptBuildError as error:
+            # Before the loop, and never inside it. A build failure is deterministic
+            # -- attempt 2 phrases the identical request from the identical row --
+            # so the catch-all below would spend the whole retry budget and a
+            # backoff on a value that cannot change, and bill the provider for a
+            # request that cannot be phrased. Terminal on the first failure instead.
+            logger.error("generation %s cannot be phrased as a prompt: %s", generation.id, error)
+            await self._fail_terminally(generation)
+            return
+
         last_error: Exception | None = None
         for attempt in range(1, MAX_PROVIDER_ATTEMPTS + 1):
             try:
@@ -86,6 +117,13 @@ class GenerateDocument:
             MAX_PROVIDER_ATTEMPTS,
             last_error,
         )
+        await self._fail_terminally(generation)
+
+    async def _fail_terminally(self, generation: Generation) -> None:
+        # The row's last write, shared by both terminal paths -- an unphraseable
+        # prompt and an exhausted attempt budget. What differs between them is the
+        # log line, which each caller keeps; what must not differ is the state the
+        # user is left in, so the message and the persist live in one place.
         generation.fail(GENERIC_FAILURE_MESSAGE)
         await self._storage.update(generation)
 
