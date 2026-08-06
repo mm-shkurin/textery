@@ -55,10 +55,6 @@ class TestAMissingTemplateRefusesInTheRequest:
             f"refuse, got keys {sorted(_TEMPLATES)}"
         )
 
-    @pytest.mark.skip(
-        reason="RED: build_prompt subscripts _TEMPLATES bare -- KeyError: 'диссертация' "
-        "at prompt_template.py:143, not PromptBuildError"
-    )
     def test_should_refuse_a_document_type_that_has_no_template(self):
         # G17(a) via the path a live request takes: a type outside
         # SUPPORTED_DOCUMENT_TYPES arrives through `Generation.__init__`, the
@@ -71,10 +67,6 @@ class TestAMissingTemplateRefusesInTheRequest:
         # satisfy `pytest.raises` while reporting a different cause -- and the message.
         assert_refusal(exc_info, no_template_message(UNSUPPORTED_TYPE))
 
-    @pytest.mark.skip(
-        reason="RED: build_prompt subscripts _TEMPLATES bare -- KeyError: 'реферат' "
-        "at prompt_template.py:143, not PromptBuildError"
-    )
     def test_should_refuse_a_supported_type_whose_template_was_removed(self, monkeypatch):
         # The same refusal reached from the direction the hazard actually arrives
         # from: the type is supported, the dict entry is not there. `monkeypatch`

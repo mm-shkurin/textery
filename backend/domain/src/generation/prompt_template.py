@@ -95,13 +95,26 @@ _TEMPLATES = {
     REFERAT: _referat,
 }
 
-assert set(_TEMPLATES) == set(SUPPORTED_DOCUMENT_TYPES), (
-    "every supported document type needs a prompt template"
-)
-
 
 def _requires_ban(document_type: str) -> bool:
     return document_type in TYPES_REQUIRING_SOURCE_BAN and document_type not in _BAN_DEFERRED
+
+
+def _select_template(document_type: str):
+    """A missing template refuses this one request, and does not fail at import.
+
+    The completeness of `_TEMPLATES` over `SUPPORTED_DOCUMENT_TYPES` used to be a
+    module-scope `assert`, which `python -O` strips, and whose raising replacement
+    would take every instance down at import over one missing dict entry -- for
+    types that work as well as for the one that does not. The claim now lives in
+    `backend/domain/tests/generation/test_prompt_type_coverage.py`, where `-O`
+    cannot reach it, and the runtime failure is named, terminal and scoped to the
+    request that asked for the missing type.
+    """
+    template = _TEMPLATES.get(document_type)
+    if template is None:
+        raise PromptBuildError(f"no prompt template for {document_type}")
+    return template
 
 
 def _is_renderable_volume(volume_pages) -> bool:
@@ -140,7 +153,7 @@ def build_prompt(request: PromptRequest) -> str:
     whole point of deriving the scope instead of listing it.
     """
     _reject_unrenderable_fields(request)
-    prompt = _TEMPLATES[request.document_type](request)
+    prompt = _select_template(request.document_type)(request)
     if _requires_ban(request.document_type):
         return f"{prompt}\n{BAN_SENTENCE}"
     return prompt

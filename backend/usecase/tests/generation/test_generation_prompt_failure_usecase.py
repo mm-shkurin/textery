@@ -1,13 +1,7 @@
-import pytest
 
 from statements.generation_prompt_failure_statements import GenerationPromptFailureStatements
 
 
-@pytest.mark.skip(
-    reason="RED: GenerateDocument builds no prompt -- the provider is called once and the "
-    "row completes; AssertionError: a prompt that cannot be built must reach no provider, "
-    "got 1 call(s)"
-)
 class TestAPromptThatCannotBeBuiltIsNotRetried:
     """G5. A `PromptBuildError` is deterministic: attempt 2 sends the identical request.
 

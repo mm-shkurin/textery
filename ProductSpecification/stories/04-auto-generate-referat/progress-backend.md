@@ -696,8 +696,60 @@ that can be red.
   behind it are staged but not yet exercised. Green must re-run and confirm all five pass,
   not stop when the count reaches zero — a catch-all that slept once and gave up satisfies
   the count and still fails `assert_never_waited`.
-- [~] green-usecase
-- [ ] adapters-discovery
+- [x] green-usecase — Option D's two halves landed together, as the design required that
+  they must. **Domain** (`prompt_template.py`, 159 lines): the module-scope
+  `assert set(_TEMPLATES) == set(SUPPORTED_DOCUMENT_TYPES)` is gone, and `_select_template`
+  raises `PromptBuildError(f"no prompt template for {document_type}")` in place of the bare
+  `_TEMPLATES[...]` subscript. Nothing raises at module scope: that was the reversal 1.4's
+  scan forced, because a boot-time raise trades a missing dict entry for a fleet-wide
+  outage. The completeness claim now lives only in `test_prompt_type_coverage.py`, which
+  `python -O` cannot strip — which is the whole point of moving it.
+  **Usecase** (`generate_document.py`, 131 lines): `_compose_prompt(generation)` builds the
+  `PromptRequest` and calls `build_prompt` **before the attempt loop**, and the
+  `except PromptBuildError` sits ahead of `last_error` and the loop. A build failure logs at
+  `error`, calls `generation.fail(GENERIC_FAILURE_MESSAGE)`, writes once, and returns — the
+  `except Exception` retry path is never entered. That is **G5, shipped**: flagged by seven
+  hazard groups across three scans and owned by nobody until this scenario.
+  787 passed, 2 skipped, 0 failed across `pytest backend/` (was 783 / 6 — the four enabled
+  tests account for the delta exactly); ruff clean. Only skip markers were removed from the
+  tests, plus the `import pytest` that stripping the class-level marker orphaned.
+  **All five G5 assertions were confirmed exercised, not just the first.** RED left them
+  staged behind a failing call count, so green re-ran and watched
+  `assert_the_build_failure_was_terminal_and_unbilled` run to completion on both arrival
+  paths — the unsupported type through `_select_template`, the over-ceiling volume through
+  `_reject_unrenderable_fields`. `assert_never_waited`, the `[get, update, update]`
+  sequence, the exactly-two-writes/status pair and the nine-field unaltered-row check over
+  both snapshots all passed, so a catch-all that slept once and gave up is genuinely
+  excluded rather than merely un-contradicted.
+  **The composed prompt is deliberately discarded.** `provider.generate(generation)` is
+  untouched, so Backend 2.1 still has the substitution to redden — composing it here and
+  handing it over would have left 2.1 with a green adapter. Placement honours 2.1's
+  inherited obligation nonetheless: the build is at the call site, not inside
+  `GigaChatProvider.generate`, which is what keeps G5's zero-call assertion satisfiable.
+
+  Coverage: `prompt_template.py` 43/43 statements, 10/10 branches; `generate_document.py`
+  54/54 statements, 6/6 branches — **100% both, 0 partial**, read line-by-line from
+  `coverage.xml` rather than off the summary row. `--focus` was again overridden by hand,
+  for the reason 1.3 recorded. Because 1.3 proved 100% can be misleading, the pass ran
+  mutants at the four new decision points instead of trusting the counters: deleting
+  `_select_template`'s raise → 3 failed; deleting the `return` after the terminal `fail()`
+  so the row falls into the retry loop → 2 failed (G5 firing as designed); emptying the
+  refusal message → 2 failed. 1.3's specific defect class does not recur — neither new
+  decision point is compound, and the one compound predicate in the file (`_requires_ban`)
+  is untouched 1.2/1.3 code.
+  **One surviving mutant, judged equivalent rather than a gap**: widening
+  `except PromptBuildError` to `except Exception` leaves all 482 green, because nothing
+  `_compose_prompt` touches can raise anything else today — `__init__` only assigns, both
+  build guards and `_select_template` raise `PromptBuildError`, the lookup is `.get` so it
+  cannot `KeyError`, and both f-strings interpolate values `_reject_unrenderable_fields`
+  already validated. Unreachable by structure, so no test has an input to assert on. It is
+  a property of *today's* `build_prompt`, and it stops holding at **1.5/1.6** (which add
+  fields to the composition) and at **2.1** (which moves the builder into the provider
+  path): from then on a non-`PromptBuildError` escaping `_compose_prompt` propagates out of
+  `execute` into the `BackgroundTask` context and strands the row `in_progress` until the
+  sweep — exactly what the in-loop `except Exception` was written to prevent. Recorded here
+  for those scenarios rather than opened as a 1.4 step.
+- [~] adapters-discovery
 
 ### Scenario 1.5: The topic cannot displace the template's instructions
 - [ ] red-acceptance
