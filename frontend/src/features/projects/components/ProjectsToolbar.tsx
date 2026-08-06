@@ -32,19 +32,25 @@ export function ProjectsToolbar({
 }: ProjectsToolbarProps) {
   return (
     <div className="projects-toolbar" data-testid="projects-toolbar">
-      {/* A form, so Enter is a submit the browser understands — and `onSubmit` prevents the
-          default, because a real submit would reload the page and throw away the feed. */}
-      <form className="projects-search" role="search" onSubmit={(event) => event.preventDefault()}>
-        <input
-          type="search"
-          className="projects-search-input"
-          data-testid="projects-search"
-          aria-label="Поиск по проектам"
-          placeholder="Поиск"
-          value={q}
-          onChange={(event) => onQueryChange(event.target.value)}
-        />
-      </form>
+      {/* `<search>` rather than `role="search"` on the form: the element carries the same role
+          natively, and a role attribute duplicating an element's own semantics is one more thing
+          that can be typo'd into silence.
+          The form inside it stays — that is what makes Enter a submit the browser understands,
+          and `onSubmit` prevents the default, because a real submit would reload the page and
+          throw away the feed. */}
+      <search className="projects-search">
+        <form onSubmit={(event) => event.preventDefault()}>
+          <input
+            type="search"
+            className="projects-search-input"
+            data-testid="projects-search"
+            aria-label="Поиск по проектам"
+            placeholder="Поиск"
+            value={q}
+            onChange={(event) => onQueryChange(event.target.value)}
+          />
+        </form>
+      </search>
 
       {/* The count is rendered only while a search is active: on the unfiltered feed it would
           restate the number of cards the user is already looking at. */}
@@ -69,9 +75,12 @@ export function ProjectsToolbar({
         </select>
       </label>
 
-      {/* `aria-pressed` rather than a disabled active button: the current view must stay
+      {/* `<fieldset>` rather than `role="group"`: a set of related controls is exactly what the
+          element means, and it carries the role natively. No `<legend>` — the group's name is the
+          `aria-label`, and a visible legend here would repeat what the two buttons already say.
+          `aria-pressed` rather than a disabled active button: the current view must stay
           focusable and announced as chosen, not removed from the tab order. */}
-      <div className="projects-view-toggle" role="group" aria-label="Вид списка">
+      <fieldset className="projects-view-toggle" aria-label="Вид списка">
         <button
           type="button"
           data-testid="projects-view-grid"
@@ -88,7 +97,7 @@ export function ProjectsToolbar({
         >
           Список
         </button>
-      </div>
+      </fieldset>
     </div>
   )
 }

@@ -6,6 +6,8 @@ import {
 } from '../../../shared/documentTypes'
 import { ProjectFolderIcon } from './ProjectFolderIcon'
 import { formatCardDate } from '../formatCardDate'
+import { projectKey } from '../projectKey'
+import './ProjectCard.css'
 
 interface ProjectCardProps {
   project: ProjectSummary
@@ -16,15 +18,6 @@ interface ProjectCardProps {
   onRetry?: (generationId: string) => void
   retrying?: boolean
   retryError?: string | null
-}
-
-// A project's identity, in one place because both consumers of it explain the same hazard: the
-// two arms of the merged feed come from different tables, so `id` alone is NOT unique — the
-// fixture's document and generation both carry id '1'. Keying or addressing a card on `id` would
-// collapse the pair onto one node. Named here so the rule is stated once rather than re-derived
-// as an inline template literal at each site.
-export function projectKey(project: ProjectSummary): string {
-  return `${project.kind}-${project.id}`
 }
 
 // The mockup tints each card by document type — badge fill, badge text and folder glyph move
@@ -59,26 +52,15 @@ export function ProjectCard({
 }: ProjectCardProps) {
   const namespaced = (name: string) => (testIdPrefix ? `${testIdPrefix}-${name}` : name)
   const openable = onOpen !== undefined && project.kind === 'document'
+  // An untitled document is labelled by the start of its own text, never by its type: naming every
+  // untitled доклад "Доклад" is what made them indistinguishable in «Мои работы» and therefore
+  // unopenable. It is also the open button's accessible name, so "" would leave the control
+  // nameless — hence the fallback to the type label, which at least says what it opens.
+  const label = project.title ?? project.preview ?? documentTypeLabelFromWire(project.documentType)
   return (
     <div
       className={`project-card ${accentClass(project.documentType)}${openable ? ' project-card-openable' : ''}`}
       data-testid={namespaced('project-card')}
-      // A card is opened by click and by keyboard alike. `role="button"` + `tabIndex` rather than
-      // a real <button>: the card carries block content, and a button element would put a
-      // heading and a date inside interactive phrasing content.
-      role={openable ? 'button' : undefined}
-      tabIndex={openable ? 0 : undefined}
-      onClick={openable ? () => onOpen!(project) : undefined}
-      onKeyDown={
-        openable
-          ? (event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault()
-                onOpen!(project)
-              }
-            }
-          : undefined
-      }
     >
       <div className="project-card-thumb">
         <ProjectFolderIcon className="project-card-folder" />
@@ -93,11 +75,19 @@ export function ProjectCard({
         <div className="project-card-type" data-testid={namespaced('project-card-type')}>
           {documentTypeLabelFromWire(project.documentType)}
         </div>
+        {/* The whole card is the click target — that is what the ::after overlay on
+            `.project-card-open` does — but the element that TAKES FOCUS and carries the
+            accessible name is a real <button> around the title. A <div role="button"> would have
+            to re-implement Enter and Space by hand, and a card without a title would announce
+            itself as an unnamed button. */}
         <div className="project-card-title" data-testid={namespaced('project-card-title')}>
-          {/* An untitled document is labelled by the start of its own text, never by its type:
-              naming every untitled доклад "Доклад" is what made them indistinguishable in «Мои
-              работы» and therefore unopenable. */}
-          {project.title ?? project.preview ?? ''}
+          {openable ? (
+            <button type="button" className="project-card-open" onClick={() => onOpen!(project)}>
+              {label}
+            </button>
+          ) : (
+            label
+          )}
         </div>
         <div className="project-card-date" data-testid={namespaced('project-card-date')}>
           {formatCardDate(project.updatedAt)}
@@ -113,12 +103,7 @@ export function ProjectCard({
             // Disabled while its own request is in flight — the guard against a double-click is
             // in the hook, but a button that stays live through the wait invites one.
             disabled={retrying}
-            onClick={(event) => {
-              // The card itself is clickable for documents; without this the retry would also
-              // trigger whatever the card does.
-              event.stopPropagation()
-              onRetry(project.id)
-            }}
+            onClick={() => onRetry(project.id)}
           >
             {retrying ? 'Повторяем…' : 'Повторить'}
           </button>

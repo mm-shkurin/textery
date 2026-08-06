@@ -69,8 +69,15 @@
   font: inherit;
 }
 
+/* A <fieldset>, so the three UA defaults it ships with are neutralised here: the groove border
+   (replaced below), the ~0.35em/0.75em padding, and `min-inline-size: min-content`, which would
+   stop the toggle from shrinking with the toolbar. Without these the group renders as a boxed
+   form section rather than as the segmented control the mockup draws. */
 .projects-view-toggle {
   display: inline-flex;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   overflow: hidden;

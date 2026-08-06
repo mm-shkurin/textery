@@ -1,6 +1,7 @@
 import type { ProjectSummary } from '../api/projectsApi'
 import type { ProjectView } from '../useProjectView'
-import { ProjectCard, projectKey } from './ProjectCard'
+import { ProjectCard } from './ProjectCard'
+import { projectKey } from '../projectKey'
 
 interface ProjectsFeedProps {
   items: ProjectSummary[]
