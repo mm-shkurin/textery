@@ -334,6 +334,38 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   separate decision, same shaping question as the deferred nine-required-fields step).
   Suite after: 652 passed, 3 skipped (down from 4 — the `.skip` removal accounted for), 175 test files
   passed / 1 skipped; `npx tsc --noEmit` clean. `projectsApi.ts` is 128 lines
+- [ ] red-frontend-api (the page-shape guard reads `.items` off a value it never validated) — **BOTH
+  review passes on 989253d9, independently, and it is a live hole in the guard that commit just
+  shipped rather than a deferred widening.** `httpClient.ts:167` substitutes `{}` ONLY when
+  `res.json()` throws; a 200 whose body is the four characters `null` parses successfully, so
+  `data === null` reaches `!Array.isArray(data.items)` and throws
+  `TypeError: Cannot read properties of null (reading 'items')` — the English engine string this
+  scenario exists to eliminate, from the line written to eliminate it. Both agents ran it to confirm.
+  Distinct from the deferred non-array arms (`items: null`, `items: 42`, `{results: […]}`): those have
+  `data` as a valid object and the shipped guard DOES catch them. Premortem found the level below in
+  the same run — `{items: [null]}` throws inside `.map` before `parseUpdatedAt` can fail closed.
+  Note the outcome is misdiagnosis, not an English leak: the `TypeError`'s message is not on
+  `FEED_AUTHORED_MESSAGES`, so the user reads «Не удалось загрузить проекты» — the TRANSPORT sentence
+  — on a server-shape fault, and every ticket says "network problem". Fixtures owed:
+  `stubFetchJson(null)` and `{items: [null]}`; check `stubFetchJson` can even express a non-object
+  body before writing the red. Production fix is `!data || typeof data !== 'object' ||
+  !Array.isArray(data.items)` plus a per-item object check ahead of the field reads
+- [ ] green-frontend-api (the page-shape guard reads `.items` off a value it never validated)
+- [ ] red-frontend (every allow-list entry is pinned to the screen, not just the first) — agent-review
+  AND premortem on 989253d9, both independently. That commit's own message calls the
+  `FEED_AUTHORED_MESSAGES` half load-bearing — and delete `INVALID_PAGE_MESSAGE` from the array right
+  now and NOTHING fails: `projectsApi.pageShape.test.ts` asserts the rejection at the api boundary and
+  never touches `describeLoadFailure`. The degradation is also visually silent, since
+  `LOAD_FAILURE_FALLBACK` is itself a legitimate Russian sentence. The asymmetry with its own cited
+  precedent is the sharp part: `MISSING_UPDATED_AT_MESSAGE` has TWO page-level pins
+  (`ProjectsPage.loadFailure.test.tsx:45`, `ProjectsPage.errorAnnounced.test.tsx:46`); the constant
+  added by the same pattern got neither. This is NOT covered by the frozen-array refactor step below —
+  that makes forgetting to ADD an entry impossible, and detects neither removing one nor a reordering
+  of `describeLoadFailure`'s branches. One test per allow-list entry is the invariant; there is
+  currently one for entry 1 and none for entry 2. `feedTestHarness` already exposes
+  `mockFeedRejection`, so this is a few lines. Order it BEFORE the frozen-array refactor — that
+  refactor rewrites the very array this would pin
+- [ ] green-frontend (every allow-list entry is pinned to the screen, not just the first)
 - [~] red-frontend (a 4xx's server-authored Russian explanation reaches the user) — **BOTH review
   passes on 7baba471, and it is a regression that commit introduced rather than an inherited gap.**
   `send.ts` re-throws raw only for `RequestTimeoutError` and `isHttpError(error) && error.status >= 500`;
