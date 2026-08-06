@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { listProjects, MISSING_UPDATED_AT_MESSAGE } from '../projectsApi'
 import { clearSession, saveSession } from '../../../auth/utils/authSession'
-import { PROJECT_WIRE_WITHOUT_UPDATED_AT, settle, stubFetchJson } from './projectsWireFixtures'
+import {
+  expectSingleFeedRequest,
+  PROJECT_WIRE_WITHOUT_UPDATED_AT,
+  settle,
+  stubFetchJson,
+} from './projectsWireFixtures'
 
 // Scenario 1.1 — the wire contract of the «Мои проекты» feed, at the mapper.
 //
@@ -54,13 +59,10 @@ describe('projectsApi wire contract', () => {
 
     const settled = await settle(listProjects())
 
-    // Exactly one call, to the feed path: without this the test would also pass if the guard
-    // rejected before any request went out, or if a 401-renew-and-replay fired a second call —
-    // neither of which is «the mapper refused a broken item». The request's full shape (method,
-    // headers, absent body) is pinned by `projectsApi.test.ts`; only what this claim rests on is
-    // re-asserted here.
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/projects')
+    // Exactly one call, to the feed path — the rationale lives with the shared helper. The
+    // request's full shape (method, headers, absent body) is pinned by `projectsApi.test.ts`; only
+    // what this claim rests on is re-asserted here.
+    expectSingleFeedRequest(fetchMock)
     expect(settled).toEqual({ rejected: true, error: new Error(MISSING_UPDATED_AT_MESSAGE) })
   })
 })

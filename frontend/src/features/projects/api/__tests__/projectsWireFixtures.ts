@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { expect, vi } from 'vitest'
 
 // Shared wire fixtures and transport stub for the «Мои проекты» api tests. One definition each,
 // because both suites in this directory read the same endpoint: a second hand-copied literal drifts
@@ -57,6 +57,12 @@ export async function settle(promise: Promise<unknown>): Promise<Settled> {
   )
 }
 
+// The feed path, as the TEST expects it — deliberately a second literal, not an import from
+// `projectsApi.ts`. A test that read the path from the module under test would pin nothing: the
+// endpoint could change to anything and every suite here would still pass. One copy on this side,
+// three suites, per this file's one-definition rule.
+export const FEED_PATH = '/api/v1/projects'
+
 // The transport stub every api test here shares. `GET /api/v1/projects` does not exist on the
 // backend yet, so nothing in this directory may reach a real server. Returns the mock so the caller
 // can pin how many times it was called and with what.
@@ -68,4 +74,15 @@ export function stubFetchJson(body: unknown): ReturnType<typeof vi.fn> {
   })
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
+}
+
+// The precondition BOTH fail-closed suites rest on, in one definition. Each of them asserts that a
+// rejection came from the mapper's own guard, and that claim is only worth anything if the request
+// actually went out exactly once and to the feed path: without this pair a suite would also pass if
+// the guard rejected before any request was made, or if a 401-renew-and-replay fired a second call.
+// Extracted because it is assertion logic, not setup — the two copies were verbatim, endpoint
+// literal included, and a drifted precondition weakens a test silently rather than reddening it.
+export function expectSingleFeedRequest(fetchMock: ReturnType<typeof vi.fn>): void {
+  expect(fetchMock).toHaveBeenCalledTimes(1)
+  expect(fetchMock.mock.calls[0][0]).toBe(FEED_PATH)
 }

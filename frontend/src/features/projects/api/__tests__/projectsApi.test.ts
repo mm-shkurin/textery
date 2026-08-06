@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { listProjects } from '../projectsApi'
 import { clearSession, saveSession } from '../../../auth/utils/authSession'
-import { PROJECT_WIRE, stubFetchJson } from './projectsWireFixtures'
+import { FEED_PATH, PROJECT_WIRE, stubFetchJson } from './projectsWireFixtures'
 
 // Scenario 1.1 — «Мои проекты» feed client. The transport is stubbed: `GET /api/v1/projects`
 // does not exist on the backend yet, so nothing here may reach a real server.
@@ -47,7 +47,7 @@ describe('projectsApi', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
 
     const [url, init] = fetchMock.mock.calls[0]
-    expect(url).toBe('/api/v1/projects')
+    expect(url).toBe(FEED_PATH)
     expect(init.method).toBe('GET')
     // The whole header object, not just the Authorization key. For a bodyless GET the set is
     // fully determined — `performRequest` adds `Content-Type` only when a body exists

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { INVALID_PAGE_MESSAGE, listProjects } from '../projectsApi'
 import { clearSession, saveSession } from '../../../auth/utils/authSession'
-import { settle, stubFetchJson } from './projectsWireFixtures'
+import { expectSingleFeedRequest, settle, stubFetchJson } from './projectsWireFixtures'
 
 // Scenario 1.1 — the SHAPE of the feed page, at the mapper. The sibling
 // `projectsApi.wireContract.test.ts` guards a field OF an item; this one guards the presence of the
@@ -54,10 +54,8 @@ describe('projectsApi page shape', () => {
 
     const settled = await settle(listProjects())
 
-    // Exactly one call, to the feed path: without this the test would also pass if the guard
-    // rejected before any request went out, or if a 401-renew-and-replay fired a second call.
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/projects')
+    // Exactly one call, to the feed path — the rationale lives with the shared helper.
+    expectSingleFeedRequest(fetchMock)
     expect(settled).toEqual({ rejected: true, error: new Error(INVALID_PAGE_MESSAGE) })
   })
 })
