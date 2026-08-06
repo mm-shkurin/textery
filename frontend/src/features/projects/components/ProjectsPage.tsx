@@ -1,33 +1,56 @@
 import { useEffect, useState } from 'react'
-import { listProjects, LOAD_FAILURE_FALLBACK, type ProjectSummary } from '../api/projectsApi'
+import {
+  listProjects,
+  LOAD_FAILURE_FALLBACK,
+  MISSING_UPDATED_AT_MESSAGE,
+  type ProjectSummary,
+} from '../api/projectsApi'
 import { describeFailure } from '../../../shared/api/send'
-import { RequestTimeoutError } from '../../../shared/api/httpClient'
+import { isHttpError } from '../../../shared/api/httpClient'
+import { SessionExpiredError } from '../../auth/api/authorizedRequest'
 import { ProjectCard, projectKey } from './ProjectCard'
 import './ProjectsPage.css'
 
-// Failure types that reach this screen carrying ENGLISH text of their own. `send.ts:93` re-throws
-// `RequestTimeoutError` by identity so the autosave retry policy can still classify it, and its
-// message is the transport-layer literal `httpClient.ts:70-75` hardcodes ("Request timed out") —
-// which `describeFailure`'s last line then prefers over the caller's fallback, painting English on
-// a Russian-only screen on the failure a real user hits most.
+// AN ALLOW-LIST, and it had to become one. The previous shape here was a deny-list of transport
+// types (`OPAQUE_TRANSPORT_FAILURES = [RequestTimeoutError]`) whose messages are English; it could
+// not be extended to cover the failure a real user hits most. A dropped connection, a failed DNS
+// lookup or an offline device makes `fetch` reject with a bare `TypeError('Failed to fetch')`,
+// which matches none of `send.ts`'s carve-outs and falls to `send.ts:96` —
+// `throw new Error(describeFailure(error, fallback))`. The TYPE IS DESTROYED one layer above this
+// screen and only the English message survives, so there is nothing left for a deny-list to name.
 //
-// A TYPE LIST, deliberately, rather than "stop preferring `Error.message` in this catch": that
-// wording would also swallow `SessionExpiredError`, whose own «Сессия истекла. Войдите снова.» is
-// this codebase's entire sign-out affordance here (no route redirects on it), retitling an expired
-// session as a generic feed error with a retry that can never succeed. Anything not listed keeps
-// `describeFailure`'s routing unchanged, including the bare-object-literal `HttpError` a 5xx
-// arrives as.
+// Inverted, the question stops being "which failures are opaque?" (an open set the transport keeps
+// growing) and becomes "whose text is this, and is it already addressed to this user?" — a closed
+// set, because only three things author text that belongs on a Russian-only screen:
+//
+//   1. the SERVER, via an `HttpError` — a 4xx's `detail`/`message` is a decided answer written for
+//      the user, and a bodyless 5xx still contributes its `(HTTP 500)` suffix. Matched with
+//      `isHttpError`, never `instanceof`: `HttpError` is a bare object literal
+//      (`httpClient.ts:141`) and is not an `Error` at all, so a type-only allow-list would collapse
+//      both of those into the generic sentence below.
+//   2. `SessionExpiredError`, which `send.ts:62` re-throws BY IDENTITY. Its «Сессия истекла.
+//      Войдите снова.» is this codebase's entire sign-out affordance here — no route redirects on
+//      it — so retitling it as a feed failure would offer a retry that can never succeed.
+//   3. THIS FEATURE'S OWN contract guards, which reach the catch flattened to a plain `Error` and
+//      are therefore indistinguishable from `Failed to fetch` BY TYPE. They are matched by message
+//      identity against the constants that authored them. A guard added later and not listed here
+//      degrades to the generic sentence rather than leaking — the safe direction.
+//
+// Everything else is transport noise in a language the user did not ask for.
 //
 // NOT fixed at `send.ts:52`: that line is shared by `useDocumentInit`, `useGeneration`, the
 // ManualEditor save path and the auth forms, and its non-`HttpError` arm has no characterization
 // test anywhere — an app-wide wording change there would go unnoticed by the suite.
-const OPAQUE_TRANSPORT_FAILURES = [RequestTimeoutError]
+const FEED_AUTHORED_MESSAGES: string[] = [MISSING_UPDATED_AT_MESSAGE]
 
 function describeLoadFailure(failure: unknown): string {
-  if (OPAQUE_TRANSPORT_FAILURES.some((type) => failure instanceof type)) {
-    return LOAD_FAILURE_FALLBACK
+  if (isHttpError(failure) || failure instanceof SessionExpiredError) {
+    return describeFailure(failure, LOAD_FAILURE_FALLBACK)
   }
-  return describeFailure(failure, LOAD_FAILURE_FALLBACK)
+  if (failure instanceof Error && FEED_AUTHORED_MESSAGES.includes(failure.message)) {
+    return failure.message
+  }
+  return LOAD_FAILURE_FALLBACK
 }
 
 // The «Мои проекты» feed. Scenario 1.1 only: the cards, and nothing around them — no search, no

@@ -250,7 +250,32 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   `.not.toContain('Failed to fetch')`. One `mockFeedFailure(new Error('Failed to fetch'))` case.
   Expect it RED, and note it cannot go green by extending the list — the green here inverts the
   design to an allow-list of Russian-bearing types, or accepts the `send.ts` change bcabd515 declined
-- [~] green-frontend (the offline user gets English too, and the list cannot reach them) — the red
+- [x] green-frontend (the offline user gets English too, and the list cannot reach them) — shipped as
+  option (a): `describeLoadFailure` is now an ALLOW-list, entirely inside `ProjectsPage`'s catch;
+  `send.ts` untouched, `OPAQUE_TRANSPORT_FAILURES` and the `RequestTimeoutError` import are gone.
+  The inversion changes the question from «which failures are opaque?» (an open set the transport
+  keeps growing — the red proved it cannot even be enumerated once `send.ts:96` flattens the type)
+  to «whose text is this, and is it already addressed to this user?», which is closed at three
+  authors. **The premortem's hazard is why it is not a type allow-list**: two of the three authors
+  are invisible to `instanceof`. A 4xx/5xx arrives as a bare `HttpError` OBJECT LITERAL
+  (`httpClient.ts:141`) and is matched with `isHttpError`, preserving both the server's Russian
+  `detail` and the bodyless-5xx `(HTTP 500)` suffix; `SessionExpiredError` IS a real type
+  (`send.ts:62` re-throws by identity) and both arms route to `describeFailure` unchanged, so
+  «Сессия истекла. Войдите снова.» survives by construction — still guarded by comment only, the
+  assertion is still owed by the `red-frontend-api (the two arms this commit was designed around)`
+  step below. **The third author was the real design constraint and neither review pass named it**:
+  this feature's own `MISSING_UPDATED_AT_MESSAGE` reaches the catch as a plain `Error`, exactly the
+  shape `Failed to fetch` arrives in — same type, same truthiness, nothing to tell them apart but
+  the string. So a type-only allow-list of ANY composition turns `ProjectsPage.loadFailure.test.tsx`
+  red. It is matched by message identity against a module-local `FEED_AUTHORED_MESSAGES` list
+  holding the exported constant. That list is the one maintenance cost accepted here, and it fails
+  in the SAFE direction: a contract guard added later and not listed degrades to the generic Russian
+  sentence — a lost diagnostic, never an English leak. The nine-required-fields step below inherits
+  it and should decide the guard's shape and this list's shape together. A Cyrillic-detection
+  heuristic was considered as the self-maintaining alternative and rejected: it makes the screen's
+  copy rules depend on a regex over server-controlled text. Both assertions pass, including the
+  `document.body` guard that never executed in the red. Full frontend suite: 651 passed, 0 failed,
+  3 skipped (174 files passed, 1 skipped); `tsc --noEmit` clean. Original note follows: the red
   confirmed this cannot go green by extending `OPAQUE_TRANSPORT_FAILURES`: there is no surviving type
   to list, the flattening happened a layer above. Two live options — (a) invert `describeLoadFailure`
   to an ALLOW-list of types whose message is Russian-bearing, on which `SessionExpiredError` must
@@ -258,7 +283,7 @@ Story 7 and Story 16). Decide the deferral per scenario at its work unit — do 
   (b) the `send.ts` change bcabd515 declined, whose cost is unchanged: four features share that line
   and its non-HttpError arm has no characterization test. The second assertion (`document.body` must
   not contain `Failed to fetch`) never executed in the red — it has to hold too
-- [ ] red-frontend-api (a 200 with no `items` renders a JS engine message to the user) — agent-review
+- [~] red-frontend-api (a 200 with no `items` renders a JS engine message to the user) — agent-review
   on bcabd515. `projectsApi.ts:96` does `data.items.map(...)` with no shape check, and
   `httpClient.ts:167` deliberately turns an empty or unparseable SUCCESSFUL body into `{}`
   (`await res.json().catch(() => ({}))`). A 204, an empty 200, or any body missing `items` therefore

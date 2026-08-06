@@ -49,7 +49,7 @@ describe('ProjectsPage renders a dropped connection in the user’s language', (
   // failed too. Same failure SHAPE as the timeout sibling and a different cause: there the English
   // survived because the type survived; here it survives because the type did not, so the two reds
   // that look alike cannot be closed by the same edit.
-  it.skip('shows the Russian load-failure sentence when the connection drops', async () => {
+  it('shows the Russian load-failure sentence when the connection drops', async () => {
     mockFeedFailure(new Error('Failed to fetch'))
 
     render(<ProjectsPage />)
