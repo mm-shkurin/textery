@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
-import { ProjectsPage } from '../ProjectsPage'
-import { mockFeed, pinClockTo } from './feedTestHarness'
+import { screen, within } from '@testing-library/react'
+import { mockFeed, pinClockTo, renderProjectsPage } from './feedTestHarness'
 import { MAX_SENTINEL_DATE_PROJECT, MIN_SENTINEL_DATE_PROJECT } from './projectSentinelFixtures'
 
 // `GET /api/v1/projects` does not exist on the backend yet — this suite builds against a mock of
@@ -34,7 +33,7 @@ describe('ProjectsPage card date for a project whose updatedAt is a backend sent
   it('renders a placeholder when updatedAt is the min-value sentinel, never year 1', async () => {
     mockFeed([MIN_SENTINEL_DATE_PROJECT], 1)
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     const card = await screen.findByTestId('project-card-document-23')
 
@@ -62,7 +61,7 @@ describe('ProjectsPage card date for a project whose updatedAt is a backend sent
   it('renders a placeholder when updatedAt is the max-value sentinel, never year 10000', async () => {
     mockFeed([MAX_SENTINEL_DATE_PROJECT], 1)
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     const card = await screen.findByTestId('project-card-document-25')
 

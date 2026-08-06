@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
-import { ProjectsPage } from '../ProjectsPage'
-import { mockFeed, pinClockTo } from './feedTestHarness'
+import { screen, within } from '@testing-library/react'
+import { mockFeed, pinClockTo, renderProjectsPage } from './feedTestHarness'
 import { UNKNOWN_TYPE_PROJECT } from './projectFixtures'
 
 // `GET /api/v1/projects` does not exist on the backend yet — this suite builds against a mock of
@@ -23,7 +22,7 @@ describe('ProjectsPage card accent for an unfamiliar document type', () => {
   it('gives a project of an unknown wire type the blue fallback accent rather than no accent', async () => {
     mockFeed([UNKNOWN_TYPE_PROJECT], 1)
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     const card = await screen.findByTestId('project-card')
 

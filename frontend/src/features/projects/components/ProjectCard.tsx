@@ -9,6 +9,10 @@ import { formatCardDate } from '../formatCardDate'
 
 interface ProjectCardProps {
   project: ProjectSummary
+  // Namespaces this card's testids so «Недавние проекты» and the full list below it can show the
+  // same row without two elements answering to the same identity lookup.
+  testIdPrefix?: string
+  onOpen?: (project: ProjectSummary) => void
 }
 
 // A project's identity, in one place because both consumers of it explain the same hazard: the
@@ -42,23 +46,47 @@ function accentClass(wireDocumentType: string): string {
 // One card. Two nested testids on purpose: `project-card` is what the feed is counted by, and
 // `project-card-{kind}-{id}` is what an individual card is FETCHED by — identity, not position,
 // because a positional lookup cannot fail on a swap.
-export function ProjectCard({ project }: ProjectCardProps) {
+export function ProjectCard({ project, testIdPrefix, onOpen }: ProjectCardProps) {
+  const namespaced = (name: string) => (testIdPrefix ? `${testIdPrefix}-${name}` : name)
+  const openable = onOpen !== undefined && project.kind === 'document'
   return (
-    <div className={`project-card ${accentClass(project.documentType)}`} data-testid="project-card">
+    <div
+      className={`project-card ${accentClass(project.documentType)}${openable ? ' project-card-openable' : ''}`}
+      data-testid={namespaced('project-card')}
+      // A card is opened by click and by keyboard alike. `role="button"` + `tabIndex` rather than
+      // a real <button>: the card carries block content, and a button element would put a
+      // heading and a date inside interactive phrasing content.
+      role={openable ? 'button' : undefined}
+      tabIndex={openable ? 0 : undefined}
+      onClick={openable ? () => onOpen!(project) : undefined}
+      onKeyDown={
+        openable
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                onOpen!(project)
+              }
+            }
+          : undefined
+      }
+    >
       <div className="project-card-thumb">
         <ProjectFolderIcon className="project-card-folder" />
       </div>
-      <div className="project-card-body" data-testid={`project-card-${projectKey(project)}`}>
+      <div className="project-card-body" data-testid={namespaced(`project-card-${projectKey(project)}`)}>
         {/* The LABEL the rest of the app uses ('Реферат'), never the wire's Cyrillic 'реферат':
             the history list shipped the raw field once and named one document two ways
             depending on which screen you looked at. */}
-        <div className="project-card-type" data-testid="project-card-type">
+        <div className="project-card-type" data-testid={namespaced('project-card-type')}>
           {documentTypeLabelFromWire(project.documentType)}
         </div>
-        <div className="project-card-title" data-testid="project-card-title">
-          {project.title}
+        <div className="project-card-title" data-testid={namespaced('project-card-title')}>
+          {/* An untitled document is labelled by the start of its own text, never by its type:
+              naming every untitled доклад "Доклад" is what made them indistinguishable in «Мои
+              работы» and therefore unopenable. */}
+          {project.title ?? project.preview ?? ''}
         </div>
-        <div className="project-card-date" data-testid="project-card-date">
+        <div className="project-card-date" data-testid={namespaced('project-card-date')}>
           {formatCardDate(project.updatedAt)}
         </div>
       </div>

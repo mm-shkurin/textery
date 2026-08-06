@@ -11,7 +11,7 @@ export const DOCUMENT: ProjectSummary = {
   preview: null,
   documentType: 'реферат',
   status: 'draft',
-  canRepeat: false,
+  retryable: false,
   createdAt: '2026-07-15T09:00:00Z',
   updatedAt: '2026-07-15T09:00:00Z',
 }
@@ -23,7 +23,7 @@ export const GENERATION: ProjectSummary = {
   preview: null,
   documentType: 'доклад',
   status: 'failed',
-  canRepeat: true,
+  retryable: true,
   createdAt: '2026-06-02T09:00:00Z',
   updatedAt: '2026-06-02T09:00:00Z',
 }
@@ -39,7 +39,7 @@ export const UNKNOWN_TYPE_PROJECT: ProjectSummary = {
   preview: null,
   documentType: 'курсовая',
   status: 'draft',
-  canRepeat: false,
+  retryable: false,
   createdAt: '2026-07-15T09:00:00Z',
   updatedAt: '2026-07-15T09:00:00Z',
 }
@@ -55,7 +55,7 @@ export const OLDER_YEAR_PROJECT: ProjectSummary = {
   preview: null,
   documentType: 'реферат',
   status: 'draft',
-  canRepeat: false,
+  retryable: false,
   createdAt: '2025-09-02T09:00:00Z',
   updatedAt: '2025-09-02T09:00:00Z',
 }
@@ -73,7 +73,7 @@ export const SECOND_OLDER_YEAR_PROJECT: ProjectSummary = {
   preview: null,
   documentType: 'реферат',
   status: 'draft',
-  canRepeat: false,
+  retryable: false,
   createdAt: '2024-12-16T12:00:00Z',
   updatedAt: '2024-12-16T12:00:00Z',
 }
@@ -92,7 +92,7 @@ export const EDITED_LONG_AFTER_CREATION_PROJECT: ProjectSummary = {
   preview: null,
   documentType: 'реферат',
   status: 'draft',
-  canRepeat: false,
+  retryable: false,
   createdAt: '2024-03-05T12:00:00Z',
   updatedAt: '2026-07-15T12:00:00Z',
 }
@@ -113,7 +113,7 @@ export const UNPARSEABLE_DATE_PROJECT: ProjectSummary = {
   preview: null,
   documentType: 'реферат',
   status: 'draft',
-  canRepeat: false,
+  retryable: false,
   createdAt: '2026-07-15T09:00:00Z',
   updatedAt: '30 февраля, наверное' as unknown as string,
 }
@@ -129,7 +129,7 @@ export const MISSING_DATE_PROJECT: ProjectSummary = {
   preview: null,
   documentType: 'реферат',
   status: 'draft',
-  canRepeat: false,
+  retryable: false,
   createdAt: '2026-07-15T09:00:00Z',
   updatedAt: null as unknown as string,
 }
@@ -148,7 +148,7 @@ export const NUMERIC_DATE_PROJECT: ProjectSummary = {
   preview: null,
   documentType: 'реферат',
   status: 'draft',
-  canRepeat: false,
+  retryable: false,
   createdAt: '2026-07-15T09:00:00Z',
   updatedAt: 1755000000 as unknown as string,
 }
@@ -177,7 +177,7 @@ export const EPOCH_DATE_PROJECT: ProjectSummary = {
   preview: null,
   documentType: 'реферат',
   status: 'draft',
-  canRepeat: false,
+  retryable: false,
   createdAt: '2026-07-15T09:00:00Z',
   updatedAt: '1970-01-01T00:00:00Z',
 }

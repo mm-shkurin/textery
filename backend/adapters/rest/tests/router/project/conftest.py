@@ -83,9 +83,17 @@ def feed_serving(mocker):
     never fetched.
     """
 
-    def _make(*rows):
+    def _make(*rows, page=1, limit=20, total=None):
+        # `total` defaults to the row count only because most callers do not care
+        # about it. The row-serialization test passes it explicitly, so a rest
+        # layer that derived the counter from `len(items)` instead of forwarding
+        # the domain's still fails there.
         usecase = mocker.Mock()
-        usecase.execute = mocker.AsyncMock(return_value=ProjectPage(items=rows))
+        usecase.execute = mocker.AsyncMock(
+            return_value=ProjectPage(
+                items=rows, page=page, limit=limit, total=len(rows) if total is None else total
+            )
+        )
         return usecase
 
     return _make

@@ -1,20 +1,22 @@
+from datetime import timedelta
 from uuid import UUID
 
-from sqlalchemy import Row, select
+from sqlalchemy import Row, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from model.document.document_model import DocumentModel
+from access.project.project_feed_query import feed_subquery, order_by
 from project.project_item import ProjectItem
 from project.project_page import ProjectPage, ProjectPageRequest
+from project.project_preview import derive_preview
+from project.project_status import (
+    DOCUMENT_KIND,
+    generation_feed_status,
+    generation_is_retryable,
+)
+from shared.clock import Clock, SystemClock
 
-# The `kind` discriminator of the documents arm. A literal, and correctly so:
-# there is no `documents.kind` column to read -- the value says which arm of the
-# ADR's UNION ALL the row came from, and the generations arm will name its own.
-_DOCUMENT_KIND = "document"
-
-# A document is never retryable; only a failed generation is, and that column
-# arrives with the generations arm (1.2/1.3). Named rather than inlined so the
-# literal `False` in the row factory is not read as an oversight.
+# A document is never retryable; only a failed generation is. Named rather than
+# inlined so the literal `False` in the row factory is not read as an oversight.
 _DOCUMENTS_ARE_NEVER_RETRYABLE = False
 
 MISSING_OWNER_REFUSAL = (
@@ -24,76 +26,79 @@ MISSING_OWNER_REFUSAL = (
 
 
 class SqlAlchemyProjectFeedRepository:
-    """The `ProjectFeedRepository` port, backed by one SQLAlchemy statement.
+    """The `ProjectFeedRepository` port, backed by one merged SQL projection.
 
     See stories/12-my-projects/decisions/project-feed-read-model-decision.md.
 
-    Documents arm only. The ADR's `UNION ALL` with the generations arm arrives
-    with the scenario that first seeds a generation row (1.2/1.3); adding it now
-    would ship an owner predicate no test exercises on a second table.
+    The clock is the adapter's because the stale label is a property of the row
+    as *read*: `items` and `total` come from one snapshot, and the recovering
+    boundary must be evaluated against that same instant.
     """
 
-    def __init__(self, session: AsyncSession) -> None:
-        self._session = session
-
-    async def list_feed(
+    def __init__(
         self,
-        owner_id: UUID,
-        # ARG002 noqa'd on the parameter, not on the file: `request` is the port's
-        # pinned signature and is read from 1.2 onward (page, limit, sort, q).
-        # Dropping it would break the port; a file-wide ignore would also silence a
-        # genuinely dead parameter added later.
-        request: ProjectPageRequest,  # noqa: ARG002
-    ) -> ProjectPage:
+        session: AsyncSession,
+        stale_after: timedelta = timedelta(minutes=10),
+        clock: Clock | None = None,
+    ) -> None:
+        self._session = session
+        self._stale_after = stale_after
+        self._clock = clock or SystemClock()
+
+    async def list_feed(self, owner_id: UUID, request: ProjectPageRequest) -> ProjectPage:
         """The caller's feed, owner-scoped **in SQL**.
 
         The refusal comes first and is not a type-checker formality: SQLAlchemy
         compiles `where(col == None)` to `IS NULL`, so forwarding an unresolved
-        owner would serve a well-formed, empty 200 rather than failing. The
-        predicate is a WHERE clause, never an in-Python filter over an unfiltered
-        select -- the latter passes every single-owner test while reading every
-        account's rows on every request.
+        owner would serve a well-formed, empty 200 rather than failing.
+
+        `total` is counted over the same subquery as the page and inside the same
+        transaction, so the two describe one snapshot. It is not `len(items)`,
+        which under offset paging is the size of the window rather than of the set.
         """
         if owner_id is None:
             raise ValueError(MISSING_OWNER_REFUSAL)
 
-        result = await self._session.execute(
-            select(
-                DocumentModel.id,
-                DocumentModel.title,
-                DocumentModel.content,
-                DocumentModel.document_type,
-                DocumentModel.status,
-                DocumentModel.created_at,
-                DocumentModel.updated_at,
-            ).where(DocumentModel.owner_id == owner_id)
+        feed = feed_subquery(owner_id, request.query)
+        total = await self._session.scalar(select(func.count()).select_from(feed))
+        rows = await self._session.execute(
+            select(feed)
+            .order_by(*order_by(feed, request.sort))
+            .limit(request.limit)
+            .offset(request.offset)
         )
-        # Built from the whole result set, not from a first row: an owner who owns
-        # nothing is the path every new account hits first, and `scalar_one()` or
-        # `rows[0]` would raise there instead of yielding an empty page.
-        return ProjectPage(items=tuple(_row_of(row) for row in result))
+        now = self._clock.now()
+        return ProjectPage(
+            items=tuple(self._item_of(row, now) for row in rows),
+            page=request.page,
+            limit=request.limit,
+            total=total or 0,
+        )
 
+    def _item_of(self, row: Row, now) -> ProjectItem:
+        """One feed row, projected from whichever arm produced it.
 
-def _row_of(row: Row) -> ProjectItem:
-    """One feed row, every field but the two arm discriminators read from SQL.
-
-    `status` is the stored column rather than the domain's `DRAFT_STATUS`: the
-    check constraint admits only `draft` today, so no test can yet tell a read
-    from a hardcode -- but a projection that reads the column keeps telling the
-    truth on the day the contract's `ready` arrives.
-
-    `preview` is the content verbatim, and `''` rather than NULL for a document
-    with none, because `documents.content` is NOT NULL and defaults to `''`. The
-    200-code-point trim (6.2) and the markup strip (6.3) are not 1.1's to derive.
-    """
-    return ProjectItem(
-        kind=_DOCUMENT_KIND,
-        id=row.id,
-        title=row.title,
-        preview=row.content,
-        document_type=row.document_type,
-        status=row.status,
-        retryable=_DOCUMENTS_ARE_NEVER_RETRYABLE,
-        created_at=row.created_at,
-        updated_at=row.updated_at,
-    )
+        `status` and `retryable` are derived here rather than in the query
+        because the recovering rule is a comparison against an injected clock,
+        and pushing it into SQL would make the boundary depend on the database's
+        idea of `now()` instead of the application's.
+        """
+        is_document = row.kind == DOCUMENT_KIND
+        status = (
+            row.status
+            if is_document
+            else generation_feed_status(row.status, row.updated_at, now, self._stale_after)
+        )
+        return ProjectItem(
+            kind=row.kind,
+            id=row.id,
+            title=row.title,
+            preview=derive_preview(row.preview_source),
+            document_type=row.document_type,
+            status=status,
+            retryable=(
+                _DOCUMENTS_ARE_NEVER_RETRYABLE if is_document else generation_is_retryable(status)
+            ),
+            created_at=row.created_at,
+            updated_at=row.updated_at,
+        )

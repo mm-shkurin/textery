@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { ProjectsPage } from '../ProjectsPage'
-import { mockFeedRejection, resetFeedMocks } from './feedTestHarness'
+import { screen } from '@testing-library/react'
+import { mockFeedRejection, resetFeedMocks, renderProjectsPage } from './feedTestHarness'
 import { MISSING_UPDATED_AT_MESSAGE } from '../../api/projectsApi'
 
 // `GET /api/v1/projects` does not exist on the backend yet — this suite builds against a mock of
@@ -34,7 +33,7 @@ describe('ProjectsPage shows a rejected load instead of an empty feed', () => {
   it('shows an error instead of a feed that looks empty', async () => {
     mockFeedRejection(MISSING_UPDATED_AT_MESSAGE)
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     const error = await screen.findByTestId('projects-error')
     // `.textContent` compared with `toBe`, not `toHaveTextContent`: the latter is a SUBSTRING

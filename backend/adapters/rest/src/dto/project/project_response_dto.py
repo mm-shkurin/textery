@@ -128,14 +128,24 @@ class ProjectItemDto(BaseModel):
 
 
 class ProjectPageDto(BaseModel):
-    """The feed envelope.
+    """The feed envelope: the page, and the counters needed to page it.
 
-    No `page`/`limit`/`total`: `ProjectPage` carries `items` alone, and deriving a
-    total from `len(items)` would be wrong under offset paging.
+    `total` is forwarded from the domain page, never derived from `len(items)` --
+    under offset paging that is the size of the window, not of the set, and a
+    client using it to decide whether a page 2 exists would stop one page early
+    on every full page.
     """
 
     items: list[ProjectItemDto]
+    page: int
+    limit: int
+    total: int
 
     @classmethod
     def from_domain(cls, page: ProjectPage) -> "ProjectPageDto":
-        return cls(items=[ProjectItemDto.from_domain(item) for item in page.items])
+        return cls(
+            items=[ProjectItemDto.from_domain(item) for item in page.items],
+            page=page.page,
+            limit=page.limit,
+            total=page.total,
+        )

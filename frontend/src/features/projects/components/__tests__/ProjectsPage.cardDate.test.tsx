@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
-import { ProjectsPage } from '../ProjectsPage'
-import { mockFeed, pinClockTo } from './feedTestHarness'
+import { screen, within } from '@testing-library/react'
+import { mockFeed, pinClockTo, renderProjectsPage } from './feedTestHarness'
 import {
   EDITED_LONG_AFTER_CREATION_PROJECT,
   EPOCH_DATE_PROJECT,
@@ -30,7 +29,7 @@ describe('ProjectsPage card date for a project from an older year', () => {
   it('renders the year for an older project, in the mockup’s format and without the era suffix', async () => {
     mockFeed([OLDER_YEAR_PROJECT], 1)
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     const card = await screen.findByTestId('project-card-document-9')
 
@@ -45,7 +44,7 @@ describe('ProjectsPage card date for a project from an older year', () => {
   it('renders a second older year in the same format, pinning a second genitive month', async () => {
     mockFeed([SECOND_OLDER_YEAR_PROJECT], 1)
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     const card = await screen.findByTestId('project-card-document-11')
 
@@ -66,7 +65,7 @@ describe('ProjectsPage card date for a project edited long after it was created'
   it('renders the date the project was last edited, not the date it was created', async () => {
     mockFeed([EDITED_LONG_AFTER_CREATION_PROJECT], 1)
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     const card = await screen.findByTestId('project-card-document-13')
 
@@ -108,7 +107,7 @@ describe('ProjectsPage card date for a project whose updatedAt is unusable', () 
   it('renders a placeholder when updatedAt is unparseable, never a failure token', async () => {
     mockFeed([UNPARSEABLE_DATE_PROJECT], 1)
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     const card = await screen.findByTestId('project-card-document-15')
 
@@ -128,7 +127,7 @@ describe('ProjectsPage card date for a project whose updatedAt is unusable', () 
   it('renders a placeholder when updatedAt is missing, never the epoch', async () => {
     mockFeed([MISSING_DATE_PROJECT], 1)
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     const card = await screen.findByTestId('project-card-document-17')
 
@@ -151,7 +150,7 @@ describe('ProjectsPage card date for a project whose updatedAt is unusable', () 
   it('renders a placeholder when updatedAt arrives as epoch millis, never a 1970 date', async () => {
     mockFeed([NUMERIC_DATE_PROJECT], 1)
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     const card = await screen.findByTestId('project-card-document-19')
 
@@ -189,7 +188,7 @@ describe('ProjectsPage card date for a project genuinely edited on the epoch', (
   it('renders a genuine 1970 timestamp as a real date, not as the placeholder', async () => {
     mockFeed([EPOCH_DATE_PROJECT], 1)
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     const card = await screen.findByTestId('project-card-document-21')
 

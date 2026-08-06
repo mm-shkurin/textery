@@ -1,4 +1,7 @@
 import { afterEach, beforeEach, vi } from 'vitest'
+import { render } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import { ProjectsPage } from '../ProjectsPage'
 import * as projectsApi from '../../api/projectsApi'
 import type { ProjectSummary } from '../../api/projectsApi'
 
@@ -71,4 +74,19 @@ export function pinClockTo(instant: string) {
   afterEach(() => {
     vi.useRealTimers()
   })
+}
+
+// The page reads `q`, `sort` and `page` from the query string, so it only renders inside a
+// Router. Rendered through this helper rather than by each suite so the entry URL — the thing a
+// search or sort test actually varies — is one named argument instead of a router wrapper
+// repeated in eight files.
+export function renderProjectsPage(
+  props: Parameters<typeof ProjectsPage>[0] = {},
+  initialUrl = '/projects',
+) {
+  return render(
+    <MemoryRouter initialEntries={[initialUrl]}>
+      <ProjectsPage {...props} />
+    </MemoryRouter>,
+  )
 }

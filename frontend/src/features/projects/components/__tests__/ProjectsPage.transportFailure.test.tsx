@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { ProjectsPage } from '../ProjectsPage'
-import { mockFeedFailure, resetFeedMocks } from './feedTestHarness'
+import { screen } from '@testing-library/react'
+import { mockFeedFailure, resetFeedMocks, renderProjectsPage } from './feedTestHarness'
 import { LOAD_FAILURE_FALLBACK } from '../../api/projectsApi'
 
 // `GET /api/v1/projects` does not exist on the backend yet — this suite builds against a mock of
@@ -52,7 +51,7 @@ describe('ProjectsPage renders a dropped connection in the user’s language', (
   it('shows the Russian load-failure sentence when the connection drops', async () => {
     mockFeedFailure(new Error('Failed to fetch'))
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     const error = await screen.findByTestId('projects-error')
 

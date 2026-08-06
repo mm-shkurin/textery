@@ -58,7 +58,13 @@ _EXPECTED_BODY = {
             "created_at": "2026-02-01T00:00:00Z",
             "updated_at": "2026-02-01T00:00:31Z",
         },
-    ]
+    ],
+    # The envelope's counters come from the domain page, never from `len(items)`:
+    # the fake below hands back a two-row page whose `total` is deliberately
+    # larger, so a rest layer that derived the count would fail here by value.
+    "page": 1,
+    "limit": 20,
+    "total": 7,
 }
 
 
@@ -76,16 +82,16 @@ class TestListProjectsRowSerialization:
     field, a substituted value, an invented tenth field and a naive timestamp all
     fail it, and the literal is not produced by the serializer under test.
 
-    `page`, `limit` and `total` stay out of the expectation on purpose: `ProjectPage`
-    still carries `items` alone, and they arrive with their own step. Because the
-    comparison is whole-body, a serializer that back-derived `total` from
-    `len(items)` fails here rather than passing unnoticed.
+    The comparison is whole-body, so `page`, `limit` and `total` are pinned here
+    too. The page below is seeded with a `total` that is deliberately not the row
+    count, so a serializer that back-derived it from `len(items)` fails by value
+    rather than passing unnoticed.
     """
 
     async def test_should_emit_every_project_item_field_for_each_feed_row(
         self, feed_serving, feed_client
     ):
-        usecase = feed_serving(_DOCUMENT_ROW, _GENERATION_ROW)
+        usecase = feed_serving(_DOCUMENT_ROW, _GENERATION_ROW, total=7)
 
         async with feed_client(usecase) as client:
             response = await client.get("/api/v1/projects")

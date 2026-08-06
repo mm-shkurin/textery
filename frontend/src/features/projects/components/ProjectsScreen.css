@@ -1,0 +1,213 @@
+/* «Мои проекты» — the chrome around the feed: header, toolbar, sections, empty and loading
+   states, pager, and the list view. Split from ProjectsPage.css, which owns the grid and the
+   cards, to keep both files under the 200-line cap. Tokens come from index.css. */
+
+.projects-screen {
+  max-width: 1640px;
+  margin: 0 auto;
+  padding: 24px 24px 48px;
+}
+
+.projects-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.projects-heading {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.projects-back {
+  background: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.projects-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 18px 0 8px;
+}
+
+.projects-search {
+  flex: 1 1 260px;
+}
+
+.projects-search-input {
+  width: 100%;
+  padding: 9px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-surface);
+  font: inherit;
+}
+
+.projects-result-count {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.projects-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.projects-sort select {
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  font: inherit;
+}
+
+.projects-view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.projects-view-toggle button {
+  padding: 8px 14px;
+  border: none;
+  background: var(--bg-surface);
+  cursor: pointer;
+  font: inherit;
+}
+
+/* The chosen view is announced through aria-pressed, so the styling follows that state rather
+   than a class the markup would have to keep in step with it. */
+.projects-view-toggle button[aria-pressed='true'] {
+  background: var(--bg-sunken);
+  font-weight: 600;
+}
+
+.projects-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 26px 0 4px;
+}
+
+.projects-error-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.projects-error-block button {
+  padding: 6px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  cursor: pointer;
+}
+
+.projects-empty {
+  padding: 40px 0;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.projects-empty button {
+  margin-top: 10px;
+  padding: 9px 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-surface);
+  cursor: pointer;
+}
+
+/* Cards in outline, so the wait reads as "this is loading" rather than as an empty feed. Marked
+   aria-hidden in the markup: an assistive-technology user gets nothing from four empty boxes. */
+.projects-skeleton {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+  padding: 24px 0;
+}
+
+.projects-skeleton-card {
+  height: 210px;
+  border-radius: 14px;
+  background: var(--bg-sunken);
+  animation: projects-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes projects-skeleton-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Motion is decoration here; a user who asked the OS to stop it gets a static placeholder. */
+@media (prefers-reduced-motion: reduce) {
+  .projects-skeleton-card {
+    animation: none;
+  }
+}
+
+.projects-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.projects-pager button {
+  padding: 8px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  cursor: pointer;
+}
+
+.projects-pager button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* The list view is the same components in one column: switching re-renders data already in
+   hand, so the rows must not need markup of their own. */
+.projects-view-list {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.projects-view-list .project-card {
+  display: flex;
+  align-items: center;
+}
+
+.projects-view-list .project-card-thumb {
+  width: 96px;
+  height: 76px;
+  flex: none;
+}
+
+.projects-view-list .project-card-body {
+  padding: 10px 16px;
+}
+
+.projects-view-list .project-card-title {
+  -webkit-line-clamp: 1;
+}
+
+.project-card-openable {
+  cursor: pointer;
+}
+
+.project-card-openable:focus-visible {
+  outline: 2px solid var(--accent, #1552f0);
+  outline-offset: 2px;
+}

@@ -64,7 +64,10 @@ class TestListProjects:
                     "created_at": "1970-01-01T00:00:00Z",
                     "updated_at": "1970-01-01T00:00:00Z",
                 }
-            ]
+            ],
+            "page": 1,
+            "limit": 20,
+            "total": 1,
         }, f"unexpected body {response.json()}"
 
     async def test_should_scope_the_read_to_the_bearer_resolved_owner(

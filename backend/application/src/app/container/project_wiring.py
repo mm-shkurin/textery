@@ -1,9 +1,10 @@
+from datetime import timedelta
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from access.project.project_feed_storage import SqlAlchemyProjectFeedRepository
-from container.runtime import request_scoped
+from container.runtime import request_scoped, stale_after_minutes
 from project.list_projects import ListProjects
 from shared.clock import SystemClock
 
@@ -28,8 +29,14 @@ class UnlimitedSearchSlots:
 
 @request_scoped
 def create_list_projects(session: AsyncSession) -> ListProjects:
+    # The same threshold the stale sweep runs on, read from the same place: the
+    # feed's `recovering` label and the sweep's requeue must agree about which
+    # rows are stale, or the feed offers a retry on work the sweep is re-running.
+    stale_after = timedelta(minutes=stale_after_minutes())
     return ListProjects(
-        project_feed_repository=SqlAlchemyProjectFeedRepository(session),
+        project_feed_repository=SqlAlchemyProjectFeedRepository(
+            session, stale_after=stale_after, clock=SystemClock()
+        ),
         search_slots=UnlimitedSearchSlots(),
         clock=SystemClock(),
     )

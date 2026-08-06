@@ -6,7 +6,7 @@ import { expect, vi } from 'vitest'
 // reason it does not name.
 
 // A generation, not a document: it is the arm that carries the fields a document-shaped fixture
-// would leave untested — `can_repeat: true`, and a `preview` that is null while the title is
+// would leave untested — `retryable: true`, and a `preview` that is null while the title is
 // present. Both are server-computed and neither may be re-derived on this side.
 //
 // `document_type` is Cyrillic because that is what the wire actually carries: the frontend asked
@@ -22,7 +22,7 @@ export const PROJECT_WIRE = {
   preview: null,
   document_type: 'реферат',
   status: 'failed',
-  can_repeat: true,
+  retryable: true,
   created_at: '2026-07-15T09:00:00Z',
   updated_at: '2026-07-15T09:00:00Z',
 }

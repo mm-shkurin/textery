@@ -73,7 +73,7 @@ describe('projectsApi', () => {
           preview: null,
           documentType: 'реферат',
           status: 'failed',
-          canRepeat: true,
+          retryable: true,
           createdAt: '2026-07-15T09:00:00Z',
           updatedAt: '2026-07-15T09:00:00Z',
         },

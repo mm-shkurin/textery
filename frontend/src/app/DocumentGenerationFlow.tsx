@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { DOCUMENT_TYPE_LABELS } from '../shared/documentTypes'
-import { HistoryPage } from '../features/history/components/HistoryPage'
+import { ProjectsPage } from '../features/projects/components/ProjectsPage'
 import { LandingPage } from '../features/landing/components/LandingPage'
 import { ChatWorkspace } from '../features/generation/components/ChatWorkspace'
 import { ErrorBoundary } from '../shared/components/ErrorBoundary'
@@ -57,8 +57,19 @@ export function DocumentGenerationFlow() {
 
   // Below the isAuthenticated gate on purpose: history is owner-scoped by construction (both
   // endpoints 401 without a token), so it never renders for a signed-out visitor.
+  // «Мои проекты» (story 12) replaces the earlier «Мои работы» list at this step rather than
+  // sitting beside it: both list the same rows, and two screens answering the same question is
+  // how one of them silently rots. `HistoryPage` and its hook stay in the tree — the deprecated
+  // `GET /documents`/`GET /generations` endpoints they read still work, and removing the screen
+  // is a separate decision from replacing its entry point.
   if (step === 'history') {
-    return <HistoryPage onOpenDocument={flow.openDocumentFromHistory} onBack={flow.backToLanding} />
+    return (
+      <ProjectsPage
+        onOpenDocument={flow.openDocumentFromHistory}
+        onCreateProject={flow.startFlow}
+        onBack={flow.backToLanding}
+      />
+    )
   }
 
   if (step === 'form' && documentType && mode) {

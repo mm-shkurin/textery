@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
-import { ProjectsPage } from '../ProjectsPage'
-import { mockFeed, resetFeedMocks } from './feedTestHarness'
+import { screen, within } from '@testing-library/react'
+import { mockFeed, resetFeedMocks, renderProjectsPage } from './feedTestHarness'
 import { DOCUMENT, GENERATION } from './projectFixtures'
 
 // `GET /api/v1/projects` does not exist on the backend yet — this suite builds against a mock of
@@ -21,7 +20,7 @@ describe('ProjectsPage', () => {
   it('shows each project as a card carrying its type, its name, and its date', async () => {
     mockFeed([DOCUMENT, GENERATION], 2)
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     const cards = await screen.findAllByTestId('project-card')
     expect(cards).toHaveLength(2)

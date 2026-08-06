@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { ProjectsPage } from '../ProjectsPage'
-import { mockFeedFailure, resetFeedMocks } from './feedTestHarness'
+import { screen } from '@testing-library/react'
+import { mockFeedFailure, resetFeedMocks, renderProjectsPage } from './feedTestHarness'
 import { LOAD_FAILURE_FALLBACK } from '../../api/projectsApi'
 import { RequestTimeoutError } from '../../../../shared/api/httpClient'
 
@@ -41,7 +40,7 @@ describe('ProjectsPage renders a timed-out load in the user’s language', () =>
   it('shows the Russian load-failure sentence when the request times out', async () => {
     mockFeedFailure(new RequestTimeoutError())
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     const error = await screen.findByTestId('projects-error')
 

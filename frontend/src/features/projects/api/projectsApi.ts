@@ -8,7 +8,7 @@
 
 import { send } from '../../../shared/api/send'
 
-// FAIL-CLOSED CONTRACT. `updated_at` is declared required by projects_schemas.yaml, and `send`
+// FAIL-CLOSED CONTRACT. `updated_at` is declared required by projects_list.yaml, and `send`
 // casts the JSON blindly — so an absent field would map to `updatedAt: undefined` and every card
 // would render the same `—` a legitimately unusable date shows, making a broken endpoint look
 // deliberate. Exported so the test asserts against ONE definition of the message, never a drifting
@@ -41,7 +41,7 @@ function parseUpdatedAt(raw: unknown): string {
   return raw
 }
 
-// Summary projection — no `content`. See ProductSpecification/api-specs/projects_schemas.yaml.
+// Summary projection — no `content`. See ProductSpecification/api-specs/projects_list.yaml.
 export interface ProjectSummary {
   kind: string
   // String-serialized: a numeric id above 2^53 would round in the browser's JSON parse and
@@ -54,7 +54,7 @@ export interface ProjectSummary {
   status: string
   // Server-computed. Never derived here from `status`: a client computing it from an enum it
   // does not fully know would offer «Повторить» on an unknown status (fail-open).
-  canRepeat: boolean
+  retryable: boolean
   createdAt: string
   updatedAt: string
 }
@@ -75,7 +75,7 @@ export interface ListProjectsParams {
   limit?: number
 }
 
-// The wire is snake_case on every field (ProductSpecification/api-specs/projects_schemas.yaml);
+// The wire is snake_case on every field (ProductSpecification/api-specs/projects_list.yaml);
 // `ProjectSummary` is camelCase. Returning the parsed body untouched would hand `ProjectCard`
 // `undefined` for `documentType` and `updatedAt`, so the mapping below is the whole job.
 interface ProjectSummaryWire {
@@ -85,7 +85,7 @@ interface ProjectSummaryWire {
   preview: string | null
   document_type: string
   status: string
-  can_repeat: boolean
+  retryable: boolean
   created_at: string
   updated_at: string
 }
@@ -97,10 +97,29 @@ interface ProjectPageWire {
   limit: number
 }
 
-// `_params` is unread on purpose: search, sort and paging query building belong to scenarios
-// 2.x/3.x, and building a default `?limit=20` here would pre-decide a contract they own.
-export async function listProjects(_params?: ListProjectsParams): Promise<ProjectPage> {
-  const data = await send<ProjectPageWire>('/api/v1/projects', {}, LOAD_FAILURE_FALLBACK)
+// Only the parameters the caller actually named are sent. Writing a default `page=1&limit=20`
+// here would state on the wire what the server already defaults to — and would then be a second
+// place those defaults live, free to drift from the contract that owns them.
+function queryStringOf(params: ListProjectsParams | undefined): string {
+  if (!params) return ''
+  const search = new URLSearchParams()
+  // A whitespace-only query is "no search" server-side; not sending it at all keeps the URL (and
+  // therefore the browser history entry the feed restores from) free of a parameter that means
+  // nothing.
+  if (params.q !== undefined && params.q.trim() !== '') search.set('q', params.q)
+  if (params.sort !== undefined) search.set('sort', params.sort)
+  if (params.page !== undefined) search.set('page', String(params.page))
+  if (params.limit !== undefined) search.set('limit', String(params.limit))
+  const query = search.toString()
+  return query === '' ? '' : `?${query}`
+}
+
+export async function listProjects(params?: ListProjectsParams): Promise<ProjectPage> {
+  const data = await send<ProjectPageWire>(
+    `/api/v1/projects${queryStringOf(params)}`,
+    {},
+    LOAD_FAILURE_FALLBACK,
+  )
   // `Array.isArray`, not a presence or truthiness check, for the same reason `parseUpdatedAt`
   // guards more than `=== undefined`: `null`, a number, or a nested `{results: [...]}` envelope
   // are all plausible serializer breakages, and every one of them reaches `.map` and paints the
@@ -117,7 +136,7 @@ export async function listProjects(_params?: ListProjectsParams): Promise<Projec
       preview: item.preview,
       documentType: item.document_type,
       status: item.status,
-      canRepeat: item.can_repeat,
+      retryable: item.retryable === true,
       createdAt: item.created_at,
       updatedAt: parseUpdatedAt(item.updated_at),
     })),
