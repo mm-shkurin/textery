@@ -2,7 +2,7 @@ import pytest
 
 from document.document_type import REFERAT, SUPPORTED_DOCUMENT_TYPES
 from generation.prompt_template import _TEMPLATES, PromptBuildError
-from prompt_fixtures import prompt_for
+from prompt_fixtures import assert_refusal, prompt_for
 
 # A type that is in no tuple and no dict. Spelled as a literal rather than derived,
 # because every derivation available here reads one of the two sets under test.
@@ -66,17 +66,10 @@ class TestAMissingTemplateRefusesInTheRequest:
         with pytest.raises(PromptBuildError) as exc_info:
             prompt_for(UNSUPPORTED_TYPE)
 
-        # `type(...) is`, matching `assert_refusal`'s reasoning in
-        # `test_prompt_build_refusals.py`: `PromptBuildError` is deliberately the
-        # base of a family, so a subclass raised here would satisfy
-        # `pytest.raises` while reporting a different cause to the call site.
-        assert type(exc_info.value) is PromptBuildError, (
-            f"a missing template must raise the base PromptBuildError itself, got "
-            f"{type(exc_info.value).__name__}"
-        )
-        assert str(exc_info.value) == no_template_message(UNSUPPORTED_TYPE), (
-            f"unexpected refusal message: {str(exc_info.value)!r}"
-        )
+        # Both halves via the shared helper: the exact base type -- `PromptBuildError`
+        # is deliberately the base of a family, so a subclass raised here would
+        # satisfy `pytest.raises` while reporting a different cause -- and the message.
+        assert_refusal(exc_info, no_template_message(UNSUPPORTED_TYPE))
 
     @pytest.mark.skip(
         reason="RED: build_prompt subscripts _TEMPLATES bare -- KeyError: 'реферат' "
@@ -95,10 +88,4 @@ class TestAMissingTemplateRefusesInTheRequest:
         with pytest.raises(PromptBuildError) as exc_info:
             prompt_for(REFERAT)
 
-        assert type(exc_info.value) is PromptBuildError, (
-            f"a removed template must raise the base PromptBuildError itself, got "
-            f"{type(exc_info.value).__name__}"
-        )
-        assert str(exc_info.value) == no_template_message(REFERAT), (
-            f"unexpected refusal message: {str(exc_info.value)!r}"
-        )
+        assert_refusal(exc_info, no_template_message(REFERAT))

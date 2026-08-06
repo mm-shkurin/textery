@@ -13,10 +13,13 @@ it.
 import unicodedata
 from typing import cast
 
+import pytest
+
 from generation.generation import MAX_VOLUME_PAGES
 from generation.prompt_template import (
     _BAN_DEFERRED,
     TYPES_REQUIRING_SOURCE_BAN,
+    PromptBuildError,
     PromptRequest,
     build_prompt,
 )
@@ -92,6 +95,46 @@ def prompt_for(
     a capital `Н` that a lowercasing helper would erase.
     """
     return build_prompt(prompt_request(document_type, topic=topic, volume_pages=volume_pages))
+
+
+def assert_refusal(
+    exc_info: pytest.ExceptionInfo[PromptBuildError], expected_message: str
+) -> None:
+    """The two things every refusal in these files must be, asserted together.
+
+    Extracted because the pair was written out three times in
+    `test_prompt_build_refusals.py`: a wording change to either failure text used to
+    be three edits, and a fourth refusal guard could have been added with only one of
+    the two halves. Moved here from that file when `test_prompt_type_refusal.py`
+    became its second consumer and retyped both halves twice more -- the same reason
+    `last_line` moved, and the same fail-open: a fifth guard written against only the
+    message would have been green on a subclass.
+
+    The `with pytest.raises(...)` act stays inline at each call site -- folding it in
+    here would hide which request is being built, which is the one thing the call
+    sites differ on.
+
+    `type(...) is`, not `isinstance`: `PromptBuildError` is deliberately the base of
+    a family, so an implementation that raised `UnsupportedDocumentTypeError` for a
+    `volume_pages` of `-3` would satisfy `pytest.raises` alone while reporting the
+    wrong cause to the call site.
+
+    `==` on a constant with no interpolation slot, which is also what keeps the
+    rejected value out of the message: `generate_document.py` interpolates the caught
+    error into the log, so a message that quoted the offending field would put
+    user-supplied text there through the error path. It matters most on `topic`,
+    which is free user text the natural implementation would quote. The missing
+    template refusal is the stated exception -- the ADR specifies that one verbatim
+    with the offending type interpolated -- and it passes its own interpolated
+    constant in, so the `==` is unchanged.
+    """
+    assert type(exc_info.value) is PromptBuildError, (
+        f"a refusal must raise the base PromptBuildError itself, got "
+        f"{type(exc_info.value).__name__}"
+    )
+    assert str(exc_info.value) == expected_message, (
+        f"unexpected refusal message: {str(exc_info.value)!r}"
+    )
 
 
 def last_line(prompt: str) -> str:

@@ -3,7 +3,7 @@ import pytest
 from document.document_type import SUPPORTED_DOCUMENT_TYPES
 from generation.generation import MAX_VOLUME_PAGES
 from generation.prompt_template import PromptBuildError
-from prompt_fixtures import prompt_for
+from prompt_fixtures import assert_refusal, prompt_for
 from shared.exceptions import DomainException, ValidationException
 
 # The volumes `__init__` accepts today but that must never render, and the topics
@@ -27,37 +27,6 @@ UNRENDERABLE_TOPICS = (None, "", "   ")
 # quoted the rejected `topic`. The duplication *is* the guard; do not de-duplicate it.
 VOLUME_PAGES_ERROR_MESSAGE = "volume_pages is not renderable in a prompt"
 TOPIC_ERROR_MESSAGE = "topic is not renderable in a prompt"
-
-
-def assert_refusal(
-    exc_info: pytest.ExceptionInfo[PromptBuildError], expected_message: str
-) -> None:
-    """The two things every refusal in this file must be, asserted together.
-
-    Extracted because the pair was written out three times: a wording change to
-    either failure text used to be three edits, and a fourth refusal guard could
-    have been added with only one of the two halves. The `with pytest.raises(...)`
-    act stays inline at each call site -- folding it in here would hide which
-    request is being built, which is the one thing the three guards differ on.
-
-    `type(...) is`, not `isinstance`: `PromptBuildError` is deliberately the base
-    of a family, so an implementation that raised `UnsupportedDocumentTypeError`
-    for a `volume_pages` of `-3` would satisfy `pytest.raises` alone while
-    reporting the wrong field to the call site.
-
-    `==` on a constant with no interpolation slot, which is also what keeps the
-    rejected value out of the message: `generate_document.py` interpolates the
-    caught error into the log, so a message that quoted the offending field would
-    put user-supplied text there through the error path. It matters most on
-    `topic`, which is free user text the natural implementation would quote.
-    """
-    assert type(exc_info.value) is PromptBuildError, (
-        f"a refused field must raise the base PromptBuildError itself, got "
-        f"{type(exc_info.value).__name__}"
-    )
-    assert str(exc_info.value) == expected_message, (
-        f"unexpected refusal message: {str(exc_info.value)!r}"
-    )
 
 
 class TestAPromptRefusesAFieldItCannotRender:
