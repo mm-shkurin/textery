@@ -849,8 +849,85 @@ that can be red.
   generation"**, with Security 1.2 covering the other user-controlled fields. Writing an
   HTTP test here would be Security 1.1 under a different heading — and would be the *worse*
   version of it, since it would have to assert through `FakeProvider`'s canned string.
-- [ ] design
-- [ ] red-usecase
+- [x] design — **Option D, refuse rather than strip**, recorded by revising the existing
+  ADR `decisions/prompt-builder-decision.md` (it already governs 1.1–1.6) rather than
+  opening a second one. All eight hazard groups re-dispatched from scratch; group 8
+  re-derived and dismissed as a block. Groups 1–7 fired, 26 GAPs, collapsed to ten guards
+  G19–G28 across the seams.
+
+  **The scan reversed a standing instruction of this ADR, for the second scenario running.**
+  The Edge Cases row "User text contains the delimiter token" has said **strip to fixpoint**
+  since 2026-08-01, and G1 was written against it. Four groups independently found that the
+  loop — not the correctness of the strip — is where this scenario's hazards live: it is the
+  only super-linear step on a per-request path (a field cap bounds n, not n²); its obvious
+  cost mitigation is an iteration cap whose obvious behaviour is *proceed with
+  partially-stripped text*, a security decision resolving permissively because of what a
+  `while` loop yields rather than because anyone chose it; it is the one place an author
+  reaches for a module-level memo, in a module whose entire multi-instance argument is "no
+  runtime write exists"; and it runs after `mark_in_progress()` on the event loop with no
+  `to_thread`, so an adversarial topic can carry a row past the stale threshold and have the
+  sweep start a second activation that spins identically, while blocking every other
+  generation on that instance. A single linear membership test has none of the four.
+
+  **The four are recorded as dissolved by the option chosen, not skipped** — that
+  distinction is the point. A later author who reinstates a removal pass reinstates all four
+  and will find no guard standing where the design removed the need for one.
+
+  **The cost, stated rather than discovered later.** Refusal is strictly less forgiving to
+  rows already in the table: `Generation.__init__` applies none of `create`'s validation, so
+  a legacy row with a newline in its `topic` becomes permanently unbuildable in one deploy
+  where stripping would have salvaged it. Accepted on the size of the corpus, not on
+  principle — the composer is a single-line input with `maxLength=500`, so no row the UI can
+  produce is affected; only API-crafted rows are, and a row carrying a forged instruction
+  line is one whose salvaged generation would have been the incident.
+
+  **Two choices inside the design, each forced by a named hazard rather than by taste:**
+  - **The delimiter must be non-alphabetic (G22).** `test_prompt_goldens.py:142` asserts
+    every alphabetic character in the built prompt is Cyrillic — that is G13 — so any
+    Latin-lettered delimiter (`<<<TOPIC>>>`, `BEGIN_TOPIC`) is **red on arrival with no
+    defect present**, and the cheapest fix is widening G13's character class, which
+    permanently re-opens the homoglyph hazard G13 exists to close. Same shape as the
+    `_BAN_DEFERRED` escape the ADR blocked for G14; nothing blocked this one until now.
+    Choosing a non-alphabetic token removes the collision instead of negotiating with it,
+    and moots the case-folding question entirely — a token with no letters has no case.
+  - **The forgery check runs on the NFKC fold; the emitted form is NFC (G23).** NFC does not
+    fold compatibility equivalents, so a fullwidth or `Cf`-interrupted variant survives an
+    NFC-only check as inert text and becomes the token the moment any consumer normalizes
+    differently, or the model simply reads it as visually identical.
+
+  **The counterweight (G24)**, because a strict sanitizer without one silently mutilates
+  valid input: a corpus of realistic Cyrillic topics — `«»`, dashes, parentheses, digits,
+  `ё` — must round-trip byte-identically. `«»` is the specific trap: idiomatic in Russian
+  topic titles and otherwise an attractive delimiter.
+
+  **The spec widening the 1.2 scan required is now actually made (G20).** That scan recorded
+  that this scenario's sentence must grow from "the delimiter token" to *any line-structuring
+  character*, and that neither 1.2 nor 1.5 carried it. `_referat` is a `\n`-delimited
+  instruction list, so `\n` / `\r\n` / U+2028 / U+2029 / U+0085 forge an instruction line the
+  model reads as a peer of the template's own — **with a perfectly correct delimiter**,
+  because the delimiter wraps a field and does not escape per line. G20 asserts on the built
+  prompt's line count, not on the topic's contents, which is the only form that catches a
+  break introduced downstream of the check.
+
+  **Two guards `red-usecase` must not mistake for someone else's:**
+  - **G25 — normalization happens on a local inside `build_prompt`, never on the entity.**
+    The entity is the natural place and the wrong one: the worker holds the `Generation`
+    across a ~363 s window and every terminal path calls `storage.update(generation)`, so
+    normalizing in place blind-writes the user's stored topic with sanitized text. An
+    irreversible overwrite of persisted user data, invisible to every prompt-level
+    assertion, and G9 is green either way.
+  - **G27(b) — the sentinel-in-log test, which has no equivalent anywhere in this repo**
+    (`grep -rln caplog` over the domain and usecase test trees returns one unrelated file).
+    It is kept here *even though* Security 2.1/2.2 own a widened version, because Security
+    2.1 as specified asserts absence at info level on the happy path and would go green
+    while never touching the error path — the exact shape where each pass assumes the other
+    owned it.
+
+  **Routed elsewhere, not folded in**: the `FAILED`-not-absorbing lifecycle → Backend 3.2,
+  whose existing row already owns it — noted there because this scenario *widens the
+  population* reaching that edge and 3.2 lands after it. Mutual exclusion on a second
+  activation → Backend 3.2 / 3.4, existing row.
+- [~] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance

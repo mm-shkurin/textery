@@ -7,8 +7,116 @@ over that revision — see "Corrections" below; revised again 2026-08-04 after t
 1.3 scan added G14–G17, gave G3 and G9 an owner, and corrected three claims the ban's
 implementation had made stale — see "Revision (scenario 1.3)"; revised again 2026-08-05
 after the scenario 1.4 scan overturned G17's prescribed mechanism and added G18 — see
-"Revision (scenario 1.4)")
+"Revision (scenario 1.4)"; revised again 2026-08-06 after the scenario 1.5 scan replaced
+strip-to-fixpoint with refusal and added G19–G28 — see "Revision (scenario 1.5)")
 **Scenarios**: 1.1–1.6, 2.1
+
+## Revision (scenario 1.5, 2026-08-06)
+
+**Option D — refuse, do not strip.** All eight hazard groups re-dispatched from scratch;
+group 8 dismissed as a block (re-derived, not inherited: no client surface, and the two
+client-side rules that exist — `maxLength` 500 and a disabled-on-blank send button — are
+already server-mirrored in `Generation.create` with a guard). Groups 1–7 fired, 26 GAPs,
+collapsed to ten guards across the seams.
+
+**The decision the scan forced, and it reverses this ADR's own standing instruction.**
+The Edge Cases row "User text contains the delimiter token" has specified
+**strip-to-fixpoint** since 2026-08-01, and G1 is written against it. Four groups
+independently found that the loop is where this scenario's real hazards live, and none of
+them is about correctness of the strip:
+
+- **It is the only super-linear step on a per-request hot path** (group 6, and the 1.2
+  scan's own ReDoS row): nested/overlapping fragments at the field cap make the cost
+  n², and a field cap bounds n, not n².
+- **Its iteration cap fails open** (group 5). The obvious mitigation for the cost is a
+  maximum pass count, and the obvious behaviour at that cap is *proceed with
+  partially-stripped text* — which is precisely the input the loop had not finished
+  neutralizing. A security decision resolving permissively because of what a `while` loop
+  yields, not because anyone chose it.
+- **It is the one place an author reaches for module-level state** (group 3): a
+  `_STRIP_CACHE[topic]` memo to buy the cost back, in a module whose entire
+  multi-instance argument is "divergence requires a runtime write, and there is none".
+- **It converts a per-request cost into a self-amplifying requeue** (group 3): the loop
+  runs after `mark_in_progress()` on the event loop with no `to_thread`, so an adversarial
+  topic can carry a row past `GENERATION_STALE_AFTER_MINUTES` and have the sweep start a
+  second activation that spins identically — while blocking every other generation on
+  that instance.
+- **Its fixpoint is not assertable as specified** (group 2): NFC applied after the strip
+  can re-compose a token out of combining characters that survived it, so
+  `sanitize(sanitize(x)) == sanitize(x)` is a guard the strip needs and G9 does not give.
+
+**Refusing dissolves all five rather than guarding them.** A single linear membership
+test has no loop, no cap, no partial output, no memo incentive and no fixpoint. The four
+gaps above are therefore recorded as **dissolved by the option chosen, not skipped** —
+that distinction matters, because a later author who reinstates stripping reinstates every
+one of them and will find no guard standing where the design removed the need for one.
+
+**The cost of Option D, stated rather than discovered later.** Refusal is the strictly
+less forgiving choice for rows already in the table: `Generation.__init__` applies none of
+`create`'s validation, so a legacy row whose `topic` carries a newline or exceeds the cap
+becomes permanently unbuildable in one deploy, where stripping would have salvaged it
+(group 4). Accepted, on the size of the affected corpus rather than on principle — the
+composer is a single-line input with `maxLength=500`, so no row the UI can produce is
+affected; only API-crafted rows are, and a row that carries a forged instruction line is
+one whose salvaged generation would have been the incident. The population reaching
+`_fail_terminally` does widen, which matters because **Backend 3.2** owns the lifecycle
+guard for that edge and lands after this scenario — noted there, not annexed here.
+
+**The design.**
+
+1. `topic` is NFC-normalized **on a local inside `build_prompt`, never on the entity**
+   (G25). Group 3 found the entity is the natural place and the wrong one: the worker
+   holds the `Generation` across a ~363 s window and every terminal path calls
+   `storage.update(generation)`, so normalizing in place blind-writes the user's stored
+   topic with sanitized text — an irreversible overwrite invisible to every prompt-level
+   assertion.
+2. **Re-cap after normalization** (G19), on `DocumentContent`'s precedent
+   (`document_content.py:32-36`: raw cap → NFC → re-cap). NFC can grow the string, so a
+   cap applied only before it is bypassable by choosing a composition form.
+3. **Refuse** — `PromptBuildError` — if the normalized topic exceeds `MAX_TOPIC_LENGTH`
+   (G19), contains any line-structuring character (G20), or forges the delimiter (G23).
+4. The topic is interpolated wrapped in a **non-alphabetic** delimiter (G22).
+5. Renderability is re-checked **after** normalization (G26).
+
+**Two choices inside that, both forced by a specific hazard rather than by taste.**
+
+- **The delimiter must be non-alphabetic.** `test_prompt_goldens.py:142` asserts every
+  alphabetic character in the built prompt is Cyrillic — that is G13. Any Latin-lettered
+  delimiter (`<<<TOPIC>>>`, `BEGIN_TOPIC`) is **red on arrival with no defect present**,
+  and the cheapest fix is to widen G13's character class, which permanently re-opens the
+  homoglyph hazard G13 exists to close. This is the same shape as the `_BAN_DEFERRED`
+  escape the ADR blocked explicitly for G14; nothing blocked this one until now. Choosing
+  a non-alphabetic token removes the collision instead of negotiating with it, and makes
+  G13 and G22 mutually reinforcing rather than opposed. It also moots the case-folding
+  question group 1 raised: a non-alphabetic token has no case, so no Turkish-`I` fold.
+- **The forgery check runs on the NFKC fold; the output is NFC** (G23). NFC does not fold
+  compatibility equivalents, so a fullwidth or `Cf`-interrupted variant of the token
+  survives an NFC-only check as inert text and becomes the token the moment any consumer
+  normalizes differently or the model simply reads it as visually identical. Checking the
+  fold and emitting the NFC form closes that without letting NFKC mangle legitimate topics.
+
+**The counterweight, because a strict sanitizer with no counterweight silently mutilates
+valid input**: G24 pins a corpus of realistic Cyrillic topics — `«»` quotes, dashes,
+parentheses, digits, `ё` — round-tripping into the prompt byte-identically. Without it the
+delimiter choice is a coincidence rather than a decision, and `«»` in particular is common
+in real Russian academic topics and would have been a plausible delimiter.
+
+**The spec widening the 1.2 scan required, now actually made.** That scan recorded that
+1.5's sentence must grow from "the delimiter token" to **any line-structuring character**,
+and noted neither 1.2 nor 1.5 carried it. `_referat` is a `\n`-delimited instruction list,
+so a `topic` containing `\n`, `\r\n`, U+2028, U+2029, U+0085, `\v` or `\f` forges an
+instruction line the model reads as a peer of the template's own — **with a perfectly
+correct delimiter**, because the delimiter wraps a field and does not escape per line.
+G20 asserts on the built prompt's line count, not on the topic's contents, which is the
+only form of the assertion that catches a forgery introduced downstream of the check.
+
+**Routed elsewhere, not folded in**: the `FAILED`-not-absorbing lifecycle → Backend 3.2
+(existing row; 1.5 widens the population reaching it). The sentinel-in-log guard →
+Security 2.1 / 2.2 already own a widened version, **but** G27 is kept here as well and
+deliberately so: group 7 found Security 2.1 as specified would go green while never
+touching the error path, which is the exact "each pass assumed the other owned it" shape
+this catalogue exists to break. Mutual exclusion on a second activation → Backend 3.2 /
+3.4 (existing row).
 
 ## Revision (scenario 1.4, 2026-08-05)
 
@@ -240,7 +348,10 @@ below is the guard that closes it.
 | Composed prompt exceeds the ceiling | Per-field caps are 500 / 2000 / 2000, so the composed prompt has a bound the design states explicitly and enforces on the built string — the hydration path applies no per-field cap at all. Over the ceiling raises `PromptBuildError`. |
 | `document_type` in a non-NFC normal form | Normalized before the subscript, so the реферат template is still selected. |
 | `document_type` outside `SUPPORTED_DOCUMENT_TYPES` | `UnsupportedDocumentTypeError`; the worker lands the row `failed` with the sanctioned generic message, without retrying. |
-| User text contains the delimiter token | User text is NFC-normalized first, then the token is stripped **to fixpoint** — one pass can splice a fresh occurrence out of the surrounding text. Asserted at maximum field lengths, not only on short fixtures. |
+| User text contains the delimiter token | **Reversed 2026-08-06 (1.5): refused, not stripped.** This row read "NFC-normalized first, then the token is stripped **to fixpoint**" from 2026-08-01 until the 1.5 scan, and G1 was written against that wording. Four hazard groups found the loop, not the strip's correctness, was where this scenario's hazards lived — super-linear cost on a per-request path, an iteration cap that fails open on partially-stripped text, a module-level memo incentive, and a self-amplifying sweep requeue. `PromptBuildError` instead: one linear membership test, no loop and none of the four. The check runs on the **NFKC fold** (NFC does not fold compatibility equivalents, so a fullwidth token would survive an NFC-only check); the emitted form is NFC. See "Revision (scenario 1.5)" for why the legacy-row cost of refusing was accepted. |
+| `topic` contains a line-structuring character (`\n`, `\r\n`, U+2028, U+2029, U+0085, `\v`, `\f`) | `PromptBuildError`. `_referat` is a `\n`-delimited instruction list, so these forge an instruction line the model reads as a peer of the template's own — **even with a correct delimiter**, since the delimiter wraps a field rather than escaping per line. This is the spec widening the 1.2 scan required and no scenario had made. |
+| `topic` above `MAX_TOPIC_LENGTH` on the hydration path, or above it only *after* NFC | `PromptBuildError` from the **post**-normalization check. NFC can grow the string, so a pre-NFC-only cap is bypassable by choosing a composition form — `DocumentContent` (`document_content.py:32-36`) is the precedent, and its re-cap is the part a naive reading drops. The cap is counted in **code points**, matching `Generation.create`; the overhead constants G10/G15 pin are counted in **UTF-8 bytes**. Two units, ~1.8× apart on Cyrillic, and the fixture must be wholly Cyrillic so they differ. |
+| `topic` is non-blank before normalization and blank after | `PromptBuildError`, not a blank topic slot. `_is_renderable_topic` runs before normalization and uses a bare `.strip()`, which — unlike `Generation._required_topic` — does not remove `Cf` format characters, so a `Cf`-only topic passes it and would render `на тему:  (5 стр.)` on a billed call. |
 | A fifth document type is added without a template | Import-time assertion fails at boot, plus a test on the same equality. Never a worker failure. |
 | доклад | Byte-identical to the string `GigaChatProvider` composed before this story, pinned by a golden `==` test — story 1 is being finished elsewhere against that exact output. |
 | эссе / сочинение | **Corrected 2026-08-04 (1.3).** Each gets its own golden `==` — the refactor is asserted lossless for every type, not asserted for one and assumed for the rest — but the expected text is the pre-change f-string **plus** `"\n" + BAN_SENTENCE`, not the pre-change f-string alone. They route to `_plain` and they are in `TYPES_REQUIRING_SOURCE_BAN`; only доклад is byte-identical, and only for as long as `_BAN_DEFERRED` holds it. Writing these goldens against the bare pre-change text makes them red on arrival, and the cheapest-looking fix — adding эссе and сочинение to `_BAN_DEFERRED` — silently reverts the ban for half the types that need it. |
@@ -255,7 +366,7 @@ block, groups 1/3/4/5/6/7 fired).
 
 | ID | Guard |
 |----|-------|
-| G1 | Delimiter in `topic` in a non-NFC / combining form → zero tokens in the built prompt. Splice fixture (one removal pass reconstructs the token) → zero tokens. |
+| G1 | **Restated 2026-08-06 (1.5) — the mechanism it asserted was withdrawn.** It read: "Delimiter in `topic` in a non-NFC / combining form → zero tokens in the built prompt. Splice fixture (one removal pass reconstructs the token) → zero tokens." The splice half was a *fixpoint* assertion, and 1.5 replaced stripping with refusal, so there is no removal pass for a splice to defeat — the fixture is unwritable against the chosen design. As it stands now: a `topic` carrying the delimiter in NFC form, in a combining/decomposed form, or in a compatibility form → `PromptBuildError`. The non-NFC half survives intact and is the load-bearing one; G23 carries the compatibility-form half, which an NFC-only check misses. **Note for anyone reinstating stripping**: the splice assertion becomes necessary again the moment a removal pass exists, and nothing else in this table would cover it. |
 | G2 | `build_prompt` at maximum field lengths, and one past them via `__init__`, → the stated ceiling holds or `PromptBuildError`. **Disjunctive by design — it is satisfied either way, so it cannot go red when a type flips from "holds" to "raises". G10 is the non-disjunctive half.** |
 | G3 | `volume_pages` at `0`, negative, and above `MAX_VOLUME_PAGES` → `PromptBuildError`, same as the `None` case. |
 | G4 | `topic` `None` / empty / whitespace-only → `PromptBuildError`. |
@@ -273,6 +384,31 @@ block, groups 1/3/4/5/6/7 fired).
 | G17 | **Restated 2026-08-05 (1.4) — the earlier wording prescribed the wrong mechanism.** It read: "fails at boot as a raised, named exception, not a bare `assert`". The diagnosis was right (`python -O` strips `assert`, so the fifth-type guard holds by accident of interpreter invocation) but the prescribed cure was worse than the disease: a module-scope raise means a deploy where `SUPPORTED_DOCUMENT_TYPES` gains a fifth type before `_TEMPLATES` does takes down **every instance at import** — including generations of the four types that work — so the blast radius of one missing dict entry is the whole service. `ImportError` specifically is also the wrong class: it is the one exception routinely swallowed by optional-import `try/except ImportError` in loaders and DI wiring, which converts a fail-closed crash into a silent skip. As it stands now, two halves: (a) `build_prompt` raises `PromptBuildError(f"no prompt template for {document_type}")` on the missing key, so the failure is named, terminal and scoped to the one affected request; (b) the bare `assert` is **deleted** and replaced by a domain test that removes a template and asserts the refusal — so a missing template is red in CI *before* deploy, which is the pre-deploy catch the boot-raise was reaching for, with no production crash path at all. Note (b) is what makes this different from "just delete the check": the completeness claim survives, it moves from an `-O`-strippable runtime statement into a test, which `-O` cannot strip. **Corrected 2026-08-05, same day, after both review passes over `dd9b0f72` reached it independently**: half (b) as first written did **not** move the completeness claim, it dropped it. A test that removes a key and asserts `PromptBuildError` exercises the *refusal mechanism*; it is green whether `_TEMPLATES` covers `SUPPORTED_DOCUMENT_TYPES` or not, so the named hazard — a fifth type added to the tuple before the dict — passes it unchanged. The deleted `assert` was a **set equality** and caught both directions: a supported type with no template, and a stale template for a type dropped from the tuple. Half (b) therefore requires **two** tests, not one: the removal test above, **and** an explicit `set(_TEMPLATES) == set(SUPPORTED_DOCUMENT_TYPES)` assertion, both directions, in `backend/domain/tests/generation/`. Relying on the parametrized suites to catch it incidentally is not acceptable here and this ADR elsewhere refuses exactly that — G14 is the precedent, having been scoped away from `SUPPORTED_DOCUMENT_TYPES` for a legitimate reason, which is how incidental coverage evaporates. The reverse direction (an extra key) is caught by nothing today. **Owner: 1.4.** |
 | G18 | The per-type assertion over `SUPPORTED_DOCUMENT_TYPES` is **type-discriminating, not truthiness**. "A non-empty prompt is produced for every one of them" is satisfied by a mojibake prompt, a replacement-character prompt, and a prompt whose Cyrillic type name was decoded under the wrong charset — so `assert built` admits a fifth type on a check that cannot fail for any reason a reader would care about. Assert per type that the built prompt carries that type's own text and lands on the correct side of the ban branch (`BAN_SENTENCE` present for every type in `TYPES_REQUIRING_SOURCE_BAN - _BAN_DEFERRED`, absent for доклад while the freeze holds). The ban table has no completeness assertion of its own anywhere — G12 asserts the ban over the derived set, but nothing asserts *per type* which side it landed on, so a fifth type silently inherits "ban applies" with no case exercising it. **Rationale narrowed 2026-08-05**: the mojibake half of the argument above is already guarded — `test_prompt_goldens.py`'s `test_should_spell_every_type_s_prompt_entirely_in_cyrillic` is implemented and parametrized over all types, so a wrong-charset prompt is red today (that is G13). G18's genuinely new content is the **per-type ban-side discrimination**, and an author who reads the mojibake framing as the point will write the half that already exists and skip the half that does not. **Owner: 1.4.** |
 | G13 | **Scope restated 2026-08-04 (1.3)**: asserted per type over every built prompt in `SUPPORTED_DOCUMENT_TYPES`, matching G6's scope rather than the ban sentence alone. 1.3 goldens `на тему:` and `стр.` for the first time, and `с`, `о`, `р`, `а`, `е` — **four** of which appear in those two fragments (`а` and `е` in `на тему:`, `с` and `р` in `стр.`) — are exactly the homoglyph-bearing characters the rationale below names. Every alphabetic character in the built prompt is Cyrillic (`unicodedata.name(ch)` starts with `CYRILLIC`). **Rationale corrected 2026-08-04**: the earlier claim that список/литературы/источники are spelled "entirely" from homoglyph-bearing characters is false — `п`, `и`, `к`, `л`, `ы`, `ч`, `н` have no Latin lookalike. The real hazard is narrower and still real: `с`, `о`, `р`, `а`, `е` **do** have identical Latin glyphs, and one of them mistyped inside `список` or `источники` renders the same, ships a corrupted instruction, and passes a hand-typed expected literal that carries the same mistake. Because only *some* characters are substitutable, a presence check on a subword is **not** an adequate substitute — which is precisely what the wrong rationale would have licensed. Only the character-class assertion over the whole string catches it. |
+
+G19–G28 were folded in from the **scenario 1.5** scan (2026-08-06; all eight groups
+re-dispatched from scratch — group 8 re-derived and dismissed as a block, groups 1–7
+fired). All ten are **Backend 1.5's** unless a row says otherwise.
+
+| ID | Guard |
+|----|-------|
+| G19 | `topic` at `MAX_TOPIC_LENGTH` builds; at `MAX_TOPIC_LENGTH + 1`, hydrated via `Generation.__init__`, → `PromptBuildError`. **Non-disjunctive** — one branch asserted, not G2's "holds *or* raises", which is why G2 cannot cover this. Plus the composition-form half: a decomposed topic **under** the cap before NFC and **over** it after → refused by the post-NFC check, so the cap is not bypassable by choosing a normal form. The fixture must be wholly Cyrillic, so the code-point cap and the UTF-8 byte overhead G10/G15 pin are visibly different quantities rather than one self-equal number. This is the ADR's own twice-recorded unowned row (`_reject_unrenderable_fields` has no `topic` cap at all), reached independently by groups 1, 5, 6, 7 and 8, and it lands here because 1.5 is the scenario that starts doing arithmetic on the topic's length. |
+| G20 | The built prompt's line count equals the template's own, for every hostile-topic fixture and every type in `SUPPORTED_DOCUMENT_TYPES`; a `topic` containing `\n`, `\r\n`, U+2028, U+2029, U+0085, `\v` or `\f` → `PromptBuildError`. **Asserted on the built prompt, not on the topic**, which is the only form that catches a line break introduced downstream of the check. This is the spec widening the 1.2 scan required and which the scan itself recorded as carried by neither 1.2 nor 1.5. |
+| G21 | The built prompt contains exactly one opening and one closing delimiter, at the expected offsets, for every type in `SUPPORTED_DOCUMENT_TYPES`. G1 asserts the token is absent from the *user text*; this asserts the *structure of the output*, which is what a forgery actually attacks — a template that forgets a closing token, or a refusal that lets one of a spliced pair through, leaves an unbalanced structure G1 is green on. |
+| G22 | The delimiter contains **no alphabetic character**, asserted on the constant itself. G13 asserts every alphabetic character in the built prompt is Cyrillic, so a Latin-lettered delimiter is red on arrival with no defect present — and the cheapest fix is widening G13's character class, which permanently re-opens the homoglyph hazard G13 exists to close. G22 blocks that escape the way `test_referat_ban.py:227` blocks the `_BAN_DEFERRED` one. Corollary worth stating because it removes a guard rather than adding one: a non-alphabetic token has no case, so the case-folding hazard group 1 raised (an exact-match strip missing a case variant; a case-insensitive one meeting the Turkish `I`) cannot arise. |
+| G23 | A **compatibility-form** delimiter (fullwidth variants, U+2039/U+203A) and a `Cf`-interrupted delimiter → `PromptBuildError`. The refusal decides on the **NFKC fold** of the topic while the emitted topic is **NFC**: NFC does not fold compatibility equivalents, so an NFC-only check passes a fullwidth forgery through as inert text that becomes the token the moment any consumer normalizes differently — or that the model simply reads as visually identical. |
+| G24 | A corpus of realistic Cyrillic topics — `«»` quotes, em/en dashes, parentheses, digits, `ё`, ordinary punctuation — round-trips into the built prompt **byte-identically**. The counterweight without which the delimiter choice is a coincidence rather than a decision: a delimiter drawn from characters that occur in real Russian academic topics mutilates valid input silently and turns nothing else in this table red. `«»` is the specific trap — idiomatic in Russian topic titles and an otherwise attractive delimiter. |
+| G25 | After `_compose_prompt(generation)`, `generation.topic` is byte-identical to the hydrated value, and no `storage.update` call carries a topic differing from the one read — for a topic that *is* transformed on the way into the prompt. Normalization happens on a local inside `build_prompt` and never on the entity. The worker holds the `Generation` across a ~363 s window and every terminal path persists it, so in-place normalization blind-writes the user's stored topic with sanitized text: an irreversible overwrite of persisted user data, invisible to every prompt-level assertion. G9 is green either way — it constrains the builder's inputs and module state, not the caller's entity, and `PromptRequest` is constructed fresh at the call site. |
+| G26 | A `topic` non-blank before normalization and blank after → `PromptBuildError`, not a blank topic slot. Reachable because `_is_renderable_topic` runs *before* normalization and uses a bare `.strip()`, which — unlike `Generation._required_topic` — does not remove `Cf` format characters. Without it a `Cf`-only topic renders `на тему:  (5 стр.)` and is billed. This is the `DocumentContent` re-cap pattern applied to renderability rather than to length: check, transform, **re-check**. |
+| G27 | Two halves, and the second is the one that has never existed anywhere in this repo. **(a)** A ratchet over the module's *whole* `PromptBuildError` message family asserting each is a fixed string with **no interpolation slot** — not the current per-message opt-in, under which any message 1.5 adds is guarded only by what 1.5 itself writes. The in-file precedent points the wrong way: `_select_template` raises `f"no prompt template for {document_type}"`, so an author copying the nearest sibling copies the interpolating one. **(b)** Seed a sentinel inside `topic`, drive **every** `PromptBuildError` family through `GenerateDocument.execute`, and assert the sentinel is absent from `str(exc)`, from `caplog` at error level, and from the persisted `error_message` (which must equal the sanctioned constant). `grep -rln caplog` over `backend/domain/tests/` and `backend/usecase/tests/` returns one unrelated file, so no captured-log assertion exists at any level today. **Kept here even though Security 2.1/2.2 own a widened version** — deliberately, because Security 2.1 as specified asserts absence at info level on the happy path and would go green while never touching the error path, which is exactly the shape where each pass assumes the other owned it. |
+| G28 | G5's parametrization extended to **every** refusal reason 1.5 introduces — over-cap topic, line-structuring character, forged delimiter, blank-after-normalization — each asserting provider called zero times, `sleep` awaited zero times, exactly two `storage.update` calls. G5's own row already demands its fixture reach the error by more than one call path "because the two arrive from different call paths"; by that argument a third and fourth path added here are unasserted. `generate_document.py`'s `except Exception` retries anything the pre-loop `except PromptBuildError` misses, so a refusal raised as some other class — a `ValueError` out of `unicodedata`, say — is retried twice against a value that cannot change and bills the provider. |
+
+**Dissolved by Option D, not skipped.** Four gaps the scan raised have no guard because
+the design removed the mechanism, and they are recorded rather than dropped so that
+reinstating stripping reinstates them: the strip loop's wall-clock/iteration bound (no
+loop), its fail-closed behaviour at an iteration cap (no cap), `sanitize(sanitize(x)) ==
+sanitize(x)` (no sanitize stage), and the module-level-memo assertion (no cost to memoize
+away). A later author who brings back a removal pass will find no guard standing where
+this design removed the need for one.
 
 ## Out-of-Diff Findings
 
