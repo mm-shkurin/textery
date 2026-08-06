@@ -45,11 +45,12 @@ class TestListProjectsWireContract:
             response = await client.get("/api/v1/projects")
 
         assert response.status_code == 200, f"got {response.status_code}: {response.text}"
+        items = response.json()["items"]
         # Whole-row, not the two timestamps alone: converting the offsets while
         # dropping or corrupting one of the other seven fields is not a pass.
-        assert response.json()["items"] == [expected_row(_ID_ONE)], (
+        assert items == [expected_row(_ID_ONE)], (
             f"a +07:00 and a -05:00 instant must both reach the wire as UTC, "
-            f"got {response.json()['items']!r}"
+            f"got {items!r}"
         )
 
     async def test_should_refuse_a_naive_timestamp_rather_than_shift_it(

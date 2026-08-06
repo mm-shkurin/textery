@@ -745,6 +745,69 @@ only the design draft could not see the contract.
   same fixture illegality `bfd11431` removed, in a fixture whose docstring now promises legality;
   and `response.headers["Cache-Control"]` raises `KeyError` before its own assertion message can
   render, defeating the very mutant it was written to catch (use `.get(...)` inside the assertion).
+  **Review-pass findings on `579fe401`** (both CONCERNS; surfaced, not auto-fixed). They converge
+  on one question this red must answer explicitly rather than inherit: **is the fail-closed unit
+  the `status` field, or the row?** Every finding below is a different way the field-level answer
+  leaks. `/refactor` applied one behaviour-preserving change only — hoisting a repeated
+  `response.json()["items"]` decode into a local — and then died on an API error; the tree was
+  verified clean and the whole backend re-run green before the commit.
+  1. *both passes, medium/CREDIBLE — `_fail_closed_to_unknown` swallows every input, not only
+     unrecognised status **strings**.* `Enum.__call__` raises `ValueError` for any non-member, so
+     `None`, `123`, `True`, `['ready']`, `b'ready'` and `object()` all render `unknown` (agent-review
+     ran each against the real DTO). The contract's clause is narrower — "a *status* this contract
+     does not know" — and a `None` from a NULL column, a not-yet-backfilled migration or a
+     LEFT-JOIN miss on the generations arm is a **projection bug**, not an unknown status. They are
+     now indistinguishable on the wire, and the branch that swallows both emits nothing. Premortem's
+     blast radius is the sharp half: a schema-level cause hits every row of every account at once
+     and returns 200 carrying plausible JSON — the one shape no error-rate monitor catches. This
+     also undercuts `ProjectItemDto`'s own docstring claim that this is "the layer where that
+     widening is *enforced* rather than merely declared": for `status`, it now enforces nothing.
+     Owed: a seed with `status=None` asserting a distinguishable outcome (a refusal, or at minimum
+     a distinct signal), and a narrowed `except` so one predicate serves both the mapping and the
+     scheduled log emission instead of `from_domain` re-deriving it and drifting.
+  2. *premortem, CREDIBLE — an unknown-status row still reaches the wire `retryable: true`.*
+     `from_domain` forwards `retryable` verbatim while `status` is normalized, so
+     `(status="teapot", retryable=True)` serializes as `{"status": "unknown", "retryable": true}` —
+     a combination `projects_list.yaml` forbids ("true only for a `failed` generation…; offering a
+     retry on a pending/in_progress/recovering row would duplicate work that is still running").
+     A row whose status the contract cannot resolve is by construction not a known-`failed`
+     generation. Fail-closed on one field with pass-through on its dependent field is not
+     fail-closed. Unreachable today only because the documents arm pins
+     `_DOCUMENTS_ARE_NEVER_RETRYABLE = False`; live at 1.2/1.3, and this commit is what makes
+     `unknown` a value that arm can produce. Owed: seed
+     `contract_row(kind="generation", status="teapot", retryable=True)` and assert
+     `items[0]["retryable"] is False`. Note the existing unknown test is satisfied by pass-through
+     because its seed keeps the default `retryable=False`.
+  3. *premortem, CREDIBLE — the `ProjectKind` no-fail-closed judgement is a claim about today's SQL
+     that nothing tests.* An unrecognised `kind` raises into `main.py`'s catch-all and blanks the
+     page — the outage the neighbouring status test exists to forbid. The judgement (recorded in the
+     class docstring, and independently verified sound for the arm that exists: no `documents.kind`
+     column, `_DOCUMENT_KIND` a SQL-side literal) rests on there being exactly two hard-coded arms.
+     A typo in the second arm's literal, or a third arm, is a full-page 500 with a green suite.
+     Owed: name `kind` explicitly in this step's isolation scope — a per-*field* refusal decision
+     made for timestamps will not cover it — or a storage-adapter test asserting every `kind` the
+     repository can emit is a `ProjectKind` member.
+  4. *agent-review, low — `_as_utc`'s naive guard is bypassed by a numeric timestamp.* The guard
+     reads `value.tzinfo`, i.e. only what Pydantic already coerced, and lax mode turns an
+     `int`/`float` into a tz-aware UTC datetime, so `created_at=0` satisfies it by construction. A
+     naive *string* is correctly refused, so the string path is sound; `ProjectItem.created_at:
+     datetime` is an unenforced dataclass annotation, so nothing upstream rules the numeric path
+     out. Low — no producer emits one — but it is a second route to the laundered-wrong-instant the
+     docstring exists to prevent.
+  5. *agent-review, low — the diff ships both sides of an argument it also states.*
+     `_fail_closed_to_unknown`'s docstring argues at length that a per-row problem must never
+     become a per-page failure; `_as_utc` then does exactly that, and the class docstring blesses
+     it. Worth recording that the choice this step is scheduled to "make rather than inherit" is
+     already asserted in both directions in shipped code.
+  6. *agent-review, low — `ProjectItemDto`'s docstring says "all nine fields `projects_list.yaml`
+     declares required"; the `required` list has **eight** (`title` is excluded, as the same
+     docstring states two sentences later). Pre-existing text, but this commit rewrote the
+     paragraph below it and left it standing.
+  **Checked and clean, recorded so it is not re-litigated:** `ProjectStatus`'s eight members match
+  the contract enum member-for-member; `StrEnum` makes both validators idempotent under FastAPI's
+  `response_model` re-validation, and would fail the sibling whole-row equality if it changed the
+  wire form of a legal value; unhashable `status` input escapes as `ValueError`, not `TypeError`,
+  so the `except` holds.
 - [ ] green-adapter rest (the unknown branch signals, and a naive row costs one row not the page)
 - [ ] red-usecase (the envelope carries page, limit and total) — `ProjectPage` widens to
   `(items, page, limit, total)` and `ProjectPageRequest` grows the contract's unparameterised
