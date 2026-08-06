@@ -407,7 +407,57 @@ only the design draft could not see the contract.
   `{"items": [{"id": str(project_id)}]}` as a whole-body equality by deliberate design (its
   docstring says the scenario adding a field also adds it to these dicts), so it breaks the
   moment the DTO widens. Expected work, not a defect.
-- [~] green-adapter rest (the envelope emits every `ProjectItem` field)
+- [x] green-adapter rest (the envelope emits every `ProjectItem` field) — `ProjectItemDto`
+  widens to the nine contract fields, `from_domain` forwarding each unchanged; `title` is
+  `str | None` (the one layer that enforces it) and `retryable` is `bool`. `ProjectPageDto`
+  untouched: no `page`/`limit`/`total`, and its docstring's reason for that still holds.
+  `project_router.py` was not touched at all, so `Cache-Control: no-store` is intact.
+  The pre-declared second edit landed as expected: `test_project_list_router.py:48` widened
+  to the full nine-field row, still one whole-body equality, its docstring corrected to say
+  the eight fields are pinned there as *shape* with their contract values pinned next door.
+  Coverage 100% line and branch on `project_response_dto.py` (23/23 statements, zero
+  branches — a flat declaration plus a nine-argument forward, nothing to branch on); the rest
+  module sits at 96% lines / 100% branches, the remainder pre-existing and untouched.
+  **The coverage pass ran two mutants rather than trusting the 100%, and both survived:**
+  1. `retryable: int` — all 89 tests pass. `json.loads('{"r":0}') == {"r": False}` is `True`,
+     so whole-body dict equality cannot tell JSON `false` from `0` in either direction. The
+     green reported finding 3 as "closed in production code by the `bool` annotation"; that
+     is **wrong** — the declaration is correct behaviour guarded by nothing, and a future
+     edit reverting it is undetectable here. Finding 3's one-line `isinstance` guard is still
+     owed.
+  2. Deleting `project_router.py:35` (`Cache-Control: no-store`) outright — the full rest
+     suite stays green. Covered and pinned by nothing; the textbook covered-but-unpinned
+     case, now hard evidence rather than an argument. The header is scheduled at the
+     acceptance tier by Scenario 10.6, which is much later; finding 2's narrower fix stands.
+  **Also surfaced, and it has a scheduled break rather than a hypothetical one:** the widened
+  sibling literal carries the `feed_row` fixture's fillers, and two of them are contract-
+  *illegal* rather than merely implausible — `"kind": ""` and `"status": ""` are outside the
+  enums `projects_list.yaml` declares. The moment finding 4's constrained `status`/`kind`
+  field lands, an envelope-*shape* test fails on a validation error that has nothing to do
+  with envelope shape. Fix is not "make the fillers plausible": keep them implausible for the
+  free-form fields (`preview=""`, `title=""`, epoch timestamps) and make the two enum-shaped
+  ones implausible-but-legal (`kind="document"`, `status="ready"`), touching `conftest.py`
+  and the router literal. Not a red/green step — it belongs with the amendment below.
+  **Adjacent, not scheduled here:** `project_router.py:14`'s `get_list_projects_usecase`
+  raises `NotImplementedError` and is never executed, while every auth router has a matching
+  `*_di_stub.py` test asserting the un-overridden dependency raises. The project feed router
+  has no such sibling — a real inconsistency with the established pattern, belonging to the
+  router step rather than the DTO step.
+- [ ] red-adapter rest amendment (the wire pins what the whole-body equality cannot) — the
+  four review-pass findings above, all of which survived a mutant or are structurally
+  invisible to dict equality, folded into one red rather than four. Seeds a third row whose
+  `created_at` carries a non-UTC offset (`tzinfo=timezone(timedelta(hours=7))`) expecting
+  `Z`, so an echoing serializer goes RED where the two identity-case UTC seeds cannot see it;
+  adds `isinstance(row["retryable"], bool)` so `False == 0` stops hiding an `int`; adds
+  `assert response.headers["Cache-Control"] == "no-store"` to the envelope test, narrower
+  than pulling 10.6's acceptance assertion forward; and seeds `status="teapot"` asserting the
+  response is not a 200 pass-through. The enum-legal filler correction rides along, since
+  that last assertion is what breaks the sibling literal.
+- [ ] green-adapter rest amendment (the wire pins what the whole-body equality cannot) —
+  expected shape: an `astimezone(UTC)` field serializer, and constrained `status`/`kind`
+  types on the DTO. The constrained type is entangled with the CARRIED fail-closed-to-
+  `unknown` rule — settle at the green whether the DTO rejects an unknown value or maps it,
+  and record which, because the ADR requires the *document* arm to fail closed too.
   **Review-pass findings on `8c9f567c`** (both CONCERNS; surfaced, not auto-fixed). `/refactor`
   applied nothing — the near-duplicate row constructions ARE the contrast the scenario pins,
   and a conftest assertion helper would replace a working mirror of the sibling file with a

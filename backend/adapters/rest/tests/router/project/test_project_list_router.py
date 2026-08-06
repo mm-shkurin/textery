@@ -14,13 +14,12 @@ class TestListProjects:
 
     What this pins, and what it deliberately does not:
 
-    `items` and the row's `id` are pinned, because `id` is the only field the
-    domain `ProjectItem` carries today. `kind`, `title`, `preview`,
-    `document_type`, `status`, `retryable`, `created_at` and `updated_at` --
-    every other field projects_list.yaml declares required -- are NOT pinned
-    here: the domain does not carry them, and inventing them at the rest layer
-    would put contract values in the serializer where no usecase test can reach
-    them. `page`, `limit` and `total` are NOT pinned for the same reason:
+    `items` and all nine `ProjectItem` fields are pinned. The eight beyond `id`
+    arrived with the row-serialization scenario next door
+    (`test_project_list_row_serialization.py`), which is where their *contract*
+    values are pinned; the values here are the `feed_row` fixture's deliberately
+    implausible fillers, so this test keeps asserting the envelope shape rather
+    than restating that scenario. `page`, `limit` and `total` are NOT pinned:
     `ProjectPage` carries `items` alone, and a router that derived `total` from
     `len(items)` would be wrong under the offset paging the read-model decision
     chose. Each arrives with the scenario that first asserts it.
@@ -45,9 +44,21 @@ class TestListProjects:
             response = await client.get("/api/v1/projects")
 
         assert response.status_code == 200, f"got {response.status_code}: {response.text}"
-        assert response.json() == {"items": [{"id": str(project_id)}]}, (
-            f"unexpected body {response.json()}"
-        )
+        assert response.json() == {
+            "items": [
+                {
+                    "kind": "",
+                    "id": str(project_id),
+                    "title": "",
+                    "preview": "",
+                    "document_type": "",
+                    "status": "",
+                    "retryable": False,
+                    "created_at": "1970-01-01T00:00:00Z",
+                    "updated_at": "1970-01-01T00:00:00Z",
+                }
+            ]
+        }, f"unexpected body {response.json()}"
 
     async def test_should_scope_the_read_to_the_bearer_resolved_owner(
         self, mocker, feed_client, owner_id
