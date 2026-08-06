@@ -318,7 +318,7 @@ only the design draft could not see the contract.
   so the NULL-only arm alone would still have read 100% — it is genuinely pinned by the
   seeded-title test; and the zero-row page has no test here, invisible because an empty
   generator exit is not a reported arc, and it belongs to Scenario 2.3.
-- [~] red-adapter rest (the envelope emits every `ProjectItem` field) — `ProjectItemDto` widens
+- [x] red-adapter rest (the envelope emits every `ProjectItem` field) — `ProjectItemDto` widens
   to the contract's nine fields, timestamps serialized as UTC ISO-8601 with an explicit offset
   (the acceptance DTO's `parse_feed_timestamp` rejects a naive string).
   **Review-pass findings on `6bed7cb0`** (both passes CONCERNS; surfaced, not auto-fixed).
@@ -373,7 +373,41 @@ only the design draft could not see the contract.
   the identity map by construction) and the `title` widening breaking a live consumer (REMOTE
   — no consumer reads it; this step is where `None` first reaches serialization and it is
   written to expect it).
-- [ ] green-adapter rest (the envelope emits every `ProjectItem` field)
+  **How the red landed (2026-08-06):** new
+  `rest/tests/router/project/test_project_list_row_serialization.py` (107 lines), one
+  whole-body equality of `response.json()` against a hand-written literal. Two seeded rows —
+  a titled `document` and an untitled `retryable=True` `generation` — so `title=None` bites
+  at the one layer that enforces the annotation (Pydantic), which is finding 4's answer: a
+  narrow `title: str` on the DTO raises on the second row rather than passing a value-only
+  check. The expectation imports nothing from `ProjectItemDto` and retypes both UUIDs and
+  both timestamps by hand, so the mirror defect the db-arm amendment had does not recur.
+  Because the comparison is the **whole body**, a `total` back-derived from `len(items)`
+  fails here too, and so does a naive timestamp. Predicted `AssertionError: unexpected body
+  {'items': [{'id': '1111…'}, {'id': '2222…'}]}` at the body equality with the 200 passing;
+  observed exactly that, message identical, so the skip marker carries the real failure.
+  **`/test-review` (2026-08-06):** no fixes — all three detectors clean. Placement dismissed
+  with a reason worth keeping: the REST tier has **no Statements layer at all**
+  (`grep -rn "statements" backend/adapters/rest/tests` is empty); its convention is
+  conftest-for-infrastructure plus module-level literals inline, and the one extraction
+  precedent (`router/auth/login_router_fixtures.py`) was pulled out only because several
+  files shared it. Inventing a REST-only Statements module for one file would break the
+  convention, not follow it.
+  **Two contract questions, unsettled, for the green:**
+  1. `projects_list.yaml` says "UTC ISO-8601 with explicit offset" and does not choose
+     between `…Z` and `…+00:00`. The test pins `Z` (Pydantic 2.13's default, verified
+     empirically; `datetime.fromisoformat` accepts it on 3.12, so the acceptance DTO's
+     `parse_feed_timestamp` holds). The dependency is **loud** — whole-body equality forces
+     the green to emit `Z` — but it leaves the spec downstream of the test. Amend the spec to
+     name `Z`, or change the literal.
+  2. Sub-second precision is unspecified and the dependency is **silent**: both seeded rows
+     carry whole-second timestamps, so the test passes whether the serializer preserves
+     microseconds or truncates them. Postgres `timestamptz` will carry microseconds in
+     practice. Nothing fails loudly to force this one — settle it before green-acceptance.
+  **Second file the green must touch:** `test_project_list_router.py:48` asserts
+  `{"items": [{"id": str(project_id)}]}` as a whole-body equality by deliberate design (its
+  docstring says the scenario adding a field also adds it to these dicts), so it breaks the
+  moment the DTO widens. Expected work, not a defect.
+- [~] green-adapter rest (the envelope emits every `ProjectItem` field)
 - [ ] red-usecase (the envelope carries page, limit and total) — `ProjectPage` widens to
   `(items, page, limit, total)` and `ProjectPageRequest` grows the contract's unparameterised
   defaults `page=1`, `limit=20`; the usecase test pins that they reach the caller.
