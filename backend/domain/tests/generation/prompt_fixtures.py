@@ -94,6 +94,18 @@ def prompt_for(
     return build_prompt(prompt_request(document_type, topic=topic, volume_pages=volume_pages))
 
 
+def last_line(prompt: str) -> str:
+    """The final line of `prompt`.
+
+    Moved here from `test_referat_ban.py` when the per-type ban guard became its
+    second consumer. The ban's *position* is the contract, and spelled inline in
+    two files a change to what "last" means (trailing newline, \\r\\n) is two edits
+    in two shapes -- with the per-type guard's negative branch the one that would
+    silently keep passing.
+    """
+    return prompt.splitlines()[-1]
+
+
 def ban_scope() -> tuple[tuple[str, ...], tuple[str, ...]]:
     """`(TYPES_REQUIRING_SOURCE_BAN, _BAN_DEFERRED)`, exactly as the module declares them.
 

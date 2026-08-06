@@ -656,8 +656,47 @@ that can be red.
 
   Left genuinely unowned, and it is a note rather than a guard: the hydration path applies
   no `topic` length cap at all.
-- [~] red-usecase
-- [ ] green-usecase
+- [x] red-usecase — Option D's two halves landed together, as the design required.
+  **Domain** (`test_prompt_type_coverage.py`, `test_prompt_type_refusal.py`): G17(b) as two
+  tests, not one — the refusal (`PromptBuildError` for a type with no template, and for a
+  supported type whose template was removed) *and* a separate explicit
+  `set(_TEMPLATES) == set(SUPPORTED_DOCUMENT_TYPES)`, because a refusal-mechanism test is
+  green whether the sets match or not. G18 as a type-discriminating assertion:
+  `prompt.count(document_type) == 1` plus first-line placement, not `assert built`. The
+  hand-declared `EXPECTED_BAN_SIDE` table is deliberately not derived — a derived table
+  moves with the mutation and stays green.
+  **Usecase** (`test_generation_prompt_failure_usecase.py` + three Statements files):
+  **G5, implemented at last** — flagged by seven hazard groups across three scans, owned by
+  nobody until this scenario. Asserts the provider is called **zero** times, no backoff was
+  ever awaited, exactly two writes, and the offending row written back unaltered.
+  Three guards pin existing behavior, so their real red is a **mutation red** (the G14
+  precedent from 1.3). Each was verified to fire and production restored bit-for-bit:
+  dispatch ignoring the requested type → 6 failed; `_BAN_DEFERRED = (REFERAT,)` → 4 failed;
+  a stale `"диссертация"` template key → 3 failed — the last being the direction the ADR
+  records as "caught by nothing today".
+  `/test-review` widened eight findings. The load-bearing one: the row-unaltered assertion
+  compared 3 of `Generation`'s 12 fields on 1 of 2 snapshots — `owner_id` and `version`
+  were omitted, so a `fail()` on a rewritten owner (a lost update) or a bumped version (a
+  broken CAS) passed. Now all 9 invariant fields on every snapshot, with a tripwire that
+  fails loudly if a 13th field is added. Two module-scope `assert` premises were relocated:
+  in the Statements an import-time failure there takes the **whole usecase suite's
+  collection** down as an error rather than failing the test whose premise it is.
+  Two findings were left to `/refactor` or to a global decision rather than fixed here:
+  P-16 (storage port injected into Statements) is a real rule violation but repo-wide
+  across 17 files, and this scenario is unwritable without it — it needs the
+  `Generation.__init__` hydration path, which no usecase can produce; S-11 (duplication
+  with `generation_lifecycle_statements.py`) needs a cross-file extraction outside this
+  unit's diff.
+  Counts: `pytest backend/` **783 passed, 6 skipped, 0 failed**; the four RED tests with
+  their skip markers stripped, **4 failed** — both domain ones `KeyError` at
+  `prompt_template.py:143`, both usecase ones
+  `AssertionError: a prompt that cannot be built must reach no provider, got 1 call(s)`.
+  `git diff` over `backend/*/src` is empty — no production code.
+  **For green**: G5's two cases fail on the *first* assertion (the call count), so the four
+  behind it are staged but not yet exercised. Green must re-run and confirm all five pass,
+  not stop when the count reaches zero — a catch-all that slept once and gave up satisfies
+  the count and still fails `assert_never_waited`.
+- [~] green-usecase
 - [ ] adapters-discovery
 
 ### Scenario 1.5: The topic cannot displace the template's instructions

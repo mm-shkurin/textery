@@ -1,6 +1,7 @@
 import pytest
 
 from statements.generation_lifecycle_statements import GenerationLifecycleStatements
+from statements.generation_prompt_failure_statements import GenerationPromptFailureStatements
 from statements.generation_statements import GenerationStatements
 from statements.login_failed_attempt_statements import LoginFailedAttemptStatements
 from statements.login_lockout_statements import LoginLockoutStatements
@@ -39,6 +40,11 @@ def register_atomic_write_statements():
 @pytest.fixture
 def generation_statements():
     return GenerationStatements()
+
+
+@pytest.fixture
+def generation_prompt_failure_statements():
+    return GenerationPromptFailureStatements()
 
 
 @pytest.fixture
