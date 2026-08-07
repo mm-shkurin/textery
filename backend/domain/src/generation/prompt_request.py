@@ -22,12 +22,20 @@ class PromptRequest:
     def __init__(
         self,
         document_type: str,
-        topic: str,
-        volume_pages: int,
+        topic: str | None,
+        volume_pages: int | None,
         requirements: str | None = None,
         extra_wishes: str | None = None,
     ) -> None:
         self.document_type = document_type
+        # Nullable, matching `Generation`'s own annotations. Narrowing them to
+        # `str`/`int` here would be a claim this view cannot make: the storage
+        # hydration path builds a `Generation` through `__init__`, which applies
+        # neither the required-topic nor the range check that `create` does, so a
+        # row written before those checks existed reaches `build_prompt` with
+        # either field `None`. `_reject_unrenderable_fields` is the guard that
+        # turns that into a terminal `PromptBuildError`; it only has a job to do
+        # because the value genuinely can be absent.
         self.topic = topic
         self.volume_pages = volume_pages
         # Optional by the contract, and defaulted here rather than made required:

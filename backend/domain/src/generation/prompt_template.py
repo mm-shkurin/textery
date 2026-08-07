@@ -88,14 +88,14 @@ def _select_template(document_type: str) -> Callable[[PromptRequest], str]:
     return template
 
 
-def _is_renderable_volume(volume_pages) -> bool:
+def _is_renderable_volume(volume_pages: object) -> bool:
     """`bool` is excluded explicitly: `True` is an `int` and would render as `True стр.`."""
     if not isinstance(volume_pages, int) or isinstance(volume_pages, bool):
         return False
     return MIN_VOLUME_PAGES <= volume_pages <= MAX_VOLUME_PAGES
 
 
-def _is_renderable_topic(topic) -> bool:
+def _is_renderable_topic(topic: object) -> bool:
     return isinstance(topic, str) and topic.strip() != ""
 
 

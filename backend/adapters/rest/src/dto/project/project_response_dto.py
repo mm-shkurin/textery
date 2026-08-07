@@ -40,6 +40,23 @@ class ProjectStatus(StrEnum):
     UNKNOWN = "unknown"
 
 
+def _to_status(value: object) -> ProjectStatus:
+    """Map a status this contract does not know onto `unknown`.
+
+    A module-level function rather than logic inlined in the validator, because
+    both entry points into this DTO need the identical rule: the `before`
+    validator below (which is what survives FastAPI's re-validation against
+    `response_model`) and `from_domain`, whose `item.status` is a plain domain
+    `str`. Sharing the function is what keeps them from drifting apart.
+    """
+    if not isinstance(value, str):
+        return ProjectStatus.UNKNOWN
+    try:
+        return ProjectStatus(value)
+    except ValueError:
+        return ProjectStatus.UNKNOWN
+
+
 class ProjectItemDto(BaseModel):
     """One feed row on the wire.
 
@@ -77,13 +94,13 @@ class ProjectItemDto(BaseModel):
 
     @field_validator("status", mode="before")
     @classmethod
-    def _fail_closed_to_unknown(cls, value: object) -> object:
-        """Map a status this contract does not know onto `unknown`.
+    def _fail_closed_to_unknown(cls, value: object) -> ProjectStatus:
+        """Apply `_to_status` on *every* construction of this DTO.
 
-        A `before` validator rather than a translation inside `from_domain`,
-        because it must hold on *every* construction of this DTO -- including the
-        re-validation FastAPI performs against `response_model`, which a
-        from_domain-only mapping would not survive.
+        A `before` validator rather than a translation inside `from_domain` alone,
+        because it must hold including on the re-validation FastAPI performs
+        against `response_model`, which a from_domain-only mapping would not
+        survive.
 
         Deliberately a mapping and not a rejection. `ProjectItemDto` is built once
         per row with no isolation, so a constrained field that raised here would
@@ -92,10 +109,7 @@ class ProjectItemDto(BaseModel):
         allow only `draft` today while the contract can emit `ready`, so the
         document arm needs the rule as much as the generation arm.
         """
-        try:
-            return ProjectStatus(value)
-        except ValueError:
-            return ProjectStatus.UNKNOWN
+        return _to_status(value)
 
     @field_validator("created_at", "updated_at")
     @classmethod
@@ -115,12 +129,17 @@ class ProjectItemDto(BaseModel):
     @classmethod
     def from_domain(cls, item: ProjectItem) -> "ProjectItemDto":
         return cls(
-            kind=item.kind,
+            # Converted at the call rather than left to Pydantic's coercion, so
+            # that the two enums' differing policies are visible here: `kind`
+            # raises on an unrecognised value (a bug in this process -- see its
+            # docstring), `status` fails closed onto `unknown` (data a future
+            # migration may widen).
+            kind=ProjectKind(item.kind),
             id=item.id,
             title=item.title,
             preview=item.preview,
             document_type=item.document_type,
-            status=item.status,
+            status=_to_status(item.status),
             retryable=item.retryable,
             created_at=item.created_at,
             updated_at=item.updated_at,

@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from access.auth.account_storage import SqlAlchemyAccountRepository
@@ -73,7 +75,7 @@ class _AccountExistence:
     def __init__(self, session: AsyncSession) -> None:
         self._accounts = SqlAlchemyAccountRepository(session)
 
-    async def exists(self, account_id) -> bool:
+    async def exists(self, account_id: UUID) -> bool:
         return await self._accounts.find_by_id(account_id) is not None
 
 

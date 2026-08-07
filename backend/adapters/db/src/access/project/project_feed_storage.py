@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import Row, func, select
@@ -75,7 +75,7 @@ class SqlAlchemyProjectFeedRepository:
             total=total or 0,
         )
 
-    def _item_of(self, row: Row, now) -> ProjectItem:
+    def _item_of(self, row: Row, now: datetime) -> ProjectItem:
         """One feed row, projected from whichever arm produced it.
 
         `status` and `retryable` are derived here rather than in the query

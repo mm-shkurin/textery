@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy import Select, String, cast, func, literal, not_, or_, select, union_all
+from sqlalchemy.sql.selectable import Subquery
 
 from model.document.document_model import DocumentModel
 from model.generation.generation_model import GenerationModel
@@ -72,7 +73,7 @@ def _generations_arm(owner_id: UUID) -> Select:
     ).where(GenerationModel.owner_id == owner_id, not_(linked.exists()))
 
 
-def feed_subquery(owner_id: UUID, query: ProjectQuery):
+def feed_subquery(owner_id: UUID, query: ProjectQuery) -> Subquery:
     """The merged, owner-scoped, searched feed as one subquery.
 
     The merge is `UNION ALL` in SQL rather than two queries stitched in Python:
@@ -94,13 +95,11 @@ def feed_subquery(owner_id: UUID, query: ProjectQuery):
                 DocumentModel.content.ilike(pattern, escape=LIKE_ESCAPE),
             )
         )
-        generations = generations.where(
-            GenerationModel.topic.ilike(pattern, escape=LIKE_ESCAPE)
-        )
+        generations = generations.where(GenerationModel.topic.ilike(pattern, escape=LIKE_ESCAPE))
     return union_all(documents, generations).subquery("feed")
 
 
-def order_by(feed, sort: ProjectSort) -> list:
+def order_by(feed: Subquery, sort: ProjectSort) -> list:
     """The ORDER BY for one sort order, always made total.
 
     Every order ends with `(kind, id)`. `id` alone is not a tiebreak: document
