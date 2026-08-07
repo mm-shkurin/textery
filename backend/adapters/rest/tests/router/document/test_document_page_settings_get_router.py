@@ -129,9 +129,7 @@ class TestGetDocumentPageSettingsResponseShape:
         # The route must ask for THIS document on behalf of THIS owner. Without
         # this, a route that ignored the path id, or passed a hardcoded owner,
         # still returns the stubbed document and the body assertion passes.
-        usecase.execute.assert_awaited_once_with(
-            document_id=DOCUMENT_ID, owner_id=owner_id
-        )
+        usecase.execute.assert_awaited_once_with(document_id=DOCUMENT_ID, owner_id=owner_id)
         # `page_settings: None` with the KEY PRESENT — an omitted key would say
         # "this server does not know the field", which is a different answer.
         assert response.json() == expected_body(page_settings=None), (
@@ -151,9 +149,7 @@ class TestGetDocumentPageSettingsResponseShape:
             response = await client.get(f"/api/v1/documents/{DOCUMENT_ID}")
 
         assert response.status_code == 200, f"got {response.status_code}: {response.text}"
-        usecase.execute.assert_awaited_once_with(
-            document_id=DOCUMENT_ID, owner_id=owner_id
+        usecase.execute.assert_awaited_once_with(document_id=DOCUMENT_ID, owner_id=owner_id)
+        assert response.json() == expected_body(page_settings=A_CONFIGURED_GEOMETRY_ON_THE_WIRE), (
+            f"unexpected body {response.json()}"
         )
-        assert response.json() == expected_body(
-            page_settings=A_CONFIGURED_GEOMETRY_ON_THE_WIRE
-        ), f"unexpected body {response.json()}"

@@ -21,7 +21,6 @@ from shared.exceptions import (
 OWNER_ID = uuid4()
 
 
-
 class _EveryAccountExists:
     """The `AccountExistence` port for tests that are not about a deleted account.
 
@@ -34,6 +33,7 @@ class _EveryAccountExists:
 
     async def exists(self, account_id) -> bool:  # noqa: ARG002
         return True
+
 
 @pytest.fixture
 def document_app():

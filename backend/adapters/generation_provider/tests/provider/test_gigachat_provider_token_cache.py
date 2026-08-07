@@ -98,9 +98,7 @@ class TestTokenCaching:
         )
         provider = GigaChatProvider()
 
-        await asyncio.gather(
-            provider.generate(PROMPT), provider.generate(PROMPT)
-        )
+        await asyncio.gather(provider.generate(PROMPT), provider.generate(PROMPT))
 
         assert posted_urls(client).count(TOKEN_URL) == 1, (
             "a burst on a cold cache must mint one token. Without the lock each "

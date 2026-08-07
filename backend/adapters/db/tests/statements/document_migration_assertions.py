@@ -27,9 +27,7 @@ class DocumentMigrationAssertions:
     than inventing a base-class dependency to sit in the line.
     """
 
-    def assert_migration_adds_the_column_without_backfilling(
-        self, upgrades: list[str]
-    ) -> None:
+    def assert_migration_adds_the_column_without_backfilling(self, upgrades: list[str]) -> None:
         """The migration's `upgrade()` adds the column and touches no existing row.
 
         This is the arm the column-shape assertions cannot reach. A backfill

@@ -21,6 +21,7 @@ class AccountExistence(Protocol):
 def get_account_existence() -> AccountExistence:
     raise NotImplementedError("wired by the application composition root")
 
+
 _BEARER_PREFIX = "bearer "
 
 UNAUTHORIZED_MESSAGE = "A valid access token is required."

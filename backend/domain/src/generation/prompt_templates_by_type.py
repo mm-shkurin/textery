@@ -91,5 +91,3 @@ TEMPLATES = {
     SOCHINENIE: _sochinenie,
     REFERAT: _referat,
 }
-
-

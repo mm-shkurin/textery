@@ -23,8 +23,7 @@ _COMBINING_CATEGORIES = frozenset({"Mn", "Mc", "Me"})
 
 def _is_continuation(character: str) -> bool:
     return (
-        character == _ZERO_WIDTH_JOINER
-        or unicodedata.category(character) in _COMBINING_CATEGORIES
+        character == _ZERO_WIDTH_JOINER or unicodedata.category(character) in _COMBINING_CATEGORIES
     )
 
 

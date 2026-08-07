@@ -97,9 +97,7 @@ def prompt_for(
     return build_prompt(prompt_request(document_type, topic=topic, volume_pages=volume_pages))
 
 
-def assert_refusal(
-    exc_info: pytest.ExceptionInfo[PromptBuildError], expected_message: str
-) -> None:
+def assert_refusal(exc_info: pytest.ExceptionInfo[PromptBuildError], expected_message: str) -> None:
     """The two things every refusal in these files must be, asserted together.
 
     Extracted because the pair was written out three times in

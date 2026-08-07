@@ -17,9 +17,7 @@ EXTRA_WISHES = "Добавь пример из школьной программ
 
 def _build(document_type, **fields):
     return build_prompt(
-        PromptRequest(
-            document_type=document_type, topic=TOPIC, volume_pages=VOLUME_PAGES, **fields
-        )
+        PromptRequest(document_type=document_type, topic=TOPIC, volume_pages=VOLUME_PAGES, **fields)
     )
 
 

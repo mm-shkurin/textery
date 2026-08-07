@@ -69,14 +69,10 @@ class RetryGeneration:
             # Only `failed`. A pending or in-progress row is still alive -- the
             # stale sweep requeues it -- and retrying there runs one piece of work
             # twice: two documents, two model bills.
-            raise ValidationException(
-                message=NOT_RETRYABLE_MESSAGE, error_code="NOT_RETRYABLE"
-            )
+            raise ValidationException(message=NOT_RETRYABLE_MESSAGE, error_code="NOT_RETRYABLE")
 
         if await self._storage.count_retries_of(generation_id) >= RETRY_CEILING:
-            raise ValidationException(
-                message=RETRY_LIMIT_MESSAGE, error_code="RETRY_LIMIT_REACHED"
-            )
+            raise ValidationException(message=RETRY_LIMIT_MESSAGE, error_code="RETRY_LIMIT_REACHED")
 
         retry = Generation.retry_of(source, idempotency_key=key)
         # Saved before enqueued, so a crash between the two leaves a row the sweep

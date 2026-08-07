@@ -62,9 +62,7 @@ def patch_async_client(mocker, post_side_effect):
 # exact string is posted back, never what is in it. What goes into a prompt is the
 # domain's claim and is pinned by the prompt goldens; this module's claim is that
 # the transport does not touch it.
-PROMPT = build_prompt(
-    PromptRequest(document_type=DOKLAD, topic="Космос", volume_pages=3)
-)
+PROMPT = build_prompt(PromptRequest(document_type=DOKLAD, topic="Космос", volume_pages=3))
 
 
 def set_credentials(monkeypatch):

@@ -49,8 +49,7 @@ class TestListProjectsWireContract:
         # Whole-row, not the two timestamps alone: converting the offsets while
         # dropping or corrupting one of the other seven fields is not a pass.
         assert items == [expected_row(_ID_ONE)], (
-            f"a +07:00 and a -05:00 instant must both reach the wire as UTC, "
-            f"got {items!r}"
+            f"a +07:00 and a -05:00 instant must both reach the wire as UTC, got {items!r}"
         )
 
     async def test_should_refuse_a_naive_timestamp_rather_than_shift_it(
