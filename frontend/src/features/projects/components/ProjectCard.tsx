@@ -24,11 +24,15 @@ interface ProjectCardProps {
 // together — so the type picks ONE accent name and the stylesheet owns the three colours. Written
 // as a table rather than a chain of ternaries because it is exhaustive on DocumentType: adding a
 // type without an accent is a compile error here, in the file that has to know.
+// Read off the Figma frame «Мои проекты - вид сетка - вариант 1 (Dekstop)» (node 484:1104), one
+// accent per type — эссе is coral there, not teal. It shipped as teal, which gave эссе and
+// сочинение the same badge and the same folder: two document types a user cannot tell apart at a
+// glance is exactly the confusion the tint exists to prevent.
 const ACCENT_BY_TYPE: Record<DocumentType, string> = {
   referat: 'blue',
   doklad: 'purple',
   sochinenie: 'teal',
-  essay: 'teal',
+  essay: 'coral',
 }
 
 // A type this client has never heard of still gets a card. Blue is the mockup's most common tint

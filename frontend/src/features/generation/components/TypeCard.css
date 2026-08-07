@@ -1,0 +1,101 @@
+/* One document-type tile on the creation modal, drawn from Figma 788:5094. The card's background
+   IS the image — the frame fills each card with a tile from «Cards/Images color folders» — and the
+   words sit on a frosted panel across its lower half. Tokens from index.css. */
+.type-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 100%;
+  aspect-ratio: 161 / 175;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background-color: var(--bg-sunken);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  color: var(--text-primary);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.type-card:hover {
+  filter: brightness(1.03);
+}
+
+.type-card.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* The four tiles the modal spends. The other four in the palette
+   (coral, green, yellow, magenta) are downloaded alongside them and wait for the document types
+   that do not exist yet. */
+.type-card-blue {
+  background-image: url('/design/doc-types/blue.png');
+}
+
+.type-card-orange {
+  background-image: url('/design/doc-types/orange.png');
+}
+
+.type-card-violet {
+  background-image: url('/design/doc-types/violet.png');
+}
+
+.type-card-teal {
+  background-image: url('/design/doc-types/teal.png');
+}
+
+/* Translucent white over the tile rather than an opaque strip: the folder art shows through, which
+   is what makes the four cards read as one set of coloured objects instead of four captions. */
+.type-card-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px 14px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.type-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.type-card-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.type-card-chevron {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--text-secondary);
+}
+
+.type-card-description {
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+
+/* The «скоро» marker for a type that cannot be generated yet. Sits on the tile, clear of the
+   panel, so it reads as a stamp on the card rather than as part of the description. */
+.soon-pill {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}

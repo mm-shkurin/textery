@@ -58,14 +58,16 @@ describe('ProjectsPage navigation', () => {
   })
 
   // «Недавние проекты» is the first four items of the SAME response — never a second request for a
-  // slice of data already in hand. It only earns its screenful once the page holds more than it
-  // would show; repeating four cards the user can already see costs a section and buys nothing.
-  it('shows no recent section when the feed fits inside it', async () => {
+  // slice of data already in hand. It is part of the screen whenever there is anything to put in
+  // it: frame 484:1104 draws the rail above a list that repeats it. This case used to assert the
+  // opposite — that a short feed suppressed the rail — which cost a user with two projects the
+  // section entirely and did not match any frame in the file.
+  it('shows the recent section even when the feed fits inside it', async () => {
     mockFeed([DOCUMENT, GENERATION], 2)
     renderProjectsPage()
 
     await screen.findAllByTestId('project-card')
-    expect(screen.queryByTestId('projects-recent')).toBeNull()
+    expect(screen.getByTestId('projects-recent')).toBeInTheDocument()
   })
 
   it('shortcuts the four newest projects once the feed is longer', async () => {

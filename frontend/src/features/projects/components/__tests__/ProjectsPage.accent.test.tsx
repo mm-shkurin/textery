@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import { mockFeed, pinClockTo, renderProjectsPage } from './feedTestHarness'
 import { UNKNOWN_TYPE_PROJECT } from './projectFixtures'
+import { ESSAY_PROJECT, SOCHINENIE_PROJECT } from './projectAccentFixtures'
 
 // `GET /api/v1/projects` does not exist on the backend yet — this suite builds against a mock of
 // it, never a live call.
@@ -29,6 +30,31 @@ describe('ProjectsPage card accent for an unfamiliar document type', () => {
     expect(card).toHaveClass('project-card-accent-blue')
     expect(card).not.toHaveClass('project-card-accent-purple')
     expect(card).not.toHaveClass('project-card-accent-teal')
+    expect(card).not.toHaveClass('project-card-accent-coral')
     expect(within(card).getByTestId('project-card-type')).toBeInTheDocument()
+  })
+})
+
+// Both types in ONE case, on ONE feed: the defect was not "эссе had the wrong colour" but "эссе and
+// сочинение had the SAME colour", and a claim about sameness cannot be made by two tests that each
+// see one card. Rendering them side by side is also what the user does — the two sit in the same
+// grid.
+describe('ProjectsPage card accents distinguish эссе from сочинение', () => {
+  pinClockTo('2026-08-03T12:00:00.000Z')
+
+  it('tints эссе coral and сочинение teal rather than giving both the same accent', async () => {
+    mockFeed([ESSAY_PROJECT, SOCHINENIE_PROJECT], 2)
+
+    renderProjectsPage()
+
+    const [essay, sochinenie] = await screen.findAllByTestId('project-card')
+
+    expect(essay).toHaveClass('project-card-accent-coral')
+    expect(essay).not.toHaveClass('project-card-accent-teal')
+    expect(sochinenie).toHaveClass('project-card-accent-teal')
+    expect(sochinenie).not.toHaveClass('project-card-accent-coral')
+    // The badges name the two types, so a fixture swap cannot satisfy the assertions above.
+    expect(within(essay).getByTestId('project-card-type')).toHaveTextContent('Эссе')
+    expect(within(sochinenie).getByTestId('project-card-type')).toHaveTextContent('Сочинение')
   })
 })

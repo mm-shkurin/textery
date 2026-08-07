@@ -4,6 +4,11 @@ export interface DocumentTypeOption {
   id: DocumentType
   name: string
   available: boolean
+  // The line under the name on the creation modal's card — what the type IS, in the words the
+  // Figma frame «Мои проекты - Создать проект» (788:5094) uses. It sits beside `name` rather than
+  // in the component because it is copy, and the component that renders it is not the only screen
+  // that will want to say what a доклад is.
+  description: string
 }
 
 // All four are selectable. `available` stays on the option rather than being deleted: it is the
@@ -12,11 +17,20 @@ export interface DocumentTypeOption {
 // `SUPPORTED_DOCUMENT_TYPES` has admitted all four since story 1, and since scenario 2.1 every one
 // of them reaches the model through the domain's own `build_prompt`, which carries реферат's
 // section template and the invented-sources ban.
+//
+// Ordered as the creation modal draws them — Реферат, Эссе, Доклад, Сочинение. The order is a
+// design decision and this is the list every screen renders, so it is stated here rather than
+// sorted at each call site.
 export const DOCUMENT_TYPES: DocumentTypeOption[] = [
-  { id: 'doklad', name: 'Доклад', available: true },
-  { id: 'essay', name: 'Эссе', available: true },
-  { id: 'sochinenie', name: 'Сочинение', available: true },
-  { id: 'referat', name: 'Реферат', available: true },
+  { id: 'referat', name: 'Реферат', available: true, description: 'Изложение темы с выводами' },
+  { id: 'essay', name: 'Эссе', available: true, description: 'Личный взгляд на проблему' },
+  { id: 'doklad', name: 'Доклад', available: true, description: 'Текст для устного выступления' },
+  {
+    id: 'sochinenie',
+    name: 'Сочинение',
+    available: true,
+    description: 'Рассуждение на тему с позицией',
+  },
 ]
 
 export const DEFAULT_DOCUMENT_TYPE: DocumentType = 'doklad'

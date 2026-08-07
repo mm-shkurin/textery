@@ -17,10 +17,35 @@ describe('ProjectsPage empty states', () => {
     renderProjectsPage({ onCreateProject })
 
     const empty = await screen.findByTestId('projects-empty-none')
-    expect(empty).toHaveTextContent('Работ пока нет.')
+    // The copy frame 527:1863 draws: the state on one line, what to do about it on the next.
+    expect(empty).toHaveTextContent('Здесь пока ничего нет')
+    expect(empty).toHaveTextContent('Начните работу здесь')
     expect(screen.queryByTestId('projects-empty-search')).toBeNull()
 
     fireEvent.click(screen.getByTestId('projects-create'))
+    expect(onCreateProject).toHaveBeenCalledTimes(1)
+  })
+
+  // The section heading is the screen's one structural landmark, and the empty frame keeps it.
+  // Dropping it exactly when the page has nothing else on it leaves a user staring at whitespace
+  // with no clue which of the app's screens they are on.
+  it('keeps the «Все проекты» heading above an empty feed', async () => {
+    mockFeed([], 0)
+    renderProjectsPage()
+
+    await screen.findByTestId('projects-empty-none')
+    expect(screen.getByRole('heading', { name: 'Все проекты' })).toBeInTheDocument()
+  })
+
+  // The toolbar's «Создать проект» is the path to a first project for a user who is NOT looking at
+  // the empty state — the one with twenty projects already. It shipped only inside the empty
+  // block, so creating a twenty-first meant emptying the feed first.
+  it('offers «Создать проект» from the toolbar while the feed has rows', async () => {
+    mockFeed([DOCUMENT], 1)
+    const onCreateProject = vi.fn()
+    renderProjectsPage({ onCreateProject })
+
+    fireEvent.click(await screen.findByTestId('projects-toolbar-create'))
     expect(onCreateProject).toHaveBeenCalledTimes(1)
   })
 

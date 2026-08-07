@@ -1,23 +1,38 @@
-/* «Мои проекты» — the chrome around the feed: header, toolbar, sections, empty and loading
-   states, pager, and the list view. Split from ProjectsPage.css, which owns the grid and the
-   cards, to keep both files under the 200-line cap. Tokens come from index.css. */
+/* «Мои проекты» — the chrome around the feed: header, sections, list view, loading state and
+   pager. Split from ProjectsPage.css, which owns the grid and the cards, and from
+   ProjectsToolbar.css / ProjectsEmptyState.css, which own the two blocks named after them — all
+   four to keep every file under the 200-line cap. Tokens come from index.css. */
 
+/* The design's `Main` frame: a 1640px column with 40px above and below and 140px either side, on
+   a 1920px page. The side padding is expressed as the same 140px only while there is room for it
+   — `min()` lets the column keep its air on a laptop instead of pinning a fixed 140px gutter that
+   would eat a seventh of a 1000px screen. */
 .projects-screen {
   max-width: 1640px;
   margin: 0 auto;
-  padding: 24px 24px 48px;
+  padding: 40px min(140px, 4vw) 48px;
 }
 
 .projects-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
 }
 
+/* 28/600 in frame 527:1863, not 30/700 — the heading is a size and a half above the section
+   titles under it, and it had drifted heavier than either. */
 .projects-heading {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 600;
   margin: 0;
+}
+
+/* One quiet line under the title, as in frame 527:1863: 18/400, and 12px below the heading. It
+   shipped at 15px, which read as a caption rather than as the page's own description. */
+.projects-subtitle {
+  margin: 12px 0 0;
+  font-size: 18px;
+  color: var(--text-secondary);
 }
 
 .projects-back {
@@ -28,80 +43,11 @@
   cursor: pointer;
 }
 
-.projects-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  margin: 18px 0 8px;
-}
-
-.projects-search {
-  flex: 1 1 260px;
-}
-
-.projects-search-input {
-  width: 100%;
-  padding: 9px 14px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: var(--bg-surface);
-  font: inherit;
-}
-
-.projects-result-count {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.projects-sort {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-}
-
-.projects-sort select {
-  padding: 8px 10px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  background: var(--bg-surface);
-  font: inherit;
-}
-
-/* A <fieldset>, so the three UA defaults it ships with are neutralised here: the groove border
-   (replaced below), the ~0.35em/0.75em padding, and `min-inline-size: min-content`, which would
-   stop the toggle from shrinking with the toolbar. Without these the group renders as a boxed
-   form section rather than as the segmented control the mockup draws. */
-.projects-view-toggle {
-  display: inline-flex;
-  margin: 0;
-  padding: 0;
-  min-inline-size: 0;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.projects-view-toggle button {
-  padding: 8px 14px;
-  border: none;
-  background: var(--bg-surface);
-  cursor: pointer;
-  font: inherit;
-}
-
-/* The chosen view is announced through aria-pressed, so the styling follows that state rather
-   than a class the markup would have to keep in step with it. */
-.projects-view-toggle button[aria-pressed='true'] {
-  background: var(--bg-sunken);
-  font-weight: 600;
-}
-
+/* 20/600, and the 40px gap the `Main` frame puts between its sections. */
 .projects-section-title {
-  font-size: 15px;
-  font-weight: 700;
-  margin: 26px 0 4px;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 40px 0 4px;
 }
 
 .projects-error-block {
@@ -119,19 +65,68 @@
   cursor: pointer;
 }
 
-.projects-empty {
-  padding: 40px 0;
-  color: var(--text-muted);
-  text-align: center;
+/* The list view is the same components in one column: switching re-renders data already in
+   hand, so the rows must not need markup of their own. */
+.projects-view-list {
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
 
-.projects-empty button {
-  margin-top: 10px;
-  padding: 9px 18px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: var(--bg-surface);
-  cursor: pointer;
+.projects-view-list .project-card {
+  display: flex;
+  align-items: center;
+}
+
+.projects-view-list .project-card-thumb {
+  width: 96px;
+  height: 76px;
+  flex: none;
+}
+
+.projects-view-list .project-card-body {
+  padding: 10px 16px;
+}
+
+.projects-view-list .project-card-title {
+  -webkit-line-clamp: 1;
+}
+
+/* The list view has no way IN on mobile — the toggle is hidden there — but a stored preference
+   from a wide viewport still arrives as `view="list"`. Without this the phone would render the
+   squat 96px-thumbnail rows the design does not have, chosen on a screen the user is no longer
+   looking at. The grid is what mobile shows, whatever the preference says. */
+@media (max-width: 720px) {
+  /* 24/16 in the 360px frame 1141:12494 — the mobile heading is one step down from the desktop's
+     28, and the subtitle one step down from its 18. */
+  .projects-heading {
+    font-size: 24px;
+  }
+
+  .projects-subtitle {
+    font-size: 16px;
+    margin-top: 8px;
+  }
+
+  .projects-section-title {
+    margin-top: 28px;
+  }
+
+  .projects-view-list .project-card {
+    display: block;
+  }
+
+  .projects-view-list .project-card-thumb {
+    width: auto;
+    height: 128px;
+  }
+
+  .projects-view-list .project-card-body {
+    padding: 14px 16px 18px;
+  }
+
+  .projects-view-list .project-card-title {
+    -webkit-line-clamp: 2;
+  }
 }
 
 /* Cards in outline, so the wait reads as "this is loading" rather than as an empty feed. Marked

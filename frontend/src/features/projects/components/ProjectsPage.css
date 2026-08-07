@@ -1,12 +1,9 @@
-/* «Мои проекты» — grid feed and cards, ported from
-   ProductSpecification/stories/12-my-projects/mockups/desktop/{01-projects-grid.html,projects.css}.
-   Scenario 1.1 covers the grid and the cards only; the toolbar, chips, section titles, list view
-   and empty state in that mockup belong to later scenarios and are deliberately absent here.
+/* «Мои проекты» — the grid feed and the cards in it. The rest of the screen is owned by the file
+   named after it: ProjectsScreen.css (header, sections, list view, skeleton, pager),
+   ProjectsToolbar.css and ProjectsEmptyState.css.
 
-   Tokens come from index.css. The mockup's own theme.css is a different palette file (the
-   story-18 sheet) — where a token means the same thing in both, the app's value wins so this
-   screen follows a theme change like every other; only values the app has no token for are
-   literal, and they are the per-type tint swatches, which the mockup hardcodes too. */
+   The per-type swatches below are read off the Figma frame 484:1104; everything else comes from
+   the tokens in index.css, so this screen follows a theme change like every other. */
 
 .projects-page {
   max-width: 1640px;
@@ -32,11 +29,23 @@
   }
 }
 
+/* One column below 720px, not two: the Figma mobile frames (674:2534, 1141:12494) are drawn at
+   360px and give each card the full width, with the thumbnail above the text rather than beside
+   it. Two columns there would halve a card that already clamps its title to two lines. */
 @media (max-width: 720px) {
   .projects-page {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
     gap: 16px;
-    padding: 16px;
+    padding: 16px 0;
+  }
+
+  /* «Недавние проекты» shows two cards on mobile and four on the web — the board's own note
+     («в недавних проектах показ только последних 2 карточек (в вебе 4)»). Done here rather than
+     by slicing a different count in JS: the page renders one list, and a viewport is a styling
+     question. Hidden cards are the 3rd and 4th of a rail the full list below repeats in order,
+     so nothing becomes unreachable. */
+  .projects-section-recent .project-card:nth-child(n + 3) {
+    display: none;
   }
 }
 
@@ -103,57 +112,44 @@
 }
 
 /* Per-type tints. Two swatches per type — the badge pair and the folder colour — kept adjacent so
-   a new document type is one block here and never another copy of the glyph. The literals are the
-   mockup's own (the .b- and .f- rules in projects.css); neither palette has tokens for them. */
+   a new document type is one block here and never another copy of the glyph. The literals are read
+   off the Figma frame 484:1104 (badge fill/text, and the mid stop of the folder's gradient);
+   neither palette has tokens for them. */
 .project-card-accent-blue .project-card-type {
-  background: #e8effe;
-  color: #1552f0;
+  background: #e5f3fe;
+  color: #004ee0;
 }
 
 .project-card-accent-blue .project-card-folder {
-  color: #4a93ef;
+  color: #4894fe;
+}
+
+.project-card-accent-coral .project-card-type {
+  background: #fff0ed;
+  color: #e76455;
+}
+
+.project-card-accent-coral .project-card-folder {
+  color: #e76455;
 }
 
 .project-card-accent-purple .project-card-type {
-  background: #efe8fd;
-  color: #7040d8;
+  background: #efeaff;
+  color: #6730ff;
 }
 
 .project-card-accent-purple .project-card-folder {
-  color: #9370ea;
+  color: #8a38f5;
 }
 
 .project-card-accent-teal .project-card-type {
-  background: #dff5f2;
-  color: #12857a;
+  background: #eafffd;
+  color: #2d978d;
 }
 
 .project-card-accent-teal .project-card-folder {
-  color: #45c7b7;
+  color: #2d978d;
 }
 
-/* The list view is the same components in one column: switching re-renders data already in
-   hand, so the rows must not need markup of their own. */
-.projects-view-list {
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-
-.projects-view-list .project-card {
-  display: flex;
-  align-items: center;
-}
-
-.projects-view-list .project-card-thumb {
-  width: 96px;
-  height: 76px;
-  flex: none;
-}
-
-.projects-view-list .project-card-body {
-  padding: 10px 16px;
-}
-
-.projects-view-list .project-card-title {
-  -webkit-line-clamp: 1;
-}
+/* The list view's own rules moved to ProjectsScreen.css, which its header already claims to own —
+   this file was at the 200-line cap once the mobile block above landed. */

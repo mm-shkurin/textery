@@ -1,0 +1,171 @@
+/* The toolbar above the feed: search, sort, «Создать проект», and the grid/list toggle. Split out
+   of ProjectsScreen.css, which sits near the 200-line cap and owns the rest of the screen's chrome.
+   Drawn from the Figma frames 527:1863 (desktop) and 1141:12494 (mobile). Tokens from index.css. */
+
+/* Two groups, pushed apart: filters read left-to-right from the search box, actions sit against
+   the right edge. `space-between` rather than a margin-left auto on the second group — the
+   relationship is between the two, not a property of one of them. */
+.projects-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 22px 0 8px;
+}
+
+.projects-toolbar-filters,
+.projects-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* `Tabs/Search tab` is 240x48 in the frame. It stays flexible rather than fixed at 240 so the row
+   can breathe on a wide screen, but it no longer grows past the design's width. */
+.projects-search {
+  flex: 1 1 240px;
+  max-width: 240px;
+}
+
+/* The magnifier sits INSIDE the field, so the field is the positioning context and the input gets
+   left padding wide enough to clear it. */
+.projects-search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.projects-search-icon {
+  position: absolute;
+  left: 14px;
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* 48px tall, 12px radius, 14px text — the frame's `Tabs/Search tab`. */
+.projects-search-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px 0 42px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  font: inherit;
+  font-size: 14px;
+}
+
+.projects-result-count {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.projects-sort {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Matches the 48px/12px-radius icon buttons it stands in for (`Dropdown/Icon only`, `Tabs/Sort`),
+   so the filter row is one band rather than three heights. */
+.projects-sort select {
+  height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  font: inherit;
+  font-size: 14px;
+}
+
+/* The screen's primary action, shared with the empty state's button so the two cannot drift into
+   two different blues. */
+/* `Buttons/Main+icon`: 48px tall, 12px radius, 32px side padding, 12px gap, 16/600 text. */
+.projects-create-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 48px;
+  padding: 0 32px;
+  border: none;
+  border-radius: 12px;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.projects-create-button:hover {
+  background: var(--accent-hover);
+}
+
+.projects-create-sparkle {
+  width: 18px;
+  height: 18px;
+}
+
+/* A <fieldset>, so the three UA defaults it ships with are neutralised here: the groove border
+   (replaced below), the ~0.35em/0.75em padding, and `min-inline-size: min-content`, which would
+   stop the toggle from shrinking with the toolbar. Without these the group renders as a boxed
+   form section rather than as the segmented control the design draws. */
+.projects-view-toggle {
+  display: inline-flex;
+  margin: 0;
+  padding: 4px;
+  min-inline-size: 0;
+  gap: 2px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-surface);
+}
+
+.projects-view-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.projects-view-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* The chosen view is announced through aria-pressed, so the styling follows that state rather
+   than a class the markup would have to keep in step with it. */
+.projects-view-toggle button[aria-pressed='true'] {
+  background: var(--bg-sunken);
+  color: var(--text-primary);
+}
+
+/* Mobile, per frames 1141:12494 and 674:2534: the search row keeps its controls side by side, the
+   primary action drops to its own full-width row beneath them, and the view toggle is gone — the
+   board's note reads «в мобильной версии только сеткой вид карточек». It is HIDDEN rather than
+   unmounted so a user who rotates back to a wide viewport still has the view they chose. */
+@media (max-width: 720px) {
+  .projects-toolbar {
+    display: grid;
+    gap: 12px;
+  }
+
+  .projects-search {
+    max-width: none;
+  }
+
+  .projects-create-button {
+    width: 100%;
+  }
+
+  .projects-view-toggle {
+    display: none;
+  }
+}
