@@ -22,7 +22,11 @@ export const REQUIRED = [
     why: 'the one step that proves the app still compiles and bundles — and that what it bundles still fits its size budgets',
     mustContain: ['vite build', 'check-bundle-size.selftest.mjs', 'check-bundle-size.mjs'],
   },
-  { script: 'lint', why: 'oxlint at --max-warnings=0', mustContain: ['--max-warnings=0'] },
+  {
+    script: 'lint',
+    why: 'oxlint at --max-warnings=0, and the module boundaries the README states but nothing else enforces',
+    mustContain: ['--max-warnings=0', 'check-boundaries.selftest.mjs', 'check-boundaries.mjs'],
+  },
   { script: 'format:check', why: 'a .prettierrc nobody runs is a preference, not a convention' },
   {
     script: 'audit',

@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/check-bundle-size.selftest.mjs && node scripts/check-bundle-size.mjs",
     "typecheck": "tsc -b --noEmit",
-    "lint": "oxlint --max-warnings=0",
+    "lint": "oxlint --max-warnings=0 && node scripts/check-boundaries.selftest.mjs && node scripts/check-boundaries.mjs",
     "ci:parity": "node scripts/check-ci-parity.selftest.mjs && node scripts/check-ci-parity.runtime.selftest.mjs && node scripts/check-ci-parity.mjs",
     "check:ingress": "node scripts/check-nginx-503.selftest.mjs && node scripts/check-nginx-503.premise.selftest.mjs && node scripts/check-nginx-503.mjs",
     "audit": "node scripts/check-audit.selftest.mjs && node scripts/check-audit.mjs",
