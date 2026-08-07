@@ -1,7 +1,7 @@
 """constrain generations.document_type to the supported set
 
 The documents table has constrained this column since it was created; the
-generations table never did. Generation._validate_document_type is the only
+generations table never did. generation_validation.validate_document_type is the only
 guard, so any code path that writes a row without going through the factory --
 a migration, a fixture, a future bulk import -- can put an arbitrary string in a
 column whose value GigaChatProvider interpolates straight into an LLM prompt.

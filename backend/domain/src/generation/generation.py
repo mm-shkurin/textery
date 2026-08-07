@@ -1,8 +1,5 @@
-import unicodedata
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
-
-from document.document_type import DocumentType
 
 # Imported for use below AND re-exported: the constants moved to
 # `generation_rules` for file size, not to be renamed, so every existing
@@ -23,6 +20,11 @@ from generation.generation_rules import (  # noqa: F401
     PENDING_STATUS,
     REQUIREMENTS_TOO_LONG_MESSAGE,
     TOPIC_TOO_LONG_MESSAGE,
+)
+from generation.generation_validation import (
+    is_out_of_range_volume,
+    required_topic,
+    validate_document_type,
 )
 from shared.exceptions import ValidationException
 
@@ -95,10 +97,10 @@ class Generation:
         # be honest: a predicate that answers True for None leaves `topic` typed
         # `str | None` afterwards, and `len(topic)` was only safe by reading the
         # two lines together. The validator returns the narrowed value instead.
-        topic = cls._required_topic(topic)
+        topic = required_topic(topic)
         if len(topic) > MAX_TOPIC_LENGTH:
             raise ValidationException(TOPIC_TOO_LONG_MESSAGE)
-        if cls._is_out_of_range_volume(volume_pages):
+        if is_out_of_range_volume(volume_pages):
             raise ValidationException(OUT_OF_RANGE_VOLUME_MESSAGE)
         if requirements is not None and len(requirements) > MAX_REQUIREMENTS_LENGTH:
             raise ValidationException(REQUIREMENTS_TOO_LONG_MESSAGE)
@@ -113,7 +115,7 @@ class Generation:
             volume_pages=volume_pages,
             requirements=requirements,
             extra_wishes=extra_wishes,
-            document_type=cls._validate_document_type(document_type),
+            document_type=validate_document_type(document_type),
         )
 
     @classmethod
@@ -147,55 +149,3 @@ class Generation:
             idempotency_key=idempotency_key,
             source_generation_id=source.id,
         )
-
-    @staticmethod
-    def _validate_document_type(document_type: str) -> str:
-        """Reject anything outside the four supported types.
-
-        Load-bearing, not cosmetic: GigaChatProvider interpolates this value
-        straight into the prompt ("{document_type} на тему: {topic}"), so an
-        unvalidated string here reaches the model. The generations table carries
-        no CHECK on the column either -- unlike documents -- which makes this the
-        only guard.
-
-        DocumentType is reused rather than reimplemented so the allowlist stays
-        one tuple, shared with Document.create and the documents CHECK constraint.
-        """
-        try:
-            return DocumentType(document_type).value
-        except ValueError as error:
-            # error_code="INVALID_DOCUMENT_TYPE", matching CreateDocument, rather
-            # than the bare VALIDATION_ERROR this factory's other rules raise. It
-            # is the same field under the same allowlist, so a client that learned
-            # to handle the code from /documents handles it here unchanged -- and
-            # the shared handler already maps it to 422.
-            raise ValidationException(
-                error_code="INVALID_DOCUMENT_TYPE",
-                message=INVALID_DOCUMENT_TYPE_MESSAGE,
-            ) from error
-
-    @staticmethod
-    def _is_out_of_range_volume(volume_pages: int | None) -> bool:
-        if volume_pages is None:
-            return True
-        return not (MIN_VOLUME_PAGES <= volume_pages <= MAX_VOLUME_PAGES)
-
-    @staticmethod
-    def _required_topic(topic: str | None) -> str:
-        """The topic, proven present, or `MISSING_TOPIC_MESSAGE`.
-
-        Returns the value rather than answering a yes/no question, so the caller
-        holds a `str` afterwards instead of a `str | None` it has to remember is
-        already checked.
-        """
-        if topic is None:
-            raise ValidationException(MISSING_TOPIC_MESSAGE)
-        # str.strip() only removes Unicode whitespace (category Zs/Zl/Zp), not
-        # format characters like U+200B ZERO WIDTH SPACE (category Cf). Strip
-        # both ordinary whitespace and format characters before checking emptiness.
-        visible_chars = [
-            char for char in topic if not char.isspace() and unicodedata.category(char) != "Cf"
-        ]
-        if not visible_chars:
-            raise ValidationException(MISSING_TOPIC_MESSAGE)
-        return topic

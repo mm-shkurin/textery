@@ -58,7 +58,7 @@ class TestAPromptRefusesAFieldItCannotRender:
     def test_should_refuse_to_build_a_prompt_for_a_missing_or_blank_topic(
         self, document_type, topic
     ):
-        # `_required_topic` runs in `Generation.create` and not in `__init__`, so a
+        # `required_topic` runs in `Generation.create` and not in `__init__`, so a
         # hydrated generation carries whatever the row holds. `на тему: None` has
         # been reachable since 1.1; it is guarded here because this is the scenario
         # that first builds the exception to raise.
