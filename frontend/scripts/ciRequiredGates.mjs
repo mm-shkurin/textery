@@ -17,7 +17,11 @@ export const REQUIRED = [
     why: 'the suite AND the per-file coverage floors, which only fire under --coverage',
     mustContain: ['--coverage', 'check-per-file-coverage.mjs'],
   },
-  { script: 'build', why: 'the one step that proves the app still compiles and bundles' },
+  {
+    script: 'build',
+    why: 'the one step that proves the app still compiles and bundles — and that what it bundles still fits its size budgets',
+    mustContain: ['vite build', 'check-bundle-size.selftest.mjs', 'check-bundle-size.mjs'],
+  },
   { script: 'lint', why: 'oxlint at --max-warnings=0', mustContain: ['--max-warnings=0'] },
   { script: 'format:check', why: 'a .prettierrc nobody runs is a preference, not a convention' },
   {
