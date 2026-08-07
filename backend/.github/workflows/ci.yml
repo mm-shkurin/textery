@@ -30,6 +30,14 @@ jobs:
       - name: Check formatting
         run: ruff format --check .
 
+      # In `lint` rather than a job of its own: it needs nothing installed, not
+      # even ruff, so a separate runner would spend more time starting than
+      # checking. Added because this was the one rule in
+      # .claude/rules/coding-rules.md with no gate behind it -- and it had eight
+      # violations, which is what an ungated rule reliably collects.
+      - name: Check file sizes
+        run: python scripts/check_file_size.py
+
   # Its own job, and not folded into `lint`: mypy needs the runtime dependencies
   # installed to see FastAPI's and SQLAlchemy's own type information, which the
   # ruff-only job deliberately skips to stay fast. It still needs no database.
