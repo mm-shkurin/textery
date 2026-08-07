@@ -31,6 +31,7 @@ import contextlib
 import logging
 from collections.abc import AsyncIterator
 
+from api_docs import docs_urls
 from fastapi import FastAPI
 
 from container import (
@@ -144,7 +145,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await provider.aclose()
 
 
-app = FastAPI(lifespan=lifespan)
+# Off unless API_DOCS_ENABLED says so; api_docs.py has the why.
+_docs = docs_urls()
+app = FastAPI(
+    lifespan=lifespan,
+    docs_url=_docs.docs_url,
+    redoc_url=_docs.redoc_url,
+    openapi_url=_docs.openapi_url,
+)
 app.include_router(generation_router)
 app.include_router(auth_router)
 app.include_router(oauth_router)
