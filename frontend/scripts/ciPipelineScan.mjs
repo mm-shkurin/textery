@@ -95,7 +95,40 @@ export function scanPipeline(path) {
     }
   }
 
-  return { active: active.sort(), neutralized: neutralized.sort() }
+  return { active: active.sort(), neutralized: neutralized.sort(), node: nodeVersions(contents) }
+}
+
+// The same gates on two different runtimes are not the same gates. This is the drift the script
+// comparison cannot see: both files keep running `npm run build`, one on Node 20 and one on 22, and
+// the split repo goes green on a build the monorepo would have failed - or the reverse, which is
+// worse, because the failure lands on whoever pulls next rather than on whoever caused it.
+//
+// Read as text rather than parsed: a `node-version:` line is unambiguous, and the alternative is a
+// YAML dependency in a script whose whole point is that it runs with nothing installed.
+const NODE_VERSION = /(?:^|\n)\s*node-version:\s*'?"?([^'"\n]+?)'?"?\s*$/gm
+
+function nodeVersions(contents) {
+  return [...contents.matchAll(NODE_VERSION)].map(([, version]) => version.trim()).sort()
+}
+
+// A pipeline pinned to a runtime older than `engines` is the drift with the longest fuse: every
+// gate passes, and the first person to use a newer API finds out from a CI log that blames their
+// syntax. Compared as major versions - `engines` states a floor with a minor in it (>=20.19), CI
+// states a track ('20'), and those two notations agree at exactly the granularity CI can express.
+export function runtimeProblems(packageJsonPath, pipelines) {
+  const engines = JSON.parse(readFileSync(packageJsonPath, 'utf8')).engines?.node
+  const wanted = /(\d+)/.exec(engines ?? '')
+  if (!wanted) return []
+
+  return pipelines.flatMap(({ label, node }) =>
+    node
+      .filter((version) => /(\d+)/.exec(version)?.[1] !== wanted[1])
+      .map(
+        (version) =>
+          `  ${label} runs Node ${version}, but package.json requires ${engines}.\n` +
+          '    Pin the workflow to the major the project declares, or change what the project declares.',
+      ),
+  )
 }
 
 // The floor names gates; their bodies live in package.json, which the workflow files never mention.

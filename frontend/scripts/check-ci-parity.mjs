@@ -9,7 +9,7 @@
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
-import { bodyProblems, scanPipeline } from './ciPipelineScan.mjs'
+import { bodyProblems, runtimeProblems, scanPipeline } from './ciPipelineScan.mjs'
 import { REQUIRED } from './ciRequiredGates.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -59,7 +59,18 @@ function exitIfBelowFloor(...checked) {
     console.error('CI gate hollowed out in package.json — the workflows still name it:')
     for (const problem of problems) console.error(problem)
   }
-  if (!checked.map((args) => isBelowFloor(...args)).some(Boolean) && problems.length === 0) return
+  // Checked for whichever pipelines are present, including the split-repo shape where there is only
+  // one — a workflow on the wrong runtime is wrong on its own, not only by comparison.
+  const runtime = runtimeProblems(
+    PACKAGE_JSON,
+    checked.map(([{ label }, scan]) => ({ label, node: scan.node })),
+  )
+  if (runtime.length > 0) {
+    console.error('CI runtime does not match the runtime this project declares:')
+    for (const problem of runtime) console.error(problem)
+  }
+  const belowFloor = checked.map((args) => isBelowFloor(...args)).some(Boolean)
+  if (!belowFloor && problems.length === 0 && runtime.length === 0) return
   console.error('Restore the step; do not remove or neutralize a gate to make a pipeline pass.')
   process.exit(1)
 }
@@ -106,4 +117,16 @@ if (standalone.active.join() !== monorepo.active.join()) {
   process.exit(1)
 }
 
-console.log(`CI parity OK — both pipelines run: ${monorepo.active.join(', ')}`)
+// Same scripts, different runtime, is still drift — and the invisible kind, because every gate
+// passes in both files. Compared after the script sets, since a difference in what runs explains a
+// difference in what it runs on, and reporting both at once reads as two unrelated faults.
+if (standalone.node.join() !== monorepo.node.join()) {
+  console.error('CI drift: the two frontend pipelines no longer run on the same Node version.')
+  console.error(`  ${STANDALONE.label} : ${standalone.node.join(', ') || '(unpinned)'}`)
+  console.error(`  ${MONOREPO.label}: ${monorepo.node.join(', ') || '(unpinned)'}`)
+  console.error('Bring the two setup-node steps back in step; an unpinned one drifts on its own.')
+  process.exit(1)
+}
+
+const on = standalone.node.length > 0 ? ` on Node ${[...new Set(standalone.node)].join(', ')}` : ''
+console.log(`CI parity OK — both pipelines run${on}: ${monorepo.active.join(', ')}`)

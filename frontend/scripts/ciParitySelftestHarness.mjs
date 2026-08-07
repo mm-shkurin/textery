@@ -20,15 +20,21 @@ export const ALL = REQUIRED.map(({ script }) => script)
 
 // A package.json whose bodies satisfy every mustContain, so a case fails for the reason it names
 // rather than because the fixture forgot a fragment.
-export const packageJson = (overrides = {}) => {
+export const packageJson = (overrides = {}, engines) => {
   const scripts = Object.fromEntries(
     REQUIRED.map(({ script, mustContain = [] }) => [
       script,
       `node ${[script, ...mustContain].join(' ')}`,
     ]),
   )
-  return JSON.stringify({ scripts: { ...scripts, ...overrides } })
+  return JSON.stringify({ scripts: { ...scripts, ...overrides }, ...(engines ? { engines } : {}) })
 }
+
+// A workflow that pins a runtime, in the shape actions/setup-node is actually written in. The
+// default fixtures pin nothing, so the runtime cases are the only ones that carry a version and
+// every other case stays about the thing it names.
+export const workflowOn = (version, scripts = ALL) =>
+  `jobs:\n  gate:\n    steps:\n      - uses: actions/setup-node@v4\n        with:\n          node-version: '${version}'\n${scripts.map(step).join('')}`
 
 function run({ standalone = ALL, monorepo = ALL, pkg = packageJson(), raw = {} }) {
   const dir = mkdtempSync(join(tmpdir(), 'ci-parity-'))

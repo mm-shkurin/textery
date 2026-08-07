@@ -11,7 +11,7 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --noEmit",
     "lint": "oxlint --max-warnings=0",
-    "ci:parity": "node scripts/check-ci-parity.selftest.mjs && node scripts/check-ci-parity.mjs",
+    "ci:parity": "node scripts/check-ci-parity.selftest.mjs && node scripts/check-ci-parity.runtime.selftest.mjs && node scripts/check-ci-parity.mjs",
     "check:ingress": "node scripts/check-nginx-503.selftest.mjs && node scripts/check-nginx-503.premise.selftest.mjs && node scripts/check-nginx-503.mjs",
     "audit": "node scripts/check-audit.selftest.mjs && node scripts/check-audit.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"scripts/**/*.mjs\"",

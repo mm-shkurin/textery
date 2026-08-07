@@ -28,7 +28,11 @@ export const REQUIRED = [
   {
     script: 'ci:parity',
     why: 'this check; a pipeline that drops it can then drift freely',
-    mustContain: ['check-ci-parity.selftest.mjs', 'check-ci-parity.mjs'],
+    mustContain: [
+      'check-ci-parity.selftest.mjs',
+      'check-ci-parity.runtime.selftest.mjs',
+      'check-ci-parity.mjs',
+    ],
   },
   {
     script: 'check:ingress',
