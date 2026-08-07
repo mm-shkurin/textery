@@ -73,7 +73,7 @@ describe('ManualEditor — no abandonment record when the armed write had nothin
   // ["Pending document save abandoned before it completed"]. hasPendingEditRef is still true because
   // the timer never fired, so the []-scoped cleanup logs over content the server provably holds.
   // RED 2026-07-30, awaiting the H9.4 green that moves the clear site.
-  it.skip('records nothing when the editor unmounts after an edit was reverted to the saved content', async () => {
+  it('records nothing when the editor unmounts after an edit was reverted to the saved content', async () => {
     const { unmount } = await renderCreatedDocument()
 
     armServerConfirmsSavedContent()
@@ -151,7 +151,7 @@ describe('ManualEditor — no abandonment record when the armed write had nothin
   // RED: expected "error" to not be called at all, but actually been called 1 times — same record,
   // same cause. The button bypasses the scheduler, so nothing clears the flag the keystroke set.
   // RED 2026-07-30, awaiting the H9.4 green that moves the clear site.
-  it.skip('records nothing when a manual save inside the debounce gap already persisted the edit', async () => {
+  it('records nothing when a manual save inside the debounce gap already persisted the edit', async () => {
     const { unmount } = await renderCreatedDocument()
 
     armServerConfirmsSavedContent()

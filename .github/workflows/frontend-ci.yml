@@ -55,13 +55,12 @@ jobs:
       - name: nginx 503 guard
         run: npm run check:ingress
 
-      # Production dependencies only, high and above. Two moderate react-router advisories are
-      # open today (GHSA-wrjc-x8rr-h8h6 backslash open redirect, GHSA-337j-9hxr-rhxg SSR
-      # deserializeErrors) whose only fix is the v7 major. Neither is reachable here — the one
-      # place a user-controlled redirect target enters is safeRedirectTarget, which rejects
-      # backslashes itself and says why, and this app does not server-render. The gate is set to
-      # `high` so it stays a signal rather than a permanently-red step nobody reads; drop it to
-      # `moderate` once the v7 migration lands.
+      # Production dependencies, at EVERY severity — the `--audit-level=high` threshold this step
+      # used to carry is gone. A threshold is a silent allowlist: it exempts every present and
+      # future advisory below the line without naming one, and raising it is the obvious way to
+      # make the step stop complaining. Anything npm reports must now be named in
+      # scripts/auditExceptions.mjs with a reason it is not reachable here and a date the
+      # exemption expires; an expired entry, or one npm no longer reports, fails this too.
       - name: Audit production dependencies
         run: npm run audit
 
