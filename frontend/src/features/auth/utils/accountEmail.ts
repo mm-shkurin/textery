@@ -58,7 +58,10 @@ export function currentAccountEmail(): string | null {
 // evidence of a second word an email carries; inventing a second letter from a single word would
 // be inventing data.
 export function accountInitials(email: string): string {
-  const words = email.split('@')[0].split(/[._\-+]+/).filter((word) => word !== '')
+  const words = email
+    .split('@')[0]
+    .split(/[._\-+]+/)
+    .filter((word) => word !== '')
   const letters = words.slice(0, 2).map((word) => word[0])
   return letters.join('').toUpperCase()
 }
