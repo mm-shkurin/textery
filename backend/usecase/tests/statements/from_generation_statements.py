@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from document.create_document_from_generation import CreateDocumentFromGeneration
+from fake.generation.fake_generation_storage import FakeGenerationStorage
 from generation.generation import Generation
 
 _EPOCH = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
@@ -35,38 +36,21 @@ def a_completed_generation(
     )
 
 
-class FakeGenerationStorage:
-    """In-memory GenerationStorage, owner-scoped like the real adapter.
+def a_generation_storage(*generations: Generation) -> FakeGenerationStorage:
+    """The shared `FakeGenerationStorage`, pre-seeded with these rows.
 
-    `get_by_id_and_owner` filters on owner exactly as the SQL does: a fake that
-    looked up by id alone would let a conversion that forgot the ownership check
-    pass here and leak another account's text in production.
+    A seeding helper and not a second fake. There used to be a class of that same
+    name declared right here, with its own constructor and its own subset of the
+    `GenerationStorage` port -- so "the generation fake" named two different
+    objects depending on the import line, and a port method added to one was
+    absent from the other with nothing to say so. The one in `fake/generation/`
+    mirrors the real adapter's CAS conflicts and its owner predicate; this file
+    only ever needed the seeding shape, which is what the helper supplies.
     """
-
-    def __init__(self, generations: list[Generation] | None = None) -> None:
-        self.generations = generations or []
-        self.updated: list[Generation] = []
-
-    async def get_by_id_and_owner(self, generation_id: UUID, owner_id: UUID) -> Generation | None:
-        return next(
-            (g for g in self.generations if g.id == generation_id and g.owner_id == owner_id),
-            None,
-        )
-
-    async def save(self, generation: Generation) -> None:
-        self.generations.append(generation)
-
-    async def update(self, generation: Generation) -> None:
-        # Recorded rather than ignored: the conversion must leave the generation
-        # untouched (it stays the audit record of what the model wrote), and a
-        # no-op fake could not tell "never called" from "called harmlessly".
-        self.updated.append(generation)
-
-    async def list_stale(self, older_than: datetime) -> list[Generation]:
-        return []
-
-    async def list_by_owner(self, owner_id: UUID, limit: int, cursor=None) -> list[Generation]:
-        return [g for g in self.generations if g.owner_id == owner_id][:limit]
+    storage = FakeGenerationStorage(call_order=[])
+    for generation in generations:
+        storage.seed(generation)
+    return storage
 
 
 class PassthroughMarkdownConverter:

@@ -8,12 +8,12 @@ from shared.exceptions import ValidationException
 from statements.document_fakes import FakeDocumentRepository
 from statements.from_generation_statements import (
     COMPLETED_MARKDOWN,
-    FakeGenerationStorage,
     OverflowingSanitizer,
     PassthroughMarkdownConverter,
     RecordingSanitizer,
     a_completed_generation,
     a_conversion,
+    a_generation_storage,
 )
 
 
@@ -30,7 +30,7 @@ def documents():
 class TestACompletedGenerationBecomesAnEditableDocument:
     async def test_should_create_a_draft_linked_to_the_generation(self, documents, owner_id):
         generation = a_completed_generation(owner_id)
-        conversion = a_conversion(documents, FakeGenerationStorage([generation]))
+        conversion = a_conversion(documents, a_generation_storage(generation))
 
         result = await conversion.execute(owner_id, generation.id, "key-1")
 
@@ -45,7 +45,7 @@ class TestACompletedGenerationBecomesAnEditableDocument:
 
     async def test_should_take_the_document_type_from_the_generation(self, documents, owner_id):
         generation = a_completed_generation(owner_id)
-        conversion = a_conversion(documents, FakeGenerationStorage([generation]))
+        conversion = a_conversion(documents, a_generation_storage(generation))
 
         result = await conversion.execute(owner_id, generation.id, "key-1")
 
@@ -53,7 +53,7 @@ class TestACompletedGenerationBecomesAnEditableDocument:
 
     async def test_should_title_the_document_from_the_topic(self, documents, owner_id):
         generation = a_completed_generation(owner_id, topic="Лексус LS 460")
-        conversion = a_conversion(documents, FakeGenerationStorage([generation]))
+        conversion = a_conversion(documents, a_generation_storage(generation))
 
         result = await conversion.execute(owner_id, generation.id, "key-1")
 
@@ -61,7 +61,7 @@ class TestACompletedGenerationBecomesAnEditableDocument:
 
     async def test_should_fall_back_to_an_untitled_name_without_a_topic(self, documents, owner_id):
         generation = a_completed_generation(owner_id, topic=None)
-        conversion = a_conversion(documents, FakeGenerationStorage([generation]))
+        conversion = a_conversion(documents, a_generation_storage(generation))
 
         result = await conversion.execute(owner_id, generation.id, "key-1")
 
@@ -69,7 +69,7 @@ class TestACompletedGenerationBecomesAnEditableDocument:
 
     async def test_should_persist_the_document(self, documents, owner_id):
         generation = a_completed_generation(owner_id)
-        conversion = a_conversion(documents, FakeGenerationStorage([generation]))
+        conversion = a_conversion(documents, a_generation_storage(generation))
 
         await conversion.execute(owner_id, generation.id, "key-1")
 
@@ -79,12 +79,14 @@ class TestACompletedGenerationBecomesAnEditableDocument:
         # The generation stays the audit record of what the model produced, so a
         # later question about who wrote a paragraph is still answerable.
         generation = a_completed_generation(owner_id)
-        generations = FakeGenerationStorage([generation])
+        generations = a_generation_storage(generation)
         conversion = a_conversion(documents, generations)
 
         await conversion.execute(owner_id, generation.id, "key-1")
 
-        assert generations.updated == [], "the conversion must not write to the generation"
+        assert generations.updated_generations == [], (
+            "the conversion must not write to the generation"
+        )
         assert generation.content == COMPLETED_MARKDOWN
 
 
@@ -94,7 +96,7 @@ class TestTheContentPipelineRunsInOrder:
     async def test_should_hand_the_generated_markdown_to_the_converter(self, documents, owner_id):
         generation = a_completed_generation(owner_id)
         converter = PassthroughMarkdownConverter()
-        conversion = a_conversion(documents, FakeGenerationStorage([generation]), converter)
+        conversion = a_conversion(documents, a_generation_storage(generation), converter)
 
         await conversion.execute(owner_id, generation.id, "key-1")
 
@@ -110,9 +112,7 @@ class TestTheContentPipelineRunsInOrder:
         generation = a_completed_generation(owner_id)
         converter = PassthroughMarkdownConverter()
         sanitizer = RecordingSanitizer()
-        conversion = a_conversion(
-            documents, FakeGenerationStorage([generation]), converter, sanitizer
-        )
+        conversion = a_conversion(documents, a_generation_storage(generation), converter, sanitizer)
 
         await conversion.execute(owner_id, generation.id, "key-1")
 
@@ -120,7 +120,7 @@ class TestTheContentPipelineRunsInOrder:
 
     async def test_should_store_what_the_sanitizer_returned(self, documents, owner_id):
         generation = a_completed_generation(owner_id)
-        conversion = a_conversion(documents, FakeGenerationStorage([generation]))
+        conversion = a_conversion(documents, a_generation_storage(generation))
 
         result = await conversion.execute(owner_id, generation.id, "key-1")
 
@@ -135,7 +135,7 @@ class TestTheContentPipelineRunsInOrder:
         generation = a_completed_generation(owner_id)
         conversion = a_conversion(
             documents,
-            FakeGenerationStorage([generation]),
+            a_generation_storage(generation),
             html_sanitizer=OverflowingSanitizer(MAX_CONTENT_LENGTH + 1),
         )
 

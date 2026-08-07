@@ -5,9 +5,9 @@ import pytest
 from shared.exceptions import NotFoundException, ValidationException
 from statements.document_fakes import FakeDocumentRepository
 from statements.from_generation_statements import (
-    FakeGenerationStorage,
     a_completed_generation,
     a_conversion,
+    a_generation_storage,
 )
 
 
@@ -23,7 +23,7 @@ def documents():
 
 class TestOnlyAFinishedGenerationTheCallerOwnsCanConvert:
     async def test_should_refuse_a_generation_that_does_not_exist(self, documents, owner_id):
-        conversion = a_conversion(documents, FakeGenerationStorage([]))
+        conversion = a_conversion(documents, a_generation_storage())
 
         with pytest.raises(NotFoundException):
             await conversion.execute(owner_id, uuid4(), "key-1")
@@ -34,7 +34,7 @@ class TestOnlyAFinishedGenerationTheCallerOwnsCanConvert:
         # Byte-identical to the missing case, never a 403: a distinguishable
         # answer confirms the id exists to whoever guessed it.
         someone_else = a_completed_generation(uuid4())
-        conversion = a_conversion(documents, FakeGenerationStorage([someone_else]))
+        conversion = a_conversion(documents, a_generation_storage(someone_else))
 
         with pytest.raises(NotFoundException):
             await conversion.execute(owner_id, someone_else.id, "key-1")
@@ -47,7 +47,7 @@ class TestOnlyAFinishedGenerationTheCallerOwnsCanConvert:
         # the one a later story adds, and converting a half-written generation
         # would hand the user a truncated document as if it were finished.
         generation = a_completed_generation(owner_id, status=status)
-        conversion = a_conversion(documents, FakeGenerationStorage([generation]))
+        conversion = a_conversion(documents, a_generation_storage(generation))
 
         with pytest.raises(ValidationException) as refusal:
             await conversion.execute(owner_id, generation.id, "key-1")
@@ -60,7 +60,7 @@ class TestOnlyAFinishedGenerationTheCallerOwnsCanConvert:
         # to convert into an empty document the user would read as "it deleted my
         # report".
         generation = a_completed_generation(owner_id, content=None)
-        conversion = a_conversion(documents, FakeGenerationStorage([generation]))
+        conversion = a_conversion(documents, a_generation_storage(generation))
 
         with pytest.raises(ValidationException) as refusal:
             await conversion.execute(owner_id, generation.id, "key-1")
@@ -69,7 +69,7 @@ class TestOnlyAFinishedGenerationTheCallerOwnsCanConvert:
 
     async def test_should_refuse_an_empty_idempotency_key(self, documents, owner_id):
         generation = a_completed_generation(owner_id)
-        conversion = a_conversion(documents, FakeGenerationStorage([generation]))
+        conversion = a_conversion(documents, a_generation_storage(generation))
 
         with pytest.raises(ValidationException) as refusal:
             await conversion.execute(owner_id, generation.id, "")
@@ -87,7 +87,7 @@ class TestConvertingTwiceYieldsOneDocument:
 
     async def test_should_return_the_same_document_on_a_replay(self, documents, owner_id):
         generation = a_completed_generation(owner_id)
-        conversion = a_conversion(documents, FakeGenerationStorage([generation]))
+        conversion = a_conversion(documents, a_generation_storage(generation))
 
         first = await conversion.execute(owner_id, generation.id, "key-1")
         second = await conversion.execute(owner_id, generation.id, "key-1")
@@ -97,7 +97,7 @@ class TestConvertingTwiceYieldsOneDocument:
 
     async def test_should_not_write_a_second_document_on_a_replay(self, documents, owner_id):
         generation = a_completed_generation(owner_id)
-        conversion = a_conversion(documents, FakeGenerationStorage([generation]))
+        conversion = a_conversion(documents, a_generation_storage(generation))
 
         await conversion.execute(owner_id, generation.id, "key-1")
         await conversion.execute(owner_id, generation.id, "key-1")
@@ -110,7 +110,7 @@ class TestConvertingTwiceYieldsOneDocument:
         # constraint is what makes these converge; the idempotency key alone
         # would let each mint its own document.
         generation = a_completed_generation(owner_id)
-        conversion = a_conversion(documents, FakeGenerationStorage([generation]))
+        conversion = a_conversion(documents, a_generation_storage(generation))
 
         winner = await conversion.execute(owner_id, generation.id, "key-1")
         loser = await conversion.execute(owner_id, generation.id, "key-2")
@@ -127,7 +127,7 @@ class TestConvertingTwiceYieldsOneDocument:
         # somebody else's text under their own generation's name.
         first = a_completed_generation(owner_id)
         second = a_completed_generation(owner_id)
-        conversion = a_conversion(documents, FakeGenerationStorage([first, second]))
+        conversion = a_conversion(documents, a_generation_storage(first, second))
         await conversion.execute(owner_id, first.id, "shared-key")
 
         with pytest.raises(ValidationException) as refusal:
