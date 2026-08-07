@@ -11,6 +11,8 @@ CALL_GET = "get_by_id_and_owner"
 CALL_UPDATE = "update"
 CALL_LIST_STALE = "list_stale"
 CALL_LIST_BY_OWNER = "list_by_owner"
+CALL_FIND_BY_IDEMPOTENCY_KEY = "find_by_owner_and_idempotency_key"
+CALL_COUNT_RETRIES = "count_retries_of"
 
 
 class FakeGenerationStorage(CallOrderRecordingFake):
@@ -72,6 +74,43 @@ class FakeGenerationStorage(CallOrderRecordingFake):
         if cursor is not None:
             rows = [g for g in rows if (g.created_at, g.id) < (cursor.created_at, cursor.id)]
         return rows[:limit]
+
+    async def find_by_owner_and_idempotency_key(
+        self, owner_id: UUID, idempotency_key: str
+    ) -> Generation | None:
+        """Owner-scoped, mirroring the port's own reason for being owner-scoped.
+
+        Implemented rather than omitted: the port has carried this method since
+        the retry path landed, and a double missing it is not a stand-in for the
+        storage -- the usecase reaches it through structural typing, so the gap
+        stays invisible until a test wires this fake into the one usecase that
+        calls it. Keying on the pair and not on the key alone is the same rule the
+        real adapter follows: a key-only lookup returns another account's row on
+        the replay path, which short-circuits before any ownership check runs.
+        """
+        self._record(CALL_FIND_BY_IDEMPOTENCY_KEY, idempotency_key)
+        return next(
+            (
+                generation
+                for generation in self._by_id.values()
+                if generation.owner_id == owner_id and generation.idempotency_key == idempotency_key
+            ),
+            None,
+        )
+
+    async def count_retries_of(self, source_generation_id: UUID) -> int:
+        """Counted over the stored rows, as the real adapter counts them in SQL.
+
+        Not a settable integer: a fake returning a staged number would keep a
+        usecase green that had stopped writing `source_generation_id` at all, and
+        the retry ceiling it guards would then bound nothing.
+        """
+        self._record(CALL_COUNT_RETRIES, source_generation_id)
+        return sum(
+            1
+            for generation in self._by_id.values()
+            if generation.source_generation_id == source_generation_id
+        )
 
     def seed(self, generation: Generation) -> None:
         self._by_id[generation.id] = generation
