@@ -8,10 +8,16 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Textery</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- Inter is served from this origin (src/styles/fonts.css); there is no third-party font
+         request to preconnect to any more. The cyrillic subset is preloaded because it is what
+         every page of this Russian-language app needs first, and a font referenced only from a
+         stylesheet is not discovered until that stylesheet has been parsed. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      href="/fonts/inter-cyrillic.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
     />
   </head>
   <body>

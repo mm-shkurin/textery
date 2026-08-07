@@ -1,3 +1,5 @@
+@import './styles/fonts.css';
+
 /* Design tokens mirror the Figma file "Labs-2026 ООО ИИ" (page Textery), frame `Pallete`
    (node 315:2139). The Figma frames are drawn at 1.3333x, so every px value taken from the
    API is divided by 1.3333 before it lands here — Figma 21.33px text is 16px CSS. */
@@ -92,7 +94,18 @@
 body {
   background: var(--bg-page);
   color: var(--text-primary);
-  font-family: 'Inter', sans-serif;
+  /* The fallback is what the page renders in for the few hundred milliseconds before Inter
+     arrives (font-display: swap), so it is a stack of faces that actually exist on the reading
+     device rather than a bare `sans-serif` that resolves to Times on some of them. */
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
   line-height: 1.5;
 }
 
