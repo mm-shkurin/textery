@@ -7,11 +7,16 @@ someone reads the composition root, and the failure it causes is a default
 quietly applying in an environment that meant to override it.
 
 `OAUTH_FAKE_AUTHORIZE_URL` was in exactly that state until 2026-08-07 -- read by
-`container/oauth_wiring.py`, absent from the file that promised to name it.
+`container/oauth_wiring.py`, absent from the file that promised to name it. So was
+`API_DOCS_ENABLED` the day after, which the first version of this check missed:
+it scanned for inline literals with a regex, and most of this codebase names the
+variable through a module constant. See `env_reads.py`.
 """
 
 import re
 from pathlib import Path
+
+from env_reads import environment_reads
 
 # The layer roots are separate sys.path entries, so `__file__` is the only honest
 # way back to the backend directory: application/tests/<this file> -> backend/.
@@ -30,28 +35,15 @@ _PRODUCTION_ROOTS = (
     "application/src",
 )
 
-# The three ways this codebase reads the environment. Matching the literal rather
-# than resolving a constant is deliberate: a variable named through an indirection
-# is not discoverable by an operator reading the source either, so if one ever
-# appears it should be given a literal here as well as an entry in the file.
-_ENV_READ = re.compile(
-    r"""(?:os\.)?(?:getenv|environ\.get)\(\s*["']([A-Z][A-Z0-9_]*)["']"""
-    r"""|(?:os\.)?environ\[\s*["']([A-Z][A-Z0-9_]*)["']\s*\]"""
-)
-
 # Set by the test runner and by the container, never by an operator editing
-# .env: DATABASE_URL is written over by the db suite's own URL guard, and
-# TEST_DATABASE_URL only exists for that suite.
+# .env: TEST_DATABASE_URL only exists for the db suite, and DATABASE_URL is
+# written over by that suite's own URL guard.
 _NOT_OPERATOR_FACING = frozenset({"TEST_DATABASE_URL"})
 
 
 def _variables_read_in_production_code() -> set[str]:
-    found = set()
-    for root in _PRODUCTION_ROOTS:
-        for source in (_BACKEND_ROOT / root).rglob("*.py"):
-            for match in _ENV_READ.finditer(source.read_text(encoding="utf-8")):
-                found.add(match.group(1) or match.group(2))
-    return found - _NOT_OPERATOR_FACING
+    roots = tuple(_BACKEND_ROOT / root for root in _PRODUCTION_ROOTS)
+    return environment_reads(roots) - _NOT_OPERATOR_FACING
 
 
 def _variables_documented() -> set[str]:
@@ -82,7 +74,7 @@ class TestEnvExampleIsTheInventoryItClaimsToBe:
         check would then pass no matter what was undocumented.
         """
         assert _ENV_EXAMPLE.is_file(), f"expected .env.example at {_ENV_EXAMPLE}"
-        assert len(_variables_read_in_production_code()) >= 2, (
+        assert len(_variables_read_in_production_code()) >= 10, (
             "expected the scan to find the environment reads in the composition root; "
             "finding none means the regex or the source roots stopped matching, not "
             "that the code stopped reading the environment"
