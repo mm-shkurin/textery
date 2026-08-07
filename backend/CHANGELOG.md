@@ -11,6 +11,14 @@
 
 ### Fixed
 
+- Четыре фикстуры (`account_to_domain_roundtrip`, `resend_concurrency`,
+  `reset_failed_attempts`, `verification_code_concurrency`) были определены в
+  `statement_fixtures`, но отсутствовали в списке ре-экспорта `conftest.py` —
+  pytest падал на setup'е с «fixture not found». Список вёлся руками в двух
+  местах; теперь он **вычисляется** (`fixture_exports.fixture_names`) по типу
+  обёртки, в которую pytest заворачивает фикстуру, и падает на импорте, если
+  найдено меньше ожидаемого — реестр, который молча опустел, даёт ровно тот же
+  симптом. Без Postgres вся сюита скипается, поэтому дыру видел только CI.
 - CI гонял db-сюиту против `textery` — базы самого приложения. Гард
   `resolve_test_database_url` (добавлен после того, как полный прогон `pytest`
   по живому стенду 2026-08-06 стёр локальные данные) отказывается работать с

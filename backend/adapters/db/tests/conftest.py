@@ -36,34 +36,17 @@ def require_database() -> None:
 
 
 # Imported for their side effect: pytest registers a fixture when the function
-# object is present in the conftest namespace. They live in `statement_fixtures`
-# because that list grows by one entry per Statements class, while what remains
-# here -- what a test session connects to, and what gets truncated -- does not.
-from statement_fixtures import (  # noqa: E402
-    account_concurrency_statements,
-    account_storage_statements,
-    db_session,
-    document_storage_statements,
-    failed_attempt_concurrency_statements,
-    generation_storage_statements,
-    history_paging_statements,
-    project_feed_statements,
-    resend_ordering_statements,
-    sql_alchemy_unit_of_work_statements,
-    verification_code_storage_statements,
-)
+# object is present in the conftest namespace.
+#
+# A STAR import over statement_fixtures' computed `__all__`, not a hand-kept list.
+# The list was kept by hand in two places here, and a fixture added there but
+# forgotten here does not fail at collection - it fails at SETUP of whichever test
+# asks for it, "fixture not found", listing the ones that were remembered. Four
+# fixtures sat in that state, and only CI could see it: without Postgres the whole
+# suite skips.
+from statement_fixtures import *  # noqa: E402,F401,F403
+from statement_fixtures import __all__ as _fixture_names  # noqa: E402
 
-__all__ = [
-    "account_concurrency_statements",
-    "account_storage_statements",
-    "db_session",
-    "document_storage_statements",
-    "failed_attempt_concurrency_statements",
-    "generation_storage_statements",
-    "history_paging_statements",
-    "project_feed_statements",
-    "require_database",
-    "resend_ordering_statements",
-    "sql_alchemy_unit_of_work_statements",
-    "verification_code_storage_statements",
-]
+# `require_database` lives here, not there, so it is added on top of whatever the
+# fixture module exports rather than re-listed alongside it.
+__all__ = [*_fixture_names, "require_database"]

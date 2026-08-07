@@ -6,9 +6,11 @@ it decides what a test session connects to and what gets truncated) and this lis
 which is a registry that grows by one entry per Statements class and will keep
 growing.
 
-Imported by name into `conftest.py` rather than declared here as a plugin: pytest
-registers a fixture when its function object is in the conftest namespace, and
-`pytest_plugins` is not permitted in a non-root conftest.
+Imported into `conftest.py` rather than declared here as a plugin: pytest registers
+a fixture when its function object is in the conftest namespace, and
+`pytest_plugins` is not permitted in a non-root conftest. That import is a star
+import over the `__all__` computed at the bottom of this file, and that is the
+point -- see the note there.
 
 Every fixture here takes `db_session`, which `conftest.py` still owns.
 """
@@ -17,6 +19,7 @@ from collections.abc import AsyncIterator, Callable
 
 import pytest
 import pytest_asyncio
+from fixture_exports import fixture_names
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from session import create_engine, create_session_factory
@@ -166,3 +169,7 @@ def history_paging_statements(db_session: AsyncSession):
     from statements.history_paging_statements import HistoryPagingStatements
 
     return HistoryPagingStatements(db_session)
+
+
+# Computed, never typed out — see fixture_exports for what that is guarding against.
+__all__ = fixture_names(globals())
