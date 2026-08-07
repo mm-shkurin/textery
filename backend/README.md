@@ -27,10 +27,22 @@ FastAPI, ни про SQLAlchemy, `usecase` объявляет порты, а р�
 ## Установка и запуск
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt          # только то, что нужно приложению
 alembic -c adapters/db/alembic.ini upgrade head        # применить миграции
 uvicorn main:app --app-dir application/src/app --reload
 ```
+
+Для разработки нужен второй файл — он подтягивает первый и добавляет
+инструментарий (pytest, ruff, mypy):
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+Разделение не косметическое: `infra/docker/backend.Dockerfile` ставит именно
+`requirements.txt`, и пока файл был один, в production-образ уезжали pytest,
+ruff и mypy. По той же причине джоб `audit` в CI проверяет уязвимости только по
+runtime-файлу — он отвечает на вопрос «уязвимо ли то, что мы деплоим».
 
 Команды выполняются из этого каталога (`backend/`). `--app-dir` обязателен:
 `main.py` — это composition root, он добавляет корни слоёв в `sys.path` при
@@ -108,13 +120,40 @@ mypy                        # статическая проверка типов
 mypy --disallow-incomplete-defs domain/src usecase/src adapters/*/src application/src
                             # то же по production-коду, но с запретом частично
                             # аннотированных сигнатур (см. джоб `types` в CI)
-pip-audit -r requirements.txt   # известные уязвимости в зависимостях
+python scripts/check_file_size.py   # лимит 200 строк на файл
+pip-audit -r requirements.txt   # уязвимости в том, что деплоится
 ```
+
+Это ровно те проверки, которые гоняет CI (`.github/workflows/ci.yml`), и все они
+блокирующие. Прогнать их локально до коммита дешевле, чем узнать о красном
+`lint` из отчёта.
 
 Тесты каждого слоя лежат рядом с модулем (`domain/tests`, `usecase/tests`,
 `adapters/*/tests`). Живой PostgreSQL нужен только тестам `adapters/db` —
 остальные работают без внешних сервисов. Без поднятой БД набор `adapters/db`
 целиком помечается `skipped` с указанием причины, а не падает и не зависает.
+
+### База для тестов `adapters/db`
+
+На свежем checkout эти ~70 тестов пропускаются: базы, которую они ждут, ещё нет.
+Чтобы они начали выполняться:
+
+```bash
+createdb textery_test                    # или: psql -c "CREATE DATABASE textery_test"
+export TEST_DATABASE_URL=postgresql://textery:change-me@localhost:5432/textery_test
+pytest adapters/db
+```
+
+`TEST_DATABASE_URL` можно не задавать — значение по умолчанию именно такое
+(`adapters/db/tests/statements/database_url.py`). Задавать его нужно, только
+если у вас другой хост, порт или пользователь.
+
+**Имя базы обязано содержать `test`.** Набор делает `TRUNCATE` всех таблиц между
+фикстурами, поэтому `resolve_test_database_url()` отказывается работать с базой,
+чьё имя этого не подтверждает. Проверка появилась не из осторожности: 2026-08-06
+значением по умолчанию была рабочая база `textery`, полный прогон `pytest`
+стёр данные локального стенда, и первым симптомом стал 401 на пароле, который
+минуту назад работал.
 
 CI держит покрытие не ниже 90% (`--cov-fail-under`); фактическое — 98%.
 
