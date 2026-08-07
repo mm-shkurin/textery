@@ -1,0 +1,35 @@
+/* Figma `Navbar` instance in «Мои проекты - после авторизации (нет проектов)» (node 573:4518):
+   a white pill, 88px tall, 28px radius, 12px/32px padding, floating on the page background with
+   a soft drop shadow. Values are 1:1 with that node. */
+
+.projects-navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 88px;
+  padding: 12px 32px;
+  border-radius: 28px;
+  background: var(--bg-surface);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.09);
+  margin-bottom: 24px;
+}
+
+.projects-navbar-logo {
+  height: 45px;
+  width: auto;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .projects-navbar {
+    min-height: 64px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+  }
+
+  .projects-navbar-logo {
+    height: 32px;
+  }
+}

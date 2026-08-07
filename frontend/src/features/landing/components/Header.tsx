@@ -1,3 +1,4 @@
+import { ProfileMenu } from '../../../shared/components/profile/ProfileMenu'
 import './Header.css'
 
 interface HeaderProps {
@@ -50,21 +51,6 @@ export function Header({
             Мои работы
           </button>
         )}
-        {isAuthenticated && (
-          // Shown only to a signed-in user: a "Выйти" button on the public landing offers to
-          // end a session that does not exist. The mockup (05-authenticated.html) draws a user
-          // menu with an email here, but the client never stores the email — inventing one to
-          // fill the pill would be placeholder data on a real screen. A plain sign-out action
-          // is the honest subset until the account menu has something true to show.
-          <button
-            type="button"
-            className="btn-ghost header-logout"
-            data-testid="header-logout-button"
-            onClick={onLogoutClick}
-          >
-            Выйти
-          </button>
-        )}
         <button
           type="button"
           className="btn-light"
@@ -73,6 +59,17 @@ export function Header({
         >
           Создать генерацию
         </button>
+        {isAuthenticated && onLogoutClick !== undefined && (
+          // Shown only to a signed-in user: a sign-out action on the public landing offers to end
+          // a session that does not exist. It moved INTO the avatar menu (Figma `profile navbar`,
+          // node 1218:5171) — the earlier note here said the client never stores the email, which
+          // is no longer the reason to omit it: the access token carries an `email` claim, so the
+          // menu shows the real address rather than an invented one.
+          //
+          // Last in the row, right of the CTA: the account is the corner of the header, and the
+          // design puts it at the far edge on every screen that has one.
+          <ProfileMenu onLogoutClick={onLogoutClick} testIdPrefix="header" />
+        )}
       </div>
     </header>
   )

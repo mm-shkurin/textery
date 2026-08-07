@@ -71,12 +71,12 @@ describe('App step transitions', () => {
   })
 
   // The two doors are mutually exclusive: "Войти" on a signed-in header offers to start a
-  // session that already exists, and it is where the sign-out action now sits instead.
+  // session that already exists, and the account menu — which holds sign-out — takes its place.
   it('hides the sign-in action once a session exists', () => {
     render(<App />)
 
     expect(screen.queryByTestId('header-login-button')).not.toBeInTheDocument()
-    expect(screen.getByTestId('header-logout-button')).toBeInTheDocument()
+    expect(screen.getByTestId('header-profile-button')).toBeInTheDocument()
   })
 
   it('walks landing -> type -> generation workspace, no mode modal in between', () => {
@@ -110,6 +110,7 @@ describe('App step transitions', () => {
     pickDokladType()
     expect(screen.getByTestId('chat-panel')).toBeInTheDocument()
 
+    fireEvent.click(screen.getByTestId('workspace-profile-button'))
     fireEvent.click(screen.getByTestId('workspace-logout-button'))
 
     expect(getAccessToken()).toBeNull()

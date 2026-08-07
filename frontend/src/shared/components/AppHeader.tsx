@@ -1,3 +1,4 @@
+import { ProfileMenu } from './profile/ProfileMenu'
 import './AppHeader.css'
 
 interface AppHeaderProps {
@@ -12,16 +13,10 @@ export function AppHeader({ onLogoutClick }: AppHeaderProps) {
   return (
     <header className="app-header">
       <img className="app-logo" src="/design/logo-textery.svg" alt="Textery" />
-      {onLogoutClick && (
-        <button
-          type="button"
-          className="app-logout"
-          data-testid="workspace-logout-button"
-          onClick={onLogoutClick}
-        >
-          Выйти
-        </button>
-      )}
+      {/* Sign-out lives inside the account menu here for the same reason it does on the landing:
+          one control for "this is my account, and here is the way out of it", identical on every
+          screen that has a session. */}
+      {onLogoutClick && <ProfileMenu onLogoutClick={onLogoutClick} testIdPrefix="workspace" />}
     </header>
   )
 }
