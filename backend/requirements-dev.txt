@@ -1,0 +1,31 @@
+# Development and CI tooling. NOT installed into the production image.
+#
+# Split out of requirements.txt on 2026-08-07 -- see the note at the top of that
+# file. Installs the runtime set first, because the test suite imports the
+# application, and mypy needs FastAPI's and SQLAlchemy's own type information to
+# check anything useful.
+#
+# Pinned exactly, like the runtime set. ruff ships new rules in patch releases
+# and mypy tightens inference in minor ones, so an unpinned version turns "CI
+# went red" into a question about which tool version the runner drew rather than
+# about the commit.
+-r requirements.txt
+
+pytest==9.1.1
+pytest-asyncio==1.4.0
+pytest-mock==3.15.1
+pytest-cov==7.1.0
+# Linter and formatter, configured in pyproject.toml. Pinned exactly, like
+# everything else here: ruff ships new rules in patch releases, so an unpinned
+# version turns "CI went red" into a question about which ruff the runner drew
+# rather than about the commit.
+ruff==0.15.22
+# Static type checker, configured in pyproject.toml. Pinned for the same reason
+# ruff is: mypy tightens inference in minor releases, so an unpinned version
+# turns "CI went red" into a question about which mypy the runner drew.
+mypy==1.19.0
+# Type stubs for Markdown, which ships none of its own. Not covered by mypy's
+# `ignore_missing_imports`: that setting silences packages with no stubs anywhere,
+# while a package with stubs available on PyPI is reported as installable instead
+# -- correctly, since silencing it would erase the types rather than find them.
+types-Markdown==3.7.0.20240822

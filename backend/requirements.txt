@@ -1,3 +1,17 @@
+# Runtime dependencies only -- what the production image installs.
+#
+# Split from the development tooling on 2026-08-07. They were one file, and
+# infra/docker/backend.Dockerfile installs this file, so pytest, pytest-cov,
+# pytest-mock, ruff, mypy and a stubs package all shipped into the production
+# image: dead weight, extra attack surface, and a `pip-audit` result that could
+# not answer "is what we deploy vulnerable" because it was auditing the linter
+# too. Development tooling now lives in requirements-dev.txt, which installs
+# this file first.
+#
+# Every version is pinned exactly. That is what makes the build reproducible --
+# and also what makes a known vulnerability sit here until the `audit` CI job
+# reports it, which is why that job is blocking.
+
 fastapi==0.139.0
 uvicorn==0.34.0
 httpx==0.28.1
@@ -26,21 +40,3 @@ htmldocx==0.0.6
 # any client-submitted content, because a markdown document may embed raw HTML.
 Markdown==3.7
 alembic==1.18.4
-pytest==9.1.1
-pytest-asyncio==1.4.0
-pytest-mock==3.15.1
-pytest-cov==7.1.0
-# Linter and formatter, configured in pyproject.toml. Pinned exactly, like
-# everything else here: ruff ships new rules in patch releases, so an unpinned
-# version turns "CI went red" into a question about which ruff the runner drew
-# rather than about the commit.
-ruff==0.15.22
-# Static type checker, configured in pyproject.toml. Pinned for the same reason
-# ruff is: mypy tightens inference in minor releases, so an unpinned version
-# turns "CI went red" into a question about which mypy the runner drew.
-mypy==1.19.0
-# Type stubs for Markdown, which ships none of its own. Not covered by mypy's
-# `ignore_missing_imports`: that setting silences packages with no stubs anywhere,
-# while a package with stubs available on PyPI is reported as installable instead
-# -- correctly, since silencing it would erase the types rather than find them.
-types-Markdown==3.7.0.20240822

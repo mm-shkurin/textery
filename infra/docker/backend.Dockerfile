@@ -20,6 +20,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
+# requirements.txt only, never requirements-dev.txt. Until they were split on
+# 2026-08-07 they were one file, so this line installed pytest, pytest-cov,
+# pytest-mock, ruff, mypy and a stubs package into the production image -- weight
+# and attack surface for tooling the container never runs.
 COPY backend/requirements.txt backend/requirements.txt
 RUN pip install --no-cache-dir -r backend/requirements.txt
 
