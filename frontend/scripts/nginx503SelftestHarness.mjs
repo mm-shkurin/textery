@@ -18,7 +18,10 @@ const GUARD = resolve(here, 'check-nginx-503.mjs')
 // the shape of the checkout — the split repo (`frontend/` as root, no infra/, no monorepo workflow)
 // has to be exercisable from a monorepo checkout and vice versa.
 export const REAL_MONOREPO_MARKER = resolve(here, '../../.github/workflows/frontend-ci.yml')
-export const MONOREPO_MARKER = join(mkdtempSync(join(tmpdir(), 'nginx-503-shape-')), 'frontend-ci.yml')
+export const MONOREPO_MARKER = join(
+  mkdtempSync(join(tmpdir(), 'nginx-503-shape-')),
+  'frontend-ci.yml',
+)
 writeFileSync(MONOREPO_MARKER, '# fabricated monorepo marker for the self-test\n')
 
 // Every fixture carries the back-reference except the case that tests its absence — the guard
@@ -53,12 +56,26 @@ function fixtureDir(confs) {
 
 // `confs: null` means the directory itself is absent — a path under a temp parent that does exist,
 // which is what MOVED confs look like, as opposed to a repository that never had any.
-export function expectVerdict({ what, confs, code, quotes = [], marker = MONOREPO_MARKER, deployNotes, owedItems, backend }) {
+export function expectVerdict({
+  what,
+  confs,
+  code,
+  quotes = [],
+  marker = MONOREPO_MARKER,
+  deployNotes,
+  owedItems,
+  backend,
+}) {
   const missing = confs === null
   const parent = missing ? mkdtempSync(join(tmpdir(), 'nginx-503-gone-')) : null
   const dir = missing ? join(parent, 'moved') : fixtureDir(confs)
 
-  checkVerdict({ what, result: runGuard({ dir, marker, deployNotes, owedItems, backend }), code, quotes })
+  checkVerdict({
+    what,
+    result: runGuard({ dir, marker, deployNotes, owedItems, backend }),
+    code,
+    quotes,
+  })
 
   rmSync(parent ?? dir, { recursive: true, force: true })
 }

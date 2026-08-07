@@ -43,7 +43,9 @@ function isBelowFloor({ label, path }, { active, neutralized }) {
     // A neutralized step is the more likely of the two and reads as present to anyone skimming the
     // file, so it is named as such rather than reported as absent.
     const dead = neutralized.includes(script)
-    console.error(`  npm run ${script} — ${dead ? 'present but behind `if:`/`continue-on-error`' : 'absent'}: ${why}`)
+    console.error(
+      `  npm run ${script} — ${dead ? 'present but behind `if:`/`continue-on-error`' : 'absent'}: ${why}`,
+    )
   }
   console.error(`  (${path})`)
   return true

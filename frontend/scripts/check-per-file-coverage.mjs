@@ -44,11 +44,17 @@ for (const [file, totals] of Object.entries(summary)) {
 }
 
 if (failures.length > 0) {
-  console.error(`Per-file coverage floor: ${MIN_STATEMENTS}% statements, ${MIN_BRANCHES}% branches.`)
+  console.error(
+    `Per-file coverage floor: ${MIN_STATEMENTS}% statements, ${MIN_BRANCHES}% branches.`,
+  )
   for (const failure of failures) {
-    console.error(`  ${failure.file} — ${failure.statements}% statements, ${failure.branches}% branches`)
+    console.error(
+      `  ${failure.file} — ${failure.statements}% statements, ${failure.branches}% branches`,
+    )
   }
-  console.error('Test the module rather than lowering the floor; the floor only catches untested ones.')
+  console.error(
+    'Test the module rather than lowering the floor; the floor only catches untested ones.',
+  )
   process.exit(1)
 }
 

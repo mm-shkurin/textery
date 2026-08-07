@@ -6,51 +6,16 @@
 // sibling nginx guard was given a self-test for — this file is the same remedy, one script over.
 //
 // Cases are driven against FIXTURE workflows written to a temp dir, so the real ones are never
-// touched, and generated from REQUIRED itself so a gate cannot be added without a case.
+// touched, and generated from REQUIRED itself so a gate cannot be added without a case. What those
+// fixtures look like lives in ciParitySelftestHarness.mjs; this file is the cases.
 import { fileURLToPath } from 'node:url'
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
-import { tmpdir } from 'node:os'
+import { existsSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import { REQUIRED } from './ciRequiredGates.mjs'
-import { check, checkVerdict, countCase, reportAndExit, runNodeScript } from './selftestRunner.mjs'
+import { check, countCase, reportAndExit, runNodeScript } from './selftestRunner.mjs'
+import { ALL, CHECK, expect, packageJson, step } from './ciParitySelftestHarness.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const CHECK = resolve(here, 'check-ci-parity.mjs')
-
-const step = (script) => `      - name: ${script}\n        run: npm run ${script}\n`
-const workflow = (scripts) => `jobs:\n  gate:\n    steps:\n${scripts.map(step).join('')}`
-const ALL = REQUIRED.map(({ script }) => script)
-
-// A package.json whose bodies satisfy every mustContain, so a case fails for the reason it names
-// rather than because the fixture forgot a fragment.
-const packageJson = (overrides = {}) => {
-  const scripts = Object.fromEntries(
-    REQUIRED.map(({ script, mustContain = [] }) => [script, `node ${[script, ...mustContain].join(' ')}`]),
-  )
-  return JSON.stringify({ scripts: { ...scripts, ...overrides } })
-}
-
-function run({ standalone = ALL, monorepo = ALL, pkg = packageJson(), raw = {} }) {
-  const dir = mkdtempSync(join(tmpdir(), 'ci-parity-'))
-  const paths = { standalone: join(dir, 'standalone.yml'), monorepo: join(dir, 'monorepo.yml'), pkg: join(dir, 'package.json') }
-
-  if (standalone !== null) writeFileSync(paths.standalone, raw.standalone ?? workflow(standalone))
-  if (monorepo !== null) writeFileSync(paths.monorepo, raw.monorepo ?? workflow(monorepo))
-  writeFileSync(paths.pkg, pkg)
-
-  const flags = [
-    `--standalone=${paths.standalone}`,
-    `--monorepo=${paths.monorepo}`,
-    `--package=${paths.pkg}`,
-  ]
-  return { dir, result: runNodeScript(CHECK, flags) }
-}
-
-function expect({ what, code, quotes = [], ...setup }) {
-  const { dir, result } = run(setup)
-  checkVerdict({ what, result, code, quotes })
-  rmSync(dir, { recursive: true, force: true })
-}
 
 expect({
   what: 'two complete, identical pipelines pass',
@@ -76,14 +41,22 @@ for (const { script } of REQUIRED) {
 // Neutering is cheaper than deleting and looks temporary, which is why it is what gets reached for.
 expect({
   what: 'a gate behind `if:` counts as missing',
-  raw: { monorepo: `jobs:\n  gate:\n    steps:\n${ALL.map((s) => `      - name: ${s}\n        if: false\n        run: npm run ${s}\n`).join('')}` },
+  raw: {
+    monorepo: `jobs:\n  gate:\n    steps:\n${ALL.map((s) => `      - name: ${s}\n        if: false\n        run: npm run ${s}\n`).join('')}`,
+  },
   code: 1,
   quotes: ['present but behind'],
 })
 
 expect({
   what: 'a gate marked continue-on-error counts as missing',
-  raw: { monorepo: `jobs:\n  gate:\n    steps:\n      - name: typecheck\n        continue-on-error: true\n        run: npm run typecheck\n${ALL.filter((s) => s !== 'typecheck').map(step).join('')}` },
+  raw: {
+    monorepo: `jobs:\n  gate:\n    steps:\n      - name: typecheck\n        continue-on-error: true\n        run: npm run typecheck\n${ALL.filter(
+      (s) => s !== 'typecheck',
+    )
+      .map(step)
+      .join('')}`,
+  },
   code: 1,
   quotes: ['present but behind'],
 })
@@ -92,7 +65,9 @@ expect({
 // pipelines and the floor untouched.
 expect({
   what: 'a required script missing from package.json fails',
-  pkg: JSON.stringify({ scripts: Object.fromEntries(ALL.filter((s) => s !== 'build').map((s) => [s, `node ${s}`])) }),
+  pkg: JSON.stringify({
+    scripts: Object.fromEntries(ALL.filter((s) => s !== 'build').map((s) => [s, `node ${s}`])),
+  }),
   code: 1,
   quotes: ['no such script in package.json'],
 })
@@ -114,25 +89,44 @@ expect({
 })
 
 // Both repository shapes that legitimately have one file, plus the one that has neither.
-expect({ what: 'the split-repo shape skips the comparison but keeps the floor', monorepo: null, code: 0, quotes: ['Required gates present'] })
-expect({ what: 'the split-repo shape still fails below the floor', monorepo: null, standalone: ALL.filter((s) => s !== 'lint'), code: 1, quotes: ['npm run lint'] })
+expect({
+  what: 'the split-repo shape skips the comparison but keeps the floor',
+  monorepo: null,
+  code: 0,
+  quotes: ['Required gates present'],
+})
+expect({
+  what: 'the split-repo shape still fails below the floor',
+  monorepo: null,
+  standalone: ALL.filter((s) => s !== 'lint'),
+  code: 1,
+  quotes: ['npm run lint'],
+})
 expect({
   what: 'a monorepo workflow with no standalone copy fails',
   standalone: null,
   code: 1,
   quotes: ['The standalone copy is what gates the split repo'],
 })
-expect({ what: 'neither workflow present is a clean skip', standalone: null, monorepo: null, code: 0, quotes: ['no frontend workflow here at all'] })
+expect({
+  what: 'neither workflow present is a clean skip',
+  standalone: null,
+  monorepo: null,
+  code: 0,
+  quotes: ['no frontend workflow here at all'],
+})
 
 // Conditioning the whole JOB is cheaper than conditioning eight steps and reads as ordinary
 // workflow hygiene. It also lives above the first `- `, where step chunking cannot see it.
 expect({
   what: 'a job-level `if:` counts every gate under it as missing',
-  raw: { monorepo: `jobs:
+  raw: {
+    monorepo: `jobs:
   gate:
     if: false
     steps:
-${ALL.map(step).join('')}` },
+${ALL.map(step).join('')}`,
+  },
   code: 1,
   quotes: ['present but behind'],
 })

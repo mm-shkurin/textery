@@ -53,7 +53,11 @@ export function countCase() {
 
 export function checkVerdict({ what, result, code, quotes = [] }) {
   countCase()
-  check(what, result.code === code, `expected exit ${code}, got ${result.code}. Output:\n${result.output}`)
+  check(
+    what,
+    result.code === code,
+    `expected exit ${code}, got ${result.code}. Output:\n${result.output}`,
+  )
   for (const quote of quotes) {
     check(
       `${what} — quotes ${JSON.stringify(quote)}`,

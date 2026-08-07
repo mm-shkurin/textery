@@ -12,8 +12,14 @@ import { reportAndExit } from './selftestRunner.mjs'
 
 // A doc with the bullet tidied away — the failure mode being pinned is a doc edit, so the fixture is
 // a doc. Serves both pointer files: neither says anything about 503.
-const NOTES_WITHOUT_POINTER = join(mkdtempSync(join(tmpdir(), 'nginx-503-notes-')), 'architecture.md')
-writeFileSync(NOTES_WITHOUT_POINTER, '# Architecture\n\n## Deploy notes\n\n- nothing about 503 here\n')
+const NOTES_WITHOUT_POINTER = join(
+  mkdtempSync(join(tmpdir(), 'nginx-503-notes-')),
+  'architecture.md',
+)
+writeFileSync(
+  NOTES_WITHOUT_POINTER,
+  '# Architecture\n\n## Deploy notes\n\n- nothing about 503 here\n',
+)
 
 // A backend tree holding one source file, for the origin-scan cases. `name` may carry directories
 // — the probe exemption is keyed on a path SEGMENT, so a case that cannot nest cannot reach it.
@@ -62,7 +68,10 @@ expectVerdict({
 expectVerdict({
   what: 'a backend that raises 503 fails',
   confs: { 'frontend.conf': CLEAN_CONF },
-  backend: backendFixture('handlers.py', 'def unavailable():\n    raise HTTPException(status_code=503)\n'),
+  backend: backendFixture(
+    'handlers.py',
+    'def unavailable():\n    raise HTTPException(status_code=503)\n',
+  ),
   code: 1,
   quotes: ['the ORIGIN now mentions 503', 'status_code=503'],
 })

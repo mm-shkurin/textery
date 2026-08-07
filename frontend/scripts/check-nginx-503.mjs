@@ -41,7 +41,10 @@ const NGINX_DIR = flag('dir', resolve(here, '../../infra/docker/nginx'))
 // ambiguous between "split repo" and "somebody moved infra/docker/nginx", and skipping on the
 // second is the gate failing OPEN with a reassuring line — the more likely of the two, since
 // directories get moved more often than emptied.
-const MONOREPO_WORKFLOW = flag('monorepo-marker', resolve(here, '../../.github/workflows/frontend-ci.yml'))
+const MONOREPO_WORKFLOW = flag(
+  'monorepo-marker',
+  resolve(here, '../../.github/workflows/frontend-ci.yml'),
+)
 
 if (!existsSync(NGINX_DIR)) {
   if (existsSync(MONOREPO_WORKFLOW)) {
@@ -54,7 +57,6 @@ if (!existsSync(NGINX_DIR)) {
   console.log('nginx 503 guard skipped — no infra/docker/nginx here (standalone repository shape).')
   process.exit(0)
 }
-
 
 const confs = readdirSync(NGINX_DIR).filter((name) => name.endsWith('.conf'))
 
@@ -107,20 +109,25 @@ if (!backReferenced) {
 // points the scan elsewhere — a fixture run is about the conf rules, not about this repo's layout.
 const BACKEND_DIR = flag('backend', resolve(here, '../../backend'))
 const DEPLOY_NOTES = flag('deploy-notes', resolve(here, '../../infra/architecture.md'))
-const OWED_ITEMS = flag('owed-items', resolve(here, '../../ProductSpecification/stories/05-manual-mode/progress.md'))
+const OWED_ITEMS = flag(
+  'owed-items',
+  resolve(here, '../../ProductSpecification/stories/05-manual-mode/progress.md'),
+)
 
 offenders.push(
   ...pointerProblems([
     {
       path: DEPLOY_NOTES,
       marker: 'mayHaveLandedServerSide',
-      label: 'it carries the only pointer for the hops with no IaC source (WAF, TLS terminator,' +
+      label:
+        'it carries the only pointer for the hops with no IaC source (WAF, TLS terminator,' +
         ' the host/prod-copy proxy), which have no gate at all',
     },
     {
       path: OWED_ITEMS,
       marker: 'No handler may return 503',
-      label: 'it carries the owed backend item for the half of the premise this scan cannot' +
+      label:
+        'it carries the owed backend item for the half of the premise this scan cannot' +
         ' enforce — that no handler DELIBERATELY starts returning 503',
     },
   ]),

@@ -29,8 +29,14 @@ import { check, countCase, reportAndExit } from './selftestRunner.mjs'
 
 // A deploy-notes file with the bullet tidied away — the failure mode being pinned is a doc edit, so
 // the fixture is a doc.
-const NOTES_WITHOUT_POINTER = join(mkdtempSync(join(tmpdir(), 'nginx-503-notes-')), 'architecture.md')
-writeFileSync(NOTES_WITHOUT_POINTER, '# Architecture\n\n## Deploy notes\n\n- nothing about 503 here\n')
+const NOTES_WITHOUT_POINTER = join(
+  mkdtempSync(join(tmpdir(), 'nginx-503-notes-')),
+  'architecture.md',
+)
+writeFileSync(
+  NOTES_WITHOUT_POINTER,
+  '# Architecture\n\n## Deploy notes\n\n- nothing about 503 here\n',
+)
 
 // A conf that proxies to the origin and can answer nothing itself: the only shape that may pass.
 expectVerdict({ what: 'a clean conf passes', confs: { 'frontend.conf': CLEAN_CONF }, code: 0 })
@@ -132,7 +138,11 @@ expectVerdict({
 // Both ways of ending up with nothing to scan. The second is the one that used to exit 0 with a
 // reassuring line, because a missing directory is ambiguous between "split repo" and "moved".
 expectVerdict({ what: 'an empty conf directory fails', confs: {}, code: 1 })
-expectVerdict({ what: 'a missing conf directory fails in the monorepo shape', confs: null, code: 1 })
+expectVerdict({
+  what: 'a missing conf directory fails in the monorepo shape',
+  confs: null,
+  code: 1,
+})
 
 // The shape the guard exists to stay safe in: `frontend/` as the repository ROOT, where infra/ does
 // not exist and never did. Without this case the missing-directory case above silently demanded
