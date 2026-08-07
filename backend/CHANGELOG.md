@@ -9,6 +9,22 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- CI гонял db-сюиту против `textery` — базы самого приложения. Гард
+  `resolve_test_database_url` (добавлен после того, как полный прогон `pytest`
+  по живому стенду 2026-08-06 стёр локальные данные) отказывается работать с
+  базой, в имени которой нет `test`, и все 68 тестов адаптера падали с
+  `RuntimeError`. Оба пайплайна теперь создают отдельную `textery_test`,
+  указывают на неё `TEST_DATABASE_URL` и **отдельно прогоняют на ней миграции**:
+  шаг `alembic upgrade head` мигрирует ту базу, что названа в `DATABASE_URL`,
+  то есть тестовая до сих пор не мигрировалась бы вовсе.
+- `test_document_storage_cas_shape` и `test_document_storage_concurrency`
+  подставляли `TEST_DATABASE_URL` вручную, литералом с именем `textery`. Эти
+  два теста строят собственный engine и зовут `truncate_all` — то есть были
+  единственной оставшейся дорогой к тому самому стиранию. Теперь оба идут через
+  общий `resolve_test_database_url()`.
+
 ### Added
 
 - Гейт на лимит в 200 строк (`scripts/check_file_size.py`, шаг `Check file

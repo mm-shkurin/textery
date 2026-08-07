@@ -122,7 +122,12 @@ jobs:
 
     env:
       DATABASE_URL: postgresql+asyncpg://textery:change-me@localhost:5432/textery
-      TEST_DATABASE_URL: postgresql://textery:change-me@localhost:5432/textery
+      # `textery_test`, NOT `textery`. The db suite TRUNCATEs every table between
+      # fixtures, and adapters/db/tests/statements/database_url.py refuses any target
+      # whose name does not say `test` - a guard added after a full pytest run against
+      # a live stack wiped a developer's local data on 2026-08-06. CI pointed here at
+      # the app's own database, so every db test errored out on that guard.
+      TEST_DATABASE_URL: postgresql://textery:change-me@localhost:5432/textery_test
       GENERATION_PROVIDER: fake
       # Any value >= 32 bytes: JwtTokenService refuses a shorter HS256 key, and
       # the token tests construct it for real. Not a secret -- CI signs nothing
@@ -157,6 +162,10 @@ jobs:
         run: |
           sudo -u postgres psql -c "CREATE USER textery WITH PASSWORD 'change-me' SUPERUSER;"
           sudo -u postgres psql -c "CREATE DATABASE textery OWNER textery;"
+          # Two databases, because the suite empties the one it is pointed at. `textery` is
+          # what the application config names; `textery_test` is the only one the db suite is
+          # allowed to touch.
+          sudo -u postgres psql -c "CREATE DATABASE textery_test OWNER textery;"
 
       # WeasyPrint's native Pango/cairo libs. Without them `import weasyprint`
       # fails and the rendering-adapter test would importorskip itself into a
@@ -177,6 +186,17 @@ jobs:
 
       - name: Run migrations
         working-directory: adapters/db
+        run: alembic upgrade head
+
+      # The db suite connects to textery_test, which alembic has never seen: the step
+      # above migrates whatever DATABASE_URL names, and that is the application's
+      # database. Without this the tables the suite TRUNCATEs and reads do not exist,
+      # and the failure arrives as a relation-does-not-exist per test rather than as
+      # "the test database was never migrated".
+      - name: Run migrations on the test database
+        working-directory: adapters/db
+        env:
+          DATABASE_URL: postgresql+asyncpg://textery:change-me@localhost:5432/textery_test
         run: alembic upgrade head
 
       # The threshold is deliberately below the 98% the suite actually reaches:

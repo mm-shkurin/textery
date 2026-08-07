@@ -1,5 +1,4 @@
 import asyncio
-import os
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -10,6 +9,7 @@ from document.document import Document
 from document.title_update import TitleUpdate
 from session import create_engine, create_session_factory
 from statements.database_cleanup import truncate_all
+from statements.database_url import resolve_test_database_url
 
 
 class TestConcurrentSavesResolveAtomically:
@@ -42,10 +42,12 @@ class TestConcurrentSavesResolveAtomically:
     """
 
     async def test_exactly_one_of_two_same_version_saves_wins(self):
-        os.environ.setdefault(
-            "TEST_DATABASE_URL", "postgresql://textery:change-me@localhost:5432/textery"
-        )
-        os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
+        # Through the shared resolver, not a hand-rolled setdefault. The literal that
+        # used to sit here named `textery` -- the application's own database -- so these
+        # two tests were the one way back into the wipe the resolver's guard exists to
+        # prevent: they build their own engine instead of taking `db_session`, and
+        # `truncate_all` below empties whatever that engine reached.
+        resolve_test_database_url()
         engine = create_engine()
         session_factory = create_session_factory(engine)
 
