@@ -1,30 +1,46 @@
 # Build context for infra/docker/*.Dockerfile is the repo root (see
 # infra/docker-compose.yml build.context: ..). Keep VCS/harness bookkeeping,
 # language caches, and local envs out of build images.
+#
+# Every pattern below is anchored at the CONTEXT ROOT unless it starts with `**/`.
+# That is a real trap in this file's history: a bare `__pycache__` excluded
+# `./__pycache__` and nothing else, so `backend/adapters/db/migrations/__pycache__`
+# still went into the context and buildkit failed the whole build on it —
+#   ERROR: invalid file request backend/.../__pycache__/env.cpython-312.pyc
+# The rule of thumb: if the thing can appear at more than one depth (a cache
+# directory, an env file), it needs `**/`.
 .git
 .claude
 ProductSpecification
 infra/.memory-bank
 infra/swarm-report
-node_modules
-# Local Vite build output — the frontend image runs its own `npm run build` inside the
-# Dockerfile, so shipping the host's dist/ only bloats the context (and trips buildkit's
-# "invalid file request" on OneDrive-synced artifacts).
+**/node_modules
+# Local build/report output — the frontend image runs its own `npm run build` inside the
+# Dockerfile, so shipping the host's dist/ or coverage/ only bloats the context (and trips
+# buildkit's "invalid file request" on OneDrive-synced artifacts, which is exactly how
+# frontend/coverage broke the build once dist/ had been fixed).
 frontend/dist
+frontend/coverage
 .venv
-__pycache__
-*.pyc
-.pytest_cache
-.mypy_cache
-.ruff_cache
-htmlcov
-coverage.xml
-*.egg-info
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/htmlcov
+**/coverage.xml
+**/*.egg-info
 # `.env` alone left every suffixed copy in the build context. A hand-made backup
 # beside it -- `.env.bak-pre-key`, taken before a credential rotation -- would have
 # been copied into an image layer, and a pushed image is a pushed secret that no
 # .gitignore rule reaches. The example file is the one .env.* that is safe and
 # useful to ship, so it is re-included explicitly.
-.env
-.env.*
-!.env.example
+#
+# Recursive, for the same reason as the caches above and with more at stake: the
+# root-anchored form left `backend/.env` — the file that holds the model credentials —
+# in the context, and backend.Dockerfile copies the whole `backend/` tree. The
+# containers get their env from compose's `env_file` at RUN time, so nothing needs
+# these baked into a layer.
+**/.env
+**/.env.*
+!**/.env.example
