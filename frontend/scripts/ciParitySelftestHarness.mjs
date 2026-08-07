@@ -33,8 +33,8 @@ export const packageJson = (overrides = {}, engines) => {
 // A workflow that pins a runtime, in the shape actions/setup-node is actually written in. The
 // default fixtures pin nothing, so the runtime cases are the only ones that carry a version and
 // every other case stays about the thing it names.
-export const workflowOn = (version, scripts = ALL) =>
-  `jobs:\n  gate:\n    steps:\n      - uses: actions/setup-node@v4\n        with:\n          node-version: '${version}'\n${scripts.map(step).join('')}`
+export const workflowOn = (version, scripts = ALL, pins = ['actions/setup-node@v4']) =>
+  `jobs:\n  gate:\n    steps:\n${pins.map((pin) => `      - uses: ${pin}\n`).join('')}        with:\n          node-version: '${version}'\n${scripts.map(step).join('')}`
 
 function run({ standalone = ALL, monorepo = ALL, pkg = packageJson(), raw = {} }) {
   const dir = mkdtempSync(join(tmpdir(), 'ci-parity-'))

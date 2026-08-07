@@ -7,6 +7,7 @@
 // npm script itself reduced to a no-op in package.json. So a step is only counted when nothing in
 // its own block neutralizes it, and the script bodies are checked separately.
 import { readFileSync } from 'node:fs'
+import { actionPins } from './ciActionPins.mjs'
 
 // A step begins at a `- ` list item and runs to the next one, so `if:` and `continue-on-error:`
 // stay attached to the step they modify — a whole-file scan cannot tell whose they are, and that is
@@ -95,7 +96,12 @@ export function scanPipeline(path) {
     }
   }
 
-  return { active: active.sort(), neutralized: neutralized.sort(), node: nodeVersions(contents) }
+  return {
+    active: active.sort(),
+    neutralized: neutralized.sort(),
+    node: nodeVersions(contents),
+    pins: actionPins(contents),
+  }
 }
 
 // The same gates on two different runtimes are not the same gates. This is the drift the script

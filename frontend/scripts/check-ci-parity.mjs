@@ -10,6 +10,7 @@ import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { bodyProblems, runtimeProblems, scanPipeline } from './ciPipelineScan.mjs'
+import { pinProblems } from './ciActionPins.mjs'
 import { REQUIRED } from './ciRequiredGates.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -125,6 +126,19 @@ if (standalone.node.join() !== monorepo.node.join()) {
   console.error(`  ${STANDALONE.label} : ${standalone.node.join(', ') || '(unpinned)'}`)
   console.error(`  ${MONOREPO.label}: ${monorepo.node.join(', ') || '(unpinned)'}`)
   console.error('Bring the two setup-node steps back in step; an unpinned one drifts on its own.')
+  process.exit(1)
+}
+
+// The third way two pipelines diverge while running the same gate list: the same steps on
+// different tooling. An action only one file uses is not drift - the monorepo shape has a docker
+// job the split repo has no counterpart to - so only shared action names are compared.
+const pins = pinProblems([
+  { label: STANDALONE.label, pins: standalone.pins },
+  { label: MONOREPO.label, pins: monorepo.pins },
+])
+if (pins.length > 0) {
+  console.error('CI drift: the two frontend pipelines pin different action versions.')
+  for (const problem of pins) console.error(problem)
   process.exit(1)
 }
 
