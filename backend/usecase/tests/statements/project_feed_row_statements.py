@@ -12,6 +12,7 @@ hands the port's row on untouched.
 
 from dataclasses import asdict
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from fake.auth.fake_clock import FakeClock
@@ -36,7 +37,10 @@ _FIXED_NOW = datetime(2026, 8, 4, 12, 0, tzinfo=UTC)
 # will never emit, precisely because a usecase that hardcoded the contract's
 # document default (False) instead of forwarding the port's value would otherwise
 # pass. The usecase does not know kinds; forwarding is its entire job.
-_EXPECTED_ROW = {
+# Annotated `dict[str, Any]` rather than left to inference: a heterogeneous literal
+# infers as `dict[str, object]`, and `ProjectItem(**_EXPECTED_ROW)` below then fails
+# every field against it. The dict is a kwargs bundle, not a collection of one type.
+_EXPECTED_ROW: dict[str, Any] = {
     "kind": "document",
     "id": UUID("11111111-2222-3333-4444-555555555555"),
     "title": "Байкал: доклад",

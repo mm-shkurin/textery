@@ -37,7 +37,13 @@ class GenerationPromptFailureAssertions:
     slept_for: list[float]
 
     @property
-    def seeded_fields(self) -> tuple[Any, ...]: ...
+    def seeded_fields(self) -> tuple[Any, ...]:
+        # Declared, never run: `GenerationPromptFailureStatements` supplies the
+        # real property, and this mixin is only ever mixed into it. Raising rather
+        # than `...` so the day it *is* mixed into something else the failure names
+        # the missing half, instead of the body returning `None` and every
+        # assertion below comparing against it.
+        raise NotImplementedError
 
     def assert_provider_was_never_called(self) -> None:
         """Zero, not "fewer than two".

@@ -14,7 +14,8 @@ would have been three separate silent breakages. It lives here once instead.
 """
 
 import contextlib
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncGenerator, AsyncIterator, Callable
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 SESSION_FACTORY_TARGET = "container.runtime.session_factory"
@@ -22,7 +23,11 @@ SESSION_FACTORY_TARGET = "container.runtime.session_factory"
 
 @contextlib.asynccontextmanager
 async def wired_on_one_session(
-    factory: Callable[[], AsyncIterator],
+    # `AsyncGenerator`, not the wider `AsyncIterator` this used to say: the harness
+    # calls `aclose()` below, which only the generator protocol has. Under the wider
+    # annotation that call was an attribute error mypy reported and the tests could
+    # not, since every real argument is in fact a generator.
+    factory: Callable[[], AsyncGenerator[Any, None]],
 ) -> AsyncIterator[tuple]:
     """Resolve `factory` against a sentinel session, yielding `(usecase, session)`.
 

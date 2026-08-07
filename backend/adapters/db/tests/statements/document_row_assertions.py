@@ -74,7 +74,10 @@ class DocumentRowAssertions:
         A misspelled override is not swallowed: it survives the merge as an extra
         kwarg and `reconstitute` raises `TypeError` on it.
         """
-        carried_over = {
+        # `dict[str, Any]`, not the inferred `dict[str, object]`: this is a kwargs
+        # bundle for `reconstitute`, whose eleven parameters have eleven different
+        # types, and `object` fails all of them at the splat below.
+        carried_over: dict[str, Any] = {
             "id": original.id,
             "owner_id": original.owner_id,
             "document_type": original.document_type,

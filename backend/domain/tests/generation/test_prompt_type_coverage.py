@@ -82,9 +82,13 @@ class TestEverySupportedDocumentTypeYieldsAPrompt:
     def test_should_build_a_prompt_that_names_its_own_type(self, document_type):
         # G18's first half. `assert built` is satisfied by a prompt built for the
         # *wrong* type, so the check has to discriminate. `test_prompt_goldens.py`
-        # pins today's four byte for byte, but a golden is a hand-typed literal per
-        # type: a fifth type joins SUPPORTED_DOCUMENT_TYPES with no golden and
-        # `KeyError`s there. This one is parametrized over the tuple.
+        # pins today's four byte for byte, but a golden is a hand-typed literal
+        # per type -- a fifth type joins SUPPORTED_DOCUMENT_TYPES with no golden
+        # and `KeyError`s there. This one is parametrized over the tuple.
+        #
+        # Rewrapped so that no line begins "# type:". It did, and mypy reads that
+        # as a type comment: it reported a syntax error and stopped checking the
+        # rest of this file, which is a silent hole rather than a cosmetic one.
         prompt = prompt_for(document_type)
         lines = prompt.splitlines()
 

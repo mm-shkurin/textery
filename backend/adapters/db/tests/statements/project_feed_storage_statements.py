@@ -136,6 +136,12 @@ class ProjectFeedStorageStatements(ProjectFeedRowExpectations):
     async def assert_feed_refuses_an_unresolved_owner(self) -> None:
         """Call the port the way an unresolved caller would. Must not be served."""
         with pytest.raises(ValueError) as refusal:
-            await self._feed.list_feed(None, ProjectPageRequest())
+            # The ignore is the point of the test, not a way around it: `list_feed`
+            # is annotated `owner_id: UUID`, and this pins that it *also* refuses at
+            # runtime. Annotations are erased at run time, so an unresolved caller
+            # reaching this port is a real production shape that no type check can
+            # prevent -- which is why the guard exists and why proving it needs a
+            # call the type checker would otherwise reject.
+            await self._feed.list_feed(None, ProjectPageRequest())  # type: ignore[arg-type]
 
         assert str(refusal.value) == _MISSING_OWNER_REFUSAL, _REFUSAL_NAMES_THE_MISSING_OWNER
