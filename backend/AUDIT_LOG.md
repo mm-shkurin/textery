@@ -134,20 +134,84 @@ the production branches sampled. Layer coverage is 87% locally and 98% in CI --
 the difference is entirely the 70 Postgres-backed tests, whose uncovered lines
 are all under `adapters/db/src`.
 
+## Iteration 7 — Score: 2.5 / 3.0
+
+### Findings
+
+- `application/src/app/main.py` built `FastAPI(lifespan=lifespan)` with no `docs_url`/`redoc_url`/`openapi_url`, and `infra/docker-compose.yml` publishes the backend port on the host, so `/docs`, `/redoc` and `/openapi.json` answered on every environment. Invisible through the frontend origin, which proxies only `/api/` — which is why it lasted.
+- Neither the backend nor `infra/docker/nginx/frontend.conf` sets `X-Content-Type-Options` or `X-Frame-Options`. **Not fixed** — the frame/CSP layer belongs at the ingress, and that config is shared with the frontend session.
+
+### Fixed
+
+- `fix(security)` — documentation off unless `API_DOCS_ENABLED` says otherwise,
+  as an explicit allowlist rather than a truthiness test (`false` and `0` are what
+  someone writes meaning off, and both are truthy strings). The three URLs are
+  decided by one value, since clearing the viewer while serving the schema
+  disables nothing that matters.
+- `fix(tests)` — the `.env.example` check from iteration 6 was far weaker than its
+  docstring claimed: a regex over inline literals, finding 2 of 17 variables. It
+  proved it by staying green when `API_DOCS_ENABLED` was added undocumented in the
+  commit before. Rewritten with `ast`, resolving both the module-constant
+  convention and one level of wrapper (`_require("YANDEX_CLIENT_ID")`). Two real
+  gaps surfaced: `API_DOCS_ENABLED` and `DATABASE_URL`, the latter set by
+  docker-compose but needed by anyone following the README's `uvicorn` path.
+
+### Note
+
+Postgres was running locally for the first time this session, so the 70
+db-suite tests executed rather than skipping. The caveat carried since iteration 1
+is closed: they pass.
+
+## Iteration 8 — Score: 2.5 / 3.0
+
+### Findings
+
+- Route ownership is enforced by remembering to type `Depends(get_current_owner_id)`. All sixteen routes do; nothing checks the seventeenth, and the router suites cannot catch it — the dangerous route is by definition the one nobody wrote a test for.
+
+### Fixed
+
+- `test(rest)` — a gate over the served routes. The public list is spelled out, not
+  derived, or an unauthenticated route would prove its own right to be
+  unauthenticated; a second test refuses a stale exemption, since one for a deleted
+  path pre-approves a future one.
+- `app.routes` turned out not to contain the routes at all — this FastAPI version
+  defers `include_router` behind an `_IncludedRouter` with no path, so the obvious
+  filter returns an empty list and every assertion passes while inspecting nothing.
+  That is what happened on the first run, and the guard-the-guard test is what
+  caught it.
+
+## Iteration 9 — Score: 3.0 / 3.0 (this directory)
+
+Nothing concrete found. Swept in addition to the gates: no file in the production
+layers has more than nine methods, all 19 migrations are reversible and form one
+linear chain from a single root, `_read_subject` checks the token type claim (so a
+refresh token cannot be spent as an access token), bcrypt pre-hashes with
+sha256+base64 (the correct 72-byte mitigation), nh3 runs an explicit tag and
+attribute allowlist with `link_rel="noopener noreferrer"`.
+
+The score is for `backend/`. Scoring the whole repository would be lower:
+`acceptance/` runs in no CI job and declares no dependencies although
+`acceptance/conftest.py` imports selenium. It is a separate top-level module,
+outside the repository this directory publishes as, and was left alone.
+
 ## Final state
 
 | Gate | Result |
 |------|--------|
 | `ruff check .` | All checks passed |
-| `ruff format --check .` | 396 files already formatted |
-| `mypy` | 386 source files, no issues |
-| `mypy --disallow-incomplete-defs` (src roots) | 153 files, no issues |
+| `ruff format --check .` | 401 files already formatted |
+| `mypy` | 391 source files, no issues |
+| `mypy --disallow-incomplete-defs` (src roots) | 154 files, no issues |
 | `python scripts/check_file_size.py` | exit 0 |
-| `pytest` | 779 passed, 70 skipped |
+| `pytest` | 867 passed, 2 skipped |
 | production dependencies | 13, down from 20 |
 | tracked secrets or build output | none |
 
-Six iterations. Score moved 2.0 -> 2.5 at iteration 2 and held there through four
-further passes; the remaining gap to 3.0 is process work outside this directory
-(no CI job runs `acceptance/`, which is not part of the repository `backend/`
-publishes as, and which declares no dependencies of its own).
+The 2 remaining skips are `weasyprint` and `htmldocx`, absent from this host and
+installed in both CI and the backend image.
+
+Nine iterations. 2.0 -> 2.5 at iteration 2, held through six passes while the
+process and packaging gaps were closed, 3.0 at iteration 9. Three checks were
+verified by breaking the thing they guard and watching them name it: the
+file-size gate, the `.env.example` inventory (both detection paths), and the
+route-ownership gate.
