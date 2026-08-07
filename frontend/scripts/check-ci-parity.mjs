@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { bodyProblems, runtimeProblems, scanPipeline } from './ciPipelineScan.mjs'
 import { pinProblems } from './ciActionPins.mjs'
+import { orderProblems, pathsProblems } from './ciTriggers.mjs'
 import { REQUIRED } from './ciRequiredGates.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -139,6 +140,26 @@ const pins = pinProblems([
 if (pins.length > 0) {
   console.error('CI drift: the two frontend pipelines pin different action versions.')
   for (const problem of pins) console.error(problem)
+  process.exit(1)
+}
+
+// Two ways a pipeline can be wrong that have nothing to do with the other one: an order the gates
+// were not meant to run in, and a `paths:` filter that no longer matches the code they gate. The
+// second is the quietest failure here — the workflow never starts, so nothing is red because
+// nothing ran.
+const triggers = [
+  ...orderProblems(
+    { label: STANDALONE.label, order: standalone.order },
+    { label: MONOREPO.label, order: monorepo.order },
+  ),
+  ...pathsProblems(
+    { label: MONOREPO.label, paths: monorepo.paths },
+    { gated: 'frontend/', own: '.github/workflows/frontend-ci.yml' },
+  ),
+]
+if (triggers.length > 0) {
+  console.error('CI drift: the two frontend pipelines do not fire and run the same way.')
+  for (const problem of triggers) console.error(problem)
   process.exit(1)
 }
 

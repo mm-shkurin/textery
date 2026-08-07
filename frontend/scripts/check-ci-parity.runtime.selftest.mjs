@@ -7,7 +7,13 @@
 // package.json declares, and the two files pinning different versions of the same action. All
 // three are invisible to a comparison of script names, and all three end the same way: green here,
 // broken for whoever pulls next.
-import { ALL, expect, packageJson, workflowOn } from './ciParitySelftestHarness.mjs'
+import {
+  ALL,
+  expect,
+  packageJson,
+  workflowFiltering,
+  workflowOn,
+} from './ciParitySelftestHarness.mjs'
 import { reportAndExit } from './selftestRunner.mjs'
 
 // The blind spot the script comparison leaves open: both files run every gate, on two different
@@ -83,9 +89,45 @@ expect({
   quotes: ['pinned to v4 and v5 within one file'],
 })
 
+// Same gates, same runtime, different sequence. Ordered cheapest-first on purpose, and two
+// pipelines reporting different first failures for one commit is how "green for me" starts.
+expect({
+  what: 'the same gates in a different order fail',
+  standalone: ALL,
+  monorepo: [...ALL].reverse(),
+  code: 1,
+  quotes: ['do not fire and run the same way', 'different sequence'],
+})
+
+// The quietest failure a pipeline has: the filter stops matching, the workflow never starts, and
+// nothing is red because nothing ran.
+expect({
+  what: 'a monorepo paths filter that misses the gated directory fails',
+  raw: { monorepo: workflowFiltering(['backend/**', '.github/workflows/frontend-ci.yml']) },
+  code: 1,
+  quotes: ['does not fire on changes under frontend/'],
+})
+
+// A workflow that does not re-run when it is edited cannot be fixed by editing it, and the first
+// symptom is a "fix" that changes nothing.
+expect({
+  what: 'a paths filter that omits the workflow itself fails',
+  raw: { monorepo: workflowFiltering(['frontend/**']) },
+  code: 1,
+  quotes: ['does not fire when it is edited itself'],
+})
+
+// The shape that must NOT fail: no `on:` block at all is the split repository, where the whole
+// checkout is the gated directory and a filter would be the mistake.
+expect({
+  what: 'a pipeline with no paths filter at all is not a trigger problem',
+  code: 0,
+  quotes: ['CI parity OK'],
+})
+
 reportAndExit({
-  subject: 'CI runtime and action pins',
+  subject: 'CI runtime, action pins and triggers',
   subjectIs: 'the parity check runtime comparison',
   script: 'check-ci-parity.mjs',
-  tail: 'version drift, unpinned side, engines agreement, a runtime below it, and three action-pin cases',
+  tail: 'runtime drift and engines, three action-pin cases, step order, and three paths-filter cases',
 })

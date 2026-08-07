@@ -8,6 +8,7 @@
 // its own block neutralizes it, and the script bodies are checked separately.
 import { readFileSync } from 'node:fs'
 import { actionPins } from './ciActionPins.mjs'
+import { triggerPaths } from './ciTriggers.mjs'
 
 // A step begins at a `- ` list item and runs to the next one, so `if:` and `continue-on-error:`
 // stay attached to the step they modify — a whole-file scan cannot tell whose they are, and that is
@@ -97,10 +98,14 @@ export function scanPipeline(path) {
   }
 
   return {
+    // `order` before `active` is sorted in place — the sequence the steps appear in is a separate
+    // fact from the set of them, and `sort()` destroys it.
+    order: [...active],
     active: active.sort(),
     neutralized: neutralized.sort(),
     node: nodeVersions(contents),
     pins: actionPins(contents),
+    paths: triggerPaths(contents),
   }
 }
 

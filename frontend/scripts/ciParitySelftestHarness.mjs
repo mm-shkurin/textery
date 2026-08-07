@@ -30,6 +30,22 @@ export const packageJson = (overrides = {}, engines) => {
   return JSON.stringify({ scripts: { ...scripts, ...overrides }, ...(engines ? { engines } : {}) })
 }
 
+// A workflow with an `on:` block carrying a paths filter, for the trigger cases. Kept apart from
+// `workflowOn`, whose fixtures deliberately have no `on:` at all — the split-repo shape.
+export const workflowFiltering = (paths, scripts = ALL) =>
+  `on:
+  push:
+    paths:
+${paths
+  .map(
+    (p) => `      - '${p}'
+`,
+  )
+  .join('')}jobs:
+  gate:
+    steps:
+${scripts.map(step).join('')}`
+
 // A workflow that pins a runtime, in the shape actions/setup-node is actually written in. The
 // default fixtures pin nothing, so the runtime cases are the only ones that carry a version and
 // every other case stays about the thing it names.
