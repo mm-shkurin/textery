@@ -92,3 +92,62 @@ The 70 skips are the Postgres-backed adapter tests. They are not skipped in CI �
 the `test` job installs Postgres, runs the migrations and executes them there.
 They could not be executed locally during this audit, so their *collection* was
 verified (imports and fixture wiring resolve) but their *execution* was not.
+
+## Iteration 5 — Score: 2.5 / 3.0
+
+### Findings
+
+- `infra/docker/backend.Dockerfile` installed the whole `requirements.txt` into the production image, so `pytest`, `pytest-cov`, `pytest-mock`, `ruff`, `mypy` and a stubs package shipped to production alongside FastAPI.
+- `requirements.txt` did not separate runtime from tooling, which cost the `audit` job its meaning: `pip-audit` answered "is anything in this file vulnerable" rather than "is what we deploy vulnerable".
+- `README.md` never named `TEST_DATABASE_URL` or the required `textery_test` database. On a fresh checkout 70 tests skipped, and "skipped" reads as "not applicable to me" rather than "you have not finished setting up".
+- `CHANGELOG.md` had stopped at 2026-07-31 and recorded none of the eight commits since, including the stretch where `lint` and `types` were red.
+- `acceptance/` declares no dependencies anywhere, though `acceptance/conftest.py:10` imports `selenium`. **Not fixed** — `acceptance/` is a separate top-level module and is not part of the repository this directory publishes as.
+
+### Fixed
+
+- `build(deps)` — runtime/dev split. `audit` deliberately stays on the runtime
+  file; `types` and `test` move to the dev file, which starts with
+  `-r requirements.txt`. Both CI pip caches now key on both files. Nothing was
+  unpinned by the split.
+- `docs(backend)` — README setup section for the test database, including why the
+  name must contain `test`; changelog Unreleased refilled, with the production
+  defects stated as defects rather than as tidying.
+
+## Iteration 6 — Score: 2.5 / 3.0
+
+### Findings
+
+- `OAUTH_FAKE_AUTHORIZE_URL` is read by `application/src/app/container/oauth_wiring.py:77` and appears nowhere in `.env.example`, whose own header claims to document every variable the backend consumes. The failure mode is not an error but a default quietly applying in an environment that meant to override it.
+
+### Fixed
+
+- `test(config)` — the variable documented, plus a test that scans the production
+  roots for environment reads and fails on any the file does not declare, with a
+  second test guarding it against scanning nothing. Verified by deleting the new
+  entry and watching the check go red on exactly `['OAUTH_FAKE_AUTHORIZE_URL']`.
+
+### Swept clean, no findings
+
+No `TODO`/`FIXME`/`HACK` markers anywhere in the source. No inward-dependency
+violations (`domain` and `usecase` import no adapter module). No magic numbers in
+the production branches sampled. Layer coverage is 87% locally and 98% in CI --
+the difference is entirely the 70 Postgres-backed tests, whose uncovered lines
+are all under `adapters/db/src`.
+
+## Final state
+
+| Gate | Result |
+|------|--------|
+| `ruff check .` | All checks passed |
+| `ruff format --check .` | 396 files already formatted |
+| `mypy` | 386 source files, no issues |
+| `mypy --disallow-incomplete-defs` (src roots) | 153 files, no issues |
+| `python scripts/check_file_size.py` | exit 0 |
+| `pytest` | 779 passed, 70 skipped |
+| production dependencies | 13, down from 20 |
+| tracked secrets or build output | none |
+
+Six iterations. Score moved 2.0 -> 2.5 at iteration 2 and held there through four
+further passes; the remaining gap to 3.0 is process work outside this directory
+(no CI job runs `acceptance/`, which is not part of the repository `backend/`
+publishes as, and which declares no dependencies of its own).
