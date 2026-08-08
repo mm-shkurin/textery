@@ -1,5 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { derivePaginationState } from '../paginationState'
+import { derivePaginationState, type PaginationInput } from '../paginationState'
+
+/**
+ * The geometry both cases below are driven over — seven blocks totalling 2800px against 900px of
+ * usable sheet, four pages' worth whichever way they pack. It is a single binding rather than two
+ * literals BECAUSE the two cases must be byte-identical here: `fontStatus` being the only differing
+ * input is what makes the font gate load-bearing, and a shared binding enforces that instead of
+ * asking a reader to diff two arrays and take the header comments' word for it.
+ *
+ * Only the INPUT is shared. Every expected field stays spelled out at its own assertion — the
+ * whole-object comparisons exist to make each one visible, and a fixture value must never be
+ * reachable from an expected value.
+ */
+const AMPLY_MEASURABLE_DOCUMENT: Omit<PaginationInput, 'fontStatus'> = {
+  blockHeights: [400, 380, 420, 390, 410, 400, 400],
+  usableContentHeight: 900,
+}
 
 /**
  * Story 10, UI scenario 1.1 — "Pagination waits for the document font".
@@ -10,9 +26,9 @@ import { derivePaginationState } from '../paginationState'
  *   And no page count is displayed
  *   And the state is visibly distinct from an error and from an empty document
  *
- * Heights are SUPPLIED and they are amply sufficient to lay the document out (seven blocks
- * totalling 2800px against 900px of usable sheet — four pages' worth, whichever way they pack).
- * That is the point of the case: having measurements is not permission to paginate. The font gate
+ * Heights are SUPPLIED and they are amply sufficient to lay the document out (see
+ * `AMPLY_MEASURABLE_DOCUMENT` above). That is the point of the case: having measurements is not
+ * permission to paginate. The font gate
  * dominates, because heights measured against a substituted face would produce a count that
  * changes under the user once the real face arrives (scenario 1.2's "does not change again on its
  * own"). A `derivePaginationState` that looked only at the geometry would return a laid-out page
@@ -43,11 +59,7 @@ describe('derivePaginationState — the document font has not resolved', () => {
   // TDD RED — fails with `Error: Not implemented` at paginationState.ts:51. `derivePaginationState`
   // is a stub; no pre-layout state machine exists in `frontend/src` yet. Unskip in green-frontend.
   it.skip('holds the editor in the measuring state with no page count, however measurable the document is', () => {
-    const state = derivePaginationState({
-      fontStatus: 'pending',
-      blockHeights: [400, 380, 420, 390, 410, 400, 400],
-      usableContentHeight: 900,
-    })
+    const state = derivePaginationState({ fontStatus: 'pending', ...AMPLY_MEASURABLE_DOCUMENT })
 
     expect(state).toEqual({
       phase: 'measuring',
@@ -63,8 +75,8 @@ describe('derivePaginationState — the document font has not resolved', () => {
 })
 
 /**
- * The counter-case, over the SAME geometry — same `blockHeights`, same `usableContentHeight`.
- * `fontStatus` is the only thing that differs between the two cases, which is what makes it
+ * The counter-case, over the same `AMPLY_MEASURABLE_DOCUMENT` binding the first case is driven
+ * over, so `fontStatus` is the only thing that CAN differ between the two — which is what makes it
  * load-bearing: with one case only, every expected field above is a constant, and a
  * `derivePaginationState` that discards its argument and returns a frozen literal passes. That
  * exact mutation was demonstrated. Then the scenario's whole claim — the font gate dominates the
@@ -79,8 +91,12 @@ describe('derivePaginationState — the document font has not resolved', () => {
  * reader still told the editor is busy. That is the mirror image of the defect the first case's
  * whole-object comparison exists to forbid ("the right phase alongside a stray page count"), and it
  * is the same family both prior reviews of this scenario found. So the measuring surface is pinned
- * POSITIVELY absent — exact `0` / `null` / `false` / `''`, the values `PaginationViewState`'s own
- * doc comments define for phases that render no such surface — not left unmentioned.
+ * POSITIVELY absent — exact `0` / `null` / `false` / `''` — not left unmentioned. Two of those
+ * follow from `PaginationViewState`'s own doc comments (`liveRegionRole` is `null` where no live
+ * region is rendered; `measuringMessage` belongs to the measuring surface). The skeleton counts do
+ * NOT: `sheetSkeletonCount` carries no doc comment and `railSkeletonCount`'s describes only the
+ * measuring surface's fixed three rows. `0` for a phase that renders no skeletons is decided HERE,
+ * not restated from the interface.
  *
  * `pageCount` is pinned to a value, not to `not.toBeNull()`. Non-null is satisfiable by `0` and by
  * `-1`: an editor claiming to be laid out across zero pages. The count is not opaque here — heights
@@ -101,11 +117,7 @@ describe('derivePaginationState — the document font has resolved', () => {
   // TDD RED — fails with `Error: Not implemented` at paginationState.ts:51. `derivePaginationState`
   // is a stub; no pre-layout state machine exists in `frontend/src` yet. Unskip in green-frontend.
   it.skip('lays the document out and tears the measuring surface down', () => {
-    const state = derivePaginationState({
-      fontStatus: 'resolved',
-      blockHeights: [400, 380, 420, 390, 410, 400, 400],
-      usableContentHeight: 900,
-    })
+    const state = derivePaginationState({ fontStatus: 'resolved', ...AMPLY_MEASURABLE_DOCUMENT })
 
     const { statusText: _statusText, ...laidOut } = state
     expect(laidOut).toEqual({

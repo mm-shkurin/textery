@@ -121,8 +121,52 @@ below — their vitest step covers logic, not layout.
   Nothing pins `statusText` outside the measuring phase and nothing pins the field→testid
   mapping at all. Pin it before green picks a rendering; scenario 2.3 is otherwise the first
   step that would expose it, by which point the choice is made.
+- [ ] red-frontend (premortem CREDIBLE 1 over `0e08f0cf`, by mutation) — **`pageCount: 4` is
+  satisfied by a SECOND frozen literal; the mutation this step just killed survives one
+  branch up.** Restoring the stub as `if (input.fontStatus !== 'pending') return {…
+  pageCount: 4 …}; return {…measuring…}` — reading `blockHeights` and `usableContentHeight`
+  never — passes BOTH cases (`2 passed`). The gate closed on `fontStatus` and left every
+  geometry argument in exactly the state `fontStatus` was in before. The commit message's
+  own defence is what lands it: `4` was argued safe *because* both candidate packings agree,
+  and agreement is precisely what makes one fixture unable to tell a packer from a constant.
+  Add a second `fontStatus: 'resolved'` row varying the geometry (e.g. the same seven blocks
+  against `usableContentHeight: 2000`) — a different count, still packing-agnostic, so 2.1's
+  choice stays open.
+- [ ] red-frontend (premortem CREDIBLE 2 over `0e08f0cf`, by mutation) — **nothing forbids
+  `derivePaginationState` from consuming the caller's `blockHeights`, and the shared fixture
+  makes the damage order-dependent.** `{ fontStatus, ...AMPLY_MEASURABLE_DOCUMENT }` spreads
+  the module-level array by REFERENCE, so both cases share one object. A greedy packer using
+  `input.blockHeights.shift()` — an ordinary shape — passes both (`2 passed`), because the
+  `pending` case returns before touching geometry. Moving the gate below the packing
+  (compute-then-gate, equally ordinary) yields `1 failed | 1 passed` with `pageCount: 0` in
+  the RESOLVED case — the counter-case blamed for damage the `pending` case did. Under
+  `--shuffle`, `.only`, or once the `statusText` step adds a third case, the same
+  implementation flips between passing and failing. Incident: the page rail renders empty
+  for every document after the first layout pass because pagination ate `blockHeights`.
+  Guard: a factory returning a fresh array per case (preferred — the fixture's goal is
+  identical VALUES; sharing the array OBJECT is the side effect), or `Object.freeze`, plus
+  an explicit assertion the input is unchanged after the call.
+- [ ] red-frontend (agent-review CONCERNS 1 over `0e08f0cf`) — **closing the constant-return
+  road left the `'failed'` arm wide open, and it leads to the same permanent spinner.**
+  `DocumentFontStatus` declares `'pending' | 'resolved' | 'failed'`; the suite exercises two.
+  No vitest case, no Selenium statement and no locator anywhere produces `'failed'` — the
+  only other occurrence in the repo is a comment in `document_font_hold.py:3`. So two
+  contradictory greens both pass this red: `fontStatus === 'pending' ? MEASURING : LAID_OUT`
+  (a failed font lays out immediately) and `fontStatus === 'resolved' ? LAID_OUT : MEASURING`
+  (a failed font spins forever) — the second is verbatim what 1.3 exists to forbid. The
+  hazard did not go away; it moved from "no branch" to "branch with an undefined arm", which
+  is HARDER to catch in green review because the function now visibly reads `fontStatus`.
+  Sharpening it: lines 37-38 above record that a font the renderer cannot resolve RESOLVES
+  with substituted metrics — if that is authoritative, `'failed'` is a member with no
+  producer and no semantics, and the fix is to remove it so the branch is unrepresentable
+  (same question for `PaginationPhase`'s `'error'`, which no test in this scenario produces).
+  Premortem rated this REMOTE on the grounds that 1.3 owns the Given; agent-review rates it
+  now, and agent-review is right about the TIMING: 1.3 sits after 1.2, so 1.1's green lands
+  first, the arm gets implemented and reviewed as finished, and 1.3's red is then written
+  against behavior that already looks decided — the exact failure this scenario's own charter
+  argues against. Decide the member here; leave the *behavior* to 1.3.
 - [ ] green-frontend — **name the consuming component here, as a deliverable** (premortem
-  CREDIBLE 2). This commit opened a new feature root, `frontend/src/features/editor/`,
+  CREDIBLE 2 over `f156718b`). This commit opened a new feature root, `frontend/src/features/editor/`,
   holding only `logic/`; the real editor is `features/generation/components/ManualEditor.tsx`
   and `grep -l pagination frontend/src --include=*.tsx` returns nothing. A pure function can
   be implemented, correct, and imported by no component — the vitest leg is satisfied either
@@ -135,6 +179,15 @@ below — their vitest step covers logic, not layout.
   exact-match, cross-language, one invisible U+2026 apart. Defect (c) WAS this drift and the
   fix added a fourth copy. Green must not type a fifth: the component imports the literal
   from `paginationState.ts`.
+  And (premortem CREDIBLE 3 over `0e08f0cf`): **the skipped surface doubled, and nothing
+  outside a code comment requires green to unskip both.** `frontend/` has no eslint config at
+  all — no `no-disabled-tests`, no skip-count check, no CI grep; the only record of the count
+  is prose in a commit message. The FIRST case is the one whose name matches the scenario
+  header and the one a green would naturally unskip first, and unskipping only it reproduces
+  exactly the state `f156718b` was in — the state this whole chain of steps exists to leave.
+  Green's deliverable is explicit: every case in `paginationState.measuring.test.ts` runs and
+  the suite reports **3 skipped, not 5** (the 3 pre-existing markers in the `ManualEditor`
+  autosave tests are not this scenario's).
 - [ ] align-design
 - [ ] green-selenium
 - [ ] demo
