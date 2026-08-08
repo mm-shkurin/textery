@@ -73,6 +73,30 @@ class BaseFrontendStatements(RequestLogMixin, PresenceAssertionsMixin, FormAsser
         assert actual == expected, f"expected {label} to be '{expected}', got '{actual}'"
         return element
 
+    def _assert_element_attribute_equals(
+        self,
+        driver: WebDriver,
+        locator: tuple[str, str],
+        attribute: str,
+        expected: str,
+        label: str,
+        reason: str,
+    ) -> WebElement:
+        """Wait for the element, then assert one of its attributes equals `expected`.
+
+        The waiting half is the point. Read straight off `driver.find_element` the attribute is
+        sampled at one instant, so an element that gains its ARIA attributes a frame after it
+        mounts reports `None` — the same false failure `_assert_element_text_equals` exists to
+        stop for text. `reason` carries what the mismatch COSTS, which a bare
+        expected/got line cannot say.
+        """
+        element = self._wait_for_visible(driver, locator)
+        actual = element.get_attribute(attribute)
+        assert actual == expected, (
+            f"expected {label} to carry {attribute}='{expected}', got '{actual}' — {reason}"
+        )
+        return element
+
     def _assert_not_visible(self, driver: WebDriver, locator: tuple[str, str], message: str) -> None:
         """Wait until `locator` is absent or hidden, failing with `message` if it stays up.
 

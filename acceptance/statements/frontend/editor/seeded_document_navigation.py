@@ -53,7 +53,12 @@ class SeededDocumentNavigationMixin:
         ).click()
         self._wait_for_visible(driver, HISTORY_PAGE, "expected Мои работы to open")
         self._assert_history_lists_only_the_seeded_document(driver, document)
-        self._open_the_only_history_row(driver)
+        self._wait_for_visible(
+            driver,
+            HISTORY_DOCUMENT_ROW,
+            "expected the seeded document's row to be clickable in Мои работы, but "
+            f"{HISTORY_DOCUMENT_ROW[1]} was not — the editor is reachable only by clicking it",
+        ).click()
 
     def _assert_history_lists_only_the_seeded_document(
         self, driver: WebDriver, document: SeededDocument
@@ -70,6 +75,3 @@ class SeededDocumentNavigationMixin:
         self._assert_element_text_equals(
             driver, HISTORY_ROW_TITLE, document.title, "the history row's title"
         )
-
-    def _open_the_only_history_row(self, driver: WebDriver) -> None:
-        self._wait_for_visible(driver, HISTORY_DOCUMENT_ROW).click()

@@ -12,18 +12,14 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from statements.frontend.base_frontend_statements import BaseFrontendStatements
 from statements.frontend.editor.document_font_hold import DocumentFontHoldMixin
 from statements.frontend.editor.live_document_setup import SeededDocument
+from statements.frontend.editor.measuring_surface_assertions import MeasuringSurfaceAssertionsMixin
 from statements.frontend.editor.pagination_measuring_locators import (
     EMPTY_DOCUMENT_HINT,
-    EXPECTED_MEASURING_BUSY,
     EXPECTED_MEASURING_MESSAGE,
     EXPECTED_MEASURING_STATUS,
-    EXPECTED_RAIL_SKELETON_COUNT,
-    EXPECTED_SPINNER_ROLE,
     MEASURING_MESSAGE,
-    MEASURING_SPINNER,
     MEASURING_SURFACE,
     PAGE_COUNT,
-    PAGE_RAIL_SKELETON,
     PAGINATION_ERROR,
     PAGINATION_STATUS,
     SHEET_SKELETON,
@@ -33,7 +29,10 @@ from statements.frontend.generation.manual_editor_statements import MANUAL_EDITO
 
 
 class PaginationMeasuringStatements(
-    DocumentFontHoldMixin, SeededDocumentNavigationMixin, BaseFrontendStatements
+    DocumentFontHoldMixin,
+    SeededDocumentNavigationMixin,
+    MeasuringSurfaceAssertionsMixin,
+    BaseFrontendStatements,
 ):
     """Open a saved document with the font held mid-load, then read the pre-layout state."""
 
@@ -81,58 +80,6 @@ class PaginationMeasuringStatements(
         )
         self._assert_the_measuring_surface_announces_itself_busy(driver)
         self._assert_the_skeletons_stand_in_for_the_unlaid_pages(driver)
-
-    def _assert_the_measuring_surface_announces_itself_busy(self, driver: WebDriver) -> None:
-        """The spinner is a LIVE indicator, not an element with a spinner's testid.
-
-        Visibility alone is satisfied by an empty div, which is how a static notice passes for a
-        measuring state. The role and busy flag are also what make this state distinct to a screen
-        reader, where "visibly distinct" has no meaning and the error and empty states are told
-        apart by what they announce.
-        """
-        spinner = self._wait_for_visible(
-            driver,
-            MEASURING_SPINNER,
-            f"expected a live progress indicator while measuring, but {MEASURING_SPINNER[1]} "
-            "never appeared — a message with no indicator is a static notice",
-        )
-        actual_role = spinner.get_attribute("role")
-        assert actual_role == EXPECTED_SPINNER_ROLE, (
-            f"expected the measuring spinner to announce role='{EXPECTED_SPINNER_ROLE}', got "
-            f"'{actual_role}' — the state is not distinguishable to a screen reader"
-        )
-        surface = driver.find_element(*MEASURING_SURFACE)
-        actual_busy = surface.get_attribute("aria-busy")
-        assert actual_busy == EXPECTED_MEASURING_BUSY, (
-            f"expected the measuring surface to carry aria-busy='{EXPECTED_MEASURING_BUSY}', got "
-            f"'{actual_busy}' — assistive tech is told the editor has settled while it measures"
-        )
-
-    def _assert_the_skeletons_stand_in_for_the_unlaid_pages(self, driver: WebDriver) -> None:
-        """A skeleton SHEET in the content area and exactly the rail's placeholder rows.
-
-        The sheet skeleton is the element neither state this must be distinct from renders: the
-        error state shows an error surface, and the empty document shows a real, blank sheet.
-        """
-        self._wait_for_visible(
-            driver,
-            SHEET_SKELETON,
-            f"expected a skeleton sheet in the content area while measuring, but "
-            f"{SHEET_SKELETON[1]} never appeared — the DSL defines the measuring state as a "
-            "skeleton sheet plus rail skeletons, and this half of it is missing",
-        )
-        self._wait_for_visible(
-            driver,
-            PAGE_RAIL_SKELETON,
-            f"expected the page rail to show placeholder rows while measuring, but "
-            f"{PAGE_RAIL_SKELETON[1]} never appeared — the rail rendered nothing",
-        )
-        self._assert_visible_element_count(
-            driver,
-            PAGE_RAIL_SKELETON,
-            EXPECTED_RAIL_SKELETON_COUNT,
-            "page-rail skeleton row(s) while measuring",
-        )
 
     def assert_no_page_count_is_displayed_and_the_status_reads_measuring(
         self, driver: WebDriver

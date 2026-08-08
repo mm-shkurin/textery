@@ -16,15 +16,21 @@ A new account per call, inherited from `live_auth_session`: it keeps the history
 single-row list, so "click the row" is unambiguous without the test knowing an id.
 """
 
-import os
 import uuid
 from dataclasses import dataclass
 
 import httpx
 
-from statements.frontend.live_auth_session import LiveAuthSession, issue_live_session
-
-_REQUEST_TIMEOUT_SECONDS = 10
+# The backend origin and the HTTP timeout are taken from `live_auth_session` rather than
+# re-declared: this module seeds a document FOR the account that module mints, over the same
+# backend, so a second copy of the port lookup could only ever drift away from the one that
+# matters. Same import-don't-copy shape `manual_editor_conflict_reconcile_statements` uses.
+from statements.frontend.live_auth_session import (
+    _REQUEST_TIMEOUT_SECONDS,
+    LiveAuthSession,
+    _backend_base_url,
+    issue_live_session,
+)
 
 # The document the scenario opens. Content is present but deliberately unremarkable: 1.1 asserts
 # nothing about layout, only about the state shown BEFORE layout can happen. An empty document
@@ -52,12 +58,6 @@ class SeededDocument:
 
     session: LiveAuthSession
     title: str
-
-
-def _backend_base_url() -> str:
-    # Mirrors ApplicationClient and live_auth_session: the published backend port is
-    # per-checkout and lives in infra/.env, so it arrives as an env var, never a literal.
-    return f"http://localhost:{os.environ.get('BACKEND_PORT', '8000')}"
 
 
 def seed_saved_document() -> SeededDocument:
