@@ -71,7 +71,10 @@ MAX_TESTABLE_TTL_SECONDS = 10
 
 # Manual-editor Statements fixtures live in their own plugin module to keep this
 # root conftest under the 200-line file cap.
-pytest_plugins = ("statements.frontend.generation.manual_editor_fixtures",)
+pytest_plugins = (
+    "statements.frontend.generation.manual_editor_fixtures",
+    "statements.frontend.editor.editor_pages_fixtures",
+)
 
 
 @pytest_asyncio.fixture

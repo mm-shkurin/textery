@@ -5,10 +5,18 @@ Story-level narrative and decisions: `progress.md`. Backend and the rest:
 
 Scenario ids map to `tests/02_UI_Tests.md`.
 
-**Sequencing note.** Frontend work starts after the `page_settings` contract exists in
-`progress-backend.md` (scenarios 2.x and 4.x) — pagination written against hardcoded
-constants would be rewritten, tests included, the moment settings land. Until then the
-frontend scenarios below stay `[ ]`.
+**Sequencing note.** The concern this note originally raised was pagination written against
+hardcoded constants — rewritten, tests included, the moment settings land. That concern is
+answered by the *contract*, not by the backend implementation, and the contract is closed:
+`page_settings` and its `PageSettings` schema are specified in `api-specs/documents_get.yaml`
+and `documents_save.yaml`, with the PUT tri-state rules in `endpoints.md`. Frontend work
+reads geometry from that value object, never from constants.
+
+Absent `page_settings` reads as `null`, which the client renders as the default preset — so
+the scenarios below run against the backend as it stands today, before scenarios 2.x/4.x
+land their storage. The steps that genuinely need stored settings to survive a round-trip
+are the `*-frontend-api` ones on scenarios 5.2, 6.1, 7.1, 7.2 and 7.3 (a save that must come
+back changed); those wait on `progress-backend.md` scenario 4.x. Everything else does not.
 
 **Coverage note.** Pagination is measured by the browser. jsdom reports every element as
 zero-height, so `red-frontend` can only pin the break-decision logic given *supplied*
@@ -19,8 +27,24 @@ below — their vitest step covers logic, not layout.
 ## Frontend Scenarios (02_UI_Tests.md)
 
 ### Scenario 1.1: Pagination waits for the document font
-- [ ] red-selenium
-- [ ] red-frontend
+- [x] red-selenium — RED as predicted: `TimeoutException`, `[data-testid='manual-editor']
+  [data-testid='pagination-measuring']` never appeared; no pre-layout state exists in
+  `frontend/src` at all. Three things this step settled, all of which green inherits:
+  (a) **The route to the editor is Мои работы → click a row.** `mode-card-manual` — the path
+  `manual_editor_statements` uses — is DEAD; story 18 removed the mode modal and that testid
+  exists nowhere in production. The document is seeded over HTTP, then opened by clicking.
+  No URL navigation.
+  (b) **The font lever is not a blocked URL.** Per the journey summary, a font the renderer
+  cannot resolve RESOLVES with substituted metrics — that is 1.3's Given, not 1.1's.
+  `document_font_hold.py` stubs `fonts.ready` permanently pending via CDP, and the test reads
+  the state back off the page so the Given is asserted, not assumed.
+  (c) **`/test-review` found the third Then pinned nothing.** "Visibly distinct from an error
+  and from an empty document" was two absence checks, which an editor rendering NOTHING
+  satisfies. The positive separator is `page-sheet-skeleton` (spec: "Skeleton sheet + rail
+  skeletons"; `mockups/desktop/02-measuring.html:61-65`) — it had no locator anywhere. Now
+  asserted, along with exactly 3 rail skeletons and `role="status"` + `aria-busy="true"`.
+  Absence assertions no longer accept not-yet-rendered as absent.
+- [~] red-frontend
 - [ ] green-frontend
 - [ ] align-design
 - [ ] green-selenium

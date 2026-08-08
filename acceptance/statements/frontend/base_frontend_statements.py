@@ -15,7 +15,8 @@ from statements.frontend.frontend_form_assertions import (  # noqa: F401
     FormAssertionsMixin,
     HintErrorSnapshot,
 )
-from statements.frontend.live_auth_session import issue_live_session
+from statements.frontend.frontend_presence_assertions import PresenceAssertionsMixin
+from statements.frontend.live_auth_session import LiveAuthSession, issue_live_session
 # Re-exported for the Statements modules that import this from here; the CDP performance-log
 # helpers moved to request_log.py to keep both files under the 200-line limit.
 from statements.frontend.request_log import REQUEST_LOG_SETTLE_SECONDS, RequestLogMixin  # noqa: F401
@@ -24,7 +25,7 @@ PRIMARY_CTA_BUTTON = (By.CSS_SELECTOR, "[data-testid='header-primary-cta-button'
 TYPE_CARD_DOKLAD = (By.CSS_SELECTOR, "[data-testid='type-card-doklad']")
 
 
-class BaseFrontendStatements(RequestLogMixin, FormAssertionsMixin):
+class BaseFrontendStatements(RequestLogMixin, PresenceAssertionsMixin, FormAssertionsMixin):
     """Shared Selenium wait infrastructure for frontend Statements classes."""
 
     _DEFAULT_PORTS: ClassVar[dict[str, str]] = {"http": "80", "https": "443"}
@@ -50,8 +51,18 @@ class BaseFrontendStatements(RequestLogMixin, FormAssertionsMixin):
             is_expected_page, f"expected URL '{app_url}{expected_path}', got '{driver.current_url}'"
         )
 
-    def _wait_for_visible(self, driver: WebDriver, locator: tuple[str, str]) -> WebElement:
-        return WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(ec.visibility_of_element_located(locator))
+    def _wait_for_visible(
+        self, driver: WebDriver, locator: tuple[str, str], message: str = ""
+    ) -> WebElement:
+        """Wait for `locator` to be visible; `message` names what was expected on timeout.
+
+        The message parameter exists so callers stop re-writing `WebDriverWait(...).until(...)`
+        inline purely to attach wording. A bare timeout names only a CSS selector, which cannot
+        distinguish "the precondition never held" from "the thing under test is missing".
+        """
+        return WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(
+            ec.visibility_of_element_located(locator), message
+        )
 
     def _assert_element_text_equals(
         self, driver: WebDriver, locator: tuple[str, str], expected: str, label: str
@@ -81,7 +92,11 @@ class BaseFrontendStatements(RequestLogMixin, FormAssertionsMixin):
     _REFRESH_TOKEN_KEY = "textery.auth.refreshToken"
 
     def _establish_logged_in_precondition(
-        self, driver: WebDriver, app_url: str, live_session: bool = False
+        self,
+        driver: WebDriver,
+        app_url: str,
+        live_session: bool = False,
+        session: LiveAuthSession | None = None,
     ) -> None:
         """Establish a "given a logged-in visitor" precondition in sessionStorage.
 
@@ -97,9 +112,17 @@ class BaseFrontendStatements(RequestLogMixin, FormAssertionsMixin):
         running backend. Required for any screen that calls the API on mount or submit (the
         manual editor's createDocument, the chat workspace's generation POST): a seeded token
         gets a 401, the client clears the session, and the app collapses to the landing.
+
+        SUPPLIED (`session=...`) — a live session the CALLER already minted, passed in rather
+        than issued here. Needed whenever the browser's identity must match data seeded over
+        HTTP outside the browser: `issue_live_session` makes a NEW account every call, so a
+        test that seeds a document for one account and then lets this method mint another would
+        sign in as a stranger and find an empty history. Implies a live session.
         """
         driver.get(app_url)
-        if live_session:
+        if session is not None:
+            access_token, refresh_token = session.access_token, session.refresh_token
+        elif live_session:
             session = issue_live_session()
             access_token, refresh_token = session.access_token, session.refresh_token
         else:
