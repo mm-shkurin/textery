@@ -363,7 +363,56 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   unconditionally passes both reds and destroys deliberate erasure.
   `ruff format --check` was left alone: it already fails on three files at HEAD, two untouched
   here, so it is not an enforced gate, and the flagged line is byte-identical to HEAD.)
-- [~] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
+- [~] red-adapter rest (both review passes on `4923d835`, each having BUILT AND RUN the hostile
+  green independently: the wire-shape file pins two of story 17's four wire rows — absent and
+  explicit null — and never pins what the DTO writes for a REAL title. Across both test files every
+  `model_dump`/`model_dump_json` call is on an absent-title or null-title request; all eight of
+  them, grepped. So the row carrying actual user data is unpinned on the writer side, and the
+  green's whole job is to add a serializer to this very model — which is the natural place for
+  someone to "tidy" the title on the way out. Measured:
+
+      @model_serializer(mode="wrap")
+      def _s(self, handler):
+          d = handler(self)
+          if "title" not in self.model_fields_set:
+              d.pop("title", None)
+          elif isinstance(d.get("title"), str):
+              d["title"] = d["title"].strip()
+          return d
+
+  passes EVERYTHING — both reds, the negative control, both round-trip tests, the live literal-body
+  test — while emitting `" Отчёт "` as `"Отчёт"`. That violates the DTO's own docstring at
+  `document_dtos.py:60` ("and no `.strip()` — `" Отчёт "` keeps its padding") and story 17's wire
+  table, which the new file quotes TWICE in its own docstring while not enforcing it.
+  **(a) Pin the real-title row**, both legs:
+  `SaveDocumentRequestDto(content="<p>saved</p>", version=1, title=" Отчёт ").model_dump()`
+  == `{"content": "<p>saved</p>", "title": " Отчёт ", "version": 1}`, and the `model_dump_json`
+  leg for the same Rust-vs-Python reason the file already argues for the absent row. Goes in the
+  UNSKIPPED negative-control class — it passes at HEAD, and behind the class-level marker it would
+  be dark exactly during the red period, which is when the green that breaks it gets written.
+  **(b) Whole-body equality against a frozen literal is asymmetric under extension.** It was chosen
+  to catch a SPURIOUS key and it does, but it cannot catch a DROPPED declared one: when a later
+  scenario adds a field to `SaveDocumentRequestDto`, a green whose serializer hand-builds its dict
+  (a non-`wrap` `@model_serializer` returning `{"content":..., "version":...}`) silently omits the
+  new field and `body == {...}` still holds. The live negative control has the same hole. One line
+  that grows with the model instead of freezing: assert the dumped keys against
+  `SaveDocumentRequestDto.model_fields` — every field in `model_fields_set` must appear in the body,
+  and no key outside `model_fields`. Lower severity than (a): the natural `mode="wrap"` green is
+  immune. Still one line, and this file is the only place it fits.
+  **(c) Split the negative control's two legs into separate methods.** It asserts the dict body and
+  the JSON body in one method, so a dict-leg regression means the JSON assertion never runs and the
+  report names one broken leg where two may be broken. The RED class next door splits its legs on
+  exactly the stated grounds that they are separably breakable; the fence contradicts its own
+  neighbour's reasoning for no reason.
+  Measured and rated REMOTE, recorded so green does not re-litigate them: the sentinel default
+  leaves the published PUT contract unchanged (`model_json_schema()` emits only a
+  `PydanticJsonSchemaWarning`, still a clean `anyOf: [string, null]`); the sentinel DOES make
+  `model_dump_json()` raise `PydanticSerializationError: Unable to serialize unknown type: _Absent`,
+  but no production path dumps this model (`document_router.py:177` forwards only
+  `title_update()`, and the error handlers serialize Starlette's `Request`, not the DTO) and the
+  wire-shape JSON test catches it at green time regardless; and the strip-green's damage to the
+  `"   "` row is absorbed by the domain's blank fold.)
+- [ ] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
   RED landed at `backend/adapters/rest/tests/dto/document/test_save_document_request_dto_roundtrip.py`
   — a new `tests/dto/` tree, no `__init__.py` and no Statements class, matching the rest-adapter
   convention; the router file was at 197/200 and could not take it. The failing assertion is the
