@@ -11,10 +11,10 @@ Enduring quirks and decisions promoted from completed scenarios. Read on resume.
 
 ## Codebase Quirk: the coverage focus filter cannot see new files
 
-**Quirk:** The tech template's coverage focus filter is `git diff HEAD --name-only`, which never lists untracked paths, so any green phase that creates files rather than editing them filters to nothing and reports clean.
+**Quirk:** The tech template's coverage focus filter is `git diff HEAD --name-only`, which lists neither untracked paths **nor anything the RED commit already landed** — and on this project's cycle the ports always land in the RED commit.
 **Where:** `.claude/tech/python-fastapi-hex/templates/testing/coverage-commands.md:38`.
-**Implication:** Pass the filenames explicitly, or use `git status --porcelain`; a clean focus report after a file-creating green phase is meaningless.
-**From:** scenario 1.2 (1-2-edit-of-another-document)
+**Implication:** Pass the filenames explicitly; `git status --porcelain` fixes only the untracked half. A clean focus report after any green phase is meaningless — four false all-clears so far on this story.
+**From:** scenario 1.2 (1-2-edit-of-another-document), widened by scenario 1.3 (1-3-revision-of-another-document)
 
 ## Codebase Quirk: db test directories merge into the production namespace package
 
