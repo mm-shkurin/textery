@@ -255,7 +255,18 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   mock, which is precisely why the mutants in (a) survive. The docstring at `document_dtos.py:47-53`
   explains `model_fields_set` at length and never warns it is not serialization-stable — fix that
   in the same pass.)
-- [~] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
+- [~] red-adapter rest (both review passes on `21dc66f4`, converging: the shipped round-trip guard
+  pins the Python-dict leg only, and every incident its own docstring names is a JSON one. Measured
+  at HEAD: `model_validate_json(d.model_dump_json()).title_update()` → `clear()` — broken
+  identically, pinned by nothing. The two legs are separably fixable, so the shipped red does not
+  force green to pick the covering fix — this row exists to remove that freedom before green runs.
+  Two assertions, NEITHER derived from `model_dump()`:
+  (a) `model_validate({"content": "<p>saved</p>", "version": 1}).title_update() == TitleUpdate.preserve()`
+  — a LITERAL dict with no `title` key, unsatisfiable by any serializer change;
+  (b) `model_validate_json(request.model_dump_json()).title_update() == TitleUpdate.preserve()` — the
+  JSON leg, which in Pydantic v2 bypasses the Python `model_dump` method entirely and goes to the
+  Rust serializer. Cheap: the file is at 67/200.)
+- [ ] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
   RED landed at `backend/adapters/rest/tests/dto/document/test_save_document_request_dto_roundtrip.py`
   — a new `tests/dto/` tree, no `__init__.py` and no Statements class, matching the rest-adapter
   convention; the router file was at 197/200 and could not take it. The failing assertion is the
@@ -268,7 +279,27 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   docstring: it must be REWRITTEN against the new mechanism, not appended to with a warning, and
   lines 55-59 move with it — red left it untouched deliberately, since the paragraph cannot be
   written correctly until green picks between "stop depending on `model_fields_set`" and "give the
-  DTO a serialization-stable spelling of absent".)
+  DTO a serialization-stable spelling of absent".
+  **REMOVE THE SKIP MARKER** — `test_save_document_request_dto_roundtrip.py:7`. Both review passes
+  named this independently and it was missing from this row's first draft, which is what makes it
+  worth spelling in capitals: the row was otherwise detailed enough to read as complete. The RED is
+  spelled `@pytest.mark.skip`, which is inert in BOTH directions — silent while the bug is present
+  AND after it is fixed — so nothing in the suite demands the marker's removal. Not hypothetical
+  here: three RED skip markers from `3b9e5a25` (2026-08-03) are still parked
+  (`test_login_lockout_acceptance.py:6`, `test_document_page_settings_read_acceptance.py:6`,
+  `test_auto_editor_transition_acceptance.py:31`). `--runxfail` does not reach `mark.skip`, so no
+  run mode surfaces it. Consider respelling as `xfail(strict=True)`, which self-clears via XPASS.
+  **Green must be READER-side, not writer-side.** The shipped assertion derives its input from the
+  code under test (`model_validate(request.model_dump())`) and pins only the COMPOSITION of writer
+  and reader. A green that fixes the writer — `model_dump` defaulting to `exclude_unset`, or a
+  `@model_serializer` that drops unset fields — turns the test green while `title_update()` still
+  reads `model_fields_set` and still erases on every other path: a literal dict from a BFF hop,
+  `model_construct`, `model_copy(update=...)`, a hand-rebuilt queue payload. Worse, `model_dump_json()`
+  does not route through the Python `model_dump` method in Pydantic v2 — it goes to the Rust
+  serializer — so a writer-only green leaves the JSON leg erasing, and JSON is what an offline outbox
+  or a Redis save queue actually uses. Both incidents the red's docstring names are JSON ones.
+  Guard against the collapse-into-preserve green already exists:
+  `test_save_document_title_router.py:136` drives wire `{"title": null}` and asserts `clear()`.)
 - [ ] red-adapter rest (premortem CREDIBLE: the erasure path is silent. `logger.` appears ZERO times
   across `backend/adapters/rest/src/router/document/`, `backend/adapters/db/src/access/document/`
   and `backend/usecase/src/document/`; there is no revision or audit table
