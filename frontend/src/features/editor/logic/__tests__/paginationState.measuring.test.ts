@@ -40,7 +40,7 @@ import { derivePaginationState } from '../paginationState'
  * document does NOT say, where it reads "Страница 1 из 1" against an identical single sheet.
  */
 describe('derivePaginationState — the document font has not resolved', () => {
-  // TDD RED — fails with `Error: Not implemented` at paginationState.ts:45. `derivePaginationState`
+  // TDD RED — fails with `Error: Not implemented` at paginationState.ts:51. `derivePaginationState`
   // is a stub; no pre-layout state machine exists in `frontend/src` yet. Unskip in green-frontend.
   it.skip('holds the editor in the measuring state with no page count, however measurable the document is', () => {
     const state = derivePaginationState({

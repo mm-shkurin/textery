@@ -64,7 +64,47 @@ below — their vitest step covers logic, not layout.
   status copy does. Added `statusText` + `measuringMessage` and asserted both.
   Deliberately NOT applied: the `liveRegionRole: 'status' | null` nullability smell — a
   domain-modeling preference owned by `/refactor`, not a loose assertion.
-- [~] green-frontend
+- [~] red-frontend (agent-review CONCERNS 2 + premortem CREDIBLE 1, both independently, the
+  second by mutation) — **the scenario's central claim is pinned by nothing.** The suite has
+  exactly one case, `fontStatus: 'pending'`, and after the fixture widening EVERY expected
+  field is a constant. Premortem replaced the stub body with a frozen literal that ignores
+  its argument entirely and unskipped: `Tests 1 passed`. So `derivePaginationState` may
+  discard `fontStatus` and be fully green — "having measurements is not permission to
+  paginate" is asserted by the header comment, not by a test. The commit message's "only
+  phase and pageCount were catching it" is now "nothing is catching it". Add a second case
+  over the SAME `blockHeights`/`usableContentHeight` asserting `fontStatus: 'resolved'`
+  leaves the measuring phase (`pageCount` non-null), which makes `fontStatus` load-bearing
+  and kills the constant-return. This also retires agent-review finding 3: `'resolved'` is
+  currently a declared-but-untouched union member, against `tdd-rules.md`'s RED minimality.
+  Do NOT wait for scenario 1.2 to supply this — a constant-return green shipped now becomes
+  1.3's *actual behavior* (the permanent spinner that 1.3 exists to forbid), and 1.3's red
+  would then be written against an implementation that already looks finished.
+- [ ] red-frontend (agent-review CONCERNS 1) — **`statusText` carries the page count in
+  prose, which is the exact failure the selenium leg's two-node model exists to catch.**
+  `red-selenium` splits the status bar into `pagination-status` (`"Расчёт страниц…"`) and
+  `page-count` (`"Страница N из M"`), and `pagination_measuring_statements.py:88-91` names
+  why: "a missing `page-count` node with a status bar already reading 'Страница 1 из 1'
+  would satisfy a pure absence check while telling the user a page count in prose." The
+  field added to fix `/test-review` defect (c) declares in its own doc comment that the
+  empty phase's `statusText` IS `"Страница 1 из 1"` — so the view state now holds that fact
+  twice (`pageCount: 1` and `statusText`), with no rule saying which node renders which.
+  Nothing pins `statusText` outside the measuring phase and nothing pins the field→testid
+  mapping at all. Pin it before green picks a rendering; scenario 2.3 is otherwise the first
+  step that would expose it, by which point the choice is made.
+- [ ] green-frontend — **name the consuming component here, as a deliverable** (premortem
+  CREDIBLE 2). This commit opened a new feature root, `frontend/src/features/editor/`,
+  holding only `logic/`; the real editor is `features/generation/components/ManualEditor.tsx`
+  and `grep -l pagination frontend/src --include=*.tsx` returns nothing. A pure function can
+  be implemented, correct, and imported by no component — the vitest leg is satisfied either
+  way, and the only thing that would catch the disconnect is `green-selenium`, a full work
+  unit later (after `align-design`). Green must land a component test asserting the editor
+  renders `data-testid="pagination-measuring"` while fonts are pending.
+  Also (premortem CREDIBLE 3): `"Расчёт страниц…"` / `"Готовим страницы…"` already exist as
+  four independent literals — this test, `pagination_measuring_locators.py:69-70`,
+  `mockups/desktop/02-measuring.html:55,73`, `ui-conventions.md:188` — both assertion sites
+  exact-match, cross-language, one invisible U+2026 apart. Defect (c) WAS this drift and the
+  fix added a fourth copy. Green must not type a fifth: the component imports the literal
+  from `paginationState.ts`.
 - [ ] align-design
 - [ ] green-selenium
 - [ ] demo

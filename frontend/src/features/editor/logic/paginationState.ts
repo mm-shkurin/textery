@@ -33,6 +33,12 @@ export interface PaginationViewState {
    * document — the rail shows the same three rows for a one-block document and a fifty-block one.
    */
   railSkeletonCount: number
+  /**
+   * `null` in phases that render no live region — deliberately NOT a `'none'` member: `role="none"`
+   * is a real ARIA role (the synonym of `presentation`) that STRIPS an element's semantics. A
+   * consumer writing `role={state.liveRegionRole}` renders nothing for `null` and actively
+   * suppresses semantics for `'none'`, so the absent case has to stay unrepresentable as a role.
+   */
   liveRegionRole: 'status' | null
   ariaBusy: boolean
   /** Status-bar copy. Product-defined per phase; the empty document reads "Страница 1 из 1" here. */
