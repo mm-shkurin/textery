@@ -10,12 +10,18 @@ from statements.login_failed_attempt_statements import LoginFailedAttemptStateme
 from statements.login_lockout_statements import LoginLockoutStatements
 from statements.login_statements import LoginStatements
 from statements.refresh_statements import RefreshStatements
+from statements.refusal_record_shape_statements import RefusalRecordShapeStatements
 from statements.register_atomic_write_statements import RegisterAtomicWriteStatements
 from statements.register_statements import RegisterStatements
 from statements.requeue_stale_generations_statements import RequeueStaleGenerationsStatements
 from statements.resend_code_lock_statements import ResendCodeLockStatements
 from statements.resend_code_statements import ResendCodeStatements
 from statements.resend_verified_statements import ResendVerifiedStatements
+from statements.revision_number_range_statements import RevisionNumberRangeStatements
+from statements.revision_outage_statements import RevisionOutageStatements
+from statements.revision_refusal_log_statements import RevisionRefusalLogStatements
+from statements.revision_scope_guard_statements import RevisionScopeGuardStatements
+from statements.revision_silence_statements import RevisionSilenceStatements
 from statements.verify_account_already_verified_statements import (
     VerifyAccountAlreadyVerifiedStatements,
 )
@@ -49,6 +55,44 @@ def ai_edit_refusal_log_statements():
     statements = AiEditRefusalLogStatements()
     yield statements
     statements.stop_collecting()
+
+
+@pytest.fixture
+def revision_scope_guard_statements():
+    return RevisionScopeGuardStatements()
+
+
+@pytest.fixture
+def revision_number_range_statements():
+    return RevisionNumberRangeStatements()
+
+
+@pytest.fixture
+def revision_outage_statements():
+    return RevisionOutageStatements()
+
+
+@pytest.fixture
+def revision_refusal_log_statements():
+    statements = RevisionRefusalLogStatements()
+    yield statements
+    statements.stop_collecting()
+
+
+@pytest.fixture
+def revision_silence_statements():
+    statements = RevisionSilenceStatements()
+    yield statements
+    statements.stop_collecting()
+
+
+@pytest.fixture
+def refusal_record_shape_statements(
+    ai_edit_refusal_log_statements, revision_refusal_log_statements
+):
+    return RefusalRecordShapeStatements(
+        ai_edit_refusal_log_statements, revision_refusal_log_statements
+    )
 
 
 @pytest.fixture

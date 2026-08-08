@@ -66,7 +66,7 @@ class TestAiEditRepositoryPortStub:
     """
 
     def test_should_expose_exactly_the_known_port_methods(self):
-        assert DISCOVERED_PORT_METHODS == sorted(EXPECTED_PORT_METHODS), (
+        assert sorted(EXPECTED_PORT_METHODS) == DISCOVERED_PORT_METHODS, (
             "AiEditRepository exposes a method roster this test does not cover: "
             f"{DISCOVERED_PORT_METHODS}"
         )
@@ -90,6 +90,5 @@ class TestAiEditRepositoryPortStub:
             await method(edit_id=uuid4(), document_id=uuid4())
 
         assert str(excinfo.value) == EXPECTED_PORT_METHODS[method_name], (
-            f"unexpected NotImplementedError message from {method_name}: "
-            f"{excinfo.value}"
+            f"unexpected NotImplementedError message from {method_name}: {excinfo.value}"
         )

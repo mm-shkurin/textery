@@ -590,8 +590,84 @@ within their file, not across the story.
       dismissals decay silently (nothing goes red the day a delete route or a lifecycle state lands —
       the ADR's "re-decide here" is prose only), and its observation that this file left no `[~]`
       marker after the step advanced, fixed here.
-- [~] red-usecase
-- [ ] green-usecase
+- [x] red-usecase — 12 tests on `resolve_owned_revision`, one class, skipped at class level; all 12
+      fail (10 × `NotImplementedError` out of the stub, 2 × `AssertionError` naming the outage that
+      was expected to propagate). Predicted type, both messages and the 12-failed/0-passed count
+      exactly. Beyond the scenario's own case, each of the design's eight forced guards is at least
+      one test: the revision store is asked **zero** times when the document cannot be resolved;
+      out-of-range numbers (`0`, `-1`, `-2147483648`, `2147483648`) are the canonical refusal with
+      the store never asked, and `1`/`2147483647` are carried through *as parsed ints* so an
+      off-by-one bound goes red somewhere; non-integer input is the canonical refusal, never a 422;
+      `RevisionScope` is pinned to the literal `["id", "revision_number", "document_id"]`; either
+      repository raising propagates unchanged; the step-1 and step-2 refusals are compared to each
+      other in type and message *as well as* each to the imported literal; and four log tests cover
+      the two causes, the success path and both outages.
+      **Two judgement calls worth carrying.** (a) The non-integer set is deliberately
+      `("abc", "1.5", "", "2e3", "0x2", "-")` and deliberately excludes `" 2"`, `"+2"`, `"1_0"` and
+      the Arabic-Indic `"٢"` — `int()` accepts all four, so demanding a refusal for them would pin a
+      parser opinion this scenario has not formed. What is in the set are the numeric-looking
+      strings a `float()` or a lenient regex would let past into the store. (b) The ADR's
+      "`_log_refusal` is shared with `resolve_owned_edit`, not copied" cannot be honoured by literally
+      sharing the message: 1.2 pins `"ai edit guard refused the request"` on logger
+      `document_edit.resolve_owned_edit`, and a shared line or a shared logger would break that test
+      in GREEN, where tests are read-only. What is genuinely shareable is the `extra`-building rule,
+      so it is asserted **between** the guards: `refusal_record_shape_statements` drives both
+      resolvers and compares their id-field key sets, both sides read off emitted records rather
+      than off a literal. **Binding on green:** `_log_refusal` takes the logger and the message as
+      parameters; the revision guard's own literals are logger `document_edit.resolve_owned_revision`,
+      message `"revision guard refused the request"`, causes `"document-scope-refused"` and
+      `"revision-scope-refused"`.
+      Reuse over restatement: `document_guard_contract` (actor ids, `captured`,
+      `assert_is_the_canonical_refusal`, `assert_bounded_projection`), `FakeDocumentRepository`,
+      `FailingDocumentScopeRepository` and `StorageUnavailableError` are all imported, not recreated;
+      1.2's private `_RecordingHandler` plus its attach/force-INFO/restore-level bookkeeping was
+      **extracted** to `statements/log_recorder.py` and 1.2 now imports it — three copies of "remember
+      to put the level back" is three chances to leave a process-global `setLevel` behind. 1.2's five
+      tests re-verified green after the extraction.
+      **Two pre-existing reds inherited, not introduced** (both confirmed present at HEAD by stashing):
+      `ruff` flags `SIM300` in `test_ai_edit_repository_port_stub.py:69`, and `mypy` fails on
+      `document_guard_contract.py:84` (`fields()` takes a dataclass, not `object`) — the CI mypy step
+      added at 1.1's green-adapter is therefore red on this branch already, and per the line-104 note
+      its trigger does not fire on feature branches, so nothing was reporting it.
+      `/test-review` found seven strictness holes and made one removal; the failure breakdown moved
+      from 10 × `NotImplementedError` / 2 × `AssertionError` to **8 / 4** as a result, with the same
+      12-failed total and the same three messages, so the skip-reason text stayed accurate.
+      Two are this family's signature weaknesses arriving again. The cross-guard roster was
+      **self-fulfilling**: `ALL_ID_FIELDS` was unioned from the two guards' own test-side tuples, so a
+      guard growing a field in neither tuple filtered out of both sides and the class stayed green on
+      exactly the drift it advertises. It now reads the record's real extras (`record.__dict__` minus
+      standard attributes sampled from `logging` itself) and compares the whole set, with
+      `refusal_cause` *expected* rather than excluded — an exclusion list is the same hand-maintained
+      roster in negative form. And the byte-identity check between the two refusals was an **unfailable
+      tautology**: `(type, str)` compared between two operands pinned two lines above by the same
+      `assert_is_the_canonical_refusal` helper. Removed — no implementation reaching it could fail it,
+      and its docstring's defence ("a change touching only one raise site") is already covered by both
+      sides going through that one shared function.
+      One hole was more than looseness. The record accessors used `_first` truthiness, and the
+      cross-guard shape test reaches them without ever calling
+      `assert_each_refusal_emitted_exactly_one_record` — so a guard emitting a **duplicate** pair, a
+      probe double-counted in the one channel built to attribute probes, passed with only `records[0]`
+      inspected. Exact cardinality now, in 1.2's twin file too. The success-path test was named "when
+      the revision resolves" but asserted only silence, which a guard returning `None` or another
+      document's row also produces — it carries a full `RevisionScope` equality as its positive control
+      now, mirroring the class's existing `assert_each_outage_reached_the_caller`. An assertion was
+      hidden inside an act step (`request_the_revision_under_the_foreign_document` called `refusal_of`,
+      enforcing a contract no line of the test body showed). Four roster loops iterated the recorded
+      dict instead of the pinned tuple, so a probe never sent could not fail on its own value. And the
+      scenario's second Then — "no new version is created on either document", claimed by both the
+      docstring and the ADR — was **asserted nowhere**: a guard that refused correctly and bumped a
+      version satisfied every other assertion in the package. It is now pinned to the `Document.create`
+      literal rather than sampled from the row.
+      Usecase suite 168 passed, 12 skipped, 0 failed; ruff clean across `backend/usecase/tests`. RED
+      re-verified by lifting the marker (12 failed, 0 passed) and restoring it.
+      **Left for `/refactor`, flagged not dropped:** `RevisionRefusalLogStatements` is a near-total copy
+      of 1.2's log Statements (`_assert_shape`, `_assert_ids`, `_collected`, both accessors, and the
+      same sentinel declared twice under two names), and `assert_outage_propagated` / `_outcome_of` /
+      `assert_*_lookups` each exist in two or three copies — the prescribed fix is a
+      `RefusalLogStatementsBase` plus promoting the outage helpers into `document_guard_contract.py`.
+      **`conftest.py` is at 180 lines** and grows one fixture per scenario; it crosses the 200-line hard
+      limit within a few more.
+- [~] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
