@@ -851,12 +851,21 @@ within their file, not across the story.
       `strict` or the plugin being dropped — then the body test is an un-awaited coroutine that never
       executes and can report green, making the file's whole claim false while passing. An explicit
       `@pytest.mark.asyncio` is inert under auto mode and load-bearing if the mode ever changes.
-- [~] green-usecase (coverage: DocumentRevisionRepository port stub raises NotImplementedError) —
-      on the evidence above this is a candidate for `[S]`, but read line 358 before marking it: 1.2
-      marked the identical step `[S]` and had to correct it, because `/test-review` had forced a
-      production change into the red commit. Here the red commit contains no production file at all —
-      verify that against the diff, not against this note.
-- [ ] red-usecase (the range check's position and its refusal cause) — the premortem's first incident,
+- [S] green-usecase (coverage: DocumentRevisionRepository port stub raises NotImplementedError) —
+      **`[S]` verified against the diff, not against the prediction, precisely because 1.2 got this
+      wrong at line 358.** `git show --name-status 56878c76` lists exactly two paths: the new test file
+      and `progress-backend.md`. No file under `backend/usecase/src/` appears, so `[S]`'s condition —
+      zero production files modified — is met here in a way it was not for 1.2, where `/test-review`
+      had forced the `NotImplementedError` message string into the red commit.
+      Coverage confirms the step bought what it was scheduled for:
+      `usecase\src\document_edit\document_revision_repository.py` now reports **6/6 statements, 0/0
+      branch, 100%** (was 5/6, L35 missed). Run by hand as
+      `--cov=document_edit.document_revision_repository` — note that a *path*-form `--cov` argument
+      (`--cov=usecase/src/.../document_revision_repository.py`) fails silently into
+      `No data was collected` plus a clean-looking `182 passed`, which is the same false-all-clear shape
+      the carryover already records for the focus filter. Use the dotted module name. Usecase suite
+      182 passed, 0 failed, 0 skipped.
+- [~] red-usecase (the range check's position and its refusal cause) — the premortem's first incident,
       rescheduled from the green-usecase note above because GREEN may not write tests. Two tests: what
       an out-of-range or non-integer probe emits on `document_edit.resolve_owned_revision` — a cause of
       its own or deliberate silence, either way with its extras run through the whole-set rule — and an
