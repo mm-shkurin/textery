@@ -667,6 +667,40 @@ within their file, not across the story.
       `RefusalLogStatementsBase` plus promoting the outage helpers into `document_guard_contract.py`.
       **`conftest.py` is at 180 lines** and grows one fixture per scenario; it crosses the 200-line hard
       limit within a few more.
+      *(Done at `/refactor`, below — all three, plus both inherited mypy reds.)*
+- [x] refactor — the three deferred findings, applied serially with the suite re-run after each.
+      (1) `RefusalLogStatementsBase` extracted, mixed into both log Statements classes ahead of their
+      guard bases so the guard's `refusal_of`/`second_document_id` win the MRO; what differs between
+      §1.2 and §1.3 is now four class attributes (`logger_name`, `refusal_message`, `child_id_field`,
+      `child_scope_refusal_cause`) and nothing else. The base landed at 215 lines, over the hard limit,
+      so it split again on a real seam: `refusal_log_base.py` gets hold of a record (recorder lifecycle,
+      act steps, accessors, cardinality) and `refusal_record_assertions.py` judges one (shape, id
+      mapping, cause distinctness). The `"<absent>"` sentinel is declared **once** there — it had been
+      two constants under two names, in the one family whose whole subject is that the two guards mean
+      the same thing by "absent". `_assert_ids` builds `actual` from the pinned `id_fields` roster, not
+      from the expectation's own keys: derived from `expected`, a dropped field drops from both sides.
+      (2) Outage helpers promoted into `document_guard_contract.py` — `captured_outage`, `outcome_of`,
+      `assert_is_the_store_outage`, `assert_lookups`. Three copies of the propagation equality and two
+      of the capture-without-judging act helper collapse to one each; the two `assert_*_lookups`
+      wrappers stay on their guard bases (protected, intent-named) but share the comparison.
+      (3) The root `usecase/tests/conftest.py` is gone, replaced by four per-directory conftests
+      (`auth/` 99, `document_edit/` 73, `generation/` 22, `document/` 10). Beyond the line count, this
+      ends the arrangement where every test in the module imported every Statements class in it.
+      **Both inherited mypy reds fixed, since both sat in files this pass was already rewriting:**
+      `assert_bounded_projection` takes `DataclassInstance` under `TYPE_CHECKING` rather than `object`,
+      and `assert_is_the_canonical_refusal` takes `object` rather than `Exception` — the boundary probe
+      hands it whatever the guard produced, and "returned a scope where it should have refused" is one
+      of the outcomes that equality exists to catch, so the narrow type had presumed the case away.
+      `python -m mypy` is now **clean across all 306 files** (HEAD had two errors, not the one the entry
+      above recorded). The ruff `SIM300` is untouched and is **not** at
+      `test_ai_edit_repository_port_stub.py:69` as recorded above — it is at
+      `adapters/rest/tests/router/document_edit/test_ai_edit_router_di_stubs.py:50`, outside this pass.
+      Usecase suite 168 passed / 12 skipped / 0 failed, unchanged; ruff clean across `usecase`; RED
+      re-verified twice by lifting the marker (12 failed, 0 passed) and restoring it. Every touched file
+      is under 200 lines. Full backend suite 563 passed, 4 failed — all four the known unmigrated-db
+      environment failure (`relation "ai_edits" does not exist`), no db code touched.
+      **Carried:** `generation_lifecycle_statements.py` is 227 lines, over the hard limit, pre-existing
+      and untouched by this pass.
 - [~] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance

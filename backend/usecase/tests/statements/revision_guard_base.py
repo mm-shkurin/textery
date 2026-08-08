@@ -13,6 +13,7 @@ from statements.document_guard_contract import (
     CALLER_ID,
     EPOCH,
     OTHER_ACCOUNT_ID,
+    assert_lookups,
     captured,
 )
 
@@ -152,16 +153,13 @@ class RevisionGuardBase:
         ordering guard without editing an assertion. Only the intent-named
         wrappers in the subclasses may reach it.
 
-        Comparing the whole list -- rather than a count, or "the revision was not
-        returned" -- is what makes the ordering and the range guards real. A guard
-        that looked the revision up first and only then checked the document would
-        refuse identically and satisfy every other assertion in this package,
-        while having already performed an unauthorized read; a guard that passed
-        an out-of-range number straight through would refuse identically too, and
-        blow up as a 500 the day a real store is behind the port.
+        The comparison itself is `assert_lookups`, shared with the edit guard. What
+        this class adds beyond that shared reasoning is the range guard: a guard
+        that passed an out-of-range number straight through would refuse
+        identically and blow up as a 500 the day a real store is behind the port,
+        so the empty list is as load-bearing here as the populated one.
         """
-        lookups = self.revision_repository.lookups
-        assert lookups == expected, f"expected revision lookups {expected}, got {lookups} -- {why}"
+        assert_lookups("revision", list(self.revision_repository.lookups), list(expected), why)
 
     async def refusal_of(
         self, document_id: UUID, revision_number: str = RECORDED_REVISION_PARAMETER

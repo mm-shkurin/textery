@@ -13,6 +13,7 @@ from statements.document_guard_contract import (
     CALLER_ID,
     EPOCH,
     OTHER_ACCOUNT_ID,
+    assert_lookups,
     captured,
 )
 
@@ -103,15 +104,11 @@ class AiEditGuardBase:
         """The edit store's call log, compared whole.
 
         Both subclasses assert on this same spy from four methods, and every one
-        of them had its own copy of the comparison. Comparing the whole list --
-        rather than a count, or "the edit was not returned" -- is what makes the
-        ordering guard real: a guard that looked the edit up first and only then
-        checked the document would refuse identically and satisfy every other
-        assertion in this package, while having already performed an
-        unauthorized read. `why` carries each caller's stake into the failure.
+        of them had its own copy of the comparison. The comparison itself is
+        `assert_lookups`, shared with the revision guard; this method is the spy
+        it reads and the noun its failure uses.
         """
-        lookups = self.ai_edit_repository.lookups
-        assert lookups == expected, f"expected edit lookups {expected}, got {lookups} -- {why}"
+        assert_lookups("edit", list(self.ai_edit_repository.lookups), list(expected), why)
 
     async def refusal_of(self, document_id: UUID) -> NotFoundException:
         return await captured(

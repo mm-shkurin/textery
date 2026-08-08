@@ -7,6 +7,7 @@ from fake.document_edit.fake_ai_edit_repository import (
     StorageUnavailableError,
 )
 from statements.arranged import arranged
+from statements.document_guard_contract import assert_is_the_store_outage, outcome_of
 from statements.log_recorder import RecordingLogger
 from statements.revision_guard_base import (
     RECORDED_REVISION_ID,
@@ -71,7 +72,7 @@ class RevisionSilenceStatements(RevisionGuardBase):
 
     async def _request_with_the_revision_store_down(self) -> None:
         self._recorder.clear()
-        self._outages[REVISION_OUTAGE_PATH] = await self._outcome_of(
+        self._outages[REVISION_OUTAGE_PATH] = await outcome_of(
             self.resolve(self.first_document_id)
         )
         self._quiet[REVISION_OUTAGE_PATH] = self._recorder.taken()
@@ -79,24 +80,10 @@ class RevisionSilenceStatements(RevisionGuardBase):
     async def _request_with_the_document_store_down(self) -> None:
         self._recorder.clear()
         failing = FailingDocumentScopeRepository(StorageUnavailableError(SILENCE_OUTAGE_MESSAGE))
-        self._outages[DOCUMENT_OUTAGE_PATH] = await self._outcome_of(
+        self._outages[DOCUMENT_OUTAGE_PATH] = await outcome_of(
             self.resolve_via(failing, self.first_document_id)
         )
         self._quiet[DOCUMENT_OUTAGE_PATH] = self._recorder.taken()
-
-    async def _outcome_of(self, resolution) -> object:
-        """Records what came back; judges none of it.
-
-        This used to swallow `StorageUnavailableError` and raise `AssertionError`
-        on anything else, which enforced a real behavioural contract -- the outage
-        reached the caller -- invisibly, from inside an act step, where no reader
-        of the test body could see it. It is now
-        `assert_each_outage_reached_the_caller`, in the then-phase where it shows.
-        """
-        try:
-            return await resolution
-        except Exception as raised:  # noqa: BLE001 -- the then-phase pins the exact type
-            return raised
 
     def assert_the_revision_actually_resolved(self) -> None:
         """Silence is only the right answer if the request succeeded.
@@ -161,11 +148,4 @@ class RevisionSilenceStatements(RevisionGuardBase):
             f"the outage paths exercised were {tuple(self._outages)}, expected {expected_paths}"
         )
         for which in expected_paths:
-            outcome = self._outages[which]
-            actual = (type(outcome), str(outcome))
-            assert actual == (StorageUnavailableError, SILENCE_OUTAGE_MESSAGE), (
-                f"{which} surfaced as {type(outcome).__name__}('{outcome}'), expected "
-                f"StorageUnavailableError('{SILENCE_OUTAGE_MESSAGE}') to propagate out of the "
-                f"guard -- an outage rendered as the canonical 404 is silent too, so the "
-                f"emptiness assertions alone cannot tell the two apart"
-            )
+            assert_is_the_store_outage(self._outages[which], SILENCE_OUTAGE_MESSAGE, which)

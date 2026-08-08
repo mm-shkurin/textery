@@ -1,4 +1,4 @@
-from statements.document_guard_contract import assert_is_the_canonical_refusal
+from statements.document_guard_contract import assert_is_the_canonical_refusal, outcome_of
 from statements.revision_guard_base import RevisionGuardBase
 
 # The storage range, written as the two literals the `INTEGER` column actually
@@ -55,13 +55,9 @@ class RevisionNumberRangeStatements(RevisionGuardBase):
         statements were rewritten to remove.
         """
         for value in (SMALLEST_VALID_REVISION_NUMBER, LARGEST_VALID_REVISION_NUMBER):
-            self._boundary_outcomes[value] = await self._outcome_of(value)
-
-    async def _outcome_of(self, value: str) -> object:
-        try:
-            return await self.resolve(self.first_document_id, value)
-        except Exception as raised:  # noqa: BLE001 -- the then-phase pins the exact type
-            return raised
+            self._boundary_outcomes[value] = await outcome_of(
+                self.resolve(self.first_document_id, value)
+            )
 
     async def _request_each(self, values: tuple[str, ...]) -> None:
         for value in values:
