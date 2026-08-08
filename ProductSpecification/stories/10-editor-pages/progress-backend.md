@@ -363,7 +363,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   unconditionally passes both reds and destroys deliberate erasure.
   `ruff format --check` was left alone: it already fails on three files at HEAD, two untouched
   here, so it is not an enforced gate, and the flagged line is byte-identical to HEAD.)
-- [~] red-adapter rest (both review passes on `4923d835`, each having BUILT AND RUN the hostile
+- [x] red-adapter rest (both review passes on `4923d835`, each having BUILT AND RUN the hostile
   green independently: the wire-shape file pins two of story 17's four wire rows — absent and
   explicit null — and never pins what the DTO writes for a REAL title. Across both test files every
   `model_dump`/`model_dump_json` call is on an absent-title or null-title request; all eight of
@@ -411,8 +411,42 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   but no production path dumps this model (`document_router.py:177` forwards only
   `title_update()`, and the error handlers serialize Starlette's `Request`, not the DTO) and the
   wire-shape JSON test catches it at green time regardless; and the strip-green's damage to the
-  `"   "` row is absorbed by the domain's blank fold.)
-- [ ] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
+  `"   "` row is absorbed by the domain's blank fold.
+  **LANDED — no new failing test, and that is the correct outcome.** All three jobs are fences over
+  already-correct code; the defect they close is that nothing pinned it. Manufacturing a red would
+  have meant asserting something false. rest went 99 → 102 passed, 4 skipped.
+  Each fence measured against the green it forbids: the strip-green produces `2 failed, 100 passed,
+  4 skipped` and the ONLY two failures are the new row-4 methods — every other test in the suite,
+  both REDs and both round-trip tests included, passes under it. The key-tracking helper is honest
+  about its own weakness: on the CURRENT model the frozen literal already catches the hand-built
+  dict, so the helper adds nothing today; its window is strictly under extension, measured with an
+  added field (`frozen equality holds: True` while `key-tracking fires, missing: ['note']`). Its
+  docstring now says so, and says the sharper thing test-review named — reading `model_fields_set`
+  / `model_fields` off the object under test is the SAME self-agreement structure the RED class
+  spends 40 lines rejecting, re-imported on the key axis. It is a weaker pin that covers what the
+  literals cannot, not a better one.
+  `_HOSTILE_TITLE` was introduced as a module constant and removed again: row 4's whole subject is
+  the PADDING, and a reader at the assertion site could not see there was any. Every expected value
+  in these files is inline for that reason.
+  **The pair was split across two files** — `test_save_document_request_dto_wire_shape.py` (87, the
+  two REDs) and `..._wire_shape_control.py` (130, the live fence class + the helper). test-review
+  argued against splitting at 198/200 on the real ground that the fence is only legible beside the
+  RED it fences. What settled it: the file hit exactly 200 and then could not absorb a four-line
+  docstring correction. A file at the cap cannot take a clarifying line, and both halves are still
+  growing a row at a time as story 17's wire table gets pinned. They share only the import. The
+  cross-references now name the sibling file explicitly so the pair still reads as a pair.
+  **Environment correction — the journey-summary quirk is WRONG and should be struck.** Postgres IS
+  running in this worktree: `pytest adapters/db/` gives 62 passed, 0 skipped, and the full backend
+  sweep is **734 passed, 6 skipped**, not the 649/65 recorded earlier. Any figure in this file
+  measured under the old assumption was scope-narrowed for a reason that no longer holds.
+  **And 6 skips is not 4 RED markers.** The other two are silent env-skips from missing optional
+  dependencies, in a module nobody has been watching:
+  `adapters/rendering/tests/rendering/test_html_docx_renderer.py:14` (`could not import 'htmldocx'`)
+  and `test_weasyprint_pdf_renderer.py:8` (`could not import 'weasyprint'`). The DOCX and PDF
+  renderers are currently untested here, and every "full suite green" claim has been carrying that.
+  Per the zero-tolerance rule in `tdd-rules.md` this needs a decision — install both deps so they
+  run, or record an explicit `[S]` with justification. Not this work unit's to make.)
+- [~] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
   RED landed at `backend/adapters/rest/tests/dto/document/test_save_document_request_dto_roundtrip.py`
   — a new `tests/dto/` tree, no `__init__.py` and no Statements class, matching the rest-adapter
   convention; the router file was at 197/200 and could not take it. The failing assertion is the

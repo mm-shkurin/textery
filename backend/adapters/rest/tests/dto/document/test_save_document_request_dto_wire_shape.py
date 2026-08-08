@@ -85,31 +85,3 @@ class TestSaveDocumentRequestDtoWireShape:
             "a title the request never carried must not appear as a key in the "
             f"dumped JSON body, and every other field must survive it verbatim, got {body!r}"
         )
-
-
-class TestSaveDocumentRequestDtoWireShapeNegativeControl:
-    """The fence around the two RED tests above -- deliberately NOT skipped.
-
-    A serializer that dropped `title` unconditionally passes both RED tests next
-    door and destroys the one intent the wire can only express WITH the key: the
-    deliberate erasure. Omission must be the absent row's spelling alone.
-
-    It lives in its own class because it PASSES at HEAD, and the marker up there
-    is class-level. Parked behind that marker it would guard nothing for the whole
-    duration of the red -- which is exactly the defect this scenario already named
-    once and acted on, when `TestSaveDocumentRequestDtoFromALiteralBody` was kept
-    live for the same reason. A fence is only a fence while it is standing.
-    """
-
-    def test_should_keep_an_explicit_null_title_in_the_dumped_body(self):
-        request = SaveDocumentRequestDto(content="<p>saved</p>", version=1, title=None)
-
-        body = request.model_dump()
-        json_body = json.loads(request.model_dump_json())
-
-        assert body == {"content": "<p>saved</p>", "title": None, "version": 1}, (
-            f"an explicit null title must stay on the dumped body as null, got {body!r}"
-        )
-        assert json_body == {"content": "<p>saved</p>", "title": None, "version": 1}, (
-            f"an explicit null title must stay on the JSON body as null, got {json_body!r}"
-        )
