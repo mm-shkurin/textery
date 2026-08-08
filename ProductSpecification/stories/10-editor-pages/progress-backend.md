@@ -294,7 +294,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   added over `21dc66f4`: one more instance of the same writer-satisfiable red, not a new class of
   red. Keep the tests — they are correct as characterizations — but do not read the charter as
   enforced. It is enforced by nothing.)
-- [~] red-adapter rest (the charter repair, chartered by both review passes on `378e92a8`.
+- [x] red-adapter rest (the charter repair, chartered by both review passes on `378e92a8`.
   Two things must change before green runs, and the second is the one that actually bites.
   **(1) The `title is None` assertions forbid the only real reader-side fix.** They were added by
   `378e92a8`'s own `/test-review` pass, defended on round-trip-faithfulness grounds, and nobody
@@ -331,8 +331,39 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   `documentApi.conflict.test.ts:62` — a strict `toEqual({content, version})` that would catch it
   incidentally today, but it is a conflict-retry test and will be rewritten to include `title` the
   moment that scenario lands. Hand this to the frontend session; it belongs in
-  `progress-frontend.md`, which the file-ownership rule forbids this session from editing.)
-- [ ] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
+  `progress-frontend.md`, which the file-ownership rule forbids this session from editing.
+  **LANDED — and job (2) came back impossible, which is the finding.** (1) is done: the three
+  `title is None` assertions now read `not isinstance(x.title, str)`, verified to hold under HEAD's
+  field shape AND under a sentinel default, while still failing if `title` reparses as a `str`.
+  (2) has no answer. Fed a hand-written body from a foreign producer, HEAD's reader is ALREADY
+  CORRECT on every row of story 17's wire table — measured twice, independently, by red and by
+  test-review: `{content,version}` → preserve, `{"title":null}` → clear, `""` → preserve,
+  `"   "` → preserve, `" Отчёт "` → `of(" Отчёт ")` verbatim, `model_construct` → preserve.
+  test-review additionally probed four paths where key-presence and `model_fields_set` might come
+  apart (`model_copy(update=...)` both ways, post-construction `d.title = None`,
+  `model_dump(exclude_unset=True)` reparsed) and found no divergence. For a body nobody serialized,
+  "was the key there" is the ONLY information carried, and `model_fields_set` is exactly that
+  information. A reader-side red needs the reader to be wrong about some input; there is no such
+  input. **The defect is writer-side only.** Accept that rather than manufacture a red that pins
+  the wrong thing.
+  What landed instead is a NOT-SELF-REFERENTIAL guard, new file
+  `test_save_document_request_dto_wire_shape.py` (115/200; split because 158 + ~110 blows the cap).
+  The round-trip class proves self-consistency, and self-consistency is satisfiable by a PRIVATE
+  ENCODING — built and measured: a `@model_serializer` emitting `title: "\x00__ABSENT__"` plus an
+  `after` validator discarding the marker turns all three round-trip assertions green,
+  `reparsed.title is None` included, while the emitted body carries that marker on the wire and
+  HEAD's own reader parses it back as `TitleUpdate.of('\x00__ABSENT__')` — the user's title
+  overwritten with a control character. The wire-shape class asserts the BODY, not the loop, so it
+  closes that hole. Whole-body equality, not `"title" not in body`: membership passes a body that
+  grew a spurious key, and which keys the body carries is the entire subject.
+  The negative control (explicit null must KEEP the key) lives in its own UNSKIPPED class — it
+  passes at HEAD, and behind the class-level marker it would guard nothing for the whole red
+  period, which is the same defect this scenario already named once and acted on for
+  `TestSaveDocumentRequestDtoFromALiteralBody`. Without it, a green that drops `title`
+  unconditionally passes both reds and destroys deliberate erasure.
+  `ruff format --check` was left alone: it already fails on three files at HEAD, two untouched
+  here, so it is not an enforced gate, and the flagged line is byte-identical to HEAD.)
+- [~] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
   RED landed at `backend/adapters/rest/tests/dto/document/test_save_document_request_dto_roundtrip.py`
   — a new `tests/dto/` tree, no `__init__.py` and no Statements class, matching the rest-adapter
   convention; the router file was at 197/200 and could not take it. The failing assertion is the

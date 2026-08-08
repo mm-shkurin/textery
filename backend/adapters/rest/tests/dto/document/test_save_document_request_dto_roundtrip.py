@@ -64,13 +64,22 @@ class TestSaveDocumentRequestDtoRoundTrip:
         )
         # The round-trip's other fields, pinned so a dump that dropped or coerced
         # them cannot pass a test whose name promises a faithful reparse. `title`
-        # is pinned too: `title_update()` reading preserve while the field itself
-        # came back as a string would be a reparse this test must not call faithful.
+        # is pinned NEGATIVELY and deliberately so: `title_update()` reading
+        # preserve while the field itself came back as a string would be a reparse
+        # this test must not call faithful -- but WHICH non-string the field holds
+        # is a representation green must stay free to change. `title is None`
+        # (the spelling this line replaced) is False under the standard pydantic
+        # answer to absent-vs-null, a sentinel default `title: str | None |
+        # _Absent = ABSENT`, which is production-viable here because
+        # `document_router.py` forwards only `title_update()` and never reads
+        # `request.title`. Measured: that reader-side fix failed this assertion
+        # while a writer-side serializer patch passed it -- the pin steered green
+        # away from the only fix that touches the reader.
         assert reparsed.content == "<p>saved</p>", (
             f"content did not survive the round-trip, got {reparsed.content!r}"
         )
-        assert reparsed.title is None, (
-            f"an absent title must reparse as the None field value, got {reparsed.title!r}"
+        assert not isinstance(reparsed.title, str), (
+            f"an absent title must not reparse as a str, got {reparsed.title!r}"
         )
         assert reparsed.version == 1, (
             f"version did not survive the round-trip, got {reparsed.version!r}"
@@ -103,8 +112,8 @@ class TestSaveDocumentRequestDtoRoundTrip:
         assert reparsed.content == "<p>saved</p>", (
             f"content did not survive the JSON round-trip, got {reparsed.content!r}"
         )
-        assert reparsed.title is None, (
-            f"an absent title must reparse as the None field value, got {reparsed.title!r}"
+        assert not isinstance(reparsed.title, str), (
+            f"an absent title must not reparse as a str, got {reparsed.title!r}"
         )
         assert reparsed.version == 1, (
             f"version did not survive the JSON round-trip, got {reparsed.version!r}"
@@ -141,8 +150,8 @@ class TestSaveDocumentRequestDtoFromALiteralBody:
         assert request.content == "<p>saved</p>", (
             f"content did not survive parsing, got {request.content!r}"
         )
-        assert request.title is None, (
-            f"a body with no title key must parse to the None field value, got {request.title!r}"
+        assert not isinstance(request.title, str), (
+            f"a body with no title key must not parse to a str title, got {request.title!r}"
         )
         assert request.version == 1, (
             f"version did not survive parsing, got {request.version!r}"
