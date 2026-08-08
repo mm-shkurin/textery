@@ -280,8 +280,59 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   (b) joined `TestSaveDocumentRequestDtoRoundTrip` under the widened skip reason. Confirmed the
   Rust serializer emits `"title":null` exactly as the Python `model_dump` does — which is WHY the
   JSON leg breaks identically, and why a writer-side green aimed at `model_dump` would have left it
-  broken. That freedom is now gone. File at 149/200.)
-- [~] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
+  broken. That freedom is now gone. File at 149/200.
+  **THAT LAST SENTENCE IS FALSE — both review passes on `378e92a8` measured it so, independently,
+  on pydantic 2.13.4.** `model_dump_json()` bypassing the Python `model_dump` METHOD does not
+  foreclose a writer-side green, because `@model_serializer` is not a method override — it is
+  compiled into the core schema and the Rust serializer honours it on BOTH legs. A
+  `@model_serializer(mode="wrap")` that pops `title` when it is absent from `model_fields_set`,
+  with `title_update()` left completely untouched, produces:
+  `dump {'content':..., 'version':1}` / `dump_json {"content":...,"version":1}` / dict leg
+  `preserve` / JSON leg `preserve` / literal `preserve` / explicit null `clear`. All three tests in
+  the file go green AND `test_save_document_title_router.py:135` still passes. The commit removed
+  one writer-side escape (overriding `model_dump`) and left the standard one open. Net constraint
+  added over `21dc66f4`: one more instance of the same writer-satisfiable red, not a new class of
+  red. Keep the tests — they are correct as characterizations — but do not read the charter as
+  enforced. It is enforced by nothing.)
+- [~] red-adapter rest (the charter repair, chartered by both review passes on `378e92a8`.
+  Two things must change before green runs, and the second is the one that actually bites.
+  **(1) The `title is None` assertions forbid the only real reader-side fix.** They were added by
+  `378e92a8`'s own `/test-review` pass, defended on round-trip-faithfulness grounds, and nobody
+  noticed they pin a REPRESENTATION green needs to be free to change. The standard pydantic answer
+  to absent-vs-null is a sentinel default — `title: str | None | _Absent = ABSENT` — and it is
+  production-viable here precisely because `document_router.py:174` forwards only
+  `request.title_update()` and never reads `request.title`, so the sentinel stays inside the DTO.
+  Measured: under the sentinel, `title is None` is **False**, so the reader-side fix fails three
+  assertions while the writer-side fix passes all of them. The commit inverted its own charter.
+  Restate those three as intent (`title_update()`) or as "does not reparse as a `str`" — do not
+  simply delete them, the round-trip-fidelity concern that motivated them is real.
+  **(2) Nothing pins the reader against input the DTO did not itself produce.** Every red in the
+  file round-trips through this DTO's own serializer, which is exactly why a serializer patch
+  satisfies them. Note the honest difficulty, discovered here: absent-vs-null IS key presence, and
+  `model_fields_set` IS key presence, so there is no reader-side fix that keeps the current field
+  representation — the sentinel changes the representation, which is why (1) blocks it and why (1)
+  must be fixed FIRST. A red that a serializer cannot satisfy has to feed `model_validate` a
+  hand-written body from a foreign producer, not a `model_dump()` output.
+  **Worth stating plainly before green: this DTO is never serialized in production.**
+  `SaveDocumentRequestDto` appears at exactly one site — `document_router.py:168`, a FastAPI inbound
+  body — and there are ZERO `model_dump`/`model_dump_json` call sites anywhere in
+  `backend/adapters/rest/src/`. FastAPI parses bodies, it never serializes them. The save queue,
+  offline outbox, request replay and BFF hop the docstrings name exist nowhere in this repo. So the
+  cheapest green is a serializer that is dead on arrival: suite green, `title_update()` unchanged,
+  and the team records the erasure as protected. That is the incident.
+  **CROSS-LAYER — the erasure that reaches a real user is in the FRONTEND, and this session does not
+  own that file.** The actual producer of the save body is
+  `frontend/src/features/generation/api/documentApi.ts` — `saveDocument(documentId, content, version)`
+  / `putDocument` — which sends no `title` key at all, which is the only reason the reader is correct
+  today. When the frontend scenario wires title into that call, the idiomatic TS spelling
+  `title: title ?? null` serializes `"title": null` and routes every title-untouched autosave into
+  `TitleUpdate.clear()`: silent data loss, user-visible, no error. No frontend test asserts the PUT
+  body OMITS the `title` key when the title is untouched. The nearest thing is
+  `documentApi.conflict.test.ts:62` — a strict `toEqual({content, version})` that would catch it
+  incidentally today, but it is a conflict-retry test and will be rewritten to include `title` the
+  moment that scenario lands. Hand this to the frontend session; it belongs in
+  `progress-frontend.md`, which the file-ownership rule forbids this session from editing.)
+- [ ] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
   RED landed at `backend/adapters/rest/tests/dto/document/test_save_document_request_dto_roundtrip.py`
   — a new `tests/dto/` tree, no `__init__.py` and no Statements class, matching the rest-adapter
   convention; the router file was at 197/200 and could not take it. The failing assertion is the
