@@ -255,7 +255,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   mock, which is precisely why the mutants in (a) survive. The docstring at `document_dtos.py:47-53`
   explains `model_fields_set` at length and never warns it is not serialization-stable — fix that
   in the same pass.)
-- [~] red-adapter rest (both review passes on `21dc66f4`, converging: the shipped round-trip guard
+- [x] red-adapter rest (both review passes on `21dc66f4`, converging: the shipped round-trip guard
   pins the Python-dict leg only, and every incident its own docstring names is a JSON one. Measured
   at HEAD: `model_validate_json(d.model_dump_json()).title_update()` → `clear()` — broken
   identically, pinned by nothing. The two legs are separably fixable, so the shipped red does not
@@ -265,8 +265,23 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   — a LITERAL dict with no `title` key, unsatisfiable by any serializer change;
   (b) `model_validate_json(request.model_dump_json()).title_update() == TitleUpdate.preserve()` — the
   JSON leg, which in Pydantic v2 bypasses the Python `model_dump` method entirely and goes to the
-  Rust serializer. Cheap: the file is at 67/200.)
-- [ ] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
+  Rust serializer. Cheap: the file is at 67/200.
+  **LANDED, and the row's premise was half wrong — only (b) is red.** Measured at HEAD before
+  writing: `model_validate({"content": ..., "version": 1}).title_update()` → `preserve()` ALREADY.
+  A literal body with no `title` key never puts `title` into `model_fields_set`, so (a) passes
+  today; the row read as two reds and there was one. (a) therefore landed in its OWN class,
+  `TestSaveDocumentRequestDtoFromALiteralBody`, **unskipped** — parking a passing guard behind the
+  class-level RED marker would make it inert for the whole red period, which is the exact defect
+  the green row below already calls out in capitals about that marker. Unskipped it does its real
+  job now: unsatisfiable by any writer-side green, and it forecloses the over-correcting green that
+  makes absent mean CLEAR in both directions. It is a characterization guard landed in a red commit,
+  not a red, and the split is structurally forced anyway — the skip marker is class-level, so a
+  passing guard and a failing red cannot share a class without one being mis-marked.
+  (b) joined `TestSaveDocumentRequestDtoRoundTrip` under the widened skip reason. Confirmed the
+  Rust serializer emits `"title":null` exactly as the Python `model_dump` does — which is WHY the
+  JSON leg breaks identically, and why a writer-side green aimed at `model_dump` would have left it
+  broken. That freedom is now gone. File at 149/200.)
+- [~] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
   RED landed at `backend/adapters/rest/tests/dto/document/test_save_document_request_dto_roundtrip.py`
   — a new `tests/dto/` tree, no `__init__.py` and no Statements class, matching the rest-adapter
   convention; the router file was at 197/200 and could not take it. The failing assertion is the
