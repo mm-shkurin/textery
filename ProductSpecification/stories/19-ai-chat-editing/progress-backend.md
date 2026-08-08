@@ -566,7 +566,31 @@ within their file, not across the story.
       re-fires the day a lifecycle state lands; and no N-1 schema risk — the migration is purely
       additive, a new table holding the child side of the FK, so no already-deployed document path can
       break on it. Group 08 (client/frontend) was block-dismissed as out of altitude.
-- [ ] red-usecase
+      **Both review passes returned CONCERNS and four findings were folded back into the ADR before
+      red-usecase could lock on it** — the passes are non-gating, but these landed in the design
+      artifact itself, which is still what this work unit ships. (a) Both passes independently found
+      the missing `UNIQUE(document_id, revision_number)`: the `| None` return is `one_or_none()`-shaped,
+      restore writes a revision row per call, and two concurrent restores each computing `max(n) + 1`
+      produce the same number — `MultipleResultsFound` is then a 500 on the guard path, the same
+      failure class the range check exists to prevent arriving by a different door. `ai_edits`' PK is
+      its own UUID and inherits nothing here. (b) Both found the non-integer edge was deferred to §1.4
+      *under a 422 expectation*, but the contract lists no 422 at all and puts "non-integer" in the 404
+      body; `document_edit_router.py`'s own docstring already rejects a pre-guard 422, and path
+      coercion fires ahead of the Bearer dependency, so an unauthenticated caller would get 422 instead
+      of 401. The route now declares the parameter as `str` and the guard parses it, which also merges
+      the parse and the range check into one place. (c) The premortem's leak: `RevisionScope` carried no
+      row `id`, and `revision_number` is per-document, so the natural §7.x content loader keyed on the
+      number alone would copy another document's revision text into the caller's document — a
+      cross-tenant leak that is also a write. The scope carries `id` and the content port is `id`-keyed.
+      (d) "Step-1 cause id-free" was written literally but mirrors a helper that always emits
+      `caller_id` and omits only the peer id; taken at face value it would make step-1 refusals
+      anonymous in the one channel built to attribute them. `_log_refusal` is shared with
+      `resolve_owned_edit`, not copied.
+      Two findings were **not** folded and are carried instead: the review pass's note that the
+      dismissals decay silently (nothing goes red the day a delete route or a lifecycle state lands —
+      the ADR's "re-decide here" is prose only), and its observation that this file left no `[~]`
+      marker after the step advanced, fixed here.
+- [~] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
