@@ -61,3 +61,61 @@ describe('derivePaginationState — the document font has not resolved', () => {
     })
   })
 })
+
+/**
+ * The counter-case, over the SAME geometry — same `blockHeights`, same `usableContentHeight`.
+ * `fontStatus` is the only thing that differs between the two cases, which is what makes it
+ * load-bearing: with one case only, every expected field above is a constant, and a
+ * `derivePaginationState` that discards its argument and returns a frozen literal passes. That
+ * exact mutation was demonstrated. Then the scenario's whole claim — the font gate dominates the
+ * geometry — would be asserted by the header comment and by nothing else, and the permanent
+ * spinner scenario 1.3 exists to forbid would ship as the implemented behavior.
+ *
+ * LEAVING the measuring state is pinned the same way ENTERING it is: by comparing the whole state
+ * object, minus the one field a later chartered step owns. Asserting `phase` alone would let an
+ * implementation flip the discriminant while still emitting `sheetSkeletonCount: 1`,
+ * `railSkeletonCount: 3`, `liveRegionRole: 'status'`, `ariaBusy: true` and the measuring copy —
+ * a laid-out document with the skeleton surface still up, the spinner still spinning, and a screen
+ * reader still told the editor is busy. That is the mirror image of the defect the first case's
+ * whole-object comparison exists to forbid ("the right phase alongside a stray page count"), and it
+ * is the same family both prior reviews of this scenario found. So the measuring surface is pinned
+ * POSITIVELY absent — exact `0` / `null` / `false` / `''`, the values `PaginationViewState`'s own
+ * doc comments define for phases that render no such surface — not left unmentioned.
+ *
+ * `pageCount` is pinned to a value, not to `not.toBeNull()`. Non-null is satisfiable by `0` and by
+ * `-1`: an editor claiming to be laid out across zero pages. The count is not opaque here — heights
+ * are SUPPLIED, not measured, so 2800px of blocks against 900px of usable sheet is fully determined
+ * by this fixture's arguments. `4` also does not pre-empt scenario 2.1, which owns WHERE the breaks
+ * fall: greedy no-split packing (400+380 | 420+390 | 410+400 | 400) and split-anywhere packing
+ * (`ceil(2800/900)`) agree on 4 for this document, so both of 2.1's candidate answers pass and the
+ * choice between them stays open.
+ *
+ * `statusText` is the ONE field deliberately not compared, and it is excluded by name rather than
+ * by silence. The next `red-frontend` step in `progress-frontend.md` is chartered to decide it:
+ * `red-selenium` splits the status bar into `pagination-status` and a separate `page-count` node,
+ * so whether the laid-out `statusText` carries "Страница 1 из 4" in prose at all is exactly that
+ * step's open question. Pinning a value here would answer it in the direction that step suspects is
+ * wrong. Every other field is decided now.
+ */
+describe('derivePaginationState — the document font has resolved', () => {
+  // TDD RED — fails with `Error: Not implemented` at paginationState.ts:51. `derivePaginationState`
+  // is a stub; no pre-layout state machine exists in `frontend/src` yet. Unskip in green-frontend.
+  it.skip('lays the document out and tears the measuring surface down', () => {
+    const state = derivePaginationState({
+      fontStatus: 'resolved',
+      blockHeights: [400, 380, 420, 390, 410, 400, 400],
+      usableContentHeight: 900,
+    })
+
+    const { statusText: _statusText, ...laidOut } = state
+    expect(laidOut).toEqual({
+      phase: 'laid-out',
+      pageCount: 4,
+      sheetSkeletonCount: 0,
+      railSkeletonCount: 0,
+      liveRegionRole: null,
+      ariaBusy: false,
+      measuringMessage: '',
+    })
+  })
+})

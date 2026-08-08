@@ -64,7 +64,7 @@ below — their vitest step covers logic, not layout.
   status copy does. Added `statusText` + `measuringMessage` and asserted both.
   Deliberately NOT applied: the `liveRegionRole: 'status' | null` nullability smell — a
   domain-modeling preference owned by `/refactor`, not a loose assertion.
-- [~] red-frontend (agent-review CONCERNS 2 + premortem CREDIBLE 1, both independently, the
+- [x] red-frontend (agent-review CONCERNS 2 + premortem CREDIBLE 1, both independently, the
   second by mutation) — **the scenario's central claim is pinned by nothing.** The suite has
   exactly one case, `fontStatus: 'pending'`, and after the fixture widening EVERY expected
   field is a constant. Premortem replaced the stub body with a frozen literal that ignores
@@ -79,7 +79,37 @@ below — their vitest step covers logic, not layout.
   Do NOT wait for scenario 1.2 to supply this — a constant-return green shipped now becomes
   1.3's *actual behavior* (the permanent spinner that 1.3 exists to forbid), and 1.3's red
   would then be written against an implementation that already looks finished.
-- [ ] red-frontend (agent-review CONCERNS 1) — **`statusText` carries the page count in
+  **Done.** RED as predicted: `Error: Not implemented` at `paginationState.ts:51`, thrown by
+  the call before either `expect` runs. The second case supplies byte-identical
+  `blockHeights` / `usableContentHeight`, so `fontStatus` is the single differing input, and
+  the guard was proved to bite by restoring premortem's exact frozen-literal mutation and
+  unskipping both cases: `1 failed | 1 passed` — the `pending` case still passes under the
+  mutation (reproducing the finding) while the new one kills it with
+  `expected 'measuring' to be 'laid-out'`. Mutation reverted, both cases re-skipped.
+  `/test-review` then found two defects, the same family the two prior reviews of this
+  scenario found:
+  (a) **The state change was pinned by a discriminant string only.** The case asserted
+  `phase` and `pageCount` and left six of eight `PaginationViewState` fields unmentioned —
+  so an implementation could flip to `'laid-out'` while still emitting `sheetSkeletonCount:
+  1`, `railSkeletonCount: 3`, `liveRegionRole: 'status'`, `ariaBusy: true` and the measuring
+  message: a laid-out document with the skeleton surface still up, the spinner still
+  spinning, and a screen reader still told the editor is busy. That is the exact mirror of
+  what the first case's whole-object `toEqual` forbids. Now a whole-object comparison with
+  the measuring surface pinned POSITIVELY ABSENT (`0`/`0`/`null`/`false`/`''`) — values the
+  interface's own doc comments already define, so nothing new had to be decided.
+  (b) **`expect(pageCount).not.toBeNull()` was a loose assertion in disguise.** The
+  non-null was justified as "geometry belongs to green-selenium", but `blockHeights` is
+  SUPPLIED by the caller here, not measured — jsdom measuring nothing is irrelevant, the
+  count is fully determined by the fixture's own arguments. Non-null accepts `0` and `-1`:
+  an editor claiming to be laid out across zero pages, which is a state 1.3 exists to forbid
+  arriving by another road. The 2.1 objection does not hold either — 2.1 owns where the
+  breaks FALL, and both candidate packings agree on this fixture (greedy no-split
+  `400+380 | 420+390 | 410+400 | 400` = 4; split-anywhere `ceil(2800/900)` = 4). `toBe(4)`
+  pins the hole shut while leaving 2.1's choice open.
+  `statusText` is the one field left open, excluded BY NAME from the rest-comparison rather
+  than by silence — the next step below is chartered to decide it, and writing a value here
+  would answer that question in the direction it suspects is wrong.
+- [~] red-frontend (agent-review CONCERNS 1) — **`statusText` carries the page count in
   prose, which is the exact failure the selenium leg's two-node model exists to catch.**
   `red-selenium` splits the status bar into `pagination-status` (`"Расчёт страниц…"`) and
   `page-count` (`"Страница N из M"`), and `pagination_measuring_statements.py:88-91` names
