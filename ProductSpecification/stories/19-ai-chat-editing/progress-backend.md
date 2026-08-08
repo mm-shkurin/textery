@@ -770,6 +770,35 @@ within their file, not across the story.
       and it holds the single real gap (line 35, the `raise NotImplementedError` body, uncovered because
       every usecase test runs against the fake that overrides it). Pinned by the pair below; no new step
       needed.
+      **`/refactor` was empty and the commit skipped** — a reasoned rejection, not an omission. The
+      step-1 block is now four identical lines in both guards, but extracting it needs five parameters
+      to remove four lines, puts a `raise`-through behind a call so "step 1 can end the function" stops
+      being visible at the call site, and is precisely what row 1 of the ADR's rejected table refused: a
+      parametric resolver shared by edit and revision. The ADR drew the line at the *logging rule*,
+      which is already extracted. Past the silhouette the step-2 shapes are not near-identical anyway —
+      the revision guard has two doors into the refusal and routes both through `_refuse_at_step_two`,
+      the edit guard has one and inlines it, and the key types, cause literals and return types all
+      differ.
+      **Review passes: agent-review CONCERNS (3), premortem CONCERNS (3 credible).** One was a one-line
+      production defect and is fixed in this work unit rather than carried: `log_refusal` emitted
+      without `stacklevel=2`, so folding the two per-guard `_log_refusal` bodies into one function moved
+      **all four refusal sites in both guards** onto `refusal_log.py` as their `filename`/`lineno`/
+      `funcName`. No test reads those attributes — the cross-guard shape check subtracts every standard
+      `LogRecord` field before comparing — which is exactly why the regression was silent. The rest are
+      scheduled below or annotated onto the gate that owns them.
+      **The premortem's first incident deserves reading in full before this scenario closes, because it
+      says the argument this whole work unit is about has no receiver.** `refusal_log` emits at INFO,
+      and the deployed app configures logging **nowhere**: `application/src/app/main.py` does
+      `import logging` and `getLogger(__name__)` and nothing else — no `basicConfig`, no `dictConfig`,
+      and the same across `adapters/rest/src`. An unconfigured root leaves `document_edit.*` at WARNING
+      with no handler, so every refusal record ever emitted by 1.2's shipped guard and by this one is
+      dropped in production. Even at INFO the stdlib default formatter renders `%(message)s` only, and
+      the message is deliberately id-free, so `refusal_cause`/`caller_id`/`document_id` would still not
+      appear without a structured formatter. The 180 tests cannot see it: `log_recorder.RecordingLogger`
+      calls `setLevel(logging.INFO)` and attaches its own handler, then reads the `LogRecord` object
+      rather than formatted output — it forces the exact condition production lacks. This is an
+      application-layer gap, not a usecase one, so it is recorded here and belongs to an infrastructure
+      or application scenario rather than to 1.3's remaining steps.
 - [~] red-usecase (coverage: DocumentRevisionRepository port stub raises NotImplementedError) —
       **scheduled by the review passes, following the 1.2 precedent at line 331.** The port's own
       docstring calls the raising body load-bearing — "a `...` body on an `async def` is a concrete
@@ -799,6 +828,17 @@ within their file, not across the story.
       ahead of the document guard, where it would let a caller suppress their own attribution record by
       appending `/0/restore`.
 - [ ] green-usecase (the range check's position and its refusal cause)
+- [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
+      docstring asserts a fact about the route that is false as shipped.** It says "the route declares
+      the parameter as `str` precisely so that FastAPI does not answer it 422 ahead of the Bearer
+      dependency"; `document_edit_router.py:126` declares `revision_number: int`. So
+      `POST /documents/{id}/revisions/abc/restore` **with no Bearer token** returns 422 today — path
+      coercion fires ahead of `Depends(get_current_owner_id)` — which is both the disclosure the ADR's
+      non-integer row forbids and the reason the guard takes a `str` at all. The guard's entire
+      non-integer branch is unreachable through the real route. Note that `ai_edit_routes.py:19`
+      actively pins the int shape (`PROBE_REVISION_NUMBER = 1`), so a rest-layer test has to *change*
+      for the ADR to become true — this is not an additive step.
+- [ ] green-adapter rest (the restore route declares its revision number as a string)
 - [ ] adapters-discovery — **three ADR-forced schema pins are binding on this gate and are owned by no
       other checkbox** (both passes found this independently, and the ADR itself records that 1.2
       shipped its FK and PK unpinned). None of the gate's three standard checks asks for them, and
@@ -811,12 +851,30 @@ within their file, not across the story.
       `UNIQUE(document_id, revision_number)`, whose absence turns `one_or_none()` into
       `MultipleResultsFound` — the same 500-on-the-guard-path class by a different door, and one the
       usecase layer is structurally blind to because the fake's `next(...)` silently returns the first
-      match. (3) The FK `ON DELETE CASCADE`.
+      match. (3) The FK `ON DELETE CASCADE`. (4) **Added by the premortem on `dacecdb0`: the finder's
+      `WHERE` is scoped by `document_id`.** The guard returns the repository's answer unchecked — there
+      is no `scope.document_id == document_id` assertion between the port and the caller — so the entire
+      cross-document property rests on one `WHERE` clause in an adapter that does not exist yet, and
+      `revision_number` reads as a natural key, which makes `WHERE revision_number = :n` the plausible
+      mistake. `FakeDocumentRevisionRepository` filters on both fields and is the only thing that has
+      ever enforced the clause; the ADR names this failure class and mitigates it by putting `id` on the
+      scope, not by pinning the filter. The `red-adapter db` test must seed the **same** revision number
+      on two documents owned by different accounts and assert the finder returns the requested
+      document's row and `None` for the other.
 - [ ] green-acceptance
 
 ### Scenario 1.4: A malformed revision number is refused as not found, never as a server error
 - [ ] red-acceptance
-- [ ] design
+- [ ] design — **carries one decision handed over by 1.3's ADR** (edge-case table, "parseable but not
+      plain ASCII digits"): `_parse_in_range` delegates to `int()`, which accepts surrounding
+      whitespace, a leading `+`, PEP-515 underscores and any Unicode decimal digit, so `" 2"`, `"+2"`,
+      `"1_0"` (→ 10) and the Arabic-Indic `"٢"` all resolve real revisions. 1.3 deliberately did not
+      form the opinion and 1.4's checklist did not pick it up either, so it was scheduled to be formed
+      by nobody. Nothing cross-tenant — the document scope still holds — but the endpoint is URL-aliased,
+      which matters the moment anything downstream caches, rate-limits, dedupes or audits by path, and
+      §7's list route inherits the same parser. Pin the roster
+      `(" 2", "2 ", "+2", "1_0", "٢", "2
+")` to one decided behavior and record it back in the ADR.
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery

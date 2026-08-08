@@ -42,4 +42,12 @@ def log_refusal(
     fields = {"refusal_cause": cause, "caller_id": str(owner_id)}
     if document_id is not None:
         fields["document_id"] = str(document_id)
-    logger.info(message, extra=fields)
+    # `stacklevel=2` attributes the record to the guard that refused, not to this
+    # line. Without it every refusal in both guards reports `refusal_log.py` as
+    # its `filename`/`lineno`/`funcName`, so an operator grepping by source
+    # location -- or any formatter carrying `%(filename)s:%(lineno)d` -- sees one
+    # location for all four refusal sites. No test reads those attributes (the
+    # cross-guard shape check subtracts every standard `LogRecord` field before
+    # comparing), which is exactly why the regression was silent when the two
+    # per-guard `_log_refusal` bodies were folded into this one.
+    logger.info(message, extra=fields, stacklevel=2)
