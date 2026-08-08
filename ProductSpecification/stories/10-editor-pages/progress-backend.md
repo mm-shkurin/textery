@@ -178,7 +178,28 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   (d) **`title_update()` has one production caller and zero direct test callers** — every assertion
   reaches it through HTTP against an autospec'd mock. That is what makes (a), (b) and the story-17
   collision below all invisible at once.
-- [~] red-adapter rest (agent-review: the set arm cannot catch a route that trims, and the class
+- [x] red-adapter rest — landed GREEN on arrival, and that is the finding, not a formality. The
+  hostile arm `" <Отчёт>  №ﬁ1  "` passes against HEAD because `80dadf62`/`3f676865` already forward
+  the title verbatim through `SaveDocumentRequestDto.title_update()`; the defect was never in the
+  production code, it was that nothing pinned it. Evidence the row is now real — the set line
+  `return TitleUpdate.of(self.title)` (`document_dtos.py:59`) was mutated one at a time, DTO restored
+  after each: `.strip()` **killed**, `html.escape(...)` **killed**, `unicodedata.normalize("NFKC", ...)`
+  **killed**, `" ".join(self.title.split())` **killed**, `[:120]` **survives** (expected and
+  in-charter — truncation escapes any arm shorter than a plausible cap; length stays with the cap gap
+  in `progress.md`). Four of the five mutants that survived `"Привет Мир"` now die. Docstring rewritten
+  against HEAD across all three stale claims: the mapping's move off the route onto the DTO,
+  `TitleUpdate.clear()` now being HTTP-reachable (with the still-open db-arm caveat kept separate so
+  the consequence clause cannot be half-confirmed), and the corrected collapse — Pydantic collapses
+  rows **1 and 3** (absent, null), while blank differs by VALUE, not by `model_fields_set`.
+  `/test-review` returned **0 violations, 0 edits** across clusters A/P/S (Se not applicable): the
+  single module-level `_HOSTILE_TITLE` used as both payload and expectation is the correct spelling —
+  two copy-pasted strings differing by one space would still pass a `.strip()` mutant. Se-cluster
+  note for later readers: this directory has **no `Statements` classes** anywhere under
+  `backend/adapters/rest/tests/`; the DSL split is `conftest.py` (infrastructure) +
+  `document_router_fixtures.py` (given-phase builders) + inline assertions, which is what the
+  python-fastapi-hex binding prescribes — the Java "zero assertions in the test class" rule does not
+  read against this stack. File at 197/200 lines. 97/0 rest.
+  (original charter: the set arm cannot catch a route that trims, and the class
   docstring claims it can. `test_should_map_a_wire_title_to_a_set_intent` sends `"Привет Мир"` —
   no leading or trailing space — so every value-rewriting transform is the identity on it:
   `of(request.title.strip())`, `of(request.title.strip() or "")` (the spelling `title_update.py`
@@ -214,8 +235,10 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   an unrelated downstream reason (the db arm drops the clear — see `progress.md:83-96`), so a reader
   who half-checks it confirms the wrong story. The mapping also no longer lives in the route at all;
   it is `SaveDocumentRequestDto.title_update()`. Rewrite the whole block against HEAD.)
-- [ ] green-adapter rest (agent-review: the hostile set arm — forward the title byte for byte)
-- [ ] red-adapter rest (premortem CREDIBLE: `model_fields_set` describes how the DTO was BUILT, not
+- [S] green-adapter rest (agent-review: the hostile set arm — forward the title byte for byte)
+  SKIPPED: the set line already forwards verbatim on HEAD; the red row above was a coverage guard,
+  not a behavior gap, proven by four killed mutants. A green step here would be a no-op commit.
+- [~] red-adapter rest (premortem CREDIBLE: `model_fields_set` describes how the DTO was BUILT, not
   what the client sent, and the failure runs toward erasure. Proved against the shipped DTO:
   `d = SaveDocumentRequestDto(content='c', version=1)` → `preserve()`, but
   `SaveDocumentRequestDto.model_validate(d.model_dump())` → **`clear()`**, because `model_dump()`

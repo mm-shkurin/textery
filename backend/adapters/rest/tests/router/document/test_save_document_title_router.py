@@ -4,6 +4,11 @@ from document_router_fixtures import a_document, a_usecase
 from document.save_document import SaveDocument
 from document.title_update import TitleUpdate
 
+# Written as one literal so the expectation and the wire payload cannot drift
+# apart: the whole point of the arm is that the two are the SAME bytes, and two
+# copy-pasted strings differing by one space would still pass a `.strip()` mutant.
+_HOSTILE_TITLE = " <Отчёт>  №ﬁ1  "
+
 
 class TestSaveDocumentTitleIntent:
     """The three-state title contract, at the ONE layer that can express it.
@@ -17,16 +22,21 @@ class TestSaveDocumentTitleIntent:
         "title": null     -> explicit clear, SET title = NULL
         "title": "Отчёт"  -> store verbatim
 
-    Pydantic collapses the first two to `None`, so `model_fields_set` on
-    `SaveDocumentRequestDto` is the only place in the stack where they are still
-    distinguishable. The route forwards `title=request.title` raw today, which
-    spends that distinction one line after receiving it: `SaveDocument._title_intent`
-    then maps both to `TitleUpdate.preserve()`, and its own docstring forbids
-    exactly that ("if it forwards `None` for a null the erasure is silently
-    converted into a preserve and the whole clear path no-ops with every test
-    green"). `TitleUpdate.clear()` is today constructed only by tests -- no HTTP
-    request can produce it -- so a user who clears a title keeps the old one in
-    history and in the export filename, with the domain and usecase suites green.
+    Pydantic collapses rows ONE and THREE -- absent and an explicit null -- to
+    `title=None`; the blank row is NOT collapsed and arrives by value (`""` as
+    `''`, `"   "` as `'   '`). So absent and null are separated only by
+    `model_fields_set` on `SaveDocumentRequestDto`, while absent and blank differ
+    by VALUE. Reading the old claim ("the first two collapse") literally told a
+    green implementer that `""` arrives as `None`, i.e. that the absent branch
+    already covers it -- the exact wrong green the blank row exists to forbid.
+
+    Since `80dadf62` the mapping is real and lives on the DTO, not in the route:
+    `SaveDocumentRequestDto.title_update()` reads `model_fields_set` and returns
+    the intent, and `document_router.py` passes `title=request.title_update()` to
+    the port. `TitleUpdate.clear()` is therefore reachable from HTTP -- a wire
+    `"title": null` produces it. Whether the erasure survives BELOW the port is a
+    separate, still-open question (the db arm drops the clear); this class pins
+    only the wire-to-port mapping, which is the one thing this layer decides.
 
     Every mapping is asserted, not one: the ADR calls for it by name, because a
     route that mapped every shape to a single constant intent satisfies any one of
@@ -152,11 +162,21 @@ class TestSaveDocumentTitleIntent:
         )
 
     async def test_should_map_a_wire_title_to_a_set_intent(self, mocker, save_client, owner_id):
-        """Scenario 3.1's original assertion, restated in the intent the port takes.
+        """The ADR's fourth row -- "store verbatim" -- priced in a HOSTILE title.
 
-        It used to expect the raw string, which `_title_intent` wrapped one layer
-        deeper. The wrapping moves to the route with the other two arms so all
-        three states are decided in the one place that can tell them apart.
+        This arm used to send `"Привет Мир"`, the identity under every plausible
+        rewrite -- `.strip()`, `[:120]`, `html.escape`, NFKC -- so five mutants of
+        the set line passed the whole suite. A row asserting "verbatim" that
+        survives four ways of not being verbatim pins nothing.
+
+        `" <Отчёт>  №ﬁ1  "` costs each of them a byte: padding (dies under
+        `.strip()` and whitespace-collapse), `<`/`>` (die under `html.escape`) and
+        the compatibility ligature `ﬁ`, which NFKC expands to `fi`. Only
+        truncation escapes it, deliberately -- length belongs to the cap gap.
+
+        The padding here is DATA: `__post_init__` must not fold it and the DTO
+        must not trim it. Expecting `of()` on the ORIGINAL string is the only
+        assertion shape that tells "forwarded" from "cleaned".
         """
         document = a_document(owner_id)
         usecase = a_usecase(mocker, SaveDocument, returns=document)
@@ -164,7 +184,7 @@ class TestSaveDocumentTitleIntent:
         async with save_client(usecase) as client:
             response = await client.put(
                 f"/api/v1/documents/{document.id}",
-                json={"content": "<p>saved</p>", "version": 1, "title": "Привет Мир"},
+                json={"content": "<p>saved</p>", "version": 1, "title": _HOSTILE_TITLE},
             )
 
         assert response.status_code == 200, f"got {response.status_code}: {response.text}"
@@ -173,5 +193,5 @@ class TestSaveDocumentTitleIntent:
             owner_id=owner_id,
             content="<p>saved</p>",
             version=1,
-            title=TitleUpdate.of("Привет Мир"),
+            title=TitleUpdate.of(_HOSTILE_TITLE),
         )
