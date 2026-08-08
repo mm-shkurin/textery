@@ -446,7 +446,52 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   renderers are currently untested here, and every "full suite green" claim has been carrying that.
   Per the zero-tolerance rule in `tdd-rules.md` this needs a decision — install both deps so they
   run, or record an explicit `[S]` with justification. Not this work unit's to make.)
-- [~] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
+- [~] red-adapter rest (both review passes on `7e0ecd65`, converging on two and splitting on a
+  third — the split is itself informative, so all four are recorded with their rating.
+  **(a) CREDIBLE, and rated the most severe of the set: the blank-title rows are unpinned on the
+  writer side.** Across the whole pair, `title` is only ever constructed as absent, `None`, or
+  `" Отчёт "`. Nothing constructs `title=""` or `title="   "` — those strings appear only inside
+  the RED class's prose table at `..._wire_shape.py:46-47`. Row 4 pins that a NON-BLANK title
+  survives; a serializer that rewrites only blank titles is the identity on all four fenced rows
+  and passes the entire suite. The damaging spelling is the most natural line a developer writes:
+  `if not v.strip(): return None`. On the wire that is `"title": null`, and HEAD's reader maps null
+  to `TitleUpdate.clear()` — so a documented PRESERVE silently becomes an ERASURE. This is the same
+  class of harm row 4 was added to prevent, one row over, on the rows whose blank-vs-null
+  distinction is the load-bearing one. Note the earlier "absorbed by the domain's blank fold"
+  dismissal does NOT cover this: that was reader-side reasoning applied to a writer-side gap, and
+  it does not hold in the blank→null direction. Four methods, matching the file's leg split:
+  `""` and `"   "`, each on the dict and JSON legs, asserted verbatim.
+  **(b) CREDIBLE, reproduced independently by both passes: the key-tracking helper is silent in the
+  exact window its 23-line docstring claims as its only reason to exist.**
+  `..._control.py:33` computes `missing = request.model_fields_set - body.keys()` — `model_fields_set`,
+  not the `declared` set the line above it already builds. All four call sites construct only
+  `content`/`version`/`title`, so a DEFAULTED added field is never in `model_fields_set`:
+
+      declared:    {'content','version','note','title'}
+      fields_set:  {'content','version','title'}     # 'note' defaulted, never set
+      missing per helper: set()                      # silent, while the serializer drops it
+
+  The measurement recorded in `7e0ecd65` (`key-tracking fires, missing: ['note']`) only reproduces
+  from a call site that explicitly PASSES the new field, and no such call site exists or is likely
+  to. So the helper adds nothing today (which its docstring concedes) and nothing in the window it
+  was added for (which its docstring denies) — and that is worse than being absent, because the
+  docstring is an assurance the next reader will trust instead of looking. Fix: the `missing` leg
+  reads `declared - body.keys()`, with an explicit exclusion set for fields intentionally kept off
+  the wire, plus one test constructing EVERY declared field so the fence has something to drop.
+  **(c) CREDIBLE, premortem only — the symmetric hole on `content`, closed for `title` by the very
+  reasoning that left this open.** `content` is the largest user-data surface on this DTO, and in
+  all eleven constructions across the pair and the round-trip file it is `"<p>saved</p>"` or `'c'`:
+  ASCII, single-line, no leading or trailing whitespace, nothing non-BMP. A `mode="wrap"` serializer
+  normalizing whitespace on `content` only — the exact shape measured against for `title` — is the
+  identity on every asserted content value and ships green. One row with
+  `content="  <p>a</p>\n\n  "` or a non-ASCII multiline body, both legs, byte for byte.
+  **(d) REMOTE, and the passes disagreed: the split's cross-reference is one-directional.**
+  agent-review raised it; premortem downgraded it, and premortem is right — both files load in the
+  same pytest session and a green that over-satisfies the RED goes red in the control class in the
+  same run regardless of what the RED file says. Cost is a confused reader, not a shipped fault.
+  Still worth the one comment line at the foot of `..._wire_shape.py`, since the split was argued
+  on legibility grounds and currently only half-delivers it.)
+- [ ] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
   RED landed at `backend/adapters/rest/tests/dto/document/test_save_document_request_dto_roundtrip.py`
   — a new `tests/dto/` tree, no `__init__.py` and no Statements class, matching the rest-adapter
   convention; the router file was at 197/200 and could not take it. The failing assertion is the
