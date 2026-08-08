@@ -799,7 +799,7 @@ within their file, not across the story.
       rather than formatted output — it forces the exact condition production lacks. This is an
       application-layer gap, not a usecase one, so it is recorded here and belongs to an infrastructure
       or application scenario rather than to 1.3's remaining steps.
-- [~] red-usecase (coverage: DocumentRevisionRepository port stub raises NotImplementedError) —
+- [x] red-usecase (coverage: DocumentRevisionRepository port stub raises NotImplementedError) —
       **scheduled by the review passes, following the 1.2 precedent at line 331.** The port's own
       docstring calls the raising body load-bearing — "a `...` body on an `async def` is a concrete
       coroutine returning `None`, so an adapter that forgot to implement the method would silently
@@ -818,7 +818,26 @@ within their file, not across the story.
       (untracked) nor `document_revision_repository.py` (committed in RED) — and the gap is in the
       latter. The filter's blind spot is therefore wider than the carryover records: not just new
       files, but every file the RED commit already landed. Pass the names explicitly.
-- [ ] green-usecase (coverage: DocumentRevisionRepository port stub raises NotImplementedError)
+      **Outcome: a legitimate no-red, and this time the `[S]` condition genuinely holds.** Predicted
+      "none / 2 passed", actual "none / 2 passed"; no disable marker applied, since a passing coverage
+      test left skipped covers nothing. Unlike 1.2 (line 358), **zero production files were modified** —
+      `document_revision_repository.py:35` already raised
+      `NotImplementedError("DocumentRevisionRepository.find_scope_by_number_and_document")` with the
+      exact message the test pins as a literal, so both the raise *and* the message ran against
+      unmodified production. Non-vacuity was proved by measurement, not assumed: with the body swapped
+      to `...` the await returns `None` and the body test fails `DID NOT RAISE NotImplementedError`,
+      while the roster test correctly stays green — so the failure is attributable to the body
+      assertion alone. `/test-review` found **nothing** across all four clusters: the file inherits all
+      three hardenings 1.2 earned (`inspect.iscoroutinefunction` asserted before the `pytest.raises`
+      block, roster unioned across the MRO rather than `vars()`, message equality against a literal),
+      and the 009a464f trap is absent — the expected side is a hand-written literal dict, the
+      discovered side derives from `__mro__` alone, and the two are compared with symmetric equality so
+      both an added and a removed port method fail. Usecase suite 182 passed, 0 failed, 0 skipped.
+- [~] green-usecase (coverage: DocumentRevisionRepository port stub raises NotImplementedError) —
+      on the evidence above this is a candidate for `[S]`, but read line 358 before marking it: 1.2
+      marked the identical step `[S]` and had to correct it, because `/test-review` had forced a
+      production change into the red commit. Here the red commit contains no production file at all —
+      verify that against the diff, not against this note.
 - [ ] red-usecase (the range check's position and its refusal cause) — the premortem's first incident,
       rescheduled from the green-usecase note above because GREEN may not write tests. Two tests: what
       an out-of-range or non-integer probe emits on `document_edit.resolve_owned_revision` — a cause of
