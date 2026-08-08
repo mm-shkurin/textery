@@ -833,6 +833,24 @@ within their file, not across the story.
       and the 009a464f trap is absent — the expected side is a hand-written literal dict, the
       discovered side derives from `__mro__` alone, and the two are compared with symmetric equality so
       both an added and a removed port method fail. Usecase suite 182 passed, 0 failed, 0 skipped.
+      **`/refactor` empty and the commit skipped — a reasoned rejection.** The two stub files are
+      near-twins, but the residue must stay per-file anyway (each port's own import, its own literal
+      `EXPECTED_PORT_METHODS`, and its own kwargs — `revision_number=1, document_id=…` vs
+      `edit_id=…, document_id=…`), threading the last through a helper means a kwargs dict, which is
+      the "parameterisation wider than the duplication it removes" the ADR rejects and which destroys
+      the fail-loudly property a differing second port method needs. Net lines go up. The Statements
+      move rejected for 1.2 at line 354 was re-derived as a shared *module* and rejected on the same
+      merits; a pair-wide proposal is admissible, this one is still wrong.
+      **Two low-severity review findings, flagged not dropped — both apply to the 1.2 sibling equally,
+      so they move as a pair or not at all.** (a) The roster comprehension collects any public class
+      attribute, not only coroutine methods, so a public constant or nested alias added to a port would
+      fail the roster test with a message that misattributes it as a method; filtering discovery on
+      `iscoroutinefunction` would also document that the roster is the awaited-port surface. Fails
+      loudly, only for the wrong reason. (b) `iscoroutinefunction` protects against the *body* becoming
+      a plain `def`, not against `asyncio_mode = "auto"` (`backend/pyproject.toml:20`) being flipped to
+      `strict` or the plugin being dropped — then the body test is an un-awaited coroutine that never
+      executes and can report green, making the file's whole claim false while passing. An explicit
+      `@pytest.mark.asyncio` is inert under auto mode and load-bearing if the mode ever changes.
 - [~] green-usecase (coverage: DocumentRevisionRepository port stub raises NotImplementedError) —
       on the evidence above this is a candidate for `[S]`, but read line 358 before marking it: 1.2
       marked the identical step `[S]` and had to correct it, because `/test-review` had forced a
@@ -880,6 +898,31 @@ within their file, not across the story.
       scope, not by pinning the filter. The `red-adapter db` test must seed the **same** revision number
       on two documents owned by different accounts and assert the finder returns the requested
       document's row and `None` for the other.
+      (5) **Added by both passes on `56878c76`, independently: the port-shape half of 1.2's pair has no
+      revision equivalent.** The stub guard this work unit shipped proves the raising body *executes*,
+      but `ai_edit_port_shape_statements.py:70` records that it can never fire for a real adapter —
+      adapters satisfy these Protocols **structurally** and are forbidden from inheriting them, so the
+      inherited body protects nothing in production. What 1.2 added to cover that gap
+      (`backend/adapters/db/tests/statements/ai_edit_port_shape_statements.py`: adapter not in the
+      Protocol's MRO, finder present in the adapter's own `vars()`, `iscoroutinefunction`, and an exact
+      hand-written positional signature) has **no revision counterpart** — no
+      `SqlAlchemyDocumentRevisionStorage` exists under `backend/adapters/db/src/` and no step schedules
+      one. The `red-adapter db` step this gate inserts must carry a
+      `document_revision_port_shape_statements.py` mirroring all four assertions. Aggravating: the
+      restore route's revision number is a `str` at the boundary (see the rest-adapter pair above), so
+      mypy's int/UUID distinction will not backstop a transposition or coercion drift the way it partly
+      does for 1.2.
+      (6) **The port's keyword-only contract is unpinned, and deleting the `*` is a silent no-op.** The
+      new stub test pins the method name and the message but calls the body by keyword, which succeeds
+      whether or not the `*` is there; 1.2's `assert_the_scoping_ids_are_keyword_only` asserts it for
+      the **port** as well as the adapter, and the 1.3 mirror inherited the three hardenings but not
+      this one. Pin `inspect.signature(DocumentRevisionRepository.find_scope_by_number_and_document)`
+      as exactly `[("self", POSITIONAL_OR_KEYWORD), ("revision_number", KEYWORD_ONLY),
+      ("document_id", KEYWORD_ONLY)]`, hand-written and positionally exact, per the
+      `EXPECTED_FINDER_SIGNATURE` precedent.
+      **Read (5) and (6) together with this secondary effect the premortem named:** the stub guard
+      drives `document_revision_repository.py` to 100%, so no future coverage pass will surface that
+      module again — and what the 100% now hides is that the port has *zero* production implementation.
 - [ ] green-acceptance
 
 ### Scenario 1.4: A malformed revision number is refused as not found, never as a server error
