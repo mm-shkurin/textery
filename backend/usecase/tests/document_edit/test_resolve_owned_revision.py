@@ -1,5 +1,3 @@
-import pytest
-
 from statements.refusal_record_shape_statements import RefusalRecordShapeStatements
 from statements.revision_number_range_statements import RevisionNumberRangeStatements
 from statements.revision_outage_statements import RevisionOutageStatements
@@ -8,14 +6,6 @@ from statements.revision_scope_guard_statements import RevisionScopeGuardStateme
 from statements.revision_silence_statements import RevisionSilenceStatements
 
 
-@pytest.mark.skip(
-    reason="RED: resolve_owned_revision is a stub -- 8 tests raise NotImplementedError out of "
-    "the guard, and 4 fail with AssertionError, each naming NotImplementedError('') where the "
-    "contract was expected: the two outage tests expect "
-    "StorageUnavailableError('document_revisions read timed out'), the either-store-down test "
-    "expects StorageUnavailableError('the store is down'), and the storage-range test expects "
-    "NotFoundException('document not found') for the in-range boundary. 12 failed, 0 passed."
-)
 class TestResolveOwnedRevision:
     """A revision belonging to another document of the same owner is not found.
 

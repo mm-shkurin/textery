@@ -716,9 +716,10 @@ within their file, not across the story.
       attribution record becomes suppressible by choosing an out-of-range number. The twelve stay green
       because `RevisionNumberRangeStatements` probes only the caller's own resolvable document and
       attaches no recorder at all, while the log and silence Statements probe only the in-range `"2"`.
-      Close it at green-usecase with two tests: what an out-of-range or non-integer probe emits (a
-      cause or deliberate silence, its extras run through the whole-set rule), and an out-of-range
-      number sent at a foreign or absent document asserting the step-1 record is still emitted.
+      **Correction to how this was first scheduled:** it said "close it at green-usecase with two
+      tests", which GREEN may not do — tests are read-only there. It is its own red/green pair, inserted
+      below. Until that pair lands, whatever ordering green-usecase picks is unpinned, and the pair is
+      what makes it binding rather than incidental.
       Two findings stay as notes. `RevisionNumberRangeStatements` shares one `_refusals` dict across its
       two probe rosters; today each test calls one act step so it holds, but a test calling both on one
       instance — which the class docstring invites — fails the roster equality for a reason unrelated to
@@ -727,8 +728,49 @@ within their file, not across the story.
       subclass without `@abstractmethod` enforces nothing at class-creation time. The rename *is*
       caught, but by the inherited raising body, so the two docstrings disagree about which mechanism
       protects what.
-- [~] green-usecase
-- [ ] red-usecase (coverage: DocumentRevisionRepository port stub raises NotImplementedError) —
+- [x] green-usecase — `resolve_owned_revision` is `resolve_owned_document` → parse and range-check →
+      revision lookup. 12/12 target tests, full usecase suite 180 passed, 0 failed; ruff and mypy clean.
+      **The ordering is the whole content of this step, and no test would have caught the wrong one.**
+      The cheap check first is observationally identical to the caller — both answer the same canonical
+      `NotFoundException` — but it lets `/documents/{someone-elses-id}/revisions/0/restore` return that
+      404 having called **neither** repository and emitted **no** record, turning "pick an out-of-range
+      revision number" into a switch that disables the step-1 attribution channel while document-id
+      probing continues at full speed. green-agent verified rather than assumed that the suite cannot
+      tell the two apart: the range Statements arrange only documents the caller *does* own, so step 1
+      succeeds on every one of their probes and both orderings leave the same empty revision-store call
+      log; the log Statements never probe an out-of-range number under an unresolvable document. The
+      reasoning is written into the guard's docstring so the next reader does not "optimize" the cheap
+      check forward, and the inserted red/green pair below is what makes it binding rather than
+      incidental.
+      Both step-2 doors — unparseable/out-of-range, and simply absent — refuse through one
+      `_refuse_at_step_two`, so neither the body nor the record tells the caller which one answered.
+      Range bounds are the two literals `1` / `2147483647`, not `2**31 - 1`.
+      The ADR's "shared, not copied" is now honoured as far as it can be: a new
+      `document_edit/refusal_log.py` holds `log_refusal(logger, message, cause, owner_id, document_id=None)`
+      and `DOCUMENT_SCOPE_REFUSAL_CAUSE`, and **`resolve_owned_edit` was rewired onto it** — its private
+      `_log_refusal` and its own copy of the cause constant are gone, behavior unchanged and 1.2's tests
+      confirm it. Logger and message stay parameters because 1.2 and 1.3 each pin their own literals in
+      read-only tests.
+      One test-file change beyond the marker, flagged rather than hidden: removing the class-level skip
+      left `import pytest` unused (ruff F401); the import line was deleted, no assertion touched.
+      `/test-coverage usecase --focus` (run by hand as `pytest --cov=usecase/src --cov-branch`, since
+      the template still omits the flag): `resolve_owned_revision.py` 37/37 lines and **6/6 branches**,
+      `refusal_log.py` 8/8 and 2/2, `resolve_owned_edit.py` 22/22 and 2/2, `revision_scope.py` 7/7.
+      The ternary quirk did not bite and was checked rather than trusted — no conditional expressions
+      exist in any of the five files and `BrPart` is 0 throughout, so the 6/6 is measured. One thing
+      `--cov-branch` genuinely cannot see was verified by hand: `not SMALLEST <= parsed <= LARGEST` is a
+      chained comparison counted as a single branch pair, so the two out-of-range doors are not
+      distinguished by the tool — `revision_number_range_statements.py:16` probes
+      `("0", "-1", "-2147483648", "2147483648")` and pins both inclusive bounds, so both arms are held
+      by named tests.
+      **The focus filter's blind spot is wider than the carryover records**, and this is the fourth
+      false all-clear from that template. `git diff HEAD --name-only` misses untracked files —
+      `refusal_log.py` — *and* every file the RED commit already landed, which is where the ports always
+      live on this project's cycle: `document_revision_repository.py` is neither modified nor untracked,
+      and it holds the single real gap (line 35, the `raise NotImplementedError` body, uncovered because
+      every usecase test runs against the fake that overrides it). Pinned by the pair below; no new step
+      needed.
+- [~] red-usecase (coverage: DocumentRevisionRepository port stub raises NotImplementedError) —
       **scheduled by the review passes, following the 1.2 precedent at line 331.** The port's own
       docstring calls the raising body load-bearing — "a `...` body on an `async def` is a concrete
       coroutine returning `None`, so an adapter that forgot to implement the method would silently
@@ -737,7 +779,26 @@ within their file, not across the story.
       never executed. 1.2 built exactly this guard, and this work unit edited that very file without
       adding the sibling. Mirror it — roster equality unioned across the MRO, plus the raising body and
       its message asserted as literals, never read back from the module.
+      **Confirmed by measurement, not only predicted.** `/test-coverage usecase --focus` over the
+      green phase (run by hand with `--cov-branch`, which the tech template omits) reports
+      `document_revision_repository.py` at 5/6 statements — `L35`, the `raise NotImplementedError`,
+      is the single uncovered line in the whole focus set. Every other touched file is 100% line and
+      100% branch. So this pair is the only coverage work 1.3's usecase layer owes, and no further
+      red/green steps were inserted.
+      **The focus filter would not have found it.** `git diff HEAD` lists neither `refusal_log.py`
+      (untracked) nor `document_revision_repository.py` (committed in RED) — and the gap is in the
+      latter. The filter's blind spot is therefore wider than the carryover records: not just new
+      files, but every file the RED commit already landed. Pass the names explicitly.
 - [ ] green-usecase (coverage: DocumentRevisionRepository port stub raises NotImplementedError)
+- [ ] red-usecase (the range check's position and its refusal cause) — the premortem's first incident,
+      rescheduled from the green-usecase note above because GREEN may not write tests. Two tests: what
+      an out-of-range or non-integer probe emits on `document_edit.resolve_owned_revision` — a cause of
+      its own or deliberate silence, either way with its extras run through the whole-set rule — and an
+      out-of-range number sent at a **foreign or absent** document, asserting the step-1 record is still
+      emitted. The second is the load-bearing one: it is what stops the range check from being ordered
+      ahead of the document guard, where it would let a caller suppress their own attribution record by
+      appending `/0/restore`.
+- [ ] green-usecase (the range check's position and its refusal cause)
 - [ ] adapters-discovery — **three ADR-forced schema pins are binding on this gate and are owned by no
       other checkbox** (both passes found this independently, and the ADR itself records that 1.2
       shipped its FK and PK unpinned). None of the gate's three standard checks asks for them, and
