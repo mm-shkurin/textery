@@ -591,17 +591,18 @@ within their file, not across the story.
       the ADR's "re-decide here" is prose only), and its observation that this file left no `[~]`
       marker after the step advanced, fixed here.
 - [x] red-usecase — 12 tests on `resolve_owned_revision`, one class, skipped at class level; all 12
-      fail (10 × `NotImplementedError` out of the stub, 2 × `AssertionError` naming the outage that
-      was expected to propagate). Predicted type, both messages and the 12-failed/0-passed count
-      exactly. Beyond the scenario's own case, each of the design's eight forced guards is at least
+      fail — 10 × `NotImplementedError` out of the stub and 2 × `AssertionError` as predicted, then
+      **8 / 4** after `/test-review` (see below); the 12-failed/0-passed total and the three messages
+      never moved. Predicted type, both messages and the count matched exactly. Beyond the scenario's own case, each of the design's eight forced guards is at least
       one test: the revision store is asked **zero** times when the document cannot be resolved;
       out-of-range numbers (`0`, `-1`, `-2147483648`, `2147483648`) are the canonical refusal with
       the store never asked, and `1`/`2147483647` are carried through *as parsed ints* so an
       off-by-one bound goes red somewhere; non-integer input is the canonical refusal, never a 422;
       `RevisionScope` is pinned to the literal `["id", "revision_number", "document_id"]`; either
-      repository raising propagates unchanged; the step-1 and step-2 refusals are compared to each
-      other in type and message *as well as* each to the imported literal; and four log tests cover
-      the two causes, the success path and both outages.
+      repository raising propagates unchanged; and four log tests cover the two causes, the success
+      path and both outages. (The step-1/step-2 cross-comparison this list originally claimed was
+      **removed** by `/test-review` as an unfailable tautology — see below. Both refusals are still
+      pinned, each against the literal imported from 1.1.)
       **Two judgement calls worth carrying.** (a) The non-integer set is deliberately
       `("abc", "1.5", "", "2e3", "0x2", "-")` and deliberately excludes `" 2"`, `"+2"`, `"1_0"` and
       the Arabic-Indic `"٢"` — `int()` accepts all four, so demanding a refusal for them would pin a
@@ -701,8 +702,55 @@ within their file, not across the story.
       environment failure (`relation "ai_edits" does not exist`), no db code touched.
       **Carried:** `generation_lifecycle_statements.py` is 227 lines, over the hard limit, pre-existing
       and untouched by this pass.
+      **Review passes over the behavior commit `009a464f`: agent-review CONCERNS (4), premortem
+      CONCERNS (2 credible).** Two findings were stale claims in this file itself and are corrected in
+      the `red-usecase` entry above. Three more are scheduled as work rather than carried as prose —
+      the two inserted steps below and the `adapters-discovery` annotation.
+      **The premortem's first incident is the one to read before green**, because it is a hole in the
+      test package rather than in the design: the pre-store range/parse check has **no refusal cause**,
+      and nothing pins its position relative to step 1. Three different GREENs satisfy all twelve
+      tests — emit nothing, emit `revision-scope-refused`, or emit a third cause the shape test never
+      sees. Put the check first, which is the natural reading of "before the repository is called" and
+      what the module docstring already says, and `POST /documents/{victim-id}/revisions/0/restore`
+      returns the canonical 404 having called neither repository and logged nothing: the step-1
+      attribution record becomes suppressible by choosing an out-of-range number. The twelve stay green
+      because `RevisionNumberRangeStatements` probes only the caller's own resolvable document and
+      attaches no recorder at all, while the log and silence Statements probe only the in-range `"2"`.
+      Close it at green-usecase with two tests: what an out-of-range or non-integer probe emits (a
+      cause or deliberate silence, its extras run through the whole-set rule), and an out-of-range
+      number sent at a foreign or absent document asserting the step-1 record is still emitted.
+      Two findings stay as notes. `RevisionNumberRangeStatements` shares one `_refusals` dict across its
+      two probe rosters; today each test calls one act step so it holds, but a test calling both on one
+      instance — which the class docstring invites — fails the roster equality for a reason unrelated to
+      the guard, blaming a probe that was in fact sent. And `FakeDocumentRevisionRepository`'s docstring
+      claims subclassing the Protocol protects against a port rename; it does not — a `Protocol`
+      subclass without `@abstractmethod` enforces nothing at class-creation time. The rename *is*
+      caught, but by the inherited raising body, so the two docstrings disagree about which mechanism
+      protects what.
 - [~] green-usecase
-- [ ] adapters-discovery
+- [ ] red-usecase (coverage: DocumentRevisionRepository port stub raises NotImplementedError) —
+      **scheduled by the review passes, following the 1.2 precedent at line 331.** The port's own
+      docstring calls the raising body load-bearing — "a `...` body on an `async def` is a concrete
+      coroutine returning `None`, so an adapter that forgot to implement the method would silently
+      answer 'not found' for every owner's own revision" — and nothing in the commit can go red on it:
+      every usecase test runs against the fake, which overrides the method, so the production body is
+      never executed. 1.2 built exactly this guard, and this work unit edited that very file without
+      adding the sibling. Mirror it — roster equality unioned across the MRO, plus the raising body and
+      its message asserted as literals, never read back from the module.
+- [ ] green-usecase (coverage: DocumentRevisionRepository port stub raises NotImplementedError)
+- [ ] adapters-discovery — **three ADR-forced schema pins are binding on this gate and are owned by no
+      other checkbox** (both passes found this independently, and the ADR itself records that 1.2
+      shipped its FK and PK unpinned). None of the gate's three standard checks asks for them, and
+      there is no `red-adapter db` step scheduled for 1.3 yet — this gate must insert one and carry all
+      three into it. (1) The range constant and the declared column type must be pinned **together**:
+      `LARGEST_VALID_REVISION_NUMBER` is a hard-coded `2147483647` and the table is unwritten, so
+      `SMALLINT` sends legitimate values to the driver as a numeric-out-of-range error, past the narrow
+      `except`, out as the one status the restore contract forbids — while `BIGINT` opens a silent dead
+      band of storable values refused as 404. All twelve tests stay green either way. (2)
+      `UNIQUE(document_id, revision_number)`, whose absence turns `one_or_none()` into
+      `MultipleResultsFound` — the same 500-on-the-guard-path class by a different door, and one the
+      usecase layer is structurally blind to because the fake's `next(...)` silently returns the first
+      match. (3) The FK `ON DELETE CASCADE`.
 - [ ] green-acceptance
 
 ### Scenario 1.4: A malformed revision number is refused as not found, never as a server error
