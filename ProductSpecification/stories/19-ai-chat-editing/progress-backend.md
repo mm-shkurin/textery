@@ -529,7 +529,43 @@ within their file, not across the story.
       **Environment:** the backend had to be started for this run
       (`docker compose -f infra/docker-compose.yml up -d --build backend`); `/health` answers 404 on
       this build, so liveness was confirmed by the app answering on an API path instead.
-- [~] design
+- [x] design — Option A chosen, ADR at `decisions/revision-scope-guard-decision.md`. A third shared
+      helper `resolve_owned_revision` over a bounded
+      `DocumentRevisionRepository.find_scope_by_number_and_document`, layered on 1.1's
+      `resolve_owned_document` and importing its `REFUSAL_MESSAGE` — the same shape 1.2 froze for
+      edits. Rejected: one parametric child-scope resolver shared by edit and revision (the child key
+      types differ, UUID vs int, as do the log causes and the scopes — the parameterisation is wider
+      than the duplication it removes), a composite port join, and an inline lookup in the restore
+      usecase. Hazard scan covered all 8 `_index.md` groups plus one synthesis pass over the flagged
+      seams; 14 GAPs, 8 folded into the design as forced guards, the rest dismissed on evidence.
+      **The fold worth carrying is the range check.** `revision_number` is a plain Python `int` and
+      Python ints are unbounded; the column is not. Passing the raw value to the repository sends a
+      value above the int4 bound to the driver as a numeric-out-of-range error, and the design's
+      deliberately narrow `except NotFoundException` correctly does *not* swallow it — so it surfaces
+      as a 500, which `documents_revisions_restore.yaml` explicitly forbids ("overflowing → 404").
+      The helper therefore pins `1 .. 2147483647` and refuses outside it **with the repository asked
+      zero times**; §1.4 keeps only the rest-layer non-integer edge, where FastAPI's `int` path typing
+      would answer 422.
+      The other seven folds: the db test seeds **three** revisions so number 3 resolves the third row
+      and 4 is 404 (the numbering base was asserted only by the parameter name, which a 0-based store
+      satisfies); **both** repositories driven to raise propagate unchanged and emit no refusal record
+      (1.2 proved this for step 1 only); the two refusals asserted equal in type and message, not
+      merely each equal to the imported literal; a rest-layer guard that POSTs a body carrying
+      `document_id`/`owner_id`/`version` and asserts the usecase is awaited with the **path** ids (the
+      restore contract ignores any body, and a Pydantic body model added later turns the 404 into a
+      422); the scope field names pinned to the literal `["revision_number", "document_id"]` with the
+      finder recorded as a column projection; four log tests — step-1 cause id-free, step-2 cause
+      carrying `document_id` and **never** the probed revision number, success emitting neither,
+      outage emitting neither; and the FK `ON DELETE CASCADE` **pinned by a test**, which 1.2 shipped
+      unpinned and its own review pass flagged.
+      **Three dismissals made on evidence rather than assumption**, because groups 02, 03 and 04 each
+      independently raised the first one: there is no TOCTOU window between step 1 and step 2 — no
+      document delete route exists under `router/document/` and no owner-transfer usecase exists under
+      `usecase/src/document/`, the same evidence 1.2's ADR used; no document non-live state —
+      `document.py` mints only `DRAFT_STATUS`, so the archived/soft-deleted case cannot arise and
+      re-fires the day a lifecycle state lands; and no N-1 schema risk — the migration is purely
+      additive, a new table holding the child side of the FK, so no already-deployed document path can
+      break on it. Group 08 (client/frontend) was block-dismissed as out of altitude.
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
