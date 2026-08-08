@@ -44,8 +44,27 @@ below — their vitest step covers logic, not layout.
   skeletons"; `mockups/desktop/02-measuring.html:61-65`) — it had no locator anywhere. Now
   asserted, along with exactly 3 rail skeletons and `role="status"` + `aria-busy="true"`.
   Absence assertions no longer accept not-yet-rendered as absent.
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — RED as predicted: `Error: Not implemented` thrown by the
+  `derivePaginationState` stub (`frontend/src/features/editor/logic/paginationState.ts`),
+  before any `expect` runs. The pure leg pins the pre-layout *state machine* given supplied
+  heights — jsdom measures nothing, so geometry stays with `green-selenium` (Coverage note
+  above). `/test-review` found three defects, all the same family as the selenium leg's:
+  (a) **`railSkeletonCount: 3` collided with `blockHeights.length === 3`** — three rail rows
+  is a fixed design constant, but with a 3-block fixture `railSkeletonCount =
+  blockHeights.length` passes, and a 7-block document would then render 7 rows.
+  (b) **`sheetSkeletonCount: 1` collided with `ceil(540/900) === 1`** — the header comment
+  claimed a geometry-only implementation "would pass nothing", yet such an implementation
+  emitted `1` and passed that field. Both fixed by one fixture change: 7 blocks totalling
+  2800px against 900px usable, so no expected value (`1`, `3`) is reachable by computing on
+  the input. Expected values themselves were not weakened.
+  (c) **"Same vocabulary as the selenium leg" was claimed, not held.** `red-selenium` pins
+  `"Расчёт страниц…"` / `"Готовим страницы…"`; neither had a home in `PaginationViewState`.
+  That is the half of Then 3 that separates measuring from an *empty document* — scenario 2.3
+  also shows exactly one sheet, so `sheetSkeletonCount: 1` does not distinguish them; the
+  status copy does. Added `statusText` + `measuringMessage` and asserted both.
+  Deliberately NOT applied: the `liveRegionRole: 'status' | null` nullability smell — a
+  domain-modeling preference owned by `/refactor`, not a loose assertion.
+- [~] green-frontend
 - [ ] align-design
 - [ ] green-selenium
 - [ ] demo
