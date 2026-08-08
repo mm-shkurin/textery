@@ -238,7 +238,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
 - [S] green-adapter rest (agent-review: the hostile set arm — forward the title byte for byte)
   SKIPPED: the set line already forwards verbatim on HEAD; the red row above was a coverage guard,
   not a behavior gap, proven by four killed mutants. A green step here would be a no-op commit.
-- [~] red-adapter rest (premortem CREDIBLE: `model_fields_set` describes how the DTO was BUILT, not
+- [x] red-adapter rest (premortem CREDIBLE: `model_fields_set` describes how the DTO was BUILT, not
   what the client sent, and the failure runs toward erasure. Proved against the shipped DTO:
   `d = SaveDocumentRequestDto(content='c', version=1)` → `preserve()`, but
   `SaveDocumentRequestDto.model_validate(d.model_dump())` → **`clear()`**, because `model_dump()`
@@ -255,7 +255,20 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   mock, which is precisely why the mutants in (a) survive. The docstring at `document_dtos.py:47-53`
   explains `model_fields_set` at length and never warns it is not serialization-stable — fix that
   in the same pass.)
-- [ ] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve)
+- [~] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
+  RED landed at `backend/adapters/rest/tests/dto/document/test_save_document_request_dto_roundtrip.py`
+  — a new `tests/dto/` tree, no `__init__.py` and no Statements class, matching the rest-adapter
+  convention; the router file was at 197/200 and could not take it. The failing assertion is the
+  `reparsed` one: `TitleUpdate(clears=True) != TitleUpdate(clears=False)`. Both sides are pinned
+  against the LITERAL `TitleUpdate.preserve()`, not `before == after` — a self-equality is
+  satisfiable by a green that erases the distinction in both directions, and Pydantic's
+  `BaseModel.__eq__` ignores `model_fields_set` entirely, so `reparsed == request` passes today
+  against the very bug. `content` and `version` are pinned too; those two already pass at HEAD and
+  are round-trip-fidelity guards, not part of the red. Green owns the `document_dtos.py:47-53`
+  docstring: it must be REWRITTEN against the new mechanism, not appended to with a warning, and
+  lines 55-59 move with it — red left it untouched deliberately, since the paragraph cannot be
+  written correctly until green picks between "stop depending on `model_fields_set`" and "give the
+  DTO a serialization-stable spelling of absent".)
 - [ ] red-adapter rest (premortem CREDIBLE: the erasure path is silent. `logger.` appears ZERO times
   across `backend/adapters/rest/src/router/document/`, `backend/adapters/db/src/access/document/`
   and `backend/usecase/src/document/`; there is no revision or audit table
