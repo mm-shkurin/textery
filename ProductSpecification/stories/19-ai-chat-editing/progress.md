@@ -10,7 +10,7 @@
 Scenario checklists live in the split per-layer files:
 `progress-backend.md` (Backend + Integration + Security + Load + Infrastructure — 130
 scenarios, bootstrapped 2026-07-29) and `progress-frontend.md` (Frontend — 35 scenarios
-from `tests/02_UI_Tests*.md`, not bootstrapped yet; the frontend session creates it).
+from `tests/02_UI_Tests*.md`, bootstrapped 2026-08-08).
 
 Counting the `###` scenario headings across the test spec gives **165** scenarios
 (130 backend + 35 frontend), not the 156 `stories.md` carried from the test-spec phase;
@@ -58,6 +58,11 @@ Spec phase complete: interview, story, mockups, api-spec, test-spec all `[x]`. N
 implemented — no backend, frontend, or migration code exists for this story yet.
 `progress-backend.md` is bootstrapped (130 scenarios); the next backend work unit is
 `red-acceptance` for Backend Scenario 1.1 (`01_API_Tests.md` — every endpoint refuses an
-absent document indistinguishably from a foreign one). `progress-frontend.md` is still
-unbootstrapped and belongs to the frontend session.
+absent document indistinguishably from a foreign one).
+
+**Frontend (2026-08-08):** `progress-frontend.md` is now bootstrapped — 35 scenarios across
+the three UI spec files, every step `[ ]`, the full eight-step frontend sequence per
+scenario. No frontend code exists for this story yet, so nothing was pre-marked `[x]`. The
+next frontend work unit is `red-selenium` for Frontend Scenario 0.1 (`02_UI_Tests.md` — a
+document that cannot be loaded blocks the chat panel with a way out).
 
