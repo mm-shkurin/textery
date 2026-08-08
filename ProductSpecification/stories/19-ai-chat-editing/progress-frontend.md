@@ -15,8 +15,19 @@ under `frontend/src` or `acceptance/tests/frontend`.
 ## Frontend Scenarios (02_UI_Tests.md)
 
 ### 0.1 A document that cannot be loaded blocks the chat panel with a way out
-- [~] red-selenium
-- [ ] red-frontend
+- [x] red-selenium — one test, three Statements assertions. Predicted and got
+      `TimeoutException` in `_wait_for_visible` on `[data-testid='document-not-found']`.
+      `/test-review` landed five fixes: the way-out link now asserts its `href` resolves to
+      `{app_url}/documents` **and** that the link is a descendant of the blocker (caption-only
+      would have passed a `<span>` or an `href="#"`); the chat-panel absence check moved to the
+      prefix locator `[data-testid^='ai-chat']` because the exact `ai-chat-panel` testid exists
+      nowhere and nothing forces scenario 1.1 to choose that name — the check was permanently
+      vacuous; the `driver.get` justification was re-argued from the durable reason (a
+      not-found document is unreachable by clicking your own documents list, by construction)
+      rather than from a documents list that does not exist yet; and the skip reason now says
+      the route itself is absent. Absence stays `find_elements`-based on purpose — a
+      non-visibility check would pass a rendered-but-hidden editor.
+- [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api

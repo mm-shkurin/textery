@@ -6,6 +6,9 @@ Registered as a plugin from that conftest, so fixture scope is unchanged.
 
 import pytest
 
+from statements.frontend.ai_chat.document_not_found_statements import (
+    DocumentNotFoundStatements,
+)
 from statements.frontend.auth.login_page_statements import LoginPageStatements
 from statements.frontend.auth.register_page_statements import RegisterPageStatements
 from statements.frontend.auth.verify_code_page_statements import VerifyCodePageStatements
@@ -38,6 +41,11 @@ from statements.frontend.generation.manual_editor_statements import ManualEditor
 from statements.frontend.generation.mode_modal_statements import ModeModalStatements
 from statements.frontend.landing_page_statements import LandingPageStatements
 from statements.frontend.responsive_statements import ResponsiveStatements
+
+
+@pytest.fixture
+def document_not_found_statements():
+    return DocumentNotFoundStatements()
 
 
 @pytest.fixture

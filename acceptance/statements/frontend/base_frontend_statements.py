@@ -64,6 +64,33 @@ class BaseFrontendStatements(FormAssertionsMixin):
         assert actual == expected, f"expected {label} to be '{expected}', got '{actual}'"
         return element
 
+    def _assert_absent(self, driver: WebDriver, locator: tuple[str, str], label: str) -> None:
+        """Assert no element matches `locator` at all.
+
+        Deliberately stricter than a non-visibility check: an element that is rendered but
+        hidden fails here, which is what "shown instead of" scenarios mean. Callers must
+        anchor this on a positive `_wait_for_visible` first, or it passes vacuously against
+        a page that has not rendered yet.
+        """
+        elements = driver.find_elements(*locator)
+        assert not elements, f"expected no {label}, found {len(elements)} element(s)"
+
+    def _assert_link_target(
+        self, driver: WebDriver, locator: tuple[str, str], app_url: str, expected_path: str, label: str
+    ) -> None:
+        """Assert the element is an anchor whose href resolves to `expected_path` on the app origin."""
+        element = self._wait_for_visible(driver, locator)
+        tag = element.tag_name.lower()
+        assert tag == "a", f"expected {label} to be an <a> link, got <{tag}>"
+
+        href = element.get_attribute("href") or ""
+        actual_origin = self._normalized_origin(href)
+        actual_path = urlparse(href).path.rstrip("/") or "/"
+        expected_origin = self._normalized_origin(app_url)
+        assert (actual_origin, actual_path) == (expected_origin, expected_path), (
+            f"expected {label} to point at '{app_url}{expected_path}', got '{href}'"
+        )
+
     # Auth-session storage keys (frontend/src/features/auth/utils/authSession.ts). The frontend
     # gates the whole type -> mode -> editor/workspace flow behind a session (Story 7, added
     # 2026-07-16): an unauthenticated CTA routes to /register, so without this the type card
