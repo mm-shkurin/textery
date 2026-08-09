@@ -72,7 +72,7 @@ class AiEditScopeGuardStatements(AiEditGuardBase):
         the document would refuse identically and pass every other assertion in
         this file, while having already performed an unauthorized read.
         """
-        self.assert_edit_lookups(
+        self._assert_edit_lookups(
             [],
             "the edit lookup for a document the caller cannot resolve is itself an "
             "unauthorized read, so step 1 must refuse before step 2 runs",
@@ -80,7 +80,7 @@ class AiEditScopeGuardStatements(AiEditGuardBase):
 
     def assert_the_edit_store_was_asked_once_for_the_probed_document(self) -> None:
         """The counterpart control: a resolvable document does reach step 2 exactly once."""
-        self.assert_edit_lookups(
+        self._assert_edit_lookups(
             [(QUEUED_EDIT_ID, self.second_document_id)],
             "a document the caller does resolve must reach step 2, exactly once and "
             "scoped to the document that was probed",

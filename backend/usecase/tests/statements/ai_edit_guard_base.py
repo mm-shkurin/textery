@@ -72,13 +72,18 @@ class AiEditGuardBase(DocumentArrangement):
             owner_id=CALLER_ID,
         )
 
-    def assert_edit_lookups(self, expected: list[tuple[UUID, UUID]], why: str) -> None:
+    def _assert_edit_lookups(self, expected: list[tuple[UUID, UUID]], why: str) -> None:
         """The edit store's call log, compared whole.
 
         Both subclasses assert on this same spy from four methods, and every one
         of them had its own copy of the comparison. The comparison itself is
         `assert_lookups`, shared with the revision guard; this method is the spy
         it reads and the noun its failure uses.
+
+        Protected for the same reason as the revision guard's counterpart: the
+        expectation is supplied entirely by the caller, so a public form lets any
+        collaborator pass `[]` and weaken the ordering guard without editing an
+        assertion. Only the intent-named wrappers in the subclasses may reach it.
         """
         assert_lookups("edit", list(self.ai_edit_repository.lookups), list(expected), why)
 

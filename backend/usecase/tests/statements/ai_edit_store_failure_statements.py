@@ -51,7 +51,7 @@ class AiEditStoreFailureStatements(AiEditGuardBase):
         lookup -- otherwise both assertions in this class would be satisfied by a
         fake nobody ever calls.
         """
-        self.assert_edit_lookups(
+        self._assert_edit_lookups(
             [(QUEUED_EDIT_ID, self.first_document_id)],
             "the lookup must have reached the store before it failed, or both assertions "
             "in this class would be satisfied by a fake nobody ever calls",
@@ -65,7 +65,7 @@ class AiEditStoreFailureStatements(AiEditGuardBase):
         would pass `assert_the_outage_propagated_unchanged` while having already
         performed the unauthorized read the ADR forbids.
         """
-        self.assert_edit_lookups(
+        self._assert_edit_lookups(
             [],
             "the document store was down, and step 2 must not run when step 1 did not resolve",
         )
