@@ -25,14 +25,20 @@ import { VARIED_GEOMETRY_ROW } from './laidOutRows.fixture'
  * Both die here, because this row's expected numbers are unreachable from that file's: the
  * frozen literal emits `4`/`2` where this expects `6`/`5`, and the arithmetic hop emits `3`.
  *
- * The fixture. Eleven blocks totalling 3600px against 600px of usable sheet. The count stays
+ * The fixture. Eleven blocks totalling 3600px against 600px of usable sheet, supplied by
+ * `VARIED_GEOMETRY_ROW` rather than typed here — the geometry and the count it produces are one
+ * value, and `paginationState.crossRow.test.ts` derives `6` from those blocks and compares it against
+ * the row's own declared `pageCount`, so retuning either alone goes red. The count stays
  * PACKING-AGNOSTIC, which is what keeps scenario 2.1's choice of where breaks FALL open: the blocks
  * pack exactly, so greedy no-split (400+200 | 300+300 | 600 | 250+350 | 600 | 100+300+200) and
  * split-anywhere (`ceil(3600/600)`) both answer 6. Only a perfectly-packing fixture has that
  * property, which is why the geometry is spelled out this way rather than picked round.
  *
  * `6` is reachable from no other value in either file — not `4`, not the `1`/`3` skeleton counts,
- * and not `blockHeights.length` (11), so `pageCount: blockHeights.length` still fails.
+ * and not `blockHeights.length` (11), so `pageCount: blockHeights.length` still fails. That claim
+ * used to be this sentence and nothing else; it is now the second `describe` of
+ * `paginationState.crossRow.test.ts`, which enumerates every number this row's expectations are
+ * stated in and fails on any collision between them.
  *
  * `visiblePageNumber` is `VARIED_GEOMETRY_ROW.currentPage`, and the pair `(6, 5)` is not this file's
  * to retune alone. No `visiblePageNumber` in range of a 6-page document escapes every arithmetic hop
@@ -60,8 +66,8 @@ describe('derivePaginationState — a resolved font over different geometry', ()
   it.skip('derives the page count and the visible page from the geometry it is handed, not from constants', () => {
     const state = derivePaginationState({
       fontStatus: 'resolved',
-      blockHeights: [400, 200, 300, 300, 600, 250, 350, 600, 100, 300, 200],
-      usableContentHeight: 600,
+      blockHeights: [...VARIED_GEOMETRY_ROW.blockHeights],
+      usableContentHeight: VARIED_GEOMETRY_ROW.usableContentHeight,
       visiblePageNumber: VARIED_GEOMETRY_ROW.currentPage,
     })
 

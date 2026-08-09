@@ -16,22 +16,26 @@ import { FONT_GATE_ROW } from './laidOutRows.fixture'
  * handed, so the laid-out case expecting exactly the `2` the fixture supplies is what pins the
  * pass-through. Every OTHER field must still fail if it echoes a fixture value.
  *
- * ITS NUMBERS ARE NOT THIS FILE'S TO RETUNE ALONE. `visiblePageNumber` is `FONT_GATE_ROW.currentPage`
- * — one half of a pair held jointly with `paginationState.laidOut.test.ts`, because a single laid-out
- * row cannot refute every arithmetic hop from `pageCount` to `currentPage` and each hop therefore
- * dies across the two. This row's `2` against `4` is the ENTIRE kill of `currentPage: pageCount - 1`,
- * the likeliest of those accidents: the other row expects `5` against `6` and survives it. Retune
- * this row so the pair agrees under `p - 1` and that hop ships as behaviour. The reasoning for both
- * numbers, and the executable refutation matrix that fails when they stop disagreeing, live in
- * `laidOutRows.fixture.ts` and `paginationState.crossRow.test.ts`.
+ * NOTHING HERE IS THIS FILE'S TO RETUNE ALONE, which is why the geometry AND the numbers come from
+ * `FONT_GATE_ROW`. The blocks and the sheet height are one half of a pair held jointly with
+ * `paginationState.laidOut.test.ts`, because a single laid-out row cannot refute every arithmetic hop
+ * from `pageCount` to `currentPage` and each hop therefore dies across the two. This row's `2`
+ * against `4` is the ENTIRE kill of `currentPage: pageCount - 1`, the likeliest of those accidents:
+ * the other row expects `5` against `6` and survives it. Retune this row so the pair agrees under
+ * `p - 1` and that hop ships as behaviour. And `4` is not a number typed beside the blocks — it is
+ * what `ceil(2800 / 900)` produces, which `paginationState.crossRow.test.ts` derives and compares, so
+ * changing the geometry here without changing the count goes red immediately instead of at green.
+ * The reasoning for every one of those numbers, and the refutation matrices that fail when they stop
+ * disagreeing, live in `laidOutRows.fixture.ts` and `paginationState.crossRow.test.ts`.
  *
- * Only the number is shared. This file's two cases are the FONT GATE and stay driven over one
- * binding — that co-location is what kills a `derivePaginationState` discarding its argument — and
- * the geometry row must not be folded back in here.
+ * Sharing the row does NOT dissolve the co-location: this file's two cases are the FONT GATE and are
+ * still spread from this ONE local binding, never reading the row independently — that is what kills
+ * a `derivePaginationState` discarding its argument — and the varied-geometry row must not be folded
+ * back in here.
  */
 const AMPLY_MEASURABLE_DOCUMENT: Omit<PaginationInput, 'fontStatus'> = {
-  blockHeights: [400, 380, 420, 390, 410, 400, 400],
-  usableContentHeight: 900,
+  blockHeights: [...FONT_GATE_ROW.blockHeights],
+  usableContentHeight: FONT_GATE_ROW.usableContentHeight,
   visiblePageNumber: FONT_GATE_ROW.currentPage,
 }
 

@@ -324,7 +324,7 @@ pagination failure.
   using `tsc --noEmit`, which is exit 0 and never surfaces it. The two commands disagree and
   this file recorded only the passing one. It resolves itself when green implements the stub,
   but no step should claim a clean typecheck on the strength of the weaker command again.
-- [~] red-frontend (premortem CREDIBLE 1 + agent-review CONCERNS 1 and 2 over `fabafd1d`, one
+- [x] red-frontend (premortem CREDIBLE 1 + agent-review CONCERNS 1 and 2 over `fabafd1d`, one
   root) — **the numbers moved into the fixture; the geometry that justifies them did not.**
   `laidOutRows.fixture.ts` holds `pageCount: 4` and `pageCount: 6` and describes "seven blocks
   totalling 2800px against 900px" in the header of a file containing neither `blockHeights` nor
@@ -372,6 +372,56 @@ pagination failure.
   that BOTH font-gate cases are spread from — if the geometry now comes from the fixture, the
   two cases must still read it through one local binding, never independently, or the
   discard-the-argument kill dissolves.
+  **Done on the retry.** RED as predicted: `Error: Not implemented` at
+  `paginationState.ts:101:9`, `3 failed | 4 passed` (the live crossRow cases green), none
+  reaching an `expect`; re-skipped. `LaidOutRow` now carries `blockHeights` and
+  `usableContentHeight` beside `pageCount`/`currentPage`, so the derivation and its result are
+  one value. New fixture exports: `splitAnywherePageCount(row)` (the `ceil(sum/usable)` lower
+  bound — greedy agreement stays with its own chartered step), `SURFACE_CONSTANTS` (`1`/`3`/`0`,
+  named ONLY to be refuted against, never as expectations), `namedValuesOf(row)`. The `4`/`6`
+  rationale is now actually in the file that holds them, and says they are PRODUCED, not chosen.
+  **All three mutations die**, and the headline one fires with every stub case still skipped —
+  the exact state in which nothing failed before: (1) retune `FONT_GATE_ROW.usableContentHeight`
+  900 → 600 leaving `pageCount: 4` stale → `1 failed | 3 passed | 3 skipped`,
+  `expected {'the font-gate row': 5, …} to strictly equal {'the font-gate row': 4, …}`;
+  (2) `pageCount: blockHeights.length` (4 → 7) → `3 failed | 1 passed | 3 skipped`, the
+  collision test naming it `+ "pageCount === blockHeights.length"`; (3) the earlier hops still
+  die on the charted division of labour — `currentPage: pageCount - 1` by the font-gate case
+  only, `pageCount / 2` by the varied-geometry case only, each `1 failed | 6 passed`.
+  **Co-location survived the move:** `AMPLY_MEASURABLE_DOCUMENT` is still one visible local
+  binding both font-gate cases are spread from, and neither case reads `FONT_GATE_ROW` for any
+  INPUT — `fontStatus` remains the only per-case difference, so the discard-the-argument kill
+  stands. The second case reads the row only on the EXPECTATION side, which is the intended
+  pass-through pin.
+  `/test-review` answered the four judgement calls and found one real defect:
+  (a) **`splitAnywherePageCount` is a real check, not a restatement** — derived side reads the
+  geometry, declared side is the literal. The "edit both in one motion" escape is closed, but by
+  a DIFFERENT case rather than an opposing one: retuning geometry and `pageCount` together
+  satisfies this case, and is then caught by the hop matrix. Verified on the load-bearing
+  instance — retune the font-gate row to 2700/900/`pageCount: 3` and `pageCount - 1` becomes
+  `2` = `currentPage`, so `rowsRefuting` returns `[]` and BOTH the matrix and its non-emptiness
+  companion fail. Geometry cannot be retuned into agreement silently.
+  (b) **The collision check was NOT complete for what the headers claim — fixed.**
+  `collisionsWithin` compared pairs inside a single row only, while `laidOut.test.ts` claims `6`
+  is reachable from no other value "in either file — not `4`", and rests the whole second row on
+  "the frozen literal emits `4`/`2` where this expects `6`/`5`". That CROSS-ROW distinctness —
+  the entire carry of the frozen-literal kill from one row to the other — was asserted by
+  nothing. Added a fifth live case plus `rowValuesOf`, proved to bite by mutation: give the
+  font-gate row six blocks still summing 2800px (so `pageCount` stays `4` and every other case
+  stays green) and only the new case reddens, naming
+  `"the font-gate row.blockHeights.length === the varied-geometry row.pageCount"`. The surface
+  constants are deliberately excluded from the cross-row half and kept in the same-row half —
+  both rows name the same `1`/`3`/`0`, so including them would report every row colliding with
+  every other and the check would say nothing. The pair is keyed by name, so a third row added
+  without extending the expectation fails here rather than going unchecked.
+  (c) **`SURFACE_CONSTANTS` framing holds.** Referenced only through `namedValuesOf` into the
+  collision check; no test imports them, each file still spells `1`/`3`/`0` at its own
+  assertion, and the keys are prose (`'the measuring surface's three rail rows'`) rather than
+  field names, so they cannot be spread into an expectation object. Nothing asserts a constant
+  against itself.
+  Suite 638 passed / 6 skipped / 0 failed; `tsc --noEmit` exit 0. Files: fixture 150, crossRow
+  142, measuring 193, laidOut unchanged — all under 200, and no case joined the closed measuring
+  file.
 - [ ] red-frontend (premortem CREDIBLE 2 over `fabafd1d`) — **scenario 2.1's open choice can be
   decided by a fixture retune nobody reads as making it.** Packing-agnosticism is the stated
   licence for pinning `pageCount` at all: the blocks pack exactly, so greedy no-split and
