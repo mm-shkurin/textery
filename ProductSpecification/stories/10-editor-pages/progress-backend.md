@@ -1027,7 +1027,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   fence rows do not add up to — do not let 2.1's green-acceptance stand in for it, and do not read
   the fence cluster going green as this being covered.)
 - [ ] green-acceptance (premortem: a content-only save must leave the stored title alone, end to end)
-- [~] red-adapter rest (coverage: refusal co-occurring with the other two faults). The partition's
+- [x] red-adapter rest (coverage: refusal co-occurring with the other two faults). The partition's
   arms are pinned INDIVIDUALLY but never in combination, and coverage cannot see the gap:
   `wire_shape_key_fence.py` reports **100% line and 100% branch** (17 stmts, 6 branches) because
   every `if` gets both outcomes across the five rows — combinations are invisible to coverage.py.
@@ -1040,8 +1040,48 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   `undeclared == {"__not_a_field__"}`, message carries refusal + dropped + undeclared with TWO
   `'; and '` joiners, which nothing currently pins. Use `"__not_a_field__"`, not `"note"` — the row
   below already charters that rename. Exact equality, per the class docstring.
-- [ ] green-adapter rest (coverage: refusal co-occurring with the other two faults)
-- [ ] red-adapter rest (coverage: leg guard preempts a genuinely broken body). The guard row ships
+  **LANDED GREEN, and the mutation table is what earns it.** The helper was already correct — the gap
+  was in the TESTS — so predicting a failure would have been predicting a lie. Predicted no-failure
+  with the exact three-clause message; actual, byte-identical, `2 passed`. The two survivors the
+  premortem on `f935be3c` measured are now DEAD, both attributable to this row BY NAME, and both
+  re-run independently by `/test-review` rather than taken on report:
+  - refusal `faults.append` moved AFTER dropped + undeclared: 16 passed → **1 failed, 16 passed**
+  - refusal suppressed whenever another fault co-occurs: 16 passed → **1 failed, 16 passed**
+  - `dropped = missing` (control): 1 failed → 2 failed
+  No skip marker: a marker asserts "this fails now", and marking a row that passed on arrival parks a
+  live coverage guard for no red period — and would have suppressed the very kills that earn its
+  place. Fourth time this scenario has faced that call.
+  PLACEMENT — the refusal file, not the model-agnostic sibling, and test-review found the stronger
+  ground: the fixture drops `title`, so the expected message OPENS with the six-line refusal clause
+  naming `TestSaveDocumentRequestDtoWireShape` and its file. Putting it in the sibling drags that
+  title-specific wording and cross-file class coupling straight back into the file that expelled it.
+  The cap forbids the alternative independently — the agnostic file was at **170**, not the 165 this
+  charter assumed, so a ~55-line row would have pushed it to ~225.
+  `/test-review` found 0 assertion violations and 6 docstring-accuracy ones, all fixed, and it caught
+  a lint regression by RE-RUNNING ruff rather than assuming: a corrected line hit 108 chars. The
+  substantive one is a fact this scenario has been miscounting — "named and acted on TWICE" was an
+  undercount; there are three distinct acted-on instances (`TestSaveDocumentRequestDtoFromALiteralBody`,
+  `..._wire_shape_control.py:20`, `..._blank_control.py:14`), and the sibling file saying "three
+  times" was right while this one said two.
+  THE THREE STALE CLAIMS, resolved: (1) the false preemption claim is STRUCK and replaced with an
+  explicit statement that the coverage is a separate chartered step and must not be read as closed;
+  (2) the "fourth row's subject" pointer now names the refusal file; (3) "108 tests green" is
+  deliberately NOT re-stamped to 114 — the measurement was never taken against a 114-test suite and a
+  fresh number implies a fresh mutation run nobody performed. Converted to explicit past tense with
+  three disambiguators. test-review's verdict: right call, re-measure rather than re-stamp if that
+  evidence is ever needed as current.
+  ROT ACCEPTED DELIBERATELY, recorded so nobody "fixes" it: the expected literal hardcodes the
+  sibling class name and filename. Interpolating `TestSaveDocumentRequestDtoWireShape.__name__` would
+  compute the expected value from the same source the subject reads, passing under ANY rename —
+  strictly weaker than the literal. Naming-coupling, not assertion-looseness.
+  **CONFIRMED STILL OPEN by both agents independently:** the leg guard can be moved below `faults` and
+  the suite stays green (17 passed, 4 skipped under that mutant). Now DOCUMENTED as open, still
+  UNCOVERED. That is the next row.)
+- [S] green-adapter rest (coverage: refusal co-occurring with the other two faults) — SKIPPED as a
+  step in substance: nothing to implement. The helper already emitted the correct three-clause
+  message in the correct order; the red half was a coverage guard over already-correct code, proven
+  by two mutants that were alive before it and dead after. A green commit here would be a no-op.
+- [~] red-adapter rest (coverage: leg guard preempts a genuinely broken body). The guard row ships
   with a WELL-FORMED body, so it pins the reject path but NOT the preemption its own comment
   (lines 100-108) argues for at length: with both fault legs quiet the message could only have come
   from the guard either way. A body that is broken AND carries a typo'd leg —

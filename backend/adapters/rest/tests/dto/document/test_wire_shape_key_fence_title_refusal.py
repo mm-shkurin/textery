@@ -18,10 +18,11 @@ class TestWireShapeKeyFenceRefusesTheAbsentTitleRow:
     live row behind it.
 
     The seam is subject, not line count. The other file's rows are model-agnostic:
-    the fence reports faults in both directions and names both in one message. This
-    row is specific to scenario 2.1 and to one field. It is also the only row whose
-    expected message names a sibling class and file, so that cross-file coupling now
-    lives in the file whose whole subject is that relationship.
+    the fence reports faults in both directions and names both in one message. The
+    rows here are specific to scenario 2.1 and to one field -- the refusal alone,
+    and the refusal co-occurring with both other legs. They are also the only rows
+    whose expected message names a sibling class and file, so that cross-file
+    coupling now lives in the file whose whole subject is that relationship.
     """
 
     def test_should_refuse_the_untouched_row_rather_than_call_its_absent_title_a_dropped_field(
@@ -80,4 +81,61 @@ class TestWireShapeKeyFenceRefusesTheAbsentTitleRow:
         ), (
             "an absent `title` must be REFUSED by name, not reported as a dropped field -- "
             f"calling it dropped asks green to emit the erasure, got {failure.value!s}"
+        )
+
+    def test_should_report_the_refusal_alongside_both_other_faults_in_one_message(self):
+        """The combination no row held, and the two mutants that lived in the gap.
+
+        Every arm of the partition is pinned INDIVIDUALLY -- the refusal above, the
+        generic dropped leg and the undeclared leg next door, the two-fault join in
+        `test_wire_shape_key_fence.py`. Coverage cannot see what is left: measured,
+        `wire_shape_key_fence.py` reports 100% line and 100% branch (17 statements,
+        6 branches), because across those rows every `if` gets both outcomes.
+        COMBINATIONS are invisible to coverage.py, and two of them had no row.
+
+        The refusal firing TOGETHER with the generic dropped clause was one: no
+        fixture omitted `title` and another declared field at once, so nothing
+        pinned that both survive the partition or in which ORDER they reach the
+        message. The refusal firing together with `undeclared` was the other: the
+        existing joiner row pins `'; and '` only for dropped+undeclared. This one
+        body closes both -- `missing == {'content', 'title'}` and
+        `undeclared == {'__not_a_field__'}`, so all three clauses land in the one
+        message with TWO joiners.
+
+        Measured against the real helper, running the full directory suite per
+        mutant: moving the refusal's `faults.append` BELOW the dropped and
+        undeclared legs left every row green, and suppressing the refusal whenever
+        another fault co-occurs left every row green. Both are exactly the shape the
+        green deliberately rejected -- the refusal is collected like any other fault
+        precisely so a body broken three ways still names all three -- and both die
+        on this row.
+
+        `"__not_a_field__"` rather than `"note"`: a later row charters that rename,
+        and a fixture keyed on the name it is about to take would go quietly wrong.
+
+        Whole-message exact equality, per the class docstring and for the reason
+        every message-asserting row in this file and its sibling upholds: a
+        substring pin does not kill a mutation
+        that mangles the `'; and '` joiner or drops the `got {body!r}` tail, and
+        joiner placement is half of what this row exists to hold.
+        """
+        body = {"__not_a_field__": "x", "version": 1}
+
+        with pytest.raises(AssertionError) as failure:
+            assert_body_keys_track_the_model(body, "dumped")
+
+        assert str(failure.value) == (
+            "the dumped body's key set must be exactly the model's declared fields -- "
+            "'title' is absent, which this fence cannot judge: absence is the CORRECT "
+            "shape for a title-untouched save (TestSaveDocumentRequestDtoWireShape in "
+            "test_save_document_request_dto_wire_shape.py) and a serializer fault "
+            "everywhere else, and the body alone does not say which -- do not call this "
+            "fence on the untouched row; and "
+            "['content'] was declared on the model and dropped by the serializer; and "
+            "['__not_a_field__'] is on the body but declared nowhere on the model, "
+            "got {'__not_a_field__': 'x', 'version': 1}"
+        ), (
+            "a body that trips the refusal AND both other legs must report all three in "
+            "the one message, refusal first -- a refusal reordered behind the faults, or "
+            f"suppressed when they co-occur, must not survive, got {failure.value!s}"
         )

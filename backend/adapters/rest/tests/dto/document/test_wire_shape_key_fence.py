@@ -9,15 +9,16 @@ class TestWireShapeKeyFenceReportsEveryFault:
     wire-shape files -- six in `..._wire_shape_control.py`, four in
     `..._wire_shape_blank_control.py` -- and at every one of them `missing` and
     `undeclared` are both empty. So the rest of the suite exercises exactly one
-    branch of it: the one that does nothing. (The four calls below, plus the one
+    branch of it: the one that does nothing. (The four calls below, plus the two
     in `test_wire_shape_key_fence_title_refusal.py`, are the only others, and
     they are the ones where the branch is not empty.)
 
     The `['content']`-as-missing literals in the first and third rows replaced
     `['title']` ones, which read as a contract stating that `title: null` is the
     well-formed body and an absent `title` is the fault -- scenario 2.1's
-    invariant exactly inverted. The absent-`title` body is now the fourth row's
-    subject, where it is REFUSED rather than certified, and `content` is the
+    invariant exactly inverted. The absent-`title` body is now the subject of
+    `test_wire_shape_key_fence_title_refusal.py`, where it is REFUSED rather than
+    certified -- the third row in THIS file is the leg-label guard -- and `content` is the
     honest fixture for the generic leg because nothing anywhere claims a body may
     omit it. Those literals are no longer PROVISIONAL in that direction; they stay
     coupled to the declared set, which is the next unit's row.
@@ -28,8 +29,10 @@ class TestWireShapeKeyFenceReportsEveryFault:
     sequential `assert`s abort on the first and report one broken direction where
     two may be broken. That reasoning was evidenced only by an interactive probe.
     Reverting to sequential asserts, inverting either `if`, or appending a fault
-    under the wrong branch leaves all 108 tests green with the fence dead, and
-    reopens at zero cost the masking the collected form exists to close.
+    under the wrong branch left all 108 tests of the suite AS IT STOOD THEN green
+    with the fence dead -- a measurement taken before this class existed, hence the
+    stale count; it is recorded as history, not as a claim about the suite today.
+    It reopens at zero cost the masking the collected form exists to close.
 
     These tests assert the MESSAGE, not merely that it raises. "It raised" is
     satisfied by a fence that raises for the wrong reason -- a sequential-assert
@@ -54,10 +57,11 @@ class TestWireShapeKeyFenceReportsEveryFault:
     The CLASS is deliberately NOT skipped, and in its own file. Every row here is
     live, because a marker is class-level by default and a fence parked behind one
     guards nothing for exactly the red period -- the defect this scenario has
-    already named and acted on twice, for
-    `TestSaveDocumentRequestDtoFromALiteralBody` and again for the blank-title
-    control. Its own file because `..._wire_shape_control.py` is at 170 of the 200
-    allowed and this is a different subject anyway: those files test what
+    already named and acted on three times, for
+    `TestSaveDocumentRequestDtoFromALiteralBody`, for the negative control, and
+    again for the blank-title control. Its own file because
+    `..._wire_shape_control.py` is at 170 of the 200 allowed and this is a
+    different subject anyway: those files test what
     `SaveDocumentRequestDto` writes, this one tests the assertion helper they all
     call.
 
@@ -79,7 +83,8 @@ class TestWireShapeKeyFenceReportsEveryFault:
         `content` carries no such dispute: no row anywhere claims a body may
         omit it, so its absence is unambiguously a serializer fault and this
         row's subject is the generic leg alone. The absent-`title` body is now
-        the subject of its own row below, which is the one that must refuse it.
+        the subject of its own file, `test_wire_shape_key_fence_title_refusal.py`,
+        whose rows REFUSE it rather than certify it.
 
         Re-fixtured, not loosened: exact equality survives, for the reason the
         class docstring gives.
@@ -117,10 +122,12 @@ class TestWireShapeKeyFenceReportsEveryFault:
         the wording. The label is interpolation-only, so a wrong one is invisible to
         every other row here -- deleting the guard leaves them all green.
 
-        The body is WELL-FORMED, deliberately. That makes this row pin the guard's
-        preemption too: with both fault legs quiet the message can only come from
-        the guard, and the exact equality kills a revert that keeps raising but
-        drops the offending label from the text.
+        The body is WELL-FORMED, deliberately: with both fault legs quiet the
+        message can only come from the guard, and the exact equality kills a revert
+        that keeps raising but drops the offending label from the text. It does NOT
+        pin the guard's PREEMPTION -- with no fault to preempt, moving the guard
+        below `faults` leaves this row green. That coverage is a separate chartered
+        step; do not read this row as having closed it.
         """
         body = {"content": "<p>saved</p>", "title": None, "version": 1}
 
