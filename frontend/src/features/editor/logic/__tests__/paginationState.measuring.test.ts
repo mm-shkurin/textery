@@ -57,8 +57,8 @@ const AMPLY_MEASURABLE_DOCUMENT: Omit<PaginationInput, 'fontStatus'> = {
  * single sheet.
  */
 describe('derivePaginationState — the document font has not resolved', () => {
-  // TDD RED — fails with `Error: Not implemented` at paginationState.ts:80. `derivePaginationState`
-  // is a stub; no pre-layout state machine exists in `frontend/src` yet. Unskip in green-frontend.
+  // TDD RED — fails with `Error: Not implemented`; `derivePaginationState` is a stub and no
+  // pre-layout state machine exists in `frontend/src` yet. Unskip in green-frontend.
   it.skip('holds the editor in the measuring state with no page count, however measurable the document is', () => {
     const state = derivePaginationState({ fontStatus: 'pending', ...AMPLY_MEASURABLE_DOCUMENT })
 
@@ -130,8 +130,8 @@ describe('derivePaginationState — the document font has not resolved', () => {
  * what "tears the measuring surface down" means.
  */
 describe('derivePaginationState — the document font has resolved', () => {
-  // TDD RED — fails with `Error: Not implemented` at paginationState.ts:80. `derivePaginationState`
-  // is a stub; no pre-layout state machine exists in `frontend/src` yet. Unskip in green-frontend.
+  // TDD RED — fails with `Error: Not implemented`; `derivePaginationState` is a stub and no
+  // pre-layout state machine exists in `frontend/src` yet. Unskip in green-frontend.
   it.skip('lays the document out and tears the measuring surface down, leaving the count to the count node', () => {
     const state = derivePaginationState({ fontStatus: 'resolved', ...AMPLY_MEASURABLE_DOCUMENT })
 

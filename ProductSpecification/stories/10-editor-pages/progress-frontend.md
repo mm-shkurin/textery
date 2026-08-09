@@ -225,6 +225,52 @@ below — their vitest step covers logic, not layout.
   first, the arm gets implemented and reviewed as finished, and 1.3's red is then written
   against behavior that already looks decided — the exact failure this scenario's own charter
   argues against. Decide the member here; leave the *behavior* to 1.3.
+- [ ] red-frontend (premortem CREDIBLE 1 over `40017b19`) — **`Страница 1 из 3` holds two
+  numbers; `PaginationViewState` carries one.** The laid-out mockup's count slot
+  (`01-editor-paginated.html:96`) reads current AND total; the view state has `pageCount`
+  only, and this work unit's doc comment declares that node's data supply complete ("the
+  count is carried by `pageCount` as a NUMBER and by nothing else"). The laid-out case is now
+  an exhaustive whole-object `toEqual` freezing the field set at eight with no current-page
+  member, so adding one later breaks both cases. Green renders `Страница 1 из {pageCount}`
+  with a hardcoded `1`, the user scrolls to page 3, and the readout never moves. Nothing
+  anywhere pins the `page-count` node's text in the laid-out phase or asserts any producer
+  for the "N" — the out-of-scope note about unpinned laid-out strings observes the strings,
+  not that one of their two numbers has no source at all.
+- [ ] red-frontend (premortem CREDIBLE 2 over `40017b19`) — **`pagination-status` is not
+  pagination's node, and `''` blanks another feature's text.** In the laid-out mockup that
+  span holds `415 слов · Все изменения сохранены` (`01-editor-paginated.html:95`); in the
+  measuring mockup the SAME span holds `Расчёт страниц…` (`02-measuring.html:72`). One slot,
+  two owners, no arbitration rule. This unit's doc comment claims it exclusively ("the text
+  of exactly one node"), so the natural green is
+  `<span data-testid="pagination-status">{state.paginationStatusText}</span>` — and `''` in
+  the laid-out phase erases the save-state feature's text. The commit message notices the
+  collision and resolves it in prose only. The transitive pin through
+  `pagination_measuring_statements.py:101` covers the phase where pagination DOES own the
+  node and says nothing about the phase where it does not. Pin whether `pagination-status` is
+  pagination-exclusive or a shared slot pagination merely contributes to.
+- [ ] red-frontend (premortem CREDIBLE 3 + agent-review CONCERNS 1 over `40017b19`, same
+  defect from both sides) — **"that node is not rendered at all" is an unbacked
+  node-lifecycle claim, and the mockup contradicts it.** This unit widened the `pageCount`
+  doc comment to instruct green that `page-count` is not rendered while measuring, matching
+  the Selenium leg's `_assert_stays_not_visible(driver, PAGE_COUNT, …)`. But that slot is
+  populated in BOTH phases: `02-measuring.html:74` is `A4, книжная` and
+  `01-editor-paginated.html:96` is `Страница 1 из 3 · A4, книжная`. The same span carries the
+  count and the sheet geometry, and the geometry is present while measuring — deliberately
+  excluded from the locators as scenario 5.x's subject
+  (`pagination_measuring_locators.py:12-15`). Green following the comment literally either
+  drops `A4, книжная` from the measuring status bar, or must split the span into a geometry
+  node plus a `page-count` node — a split the mockup does not show and which
+  `PaginationViewState` cannot express, having no sheet-geometry field. Nothing states
+  whether `page-count` is the whole span or the count substring within it, so
+  `stays_not_visible` PASSES on an implementation that hid the geometry along with the count.
+  This is the mirror of the defect the unit was built to prevent: the commit reasoned
+  correctly that `pagination-status` is shared and then did not apply that reasoning to
+  `page-count`, which the mockup shows is equally shared. `paginationStatusText: ''` is right
+  for exactly the reason that makes "not rendered at all" wrong.
+  Common shape across all three: `''` made the prose count unrepresentable *in this module*
+  but relocated the risk to the component boundary rather than removing it, and the three
+  claims added to compensate (which node, which text, whether rendered) all live where no
+  test can fail on them.
 - [ ] green-frontend — **name the consuming component here, as a deliverable** (premortem
   CREDIBLE 2 over `f156718b`). This commit opened a new feature root, `frontend/src/features/editor/`,
   holding only `logic/`; the real editor is `features/generation/components/ManualEditor.tsx`
@@ -248,6 +294,10 @@ below — their vitest step covers logic, not layout.
   Green's deliverable is explicit: every case in `paginationState.measuring.test.ts` runs and
   the suite reports **3 skipped, not 5** (the 3 pre-existing markers in the `ManualEditor`
   autosave tests are not this scenario's).
+  Sharpened by premortem over `40017b19`: as written this step only requires asserting
+  `data-testid="pagination-measuring"` during measuring, which catches NONE of the three
+  node-ownership hazards recorded above. It is the right home for two of them — extend the
+  component test to pin the laid-out status bar and count slot, not just the measuring one.
 - [ ] align-design
 - [ ] green-selenium
 - [ ] demo
