@@ -275,7 +275,8 @@ pagination failure.
   `VARIED_GEOMETRY_ROW {pageCount: 6, currentPage: 5}` and `RULED_OUT_CURRENT_PAGE_HOPS`
   (`pageCount`, `pageCount - 1`, `pageCount / 2`, `1`) as an executable table, with the
   rationale for both numbers moved to where the numbers now live;
-  `paginationState.crossRow.test.ts` (49 lines) is **LIVE, not skipped** — it never calls
+  `paginationState.crossRow.test.ts` (66 lines after `/test-review`'s second case) is **LIVE,
+  not skipped** — it never calls
   `derivePaginationState`, it checks the fixtures, so it runs today against the unimplemented
   stub. It pins the refutation matrix BY NAME (`pageCount - 1` → `[font-gate]`, `pageCount / 2`
   → `[varied-geometry]`, `pageCount` and `1` → both), because a weaker "at least one row
@@ -323,6 +324,60 @@ pagination failure.
   using `tsc --noEmit`, which is exit 0 and never surfaces it. The two commands disagree and
   this file recorded only the passing one. It resolves itself when green implements the stub,
   but no step should claim a clean typecheck on the strength of the weaker command again.
+- [ ] red-frontend (premortem CREDIBLE 1 + agent-review CONCERNS 1 and 2 over `fabafd1d`, one
+  root) — **the numbers moved into the fixture; the geometry that justifies them did not.**
+  `laidOutRows.fixture.ts` holds `pageCount: 4` and `pageCount: 6` and describes "seven blocks
+  totalling 2800px against 900px" in the header of a file containing neither `blockHeights` nor
+  `usableContentHeight`. `rowsRefuting` computes entirely off `(pageCount, currentPage)` and
+  never sees the geometry. **That is the defect this very unit set out to kill — a cross-file
+  binding held by a comment — reproduced one field over.** It is NOT the known raw-literal
+  bypass: that is about dodging the import, this is about the imported value having no
+  executable tie to its own derivation. The three chartered steps queued to edit
+  `AMPLY_MEASURABLE_DOCUMENT` can now change the geometry and leave `pageCount: 4` stale, with
+  crossRow green while its whole matrix reasons about a count the geometry no longer produces.
+  Every case that would evaluate the claim is `.skip`ped, so the divergence is undetectable for
+  the entire RED phase — and at green the natural repair to `expected 4, received 5` is to
+  retune the fixture number, not the geometry.
+  **Half the invariant is executable and half is still prose.** `RULED_OUT_CURRENT_PAGE_HOPS`
+  covers derivations of `currentPage` from `pageCount`; the symmetric family — derivations of
+  `pageCount` from the geometry — is argued at equal length in BOTH headers ("`6` is reachable
+  from no other value in either file — not `4`, not the `1`/`3` skeleton counts, and not
+  `blockHeights.length` (11)") and refuted nowhere executable. The fixture module cannot model
+  it, because it does not import the geometry. This collision has already bitten once in this
+  scenario: `railSkeletonCount: 3` colliding with `blockHeights.length === 3`. Incident: green
+  ships `pageCount: blockHeights.length`, right on the fixtures and wrong on every real
+  document, and the rail renders one row per block.
+  Also: the fixture claims each number's rationale moved to where the number now lives — true
+  for `2` and `5`, false for `4` and `6`. And `measuring.test.ts`'s header still says "Only the
+  number is shared", singular, while the diff made `pageCount` a SECOND shared value
+  (`pageCount: FONT_GATE_ROW.pageCount`) — and `pageCount` is not a pass-through, it is the
+  derived value, the one field whose expectation had a reason to stay an independent literal.
+  Guard: move the geometry into `LaidOutRow` so a collision test is writable at all, then assert
+  no expected field value of a row (`pageCount`, `sheetSkeletonCount`, `railSkeletonCount`)
+  equals `blockHeights.length`, a hardcoded constant, or another expected value.
+- [ ] red-frontend (premortem CREDIBLE 2 over `fabafd1d`) — **scenario 2.1's open choice can be
+  decided by a fixture retune nobody reads as making it.** Packing-agnosticism is the stated
+  licence for pinning `pageCount` at all: the blocks pack exactly, so greedy no-split and
+  `ceil(3600/600)` both answer 6. That is a fragile arithmetic coincidence of eleven literals,
+  restated by hand. Any chartered edit that keeps the sum and the count but breaks exact packing
+  silently makes the two candidate packers disagree, and the pinned `6` then SELECTS one of
+  them — committing greedy-no-split in a red-phase 1.1 fixture, before 2.1 opens. crossRow stays
+  green throughout: the pair `(6, 5)` never changed. Guard: assert that the two candidate
+  packings agree on each row's `pageCount`. It is the one claim in the commit whose falsification
+  is invisible in both test files AND in the new live test.
+- [ ] red-frontend (premortem CREDIBLE 3 over `fabafd1d`) — **the registry is opt-in, and the
+  design actively discourages registering.** `crossRow` iterates `LAID_OUT_ROWS`, a
+  hand-maintained array, and nothing asserts it is exhaustive over the module's exported
+  `LaidOutRow`s — a new `export const THIRD_ROW` participates in no matrix. Worse, appending a
+  third row CORRECTLY turns a green `toStrictEqual` red and forces the author to re-derive four
+  name-arrays for a change unrelated to their row, so the path of least resistance is to leave it
+  out; the name arrays are positionally coupled too, so even a harmless reorder is a spurious
+  red. Incident: a later step (2.1's packing row, or the `'failed'` arm) adds a third row in a
+  third file, its numbers agree with `pageCount - 1`, its own header says the pair guards it, and
+  the hop this whole unit exists to kill is live again — with nothing red. Guard: assert every
+  exported `LaidOutRow` is a member of `LAID_OUT_ROWS` (`import * as rows`, check each
+  `LaidOutRow`-shaped export is registered), and reconsider the positional coupling so
+  registering a row is cheap.
 - [ ] red-frontend (agent-review CONCERNS 2 over `2572b8be`) — **the two filenames name PHASES
   while both headers insist the seam is by SUBJECT.** `paginationState.measuring.test.ts` holds
   both the measuring case AND a `fontStatus: 'resolved'` laid-out case; `laidOut.test.ts` holds
