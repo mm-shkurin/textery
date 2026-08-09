@@ -23,15 +23,14 @@ import { derivePaginationState, type PaginationInput } from '../paginationState'
  * skeleton counts below, not `blockHeights.length` (7), not the laid-out `4` — so no other field
  * can be satisfied by echoing it.
  *
- * What `2` does NOT kill, stated plainly rather than left for a later reader to discover: with one
- * laid-out case, `currentPage` and `pageCount` are two numbers in one object, and `2` is `4 / 2`.
- * `currentPage: pageCount / 2` passes both cases (the measuring case early-returns on the phase
- * discriminant and never evaluates it). No literal in `1..4` escapes this — `1` is `pageCount - 3`,
- * `3` is `pageCount - 1`, `4` is `pageCount` — because a single fixture makes every expected number
- * an arithmetic hop from every other. Only a second laid-out row with a DIFFERENT
- * `visiblePageNumber` against a different `pageCount` closes it, which is the varying-geometry step
- * already chartered in `progress-frontend.md`; that step must vary this input too, not the geometry
- * alone. It is recorded there, not deferred silently here.
+ * What `2` does NOT kill on its own: with one laid-out case, `currentPage` and `pageCount` are two
+ * numbers in one object, and `2` is `4 / 2`, so `currentPage: pageCount / 2` passes both cases here
+ * (the measuring case early-returns on the phase discriminant and never evaluates it). No literal in
+ * `1..4` escapes that — a single fixture makes every expected number an arithmetic hop from every
+ * other. It is closed by a SECOND laid-out row over different geometry and a different
+ * `visiblePageNumber`, which lives in `paginationState.laidOut.test.ts` (see that file's header for
+ * the seam). This file's two cases are the FONT GATE and stay driven over one shared binding; that
+ * file's row is the GEOMETRY, and must not be folded back in here.
  */
 const AMPLY_MEASURABLE_DOCUMENT: Omit<PaginationInput, 'fontStatus'> = {
   blockHeights: [400, 380, 420, 390, 410, 400, 400],

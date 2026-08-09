@@ -188,7 +188,7 @@ pagination failure.
   now a whole-object `toEqual` with NO destructuring (the exclusion existed only so this step
   could decide the field), so the `pageCount: 4` step inherits the whole-object shape rather
   than the exclusion pattern.
-- [ ] red-frontend (premortem CREDIBLE 1 over `0e08f0cf`, by mutation) — **`pageCount: 4` is
+- [x] red-frontend (premortem CREDIBLE 1 over `0e08f0cf`, by mutation) — **`pageCount: 4` is
   satisfied by a SECOND frozen literal; the mutation this step just killed survives one
   branch up.** Restoring the stub as `if (input.fontStatus !== 'pending') return {…
   pageCount: 4 …}; return {…measuring…}` — reading `blockHeights` and `usableContentHeight`
@@ -214,6 +214,42 @@ pagination failure.
   load-bearing co-location — both cases and the shared binding on one screen, which is what
   kills the frozen-literal implementation — behind a cross-file import. This step both breaches
   200 and knows where the new seam is, so it pays the cost exactly when it buys something.
+  **Done.** RED as predicted: `Error: Not implemented` at `paginationState.ts:101`, 3 failed
+  (all three cases), none reaching an `expect`; re-skipped; suite 633 passed / 6 skipped / 0
+  failed, `tsc --noEmit` clean. The new row: 11 blocks totalling 3600px against
+  `usableContentHeight: 600`, `visiblePageNumber: 5` → `pageCount: 6`, `currentPage: 5`.
+  **Both mutations died on the new row alone**, each `1 failed | 2 passed` — the two old cases
+  still passing, which reproduces the premortem finding verbatim: (1) the frozen literal one
+  branch up (`if (fontStatus !== 'pending') return {…pageCount: 4, currentPage: 2…}`, reading
+  no geometry) and (2) `currentPage: pageCount / 2` over a real `ceil(sum/usable)` packer
+  (`- 5, + 3`). Both reverted; `paginationState.ts` byte-identical.
+  **The split, by SUBJECT rather than by phase.** `paginationState.measuring.test.ts` (192
+  lines) keeps BOTH font-gate cases over the single `AMPLY_MEASURABLE_DOCUMENT` binding —
+  that co-location is what kills the discard-the-argument mutation, so it had to stay intact.
+  The varied-geometry row is exactly the case that would have dissolved "one shared binding",
+  so it is what leaves, into `paginationState.laidOut.test.ts` (80 lines). Cross-references
+  run both ways so neither file orphans the other's context.
+  `/test-review` verified the two claims the row rests on and found one gap:
+  (a) **Packing-agnosticism verified independently and it is stronger than argued.** Greedy
+  no-split, first-fit (later block backfilling an earlier gap), best-fit-decreasing and
+  `ceil(3600/600)` all answer 6. `ceil` is the theoretical lower bound and greedy ACHIEVES it,
+  so no packer can answer below 6 and none of the plausible ones answers above. A widow/orphan
+  rule is not expressible over this input at all — `blockHeights` carries no semantics to
+  keep-with-next on. Bounded residual, not a defect: the exactness that creates the
+  agnosticism means a packer reserving slack would break to 7, but `usableContentHeight` is
+  already the post-margin figure, so no such packer can be written against this contract.
+  (b) **`5` is `6 − 1`, so `currentPage: pageCount - 1` passes this row on its own** — the
+  0-based/1-based off-by-one, by some distance the likeliest of the three accidents, and the
+  one the header's exclusion list omitted while reading as exhaustive. It IS killed, but only
+  by the sibling file's row (`4 − 1 = 3` against expected `2`). Pre-split a reader saw both
+  rows at once; post-split the laidOut file made a completeness claim it could no longer back.
+  No mutation survives both rows (the only `f` with `f(4)=2, f(6)=5` is `1.5p − 4`, which
+  nobody writes). Fixed comment-only: the exclusion paragraph now names the hop and attributes
+  its kill to the sibling row.
+  Flagged, not fixed: the measuring file has **8 lines of headroom**, and its header is where
+  the pending `'failed'` arm and shared-`blockHeights` guard would naturally document
+  themselves. Those steps will likely force a further split — follow the subject-seam
+  precedent set here.
 - [ ] red-frontend (premortem CREDIBLE 2 over `0e08f0cf`, by mutation) — **nothing forbids
   `derivePaginationState` from consuming the caller's `blockHeights`, and the shared fixture
   makes the damage order-dependent.** `{ fontStatus, ...AMPLY_MEASURABLE_DOCUMENT }` spreads
@@ -422,7 +458,11 @@ pagination failure.
   exactly the state `f156718b` was in — the state this whole chain of steps exists to leave.
   Green's deliverable is explicit: every case in `paginationState.measuring.test.ts` runs and
   the suite reports **3 skipped, not 5** (the 3 pre-existing markers in the `ManualEditor`
-  autosave tests are not this scenario's).
+  autosave tests are not this scenario's). **Restated after the split: the target is now 3
+  skipped, not SIX, and green must unskip TWO files** — `paginationState.measuring.test.ts`
+  and `paginationState.laidOut.test.ts`. The second file is the easier one to forget, and
+  forgetting it reinstates exactly the constant-return green this chain of steps exists to
+  prevent.
   Sharpened by premortem over `40017b19`: as written this step only requires asserting
   `data-testid="pagination-measuring"` during measuring, which catches NONE of the three
   node-ownership hazards recorded above. It is the right home for two of them — extend the
