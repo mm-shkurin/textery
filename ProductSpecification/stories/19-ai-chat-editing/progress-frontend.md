@@ -203,6 +203,42 @@ under `frontend/src` or `acceptance/tests/frontend`.
       failure. Two vacuous negatives (`not.toBeInstanceOf`) were replaced by strict `name`/`message`
       assertions — on the 500 case, `name === 'Error'` also rules out `VersionConflictError`.
       **Note for green:** the file is 199 of its 200 permitted lines — a sixth case needs a split.
+      `/refactor` extracted the four-times-repeated `toBeInstanceOf`/`name`/`message` triple into
+      `expectErrorIdentity`, which pushed the file to 206 lines and made the split mandatory: the
+      test-support layer moved to `__tests__/editorDocumentApiFixtures.ts` (166 + 56 lines), taking
+      the support seam rather than splitting by case, which would have duplicated the `describe.skip`
+      marker. It also promoted `rejectionOf` from `auth/api/__tests__/loginApiTestUtils.ts` to
+      `src/test/rejectionOf.ts` and rewired six files: the inline `promise.catch(e => e)` idiom
+      yields the **resolved** value when nothing throws, so a non-rejecting implementation reported
+      "expected `{documentId: …}` to be an instance of DocumentNotFoundError" instead of naming the
+      real defect. 507 passed / 5 skipped, unchanged; tsc clean.
+      **Review-pass follow-ups — both passes CONCERNS, and they agree on the same root: `send.ts` is
+      shared by four features, while every case here exercises one caller.** Resolve (t) BEFORE
+      writing green — it may change the design decision recorded above.
+      (t) **`error_code: 'NOT_FOUND'` is not endpoint-scoped.** `endpoints.md` says all seven
+      endpoints share one 404 body — which is exactly why a branch keyed on the code alone also
+      fires for `GET /generations/{id}`, the history lists and `PUT /documents/{id}`. Callers then
+      receive a type they never narrow: `useDocumentSave.ts` falls through
+      `SessionExpiredError`/`VersionConflictError` to "Повторите — текст пока только в редакторе",
+      advice that can never succeed while the only copy of the text is the tab; `useGeneration.ts:89`
+      and `useHistoryList.ts:52` render `error.message` straight through, so a missing *generation*
+      says "Документ не найден". This is the 409 comment's own lesson one axis over: the code is
+      unambiguous, the error class is not endpoint-neutral. Owe either a scoping mechanism or a case
+      pinning that a `NOT_FOUND` 404 on a non-document endpoint keeps its caller's fallback and
+      `name === 'Error'`.
+      (u) **A 404 with no `error_code` routes the scenario's own Given to `failed`.** `performRequest`
+      substitutes `{}` when `res.json()` throws (proxy HTML, empty body), and the live endpoint has
+      historically answered `{detail: …}`. Under strict code-keying such a 404 becomes a generic
+      `Error` and `useEditorDocument` shows "не удалось загрузить" for a document that is genuinely
+      absent. Fail-safe may be the right trade — but nothing states or pins it, so green can widen to
+      bare `status === 404` and stay green either way.
+      (v) **The only pre-existing 404 case is code-blind.**
+      `generation/api/__tests__/documentApi.test.ts:179` stubs `{ detail: … }` with no `error_code`
+      and asserts with `rejects.toThrow('Документ не найден')`, which passes for
+      `DocumentNotFoundError` too — so it cannot catch `getDocument`'s error type changing under
+      `useDocumentInit.ts:71`. Owe a sibling case carrying `error_code`.
+      (w) No case in `ManualEditor.saveFailureKinds.test.tsx` asserts the banner when `saveDocument`
+      rejects with `DocumentNotFoundError`.
 - [ ] green-frontend-api
 - [ ] align-design
 - [ ] green-selenium

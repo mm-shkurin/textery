@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDocument } from '../documentApi'
 import { VersionConflictError } from '../../../../shared/api/send'
 import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { rejectionOf } from '../../../../test/rejectionOf'
 
 // 409 is not one thing, and `send` used to pretend it was — it mapped the bare STATUS to
 // VersionConflictError. `saveDocument`'s 409 does mean a stale version, but `createDocument`
@@ -32,7 +33,7 @@ describe('documentApi createDocument — a 409 that is not a version conflict', 
       }),
     )
 
-    const rejection = await createDocument('doklad', 'key-1').catch((error: unknown) => error)
+    const rejection = await rejectionOf(createDocument('doklad', 'key-1'))
 
     // Not the version-conflict type: nothing here is recoverable by refetching a version.
     expect(rejection).not.toBeInstanceOf(VersionConflictError)
@@ -52,7 +53,7 @@ describe('documentApi createDocument — a 409 that is not a version conflict', 
       }),
     )
 
-    const rejection = await createDocument('doklad', 'key-1').catch((error: unknown) => error)
+    const rejection = await rejectionOf(createDocument('doklad', 'key-1'))
 
     // The narrowing must not have thrown the carve-out out with the bathwater.
     expect(rejection).toBeInstanceOf(VersionConflictError)

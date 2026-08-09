@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { oauthExchange } from '../oauthExchangeApi'
 import { isLoginNetworkError } from '../../utils/loginErrorHandling'
-import { rejectionOf } from './loginApiTestUtils'
+import { rejectionOf } from '../../../../test/rejectionOf'
 
 // Real-fetch tests: `fetch` is stubbed, `oauthExchange` is NOT mocked. This is the only place the
 // exchange client's wire boundary is executed — snake_case → camelCase (sessionTokensFromWire) and

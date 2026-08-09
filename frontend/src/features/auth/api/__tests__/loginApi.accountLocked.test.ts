@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { login } from '../loginApi'
-import { EMAIL, PASSWORD, rejectionOf } from './loginApiTestUtils'
+import { EMAIL, PASSWORD } from './loginApiTestUtils'
+import { rejectionOf } from '../../../../test/rejectionOf'
 
 // Real-fetch tests (fetch stubbed, loginApi NOT mocked, no backend). Sibling of loginApi.test.ts,
 // which is at the 200-line ceiling. This file pins the API-layer half of the 5.4 lockout contract:

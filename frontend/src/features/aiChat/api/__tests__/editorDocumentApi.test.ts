@@ -2,6 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DocumentNotFoundError, loadEditorDocument } from '../editorDocumentApi'
 import { SessionExpiredError } from '../../../auth/api/authorizedRequest'
 import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { rejectionOf } from '../../../../test/rejectionOf'
+import {
+  DOCUMENT_URL,
+  NOT_FOUND_MESSAGE,
+  NOT_FOUND_RESPONSE,
+  REFRESH_URL,
+  expectErrorIdentity,
+  stubFetch,
+} from './editorDocumentApiFixtures'
 
 // DESIGN DECISION, recorded here because the previous /refactor pass deferred it to this work
 // unit and the tests below only make sense once it is settled.
@@ -49,39 +58,6 @@ describe.skip('editorDocumentApi loadEditorDocument', () => {
     vi.unstubAllGlobals()
   })
 
-  // The default implementation THROWS rather than returning undefined. An unstubbed extra call
-  // would otherwise resolve to `undefined` and blow up inside httpClient on `res.ok`, turning
-  // "the client made a request this test never authorised" into an unreadable TypeError. Each
-  // test also pins the exact call list, so an extra call is a failure and not a shrug.
-  function stubFetch(...responses: unknown[]): ReturnType<typeof vi.fn> {
-    const fetchMock = vi.fn()
-    fetchMock.mockImplementation(() => {
-      throw new Error('fetch called more times than the test stubbed')
-    })
-    for (const response of responses) {
-      fetchMock.mockResolvedValueOnce(response)
-    }
-    vi.stubGlobal('fetch', fetchMock)
-    return fetchMock
-  }
-
-  // VITE_API_BASE_URL is empty (frontend/.env), so httpClient's API_BASE is '' and the fetched
-  // URL is the path verbatim. Asserted with toBe, not toContain: `toContain` passes for
-  // '/api/v1/documents/doc-1/versions' and for a doubled base, which are different endpoints.
-  const DOCUMENT_URL = '/api/v1/documents/doc-1'
-  const REFRESH_URL = '/api/v1/auth/refresh'
-
-  // The wire text is deliberately NOT the Russian sentence the error carries. DocumentNotFoundError
-  // is constructed with no arguments and owns its message, so asserting the Russian constant while
-  // the body says something else proves the class was raised — where matching bodies would also
-  // pass for an implementation that merely echoes `body.message` into a plain Error.
-  const NOT_FOUND = {
-    ok: false,
-    status: 404,
-    json: async () => ({ error_code: 'NOT_FOUND', message: 'Document not found' }),
-  }
-  const NOT_FOUND_MESSAGE = 'Документ не найден'
-
   it('loads the document behind /documents/{id} and renames the wire fields', async () => {
     const fetchMock = stubFetch({
       ok: true,
@@ -114,33 +90,23 @@ describe.skip('editorDocumentApi loadEditorDocument', () => {
     expect(init.headers.Authorization).toBe('Bearer access-1')
   })
 
-  // The scenario's Given, both halves at once. The TYPE is what the hook (useEditorDocument)
-  // branches on — `error instanceof DocumentNotFoundError ? 'not-found' : 'failed'` — so a green
-  // that produced the right sentence with the wrong class would still route the user to the
-  // generic failure screen, which is follow-up (r) unfixed. `name` is asserted alongside because
-  // it is the only assertion that survives a green which re-declares the class in a second
-  // module: two structurally identical classes, one `instanceof` that silently goes false.
+  // The scenario's Given, both halves at once. A green that produced the right sentence with the
+  // wrong class would still route the user to the generic failure screen — follow-up (r) unfixed.
   it('maps the shared 404 body onto DocumentNotFoundError', async () => {
-    const fetchMock = stubFetch(NOT_FOUND)
+    const fetchMock = stubFetch(NOT_FOUND_RESPONSE)
 
-    const error = await loadEditorDocument('doc-1').catch((caught: unknown) => caught)
-    expect(error).toBeInstanceOf(DocumentNotFoundError)
-    expect((error as Error).name).toBe('DocumentNotFoundError')
-    expect((error as Error).message).toBe(NOT_FOUND_MESSAGE)
+    const error = await rejectionOf(loadEditorDocument('doc-1'))
+    expectErrorIdentity(error, DocumentNotFoundError, 'DocumentNotFoundError', NOT_FOUND_MESSAGE)
     // Exactly one call: a 404 is a statement about the document, not about the session, so it
     // must not send the request through `authorizedRequest`'s renew-and-replay.
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([DOCUMENT_URL])
   })
 
   it('rejects a foreign account document — the same 404 — with the same error type', async () => {
-    const fetchMock = stubFetch(NOT_FOUND)
+    const fetchMock = stubFetch(NOT_FOUND_RESPONSE)
 
-    const error = await loadEditorDocument('doc-owned-by-someone-else').catch(
-      (caught: unknown) => caught,
-    )
-    expect(error).toBeInstanceOf(DocumentNotFoundError)
-    expect((error as Error).name).toBe('DocumentNotFoundError')
-    expect((error as Error).message).toBe(NOT_FOUND_MESSAGE)
+    const error = await rejectionOf(loadEditorDocument('doc-owned-by-someone-else'))
+    expectErrorIdentity(error, DocumentNotFoundError, 'DocumentNotFoundError', NOT_FOUND_MESSAGE)
     // The id reaches the URL: without this the case is indistinguishable from the one above and
     // would pass for an implementation that ignores its argument.
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
@@ -150,10 +116,10 @@ describe.skip('editorDocumentApi loadEditorDocument', () => {
 
   // Review follow-up (n): an expired session must NOT arrive as DocumentNotFoundError. It is not
   // a statement about the document at all — the document may well exist — and folding it in would
-  // tell a signed-out user their work is gone and offer to re-create it. `toBeInstanceOf`
-  // /`name` on SessionExpiredError is what fails an implementation that maps every rejection to
-  // DocumentNotFoundError; a bare `not.toBeInstanceOf(DocumentNotFoundError)` would add nothing
-  // to it and is left out rather than kept as decoration.
+  // tell a signed-out user their work is gone and offer to re-create it. Naming SessionExpiredError
+  // positively is what fails an implementation that maps every rejection to DocumentNotFoundError;
+  // a bare `not.toBeInstanceOf(DocumentNotFoundError)` would add nothing and is left out rather
+  // than kept as decoration.
   //
   // Two 401s: the first triggers `authorizedRequest`'s renew-and-replay, the refresh call is the
   // second, and its failure ends the session. That is the only path that reaches the caller as
@@ -168,10 +134,13 @@ describe.skip('editorDocumentApi loadEditorDocument', () => {
     }
     const fetchMock = stubFetch(unauthorized, unauthorized)
 
-    const error = await loadEditorDocument('doc-1').catch((caught: unknown) => caught)
-    expect(error).toBeInstanceOf(SessionExpiredError)
-    expect((error as Error).name).toBe('SessionExpiredError')
-    expect((error as Error).message).toBe('Сессия истекла. Войдите снова.')
+    const error = await rejectionOf(loadEditorDocument('doc-1'))
+    expectErrorIdentity(
+      error,
+      SessionExpiredError,
+      'SessionExpiredError',
+      'Сессия истекла. Войдите снова.',
+    )
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([DOCUMENT_URL, REFRESH_URL])
   })
 
@@ -179,9 +148,9 @@ describe.skip('editorDocumentApi loadEditorDocument', () => {
   // already does, so the failure screen says the load broke rather than that the document is
   // gone. A bare `catch → not found` fails HERE — on `name` being the plain 'Error' and on the
   // message being the server's, both of which DocumentNotFoundError's fixed Russian sentence
-  // contradicts. `name` is asserted instead of `not.toBeInstanceOf(DocumentNotFoundError)`
-  // because it is the stronger claim: it also rules out SessionExpiredError, VersionConflictError
-  // and any other subclass a green might reach for.
+  // contradicts. Pinning `name` to 'Error' is stronger than `not.toBeInstanceOf(
+  // DocumentNotFoundError)`: it also rules out SessionExpiredError, VersionConflictError and any
+  // other subclass a green might reach for.
   it('keeps a 500 as a described generic failure, not not-found', async () => {
     const fetchMock = stubFetch({
       ok: false,
@@ -189,10 +158,8 @@ describe.skip('editorDocumentApi loadEditorDocument', () => {
       json: async () => ({ error_code: 'INTERNAL_ERROR', message: 'Внутренняя ошибка' }),
     })
 
-    const error = await loadEditorDocument('doc-1').catch((caught: unknown) => caught)
-    expect(error).toBeInstanceOf(Error)
-    expect((error as Error).name).toBe('Error')
-    expect((error as Error).message).toBe('Внутренняя ошибка')
+    const error = await rejectionOf(loadEditorDocument('doc-1'))
+    expectErrorIdentity(error, Error, 'Error', 'Внутренняя ошибка')
     // A 500 is not a session problem either — no renew, no replay.
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([DOCUMENT_URL])
   })

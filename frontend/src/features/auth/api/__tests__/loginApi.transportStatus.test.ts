@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { login } from '../loginApi'
-import { EMAIL, PASSWORD, rejectionOf } from './loginApiTestUtils'
+import { EMAIL, PASSWORD } from './loginApiTestUtils'
+import { rejectionOf } from '../../../../test/rejectionOf'
 
 // Real-fetch tests (fetch stubbed, loginApi NOT mocked, no backend). Third sibling of
 // loginApi.test.ts (at the 200-line ceiling) and loginApi.accountLocked.test.ts. This file pins
