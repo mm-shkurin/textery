@@ -121,29 +121,58 @@ class RevisionGuardBase:
         """The scenario's last Then, which had no assertion behind it.
 
         "And no new version is created on either document" is a claim about a
-        write, and the refusal assertions cannot see writes at all: a guard that
-        refused correctly and bumped a version on the way past would satisfy every
-        other assertion in this package. Pinned as one mapping equality against
-        the minted literal, so a version that moved on *either* document -- the
-        probed one or the one that actually owns the revision -- is named.
+        write, and the refusal assertions cannot see writes: a guard that refused
+        correctly and bumped a version on the way past satisfies every other
+        assertion here. One whole-store equality against the minted literal, for
+        the arrangement seeding the caller's own two and nothing else; probes at a
+        document the caller cannot resolve seed a third row and use the sibling.
         """
-        actual = {
-            "first": self._version_of(self.first_document_id),
-            "second": self._version_of(self.second_document_id),
-        }
-        expected = {"first": NEW_DOCUMENT_VERSION, "second": NEW_DOCUMENT_VERSION}
-        assert actual == expected, (
-            f"the two documents are at versions {actual}, expected {expected} -- resolving a "
-            f"revision is a read, and a guard that writes on the refusal path would satisfy "
-            f"every other assertion here while the caller's document silently moved"
+        self._assert_versions(
+            {
+                self.first_document_id: NEW_DOCUMENT_VERSION,
+                self.second_document_id: NEW_DOCUMENT_VERSION,
+            }
         )
 
-    def _version_of(self, document_id: UUID) -> int:
-        stored = next(
-            (row for row in self.document_repository.documents if row.id == document_id), None
+    def assert_no_probed_document_gained_a_version(self) -> None:
+        """The same claim, for the arrangement an unresolvable probe touches.
+
+        A guard that refused correctly, emitted the right step-1 record and bumped
+        the *foreign* document's version on the way past satisfied every assertion
+        the unresolvable-probe test had, because nothing read that document's
+        version. The absent id needs no entry: an id missing from the expected
+        mapping is one the store is required not to hold at all.
+        """
+        self._assert_versions(
+            {
+                self.first_document_id: NEW_DOCUMENT_VERSION,
+                self.second_document_id: NEW_DOCUMENT_VERSION,
+                self.foreign_document_id: NEW_DOCUMENT_VERSION,
+            }
         )
-        assert stored is not None, f"document {document_id} was never seeded"
-        return stored.version
+
+    def _assert_versions(self, expected: dict[UUID, int]) -> None:
+        """The whole store, keyed by id, against a mapping the caller wrote out.
+
+        Read as `{id: version}` over every row rather than by looking up the ids
+        the caller named: a per-id probe can only fail on a row somebody thought to
+        enumerate, so a guard that *inserted* a row -- under the absent id it was
+        handed, or under one it minted -- passed the aimed form of this assertion
+        whichever ids it was aimed at. Comparing the store whole puts the row set
+        inside the equality, so a version that moved and a row that appeared fail
+        the same expression, and no `None` arm is needed to ask about an id that
+        owns no row -- removing the way a `None` stood for "never seeded" too.
+
+        The expected side is literal versions against arrangement-minted ids, never
+        read back off `documents`: an expectation sampled from the store agrees
+        with whatever the guard did to it, including bumping.
+        """
+        actual = {row.id: row.version for row in self.document_repository.documents}
+        assert actual == expected, (
+            f"the store holds versions {actual}, expected {expected} -- resolving a revision is a "
+            f"read, and a guard writing on the refusal path satisfies every other assertion here "
+            f"while a document silently moves or appears"
+        )
 
     def _assert_revision_lookups(self, expected: list[tuple[int, UUID]], why: str) -> None:
         """The revision store's call log, compared whole.

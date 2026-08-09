@@ -180,7 +180,7 @@ class TestResolveOwnedRevision:
         revision_range_refusal_log_statements.assert_every_unresolvable_probe_was_the_canonical_refusal()
         revision_range_refusal_log_statements.assert_an_unresolvable_document_still_records_the_attribution()
         revision_range_refusal_log_statements.assert_the_revision_store_was_never_asked()
-        revision_range_refusal_log_statements.assert_neither_document_gained_a_version()
+        revision_range_refusal_log_statements.assert_no_probed_document_gained_a_version()
 
     async def test_should_build_its_refusal_record_by_the_same_rule_as_the_edit_guard(
         self, refusal_record_shape_statements: RefusalRecordShapeStatements

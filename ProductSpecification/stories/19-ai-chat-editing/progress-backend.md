@@ -983,7 +983,7 @@ within their file, not across the story.
       runs *after* the step-1 `try/except` and refuses through `_refuse_at_step_two`, which logs before
       raising. This step existed to catch the opposite ordering, and the four mutations proved the tests
       would catch it. What the unit bought is a pin, not a behaviour.
-- [ ] red-usecase (the version guard aimed at the documents the load-bearing test actually probes) —
+- [x] red-usecase (the version guard aimed at the documents the load-bearing test actually probes) —
       **scheduled by the review passes on `746feacd`; the first finding is a live vacuous assertion in
       the committed tests, and GREEN may not write tests, so it is red work.**
       (1) `assert_neither_document_gained_a_version` reads `first_document_id` and `second_document_id`,
@@ -1003,6 +1003,49 @@ within their file, not across the story.
       Expect a no-red on (2) and a **real** red on (1) only under mutation — the production guard does
       not bump versions, so prove non-vacuity by mutation as this family does, not by expecting a
       natural failure.
+      **Outcome: the no-red landed as predicted (184 passed, 0 failed, 0 skipped; predicted type,
+      message and count all matched), and then `/test-review` found the fix itself carried the same
+      defect one level up.** Re-aiming was not enough. `_assert_versions` compared only the ids the
+      caller enumerated, so completeness was a positional accident and a guard that **inserted a row**
+      under a freshly minted id was invisible to *every* aim, corrected or not. The helper now builds
+      actual from the whole store (`{row.id: row.version for row in ...}`) and compares it to a
+      caller-written `dict[UUID, int]` — the row set is inside the equality. That also dissolved the
+      `int | None` problem the step was going to introduce: `_version_of` is deleted and the
+      `"absent": None` arm with it, because an id **missing from the expected mapping** is one the store
+      must not hold at all, which is strictly stronger than `None` — the old arm would have passed
+      equally for a document that should have been seeded and never was. A third finding: the roster's
+      three indexed walks pinned that no probe was *skipped* but not that no probe was *sent and never
+      named*, so a duplicate key dropped a case while every walk stayed green; key-set equality is now
+      asserted at the head of all three, the strictness `RevisionNumberRangeStatements` already applied
+      over these same rosters.
+      **Six mutations across the two agents, and the decisive one is the third.** Bumping the probed
+      document's version inside the step-1 `except NotFoundException` branch failed exactly the
+      load-bearing test — and under the *same* mutation the committed aim gave 184 passed, so the review
+      finding was live and the correction is what closes it. Inserting a row under a fresh id on the
+      refusal path also failed exactly one test, but against the **pre-review** assertions it gave
+      **184 passed** — re-aiming alone would never have caught it; only comparing the store whole does.
+      Appending `"0"` to `NON_INTEGER_REVISION_NUMBERS` is now a collection error naming the repeat,
+      and 184 passed with the assert neutered. Dropping one probe from both act-step loops fails 2.
+      One mutation is reported as **inconclusive rather than counted**: minting a row for
+      `ABSENT_DOCUMENT_ID` does fail the load-bearing test, but through an earlier assertion (the minted
+      row makes the id resolvable, so the second probe records the step-2 cause), so that half is
+      defended in depth and not independently attributable to the version assertion.
+      All mutations reverted; `git diff backend/usecase/src/` empty — no production change in this unit.
+      **One deviation kept deliberately, flagged not decided silently:** `_assert_versions` reads
+      `document_repository.documents` directly — a storage-port read inside a Statements class, with no
+      read-only exemption in the checklist. Both usecase alternatives are strictly weaker: `GetDocument`
+      per id reintroduces the enumerated-id blindness this fix removes, and `ListDocuments` is
+      owner-scoped and truncates at `DEFAULT_LIMIT`, so it can neither see a row minted under a third
+      owner nor guarantee it saw everything. The ports must be fields here regardless, since
+      `resolve_owned_revision` takes both as arguments. Not a regression — `_version_of` already read
+      the same list — but the honest fix is a whole-store read usecase, which does not exist.
+      **Two pre-existing items recorded, both outside this unit's files:** `refusal_of`
+      (`revision_guard_base.py:192`) enforces the exception type from inside an act step, the same
+      check-15 violation the last gate fixed elsewhere — its only caller is
+      `revision_number_range_statements._request_each`; and `revision_refusal_log_statements.py:40-47`
+      is three pure rename pass-throughs to inherited base methods. Also still open on the branch:
+      E501 on `test_resolve_owned_revision.py:164,178` and a `ruff format --check` failure on
+      `revision_silence_statements.py`, both confirmed present on a stashed baseline.
 - [ ] green-usecase (the version guard aimed at the documents the load-bearing test actually probes)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares

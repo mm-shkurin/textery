@@ -40,6 +40,18 @@ from statements.revision_refusal_log_statements import RevisionRefusalLogStateme
 # assertion is value-independent, so walking both entire costs nothing.
 UNUSABLE_PROBES = OUT_OF_RANGE_REVISION_NUMBERS + NON_INTEGER_REVISION_NUMBERS
 
+# Every probe here is used as a dict key, and both source rosters live in a file
+# this one does not own. The day a value appears in both -- `"0"` reclassified as
+# non-integer, `""` or `"-"` moved -- the key collapses, the case count silently
+# drops, and every indexed loop still passes: the roster-silently-shrinks defect
+# the widening removed, re-entering through the key type. Pinned where the roster
+# is built, so the collision is named at import rather than diagnosed from a
+# green run that covered fewer cases than it claims.
+assert len(UNUSABLE_PROBES) == len(set(UNUSABLE_PROBES)), (
+    f"the unusable-probe roster {UNUSABLE_PROBES} repeats a value -- it keys every case dict "
+    f"here, so a duplicate drops cases while every assertion below stays green"
+)
+
 FOREIGN_DOCUMENT_PATH = "the foreign document"
 ABSENT_DOCUMENT_PATH = "the absent document"
 UNRESOLVABLE_PATHS = (FOREIGN_DOCUMENT_PATH, ABSENT_DOCUMENT_PATH)
@@ -88,12 +100,35 @@ class RevisionRangeRefusalLogStatements(RevisionRefusalLogStatements):
         outcome = await outcome_of(self.resolve(document_id, revision_number))
         return outcome, self._recorder.taken()
 
+    def _assert_the_probes_were_all_sent(self) -> None:
+        """The roster is pinned before any of the three walks below index it.
+
+        Indexing the literal roster fails on a probe that was never sent, but says
+        nothing about a probe that was sent and never named -- and a case dict is
+        also where a *silently shrinking* roster hides, since a duplicate key drops
+        a case while every indexed walk stays green. The key-set equality is the
+        same one `RevisionNumberRangeStatements` applies over these same rosters;
+        without it the two classes read the same values at two strictnesses.
+        """
+        assert tuple(self._own_document) == UNUSABLE_PROBES, (
+            f"the own-document probe covered {tuple(self._own_document)}, expected every one of "
+            f"{UNUSABLE_PROBES} -- a roster read back off the act step agrees with any subset"
+        )
+
+    def _assert_the_unresolvable_probes_were_all_sent(self) -> None:
+        assert tuple(self._unresolvable) == UNRESOLVABLE_CASES, (
+            f"the unresolvable probe covered {tuple(self._unresolvable)}, expected every one of "
+            f"{UNRESOLVABLE_CASES} -- a case never sent is a channel never checked"
+        )
+
     def assert_every_unusable_number_was_the_canonical_refusal(self) -> None:
+        self._assert_the_probes_were_all_sent()
         for probe in UNUSABLE_PROBES:
             outcome, _ = self._own_document[probe]
             assert_is_the_canonical_refusal(outcome, f"revision number '{probe}'")
 
     def assert_every_unusable_number_refused_at_step_two(self) -> None:
+        self._assert_the_probes_were_all_sent()
         for probe in UNUSABLE_PROBES:
             which = f"revision number '{probe}'"
             record = self._first(self._own_document[probe][1], which)
@@ -108,6 +143,7 @@ class RevisionRangeRefusalLogStatements(RevisionRefusalLogStatements):
         id of a document the caller has no claim to -- into the 404 text passed
         everything here. This is the path where such a disclosure would appear.
         """
+        self._assert_the_unresolvable_probes_were_all_sent()
         for case in UNRESOLVABLE_CASES:
             outcome, _ = self._unresolvable[case]
             assert_is_the_canonical_refusal(outcome, self._describe(case))
@@ -122,6 +158,7 @@ class RevisionRangeRefusalLogStatements(RevisionRefusalLogStatements):
         switch the attribution channel off for themselves with `/0/restore` or
         `/abc/restore` -- exactly the ids the step-1 cause exists to record.
         """
+        self._assert_the_unresolvable_probes_were_all_sent()
         for case in UNRESOLVABLE_CASES:
             which = self._describe(case)
             record = self._first(self._unresolvable[case][1], which)
