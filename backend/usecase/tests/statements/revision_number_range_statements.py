@@ -35,7 +35,7 @@ class RevisionNumberRangeStatements(RevisionGuardBase):
 
     def __init__(self) -> None:
         super().__init__()
-        self._refusals: dict[str, Exception] = {}
+        self._refusals: dict[str, object] = {}
         self._boundary_outcomes: dict[str, object] = {}
 
     async def request_every_out_of_range_revision_number(self) -> None:
@@ -47,12 +47,8 @@ class RevisionNumberRangeStatements(RevisionGuardBase):
     async def request_both_ends_of_the_valid_range(self) -> None:
         """The positive control against a range check that refuses everything.
 
-        Neither number is seeded, so both are ordinary 404s. The act step records
-        the outcome without judging it -- both the 404-ness and the lookups are
-        pinned in the then-phase, where the test body can see them. Capturing
-        rather than asserting here is what keeps this an act step: a `refusal_of`
-        call would enforce the contract invisibly, the defect the 1.2 log
-        statements were rewritten to remove.
+        Neither number is seeded, so both are ordinary 404s. Recorded and not
+        judged, for the reason `_request_each` gives.
         """
         for value in (SMALLEST_VALID_REVISION_NUMBER, LARGEST_VALID_REVISION_NUMBER):
             self._boundary_outcomes[value] = await outcome_of(
@@ -60,8 +56,17 @@ class RevisionNumberRangeStatements(RevisionGuardBase):
             )
 
     async def _request_each(self, values: tuple[str, ...]) -> None:
+        """Records what each probe came back with; judges none of it.
+
+        `outcome_of` rather than `refusal_of`: the latter runs through `captured`,
+        which enforces the exception type and fails when the guard returns instead
+        of refusing -- a real contract applied from inside the act half, where no
+        reader of the test body can see it. Nothing is lost by moving it out:
+        `_assert_each_refusal_was_canonical` pins type and body together, and it
+        takes `object` precisely so "the guard returned a scope" fails there.
+        """
         for value in values:
-            self._refusals[value] = await self.refusal_of(self.first_document_id, value)
+            self._refusals[value] = await outcome_of(self.resolve(self.first_document_id, value))
 
     def assert_every_out_of_range_refusal_was_canonical(self) -> None:
         self._assert_each_refusal_was_canonical(OUT_OF_RANGE_REVISION_NUMBERS, "out-of-range")

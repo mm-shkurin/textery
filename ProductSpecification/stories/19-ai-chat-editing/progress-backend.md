@@ -1046,6 +1046,72 @@ within their file, not across the story.
       is three pure rename pass-throughs to inherited base methods. Also still open on the branch:
       E501 on `test_resolve_owned_revision.py:164,178` and a `ruff format --check` failure on
       `revision_silence_statements.py`, both confirmed present on a stashed baseline.
+      `/refactor` applied two and rejected three. Applied: `_request_each` no longer calls `refusal_of`
+      from inside the act step — it records `outcome_of(self.resolve(...))`, matching the shape its own
+      siblings already use, and nothing is lost because both consumers run in every test that calls the
+      act step and `assert_is_the_canonical_refusal` pins `(type, str)` together, so "wrong type" and
+      "the guard returned a scope" fail there instead; plus the `revision_silence_statements.py` format
+      failure. **Rejected, and the first rejection corrects this file:** `refusal_of` has three more
+      callers than the brief claimed (`revision_scope_guard_statements.py:44,50,53` and
+      `refusal_log_base._records_of:82`), and one of them —
+      `test_should_never_touch_the_revision_store_for_a_document_the_caller_cannot_resolve` — makes no
+      then-phase canonicality assertion at all, so `refusal_of`'s implicit "something was raised" is the
+      only check standing there. Converting it would have silently dropped a real assertion. Also
+      rejected: the three pass-throughs at `revision_refusal_log_statements.py:40-47` are Rename Method
+      adapters giving the test body scenario vocabulary over a base named in collection vocabulary, and
+      the two E501s are `await <fixture>.<method>()` with nothing splittable — every behaviour-preserving
+      fix is a rename costing 6 and 15 characters of deliberate meaning, for a column limit.
+      **Both review passes CONCERNS. Six findings; the two that converge are scheduled below as their own
+      pair, the rest are carried.** Carried: (a) `revision_guard_base.py` landed at **exactly 200
+      lines** — the hard cap with zero headroom, so the next `given_`/`assert_` added to the base class
+      every revision-guard Statements extends forces a split inside whatever unrelated red step touches
+      it; nothing fails at 201. (b) The disjointness assert lives in the module that *consumes* the
+      rosters, not `revision_number_range_statements.py`, which defines them **and keys `_refusals` by
+      them**; the protection is an import-order accident that vanishes if the downstream module is
+      renamed or stops importing. It belongs upstream. (c) The two assert names now undersell what they
+      do — `assert_neither_document_gained_a_version` asserts the store holds exactly two rows and
+      nothing else, and `assert_no_probed_document_gained_a_version` includes two ids its test never
+      probes. Undersold names are how the original vacuity was missed. (d) Prose miscount in the commit
+      message: four indexed walks, not three — all four are guarded, only the narrative is off.
+- [ ] red-usecase (the version guard extended to the tests and families that still cannot see a write) —
+      **both review passes converged here from opposite directions, and the finding is that this unit
+      fixed one test of a family-wide blindness.**
+      (1) *(agent-review)* The sibling
+      `test_should_never_touch_the_revision_store_for_a_document_the_caller_cannot_resolve`
+      (`test_resolve_owned_revision.py:53-67`) arranges all three documents, probes the foreign one, the
+      absent id **and** the second document, and asserts only refusal canonicality and the revision-store
+      call log. The exact mutation this unit exists to catch — a guard bumping the foreign document's
+      version on the refusal path — passes it untouched. `assert_no_probed_document_gained_a_version()`
+      is directly applicable: same hierarchy, same arrangement.
+      (2) *(premortem)* The blindness is a property of the **guard family, not of one test**, and the
+      other two families still have it whole: `grep -n version` over `ai_edit_guard_base.py`,
+      `ai_edit_scope_guard_statements.py` and `document_scope_guard_statements.py` returns **nothing** —
+      no test in either family reads `document_repository.documents` at all, so a guard inserting or
+      bumping on the AI-edit or document-scope refusal path passes every assertion they have. That is
+      precisely the state `revision_guard_base.py` was in before `d2186314`. The named guard is a peer
+      `_assert_versions` on `ai_edit_guard_base.py` with wrappers called from `test_resolve_owned_edit.py`
+      and `test_resolve_owned_document.py`.
+      (3) *(both passes, independently)* The whole-store equality is **silently coupled to which `given_`
+      steps ran**: the expected mapping is hardcoded per method, so adding
+      `given_a_document_owned_by_another_account()` to a test for an unrelated reason fails with "a
+      document silently moves or appears" — text pointing at production when the cause is the
+      arrangement. The cheapest diagnosis is to loosen back toward the enumerated-id form, reopening the
+      hole this unit closed. Fix: snapshot `{row.id: row.version}` at the end of the arrangement and
+      compare the store to that, keeping the minted-literal `NEW_DOCUMENT_VERSION` check as a **separate**
+      statement so the two causes report distinctly.
+      (4) *(premortem)* The expected side now pins a store state **production cannot produce**.
+      `given_a_revision_recorded_on_the_first_document` seeds revisions 1 and 2 — the file's own comment
+      calls them "the two rows the first mutation of a never-edited document writes in one transaction" —
+      but a document that has taken that mutation has been through `save_content_if_version_matches`,
+      which does `stored.version += 1`, so in production that document is at version **2**. The whole-store
+      form pins version 1 as required where the per-id form pinned it only incidentally. This is the
+      principle the file already states about the *arranged* side (`:60-61`: a hand-built row can hold a
+      shape the application can never produce) applied to the expectation. Advance the version through the
+      same port the applied edit uses, and name the post-edit version in both wrappers.
+      Expect a no-red on (1) and (2) — production performs only reads — so prove non-vacuity by mutation
+      per this family's standard: mutate each family's refusal path to bump and to insert, and show the
+      new assertion in that family fails while the old one gave a full green.
+- [ ] green-usecase (the version guard extended to the tests and families that still cannot see a write)
 - [ ] green-usecase (the version guard aimed at the documents the load-bearing test actually probes)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares

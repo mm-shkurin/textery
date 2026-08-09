@@ -72,9 +72,7 @@ class RevisionSilenceStatements(RevisionGuardBase):
 
     async def _request_with_the_revision_store_down(self) -> None:
         self._recorder.clear()
-        self._outages[REVISION_OUTAGE_PATH] = await outcome_of(
-            self.resolve(self.first_document_id)
-        )
+        self._outages[REVISION_OUTAGE_PATH] = await outcome_of(self.resolve(self.first_document_id))
         self._quiet[REVISION_OUTAGE_PATH] = self._recorder.taken()
 
     async def _request_with_the_document_store_down(self) -> None:
