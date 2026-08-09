@@ -75,7 +75,19 @@ def assert_body_keys_track_the_model(body: dict[str, object], leg: WireLeg):
     would be dark for exactly the red period, which is when the green that could
     trip it gets written.
     """
+    # `WireLeg` is documentation, not enforcement (see the module comment): mypy
+    # types this callee `Any` at every call site, and a typo'd "dmped JSON" was
+    # measured as accepted. Since the label is interpolation-only, a wrong one is
+    # invisible to every assertion and misnames the broken leg in the one report
+    # anybody reads. Two lines close at run time what the type cannot.
+    assert leg in ("dumped", "dumped JSON"), (
+        f"the leg label must be one of the declared WireLeg values, got {leg!r}"
+    )
     declared = set(SaveDocumentRequestDto.model_fields)
+    # Without this, an empty declared set skips both `if`s below and the final
+    # assert passes without having examined `body` at all -- a vacuous pass in the
+    # one helper whose whole job is to notice an absence.
+    assert declared, "the model declares no fields -- the fence has nothing to check"
     missing = declared - body.keys()
     undeclared = body.keys() - declared
     # Both faults are computed before either is asserted, and both are named in

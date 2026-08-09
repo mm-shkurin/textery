@@ -768,7 +768,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   implementation to write. The fence is correct at HEAD; the red half was the missing guard over
   already-correct code, proven by two mutations that leave the entire pre-existing suite green. A
   green step here would be a no-op commit.
-- [~] red-adapter rest (premortem #2 on `307ff37c`: deleting `FIELDS_KEPT_OFF_THE_WIRE` traded an
+- [x] red-adapter rest (premortem #2 on `307ff37c`: deleting `FIELDS_KEPT_OFF_THE_WIRE` traded an
   unobservable exception for an UNENFORCEABLE one, and the difference bites at green. The helper's
   `declared - body.keys()` leg now requires `title` on every body it inspects; the only thing
   keeping that correct is a comment saying the fence is called solely from sites that set `title`
@@ -778,8 +778,65 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   key) and GREEN on the erasure body (`"title": null`). Green for 2.1 is written against these
   fences, so the fence would be asking for the erasure. Guard: make the helper REFUSE the absent row
   outright — `assert "title" in body` with a message naming the RED class — or pin that it raises
-  when handed a body with no `title` key. Sequencing: this wants to land BEFORE green.)
-- [ ] green-adapter rest (premortem: the fence must refuse the row it cannot judge)
+  when handed a body with no `title` key. Sequencing: this wants to land BEFORE green.
+  **LANDED, a REAL red, first run, prediction byte-identical.** `pytest.raises` is SATISFIED — the
+  fence does raise — and the test's own exact-equality assertion on the message is what fails,
+  because the un-partitioned `missing` leg reports the generic dropped-field fault where the charter
+  demands a refusal naming the call site the fence must not be reached from. Predicted and actual
+  both: `...['title'] was declared on the model and dropped by the serializer, got {'content':
+  '<p>saved</p>', 'version': 1}`. 111 passed, 5 skipped.
+  **The charter's own remedy was wrong, and red-agent said so instead of implementing it.**
+  `assert "title" in body` would have been the same assertion wearing two names: the fence's ONLY
+  observable is `body`, and "the caller handed me the untouched row" and "the serializer dropped
+  `title`" produce the IDENTICAL dict. A layered guard fires on exactly the set the `missing` leg
+  already fires on and can only ever preempt it. What IS distinguishable is WHICH field is absent —
+  `title` is the single declared field whose absence is under dispute (the skipped RED class asserts
+  the untouched row must omit it), while nothing anywhere claims a body may omit `content` or
+  `version`. So green must PARTITION the `missing` leg, not double it, and the refusal is collected
+  into `faults` like any other fault rather than raised ahead of them, so an absent-title-plus-
+  spurious-key body still reports both directions in one message.
+  **The carried inversion is resolved.** `test_should_name_a_declared_key_the_body_dropped` and the
+  both-faults row moved from a dropped `title` onto a dropped `content`. Read as a contract those two
+  rows previously stated that `title: null` is the well-formed body and absent `title` is the fault —
+  2.1's invariant exactly backwards. Exact equality preserved on every message; the fixtures moved,
+  not the strictness, and test-review traced both re-fixtured bodies through the helper to confirm
+  the literals are byte-exact. `content` is required, non-defaulted, and claimed by nobody to be
+  omittable, so it is the unambiguous fixture for the generic leg.
+  `/test-review` found 0 assertion violations, 2 placement, 2 helper-quality — and SPLIT THE FILE,
+  which was owed:
+  - NEW `test_wire_shape_key_fence_title_refusal.py` (92) — the red row moved out, marker back at
+    CLASS level, assertion byte-identical. Method-level was right GIVEN co-location (a class marker
+    would have parked the three rows that are the suite's only executed coverage of the fence's
+    failure path — all 10 live call sites hit only the do-nothing branch) but it was the one
+    method-level marker in the directory. The split dissolves the conflict rather than trading one
+    hazard for the other. Seam is SUBJECT, not arithmetic: rows 1-3 are model-agnostic fault
+    reporting; row 4 is 2.1-specific, one-field-specific, and the only row naming a sibling class and
+    file inside its asserted string.
+  - `test_wire_shape_key_fence.py` 192 → **135**, class docstring corrected (it still claimed a
+    fourth row) with a pointer to the new file. Doing the split NOW matters: the next chartered unit
+    renames the `"note"` fixture key inside frozen equality literals in rows 2 and 3, which is not a
+    one-line edit on a file being simultaneously re-cut.
+  - `wire_shape_key_fence.py` 95 → 107, two runtime guards: the unenforced `WireLeg` Literal (mypy
+    types the callee `Any`; a typo'd `"dmped JSON"` was previously MEASURED as accepted), and an
+    empty `declared` set, which would skip both `if`s and pass without examining `body` at all.
+  - The skip reason was partial — it named the failure and quoted the wrong output verbatim but
+    delivered the consequence as the code mapping only. It now states the erasure itself: no error
+    raised, nothing surfaced to the author, prior title retained nowhere, unrecoverable.
+  KNOWN AND ACCEPTED: the expected message hardcodes `TestSaveDocumentRequestDtoWireShape` and its
+  filename, pinned against the fence's own string rather than the real class, so a rename leaves the
+  row green pointing at nothing. Staleness, not looseness, and the right trade — a refusal that does
+  not say where the body came from leaves the reader the same puzzle the generic fault left them.
+  Documented in the moved row's docstring rather than loosening the pin.
+  DEFERRED by test-review, recorded so a later pass does not "correct" them: the `undeclared` leg is
+  subsumed by the frozen `body == {...}` at all 10 sites, but removing either side is a WEAKENING and
+  is refactor territory; and `model_fields` as a calculated expected is normally a smell but is this
+  helper's entire reason to exist.
+  **FOR GREEN, from test-review and worth weighing against the partition verdict above:** the skipped
+  row prescribes hardcoding a sibling class name inside shared infrastructure called from two other
+  files, which contradicts the helper's own module comment (lines 23-29) arguing that CALL-SITE
+  PLACEMENT, not field-level policy, carries this condition. Consider having green pass the
+  un-judgeable field set IN from the call site rather than baking `title` into the fence.)
+- [~] green-adapter rest (premortem: the fence must refuse the row it cannot judge)
 - [ ] red-adapter rest (both review passes on `9a7027b2`, three findings that share one root — the
   fence's guards are coupled to the CURRENT shape of `SaveDocumentRequestDto`, and all three break
   on the day someone adds a field. Take them in one unit; splitting them means rewriting the same

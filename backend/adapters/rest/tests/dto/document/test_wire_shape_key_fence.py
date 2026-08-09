@@ -9,8 +9,19 @@ class TestWireShapeKeyFenceReportsEveryFault:
     wire-shape files -- six in `..._wire_shape_control.py`, four in
     `..._wire_shape_blank_control.py` -- and at every one of them `missing` and
     `undeclared` are both empty. So the rest of the suite exercises exactly one
-    branch of it: the one that does nothing. (The three calls below are the only
-    others, and they are the ones where the branch is not empty.) The collected-`faults` shape -- both faults computed before
+    branch of it: the one that does nothing. (The four calls below are the only
+    others, and they are the ones where the branch is not empty.)
+
+    The `['content']`-as-missing literals in the first and third rows replaced
+    `['title']` ones, which read as a contract stating that `title: null` is the
+    well-formed body and an absent `title` is the fault -- scenario 2.1's
+    invariant exactly inverted. The absent-`title` body is now the fourth row's
+    subject, where it is REFUSED rather than certified, and `content` is the
+    honest fixture for the generic leg because nothing anywhere claims a body may
+    omit it. Those literals are no longer PROVISIONAL in that direction; they stay
+    coupled to the declared set, which is the next unit's row.
+
+    The collected-`faults` shape -- both faults computed before
     either is asserted, both named in one message -- was landed deliberately, on
     the grounds the control file's docstring gives for splitting its own legs: two
     sequential `assert`s abort on the first and report one broken direction where
@@ -39,26 +50,46 @@ class TestWireShapeKeyFenceReportsEveryFault:
     suffix -- not to loosen these to substrings, for the reason the paragraph
     above gives.
 
-    Deliberately NOT skipped, and in its own file. Live because a marker is
-    class-level and a fence parked behind one guards nothing for exactly the red
-    period -- the defect this scenario has already named and acted on twice, for
+    The CLASS is deliberately NOT skipped, and in its own file. Every row here is
+    live, because a marker is class-level by default and a fence parked behind one
+    guards nothing for exactly the red period -- the defect this scenario has
+    already named and acted on twice, for
     `TestSaveDocumentRequestDtoFromALiteralBody` and again for the blank-title
     control. Its own file because `..._wire_shape_control.py` is at 162 of the 200
     allowed and this is a different subject anyway: those files test what
     `SaveDocumentRequestDto` writes, this one tests the assertion helper they all
     call.
+
+    Scenario 2.1's RED row -- the absent-`title` body the fence must REFUSE rather
+    than call a dropped field -- lives in
+    `test_wire_shape_key_fence_title_refusal.py`, split out so its skip marker can
+    sit at CLASS level without taking these three rows with it. This file stays
+    model-agnostic: fault reporting in both directions, both named in one message.
     """
 
     def test_should_name_a_declared_key_the_body_dropped(self):
-        body = {"content": "<p>saved</p>", "version": 1}
+        """The dropped field is `content`, NOT `title`, and the swap is the point.
+
+        This row shipped with a body that dropped `title`, which read as a
+        contract saying `title: null` is the well-formed shape and an absent
+        `title` is the fault -- the invariant of scenario 2.1 exactly inverted.
+        `content` carries no such dispute: no row anywhere claims a body may
+        omit it, so its absence is unambiguously a serializer fault and this
+        row's subject is the generic leg alone. The absent-`title` body is now
+        the subject of its own row below, which is the one that must refuse it.
+
+        Re-fixtured, not loosened: exact equality survives, for the reason the
+        class docstring gives.
+        """
+        body = {"title": None, "version": 1}
 
         with pytest.raises(AssertionError) as failure:
             assert_body_keys_track_the_model(body, "dumped")
 
         assert str(failure.value) == (
             "the dumped body's key set must be exactly the model's declared fields -- "
-            "['title'] was declared on the model and dropped by the serializer, "
-            "got {'content': '<p>saved</p>', 'version': 1}"
+            "['content'] was declared on the model and dropped by the serializer, "
+            "got {'title': None, 'version': 1}"
         ), f"the dropped-key leg must name the dropped field, got {failure.value!s}"
 
     def test_should_name_a_key_the_body_carries_that_the_model_never_declared(self):
@@ -77,23 +108,27 @@ class TestWireShapeKeyFenceReportsEveryFault:
         """The row the other two cannot cover, and the only reason the helper
         collects `faults` instead of asserting twice.
 
-        A body that BOTH drops `title` and carries `note` is broken in two
+        A body that BOTH drops `content` and carries `note` is broken in two
         directions. Under sequential asserts the run aborts on the dropped leg and
-        the report names `title` alone: a developer fixes it, re-runs, and meets
+        the report names `content` alone: a developer fixes it, re-runs, and meets
         the second fault only on the next round -- and if the dropped leg is the
         one their change fixed, the spurious key ships. Asserting only that this
         raises would pass under that revert. The equality below is what does not.
+
+        The dropped field is `content` for the reason the first row gives: a
+        body dropping `title` is the untouched row's CORRECT shape, and pinning
+        it here as a fault states the inverted invariant.
         """
-        body = {"content": "<p>saved</p>", "version": 1, "note": "spurious"}
+        body = {"title": None, "version": 1, "note": "spurious"}
 
         with pytest.raises(AssertionError) as failure:
             assert_body_keys_track_the_model(body, "dumped")
 
         assert str(failure.value) == (
             "the dumped body's key set must be exactly the model's declared fields -- "
-            "['title'] was declared on the model and dropped by the serializer; and "
+            "['content'] was declared on the model and dropped by the serializer; and "
             "['note'] is on the body but declared nowhere on the model, "
-            "got {'content': '<p>saved</p>', 'version': 1, 'note': 'spurious'}"
+            "got {'title': None, 'version': 1, 'note': 'spurious'}"
         ), (
             "a body broken in both directions must name BOTH faults in the one message -- "
             f"got {failure.value!s}"
