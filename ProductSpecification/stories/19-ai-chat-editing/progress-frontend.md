@@ -299,6 +299,59 @@ under `frontend/src` or `acceptance/tests/frontend`.
       un-savable editor that a refresh cannot fix. This commit is what made the distinction available
       (`{ notFound: true }`) and left that call site not taking it — falling through to the
       `createDocument` arm is the recovery that unsticks the user.
+- [x] align-design — aligned to `mockups/desktop/01-editor-chat.html` + `editor.css`: the workspace
+      became the mockup's grid (`1fr 380px`), the document a 760px card in a scrolling `.ac-doc-wrap`
+      pane, and the chat a full-height column divided by a rule rather than a floating card with a
+      gap. The chat heading gained the mockup's accent tile (inline SVG — this app has no icon
+      package, and it is `aria-hidden` decoration the heading already names).
+      **Geometry is copied, colour is not.** The mockup ships its own `theme.css` palette
+      (`#1552f0` accent, `#f2f4f7` page) while this app's live tokens are the blue UI-Kit set every
+      other screen renders; taking the literals would give story 19 a second accent colour on a
+      screen that sits beside story 18's editor. Stated at the top of the stylesheet.
+      `/design-review`: **PASS on the placeholder gate** — none of the mockup's payload (`415 слов ·
+      версия 7`, `История ИИ`, the `14:02` timestamps, `Осталось правок сегодня: 17 из 20`,
+      `7 версий`) reached the component, and the panel still declines the mockup's composer opener.
+      Three of its geometry findings were fixed in this unit: `min-height` was `calc(100vh - 150px)`
+      copied verbatim, but the 150px is the mockup's topbar + crumbs + format bar and this route
+      renders none of that chrome — the workspace stopped 150px short of the viewport with the chat
+      column's border ending in mid-air; `.ac-doc-wrap` regained `position: relative` (scenarios
+      2/4/5 anchor the state ribbon and the frozen overlay in that pane); and the card shadow became
+      a real `--shadow-card` token in `index.css` instead of the file's only raw colour literal.
+      **Left open, recorded rather than fixed:** (ac) the screen has no topbar/breadcrumb/format
+      bar/statusbar at all — a staged deferral to the scenarios that own them, but until then the
+      shell reads unfinished; (ad) the app's `--bg-page` resolves to `--blue-50`, the same value as
+      `--accent-soft`, so the white card, the chat and the accent tile all sit on tinted blue
+      separated only by a 4%-alpha shadow — a dedicated sunken token would restore the mockup's
+      card/ground contrast; (ae) `.ac-chat` has no `flex: 1` region, so the moment scenario 1.1 adds
+      the composer it will float up under the header unless the notice is replaced by a `flex: 1`
+      message list.
+      **The step row was missing from this scenario's list** (every other scenario has one); added
+      retroactively. `/test-coverage frontend --focus` over it found **no gap it
+      created**: `AiChatPanel.tsx` and `EditorDocumentView.tsx` are 100%/100% with **zero
+      branches** between them, and the two CSS files are not instrumented at all. A clean report
+      here is not evidence — v8 counts executed statements, and unconditional JSX plus a
+      stylesheet cannot produce a gap however wrong they look. The gaps below are the *green*
+      units' and were invisible until the filenames were passed explicitly, exactly as
+      `carryover.md` predicted of the `git diff HEAD --name-only` focus filter.
+- [ ] red-frontend (coverage: repeat mount does not refetch)
+- [ ] green-frontend (coverage: repeat mount does not refetch)
+- [ ] red-frontend (coverage: stale response for old id ignored)
+- [ ] green-frontend (coverage: stale response for old id ignored)
+      Both pairs target `useEditorDocument.ts` (branches 4/8). The dedupe guard `L35` and the two
+      stale-response guards `L41`/`L45` have their true arms taken by **no** test — all three
+      `return`s are deletable with the suite green, which is follow-up (k) still open: the
+      StrictMode double-fetch proof lives in `useDocumentInit.strictMode.test.tsx` for the *other*
+      hook, and `toHaveBeenCalledExactlyOnceWith` here is asserted outside StrictMode, so it
+      passes for a hook with no guard at all. The stale-response pair needs a rerender with a new
+      `documentId` while the first load is still pending.
+      **Deferred, NOT added here — these belong to scenario 8.8** ("The document load has a
+      loading state and a distinct failure state"), which owns them: `useEditorDocument.ts:46`
+      cond-expr arm 1 (the `'failed'` side of the `instanceof` ternary) and
+      `DocumentEditorPage.tsx:27` (the whole `document-load-failed` screen, statement + `if` arm).
+      That is follow-ups (h)/(p) — the regression to `catch { setNotFound(true) }` is still
+      suite-green — now located precisely rather than merely restated.
+      Also uncovered and deliberately left alone: `DocumentEditorPage.tsx:20` `documentId ?? ''`
+      right arm — reachable only by mounting the page off its route, no user-visible behavior.
 - [ ] green-selenium
 - [ ] demo
 

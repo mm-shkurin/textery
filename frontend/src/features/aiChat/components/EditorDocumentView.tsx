@@ -24,9 +24,13 @@ export function EditorDocumentView({ content }: EditorDocumentViewProps) {
     immediatelyRender: true,
   })
 
+  // Two elements, as in the mockup: the scrolling pane (`.doc-wrap`) and the page-like card
+  // inside it (`.doc`). The card is what carries the testid — it is the document.
   return (
-    <div className="ac-editor" data-testid="manual-editor">
-      <EditorContent editor={editor} />
+    <div className="ac-doc-wrap">
+      <div className="ac-editor" data-testid="manual-editor">
+        <EditorContent editor={editor} />
+      </div>
     </div>
   )
 }

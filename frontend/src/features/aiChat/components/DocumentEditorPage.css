@@ -1,43 +1,117 @@
-/* Tokens come from index.css — no literals, so this screen follows a theme change like the rest. */
+/* Aligned to mockups/desktop/01-editor-chat.html + editor.css (story 19).
+   Geometry — the grid, the 380px chat column, the 760px document card, the paddings — is
+   copied from the mockup. COLOURS are not: the mockup ships its own theme.css palette
+   (#1552f0 accent, #f2f4f7 page), while this app's live token set in index.css is the blue
+   UI-Kit one every other screen already renders. Taking the mockup's literals would give
+   story 19 a second accent colour on a screen that sits beside story 18's editor, so the
+   values here resolve through the app's tokens and follow a theme change with the rest. */
+
+/* The mockup subtracts 150px here for its topbar + breadcrumbs + format bar. This route
+   renders none of that chrome yet — the toolbar belongs to the frozen-editor states and the
+   breadcrumb row to the revisions entry point, both later scenarios — so subtracting for bars
+   that do not exist would stop the workspace 150px short of the viewport and leave the chat
+   column's left border ending in mid-air. Restore the subtraction when the chrome lands. */
 .ac-layout {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  min-height: 100vh;
   align-items: stretch;
-  gap: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 32px 20px 64px;
 }
 
+/* `position: relative` is not decoration: scenarios 2/4/5 anchor the state ribbon and the
+   frozen-editor overlay inside this pane. */
+.ac-doc-wrap {
+  padding: 36px;
+  overflow: auto;
+  position: relative;
+}
+
+/* The document card. `.doc` in the mockup. */
 .ac-editor {
-  flex: 1;
-  min-width: 0;
-  background: var(--surface-light);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  padding: 32px;
+  max-width: 760px;
+  margin: 0 auto;
+  background: var(--bg-surface);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+  padding: 48px 56px;
 }
 
+.ac-editor h1 {
+  font-size: 28px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 18px;
+  margin-bottom: 28px;
+}
+
+.ac-editor h2,
+.ac-editor h3 {
+  font-size: 17px;
+  margin: 28px 0 14px;
+}
+
+.ac-editor p {
+  margin-bottom: 14px;
+}
+
+.ac-editor ul,
+.ac-editor ol {
+  margin: 0 0 14px 20px;
+}
+
+/* The mockup's `.chat`: a full-height column divided from the document by a rule, not a
+   floating card — it is the wall of the workspace, and a gap would let the page show
+   through between them. */
 .ac-chat {
-  width: 360px;
-  flex-shrink: 0;
-  background: var(--surface-light);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  padding: 24px;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+}
+
+.ac-chat-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* The square accent tile beside the heading — `.chat-head .mark`. Its glyph is the panel's
+   only ornament, so it is decorative and hidden from assistive tech. */
+.ac-chat-mark {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 26px;
+}
+
+.ac-chat-mark svg {
+  width: 15px;
+  height: 15px;
 }
 
 .ac-chat-heading {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-  margin: 0 0 8px;
+  margin: 0;
 }
 
 .ac-chat-notice {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13.5px;
   margin: 0;
+  padding: 20px;
 }
 
+/* The blocker and the load-failure screen have NO mockup — story 19's set draws the nine
+   states the spec names and a missing document is not among them. They therefore follow the
+   mockup's type scale and tokens rather than inventing a second one, and stay deliberately
+   plain: the whole screen exists to say one sentence and offer one way out. */
 .ac-blocker {
   max-width: 520px;
   margin: 0 auto;
@@ -46,25 +120,46 @@
 }
 
 .ac-blocker-title {
-  font-size: 22px;
-  font-weight: 600;
-  margin: 0 0 12px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 10px;
 }
 
 .ac-blocker-text {
   color: var(--text-secondary);
-  font-size: 15px;
-  margin: 0 0 24px;
+  font-size: 13.5px;
+  margin: 0 0 22px;
 }
 
 .ac-blocker-link {
   color: var(--accent);
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 13.5px;
+  font-weight: 600;
 }
 
 .ac-loading {
   color: var(--text-secondary);
+  font-size: 13.5px;
   padding: 96px 20px;
   text-align: center;
+}
+
+@media (max-width: 900px) {
+  .ac-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ac-doc-wrap {
+    padding: 20px;
+  }
+
+  .ac-editor {
+    padding: 28px 20px;
+  }
+
+  .ac-chat {
+    border-left: none;
+    border-top: 1px solid var(--border-subtle);
+  }
 }
