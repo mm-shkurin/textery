@@ -64,16 +64,26 @@ class RefusalRecordShapeStatements:
         self.edit = edit_statements
         self.revision = revision_statements
 
-    async def given_both_guards_have_refused_at_both_steps(self) -> None:
+    async def given_both_guards_are_arranged_and_collecting(self) -> None:
         await self.edit.given_the_caller_owns_two_documents()
         self.edit.given_an_edit_queued_on_the_first_document()
         self.edit.given_the_guards_own_log_is_collected()
-        await self.edit.request_the_edit_under_the_second_document()
-        await self.edit.request_the_edit_under_an_absent_document()
 
         await self.revision.given_the_caller_owns_two_documents()
         self.revision.given_a_revision_recorded_on_the_first_document()
         self.revision.given_the_guards_own_log_is_collected()
+
+    async def request_both_guards_refuse_at_both_steps(self) -> None:
+        """The act half, named as one: four refusals, and none of them arrangement.
+
+        These lived inside the `given_` method above, which left the consuming test
+        with no visible act phase at all -- arrange and assert only, with the fact
+        that two guards were actually exercised at two steps each invisible to a
+        reader of the test body.
+        """
+        await self.edit.request_the_edit_under_the_second_document()
+        await self.edit.request_the_edit_under_an_absent_document()
+
         await self.revision.request_the_revision_under_the_second_document()
         await self.revision.request_the_revision_under_an_absent_document()
 

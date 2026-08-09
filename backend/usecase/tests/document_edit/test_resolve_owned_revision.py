@@ -1,7 +1,7 @@
 from statements.refusal_record_shape_statements import RefusalRecordShapeStatements
 from statements.revision_number_range_statements import RevisionNumberRangeStatements
-from statements.revision_range_refusal_log_statements import RevisionRangeRefusalLogStatements
 from statements.revision_outage_statements import RevisionOutageStatements
+from statements.revision_range_refusal_log_statements import RevisionRangeRefusalLogStatements
 from statements.revision_refusal_log_statements import RevisionRefusalLogStatements
 from statements.revision_scope_guard_statements import RevisionScopeGuardStatements
 from statements.revision_silence_statements import RevisionSilenceStatements
@@ -165,8 +165,10 @@ class TestResolveOwnedRevision:
             revision_range_refusal_log_statements.request_every_unusable_number_under_its_own_document()
         )
 
+        revision_range_refusal_log_statements.assert_every_unusable_number_was_the_canonical_refusal()
         revision_range_refusal_log_statements.assert_every_unusable_number_refused_at_step_two()
         revision_range_refusal_log_statements.assert_the_revision_store_was_never_asked()
+        revision_range_refusal_log_statements.assert_neither_document_gained_a_version()
 
     async def test_should_still_attribute_a_refusal_when_an_unusable_number_names_a_document_it_cannot_resolve(
         self, revision_range_refusal_log_statements: RevisionRangeRefusalLogStatements
@@ -179,13 +181,17 @@ class TestResolveOwnedRevision:
             revision_range_refusal_log_statements.request_an_unusable_number_under_a_document_it_cannot_resolve()
         )
 
+        revision_range_refusal_log_statements.assert_every_unresolvable_probe_was_the_canonical_refusal()
         revision_range_refusal_log_statements.assert_an_unresolvable_document_still_records_the_attribution()
         revision_range_refusal_log_statements.assert_the_revision_store_was_never_asked()
+        revision_range_refusal_log_statements.assert_neither_document_gained_a_version()
 
     async def test_should_build_its_refusal_record_by_the_same_rule_as_the_edit_guard(
         self, refusal_record_shape_statements: RefusalRecordShapeStatements
     ):
-        await refusal_record_shape_statements.given_both_guards_have_refused_at_both_steps()
+        await refusal_record_shape_statements.given_both_guards_are_arranged_and_collecting()
+
+        await refusal_record_shape_statements.request_both_guards_refuse_at_both_steps()
 
         refusal_record_shape_statements.assert_both_guards_record_the_same_id_fields()
         refusal_record_shape_statements.assert_the_caller_is_attributable_at_both_steps()

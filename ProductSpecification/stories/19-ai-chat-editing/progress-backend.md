@@ -865,7 +865,7 @@ within their file, not across the story.
       `No data was collected` plus a clean-looking `182 passed`, which is the same false-all-clear shape
       the carryover already records for the focus filter. Use the dotted module name. Usecase suite
       182 passed, 0 failed, 0 skipped.
-- [~] red-usecase (the range check's position and its refusal cause) — the premortem's first incident,
+- [x] red-usecase (the range check's position and its refusal cause) — the premortem's first incident,
       rescheduled from the green-usecase note above because GREEN may not write tests. Two tests: what
       an out-of-range or non-integer probe emits on `document_edit.resolve_owned_revision` — a cause of
       its own or deliberate silence, either way with its extras run through the whole-set rule — and an
@@ -873,12 +873,12 @@ within their file, not across the story.
       emitted. The second is the load-bearing one: it is what stops the range check from being ordered
       ahead of the document guard, where it would let a caller suppress their own attribution record by
       appending `/0/restore`.
-      **INTERRUPTED MID-WORK-UNIT — the tests exist in the working tree and are NOT committed.** The
-      session hit its API limit during `/test-review`; that agent died after dispatching its four
-      detectors and returned no findings. On resume: re-run `/test-review` over the four files below
-      **first**, then the behavior commit, then the `/refactor` batch with both review passes. Do not
-      commit before `/test-review` — the gate has not run.
-      Uncommitted (`git status`): `backend/usecase/tests/document_edit/test_resolve_owned_revision.py`
+      **Interrupted mid-work-unit and resumed.** The first session hit its API limit during
+      `/test-review`; that agent died after dispatching its four detectors and returned no findings, so
+      the four files were parked on the remote as the wip commit `f9ab5723` with `[~]` deliberately not
+      advanced. The gate was re-run over exactly those four files on resume, before this commit — the
+      wip commit is therefore red-phase content that had not passed its gate, not a completed unit.
+      Files (wip `f9ab5723`): `backend/usecase/tests/document_edit/test_resolve_owned_revision.py`
       (M, two new tests, 191 lines), `backend/usecase/tests/statements/revision_range_refusal_log_statements.py`
       (new, 179 lines — subclasses `RevisionRefusalLogStatements` so the logger name, message literal,
       `child_id_field` and step-2 cause are reused rather than restated),
@@ -902,6 +902,39 @@ within their file, not across the story.
       `raise NotFoundException(REFUSAL_MESSAGE)`; only test 1 failed (`emitted 0 records ... expected
       exactly one`), so the range check's *silence* is attributable to test 1 alone. Both mutations
       reverted; production is byte-identical to HEAD.
+      `/test-review` (run on resume) found five holes, and the load-bearing one is that **the
+      caller-facing refusal was never asserted on either new path**: `_records_of_probe` called
+      `refusal_of` → `captured(...)`, enforcing the exception *type* from inside the act step — an
+      invisible behavioural contract, the same defect `revision_number_range_statements.py:48-56`
+      records as already fixed for itself — and nothing pinned the 404 *body*. Both tests now go
+      through `outcome_of(...)` and assert `assert_is_the_canonical_refusal` in the then phase.
+      Two probe rosters were `[0]` slices (one value per kind, silently changing under a reorder):
+      widened to all 10 unusable probes, and the unresolvable-document test now crosses both kinds
+      against both the foreign and the absent document — 20 cases. A `_assert_roster` comparing
+      `tuple(collected)` against the same constant its act step had just iterated was an unfailable
+      tautology and was deleted (the indexed loops are the real guard). `_only` was a near-byte-for-byte
+      copy of the inherited `_first` and now delegates. And `given_both_guards_have_refused_at_both_steps`
+      performed four refusals behind a `given_` name, leaving its test with no visible act phase — split
+      into arrange + act. Both tests also gained `assert_neither_document_gained_a_version`.
+      **Two fresh mutations after the gate, proving the new assertions are live.** (C) leaking
+      `revision_number` into the step-1 body failed the load-bearing test on the new canonical-refusal
+      assertion (`NotFoundException('document not found: 0')`). (D) moving only the `int()` parse ahead
+      of step 1, leaving the range check behind it, failed **exactly one test of 184 — on probe
+      `'abc'`**: this is precisely the hole the roster widening closed, since the old code probed only
+      `'0'` against unresolvable documents and `'0'` parses fine, so `/abc/restore` was an unpinned way
+      to suppress one's own attribution record. Both reverted; `git diff backend/usecase/src/` empty.
+      184 passed, 0 failed, 0 skipped — same count as before the gate, assertions strictly tighter.
+      **Three findings reported and deliberately not fixed, all outside the four-file scope:**
+      (a) `revision_guard_base.py:52,68-74` seeds revisions directly via
+      `revision_repository.seed_revision`, bypassing the write-through-the-writer-usecase rule that
+      documents correctly follow via `CreateDocument` — so the guard is proven against revision rows the
+      application may never produce. A real violation, but rearranging it touches the whole §1.3 family's
+      arrangement; it needs its own decision, not a silent edit inside a gate. (The same seam is already
+      recorded at 1.2's `given_a_queued_edit` and at 1.2's adapters-discovery: both wait on 3.1.)
+      (b) `revision_number_range_statements.py:81` carries an identical unfailable roster equality to the
+      one deleted here. (c) `refusal_log_base.py:100-138` — the new class's step-1/step-2 record
+      expectations duplicate the base's; a parameterized `_assert_step_one_record` /
+      `_assert_step_two_record` on the base removes it. (c) is `/refactor` territory and was handed to it.
 - [ ] green-usecase (the range check's position and its refusal cause)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares

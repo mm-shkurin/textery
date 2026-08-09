@@ -18,7 +18,12 @@ Two claims:
 import logging
 from uuid import UUID
 
-from statements.document_guard_contract import ABSENT_DOCUMENT_ID, CALLER_ID
+from statements.document_guard_contract import (
+    ABSENT_DOCUMENT_ID,
+    CALLER_ID,
+    assert_is_the_canonical_refusal,
+    outcome_of,
+)
 from statements.refusal_record_assertions import (
     ABSENT,
     DOCUMENT_SCOPE_REFUSAL_CAUSE,
@@ -39,16 +44,26 @@ from statements.revision_refusal_log_statements import (
     RevisionRefusalLogStatements,
 )
 
-# One probe of each unusable kind, taken from the rosters the range statements
-# already own rather than written again here: the two files must probe the same
-# values, and a second literal drifts the day one roster is extended.
-OUT_OF_RANGE_PROBE = OUT_OF_RANGE_REVISION_NUMBERS[0]
-NON_INTEGER_PROBE = NON_INTEGER_REVISION_NUMBERS[0]
-UNUSABLE_PROBES = (OUT_OF_RANGE_PROBE, NON_INTEGER_PROBE)
+# Every unusable value, both kinds, taken whole from the rosters the range
+# statements already own. This was `roster[0]` of each, which pinned one value per
+# kind and changed which ones the day either roster was reordered. The per-probe
+# assertion is value-independent, so walking both entire costs nothing.
+UNUSABLE_PROBES = OUT_OF_RANGE_REVISION_NUMBERS + NON_INTEGER_REVISION_NUMBERS
 
 FOREIGN_DOCUMENT_PATH = "the foreign document"
 ABSENT_DOCUMENT_PATH = "the absent document"
 UNRESOLVABLE_PATHS = (FOREIGN_DOCUMENT_PATH, ABSENT_DOCUMENT_PATH)
+
+# Both unresolvable documents crossed with both parse branches. An `int()`
+# conversion ordered ahead of step 1 suppresses the attribution record exactly as
+# a range check does, so probing only the range branch would leave `/abc/restore`
+# as an unpinned way to switch the channel off.
+UNRESOLVABLE_CASES = tuple(
+    (path, probe) for path in UNRESOLVABLE_PATHS for probe in UNUSABLE_PROBES
+)
+
+# What the act steps record per probe: what the guard raised, and what it logged.
+Probed = tuple[object, list[logging.LogRecord]]
 
 
 class RevisionRangeRefusalLogStatements(RevisionRefusalLogStatements):
@@ -56,40 +71,48 @@ class RevisionRangeRefusalLogStatements(RevisionRefusalLogStatements):
 
     def __init__(self) -> None:
         super().__init__()
-        self._own_document_records: dict[str, list[logging.LogRecord]] = {}
-        self._unresolvable_records: dict[str, list[logging.LogRecord]] = {}
+        self._own_document: dict[str, Probed] = {}
+        self._unresolvable: dict[tuple[str, str], Probed] = {}
 
     async def request_every_unusable_number_under_its_own_document(self) -> None:
         for probe in UNUSABLE_PROBES:
-            self._own_document_records[probe] = await self._records_of_probe(
-                self.first_document_id, probe
-            )
+            self._own_document[probe] = await self._probe(self.first_document_id, probe)
 
     async def request_an_unusable_number_under_a_document_it_cannot_resolve(self) -> None:
-        self._unresolvable_records[FOREIGN_DOCUMENT_PATH] = await self._records_of_probe(
-            self.foreign_document_id, OUT_OF_RANGE_PROBE
-        )
-        self._unresolvable_records[ABSENT_DOCUMENT_PATH] = await self._records_of_probe(
-            ABSENT_DOCUMENT_ID, OUT_OF_RANGE_PROBE
-        )
+        for path, document_id in (
+            (FOREIGN_DOCUMENT_PATH, self.foreign_document_id),
+            (ABSENT_DOCUMENT_PATH, ABSENT_DOCUMENT_ID),
+        ):
+            for probe in UNUSABLE_PROBES:
+                self._unresolvable[(path, probe)] = await self._probe(document_id, probe)
 
-    async def _records_of_probe(
-        self, document_id: UUID, revision_number: str
-    ) -> list[logging.LogRecord]:
+    async def _probe(self, document_id: UUID, revision_number: str) -> Probed:
+        """Records what came back and what was logged; judges neither.
+
+        `outcome_of` rather than `refusal_of`: the latter runs through `captured`,
+        which enforces the exception type and fails when the guard returns instead
+        of refusing -- a real contract applied from inside the act half, where no
+        reader of the test body can see it. The judging is in the then-phase.
+        """
         self._recorder.clear()
-        await self.refusal_of(document_id, revision_number)
-        return self._recorder.taken()
+        outcome = await outcome_of(self.resolve(document_id, revision_number))
+        return outcome, self._recorder.taken()
+
+    def assert_every_unusable_number_was_the_canonical_refusal(self) -> None:
+        for probe in UNUSABLE_PROBES:
+            outcome, _ = self._own_document[probe]
+            assert_is_the_canonical_refusal(outcome, f"revision number '{probe}'")
 
     def assert_every_unusable_number_refused_at_step_two(self) -> None:
-        self._assert_roster(self._own_document_records, UNUSABLE_PROBES, "own-document")
         for probe in UNUSABLE_PROBES:
-            record = self._only(self._own_document_records[probe], f"revision number '{probe}'")
+            which = f"revision number '{probe}'"
+            record = self._first(self._own_document[probe][1], which)
             assert_record_shape(
                 record,
                 self.logger_name,
                 self.refusal_message,
                 REVISION_SCOPE_REFUSAL_CAUSE,
-                f"revision number '{probe}'",
+                which,
             )
             assert_record_ids(
                 record,
@@ -99,25 +122,35 @@ class RevisionRangeRefusalLogStatements(RevisionRefusalLogStatements):
                     "document_id": str(self.first_document_id),
                     self.child_id_field: ABSENT,
                 },
-                f"revision number '{probe}'",
+                which,
             )
-            self._assert_whole_extra_set(
-                record, EXTRA_FIELDS_AT_STEP_TWO, f"revision number '{probe}'"
-            )
+            self._assert_whole_extra_set(record, EXTRA_FIELDS_AT_STEP_TWO, which)
+
+    def assert_every_unresolvable_probe_was_the_canonical_refusal(self) -> None:
+        """The caller-facing half, pinned as the whole body rather than the type.
+
+        `captured` only ever checked the exception's class, so a guard that
+        recorded the right step-1 record while leaking the probed number -- or the
+        id of a document the caller has no claim to -- into the 404 text passed
+        everything here. This is the path where such a disclosure would appear.
+        """
+        for case in UNRESOLVABLE_CASES:
+            outcome, _ = self._unresolvable[case]
+            assert_is_the_canonical_refusal(outcome, self._describe(case))
 
     def assert_an_unresolvable_document_still_records_the_attribution(self) -> None:
         """The load-bearing one: the parse must not run ahead of the document guard.
 
         Both orderings answer the caller the identical canonical 404 and leave the
-        revision store untouched, so nothing else in this suite can tell them
-        apart. If the parse ran first, `0` would short-circuit before step 1 ever
-        looked the document up, and a caller enumerating document ids could switch
-        the attribution channel off for themselves by appending `/0/restore` --
-        exactly the ids the step-1 cause exists to record.
+        revision store untouched, so nothing else in this suite tells them apart.
+        If the parse ran first, an unusable number would short-circuit before step
+        1 ever looked the document up, and a caller enumerating document ids could
+        switch the attribution channel off for themselves with `/0/restore` or
+        `/abc/restore` -- exactly the ids the step-1 cause exists to record.
         """
-        self._assert_roster(self._unresolvable_records, UNRESOLVABLE_PATHS, "unresolvable-document")
-        for which in UNRESOLVABLE_PATHS:
-            record = self._only(self._unresolvable_records[which], which)
+        for case in UNRESOLVABLE_CASES:
+            which = self._describe(case)
+            record = self._first(self._unresolvable[case][1], which)
             assert_record_shape(
                 record,
                 self.logger_name,
@@ -150,10 +183,9 @@ class RevisionRangeRefusalLogStatements(RevisionRefusalLogStatements):
         """The extras as a whole set, not field by field.
 
         `assert_record_ids` reads through a pinned roster, so a field nobody
-        enumerated -- the probed number arriving under some new name, an ip, an
-        owner id -- is invisible to it. Subtracting the standard `LogRecord`
-        attributes and comparing what is left is the story's whole-set rule, reused
-        from `refusal_record_shape_statements` rather than restated.
+        enumerated -- the probed number under some new name, an ip, an owner id --
+        is invisible to it. The whole-set rule is reused from
+        `refusal_record_shape_statements` rather than restated.
         """
         actual = extra_field_names(record)
         assert actual == expected, (
@@ -162,18 +194,6 @@ class RevisionRangeRefusalLogStatements(RevisionRefusalLogStatements):
             f"id check while carrying something the caller proved no claim to"
         )
 
-    def _assert_roster(
-        self, collected: dict[str, list[logging.LogRecord]], expected: tuple[str, ...], which: str
-    ) -> None:
-        assert tuple(collected) == expected, (
-            f"the {which} probe covered {tuple(collected)}, expected {expected} -- a roster "
-            f"read back off the act step agrees with any subset of itself"
-        )
-
-    def _only(self, records: list[logging.LogRecord], which: str) -> logging.LogRecord:
-        assert len(records) == 1, (
-            f"the {which} refusal emitted {len(records)} records on '{self.logger_name}', "
-            f"expected exactly one: {[record.getMessage() for record in records]} -- a refusal "
-            f"nobody records is a probe nobody can attribute"
-        )
-        return records[0]
+    def _describe(self, case: tuple[str, str]) -> str:
+        path, probe = case
+        return f"revision number '{probe}' under {path}"
