@@ -20,15 +20,8 @@ from uuid import UUID
 
 from statements.document_guard_contract import (
     ABSENT_DOCUMENT_ID,
-    CALLER_ID,
     assert_is_the_canonical_refusal,
     outcome_of,
-)
-from statements.refusal_record_assertions import (
-    ABSENT,
-    DOCUMENT_SCOPE_REFUSAL_CAUSE,
-    assert_record_ids,
-    assert_record_shape,
 )
 from statements.refusal_record_shape_statements import (
     EXTRA_FIELDS_AT_STEP_ONE,
@@ -39,10 +32,7 @@ from statements.revision_number_range_statements import (
     NON_INTEGER_REVISION_NUMBERS,
     OUT_OF_RANGE_REVISION_NUMBERS,
 )
-from statements.revision_refusal_log_statements import (
-    REVISION_SCOPE_REFUSAL_CAUSE,
-    RevisionRefusalLogStatements,
-)
+from statements.revision_refusal_log_statements import RevisionRefusalLogStatements
 
 # Every unusable value, both kinds, taken whole from the rosters the range
 # statements already own. This was `roster[0]` of each, which pinned one value per
@@ -107,23 +97,7 @@ class RevisionRangeRefusalLogStatements(RevisionRefusalLogStatements):
         for probe in UNUSABLE_PROBES:
             which = f"revision number '{probe}'"
             record = self._first(self._own_document[probe][1], which)
-            assert_record_shape(
-                record,
-                self.logger_name,
-                self.refusal_message,
-                REVISION_SCOPE_REFUSAL_CAUSE,
-                which,
-            )
-            assert_record_ids(
-                record,
-                self.id_fields,
-                {
-                    "caller_id": str(CALLER_ID),
-                    "document_id": str(self.first_document_id),
-                    self.child_id_field: ABSENT,
-                },
-                which,
-            )
+            self.assert_step_two_record(record, self.first_document_id, which)
             self._assert_whole_extra_set(record, EXTRA_FIELDS_AT_STEP_TWO, which)
 
     def assert_every_unresolvable_probe_was_the_canonical_refusal(self) -> None:
@@ -151,23 +125,7 @@ class RevisionRangeRefusalLogStatements(RevisionRefusalLogStatements):
         for case in UNRESOLVABLE_CASES:
             which = self._describe(case)
             record = self._first(self._unresolvable[case][1], which)
-            assert_record_shape(
-                record,
-                self.logger_name,
-                self.refusal_message,
-                DOCUMENT_SCOPE_REFUSAL_CAUSE,
-                which,
-            )
-            assert_record_ids(
-                record,
-                self.id_fields,
-                {
-                    "caller_id": str(CALLER_ID),
-                    "document_id": ABSENT,
-                    self.child_id_field: ABSENT,
-                },
-                which,
-            )
+            self.assert_step_one_record(record, which)
             self._assert_whole_extra_set(record, EXTRA_FIELDS_AT_STEP_ONE, which)
 
     def assert_the_revision_store_was_never_asked(self) -> None:

@@ -161,25 +161,21 @@ class TestResolveOwnedRevision:
         await revision_range_refusal_log_statements.given_the_caller_owns_two_documents()
         revision_range_refusal_log_statements.given_the_guards_own_log_is_collected()
 
-        await (
-            revision_range_refusal_log_statements.request_every_unusable_number_under_its_own_document()
-        )
+        await revision_range_refusal_log_statements.request_every_unusable_number_under_its_own_document()
 
         revision_range_refusal_log_statements.assert_every_unusable_number_was_the_canonical_refusal()
         revision_range_refusal_log_statements.assert_every_unusable_number_refused_at_step_two()
         revision_range_refusal_log_statements.assert_the_revision_store_was_never_asked()
         revision_range_refusal_log_statements.assert_neither_document_gained_a_version()
 
-    async def test_should_still_attribute_a_refusal_when_an_unusable_number_names_a_document_it_cannot_resolve(
+    async def test_should_still_attribute_an_unusable_number_aimed_at_an_unresolvable_document(
         self, revision_range_refusal_log_statements: RevisionRangeRefusalLogStatements
     ):
         await revision_range_refusal_log_statements.given_the_caller_owns_two_documents()
         await revision_range_refusal_log_statements.given_a_document_owned_by_another_account()
         revision_range_refusal_log_statements.given_the_guards_own_log_is_collected()
 
-        await (
-            revision_range_refusal_log_statements.request_an_unusable_number_under_a_document_it_cannot_resolve()
-        )
+        await revision_range_refusal_log_statements.request_an_unusable_number_under_a_document_it_cannot_resolve()
 
         revision_range_refusal_log_statements.assert_every_unresolvable_probe_was_the_canonical_refusal()
         revision_range_refusal_log_statements.assert_an_unresolvable_document_still_records_the_attribution()

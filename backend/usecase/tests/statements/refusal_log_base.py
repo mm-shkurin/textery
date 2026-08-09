@@ -98,43 +98,43 @@ class RefusalLogStatementsBase:
             )
 
     def assert_the_cross_document_record_omits_the_probed_child(self) -> None:
-        record = self.cross_document_record()
-        assert_record_shape(
-            record,
-            self.logger_name,
-            self.refusal_message,
-            self.child_scope_refusal_cause,
-            "cross-document",
+        self.assert_step_two_record(
+            self.cross_document_record(), self.second_document_id, "cross-document"
         )
+
+    def assert_the_absent_document_record_has_the_other_cause(self) -> None:
+        self.assert_step_one_record(self.absent_document_record(), "absent-document")
+
+    def assert_step_two_record(
+        self, record: logging.LogRecord, document_id: UUID, which: str
+    ) -> None:
+        """A child-scope refusal: the caller resolved the document, not the child."""
+        self._assert_refusal_record(record, self.child_scope_refusal_cause, str(document_id), which)
+
+    def assert_step_one_record(self, record: logging.LogRecord, which: str) -> None:
+        """A document-scope refusal: no peer id, but the caller still attributable."""
+        self._assert_refusal_record(record, DOCUMENT_SCOPE_REFUSAL_CAUSE, ABSENT, which)
+
+    def _assert_refusal_record(
+        self, record: logging.LogRecord, cause: str, document_id: str, which: str
+    ) -> None:
+        """Shape then ids, with only the cause and the document id varying.
+
+        `caller_id` is the one id step 1 legitimately knows, and pinning it is what
+        stops the two absences from passing on an empty record. It is also what makes
+        the cause attributable at all -- "id-free" means the message and the peer ids,
+        never the caller's own id.
+        """
+        assert_record_shape(record, self.logger_name, self.refusal_message, cause, which)
         assert_record_ids(
             record,
             self.id_fields,
             {
                 "caller_id": str(CALLER_ID),
-                "document_id": str(self.second_document_id),
+                "document_id": document_id,
                 self.child_id_field: ABSENT,
             },
-            "cross-document",
-        )
-
-    def assert_the_absent_document_record_has_the_other_cause(self) -> None:
-        record = self.absent_document_record()
-        assert_record_shape(
-            record,
-            self.logger_name,
-            self.refusal_message,
-            DOCUMENT_SCOPE_REFUSAL_CAUSE,
-            "absent-document",
-        )
-        assert_record_ids(
-            record,
-            self.id_fields,
-            # `caller_id` is the one id step 1 legitimately knows, and pinning it is
-            # what stops the two absences from passing on an empty record. It is also
-            # what makes the cause attributable at all -- "id-free" means the message
-            # and the peer ids, never the caller's own id.
-            {"caller_id": str(CALLER_ID), "document_id": ABSENT, self.child_id_field: ABSENT},
-            "absent-document",
+            which,
         )
 
     def assert_the_two_causes_are_distinct(self) -> None:

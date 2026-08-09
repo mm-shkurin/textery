@@ -934,7 +934,42 @@ within their file, not across the story.
       (b) `revision_number_range_statements.py:81` carries an identical unfailable roster equality to the
       one deleted here. (c) `refusal_log_base.py:100-138` — the new class's step-1/step-2 record
       expectations duplicate the base's; a parameterized `_assert_step_one_record` /
-      `_assert_step_two_record` on the base removes it. (c) is `/refactor` territory and was handed to it.
+      `_assert_step_two_record` on the base removes it. (c) is `/refactor` territory and was handed to it,
+      and applied: `refusal_log_base.py` now owns `_assert_refusal_record(record, cause, document_id,
+      which)` with `assert_step_one_record` / `assert_step_two_record` on top, −46 lines across the two
+      files. `/refactor` **rejected** (b) with a reason worth keeping: the two roster equalities are not
+      identical. The deleted one compared a dict populated by a loop over `UNUSABLE_PROBES` against
+      `UNUSABLE_PROBES`; `revision_number_range_statements.py:81` compares a dict **shared across both
+      act steps** against a roster passed in per call, so it fails if the wrong roster ran, if the two
+      act steps interleave, or if a probe collapses a key — and the indexed loop below it catches only
+      the missing-probe direction, never a superset. Do not delete it. It also cleared a stale note in
+      this file: the standing `RevisionRefusalLogStatements` duplication is already resolved
+      (`refusal_log_base.py` is that extraction; `assert_outage_propagated` / `_outcome_of` /
+      `assert_*_lookups` exist in one copy each). One incidental lint fix: a 111-char test method name
+      from the wip commit was failing `ruff` E501 on the branch and was renamed.
+      **Review passes, both CONCERNS, non-gating — three findings carried, and the first is a live hole
+      in this very commit.** (1) `assert_neither_document_gained_a_version` is **vacuous on the
+      load-bearing test**: the helper reads `first_document_id` and `second_document_id`, but that test
+      probes `foreign_document_id` and `ABSENT_DOCUMENT_ID`. A guard that refuses correctly, emits the
+      right step-1 record, and bumps `version` on the *foreign* document on the way past passes all four
+      of its assertions — nothing in the suite reads that document's version. The helper's own docstring
+      claims to cover "the probed one or the one that actually owns the revision", which is true at its
+      original call sites and false at this new one. The same assertion on the first test is correctly
+      aimed. Fix it at the next touch of this file. (2) `UNUSABLE_PROBES` is
+      `OUT_OF_RANGE + NON_INTEGER` used as **dict keys**, with disjointness unpinned and both rosters
+      owned by another file: the day a value appears in both (`"0"` reclassified, `""` or `"-"` moved)
+      the key collapses, the case count drops, and every indexed loop still passes — the same
+      roster-silently-shrinks defect the widening removed, re-entering through the key type. Wants
+      `len(UNUSABLE_PROBES) == len(set(UNUSABLE_PROBES))`. (3) *(premortem)* the load-bearing guarantee
+      **is unreachable in production today**: `document_edit_router.py:126` declares
+      `revision_number: int`, so every non-integer probe short-circuits to 422 in FastAPI's validation
+      phase — ahead of the guard and ahead of `get_current_owner_id` — and emits no record at all. That
+      is precisely the suppression this unit believes it closed, and `revision_guard_base.py:30-32`
+      states the contrary as fact in a comment. The queued `red-adapter rest` step below names the same
+      falsity and is where it goes red; until it lands, the 184-green suite is green about an ordering
+      no request can exercise. A fourth, unscheduled anywhere: the range guard is proven only against
+      the fake, which has no int4 ceiling — no acceptance test probes `/2147483648/restore` or
+      `/abc/restore` against the real column, and `documents_revisions_restore.yaml` requires 404.
 - [ ] green-usecase (the range check's position and its refusal cause)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares
