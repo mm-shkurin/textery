@@ -72,6 +72,40 @@ under `frontend/src` or `acceptance/tests/frontend`.
       `app/App.tsx`, the blocker, and a `/documents` list for the way-out link to target.
       **Harness note:** `frontend/node_modules` was absent; `npm ci` (273 packages, ~2 min) is
       needed before the suite runs — an empty `node_modules` looks like a broken config.
+      `/refactor` found NO ACTION (141/7/28 lines, oxlint and tsc clean); no refactor commit.
+      It flagged two deferrals for `red-frontend-api`: `loadEditorDocument`/`EditorDocument`
+      duplicates `getDocument`/`GetDocumentResult` in `generation/api/documentApi.ts` (same
+      shape, same endpoint) — do not land a second document loader without deciding that; and
+      `DocumentNotFoundError` belongs beside `VersionConflictError`/`SessionExpiredError` in
+      `shared/api/send.ts` once something actually throws it.
+      **Review-pass follow-ups for `green-frontend` (verified where noted):**
+      (f) **The coverage gate is red on `f1e3f306` — confirmed, `npm run test:coverage` exits 1.**
+      Both stubs sit at 0% statements against a 60% per-file floor. This is inherent to a RED
+      phase that lands stubs behind a skipped test; green closes it by un-skipping. Do not
+      lower the floor or add an exclude. Any CI job running `test:coverage` fails here, and the
+      failure looks like a coverage problem rather than an in-flight red phase.
+      (g) The success case asserts a live `ai-chat-panel`, which is scenario 1.1's component —
+      so green's scope is *four* things, not the three listed above. An empty placeholder div
+      named `ai-chat-panel` would satisfy it and reintroduce exactly the incidental-wrapper pass
+      the asymmetric locators were chosen to prevent. Decide this before green starts.
+      (h) Every rejection currently maps to the blocker. The minimal code passing both cases is
+      `try { … } catch { setNotFound(true) }`, which shows "Документ не найден" on a 500, on a
+      401, on a dropped connection — and invites the user to re-create a document that exists.
+      Owe a case rejecting with a generic `Error` and asserting the blocker is **absent**.
+      (i) Both suites assert the way-out link's `href`, neither ever clicks it. `App.tsx:16`
+      routes `/*` to `DocumentGenerationFlow`, so `/documents` resolves today and green can ship
+      without ever building the list. Owe an App-level case that clicks the link and asserts the
+      documents list — not the generation flow — renders.
+      (j) `/documents/:documentId` is currently swallowed by that same `/*` catch-all, which
+      renders `ManualEditor` — already carrying `data-testid="manual-editor"`, the testid this
+      test reuses for the new page root. Sibling routes never mount together so `getByTestId`
+      stays unambiguous, but `src/__tests__/App.test.tsx:131,146,150` assert on that testid at
+      app level; composing the two editors would break them.
+      (k) `toHaveBeenCalledExactlyOnceWith` is proved outside StrictMode while `main.tsx` wraps
+      `App` in it, so a naive `useEffect` fetch passes here and double-invokes in dev. The repo
+      already has `generation/hooks/__tests__/useDocumentInit.strictMode.test.tsx` for this.
+      (l) Nothing fails on a permanently-skipped spec. Green's verification must report these
+      two cases as *passed*, not merely "suite green".
 - [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
