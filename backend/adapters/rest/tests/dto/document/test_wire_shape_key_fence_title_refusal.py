@@ -2,18 +2,6 @@ import pytest
 from wire_shape_key_fence import assert_body_keys_track_the_model
 
 
-@pytest.mark.skip(
-    reason="RED: handed the untouched row -- a body with no `title` key -- the fence "
-    "answers with the GENERIC dropped-key fault, \"['title'] was declared on the model "
-    'and dropped by the serializer". That is scenario 2.1\'s invariant inverted: absent '
-    "IS the correct spelling for a title-untouched save, so the fence calling it a "
-    "serializer fault is the fence asking green to emit `title: null`. CONSEQUENCE: that "
-    "body tells a consumer to ERASE the title -- `SaveDocumentRequestDto.title_update()` "
-    "maps `title: null` to `TitleUpdate.clear()` -- so a save that never touched the "
-    "title wipes it. Silently: no error is raised, nothing is surfaced to the author, "
-    "and the prior title is not retained anywhere, so the erasure is unrecoverable. The "
-    "fence must REFUSE that body by name instead of certifying the erasure as well-formed"
-)
 class TestWireShapeKeyFenceRefusesTheAbsentTitleRow:
     """The `missing` leg's absent-`title` partition, split out of
     `test_wire_shape_key_fence.py` so this marker can sit at CLASS level.

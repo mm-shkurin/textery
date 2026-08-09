@@ -104,6 +104,33 @@ class TestWireShapeKeyFenceReportsEveryFault:
             "got {'content': '<p>saved</p>', 'title': None, 'version': 1, 'note': 'spurious'}"
         ), f"the spurious-key leg must name the undeclared field, got {failure.value!s}"
 
+    def test_should_refuse_a_leg_label_that_is_not_a_declared_wire_leg(self):
+        """The guard nothing stood behind, on the exact typo that was measured.
+
+        `"dmped JSON"` is not a hypothetical: the module comment records it as
+        MEASURED-as-accepted by mypy, which is why the run-time guard exists. That
+        measurement never became a test, and `/refactor` then rewrote the guard's
+        accepted set to `get_args(WireLeg)` with nothing pinning either the set or
+        the wording. The label is interpolation-only, so a wrong one is invisible to
+        every other row here -- deleting the guard leaves them all green.
+
+        The body is WELL-FORMED, deliberately. That makes this row pin the guard's
+        preemption too: with both fault legs quiet the message can only come from
+        the guard, and the exact equality kills a revert that keeps raising but
+        drops the offending label from the text.
+        """
+        body = {"content": "<p>saved</p>", "title": None, "version": 1}
+
+        with pytest.raises(AssertionError) as failure:
+            assert_body_keys_track_the_model(body, "dmped JSON")
+
+        assert str(failure.value) == (
+            "the leg label must be one of the declared WireLeg values, got 'dmped JSON'"
+        ), (
+            "a leg label outside WireLeg must be refused by name -- an unpinned guard is "
+            f"deletable without a red row, got {failure.value!s}"
+        )
+
     def test_should_name_both_faults_in_one_message_when_a_body_drops_and_adds_a_key(self):
         """The row the other two cannot cover, and the only reason the helper
         collects `faults` instead of asserting twice.

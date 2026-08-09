@@ -894,7 +894,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   (e) **Skip-marker exit condition, named here so it is not prose** (premortem #1): the marker is at
   CLASS level in `test_wire_shape_key_fence_title_refusal.py`, and this scenario has sprung the
   inert-marker trap three times. Green's exit condition is written into the row below.)
-- [~] green-adapter rest (premortem: the fence must refuse the row it cannot judge.
+- [x] green-adapter rest (premortem: the fence must refuse the row it cannot judge.
   **EXIT CONDITION, explicit:** remove the CLASS-LEVEL `@pytest.mark.skip` from
   `test_wire_shape_key_fence_title_refusal.py`, and check the NUMBER — the suite must come back
   **112 passed, 4 skipped**. Nothing fails if green leaves the marker on; the count is the only
@@ -907,7 +907,70 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   call-site-parameter design first and record the decision; note agent-review 4 above — taking that
   route means amending the red row's asserted string, which green must do openly if at all.
   While here, close premortem #2's gap in the same pass: one row asserting a typo'd leg label raises
-  with its exact message, and a decision on the unreachable `assert declared` line.)
+  with its exact message, and a decision on the unreachable `assert declared` line.
+  **LANDED. 113 passed, 4 skipped** — the exit condition's number was 112, and the extra one is the
+  chartered leg-guard row, which is a genuinely new test rather than a marker lift. Marker removed
+  (file 92 → 80, nothing else in it touched). Full backend 683 passed, 68 skipped, 0 failed. No
+  production code changed — the fence is test infrastructure.
+  PARTITION implemented as the red asserts it: `if "title" in missing` appends the refusal, then
+  `dropped = missing - {"title"}` keeps the generic wording, both collected into `faults` alongside
+  `undeclared`. The call-site design was weighed and REJECTED, and the reasoning goes past "the red
+  pins it": the call-site route moves the WORDING into a parameter, and the wording is this row's
+  whole deliverable — every site would then re-spell or import the same one-element fact, and a site
+  that forgets it silently gets the generic dropped-field wording back, which is the exact defect the
+  partition exists to close. Field-level keeps one declaration and cannot be forgotten.
+  The contradicting module comment (lines 23-29) was rewritten rather than left to rot: `title` is
+  not EXCLUDED — an exclusion set would make the absent row PASS, silently certifying the erasure —
+  it is PARTITIONED; call-site placement still carries the rest; and the call-site alternative is
+  recorded as weighed and rejected with the reason above.
+  `assert declared` removed with its comment, no fake guard put in its place, and both errors written
+  down: `model_fields` is always populated so no reachable input trips it, AND with `declared ==
+  set()` the `undeclared` leg fires for any non-empty body, so the vacuous pass the comment described
+  also needed an empty `body`.
+  Leg guard KEPT ahead of both fault legs, with the reason now in the code: under the other order the
+  fault IS reported but attributed to a leg that does not exist — a wrong report, not a partial one,
+  sending the reader to the wrong serializer. A typo'd leg is a one-edit caller defect and the fault
+  re-reports next run. The comment says explicitly that this is the opposite call from the two legs
+  below it. The new row uses a WELL-FORMED body, so with both fault legs quiet the message can only
+  come from the guard.
+  `/test-coverage rest --focus` — production source **348/357 lines (98%), 16/16 branches (100%)**,
+  and the focus filter over `backend/*/src/` returned ZERO files, correctly: nothing production
+  changed. All nine uncovered lines are the `raise NotImplementedError("wired by the application
+  composition root")` bodies of `Depends()` provider stubs, pre-existing and covered by the
+  application tests.
+  **The fence helper reads 100% line AND 100% branch — and that number is not evidence.** Every `if`
+  gets both outcomes across the five rows, so coverage.py is satisfied, while the partition's risk
+  lives in COMBINATIONS, which branch coverage cannot see. Sharpest consequence measured: a mutation
+  that raises the refusal AHEAD of `faults` — precisely the shape this green rejected and argues
+  against in the helper's own comment — leaves all five rows green. So does moving the leg guard
+  below `faults`. Two arms have no test at all (both-missing-at-once; refusal co-occurring with
+  `undeclared` — row 4 pins the `'; and '` joiner for dropped+undeclared only) and the leg guard's
+  PREEMPTION is unpinned because row 3's body is well-formed. Four steps added below.
+  KNOWN, pre-existing, not this unit's: `ruff check backend/adapters/rest` reports one E501 at
+  `test_save_document_request_dto_wire_shape_control.py:40` — a long line inside a class docstring,
+  confirmed present without this unit's changes. The lint gate stays red until someone rewraps it.)
+- [~] red-adapter rest (coverage: refusal co-occurring with the other two faults). The partition's
+  arms are pinned INDIVIDUALLY but never in combination, and coverage cannot see the gap:
+  `wire_shape_key_fence.py` reports **100% line and 100% branch** (17 stmts, 6 branches) because
+  every `if` gets both outcomes across the five rows — combinations are invisible to coverage.py.
+  Two arms have no row: (a) the refusal firing TOGETHER with the generic dropped clause — no fixture
+  omits `title` and another declared field at once, so nothing pins their ORDER in the message or
+  that both survive the partition; (b) the refusal firing together with `undeclared` — row 4 pins
+  `'; and '` only for dropped+undeclared, so a mutation that raises the refusal ahead of `faults`
+  (the shape this green deliberately rejected) still passes every row. One body closes both:
+  `{"__not_a_field__": "x", "version": 1}` → `missing == {"content", "title"}`,
+  `undeclared == {"__not_a_field__"}`, message carries refusal + dropped + undeclared with TWO
+  `'; and '` joiners, which nothing currently pins. Use `"__not_a_field__"`, not `"note"` — the row
+  below already charters that rename. Exact equality, per the class docstring.
+- [ ] green-adapter rest (coverage: refusal co-occurring with the other two faults)
+- [ ] red-adapter rest (coverage: leg guard preempts a genuinely broken body). The guard row ships
+  with a WELL-FORMED body, so it pins the reject path but NOT the preemption its own comment
+  (lines 100-108) argues for at length: with both fault legs quiet the message could only have come
+  from the guard either way. A body that is broken AND carries a typo'd leg —
+  `assert_body_keys_track_the_model({"version": 1}, "dmped JSON")` — must raise the leg-label
+  message, not a fault message naming a leg that does not exist. Moving the guard below `faults`
+  leaves all five current rows green.
+- [ ] green-adapter rest (coverage: leg guard preempts a genuinely broken body)
 - [ ] red-adapter rest (both review passes on `b1991508`, converging as their top finding: **two LIVE
   rows now certify the erasure body as key-set-clean.** `test_wire_shape_key_fence.py` rows 1 and 3
   use `{"title": None, "version": 1}` (and `+ {"note": "spurious"}`) with `['content']` pinned by

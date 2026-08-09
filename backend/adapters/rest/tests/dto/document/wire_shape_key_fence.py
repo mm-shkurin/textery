@@ -20,13 +20,26 @@ from dto.document.document_dtos import SaveDocumentRequestDto
 # the path order changed or the helper moved beside the code it types, neither of
 # which is a test-file edit. Left as the short spelling until then.
 #
-# There is deliberately NO field-level exclusion set. `title` would be the only
-# candidate, and excluding it is exactly the hole this helper exists to close:
-# its omission on the absent row is a PER-REQUEST condition, not a field-level
-# policy -- the same field is required on the body for the null row and the
-# real-title row. Call-site placement carries that instead: this helper is
-# called only from sites that set `title` explicitly, and never from the RED
-# class next door, whose whole assertion is that `title` is ABSENT.
+# `title` is NOT excluded, and the difference between excluding it and what the
+# `missing` leg below actually does is the whole point. An exclusion set would
+# make an absent `title` PASS -- silently certifying the one body whose meaning
+# the fence cannot read. Instead the leg is PARTITIONED: an absent `title` still
+# fails, but with a refusal that names the condition and the forbidden call site,
+# because absence is the CORRECT shape for a title-untouched save and a
+# serializer fault everywhere else, and `body` alone does not say which. Call-site
+# placement still carries the rest: this helper is called only from sites that set
+# `title` explicitly, and never from the RED class next door, whose whole
+# assertion is that `title` is ABSENT. The refusal is what makes that discipline
+# self-enforcing rather than a comment.
+#
+# Weighed and rejected: passing the un-judgeable field set IN from each call site.
+# It reads better in the abstract -- the condition is per-request, so the caller
+# knows it and the helper does not -- but it moves the wording into a parameter,
+# and the wording is what the refusal row asserts by exact equality. Every call
+# site would then have to spell (or import) the same set, which is a second
+# declaration of a one-element fact, and a site that forgets it gets the generic
+# "dropped field" wording back -- the exact defect this partition closes. The
+# field-level spelling keeps one declaration and cannot be forgotten.
 #
 # Module-name note: this file is reachable under TWO names. pytest's `prepend`
 # import mode puts each collected test's own directory on `sys.path`, so the
@@ -83,14 +96,26 @@ def assert_body_keys_track_the_model(body: dict[str, object], leg: WireLeg):
     # are read OFF `WireLeg` rather than re-spelled here: a re-spelled tuple is a
     # second declaration of the same closed set, and a leg added to the type but
     # not to the tuple gets rejected by the very guard that exists to police it.
+    #
+    # This guard sits BEFORE both fault legs and preempts them, so a typo'd leg on
+    # a genuinely broken body reports the label and not the fault. Kept that way
+    # deliberately: the label is interpolated into every message the legs produce,
+    # so under the other order the fault IS reported -- attributed to a leg that
+    # does not exist, which is a wrong report, not a partial one. A typo'd leg is a
+    # one-edit defect in the caller and the fault re-reports on the very next run,
+    # whereas a misattributed fault sends the reader to the wrong serializer. This
+    # is the one place where aborting first beats reporting both, and it is the
+    # opposite call from the two legs below for that reason.
     assert leg in get_args(WireLeg), (
         f"the leg label must be one of the declared WireLeg values, got {leg!r}"
     )
     declared = set(SaveDocumentRequestDto.model_fields)
-    # Without this, an empty declared set skips both `if`s below and the final
-    # assert passes without having examined `body` at all -- a vacuous pass in the
-    # one helper whose whole job is to notice an absence.
-    assert declared, "the model declares no fields -- the fence has nothing to check"
+    # No emptiness guard here. There was one, justified as closing a vacuous pass;
+    # both halves of that were wrong. `declared` cannot be empty -- a pydantic model
+    # always populates `model_fields`, so no reachable input trips it -- and with
+    # `declared == set()` the `undeclared` leg would fire for ANY non-empty body,
+    # so the pass it described needed an empty `body` as well. A guard that cannot
+    # fire is not a fence; the accurate statement is this comment.
     missing = declared - body.keys()
     undeclared = body.keys() - declared
     # Both faults are computed before either is asserted, and both are named in
@@ -100,8 +125,29 @@ def assert_body_keys_track_the_model(body: dict[str, object], leg: WireLeg):
     # its reason for splitting the JSON leg off the dict leg. The fence should
     # not contradict its own neighbour.
     faults = []
-    if missing:
-        faults.append(f"{sorted(missing)} was declared on the model and dropped by the serializer")
+    # The `missing` leg is PARTITIONED, not doubled. `title` is the single declared
+    # field whose absence is under dispute, so it gets a refusal that says the fence
+    # cannot judge this body and names the class it must not be called from; every
+    # other declared field keeps the generic dropped-field wording, because nothing
+    # anywhere claims a body may omit `content` or `version`. Calling an absent
+    # `title` "dropped" is what asks a future green to emit `"title": null`, and
+    # `SaveDocumentRequestDto.title_update()` maps that to `TitleUpdate.clear()` --
+    # a silent, unrecoverable title erasure on a save that never touched the title.
+    #
+    # Collected into `faults` like any other fault rather than raised ahead of them,
+    # so an absent-`title` body that ALSO carries a spurious key still reports both
+    # directions in the one message -- the shape the both-faults row exists to hold.
+    if "title" in missing:
+        faults.append(
+            "'title' is absent, which this fence cannot judge: absence is the CORRECT "
+            "shape for a title-untouched save (TestSaveDocumentRequestDtoWireShape in "
+            "test_save_document_request_dto_wire_shape.py) and a serializer fault "
+            "everywhere else, and the body alone does not say which -- do not call this "
+            "fence on the untouched row"
+        )
+    dropped = missing - {"title"}
+    if dropped:
+        faults.append(f"{sorted(dropped)} was declared on the model and dropped by the serializer")
     if undeclared:
         faults.append(f"{sorted(undeclared)} is on the body but declared nowhere on the model")
     assert not faults, (
