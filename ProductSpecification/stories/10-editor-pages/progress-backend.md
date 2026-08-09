@@ -835,8 +835,100 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   row prescribes hardcoding a sibling class name inside shared infrastructure called from two other
   files, which contradicts the helper's own module comment (lines 23-29) arguing that CALL-SITE
   PLACEMENT, not field-level policy, carries this condition. Consider having green pass the
-  un-judgeable field set IN from the call site rather than baking `title` into the fence.)
-- [~] green-adapter rest (premortem: the fence must refuse the row it cannot judge)
+  un-judgeable field set IN from the call site rather than baking `title` into the fence.
+  `/refactor` applied exactly one change, and it is agent-review finding 2 arriving independently:
+  the closed leg set was declared TWICE — as `WireLeg = Literal[...]` and again as a runtime tuple
+  in the new guard — so a leg added to the type would have been rejected by the very guard meant to
+  police it. Now `assert leg in get_args(WireLeg)`, which is what the guard's own message already
+  claimed ("one of the declared WireLeg values"). Behavior probed identical; 111/5 unchanged.
+  Both deferred items came back NO ACTION, and the first correction is worth keeping:
+  (a) **the `undeclared` leg — the deferral's premise was incomplete.** Subsumption by the frozen
+  `body == {...}` holds at the 10 live call sites, but there are **14**, and two of the other four
+  exercise `undeclared` directly (`test_wire_shape_key_fence.py:95` pins its message by exact
+  equality; `:107` pins the both-faults message). Removing the leg deletes a guard AND its tests
+  together, collapses the `'; and '` joiner to dead code, and retroactively makes the collected-
+  `faults` design look like ceremony — inviting the revert to sequential asserts that the class
+  docstring records as leaving everything green with the fence dead.
+  (b) `set(model_fields)` as a calculated expected stays, with two properties any future editor must
+  treat as load-bearing: the `assert declared` vacuity guard, and the fact that every live site
+  asserts a frozen whole-body literal ALONGSIDE the fence rather than delegating to it. **If a call
+  site ever drops its literal and leans on the fence alone, this stops being an acceptable
+  calculated expectation and becomes the smell.**
+  BOTH REVIEW PASSES RETURNED **CONCERNS**, converging on the same highest-severity finding:
+  (a) **The re-fixturing re-encoded the inversion it was meant to remove** — agent-review 1 and
+  premortem #3, reached independently and rated top by both. The replacement fixture is
+  `{"title": None, "version": 1}` with `['content']` pinned as the ONLY fault, so two LIVE
+  (non-skipped) rows now certify by exact equality that a body carrying `title: None` — the erasure
+  spelling — is key-set-clean. The old fixture only implied it by omission; the new one states it.
+  Nothing forced the choice: `{"title": "kept", "version": 1}` drops `content` just as unambiguously
+  and carries no claim about the null spelling. The docstring's own justification ("`content`
+  carries no such dispute") argues for dropping `content`, not for spelling the retained `title` as
+  `None`. And it survives green silently — after the partition `title` is present in both bodies, so
+  the messages stay byte-exact and nothing fails. Chartered below.
+  premortem sharpened it into the incident: after green the fence's opinion on `title` is
+  **absent → refuse, present-and-null → accept silently** — the erasure spelling is in its ACCEPT
+  set. An 11th call site that uses the documented shared guardian and does not ALSO freeze a
+  whole-body literal ships `{"title": None, ...}` past a green fence named for this invariant.
+  (b) **Both new helper guards are untested, and `/refactor` edited one anyway** (premortem #2). No
+  row passes a bad leg; no row asserts either message. The typo'd `"dmped JSON"` was MEASURED as
+  accepted and the measurement never became a test — then `/refactor` rewrote that exact assertion
+  with nothing standing behind it. Two sub-findings: the leg guard sits BEFORE both fault legs and
+  preempts them, so a typo'd leg on a genuinely broken body reports the label instead of the fault,
+  unpinned; and `assert declared` is **unreachable by construction** — a pydantic model always has
+  `model_fields` — so it is a dead line in a near-cap file. Do not fake a guard for it; say so or
+  remove it.
+  (c) **The empty-`declared` comment is factually wrong** (agent-review 3), in a commit whose whole
+  discipline is that comments are measured claims. With `declared == set()`, `undeclared` becomes
+  ALL of `body`'s keys, so the leg fires for any non-empty body. The vacuous pass it describes needs
+  `body` to be empty TOO. Fix the comment (or delete the line per (b)).
+  (d) **The fence's module comment now contradicts the row committed against it** (agent-review 4).
+  Lines 23-29 argue the absent-`title` condition is per-request, that there is deliberately NO
+  field-level exclusion set, and that call-site placement carries it. The red row demands the
+  opposite: a `title`-specific branch inside shared infrastructure, hardcoding a sibling class name.
+  Both ship in the same commit, unreconciled — and the note recorded above for green ("pass the
+  un-judgeable field set in from the call site") is only a suggestion in a progress file, while the
+  ASSERTED STRING already pins the field-level spelling by exact equality. **Green cannot take the
+  call-site route without editing the red row, which is not green's to edit.** The choice was made
+  here, not deferred. Green must either accept it or say plainly that the red row is being amended
+  and why.
+  (e) **Skip-marker exit condition, named here so it is not prose** (premortem #1): the marker is at
+  CLASS level in `test_wire_shape_key_fence_title_refusal.py`, and this scenario has sprung the
+  inert-marker trap three times. Green's exit condition is written into the row below.)
+- [~] green-adapter rest (premortem: the fence must refuse the row it cannot judge.
+  **EXIT CONDITION, explicit:** remove the CLASS-LEVEL `@pytest.mark.skip` from
+  `test_wire_shape_key_fence_title_refusal.py`, and check the NUMBER — the suite must come back
+  **112 passed, 4 skipped**. Nothing fails if green leaves the marker on; the count is the only
+  guard, and the marker being class-level means the whole file goes with it. This scenario has hit
+  that trap three times.
+  Implement the PARTITION, per the red's design verdict: `title` gets a refusal naming the forbidden
+  call site, every other declared field keeps the generic dropped-field wording, and the refusal is
+  collected into `faults` like any other rather than raised ahead of them — so an absent-title-plus-
+  spurious-key body still reports both directions in one message. Weigh test-review's competing
+  call-site-parameter design first and record the decision; note agent-review 4 above — taking that
+  route means amending the red row's asserted string, which green must do openly if at all.
+  While here, close premortem #2's gap in the same pass: one row asserting a typo'd leg label raises
+  with its exact message, and a decision on the unreachable `assert declared` line.)
+- [ ] red-adapter rest (both review passes on `b1991508`, converging as their top finding: **two LIVE
+  rows now certify the erasure body as key-set-clean.** `test_wire_shape_key_fence.py` rows 1 and 3
+  use `{"title": None, "version": 1}` (and `+ {"note": "spurious"}`) with `['content']` pinned by
+  exact equality as the ONLY fault. Read as a contract — the same reading that condemned the fixtures
+  these replaced — a body carrying `title: None` is asserted to be well-formed on the key axis, by
+  name, in rows nobody skips. Fix: re-fixture to `{"title": "kept", "version": 1}`, which drops
+  `content` just as unambiguously and makes no claim about the null spelling. Cheap and behavior-
+  neutral: `title` is present either way, so the pinned messages stay byte-exact and green is
+  unaffected. That is exactly why it must be done deliberately — nothing will ever fail to remind
+  anyone.
+  The load-bearing half is premortem #3, and it outlives the fixture fix: after green the fence's
+  opinion on `title` is **absent → refuse, present-and-null → accept silently**. The erasure spelling
+  sits in its ACCEPT set, and the 10 live call sites are covered only because each independently
+  freezes a whole-body literal — the fence contributes NOTHING to the invariant it is named for.
+  So also pin what the fence does when handed the exact erasure body: either it refuses `title: None`
+  by name (the fence owns the invariant), or — if key-set-only scope is deliberate, which the
+  helper's own docstring implies — a row pinning that the fence is explicitly VALUE-BLIND, with the
+  consequence stated: whole-body equality at the call site is the only thing between a title-
+  untouched save and `TitleUpdate.clear()`. Sequencing: after the partition green, since the refusal
+  branch is what makes the accept set legible.)
+- [ ] green-adapter rest (the fence must not certify the erasure body)
 - [ ] red-adapter rest (both review passes on `9a7027b2`, three findings that share one root — the
   fence's guards are coupled to the CURRENT shape of `SaveDocumentRequestDto`, and all three break
   on the day someone adds a field. Take them in one unit; splitting them means rewriting the same

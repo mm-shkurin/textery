@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, get_args
 
 from dto.document.document_dtos import SaveDocumentRequestDto
 
@@ -79,8 +79,11 @@ def assert_body_keys_track_the_model(body: dict[str, object], leg: WireLeg):
     # types this callee `Any` at every call site, and a typo'd "dmped JSON" was
     # measured as accepted. Since the label is interpolation-only, a wrong one is
     # invisible to every assertion and misnames the broken leg in the one report
-    # anybody reads. Two lines close at run time what the type cannot.
-    assert leg in ("dumped", "dumped JSON"), (
+    # anybody reads. Two lines close at run time what the type cannot. The values
+    # are read OFF `WireLeg` rather than re-spelled here: a re-spelled tuple is a
+    # second declaration of the same closed set, and a leg added to the type but
+    # not to the tuple gets rejected by the very guard that exists to police it.
+    assert leg in get_args(WireLeg), (
         f"the leg label must be one of the declared WireLeg values, got {leg!r}"
     )
     declared = set(SaveDocumentRequestDto.model_fields)
