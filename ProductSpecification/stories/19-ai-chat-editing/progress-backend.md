@@ -1175,7 +1175,76 @@ within their file, not across the story.
       `adapters/db` integration tests env-gated on "no database listening at localhost:5432". Pre-existing
       and unrelated to this unit — but this branch's db work needs `TEST_DATABASE_URL` pointed at
       `textery_s19` (line 88), so those 62 are not running by default on this host.
+      `/refactor` applied one and rejected five. Applied: `assert_edit_lookups` →
+      `_assert_edit_lookups` — the extraction left the two bases mirroring each other in everything but
+      this, and `RevisionGuardBase._assert_revision_lookups` states the reason it is protected (the
+      expectation comes entirely from the caller, so a public form lets any collaborator pass `[]` and
+      retire the ordering guard without editing an assertion). No test body reached it. Rejected, each
+      with a reason: moving `EPOCH`/`OTHER_ACCOUNT_ID` into the new arrangement (single-consumer today is
+      not should-move — `OTHER_ACCOUNT_ID` belongs to a matched literal-id block whose whole value is
+      minting from one place, and net lines go up either way); pulling `refusal_of` up (needs an abstract
+      `resolve` and the signatures genuinely differ, so it is indirection removing no duplication);
+      hoisting `assert_the_cross_document_refusal_is_canonical` (the shared expression is already
+      `assert_is_the_canonical_refusal`; what remains is per-family recorded state, and it is pre-existing
+      rather than extraction residue); touching the three `capture_the_versions_as_arranged()` call sites
+      (that is the lazy-snapshot mechanism); and the two E501s again.
+      **Both review passes CONCERNS, and they converged — independently and empirically — on the same
+      finding: the `filterwarnings` entry this unit shipped does not do what its commit message claims.**
+      `RuntimeWarning: coroutine ... was never awaited` is emitted from the coroutine's `__del__` during
+      GC; CPython swallows exceptions raised in a destructor, so `error::RuntimeWarning` never reaches
+      the test. pytest's `unraisableexception` plugin re-surfaces it as
+      `PytestUnraisableExceptionWarning` — a **different class, not matched by the filter, and still only
+      a warning**. Both agents ran the exact bug shape against the committed config and got
+      `1 passed, 1 warning`; adding `"error::pytest.PytestUnraisableExceptionWarning"` turns the same
+      probe into `1 failed`. So the bug that bit RED at `refusal_record_shape_statements.py:73` would
+      still report green today. The entry is not useless (it still catches directly-raised
+      `RuntimeWarning`s) — it is simply inert for the class it was added for, and the commit message
+      asserts a protection the repo does not have. The deeper miss is named the same way by both passes:
+      **no test asserts the guard fires.** Seven mutations were run against the version assertions and
+      zero against the harness change, which is the one kind of change that cannot go red on its own.
+      Scheduled below. Blast radius checked and clean: `pytest adapters domain application` under the
+      committed config is 337 passed, 62 skipped. One caveat for the fix — unraisable warnings fire
+      whenever the GC runs, so pytest attributes them to whatever test is executing at collection time;
+      pair with a `gc.collect()` in a session-scoped autouse fixture or accept the misattribution
+      knowingly. And one footgun now sitting inside this diff: `given_an_edit_queued_on_the_first_document`
+      stayed sync while its revision-family sibling became async — two symmetric steps in sibling classes
+      with opposite `await` requirements, whose severity is entirely a function of whether the gate works.
+      **Two further findings carried, both from agent-review.** (a) *Scope*: of the 21 tests in the three
+      files, 6 carry the new pair. `test_should_refuse_a_missing_document_and_a_missing_revision_identically`
+      (`test_resolve_owned_revision.py:42`) is a pure double-refusal test whose arrangement is already
+      fully in place — it was edited in this very diff, only to add the `await` — and needs nothing but
+      the two assertion lines; same for the two refusal-record tests. These are exactly the refusal paths
+      the unit argues a writing guard slips past. The premortem judges this redundancy rather than a hole,
+      since the absent-id and foreign-id branches are covered by the version-asserting test at line 187 —
+      both readings are recorded, and the cheap ones are folded into the step below.
+      (b) *Latent*: `resolve_via` takes the repository as a parameter precisely so outage statements can
+      pass a **failing** one, but `capture_the_versions_as_arranged()` always reads
+      `self.document_repository` — not the store the act used. Harmless today (no outage test asserts
+      versions), but this unit's whole design is "the snapshot is automatic so no test has to remember",
+      which invites the future outage test that adds the assertion and gets a green comparison of a store
+      the resolver never touched.
 - [ ] green-usecase (the version guard extended to the tests and families that still cannot see a write)
+- [ ] red-usecase (the harness gate that does not bite, and the refusal tests still blind to a write) —
+      **both review passes on `85d65ff8` verified this empirically rather than by reading, and the
+      finding is that the previous unit's own harness change is inert.**
+      (1) `filterwarnings = ["error::RuntimeWarning"]` does not fail a forgotten `await`: the warning is
+      emitted from `__del__`, CPython swallows destructor exceptions, and pytest re-raises it as
+      `PytestUnraisableExceptionWarning`, which the filter does not match. The fix is to add
+      `"error::pytest.PytestUnraisableExceptionWarning"` — but the load-bearing part of this step is that
+      **a test must prove the gate bites**, because a harness claim is the one kind of change that cannot
+      go red on its own and the last unit shipped it with zero mutations against it. Write the probe
+      first, watch it report green under the committed config (that is the genuine RED), then let GREEN
+      add the filter entry. Pair with a `gc.collect()` in a session-scoped autouse fixture, or record
+      knowingly that unraisable warnings are attributed to whichever test is running when the GC fires.
+      (2) The cheap half of the scope finding: add the two assertion lines to
+      `test_should_refuse_a_missing_document_and_a_missing_revision_identically`
+      (`test_resolve_owned_revision.py:42`) and the two refusal-record tests, whose arrangements are
+      already in place.
+      (3) The latent snapshot/store mismatch: `capture_the_versions_as_arranged()` reads
+      `self.document_repository` while `resolve_via` acts on the repository it was handed, so an outage
+      test that adds the version assertion compares a store the resolver never touched. Either capture
+      from the repository the act was given, or make the mismatch fail loudly.
+- [ ] green-usecase (the harness gate that does not bite, and the refusal tests still blind to a write)
 - [ ] green-usecase (the version guard aimed at the documents the load-bearing test actually probes)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares
