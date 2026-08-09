@@ -83,9 +83,7 @@ class ForgottenAwaitGateStatements:
         """
         scratch = str(arranged(self._scratch, "child scratch directory"))
         environment = {
-            name: value
-            for name, value in os.environ.items()
-            if name not in LEAKY_CHILD_VARIABLES
+            name: value for name, value in os.environ.items() if name not in LEAKY_CHILD_VARIABLES
         }
         return {**environment, "TMPDIR": scratch, "TEMP": scratch, "TMP": scratch}
 
@@ -136,8 +134,9 @@ class ForgottenAwaitGateStatements:
         that merely starts with this path.
         """
         child = self._child()
-        for expected in (f"rootdir: {BACKEND_ROOT}", f"configfile: {PROJECT_CONFIG.name}"):
-            actual = child.header_line(expected.split(":", 1)[0])
+        for key, value in (("rootdir", BACKEND_ROOT), ("configfile", PROJECT_CONFIG.name)):
+            expected = f"{key}: {value}"
+            actual = child.header_line(key)
             assert actual == expected, (
                 f"the child run reported '{actual}', expected '{expected}' -- a run that fell "
                 f"back to pytest's built-in defaults says nothing about the configuration "

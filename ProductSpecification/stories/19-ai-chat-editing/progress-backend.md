@@ -1333,7 +1333,96 @@ within their file, not across the story.
       checkout to get a lint baseline, with the frontend session live — it verified immediately that
       their work was already committed (`73c5411d`) and the pop restored cleanly with nothing lost, but
       it was an avoidable risk and the reason the file-ownership rule asks for separate worktrees.
-- [ ] green-usecase (the harness gate that does not bite, and the refusal tests still blind to a write)
+      `/refactor` applied four and rejected five. It also **took the out-of-unit cap violation**:
+      `generation_lifecycle_statements.py` 227 → 158 by extracting the arrangement half into a new
+      `generation_arrangement.py` (101) that the Statements class inherits — the shape
+      `revision_guard_base.py` and `ai_edit_guard_base.py` already use, so the fixture name, class name
+      and every call site are unchanged and that story's conftest and test class needed no edit. The seam
+      is the one the class already had. It also collapsed four verbatim copies of the `GenerateDocument`
+      wiring, removed a dead `looked_up_result` accessor, un-did a round-trip re-parse in the gate
+      Statements (the loop built `f"rootdir: {…}"` then recovered the key it had just embedded with
+      `split(":", 1)[0]`), and cleared a `ruff format` deviation the commit had shipped. **Zero files over
+      200 lines anywhere under `backend/usecase/tests` now.** Rejected with reasons: extracting a
+      `_child_scratch` property (+4 lines would push the file to 201 — the cap outranks a two-occurrence
+      expression), splitting the gate Statements, the two E501s again, and deleting three more unused
+      generation-family DSL members — those carry docstrings stating scenario claims, so they read as DSL
+      written ahead of a scenario in that story rather than split residue, and deleting them is scope
+      creep into another story's design. Flagged for that story's owner instead.
+      **Both review passes CONCERNS, and both answered the two questions by *running* them.** The skipped
+      RED **will** go green when GREEN lands the filter: with only that entry added to a copy of the real
+      config, the probe child exits 1, the tally is exactly `{"failed": 1}`, and the FAILURES section
+      carries both the probe test name and the coroutine sentence. And the gate cannot pass for a
+      config-surface reason other than the fix — `error::PytestUnraisableExceptionWarning` **alone**,
+      without `error::RuntimeWarning`, still gives `exit 0, 1 passed, 1 warning`, so both entries are
+      required. One fragility recorded: the terminal exception text does *not* contain the searched
+      sentence; it survives only because the chained traceback renders the CPython
+      `_warn_unawaited_coroutine` frame, so the assertion depends on traceback rendering depth rather than
+      on a stable message.
+      **The sharpest finding is the one both passes reached independently: this commit ships a second
+      inert guard while its whole subject is an inert guard.**
+      `_refuse_a_snapshot_of_a_store_the_act_never_used` (`document_arrangement.py:130-136`) is real
+      branching logic — a sticky latch set from `acted_on is not self.document_repository`, read by two
+      assertion methods — with **zero test coverage**. The outage families do set the latch today, but
+      none of them calls a version assertion, so the `assert` never executes in any run; it was
+      mutation-proven once by hand and never again. Dropping either call site or weakening the `is not`
+      goes green, returning the outage families to the vacuous-pass state it was written to end.
+      A related defect in the same helper: it is called from **both** assertions, but its justification
+      holds only for `assert_no_document_gained_a_version` (pre-act snapshot vs post-act rows).
+      `assert_the_arrangement_holds_the_minted_versions` compares `_versions_as_arranged` against
+      `_minted_versions`, both read off `self.document_repository` and independent of the act's store —
+      and because the latch is never reset, a test that acts on the arrangement and *then* on a failing
+      store loses a valid arrangement assertion and is told to change its act.
+      **Two more, both about the gate's reach.** (a) The probe is written to `tmp_path` and passed by
+      absolute path, and the child is launched with `--rootdir` but **no `--confcutdir`** — pytest walks
+      conftests upward from the *collected file*, not from rootdir, so none of the repo's eleven
+      `conftest.py` files load in the child. What is proven is "must fail a bare run under this config
+      file", not "must fail the suite": a future session- or package-scope fixture using
+      `warnings.catch_warnings()` / `simplefilter` / `pytest.warns` would blind the real suite while this
+      gate stayed green. Latent today (no conftest touches `warnings`). The premortem sharpens the same
+      seam into a live hazard: if `tmp_path` ever lands inside the repo — a CI image setting `TMP` into
+      the workspace — the child imports the repo's conftests and aborts collection, *and* the parent
+      collects the leftover probe on a later run, since `tmp_path` roots persist for three runs under a
+      fixed module name. Pin `--confcutdir`, and assert at write time that `BACKEND_ROOT` is not an
+      ancestor of the probe path; the "outside rootdir" claim is prose, not an assertion.
+      (b) `child_pytest_report.py:33` fuses stdout and stderr with `+` and no separator, while
+      `summary_counts()` reads `banners[-1]` — anything the child writes to stderr lands after the final
+      tally, and a missing trailing newline merges the last stdout line with the first stderr line.
+      Low probability, trivial fix, and it sits under every tally assertion.
+      Two stale-prose notes: the commit message says four scrubbed environment variables where
+      `LEAKY_CHILD_VARIABLES` lists five, and `gc.collect()` is described as load-bearing when on CPython
+      the coroutine is a bare expression-statement temporary whose `__del__` fires at end of statement —
+      correct as defensive portability, but not the stated mechanism.
+- [ ] green-usecase (the harness gate that does not bite, and the refusal tests still blind to a write) —
+      **two deliverables, and the second is the one a GREEN forgets.** (1) Add
+      `"error::pytest.PytestUnraisableExceptionWarning"` to `filterwarnings` in `backend/pyproject.toml`
+      — both entries are required, verified. (2) **Remove the `@pytest.mark.skip` from
+      `test_should_fail_the_run_when_a_call_site_forgets_to_await_an_async_given_step`.** The premortem's
+      incident is that a GREEN which lands the config entry and forgets the marker produces a suite
+      **byte-identical in signal** to today's — `185 passed, 0 failed, 1 skipped` — with the guard dead
+      forever, and nothing in the repo fails on a nonzero skip count. The acceptance number for this step
+      is therefore **0 skipped**, not 1.
+- [ ] red-usecase (the guard on the arrangement's own guard, and the gate's reach beyond one config file)
+      — **scheduled by both review passes over `29779ca0`, which reached it independently: that commit
+      shipped a second inert guard while its entire subject was an inert guard.**
+      (1) `_refuse_a_snapshot_of_a_store_the_act_never_used` has zero coverage — the outage families set
+      its latch but never call a version assertion, so its `assert` executes in no run. A test must
+      arrange a foreign-store act and assert both `assert_no_document_gained_a_version` **and**
+      `assert_the_arrangement_holds_the_minted_versions` raise with the message naming the test-infra
+      remedy, since the latch is read from both.
+      (2) The same helper is applied where it does not belong: its justification holds only for the
+      post-act comparison. `assert_the_arrangement_holds_the_minted_versions` reads both sides off
+      `self.document_repository`, independent of the act's store, and the latch is never reset — so a
+      test that acts on the arrangement and then on a failing store loses a valid assertion. Either
+      scope the refusal to the assertion it applies to, or reset the latch per act, and pin the choice.
+      (3) The gate's reach: pin `--confcutdir` on the child so its conftest walk cannot leave the
+      scratch, and assert at write time that `BACKEND_ROOT` is not an ancestor of the probe path — the
+      "outside rootdir, so the parent never collects it" claim is prose today. Consider the cheap second
+      probe placed *inside* `backend/usecase/tests/` so what is proven is "must fail the suite" rather
+      than "must fail a bare run under this config file".
+      (4) `child_pytest_report.py:33` joins stdout and stderr with `+`; `summary_counts()` reads the last
+      banner, so stderr output lands after the tally and a missing trailing newline merges two lines.
+      `"\n".join`.
+- [ ] green-usecase (the guard on the arrangement's own guard, and the gate's reach beyond one config file)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares
       the parameter as `str` precisely so that FastAPI does not answer it 422 ahead of the Bearer
