@@ -76,7 +76,7 @@ class RevisionGuardBase(DocumentArrangement):
         is why the arrangement snapshot is taken here rather than by a `given_` step
         each test would have to remember.
         """
-        self.capture_the_versions_as_arranged()
+        self.capture_the_versions_as_arranged(document_repository)
         return await resolve_owned_revision(
             document_repository,
             self.revision_repository,

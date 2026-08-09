@@ -60,6 +60,7 @@ class DocumentArrangement:
         )
         self._minted_versions: dict[UUID, int] = {}
         self._versions_as_arranged: dict[UUID, int] | None = None
+        self._acted_on_a_store_outside_the_arrangement = False
         self._first_document_id: UUID | None = None
         self._second_document_id: UUID | None = None
         self._foreign_document_id: UUID | None = None
@@ -101,15 +102,38 @@ class DocumentArrangement:
         )
         self._minted_versions[self.first_document_id] = POST_EDIT_DOCUMENT_VERSION
 
-    def capture_the_versions_as_arranged(self) -> None:
+    def capture_the_versions_as_arranged(self, acted_on: object) -> None:
         """The end of the arrangement, taken at the first act rather than declared.
 
         Lazy and idempotent rather than an explicit `given_` step: a step would have
         to be remembered in every test of three packages, and the one test that
         forgot would be the one whose guard wrote.
+
+        `acted_on` is the document store the act was actually handed, and it is a
+        required argument for a reason. The outage families deliberately pass a
+        *failing* repository into `resolve_via`, while the snapshot can only ever be
+        read off `self.document_repository` -- so a version assertion added to one of
+        those tests would compare a store the guard never touched and pass no matter
+        what the guard did. Harmless only for as long as nobody adds the assertion,
+        which is exactly the kind of quiet the version guard exists to end: the whole
+        claim of the lazy snapshot is that no test has to remember anything.
+
+        The mismatch cannot be resolved by snapshotting the substitute (a failing
+        double holds no rows at all), so it is recorded and made to fail loudly at
+        the assertions instead of silently agreeing with itself.
         """
+        if acted_on is not self.document_repository:
+            self._acted_on_a_store_outside_the_arrangement = True
         if self._versions_as_arranged is None:
             self._versions_as_arranged = self._versions_now()
+
+    def _refuse_a_snapshot_of_a_store_the_act_never_used(self) -> None:
+        assert not self._acted_on_a_store_outside_the_arrangement, (
+            "the act was handed a document store other than this arrangement's, so the "
+            "version snapshot describes rows the guard never touched -- the assertion would "
+            "hold no matter what the guard did. Assert versions on a path that acts on "
+            "`self.document_repository`, or teach the substitute to expose its rows"
+        )
 
     def assert_the_arrangement_holds_the_minted_versions(self) -> None:
         """The arranged store is the shape production produces, and nothing else.
@@ -127,6 +151,7 @@ class DocumentArrangement:
         write as literals. `assert_no_document_gained_a_version` is the one that sees
         rows appear, because its expectation is a snapshot taken before the act.
         """
+        self._refuse_a_snapshot_of_a_store_the_act_never_used()
         actual = arranged(self._versions_as_arranged, "versions_as_arranged")
         assert actual == self._minted_versions, (
             f"the arrangement left versions {actual}, expected {self._minted_versions} -- the "
@@ -148,6 +173,7 @@ class DocumentArrangement:
         the equality, so a version that moved and a row that appeared fail the same
         expression.
         """
+        self._refuse_a_snapshot_of_a_store_the_act_never_used()
         expected = arranged(self._versions_as_arranged, "versions_as_arranged")
         actual = self._versions_now()
         assert actual == expected, (

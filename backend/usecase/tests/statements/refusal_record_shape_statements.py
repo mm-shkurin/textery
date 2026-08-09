@@ -136,6 +136,18 @@ class RefusalRecordShapeStatements:
                 f"account is worse"
             )
 
+    def assert_neither_arrangement_gained_a_version(self) -> None:
+        """Four refusals ran here, and refusing is a read on both sides.
+
+        One statement rather than four lines in the test: this class exercises two
+        guards, so the version guard has two arrangements to cover, and a test that
+        listed them by hand is a test that can list only one. The pair is written
+        out here once, where the composition already lives.
+        """
+        for guard in (self.edit, self.revision):
+            guard.assert_the_arrangement_holds_the_minted_versions()
+            guard.assert_no_document_gained_a_version()
+
     def _paired(
         self,
     ) -> list[tuple[str, frozenset[str], logging.LogRecord, logging.LogRecord]]:

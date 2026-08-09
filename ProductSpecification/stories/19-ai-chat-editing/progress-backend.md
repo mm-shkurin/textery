@@ -1249,7 +1249,7 @@ within their file, not across the story.
       `save_content_if_version_matches`, and none of them calls either. Seven mutations proved the new
       assertions would see a write if one existed. As at line 973, what the unit bought is a pin, not a
       behaviour — and this time the pin was extended to two guard families that had none at all.
-- [ ] red-usecase (the harness gate that does not bite, and the refusal tests still blind to a write) —
+- [x] red-usecase (the harness gate that does not bite, and the refusal tests still blind to a write) —
       **both review passes on `85d65ff8` verified this empirically rather than by reading, and the
       finding is that the previous unit's own harness change is inert.**
       (1) `filterwarnings = ["error::RuntimeWarning"]` does not fail a forgotten `await`: the warning is
@@ -1269,6 +1269,70 @@ within their file, not across the story.
       `self.document_repository` while `resolve_via` acts on the repository it was handed, so an outage
       test that adds the version assertion compares a store the resolver never touched. Either capture
       from the repository the act was given, or make the mismatch fail loudly.
+      **Outcome: a real RED, the first in this run of units.** Predicted `AssertionError` with message
+      "the child pytest exited 0, expected 1 — a call site that forgot to `await` an async given_ step
+      left the arrangement empty, and the suite reported it as a pass", status FAILED. Actual: exactly
+      that, at `forgotten_await_gate_statements.py:141`, the embedded child transcript ending
+      `1 passed, 1 warning` with the swallowed `PytestUnraisableExceptionWarning`. Type, message and
+      status all matched; `@pytest.mark.skip` applied to that one test.
+      **Both directions verified, as the step required.** Under the committed config the gate test fails
+      (child exits 0 — confirmed first with a bare probe, `1 passed, 1 warning`); with
+      `"error::pytest.PytestUnraisableExceptionWarning"` added, `2 passed` and the child exits 1 naming
+      the coroutine. The entry was then **reverted** — it is GREEN's to land, and
+      `git diff backend/pyproject.toml` is empty.
+      **Shape:** the gate runs pytest as a **child process against the real `backend/pyproject.toml`**
+      (`-c` + `--rootdir`, not a copy — the claim is about *this* repo's config) over a generated probe
+      module written under the parent's `tmp_path`, outside `rootdir`, so the parent never collects it.
+      It stays green once the filter lands and goes red the day anyone removes it. A second, **unskipped**
+      test runs the same machinery on an *awaited* probe and asserts exactly one pass — the non-vacuity
+      control that makes the first test's failure attributable to the forgotten `await` rather than to
+      the harness. The GC-attribution caveat is **handled rather than recorded**: each probe body calls
+      `gc.collect()` itself, so the destructor fires inside the probe's own test instead of wherever the
+      collector happens to land.
+      **`/test-review`'s severe finding is the one worth carrying, because it is this unit's own defect
+      in miniature.** `assert_the_failure_named_the_unawaited_coroutine` — the assertion written
+      precisely because "exit code alone is satisfied by any child breakage" — searched the **whole**
+      child output, and on today's config the child prints that exact sentence in its **warnings
+      summary** while exiting 0. So the assertion passed in the very state the test exists to reject,
+      and the exit code was the only live check. A gate about an inert guard shipped with an inert
+      assertion of its own. The sentence is now read out of the `FAILURES` section only, with the failing
+      test named there too; verified red by direct invocation.
+      Four more: `"1 failed" in output` / `"1 passed" in output` were substring checks — `"1 passed"`
+      also matches `11 passed`, and neither notices a skip, a second failure or a stray warning; both are
+      now a parsed whole-tally equality, which additionally rejects a run where pytest declined to
+      execute the `async def` control and reported a skip. `rootdir:`/`configfile:` were pinned by
+      substring, so a rootdir merely *starting with* that path passed; whole-line equality now.
+      **Hermeticity:** the child inherited `PYTHONWARNINGS`, `PYTEST_ADDOPTS`,
+      `PYTEST_DISABLE_PLUGIN_AUTOLOAD` and `PYTEST_PLUGINS` — `PYTHONWARNINGS=ignore::RuntimeWarning` on
+      a CI runner would make this gate **permanently un-failable**, and disabling plugin autoload would
+      stop pytest-asyncio and break the control; all four are now scrubbed. And the 200-line cap forced a
+      split: the report reading became `ChildPytestReport` (banner sections, whole header lines, parsed
+      tally), 198 / 83.
+      **The exit-1 enumeration was checked rather than assumed:** collection/conftest errors exit 2 or 3,
+      usage error 4, no-tests-collected 5 — only a genuine test failure yields 1, and with the FAILURES-
+      section fix the failure must now be attributed to the probe test for the forgotten-`await` reason.
+      **Part (2)** landed as a no-red and is mutation-proven: making `resolve_owned_revision` write on the
+      resolve path gives **6 failed / 43 passed** — all three newly-guarded tests die alongside the three
+      that already carried the lines. `test_resolve_owned_revision.py` split 198 → 119 with the
+      log/silence/shape tests moving to `test_resolve_owned_revision_records.py` (97) to stay under the cap.
+      **Part (3)**: `capture_the_versions_as_arranged` now takes the store the act was handed as a
+      **required** argument (all three call sites updated, each verified to pass the right one).
+      Snapshotting the substitute is not available — `FailingDocumentScopeRepository` holds no rows — so
+      the mismatch **fails loudly** instead, with a message naming the test-infra remedy so it cannot read
+      as a production defect. Mutation-proven: adding the two version lines to the outage test, which acts
+      on the failing repository, would previously have passed vacuously and now fails with "the act was
+      handed a document store other than this arrangement's".
+      **A flake found and fixed rather than shrugged off:** the first full run failed the *control* test —
+      the child aborted collection with `FileNotFoundError` on an ambient `%TEMP%` path it inherited. The
+      child now gets `TMPDIR`/`TEMP`/`TMP` and `--basetemp` inside the parent's own `tmp_path`; stable
+      across 5× then 3× repeated runs.
+      **Two costs and one process note, recorded not buried.** The gate spends a subprocess pytest per
+      run (~2s for the pair) — the only way a harness claim can be asserted from inside the harness.
+      `generation_lifecycle_statements.py` is **227 lines**, over the hard limit; already committed,
+      untouched by this unit, and needs splitting. And the red-agent ran `git stash -u` in this shared
+      checkout to get a lint baseline, with the frontend session live — it verified immediately that
+      their work was already committed (`73c5411d`) and the pop restored cleanly with nothing lost, but
+      it was an avoidable risk and the reason the file-ownership rule asks for separate worktrees.
 - [ ] green-usecase (the harness gate that does not bite, and the refusal tests still blind to a write)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares

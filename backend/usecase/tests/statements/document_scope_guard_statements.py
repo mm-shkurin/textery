@@ -62,7 +62,7 @@ class DocumentScopeGuardStatements(DocumentArrangement):
         keeps every act step of this class covered by the version guard without any
         test having to remember it.
         """
-        self.capture_the_versions_as_arranged()
+        self.capture_the_versions_as_arranged(self.document_repository)
         return await resolve_owned_document(self.document_repository, document_id, CALLER_ID)
 
     def assert_both_refusals_are_the_one_canonical_not_found(self) -> None:
