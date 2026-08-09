@@ -1,28 +1,28 @@
-// STUB — behaviourally empty on purpose (TDD red, Story 19 Frontend Scenario 0.1).
-//
-// It exists so that the static imports and the `vi.mock` path in
-// `components/__tests__/DocumentEditorPage.notFound.test.tsx` resolve: Vite's import analysis
-// resolves both at transform time, even under `describe.skip`, so a reference to a module that
-// does not exist crashes collection instead of failing a test.
-//
-// The real body lands in `red-frontend-api` / `green-frontend-api`, which owns mapping the
-// shared 404 body (`endpoints.md`: "All seven endpoints share one 404 body") onto
-// DocumentNotFoundError. An absent document and another account's document are indistinguishable
-// from the client — the same 404 answers both — so ONE error type covers both halves of the
-// scenario's Given.
+// The editor's read of /documents/{id}. A thin wrapper over the ONE existing loader rather than a
+// second fetch: `send` flattens every non-401/409 refusal into a described generic Error, so by the
+// time a wrapper regained control a 404 and a 500 would be the same value — recovering the
+// distinction outside `send` would have meant re-implementing the token attach, the 401
+// renew-and-replay and the refusal-describing. So the 404 branch lives beside the 409 one, and this
+// module only asks for it (`{ notFound: true }`) and drops what the editor does not use.
+import { getDocument } from '../../generation/api/documentApi'
+
+// Re-exported, NOT re-declared: two structurally identical classes are two different identities,
+// and `instanceof` in useEditorDocument / DocumentEditorPage would silently go false.
+export { DocumentNotFoundError } from '../../../shared/api/send'
+
+// `status` is deliberately absent: the editor renders `content` and sends `version` back on save,
+// and nothing in this feature branches on the document's status.
 export interface EditorDocument {
   documentId: string
   content: string
   version: number
 }
 
-export class DocumentNotFoundError extends Error {
-  constructor() {
-    super('Документ не найден')
-    this.name = 'DocumentNotFoundError'
-  }
-}
-
 export async function loadEditorDocument(documentId: string): Promise<EditorDocument> {
-  throw new Error(`Not implemented: loadEditorDocument(${documentId})`)
+  const document = await getDocument(documentId, { notFound: true })
+  return {
+    documentId: document.documentId,
+    content: document.content,
+    version: document.version,
+  }
 }

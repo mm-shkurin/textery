@@ -4,7 +4,7 @@
 // renews the session and replays rather than surfacing as a document failure the user did not
 // cause. Manual mode is behind a session by product decision (2026-07-17): an unauthorized
 // visitor can neither generate nor write.
-import { send, VersionConflictError } from '../../../shared/api/send'
+import { send, VersionConflictError, type RefusalMapping } from '../../../shared/api/send'
 import { WIRE_DOCUMENT_TYPE, type DocumentType } from '../../../shared/documentTypes'
 
 interface DocumentWire {
@@ -120,11 +120,19 @@ export interface GetDocumentResult {
   version: number
 }
 
-export async function getDocument(documentId: string): Promise<GetDocumentResult> {
+// `refusals` is passed through, not decided here: the same GET serves the generation flow (where
+// a 404 is the retry-with-context failure it has always been) and the editor (where it is the
+// scenario's Given and needs its own type). Defaulting to {} keeps every existing caller —
+// including saveDocument's refetch below — byte-for-byte on today's behaviour.
+export async function getDocument(
+  documentId: string,
+  refusals: RefusalMapping = {},
+): Promise<GetDocumentResult> {
   const data = await send<DocumentWire>(
     `/api/v1/documents/${documentId}`,
     {},
     'Не удалось загрузить документ',
+    refusals,
   )
   return {
     documentId: data.document_id,

@@ -239,7 +239,29 @@ under `frontend/src` or `acceptance/tests/frontend`.
       `useDocumentInit.ts:71`. Owe a sibling case carrying `error_code`.
       (w) No case in `ManualEditor.saveFailureKinds.test.tsx` asserts the banner when `saveDocument`
       rejects with `DocumentNotFoundError`.
-- [ ] green-frontend-api
+- [x] green-frontend-api — 512 passed / 0 skipped (was 507/5); all five cases report *passed*
+      individually. tsc clean.
+      **Follow-up (t) changed the design decision before green started: the NOT_FOUND branch is
+      OPT-IN per call, not the unconditional branch the 409 mapping is.** `send` grew a fourth
+      parameter `refusals: RefusalMapping = {}` and raises `DocumentNotFoundError` only when
+      `refusals.notFound` is set; `getDocument` forwards the flag with the same default, so
+      `saveDocument`'s conflict-refetch, generation polling and both history lists are byte-for-byte
+      unchanged and their tests stayed green untouched. That closes (t) in production code — but the
+      test that would keep it honest is **owed**: nothing yet asserts that a `NOT_FOUND` 404 on a
+      non-document endpoint still gets its caller's fallback text, so a later widening to a global
+      branch would pass the suite. (w) is likewise still open for the same reason.
+      (u) is honored and commented: the branch keys on `error_code`, so a 404 with no code (proxy
+      HTML, empty body — `performRequest` substitutes `{}`) stays a generic described `Error`. The
+      argument for that trade is that the endpoint's own 404 always carries the code, so what falls
+      through is a request that never reached the API — and telling that user "документа не
+      существует" would send them to delete work that is fine. Still unpinned by a case.
+      (r) is closed: `loadEditorDocument` no longer throws unconditionally, so `/documents` stops
+      leading every row click to the failure screen.
+      `DocumentNotFoundError` moved to `send.ts`; `editorDocumentApi` re-exports rather than
+      re-declares it — a second structurally identical class is a second identity and `instanceof`
+      would silently go false. `EditorDocument` drops `status`: the editor renders `content` and
+      sends `version` back, and nothing in the feature branches on status.
+      Only test change: removing `describe.skip`.
 - [ ] align-design
 - [ ] green-selenium
 - [ ] demo

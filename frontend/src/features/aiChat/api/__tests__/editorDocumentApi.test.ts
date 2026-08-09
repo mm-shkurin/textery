@@ -46,7 +46,7 @@ import {
 // 500 case gets "Not implemented: …" where the described refusal text is. `describe.skip` rather
 // than five `it.skip`s: one function under test, one marker (the adapter-class convention).
 // Unskipped in green-frontend-api.
-describe.skip('editorDocumentApi loadEditorDocument', () => {
+describe('editorDocumentApi loadEditorDocument', () => {
   // Setup, not subject: the load goes through `authorizedRequest`, which throws
   // SessionExpiredError before fetch is ever reached when no token is stored.
   beforeEach(() => {

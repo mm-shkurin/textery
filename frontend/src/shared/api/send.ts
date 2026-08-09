@@ -30,6 +30,29 @@ export class VersionConflictError extends Error {
 // auth endpoints' — accept either, since this app talks to both and neither is going away.
 // Measured 2026-07-17: the documents endpoints answer with {"error_code", "message"}, so the
 // `message` arm is the live one here.
+// The requested document does not exist for this session — absent, or owned by another account
+// (endpoints.md: both answer with the same 404 body, never 403, so the client cannot and must not
+// tell them apart). Its own type for the same reason as VersionConflictError: the caller routes it
+// to "этого документа нет" rather than to the generic failure screen, and matching on message text
+// to recover that is what having a type avoids.
+export class DocumentNotFoundError extends Error {
+  constructor() {
+    super('Документ не найден')
+    this.name = 'DocumentNotFoundError'
+  }
+}
+
+// OPT-IN, per call — and deliberately NOT the unconditional branch the 409 mapping is.
+// `error_code: 'NOT_FOUND'` is shared by ALL seven endpoints, so a global branch would also fire
+// for generation polling, both history lists and PUT /documents/{id} — callers that never narrow
+// the new type. `useDocumentSave` would fall through to "Повторите — текст пока только в
+// редакторе" (retry advice that can never succeed), and useGeneration/useHistoryList render
+// `error.message` verbatim, so a missing GENERATION would read "Документ не найден". Only a
+// caller that knows the 404 is about a document, and handles it, asks for the mapping.
+export interface RefusalMapping {
+  notFound?: boolean
+}
+
 export function describeFailure(error: unknown, fallback: string): string {
   if (isHttpError(error)) {
     const detail = error.body.detail ?? error.body.message
@@ -43,7 +66,12 @@ export function describeFailure(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback
 }
 
-export async function send<T>(path: string, options: RequestOptions, fallback: string): Promise<T> {
+export async function send<T>(
+  path: string,
+  options: RequestOptions,
+  fallback: string,
+  refusals: RefusalMapping = {},
+): Promise<T> {
   try {
     return await authorizedRequest<T>(path, options)
   } catch (error) {
@@ -66,6 +94,19 @@ export async function send<T>(path: string, options: RequestOptions, fallback: s
       error.body.error_code === 'VERSION_CONFLICT'
     ) {
       throw new VersionConflictError()
+    }
+    // The CODE again, not the bare status — and the trade is explicit: a 404 that carries NO
+    // `error_code` (a proxy's HTML 404, an empty body — `performRequest` substitutes `{}`) stays a
+    // generic described Error. That is the safer half of the miss: the endpoint's own 404 always
+    // carries the code, so what falls through here is a request that never reached the API, and
+    // telling that user "документа не существует" would send them to delete work that is fine.
+    if (
+      refusals.notFound &&
+      isHttpError(error) &&
+      error.status === 404 &&
+      error.body.error_code === 'NOT_FOUND'
+    ) {
+      throw new DocumentNotFoundError()
     }
     throw new Error(describeFailure(error, fallback))
   }
