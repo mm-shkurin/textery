@@ -1223,7 +1223,20 @@ within their file, not across the story.
       versions), but this unit's whole design is "the snapshot is automatic so no test has to remember",
       which invites the future outage test that adds the assertion and gets a green comparison of a store
       the resolver never touched.
-- [ ] green-usecase (the version guard extended to the tests and families that still cannot see a write)
+- [S] green-usecase (the version guard extended to the tests and families that still cannot see a write)
+      — **`[S]` verified against the diff of the whole RED phase**, per the discipline established at the
+      1.2 trap (line 358) and applied at line 973. The phase spans `85d65ff8` (behavior), `a09ce08e`
+      (refactor) and `09b35d1c` (the review-pass record), and
+      `git diff --name-only 85d65ff8^ HEAD -- backend/usecase/src backend/domain backend/adapters/*/src
+      backend/application/src` returns **empty**. The only non-test backend file touched in the entire
+      phase is `backend/pyproject.toml`, which is test-runner configuration rather than production — and
+      it is the one change the review passes found **inert** (see the entry above and the red step below),
+      so it neither implements behaviour nor counts against the `[S]` condition.
+      Nothing to implement because the unit's subject was the *tests'* blindness, not the guards':
+      all three resolvers perform reads only, every write path sits behind `save_new` /
+      `save_content_if_version_matches`, and none of them calls either. Seven mutations proved the new
+      assertions would see a write if one existed. As at line 973, what the unit bought is a pin, not a
+      behaviour — and this time the pin was extended to two guard families that had none at all.
 - [ ] red-usecase (the harness gate that does not bite, and the refusal tests still blind to a write) —
       **both review passes on `85d65ff8` verified this empirically rather than by reading, and the
       finding is that the previous unit's own harness change is inert.**
