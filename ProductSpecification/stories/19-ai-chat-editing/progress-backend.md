@@ -1073,6 +1073,18 @@ within their file, not across the story.
       nothing else, and `assert_no_probed_document_gained_a_version` includes two ids its test never
       probes. Undersold names are how the original vacuity was missed. (d) Prose miscount in the commit
       message: four indexed walks, not three — all four are guarded, only the narrative is off.
+- [S] green-usecase (the version guard aimed at the documents the load-bearing test actually probes) —
+      **marked late, and the lateness is the record.** When the review passes over `d2186314` scheduled
+      the follow-up pair, the new `red-usecase` was inserted *above* this line instead of below it, so
+      the next-work-unit rule — first `[~]` or `[ ]` in file order — stepped straight over this step and
+      ran the follow-up red. The step was never executed as its own unit and is being closed here, in
+      place, rather than back-dated: file order is the only machine-readable part of that rule, and an
+      insertion that lands above an open step silently reorders the plan.
+      The disposition itself is unchanged by the delay. `d2186314`'s RED touched zero production files
+      (`git diff backend/usecase/src/` empty, verified at the time and again across `85d65ff8^..HEAD`),
+      so `[S]`'s condition held then and holds now. The unit that jumped the queue also superseded most
+      of what a green here could have been about: the two wrappers this step's assertion lived on were
+      collapsed into one arrangement-independent statement by `85d65ff8`.
 - [x] red-usecase (the version guard extended to the tests and families that still cannot see a write) —
       **both review passes converged here from opposite directions, and the finding is that this unit
       fixed one test of a family-wide blindness.**
@@ -1258,7 +1270,6 @@ within their file, not across the story.
       test that adds the version assertion compares a store the resolver never touched. Either capture
       from the repository the act was given, or make the mismatch fail loudly.
 - [ ] green-usecase (the harness gate that does not bite, and the refusal tests still blind to a write)
-- [ ] green-usecase (the version guard aimed at the documents the load-bearing test actually probes)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares
       the parameter as `str` precisely so that FastAPI does not answer it 422 ahead of the Bearer
