@@ -1,23 +1,34 @@
+from typing import Literal
+
 from dto.document.document_dtos import SaveDocumentRequestDto
 
-# Fields declared on the model that are intentionally kept OFF the wire. Empty,
-# and deliberately spelled as an empty frozenset rather than dropped from the
-# expression: on the current `SaveDocumentRequestDto` every declared field
-# (`content`, `title`, `version`) belongs on the body, so there is nothing to
-# exclude, and the day a server-derived or internal field is added the exclusion
-# is a one-line edit here instead of a re-argument at the call sites.
+# The leg the body was produced on, spelled as a closed type rather than a bare
+# `str`. It is interpolation-only -- no branch reads it -- so a typo or a swapped
+# label is invisible to every assertion here and would misname the broken leg in
+# the one report anybody reads. NOTE: this is documentation, not enforcement --
+# the call sites spell the import `from wire_shape_key_fence import ...`, which
+# mypy cannot resolve (see the module-name note below), so it types the callee
+# `Any` and never checks the argument. The closed type becomes enforced the day
+# the import is spelled `dto.document.wire_shape_key_fence`.
 #
-# `title` is NOT listed, and that is the point of the whole leg. Its omission on
-# the absent row is a PER-REQUEST condition, not a field-level policy -- the same
-# field is required on the body for the null row and the real-title row. A
-# field-level exclusion for `title` would re-open exactly the hole this helper
-# exists to close. That is also why this helper is called only from call sites
-# that set `title` explicitly, and never from the RED class next door, whose
-# whole assertion is that `title` is ABSENT from the body.
-FIELDS_KEPT_OFF_THE_WIRE: frozenset[str] = frozenset()
+# There is deliberately NO field-level exclusion set. `title` would be the only
+# candidate, and excluding it is exactly the hole this helper exists to close:
+# its omission on the absent row is a PER-REQUEST condition, not a field-level
+# policy -- the same field is required on the body for the null row and the
+# real-title row. Call-site placement carries that instead: this helper is
+# called only from sites that set `title` explicitly, and never from the RED
+# class next door, whose whole assertion is that `title` is ABSENT.
+#
+# Module-name note: this file is reachable under TWO names. pytest's `prepend`
+# import mode puts each collected test's own directory on `sys.path`, so the
+# tests see it as top-level `wire_shape_key_fence`; mypy and `pythonpath` only
+# carry `adapters/rest/tests`, under which it is
+# `dto.document.wire_shape_key_fence`. `ignore_missing_imports = true` in
+# pyproject.toml is what keeps the mismatch silent rather than an error.
+WireLeg = Literal["dumped", "dumped JSON"]
 
 
-def assert_body_keys_track_the_model(body: dict, leg: str):
+def assert_body_keys_track_the_model(body: dict, leg: WireLeg):
     """The half of the shape that whole-body equality against a literal cannot hold.
 
     Equality with a frozen dict is asymmetric under extension. It catches a
@@ -26,9 +37,9 @@ def assert_body_keys_track_the_model(body: dict, leg: str):
     `SaveDocumentRequestDto`, a green whose serializer hand-builds its dict (a
     non-`wrap` `@model_serializer` returning `{"content": ..., "version": ...}`)
     silently omits the new field, and every `body == {...}` in this pair still
-    holds, because the literal was frozen beside the old model. These two
-    assertions read `model_fields` at run time, so they grow with the model
-    instead of freezing next to it.
+    holds, because the literal was frozen beside the old model. This assertion
+    reads `model_fields` at run time, so it grows with the model instead of
+    freezing next to it.
 
     The `missing` leg reads `model_fields` -- the DECLARED set -- and NOT
     `model_fields_set`, which is what it read when it shipped and which made it
@@ -46,7 +57,9 @@ def assert_body_keys_track_the_model(body: dict, leg: str):
     A WEAKER pin than the whole-body literals, not a stronger one: `model_fields`
     is read off the class under test, so a serializer wrong in the same direction
     agrees with itself. On the CURRENT model it catches nothing the literals
-    miss. It is here for what they provably cannot cover.
+    miss. It is here for what they provably cannot cover, and every call site
+    asserts whole-body equality against a frozen literal alongside it rather than
+    delegating to it.
 
     Called only from the LIVE classes: the same hole exists in the skipped RED
     class in `test_save_document_request_dto_wire_shape.py`, but a call there
@@ -54,13 +67,20 @@ def assert_body_keys_track_the_model(body: dict, leg: str):
     trip it gets written.
     """
     declared = set(SaveDocumentRequestDto.model_fields)
-    missing = declared - body.keys() - FIELDS_KEPT_OFF_THE_WIRE
-    assert not missing, (
-        f"every field declared on the model must appear in the {leg} body -- "
-        f"{sorted(missing)} was declared and dropped by the serializer, got {body!r}"
-    )
+    missing = declared - body.keys()
     undeclared = body.keys() - declared
-    assert not undeclared, (
-        f"the {leg} body must carry no key outside the model's declared fields, "
-        f"got {sorted(undeclared)} in {body!r}"
+    # Both faults are computed before either is asserted, and both are named in
+    # the one message. Two sequential `assert`s would abort on `missing` and
+    # report one broken direction where two may be broken -- the exact defect the
+    # control file's docstring (`test_..._wire_shape_control.py:47-54`) gives as
+    # its reason for splitting the JSON leg off the dict leg. The fence should
+    # not contradict its own neighbour.
+    faults = []
+    if missing:
+        faults.append(f"{sorted(missing)} was declared on the model and dropped by the serializer")
+    if undeclared:
+        faults.append(f"{sorted(undeclared)} is on the body but declared nowhere on the model")
+    assert not faults, (
+        f"the {leg} body's key set must be exactly the model's declared fields -- "
+        f"{'; and '.join(faults)}, got {body!r}"
     )

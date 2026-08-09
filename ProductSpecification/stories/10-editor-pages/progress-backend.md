@@ -446,7 +446,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   renderers are currently untested here, and every "full suite green" claim has been carrying that.
   Per the zero-tolerance rule in `tdd-rules.md` this needs a decision — install both deps so they
   run, or record an explicit `[S]` with justification. Not this work unit's to make.)
-- [~] red-adapter rest (both review passes on `7e0ecd65`, converging on two and splitting on a
+- [x] red-adapter rest (both review passes on `7e0ecd65`, converging on two and splitting on a
   third — the split is itself informative, so all four are recorded with their rating.
   **(a) CREDIBLE, and rated the most severe of the set: the blank-title rows are unpinned on the
   writer side.** Across the whole pair, `title` is only ever constructed as absent, `None`, or
@@ -542,8 +542,75 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   KNOWN LOOSE END, discovered by test-review just before it died: `ruff format --check` flags a
   file from this unit. Unresolved. Note the prior unit established that `ruff format` already fails
   on three files at HEAD and is therefore NOT an enforced gate — so the question is whether this
-  one is new or joins that set. Check before acting.)
-- [ ] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
+  one is new or joins that set. Check before acting.
+  **RESUMED AND CLOSED 2026-08-09.** `/test-review` re-ran to completion over the four files:
+  clusters A and P clean, Se not applicable, S returned five findings against the shared helper —
+  three applied to `wire_shape_key_fence.py`, one rejected, one handed to `/refactor`. 109 passed,
+  4 skipped, unchanged; no assertion weakened.
+  The applied three, in severity order:
+  (i) **Fault masking.** `missing` aborted before `undeclared` ran, so a body that BOTH dropped a
+  declared key and carried a spurious one reported one fault where two existed — the same defect the
+  control file's own docstring (`..._wire_shape_control.py:47-54`) cites as its reason for splitting
+  the JSON leg, re-imported one level down. Both sets are now computed before either asserts and are
+  named in one message. Probed directly: dropped-only, spurious-only and both-at-once each fire, and
+  the both case now names both.
+  (ii) **`FIELDS_KEPT_OFF_THE_WIRE` deleted.** `X - frozenset()` is provably the identity, so no
+  assertion could ever observe the symbol; eight lines of comment defended a thing that did nothing.
+  The reasoning was kept as prose — reintroduce the constant in the commit that first needs a real
+  exclusion, not before.
+  (iii) `leg: str` → `Literal["dumped", "dumped JSON"]`, with an honesty note attached, for the
+  reason under verdict 1 below.
+  REJECTED: replacing `set(SaveDocumentRequestDto.model_fields)` with a frozen literal
+  `{"content","title","version"}`. That deletes the helper's only reason to exist — growing with the
+  model is precisely what the frozen call-site literals cannot do. Clusters A and S converged on this
+  independently.
+  HANDED TO `/refactor` (deleting a test is outside test-review's mandate):
+  `test_should_carry_every_declared_field_on_the_dumped_body` (control:101-125) is byte-identical to
+  `test_should_keep_a_real_title_on_the_dumped_body_byte_for_byte` (control:64-83) in arrange, act,
+  whole-body literal and fence call; its only delta, `sorted(body) == [...]` at :121, is strictly
+  implied by the dict equality at :117 and can never fail independently.
+  THE FIVE VERDICTS:
+  1. Bare-sibling import — SOUND and precedented (`login_router_fixtures`, `document_router_fixtures`,
+     `gigachat_fixtures` all use the identical flat pattern), basename repo-unique, and the
+     `pyproject.toml` namespace note is NOT implicated (it governs the two `statements/` dirs).
+     **But it silently defeats mypy, which the question did not anticipate:** `pythonpath` carries
+     `adapters/rest/tests` and not `.../dto/document`, so pytest resolves the module top-level as
+     `wire_shape_key_fence` while mypy resolves the same file as `dto.document.wire_shape_key_fence`,
+     and `ignore_missing_imports = true` swallows the mismatch. `reveal_type` at the call site gives
+     `Any`; via the dotted path it gives the real signature. So no signature is checked at any call
+     site and the `Literal` added in (iii) is documentation, not enforcement — recorded in the module
+     comment rather than left as a promise the type does not keep. Pre-existing, and it hits all
+     three precedent fixture modules equally.
+  2. `title` correctly OUT of the exclusion set — per-request condition, not field-level policy, and
+     call-site placement is the right mechanism. The empty frozenset did not earn its place; see (ii).
+  3. Explicit `title=None` on the hostile-content rows — SOUND, and the strongest option: an absent
+     title is the one key under active dispute, so a content row depending on it would flip from
+     fence to red the instant green lands.
+  4. Four files — seams are right. The axis is consistent (RED / fence / blank fence / shared
+     assertion), the files share only imports, and the control file has ~22 lines of headroom, so
+     the last split was forced by the cap rather than by taste. The real fragmentation smell is the
+     duplicate method above, not the file count.
+  5. isort ordering is STABLE but the config is incomplete: `ruff check --select I --diff` moves a
+     hand-reordered import straight back, classifying `wire_shape_key_fence` as THIRD-party, because
+     it is absent from `known-first-party` — where `gigachat_fixtures`, `statements` and
+     `refusal_guard` are listed. `login_router_fixtures` and `document_router_fixtures` are missing
+     too, so adding this one name alone makes the config MORE inconsistent. Left unpatched; the fix
+     is one commit adding all three.
+  RUFF FORMAT — NOT NEW, no action. Measured against a clean worktree at `7c744ca7^`: 5 files would
+  be reformatted before the unit and the **same five** after (333 → 335 files formatted).
+  `..._wire_shape_control.py` was already in that set and both files this unit CREATED are
+  format-clean. The prior unit's "not an enforced gate" ruling holds, but its count was stale: it is
+  five files, not three. `ruff check` also carries one pre-existing I001 in
+  `adapters/db/src/model/document/document_model.py`, present at `7c744ca7^`.
+  **ENVIRONMENT WARNING, worth more than the review findings.** test-review's first pass of edits
+  was silently REVERTED on disk mid-run — `git diff` showed the file unmodified while `__pycache__`
+  had been regenerated — and the working tree carried a change to `progress-frontend.md` that the
+  agent did not make. Edits were re-applied and persistence verified by `git diff --stat`, and an
+  earlier `109 passed` in that run was measured against the reverted file. This checkout is being
+  shared by a parallel session and/or synced by OneDrive; `CLAUDE.md`'s file-ownership rule assumes
+  separate `git worktree`s. Any measurement taken here is only as trustworthy as the tree it ran
+  against — re-verify before relying on a number from this window.)
+- [~] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
   RED landed at `backend/adapters/rest/tests/dto/document/test_save_document_request_dto_roundtrip.py`
   — a new `tests/dto/` tree, no `__init__.py` and no Statements class, matching the rest-adapter
   convention; the router file was at 197/200 and could not take it. The failing assertion is the
