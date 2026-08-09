@@ -31,6 +31,8 @@ class TestAiEditScopeGuard:
 
         ai_edit_scope_guard_statements.assert_the_cross_document_refusal_is_canonical()
         ai_edit_scope_guard_statements.assert_the_edit_resolved_to_its_bounded_scope()
+        ai_edit_scope_guard_statements.assert_the_arrangement_holds_the_minted_versions()
+        ai_edit_scope_guard_statements.assert_no_document_gained_a_version()
 
     async def test_should_never_touch_the_edit_store_for_a_document_the_caller_cannot_resolve(
         self, ai_edit_scope_guard_statements: AiEditScopeGuardStatements
@@ -47,6 +49,8 @@ class TestAiEditScopeGuard:
         await ai_edit_scope_guard_statements.request_the_edit_under_the_second_document()
 
         ai_edit_scope_guard_statements.assert_the_edit_store_was_asked_once_for_the_probed_document()
+        ai_edit_scope_guard_statements.assert_the_arrangement_holds_the_minted_versions()
+        ai_edit_scope_guard_statements.assert_no_document_gained_a_version()
 
     async def test_should_propagate_an_edit_store_outage_instead_of_refusing_as_not_found(
         self, ai_edit_store_failure_statements: AiEditStoreFailureStatements

@@ -29,20 +29,21 @@ class TestResolveOwnedRevision:
         self, revision_scope_guard_statements: RevisionScopeGuardStatements
     ):
         await revision_scope_guard_statements.given_the_caller_owns_two_documents()
-        revision_scope_guard_statements.given_a_revision_recorded_on_the_first_document()
+        await revision_scope_guard_statements.given_a_revision_recorded_on_the_first_document()
 
         await revision_scope_guard_statements.request_the_revision_under_the_second_document()
         await revision_scope_guard_statements.request_the_revision_under_its_own_document()
 
         revision_scope_guard_statements.assert_the_cross_document_refusal_is_canonical()
         revision_scope_guard_statements.assert_the_revision_resolved_to_its_bounded_scope()
-        revision_scope_guard_statements.assert_neither_document_gained_a_version()
+        revision_scope_guard_statements.assert_the_arrangement_holds_the_minted_versions()
+        revision_scope_guard_statements.assert_no_document_gained_a_version()
 
     async def test_should_refuse_a_missing_document_and_a_missing_revision_identically(
         self, revision_scope_guard_statements: RevisionScopeGuardStatements
     ):
         await revision_scope_guard_statements.given_the_caller_owns_two_documents()
-        revision_scope_guard_statements.given_a_revision_recorded_on_the_first_document()
+        await revision_scope_guard_statements.given_a_revision_recorded_on_the_first_document()
 
         await revision_scope_guard_statements.request_the_revision_under_the_second_document()
         await revision_scope_guard_statements.request_the_revision_under_an_absent_document()
@@ -54,7 +55,7 @@ class TestResolveOwnedRevision:
     ):
         await revision_scope_guard_statements.given_the_caller_owns_two_documents()
         await revision_scope_guard_statements.given_a_document_owned_by_another_account()
-        revision_scope_guard_statements.given_a_revision_recorded_on_the_first_document()
+        await revision_scope_guard_statements.given_a_revision_recorded_on_the_first_document()
 
         await revision_scope_guard_statements.request_the_revision_under_the_foreign_document()
         await revision_scope_guard_statements.request_the_revision_under_an_absent_document()
@@ -65,6 +66,8 @@ class TestResolveOwnedRevision:
         await revision_scope_guard_statements.request_the_revision_under_the_second_document()
 
         revision_scope_guard_statements.assert_the_revision_store_was_asked_once_for_the_probed_document()
+        revision_scope_guard_statements.assert_the_arrangement_holds_the_minted_versions()
+        revision_scope_guard_statements.assert_no_document_gained_a_version()
 
     async def test_should_refuse_a_revision_number_outside_the_storage_range_without_asking(
         self, revision_number_range_statements: RevisionNumberRangeStatements
@@ -121,7 +124,7 @@ class TestResolveOwnedRevision:
         self, revision_refusal_log_statements: RevisionRefusalLogStatements
     ):
         await revision_refusal_log_statements.given_the_caller_owns_two_documents()
-        revision_refusal_log_statements.given_a_revision_recorded_on_the_first_document()
+        await revision_refusal_log_statements.given_a_revision_recorded_on_the_first_document()
         revision_refusal_log_statements.given_the_guards_own_log_is_collected()
 
         await revision_refusal_log_statements.request_the_revision_under_the_second_document()
@@ -136,7 +139,7 @@ class TestResolveOwnedRevision:
         self, revision_silence_statements: RevisionSilenceStatements
     ):
         await revision_silence_statements.given_the_caller_owns_two_documents()
-        revision_silence_statements.given_a_revision_recorded_on_the_first_document()
+        await revision_silence_statements.given_a_revision_recorded_on_the_first_document()
         revision_silence_statements.given_the_guards_own_log_is_collected()
 
         await revision_silence_statements.request_the_revision_under_its_own_document()
@@ -166,7 +169,8 @@ class TestResolveOwnedRevision:
         revision_range_refusal_log_statements.assert_every_unusable_number_was_the_canonical_refusal()
         revision_range_refusal_log_statements.assert_every_unusable_number_refused_at_step_two()
         revision_range_refusal_log_statements.assert_the_revision_store_was_never_asked()
-        revision_range_refusal_log_statements.assert_neither_document_gained_a_version()
+        revision_range_refusal_log_statements.assert_the_arrangement_holds_the_minted_versions()
+        revision_range_refusal_log_statements.assert_no_document_gained_a_version()
 
     async def test_should_still_attribute_an_unusable_number_aimed_at_an_unresolvable_document(
         self, revision_range_refusal_log_statements: RevisionRangeRefusalLogStatements
@@ -180,7 +184,8 @@ class TestResolveOwnedRevision:
         revision_range_refusal_log_statements.assert_every_unresolvable_probe_was_the_canonical_refusal()
         revision_range_refusal_log_statements.assert_an_unresolvable_document_still_records_the_attribution()
         revision_range_refusal_log_statements.assert_the_revision_store_was_never_asked()
-        revision_range_refusal_log_statements.assert_no_probed_document_gained_a_version()
+        revision_range_refusal_log_statements.assert_the_arrangement_holds_the_minted_versions()
+        revision_range_refusal_log_statements.assert_no_document_gained_a_version()
 
     async def test_should_build_its_refusal_record_by_the_same_rule_as_the_edit_guard(
         self, refusal_record_shape_statements: RefusalRecordShapeStatements

@@ -3,19 +3,11 @@ from uuid import UUID
 from document_edit.resolve_owned_revision import resolve_owned_revision
 from document_edit.revision_scope import RevisionScope
 
-from document.create_document import CreateDocument
 from document.document_repository import DocumentRepository
 from fake.document_edit.fake_document_revision_repository import FakeDocumentRevisionRepository
 from shared.exceptions import NotFoundException
-from statements.arranged import arranged
-from statements.document_fakes import FakeClock, FakeDocumentRepository
-from statements.document_guard_contract import (
-    CALLER_ID,
-    EPOCH,
-    OTHER_ACCOUNT_ID,
-    assert_lookups,
-    captured,
-)
+from statements.document_arrangement import DocumentArrangement
+from statements.document_guard_contract import CALLER_ID, assert_lookups, captured
 
 BASELINE_REVISION_ID = UUID("00000000-0000-0000-0000-0000000000a1")
 RECORDED_REVISION_ID = UUID("00000000-0000-0000-0000-0000000000a2")
@@ -33,13 +25,8 @@ RECORDED_REVISION_NUMBER = 2
 # dependency. Written as the literal the wire actually carries.
 RECORDED_REVISION_PARAMETER = "2"
 
-# What `Document.create` mints, written as the literal rather than read back off
-# the seeded row: an expectation sampled from the thing under observation agrees
-# with whatever the guard did to it, including incrementing it.
-NEW_DOCUMENT_VERSION = 1
 
-
-class RevisionGuardBase:
+class RevisionGuardBase(DocumentArrangement):
     """Arrangement shared by the revision-scope guard's Statements classes.
 
     One owner, two of their own documents, the first carrying the two revisions a
@@ -48,48 +35,24 @@ class RevisionGuardBase:
     """
 
     def __init__(self) -> None:
-        self.document_repository = FakeDocumentRepository()
+        super().__init__()
         self.revision_repository = FakeDocumentRevisionRepository()
-        self._create_document = CreateDocument(self.document_repository, FakeClock(EPOCH))
-        self._first_document_id: UUID | None = None
-        self._second_document_id: UUID | None = None
-        self._foreign_document_id: UUID | None = None
 
-    async def given_the_caller_owns_two_documents(self) -> None:
-        # Seeded through the real creation usecase rather than repository.save_new:
-        # a hand-built row can hold a shape the application can never produce, and
-        # the guard would then be proven against documents that cannot exist.
-        self._first_document_id = await self._seed(CALLER_ID, "key-first")
-        self._second_document_id = await self._seed(CALLER_ID, "key-second")
+    async def given_a_revision_recorded_on_the_first_document(self) -> None:
+        """The rows, and the mutation that is the only way to get them.
 
-    async def given_a_document_owned_by_another_account(self) -> None:
-        self._foreign_document_id = await self._seed(OTHER_ACCOUNT_ID, "key-foreign")
-
-    def given_a_revision_recorded_on_the_first_document(self) -> None:
+        Async, and it writes: a document holding these two rows has been through
+        `save_content_if_version_matches`, so seeding the rows alone would leave the
+        store at a version production cannot pair with them -- and the version guard
+        would then require that impossible state of the guard under test.
+        """
         self.revision_repository.seed_revision(
             BASELINE_REVISION_ID, BASELINE_REVISION_NUMBER, self.first_document_id
         )
         self.revision_repository.seed_revision(
             RECORDED_REVISION_ID, RECORDED_REVISION_NUMBER, self.first_document_id
         )
-
-    async def _seed(self, owner_id: UUID, key: str) -> UUID:
-        result = await self._create_document.execute(
-            owner_id=owner_id, document_type="эссе", idempotency_key=key
-        )
-        return result.document.id
-
-    @property
-    def first_document_id(self) -> UUID:
-        return arranged(self._first_document_id, "first_document_id")
-
-    @property
-    def second_document_id(self) -> UUID:
-        return arranged(self._second_document_id, "second_document_id")
-
-    @property
-    def foreign_document_id(self) -> UUID:
-        return arranged(self._foreign_document_id, "foreign_document_id")
+        await self.apply_an_edit_to_the_first_document()
 
     async def resolve(
         self, document_id: UUID, revision_number: str = RECORDED_REVISION_PARAMETER
@@ -108,70 +71,18 @@ class RevisionGuardBase:
         call site for the resolver in the whole suite -- the shape 1.2 arrived at
         after its outage statements had rebuilt the call themselves and pinned a
         five-argument order in two files at once.
+
+        It is also the one place every act step of this family passes through, which
+        is why the arrangement snapshot is taken here rather than by a `given_` step
+        each test would have to remember.
         """
+        self.capture_the_versions_as_arranged()
         return await resolve_owned_revision(
             document_repository,
             self.revision_repository,
             document_id=document_id,
             revision_number=revision_number,
             owner_id=CALLER_ID,
-        )
-
-    def assert_neither_document_gained_a_version(self) -> None:
-        """The scenario's last Then, which had no assertion behind it.
-
-        "And no new version is created on either document" is a claim about a
-        write, and the refusal assertions cannot see writes: a guard that refused
-        correctly and bumped a version on the way past satisfies every other
-        assertion here. One whole-store equality against the minted literal, for
-        the arrangement seeding the caller's own two and nothing else; probes at a
-        document the caller cannot resolve seed a third row and use the sibling.
-        """
-        self._assert_versions(
-            {
-                self.first_document_id: NEW_DOCUMENT_VERSION,
-                self.second_document_id: NEW_DOCUMENT_VERSION,
-            }
-        )
-
-    def assert_no_probed_document_gained_a_version(self) -> None:
-        """The same claim, for the arrangement an unresolvable probe touches.
-
-        A guard that refused correctly, emitted the right step-1 record and bumped
-        the *foreign* document's version on the way past satisfied every assertion
-        the unresolvable-probe test had, because nothing read that document's
-        version. The absent id needs no entry: an id missing from the expected
-        mapping is one the store is required not to hold at all.
-        """
-        self._assert_versions(
-            {
-                self.first_document_id: NEW_DOCUMENT_VERSION,
-                self.second_document_id: NEW_DOCUMENT_VERSION,
-                self.foreign_document_id: NEW_DOCUMENT_VERSION,
-            }
-        )
-
-    def _assert_versions(self, expected: dict[UUID, int]) -> None:
-        """The whole store, keyed by id, against a mapping the caller wrote out.
-
-        Read as `{id: version}` over every row rather than by looking up the ids
-        the caller named: a per-id probe can only fail on a row somebody thought to
-        enumerate, so a guard that *inserted* a row -- under the absent id it was
-        handed, or under one it minted -- passed the aimed form of this assertion
-        whichever ids it was aimed at. Comparing the store whole puts the row set
-        inside the equality, so a version that moved and a row that appeared fail
-        the same expression, and no `None` arm is needed to ask about an id that
-        owns no row -- removing the way a `None` stood for "never seeded" too.
-
-        The expected side is literal versions against arrangement-minted ids, never
-        read back off `documents`: an expectation sampled from the store agrees
-        with whatever the guard did to it, including bumping.
-        """
-        actual = {row.id: row.version for row in self.document_repository.documents}
-        assert actual == expected, (
-            f"the store holds versions {actual}, expected {expected} -- resolving a revision is a "
-            f"read, and a guard writing on the refusal path satisfies every other assertion here "
-            f"while a document silently moves or appears"
         )
 
     def _assert_revision_lookups(self, expected: list[tuple[int, UUID]], why: str) -> None:

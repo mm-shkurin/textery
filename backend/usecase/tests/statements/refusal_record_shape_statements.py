@@ -70,7 +70,7 @@ class RefusalRecordShapeStatements:
         self.edit.given_the_guards_own_log_is_collected()
 
         await self.revision.given_the_caller_owns_two_documents()
-        self.revision.given_a_revision_recorded_on_the_first_document()
+        await self.revision.given_a_revision_recorded_on_the_first_document()
         self.revision.given_the_guards_own_log_is_collected()
 
     async def request_both_guards_refuse_at_both_steps(self) -> None:

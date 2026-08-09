@@ -18,6 +18,13 @@ build-backend = "setuptools.build_meta"
 # the dependency direction: a module can only import what is genuinely below it.
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# A `given_` step that becomes `async` leaves its old call sites calling it
+# without `await`. The coroutine is never run, the arrangement is silently empty,
+# and pytest reports it as a RuntimeWarning -- which is to say the test passes.
+# One such site survived the async conversion of
+# `given_a_revision_recorded_on_the_first_document` and was only caught by eye.
+# Promoted to an error so the next one cannot be caught by eye at all.
+filterwarnings = ["error::RuntimeWarning"]
 pythonpath = [
     "domain/src",
     "usecase/src",

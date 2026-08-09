@@ -1073,7 +1073,7 @@ within their file, not across the story.
       nothing else, and `assert_no_probed_document_gained_a_version` includes two ids its test never
       probes. Undersold names are how the original vacuity was missed. (d) Prose miscount in the commit
       message: four indexed walks, not three — all four are guarded, only the narrative is off.
-- [ ] red-usecase (the version guard extended to the tests and families that still cannot see a write) —
+- [x] red-usecase (the version guard extended to the tests and families that still cannot see a write) —
       **both review passes converged here from opposite directions, and the finding is that this unit
       fixed one test of a family-wide blindness.**
       (1) *(agent-review)* The sibling
@@ -1111,6 +1111,70 @@ within their file, not across the story.
       Expect a no-red on (1) and (2) — production performs only reads — so prove non-vacuity by mutation
       per this family's standard: mutate each family's refusal path to bump and to insert, and show the
       new assertion in that family fails while the old one gave a full green.
+      **Outcome: no-red as predicted (184 passed, 0 failed, 0 skipped; type, message and count all
+      matched), and the 200-line cap turned out to be the useful constraint.** `revision_guard_base.py`
+      had no headroom and findings (1)+(2) needed the same guard in two more families, so rather than a
+      third copy the arrangement all three families had duplicated became one class:
+      `statements/document_arrangement.py` (172 lines) owns the document store, the two seeding usecases,
+      the three ids and the version guard. The three bases shrank — `revision_guard_base.py` 200→111,
+      `ai_edit_guard_base.py` 118→90, `document_scope_guard_statements.py` 109→92 — and all three now
+      inherit it. New assertions landed in `test_resolve_owned_revision.py` tests 1 and 3 (test 3 is the
+      sibling finding (1) named — the one the *previous* unit's own mutation passed untouched), both
+      range-refusal-log tests, `test_resolve_owned_edit.py` tests 1 and 2, and
+      `test_resolve_owned_document.py`, the last two families having had no version assertion at all.
+      **Finding (3) is dissolved rather than patched.** The coupling existed because the expected mapping
+      was hardcoded per method; there are now two separate statements —
+      `assert_the_arrangement_holds_the_minted_versions` (snapshot vs the literals the `given_` steps
+      named) and `assert_no_document_gained_a_version` (store now vs snapshot) — and the snapshot is
+      taken **lazily at the first act**, so no test in three packages has to remember a `given_` step.
+      The test that forgot would be the one whose guard wrote. That also retires the previous unit's
+      "undersold names" finding: the two old wrappers collapse into one arrangement-independent statement.
+      **Finding (4) fixed at the seam it was diagnosed:** `given_a_revision_recorded_on_the_first_document`
+      is now `async` and goes through `SaveDocument` — the usecase owning the write an applied edit
+      performs — so the document carrying those two revision rows sits at `POST_EDIT_DOCUMENT_VERSION = 2`,
+      the state production actually produces, where the expected side previously pinned a version 1 no
+      such document can hold. `given_an_edit_queued_on_the_first_document` deliberately does **not**
+      advance the version (a queued edit has written nothing), and the guard now keeps that distinction.
+      **Seven mutations, six conclusive, and the seventh is the interesting one.** Bump-on-refusal and
+      insert-on-refusal were run against each of the three resolvers; each failed only *with* the new
+      assertions (3/2/2/1/4 failures) and gave a full 184 green with the two new statement calls stripped
+      — the pre-change assertions were blind in every family. Every failure landed on
+      `assert_no_document_gained_a_version` and never on
+      `assert_the_arrangement_holds_the_minted_versions`, confirming the two causes report distinctly.
+      The seventh, bump-on-refusal in `resolve_owned_document`, is **unreachable by construction and
+      reported as inapplicable rather than counted**: that refusal branch is reached only for a document
+      the caller does not own, and the only write port is the owner-scoped CAS
+      `save_content_if_version_matches`, which cannot match such a row — a property of production, not of
+      the assertion. Substituted with the same bump on the path that *does* resolve: 6 failures across
+      all three families versus a full green without. Two earlier insert runs were **inconclusive and
+      discarded, not counted**: a fixed `mutant-key` made the second probe raise `ConflictException`
+      instead of `NotFoundException`, so pre-existing assertions failed too and the failure was not
+      attributable to the new statement; re-run with `f"mutant-{uuid4()}"` they became conclusive.
+      All reverted; `git diff backend/usecase/src/` empty.
+      **The gate's load-bearing finding is a hazard the RED phase had already been bitten by once.** The
+      `async` conversion produces a silently-empty arrangement at any call site that forgets `await`, and
+      pytest reports that as a **warning, not a failure** — red-agent hit exactly this at
+      `refusal_record_shape_statements.py:73` (a fifth call site), where a test was arranging against a
+      document with no revisions and no applied edit while reporting green. The suite was not configured
+      to promote it, so the same bug could recur invisibly; `filterwarnings = ["error::RuntimeWarning"]`
+      is now in `backend/pyproject.toml`, verified tolerable across the whole backend unit suite (519
+      passed). All six call sites swept clean under the flag. Second gate fix: a docstring on
+      `assert_the_arrangement_holds_the_minted_versions` claimed it catches an extra document written by
+      a `given_` step. It does not — every document is written by `_seed`, which registers the same id on
+      **both** sides of the equality, so a third seeded document agrees with itself. The version half is
+      literal-checked and sound; the roster half is self-agreeing. Docstring corrected to point at
+      `assert_no_document_gained_a_version` as the statement that sees rows appear, since a comment
+      promising a guarantee it does not deliver is how the next reader decides not to add the real check.
+      The gate verified the lazy snapshot **empirically** with a throwaway probe rather than by reading:
+      a bump after the act fails only the write statement, a `given_` step run after the first act fails
+      only the arrangement statement in arrangement words, a test that never acts cannot pass vacuously
+      (`arranged()` raises rather than comparing an empty snapshot), and acting twice is idempotent so
+      the second act's writes stay inside the guarded window. Every act path in all three families funnels
+      through exactly one call site, confirmed by grep across all seven sibling Statements classes.
+      **Reported, not dismissed:** the wider backend run is 519 passed / **62 skipped**, all of them
+      `adapters/db` integration tests env-gated on "no database listening at localhost:5432". Pre-existing
+      and unrelated to this unit — but this branch's db work needs `TEST_DATABASE_URL` pointed at
+      `textery_s19` (line 88), so those 62 are not running by default on this host.
 - [ ] green-usecase (the version guard extended to the tests and families that still cannot see a write)
 - [ ] green-usecase (the version guard aimed at the documents the load-bearing test actually probes)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's

@@ -35,3 +35,8 @@ class TestDocumentScopeGuard:
         # The positive control: without it a guard that refused everything would
         # satisfy the identity assertion perfectly.
         document_scope_guard_statements.assert_the_own_document_resolved_to_its_scope()
+        # Resolving a scope is a read. Nothing else in this family could see a write,
+        # so a guard that refused correctly and bumped -- or inserted -- a row on the
+        # way past satisfied every assertion above.
+        document_scope_guard_statements.assert_the_arrangement_holds_the_minted_versions()
+        document_scope_guard_statements.assert_no_document_gained_a_version()
