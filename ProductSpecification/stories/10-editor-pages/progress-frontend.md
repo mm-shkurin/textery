@@ -250,6 +250,50 @@ pagination failure.
   the pending `'failed'` arm and shared-`blockHeights` guard would naturally document
   themselves. Those steps will likely force a further split — follow the subject-seam
   precedent set here.
+- [ ] red-frontend (premortem CREDIBLE 2 + agent-review CONCERNS 1 over `2572b8be`, the same
+  defect from both sides) — **the cross-row kill of `currentPage: pageCount - 1` is held by
+  prose in two headers and by nothing executable, and the fixture that holds it is already
+  chartered to be edited.** `laidOut.test.ts` is explicit that the hop dies only across the
+  pair: `4 - 1` is `3` against the measuring file's expected `2`. That binding is a COMMENT.
+  `AMPLY_MEASURABLE_DOCUMENT.visiblePageNumber = 2` against `pageCount: 4` is the entire kill,
+  and the pending shared-`blockHeights` step, the `'failed'` arm and the predicted further
+  split all land in that file. Retune it to `visiblePageNumber: 3` — or to
+  `usableContentHeight: 600` — and `p - 1` becomes live across both rows with **zero tests red
+  anywhere** and no comment flagged stale. The reader making that edit is in the measuring
+  file, whose header calls it "the FONT GATE" and never says its `2` is load-bearing for a
+  different file's exclusion: the cross-reference points FORWARD for the seam, not BACKWARD for
+  this dependency, so "cross-references run both ways" is true of the seam and false of the
+  kill. A pre-split reader saw both rows on one screen; nothing does now. This is NOT the
+  shared-`blockHeights` finding below — that one is the production function mutating a caller's
+  array; this is the fixture's NUMBERS being a silent cross-file invariant. Guard: hoist both
+  laid-out rows' `(pageCount, currentPage)` pairs into one shared fixture module both files
+  import, so editing either is visibly editing the pair — or at minimum add the reciprocal
+  warning to `AMPLY_MEASURABLE_DOCUMENT`'s header naming what its `2` kills and where.
+- [ ] red-frontend (agent-review CONCERNS 2 over `2572b8be`) — **the two filenames name PHASES
+  while both headers insist the seam is by SUBJECT.** `paginationState.measuring.test.ts` holds
+  both the measuring case AND a `fontStatus: 'resolved'` laid-out case; `laidOut.test.ts` holds
+  a laid-out case. Read as filenames alone the seam is unambiguously phase-based — the exact
+  reading the measuring header spends a paragraph denying. The names route the next contributor
+  wrongly in two directions: the chartered `'failed'` arm is a FONT-GATE case that belongs with
+  the shared binding but has no home by filename, and any future laid-out case reads as
+  belonging in `laidOut.test.ts`. The first misapplication is the dangerous one — pulling the
+  resolved row out of `measuring.test.ts` because it "is laid-out" re-opens the
+  discard-the-argument mutation the split exists to preserve the kill for. The correction lives
+  only in prose inside the files, not in their names. Rename to name the subject (the font gate
+  / the geometry), and adopt `/refactor`'s forward rule with it: **`measuring.test.ts` is closed
+  at 192 lines — it holds the font gate and nothing else, and no new case joins it.** Each
+  pending step then pays for its own header in its own file (`paginationState.failed.test.ts`
+  and so on) and the 8 lines of headroom never have to be rationed.
+- [ ] red-frontend (agent-review CONCERNS 3 over `2572b8be`) — **scenario provenance is
+  orphaned in the sibling.** `laidOut.test.ts` asserts `paginationStatusText: ''`,
+  `measuringMessage: ''`, `liveRegionRole: null`, `ariaBusy: false` — product-defined values
+  whose entire justification (the two-node `pagination-status` / `page-count` split,
+  `pagination_measuring_statements.py:88-91`, the `red-selenium` vocabulary, and 1.1's own
+  Given/When/Then) exists only in `measuring.test.ts`. Its sole link is "for the same reason
+  both cases in the sibling file are". One hop today — but it points into the file already
+  flagged for a further split, after which it points at a paragraph that may not be there, with
+  nothing that fails. Give the file its own provenance line, or point at the spec rather than at
+  a sibling's paragraph.
 - [ ] red-frontend (premortem CREDIBLE 2 over `0e08f0cf`, by mutation) — **nothing forbids
   `derivePaginationState` from consuming the caller's `blockHeights`, and the shared fixture
   makes the damage order-dependent.** `{ fontStatus, ...AMPLY_MEASURABLE_DOCUMENT }` spreads
@@ -456,13 +500,37 @@ pagination failure.
   is prose in a commit message. The FIRST case is the one whose name matches the scenario
   header and the one a green would naturally unskip first, and unskipping only it reproduces
   exactly the state `f156718b` was in — the state this whole chain of steps exists to leave.
-  Green's deliverable is explicit: every case in `paginationState.measuring.test.ts` runs and
-  the suite reports **3 skipped, not 5** (the 3 pre-existing markers in the `ManualEditor`
-  autosave tests are not this scenario's). **Restated after the split: the target is now 3
-  skipped, not SIX, and green must unskip TWO files** — `paginationState.measuring.test.ts`
-  and `paginationState.laidOut.test.ts`. The second file is the easier one to forget, and
-  forgetting it reinstates exactly the constant-return green this chain of steps exists to
-  prevent.
+  Green's deliverable was originally stated as a whole-suite skip count ("3 skipped, not 5",
+  then "not SIX" after the split). **That formulation is WITHDRAWN — it is not a guard**
+  (premortem CREDIBLE 1 over `2572b8be`). A whole-suite count is
+  `pagination_skips + manual_editor_skips`, and the second term is not a constant: those are
+  three `it.skip` RED rows awaiting their own green steps
+  (`ManualEditor.autosaveAbandonFalseRecord.test.tsx:76,154`,
+  `ManualEditor.autosaveAbandonRecord.test.tsx:167`). The arithmetic fails both ways — one
+  autosave row going green gives `2 + 1 = 3` with `paginationState.laidOut.test.ts` STILL
+  DARK, so the number is satisfied by exactly the failure it was written to catch; and any new
+  RED row anywhere under `frontend/src` makes green look failed when it succeeded. Coverage
+  does not backstop it either: the laid-out branch is exercised by the measuring file's second
+  case, so `scripts/check-per-file-coverage.mjs` and the `vite.config.ts` thresholds stay green
+  with `laidOut.test.ts` skipped.
+  **The deliverable is a SCOPED ZERO instead:** after green, `frontend/src/features/editor/
+  logic/__tests__/` contains no `it.skip` and no `describe.skip` — a grep over that directory,
+  or a vitest run filtered to `paginationState` reporting `0 skipped`. That is invariant under
+  every autosave step and every unrelated future RED row. Green must unskip **two files**
+  (`paginationState.measuring.test.ts` and `paginationState.laidOut.test.ts`); the second is
+  the easier to forget, and forgetting it reinstates the constant-return green this chain
+  exists to prevent.
+  **Second green deliverable, equally verifiable** (premortem CREDIBLE 3 over `2572b8be`):
+  green's diff over `frontend/src/features/editor/logic/__tests__/**` must consist SOLELY of
+  `it.skip` → `it`. "Tests are read-only in green" is an agent-instruction convention, not a
+  check, and the new file is the natural place for a violation to hide: it is the harder of
+  the two to make pass (it demands a real packer, where the measuring rows tolerate a
+  `fontStatus` branch), its expected `6`/`5` sit in one inline literal with the fixture three
+  lines above, its input is an anonymous object literal rather than a named typed constant —
+  the cheapest thing in the pair to nudge — and no other case in that file cross-checks it.
+  Nudging `usableContentHeight: 600` to `700` to make an implementation pass would leave the
+  suite green and `0 skipped` intact. Stated as a diff check, that becomes a finding instead
+  of a non-event.
   Sharpened by premortem over `40017b19`: as written this step only requires asserting
   `data-testid="pagination-measuring"` during measuring, which catches NONE of the three
   node-ownership hazards recorded above. It is the right home for two of them — extend the
