@@ -970,7 +970,40 @@ within their file, not across the story.
       no request can exercise. A fourth, unscheduled anywhere: the range guard is proven only against
       the fake, which has no int4 ceiling — no acceptance test probes `/2147483648/restore` or
       `/abc/restore` against the real column, and `documents_revisions_restore.yaml` requires 404.
-- [ ] green-usecase (the range check's position and its refusal cause)
+- [S] green-usecase (the range check's position and its refusal cause) — **`[S]` verified against the
+      diff of the whole RED unit, not against the prediction, and not against a single commit.** The 1.2
+      trap at line 358 is that a `/test-review` fix reached across into production *inside the red
+      commit*, so a per-commit check would have missed it; here the RED phase spans three commits
+      (`f9ab5723` wip, `746feacd` the gated behavior commit, `fd9379ef` the refactor), and
+      `git diff --name-only f9ab5723 HEAD -- backend/usecase/src backend/adapters backend/domain
+      backend/application` returns **empty**. Zero production files across all three. So `[S]`'s
+      condition — no production change to make — holds for the raise, the message and every assertion
+      the gate added.
+      The reason there is nothing to implement is the RED outcome itself: `_parse_in_range` already
+      runs *after* the step-1 `try/except` and refuses through `_refuse_at_step_two`, which logs before
+      raising. This step existed to catch the opposite ordering, and the four mutations proved the tests
+      would catch it. What the unit bought is a pin, not a behaviour.
+- [ ] red-usecase (the version guard aimed at the documents the load-bearing test actually probes) —
+      **scheduled by the review passes on `746feacd`; the first finding is a live vacuous assertion in
+      the committed tests, and GREEN may not write tests, so it is red work.**
+      (1) `assert_neither_document_gained_a_version` reads `first_document_id` and `second_document_id`,
+      but the load-bearing test probes `foreign_document_id` and `ABSENT_DOCUMENT_ID`. A guard that
+      refuses correctly, emits the right step-1 record, and bumps `version` on the **foreign** document
+      on the way past passes all four of that test's assertions — no test in the suite reads that
+      document's version. The helper's docstring claims to cover "the probed one or the one that
+      actually owns the revision", which is true at its original call sites and false at this one. Point
+      the guard at the documents each test actually probes (the same assertion on the first test is
+      correctly aimed and must stay).
+      (2) `UNUSABLE_PROBES = OUT_OF_RANGE + NON_INTEGER` is used as **dict keys** while disjointness is
+      unpinned and both rosters live in a file this one does not own: the day a value appears in both
+      (`"0"` reclassified, `""` or `"-"` moved) the key collapses, the case count silently drops, and
+      every indexed loop still passes — the roster-silently-shrinks defect the widening removed,
+      re-entering through the key type. `len(UNUSABLE_PROBES) == len(set(UNUSABLE_PROBES))`, asserted
+      where the roster is built.
+      Expect a no-red on (2) and a **real** red on (1) only under mutation — the production guard does
+      not bump versions, so prove non-vacuity by mutation as this family does, not by expecting a
+      natural failure.
+- [ ] green-usecase (the version guard aimed at the documents the load-bearing test actually probes)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares
       the parameter as `str` precisely so that FastAPI does not answer it 422 ahead of the Bearer
