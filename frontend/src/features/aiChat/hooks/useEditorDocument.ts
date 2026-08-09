@@ -5,15 +5,13 @@ import {
   type EditorDocument,
 } from '../api/editorDocumentApi'
 
-export const LOAD_FAILED_MESSAGE =
-  'Не удалось загрузить документ. Проверьте соединение и обновите страницу.'
-
 export type EditorDocumentStatus = 'loading' | 'ready' | 'not-found' | 'failed'
 
-export interface EditorDocumentState {
-  status: EditorDocumentStatus
-  document: EditorDocument | null
-}
+// A union rather than `{ status; document: EditorDocument | null }`: only `ready` has a document,
+// and the loose shape forced every reader to re-check for a null the hook never produces in that
+// state — a branch no test can reach because no code path creates it.
+export type EditorDocumentState =
+  { status: Exclude<EditorDocumentStatus, 'ready'> } | { status: 'ready'; document: EditorDocument }
 
 // Loads the document behind `/documents/:documentId` exactly once.
 //
@@ -22,7 +20,7 @@ export interface EditorDocumentState {
 // the user their document is gone and inviting them to re-create one that exists. Everything
 // that is not the 404 lands on `failed`, which says the truth: the load did not work, try again.
 export function useEditorDocument(documentId: string): EditorDocumentState {
-  const [state, setState] = useState<EditorDocumentState>({ status: 'loading', document: null })
+  const [state, setState] = useState<EditorDocumentState>({ status: 'loading' })
 
   // Which id has already been requested. StrictMode (main.tsx) double-invokes effects in dev, so
   // without this the load fires twice per mount. A cleanup-flag guard (the pattern in
@@ -36,7 +34,7 @@ export function useEditorDocument(documentId: string): EditorDocumentState {
   useEffect(() => {
     if (requestedIdRef.current === documentId) return
     requestedIdRef.current = documentId
-    setState({ status: 'loading', document: null })
+    setState({ status: 'loading' })
 
     loadEditorDocument(documentId)
       .then((document) => {
@@ -45,8 +43,7 @@ export function useEditorDocument(documentId: string): EditorDocumentState {
       })
       .catch((error: unknown) => {
         if (requestedIdRef.current !== documentId) return
-        const status = error instanceof DocumentNotFoundError ? 'not-found' : 'failed'
-        setState({ status, document: null })
+        setState({ status: error instanceof DocumentNotFoundError ? 'not-found' : 'failed' })
       })
   }, [documentId])
 

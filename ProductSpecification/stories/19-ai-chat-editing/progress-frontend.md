@@ -137,6 +137,41 @@ under `frontend/src` or `acceptance/tests/frontend`.
       `dangerouslySetInnerHTML` — the HTML goes through Tiptap's schema.
       Only test change: removing `describe.skip`. The Selenium test stays skipped for
       `green-selenium`.
+      `/refactor` landed two behavior-preserving changes over `70ef65eb`: `EditorDocumentState`
+      became a discriminated union (the old shape allowed `status:'ready'` with a null document,
+      which produced an unreachable `|| !document` guard in the page), and `LOAD_FAILED_MESSAGE`
+      moved from the hook to the component that renders it — it collided by name, with different
+      wording, with the constant in `generation/hooks/useDocumentInit.ts`.
+      **Pre-existing, out of unit:** `npm run format:check` flags
+      `DocumentEditorPage.notFound.test.tsx` — already red at `70ef65eb`, i.e. landed by the RED
+      phase.
+      **Review-pass follow-ups for `red-frontend-api` / later units (both passes CONCERNS):**
+      (m) **Both new routes bypass the auth gate.** Every other authenticated screen sits under
+      `DocumentGenerationFlow`, which redirects on `!isAuthenticated` (`DocumentGenerationFlow.tsx:58`
+      states the invariant). `/documents` and `/documents/:documentId` are registered as bare routes,
+      so a signed-out visitor gets "Мои работы" with owner-scoped calls, or the editor. Owe a
+      signed-out case per route.
+      (n) **An expired session is reported as a network problem.** `SessionExpiredError` exists
+      precisely so callers can separate it (`useDocumentSave.ts:21-34`, `useGeneration.ts:87`,
+      `shared/api/send.ts:53` all carve it out); this hook folds it into `failed`, whose copy says
+      "Проверьте соединение и обновите страницу" — the same mislabeling this unit argued against,
+      displaced one branch over.
+      (o) **The `failed` screen is the dead end the blocker refuses to be** — no heading, no link,
+      while `DocumentNotFoundBlocker` ships a `Link` on the stated rule that a blocked screen needs
+      a navigable exit.
+      (p) **`loading` and `failed` have no test**, so the `instanceof` discrimination can regress to
+      a bare catch with the suite green. This is follow-up from green's own note, now doubled by both
+      passes: reject with a plain `Error`, assert `document-load-failed` present and
+      `document-not-found` absent.
+      (q) **Route wiring is untested.** The unit test mounts the page in its own `MemoryRouter` and
+      never touches `App.tsx`; the acceptance test is still skipped with a now-stale reason. Nothing
+      resolves the blocker's `/documents` href against a real route table — the way out could point
+      at a 404 and both cases still pass.
+      (r) **`/documents` is live ahead of its API**: `loadEditorDocument` is still the RED stub that
+      unconditionally throws, so every row click from the list lands on the `failed` screen. Either
+      sequence `red/green-frontend-api` before exposing the list route, or pin the navigation.
+      (s) Remote: `EditorDocumentView` calls `useEditor({ content })` once — a later `content` change
+      (scenarios 3.x, AI-applied edits) will not update the editor.
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
