@@ -382,9 +382,38 @@ under `frontend/src` or `acceptance/tests/frontend`.
       the count is the specification with no weaker true form.
       Mutation matrix after review: guard deleted → both cases fail; guard keyed `!== null` → case 1
       correctly still passes, case 2 fails; unmutated → both pass. 514 passed / 0 failed; tsc clean.
+      `/refactor`: NO ACTION. The `DOCUMENT_ID`/`DOCUMENT` literals are byte-identical to the
+      notFound test's, but that is copy-paste rather than coupling — and this file needs a
+      contrasting *pair*, so sharing one member would split the pair across modules.
+      **Review-pass follow-ups (both CONCERNS):**
+      (ah) **The file's load-bearing premise is pinned by nothing.** Case 1's exact count is
+      satisfied identically by (a) the guard working against a doubled effect and (b) the effect
+      simply not doubling. The mutation proving (a) existed for one local run and no reader can
+      reproduce it. The sibling `useDocumentInit.strictMode.test.tsx` declines a count assertion for
+      exactly this reason, in a comment: "whether React double-invokes depends on the build". A React
+      upgrade, a vitest/jsdom config change or a dropped `StrictMode` wrapper turns case 1
+      permanently green-and-vacuous with nothing failing. Owe one assertion anywhere in the suite
+      that a *guardless* effect under the same wrapper fires twice — a two-line control hook.
+      (ai) By the matrix above, case 1 kills no mutation case 2 does not also kill. Not a defect, but
+      its independent reason to exist depends on (ah) being closed.
+      (aj) **The sibling step "stale response for old id ignored" is worded for the case the ref
+      already handles.** `requestedIdRef` stores an *id*, not a *request*, so A→B→A issues two
+      fetches for A and the first, superseded one passes the `!== documentId` check and sets state —
+      including a stale `version`, which `editorDocumentApi.ts` documents as travelling back on save.
+      Route ping-pong, not the double-invoke, is the source. That step must be re-scoped to: mount A,
+      switch to B, switch back to A, resolve A's *first* promise last, assert the second response
+      wins — which needs a request token (per-effect flag or monotonic seq) beside the id key.
+      (ak) **`EditorDocumentView` has no test file at all, and `useEditor` never re-applies a changed
+      `content` prop.** Today that is masked because an id change routes through `loading` and
+      unmounts the view; any content update at the *same* id — the entire point of story 19 — is
+      dropped silently. Owe: render with X, rerender with Y at the same mount, assert Y is on screen.
+      This is (s) confirmed by a second pass and located.
 - [ ] green-frontend (coverage: repeat mount does not refetch)
-- [ ] red-frontend (coverage: stale response for old id ignored)
-- [ ] green-frontend (coverage: stale response for old id ignored)
+- [ ] red-frontend (coverage: a superseded response for the SAME id loses) — re-scoped by
+      follow-up (aj): the original wording ("stale response for old id ignored") describes the case
+      `requestedIdRef` already handles. The unpinned arm is two outstanding requests for the *same*
+      id (A→B→A), where the first response passes the id check and installs a stale `version`.
+- [ ] green-frontend (coverage: a superseded response for the SAME id loses)
       Both pairs target `useEditorDocument.ts` (branches 4/8). The dedupe guard `L35` and the two
       stale-response guards `L41`/`L45` have their true arms taken by **no** test — all three
       `return`s are deletable with the suite green, which is follow-up (k) still open: the
