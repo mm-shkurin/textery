@@ -651,7 +651,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   one a reader hits first. And `serialization_alias` on any field would make that field register as
   BOTH missing and undeclared, producing a doubly-misleading message — harmless today, worth knowing
   before someone reads a real fence failure.)
-- [~] red-adapter rest (both review passes on `307ff37c`, converging: **the fence's failure path is
+- [x] red-adapter rest (both review passes on `307ff37c`, converging: **the fence's failure path is
   pinned by nothing, and this commit is what changed it.** `assert_body_keys_track_the_model` runs at
   13 call sites and at every one of them `missing` and `undeclared` are both empty — it is a no-op
   wherever the suite exercises it. The collected-`faults` rewrite that this unit landed, the whole
@@ -662,9 +662,63 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   existed to fix. Weight the evidence question: `progress-backend.md`'s environment warning for this
   window records edits silently reverted on disk mid-run, so a green count measured here is weak and
   a committed test is not. Test: `pytest.raises(AssertionError)` over the helper for dropped-only,
-  spurious-only, and both-at-once, the last asserting BOTH field names appear in the one message.)
-- [ ] green-adapter rest (the fence must fail, and say both things, when it should)
-- [ ] red-adapter rest (premortem #2 on `307ff37c`: deleting `FIELDS_KEPT_OFF_THE_WIRE` traded an
+  spurious-only, and both-at-once, the last asserting BOTH field names appear in the one message.
+  **LANDED GREEN, honestly — and the mutation table is the whole evidence.** New file
+  `test_wire_shape_key_fence.py` (84/200), three methods, no production or helper file changed
+  (`git diff --stat backend/` empty; the helper was mutated and restored via `git checkout --` each
+  time). The fence is correct at HEAD, so a test over it passes; manufacturing a red would have
+  meant asserting something false. Predicted no-failure and got none — the one way it could have
+  failed was a message mismatch from pytest's assertion rewriting appending an `assert not [...]`
+  explanation to `str(failure.value)`, predicted NOT to apply because rewriting reaches only
+  `python_files` plus conftest/plugins and this helper is a bare non-`test_`-prefixed sibling.
+  Confirmed by test-review: no `register_assert_rewrite` in project source, no `conftest.py` in
+  `dto/document/`.
+  Three mutations, each restored after; the count that matters is the SECOND one, how many
+  pre-existing tests noticed:
+  - **A** — collected `faults` reverted to two sequential asserts: `1 failed, 110 passed`. Only the
+    both-at-once row fails, and its message names `['title']` alone with the `; and ['note'] is on
+    the body but declared nowhere` clause gone. **All 108 pre-existing tests stay green.**
+  - **C** — the undeclared fault appended under the `if missing:` branch: `2 failed, 109 passed`,
+    and spurious-only **DID NOT RAISE AT ALL** — the fence goes completely silent on a spurious key
+    while the suite reports 109 passed. **All 108 pre-existing stay green.** test-review reproduced
+    this one and found the spelling matters: an *unconditional* append inside the branch gives
+    `2 failed, 109 passed` as recorded, while a *nested* `if undeclared:` inside `if missing:` gives
+    `1 failed, 110 passed` with the same DID-NOT-RAISE. Both are killed, so the guard is stronger
+    than claimed — but a reader reproducing the recorded count needs the unconditional spelling.
+  - **B** — `if undeclared:` inverted: 13 failed. Not discriminating, already loud.
+  No class-level skip marker, deliberately: the marker is class-level, so parking the ONLY test of
+  the fence's failure path behind one makes it inert for exactly the red period — which is when the
+  green that could trip it gets written. Third time this scenario has faced that trap and acted on it.
+  `/test-review` returned **0 violations, 0 edits** across A and P (S and Se not applicable — no
+  Statements classes under `backend/adapters/rest/tests`), and re-ran mutations A and C itself
+  rather than taking them on report. Its four verdicts:
+  1. **Exact equality on `str(failure.value)` is correct, keep it.** The message is authored by the
+     code under test and deterministic in every fragment (`sorted()` fixes list order, dict `repr` is
+     insertion-ordered, `leg` is a closed `Literal`). Substring assertions on the field names would
+     still kill mutation A but would NOT kill a mutation mangling the `'; and '` joiner or dropping
+     the `got {body!r}` tail — exact equality strictly dominates. The brittleness is correctly
+     priced: this row's subject IS the wording.
+     **But the no-rewriting assumption is load-bearing and written down nowhere.** Rename the helper
+     to a `test_`-prefixed name, or add `register_assert_rewrite("wire_shape_key_fence")`, and all
+     three assertions break at once with a confusing diff. test-review recommended a line in the
+     class docstring recording it and did not edit unilaterally, since it is not a detector
+     violation. **Open — carry it into the next unit touching this file.**
+  2. No skip marker — sound, for the reason above, plus: the file passes because the fence is
+     correct, not because it asserts nothing, and the mutation table supplies the falsifiability a
+     marker would otherwise stand in for.
+  3. Own file — seam right, and the CAP is the weaker half of the argument (162 + 84 = 246 > 200).
+     The subject genuinely differs: the four `test_save_document_request_dto_*` files test what the
+     DTO writes; this tests the assertion helper they all call, including a branch dead at all 13
+     live call sites. The set reads as 4+1 and the naming carries the boundary. One coherence gap
+     left open: the control file's docstring maps the earlier splits and has no pointer to this new
+     file, so a reader arriving there has no signpost. It has 38 lines of headroom.
+  4. Convention matches — bare sibling import, identical spelling to line 3 of both control files,
+     no `__init__.py`, no Statements class.)
+- [S] green-adapter rest (the fence must fail, and say both things, when it should) — SKIPPED: no
+  implementation to write. The fence is correct at HEAD; the red half was the missing guard over
+  already-correct code, proven by two mutations that leave the entire pre-existing suite green. A
+  green step here would be a no-op commit.
+- [~] red-adapter rest (premortem #2 on `307ff37c`: deleting `FIELDS_KEPT_OFF_THE_WIRE` traded an
   unobservable exception for an UNENFORCEABLE one, and the difference bites at green. The helper's
   `declared - body.keys()` leg now requires `title` on every body it inspects; the only thing
   keeping that correct is a comment saying the fence is called solely from sites that set `title`
