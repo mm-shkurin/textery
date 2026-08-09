@@ -85,3 +85,9 @@ class TestSaveDocumentRequestDtoWireShape:
             "a title the request never carried must not appear as a key in the "
             f"dumped JSON body, and every other field must survive it verbatim, got {body!r}"
         )
+
+
+# The other half of this pair is LIVE, in `test_save_document_request_dto_wire_shape_control.py`
+# and `test_save_document_request_dto_wire_shape_blank_control.py`: the greens that would
+# over-satisfy the two tests above -- dropping `title` unconditionally, or rewriting a blank
+# title to null -- go red there, in this same pytest session, while this class is still skipped.

@@ -490,7 +490,59 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   same pytest session and a green that over-satisfies the RED goes red in the control class in the
   same run regardless of what the RED file says. Cost is a confused reader, not a shipped fault.
   Still worth the one comment line at the foot of `..._wire_shape.py`, since the split was argued
-  on legibility grounds and currently only half-delivers it.)
+  on legibility grounds and currently only half-delivers it.
+  **STEP INCOMPLETE — STAYS `[~]`. Resume here.** red-agent finished all four jobs and its output
+  is COMMITTED with this note. `/test-review` was dispatched over it and **died mid-run on a
+  session limit**, having reached the point of checking `ruff format --check`. `/refactor` and the
+  two review passes never ran at all. Do NOT mark this `[x]` and do NOT advance to green: the
+  work unit's gates are unrun, not passed.
+  RESUME BY: re-dispatching `/test-review` over the four files below with the five judgment
+  questions listed further down, then `/refactor` + `agent-review` + `premortem` over the commit,
+  then the advance. The tests themselves are green and the tree is clean — nothing is half-edited.
+  WHAT LANDED (rest 102 → **109 passed, 4 skipped**; full backend was 734 → 741/6):
+  - `wire_shape_key_fence.py` (66, NEW) — the key assertion moved out of the control file with the
+    corrected leg, `declared - body.keys()` instead of `model_fields_set - body.keys()`. Signature
+    changed `(request, body, leg)` → `(body, leg)`; `request` is no longer needed once the leg
+    stops reading `model_fields_set`. Carries an empty `FIELDS_KEPT_OFF_THE_WIRE` frozenset.
+  - `..._wire_shape_blank_control.py` (91, NEW) — job (a), four blank-title methods.
+  - `..._wire_shape_control.py` (178) — helper removed, every-declared-field row and the two
+    hostile-`content` rows added.
+  - `..._wire_shape.py` (93) — job (d), the footer comment naming both live siblings.
+  EACH FENCE MEASURED AGAINST THE GREEN IT FORBIDS, in-suite against real `document_dtos.py`, then
+  reverted — and the first number is the one that matters:
+  - blank-normalizing `field_serializer("title")` (`if v is not None and not v.strip(): return None`):
+    **102 passed, 0 failed at HEAD BEFORE this unit** — the preserve-becomes-erasure green shipped
+    entirely green. After: `4 failed, 105 passed`, and the four are exactly the new blank methods.
+  - `field_serializer("content")` doing `" ".join(v.split())`: 102/0 before; after `2 failed,
+    107 passed`, exactly the two hostile-content legs.
+  - the corrected key leg catches a dropped defaulted `note` (1 failed) where the old
+    `model_fields_set` leg was silent (1 passed) — the defect agent-review and premortem both
+    reproduced.
+  DECISIONS red-agent made that the unrun review still owes a verdict on — these are the five
+  questions to put to `/test-review` on resume:
+  1. `wire_shape_key_fence.py` is a NON-`test_`-prefixed module imported by bare sibling name
+     (`from wire_shape_key_fence import ...`), relying on pytest prepending the test dir to
+     `sys.path` with no `__init__.py`. Is that sound and precedented anywhere in `backend/`? Is the
+     basename repo-unique? The backend `pyproject.toml` documents the missing `__init__.py` as
+     load-bearing for a namespace-package merge, so this is not a free choice.
+  2. `title` is deliberately NOT in `FIELDS_KEPT_OFF_THE_WIRE`: red-agent argues its omission on the
+     absent row is a PER-REQUEST condition, not a field-level policy, and that a field-level
+     exclusion would reopen the exact hole the fence exists to close. Handled by call-site placement
+     instead — the fence is called only from sites that set `title` explicitly, never from the RED
+     class whose whole assertion is that `title` is ABSENT. Also judge whether an EMPTY frozenset
+     earns its place versus not having the concept at all.
+  3. The two hostile-`content` rows set `title=None` EXPLICITLY rather than leaving it absent, so
+     the row's subject stays `content` alone and it does not flip from fence to red the moment
+     green lands. Sound?
+  4. FOUR files now, from one two units ago. Are the seams in the right places, or has this
+     fragmented past the point where the pair still reads as a pair?
+  5. ruff's isort put `from wire_shape_key_fence import ...` in the FIRST-PARTY block ABOVE
+     `from dto.document.document_dtos import ...` in both live files — ruff's own classification via
+     `--fix`, not hand-ordered. Stable, or a lint-config smell?
+  KNOWN LOOSE END, discovered by test-review just before it died: `ruff format --check` flags a
+  file from this unit. Unresolved. Note the prior unit established that `ruff format` already fails
+  on three files at HEAD and is therefore NOT an enforced gate — so the question is whether this
+  one is new or joins that set. Check before acting.)
 - [ ] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
   RED landed at `backend/adapters/rest/tests/dto/document/test_save_document_request_dto_roundtrip.py`
   — a new `tests/dto/` tree, no `__init__.py` and no Statements class, matching the rest-adapter

@@ -1,44 +1,8 @@
 import json
 
+from wire_shape_key_fence import assert_body_keys_track_the_model
+
 from dto.document.document_dtos import SaveDocumentRequestDto
-
-
-def _assert_body_keys_track_the_model(request: SaveDocumentRequestDto, body: dict, leg: str):
-    """The half of the shape that whole-body equality against a literal cannot hold.
-
-    Equality with a frozen dict is asymmetric under extension. It catches a
-    SPURIOUS key -- that is why it was chosen -- but it cannot catch a DROPPED
-    declared one: the day a later scenario adds a field to
-    `SaveDocumentRequestDto`, a green whose serializer hand-builds its dict (a
-    non-`wrap` `@model_serializer` returning `{"content": ..., "version": ...}`)
-    silently omits the new field, and every `body == {...}` in this file still
-    holds, because the literal was frozen beside the old model. These two
-    assertions read `model_fields_set` / `model_fields` at run time, so they grow
-    with the model instead of freezing next to it.
-
-    A WEAKER pin than those literals, not a stronger one: it reads the model's
-    own bookkeeping off the object under test, so a serializer wrong in the same
-    direction agrees with itself -- the private-encoding structure the RED class
-    in `test_save_document_request_dto_wire_shape.py` rejects, on the key axis.
-    On the CURRENT model it catches nothing the literals miss. It is here for
-    what they provably cannot cover, not because it is a better assertion.
-
-    Called only from this LIVE class: the same hole exists in the skipped RED
-    class next door, but a call there would be dark for exactly the red period,
-    which is when the green that could trip it gets written.
-    """
-    declared = set(SaveDocumentRequestDto.model_fields)
-    missing = request.model_fields_set - body.keys()
-    assert not missing, (
-        f"every field the request actually carries must appear in the {leg} body -- "
-        f"{sorted(missing)} was declared on the model, set on this request, and dropped "
-        f"by the serializer, got {body!r}"
-    )
-    undeclared = body.keys() - declared
-    assert not undeclared, (
-        f"the {leg} body must carry no key outside the model's declared fields, "
-        f"got {sorted(undeclared)} in {body!r}"
-    )
 
 
 class TestSaveDocumentRequestDtoWireShapeNegativeControl:
@@ -60,8 +24,13 @@ class TestSaveDocumentRequestDtoWireShapeNegativeControl:
 
     It is a separate file because the pair reached the 200-line cap: at the cap a
     file cannot absorb so much as a clarifying line, and both halves are still
-    growing a row at a time as story 17's wire table gets pinned. They share only
-    the import, so the seam is clean.
+    growing a row at a time as story 17's wire table gets pinned. The blank-title
+    rows -- the ones whose damaging green turns a PRESERVE into an ERASURE -- have
+    since split off again into
+    `test_save_document_request_dto_wire_shape_blank_control.py` for the same
+    reason, and the key-tracking assertion both live classes call now lives in
+    `wire_shape_key_fence.py`. The seams are clean: every file shares only
+    imports.
     """
 
     def test_should_keep_an_explicit_null_title_in_the_dumped_body(self):
@@ -72,7 +41,7 @@ class TestSaveDocumentRequestDtoWireShapeNegativeControl:
         assert body == {"content": "<p>saved</p>", "title": None, "version": 1}, (
             f"an explicit null title must stay on the dumped body as null, got {body!r}"
         )
-        _assert_body_keys_track_the_model(request, body, "dumped")
+        assert_body_keys_track_the_model(body, "dumped")
 
     def test_should_keep_an_explicit_null_title_in_the_dumped_json_body(self):
         """The JSON leg of the fence, split off its dict leg.
@@ -90,7 +59,7 @@ class TestSaveDocumentRequestDtoWireShapeNegativeControl:
         assert body == {"content": "<p>saved</p>", "title": None, "version": 1}, (
             f"an explicit null title must stay on the JSON body as null, got {body!r}"
         )
-        _assert_body_keys_track_the_model(request, body, "dumped JSON")
+        assert_body_keys_track_the_model(body, "dumped JSON")
 
     def test_should_keep_a_real_title_on_the_dumped_body_byte_for_byte(self):
         """Story 17's row 4: a real title is stored VERBATIM, padding included.
@@ -111,7 +80,7 @@ class TestSaveDocumentRequestDtoWireShapeNegativeControl:
             "a real title must reach the body byte for byte, padding included, "
             f"got {body!r}"
         )
-        _assert_body_keys_track_the_model(request, body, "dumped")
+        assert_body_keys_track_the_model(body, "dumped")
 
     def test_should_keep_a_real_title_on_the_dumped_json_body_byte_for_byte(self):
         """The JSON leg of row 4, asserted separately for the Rust-serializer
@@ -127,4 +96,83 @@ class TestSaveDocumentRequestDtoWireShapeNegativeControl:
             "a real title must reach the JSON body byte for byte, padding included, "
             f"got {body!r}"
         )
-        _assert_body_keys_track_the_model(request, body, "dumped JSON")
+        assert_body_keys_track_the_model(body, "dumped JSON")
+
+    def test_should_carry_every_declared_field_on_the_dumped_body(self):
+        """The call site the key fence was written for, and did not have.
+
+        Every other method here constructs a SUBSET-shaped request by intent --
+        the absent row omits `title`, and that omission is the subject of the RED
+        class. This one sets all three declared fields, so the fence has the full
+        declared set to drop from, and the key leg is exercised against a body
+        that is supposed to carry everything. Whole-body equality is asserted
+        alongside it rather than delegated to it, for the reason the fence's own
+        docstring gives: the fence reads `model_fields` off the class under test
+        and a serializer wrong in the same direction agrees with itself.
+        """
+        request = SaveDocumentRequestDto(content="<p>saved</p>", version=1, title=" Отчёт ")
+
+        body = request.model_dump()
+
+        assert body == {"content": "<p>saved</p>", "title": " Отчёт ", "version": 1}, (
+            "a request that sets every declared field must emit every declared field, "
+            f"got {body!r}"
+        )
+        assert sorted(body) == ["content", "title", "version"], (
+            "the dumped body's key set must be exactly the model's declared fields when "
+            f"the request set all of them, got {sorted(body)}"
+        )
+        assert_body_keys_track_the_model(body, "dumped")
+
+    def test_should_keep_hostile_content_on_the_dumped_body_byte_for_byte(self):
+        """`content` is the largest user-data surface here, and it was unpinned.
+
+        Across this pair and the round-trip file `content` was only ever
+        `"<p>saved</p>"` or `'c'`: ASCII, single-line, no surrounding whitespace.
+        A `mode="wrap"` serializer normalizing whitespace on `content` alone --
+        the exact shape measured against for `title` one row over -- is the
+        identity on every one of those values and ships entirely green. Measured
+        at HEAD: a `field_serializer("content")` doing `" ".join(v.split())`
+        passed all 102 rest tests. This row is the one it cannot pass. The
+        leading and trailing spaces, the blank line, and the non-ASCII body are
+        written out at the assertion site rather than shared with the arrange
+        side through a constant -- an equality against a constant both sides read
+        is satisfied by any serializer, because it compares the value to itself.
+
+        `title` is set EXPLICITLY to null rather than left absent, so this row's
+        subject stays `content` alone: an absent title is the one key whose
+        presence is under active dispute in the RED class next door, and a
+        content row whose expected body depended on that dispute would flip from
+        fence to red the moment the green lands. Explicit null is stable across it.
+        """
+        request = SaveDocumentRequestDto(
+            content="  <p>Отчёт\n\n  за май</p>  ", version=1, title=None
+        )
+
+        body = request.model_dump()
+
+        assert body == {"content": "  <p>Отчёт\n\n  за май</p>  ", "title": None, "version": 1}, (
+            "content must reach the body byte for byte -- surrounding whitespace, interior "
+            f"newlines and non-ASCII text all verbatim, got {body!r}"
+        )
+        assert_body_keys_track_the_model(body, "dumped")
+
+    def test_should_keep_hostile_content_on_the_dumped_json_body_byte_for_byte(self):
+        """The JSON leg of the content row, and the one that actually crosses a
+        process boundary. Asserted separately for the reason this pair argues at
+        every other row: `model_dump_json()` does not route through the Python
+        `model_dump` in Pydantic v2, it goes to the Rust serializer, so a green
+        could normalize on one leg and not the other. `title` is explicit null
+        here for the reason the dict leg gives.
+        """
+        request = SaveDocumentRequestDto(
+            content="  <p>Отчёт\n\n  за май</p>  ", version=1, title=None
+        )
+
+        body = json.loads(request.model_dump_json())
+
+        assert body == {"content": "  <p>Отчёт\n\n  за май</p>  ", "title": None, "version": 1}, (
+            "content must reach the JSON body byte for byte -- surrounding whitespace, "
+            f"interior newlines and non-ASCII text all verbatim, got {body!r}"
+        )
+        assert_body_keys_track_the_model(body, "dumped JSON")
