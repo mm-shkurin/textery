@@ -37,8 +37,8 @@ class TestSaveDocumentRequestDtoWireShapeNegativeControl:
     fence. Every one of the 10 live calls to `assert_body_keys_track_the_model`
     in this cluster -- the six below, plus four in the blank control -- passes
     through the branch that does nothing, so this file cannot tell you whether
-    the fence still reports correctly when it fires. Only that one does, and it pins the message text by
-    exact equality.
+    the fence still reports correctly when it fires. Only that one does, and it
+    pins the message text by exact equality.
     """
 
     def test_should_keep_an_explicit_null_title_in_the_dumped_body(self):

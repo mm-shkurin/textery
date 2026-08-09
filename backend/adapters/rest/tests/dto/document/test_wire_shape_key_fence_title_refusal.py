@@ -4,14 +4,17 @@ from wire_shape_key_fence import assert_body_keys_track_the_model
 
 class TestWireShapeKeyFenceRefusesTheAbsentTitleRow:
     """The `missing` leg's absent-`title` partition, split out of
-    `test_wire_shape_key_fence.py` so this marker can sit at CLASS level.
+    `test_wire_shape_key_fence.py` so its skip marker could sit at CLASS level.
 
-    Co-located, the marker had to be METHOD-level: a class marker would have taken
-    that file's three passing rows with it, and they are the only thing in the suite
-    that reaches the fence's failure path at all. Parking them for the whole red
-    period is the trap this scenario has already sprung three times. The split
-    dissolves the conflict rather than trading one hazard for the other -- the
-    marker is now class-level, matching both siblings and the tech binding, with no
+    Green as of 2.1's green, and the marker is gone -- but the split it forced
+    stays, for the reason below and the subject seam below that.
+
+    Co-located, the marker would have had to be METHOD-level: a class marker would
+    have taken that file's passing rows with it, and they are the only thing in the
+    suite that reaches the fence's failure path at all. Parking them for the whole
+    red period is the trap this scenario has already sprung three times. The split
+    dissolved the conflict rather than trading one hazard for the other -- the
+    marker sat at class level, matching both siblings and the tech binding, with no
     live row behind it.
 
     The seam is subject, not line count. The other file's rows are model-agnostic:

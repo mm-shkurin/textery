@@ -948,7 +948,85 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   PREEMPTION is unpinned because row 3's body is well-formed. Four steps added below.
   KNOWN, pre-existing, not this unit's: `ruff check backend/adapters/rest` reports one E501 at
   `test_save_document_request_dto_wire_shape_control.py:40` — a long line inside a class docstring,
-  confirmed present without this unit's changes. The lint gate stays red until someone rewraps it.)
+  confirmed present without this unit's changes. The lint gate stays red until someone rewraps it.
+  `/refactor` fixed that E501 (prose rewrap at a sentence boundary; `ruff check
+  backend/adapters/rest` now **All checks passed**) and corrected three present-tense claims this
+  unit falsified — "the four calls below are the only others" (five now, the fifth in the refusal
+  file), "the control file is at 162 of 200" (170), and a split rationale still describing a skip
+  marker this unit removed. Both protected orderings untouched; `wire_shape_key_fence.py` has NO
+  diff at all. Every changed line is prose — zero executable lines — 113/4 exactly. It ruled NO
+  ACTION on the roundtrip file's triplicated three-field assertion, and the reason is worth keeping:
+  two of the three sites are inside a class still skip-marked RED, so extracting now would couple the
+  one live row to two red rows and a green adjusting one leg's pin would silently move the live row
+  too.
+  BOTH REVIEW PASSES RETURNED **CONCERNS**. agent-review cleared two things first, recorded so they
+  are not re-litigated: the class named in the refusal string exists and does not call the fence, so
+  the module comment's "never from the RED class next door" holds; and losing generic drop-detection
+  for `title` costs nothing at the 10 live sites, because each asserts `body == {...}` BEFORE calling
+  the fence, so a dropped `title` fails on the literal and the refusal is never reached.
+  (a) **premortem's finding is one level up from everything chartered so far, and it is the one that
+  matters: this whole cluster fences a serializer production never invokes.**
+  `SaveDocumentRequestDto` appears in `backend/**/src` exactly twice — its definition, and as an
+  INBOUND request parameter at `document_router.py:168` — and `grep -rn "model_dump"
+  backend/adapters/rest/src` returns ZERO hits. The DTO is inbound-only. The body that actually
+  reaches `title_update()` is written by the FRONTEND, so all five fence rows, all ten live call
+  sites and the entire wire_shape cluster can be green while the shipped request body says
+  `"title": null`. This commit records the fact ("no production code changed — the fence is test
+  infrastructure") and stops short of the consequence. **Read as a whole the charter promises that
+  closing (a)-(f) makes 2.1 safe; it does not** — five of the six are about a serializer nothing
+  calls. Chartered as a real step below.
+  (b) **The leg-guard row's docstring claims coverage this same unit measured as absent**
+  (agent-review 1): it says the well-formed body "makes this row pin the guard's preemption too",
+  and it does not — with no fault to preempt, moving the guard below `faults` leaves the row green.
+  The paragraph above in this very file says so and charters the row that would pin it. That false
+  sentence is exactly how a chartered step gets closed as already-done by a reader who trusts a
+  docstring over a charter. Strike it in the coverage-red pass below.
+  (c) **The rejection reasoning rests on a claim the code does not deliver** (agent-review 2). The
+  module comment rejects the call-site design partly on "the field-level spelling keeps one
+  declaration and cannot be forgotten", but `"title"` is spelled as a frozen literal at two sites
+  beside the model — the same failure mode the helper's own docstring invokes to justify reading
+  `model_fields` at run time. Low practical risk (a rename flips the refusal row's exact-equality
+  message to the generic wording and fails loudly), but the honest wording is "one declaration, and a
+  rename fails the refusal row loudly". Correct the comment.
+  (d) Two more stale claims the refactor pass missed while rewriting their neighbours in the same
+  docstring: "the absent-`title` body is now the fourth row's subject" (the new row is the fourth in
+  THIS file; the absent-title row lives in the refusal file) and "leaves all 108 tests green" (113).
+  Note `/refactor` deliberately left the 108 alone as a historical statement — that reading is
+  defensible, but it sits ambiguously present-tense next to a claim that IS wrong.
+  (e) The leg-label row sits outside its class's declared subject — `TestWireShapeKeyFenceReportsEvery
+  Fault` closes "this file stays model-agnostic: fault reporting in both directions", and a leg-label
+  refusal is neither direction and never reaches `faults`. Low severity, but the file already split
+  once on that seam and this quietly widens it.
+  **premortem measured the partition's survivors, confirming the coverage warning empirically** —
+  full 16-row directory suite per mutant: refusal `faults.append` moved AFTER dropped+undeclared →
+  **16 passed, survives**; refusal suppressed whenever another fault co-occurs → **16 passed,
+  survives**; `dropped = missing` (partition removed, double report) → 1 failed, caught. Both
+  survivors are exactly the chartered coverage row below, which is therefore the ONLY thing standing
+  between the partition and a silent revert — **its wording must stay exact-equality, never
+  substring.**
+  Rated REMOTE and recorded rather than chartered: the refusal cites a class that is still
+  skip-marked, and `title: str | None = None` means `model_dump()` always emits the key, so the
+  refusal leg is unreachable from any real serializer output and fires only on hand-written fixtures
+  — fold a re-read of the citation into the coverage green once that skip lifts. And a non-dict body
+  raises a bare `AttributeError` with no leg label, guarded in practice because all ten live sites
+  assert whole-body equality on the line above.)
+- [ ] red-acceptance (premortem on `f935be3c`, the finding that outranks the whole wire-shape
+  cluster: **nothing in the repo drives the real save path end to end, so nothing goes red when the
+  erasure ships.** `SaveDocumentRequestDto` is INBOUND-ONLY — two occurrences in `backend/**/src`
+  (its definition and the router parameter), zero `model_dump` call sites anywhere in
+  `backend/adapters/rest/src`. The serializer this scenario has spent five work units fencing is
+  never invoked in production. The producer is `frontend/src/features/generation/api/documentApi.ts`,
+  whose `saveDocument(documentId, content, version)` sends `{content, version}` — the safe shape,
+  today, by accident of not having a title parameter. The erasure arrives the moment story 10 adds
+  title editing to that signature, and NEITHER SIDE of the wire goes red when it does: the router
+  rows in `test_save_document_title_router.py:57` pin the server's READING of an absent key but
+  hand-write the JSON, so nothing asserts any real producer emits it.
+  Test: a content-only save through the actual client against a document with a stored title,
+  asserting the stored title survives. That row is the only thing that would catch the frontend
+  regression, and it is the row nobody chartered. Sequencing: this is the guard the six chartered
+  fence rows do not add up to — do not let 2.1's green-acceptance stand in for it, and do not read
+  the fence cluster going green as this being covered.)
+- [ ] green-acceptance (premortem: a content-only save must leave the stored title alone, end to end)
 - [~] red-adapter rest (coverage: refusal co-occurring with the other two faults). The partition's
   arms are pinned INDIVIDUALLY but never in combination, and coverage cannot see the gap:
   `wire_shape_key_fence.py` reports **100% line and 100% branch** (17 stmts, 6 branches) because

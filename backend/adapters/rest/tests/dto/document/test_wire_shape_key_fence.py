@@ -9,8 +9,9 @@ class TestWireShapeKeyFenceReportsEveryFault:
     wire-shape files -- six in `..._wire_shape_control.py`, four in
     `..._wire_shape_blank_control.py` -- and at every one of them `missing` and
     `undeclared` are both empty. So the rest of the suite exercises exactly one
-    branch of it: the one that does nothing. (The four calls below are the only
-    others, and they are the ones where the branch is not empty.)
+    branch of it: the one that does nothing. (The four calls below, plus the one
+    in `test_wire_shape_key_fence_title_refusal.py`, are the only others, and
+    they are the ones where the branch is not empty.)
 
     The `['content']`-as-missing literals in the first and third rows replaced
     `['title']` ones, which read as a contract stating that `title: null` is the
@@ -55,16 +56,18 @@ class TestWireShapeKeyFenceReportsEveryFault:
     guards nothing for exactly the red period -- the defect this scenario has
     already named and acted on twice, for
     `TestSaveDocumentRequestDtoFromALiteralBody` and again for the blank-title
-    control. Its own file because `..._wire_shape_control.py` is at 162 of the 200
+    control. Its own file because `..._wire_shape_control.py` is at 170 of the 200
     allowed and this is a different subject anyway: those files test what
     `SaveDocumentRequestDto` writes, this one tests the assertion helper they all
     call.
 
-    Scenario 2.1's RED row -- the absent-`title` body the fence must REFUSE rather
+    Scenario 2.1's row -- the absent-`title` body the fence must REFUSE rather
     than call a dropped field -- lives in
-    `test_wire_shape_key_fence_title_refusal.py`, split out so its skip marker can
-    sit at CLASS level without taking these three rows with it. This file stays
-    model-agnostic: fault reporting in both directions, both named in one message.
+    `test_wire_shape_key_fence_title_refusal.py`, split out while it was RED so its
+    skip marker could sit at CLASS level without taking the rows here with it. That
+    row is green as of 2.1's green and its marker is gone; the split stays, because
+    the seam it drew is by subject. This file stays model-agnostic: fault reporting
+    in both directions, both named in one message.
     """
 
     def test_should_name_a_declared_key_the_body_dropped(self):
