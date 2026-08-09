@@ -324,7 +324,7 @@ pagination failure.
   using `tsc --noEmit`, which is exit 0 and never surfaces it. The two commands disagree and
   this file recorded only the passing one. It resolves itself when green implements the stub,
   but no step should claim a clean typecheck on the strength of the weaker command again.
-- [ ] red-frontend (premortem CREDIBLE 1 + agent-review CONCERNS 1 and 2 over `fabafd1d`, one
+- [~] red-frontend (premortem CREDIBLE 1 + agent-review CONCERNS 1 and 2 over `fabafd1d`, one
   root) — **the numbers moved into the fixture; the geometry that justifies them did not.**
   `laidOutRows.fixture.ts` holds `pageCount: 4` and `pageCount: 6` and describes "seven blocks
   totalling 2800px against 900px" in the header of a file containing neither `blockHeights` nor
@@ -355,6 +355,23 @@ pagination failure.
   Guard: move the geometry into `LaidOutRow` so a collision test is writable at all, then assert
   no expected field value of a row (`pageCount`, `sheetSkeletonCount`, `railSkeletonCount`)
   equals `blockHeights.length`, a hardcoded constant, or another expected value.
+  **ATTEMPTED AND INTERRUPTED — nothing of this step is committed.** The red-agent died on an
+  API stall mid-run after 7 tool calls, having rewritten `laidOutRows.fixture.ts` only
+  (80 → 119 lines, geometry moved into `LaidOutRow`) with no consumer rewritten, no collision
+  assertion written, and no mutation verified. The partial tree was coherent by luck —
+  `tsc --noEmit` exit 0 and the editor suite `2 passed | 3 skipped`, unchanged — because
+  adding fields to the row type breaks no existing reader. It was **reverted**, so `HEAD`
+  (`b5b6bd07`) remains the last verified state; a copy of the partial fixture is in the
+  session scratchpad as `laidOutRows.fixture.partial.ts` if it is worth reading, but the work
+  is small enough to redo. **To resume:** start this step from scratch, full sequence
+  (red-agent → `/test-review` → behavior commit → `/refactor` + the two review passes →
+  refactor commit). Nothing here has been reviewed.
+  Note for the retry, from the interrupted attempt's own shape: moving the geometry into the
+  row is the easy half and it is where the agent spent its budget. The load-bearing half is
+  keeping `AMPLY_MEASURABLE_DOCUMENT` a single visible local binding in `measuring.test.ts`
+  that BOTH font-gate cases are spread from — if the geometry now comes from the fixture, the
+  two cases must still read it through one local binding, never independently, or the
+  discard-the-argument kill dissolves.
 - [ ] red-frontend (premortem CREDIBLE 2 over `fabafd1d`) — **scenario 2.1's open choice can be
   decided by a fixture retune nobody reads as making it.** Packing-agnosticism is the stated
   licence for pinning `pageCount` at all: the blocks pack exactly, so greedy no-split and
