@@ -9,12 +9,34 @@ import { derivePaginationState, type PaginationInput } from '../paginationState'
  * asking a reader to diff two arrays and take the header comments' word for it.
  *
  * Only the INPUT is shared. Every expected field stays spelled out at its own assertion — the
- * whole-object comparisons exist to make each one visible, and a fixture value must never be
- * reachable from an expected value.
+ * whole-object comparisons exist to make each one visible, and no fixture value may be reachable
+ * from an expected value it does not BELONG to. `currentPage` is the one deliberate exception, and
+ * it is the point rather than a slip: which sheet is in view is a viewport fact this module is
+ * handed, so the laid-out case expecting exactly the `2` the fixture supplies is what pins the
+ * pass-through. Every OTHER field must still fail if it echoes a fixture value.
+ *
+ * `visiblePageNumber` is **2** and the choice is load-bearing three times over. It is not `1`,
+ * which is the literal a component renders when "Страница N из M" has no source for its N — the
+ * exact readout that never moves as the reader scrolls, and the defect this input exists to make
+ * fail. It is not `4` either, so `currentPage: pageCount` (a readout permanently pinned to the last
+ * sheet) dies too. And it collides with no OTHER field's expected value — not the `1` and `3`
+ * skeleton counts below, not `blockHeights.length` (7), not the laid-out `4` — so no other field
+ * can be satisfied by echoing it.
+ *
+ * What `2` does NOT kill, stated plainly rather than left for a later reader to discover: with one
+ * laid-out case, `currentPage` and `pageCount` are two numbers in one object, and `2` is `4 / 2`.
+ * `currentPage: pageCount / 2` passes both cases (the measuring case early-returns on the phase
+ * discriminant and never evaluates it). No literal in `1..4` escapes this — `1` is `pageCount - 3`,
+ * `3` is `pageCount - 1`, `4` is `pageCount` — because a single fixture makes every expected number
+ * an arithmetic hop from every other. Only a second laid-out row with a DIFFERENT
+ * `visiblePageNumber` against a different `pageCount` closes it, which is the varying-geometry step
+ * already chartered in `progress-frontend.md`; that step must vary this input too, not the geometry
+ * alone. It is recorded there, not deferred silently here.
  */
 const AMPLY_MEASURABLE_DOCUMENT: Omit<PaginationInput, 'fontStatus'> = {
   blockHeights: [400, 380, 420, 390, 410, 400, 400],
   usableContentHeight: 900,
+  visiblePageNumber: 2,
 }
 
 /**
@@ -48,6 +70,13 @@ const AMPLY_MEASURABLE_DOCUMENT: Omit<PaginationInput, 'fontStatus'> = {
  * render. The whole state object is compared, so an implementation cannot satisfy the scenario by
  * emitting the right phase alongside a stray page count.
  *
+ * The second Then — "no page count is displayed" — now has TWO numbers to be absent, and both are
+ * asserted `null`. `currentPage: null` is the strictly stronger of the pair here: the fixture
+ * SUPPLIES `visiblePageNumber: 2`, so an implementation that passes the viewport straight through
+ * without consulting `fontStatus` — the shortest thing anyone would write — emits `2` and fails.
+ * The field is a number the caller hands in, which is exactly why leaving it unmentioned would let
+ * the count half of the count reading survive the measuring phase.
+ *
  * Counts, copy, and attribute values are the ones `red-selenium` pinned in
  * `acceptance/statements/frontend/editor/pagination_measuring_locators.py` — one skeleton sheet,
  * exactly three rail rows, `role="status"`, `aria-busy="true"`, and the two product-defined strings
@@ -62,9 +91,10 @@ describe('derivePaginationState — the document font has not resolved', () => {
   it.skip('holds the editor in the measuring state with no page count, however measurable the document is', () => {
     const state = derivePaginationState({ fontStatus: 'pending', ...AMPLY_MEASURABLE_DOCUMENT })
 
-    expect(state).toEqual({
+    expect(state).toStrictEqual({
       phase: 'measuring',
       pageCount: null,
+      currentPage: null,
       sheetSkeletonCount: 1,
       railSkeletonCount: 3,
       liveRegionRole: 'status',
@@ -107,6 +137,19 @@ describe('derivePaginationState — the document font has not resolved', () => {
  * (`ceil(2800/900)`) agree on 4 for this document, so both of 2.1's candidate answers pass and the
  * choice between them stays open.
  *
+ * `currentPage: 2` pins the OTHER number. `01-editor-paginated.html:96` reads "Страница 1 из 3":
+ * two numbers, and until now the view state carried one. `pageCount` is the "M"; nothing was the
+ * "N", and the whole-object comparison had frozen the field set with no member for it — so the only
+ * green this test admitted was `Страница 1 из {pageCount}` with a hardcoded literal, a readout that
+ * is right on the first sheet and wrong on every other one, with nothing anywhere able to fail on
+ * it. Expecting `2` where the fixture supplies `2` makes that literal fail, and expecting a number
+ * distinct from `pageCount` makes "always the last sheet" fail as well.
+ *
+ * It is likewise `2` and not `null` here for the reason `pageCount` is `4` and not merely non-null:
+ * the reading has two halves and a half-absent one ("Страница  из 4") is not a state the mockup
+ * shows. It stays packing-agnostic — which sheet is in view is supplied by the caller, so this test
+ * says nothing about where the breaks fall, and 2.1's choice is untouched.
+ *
  * `paginationStatusText` was the ONE field left open, excluded by name from the comparison above so
  * that this step could decide it rather than have it decided by silence. It is decided now, and the
  * whole state object is compared: **`''`**. The count is carried by `pageCount` as a number and by
@@ -135,9 +178,10 @@ describe('derivePaginationState — the document font has resolved', () => {
   it.skip('lays the document out and tears the measuring surface down, leaving the count to the count node', () => {
     const state = derivePaginationState({ fontStatus: 'resolved', ...AMPLY_MEASURABLE_DOCUMENT })
 
-    expect(state).toEqual({
+    expect(state).toStrictEqual({
       phase: 'laid-out',
       pageCount: 4,
+      currentPage: 2,
       sheetSkeletonCount: 0,
       railSkeletonCount: 0,
       liveRegionRole: null,

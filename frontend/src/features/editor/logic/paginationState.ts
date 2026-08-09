@@ -19,6 +19,13 @@ export interface PaginationInput {
   blockHeights: number[]
   /** Height available for content on one sheet, in CSS pixels. */
   usableContentHeight: number
+  /**
+   * Which sheet the reader is currently looking at, 1-based, as observed by the editor's scroll
+   * position. An INPUT, not a derivation: which sheet is in view is a viewport fact, and deriving
+   * it here from a scroll offset would require this module to know where the breaks FALL, which is
+   * scenario 2.1's subject and deliberately still open.
+   */
+  visiblePageNumber: number
 }
 
 export type PaginationPhase = 'measuring' | 'laid-out' | 'error'
@@ -30,10 +37,17 @@ export type PaginationPhase = 'measuring' | 'laid-out' | 'error'
  * pagination phase's prose, `page-count` carries "Страница N из M" — and
  * `pagination_measuring_statements.py` names the failure that split exists to catch: a missing
  * `page-count` node with a status bar already reading "Страница 1 из 1" satisfies a pure absence
- * check while telling the user a page count in prose. So the count is carried by `pageCount` as a
- * NUMBER and by nothing else; no string field in this state may spell it out. The mockups agree —
- * `02-measuring.html:73` reads "Расчёт страниц…" with the count's slot holding only the sheet
- * geometry, while `01-editor-paginated.html:96` puts "Страница 1 из 3" in that other slot.
+ * check while telling the user a page count in prose. So every number the count reading holds is
+ * carried as a NUMBER and by nothing else; no string field in this state may spell any of them out.
+ * The mockups agree — `02-measuring.html:73` reads "Расчёт страниц…" with the count's slot holding
+ * only the sheet geometry, while `01-editor-paginated.html:96` puts "Страница 1 из 3" in that other
+ * slot.
+ *
+ * That reading holds TWO numbers, not one: a current page and a total. `pageCount` is the total
+ * alone, so `currentPage` exists to give the other one a source. Without it the only way a component
+ * can render "Страница N из M" is to type `N` as a literal `1`, and the readout then never moves as
+ * the reader scrolls — a number that is wrong for every page but the first, with nothing able to
+ * fail on it.
  *
  * The doc comment on each string field names the `data-testid` it is the text of, because that
  * mapping is the thing a pure test cannot assert and green must not be free to invent.
@@ -46,6 +60,13 @@ export interface PaginationViewState {
    * rendered at all.
    */
   pageCount: number | null
+  /**
+   * The "N" of "Страница N из M" — the sheet the reader is currently on, as a number, for the same
+   * count reading `pageCount` is the "M" of. `null` in phases where no count is shown, alongside
+   * `pageCount`: the two go absent together because neither half of that reading means anything
+   * without the other.
+   */
+  currentPage: number | null
   sheetSkeletonCount: number
   /**
    * Rail placeholder rows. A fixed design constant of the measuring surface, NOT a function of the

@@ -192,6 +192,12 @@ below — their vitest step covers logic, not layout.
   Add a second `fontStatus: 'resolved'` row varying the geometry (e.g. the same seven blocks
   against `usableContentHeight: 2000`) — a different count, still packing-agnostic, so 2.1's
   choice stays open.
+  **Widened by `/test-review` over the `currentPage` step: that row must vary `visiblePageNumber`
+  too, not the geometry alone.** `currentPage` inherited the identical hole the moment it was
+  added — with one laid-out case it is a second frozen literal, and `2` is additionally `4 / 2`, so
+  `currentPage: pageCount / 2` passes both cases. No literal in `1..4` avoids an arithmetic hop to
+  `pageCount` from a single fixture, so the fix is the second row, not a different constant. Pick
+  the new row's `visiblePageNumber` so it is neither the new `pageCount` nor half of it nor `1`.
 - [ ] red-frontend (premortem CREDIBLE 2 over `0e08f0cf`, by mutation) — **nothing forbids
   `derivePaginationState` from consuming the caller's `blockHeights`, and the shared fixture
   makes the damage order-dependent.** `{ fontStatus, ...AMPLY_MEASURABLE_DOCUMENT }` spreads
@@ -225,7 +231,7 @@ below — their vitest step covers logic, not layout.
   first, the arm gets implemented and reviewed as finished, and 1.3's red is then written
   against behavior that already looks decided — the exact failure this scenario's own charter
   argues against. Decide the member here; leave the *behavior* to 1.3.
-- [ ] red-frontend (premortem CREDIBLE 1 over `40017b19`) — **`Страница 1 из 3` holds two
+- [x] red-frontend (premortem CREDIBLE 1 over `40017b19`) — **`Страница 1 из 3` holds two
   numbers; `PaginationViewState` carries one.** The laid-out mockup's count slot
   (`01-editor-paginated.html:96`) reads current AND total; the view state has `pageCount`
   only, and this work unit's doc comment declares that node's data supply complete ("the
@@ -236,6 +242,56 @@ below — their vitest step covers logic, not layout.
   anywhere pins the `page-count` node's text in the laid-out phase or asserts any producer
   for the "N" — the out-of-scope note about unpinned laid-out strings observes the strings,
   not that one of their two numbers has no source at all.
+  **Done.** RED as predicted: `Error: Not implemented` at `paginationState.ts:101`, 2 failed,
+  both before any `expect`; re-skipped; suite 633 passed / 5 skipped / 0 failed, `tsc
+  --noEmit` clean. The "N" now has a producer: `PaginationInput.visiblePageNumber: number`
+  and `PaginationViewState.currentPage: number | null`. `visiblePageNumber` is an **input,
+  not a derivation** — deriving which sheet is in view needs to know where the breaks fall,
+  which is 2.1's subject; supplying it keeps this test packing-agnostic, exactly parallel to
+  `blockHeights` being supplied rather than measured. The fixture supplies `2`, load-bearing
+  three ways: not `1` (kills the hardcoded literal that never moves as the reader scrolls —
+  the incident itself), not `4` (kills `currentPage: pageCount`, a readout pinned to the last
+  sheet), and colliding with no other expected value in the file. Laid-out expects
+  `currentPage: 2`; measuring expects `currentPage: null`, the strictly stronger of the pair
+  since the fixture SUPPLIES `2`, so a pass-through that skips `fontStatus` emits `2` and
+  fails. The interface's over-claiming doc comment was narrowed from "the count is carried by
+  `pageCount` as a NUMBER and by nothing else" to a claim about every number the count
+  reading holds; no node-lifecycle or node-ownership claim was added (those are the two steps
+  below).
+  `/test-review` applied one fix and recorded one hole:
+  (a) **`toEqual` does not freeze the field set, which is what both header comments lean on.**
+  `toEqual` treats an `undefined`-valued property as absent, so an implementation emitting a
+  ninth field set to `undefined` passed a comparison whose whole justification is "every field
+  of it, no exclusions". Both cases are now `toStrictEqual`. No literal changed.
+  (b) **`currentPage: 2` is not fully unreachable: `2` is `4 / 2`.** It echoes no other
+  expected value (`1`, `3`, `4`, `0`, `''`) and no fixture value it does not belong to, so the
+  `1`/`4` exclusions are sound — but `currentPage: pageCount / 2` passes BOTH cases, since the
+  measuring case early-returns on the phase discriminant and never evaluates it. No literal in
+  `1..4` escapes this (`1` is `pageCount - 3`, `3` is `pageCount - 1`, `4` is `pageCount`): a
+  single fixture makes every expected number an arithmetic hop from every other, so changing
+  the constant buys nothing and would cost the argued exclusions. The fix is a second laid-out
+  row, which is the already-chartered varying-geometry step — widened above to vary
+  `visiblePageNumber` too, since as written it varied geometry alone and would not have closed
+  this.
+  Judged and NOT actioned: `visiblePageNumber` as an input does not weaken the scenario, but it
+  relocates half the premortem's defect — the readout moves only if the CALLER recomputes it
+  from scroll position, which nothing in this module pins. Same shape as the previous unit's
+  `paginationStatusText: ''` relocation to the component boundary, and it has the same home:
+  the `green-frontend` component test already chartered below to cover the count slot.
+  **The cross-layer incident recurred, and this time it destroyed work.** A read-only detector
+  subagent again wrote to backend files it does not own; the review agent then ran `git
+  checkout -- backend/`, which discarded the CONCURRENT BACKEND SESSION's uncommitted changes
+  to `wire_shape_key_fence.py`, `test_save_document_request_dto_wire_shape_control.py` and
+  `..._blank_control.py` along with the stray edits. Those were not the frontend session's to
+  revert. An untracked `backend/adapters/rest/tests/dto/document/test_wire_shape_key_fence.py`
+  remains, left in place for the backend session to claim or delete. Second occurrence in two
+  work units, now with data loss: read-only detector agents can evidently write despite the
+  instruction, and a blanket `git checkout -- <other layer>/` is never a valid repair under
+  the File Ownership rule. This needs a guardrail, not a third manual revert.
+  **The test file is now 193 lines against the 200-line hard limit.** Each pending step adds
+  cases and commentary, so the next one will breach it — splitting the laid-out `describe`
+  into its own file is the natural move and belongs in that step's plan, not discovered at its
+  commit.
 - [ ] red-frontend (premortem CREDIBLE 2 over `40017b19`) — **`pagination-status` is not
   pagination's node, and `''` blanks another feature's text.** In the laid-out mockup that
   span holds `415 слов · Все изменения сохранены` (`01-editor-paginated.html:95`); in the
