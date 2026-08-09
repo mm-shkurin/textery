@@ -52,8 +52,27 @@ under `frontend/src` or `acceptance/tests/frontend`.
       **Harness quirk:** `pytest -m frontend` defaults `app_url` to port 5173 while
       `FRONTEND_PORT=80` lives in `infra/.env` — export it first (`set -a; . ../infra/.env`),
       or the run dies with `ERR_CONNECTION_REFUSED`, which looks nothing like a red test.
-- [~] red-frontend
-- [ ] green-frontend
+- [x] red-frontend — two cases, one branch, in
+      `frontend/src/features/aiChat/components/__tests__/DocumentEditorPage.notFound.test.tsx`.
+      Predicted and got `TestingLibraryElementError: Unable to find an element by:
+      [data-testid="document-not-found"]` on the failure case and `AssertionError: expected null
+      not to be null` on the success case. The success case is what closes follow-up (c): an
+      unconditional blocker now fails. `/test-review` landed six fixes — the biggest is that
+      `manual-editor` had no positive counterpart anywhere for this route, so the absence check
+      was vacuous exactly as follow-up (a) said; the success case now *requires* that testid to
+      render, proving the same constant live in one branch and absent in the other. The chat
+      locators are deliberately asymmetric: absence uses the prefix `[data-testid^='ai-chat']`
+      (un-slippable), presence uses the exact `ai-chat-panel` — `not.toBeNull()` on a prefix is
+      satisfied by any incidental wrapper. Both load calls pinned with
+      `toHaveBeenCalledExactlyOnceWith` (an unpinned count passed a component that refetches on
+      every render), and the way-out link asserts `tagName === 'A'` before its href (a
+      `<span href>` navigates nowhere). `version: 3` is left unasserted on purpose — no UI
+      scenario shows it; it travels with edit submissions in scenarios 3.x.
+      **Green-frontend scope is three things, not one:** the `/documents/:documentId` route in
+      `app/App.tsx`, the blocker, and a `/documents` list for the way-out link to target.
+      **Harness note:** `frontend/node_modules` was absent; `npm ci` (273 packages, ~2 min) is
+      needed before the suite runs — an empty `node_modules` looks like a broken config.
+- [~] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
