@@ -24,6 +24,13 @@ heights and the settings value object; "does it break in the right place" has me
 in `red-selenium` / `green-selenium`. Scenarios whose whole claim is geometric are marked
 below — their vitest step covers logic, not layout.
 
+**Flake note (observed 2026-08-09, over `72d9b438`).** `ManualEditor.autosaveDirtyGuardRevertedEdit.test.tsx:69`
+(`expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)`, with the `DIRTY_STATUS` assertion
+at :73) failed once and then passed on two subsequent runs of byte-identical, unmodified code —
+`1 failed | 632 passed`, then 633 twice. Autosave timing, not a regression, and not this story's
+file. It will intermittently redden the suite for whoever runs it next; do not chase it as a
+pagination failure.
+
 ## Frontend Scenarios (02_UI_Tests.md)
 
 ### Scenario 1.1: Pagination waits for the document font
@@ -198,6 +205,15 @@ below — their vitest step covers logic, not layout.
   `currentPage: pageCount / 2` passes both cases. No literal in `1..4` avoids an arithmetic hop to
   `pageCount` from a single fixture, so the fix is the second row, not a different constant. Pick
   the new row's `visiblePageNumber` so it is neither the new `pageCount` nor half of it nor `1`.
+  **This step also owns the file split.** `/refactor` over `72d9b438` declined to split the
+  193-line test file and argued the seam belongs here: 193 does not exceed 200, so there is no
+  violation to fix yet; this step dissolves the current structure anyway (a second laid-out row
+  means `AMPLY_MEASURABLE_DOCUMENT` stops being the single binding every case is driven over),
+  so "split the laid-out `describe` out" is a good seam for the file as it stands today and a
+  poor one for the file this step produces; and splitting now would put the counter-case's
+  load-bearing co-location — both cases and the shared binding on one screen, which is what
+  kills the frozen-literal implementation — behind a cross-file import. This step both breaches
+  200 and knows where the new seam is, so it pays the cost exactly when it buys something.
 - [ ] red-frontend (premortem CREDIBLE 2 over `0e08f0cf`, by mutation) — **nothing forbids
   `derivePaginationState` from consuming the caller's `blockHeights`, and the shared fixture
   makes the damage order-dependent.** `{ fontStatus, ...AMPLY_MEASURABLE_DOCUMENT }` spreads
@@ -327,6 +343,63 @@ below — their vitest step covers logic, not layout.
   but relocated the risk to the component boundary rather than removing it, and the three
   claims added to compensate (which node, which text, whether rendered) all live where no
   test can fail on them.
+- [ ] red-frontend (premortem CREDIBLE 1 + agent-review CONCERNS 2 over `72d9b438`, the same
+  defect from both sides) — **`Страница 7 из 3`: the two halves of one reading now have two
+  producers and no stated relationship.** `pageCount` is DERIVED (`ceil` over the geometry);
+  `currentPage` is PASSED THROUGH. `visiblePageNumber: number` is unconstrained — the type
+  admits `0`, `-1`, `2.4`, and anything greater than `pageCount` — and neither the interface
+  nor either case says whether `derivePaginationState` clamps or whether an out-of-range
+  viewport is the caller's bug. "1-based" is a doc comment, not a guard. Incident: a reader on
+  page 7 of a 12-page document deletes three-quarters of the text; it re-paginates to 3
+  sheets, the scroll container clamps to the new bottom, and the status bar reads
+  `Страница 7 из 3`. Same shape on every font-size change, every sidebar toggle that changes
+  `usableContentHeight`, and any frame where the caller's scroll observation lands one tick
+  before the re-layout. The widened varying-geometry step does NOT close this: it asks for a
+  second *consistent, in-range* value, which kills the arithmetic-hop mutants and leaves a
+  pure pass-through green. Guard: a laid-out case whose fixture supplies a `visiblePageNumber`
+  GREATER than the `pageCount` the same fixture derives (e.g. `9` against the 4-sheet
+  document), asserting the decided outcome — clamp to `pageCount`, `null`, or a stated
+  pass-through — plus the interface doc stating which; a sibling case for `0` or a
+  non-integer if the answer is clamp.
+- [ ] red-frontend (premortem CREDIBLE 2 over `72d9b438`) — **the hardcoded `1` was not
+  killed, it was promoted one layer up, into a layer no chartered step tests.** The commit
+  message and the step above both acknowledge the relocation and both home it to the
+  `green-frontend` component test. **That home cannot hold it.** A component test renders a
+  component GIVEN a `PaginationViewState`, so its fixture supplies `currentPage` directly and
+  never exercises the producer; `visiblePageNumber` is upstream of `derivePaginationState`.
+  Grep confirms it: `visiblePageNumber` appears in exactly two files, and `scroll` appears
+  nowhere in `acceptance/statements/frontend/editor/` or `acceptance/tests/frontend/editor/`.
+  2.1 owns where breaks FALL, 2.2 owns per-sheet numbers — **no scenario owns "which sheet is
+  in view."** Incident: green ships, vitest green, component test green, `align-design` passes,
+  `green-selenium` passes (its assertion is the measuring phase's ABSENCE of `page-count`), and
+  a reader scrolling to sheet 5 still reads `Страница 1 из 12` — the exact defect this unit
+  exists to prevent, invisible to every test named in this file. Guard: a named step with an
+  owner for the scroll→`visiblePageNumber` producer, naturally a Selenium assertion that
+  scrolling the laid-out editor moves `page-count` from `Страница 1 из N` to `Страница 2 из N`.
+  Only the browser leg can make that claim.
+- [ ] red-frontend (agent-review CONCERNS 1 over `72d9b438`) — **the input side does not model
+  absence, so no test can ever pin the unknown-viewport case.** `visiblePageNumber` is a
+  required non-nullable `number`, but the measuring phase is exactly the state in which no
+  such number exists: there are no sheets, only one skeleton, and the caller has nothing to
+  observe. The diff demonstrates it — `AMPLY_MEASURABLE_DOCUMENT` supplies `2` and is spread
+  into the `fontStatus: 'pending'` call, asserting the module is handed "the reader is on
+  sheet 2" for a document that has not been laid out. The output side models absence
+  (`currentPage: number | null`, `pageCount: number | null`); the input side does not, so every
+  measuring-phase caller must fabricate a value and the type forbids any test from pinning
+  what happens when the viewport is unknown. The natural fix — `visiblePageNumber: number |
+  null` with a measuring row supplying `null` — trades away the pass-through kill the header
+  comment leans on, so this needs a DECISION, not a silent widening. Premortem rated the same
+  asymmetry REMOTE on the grounds that `currentPage: null` absorbs whatever the caller
+  invents; agent-review rates it now because the *unpinnable* half survives that absorption.
+- [ ] red-frontend (agent-review CONCERNS 3 over `72d9b438`) — **the retracted over-claim
+  survives one field away.** This unit narrowed the interface header from "the count is carried
+  by `pageCount` as a NUMBER and by nothing else" precisely because the reading holds two
+  numbers — but `paginationStatusText`'s doc twelve lines below still reads "the only thing
+  pagination has to say is the count and the count is `pageCount` rendered by `page-count`",
+  the same one-number claim in the same interface, untouched; likewise the surviving test-file
+  line "The count is carried by `pageCount` as a number and by…". A reader landing on the
+  `paginationStatusText` doc gets the pre-commit model. Comment-only, no behavior — fold into
+  the next unit that touches the file, which is also the split unit.
 - [ ] green-frontend — **name the consuming component here, as a deliverable** (premortem
   CREDIBLE 2 over `f156718b`). This commit opened a new feature root, `frontend/src/features/editor/`,
   holding only `logic/`; the real editor is `features/generation/components/ManualEditor.tsx`
