@@ -317,14 +317,36 @@ under `frontend/src` or `acceptance/tests/frontend`.
       column's border ending in mid-air; `.ac-doc-wrap` regained `position: relative` (scenarios
       2/4/5 anchor the state ribbon and the frozen overlay in that pane); and the card shadow became
       a real `--shadow-card` token in `index.css` instead of the file's only raw colour literal.
+      **Both review passes then found a real defect in the shipped geometry, fixed in the same work
+      unit's second commit:** `min-height: 100vh` does not bound anything. A min-height grid row is
+      auto-sized, so it grows to the document, `.ac-doc-wrap`'s `overflow: auto` never has a bound to
+      scroll against, the *page* scrolls instead, and `align-items: stretch` makes the chat column as
+      tall as the document — on anything longer than a screen the panel's heading scrolls away and
+      the composer scenario 1.1 pins to its bottom would land thousands of pixels down. The mockup
+      gets away with `min-height` only because its document is a short stub. Now `height: 100vh` with
+      `min-height: 0` on both children (a grid item's automatic minimum is its content size, which
+      would re-defeat the bound), and the stacked ≤900px case reverts to `height: auto` because two
+      panes cannot share one viewport height. That also answers (ae): the composer's pinning needs
+      the bounded column, not a `flex: 1` inside an unbounded one.
+      (ad) is closed too — the document card regained a `1px solid var(--border-subtle)` border. The
+      mockup separates card from ground with the 4%-alpha shadow alone, tuned against its own
+      `#f7f8fa`; this app's ground resolves to `--blue-50`, so a white card separated by 4% of black
+      is below the 3:1 non-text floor and reads as a blank page. The border is what the palette swap
+      costs.
+      **Correction:** the `position: relative` rationale said "the mockup anchors the state ribbon
+      there". It does not — `editor.css` has no positioned rule at all and `.docnote` is a normal-flow
+      block. The declaration stays, for the frozen-editor overlay (3.x) and the selection prompt
+      (2.1), but it is this app's decision and not a copied one.
       **Left open, recorded rather than fixed:** (ac) the screen has no topbar/breadcrumb/format
       bar/statusbar at all — a staged deferral to the scenarios that own them, but until then the
-      shell reads unfinished; (ad) the app's `--bg-page` resolves to `--blue-50`, the same value as
-      `--accent-soft`, so the white card, the chat and the accent tile all sit on tinted blue
-      separated only by a 4%-alpha shadow — a dedicated sunken token would restore the mockup's
-      card/ground contrast; (ae) `.ac-chat` has no `flex: 1` region, so the moment scenario 1.1 adds
-      the composer it will float up under the header unless the notice is replaced by a `flex: 1`
-      message list.
+      shell reads unfinished; (af) **nothing guards the scrolling model.** jsdom applies no layout,
+      so the geometry above can regress silently — the guard belongs in
+      `acceptance/tests/frontend/ai_chat/` as a Selenium assertion that with a long document the chat
+      panel's rect stays in the viewport and `.ac-doc-wrap` is the element that scrolled
+      (`scrollTop > 0` on the pane, `window.scrollY === 0`); (ag) `.ac-doc-wrap`'s `overflow: auto` is
+      a new clipping ancestor over the editor, which is exactly the shape scenario 7.9's
+      `manual_editor_popover_clip_statements.py` exists for — "a z-index cannot escape an ancestor's
+      clip" — and scenario 2.1 puts a positioned prompt inside this pane.
       **The step row was missing from this scenario's list** (every other scenario has one); added
       retroactively. `/test-coverage frontend --focus` over it found **no gap it
       created**: `AiChatPanel.tsx` and `EditorDocumentView.tsx` are 100%/100% with **zero
