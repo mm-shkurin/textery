@@ -109,7 +109,7 @@ below — their vitest step covers logic, not layout.
   `statusText` is the one field left open, excluded BY NAME from the rest-comparison rather
   than by silence — the next step below is chartered to decide it, and writing a value here
   would answer that question in the direction it suspects is wrong.
-- [~] red-frontend (agent-review CONCERNS 1) — **`statusText` carries the page count in
+- [x] red-frontend (agent-review CONCERNS 1) — **`statusText` carries the page count in
   prose, which is the exact failure the selenium leg's two-node model exists to catch.**
   `red-selenium` splits the status bar into `pagination-status` (`"Расчёт страниц…"`) and
   `page-count` (`"Страница N из M"`), and `pagination_measuring_statements.py:88-91` names
@@ -121,15 +121,11 @@ below — their vitest step covers logic, not layout.
   Nothing pins `statusText` outside the measuring phase and nothing pins the field→testid
   mapping at all. Pin it before green picks a rendering; scenario 2.3 is otherwise the first
   step that would expose it, by which point the choice is made.
-  **INTERRUPTED, NOT DONE — the RED is written and committed, but `/test-review` never ran**
-  (the agent died mid-run on an API session limit after 11 tool calls, producing no
-  findings). A failed sub-skill means the step is not complete, so this stays `[~]`, and
-  `/refactor` plus the two review passes are also still owed for it. **To resume:**
-  `/test-review` over `frontend/src/features/editor/logic/paginationState.ts` and
-  `logic/__tests__/paginationState.measuring.test.ts` → `/refactor` → `agent-review` +
-  `premortem` over the behavior commit → refactor commit. The three prior reviews of this
-  scenario each found exactly one defect in the RED they reviewed, so the base rate is not
-  zero — do NOT treat the committed state as reviewed.
+  **Was INTERRUPTED at the RED commit** — `/test-review` died mid-run on an API session limit
+  after 11 tool calls, producing no findings, so the step stayed `[~]` with `/test-review`,
+  `/refactor` and the two review passes all owed. Resumed and completed in a later session;
+  the three prior reviews of this scenario had each found exactly one defect, so the
+  committed state was deliberately NOT treated as reviewed.
   What the RED decided (verified RED: `Error: Not implemented` at `paginationState.ts:80`,
   2 failed before any `expect`; then re-skipped — suite 633 passed / 5 skipped / 0 failed,
   `tsc --noEmit` clean): `statusText` is renamed **`paginationStatusText`** and is `''` in
@@ -145,10 +141,42 @@ below — their vitest step covers logic, not layout.
   a claim about the pagination module's contribution, not that the bar is blank —
   `01-editor-paginated.html:95` shows that slot holding `415 слов · Все изменения сохранены`,
   which belongs to other features.
-  **The question the missing `/test-review` was specifically asked and never answered: is
-  `''` genuinely strict, or the new loose assertion?** `measuringMessage` is also `''` in
-  that phase, and the field→testid mapping is pinned only in doc-comment prose — nothing a
-  test can fail on. Judge both when the review is re-run.
+  **The question the missing `/test-review` was specifically asked, now answered: `''` is
+  genuinely strict, not a loose assertion.** The re-run review applied no fixes — all four
+  detector clusters clean — and gave three reasons: (a) it is exact equality on a
+  you-define-it value inside an exhaustive whole-object `toEqual`, which fails on extra keys
+  too; no `toBeFalsy`/`not.toBeNull`/`toContain` exists anywhere in the file. (b) The
+  `paginationStatusText`/`measuringMessage` collision is real only in the laid-out case
+  *read alone* — the measuring case pins the two fields to DIFFERENT literals
+  (`'Расчёт страниц…'` vs `'Готовим страницы…'`), so a name swap dies loudly there and has
+  no surviving mutation to hide in the phase where both are `''`. (c) Swapping two empty
+  strings is unobservable by construction; the mapping needs pinning only where the strings
+  differ, which is where it is pinned.
+  The field→testid mapping is prose-only in `paginationState.ts:39,64,73`, but transitively
+  pinned for the measuring phase through a shared literal: this test pins
+  `paginationStatusText === 'Расчёт страниц…'` and `pagination_measuring_statements.py:101`
+  pins the `pagination-status` node's text to the same literal via `EXPECTED_MEASURING_STATUS`.
+  The residual gap — **no component in `frontend/src` consumes `PaginationViewState` at all**
+  — is not closable from a pure-logic file; it belongs to the `green-frontend` component test
+  already chartered below, not to a stricter assertion here.
+  Verification on re-run: RED re-confirmed by unskipping (`2 failed`, `Error: Not implemented`
+  at `paginationState.ts:80`, both before any `expect`), then re-skipped with an empty diff;
+  full frontend suite 633 passed / 5 skipped / 0 failed; `tsc --noEmit` exit 0.
+  **Incident, flagged not absorbed:** a read-only detector subagent edited
+  `backend/adapters/rest/tests/dto/document/wire_shape_key_fence.py` (+33/−23, rewriting
+  `FIELDS_KEPT_OFF_THE_WIRE` into a `Literal` and merging two asserts) — a backend file from
+  commit `7c744ca7`, another layer and another work unit this frontend session does not own.
+  Reverted; tree clean. The change is not unreasonable on its merits, but it must land in its
+  own backend work unit rather than be smuggled through a frontend review.
+  Out-of-scope observations on the coupled Selenium leg (earlier work units, untouched):
+  `pagination_measuring_statements.py:121-127` duplicates the sheet-skeleton assertion in
+  `measuring_surface_assertions.py:65-71`; `seeded_document_navigation.py:44-70` mixes
+  navigation with history-list assertions so a Given failure and a content defect are
+  indistinguishable and 1.2/1.3 cannot reuse the navigation; `live_document_setup.py:63-95`
+  builds raw `httpx` calls inline though `acceptance/clients/` holds the client pattern; and
+  the laid-out status strings (`"Страница 1 из 3"`, `"Страница 1 из 1"`) exist only in
+  comments — when 1.2/2.3 land they should become pinned constants alongside
+  `EXPECTED_MEASURING_STATUS`.
   One interaction with the steps below, flagged rather than absorbed: the laid-out case is
   now a whole-object `toEqual` with NO destructuring (the exclusion existed only so this step
   could decide the field), so the `pageCount: 4` step inherits the whole-object shape rather
