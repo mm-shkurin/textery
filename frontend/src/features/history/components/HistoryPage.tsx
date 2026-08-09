@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { listDocuments, listGenerations } from '../api/historyApi'
 import { useHistoryList } from '../hooks/useHistoryList'
 import { HistoryRows } from './HistoryRows'
@@ -127,6 +128,25 @@ function GenerationsTab() {
         </div>
       ))}
     </HistoryRows>
+  )
+}
+
+// The `/documents` route — the destination the AI-chat editor's not-found blocker links back to
+// (Story 19, Frontend Scenario 0.1).
+//
+// It reuses this screen rather than adding a second list: the "Мои документы" tab already IS the
+// user's document list, and a parallel list fed by the same endpoint would be two screens telling
+// the same story with two chances to disagree. What is new is only that the list now has a URL,
+// which is what a link can target. It lives here, beside the screen it wires, because the props
+// it fills in are this component's contract.
+export function DocumentsListRoute() {
+  const navigate = useNavigate()
+
+  return (
+    <HistoryPage
+      onOpenDocument={(documentId) => navigate(`/documents/${documentId}`)}
+      onBack={() => navigate('/')}
+    />
   )
 }
 

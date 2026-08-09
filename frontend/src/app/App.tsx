@@ -4,6 +4,8 @@ import { LoginForm } from '../features/auth/components/LoginForm'
 import { VerifyCodeForm } from '../features/auth/components/VerifyCodeForm'
 import { OAuthCallback } from '../features/auth/components/OAuthCallback'
 import { DocumentGenerationFlow } from './DocumentGenerationFlow'
+import { DocumentEditorPage } from '../features/aiChat/components/DocumentEditorPage'
+import { DocumentsListRoute } from '../features/history/components/HistoryPage'
 import { ErrorBoundary } from '../shared/components/ErrorBoundary'
 
 function AppRoutes() {
@@ -13,6 +15,12 @@ function AppRoutes() {
       <Route path="/login" element={<LoginForm />} />
       <Route path="/verify" element={<VerifyCodeForm />} />
       <Route path="/auth/callback" element={<OAuthCallback />} />
+      {/* Both above the `/*` catch-all, which would otherwise swallow them into the generation
+          flow — the flow keeps its screens in component state, so anything it does not recognise
+          lands on the landing page. `/documents/:documentId` is the editor + AI chat route
+          (Story 19); `/documents` is the list its not-found blocker links back to. */}
+      <Route path="/documents" element={<DocumentsListRoute />} />
+      <Route path="/documents/:documentId" element={<DocumentEditorPage />} />
       <Route path="/*" element={<DocumentGenerationFlow />} />
     </Routes>
   )

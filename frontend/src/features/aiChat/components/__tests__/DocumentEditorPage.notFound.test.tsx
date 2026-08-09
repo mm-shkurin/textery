@@ -86,10 +86,7 @@ function renderAtDocumentRoute(documentId: string) {
   )
 }
 
-// RED 2026-08-09: DocumentEditorPage is a stub that renders null and loadEditorDocument is a stub
-// that throws — neither branch exists. Both cases fail on the awaited element that never appears.
-// Un-skip in green-frontend for Story 19, Frontend Scenario 0.1.
-describe.skip('DocumentEditorPage — a document that cannot be loaded', () => {
+describe('DocumentEditorPage — a document that cannot be loaded', () => {
   beforeEach(() => {
     loadEditorDocumentMock.mockReset()
   })

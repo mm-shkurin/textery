@@ -106,7 +106,37 @@ under `frontend/src` or `acceptance/tests/frontend`.
       already has `generation/hooks/__tests__/useDocumentInit.strictMode.test.tsx` for this.
       (l) Nothing fails on a permanently-skipped spec. Green's verification must report these
       two cases as *passed*, not merely "suite green".
-- [~] green-frontend
+- [x] green-frontend — 507 passed / 0 skipped (was 505/2); both notFound cases report *passed*,
+      closing follow-up (l). Coverage gate exits 0 again — follow-up (f) resolved with no floor
+      lowered and no exclude added.
+      `/documents` and `/documents/:documentId` now sit **above** the `/*` catch-all in
+      `app/App.tsx`, which was swallowing both into `DocumentGenerationFlow` (follow-up j).
+      The load lives in `features/aiChat/hooks/useEditorDocument.ts` with four states —
+      `loading | ready | not-found | failed`. Only `error instanceof DocumentNotFoundError`
+      reaches `not-found`; every other rejection lands on `failed`, which renders a separate
+      "Не удалось загрузить документ" screen. That is follow-up (h) honored in production code,
+      but **the test that would keep it honest is still owed** — no case yet rejects with a
+      generic `Error` and asserts the blocker is absent, so a later regression to
+      `catch { setNotFound(true) }` would pass the suite.
+      StrictMode double-fetch (follow-up k) is guarded by a `requestedIdRef` placed **before**
+      the fetch. Worth knowing: the existing `useDocumentInit` cancel-flag pattern does not work
+      here — it suppresses the second `setState` but not the second fetch, which is exactly what
+      `toHaveBeenCalledExactlyOnceWith` measures.
+      Follow-up (g) resolved by building `AiChatPanel` honestly rather than as a placeholder
+      div: heading plus a notice that chat editing appears here, deliberately **not** the
+      mockup's "напишите, что нужно изменить" opener, which would invite typing into a composer
+      scenario 1.1 has not built.
+      Follow-up (i): `/documents` is now a real route — `DocumentsListRoute` exported from
+      `features/history/components/HistoryPage.tsx`, reusing the existing "Мои документы" screen
+      and only giving it a URL. It lived in its own `app/DocumentsListRoute.tsx` first, which sat
+      at 0% statements and failed the per-file floor; inlining it into `App.tsx` dropped App to
+      50%. **The click-through test is still owed** — both suites still only assert the link's
+      `href`.
+      `EditorDocumentView` renders the document through a read-only Tiptap `EditorContent`
+      (`immediatelyRender: true`, so the text is in the first commit) rather than
+      `dangerouslySetInnerHTML` — the HTML goes through Tiptap's schema.
+      Only test change: removing `describe.skip`. The Selenium test stays skipped for
+      `green-selenium`.
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design

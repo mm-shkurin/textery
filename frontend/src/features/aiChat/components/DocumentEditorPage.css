@@ -1,0 +1,70 @@
+/* Tokens come from index.css — no literals, so this screen follows a theme change like the rest. */
+.ac-layout {
+  display: flex;
+  align-items: stretch;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+.ac-editor {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface-light);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 32px;
+}
+
+.ac-chat {
+  width: 360px;
+  flex-shrink: 0;
+  background: var(--surface-light);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.ac-chat-heading {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.ac-chat-notice {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0;
+}
+
+.ac-blocker {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 96px 20px;
+  text-align: center;
+}
+
+.ac-blocker-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.ac-blocker-text {
+  color: var(--text-secondary);
+  font-size: 15px;
+  margin: 0 0 24px;
+}
+
+.ac-blocker-link {
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.ac-loading {
+  color: var(--text-secondary);
+  padding: 96px 20px;
+  text-align: center;
+}
