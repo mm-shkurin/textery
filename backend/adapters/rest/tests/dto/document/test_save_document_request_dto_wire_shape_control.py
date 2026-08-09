@@ -71,6 +71,16 @@ class TestSaveDocumentRequestDtoWireShapeNegativeControl:
         docstring (`document_dtos.py:53`, "no `.strip()`") and the ADR's row 4
         both violated, with nothing red. This is the row that carries actual user
         data, and it was the only one nothing pinned on the writer side.
+
+        It is also the call site the key fence was written for. Every other row
+        here constructs a SUBSET-shaped request by intent -- the absent row omits
+        `title`, and that omission is the subject of the RED class -- whereas this
+        one sets all three declared fields, so the fence has the full declared set
+        to drop from and its key leg runs against a body that is supposed to carry
+        everything. Whole-body equality is asserted alongside the fence rather than
+        delegated to it, for the reason the fence's own docstring gives: it reads
+        `model_fields` off the class under test, and a serializer wrong in the same
+        direction agrees with itself.
         """
         request = SaveDocumentRequestDto(content="<p>saved</p>", version=1, title=" Отчёт ")
 
@@ -97,32 +107,6 @@ class TestSaveDocumentRequestDtoWireShapeNegativeControl:
             f"got {body!r}"
         )
         assert_body_keys_track_the_model(body, "dumped JSON")
-
-    def test_should_carry_every_declared_field_on_the_dumped_body(self):
-        """The call site the key fence was written for, and did not have.
-
-        Every other method here constructs a SUBSET-shaped request by intent --
-        the absent row omits `title`, and that omission is the subject of the RED
-        class. This one sets all three declared fields, so the fence has the full
-        declared set to drop from, and the key leg is exercised against a body
-        that is supposed to carry everything. Whole-body equality is asserted
-        alongside it rather than delegated to it, for the reason the fence's own
-        docstring gives: the fence reads `model_fields` off the class under test
-        and a serializer wrong in the same direction agrees with itself.
-        """
-        request = SaveDocumentRequestDto(content="<p>saved</p>", version=1, title=" Отчёт ")
-
-        body = request.model_dump()
-
-        assert body == {"content": "<p>saved</p>", "title": " Отчёт ", "version": 1}, (
-            "a request that sets every declared field must emit every declared field, "
-            f"got {body!r}"
-        )
-        assert sorted(body) == ["content", "title", "version"], (
-            "the dumped body's key set must be exactly the model's declared fields when "
-            f"the request set all of them, got {sorted(body)}"
-        )
-        assert_body_keys_track_the_model(body, "dumped")
 
     def test_should_keep_hostile_content_on_the_dumped_body_byte_for_byte(self):
         """`content` is the largest user-data surface here, and it was unpinned.

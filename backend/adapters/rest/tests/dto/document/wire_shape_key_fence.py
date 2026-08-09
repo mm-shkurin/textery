@@ -8,8 +8,17 @@ from dto.document.document_dtos import SaveDocumentRequestDto
 # the one report anybody reads. NOTE: this is documentation, not enforcement --
 # the call sites spell the import `from wire_shape_key_fence import ...`, which
 # mypy cannot resolve (see the module-name note below), so it types the callee
-# `Any` and never checks the argument. The closed type becomes enforced the day
-# the import is spelled `dto.document.wire_shape_key_fence`.
+# `Any` and never checks the argument.
+#
+# Re-spelling the import `dto.document.wire_shape_key_fence` does NOT fix that,
+# though it reads as though it should. Measured: with both call sites qualified,
+# `mypy --no-incremental` still accepts a deliberately typo'd `"dmped JSON"`.
+# `mypy_path` (backend/pyproject.toml) lists `adapters/rest/src` BEFORE
+# `adapters/rest/tests`, so `dto.document` resolves to the src directory, the
+# helper is not found under it, and `ignore_missing_imports = true` silences the
+# miss into `Any` again -- same hole, reached by a longer path. Enforcement needs
+# the path order changed or the helper moved beside the code it types, neither of
+# which is a test-file edit. Left as the short spelling until then.
 #
 # There is deliberately NO field-level exclusion set. `title` would be the only
 # candidate, and excluding it is exactly the hole this helper exists to close:
@@ -21,14 +30,14 @@ from dto.document.document_dtos import SaveDocumentRequestDto
 #
 # Module-name note: this file is reachable under TWO names. pytest's `prepend`
 # import mode puts each collected test's own directory on `sys.path`, so the
-# tests see it as top-level `wire_shape_key_fence`; mypy and `pythonpath` only
+# tests see it as top-level `wire_shape_key_fence`; mypy and `pythonpath` also
 # carry `adapters/rest/tests`, under which it is
 # `dto.document.wire_shape_key_fence`. `ignore_missing_imports = true` in
 # pyproject.toml is what keeps the mismatch silent rather than an error.
 WireLeg = Literal["dumped", "dumped JSON"]
 
 
-def assert_body_keys_track_the_model(body: dict, leg: WireLeg):
+def assert_body_keys_track_the_model(body: dict[str, object], leg: WireLeg):
     """The half of the shape that whole-body equality against a literal cannot hold.
 
     Equality with a frozen dict is asymmetric under extension. It catches a

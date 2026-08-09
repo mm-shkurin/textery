@@ -609,8 +609,74 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   earlier `109 passed` in that run was measured against the reverted file. This checkout is being
   shared by a parallel session and/or synced by OneDrive; `CLAUDE.md`'s file-ownership rule assumes
   separate `git worktree`s. Any measurement taken here is only as trustworthy as the tree it ran
-  against — re-verify before relying on a number from this window.)
-- [~] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
+  against — re-verify before relying on a number from this window.
+  `/refactor` then deleted `test_should_carry_every_declared_field_on_the_dumped_body`
+  (`..._wire_shape_control.py`), the duplicate test-review handed it — verified before acting: byte
+  identical to `test_should_keep_a_real_title_on_the_dumped_body_byte_for_byte` in arrange, act and
+  whole-body literal, both ending in the same fence call, and its lone delta `sorted(body) == [...]`
+  is strictly entailed by the dict equality above it. The surviving method IS the full-declared-set
+  call site, so the key-tracking capability is preserved; the deleted method's rationale was folded
+  into the survivor's docstring. Also `body: dict` → `dict[str, object]`. **109 → 108 passed, 4
+  skipped**, the −1 being exactly that test.
+  `/refactor` additionally FALSIFIED verdict 1's implied remedy: re-spelling the imports dotted as
+  `dto.document.wire_shape_key_fence` does NOT make the `Literal` enforced. Applied, then probed
+  with a typo'd `"dmped JSON"` — mypy still reports success, because `mypy_path` in
+  `backend/pyproject.toml` lists `adapters/rest/src` BEFORE `adapters/rest/tests`, so `dto.document`
+  resolves to src, the helper is not found under it, and `ignore_missing_imports` silences the miss
+  back into `Any`. Same hole via a longer path. Reverted; the comment now records the measurement
+  and names what enforcement would actually cost (a `mypy_path` reorder, or moving the helper).
+  BOTH REVIEW PASSES RETURNED **CONCERNS**, converging on the same most-severe finding. Chartered as
+  the two rows below, plus one cross-layer hand-off:
+  (a) **The fence's entire failure path is unpinned** — agent-review finding 1 and premortem #3,
+  reached independently. All live call sites pass bodies where `missing` and `undeclared` are both
+  empty, so the helper is a no-op everywhere it runs, and the only evidence the collected-`faults`
+  rewrite works is the ad-hoc probe named in the commit message, which lives nowhere in the repo.
+  This commit CHANGED that behavior; a revert to sequential asserts, an inverted `if`, or a
+  `faults.append` under the wrong branch all leave the suite green with the fence dead. Sharpened by
+  the environment warning above: a green count from this checkout is weak evidence, a committed test
+  is not.
+  (b) **Deleting the empty frozenset made the absent-title exception unenforceable rather than
+  merely unobservable** — premortem #2. `declared - body.keys()` now demands `title` on EVERY body
+  it inspects, and the sole defence is a comment saying the fence is called only from sites that set
+  it. Point it at the absent row once the RED class unskips — the natural consistency move — and it
+  goes red on the CORRECT body and green on the erasure body, with green written against it.
+  (c) **CROSS-LAYER, not this session's file:** premortem #1 re-raises the frontend producer gap
+  already recorded further down this file, with the sharper detail that
+  `documentApi.conflict.test.ts:62`'s strict `toEqual` guards only the RETRY leg of a 409 and reads
+  as a conflict-protocol test, so the author adding title support edits the literal and it passes.
+  The guard belongs on the FIRST PUT in `documentApi.test.ts`. Hand to the frontend session.
+  Recorded, not chartered: the commit message says pytest resolves the helper "top-level via
+  `pythonpath`" — the file it commits says `prepend` import mode, and `pyproject.toml` agrees with
+  the file. Commit messages are this project's only review surface, so the wrong explanation is the
+  one a reader hits first. And `serialization_alias` on any field would make that field register as
+  BOTH missing and undeclared, producing a doubly-misleading message — harmless today, worth knowing
+  before someone reads a real fence failure.)
+- [~] red-adapter rest (both review passes on `307ff37c`, converging: **the fence's failure path is
+  pinned by nothing, and this commit is what changed it.** `assert_body_keys_track_the_model` runs at
+  13 call sites and at every one of them `missing` and `undeclared` are both empty — it is a no-op
+  wherever the suite exercises it. The collected-`faults` rewrite that this unit landed, the whole
+  point of which is that a body dropping a declared key AND carrying a spurious one names both
+  faults rather than one, is evidenced only by an ad-hoc interactive probe recorded in a commit
+  message. Reverting to sequential asserts, inverting an `if`, or appending under the wrong branch
+  each leaves 108 green with the fence dead — reopening, at zero cost, exactly the masking this unit
+  existed to fix. Weight the evidence question: `progress-backend.md`'s environment warning for this
+  window records edits silently reverted on disk mid-run, so a green count measured here is weak and
+  a committed test is not. Test: `pytest.raises(AssertionError)` over the helper for dropped-only,
+  spurious-only, and both-at-once, the last asserting BOTH field names appear in the one message.)
+- [ ] green-adapter rest (the fence must fail, and say both things, when it should)
+- [ ] red-adapter rest (premortem #2 on `307ff37c`: deleting `FIELDS_KEPT_OFF_THE_WIRE` traded an
+  unobservable exception for an UNENFORCEABLE one, and the difference bites at green. The helper's
+  `declared - body.keys()` leg now requires `title` on every body it inspects; the only thing
+  keeping that correct is a comment saying the fence is called solely from sites that set `title`
+  explicitly. Confirmed: all live call sites pass `title=None`, `""`, `"   "` or a real title, and
+  none is the absent row. When the RED class in `..._wire_shape.py` unskips, extending the fence to
+  it is the natural consistency move — and there the fence goes RED on the correct body (no `title`
+  key) and GREEN on the erasure body (`"title": null`). Green for 2.1 is written against these
+  fences, so the fence would be asking for the erasure. Guard: make the helper REFUSE the absent row
+  outright — `assert "title" in body` with a message naming the RED class — or pin that it raises
+  when handed a body with no `title` key. Sequencing: this wants to land BEFORE green.)
+- [ ] green-adapter rest (premortem: the fence must refuse the row it cannot judge)
+- [ ] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
   RED landed at `backend/adapters/rest/tests/dto/document/test_save_document_request_dto_roundtrip.py`
   — a new `tests/dto/` tree, no `__init__.py` and no Statements class, matching the rest-adapter
   convention; the router file was at 197/200 and could not take it. The failing assertion is the
