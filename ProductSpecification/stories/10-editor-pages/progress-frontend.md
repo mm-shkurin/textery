@@ -491,8 +491,76 @@ pagination failure.
   legitimate rail-count change. The correct repair at that point is to retune the row geometry so
   `pageCount ≠ 4` — NOT to loosen the check. Whoever hits that redness needs to know it is the
   guard working, not a false positive.
+  **That "will redden on any change" claim is FALSE, and both review passes proved it
+  independently — see the three steps below.** `collisionsWithin` is a uniqueness check, so it
+  reddens only when the new value equals another number of the same row; `railSkeletons: 8`
+  changes four assertions in silence. Do not rely on this sentence.
   One residue, deliberately left: nothing forces a NEWLY ADDED surface constant to be routed
   through `SURFACE_CONSTANTS`. That is the name-keyed map exhaustiveness item below.
+- [ ] red-frontend (agent-review CONCERNS 1 + premortem CREDIBLE 1 over `5eec272c`, both
+  independently) — **the fifth time, and this one is worse than its predecessors: the mutation
+  kill was an accident of two row numbers, and the copy that used to backstop it is gone.**
+  `collisionsWithin` is a UNIQUENESS check, not a VALUE check. It fires only when the mutated
+  constant equals another number of the same row, and the live value sets are
+  `{1,3,0} ∪ {4,2,7}` and `{1,3,0} ∪ {6,5,11}`. The two kills the last unit reported —
+  `railSkeletons = 4`, `NO_SKELETONS = 2` — landed exactly on `pageCount` and `currentPage`.
+  **That is the only reason they killed.** Set `railSkeletons: 8` or `9`, or `sheetSkeletons:
+  1 → 9 / 12 / 100`, or `NO_SKELETONS: 9`: no collision in either row, constants are excluded
+  from `collisionsAcross` by design, the suite stays 638/0 — and the expected value has been
+  silently rewritten in two files and four assertions at once, in cases `.skip`ped for the whole
+  RED phase. Two data points inside the kill set were read as a property of the whole set.
+  Before this unit a fixture edit could not move an assertion, because the assertion held its own
+  literal; after it, one token does. **The unit closed the DRIFT hole and opened a
+  SILENT-REDEFINITION hole, with a bigger blast radius and a guard that was never designed for
+  this role** — the collision check was conscripted into being the constants' guard without
+  anyone checking its coverage. Grep confirms nothing in `frontend/src` or `acceptance/` pins
+  `sheetSkeletons === 1`, `railSkeletons === 3`, `NO_SKELETONS === 0` (the acceptance-layer
+  `MEASURING_SURFACE` is an unrelated locator tuple). Guard, and it must be LIVE since
+  `crossRow.test.ts` is the only file that runs during RED:
+  `expect({ ...MEASURING_SURFACE, zero: NO_SKELETONS }).toStrictEqual({ sheetSkeletons: 1,
+  railSkeletons: 3, zero: 0 })`, with a header stating this is the one place the design numbers
+  are decided and a legitimate rail-count change is edited HERE, deliberately.
+- [ ] red-frontend (premortem CREDIBLE 2 over `5eec272c`) — **the collision expectation can be
+  widened on its own; its sibling cannot, and the file argues against itself about exactly this.**
+  The hop matrix has a second COMPUTED case precisely so it "cannot be quietly shortened" — the
+  two must be edited in opposite directions to hide a retune. The collision check got no such
+  companion: its expectation is a bare literal `{ 'the font-gate row': [], 'the varied-geometry
+  row': [] }`, and turning red into green is one paste of
+  `['the measuring surface's three rail rows === pageCount']` — a single mechanical
+  self-sufficient edit nothing refutes. Worse, the guidance against that edit ("retune the row
+  geometry, not the check") lives in a doc comment on `MEASURING_SURFACE` in
+  `laidOutRows.fixture.ts` — a DIFFERENT FILE from the one that reddens. The developer's red is in
+  `crossRow.test.ts`, whose header never says the collision expectation must stay empty. That is
+  this scenario's own defect again: a cross-file binding held by prose. Incident: rail grows to
+  four rows per design, the test reddens, the fix lands as one pasted line, and three sprints
+  later `railSkeletonCount: pageCount` ships — the exact hop the file asserts by name is
+  impossible. Guard: a property-form companion,
+  `expect(LAID_OUT_ROWS.filter((row) => collisionsWithin(row).length > 0).map((r) => r.name))
+  .toStrictEqual([])`, plus the retune-the-geometry sentence in `crossRow.test.ts`'s OWN header.
+- [ ] red-frontend (premortem CREDIBLE 3 + agent-review CONCERNS 2 over `5eec272c`) — **the key
+  text still spells the number in words, and the number left; and one header sentence is simply
+  false.** `SURFACE_CONSTANTS` keeps prose keys whose values are now imported:
+  `'the measuring surface's three rail rows': MEASURING_SURFACE.railSkeletons`. Change
+  `railSkeletons` to `4` and the key still reads **three** — so every collision string, every
+  failure diff, every `toStrictEqual` output names a value the constant no longer holds. The last
+  commit contains the artifact: its recorded kill for `railSkeletons = 4` is
+  `"the measuring surface's three rail rows === pageCount"`, a label lying by one, logged as a
+  passing verification. This is also what makes the finding above undetectable by review — the
+  message reads correct at every value. Incident: a reviewer reads "three", checks the rail is
+  three rows, concludes the collision report is stale, and deletes the entry.
+  Separately, `laidOut.test.ts:64-65` states a mechanism that does not hold: "Change
+  `NO_SKELETONS` to anything else and the laid-out zero collides with the measuring surface's `1`
+  … which is LIVE today." Both halves are wrong — `NO_SKELETONS = 8` collides with nothing and
+  the suite stays green, and the named partner is the `1` only for the single mutation
+  `NO_SKELETONS = 1`; the mutation actually run (`= 2`) killed via `currentPage`, which the
+  progress note records verbatim without noticing it contradicts the sentence it was validating.
+  Also flagged: restoring the literal `0/0/null/false/''` to the `laidOut` header and the parallel
+  "`MEASURING_SURFACE`'s 1 and 3" now in the `measuring` header re-create a prose-held literal
+  describing a value that lives elsewhere. That may still be the right call for readability, but
+  it should be recognised as re-opening the pattern rather than closing it. (The `7` and `4` in
+  that header are fine — they ARE guarded, by `blockHeights.length` and `pageCount`.) Guard:
+  derive the names (`` `the measuring surface's ${MEASURING_SURFACE.railSkeletons} rail rows` ``),
+  or assert the spelled numeral in each key matches its value; and correct the false sentence.
 - [ ] red-frontend or red-selenium (premortem CREDIBLE 2 over `08404a9e`) — **`usableContentHeight`
   has no producer, and this unit made the pure suite more self-sufficient about exactly the half
   that has none.** `blockHeights` and `usableContentHeight` appear in five files, all
