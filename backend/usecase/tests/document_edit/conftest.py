@@ -12,6 +12,7 @@ from statements.ai_edit_scope_guard_statements import AiEditScopeGuardStatements
 from statements.ai_edit_store_failure_statements import AiEditStoreFailureStatements
 from statements.refusal_record_shape_statements import RefusalRecordShapeStatements
 from statements.revision_number_range_statements import RevisionNumberRangeStatements
+from statements.revision_range_refusal_log_statements import RevisionRangeRefusalLogStatements
 from statements.revision_outage_statements import RevisionOutageStatements
 from statements.revision_refusal_log_statements import RevisionRefusalLogStatements
 from statements.revision_scope_guard_statements import RevisionScopeGuardStatements
@@ -53,6 +54,13 @@ def revision_outage_statements():
 @pytest.fixture
 def revision_refusal_log_statements():
     statements = RevisionRefusalLogStatements()
+    yield statements
+    statements.stop_collecting()
+
+
+@pytest.fixture
+def revision_range_refusal_log_statements():
+    statements = RevisionRangeRefusalLogStatements()
     yield statements
     statements.stop_collecting()
 

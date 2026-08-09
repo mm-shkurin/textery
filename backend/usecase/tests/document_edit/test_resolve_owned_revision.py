@@ -1,5 +1,6 @@
 from statements.refusal_record_shape_statements import RefusalRecordShapeStatements
 from statements.revision_number_range_statements import RevisionNumberRangeStatements
+from statements.revision_range_refusal_log_statements import RevisionRangeRefusalLogStatements
 from statements.revision_outage_statements import RevisionOutageStatements
 from statements.revision_refusal_log_statements import RevisionRefusalLogStatements
 from statements.revision_scope_guard_statements import RevisionScopeGuardStatements
@@ -153,6 +154,33 @@ class TestResolveOwnedRevision:
 
         revision_silence_statements.assert_each_outage_reached_the_caller()
         revision_silence_statements.assert_both_outages_were_silent()
+
+    async def test_should_record_an_unusable_revision_number_under_the_step_two_cause(
+        self, revision_range_refusal_log_statements: RevisionRangeRefusalLogStatements
+    ):
+        await revision_range_refusal_log_statements.given_the_caller_owns_two_documents()
+        revision_range_refusal_log_statements.given_the_guards_own_log_is_collected()
+
+        await (
+            revision_range_refusal_log_statements.request_every_unusable_number_under_its_own_document()
+        )
+
+        revision_range_refusal_log_statements.assert_every_unusable_number_refused_at_step_two()
+        revision_range_refusal_log_statements.assert_the_revision_store_was_never_asked()
+
+    async def test_should_still_attribute_a_refusal_when_an_unusable_number_names_a_document_it_cannot_resolve(
+        self, revision_range_refusal_log_statements: RevisionRangeRefusalLogStatements
+    ):
+        await revision_range_refusal_log_statements.given_the_caller_owns_two_documents()
+        await revision_range_refusal_log_statements.given_a_document_owned_by_another_account()
+        revision_range_refusal_log_statements.given_the_guards_own_log_is_collected()
+
+        await (
+            revision_range_refusal_log_statements.request_an_unusable_number_under_a_document_it_cannot_resolve()
+        )
+
+        revision_range_refusal_log_statements.assert_an_unresolvable_document_still_records_the_attribution()
+        revision_range_refusal_log_statements.assert_the_revision_store_was_never_asked()
 
     async def test_should_build_its_refusal_record_by_the_same_rule_as_the_edit_guard(
         self, refusal_record_shape_statements: RefusalRecordShapeStatements

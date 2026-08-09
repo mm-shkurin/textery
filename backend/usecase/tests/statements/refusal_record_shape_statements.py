@@ -30,7 +30,7 @@ EXTRA_FIELDS_AT_STEP_ONE = frozenset({"refusal_cause", "caller_id"})
 EXTRA_FIELDS_AT_STEP_TWO = frozenset({"refusal_cause", "caller_id", "document_id"})
 
 
-def _extra_field_names(record: logging.LogRecord) -> frozenset[str]:
+def extra_field_names(record: logging.LogRecord) -> frozenset[str]:
     """Every field the guard attached, and nothing the logging library added."""
     return frozenset(record.__dict__) - _STANDARD_RECORD_ATTRIBUTES
 
@@ -90,8 +90,8 @@ class RefusalRecordShapeStatements:
         grew that nobody enumerated widens one side and fails here.
         """
         for which, expected, edit_record, revision_record in self._paired():
-            edit_fields = _extra_field_names(edit_record)
-            revision_fields = _extra_field_names(revision_record)
+            edit_fields = extra_field_names(edit_record)
+            revision_fields = extra_field_names(revision_record)
             assert (edit_fields, revision_fields) == (expected, expected), (
                 f"at {which} the edit guard attached the fields {sorted(edit_fields)} and "
                 f"the revision guard attached {sorted(revision_fields)}, expected both to be "
