@@ -113,16 +113,41 @@ export const RULED_OUT_CURRENT_PAGE_HOPS: readonly CurrentPageHop[] = [
 ]
 
 /**
- * The fixed design constants of the rendered surfaces, named here ONLY so a row's numbers can be
- * refuted against them. They are not the expectations — each test file still spells its own skeleton
- * counts out at its own assertion. `railSkeletonCount: 3` colliding with a three-block
- * `blockHeights.length` is not hypothetical: it shipped in this scenario once and was caught by
- * review rather than by a test.
+ * The fixed design constants of the rendered surfaces. These ARE the expectations: each test file
+ * reads them at its own assertion rather than re-typing `1` / `3` / `0`, so the values the collision
+ * check refutes against and the values the cases expect are ONE declaration and cannot drift apart.
+ *
+ * An earlier version of this module declared them here while each test file still spelled its own
+ * literal out, linked by a doc comment — the fourth appearance in this scenario of a cross-file
+ * binding held by prose, and the same shape the geometry had before it moved in above. Latent, but
+ * every chartered step queued against these surfaces can move a skeleton count with every case that
+ * would notice `.skip`ped: grow the rail to four rows at `paginationState.measuring.test.ts` and
+ * these constants keep saying `3`, so `collisionsWithin` refutes against a stale value, reports `[]`,
+ * and passes while asserting BY NAME that `railSkeletonCount: pageCount` (also `4`) is impossible.
+ * `railSkeletonCount: 3` colliding with a three-block `blockHeights.length` is not hypothetical: it
+ * shipped in this scenario once and was caught by review rather than by a test.
+ *
+ * WHY THE KEYS ARE NOT THE FIELD NAMES. `sheetSkeletons` is not `sheetSkeletonCount`, and the zero
+ * is a separate scalar rather than a third member. The whole-object `toStrictEqual` expectations are
+ * readable as whole objects only while every key is typed out at the assertion, so spreading a
+ * shared constants object into one of them has been ruled out twice. Reading a NAMED FIELD keeps the
+ * key list intact and shares only the value; keys that deliberately do not match the field names
+ * keep the spread from ever being the shorter thing to write — it would produce the wrong keys and
+ * fail.
  */
+export const MEASURING_SURFACE = {
+  sheetSkeletons: 1,
+  railSkeletons: 3,
+} as const
+
+/** What both skeleton counts are once the pages exist and the measuring surface is torn down. */
+export const NO_SKELETONS = 0
+
+/** The same three constants keyed as prose, for the collision check to name them by. */
 export const SURFACE_CONSTANTS: Readonly<Record<string, number>> = {
-  'the measuring surface’s one skeleton sheet': 1,
-  'the measuring surface’s three rail rows': 3,
-  'the laid-out phase’s zero skeletons': 0,
+  'the measuring surface’s one skeleton sheet': MEASURING_SURFACE.sheetSkeletons,
+  'the measuring surface’s three rail rows': MEASURING_SURFACE.railSkeletons,
+  'the laid-out phase’s zero skeletons': NO_SKELETONS,
 }
 
 /**

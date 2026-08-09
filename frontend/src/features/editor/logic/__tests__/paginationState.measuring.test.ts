@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { derivePaginationState, type PaginationInput } from '../paginationState'
-import { FONT_GATE_ROW } from './laidOutRows.fixture'
+import { FONT_GATE_ROW, MEASURING_SURFACE, NO_SKELETONS } from './laidOutRows.fixture'
 
 /**
  * The geometry both cases below are driven over — seven blocks totalling 2800px against 900px of
@@ -57,7 +57,8 @@ const AMPLY_MEASURABLE_DOCUMENT: Omit<PaginationInput, 'fontStatus'> = {
  * count here and pass nothing.
  *
  * The geometry is chosen so that NO expected value is reachable by computing on the input. The
- * document has 7 blocks and lays out to 4 pages; the expected counts are 1 and 3. So
+ * document has 7 blocks and lays out to 4 pages; the expected counts are `MEASURING_SURFACE`'s 1 and
+ * 3, read from the fixture that also refutes the rows against them, so the two cannot drift. So
  * `railSkeletonCount: blockHeights.length` (7) and `sheetSkeletonCount: ceil(sum/usable)` (4) both
  * fail — the rail's three rows and the single skeleton sheet are pinned as the design constants
  * they are, not as coincidences of this fixture. An earlier fixture used three blocks summing to
@@ -95,8 +96,8 @@ describe('derivePaginationState — the document font has not resolved', () => {
       phase: 'measuring',
       pageCount: null,
       currentPage: null,
-      sheetSkeletonCount: 1,
-      railSkeletonCount: 3,
+      sheetSkeletonCount: MEASURING_SURFACE.sheetSkeletons,
+      railSkeletonCount: MEASURING_SURFACE.railSkeletons,
       liveRegionRole: 'status',
       ariaBusy: true,
       paginationStatusText: 'Расчёт страниц…',
@@ -182,8 +183,8 @@ describe('derivePaginationState — the document font has resolved', () => {
       phase: 'laid-out',
       pageCount: FONT_GATE_ROW.pageCount,
       currentPage: FONT_GATE_ROW.currentPage,
-      sheetSkeletonCount: 0,
-      railSkeletonCount: 0,
+      sheetSkeletonCount: NO_SKELETONS,
+      railSkeletonCount: NO_SKELETONS,
       liveRegionRole: null,
       ariaBusy: false,
       paginationStatusText: '',

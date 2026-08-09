@@ -422,7 +422,7 @@ pagination failure.
   Suite 638 passed / 6 skipped / 0 failed; `tsc --noEmit` exit 0. Files: fixture 150, crossRow
   142, measuring 193, laidOut unchanged — all under 200, and no case joined the closed measuring
   file.
-- [ ] red-frontend (agent-review CONCERNS 1 + premortem CREDIBLE 1 over `08404a9e`, both
+- [x] red-frontend (agent-review CONCERNS 1 + premortem CREDIBLE 1 over `08404a9e`, both
   independently) — **it happened a fourth time: `SURFACE_CONSTANTS` is the geometry defect
   relocated.** This unit's whole thesis is that `pageCount: 4` sitting next to a PROSE
   description of blocks it did not contain was a cross-file binding held by a comment — and it
@@ -448,6 +448,51 @@ pagination failure.
   those files expect. Latent today (the values do agree), but every chartered step queued
   against these surfaces can move a skeleton count, with the cases that would notice `.skip`ped
   for the whole RED phase — verbatim the condition that let the last one survive.
+  **Done, and the two goals turned out not to conflict.** The twice-adjudicated NO ACTION was
+  against SPREADING a constants object into an expectation — right, because a spread deletes the
+  key list from the assertion. A PER-FIELD named reference does not: every key stays typed out,
+  and only the VALUE comes from one declaration. New in the fixture:
+  `MEASURING_SURFACE = { sheetSkeletons: 1, railSkeletons: 3 } as const` and `NO_SKELETONS = 0`,
+  with `SURFACE_CONSTANTS` keeping its prose keys but now BUILT FROM those bindings — so the
+  values `collisionsWithin` refutes against and the values the cases expect are one declaration.
+  **The anti-spread property is structural, not conventional:** the object's keys are
+  deliberately NOT the field names (`sheetSkeletons` ≠ `sheetSkeletonCount`) and the zero is a
+  separate scalar rather than a third member, so a spread injects two wrong keys and omits two
+  required ones and `toStrictEqual` fails on four counts. `/test-review` confirmed by trying it,
+  and found `NO_SKELETONS` is not the weaker link the question suspected — spreading a number
+  yields no keys at all, so it fails harder than the object would. Side benefit: the non-matching
+  key names let both imports sit on one line, so `measuring.test.ts` grew by 1 line, not 5, and
+  no split was needed.
+  RED as predicted: `Error: Not implemented` at `paginationState.ts:101:9`, `3 failed | 5 passed`,
+  none reaching an `expect`. One correction loop: the first prediction said `4 passed` —
+  `crossRow` has five live cases, not four — corrected and re-run before verifying.
+  **Mutation 1 is the whole point, and it was checked in both directions:** the incident (rail
+  grows to four rows, `railSkeletonCount: 4`) now **kills** — `1 failed | 4 passed | 3 skipped`,
+  firing with all three stub cases still skipped — while **the identical edit at HEAD survives**
+  (`5 passed | 3 skipped`, zero failures), confirming "today it fails nothing" rather than
+  assuming it. `/test-review` mutated the new bindings directly too: `NO_SKELETONS = 2` →
+  `"the laid-out phase's zero skeletons === currentPage"`; `railSkeletons = 4` →
+  `"the measuring surface's three rail rows === pageCount"`. All four earlier kills still land on
+  their charted division of labour (stale geometry; `pageCount: blockHeights.length`;
+  `currentPage: pageCount - 1` by the font-gate case only; `pageCount / 2` by the varied one).
+  `/test-review` found one real defect — **the positively-absent pin had been weakened.**
+  `laidOut.test.ts` had rewritten its load-bearing sentence from "exact `0`/`0`/`null`/`false`/`''`"
+  to "(`NO_SKELETONS` twice, then `null`/`false`/`''`)", deleting the zero from the only place a
+  reader could see it. The pin's whole point is that `0` for a phase rendering no skeletons is
+  DECIDED here, not inherited from an interface or from a binding's name. Literal zeros restored,
+  with the reason the binding is read anyway stated alongside; header only, no assertion or
+  expected value touched. `measuring.test.ts` still spells its own out, so it needed no
+  equivalent.
+  Suite 638 passed / 6 skipped / 0 failed; `tsc --noEmit` exit 0. Files: fixture 175, measuring
+  194, laidOut 90, crossRow 142 untouched — all under 200, no case joined the closed measuring
+  file.
+  **Carried forward, currently only in a doc comment:** `MEASURING_SURFACE` is now the ONLY place
+  a design change to those surfaces can be made, so the collision test will redden on any
+  legitimate rail-count change. The correct repair at that point is to retune the row geometry so
+  `pageCount ≠ 4` — NOT to loosen the check. Whoever hits that redness needs to know it is the
+  guard working, not a false positive.
+  One residue, deliberately left: nothing forces a NEWLY ADDED surface constant to be routed
+  through `SURFACE_CONSTANTS`. That is the name-keyed map exhaustiveness item below.
 - [ ] red-frontend or red-selenium (premortem CREDIBLE 2 over `08404a9e`) — **`usableContentHeight`
   has no producer, and this unit made the pure suite more self-sufficient about exactly the half
   that has none.** `blockHeights` and `usableContentHeight` appear in five files, all

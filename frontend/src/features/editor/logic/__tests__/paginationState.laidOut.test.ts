@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { derivePaginationState } from '../paginationState'
-import { VARIED_GEOMETRY_ROW } from './laidOutRows.fixture'
+import { NO_SKELETONS, VARIED_GEOMETRY_ROW } from './laidOutRows.fixture'
 
 /**
  * Story 10, UI scenario 1.1 — the second laid-out row, over DIFFERENT geometry.
@@ -56,9 +56,13 @@ import { VARIED_GEOMETRY_ROW } from './laidOutRows.fixture'
  * decide it in silence.
  *
  * The state is compared whole, `toStrictEqual`, for the same reason both cases in the sibling file
- * are: the measuring surface must be pinned POSITIVELY absent (`0`/`0`/`null`/`false`/`''`), or an
- * implementation could lay the document out with the skeletons still up and the screen reader still
- * told the editor is busy.
+ * are: the measuring surface must be pinned POSITIVELY absent — exact `0` / `0` / `null` / `false` /
+ * `''` — or an implementation could lay the document out with the skeletons still up and the screen
+ * reader still told the editor is busy. The two zeros are read as `NO_SKELETONS` so that the value
+ * the same-row collision check refutes against and the value asserted here are one declaration; the
+ * NUMBER those assertions pin is still `0`, and that is decided here rather than by the binding's
+ * name. Change `NO_SKELETONS` to anything else and the laid-out zero collides with the measuring
+ * surface's `1` in `paginationState.crossRow.test.ts`, which is LIVE today.
  */
 describe('derivePaginationState — a resolved font over different geometry', () => {
   // TDD RED — fails with `Error: Not implemented`; `derivePaginationState` is a stub and no
@@ -75,8 +79,8 @@ describe('derivePaginationState — a resolved font over different geometry', ()
       phase: 'laid-out',
       pageCount: VARIED_GEOMETRY_ROW.pageCount,
       currentPage: VARIED_GEOMETRY_ROW.currentPage,
-      sheetSkeletonCount: 0,
-      railSkeletonCount: 0,
+      sheetSkeletonCount: NO_SKELETONS,
+      railSkeletonCount: NO_SKELETONS,
       liveRegionRole: null,
       ariaBusy: false,
       paginationStatusText: '',
