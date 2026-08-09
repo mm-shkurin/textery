@@ -262,7 +262,43 @@ under `frontend/src` or `acceptance/tests/frontend`.
       would silently go false. `EditorDocument` drops `status`: the editor renders `content` and
       sends `version` back, and nothing in the feature branches on status.
       Only test change: removing `describe.skip`.
-- [ ] align-design
+      `/refactor` extracted `refusedWith(error, status, code)` — both mapped-refusal guards spelled
+      out the same three-conjunct shape, and the opt-in conjunct was buried inside a five-line
+      boolean chain. 512 passed, unchanged; tsc clean; `send.ts` 113→111 lines.
+      **Review-pass follow-ups (both CONCERNS), for the next units:**
+      (x) **The one test that looks like the opt-in guard is a decoy — the property has ZERO
+      coverage, not thin coverage.** `generation/api/__tests__/documentApi.test.ts:180-191` stubs a
+      404 whose body carries no `error_code`, so the new branch can never fire for it *even if
+      `refusals.notFound` were deleted*; and it asserts `rejects.toThrow('Документ не найден')`,
+      which is byte-identical to `DocumentNotFoundError`'s own message, so a thrown
+      `DocumentNotFoundError` satisfies it too. Dropping the `refusals` parameter entirely would
+      leave the whole suite green. This supersedes the softer "still owed" note above: owe a case
+      where a caller that passed no `refusals` meets `404 {error_code:'NOT_FOUND'}` and the rejection
+      is pinned `name === 'Error'` and NOT `instanceof DocumentNotFoundError`. There is no `send`
+      test file at all — `shared/api/__tests__/` holds only `httpClient` tests.
+      (y) **The flag is named generically and maps to a document-specific error, in a module three
+      features share.** The next caller reading `notFound: true` as "give me a typed 404" — a
+      generation poll, a history detail — gets "Документ не найден", the exact sentence this design
+      exists to prevent. Either rename to `documentNotFound` or let the mapping carry the error type
+      instead of a boolean.
+      (z) **`aiChat` now imports `generation`.** `editorDocumentApi.ts:7` pulls `getDocument` from a
+      peer feature, which `frontend-rules.md` "Feature Structure" does not allow — `send.ts`
+      documents its auth import as an explicit layering carve-out, and this has no equivalent. Two
+      live consequences: the editor is bound to generation's wire contract (`GetDocumentResult.status`
+      is required), and any reorganisation of the generation feature breaks the editor route. The
+      shared read belongs in `shared/api` or a `documents` feature.
+      (aa) **`saveDocument`'s 409-recovery refetch reports a load failure during a save.**
+      `documentApi.ts:111` calls `getDocument(documentId)` on the default `{}`, so a document deleted
+      in another tab makes the save path say "Не удалось загрузить документ" — a load error for an
+      action the user never took — and offer a retry that can never succeed while the only copy of
+      the text is the tab. Distinct from (t): wrong *operation's* fallback, not wrong type. No case
+      in `documentApi.conflict.test.ts` covers a 404 on the refetch leg.
+      (ab) **A stale stored document id strands the user at app entry.**
+      `generation/hooks/useDocumentInit.ts:58` calls `getDocument(existingDocumentId)` on the default
+      and funnels every failure into `onError`, so a definitively-gone id gives a permanently
+      un-savable editor that a refresh cannot fix. This commit is what made the distinction available
+      (`{ notFound: true }`) and left that call site not taking it — falling through to the
+      `createDocument` arm is the recovery that unsticks the user.
 - [ ] green-selenium
 - [ ] demo
 

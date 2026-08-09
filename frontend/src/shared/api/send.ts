@@ -53,6 +53,13 @@ export interface RefusalMapping {
   notFound?: boolean
 }
 
+// "The server refused, and it named this reason." Both mapped refusals below key on the CODE and
+// not the bare status, so the pairing is the concept — naming it keeps each branch one line of
+// intent instead of three conjuncts the reader has to re-derive.
+function refusedWith(error: unknown, status: number, code: string): boolean {
+  return isHttpError(error) && error.status === status && error.body.error_code === code
+}
+
 export function describeFailure(error: unknown, fallback: string): string {
   if (isHttpError(error)) {
     const detail = error.body.detail ?? error.body.message
@@ -88,11 +95,7 @@ export async function send<T>(
     // другим сохранением": a lost-update message for a document that was never saved once, and
     // one that sends them to reopen a document that does not exist. Any other 409 keeps the
     // caller's fallback text, which at least names the operation that actually failed.
-    if (
-      isHttpError(error) &&
-      error.status === 409 &&
-      error.body.error_code === 'VERSION_CONFLICT'
-    ) {
+    if (refusedWith(error, 409, 'VERSION_CONFLICT')) {
       throw new VersionConflictError()
     }
     // The CODE again, not the bare status — and the trade is explicit: a 404 that carries NO
@@ -100,12 +103,7 @@ export async function send<T>(
     // generic described Error. That is the safer half of the miss: the endpoint's own 404 always
     // carries the code, so what falls through here is a request that never reached the API, and
     // telling that user "документа не существует" would send them to delete work that is fine.
-    if (
-      refusals.notFound &&
-      isHttpError(error) &&
-      error.status === 404 &&
-      error.body.error_code === 'NOT_FOUND'
-    ) {
+    if (refusals.notFound && refusedWith(error, 404, 'NOT_FOUND')) {
       throw new DocumentNotFoundError()
     }
     throw new Error(describeFailure(error, fallback))
