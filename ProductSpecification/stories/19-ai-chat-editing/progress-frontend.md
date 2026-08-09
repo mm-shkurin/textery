@@ -172,7 +172,37 @@ under `frontend/src` or `acceptance/tests/frontend`.
       sequence `red/green-frontend-api` before exposing the list route, or pin the navigation.
       (s) Remote: `EditorDocumentView` calls `useEditor({ content })` once — a later `content` change
       (scenarios 3.x, AI-applied edits) will not update the editor.
-- [ ] red-frontend-api
+- [x] red-frontend-api — five cases over `loadEditorDocument` in
+      `frontend/src/features/aiChat/api/__tests__/editorDocumentApi.test.ts`. Predicted and got all
+      five failing out of the stub's unconditional `throw new Error('Not implemented: …')` — the
+      happy path as an unexpected rejection, the 404/foreign/session cases as `expected Error: Not
+      implemented… to be an instance of DocumentNotFoundError|SessionExpiredError`, and the 500 case
+      on its message assertion (`expected 'Not implemented…' to be 'Внутренняя ошибка'`), since its
+      `not.toBeInstanceOf` half passes trivially.
+      **The duplication deferral is decided: option (b), the 404 branch lands in `shared/api/send.ts`.**
+      Option (a) — a thin wrapper over `getDocument` — is not available: `send` flattens every
+      non-401/409 refusal into `new Error(describeFailure(...))`, so by the time `getDocument` returns
+      a 404 and a 500 are the same generic `Error` and no wrapper can recover the distinction without
+      re-implementing the token attach, the 401 renew-and-replay and the refusal describing — the
+      second copy `send.ts`'s own header says gets the carve-out wrong. The branch keys on
+      `error_code: 'NOT_FOUND'`, not the bare status, for the same reason as the 409;
+      `DocumentNotFoundError` moves to `send.ts` and `editorDocumentApi` re-exports it so the hook's
+      and the component test's import path stays valid.
+      Follow-up (n) is now pinned by a case: the expired session survives as `SessionExpiredError`,
+      and the 500 case is what fails a `catch → not-found` implementation.
+      `/test-review` landed nine fixes. The load-bearing ones: the 404 wire body was the *same*
+      Russian string the error class hardcodes, so both 404 cases passed for an implementation that
+      merely echoes `body.message` into a plain `Error` — the wire now says `'Document not found'`
+      while the assertion is on the class constant, which proves the class was constructed. The URL
+      matcher was `toContain`, which passed for `/api/v1/documents/doc-1/versions`; the verb was
+      unpinned, so the happy path passed for a `POST` that creates a document on every page open;
+      the foreign-document case never checked the id reached the wire and was byte-identical to the
+      404 one; the session case never verified the renew-and-replay its own comment claims (now
+      pinned to `[DOCUMENT_URL, REFRESH_URL]`); and `stubFetch` had no default implementation, so a
+      spurious extra call died as an unreadable TypeError inside `httpClient` instead of a named
+      failure. Two vacuous negatives (`not.toBeInstanceOf`) were replaced by strict `name`/`message`
+      assertions — on the 500 case, `name === 'Error'` also rules out `VersionConflictError`.
+      **Note for green:** the file is 199 of its 200 permitted lines — a sixth case needs a split.
 - [ ] green-frontend-api
 - [ ] align-design
 - [ ] green-selenium
