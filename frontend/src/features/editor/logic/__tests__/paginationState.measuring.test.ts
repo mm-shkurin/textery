@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { derivePaginationState, type PaginationInput } from '../paginationState'
+import { FONT_GATE_ROW } from './laidOutRows.fixture'
 
 /**
  * The geometry both cases below are driven over — seven blocks totalling 2800px against 900px of
@@ -15,27 +16,23 @@ import { derivePaginationState, type PaginationInput } from '../paginationState'
  * handed, so the laid-out case expecting exactly the `2` the fixture supplies is what pins the
  * pass-through. Every OTHER field must still fail if it echoes a fixture value.
  *
- * `visiblePageNumber` is **2** and the choice is load-bearing three times over. It is not `1`,
- * which is the literal a component renders when "Страница N из M" has no source for its N — the
- * exact readout that never moves as the reader scrolls, and the defect this input exists to make
- * fail. It is not `4` either, so `currentPage: pageCount` (a readout permanently pinned to the last
- * sheet) dies too. And it collides with no OTHER field's expected value — not the `1` and `3`
- * skeleton counts below, not `blockHeights.length` (7), not the laid-out `4` — so no other field
- * can be satisfied by echoing it.
+ * ITS NUMBERS ARE NOT THIS FILE'S TO RETUNE ALONE. `visiblePageNumber` is `FONT_GATE_ROW.currentPage`
+ * — one half of a pair held jointly with `paginationState.laidOut.test.ts`, because a single laid-out
+ * row cannot refute every arithmetic hop from `pageCount` to `currentPage` and each hop therefore
+ * dies across the two. This row's `2` against `4` is the ENTIRE kill of `currentPage: pageCount - 1`,
+ * the likeliest of those accidents: the other row expects `5` against `6` and survives it. Retune
+ * this row so the pair agrees under `p - 1` and that hop ships as behaviour. The reasoning for both
+ * numbers, and the executable refutation matrix that fails when they stop disagreeing, live in
+ * `laidOutRows.fixture.ts` and `paginationState.crossRow.test.ts`.
  *
- * What `2` does NOT kill on its own: with one laid-out case, `currentPage` and `pageCount` are two
- * numbers in one object, and `2` is `4 / 2`, so `currentPage: pageCount / 2` passes both cases here
- * (the measuring case early-returns on the phase discriminant and never evaluates it). No literal in
- * `1..4` escapes that — a single fixture makes every expected number an arithmetic hop from every
- * other. It is closed by a SECOND laid-out row over different geometry and a different
- * `visiblePageNumber`, which lives in `paginationState.laidOut.test.ts` (see that file's header for
- * the seam). This file's two cases are the FONT GATE and stay driven over one shared binding; that
- * file's row is the GEOMETRY, and must not be folded back in here.
+ * Only the number is shared. This file's two cases are the FONT GATE and stay driven over one
+ * binding — that co-location is what kills a `derivePaginationState` discarding its argument — and
+ * the geometry row must not be folded back in here.
  */
 const AMPLY_MEASURABLE_DOCUMENT: Omit<PaginationInput, 'fontStatus'> = {
   blockHeights: [400, 380, 420, 390, 410, 400, 400],
   usableContentHeight: 900,
-  visiblePageNumber: 2,
+  visiblePageNumber: FONT_GATE_ROW.currentPage,
 }
 
 /**
@@ -179,8 +176,8 @@ describe('derivePaginationState — the document font has resolved', () => {
 
     expect(state).toStrictEqual({
       phase: 'laid-out',
-      pageCount: 4,
-      currentPage: 2,
+      pageCount: FONT_GATE_ROW.pageCount,
+      currentPage: FONT_GATE_ROW.currentPage,
       sheetSkeletonCount: 0,
       railSkeletonCount: 0,
       liveRegionRole: null,

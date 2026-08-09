@@ -250,7 +250,7 @@ pagination failure.
   the pending `'failed'` arm and shared-`blockHeights` guard would naturally document
   themselves. Those steps will likely force a further split — follow the subject-seam
   precedent set here.
-- [ ] red-frontend (premortem CREDIBLE 2 + agent-review CONCERNS 1 over `2572b8be`, the same
+- [x] red-frontend (premortem CREDIBLE 2 + agent-review CONCERNS 1 over `2572b8be`, the same
   defect from both sides) — **the cross-row kill of `currentPage: pageCount - 1` is held by
   prose in two headers and by nothing executable, and the fixture that holds it is already
   chartered to be edited.** `laidOut.test.ts` is explicit that the hop dies only across the
@@ -269,6 +269,60 @@ pagination failure.
   laid-out rows' `(pageCount, currentPage)` pairs into one shared fixture module both files
   import, so editing either is visibly editing the pair — or at minimum add the reciprocal
   warning to `AMPLY_MEASURABLE_DOCUMENT`'s header naming what its `2` kills and where.
+  **Done, taking (a) AND (b)** — (b) alone would have re-committed the original error one file
+  over, since the finding is precisely that prose does not fail. Two new files:
+  `laidOutRows.fixture.ts` (80 lines) holds `FONT_GATE_ROW {pageCount: 4, currentPage: 2}`,
+  `VARIED_GEOMETRY_ROW {pageCount: 6, currentPage: 5}` and `RULED_OUT_CURRENT_PAGE_HOPS`
+  (`pageCount`, `pageCount - 1`, `pageCount / 2`, `1`) as an executable table, with the
+  rationale for both numbers moved to where the numbers now live;
+  `paginationState.crossRow.test.ts` (49 lines) is **LIVE, not skipped** — it never calls
+  `derivePaginationState`, it checks the fixtures, so it runs today against the unimplemented
+  stub. It pins the refutation matrix BY NAME (`pageCount - 1` → `[font-gate]`, `pageCount / 2`
+  → `[varied-geometry]`, `pageCount` and `1` → both), because a weaker "at least one row
+  refutes each hop" stays green while the kills MIGRATE between rows, and migration is the
+  failure mode. Both test files now derive `visiblePageNumber` from their row's `currentPage`,
+  so the supplied viewport and the expected readout can no longer drift apart — the
+  pass-through pin is mechanical instead of a coincidence of two literals. **Co-location
+  intact:** `AMPLY_MEASURABLE_DOCUMENT` is still one binding driving both font-gate cases; only
+  the number is shared, not the geometry.
+  RED as predicted on every row: unskipped → 3 failed, all `Error: Not implemented` at
+  `paginationState.ts:101:9`, none reaching an `expect`, with crossRow green alongside.
+  **Mutation 1** (`currentPage: pageCount - 1` over a real packer): `1 failed | 3 passed`,
+  killed by the font-gate row only. **Mutation 2** (retune `FONT_GATE_ROW.currentPage` to `3`
+  so the rows agree under `p - 1`): `1 failed | 3 skipped` — the headline, since it fires with
+  every stub case still skipped, in the exact state where today nothing fails at all.
+  `/test-review` found one real defect and answered the three judgement calls:
+  (a) **The matrix admitted `[]`.** It is not a tautology — `rowsRefuting` computes
+  `hop.derive(row.pageCount) !== row.currentPage` from the fixture constants and compares
+  against an independent literal — but retuning the font-gate row to `3` made the computed
+  entry `'pageCount - 1': []`, and green was then one token away, in a matrix whose own title
+  still read "each by a named row". A fixture edit satisfiable by a matrix edit in the same
+  obvious motion. Added a second live case asserting non-emptiness as a COMPUTED property: the
+  two cases must now be edited in opposite directions to conceal a retune — emptying an entry
+  satisfies the matrix and fails the property, deleting the hop satisfies the property and
+  fails the matrix's exhaustiveness. Verified: the retune now fails BOTH.
+  (b) **By-name genuinely distinguishes from at-least-one.** If the kill migrates, the computed
+  value becomes `['the varied-geometry row']` and the assertion fails. Not a restatement.
+  (c) **The hop list is complete for what its header claims.** Brute-forced all linear `ap + b`
+  (`a ∈ [-3,3]` step 0.5, `b ∈ [-6,6]`) plus the `ceil/floor/round(p/2)`, `p % 4`,
+  `max(1, p-1)`, `min(p, 2)` family for any `f` with `f(4) = 2` AND `f(6) = 5`: exactly one
+  survivor, `1.5p − 4`, which nobody writes. `pageCount - 2` was deliberately NOT padded in —
+  it fits the pattern but the header's criterion is "a real thing someone writes", and diluting
+  that criterion is what makes such a list stop being reviewable.
+  **The residual, judged NOT acceptably bounded and deferred to green rather than absorbed:**
+  writing `visiblePageNumber: 3` as a raw literal, bypassing the import, leaves the fixtures
+  untouched and crossRow green while `pageCount - 1` ships. That is the same defect one layer
+  over, and the RED's framing understated it. It is not closable from here without a
+  source-text-scanning test or a lint rule, and during RED the cases are skipped, so the
+  exposure opens only at `green-frontend` — where it belongs. The partial bound is real but
+  non-executable: both files derive `visiblePageNumber` from `row.currentPage`, so the bypass
+  requires deleting a live import usage in a file whose header forbids it in a paragraph.
+  **Also surfaced: `npm run typecheck` (`tsc -b --noEmit`) is RED at HEAD and has been.**
+  `paginationState.ts(100,39): error TS6133: 'input' is declared but its value is never read`,
+  exit 2 — the stub's unused parameter. Every prior step in this scenario reported "tsc clean"
+  using `tsc --noEmit`, which is exit 0 and never surfaces it. The two commands disagree and
+  this file recorded only the passing one. It resolves itself when green implements the stub,
+  but no step should claim a clean typecheck on the strength of the weaker command again.
 - [ ] red-frontend (agent-review CONCERNS 2 over `2572b8be`) — **the two filenames name PHASES
   while both headers insist the seam is by SUBJECT.** `paginationState.measuring.test.ts` holds
   both the measuring case AND a `fontStatus: 'resolved'` laid-out case; `laidOut.test.ts` holds

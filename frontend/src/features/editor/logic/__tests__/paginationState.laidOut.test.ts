@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { derivePaginationState } from '../paginationState'
+import { VARIED_GEOMETRY_ROW } from './laidOutRows.fixture'
 
 /**
  * Story 10, UI scenario 1.1 — the second laid-out row, over DIFFERENT geometry.
@@ -33,21 +34,20 @@ import { derivePaginationState } from '../paginationState'
  * `6` is reachable from no other value in either file — not `4`, not the `1`/`3` skeleton counts,
  * and not `blockHeights.length` (11), so `pageCount: blockHeights.length` still fails.
  *
- * `visiblePageNumber: 5` is chosen against the same exclusions as the other row's `2`, restated
- * against THIS row's numbers: not `6`, so `currentPage: pageCount` dies; not `3`, so
- * `currentPage: pageCount / 2` dies; not `1`, the literal a component types when "Страница N из M"
- * has no source for its N; and `5` appears as no other expected value anywhere in the pair of
- * files, so no field can be satisfied by echoing it. It is in range (`5 <= 6`) deliberately —
- * whether an out-of-range viewport clamps, nulls, or passes through is an open question with its own
- * chartered step, and answering it by accident here would decide it in silence.
+ * `visiblePageNumber` is `VARIED_GEOMETRY_ROW.currentPage`, and the pair `(6, 5)` is not this file's
+ * to retune alone. No `visiblePageNumber` in range of a 6-page document escapes every arithmetic hop
+ * to `6`, so the hops die across the two rows rather than within one: this row kills
+ * `currentPage: pageCount / 2` (`3` against `5`), and it SURVIVES `currentPage: pageCount - 1`,
+ * because `5` is `6 - 1`. That one — the 0-based/1-based off-by-one, the likeliest accident of the
+ * three — is killed only by the sibling file's row, `4 - 1` being `3` against an expected `2`.
  *
- * One exclusion this row canNOT make on its own, stated here rather than left to be discovered:
- * `5` is `6 - 1`, so `currentPage: pageCount - 1` — the 0-based/1-based off-by-one, the likeliest
- * accident of the three — passes THIS row. It is killed by the sibling file's resolved row, where
- * `4 - 1` is `3` against an expected `2`. The pair closes it; neither file closes it alone. That is
- * the cost of the seam and it is paid knowingly: no `visiblePageNumber` in range of a 6-page
- * document escapes some arithmetic hop to `6`, so the hop has to die across rows rather than within
- * one, exactly as `pageCount / 2` had to.
+ * That dependency used to be this paragraph and nothing else, which meant retuning EITHER row so the
+ * pair agreed under `p - 1` shipped the hop as behaviour with nothing red. Both rows' numbers now
+ * live in `laidOutRows.fixture.ts`, and `paginationState.crossRow.test.ts` pins the refutation
+ * matrix — which hop each row kills, by name — so the pair can no longer stop disagreeing quietly.
+ * `5` is in range (`5 <= 6`) deliberately: whether an out-of-range viewport clamps, nulls, or passes
+ * through is an open question with its own chartered step, and answering it by accident here would
+ * decide it in silence.
  *
  * The state is compared whole, `toStrictEqual`, for the same reason both cases in the sibling file
  * are: the measuring surface must be pinned POSITIVELY absent (`0`/`0`/`null`/`false`/`''`), or an
@@ -62,13 +62,13 @@ describe('derivePaginationState — a resolved font over different geometry', ()
       fontStatus: 'resolved',
       blockHeights: [400, 200, 300, 300, 600, 250, 350, 600, 100, 300, 200],
       usableContentHeight: 600,
-      visiblePageNumber: 5,
+      visiblePageNumber: VARIED_GEOMETRY_ROW.currentPage,
     })
 
     expect(state).toStrictEqual({
       phase: 'laid-out',
-      pageCount: 6,
-      currentPage: 5,
+      pageCount: VARIED_GEOMETRY_ROW.pageCount,
+      currentPage: VARIED_GEOMETRY_ROW.currentPage,
       sheetSkeletonCount: 0,
       railSkeletonCount: 0,
       liveRegionRole: null,
