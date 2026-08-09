@@ -873,6 +873,35 @@ within their file, not across the story.
       emitted. The second is the load-bearing one: it is what stops the range check from being ordered
       ahead of the document guard, where it would let a caller suppress their own attribution record by
       appending `/0/restore`.
+      **INTERRUPTED MID-WORK-UNIT — the tests exist in the working tree and are NOT committed.** The
+      session hit its API limit during `/test-review`; that agent died after dispatching its four
+      detectors and returned no findings. On resume: re-run `/test-review` over the four files below
+      **first**, then the behavior commit, then the `/refactor` batch with both review passes. Do not
+      commit before `/test-review` — the gate has not run.
+      Uncommitted (`git status`): `backend/usecase/tests/document_edit/test_resolve_owned_revision.py`
+      (M, two new tests, 191 lines), `backend/usecase/tests/statements/revision_range_refusal_log_statements.py`
+      (new, 179 lines — subclasses `RevisionRefusalLogStatements` so the logger name, message literal,
+      `child_id_field` and step-2 cause are reused rather than restated),
+      `backend/usecase/tests/statements/refusal_record_shape_statements.py` (M — `_extra_field_names`
+      renamed to `extra_field_names` so the whole-set rule and both `EXTRA_FIELDS_AT_STEP_*` sets are
+      imported by the new class instead of a second comparison being written), and
+      `backend/usecase/tests/document_edit/conftest.py` (M — fixture yields so `stop_collecting()`
+      restores the process-global logger level).
+      **RED outcome: both tests passed on the first run**, predicted as such — `_parse_in_range` is
+      already called *after* the step-1 `try/except` (production lines 89-97) and its failure branch
+      returns through `_refuse_at_step_two`, which logs before raising. No disable marker applied.
+      Usecase suite 184 passed, 0 failed, 0 skipped.
+      **Non-vacuity measured by two mutations, and mutation A sharpened the incident.** Moving the
+      `_parse_in_range` block ahead of the step-1 `try/except` failed exactly one test of 184 — the new
+      load-bearing one — with `expected (..., 'document-scope-refused')`, got `'revision-scope-refused'`.
+      So under that ordering the guard does not merely *lose* the step-1 record: it emits a **step-2**
+      record carrying the `document_id` of a document the caller does not own, which is the peer id the
+      step-1 cause exists to withhold. Every pre-existing test including all of
+      `RevisionNumberRangeStatements` stayed green, confirming the ordering was previously unpinned.
+      Mutation B replaced the parse branch's `return _refuse_at_step_two(...)` with a bare
+      `raise NotFoundException(REFUSAL_MESSAGE)`; only test 1 failed (`emitted 0 records ... expected
+      exactly one`), so the range check's *silence* is attributable to test 1 alone. Both mutations
+      reverted; production is byte-identical to HEAD.
 - [ ] green-usecase (the range check's position and its refusal cause)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares
