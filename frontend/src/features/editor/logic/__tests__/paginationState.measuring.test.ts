@@ -53,10 +53,11 @@ const AMPLY_MEASURABLE_DOCUMENT: Omit<PaginationInput, 'fontStatus'> = {
  * exactly three rail rows, `role="status"`, `aria-busy="true"`, and the two product-defined strings
  * `EXPECTED_MEASURING_STATUS` / `EXPECTED_MEASURING_MESSAGE`. Same state, same vocabulary. The
  * status copy carries real weight for the third Then: "Расчёт страниц…" is precisely what the empty
- * document does NOT say, where it reads "Страница 1 из 1" against an identical single sheet.
+ * document does NOT say, where its own count node reads "Страница 1 из 1" against an identical
+ * single sheet.
  */
 describe('derivePaginationState — the document font has not resolved', () => {
-  // TDD RED — fails with `Error: Not implemented` at paginationState.ts:51. `derivePaginationState`
+  // TDD RED — fails with `Error: Not implemented` at paginationState.ts:80. `derivePaginationState`
   // is a stub; no pre-layout state machine exists in `frontend/src` yet. Unskip in green-frontend.
   it.skip('holds the editor in the measuring state with no page count, however measurable the document is', () => {
     const state = derivePaginationState({ fontStatus: 'pending', ...AMPLY_MEASURABLE_DOCUMENT })
@@ -68,7 +69,7 @@ describe('derivePaginationState — the document font has not resolved', () => {
       railSkeletonCount: 3,
       liveRegionRole: 'status',
       ariaBusy: true,
-      statusText: 'Расчёт страниц…',
+      paginationStatusText: 'Расчёт страниц…',
       measuringMessage: 'Готовим страницы…',
     })
   })
@@ -84,7 +85,7 @@ describe('derivePaginationState — the document font has not resolved', () => {
  * spinner scenario 1.3 exists to forbid would ship as the implemented behavior.
  *
  * LEAVING the measuring state is pinned the same way ENTERING it is: by comparing the whole state
- * object, minus the one field a later chartered step owns. Asserting `phase` alone would let an
+ * object — every field of it, no exclusions. Asserting `phase` alone would let an
  * implementation flip the discriminant while still emitting `sheetSkeletonCount: 1`,
  * `railSkeletonCount: 3`, `liveRegionRole: 'status'`, `ariaBusy: true` and the measuring copy —
  * a laid-out document with the skeleton surface still up, the spinner still spinning, and a screen
@@ -106,27 +107,42 @@ describe('derivePaginationState — the document font has not resolved', () => {
  * (`ceil(2800/900)`) agree on 4 for this document, so both of 2.1's candidate answers pass and the
  * choice between them stays open.
  *
- * `statusText` is the ONE field deliberately not compared, and it is excluded by name rather than
- * by silence. The next `red-frontend` step in `progress-frontend.md` is chartered to decide it:
- * `red-selenium` splits the status bar into `pagination-status` and a separate `page-count` node,
- * so whether the laid-out `statusText` carries "Страница 1 из 4" in prose at all is exactly that
- * step's open question. Pinning a value here would answer it in the direction that step suspects is
- * wrong. Every other field is decided now.
+ * `paginationStatusText` was the ONE field left open, excluded by name from the comparison above so
+ * that this step could decide it rather than have it decided by silence. It is decided now, and the
+ * whole state object is compared: **`''`**. The count is carried by `pageCount` as a number and by
+ * nothing else.
+ *
+ * That is the direction `red-selenium` already committed to and it is not a free choice. The status
+ * bar is TWO nodes — `pagination-status` and a separate `page-count` — and
+ * `pagination_measuring_statements.py:88-91` names why: "a missing `page-count` node with a status
+ * bar already reading 'Страница 1 из 1' would satisfy a pure absence check while telling the user a
+ * page count in prose." A `paginationStatusText` of "Страница 1 из 4" is exactly that failure,
+ * authored into the view state rather than stumbled into by a component: the count would be held
+ * TWICE, once as a number and once as prose, and the absence assertion the scenario's second Then
+ * rests on would be satisfiable while the user reads a count. `''` makes the prose copy
+ * unrepresentable — there is no string left for a component to render into the wrong node.
+ *
+ * `''` is a decision about the pagination module's contract, not a claim that the laid-out status
+ * bar is blank. `01-editor-paginated.html:95-96` shows that slot holding "415 слов · Все изменения
+ * сохранены" — word count and save state, which belong to other features and reach the bar by their
+ * own fields. Pagination contributes phase prose while it has something to say and nothing once the
+ * pages exist, exactly as `measuringMessage` does; the two fields now go empty together, which is
+ * what "tears the measuring surface down" means.
  */
 describe('derivePaginationState — the document font has resolved', () => {
-  // TDD RED — fails with `Error: Not implemented` at paginationState.ts:51. `derivePaginationState`
+  // TDD RED — fails with `Error: Not implemented` at paginationState.ts:80. `derivePaginationState`
   // is a stub; no pre-layout state machine exists in `frontend/src` yet. Unskip in green-frontend.
-  it.skip('lays the document out and tears the measuring surface down', () => {
+  it.skip('lays the document out and tears the measuring surface down, leaving the count to the count node', () => {
     const state = derivePaginationState({ fontStatus: 'resolved', ...AMPLY_MEASURABLE_DOCUMENT })
 
-    const { statusText: _statusText, ...laidOut } = state
-    expect(laidOut).toEqual({
+    expect(state).toEqual({
       phase: 'laid-out',
       pageCount: 4,
       sheetSkeletonCount: 0,
       railSkeletonCount: 0,
       liveRegionRole: null,
       ariaBusy: false,
+      paginationStatusText: '',
       measuringMessage: '',
     })
   })

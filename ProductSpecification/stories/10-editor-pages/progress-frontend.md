@@ -121,6 +121,38 @@ below — their vitest step covers logic, not layout.
   Nothing pins `statusText` outside the measuring phase and nothing pins the field→testid
   mapping at all. Pin it before green picks a rendering; scenario 2.3 is otherwise the first
   step that would expose it, by which point the choice is made.
+  **INTERRUPTED, NOT DONE — the RED is written and committed, but `/test-review` never ran**
+  (the agent died mid-run on an API session limit after 11 tool calls, producing no
+  findings). A failed sub-skill means the step is not complete, so this stays `[~]`, and
+  `/refactor` plus the two review passes are also still owed for it. **To resume:**
+  `/test-review` over `frontend/src/features/editor/logic/paginationState.ts` and
+  `logic/__tests__/paginationState.measuring.test.ts` → `/refactor` → `agent-review` +
+  `premortem` over the behavior commit → refactor commit. The three prior reviews of this
+  scenario each found exactly one defect in the RED they reviewed, so the base rate is not
+  zero — do NOT treat the committed state as reviewed.
+  What the RED decided (verified RED: `Error: Not implemented` at `paginationState.ts:80`,
+  2 failed before any `expect`; then re-skipped — suite 633 passed / 5 skipped / 0 failed,
+  `tsc --noEmit` clean): `statusText` is renamed **`paginationStatusText`** and is `''` in
+  the laid-out phase. The rename is the load-bearing half — `statusText` read as "the status
+  bar's text", which is what licensed the doc comment claiming the empty phase reads
+  `"Страница 1 из 1"` there; the mockups show that is a DIFFERENT span
+  (`02-measuring.html:72-74` puts `Расчёт страниц…` in one slot while the count's slot holds
+  `A4, книжная`; `01-editor-paginated.html:96` puts `Страница 1 из 3` in that other slot). So
+  the old name described a bar, not a node. The new name is the text of exactly one node,
+  `pagination-status`, and each string field's doc comment now names the `data-testid` it is
+  the text of. `''` then makes the prose-count spelling **unrepresentable** rather than
+  merely unasserted: no string is left for a component to render into the wrong node. `''` is
+  a claim about the pagination module's contribution, not that the bar is blank —
+  `01-editor-paginated.html:95` shows that slot holding `415 слов · Все изменения сохранены`,
+  which belongs to other features.
+  **The question the missing `/test-review` was specifically asked and never answered: is
+  `''` genuinely strict, or the new loose assertion?** `measuringMessage` is also `''` in
+  that phase, and the field→testid mapping is pinned only in doc-comment prose — nothing a
+  test can fail on. Judge both when the review is re-run.
+  One interaction with the steps below, flagged rather than absorbed: the laid-out case is
+  now a whole-object `toEqual` with NO destructuring (the exclusion existed only so this step
+  could decide the field), so the `pageCount: 4` step inherits the whole-object shape rather
+  than the exclusion pattern.
 - [ ] red-frontend (premortem CREDIBLE 1 over `0e08f0cf`, by mutation) — **`pageCount: 4` is
   satisfied by a SECOND frozen literal; the mutation this step just killed survives one
   branch up.** Restoring the stub as `if (input.fontStatus !== 'pending') return {…
