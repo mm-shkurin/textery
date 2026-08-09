@@ -27,6 +27,15 @@ under `frontend/src` or `acceptance/tests/frontend`.
       rather than from a documents list that does not exist yet; and the skip reason now says
       the route itself is absent. Absence stays `find_elements`-based on purpose — a
       non-visibility check would pass a rendered-but-hidden editor.
+      **Work unit left open:** the behavior commit `3ec4798a` landed, but `/refactor` and the
+      two pre-commit review passes (`agent-review`, `premortem`) never ran over it — the
+      session was stopped there. Run them over `3ec4798a` before starting `red-frontend`; the
+      refactor commit is still owed. Known refactor candidate carried over from
+      `/test-review`: the `_assert_absent` idiom is duplicated at `manual_editor_statements.py:74`
+      and `mode_modal_statements.py:41` and can migrate to the base when next touched.
+      **Harness quirk:** `pytest -m frontend` defaults `app_url` to port 5173 while
+      `FRONTEND_PORT=80` lives in `infra/.env` — export it first (`set -a; . ../infra/.env`),
+      or the run dies with `ERR_CONNECTION_REFUSED`, which looks nothing like a red test.
 - [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
