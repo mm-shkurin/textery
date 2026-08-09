@@ -71,10 +71,7 @@ class ManualEditorStatements(BaseFrontendStatements):
         # Wait for the editor shell to mount before asserting absence, so the
         # check can't pass vacuously by running before a skeleton would appear.
         self._wait_for_visible(driver, MANUAL_EDITOR)
-        skeleton_elements = driver.find_elements(*LOADING_SKELETON)
-        assert not skeleton_elements, (
-            f"expected no loading skeleton, found {len(skeleton_elements)} element(s)"
-        )
+        self._assert_absent(driver, LOADING_SKELETON, "loading skeleton")
 
     def assert_content_placeholder_is_visible(self, driver: WebDriver) -> None:
         # The placeholder is not a DOM element. InlinePlaceholder decorates the empty

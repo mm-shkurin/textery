@@ -27,12 +27,28 @@ under `frontend/src` or `acceptance/tests/frontend`.
       rather than from a documents list that does not exist yet; and the skip reason now says
       the route itself is absent. Absence stays `find_elements`-based on purpose — a
       non-visibility check would pass a rendered-but-hidden editor.
-      **Work unit left open:** the behavior commit `3ec4798a` landed, but `/refactor` and the
-      two pre-commit review passes (`agent-review`, `premortem`) never ran over it — the
-      session was stopped there. Run them over `3ec4798a` before starting `red-frontend`; the
-      refactor commit is still owed. Known refactor candidate carried over from
-      `/test-review`: the `_assert_absent` idiom is duplicated at `manual_editor_statements.py:74`
-      and `mode_modal_statements.py:41` and can migrate to the base when next touched.
+      **Work unit closed 2026-08-09:** `/refactor` and both review passes ran over `3ec4798a`.
+      Refactor migrated the two duplicated `_assert_absent` idioms
+      (`manual_editor_statements.py:74`, `mode_modal_statements.py:41`) onto the base class and
+      dropped a dead local in `chat_workspace_statements.py:72` that was failing ruff. Selenium
+      did not execute — the stack is down; evidence is collection (35 collected, 0 errors),
+      ruff clean, and import resolution.
+      **Follow-ups surfaced (non-gating, act on them in `red-frontend`/`green-frontend`):**
+      (a) `MANUAL_EDITOR = [data-testid='manual-editor']` is vacuous the same way the chat-panel
+      locator was — that testid belongs to the Story 5/18 manual editor, and nothing forces the
+      new `/documents/:id` editor to reuse it; widen it or pin it once green names its root.
+      (b) In `assert_documents_list_link_is_offered` the descendant check searches inside the
+      blocker while the text/href checks search the whole document, so a chrome link and a
+      blocker `href="#"` can satisfy them jointly — assert a single match, or run text/href
+      against the element found under `blocker`.
+      (c) The route is only ever opened with a random UUID, so nothing proves the blocker is
+      *conditional*: green can render it unconditionally and stay green. Owe a counter-case
+      (own document opens the editor, blocker absent) and a foreign-document case.
+      (d) The class is `@pytest.mark.skip` with no gate that fails on a lingering skip — verify
+      the un-skip actually happened at `green-selenium`.
+      (e) Pre-existing, out of unit: 10 `unused import: pytest` ruff errors across 9 frontend
+      and 1 backend test files; `LOADING_SKELETON`/`SOON_BADGE` use class-based selectors,
+      which `frontend-rules.md:45` forbids.
       **Harness quirk:** `pytest -m frontend` defaults `app_url` to port 5173 while
       `FRONTEND_PORT=80` lives in `infra/.env` — export it first (`set -a; . ../infra/.env`),
       or the run dies with `ERR_CONNECTION_REFUSED`, which looks nothing like a red test.

@@ -38,10 +38,7 @@ class ModeModalStatements(BaseFrontendStatements):
         )
 
     def assert_no_card_shows_soon_badge(self, driver: WebDriver) -> None:
-        badges = driver.find_elements(*SOON_BADGE)
-        assert len(badges) == 0, (
-            f"expected no 'скоро' badge in the mode modal, found {len(badges)}"
-        )
+        self._assert_absent(driver, SOON_BADGE, "'скоро' badge in the mode modal")
 
     def _assert_card_is_available_and_selectable(
         self,
