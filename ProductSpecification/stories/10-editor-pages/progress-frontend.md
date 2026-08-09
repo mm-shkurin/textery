@@ -422,6 +422,71 @@ pagination failure.
   Suite 638 passed / 6 skipped / 0 failed; `tsc --noEmit` exit 0. Files: fixture 150, crossRow
   142, measuring 193, laidOut unchanged — all under 200, and no case joined the closed measuring
   file.
+- [ ] red-frontend (agent-review CONCERNS 1 + premortem CREDIBLE 1 over `08404a9e`, both
+  independently) — **it happened a fourth time: `SURFACE_CONSTANTS` is the geometry defect
+  relocated.** This unit's whole thesis is that `pageCount: 4` sitting next to a PROSE
+  description of blocks it did not contain was a cross-file binding held by a comment — and it
+  then created three fresh literals with exactly that property. `1`, `3` and `0` are the values
+  asserted at `measuring.test.ts:98-99,185-186` and `laidOut.test.ts:78-79` as raw literals, and
+  re-typed in the fixture with only a doc comment linking them; the doc says the quiet part
+  itself: "They are not the expectations — each test file still spells its own skeleton counts
+  out at its own assertion." Nothing derives one set from the other, nothing compares them, and
+  `Readonly<Record<string, number>>` means not even the compiler links them.
+  Incident, and it is the exact family the fixture's own docstring calls "not hypothetical: it
+  shipped in this scenario once": the rail grows to four rows (a design change, or `align-design`
+  matching the mockup), so `measuring.test.ts:99` becomes `railSkeletonCount: 4` while
+  `SURFACE_CONSTANTS` still says `3`. `FONT_GATE_ROW.pageCount` is `4`, so
+  `railSkeletonCount: pageCount` is now a live collision — satisfying the fixture and wrong on
+  every real document. `collisionsWithin` reads the stale `3` and reports `[]`, and the collision
+  case passes while asserting BY NAME that no such echo exists. Same with a row retuned to four
+  blocks and `railSkeletonCount: blockHeights.length`. The guard against a stale constant is
+  review, not a test — the failure mode the last three units were each written to end.
+  `/test-review`'s finding (c) checked only the opposite direction (that the constants cannot be
+  spread INTO an expectation object); drift AWAY from the assertions was never considered.
+  Guard: the same mechanical fix the geometry got — the test files read their skeleton counts
+  from the fixture at the assertion, or a live case compares the constants against the values
+  those files expect. Latent today (the values do agree), but every chartered step queued
+  against these surfaces can move a skeleton count, with the cases that would notice `.skip`ped
+  for the whole RED phase — verbatim the condition that let the last one survive.
+- [ ] red-frontend or red-selenium (premortem CREDIBLE 2 over `08404a9e`) — **`usableContentHeight`
+  has no producer, and this unit made the pure suite more self-sufficient about exactly the half
+  that has none.** `blockHeights` and `usableContentHeight` appear in five files, all
+  `paginationState.ts` and its tests; nothing in `frontend/src` measures a block or computes a
+  sheet's usable height. Every packing-agnosticism argument in this scenario rests on one
+  sentence — "`usableContentHeight` is already the post-margin figure, so no such packer can be
+  written against this contract" — asserted nowhere. Incident: green ships, every vitest case
+  green, the caller passes the sheet's BORDER-BOX height (or forgets the `@page` margin), and
+  every real document reads `Страница 1 из 3` where it should read `из 4`. The fixture's `900`
+  and `600` are invented and differ per row, so they cannot detect it. This is a DIFFERENT
+  producer from the charted scroll one: that step owns `visiblePageNumber`, and nothing owns
+  `blockHeights` / `usableContentHeight`. Guard: a Selenium assertion binding the value the
+  editor passes for `usableContentHeight` to the rendered sheet's content box, with an owner.
+- [ ] red-frontend (premortem CREDIBLE 3 over `08404a9e`) — **no row-well-formedness check, and
+  the varied row sits exactly on the cliff edge.** `splitAnywherePageCount` is `ceil(sum/usable)`
+  and notices nothing about individual blocks; `VARIED_GEOMETRY_ROW` holds two blocks of exactly
+  `600` against `usableContentHeight: 600`. Three chartered steps will retune this geometry.
+  Nudge usable to `590`, or a block to `610`, adjust `pageCount` to the new `ceil`, and every
+  case stays green — but the document is now unpackable by ANY no-split packer, since a block
+  exceeds a sheet. 2.1's greedy-agreement step then inherits a fixture whose assertion is
+  unsatisfiable and reddens for a reason unrelated to the packer under test. Distinct from that
+  chartered step: it pins two packers against each other GIVEN well-formed input; this pins the
+  input. Guard: assert `Math.max(...row.blockHeights) <= row.usableContentHeight` for every row,
+  and `usableContentHeight > 0`, which the division also assumes. (Subsumes the REMOTE that
+  `blockHeights: []` with `pageCount: 0` satisfies the derivation, surviving today only because
+  `collisionsWithin` incidentally catches the `0` against the zero-skeleton constant.)
+- [ ] red-frontend (agent-review CONCERNS 2 + premortem REMOTE 1 over `08404a9e`, both minor;
+  fold into whichever step next touches these files) — two scope defects in the new checks.
+  **(a)** `rowValuesOf` includes `blockHeights.length` in the CROSS-row set, and one of the three
+  pairings it produces guards nothing: font-gate `blockHeights.length` against varied-geometry
+  `blockHeights.length`. No implementation returns the OTHER row's block count. A future retune
+  leaving both rows with the same number of blocks reddens the test naming a "collision" that is
+  not one, satisfiable only by perturbing a block count for no behavioural reason. Narrow the
+  scope. **(b)** `byName`/`byRowPair` key by `row.name`, so duplicate names silently collapse a
+  row out of the derivation check — and the assertion is fully symmetric, so a vanished row takes
+  its own assertion with it. Today it is caught only incidentally by the sibling cases that
+  hardcode the name literals; the charted exhaustiveness step will likely replace those with
+  derived maps, and at that moment the whole `describe` becomes self-satisfying. Whoever takes
+  that step must add `expect(Object.keys(byName(...)).length).toBe(LAID_OUT_ROWS.length)`.
 - [ ] red-frontend (premortem CREDIBLE 2 over `fabafd1d`) — **scenario 2.1's open choice can be
   decided by a fixture retune nobody reads as making it.** Packing-agnosticism is the stated
   licence for pinning `pageCount` at all: the blocks pack exactly, so greedy no-split and
