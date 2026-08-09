@@ -355,7 +355,33 @@ under `frontend/src` or `acceptance/tests/frontend`.
       stylesheet cannot produce a gap however wrong they look. The gaps below are the *green*
       units' and were invisible until the filenames were passed explicitly, exactly as
       `carryover.md` predicted of the `git diff HEAD --name-only` focus filter.
-- [ ] red-frontend (coverage: repeat mount does not refetch)
+- [x] red-frontend (coverage: repeat mount does not refetch) — two cases in
+      `frontend/src/features/aiChat/hooks/__tests__/useEditorDocument.strictMode.test.tsx`.
+      **The guard already exists and is already correct, so the RED evidence is mutation, not a
+      failing main:** with the dedupe line deleted the test predicted and got `AssertionError:
+      expected "vi.fn()" to be called once with arguments: [ Array(1) ] … Number of calls: 2`. The
+      line was restored immediately and `git diff` on the hook is empty — that mutation is evidence,
+      never a commit. This also *proves* React double-invokes effects in this vitest environment
+      rather than assuming it; without that, the whole test would pass vacuously.
+      `/test-review` found the first version's `rerender()` half vacuous, exactly as the red agent
+      flagged: with `[documentId]` unchanged the effect never re-runs, so the guard-deleted run
+      reported 2 calls, not 3 — the rerender contributed nothing either way. Instead of deleting it,
+      it was redirected at a mutation **nothing in the suite killed**: degrading the guard to
+      `if (requestedIdRef.current !== null) return` — "fetch at most once ever, whatever the id" —
+      passed all 513 tests. The hook would have silently refused to ever load a second document. The
+      second case now kills that, and additionally pins that an id change synchronously clears the
+      previous document to `{ status: 'loading' }`, without which the user sees one document's text
+      under another document's id for a round trip.
+      Two further fixes: the ready state is asserted as the whole `{ status, document }` value rather
+      than `status === 'ready'` alone — the guard sits *before* the fetch, so a variant that also
+      swallowed the `setState` would leave `ready` reachable with no document behind it — and the
+      call list is asserted as an exact ordered array, pinning count and arguments together.
+      The exact-count assertion here versus `useDocumentInit.strictMode.test.tsx`'s relational one
+      (`new Set(keys).size === 1`) is deliberate: that hook's guarantee survives a doubled effect, so
+      a count there would be testing React; here the guarantee *is* "the fetch does not repeat", and
+      the count is the specification with no weaker true form.
+      Mutation matrix after review: guard deleted → both cases fail; guard keyed `!== null` → case 1
+      correctly still passes, case 2 fails; unmutated → both pass. 514 passed / 0 failed; tsc clean.
 - [ ] green-frontend (coverage: repeat mount does not refetch)
 - [ ] red-frontend (coverage: stale response for old id ignored)
 - [ ] green-frontend (coverage: stale response for old id ignored)
