@@ -408,7 +408,14 @@ under `frontend/src` or `acceptance/tests/frontend`.
       unmounts the view; any content update at the *same* id — the entire point of story 19 — is
       dropped silently. Owe: render with X, rerender with Y at the same mount, assert Y is on screen.
       This is (s) confirmed by a second pass and located.
-- [ ] green-frontend (coverage: repeat mount does not refetch)
+- [x] green-frontend (coverage: repeat mount does not refetch) — **no production change, and that is
+      the honest outcome**: the guard already existed and RED proved it load-bearing by mutation
+      rather than by a failing main, so there is nothing minimal left to write. Both cases report
+      *passed* individually; 514 passed / 0 failed; `git diff` on `useEditorDocument.ts` empty.
+      The measurable result is the branch count the step was inserted for: the hook moved from 4/8 to
+      **5/8 branches** (50% → 62.5%), the newly-covered arm being the dedupe guard's `return`. Lines
+      41-46 remain uncovered — the two stale-response guards, which belong to the re-scoped sibling
+      step (aj), and the `'failed'` arm of the `instanceof` ternary, which belongs to scenario 8.8.
 - [ ] red-frontend (coverage: a superseded response for the SAME id loses) — re-scoped by
       follow-up (aj): the original wording ("stale response for old id ignored") describes the case
       `requestedIdRef` already handles. The unpinned arm is two outstanding requests for the *same*
