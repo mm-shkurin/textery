@@ -5,10 +5,12 @@ from wire_shape_key_fence import assert_body_keys_track_the_model
 class TestWireShapeKeyFenceReportsEveryFault:
     """The fence's own failure path, which nothing else in the suite reaches.
 
-    `assert_body_keys_track_the_model` runs at 13 call sites across the three live
-    wire-shape files, and at every one of them `missing` and `undeclared` are both
-    empty. So the whole suite exercises exactly one branch of it: the one that
-    does nothing. The collected-`faults` shape -- both faults computed before
+    `assert_body_keys_track_the_model` runs at 10 call sites across the two live
+    wire-shape files -- six in `..._wire_shape_control.py`, four in
+    `..._wire_shape_blank_control.py` -- and at every one of them `missing` and
+    `undeclared` are both empty. So the rest of the suite exercises exactly one
+    branch of it: the one that does nothing. (The three calls below are the only
+    others, and they are the ones where the branch is not empty.) The collected-`faults` shape -- both faults computed before
     either is asserted, both named in one message -- was landed deliberately, on
     the grounds the control file's docstring gives for splitting its own legs: two
     sequential `assert`s abort on the first and report one broken direction where
@@ -22,6 +24,20 @@ class TestWireShapeKeyFenceReportsEveryFault:
     revert still raises on the both-at-once body, it just names one fault. What is
     under test here is what the message SAYS, so the both-at-once row pins that
     BOTH field names reach the one report.
+
+    The exact equality below is load-bearing on a fact nothing declares: pytest
+    does NOT rewrite asserts inside `wire_shape_key_fence.py`, because it is not
+    `test_`-prefixed and nothing registers it (no `register_assert_rewrite`
+    anywhere in the repo, no conftest in this directory -- both checked). Under
+    rewriting the raised message gains a trailing newline and the reconstructed
+    expression, measured: `"...got tail\\nassert not ['a', 'b']"`. So renaming the
+    helper to a `test_`-prefixed name, adding
+    `pytest.register_assert_rewrite("wire_shape_key_fence")`, or dropping a
+    conftest here that does so breaks all three assertions at once, with a diff
+    that reads as though the fence's wording changed when only the harness did.
+    If that day comes, the fix is to compare against the message with that
+    suffix -- not to loosen these to substrings, for the reason the paragraph
+    above gives.
 
     Deliberately NOT skipped, and in its own file. Live because a marker is
     class-level and a fence parked behind one guards nothing for exactly the red

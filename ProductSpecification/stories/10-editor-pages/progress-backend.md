@@ -713,7 +713,57 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
      left open: the control file's docstring maps the earlier splits and has no pointer to this new
      file, so a reader arriving there has no signpost. It has 38 lines of headroom.
   4. Convention matches — bare sibling import, identical spelling to line 3 of both control files,
-     no `__init__.py`, no Statements class.)
+     no `__init__.py`, no Statements class.
+  `/refactor` closed both of test-review's open items and found a third by doing so. Docstring-only,
+  111/4 unchanged: (1) the assert-rewrite assumption is now RECORDED in the new file's class
+  docstring — probed in an isolated scratchpad rather than in-tree, and with rewriting on the message
+  gains a trailing `\nassert not ['a', 'b']`, breaking all three exact equalities at once with a diff
+  that reads as a wording change; the docstring names the trigger, the symptom, and directs the fix to
+  comparing against the SUFFIXED message rather than loosening to substrings. (2) the control file
+  now signposts the fence's own tests. (3) **the "13 call sites across three live files" claim in
+  this commit is FALSE** — counting them to write the signpost showed **10 calls across TWO** files
+  (control ×6, blank control ×4; the RED file has ZERO, as the helper's own docstring says). 13 is the
+  mutation-B failure count transcribed as a call-site count, and reaching 13 means counting the new
+  file's own three calls — the ones where `missing`/`undeclared` are NOT empty, contradicting the
+  sentence that counts them. It contradicted `..._wire_shape_control.py:37` ("the 10 live calls") in
+  the same directory. Corrected in both files; agent-review found it independently. **The wrong number
+  survives in this commit's message and in the two prose paragraphs above — read 10/2, not 13/3.**
+  All three detector clusters came back clean, with two mechanics candidates rejected under restraint
+  (extracting `declared`/`missing`/`undeclared` out of the 14-line helper, and splitting a
+  `_collect_faults` off the assert that consumes it — both hide the missing/undeclared symmetry the
+  collected-`faults` shape exists to express) and the shared message prefix deliberately NOT hoisted
+  to a constant: it is the subject under test, and a constant would compare the helper's format
+  string to itself.
+  BOTH REVIEW PASSES RETURNED **CONCERNS** again. Chartered as the rows below; the fourth item is
+  cross-layer and the fifth is a note for whoever writes the absent-row red:
+  (a) **The fixture collides with the helper's own worked example** (agent-review 2). The
+  spurious-key row uses `"note"`, and `wire_shape_key_fence.py`'s docstring works its entire reason
+  for existing through a measured pydantic run using a field literally named `note`. If that field
+  lands, `undeclared` goes empty, the fence does not raise, and the guard over the spurious leg dies
+  as `DID NOT RAISE` — in the exact event it was written to survive. Loud, not silent, but it reads
+  as "the fence broke" in a commit where attention is on the model change.
+  (b) **Nothing pins that the fence is CALLED** (premortem #2). This commit guards the helper's body;
+  delete all 10 call sites and the suite is fully green, because the new file imports the helper
+  directly and passes standalone. This commit made that cleanup SAFER to make — the helper now has
+  its own passing test file, so removing its callers leaves something that still looks guarded, and
+  the helper's own docstring concedes "on the CURRENT model it catches nothing the literals miss",
+  which is the argument the fence exists to refuse.
+  (c) **The three expected messages freeze the declared set as an unwritten constant** (premortem
+  #3). Add any fourth field and test 1's `['title']` becomes `['newfield', 'title']` AND test 2 — the
+  spurious-only row — grows a `missing` clause it was written never to have, so exact equality fails
+  on a row whose whole subject is the other leg. Three cryptic string failures land on a developer
+  whose change had nothing to do with the fence, and the path of least resistance is `assert "note"
+  in str(...)` — substrings, which by this unit's own test-review finding do NOT kill a mutation that
+  mangles the joiner or drops the body tail. The guard degrades to the shape it was written to beat.
+  (d) **CROSS-LAYER, frontend session's file** (premortem #1, sharpened): grepping ~60 files across
+  `documentApi` / `useDocumentSave` / `ManualEditor.autosave*` finds **zero** assertions over the PUT
+  body's KEY SET. The named guard is `Object.keys(body).sort()` equality on a title-untouched save —
+  explicitly NOT `not.toHaveProperty('title')`, which passes for `title: undefined` and would pass a
+  body built through a spread or a schema-defaulting client that materializes it as `null`.
+  (e) **Note for the absent-row red below:** read as a contract, the failure-path tests now state
+  `title: null` is the well-formed body and absent `title` is the fault — the invariant inverted.
+  That IS the next row, but fixing it must now also rewrite all three exact-equality literals, and
+  the new file's docstring carries no pointer to that pending change.)
 - [S] green-adapter rest (the fence must fail, and say both things, when it should) — SKIPPED: no
   implementation to write. The fence is correct at HEAD; the red half was the missing guard over
   already-correct code, proven by two mutations that leave the entire pre-existing suite green. A
@@ -730,6 +780,44 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   outright — `assert "title" in body` with a message naming the RED class — or pin that it raises
   when handed a body with no `title` key. Sequencing: this wants to land BEFORE green.)
 - [ ] green-adapter rest (premortem: the fence must refuse the row it cannot judge)
+- [ ] red-adapter rest (both review passes on `9a7027b2`, three findings that share one root — the
+  fence's guards are coupled to the CURRENT shape of `SaveDocumentRequestDto`, and all three break
+  on the day someone adds a field. Take them in one unit; splitting them means rewriting the same
+  three exact-equality literals three times.
+  **(1) The spurious-key fixture uses `"note"` — the exact name the helper reserves as its worked
+  example of a future DECLARED field.** `wire_shape_key_fence.py`'s docstring argues its whole
+  reason for existing through a measured pydantic run over a field named `note`. If that field is
+  ever added, `undeclared` goes empty, the fence does not raise, and
+  `test_should_name_a_key_the_body_carries_that_the_model_never_declared` dies as `DID NOT RAISE` —
+  losing the spurious-leg guard in the exact event it exists to survive. Loud rather than silent,
+  but it reads as "the fence broke" in a commit where attention is on the model change. Rename the
+  fixture key to something that can never be a field: `"__not_a_field__"`.
+  **(2) All three expected messages freeze the declared set as an unwritten constant.** Add a fourth
+  field and test 1's `['title']` becomes `['newfield', 'title']`, AND test 2 — the spurious-ONLY row
+  — grows a `missing` clause it was written never to have, so exact equality fails on a row whose
+  whole subject is the other leg. Three cryptic string failures land on a developer whose change had
+  nothing to do with the fence, and the cheap fix they will reach for is `assert "note" in
+  str(failure.value)` — substrings, which by this scenario's own test-review finding do NOT kill a
+  mutation mangling the `'; and '` joiner or dropping the `got {body!r}` tail. The guard degrades to
+  the shape it was written to beat, permanently. Fix: derive the fault bodies FROM
+  `SaveDocumentRequestDto.model_fields` (declared-minus-title, declared-plus-marker) so a model
+  change adjusts the fixtures rather than breaking the assertions. Keep exact equality on the
+  message — it is the fixtures that should move, not the strictness. If deriving proves to obscure
+  the rows, the fallback is one assertion pinning `set(model_fields) == {"content","title","version"}`
+  with a message saying UPDATE THE THREE LITERALS BELOW, so the break points at its cause.
+  **(3) Nothing pins that the fence is ever CALLED, and `9a7027b2` made deleting the calls SAFER.**
+  Remove all 10 `assert_body_keys_track_the_model(...)` lines from the two control files and the
+  suite is fully green — `test_wire_shape_key_fence.py` imports the helper directly and passes
+  standalone, so the cleanup leaves something that still looks guarded. The helper's own docstring
+  concedes "on the CURRENT model it catches nothing the literals miss", which is exactly the
+  argument such a cleanup commit would quote. The honest guard is the scenario the fence CLAIMS:
+  `pydantic.create_model` over `SaveDocumentRequestDto` with a defaulted extra field plus a
+  dict-building `@model_serializer`, asserting the fence fires — converting the docstring's
+  measured-once pydantic 2.13.4 probe into a committed test, which is the same gap `9a7027b2` closed
+  for the failure path. Note this row also lands the docstring pointer premortem asked for: the
+  `['title']`-as-missing literals are PROVISIONAL until the absent-row step above changes what the
+  fence considers well-formed.)
+- [ ] green-adapter rest (the fence's guards must survive the model growing)
 - [ ] green-adapter rest (premortem: absent must survive a DTO round-trip as preserve.
   RED landed at `backend/adapters/rest/tests/dto/document/test_save_document_request_dto_roundtrip.py`
   — a new `tests/dto/` tree, no `__init__.py` and no Statements class, matching the rest-adapter

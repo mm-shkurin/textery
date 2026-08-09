@@ -31,6 +31,14 @@ class TestSaveDocumentRequestDtoWireShapeNegativeControl:
     reason, and the key-tracking assertion both live classes call now lives in
     `wire_shape_key_fence.py`. The seams are clean: every file shares only
     imports.
+
+    That helper's OWN failure path is pinned in
+    `test_wire_shape_key_fence.py` -- read it before changing anything about the
+    fence. Every one of the 10 live calls to `assert_body_keys_track_the_model`
+    in this cluster -- the six below, plus four in the blank control -- passes
+    through the branch that does nothing, so this file cannot tell you whether
+    the fence still reports correctly when it fires. Only that one does, and it pins the message text by
+    exact equality.
     """
 
     def test_should_keep_an_explicit_null_title_in_the_dumped_body(self):
