@@ -1508,6 +1508,52 @@ within their file, not across the story.
       `test_ai_edit_router_di_stubs.py:50`, two E501s in `test_resolve_owned_revision_records.py`), none
       in files this unit touched.
 - [~] green-usecase (the guard on the arrangement's own guard, and the gate's reach beyond one config file)
+      — lands the four production-side fixes the RED pinned: scope the snapshot refusal to
+      `assert_no_document_gained_a_version`, pin `--confcutdir` on the child and refuse an in-tree probe
+      path at write time, `"\n".join` the child's two streams, and carry deliverable (5) — run
+      `backend/adapters/db` (62 tests, real Postgres) under the two-entry filter once Docker is up.
+      **Acceptance number is 0 skipped, not 6.**
+      **Both review passes over `500204e4` returned CONCERNS, and both found the same third inert guard —
+      inside the very assertion `/test-review` had just "fixed".**
+      `live_harness_configuration_statements.py:41-59` reads `self._config.getini("filterwarnings")`,
+      which returns the **ini declaration only**. `PYTEST_ADDOPTS` is parsed into `-W` command-line
+      filters, which live in `config.option.pythonwarnings` and are applied *after* the ini filters, so
+      they win. The assertion's own docstring names the exact scenario it cannot see. Confirmed
+      empirically three ways in this repo: with
+      `PYTEST_ADDOPTS="-W ignore::RuntimeWarning -W ignore::pytest.PytestUnraisableExceptionWarning"` the
+      two live-config tests report **2 passed** while a `RuntimeWarning`-emitting probe under the same
+      config goes from 1 failed to **1 passed** — the suite genuinely disarmed with the guard green. The
+      containment → whole-list-equality fix closed the "appended to ini" arm and left the "appended via
+      cmdline" arm, which is the one that works. GREEN must assert the **effective** state: either
+      `known_args_namespace.pythonwarnings` empty alongside the ini equality, or — better — a behavioural
+      check that `warnings.warn(..., RuntimeWarning)` actually raises inside the live run, which also
+      subsumes the plugin check's intent and covers a `-W` smuggled into `addopts` in `pyproject.toml`.
+      Two corrections to the record while there: the plugin half **is** real (`-p no:unraisableexception`
+      gives 1 failed / 1 passed), and `PYTHONWARNINGS=ignore::RuntimeWarning` does **not** disarm the
+      suite — pytest's `simplefilter("always")` wipes it — so the module docstring overstates that vector
+      while understating the one that bites. The `/test-review` paragraph in the step above and the RED
+      commit body both record deliverable (7) as closed; it is not, and this note is the correction.
+      **The premortem's second incident, independent of the above:**
+      `try_to_write_a_probe_inside_the_repository` asserts only that an `AssertionError` was raised and
+      matched — and its `finally` calls `shutil.rmtree(..., ignore_errors=True)`, erasing the evidence
+      before anything looks at the filesystem. `write_probe` does `mkdir` before `write_text`, so a GREEN
+      that puts the guard *after* either call passes fully green while the file really lands under
+      `BACKEND_ROOT` — the exact failure the test is named for
+      (`assert_the_write_was_refused_before_it_landed` proves only `..._raised` today). Capture
+      `IN_TREE_SCRATCH.exists()` and the probe path's existence **inside the `except`, before the
+      cleanup**, and assert both False.
+      **Two lower-severity notes.** (a) `test_live_harness_configuration.py` only runs in a job that
+      collects `usecase/tests/harness/`; a CI job running `pytest adapters/db` alone — the
+      unraisable-prone suite of deliverable (5) — gets no arming check at all. If the claim is "the suite
+      CI actually runs is armed", the check belongs at a root `conftest.py` session scope, reachable from
+      every entry point. (b) The attribution test is the only *unskipped* new test and asserts a
+      third-party observation (which item pytest charges an unraisable to) as if it were a harness
+      property; it turns red on a pytest bump with no hint that no product code changed. Pin a `pytest`
+      lower bound tied to this test, or name the version in the failure text so a red run self-diagnoses.
+      **Left alone, reported not fixed:** `verification_code_storage_statements.py` (adapters/db) is 209
+      lines, pre-existing and another unit's — the only file over the cap in the backend tree. The full
+      backend suite also carries 4 pre-existing `adapters/db` failures, verified identical on a stashed
+      clean tree; they need a live DB.
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares
       the parameter as `str` precisely so that FastAPI does not answer it 422 ahead of the Bearer
