@@ -1625,6 +1625,52 @@ within their file, not across the story.
       itself has still never been executed, so a report with no banner lines at all has never been fed
       through `summary_counts()`.
 - [ ] green-usecase (coverage: bannerless child report tallies empty)
+- [ ] red-usecase (the half of the join that was never fixed, and the half of the arming never probed) —
+      **scheduled by both review passes over `74810821`, which converged on the first item
+      independently.** The agent-review pass hunted the fourth-inert-guard question *empirically* and
+      found none — it drove `PYTEST_ADDOPTS="-W ignore::RuntimeWarning"` red, drove `-p no:warnings` red
+      (a vector **only** the behavioural half can see: `pythonwarnings` empty, `getini` still exactly the
+      two entries, so the probe is not dead weight), reproduced `--confcutdir` standalone (without it the
+      poisoned parent conftest is imported at collection), and confirmed the ancestry comparison is
+      resolved-vs-resolved. All three new guards are armed. These are the gaps beside them.
+      (1) **`"\n".join` closed the second of the two consequences its own RED spec named, not both.**
+      `child_report_join_statements.py`'s docstring lists them: stderr landing *after* the final tally
+      banner so a banner-shaped stderr line becomes the last one `summary_counts()` reads, and the merged
+      last line. Only the second is fixed. A banner-carrying stderr line still becomes `banners[-1]` —
+      precisely the "the gate blames pytest for it" failure the unit set out to end — and no guard can
+      exist under the current fixture, because `STDERR_NOISE` was deliberately chosen to carry no banner.
+      Needs a third join statement with a `=+ … =+` line on stderr, asserting the tally is still read off
+      the stdout banner and `section(FAILURES_SECTION)` still returns its real body.
+      (2) **The behavioural arming probe covers one of the two required entries.** The file states plainly
+      that `error::RuntimeWarning` and `error::pytest.PytestUnraisableExceptionWarning` are each
+      insufficient alone, but `_assert_a_runtime_warning_actually_raises` provokes only the first. Its own
+      docstring names the vector it exists for — session-time plugin meddling
+      (`resetwarnings()`/`simplefilter("ignore")` after config load) — which is class-agnostic and
+      disarms both equally, while the unraisable half is only declaration-checked (`getini`) and
+      registration-checked (`hasplugin` stays True while the warning it produces is ignored). So under
+      the exact scenario the probe was written for, the RuntimeWarning half raises green and the
+      unraisable half is silently off. The symmetric `_assert_an_unraisable_warning_actually_raises` does
+      not exist.
+      (3) **The in-tree refusal is anchored to `backend/` while its message claims the repository.**
+      `BACKEND_ROOT = Path(__file__).resolve().parents[3]`, but the refusal says "write the probe to a
+      tmp_path outside the repository". A CI image or `--basetemp` putting temp at `<repo>/.tmp` —
+      inside the repository, outside `backend/` — passes the guard and leaves a collectable `test_*.py`
+      for any root-scoped run. `gate_reach_statements.py:16-18` already anticipates that CI scenario in
+      prose. The existing refusal test only exercises a path already under `backend/`, so the anchor
+      choice is untested in the one place it differs from the claim. Pin the anchor and the message to
+      the same tree.
+      (4) Three prose defects the passes found in the diff, all cheap: `test_arrangement_snapshot_guard.py:11-13`
+      still says the refusal "guards every version assertion in three guard families" — this very commit
+      made it guard exactly one, and the file's last two tests prove the opposite of the sentence above
+      them. The `assert_both_filter_entries_are_in_force_in_this_run` docstring credits the behavioural
+      probe with covering a `-W` smuggled into `addopts`, which is false — pytest merges `addopts` and
+      `PYTEST_ADDOPTS` into one arg list during `_preparse`, so `config.option.pythonwarnings` sees it
+      and the *first* check catches it; the prose understates its own coverage and mis-maps the vectors
+      for whoever later trims a "redundant" check. And `_refuse_a_probe_inside_the_repository`'s docstring
+      claims "`resolve()` on both sides" while the code resolves only `probe_path` — correct today solely
+      because `BACKEND_ROOT` happens to be resolved at its definition 20 lines up, and silently inert the
+      day that changes.
+- [ ] green-usecase (the half of the join that was never fixed, and the half of the arming never probed)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares
       the parameter as `str` precisely so that FastAPI does not answer it 422 ahead of the Bearer
