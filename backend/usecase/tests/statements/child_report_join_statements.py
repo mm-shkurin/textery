@@ -31,9 +31,7 @@ STDERR_NOISE = "Exception ignored in: <coroutine object>\n"
 
 # Exactly what the two streams must read as once joined -- `"\n".join` of them,
 # pinned whole so the tally below is read off a report proven to carry both.
-REPORT_OF_BOTH_STREAMS = (
-    STDOUT_WITHOUT_A_TRAILING_NEWLINE + "\n" + STDERR_NOISE
-)
+REPORT_OF_BOTH_STREAMS = STDOUT_WITHOUT_A_TRAILING_NEWLINE + "\n" + STDERR_NOISE
 
 
 class ChildReportJoinStatements(FabricatedChildReportStatements):
@@ -72,7 +70,7 @@ class ChildReportJoinStatements(FabricatedChildReportStatements):
             "a section read off a report that lost one of the two streams says nothing "
             "about the join",
         )
-        self._assert_the_failures_section_is(
+        self._assert_the_failures_section_is_the_one_stdout_reported(
             "the section is bounded by the next banner, and a banner merged away by the "
             "stream join moves that bound past the end of the report"
         )

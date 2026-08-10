@@ -17,12 +17,26 @@ stdout that *does* carry a final tally banner.
 
 from statements.fabricated_child_report_statements import (
     REPORTED_FAILURES_EXIT_CODE,
-    STDERR_OF_A_CHILD_THAT_NEVER_STARTED,
     STDOUT_WITHOUT_A_TRAILING_NEWLINE,
     TALLY_STDOUT_REPORTED,
-    USAGE_ERROR_EXIT_CODE,
     FabricatedChildReportStatements,
 )
+
+# A child that died before pytest drew its first banner: an argument it did not
+# recognise, refused during `_preparse`. Substantive output, four lines of it,
+# and not one `=+ ... =+` line anywhere -- which is the only shape that reaches
+# `summary_counts()`' empty-banners arm.
+STDERR_OF_A_CHILD_THAT_NEVER_STARTED = (
+    "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n"
+    "__main__.py: error: unrecognized arguments: --not-an-option\n"
+    "  inifile: /somewhere/pyproject.toml\n"
+    "  rootdir: /somewhere\n"
+)
+
+# pytest's exit code for a usage error -- neither the 0 of a clean run nor the 1
+# of a run that reported failures, so the tally being empty is the only thing
+# left that could say what happened.
+USAGE_ERROR_EXIT_CODE = 4
 
 # Exactly what each fabrication reads as once joined -- `"\n".join` of the two
 # streams. Pinned by equality rather than searched for the child's diagnostic
@@ -91,7 +105,7 @@ class BannerlessChildReportStatements(FabricatedChildReportStatements):
             "the control is a run that got as far as reporting a failure, not one refused "
             "its arguments",
         )
-        self._assert_the_failures_section_is(
+        self._assert_the_failures_section_is_the_one_stdout_reported(
             "four extra stderr lines behind the final banner must stay outside the section"
         )
         self._assert_the_tally_is(

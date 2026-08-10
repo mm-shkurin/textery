@@ -43,21 +43,6 @@ STDOUT_WITHOUT_A_TRAILING_NEWLINE = (
 TALLY_STDOUT_REPORTED = {"failed": 1}
 FAILURES_BODY_STDOUT_REPORTED = f"{FAILING_TEST_NAME}\n"
 
-# A child that died before pytest drew its first banner: an argument it did not
-# recognise, refused during `_preparse`. Substantive output, four lines of it,
-# and not one `=+ ... =+` line anywhere -- which is the only shape that reaches
-# `summary_counts()`' empty-banners arm.
-STDERR_OF_A_CHILD_THAT_NEVER_STARTED = (
-    "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n"
-    "__main__.py: error: unrecognized arguments: --not-an-option\n"
-    "  inifile: /somewhere/pyproject.toml\n"
-    "  rootdir: /somewhere\n"
-)
-
-# pytest's exit code for a usage error -- neither the 0 of a clean run nor the 1
-# of a run that reported failures, so the tally being empty is the only thing
-# left that could say what happened.
-USAGE_ERROR_EXIT_CODE = 4
 # What a run that got as far as reporting a failure exits with.
 REPORTED_FAILURES_EXIT_CODE = 1
 
@@ -89,9 +74,7 @@ class FabricatedChildReportStatements:
 
     def _assert_the_exit_code_is(self, expected: int, because: str) -> None:
         actual = self._child().exit_code
-        assert actual == expected, (
-            f"the report exited {actual}, expected {expected} -- {because}"
-        )
+        assert actual == expected, f"the report exited {actual}, expected {expected} -- {because}"
 
     def _assert_the_tally_is(self, expected: dict[str, int], because: str) -> None:
         actual = self._child().summary_counts()
@@ -99,7 +82,7 @@ class FabricatedChildReportStatements:
             f"the report summarised {actual}, expected {expected} -- {because}"
         )
 
-    def _assert_the_failures_section_is(self, because: str) -> None:
+    def _assert_the_failures_section_is_the_one_stdout_reported(self, because: str) -> None:
         actual = self._child().section(FAILURES_SECTION)
         assert actual == FAILURES_BODY_STDOUT_REPORTED, (
             f"the FAILURES section read '{actual}', expected "
