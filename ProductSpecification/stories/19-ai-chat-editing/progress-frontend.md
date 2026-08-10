@@ -633,7 +633,53 @@ under `frontend/src` or `acceptance/tests/frontend`.
       while the compose route serves on 80.
 
 ### 0.2 An account over its daily quota cannot type an instruction
-- [ ] red-selenium
+- [x] red-selenium — one test, four Statements calls, in
+      `acceptance/tests/frontend/ai_chat/test_over_quota_acceptance.py` with
+      `over_quota_statements.py` + `over_quota_session.py`. Predicted and got a failure in the
+      **SETUP**, one layer before anything the scenario asserts: `AssertionError: over-quota
+      setup: probe 0 expected 202 or 429, got 404: {"detail":"Not Found"}` — `POST
+      /api/v1/documents/{id}/ai-edits` is not a registered route (the router file exists,
+      no composition root includes it, its seven providers still raise `NotImplementedError`),
+      so the quota counter cannot be moved and the Given is unreachable.
+      **This test specifies a contract addition green must make:** no endpoint reports quota
+      state on document open — `resets_at` lives only in the `429` body of `POST /ai-edits`
+      and none of `endpoints.md`'s seven endpoints carry quota fields. Green owes a
+      quota-state read the editor route issues on open.
+      Navigation is by CLICK, unlike 0.1: this document exists and belongs to the signed-in
+      user, so the Given's own verb is performed by clicking its row. The single `driver.get`
+      is of the LIST `/documents`, on the bookmarkable-entry-point exception — with the same
+      re-check obligation 0.1 carries, due when scenario 7.2 adds a link to it.
+      `/test-review` landed nine fixes over 15 findings. The load-bearing one: the setup
+      accepted `{done, error, cancelled}` as terminal, so an environment failing every edit
+      would refund every charge, exhaust all 25 probes and report **a quota configured too
+      high** — exactly backwards; only `done` is accepted now, `error`/`cancelled` fail loudly
+      with the body. The session module also hand-rolled `httpx`, URLs, headers and status
+      codes, duplicating three methods of `acceptance/clients/application/document_edit_client.py`
+      — it now delegates to `DocumentEditClient` and keeps only quota-spending *policy*.
+      Further: `resets_at` went from a truthiness check to a parsed, offset-aware instant
+      bounded to `now < t <= now + 24h` (the raw wire string is still what travels to the UI
+      assertion, so `data-resets-at` stays byte-exact); the 202 probe pins `status == "queued"`
+      (a replay's current status would mean the probe charged nothing); the row check asserts
+      `data-document-id` identity, not just arity; the revisions panel asserts exactly one
+      `data-revision-number='1'` row rather than a container (an empty panel is "displayed");
+      the prefix `startswith` hint match became exact equality against a new
+      `ai-chat-quota-reset-hint-lead` element — the countdown tail is unpinnable, which is a
+      reason to **split the element**, not to loosen; and the panel-opening click moved out of
+      an `assert_*` method into `open_the_revisions_panel`.
+      Rejected: pinning `DAILY_EDIT_QUOTA` as a literal (no quota value is declared anywhere
+      in the repo — it is env-configured; the server's own 429 is the strictest available
+      proof), asserting the 429's `error_code` (no literal exists in specs or backend tests;
+      inventing one defines a backend contract value a parallel session must honor), and
+      asserting all seven `DocumentResponse` fields (re-tests Story 5 from a Story 19 file).
+      **Deferred to `/refactor` on purpose:** `_sign_in_as` is now a third copy (also
+      `chat_workspace_statements.py:51`) and belongs on the shared base class.
+      Evidence: ruff clean on all four files, `--collect-only` 2 collected / 0 errors, the
+      test reports **1 skipped** (RED marker in place, un-skip is green-selenium's), and the
+      RED state was re-verified live against the running backend — same failure, same place,
+      but now *past* document creation and past the new `document_type`/`version` assertion,
+      which proves the client delegation works end to end.
+      **All three files sit at or within a line or two of the 200-line cap** — the next
+      addition to `over_quota_session.py` (exactly 200) forces a split.
 - [ ] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
