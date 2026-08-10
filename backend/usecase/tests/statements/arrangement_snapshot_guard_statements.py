@@ -31,8 +31,6 @@ act -- and the whole point of the lazy snapshot is that no test has to remember 
 ordering.
 """
 
-from collections.abc import Callable
-
 from fake.document_edit.fake_ai_edit_repository import (
     FailingDocumentScopeRepository,
     StorageUnavailableError,
@@ -109,7 +107,22 @@ class ArrangementSnapshotGuardStatements(RevisionGuardBase):
         assertion failing for its *own* reason -- the store genuinely differing
         from the snapshot -- which is the outcome the refusal exists to replace.
         """
-        self._assert_refuses(self.assert_no_document_gained_a_version)
+        try:
+            self.assert_no_document_gained_a_version()
+        except AssertionError as refused:
+            actual = str(refused)
+            assert actual == EXPECTED_REFUSAL, (
+                f"the snapshot refusal read '{actual}', expected '{EXPECTED_REFUSAL}' -- the "
+                f"message must name the test-infrastructure remedy, or the next reader "
+                f"diagnoses it as a production defect"
+            )
+            return
+        raise AssertionError(
+            "`assert_no_document_gained_a_version` compared a snapshot of a store the act "
+            "never used and passed. Its expectation was read off this arrangement's "
+            "repository while the act was handed another, so it holds no matter what the "
+            "guard did to either"
+        )
 
     def assert_the_arrangement_version_assertion_holds(self) -> None:
         """The assertion that must survive the foreign act, because it is act-blind.
@@ -128,19 +141,3 @@ class ArrangementSnapshotGuardStatements(RevisionGuardBase):
                 f"and the latch is never reset, so it costs it for the rest of the test"
             ) from refused
 
-    def _assert_refuses(self, assertion: Callable[[], None]) -> None:
-        try:
-            assertion()
-        except AssertionError as refused:
-            actual = str(refused)
-            assert actual == EXPECTED_REFUSAL, (
-                f"the snapshot refusal read '{actual}', expected '{EXPECTED_REFUSAL}' -- the "
-                f"message must name the test-infrastructure remedy, or the next reader "
-                f"diagnoses it as a production defect"
-            )
-            return
-        raise AssertionError(
-            f"`{assertion.__name__}` compared a snapshot of a store the act never used and "
-            f"passed. Its expectation was read off this arrangement's repository while the act "
-            f"was handed another, so it holds no matter what the guard did to either"
-        )

@@ -54,18 +54,18 @@ class ForgottenAwaitGateStatements:
         pytest falls back to built-in defaults when `-c` cannot be read, and a
         defaults-only run passes the forgotten-await probe for a reason that has
         nothing to do with what this repository declares. Both header lines are
-        pinned as whole lines: a substring check would also accept a `rootdir:`
-        that merely starts with this path.
+        pinned as whole values in one mapping: a substring check would also accept
+        a `rootdir:` that merely starts with this path, and asserting the two
+        separately would let the first mismatch hide the second.
         """
         child = self._child()
-        for key, value in (("rootdir", BACKEND_ROOT), ("configfile", PROJECT_CONFIG.name)):
-            expected = ChildPytestReport.expected_header_line(key, value)
-            actual = child.header_line(key)
-            assert actual == expected, (
-                f"the child run reported '{actual}', expected '{expected}' -- a run that fell "
-                f"back to pytest's built-in defaults says nothing about the configuration "
-                f"this repository actually declares:\n{child.tail}"
-            )
+        expected = {"rootdir": str(BACKEND_ROOT), "configfile": PROJECT_CONFIG.name}
+        actual = child.header_values(tuple(expected))
+        assert actual == expected, (
+            f"the child run's header reported {actual}, expected {expected} -- a run that fell "
+            f"back to pytest's built-in defaults says nothing about the configuration "
+            f"this repository actually declares:\n{child.tail}"
+        )
 
     def assert_the_probe_suite_failed(self) -> None:
         self._assert_the_child_reported(1, {"failed": 1})
@@ -91,9 +91,7 @@ class ForgottenAwaitGateStatements:
             f"hide inside a substring match:\n{child.tail}"
         )
 
-    def assert_the_failure_named_the_unawaited_coroutine(
-        self, expected_failing: set[str] | None = None
-    ) -> None:
+    def assert_the_failure_named_the_unawaited_coroutine(self) -> None:
         """Read out of the FAILURES section, which is the whole point of the check.
 
         The same sentence appears in the child's *warnings summary* on a run where
@@ -104,19 +102,25 @@ class ForgottenAwaitGateStatements:
 
         The set of failing names is compared whole rather than searched, so the
         assertion says both which test was charged and which were not, and cannot
-        pass over an absent section. `expected_failing` lets the attribution family
-        name a different test without recopying this method.
+        pass over an absent section.
+        """
+        self._assert_the_failure_was_charged_to({PROBE_TEST_NAME})
+
+    def _assert_the_failure_was_charged_to(self, expected: set[str]) -> None:
+        """The same claim against a named set, for a family whose probe fails elsewhere.
+
+        Parameterised here rather than on the public step so that step keeps its
+        no-argument reading -- a test body naming the probe's own test would be
+        restating this family's fixture back at it.
         """
         child = self._child()
-        expected = expected_failing if expected_failing is not None else {PROBE_TEST_NAME}
         failing = child.failing_test_names()
         assert failing == expected, (
             f"the child's FAILURES section is about {failing or 'no test at all'}, expected "
             f"exactly {expected} -- an unraisable fires at collection time, so a leak can be "
             f"charged to a test that passes in isolation:\n{child.tail}"
         )
-        failures = child.section("FAILURES")
-        assert UNAWAITED_COROUTINE_TEXT in failures, (
+        assert child.failure_text_contains(UNAWAITED_COROUTINE_TEXT), (
             f"the child failed, but not for the forgotten `await`: no "
             f'"{UNAWAITED_COROUTINE_TEXT}" in its FAILURES section:\n{child.tail}'
         )

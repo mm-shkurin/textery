@@ -45,6 +45,11 @@ POISONED_CONFTEST_SOURCE = f'raise RuntimeError("{POISONED_CONFTEST_MESSAGE}")\n
 # under `backend/` is collected by the real suite on the next run.
 IN_TREE_SCRATCH = BACKEND_ROOT / "usecase" / "tests" / "harness" / "_gate_reach_scratch"
 
+# Deliberately no probe body: the refusal must land on the path alone, before the
+# source is ever looked at, so this write has nothing for a lenient guard to
+# approve of. An empty literal at the call site would read as an oversight.
+NO_PROBE_SOURCE = ""
+
 # The refusal `ChildPytestRun.write_probe` must raise, decided here because the
 # test is the specification -- GREEN writes the guard to this text, not the other
 # way round. Compared whole rather than searched for the root path: a refusal
@@ -84,7 +89,7 @@ class GateReachStatements(ForgottenAwaitGateStatements):
         dropped the file by the time anything notices.
         """
         try:
-            self._run.write_probe(IN_TREE_SCRATCH, "")
+            self._run.write_probe(IN_TREE_SCRATCH, NO_PROBE_SOURCE)
         except AssertionError as refused:
             self._refusal = refused
         finally:
@@ -130,7 +135,7 @@ class GateReachStatements(ForgottenAwaitGateStatements):
         unraisable that fired late enough to be charged to the following test still
         puts the coroutine sentence in a FAILURES section.
         """
-        self.assert_the_failure_named_the_unawaited_coroutine({ATTRIBUTION_LEAKING_TEST_NAME})
+        self._assert_the_failure_was_charged_to({ATTRIBUTION_LEAKING_TEST_NAME})
 
     def assert_one_test_failed_and_the_other_passed(self) -> None:
         self._assert_the_child_reported(1, {"failed": 1, "passed": 1})

@@ -21,7 +21,7 @@ stderr without a trailing stdout newline is not something a test can arrange.
 import subprocess
 
 from statements.arranged import arranged
-from statements.child_pytest_report import ChildPytestReport
+from statements.child_pytest_report import FAILURES_SECTION, ChildPytestReport
 
 # A complete pytest report, deliberately without the trailing newline a terminal
 # run happens to end with -- the join must not depend on the child's last byte.
@@ -78,7 +78,7 @@ class ChildReportJoinStatements:
         the unawaited-coroutine sentence silently swallows the tally line and
         whatever stderr wrote after it.
         """
-        actual = self._child().section("FAILURES")
+        actual = self._child().section(FAILURES_SECTION)
         expected = "test_probe\n"
         assert actual == expected, (
             f"the FAILURES section read '{actual}', expected '{expected}' -- the section is "

@@ -20,6 +20,11 @@ _FAILING_TEST = re.compile(r"^_+ (?P<name>\S+?) _+$")
 _COUNT = re.compile(r"^(?P<count>\d+) (?P<outcome>[a-z]+)$")
 _ELAPSED = re.compile(r" in \d[\d.]*s.*$")
 
+# The section pytest writes only for tests that actually failed. Named because
+# both this module and the join test address it, and a bare literal in two files
+# is a rename waiting to leave one of them silently reading "".
+FAILURES_SECTION = "FAILURES"
+
 
 class ChildPytestReport:
     """One finished child run, addressable by header line, section and tally."""
@@ -39,37 +44,50 @@ class ChildPytestReport:
     def tail(self) -> str:
         return self.output[-2000:]
 
-    @staticmethod
-    def expected_header_line(key: str, value: object) -> str:
-        """What a session header line looks like, so only this class knows.
+    def header_values(self, keys: tuple[str, ...]) -> dict[str, str]:
+        """What each named `key: ...` session-header line says, as one mapping.
 
-        The caller compares whole lines; without this it would have to spell the
-        `key: value` shape itself and drift from what `header_line` matches on.
+        Returned whole so the caller pins every header line in a single equality.
+        Asserted one key at a time, the first mismatch raises and the second line
+        is never looked at -- a child that found neither the right rootdir nor the
+        right configfile would report only the first as wrong.
+
+        The `key: ` shape is spelled here and nowhere else, so a caller's
+        expectation is the bare value and cannot drift from what this matches on.
         """
-        return f"{key}: {value}"
+        return {key: self._header_value(key) for key in keys}
 
-    def header_line(self, key: str) -> str:
-        """The whole `key: ...` line from the session header, for equality.
+    def _header_value(self, key: str) -> str:
+        """The text after `key: `, or a description of the absence.
 
-        Returns a description of the absence rather than raising, so the caller's
-        assertion reports both what it wanted and what it got in one message.
+        Described rather than raised, so the caller's assertion reports both what
+        it wanted and what it got in one message.
         """
-        prefix = f"{key}:"
+        prefix = f"{key}: "
         return next(
-            (line.rstrip() for line in self.output.splitlines() if line.startswith(prefix)),
-            f"<no '{prefix}' line in the child's header>",
+            (
+                line.rstrip()[len(prefix) :]
+                for line in self.output.splitlines()
+                if line.startswith(prefix)
+            ),
+            f"<no '{key}:' line in the child's header>",
         )
 
     def section(self, name: str) -> str:
         """The body between a named banner and the next one, or "" if absent."""
         lines = self.output.splitlines()
         banners = self._banners()
-        for index, (number, banner) in enumerate(banners):
-            if banner != name:
-                continue
-            end = banners[index + 1][0] if index + 1 < len(banners) else len(lines)
-            return "\n".join(lines[number + 1 : end])
-        return ""
+        # Each banner's body ends where the next one starts, and the last one's at
+        # the end of the report -- so the ends are the starts shifted by one.
+        ends = [number for number, _ in banners[1:]] + [len(lines)]
+        return next(
+            (
+                "\n".join(lines[number + 1 : end])
+                for (number, banner), end in zip(banners, ends, strict=True)
+                if banner == name
+            ),
+            "",
+        )
 
     def failing_test_names(self) -> set[str]:
         """Which tests the FAILURES section is actually about, as a set to compare whole.
@@ -83,9 +101,19 @@ class ChildPytestReport:
         """
         return {
             match.group("name")
-            for line in self.section("FAILURES").splitlines()
+            for line in self.section(FAILURES_SECTION).splitlines()
             if (match := _FAILING_TEST.match(line.rstrip()))
         }
+
+    def failure_text_contains(self, text: str) -> bool:
+        """Whether the FAILURES section carries `text`, scoped rather than global.
+
+        The caller must not reach for `section(...)` and search the result itself:
+        every other reading of the child's output is parsed in here, and the whole
+        reason this is scoped to FAILURES is that the sentence the gate looks for
+        also appears in the warnings summary of a run where the gate is inert.
+        """
+        return text in self.section(FAILURES_SECTION)
 
     def summary_counts(self) -> dict[str, int]:
         """The final banner's tally, parsed whole: `1 failed in 4.37s` -> `{failed: 1}`.

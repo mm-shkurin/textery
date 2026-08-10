@@ -18,6 +18,8 @@ warning at all must be loaded -- without it there is no
 entry alone was already proven insufficient.
 """
 
+import pytest
+
 # The two entries, written out rather than read from the file being checked. The
 # order is the order they must appear in: `filterwarnings` is applied in sequence
 # and a reader comparing the two lists needs a stable expectation.
@@ -35,7 +37,7 @@ UNRAISABLE_PLUGIN_NAME = "unraisableexception"
 class LiveHarnessConfigurationStatements:
     """Assert on the configuration of the run that is executing this assertion."""
 
-    def __init__(self, config: object) -> None:
+    def __init__(self, config: pytest.Config) -> None:
         self._config = config
 
     def assert_both_filter_entries_are_in_force_in_this_run(self) -> None:
@@ -48,7 +50,7 @@ class LiveHarnessConfigurationStatements:
         the suite disarmed. Whole-list equality means an appended entry has to be
         added to the constant deliberately.
         """
-        actual = list(self._config.getini("filterwarnings"))  # type: ignore[attr-defined]
+        actual = list(self._config.getini("filterwarnings"))
         assert actual == REQUIRED_FILTERWARNINGS, (
             f"this run's `filterwarnings` is {actual}, expected exactly "
             f"{REQUIRED_FILTERWARNINGS} -- the gate that proves the entries work runs a child "
@@ -59,7 +61,7 @@ class LiveHarnessConfigurationStatements:
         )
 
     def assert_the_unraisable_plugin_is_loaded_in_this_run(self) -> None:
-        loaded = self._config.pluginmanager.hasplugin(UNRAISABLE_PLUGIN_NAME)  # type: ignore[attr-defined]
+        loaded = self._config.pluginmanager.hasplugin(UNRAISABLE_PLUGIN_NAME)
         assert loaded is True, (
             f"pytest's '{UNRAISABLE_PLUGIN_NAME}' plugin is not loaded in this run, so no "
             f"PytestUnraisableExceptionWarning is ever raised and the second filter entry "
