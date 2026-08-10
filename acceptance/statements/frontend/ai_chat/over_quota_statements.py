@@ -89,15 +89,14 @@ class OverQuotaStatements(BaseFrontendStatements):
         return account
 
     def _sign_in_as(self, driver: WebDriver, app_url: str, account: OverQuotaAccount) -> None:
+        """Load the origin, then put THIS account's real tokens in sessionStorage.
+
+        The base class's `_establish_logged_in_precondition` cannot serve here: its live
+        grade issues a session of its own, and this scenario must sign in as the one
+        account the setup already spent a day's quota on.
+        """
         driver.get(app_url)
-        driver.execute_script(
-            "window.sessionStorage.setItem(arguments[0], arguments[2]);"
-            "window.sessionStorage.setItem(arguments[1], arguments[3]);",
-            self._ACCESS_TOKEN_KEY,
-            self._REFRESH_TOKEN_KEY,
-            account.access_token,
-            account.refresh_token,
-        )
+        self._seed_session_tokens(driver, account.access_token, account.refresh_token)
 
     def _open_the_only_document_by_clicking_it(
         self, driver: WebDriver, app_url: str, account: OverQuotaAccount

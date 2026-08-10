@@ -98,6 +98,25 @@ class BaseFrontendStatements(FormAssertionsMixin):
     _ACCESS_TOKEN_KEY = "textery.auth.accessToken"
     _REFRESH_TOKEN_KEY = "textery.auth.refreshToken"
 
+    def _seed_session_tokens(
+        self, driver: WebDriver, access_token: str, refresh_token: str
+    ) -> None:
+        """Write the two auth-session keys into the current origin's sessionStorage.
+
+        The origin must already be loaded — sessionStorage is per-origin, so callers do
+        their own `driver.get`/`refresh` around this. Kept as the single place that knows
+        the key names, so a rename in `authSession.ts` lands in one file rather than in
+        every Statements class that seeds a session.
+        """
+        driver.execute_script(
+            "window.sessionStorage.setItem(arguments[0], arguments[2]);"
+            "window.sessionStorage.setItem(arguments[1], arguments[3]);",
+            self._ACCESS_TOKEN_KEY,
+            self._REFRESH_TOKEN_KEY,
+            access_token,
+            refresh_token,
+        )
+
     def _establish_logged_in_precondition(
         self, driver: WebDriver, app_url: str, live_session: bool = False
     ) -> None:
@@ -122,14 +141,7 @@ class BaseFrontendStatements(FormAssertionsMixin):
             access_token, refresh_token = session.access_token, session.refresh_token
         else:
             access_token = refresh_token = "acceptance-seeded-session"
-        driver.execute_script(
-            "window.sessionStorage.setItem(arguments[0], arguments[2]);"
-            "window.sessionStorage.setItem(arguments[1], arguments[3]);",
-            self._ACCESS_TOKEN_KEY,
-            self._REFRESH_TOKEN_KEY,
-            access_token,
-            refresh_token,
-        )
+        self._seed_session_tokens(driver, access_token, refresh_token)
 
     def navigate_to_doklad_type_modal(
         self, driver: WebDriver, app_url: str, live_session: bool = False

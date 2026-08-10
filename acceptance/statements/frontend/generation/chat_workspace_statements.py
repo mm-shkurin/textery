@@ -9,6 +9,9 @@ CHAT_PANEL = (By.CSS_SELECTOR, "[data-testid='chat-panel']")
 TOPIC_INPUT = (By.CSS_SELECTOR, "[data-testid='topic-input']")
 TOPIC_SEND_BUTTON = (By.CSS_SELECTOR, "[data-testid='topic-send']")
 
+# Placeholder token — the client gate only checks a token is PRESENT (see `_given_signed_in`).
+SEEDED_TOKEN = "acceptance-test-token"
+
 
 class ChatWorkspaceStatements(BaseFrontendStatements):
     # Per known-debt #8, the standalone generation-form page (mockup 04) was replaced
@@ -30,8 +33,7 @@ class ChatWorkspaceStatements(BaseFrontendStatements):
         self.navigate_to_doklad_type_modal(driver, app_url)
         self._wait_for_visible(driver, MODE_CARD_AUTO).click()
 
-    @staticmethod
-    def _given_signed_in(driver: WebDriver) -> None:
+    def _given_signed_in(self, driver: WebDriver) -> None:
         """Put a session in place so the landing CTA opens the flow instead of bouncing to /login.
 
         Story 7 put generation behind a session (landing stays public, everything behind it does
@@ -47,11 +49,7 @@ class ChatWorkspaceStatements(BaseFrontendStatements):
         become a real sign-in. Verified 2026-07-16: `POST /api/v1/generations` still serves
         anonymous callers, so today the seeded token is not hiding anything.
         """
-        driver.execute_script(
-            "window.sessionStorage.setItem('textery.auth.accessToken', arguments[0]);"
-            "window.sessionStorage.setItem('textery.auth.refreshToken', arguments[0]);",
-            "acceptance-test-token",
-        )
+        self._seed_session_tokens(driver, SEEDED_TOKEN, SEEDED_TOKEN)
         driver.refresh()
 
     def assert_chat_panel_is_visible(self, driver: WebDriver) -> None:
