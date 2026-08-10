@@ -1669,7 +1669,77 @@ within their file, not across the story.
       and resolves it only because `pythonpath` in `backend/pyproject.toml` lists `usecase/tests` and the
       child runs with `--rootdir backend`. Dropping that entry breaks this family with a
       `ModuleNotFoundError` that reads as a harness defect rather than a config change.
-- [~] green-usecase (coverage: disarmed suite drives the arming probe red)
+- [~] green-usecase (coverage: disarmed suite drives the arming probe red) — give `ChildPytestRun` an
+      opt-in that keeps the ambient environment for this family, leaving the unconditional scrub in place
+      for the forgotten-await gate. Acceptance number **0 skipped**. No assertion may change.
+      **The premortem's severe finding must land WITH or BEFORE this GREEN, because this GREEN is what
+      converts it from latent to live.** The entire trustworthiness of the forgotten-await gate rests on
+      one expression — the `LEAKY_CHILD_VARIABLES` filter at `child_pytest_run.py:138` — and a grep of the
+      whole backend test tree finds `LEAKY_CHILD_VARIABLES` and `_child_environment` referenced **exactly
+      once each: the definition and that use.** No test anywhere sets a hostile ambient variable and
+      asserts the gate still bites. The scrub is proven only by developer and CI environments happening to
+      be clean, which is precisely the assumption it exists to remove. That is tolerable while the scrub
+      is unconditional and total; this step makes it **conditional**, and from that commit on "does the
+      gate's child get scrubbed?" is a per-call-site decision with nothing watching it. A flipped default,
+      an opt-in threaded through the shared base, or a later refactor collapsing the two constructors
+      silently un-arms the gate while every harness test stays green — invisible in exactly the way the
+      arming check was written to prevent, and self-concealing until someone forgets an `await`. **The
+      guard is buildable today with the fixture this unit already added:**
+      `test_should_still_fail_the_forgotten_await_probe_when_the_runner_environment_ignores_runtime_warnings`
+      — parent `monkeypatch.setenv("PYTHONWARNINGS", "ignore::RuntimeWarning")`, then the existing
+      forgotten-await probe steps. Green today, RED the instant the scrub stops applying to this family.
+      Pair with a `-p no:unraisableexception` variant, the second vector `child_pytest_run.py`'s own
+      comment names.
+      **The agent-review pass's finding 1 changes what this step can claim, and it was measured rather
+      than argued.** The step is titled "coverage:", but every execution of the subject happens in a
+      **child process**, and coverage.py in this repo does not measure it — no `[tool.coverage]` section in
+      `backend/pyproject.toml`, no `COVERAGE_PROCESS_START`, no `.pth` in the active interpreter. Run with
+      `--cov=statements.live_harness_configuration_statements`, the control **passes** (so the child
+      provably executed `__init__`, the option check, the declaration check and the `try/except/return`)
+      while the report calls every one of those lines missed — including L47 — and credits only the
+      module-level imports the parent's own conftest pulled in. So GREEN will hit 0 skipped with both arms
+      watched biting, and **L97-101 will still read uncovered in `backend/coverage.xml`.** Decide the
+      success criterion explicitly: "the arm is watched biting" is satisfied by this design; "the report
+      shows it covered" is not, and is not reachable without subprocess-coverage wiring. Nothing in the
+      suite asserts the report moved, which is why this survived to the commit.
+      **A third negative arm exists, is denied by the diff's own docstrings, and is reachable.** Both the
+      module and class docstrings say "two negative arms", but
+      `assert_both_filter_entries_are_in_force_in_this_run` runs **three** checks — and the third,
+      `_assert_the_declaration_is_exactly_the_required_entries`, is not merely uncovered, it is
+      *unreachable* by either chosen vector because both short-circuit ahead of it. Its message is the
+      longest and most reasoned in the file (the "no third one may follow them / last matching filter
+      wins" argument) and has never been seen. A third vector reaches it, verified against the real
+      config: `PYTEST_ADDOPTS="-o filterwarnings=error::RuntimeWarning"` overrides the ini value without
+      populating `config.option.pythonwarnings`, so check one passes, `error::RuntimeWarning` survives so
+      check two passes, and check three bites with `{failed: 1}` — the same shape as the two existing
+      tests, dropping straight into the file. The undercount in the docstrings is what let it go
+      unnoticed; fix the count in the same breath.
+      **The control's stated justification is false, in a scenario whose whole history is false
+      justifications.** Its docstring claims that without it "a probe that failed to import, or a
+      statement that raised for any reason at all, would satisfy both refusals above on their tally".
+      Both halves are wrong: an import failure yields `{errors: 1}` and exit 2, which the
+      whole-tally-plus-exit-code pin rejects on its own, and it produces an empty `failing_test_names()`,
+      which the set equality rejects independently. More structurally, the control is a **separate test
+      with its own child run**, so it cannot make the other two tests' refusals attributable to anything —
+      a shared fixture would; three independent runs do not. Keep the control (it is the only live
+      execution of the passing arm) but correct the justification rather than carry it; after five guards
+      justified by reasoning that did not hold, the next reader will trust it.
+      **A second, minor premortem incident:** the two `@pytest.mark.skip` markers are tracked only by a
+      hand-counted tally in prose, and a number in prose is not a guard. A probe that times out on a
+      loaded Windows box (`PROBE_TIMEOUT_SECONDS = 180`, with parallel sessions in one checkout) invites
+      someone to re-add a marker to quiet the flake, returning both arms to never having executed. The
+      repo already has this shape unenforced elsewhere (`domain/tests/auth/test_verification_code.py:62`
+      documents a test that must "stay live (never skip-marked)"). Make the acceptance criterion an
+      assertion — a session-level audit that `usecase/tests/harness/` reports zero skips — for the cost of
+      one test.
+      **Checked and dismissed by the premortem, recorded so it is not re-litigated:** the parent-process
+      env mutation reaches nothing (the parent's own filters and `config.option` were resolved at startup
+      and are immune to a mid-run `setenv`; `monkeypatch` restores at teardown; xdist workers and the
+      frontend session are separate processes). The probe's import resolves from the pinned config rather
+      than an inherited path, and the live control would go red loudly on a collection error. The real
+      weakness in child cost is diagnosability, not time: a `subprocess.run` timeout raises
+      `TimeoutExpired` as an error and `child_pytest_run.py:80-87` never reads its captured stdout, so an
+      operator gets a bare traceback with no child tail — pre-existing, not charged to this unit.
 - [ ] red-usecase (coverage: bannerless child report tallies empty) — `child_pytest_report.py:133-134`
       (`if not banners: return {}`) is a partial branch, False arm only. It matters because that empty
       `{}` is the exact symptom the `"\n".join` change was written to prevent — the docstring names it
