@@ -24,7 +24,17 @@ asyncio_mode = "auto"
 # One such site survived the async conversion of
 # `given_a_revision_recorded_on_the_first_document` and was only caught by eye.
 # Promoted to an error so the next one cannot be caught by eye at all.
-filterwarnings = ["error::RuntimeWarning"]
+#
+# Both entries are required. The RuntimeWarning is emitted from the coroutine's
+# `__del__`, CPython swallows exceptions raised in a destructor, and pytest
+# re-raises the swallowed error as `PytestUnraisableExceptionWarning` -- which
+# `error::RuntimeWarning` alone does not match, so the run still passes. The
+# second entry turns that re-raised warning into the failure.
+# `test_forgotten_await_gate.py` proves the pair bites.
+filterwarnings = [
+    "error::RuntimeWarning",
+    "error::pytest.PytestUnraisableExceptionWarning",
+]
 pythonpath = [
     "domain/src",
     "usecase/src",

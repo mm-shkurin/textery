@@ -1392,7 +1392,20 @@ within their file, not across the story.
       `LEAKY_CHILD_VARIABLES` lists five, and `gc.collect()` is described as load-bearing when on CPython
       the coroutine is a bare expression-statement temporary whose `__del__` fires at end of statement —
       correct as defensive portability, but not the stated mechanism.
-- [ ] green-usecase (the harness gate that does not bite, and the refusal tests still blind to a write) —
+- [x] green-usecase (the harness gate that does not bite, and the refusal tests still blind to a write) —
+      both deliverables landed and the premortem's incident was closed by the number, not by prose:
+      **`186 passed in 7.04s`, 0 failed, 0 skipped** — the skip count is the acceptance signal, and a
+      GREEN that had landed the config entry while forgetting the marker would have read `185 passed,
+      1 skipped`. The second `filterwarnings` entry
+      (`"error::pytest.PytestUnraisableExceptionWarning"`) went in with the mechanism recorded beside it
+      in the config itself — the RuntimeWarning is raised from the coroutine's `__del__`, CPython
+      swallows destructor exceptions, and pytest re-raises the swallowed error under a *different*
+      warning class that `error::RuntimeWarning` alone does not match — so the next reader cannot delete
+      the entry as a duplicate. **Mutation-proven rather than asserted:** with only that line removed the
+      gate fails at `forgotten_await_gate_statements.py:160` (`1 failed, 1 passed`), and the unskipped
+      control keeps passing throughout, so the failure is attributable to the missing filter and not to
+      the harness. The two-entry requirement is now enforced from both sides — the RED already showed
+      the new entry alone is also insufficient.
       **two deliverables, and the second is the one a GREEN forgets.** (1) Add
       `"error::pytest.PytestUnraisableExceptionWarning"` to `filterwarnings` in `backend/pyproject.toml`
       — both entries are required, verified. (2) **Remove the `@pytest.mark.skip` from
@@ -1401,7 +1414,7 @@ within their file, not across the story.
       **byte-identical in signal** to today's — `185 passed, 0 failed, 1 skipped` — with the guard dead
       forever, and nothing in the repo fails on a nonzero skip count. The acceptance number for this step
       is therefore **0 skipped**, not 1.
-- [ ] red-usecase (the guard on the arrangement's own guard, and the gate's reach beyond one config file)
+- [~] red-usecase (the guard on the arrangement's own guard, and the gate's reach beyond one config file)
       — **scheduled by both review passes over `29779ca0`, which reached it independently: that commit
       shipped a second inert guard while its entire subject was an inert guard.**
       (1) `_refuse_a_snapshot_of_a_store_the_act_never_used` has zero coverage — the outage families set

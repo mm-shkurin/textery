@@ -1,5 +1,3 @@
-import pytest
-
 from statements.forgotten_await_gate_statements import ForgottenAwaitGateStatements
 
 
@@ -18,10 +16,6 @@ class TestForgottenAwaitGate:
     the probe's own failure is the subject rather than this suite's outcome.
     """
 
-    @pytest.mark.skip(
-        reason="RED: filterwarnings matches error::RuntimeWarning, but the forgotten await "
-        "surfaces as pytest.PytestUnraisableExceptionWarning -- the probe run passes"
-    )
     def test_should_fail_the_run_when_a_call_site_forgets_to_await_an_async_given_step(
         self, tmp_path, forgotten_await_gate_statements: ForgottenAwaitGateStatements
     ):
