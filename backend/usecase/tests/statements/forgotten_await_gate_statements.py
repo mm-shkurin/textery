@@ -91,20 +91,31 @@ class ForgottenAwaitGateStatements:
             f"hide inside a substring match:\n{child.tail}"
         )
 
-    def assert_the_failure_named_the_unawaited_coroutine(self) -> None:
+    def assert_the_failure_named_the_unawaited_coroutine(
+        self, expected_failing: set[str] | None = None
+    ) -> None:
         """Read out of the FAILURES section, which is the whole point of the check.
 
         The same sentence appears in the child's *warnings summary* on a run where
         the gate is inert -- so looking for it anywhere in the output would be
         satisfied by the very state this test exists to reject, leaving the exit
         code as the only real assertion. Scoped to the section pytest writes only
-        for tests that actually failed, and the failing test is named too.
+        for tests that actually failed.
+
+        The set of failing names is compared whole rather than searched, so the
+        assertion says both which test was charged and which were not, and cannot
+        pass over an absent section. `expected_failing` lets the attribution family
+        name a different test without recopying this method.
         """
         child = self._child()
-        failures = child.section("FAILURES")
-        assert PROBE_TEST_NAME in failures, (
-            f"the child's FAILURES section does not name '{PROBE_TEST_NAME}':\n{child.tail}"
+        expected = expected_failing if expected_failing is not None else {PROBE_TEST_NAME}
+        failing = child.failing_test_names()
+        assert failing == expected, (
+            f"the child's FAILURES section is about {failing or 'no test at all'}, expected "
+            f"exactly {expected} -- an unraisable fires at collection time, so a leak can be "
+            f"charged to a test that passes in isolation:\n{child.tail}"
         )
+        failures = child.section("FAILURES")
         assert UNAWAITED_COROUTINE_TEXT in failures, (
             f"the child failed, but not for the forgotten `await`: no "
             f'"{UNAWAITED_COROUTINE_TEXT}" in its FAILURES section:\n{child.tail}'

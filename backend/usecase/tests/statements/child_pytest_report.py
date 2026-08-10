@@ -14,6 +14,9 @@ import subprocess
 # Banner lines pytest draws around every report section, e.g.
 # `======== FAILURES ========` and the closing `======== 1 failed in 4s ========`.
 _BANNER = re.compile(r"^=+ (?P<name>.+?) =+$")
+# The per-test sub-banner pytest draws inside FAILURES, e.g. `____ test_probe ____`.
+# Underscored rather than `=`, so `_BANNER` leaves these inside the section body.
+_FAILING_TEST = re.compile(r"^_+ (?P<name>\S+?) _+$")
 _COUNT = re.compile(r"^(?P<count>\d+) (?P<outcome>[a-z]+)$")
 _ELAPSED = re.compile(r" in \d[\d.]*s.*$")
 
@@ -67,6 +70,22 @@ class ChildPytestReport:
             end = banners[index + 1][0] if index + 1 < len(banners) else len(lines)
             return "\n".join(lines[number + 1 : end])
         return ""
+
+    def failing_test_names(self) -> set[str]:
+        """Which tests the FAILURES section is actually about, as a set to compare whole.
+
+        The alternative -- `name in section` for the test that should have failed
+        and `other not in section` for the one that should not -- is vacuous on the
+        negative half: `section()` returns "" when there is no FAILURES banner at
+        all, so "the clean test is not named" passes on a child that failed nothing
+        and on a child that never ran. A set equality carries both halves and
+        cannot be satisfied by an empty section.
+        """
+        return {
+            match.group("name")
+            for line in self.section("FAILURES").splitlines()
+            if (match := _FAILING_TEST.match(line.rstrip()))
+        }
 
     def summary_counts(self) -> dict[str, int]:
         """The final banner's tally, parsed whole: `1 failed in 4.37s` -> `{failed: 1}`.

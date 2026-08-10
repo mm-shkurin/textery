@@ -1414,7 +1414,7 @@ within their file, not across the story.
       **byte-identical in signal** to today's — `185 passed, 0 failed, 1 skipped` — with the guard dead
       forever, and nothing in the repo fails on a nonzero skip count. The acceptance number for this step
       is therefore **0 skipped**, not 1.
-- [~] red-usecase (the guard on the arrangement's own guard, and the gate's reach beyond one config file)
+- [x] red-usecase (the guard on the arrangement's own guard, and the gate's reach beyond one config file)
       — **scheduled by both review passes over `29779ca0`, which reached it independently: that commit
       shipped a second inert guard while its entire subject was an inert guard.**
       (1) `_refuse_a_snapshot_of_a_store_the_act_never_used` has zero coverage — the outage families set
@@ -1457,7 +1457,57 @@ within their file, not across the story.
       in-suite check that the live `config.getini("filterwarnings")` carries both entries and the
       `unraisable` plugin is loaded — the one assertion the child-process shape structurally cannot
       make.
-- [ ] green-usecase (the guard on the arrangement's own guard, and the gate's reach beyond one config file)
+      **Outcome: a real RED — six failures, every one matching the prediction in type, message and
+      status.** Four new test modules under `usecase/tests/harness/` (`test_arrangement_snapshot_guard.py`
+      54, `test_gate_reach.py` 53, `test_child_report_join.py` 34, `test_live_harness_configuration.py`
+      27) over four new Statements. Six tests carry `@pytest.mark.skip` — exactly the six failures — so
+      **green-usecase's acceptance number is 0 skipped**, the same discipline the previous step used.
+      Full run after `/test-review`: **190 passed, 6 skipped, 0 failed**; ruff and mypy clean; largest
+      touched file 146 lines.
+      **Deliverable (2)'s open choice is pinned to *scoping*, not latch-resetting:** the refusal belongs
+      only on `assert_no_document_gained_a_version`, whose expectation is a pre-act snapshot. Resetting
+      per act would make the refusal order-dependent and defeat the lazy snapshot's claim that no test
+      has to remember an ordering. The reasoning is in `arrangement_snapshot_guard_statements.py`'s
+      module docstring so GREEN cannot pick the other arm by accident.
+      **Deliverable (3) proved its own premise wrong in the good direction:** the poisoned conftest one
+      directory *above* the probe **was** imported by the child, so the conftest walk really does leave
+      the scratch today — the "outside rootdir, so the parent never collects it" prose was not merely
+      unasserted, it was false. `--confcutdir` is GREEN's to land.
+      **`/test-review` found two more inert assertions, both live in exactly the state they exist to
+      reject** — the same defect this whole unit is about, now twice removed. (a)
+      `live_harness_configuration_statements.py:43` checked `filterwarnings` by *containment*; the ini
+      list applies in sequence and last match wins, so a runner appending `ignore::RuntimeWarning` via
+      `PYTEST_ADDOPTS` leaves both required entries present and the suite disarmed. Whole-list equality
+      against the literal now. (b) `gate_reach_statements.py:111`'s
+      `assert ATTRIBUTION_CLEAN_TEST_NAME not in failures` passed over an empty string — `section()`
+      returns `""` when the banner is absent — so it was green on a child that failed nothing *and* on
+      one that never ran; it was non-vacuous only because a positive assert happened to precede it, an
+      ordering nothing pinned. Fixed by a new `ChildPytestReport.failing_test_names()` parsing pytest's
+      `___ name ___` sub-banners, hoisted into the parent assertion so both halves collapse to one set
+      equality that cannot pass on an absent section. Mutation-checked, not trusted green: flipping the
+      expectation to the clean test's name fails at `forgotten_await_gate_statements.py:113`.
+      Two claims asserted nowhere were also closed: the poisoned conftest's `RuntimeError` text is now
+      checked directly rather than inferred from the tally, and `act_on_a_store_outside_the_arrangement`
+      no longer enforces a contract from the act half — split into `outcome_of` plus a then-phase
+      `assert_the_foreign_act_reached_the_foreign_store()`, called from all three bodies. That one is
+      load-bearing: a `resolve_via` that quietly fell back to the arrangement's own store would leave the
+      latch clear and every refusal assertion in the family would test nothing.
+      **Deliverable (5) is NOT done and stays open for GREEN.** The `adapters/db` suite (62 tests, real
+      Postgres, asyncpg `AsyncEngine` teardown) could not be run under the two-entry filter — the Docker
+      daemon is down (`npipe:////./pipe/dockerDesktopLinuxEngine`) and 5432 is closed, and the
+      infrastructure guardrails forbid starting it unasked. This is the premortem's actual incident: the
+      filter is global to the whole backend tree, and CI is otherwise the first place it meets a real
+      database.
+      **A checkout quirk worth carrying:** `git status` did not list 3 of the 8 new files until
+      `git update-index --refresh` ran — a stale index on this OneDrive checkout, where files written in
+      the same second as an index refresh stay invisible. A commit made without that refresh would have
+      silently shipped 5 of 8 files.
+      **One pre-existing cap violation, untouched:**
+      `backend/adapters/db/tests/statements/verification_code_storage_statements.py` is 209 lines — the
+      only file over 200 in the backend tree. Pre-existing lint also unchanged (SIM300 in
+      `test_ai_edit_router_di_stubs.py:50`, two E501s in `test_resolve_owned_revision_records.py`), none
+      in files this unit touched.
+- [~] green-usecase (the guard on the arrangement's own guard, and the gate's reach beyond one config file)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares
       the parameter as `str` precisely so that FastAPI does not answer it 422 ahead of the Bearer

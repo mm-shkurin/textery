@@ -47,3 +47,29 @@ async def {PROBE_TEST_NAME}() -> None:
 """
 
 UNAWAITED_COROUTINE_TEXT = f"coroutine '{PROBE_STEP_NAME}' was never awaited"
+
+ATTRIBUTION_LEAKING_TEST_NAME = "test_a_forgets_the_await"
+ATTRIBUTION_CLEAN_TEST_NAME = "test_b_is_innocent"
+
+# Two tests, and deliberately no `gc.collect()` in the leaking one: the question
+# this probe asks is which test pytest charges when the collector is left to fire
+# whenever it likes. `error::RuntimeWarning` alone could never misattribute --
+# nothing was promoted to an error at GC time -- so the second filter entry
+# brought in a failure class where test A's mistake can fail test B, and test B
+# then passes in isolation. The collect in the clean test forces the issue if the
+# interpreter has not already dropped the coroutine.
+ATTRIBUTION_PROBE = f"""
+import gc
+
+
+async def {PROBE_STEP_NAME}() -> None:
+    return None
+
+
+def {ATTRIBUTION_LEAKING_TEST_NAME}() -> None:
+    {PROBE_STEP_NAME}()
+
+
+def {ATTRIBUTION_CLEAN_TEST_NAME}() -> None:
+    gc.collect()
+"""
