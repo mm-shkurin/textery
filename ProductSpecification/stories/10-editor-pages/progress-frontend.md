@@ -742,6 +742,62 @@ pagination failure.
   Suite 642 passed / 6 skipped / 0 failed (2 cases added). `prettier --check` clean on both touched
   files; oxlint and `tsc -b --noEmit` report only the pre-existing RED stub `paginationState.ts:100`.
   Files: assignmentShape 97, constantSites 153, fixtureUsage.source 70.
+- [ ] red-frontend (premortem CREDIBLE 1 over `4f095594`) — **the paste-repair still works; it just
+  changes failure mode from WRONG VALUE to DROPPED ASSERTION.** Green phase,
+  `derivePaginationState` emits a laid-out state without `currentPage`, suite red. Retyping
+  `currentPage: 5` is now closed, so the developer takes the next-shortest path: **delete the line**
+  at `laidOut.test.ts:81` and paste the received array over `constantSites`' expected object.
+  `constantSites` green (its list is whatever vitest printed); `assignmentShape` green (no re-typed
+  value among what REMAINS, and the file still contributes three sites, comfortably above a floor
+  of one). "Страница 5 из 6" renders as "Страница 1 из 6" forever, with the two-guard stack built
+  over five work units green. The floor-over-count argument is sound for a COUNT and gave up the
+  only thing standing between the file and a silent drop; `WHAT IT DOES NOT CLAIM` hands membership
+  to `constantSites`, which is precisely the guard whose repair path this file exists because it
+  does not trust. Guard: a third case over the FIELD half (the group `PINNED_ASSIGNMENT` already
+  captures), pinning the field set each file contributes — hand-typed FIELD NAMES, already spelled
+  twice in the repo, not hand-typed VALUES, so it imports none of the dependency the header rules
+  out. Reddens on a dropped assertion and prints which field left which file.
+- [ ] red-frontend (premortem CREDIBLE 2 over `4f095594`) — **both guards can be pointed at the
+  same file, and neither can tell.** A chartered step splits or renames the assertion surfaces; in
+  `fixtureUsage.source.ts` a developer copy-pastes the import/map pair and leaves
+  `SOURCES[LAID_OUT_FILE] = measuringSource` (or sets both name constants to one string). Computed
+  object keys COLLAPSE when equal, so both cases compare a one-key object against a one-key object
+  and pass: `assignmentShape` finds no offenders and sites under both keys, `constantSites` is
+  repaired from the received list in the same motion. `laidOut.test.ts` is then scanned by
+  **nothing**, and its `pageCount:` line can be retyped with no guard in the repo looking at it. The
+  `?raw` defence covers a WRONG path (transform-time resolution error), not a DUPLICATED one — both
+  imports resolve. `fixtureUsage.source.ts` still has zero tests of its own, and this commit made a
+  second guard depend on it. Guard: assert the two scanned windows are DISTINCT — `Object.keys
+  (SOURCES).length === 2`, the two raw texts differ, or the cheap self-identifying form: each
+  source's text contains its own file name (both files' header text does).
+- [ ] red-frontend (agent-review CONCERNS 1 over `4f095594`) — **`NAMED_VALUE` admits any
+  SCREAMING_SNAKE identifier, not a FIXTURE constant — the paste-repair's one-line successor.** The
+  `it` is named "names a constant, a field of one, or null" and the header says "a SCREAMING_SNAKE
+  constant (`NO_SKELETONS`)", but nothing ties the identifier to `laidOutRows.fixture`. Under the
+  same red suite, `const FROZEN_PAGES = 6` in `laidOut.test.ts` plus `pageCount: FROZEN_PAGES`
+  passes this case cleanly. `constantSites` catches it as a changed member — and `constantSites`
+  going green by paste is the ENTIRE PREMISE this file was written for, so under the file's own
+  threat model both are green and the incident its header narrates ships. `fixtureUsageIn` already
+  returns `fixtureImports` precisely so origin can be cross-referenced, and this file imports the
+  same function without using that field. Guard: reject a constant head not present in that file's
+  `fixtureImports` — the data is already there.
+- [ ] red-frontend (agent-review CONCERNS 2 + 3 over `4f095594`, both narrow) — **(a)
+  `PINNED_FIELD` is a second, uncoupled copy of `PINNED_ASSIGNMENT`'s field alternation**
+  (`assignmentShape.test.ts:87` against `fixtureUsage.source.ts:38`), pinned together by nothing.
+  It fails CLOSED — an unmatched prefix survives the `.replace` and then fails `NAMED_VALUE` — so
+  drift is noisy, but the MESSAGE misleads: a newly chartered field prints `totalPages: NO_PAGES`
+  in the "re-typed values" list, naming a correct site as a literal. For a file whose stated
+  purpose is that failures read correctly to a developer under red, that is the same defect it just
+  fixed in the floor case (`length > 0` printing `false`). **(b)** the header says "deleting every
+  assertion in both files would pass this case in silence", implying the floor closes deletion; it
+  closes TOTAL deletion per file only, and the cited control (deleting all four `laidOut` lines) is
+  the one deletion the floor happens to catch. Overlaps CREDIBLE 1 above — fix them together.
+- [ ] **RE-RANK, not a new finding (premortem over `4f095594`):** the two-element `SOURCES` /
+  `import.meta.glob` step chartered as agent-review CONCERNS 3 over `c0e35fc6` should move AHEAD of
+  the others in its block. This commit **doubled its blast radius**: a new
+  `paginationState.someNewCase.test.ts` now escapes TWO guards rather than one, and because the
+  shape property is stated per-key rather than over the directory, the new-file route is also the
+  cheapest escape from the property this unit exists to enforce.
 - [ ] red-frontend (premortem CREDIBLE 2 over `63a049fd`) — **the split this unit performed moved
   the guard's load-bearing narrowness into a file where relaxing it reddens NOTHING.**
   `fixtureUsage.source.ts` has zero tests of its own; its only importer never touches the regex,
