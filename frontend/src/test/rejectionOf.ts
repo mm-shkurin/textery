@@ -16,5 +16,7 @@ export async function rejectionOf(promise: Promise<unknown>): Promise<unknown> {
   } catch (error) {
     return error
   }
-  throw new Error(`expected the call under test to reject, but it resolved with ${String(resolved)}`)
+  throw new Error(
+    `expected the call under test to reject, but it resolved with ${String(resolved)}`,
+  )
 }

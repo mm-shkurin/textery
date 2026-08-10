@@ -97,9 +97,7 @@ describe('DocumentEditorPage — a document that cannot be loaded', () => {
     const { container } = renderAtDocumentRoute(ABSENT_DOCUMENT_ID)
 
     const blocker = await screen.findByTestId(NOT_FOUND_BLOCKER)
-    expect(within(blocker).getByTestId(NOT_FOUND_TITLE).textContent).toBe(
-      EXPECTED_NOT_FOUND_TITLE,
-    )
+    expect(within(blocker).getByTestId(NOT_FOUND_TITLE).textContent).toBe(EXPECTED_NOT_FOUND_TITLE)
 
     // Scoped INSIDE the blocker, and asserted on the same element the scope found. A documents
     // link elsewhere in the chrome would otherwise satisfy "a way out" the blocker never offers,
