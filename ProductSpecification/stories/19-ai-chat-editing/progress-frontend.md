@@ -537,9 +537,25 @@ under `frontend/src` or `acceptance/tests/frontend`.
       capture `reject`; run the ping-pong A→B→A, resolve `resolvers[2]` with `FRESH_DOCUMENT`, then
       call `rejecters[0](new DocumentNotFoundError(...))` and assert `result.current` is still
       `{ status: 'ready', document: FRESH_DOCUMENT }`.
-- [ ] green-frontend (coverage: a superseded *rejection* for the SAME id loses)
-      Expect no production change — the guard exists and is correct; this pair pins it. Say so
-      honestly if the diff is empty, and report the branch count as the measurable result.
+- [x] green-frontend (coverage: a superseded *rejection* for the SAME id loses) — **empty production
+      diff, and that is the honest outcome**: the `.catch` token guard already existed and RED proved
+      it load-bearing by mutation rather than by a failing main, so nothing minimal was left to
+      write. `git status --porcelain` clean; 516 passed / 0 failed / 0 skipped (118 files).
+      The measurable result is the branch count the pair was inserted for: `useEditorDocument.ts`
+      moved 5/8 → **7/8 (87.5%)**, statements 17/17, functions 4/4, lines 14/14. Per-arm from
+      `coverage-final.json`: the dedupe guard (L38) and the `.then` token guard (L45) both arms
+      covered, and the newly-fired one is the *taken* arm of the `.catch` token guard (L49) — hit
+      exactly once, by this test alone. The two RED cases from `5851340a` together did 5/8 → 7/8.
+      **The one arm still uncovered is L50 col 82 — the `'failed'` side of the ternary.** Nothing in
+      the repo rejects `loadEditorDocument` with anything but a `DocumentNotFoundError`, so the
+      non-404 path the hook's own comment names as its reason for existing has never executed. That
+      is scenario 8.8's, per the named cases recorded above.
+      **Quirk found — the coverage threshold is global, so a narrowed run lies.** Running with
+      `--coverage.include` scoped to this one hook trips `ERROR: Coverage for branches (87.5%) does
+      not meet global threshold (89%)`: the repo-wide floor in `frontend/vite.config.ts:46-51` is
+      compared against a single-file scope. The unnarrowed run is fine — 89.76% branches (614/684).
+      A per-file coverage check on this project must ignore the threshold verdict and read the
+      numbers.
 - [ ] green-selenium
 - [ ] demo
 
