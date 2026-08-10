@@ -1107,8 +1107,15 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   `@pytest.mark.skip` and its now-unused `import pytest` from
   `test_content_only_save_acceptance.py`. No production code, no Statements change; the row was
   chartered GREEN on arrival and arrived green: **14 passed, 1 skipped** in
-  `tests/backend/documents/` (was 13 passed, 2 skipped with the marker on). The one remaining skip is
-  the parked roundtrip RED over the live `model_fields_set` defect, which has its own step below.
+  `tests/backend/documents/` (was 13 passed, 2 skipped with the marker on).
+  **Correction, caught by agent-review on `586e4df7` and verified:** the sentence first written here
+  named the remaining skip wrongly. The only skip left in `tests/backend/documents/` is
+  `test_document_page_settings_read_acceptance.py:6`, whose reason is a different defect —
+  `GET /documents/{id}` carries no `page_settings` field. The parked roundtrip RED over
+  `model_fields_set` is a **backend unit** test (`test_save_document_request_dto_roundtrip.py`), not an
+  acceptance row, so it was never in this count at all. Line 1090, written by the previous unit, had it
+  right by path; this line overwrote a correct claim with a wrong one. Two false comments in three work
+  units, both load-bearing for what a resumer does next — the pattern is now itself worth naming.
   Worth restating plainly, because it is what this row's value rests on: a green here proves the
   absent-title path is correct in COMPOSITION today, not that the composition is guarded against the
   erasure work. `clear()` is still unmapped, so `title_update()`'s two no-value branches remain the
@@ -1159,6 +1166,21 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   TENTH key appearing on the write response — a leaked internal field, a mistakenly widened DTO —
   passes silently. `body.keys() == set(expected) | {"created_at","updated_at"}` is what the comment
   claims. The blank-title sibling has the same shape, so this is a convention, not a slip; fix both.
+  **RECONFIRMED INDEPENDENTLY on `586e4df7`: both review passes converged on this same step as their
+  top finding, now against the EXTRACTED `assert_document_body`** — `/refactor` moved the two subset
+  checks into one place without tightening either, so the looseness is now a single shared decision
+  rather than a duplicated one. Premortem's incident makes the cost concrete: this row is, since the
+  marker came off, the only black-box guard on the PUT write shape (the blank-title sibling observes
+  through `GetDocumentResponseDto`, a different shape), so a leaked `owner_id`/`share_token` on the save
+  response ships green.
+  THIRD PART, genuinely new (agent-review on `586e4df7`): `MANUAL_DOCUMENT_GENERATION_ID = None`, and
+  `body.get(key)` returns `None` for an ABSENT key — so that one pin cannot tell a null value from a
+  missing key, and its own comment ("an omitted key is an unasserted key") is false for exactly the
+  field it annotates. `generation_id` could vanish from the response entirely and this row stays green.
+  The sting is the scenario's own subject: 2.1 exists to distinguish absent from null, and asserts one
+  of its fields in a way that conflates them. One fix closes all three parts —
+  `assert expected.keys() <= body.keys()` alongside the value comparison, plus the exact key-set
+  equality above — and makes the comment true.
   (b) `assert_blank_title_save_persisted_the_document` still carries `# created_at/updated_at are the
   only remaining response fields` — `GetDocumentResponseDto` declares EIGHT keys including
   `page_settings` (`get_document_response_dto.py:65`), which is neither pinned nor mentioned. The
