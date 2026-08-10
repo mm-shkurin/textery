@@ -83,7 +83,7 @@ describe('useEditorDocument with two outstanding requests for the same document'
   // version: 3 } } to deeply equal { …, version: 9 }. The superseded first response for A wins
   // because `requestedIdRef.current` is back to A when it resolves. `green-frontend` adds a
   // per-request token beside the id key and un-skips this.
-  it.skip('keeps the newest response when the superseded request for the same id resolves last', async () => {
+  it('keeps the newest response when the superseded request for the same id resolves last', async () => {
     const resolvers = deferredLoads()
 
     const { result, rerender } = renderHook(

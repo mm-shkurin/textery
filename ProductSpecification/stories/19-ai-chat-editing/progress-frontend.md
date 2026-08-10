@@ -447,7 +447,18 @@ under `frontend/src` or `acceptance/tests/frontend`.
       514 passed / 0 failed / 1 skipped (the skip is this case).
       **Green needs a per-request token beside the id key** — a monotonic sequence or a per-effect
       flag captured in the effect closure. The id alone cannot separate two outstanding requests.
-- [ ] green-frontend (coverage: a superseded response for the SAME id loses)
+- [x] green-frontend (coverage: a superseded response for the SAME id loses) — **a real production
+      fix, not a mutation exercise**: a monotonic `requestTokenRef` now sits beside `requestedIdRef`,
+      the token captured in the effect closure, and both `.then`/`.catch` compare
+      `requestTokenRef.current !== requestToken` instead of `requestedIdRef.current !== documentId`.
+      The two outstanding fetches for A in the A→B→A ping-pong hold tokens 1 and 3, so only the
+      newest may `setState` and the stale `version: 3` no longer travels back on save.
+      `requestedIdRef` keeps exactly one job — the pre-fetch StrictMode dedupe guard — and the
+      comment claiming it "doubles as the stale-response check" went with the behavior it described.
+      The old-id case needs no separate guard: a superseded request is by definition not the newest
+      token, so one comparison subsumes both. 515 passed / 0 failed (117 files); the sibling
+      `useEditorDocument.strictMode.test.tsx` still passes, which is what proves the dedupe guard
+      survived being split off the stale-response check.
       Both pairs target `useEditorDocument.ts` (branches 4/8). The dedupe guard `L35` and the two
       stale-response guards `L41`/`L45` have their true arms taken by **no** test — all three
       `return`s are deletable with the suite green, which is follow-up (k) still open: the
