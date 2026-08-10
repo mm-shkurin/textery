@@ -479,7 +479,30 @@ under `frontend/src` or `acceptance/tests/frontend`.
       suite-green — now located precisely rather than merely restated.
       Also uncovered and deliberately left alone: `DocumentEditorPage.tsx:20` `documentId ?? ''`
       right arm — reachable only by mounting the page off its route, no user-visible behavior.
-- [ ] red-frontend (coverage: a superseded *rejection* for the SAME id loses)
+- [x] red-frontend (coverage: a superseded *rejection* for the SAME id loses) — **un-skipped and
+      suite-green**, per the `42ba5d94` precedent: a case that pins an already-correct guard lands
+      unmarked; only a case that genuinely fails against main carries a skip. Proof is by MUTATION —
+      deleting the `.catch` guard gives `AssertionError: expected { status: 'not-found' } to strictly
+      equal { status: 'ready', document: {…version: 9} }`, exactly as predicted, and it is the *only*
+      failure in 118 files, so the new case is the sole exerciser of that arm. Guard restored, hook
+      `git diff` empty. 516 passed / 0 failed.
+      Adding the case inline took the file to 212 lines, over the 200 cap, so the shared ping-pong
+      premise (constants, deferred-load fixture, `startPingPong`, `expectPingPongNotRepeated`) moved
+      to `supersededRequestFixture.ts` and each arm got its own file — `vi.mock` is hoisted per file,
+      so each case declares its own and passes the mock in. The split was re-verified by mutating the
+      *other* arm: deleting the `.then` guard fails `supersededResponse.test.tsx` alone. Each case
+      still kills its own arm and only its own arm.
+      `/test-review` landed two fixes, both in the fixture: the call-list assertion was the lone
+      `toEqual` in files that argue for `toStrictEqual` everywhere (a hook grown a second parameter
+      passed as `undefined` would change the call shape silently), and `READY_ON_FRESH` was
+      un-annotated, so its `status` inferred as `string` — a typo in the literal would compile and
+      both cases would then assert the same wrong thing in lockstep.
+      Non-vacuity: this case asserts only that a *superseded* rejection is ignored, so alone an empty
+      `.catch` would satisfy it — the positive arm is pinned by `DocumentEditorPage.notFound.test.tsx`
+      (rejects with a real `DocumentNotFoundError`, requires the blocker). The pair is complete.
+      **Follow-up, not fixed here:** `useEditorDocument.strictMode.test.tsx` uses `toEqual` for all
+      four whole-state assertions (L86/101/109/112) — the same looseness these files reject. Committed
+      file outside this change's scope; tightening it is its own change.
       Inserted by the premortem over the green above. The `.catch` token guard is the twin of the
       `.then` one and is unexercised — deleting it leaves `src/features/aiChat` green (4 files,
       10 tests). This is the arm that produces the user-visible dead end rather than a
