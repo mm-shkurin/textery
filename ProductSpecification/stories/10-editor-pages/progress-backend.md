@@ -1140,7 +1140,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   belongs to `assert_export_attachment`, whose docstring charters the looseness for rows where the
   filename is not part of the scenario, and tightening it would change what two committed 3.x rows
   assert — a behaviour change to someone else's rows inside a RED unit.
-- [~] red-acceptance (BOTH review passes on `65c94c8a`, converging as their top finding: **the row's
+- [x] red-acceptance (BOTH review passes on `65c94c8a`, converging as their top finding: **the row's
   ABSENT-key identity rests on one line of shared client code that nothing asserts.**
   `acceptance/clients/application/application_client.py:127-129` builds the payload and omits `title`
   only when it `is not None`; three Statements call it, and no test anywhere pins the body it
@@ -1159,7 +1159,44 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   `None`) plus a row pinning that null clears and absent does not. Sequence this AFTER
   `adapters-discovery (b)` maps `clear()` — until then the two branches are the same value and the
   row cannot discriminate.)
-- [ ] red-acceptance (agent-review #2 and #3 on `65c94c8a`, both about claims the code does not keep.
+  **DONE. Only the FIRST half shipped** — the client-payload pin. The second half (the explicit-null
+  sentinel) stays chartered and stays sequenced after `adapters-discovery (b)`; it was not touched.
+  Two new rows in `test_save_document_payload_shape.py` (77) over a `RecordingApplicationClient` (104),
+  driven by `document_save_payload_statements.py` (119). No backend needed and none used: the recorder
+  captures the request the client builds before it leaves the process.
+  TWO methods, not one, and the asymmetry is the point — each kills a mutation the other survives:
+  the chartered `{"content":…, "version":…, "title": title}` simplify trips only the omission row;
+  dropping `title` unconditionally trips only the titled row. A single omission assertion is satisfied
+  by a client that never sends a title at all, which would surface as failures in the export-filename
+  rows three files away.
+  NO SKIP MARKER, deliberately, and the reasoning is the one recorded three rows down under "guard the
+  RED markers themselves": there is no paired `green-acceptance` for this row, so a marker added here
+  would never be removed — exactly the defect that step exists to guard. Same call, same reason, as
+  `test_wire_shape_key_fence_leg_guard_preemption.py:51`.
+  `/test-review` overruled the recorder's MECHANISM while keeping its layer: "in-package access" to
+  `ApplicationClient._client` is not a thing in Python — `_client` is private to the CLASS and
+  co-location grants nothing but readability. Now a subclass rebinding `self._client` after
+  `super().__init__()`, which is the route the language actually sanctions, and which also deleted the
+  `application_client` property and the train wreck it forced on the Statements. The rename coupling
+  is real and now asserted: `__init__` checks `hasattr(self, "_client")` with a message naming it.
+  It also closed two holes the row would have shipped with. The recorder's `assert self._recorded_bodies`
+  was a non-empty check on a value the test fully determines (one `given_*` = one dispatch), so a retry
+  or a double dispatch was invisible behind a read of `[-1]` — now `len(requests) == DISPATCHES_PER_SAVE`.
+  And `_record` answered every request regardless of method or path while the assertions keyed off
+  position, so nothing proved the asserted body belonged to the SAVE — the recorder now carries
+  `method`/`path` on a frozen `RecordedRequest` and pins `PUT /api/v1/documents/{id}`, a URL that was
+  unasserted anywhere on the client side. The three per-field assertions per method collapsed into one
+  whole-body equality (the titled arm had been asserting only `title`'s value, leaving `content` and
+  `version` at key-presence, so a client mangling content in the titled path passed); the null-vs-absent
+  diagnostic moved into the equality's failure message rather than being lost.
+  `@pytest.mark.backend` on a row that needs no backend: UPHELD by `/test-review`. `pytest.ini`
+  registers only `backend`/`frontend`, the suite runs `-m backend`, so unmarked the row is collected by
+  no standard command — the same silent non-execution a stale skip causes. It deliberately does NOT
+  subclass `AbstractBackendTest`, whose docstring promises a real running app; the deviation is
+  signposted in the docstring and by the filename dropping the `_acceptance` suffix its siblings carry.
+  Suite: **16 passed, 1 skipped** (was 14/1; the +2 are these rows). Mutation evidence re-proven after
+  the assertion rewrite, since collapsing to whole-body equality could have moved which row fires.
+- [~] red-acceptance (agent-review #2 and #3 on `65c94c8a`, both about claims the code does not keep.
   (a) `assert_content_only_save_preserved_the_title` compares `{k: body.get(k) for k in expected} ==
   expected` plus a `<=` on the timestamps — two SUBSET checks, while the comment argues "an omitted
   key is an unasserted key" and pins `generation_id` specifically to make the comparison total. A

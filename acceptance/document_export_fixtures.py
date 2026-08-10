@@ -24,6 +24,9 @@ from statements.document_blank_title_save_statements import (
 from statements.document_content_only_save_statements import (
     DocumentContentOnlySaveStatements,
 )
+from statements.document_save_payload_statements import DocumentSavePayloadStatements
+
+from clients.application.recording_application_client import RecordingApplicationClient
 
 
 @pytest_asyncio.fixture
@@ -59,3 +62,13 @@ def document_blank_title_save_statements(application_client):
 @pytest_asyncio.fixture
 def document_content_only_save_statements(application_client):
     return DocumentContentOnlySaveStatements(application_client)
+
+
+@pytest_asyncio.fixture
+async def document_save_payload_statements():
+    """Deliberately NOT built on the shared `application_client` fixture: this row
+    observes the request instead of the response, so its client must dispatch into a
+    recorder rather than at the backend."""
+    recording_client = RecordingApplicationClient()
+    yield DocumentSavePayloadStatements(recording_client)
+    await recording_client.close()
