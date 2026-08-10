@@ -681,6 +681,92 @@ pagination failure.
   Suite 640 passed / 6 skipped / 0 failed (a case extended, not added). `prettier --check` clean on
   both files; oxlint and `tsc -b --noEmit` each report only the pre-existing RED stub
   `paginationState.ts:100` (unused `input`).
+- [ ] red-frontend (premortem CREDIBLE 1 over `63a049fd`) — **the case's own NAME is not enforced;
+  one paste-repair legalizes a re-typed literal forever.** `PINNED_ASSIGNMENT` captures the
+  right-hand side as `(.+)`, so `pageCount: 4` is a fully LEGAL member of `pinnedAssignments`. The
+  `it` is named "states every count by naming a fixture constant or a row field, never by re-typing
+  its value", but nothing implements "never by re-typing" — the property holds only because the
+  hand-typed expected list happens to contain no literals today. The check is "the list equals this
+  list", and the list is editable in the same red-repair motion that produced the defect. Incident:
+  green phase, suite red in six places, a developer chasing a diff retypes `laidOut.test.ts:80`,
+  `constantSites` reddens AS DESIGNED, vitest prints the received array, the developer pastes it
+  into the expected object, green, ships. Six weeks later the geometry retunes to
+  `ceil(4200/600) = 7` and the readout is frozen at `6` — "Страница 5 из 4" shipped THROUGH the
+  guard that exists to prevent it, still green, still named after the property it stopped holding.
+  The header's defence ("repaired by restoring the assertion or by updating BOTH in the same
+  commit") is a request, not a mechanism. Guard: a SHAPE assertion independent of the pinned list —
+  a second `it` over both files' `pinnedAssignments` requiring every RHS to match
+  constant-or-field-read-or-explicit-null (`/^([A-Z][A-Z_]*|[A-Z][A-Z_]*\.[a-zA-Z]+|null)$/`), so
+  `pageCount: 4` fails WHETHER OR NOT it is in the expected list. Kill-check with the same four
+  mutants; each must die twice. This is the read-as-a-property move already made in `b8bde42d`,
+  not carried across to the field the alternation just admitted.
+- [ ] red-frontend (premortem CREDIBLE 2 over `63a049fd`) — **the split this unit performed moved
+  the guard's load-bearing narrowness into a file where relaxing it reddens NOTHING.**
+  `fixtureUsage.source.ts` has zero tests of its own; its only importer never touches the regex,
+  and no line in either source file is currently dropped — so widening `PINNED_ASSIGNMENT` to
+  `/^(...):\s*(.+?),?\s*(?:\/\/.*)?$/` changes no member of the expected list and the suite stays
+  GREEN. The one property that makes the trailing-comment and line-wrap attacks fail instead of
+  pass can now be deleted in a green commit, in a file titled "mechanics only" whose header defers
+  the argument to `constantSites`' header — i.e. off screen. **This is a route the single-file
+  version did not have**, introduced by this unit, and the "8 of 8 re-verified after the split"
+  matrix did not include a mutation OF THE EXTRACTED MODULE. Guard: a case running the matcher over
+  a fixed array of near-miss lines (`'pageCount: 4, // agrees with ceil'`, `'pageCount:  4,'`,
+  `'pageCount : 4,'`, `'pageCount: 4'` without the comma, a wrapped continuation) asserting each
+  yields NO match — red the instant the regex is widened, in the module where the widening happens.
+  Needs the matcher exported, or a `pinnedAssignmentsIn(text)` seam taking a string; the `?raw`
+  argument against threading covers the IMPORTS, not the regex.
+- [ ] red-frontend (premortem CREDIBLE 3 over `63a049fd`) — **the assignment is matched
+  location-blind: the pinned text can be intact while nothing asserts it.** `codeLinesOf` trims and
+  drops comment lines, then the regex is applied PER LINE, with no notion of which `expect`, which
+  `it`, or whether inside an `it` at all — every pinned line today lives in an `it.skip` body and
+  matches identically to a line in dead module-scope code. Incident: green phase, `toStrictEqual`
+  fails on a field the developer considers cosmetic (`liveRegionRole: undefined` vs `null`), and
+  under a red suite they hoist the expected object to module scope and assert a subset with
+  `toMatchObject`. Every pinned line is byte-identical, `constantSites` stays green, and the two
+  count assertions it exists to protect are no longer strictly compared. Broader than the `.skip`
+  step below, which covers skipping only — not an assertion severed from its `expect`, an object
+  hoisted out of the case, or `toStrictEqual` downgraded. Guard: collect a third member per file —
+  every `expect(state).toStrictEqual({` line — pinned to an exact count (2 for `measuring`, 1 for
+  `laidOut`). Fold into the `.skip`-count step; both read the same two source texts for the same
+  reason.
+- [ ] red-frontend or docs (agent-review CONCERNS 1 over `63a049fd`) — **the corrective sentence is
+  itself stale, in the same header slot, about the same file: the eighth instance.** The new header
+  and this unit's commit message both say "`crossRow.test.ts:126` derives from `row.blockHeights`
+  and compares the result against `row.pageCount` — the FIXTURE'S declared field". `:126` is the
+  `it(` title line, and the comparison at `:133-137` is
+  `{ derived, declared } → { derived: counts, declared: counts }` where `counts` is `{4, 6}` typed
+  literals — crossRow compares BOTH sides against a third-side literal, which THIS SESSION added in
+  `c2d76b3d`. The conclusion drawn is still true, and in fact stronger (the fixture value is
+  literal-pinned, so the assertion-site hole is more isolated, not less) — but a unit whose thesis
+  is "the predecessor justified an omission with a false sentence about another file" recorded a
+  fresh inaccurate sentence about that same file as its correction. Nothing checks header
+  citations, and this file's own line numbers moved again in this commit.
+- [ ] red-frontend or docs (agent-review CONCERNS 2 + 3 over `63a049fd`, one finding in two halves)
+  — **the scope CRITERION was deleted and not replaced, and the first field it would have caught is
+  already visible.** The diff removed "It is scoped to the skeleton counts, which are the fields the
+  fixture supplies" from `WHAT IT DOES NOT CLAIM` and substituted nothing, so the header now states
+  WHICH four fields are pinned and why they are not guarded elsewhere, but never the RULE for what
+  belongs in `PINNED_ASSIGNMENT` — the enumeration lives only as a regex alternation in a second
+  file. A reader adding an assertion has no criterion to test it against, which is how the last two
+  omissions happened. The visible instance: `visiblePageNumber: <ROW>.currentPage` at
+  `measuring.test.ts:39` and `laidOut.test.ts:75` is the identical construct, one line above a
+  pinned `currentPage:` in the same literal, unpinned with no stated reason — and
+  `laidOutRows.fixture.ts`'s header makes an explicit claim about it ("the pass-through pin,
+  mechanical instead of a coincidence of two literals") that is currently prose. Premortem rates it
+  REMOTE rather than CREDIBLE because these are INPUT sites: freezing one to `5` makes input and
+  expectation disagree at the next retune and the suite goes red loudly rather than shipping a
+  wrong readout. The finding is the missing criterion; the field is its first exhibit.
+- [ ] red-frontend (agent-review CONCERNS 4 + 5 over `63a049fd`, both low) — **two artefacts of the
+  split.** (a) `fixtureUsage.source.ts:31-36` carries "Deliberately narrow, and NOT to be widened"
+  verbatim through a commit that widened it. In context it means the SHAPE, not the field
+  alternation — but both live in the same regex, the last two correct repairs both consisted of
+  widening exactly that alternation, and the note now sits in a different file from the header
+  explaining the distinction, where it reads as forbidding the next correct repair. (b)
+  `fixtureUsageIn(fileName: string)` is exported and `codeLinesOf` indexes
+  `SOURCES[fileName]` on a `Record<string, string>`, so the module's claim that a wrong path "fails
+  at TRANSFORM time" — true of the `?raw` imports — is false of its own newly public entry point,
+  where a typo'd literal typechecks and throws `Cannot read properties of undefined` at assertion
+  time. Narrow `fileName` to `typeof MEASURING_FILE | typeof LAID_OUT_FILE`.
 - [ ] red-frontend (premortem CREDIBLE 2 over `c0e35fc6`) — **nothing forces the three `.skip`s off
   at green, and this unit walked past the one file that could see them.** `constantSites` already
   ingests both files AS TEXT and reads their assertion lines, and never looks at `it.skip`. The
