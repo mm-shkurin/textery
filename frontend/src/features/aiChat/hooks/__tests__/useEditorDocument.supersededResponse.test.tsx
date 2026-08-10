@@ -51,6 +51,11 @@ const OTHER_DOCUMENT: EditorDocument = {
   version: 1,
 }
 
+// The ping-pong, as a call list. Asserted twice — once as the premise (two outstanding requests for
+// A exist at all) and once as the conclusion (the superseded response was dropped, not recovered
+// from). One constant so the two can never drift into asserting different things.
+const PING_PONG_CALLS = [[DOCUMENT_ID], [OTHER_DOCUMENT_ID], [DOCUMENT_ID]]
+
 vi.mock('../../api/editorDocumentApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../api/editorDocumentApi')>()
   return { ...actual, loadEditorDocument: vi.fn() }
@@ -97,11 +102,7 @@ describe('useEditorDocument with two outstanding requests for the same document'
     // Three requests, in this order — asserted before any of them resolves, because the ping-pong
     // is the premise of the case: if the hook ever stopped re-fetching the returned-to id there
     // would be only one outstanding request for it and nothing below could fail.
-    expect(loadEditorDocumentMock.mock.calls).toEqual([
-      [DOCUMENT_ID],
-      [OTHER_DOCUMENT_ID],
-      [DOCUMENT_ID],
-    ])
+    expect(loadEditorDocumentMock.mock.calls).toEqual(PING_PONG_CALLS)
     // One captured resolver per call. Pins the fixture itself: `mock.calls` above proves the hook
     // asked three times, not that `deferredLoads` handed back three levers — and without this an
     // absent `resolvers[2]` would kill the test with a TypeError instead of a readable diff.
@@ -139,10 +140,6 @@ describe('useEditorDocument with two outstanding requests for the same document'
     // Still three calls: the superseded response must be DROPPED, not recovered from. A green that
     // noticed the mismatch and re-issued a fetch for A would land on FRESH_DOCUMENT too and satisfy
     // the state assertion above, while turning every route ping-pong into an extra round trip.
-    expect(loadEditorDocumentMock.mock.calls).toEqual([
-      [DOCUMENT_ID],
-      [OTHER_DOCUMENT_ID],
-      [DOCUMENT_ID],
-    ])
+    expect(loadEditorDocumentMock.mock.calls).toEqual(PING_PONG_CALLS)
   })
 })
