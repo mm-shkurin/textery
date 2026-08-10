@@ -1795,13 +1795,84 @@ within their file, not across the story.
       committed at HEAD), and `ruff format --check` would still reformat four pre-existing files
       (`usecase/src/document_edit/ai_edit_repository.py`, `arrangement_snapshot_guard_statements.py`,
       `child_pytest_report.py`, `document_arrangement.py`).
-- [ ] red-usecase (coverage: bannerless child report tallies empty) — `child_pytest_report.py:133-134`
-      (`if not banners: return {}`) is a partial branch, False arm only. It matters because that empty
+- [x] red-usecase (coverage: bannerless child report tallies empty) — `child_pytest_report.py:161-162`
+      (`if not banners: return {}`) was a partial branch, False arm only. It matters because that empty
       `{}` is the exact symptom the `"\n".join` change was written to prevent — the docstring names it
       ("the tally then read `{}` while the gate blamed pytest for it"). The fix landed; the symptom path
-      itself has still never been executed, so a report with no banner lines at all has never been fed
+      itself had never been executed, so a report with no banner lines at all had never been fed
       through `summary_counts()`.
-- [ ] green-usecase (coverage: bannerless child report tallies empty)
+      A **legitimate no-red**, following the line-161 and line-331 precedent: the arm this pins was
+      written long ago, both new items passed on the first run (4 passed in the file) and **no marker
+      was applied** — a passing coverage test left skipped covers nothing. Predicted "none / 4 passed",
+      actual "none / 4 passed". Zero production files modified.
+      **Non-vacuity proved twice by mutation rather than argued**, because this scenario has shipped
+      five inert guards and `/test-review` caught a sixth inside the previous RED.
+      (1) Deleting `if not banners: return {}` from production turns the new test RED with
+      `IndexError: list index out of range` at `child_pytest_report.py:163` (`banners[-1]`) — so the
+      guard fails in exactly the state it exists to reject, and the arm's *value* (`{}` rather than a
+      crash inside the gate's own reporting) is what is pinned, not merely its execution.
+      (2) The "bannerless **for the wrong reason**" mutant: emptying the fabricated stderr leaves a
+      report that is still bannerless and still tallies `{}` — a bare `== {}` assertion passes it,
+      which is how this family's inert guards have always looked. The premise is therefore asserted,
+      not assumed: the child's own diagnostic sentence is read back out of `tail` and the exit code
+      pinned to 4 (usage error — neither the 0 of a clean run nor the 1 of a reported failure) before
+      the tally is read. Under the mutant the test fails on that anchor.
+      A second test is the **control**: the identical stderr behind a stdout that *does* carry a final
+      tally banner must still tally `{"failed": 1}`. Without it, the empty tally is equally explained
+      by the diagnostic text suppressing the tally, by the join dropping stdout, or by
+      `summary_counts()` answering `{}` for every input.
+      Reuse over restatement: both tests live in the existing `ChildReportJoinStatements` /
+      `TestChildReportJoin` family (same subject — reading a fabricated `CompletedProcess`), and the
+      three-line `CompletedProcess` construction the existing `given_` hand-rolled is now one
+      `_fabricated(stdout, stderr, returncode)` helper shared by all three arrangements.
+      Files: `statements/child_report_join_statements.py` 182 lines, `harness/test_child_report_join.py`
+      66 — both under the 200 cap. Usecase module **203 passed, 0 failed, 0 skipped** (was 201); ruff
+      `check` and `format --check` clean on both touched files.
+      **The report will still show L161-162 covered here, unlike the child-run arms** — this reading is
+      done in the parent process, so coverage.py does follow it; no subprocess-coverage caveat applies.
+      **`/test-review` found the sixth inert guard, and it was the control.** The control asserted only
+      `summary_counts() == {"failed": 1}` and never asserted the stderr reached the report at all — so
+      if the fixture or the join dropped stderr entirely it passed unchanged, while its docstring
+      claimed it discriminates "banner absent" from "stderr content present but harmless". It could
+      not. Same shape as the five before it. It now pins the joined report, `exit_code == 1`, the
+      FAILURES section **and** the tally; the section assertion is load-bearing, because four extra
+      stderr lines behind the final banner are a far likelier bound-mover than the one-line
+      `STDERR_NOISE` the pre-existing test used.
+      **The anchor the RED chose was the weak form of the anchor available, and the paragraphs above
+      describing it are superseded.** `CHILD_DIAGNOSTIC_SENTENCE in child.tail` was a containment check
+      over a report where *every byte is written by the test file itself* — nothing nondeterministic,
+      no timing, no paths, no elapsed seconds — so the exact joined value was known and free to assert.
+      Three compounding problems: it passed on a report carrying the diagnostic **plus** arbitrary extra
+      lines the join invented, which is the defect class this family exists to catch; it read `tail`,
+      which is `output[-2000:]`, so the assertion's meaning depended silently on a truncation window;
+      and the constant was a hand-copied substring of the stderr constant, so editing the stderr would
+      make the anchor unmatchable and the failure would read as a join defect. Worse, **it did not rule
+      out the case it named**: `{}` is also produced by a report that *has* banners whose names fail
+      `_COUNT`, so the test could not distinguish "empty-banners arm executed" from "banner present,
+      tally unparseable". Whole-value `output ==` equality closes all of it — there is provably no
+      `=+ … =+` line in the pinned text — and `CHILD_DIAGNOSTIC_SENTENCE` was deleted, dissolved by the
+      stronger form. Both pre-existing join assertions were hardened the same way.
+      Also: `assert_the_tally_survived_the_second_stream` and
+      `assert_the_same_diagnostic_still_tallies_a_real_banner` had **byte-identical assertion bodies**
+      differing only in prose; four `_assert_*` helpers now exist once, each taking a `because` clause.
+      `FAILING_TEST_NAME` is interpolated into the stdout fixture rather than `"test_probe\n"` being
+      hand-copied.
+      The consolidated file hit 233 lines, so it was split along the seam the placement detector
+      flagged — the join and the bannerless arm are different mechanisms sharing only the fabrication.
+      Final: `fabricated_child_report_statements.py` 110 (new), `bannerless_child_report_statements.py`
+      101 (new), `child_report_join_statements.py` 78 (was 182), `test_child_report_join.py` 74,
+      `harness/conftest.py` 48. **203 passed, 0 failed, 0 skipped.**
+      One judgment call recorded: the assertions detector also wanted `failing_test_names() == set()`
+      and `section() == ""` on the bannerless report. Both declined — with `output` pinned whole, banner
+      absence is already proven, and `child_pytest_report.py:128-136` documents in its own words why
+      empty-collection negatives are the vacuous shape; adding them would import the anti-pattern the
+      subject warns against.
+      **A stale marker was corrected in passing:** `red-usecase (coverage: third arming arm …)` carried
+      the `[~]` while the bannerless step above it was `[ ]`. The two disagreed, and file order is the
+      machine-readable half of the next-work-unit rule, so the third-arming-arm step went back to `[ ]`.
+- [~] green-usecase (coverage: bannerless child report tallies empty) — no marker to remove and no
+      production change to make; the red step was a legitimate no-red and is already green. Acceptance:
+      0 skipped.
 - [ ] red-usecase (the scrub is watched through one variable of five, and the vectors' own potency
       is asserted nowhere) — **both review passes over `ae505cc6` converged on the first item, and the
       agent-review pass ran the negative control independently rather than trusting the commit
@@ -1852,7 +1923,7 @@ within their file, not across the story.
       weakness there is the already-scheduled `TimeoutExpired` diagnosability item.
 - [ ] green-usecase (the scrub is watched through one variable of five, and the vectors' own potency
       is asserted nowhere)
-- [~] red-usecase (coverage: third arming arm refuses a rewritten declaration) —
+- [ ] red-usecase (coverage: third arming arm refuses a rewritten declaration) —
       **the one arm this unit's own diff promises and does not deliver.**
       `disarmed_arming_probe_statements.py`'s module docstring states it outright: the third check,
       `_assert_the_declaration_is_exactly_the_required_entries`, "is unreachable by either vector below

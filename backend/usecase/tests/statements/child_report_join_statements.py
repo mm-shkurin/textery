@@ -13,29 +13,15 @@ tally by `banners[-1]`. Two consequences, both silent:
   reads `{}` -- which the gate reports as "the child summarised {}, expected
   {'failed': 1}", pointing the reader at pytest rather than at the join.
 
-Driven from a fabricated `CompletedProcess` rather than a real child run: the
-subject is the reading, not the running, and a real child that reliably writes to
-stderr without a trailing stdout newline is not something a test can arrange.
+The fabrication and the assertions are shared with the bannerless family; see
+`fabricated_child_report_statements`.
 """
 
-import subprocess
-
-from statements.arranged import arranged
-from statements.child_pytest_report import FAILURES_SECTION, ChildPytestReport
-
-# A complete pytest report, deliberately without the trailing newline a terminal
-# run happens to end with -- the join must not depend on the child's last byte.
-STDOUT_WITHOUT_A_TRAILING_NEWLINE = (
-    "============================= test session starts =============================\n"
-    "rootdir: /somewhere\n"
-    "collected 1 item\n"
-    "\n"
-    "test_probe.py F\n"
-    "\n"
-    "=================================== FAILURES ==================================\n"
-    "test_probe\n"
-    "\n"
-    "============================== 1 failed in 0.42s =============================="
+from statements.fabricated_child_report_statements import (
+    REPORTED_FAILURES_EXIT_CODE,
+    STDOUT_WITHOUT_A_TRAILING_NEWLINE,
+    TALLY_STDOUT_REPORTED,
+    FabricatedChildReportStatements,
 )
 
 # What a child writes to the other stream. Innocuous prose, and it carries no
@@ -43,31 +29,34 @@ STDOUT_WITHOUT_A_TRAILING_NEWLINE = (
 # tally, so the fabricated stderr must not be able to be blamed for one.
 STDERR_NOISE = "Exception ignored in: <coroutine object>\n"
 
+# Exactly what the two streams must read as once joined -- `"\n".join` of them,
+# pinned whole so the tally below is read off a report proven to carry both.
+REPORT_OF_BOTH_STREAMS = (
+    STDOUT_WITHOUT_A_TRAILING_NEWLINE + "\n" + STDERR_NOISE
+)
 
-class ChildReportJoinStatements:
+
+class ChildReportJoinStatements(FabricatedChildReportStatements):
     """Read a fabricated two-stream child report, and pin what the join loses."""
 
-    def __init__(self) -> None:
-        self._report: ChildPytestReport | None = None
-
     def given_a_child_that_wrote_to_both_streams(self) -> None:
-        self._report = ChildPytestReport(
-            subprocess.CompletedProcess(
-                args=["pytest"],
-                returncode=1,
-                stdout=STDOUT_WITHOUT_A_TRAILING_NEWLINE,
-                stderr=STDERR_NOISE,
-            )
+        self._fabricate(
+            stdout=STDOUT_WITHOUT_A_TRAILING_NEWLINE,
+            stderr=STDERR_NOISE,
+            returncode=REPORTED_FAILURES_EXIT_CODE,
         )
 
     def assert_the_tally_survived_the_second_stream(self) -> None:
-        actual = self._child().summary_counts()
-        expected = {"failed": 1}
-        assert actual == expected, (
-            f"the report summarised {actual}, expected {expected} -- stdout and stderr are "
-            f"joined with `+`, so a missing trailing newline merges the final tally banner "
-            f"into the first stderr line and every tally assertion in the gate reads `{{}}` "
-            f"while blaming pytest"
+        self._assert_the_report_is(
+            REPORT_OF_BOTH_STREAMS,
+            "a tally read off a report that lost one of the two streams says nothing about "
+            "the join",
+        )
+        self._assert_the_tally_is(
+            TALLY_STDOUT_REPORTED,
+            "stdout and stderr are joined with `+`, so a missing trailing newline merges "
+            "the final tally banner into the first stderr line and every tally assertion "
+            "in the gate reads `{}` while blaming pytest",
         )
 
     def assert_the_failures_section_survived_the_second_stream(self) -> None:
@@ -78,13 +67,12 @@ class ChildReportJoinStatements:
         the unawaited-coroutine sentence silently swallows the tally line and
         whatever stderr wrote after it.
         """
-        actual = self._child().section(FAILURES_SECTION)
-        expected = "test_probe\n"
-        assert actual == expected, (
-            f"the FAILURES section read '{actual}', expected '{expected}' -- the section is "
-            f"bounded by the next banner, and a banner merged away by the stream join moves "
-            f"that bound past the end of the report"
+        self._assert_the_report_is(
+            REPORT_OF_BOTH_STREAMS,
+            "a section read off a report that lost one of the two streams says nothing "
+            "about the join",
         )
-
-    def _child(self) -> ChildPytestReport:
-        return arranged(self._report, "the fabricated child report")
+        self._assert_the_failures_section_is(
+            "the section is bounded by the next banner, and a banner merged away by the "
+            "stream join moves that bound past the end of the report"
+        )
