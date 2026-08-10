@@ -24,6 +24,17 @@ heights and the settings value object; "does it break in the right place" has me
 in `red-selenium` / `green-selenium`. Scenarios whose whole claim is geometric are marked
 below — their vitest step covers logic, not layout.
 
+**CONCURRENT-SESSION WARNING (observed 2026-08-10, during the `designNumbers` unit).** A second
+session is editing THIS layer's files, not just `backend/`. While `/refactor` ran over `36574438` it
+observed `laidOutRows.fixture.ts:144` holding `NO_SKELETONS = 9` uncommitted — the exact mutant
+`designNumbers.test.ts` names as the one that used to survive — and `FONT_GATE_ROW`'s geometry
+retuned to derive `8`; both reverted themselves mid-run, so that run's single failure was a race
+against a live mutation, not a real failure. `paginationState.crossRow.test.ts` then grew 142 → 153
+and landed as commit `c2d76b3d` ("a uniqueness check was never the constants' guard") ON TOP of
+`36574438` — the same finding this unit was executing, done twice in parallel. The File Ownership
+rule assumes one session per LAYER; two frontend sessions on one story breaks it. This session
+reverted nothing. Before resuming, confirm only one frontend session is running.
+
 **Flake note (observed 2026-08-09, over `72d9b438`).** `ManualEditor.autosaveDirtyGuardRevertedEdit.test.tsx:69`
 (`expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)`, with the `DIRTY_STATUS` assertion
 at :73) failed once and then passed on two subsequent runs of byte-identical, unmodified code —
