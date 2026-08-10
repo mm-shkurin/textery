@@ -1081,13 +1081,34 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   step in substance: nothing to implement. The helper already emitted the correct three-clause
   message in the correct order; the red half was a coverage guard over already-correct code, proven
   by two mutants that were alive before it and dead after. A green commit here would be a no-op.
-- [~] red-adapter rest (coverage: leg guard preempts a genuinely broken body). The guard row ships
+- [x] red-adapter rest (coverage: leg guard preempts a genuinely broken body). The guard row ships
   with a WELL-FORMED body, so it pins the reject path but NOT the preemption its own comment
   (lines 100-108) argues for at length: with both fault legs quiet the message could only have come
   from the guard either way. A body that is broken AND carries a typo'd leg —
   `assert_body_keys_track_the_model({"version": 1}, "dmped JSON")` — must raise the leg-label
   message, not a fault message naming a leg that does not exist. Moving the guard below `faults`
-  leaves all five current rows green.
+  leaves all six current rows of the two sibling files green (four in `test_wire_shape_key_fence.py`,
+  two in the title-refusal file) — miscounted as five until `/test-review` counted them.
+  **LANDED GREEN ON ARRIVAL, and the mutation is what earns it** — fifth time this scenario has faced
+  that call. The guard order was already correct, so predicting a failure would have been predicting
+  a lie; predicted no-failure with the exact leg-label message, actual byte-identical, 18 passed /
+  4 skipped. No skip marker: a marker asserts "this fails now", and parking a live mutation-killing
+  row behind one buys no red period and suppresses the very kill that earns its place.
+  THE MUTANT IS DEAD, re-run rather than taken on report: guard moved AFTER `assert not faults` →
+  **1 failed, 17 passed, 4 skipped**, and the one failure is the new row. The other 17 — including
+  the existing well-formed-body guard row — survive the mutant, which is the empirical proof that
+  the gap the charter named was real and that this row alone closes it. Reverted, 18 passed.
+  A REAL TRAP, recorded so the next mutation run does not fall in it: "below `faults`" means below
+  the `assert not faults`, NOT below the `faults.append` calls. The first attempt moved the guard
+  between the appends and the assert and the whole suite stayed green — the legs only BUILD the list
+  there, so the guard still ran first. That reads as the new row failing to bite when it is really
+  the mutant failing to mutate. Guard-versus-RAISE is the order that matters, not guard-versus-list.
+  PLACEMENT — its own file, `test_wire_shape_key_fence_leg_guard_preemption.py` (82 lines). The cap
+  forced the timing: the sibling that owns the guard's wording is at **172** of 200, so the row could
+  not sit beside the row it extends. The seam is subject independently — the siblings assert WHAT the
+  fence says, this asserts WHICH of two things it says when both are armed. Not the refusal file
+  either: the fixture omits `title`, but the expected message carries none of the refusal's
+  title-specific wording and no cross-file class name, which is the entire point of the row.
 - [ ] green-adapter rest (coverage: leg guard preempts a genuinely broken body)
 - [ ] red-adapter rest (both review passes on `b1991508`, converging as their top finding: **two LIVE
   rows now certify the erasure body as key-set-clean.** `test_wire_shape_key_fence.py` rows 1 and 3
