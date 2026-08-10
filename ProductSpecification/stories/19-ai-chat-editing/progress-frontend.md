@@ -556,7 +556,30 @@ under `frontend/src` or `acceptance/tests/frontend`.
       compared against a single-file scope. The unnarrowed run is fine — 89.76% branches (614/684).
       A per-file coverage check on this project must ignore the threshold verdict and read the
       numbers.
-- [ ] green-selenium
+- [x] green-selenium — marker removed, test **passed**, no production/Statements/backend change.
+      `acceptance/tests/frontend/ai_chat/test_document_not_found_acceptance.py::TestDocumentNotFound
+      BlockerAcceptance::test_should_block_with_not_found_and_offer_the_documents_list` — 1 passed in
+      269.55s, and passed a second time inside the suite run. The class-level `@pytest.mark.skip`
+      plus its 9-line RED comment went, and with them the `import pytest` that existed solely for the
+      marker (leaving it would have added an 11th `unused import` to the 10 pre-existing ruff errors
+      in follow-up (e)). This closes red-selenium follow-up (d): the un-skip happened and the test
+      reports *passed*, not skipped.
+      **Environment, not committed:** the compose recreate dropped `textery_s19` — the volume kept
+      only the old `textery`, so the backend booted into
+      `asyncpg.exceptions.InvalidCatalogNameError: database "textery_s19" does not exist`. Recreated
+      it (`CREATE DATABASE textery_s19`) and the backend migrated it on restart; all seven tables are
+      present. `infra/.env` is gitignored, so the warning at line 240 of `progress-backend.md` stands
+      and now has a second failure mode: not just a fresh checkout, but any
+      `docker compose up --build` that recreates postgres.
+      **Two failures in the wider frontend suite, verified NOT this unit's** — both reproduce
+      identically with this change stashed (`2 failed in 38.89s`), and both belong to Story 5/auth:
+      `auth/test_login_submit_disabled_while_in_flight_acceptance.py` (`AssertionError: expected
+      submit button to be disabled`, `frontend_form_assertions.py:133`) and
+      `auth/test_login_submit_loading_indicator_acceptance.py` (`TimeoutException` in
+      `_wait_for_visible`). Symptom on both: the login request settles before the in-flight state can
+      be observed. The *register* equivalents pass, so this is the login path's response latency, not
+      a shared harness problem. The suite run was stopped at 14% per stop-on-first-failure — 12
+      passed, 2 failed, **21 tests did not run**, so there may be more.
 - [ ] demo
 
 ### 0.2 An account over its daily quota cannot type an instruction
