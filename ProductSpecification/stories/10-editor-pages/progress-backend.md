@@ -1196,6 +1196,29 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   signposted in the docstring and by the filename dropping the `_acceptance` suffix its siblings carry.
   Suite: **16 passed, 1 skipped** (was 14/1; the +2 are these rows). Mutation evidence re-proven after
   the assertion rewrite, since collapsing to whole-body equality could have moved which row fires.
+  `/refactor` on `1228fd65`: ONE change, five declines. Applied — `document_export_fixtures.py`'s
+  module docstring enumerated five fixtures while the module registers eight; this commit's third save
+  fixture tipped it past self-description. It now enumerates both groups and states on the record WHY
+  saves live in an export-named module (save rows set up the stored title the export-filename rows
+  assert). 74→83; `conftest.py` untouched at 198. Agent-review flagged the same staleness
+  independently as its finding #5 — already closed by the time the verdict arrived.
+  DECLINED, each for a reason worth not re-litigating: splitting the three save fixtures into
+  `document_save_fixtures.py` is blocked by the CAP, not by taste — the split removes 3 names from
+  conftest's imports and adds ~7, a net +4 on a file at 198/200, and this very commit had to strip
+  three trailing blank lines to fit one import line; landing it requires splitting `conftest.py`
+  itself, which touches every scenario's wiring. Recorded as cap-blocked, to be revisited whenever
+  conftest is next split. Renaming `document_export_fixtures.py` → `document_fixtures.py` fixes the
+  naming half at zero line cost, but the misnomer PREDATES this commit and the rename invalidates
+  every progress note and journey summary citing the path — and this file cites paths heavily; the
+  corrected docstring carries the information instead. A `recording_application_client` fixture:
+  one consumer, +5 lines, speculative reuse that does not exist. `_assert_body_is(expected, why)`:
+  the two method bodies are two statements each and the only varying part is the bespoke failure
+  message that IS the load-bearing content. `DRAFT_STATUS` pull-up: the second copy lives in 3.2's
+  committed file, the same fence already recorded twice above. Sharing `CONTENT_ON_THE_WIRE` with
+  2.1's content constant: declined deliberately — the line-27 comment states the match is intentional
+  mimicry, not shared identity, and importing would let a change to 2.1's constant silently retarget
+  this row. Full acceptance suite collects clean (112 tests, no import errors); 16 passed, 1 skipped
+  unchanged.
 - [~] red-acceptance (agent-review #2 and #3 on `65c94c8a`, both about claims the code does not keep.
   (a) `assert_content_only_save_preserved_the_title` compares `{k: body.get(k) for k in expected} ==
   expected` plus a `<=` on the timestamps — two SUBSET checks, while the comment argues "an omitted
@@ -1225,6 +1248,56 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   load-bearing; the adjacent falsehood in the same method deserves the same treatment.
   Minor, recorded: `DRAFT_STATUS` is copy-duplicated between the two sibling statement modules with no
   note, unlike `VERSION_AFTER_CONTENT_ONLY_SAVE` whose duplication is deliberately argued.)
+- [ ] red-acceptance (premortem CREDIBLE on `1228fd65`: **the payload guard shipped with a hole one
+  value wide, and the value is the one scenario 3.2 owns.** `application_client.py` builds the payload
+  with `if title is not None`. The tidy-up that turns it into `if title:` is MORE plausible than the
+  dict-literal simplify the row was written to kill, and BOTH new rows survive it: `None` still
+  omitted, a Cyrillic title still sent. What changes is `title=""` — the request silently drops from
+  `{"title": ""}` to key-absent. Not hypothetical: `document_blank_title_save_statements.py:57-64`
+  calls `save_document(..., title=blank_title)` with empty/whitespace-only strings, and 3.2's entire
+  premise is that a PRESENT but blank title reads as no-title-intent. Under `if title:` 3.2's request
+  becomes byte-identical to 2.1's, so 3.2 stops testing its own premise and starts re-testing 2.1's —
+  and stays green, because both shapes preserve. The identical failure class this work unit exists to
+  foreclose, one value over, and it lands the moment `clear()` maps. Test: a third row,
+  `given_a_save_carrying_a_blank_title()` over `save_document(title="")`, whole-body equality against
+  `{**NO_TITLE_INTENT_BODY, "title": ""}`. Nothing in the repo goes RED on
+  `if title is not None` → `if title:` today.)
+- [ ] red-acceptance (BOTH passes on `1228fd65`, same gap class one field over: **the `Authorization`
+  header is client-manufactured and unasserted anywhere in the repo.** `RecordedRequest` carries
+  `method`/`path`/`body` and the commit's own argument for pinning the save URL — "unasserted anywhere
+  on the client side" — applies verbatim to `headers={"Authorization": f"Bearer {access_token}"}`.
+  Premotem rates the incident REMOTE (a dropped auth header fails loudly as 401s across every document
+  row, not silently), which is why this is its own step rather than folded into the row above: the
+  recorder must grow a `headers` field first, and that is a change to a just-committed file.)
+- [ ] fix the recorder's two overclaims (agent-review #1 and #2 on `1228fd65`, both in
+  `recording_application_client.py`, both the shape this scenario keeps rediscovering).
+  (a) `_record` unconditionally does `body=json.loads(request.content)`, but `MockTransport` answers
+  EVERY request through this client and the class advertises itself generally, with a public
+  `recorded_requests`. The first Statements that reuses it for `get_document` or `export_document` —
+  GET, empty body — gets a `JSONDecodeError` raised from inside httpx's transport stack, several
+  layers from its cause. Nothing tests a non-PUT through this transport.
+  (b) The comment says the stub response "only has to be well-formed enough that the client's own
+  parsing and its DTO construction run exactly as they do against the real backend", and then answers
+  `httpx.Response(200, json={})`. `{}` is NOT the real save response. Invisible only because
+  `SaveDocumentResponseDto` is a bare frozen dataclass that stores `body` without reading it — the day
+  `save_document` parses a field out of it (the new `version` for the CAS loop is the obvious
+  candidate) the recorder feeds it an empty body and the parity claim is false. Third load-bearing
+  comment in this scenario to be measured against the code rather than trusted.)
+- [ ] tighten the rename guard (agent-review #3 on `1228fd65`): `assert hasattr(self, "_client")`
+  proves an attribute of that NAME exists, not that `save_document` dispatches through it. If
+  `ApplicationClient` keeps `_client` but routes document calls through a different transport
+  attribute, the assert passes, the recorder rebinds a dead attribute, and the PUT goes to a real
+  localhost backend with a bogus id and token. The failure is still loud — but it arrives from
+  `len(requests) == DISPATCHES_PER_SAVE` seeing 0, so the inline comment ("Without this, ... every
+  request would go to a real localhost backend") credits the wrong guard. Either narrow the comment to
+  what the assert proves, or make the assert prove dispatch.
+- [ ] make the RED evidence reproducible (agent-review #4 on `1228fd65`, and it applies to every
+  green-on-arrival row this scenario has shipped): both new rows pass at HEAD, and the justification is
+  a MEASURED MUTATION described in prose in three places — commit body, this file, the class docstring
+  — and executable nowhere. No mutation config, no recorded command, nothing that re-verifies it after
+  the next edit. The row's own thesis is that a claim surviving only in prose is a claim that rots,
+  and its red evidence now survives only in prose. Related to, and probably solvable with, the
+  "guard the RED markers themselves" step below.
 - [ ] unpark the roundtrip RED (premortem finding 2 on `7b0a9c51`, **re-raised and sharpened by
   premortem on `65c94c8a` into a hard ORDERING CONSTRAINT: this must land BEFORE
   `adapters-discovery (b)` maps the erasure arm.** The moment `SET title = NULL` ships, `clear()`

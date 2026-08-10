@@ -1,4 +1,13 @@
-"""Document-export Statements fixtures (export, format, docx, filename, no-mutation).
+"""Document Statements fixtures — the export rows and the save rows that feed them.
+
+Exports: export, format, docx, filename, no-mutation.
+Saves: blank-title, content-only, save-payload.
+
+The module name says "export" and the saves arrived later; the two groups stay
+together because the save rows exist to set up what the export rows then assert (a
+stored title is what an export filename is built from). Renaming the module would
+churn every progress-note and journey summary that cites it by path, so the
+enumeration above carries the correction instead.
 
 Split out of conftest.py to keep that file under the 200-line cap. These names are
 imported back into conftest (`from document_export_fixtures import ...`), so pytest
