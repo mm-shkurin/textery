@@ -36,6 +36,15 @@ class ChildPytestReport:
     def tail(self) -> str:
         return self.output[-2000:]
 
+    @staticmethod
+    def expected_header_line(key: str, value: object) -> str:
+        """What a session header line looks like, so only this class knows.
+
+        The caller compares whole lines; without this it would have to spell the
+        `key: value` shape itself and drift from what `header_line` matches on.
+        """
+        return f"{key}: {value}"
+
     def header_line(self, key: str) -> str:
         """The whole `key: ...` line from the session header, for equality.
 
@@ -43,10 +52,10 @@ class ChildPytestReport:
         assertion reports both what it wanted and what it got in one message.
         """
         prefix = f"{key}:"
-        for line in self.output.splitlines():
-            if line.startswith(prefix):
-                return line.rstrip()
-        return f"<no '{prefix}' line in the child's header>"
+        return next(
+            (line.rstrip() for line in self.output.splitlines() if line.startswith(prefix)),
+            f"<no '{prefix}' line in the child's header>",
+        )
 
     def section(self, name: str) -> str:
         """The body between a named banner and the next one, or "" if absent."""
@@ -68,12 +77,11 @@ class ChildPytestReport:
         banners = self._banners()
         if not banners:
             return {}
-        counts: dict[str, int] = {}
-        for part in _ELAPSED.sub("", banners[-1][1]).split(", "):
-            match = _COUNT.match(part.strip())
-            if match:
-                counts[match.group("outcome")] = int(match.group("count"))
-        return counts
+        return {
+            match.group("outcome"): int(match.group("count"))
+            for part in _ELAPSED.sub("", banners[-1][1]).split(", ")
+            if (match := _COUNT.match(part.strip()))
+        }
 
     def _banners(self) -> list[tuple[int, str]]:
         return [

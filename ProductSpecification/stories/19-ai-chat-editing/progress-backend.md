@@ -1435,6 +1435,28 @@ within their file, not across the story.
       (4) `child_pytest_report.py:33` joins stdout and stderr with `+`; `summary_counts()` reads the last
       banner, so stderr output lands after the tally and a missing trailing newline merges two lines.
       `"\n".join`.
+      **(5)–(7) added by the premortem over `0c5c8624` (CONCERNS), all one shape: the config change is
+      global to the whole backend tree while the acceptance evidence covered one module.**
+      (5) `error::pytest.PytestUnraisableExceptionWarning` promotes *any* GC-time exception in *any*
+      module to a hard failure, and CI runs `pytest` over the whole tree. `domain`, `adapters/rest`,
+      `adapters/security`, `adapters/generation_provider` were verified clean (324 passed), but
+      `backend/adapters/db` (62 tests, real Postgres, asyncpg, `AsyncEngine` teardown) is unverified
+      under the new filter and is the unraisable-prone suite. Run it with Postgres up and pin the
+      result before CI is the first place the two-entry filter meets a real database.
+      (6) A new failure *class*: unraisables fire at GC time, so a coroutine leaked in test A can fail
+      an unrelated test B, which then passes in isolation. `error::RuntimeWarning` alone never
+      misattributed. Nothing pins attribution — add a third probe whose leak is in test A and whose
+      assertion is that the child's FAILURES section names A, not B (the machinery in
+      `assert_the_failure_named_the_unawaited_coroutine` already exists). Note the agent-review pass
+      checked this on pytest 9.1.1 and saw correct per-item attribution, so this pins behaviour rather
+      than fixes a known break.
+      (7) The gate proves what `pyproject.toml` *declares*, and scrubs `PYTHONWARNINGS` /
+      `PYTEST_ADDOPTS` / `PYTEST_DISABLE_PLUGIN_AUTOLOAD` from the **child** only. The parent — the
+      suite CI actually runs — has no such protection: `PYTHONWARNINGS=ignore::RuntimeWarning` or
+      `-p no:unraisable` in a runner env disarms the real suite while the gate stays green. Add an
+      in-suite check that the live `config.getini("filterwarnings")` carries both entries and the
+      `unraisable` plugin is loaded — the one assertion the child-process shape structurally cannot
+      make.
 - [ ] green-usecase (the guard on the arrangement's own guard, and the gate's reach beyond one config file)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares

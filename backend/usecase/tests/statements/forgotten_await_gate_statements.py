@@ -13,41 +13,22 @@ reading the child's report. That shape stays green once the gate works and goes
 red the day somebody removes the entry -- which a test living *inside* the gated
 suite could never do, because a test that deliberately forgets an `await` would
 itself have to fail once the gate bites.
+
+The mechanics of getting a trustworthy child -- the configuration it is pointed
+at, the ambient state taken away from it -- live in `ChildPytestRun`; reading its
+report as structured values lives in `ChildPytestReport`. What remains here is
+the claim.
 """
 
-import os
-import subprocess
-import sys
 from pathlib import Path
 
-from statements.arranged import arranged
 from statements.child_pytest_report import ChildPytestReport
+from statements.child_pytest_run import BACKEND_ROOT, PROJECT_CONFIG, ChildPytestRun
 from statements.forgotten_await_probes import (
     AWAITED_PROBE,
     FORGOTTEN_AWAIT_PROBE,
-    PROBE_MODULE_NAME,
     PROBE_TEST_NAME,
     UNAWAITED_COROUTINE_TEXT,
-)
-
-# backend/usecase/tests/statements/<this file> -> backend/
-BACKEND_ROOT = Path(__file__).resolve().parents[3]
-PROJECT_CONFIG = BACKEND_ROOT / "pyproject.toml"
-
-PROBE_TIMEOUT_SECONDS = 180
-
-# Anything the ambient shell or a CI runner can set that would change what the
-# child decides about warnings or which plugins it loads. Scrubbed so the gate is
-# proven against `pyproject.toml` alone: `PYTHONWARNINGS=ignore::RuntimeWarning`
-# in a runner's environment would otherwise make the gate un-failable, and
-# `PYTEST_DISABLE_PLUGIN_AUTOLOAD` would keep the control's `async def` test from
-# ever running.
-LEAKY_CHILD_VARIABLES = (
-    "PYTEST_ADDOPTS",
-    "PYTHONWARNINGS",
-    "PYTEST_PLUGINS",
-    "PYTEST_DISABLE_PLUGIN_AUTOLOAD",
-    "PYTEST_CURRENT_TEST",
 )
 
 
@@ -55,74 +36,17 @@ class ForgottenAwaitGateStatements:
     """Run a probe suite under this project's pytest configuration and read it."""
 
     def __init__(self) -> None:
-        self._probe_path: Path | None = None
+        self._run = ChildPytestRun()
         self._report: ChildPytestReport | None = None
-        self._scratch: Path | None = None
 
     def given_a_call_site_that_forgets_to_await_an_async_given_step(self, tmp_path: Path) -> None:
-        self._probe_path = self._write_probe(tmp_path, FORGOTTEN_AWAIT_PROBE)
+        self._run.write_probe(tmp_path, FORGOTTEN_AWAIT_PROBE)
 
     def given_a_call_site_that_awaits_the_async_given_step(self, tmp_path: Path) -> None:
-        self._probe_path = self._write_probe(tmp_path, AWAITED_PROBE)
-
-    def _write_probe(self, tmp_path: Path, source: str) -> Path:
-        self._scratch = tmp_path / "child"
-        self._scratch.mkdir(parents=True, exist_ok=True)
-        probe_path = tmp_path / PROBE_MODULE_NAME
-        probe_path.write_text(source, encoding="utf-8")
-        return probe_path
-
-    def _child_environment(self) -> dict[str, str]:
-        """The child gets its own scratch root, and none of the ambient overrides.
-
-        A nested pytest that inherits `TEMP` builds its `tmp_path` factory under a
-        directory this process does not own -- and a full-suite run was once seen
-        to abort the child's collection with `FileNotFoundError` on exactly such a
-        path. The gate must fail only when the gate is wrong, so the shared mutable
-        things between parent and child are taken away.
-        """
-        scratch = str(arranged(self._scratch, "child scratch directory"))
-        environment = {
-            name: value for name, value in os.environ.items() if name not in LEAKY_CHILD_VARIABLES
-        }
-        return {**environment, "TMPDIR": scratch, "TEMP": scratch, "TMP": scratch}
+        self._run.write_probe(tmp_path, AWAITED_PROBE)
 
     def run_the_probe_under_the_projects_own_pytest_configuration(self) -> None:
-        """A child process, pointed at the real `pyproject.toml`.
-
-        `-c` and `--rootdir` rather than a copy of the settings: a copy would
-        assert that some configuration fails a forgotten `await`, which is not the
-        claim. The claim is that *this repository's* configuration does.
-
-        Beyond that the child is left alone: it loads exactly the plugin set the
-        real suite loads, or the gate would be proven under a shape nobody runs.
-        """
-        assert self._probe_path is not None, (
-            "a probe module must be arranged before the child run -- see the given_ steps"
-        )
-        completed = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                "pytest",
-                str(self._probe_path),
-                "-c",
-                str(PROJECT_CONFIG),
-                "--rootdir",
-                str(BACKEND_ROOT),
-                "-p",
-                "no:cacheprovider",
-                "--basetemp",
-                str(arranged(self._scratch, "child scratch directory") / "basetemp"),
-            ],
-            env=self._child_environment(),
-            capture_output=True,
-            text=True,
-            timeout=PROBE_TIMEOUT_SECONDS,
-            cwd=str(BACKEND_ROOT),
-            check=False,
-        )
-        self._report = ChildPytestReport(completed)
+        self._report = self._run.execute()
 
     def assert_the_projects_own_configuration_was_in_force(self) -> None:
         """Without this, a child that silently found no config proves nothing.
@@ -135,7 +59,7 @@ class ForgottenAwaitGateStatements:
         """
         child = self._child()
         for key, value in (("rootdir", BACKEND_ROOT), ("configfile", PROJECT_CONFIG.name)):
-            expected = f"{key}: {value}"
+            expected = ChildPytestReport.expected_header_line(key, value)
             actual = child.header_line(key)
             assert actual == expected, (
                 f"the child run reported '{actual}', expected '{expected}' -- a run that fell "
@@ -160,8 +84,9 @@ class ForgottenAwaitGateStatements:
         assert child.exit_code == exit_code, (
             f"the child pytest exited {child.exit_code}, expected {exit_code}:\n{child.tail}"
         )
-        assert child.summary_counts() == counts, (
-            f"the child pytest summarised {child.summary_counts()}, expected {counts} -- the "
+        summarised = child.summary_counts()
+        assert summarised == counts, (
+            f"the child pytest summarised {summarised}, expected {counts} -- the "
             f"whole tally is pinned so a second failure, a skip or a stray warning cannot "
             f"hide inside a substring match:\n{child.tail}"
         )
@@ -192,6 +117,8 @@ class ForgottenAwaitGateStatements:
             f"\n{child.tail}"
         )
 
+    # Not `arranged()`: that helper's message tells the reader to call a `given_*`
+    # step, and the step that sets this one is the act step, not an arrangement.
     def _child(self) -> ChildPytestReport:
         assert self._report is not None, "the probe must be run before it is asserted on"
         return self._report
