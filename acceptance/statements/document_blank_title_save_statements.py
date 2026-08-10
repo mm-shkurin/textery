@@ -28,6 +28,9 @@ BLANK_SAVE_CONTENT = "Обновлённое тело документа"
 class DocumentBlankTitleSaveStatements(DocumentExportFilenameStatements):
     """Scenario 3.2 statements — a blank-title save must leave the stored title alone.
 
+    Sibling of DocumentContentOnlySaveStatements, which covers scenario 2.1's other
+    no-title-intent shape (the title key omitted entirely rather than sent blank).
+
     Subclasses DocumentExportFilenameStatements to reuse the shared cyrillic-title
     arrange (`_document_carrying_the_cyrillic_title`), the pdf export step and the
     filename assertion, and lives in its own module so neither file approaches the
@@ -69,11 +72,18 @@ class DocumentBlankTitleSaveStatements(DocumentExportFilenameStatements):
         # the whole document the blank-title autosave left behind is pinned here, so a
         # save that was rejected, short-circuited, or only partially applied fails.
         #
-        # The stored TITLE is absent from this comparison because it is absent from the
-        # API: DocumentResponseDto exposes no title field, so no endpoint returns it.
-        # Title survival is pinned instead by the companion
-        # `assert_filename_rfc5987_encoded_from_title` step reading the export header --
-        # the only black-box observation of the stored title that exists.
+        # The stored TITLE is absent from THIS comparison because it is absent from the
+        # shape being compared: this is the GET re-read, and GetDocumentResponseDto --
+        # the read shape, deliberately separate from the write shape -- declares no
+        # title key (get_document_response_dto.py:60-67, and its docstring says so).
+        #
+        # That is a fact about the READ route only. It is NOT true that no endpoint
+        # returns the title: the three write routes return DocumentResponseDto, which
+        # does carry `title` (document_dtos.py:108, populated at :126) -- verified at
+        # runtime, the PUT save response body carries all nine keys including it. So
+        # title survival on this row is pinned by the companion
+        # `assert_filename_rfc5987_encoded_from_title` step reading the export header,
+        # and the sibling content-only row pins it directly off its save response.
         body = self._body_of_the_successful_reread()
         expected = {
             "document_id": self._document_id_after_blank_save,

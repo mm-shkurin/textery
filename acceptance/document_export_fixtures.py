@@ -21,6 +21,9 @@ from statements.document_export_no_mutation_statements import (
 from statements.document_blank_title_save_statements import (
     DocumentBlankTitleSaveStatements,
 )
+from statements.document_content_only_save_statements import (
+    DocumentContentOnlySaveStatements,
+)
 
 
 @pytest_asyncio.fixture
@@ -51,3 +54,8 @@ def document_export_no_mutation_statements(application_client):
 @pytest_asyncio.fixture
 def document_blank_title_save_statements(application_client):
     return DocumentBlankTitleSaveStatements(application_client)
+
+
+@pytest_asyncio.fixture
+def document_content_only_save_statements(application_client):
+    return DocumentContentOnlySaveStatements(application_client)

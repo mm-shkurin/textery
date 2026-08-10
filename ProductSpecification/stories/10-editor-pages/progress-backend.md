@@ -1010,7 +1010,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   — fold a re-read of the citation into the coverage green once that skip lifts. And a non-dict body
   raises a bare `AttributeError` with no leg label, guarded in practice because all ten live sites
   assert whole-body equality on the line above.)
-- [~] red-acceptance (premortem on `f935be3c`, the finding that outranks the whole wire-shape
+- [x] red-acceptance (premortem on `f935be3c`, the finding that outranks the whole wire-shape
   cluster: **nothing in the repo drives the real save path end to end, so nothing goes red when the
   erasure ships.** `SaveDocumentRequestDto` is INBOUND-ONLY — two occurrences in `backend/**/src`
   (its definition and the router parameter), zero `model_dump` call sites anywhere in
@@ -1047,7 +1047,62 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   from two sides, and they compound — unparking that RED and fixing the reader WITHOUT first landing
   this end-to-end row means the fix is verified only by tests that were already green while the bug
   was present. Land this first.)
-- [ ] green-acceptance (premortem: a content-only save must leave the stored title alone, end to end)
+  **LANDED GREEN ON ARRIVAL — and the first mutation SURVIVED, which is the finding.** Predicted no
+  failure (client omits the key when `title is None`, so `"title" not in model_fields_set`, so
+  `preserve()`; every leg already correct individually, the gap was composition), actual `1 passed`,
+  match on all three fields. The obvious mutation — `document_dtos.py:55-56`, absent→`clear()` —
+  **survived: 14 passed, 1 skipped**, verified with the mutated line confirmed present inside the
+  running container before believing it.
+  WHY IT SURVIVED, and this is worth more than the row: **`clear()` is unmapped today.**
+  `document_storage.py:_update_values` asks only `carries_a_value()`, which is `False` for `clear()`
+  AND for `preserve()`, so an erasure falls into the omit branch and no-ops — self-documented at
+  `document_storage.py:167-170` and owned by the routed `adapters-discovery (b)` step. `clear()` and
+  `preserve()` are behaviourally the SAME VALUE right now, so no mutation of `title_update()` alone
+  can be observed end to end, and any future work that "verifies" the erasure fix through the DTO
+  alone is verifying nothing.
+  So the honest mutation is the charter's own phrase — the day the erasure ships — BOTH legs at once
+  (DTO absent→`clear()` plus a storage leg that actually SETs `title = NULL`): **1 FAILED, 13 passed,
+  1 skipped**, the single failure being this row. Every other row survives: they all send the key, so
+  none can see an absent-key regression. Reverted, container rebuilt, baseline re-confirmed.
+  A FALSE COMMENT WAS LOAD-BEARING, caught by red-agent and confirmed at runtime by `/test-review`
+  with a throwaway probe: `document_blank_title_save_statements.py:72-76` claimed the stored title is
+  "absent from the API — `DocumentResponseDto` exposes no title field, so no endpoint returns it".
+  The PUT save response carries all NINE keys including `title`, populated verbatim. The claim split:
+  TRUE that the RE-READ cannot see it (because `GetDocumentResponseDto` is a deliberately separate
+  read shape — the comment named the wrong DTO), FALSE that no endpoint returns it (`document_dtos.py:108`
+  declares it, `:126` populates it, all three write routes return it). The falsehood was what justified
+  observing the title ONLY through a percent-encoded export header, while the step already held a
+  response containing the title verbatim and threw it away.
+  `/test-review` therefore rewrote the observation channel: new Statements class
+  `document_content_only_save_statements.py` (123) with `assert_content_only_save_preserved_the_title()`
+  pinning the FULL nine-field save shape — `title` directly and verbatim, plus content, version,
+  document_id, document_type, status, generation_id, and the two timestamps by presence. It closed two
+  further gaps: the version pin was a load-bearing behaviour assertion buried inside a `given_*` and
+  invisible to the test class (which advertised two Then clauses and asserted one), and
+  `CONTENT_ONLY_SAVE_CONTENT` was written to the wire and never observed, though its own comment argued
+  the distinct body existed so a refused save could not masquerade as success. The split was FORCED:
+  asserting in place took the file to 205 of 200. `document_blank_title_save_statements.py` reverted to
+  3.2-only scope (116) with the false comment corrected.
+  One correction to the recorded evidence, measured rather than inherited: under the two-legged mutation
+  the row now fails on the DIRECT title pin (`'title': None` vs the Cyrillic) rather than on the export
+  header — it trips earlier and reports the wiped title with no percent-encoding in the way.
+  Marker: class-level `@pytest.mark.skip(reason="RED: ...")` per the sibling convention
+  (`test_document_page_settings_read_acceptance.py:6`), reason worded to say explicitly it is NOT a
+  failure claim. Final: **13 passed, 2 skipped** in `tests/backend/documents/`.
+  ENVIRONMENT, again: mid-review `infra-backend-1` was replaced with a container built from an old
+  commit carrying no `/export` route at all, failing 13 unrelated tests. Rebuilt via
+  `infra/docker-compose.yml`. Not this session's doing — a parallel session is rebuilding into the same
+  container names.
+  HANDED TO `/refactor`: duplicated arrange between the two `given_*` rows, now across two files (a
+  shared `_save_over_the_stored_title(...)` on the common parent collapses it) — left deliberately,
+  since extracting into `DocumentExportFilenameStatements` touches 3.1/3.2's committed rows.
+  A GENUINE REMAINING GAP, not a deferred assertion: scenario **3.2's** blank-title row can now pin the
+  title directly off its own save response too — the same false comment was suppressing that.
+  `/test-review` confined itself to this uncommitted row rather than silently restrengthening a
+  committed scenario. Also noted, off this row's path: `export_envelope.py:88-92` uses
+  `content_disposition is not None and ...startswith("attachment")`, the one loose matcher in the
+  inherited kit.)
+- [~] green-acceptance (premortem: a content-only save must leave the stored title alone, end to end)
 - [ ] unpark the roundtrip RED (premortem finding 2 on `7b0a9c51`, sequenced AFTER the two rows
   above): `test_save_document_request_dto_roundtrip.py:7` carries a class-level `@pytest.mark.skip`
   over both legs whose reason names a LIVE defect in production code (`document_dtos.py:55` reads

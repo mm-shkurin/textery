@@ -53,6 +53,7 @@ from document_export_fixtures import (  # noqa: F401
     document_export_filename_statements,
     document_export_no_mutation_statements,
     document_blank_title_save_statements,
+    document_content_only_save_statements,
 )
 
 # Story-10 page-settings Statements fixtures, split out for the same reason.
