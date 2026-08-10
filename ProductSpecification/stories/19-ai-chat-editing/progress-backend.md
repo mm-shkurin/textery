@@ -1870,10 +1870,13 @@ within their file, not across the story.
       **A stale marker was corrected in passing:** `red-usecase (coverage: third arming arm …)` carried
       the `[~]` while the bannerless step above it was `[ ]`. The two disagreed, and file order is the
       machine-readable half of the next-work-unit rule, so the third-arming-arm step went back to `[ ]`.
-- [~] green-usecase (coverage: bannerless child report tallies empty) — no marker to remove and no
+- [x] green-usecase (coverage: bannerless child report tallies empty) — no marker to remove and no
       production change to make; the red step was a legitimate no-red and is already green. Acceptance:
-      0 skipped.
-- [ ] red-usecase (a coloured report has no banners either, and the exit-code pins cannot fail) —
+      0 skipped. Verified: `pytest backend/usecase` → **203 passed, 0 failed, 0 skipped**, unchanged
+      from the red commit — which is the whole content of this step. Progress-only commit: no
+      production or test file was touched, so `/refactor` and the two review passes have nothing to
+      read and are skipped per the progress-only rule.
+- [~] red-usecase (a coloured report has no banners either, and the exit-code pins cannot fail) —
       **the premortem's incident is the sharpest thing this scenario has produced, because this unit
       is what removed the last signal.** pytest's terminal writer turns markup on in a non-tty when
       `PY_COLORS=1` or `FORCE_COLOR` is set (`should_do_markup` checks exactly those), and `write_sep`
