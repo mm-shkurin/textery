@@ -1507,7 +1507,7 @@ within their file, not across the story.
       only file over 200 in the backend tree. Pre-existing lint also unchanged (SIM300 in
       `test_ai_edit_router_di_stubs.py:50`, two E501s in `test_resolve_owned_revision_records.py`), none
       in files this unit touched.
-- [~] green-usecase (the guard on the arrangement's own guard, and the gate's reach beyond one config file)
+- [x] green-usecase (the guard on the arrangement's own guard, and the gate's reach beyond one config file)
       — lands the four production-side fixes the RED pinned: scope the snapshot refusal to
       `assert_no_document_gained_a_version`, pin `--confcutdir` on the child and refuse an in-tree probe
       path at write time, `"\n".join` the child's two streams, and carry deliverable (5) — run
@@ -1554,6 +1554,77 @@ within their file, not across the story.
       lines, pre-existing and another unit's — the only file over the cap in the backend tree. The full
       backend suite also carries 4 pre-existing `adapters/db` failures, verified identical on a stashed
       clean tree; they need a live DB.
+      **Outcome: all five deliverables landed, and the acceptance number was met — 0 skipped, not 6.**
+      `usecase/tests/harness` **12 passed**; whole `backend/usecase` **196 passed, 0 failed, 0 skipped**;
+      full backend **591 passed, 4 failed** (the four pre-existing `adapters/db` failures).
+      (1) `_refuse_a_snapshot_of_a_store_the_act_never_used` now guards `assert_no_document_gained_a_version`
+      alone — the scoping arm the RED pinned. `document_arrangement.py` landed at **exactly 200 lines**
+      after three rounds of trimming prose back under the cap.
+      (2) `--confcutdir <probe dir>` on the child, and `_refuse_a_probe_inside_the_repository` is the
+      **first statement** of `write_probe`, ahead of both `mkdir` and `write_text`, comparing resolved
+      ancestry (`BACKEND_ROOT not in probe_path.resolve().parents`) rather than a string prefix so a
+      symlinked or 8.3-short scratch cannot slip past.
+      (3) `"\n".join((stdout, stderr))`, mutation-checked: reverting to `+` fails both
+      `test_child_report_join.py` tests.
+      (4) **Deliverable (7) is genuinely closed this time, and verified against all three vectors.** The
+      live check now asserts the *effective* state before the `getini` equality:
+      `config.option.pythonwarnings` is empty, and a real `RuntimeWarning` is provoked and must raise.
+      With `PYTEST_ADDOPTS="-W ignore::RuntimeWarning …"` the pair goes from 2 passed to **1 failed /
+      1 passed**; with `-W ignore::RuntimeWarning` smuggled into `addopts` inside `pyproject.toml` —
+      the vector neither the ini read nor the env scrub can see — **1 failed**; and weakening the ini
+      entry to `always::RuntimeWarning` fires the behavioural probe with its own message, so it is not
+      dead weight. Tree restored after each.
+      (5) **Deliverable (5) closed, and it answered its question.** Docker was already up with
+      `infra-postgres-1` healthy (nothing started). `adapters/db` under the two-entry filter: 62 tests,
+      **58 passed, 4 failed** — all four the documented `TestFindScopeByIdAndDocument` failures whose root
+      cause is `asyncpg.exceptions.UndefinedTableError: relation "ai_edits" does not exist`, the table the
+      `adapters-discovery` gate's inserted `red-adapter db` step is scheduled to write. **No
+      unraisable-warning failure and no misattribution appeared** — which is the whole question the
+      deliverable existed to answer, and the premortem's incident is closed by that number.
+      **One gap GREEN could not close, carried forward:** the premortem's point that
+      `assert_the_write_was_refused_before_it_landed` proves only `_refusal is not None` — its `finally`
+      rmtree erases the filesystem evidence — needs a *test* change, and tests are read-only in GREEN.
+      Verified out-of-band instead (driving `write_probe(IN_TREE_SCRATCH, "")` directly: refusal raises,
+      `IN_TREE_SCRATCH.exists()` is `False`, no leftover under `harness/`). The guard is correct today,
+      but the test would not notice a later edit moving it after the `mkdir`.
+      **A shared-checkout mistake, recorded not buried:** the green-agent ran one `git stash`/`git stash
+      pop` pair for a lint baseline while the frontend session was live, and two frontend files changed
+      under it during that window. The pop applied cleanly and `git stash list` holds only an unrelated
+      old entry, but this is the second unit in a row to do it — the file-ownership rule asks for
+      separate worktrees for exactly this reason.
+      Not addressed, outside this step's five deliverables: the root-`conftest.py` placement of the
+      arming check so a `pytest adapters/db`-only CI job is covered too, and the `pytest` lower-bound pin
+      on the attribution test.
+      **`/test-coverage` had to be pointed by hand, and the carryover quirk held.** Every file this unit
+      changed lives under `usecase/tests/`, not `src/`, so the default `--cov=usecase/src` reported
+      nothing and `git diff HEAD --name-only -- 'backend/*/src/'` was empty — a **fifth** false all-clear
+      on this story, avoided only by naming the files. It also showed why the subset matters:
+      `document_arrangement.py` reads 89% under the harness tests alone and **100%, 4/4 branches**, under
+      the full module, so the rescoping is covered on both arms. Hand-checked the conditionals coverage.py
+      cannot see (`try/except` and `assert` are not branches):
+      `_refuse_a_probe_inside_the_repository` is genuinely 2/2 — the `return` arm on every normal
+      `write_probe`, the `raise` arm in the in-tree refusal test. Two real gaps got red/green pairs below.
+- [~] red-usecase (coverage: disarmed suite drives the arming probe red) — **the newly-written core of
+      this unit has an unproven negative arm.** `live_harness_configuration_statements.py:97` — the
+      `raise AssertionError` closing `_assert_a_runtime_warning_actually_raises` — has never executed, and
+      coverage reports **0 branches** for the whole file, so the `L97` line number is the only signal
+      there is. The docstring's evidence (2 passed → 1 failed under `PYTEST_ADDOPTS`) was measured **by
+      hand at the terminal, not by a test**, so nothing in the suite would notice if the `except` clause
+      were widened to `Exception` or if a future pytest stopped turning the warning into a raise.
+      `_assert_no_command_line_filter_overrides_the_declaration`'s `assert overrides == []` is the same
+      shape and equally invisible. Drivable with machinery this scenario already owns: run a child over a
+      probe that calls the statement **with** `PYTEST_ADDOPTS="-W ignore::RuntimeWarning"` left in the
+      environment — which needs a `ChildPytestRun` variant that does not scrub `LEAKY_CHILD_VARIABLES`
+      (scrubbing is unconditional at `child_pytest_run.py:137-139`). That is a real design cost, and it is
+      also precisely the claim in this step's own title.
+- [ ] green-usecase (coverage: disarmed suite drives the arming probe red)
+- [ ] red-usecase (coverage: bannerless child report tallies empty) — `child_pytest_report.py:133-134`
+      (`if not banners: return {}`) is a partial branch, False arm only. It matters because that empty
+      `{}` is the exact symptom the `"\n".join` change was written to prevent — the docstring names it
+      ("the tally then read `{}` while the gate blamed pytest for it"). The fix landed; the symptom path
+      itself has still never been executed, so a report with no banner lines at all has never been fed
+      through `summary_counts()`.
+- [ ] green-usecase (coverage: bannerless child report tallies empty)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares
       the parameter as `str` precisely so that FastAPI does not answer it 422 ahead of the Bearer

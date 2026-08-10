@@ -1,5 +1,3 @@
-import pytest
-
 from statements.child_report_join_statements import ChildReportJoinStatements
 
 
@@ -17,7 +15,6 @@ class TestChildReportJoin:
     the report -- and the gate reports both as pytest misbehaving.
     """
 
-    @pytest.mark.skip(reason="RED: separating the two streams in ChildPytestReport is GREEN's")
     def test_should_read_the_tally_when_the_child_also_wrote_to_stderr(
         self, child_report_join_statements: ChildReportJoinStatements
     ):
@@ -25,7 +22,6 @@ class TestChildReportJoin:
 
         child_report_join_statements.assert_the_tally_survived_the_second_stream()
 
-    @pytest.mark.skip(reason="RED: separating the two streams in ChildPytestReport is GREEN's")
     def test_should_bound_the_failures_section_when_the_child_also_wrote_to_stderr(
         self, child_report_join_statements: ChildReportJoinStatements
     ):

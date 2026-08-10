@@ -1,5 +1,3 @@
-import pytest
-
 from statements.gate_reach_statements import GateReachStatements
 
 
@@ -19,7 +17,6 @@ class TestGateReach:
     test that then passes in isolation.
     """
 
-    @pytest.mark.skip(reason="RED: pinning --confcutdir on the child is GREEN's")
     def test_should_not_load_a_conftest_from_above_the_probe_directory(
         self, tmp_path, gate_reach_statements: GateReachStatements
     ):
@@ -32,7 +29,6 @@ class TestGateReach:
         gate_reach_statements.assert_the_probe_suite_failed()
         gate_reach_statements.assert_the_failure_named_the_unawaited_coroutine()
 
-    @pytest.mark.skip(reason="RED: refusing an in-tree probe path is GREEN's")
     def test_should_refuse_to_write_a_probe_inside_the_repository(
         self, gate_reach_statements: GateReachStatements
     ):

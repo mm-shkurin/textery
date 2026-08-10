@@ -38,7 +38,15 @@ class ChildPytestReport:
 
     @property
     def output(self) -> str:
-        return self._completed.stdout + self._completed.stderr
+        """The two streams, joined so neither can eat the other's lines.
+
+        `"\\n".join` rather than `+`: every reading below is positional over this
+        text -- the tally is the last banner, a section is the span between two --
+        so a stdout without a trailing newline merged its final tally banner into
+        stderr's first line, and the tally then read `{}` while the gate blamed
+        pytest for it.
+        """
+        return "\n".join((self._completed.stdout, self._completed.stderr))
 
     @property
     def tail(self) -> str:

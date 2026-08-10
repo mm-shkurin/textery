@@ -18,7 +18,13 @@ warning at all must be loaded -- without it there is no
 entry alone was already proven insufficient.
 """
 
+import warnings
+
 import pytest
+
+# What the behavioural half emits. Distinct prose so a reader meeting it in a
+# traceback knows the warning was raised on purpose by the arming check.
+ARMING_PROBE_MESSAGE = "the live harness arming probe's RuntimeWarning"
 
 # The two entries, written out rather than read from the file being checked. The
 # order is the order they must appear in: `filterwarnings` is applied in sequence
@@ -41,15 +47,23 @@ class LiveHarnessConfigurationStatements:
         self._config = config
 
     def assert_both_filter_entries_are_in_force_in_this_run(self) -> None:
-        """The whole list, in order -- not "both entries are somewhere in it".
+        """Three readings, because the declaration alone is not the effective state.
 
-        A containment check is satisfied by the state this assertion exists to
-        reject. `filterwarnings` is applied in sequence and the *last* matching
-        entry wins, so a runner that appends `ignore::RuntimeWarning` via
-        `PYTEST_ADDOPTS` leaves both required entries present, nothing missing, and
-        the suite disarmed. Whole-list equality means an appended entry has to be
-        added to the constant deliberately.
+        `getini("filterwarnings")` returns the *ini* declaration and nothing else.
+        `PYTEST_ADDOPTS="-W ignore::RuntimeWarning"` is parsed into command-line
+        filters, which land in `config.option.pythonwarnings` and are applied
+        *after* the ini entries -- so they win while `getini` still reads exactly
+        the two required entries. Measured in this repository: under that env the
+        two live-config tests reported 2 passed while a RuntimeWarning probe went
+        from 1 failed to 1 passed. The suite was disarmed with the guard green.
+
+        So the declaration is pinned, the command-line override is refused, and
+        then the actual behaviour is provoked -- the last of which also covers a
+        `-W` smuggled into `addopts` inside `pyproject.toml`, which neither of the
+        first two can see.
         """
+        self._assert_no_command_line_filter_overrides_the_declaration()
+        self._assert_a_runtime_warning_actually_raises()
         actual = list(self._config.getini("filterwarnings"))
         assert actual == REQUIRED_FILTERWARNINGS, (
             f"this run's `filterwarnings` is {actual}, expected exactly "
@@ -58,6 +72,33 @@ class LiveHarnessConfigurationStatements:
             f"disarms the suite CI actually executes. Both entries are required, and no "
             f"third one may follow them: the last matching filter wins, so an appended "
             f"`ignore::RuntimeWarning` overrides both while leaving both present"
+        )
+
+    def _assert_no_command_line_filter_overrides_the_declaration(self) -> None:
+        overrides = list(getattr(self._config.option, "pythonwarnings", None) or [])
+        assert overrides == [], (
+            f"this run carries command-line warning filters {overrides}. `-W` filters are "
+            f"applied after the ini `filterwarnings` entries and the last matching filter "
+            f"wins, so these override the declaration while `getini` still reads exactly the "
+            f"two required entries -- the shape a `PYTEST_ADDOPTS` in a runner env produces"
+        )
+
+    def _assert_a_runtime_warning_actually_raises(self) -> None:
+        """The effective state, provoked rather than read off a config object.
+
+        Whatever combination of ini entries, `-W` filters and session-time plugin
+        meddling this run ended up with, the only claim that matters is that the
+        forgotten-`await` warning class still stops a test. So one is emitted.
+        """
+        try:
+            warnings.warn(ARMING_PROBE_MESSAGE, RuntimeWarning, stacklevel=2)
+        except RuntimeWarning:
+            return
+        raise AssertionError(
+            "a RuntimeWarning raised in this very run did not fail it -- so a forgotten "
+            "`await` warns and passes here, whatever the configuration files declare. The "
+            "gate that proves the entries work runs a child with the ambient overrides "
+            "scrubbed, and stays green through exactly this"
         )
 
     def assert_the_unraisable_plugin_is_loaded_in_this_run(self) -> None:

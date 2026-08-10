@@ -1,5 +1,3 @@
-import pytest
-
 from statements.arrangement_snapshot_guard_statements import ArrangementSnapshotGuardStatements
 
 
@@ -29,7 +27,6 @@ class TestArrangementSnapshotGuard:
         statements.assert_the_foreign_act_reached_the_foreign_store()
         statements.assert_the_post_act_version_assertion_refuses()
 
-    @pytest.mark.skip(reason="RED: scoping the refusal to the post-act assertion is GREEN's")
     async def test_should_still_allow_the_arrangement_version_comparison_after_a_foreign_act(
         self, arrangement_snapshot_guard_statements: ArrangementSnapshotGuardStatements
     ):
@@ -42,7 +39,6 @@ class TestArrangementSnapshotGuard:
         statements.assert_the_foreign_act_reached_the_foreign_store()
         statements.assert_the_arrangement_version_assertion_holds()
 
-    @pytest.mark.skip(reason="RED: scoping the refusal to the post-act assertion is GREEN's")
     async def test_should_keep_the_arrangement_comparison_after_an_own_act_then_a_foreign_one(
         self, arrangement_snapshot_guard_statements: ArrangementSnapshotGuardStatements
     ):

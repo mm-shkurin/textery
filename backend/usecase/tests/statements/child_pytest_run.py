@@ -36,6 +36,23 @@ LEAKY_CHILD_VARIABLES = (
 )
 
 
+def _refuse_a_probe_inside_the_repository(probe_path: Path) -> None:
+    """Refuse a destination the parent suite would collect from.
+
+    `resolve()` on both sides, and ancestry rather than a string prefix: a
+    scratch reached through a symlink or an `8.3` short path compares unequal as
+    text while being the very directory the parent walks.
+    """
+    if BACKEND_ROOT not in probe_path.resolve().parents:
+        return
+    raise AssertionError(
+        f"a probe may not be written under {BACKEND_ROOT}: the parent suite collects "
+        f"`test_*.py` from that tree, so the probe survives as a real test of this suite "
+        f"and the gate's claim that the parent never collects it becomes false. Write the "
+        f"probe to a tmp_path outside the repository"
+    )
+
+
 class ChildPytestRun:
     """A probe module written to disk, then run by a child pytest."""
 
@@ -44,9 +61,19 @@ class ChildPytestRun:
         self._scratch: Path | None = None
 
     def write_probe(self, tmp_path: Path, source: str) -> None:
+        """The probe on disk -- but only once the destination has been judged.
+
+        The refusal is the *first* statement for a reason: `mkdir` and
+        `write_text` are both irreversible from the caller's point of view, and a
+        guard placed after either has already dropped a `test_*.py` inside the
+        tree the parent suite collects. By then the only remaining question is
+        whether anything happens to delete it again.
+        """
+        probe_path = tmp_path / PROBE_MODULE_NAME
+        _refuse_a_probe_inside_the_repository(probe_path)
         self._scratch = tmp_path / "child"
         self._scratch.mkdir(parents=True, exist_ok=True)
-        self._probe_path = tmp_path / PROBE_MODULE_NAME
+        self._probe_path = probe_path
         self._probe_path.write_text(source, encoding="utf-8")
 
     def execute(self) -> ChildPytestReport:
@@ -68,18 +95,29 @@ class ChildPytestRun:
         assert that some configuration fails a forgotten `await`, which is not the
         claim. The claim is that *this repository's* configuration does.
 
+        `--confcutdir` is the probe's own directory, and it is not decoration.
+        pytest walks conftests upward from the *collected file*, not from
+        rootdir, and the probe lives outside the repository -- so an unpinned walk
+        runs past the scratch to the filesystem root, picking up whatever happens
+        to sit above it while never reaching this repository's own conftests.
+        Cutting the walk at the probe directory makes the child's conftest set
+        exactly empty, which is the set the gate's claim assumes.
+
         Beyond that the child is left alone: it loads exactly the plugin set the
         real suite loads, or the gate would be proven under a shape nobody runs.
         """
+        probe_path = arranged(self._probe_path, "probe module")
         return [
             sys.executable,
             "-m",
             "pytest",
-            str(arranged(self._probe_path, "probe module")),
+            str(probe_path),
             "-c",
             str(PROJECT_CONFIG),
             "--rootdir",
             str(BACKEND_ROOT),
+            "--confcutdir",
+            str(probe_path.parent),
             "-p",
             "no:cacheprovider",
             "--basetemp",

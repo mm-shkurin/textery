@@ -150,8 +150,10 @@ class DocumentArrangement:
         it would mean naming ids the creation usecase mints -- which the test cannot
         write as literals. `assert_no_document_gained_a_version` is the one that sees
         rows appear, because its expectation is a snapshot taken before the act.
+        Both sides *here* read off this arrangement's own store and its `given_`
+        literals, unreachable by the act's store -- which is why the snapshot
+        refusal is scoped to that assertion rather than guarding this one too.
         """
-        self._refuse_a_snapshot_of_a_store_the_act_never_used()
         actual = arranged(self._versions_as_arranged, "versions_as_arranged")
         assert actual == self._minted_versions, (
             f"the arrangement left versions {actual}, expected {self._minted_versions} -- the "
