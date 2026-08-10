@@ -636,6 +636,66 @@ pagination failure.
   Suite 640 passed / 6 skipped / 0 failed; `tsc -b --noEmit` and oxlint clean except the
   pre-existing RED stub `paginationState.ts:100` (unused `input`). Files: constantSites 165,
   designNumbers 80 — under 200.
+- [ ] red-frontend (premortem CREDIBLE 1 over `c0e35fc6`) — **the guarded defect class ships one
+  field over, and the header's reason for excluding it is false in the same way the last header
+  was.** `SKELETON_ASSIGNMENT` is scoped to `sheet|railSkeletonCount`, but `measuring.test.ts:184-185`
+  and `laidOut.test.ts:80-81` are the SAME construct — a fixture constant read by name at an
+  assertion site. The header says `pageCount`/`currentPage` are "guarded from the value side by
+  `crossRow.test.ts`'s derivation check". They are not: `crossRow.test.ts:126` derives from
+  `row.blockHeights` and compares against `row.pageCount` — **the fixture's declared field, never
+  the test file's assertion**. Retype `pageCount: 4` at `:184` and `crossRow` is untouched (fixture
+  unchanged), `designNumbers` is untouched (it pins only the surface constants), `constantSites` is
+  untouched (wrong field name), and all six skeleton lines stay byte-identical. That is the
+  chartered mutant re-run one line up, surviving. Incident: the reader on sheet 3 of a 6-page
+  document sees "Страница 5 из 4". Guard is one alternation away:
+  `/^(pageCount|currentPage|(?:sheet|rail)SkeletonCount): (.+),$/`, with `pageCount: null` /
+  `currentPage: null` as legitimate members of the expected list.
+- [ ] red-frontend (premortem CREDIBLE 2 over `c0e35fc6`) — **nothing forces the three `.skip`s off
+  at green, and this unit walked past the one file that could see them.** `constantSites` already
+  ingests both files AS TEXT and reads their assertion lines, and never looks at `it.skip`. The
+  pinned assignment list is IDENTICAL whether the cases are skipped or not, so the file certifies a
+  healthy assertion surface for cases that do not run — the invisible-until-green hole, left open at
+  the one moment it matters. (Sharpens the `36574438` skip-exit step below, which asked for a
+  live case reading the three files' sources: `constantSites` is now that reader.) Guard: pin the
+  `it.skip(` count in those two files as an EXPECTED value — 3 today, 0 at green — so green cannot
+  be declared without the expectation being edited in the same commit.
+- [ ] red-frontend (premortem CREDIBLE 3 over `c0e35fc6`) — **prettier CAN redden this file, through
+  the import line the verification never measured.** The header's immunity claim is scoped to the
+  assignments (widest 59 of 100). `FIXTURE_IMPORT` is equally single-line and equally fail-closed,
+  and `measuring.test.ts:3` is **86 columns** — 14 of headroom. Any added specifier ≥15 chars
+  (`SURFACE_CONSTANTS` is 17) makes prettier wrap it, and the failure then reports
+  `fixtureImports: []`, literally "the import was deleted", against a file where it is plainly
+  present. Under a red suite mid-green the on-call repair is the one the header forbids — loosen
+  `FIXTURE_IMPORT` — which re-opens the local-redeclaration hole `/test-review` just closed. Guard:
+  a probe case pinning the multi-line import shape, or at minimum the measured 86/100 budget stated
+  in the header so the next author knows one specifier is the whole margin.
+- [ ] red-frontend (agent-review CONCERNS 1 over `c0e35fc6`) — **the header's stated defense against
+  local shadowing is factually wrong, and the real defense is incidental and undocumented.** The
+  header says keeping the import and shadowing it locally "is a TypeScript redeclaration error and
+  dies at `tsc --noEmit`". True only at MODULE scope. A block-scoped shadow inside a `describe` or
+  `it` callback is legal TS — run, not argued: minimal repro under this repo's own tsc with
+  `--strict --noUnusedLocals` exits 0, with the assertion site byte-identical. What actually blocks
+  the attack today is `"noUnusedLocals": true` plus the accident that every constant is read from
+  exactly ONE scope (`MEASURING_SURFACE` at `:99-100`, `NO_SKELETONS` at `:186-187` and
+  `laidOut:82-83`), so shadowing orphans the import. The moment any constant is read from two
+  `describe`s — which green and the queued surface steps make likely — the shadow is invisible to
+  tsc, to this guard, and to `designNumbers`. The condition it rests on is stated nowhere.
+- [ ] red-frontend (agent-review CONCERNS 3 over `c0e35fc6`) — **the seventh-assertion-in-a-third-file
+  hole is held open by a two-element hardcoded list, when a glob was available.** `SOURCES` names
+  exactly `measuring` and `laidOut`; the header disclaims a third file as "outside its window
+  entirely", which restates the limitation rather than giving a reason for it. The file's own
+  strongest argument — a check that merely greps passes while a seventh assertion is added with a
+  raw literal — applies verbatim to a new FILE. `import.meta.glob('./paginationState.*.test.ts',
+  { query: '?raw', eager: true })` works in this exact toolchain, removes the hardcoded list, and
+  makes a case MOVED between files fail for the right reason. As shipped, adding
+  `paginationState.someNewCase.test.ts` with `railSkeletonCount: 3` is green everywhere — and three
+  chartered steps are queued against these surfaces.
+- [ ] docs (agent-review CONCERNS 2 over `c0e35fc6`; fold into the next edit of the file) — **"npm
+  run format cannot redden this case" is a manual measurement of a moving target, pinned in a
+  comment.** True today (59 of 100). A longer constant name, a nested field, or a `printWidth`
+  change wraps a line, the list SHORTENS, and the case reddens with a message reading "an assertion
+  is missing" rather than "the formatter reflowed line 100" — while the header simultaneously
+  forbids the reader from loosening the regex, leaving the recovery path documented only in prose.
 - [ ] red-frontend (premortem CREDIBLE 1 over `36574438`) — **even when the sites DO read the
   constants, nothing pins WHICH FIELD each reaches.** Distinct from the finding above, and a guard
   for that one which merely asserts the constants are referenced does NOT close this. The fixture
