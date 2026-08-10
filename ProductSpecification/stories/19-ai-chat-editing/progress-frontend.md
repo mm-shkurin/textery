@@ -680,7 +680,60 @@ under `frontend/src` or `acceptance/tests/frontend`.
       which proves the client delegation works end to end.
       **All three files sit at or within a line or two of the 200-line cap** — the next
       addition to `over_quota_session.py` (exactly 200) forces a split.
-- [ ] red-frontend
+- [x] red-frontend — four cases in
+      `frontend/src/features/aiChat/components/__tests__/DocumentEditorPage.overQuota.test.tsx`
+      (194 lines) plus the RED stub `features/aiChat/api/editQuotaApi.ts`. Predicted and got all
+      four as `TestingLibraryElementError`, byte-identical messages: `Unable to find an element by:
+      [data-testid="ai-chat-message-input"]` (cases 1 and 4), `…"ai-chat-quota-reset-hint"`
+      (case 2), `…"ai-chat-revisions-toggle"` (case 3). The dumped DOM shows the `ai-chat-panel`
+      aside resolved, so the route, the load and the `ready` branch all ran — the failure is
+      strictly the missing composer inside the panel, not a vacuous pass against an unrendered tree.
+      **The contract addition this specifies:** `loadEditQuota(): Promise<{ exhausted: boolean;
+      resetsAt: string | null }>` — **account-scoped, no `documentId`**. The daily limit belongs to
+      the account; threading a document id through invites a per-document reading of a limit that
+      is not per-document. The wire mapping and the endpoint belong to `red-frontend-api`.
+      **Follow-up (an) is closed by a case rather than by convention.** `RESETS_AT_WIRE =
+      '2026-08-11T00:00:00+03:00'` is deliberately non-canonical — a Moscow offset, no fractional
+      seconds — and `data-resets-at` must carry it byte for byte. Any `new Date(…).toISOString()`
+      on the path rewrites it to `2026-08-10T21:00:00.000Z` and fails. The decision: the hint
+      renders the wire string verbatim into the attribute, and the human-facing countdown is a
+      separate element's job. That is what makes the Selenium layer's cross-serialization
+      byte-equality safe instead of fragile.
+      All six testids are byte-identical to `over_quota_statements.py`, so the two layers cannot
+      drift into specifying different UIs.
+      **The fourth case is the one the acceptance test structurally cannot write:** spending a real
+      day's quota only ever exercises the exhausted branch, so a composer disabled for everybody —
+      or one with no quota read behind it at all — would pass Selenium. That is the 0.1
+      unconditional-blocker lesson applied before it can happen.
+      `/test-review` landed five fixes. The two load-bearing ones: **the account-scoping argued at
+      length in the stub was unenforceable** — nothing failed if green passed a `documentId` — and
+      is now held by `toHaveBeenCalledExactlyOnceWith()` with zero arguments; and **the counts were
+      proved outside StrictMode** while `main.tsx` wraps `App` in it, which is follow-up (k) one
+      fetch over — `renderEditorFor` now renders under `<StrictMode>`, so the counts are honest
+      from day one instead of being discovered later. Also: both loads are now pinned with
+      `toHaveBeenCalledExactlyOnceWith` in all four cases (two cases pinned nothing, and the
+      document load was pinned nowhere, so a page refetching on every render passed);
+      `EditQuotaState` is imported rather than re-declared as an inline literal (a rename in the
+      stub would have left this file green against a module it no longer agreed with); and
+      `toBeInTheDocument()` after `findByTestId` — a no-op, since `findBy*` already throws — became
+      `toBeVisible()`, the one place this layer was strictly weaker than Selenium's `is_displayed()`.
+      Rejected: pinning the revisions panel's rows (scenario 1.3 owns `GET /revisions`; the Selenium
+      layer carries that strictness) and asserting a countdown sibling (no testid for it exists in
+      `over_quota_statements.py`, and inventing one breaks testid parity between the layers).
+      Evidence: 516 passed / 0 failed / 4 skipped (119 files); tsc, oxlint and prettier clean on
+      both files; RED re-verified by temporarily un-skipping all four — same messages byte for
+      byte, and the StrictMode change does not move the failure point.
+      **Green inherits three things:** the file is 194 of 200 lines, so a fifth case forces a
+      split; the quota read needs its own pre-fetch StrictMode guard (a ref before the fetch — the
+      `useDocumentInit` cancel-flag pattern suppresses the second `setState`, not the second
+      request); and the coverage gate is red on this commit exactly as follow-up (f) was on 0.1
+      (`editQuotaApi.ts` at 0% behind four skipped tests, against the 60% per-file floor) — green
+      closes it by un-skipping, with no floor lowered and no exclude added.
+      **Deliberately not pulled forward:** `useEditorDocument`'s `loading`/`failed` states and the
+      quota read's own loading/failure states (scenario 8.8), and the revisions panel's contents.
+      "Remains usable" is asserted here as: the toggle is enabled over quota, the panel is closed
+      before the click and open after it. **Green must not read that gap as licence to ship an
+      empty panel** — `green-selenium` will not pass on one.
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
