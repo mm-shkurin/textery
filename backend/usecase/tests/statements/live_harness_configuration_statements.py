@@ -57,13 +57,17 @@ class LiveHarnessConfigurationStatements:
         two live-config tests reported 2 passed while a RuntimeWarning probe went
         from 1 failed to 1 passed. The suite was disarmed with the guard green.
 
-        So the declaration is pinned, the command-line override is refused, and
-        then the actual behaviour is provoked -- the last of which also covers a
-        `-W` smuggled into `addopts` inside `pyproject.toml`, which neither of the
-        first two can see.
+        So the command-line override is refused, then the actual behaviour is
+        provoked, and only then is the declaration pinned. That order is the
+        diagnostic one: the effective state is what a reader needs told first, and
+        provoking it also covers a `-W` smuggled into `addopts` inside
+        `pyproject.toml`, which neither of the other two can see.
         """
         self._assert_no_command_line_filter_overrides_the_declaration()
         self._assert_a_runtime_warning_actually_raises()
+        self._assert_the_declaration_is_exactly_the_required_entries()
+
+    def _assert_the_declaration_is_exactly_the_required_entries(self) -> None:
         actual = list(self._config.getini("filterwarnings"))
         assert actual == REQUIRED_FILTERWARNINGS, (
             f"this run's `filterwarnings` is {actual}, expected exactly "

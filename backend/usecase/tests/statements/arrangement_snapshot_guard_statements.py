@@ -1,7 +1,7 @@
-"""The guard on `DocumentArrangement`'s own guard.
+"""The guard on `DocumentVersionLedger`'s own guard.
 
 `_refuse_a_snapshot_of_a_store_the_act_never_used` is real branching logic -- a
-sticky latch set from `acted_on is not self.document_repository` and read by two
+sticky latch set from `acted_on is not self._document_repository` and read by two
 assertion methods -- and it has never executed in any run. The outage families do
 set the latch, but none of them calls a version assertion, so the `assert` inside
 it is dead in practice: dropping either call site, or weakening the `is not` to
@@ -18,7 +18,7 @@ taken before the act and compares it against the store now, and if the act was
 handed some other store then the snapshot describes rows the guard never touched.
 `assert_the_arrangement_holds_the_minted_versions` makes no such comparison --
 both of its sides (`_versions_as_arranged` and `_minted_versions`) are read off
-`self.document_repository` and off the `given_` steps' literals, and neither can
+the ledger's own repository and off the `given_` steps' literals, and neither can
 be affected by which store the act was handed. Refusing it as well costs a valid
 assertion, and because the latch is never reset it costs it for the rest of the
 test: a test that acts on the arrangement and *then* on a failing store is told

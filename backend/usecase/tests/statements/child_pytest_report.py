@@ -10,6 +10,8 @@ otherwise reported a pass.
 
 import re
 import subprocess
+from functools import cached_property
+from typing import NamedTuple
 
 # Banner lines pytest draws around every report section, e.g.
 # `======== FAILURES ========` and the closing `======== 1 failed in 4s ========`.
@@ -26,6 +28,18 @@ _ELAPSED = re.compile(r" in \d[\d.]*s.*$")
 FAILURES_SECTION = "FAILURES"
 
 
+class _Banner(NamedTuple):
+    """One `==== name ====` line: where it sits in the report, and what it announces.
+
+    Named rather than left an anonymous pair because the position is read in three
+    places and the tally reads the name off the last one -- `banners[-1][1]` does
+    not say which half of the pair the tally is parsed from.
+    """
+
+    line_number: int
+    name: str
+
+
 class ChildPytestReport:
     """One finished child run, addressable by header line, section and tally."""
 
@@ -36,7 +50,7 @@ class ChildPytestReport:
     def exit_code(self) -> int:
         return self._completed.returncode
 
-    @property
+    @cached_property
     def output(self) -> str:
         """The two streams, joined so neither can eat the other's lines.
 
@@ -47,6 +61,16 @@ class ChildPytestReport:
         pytest for it.
         """
         return "\n".join((self._completed.stdout, self._completed.stderr))
+
+    @cached_property
+    def _lines(self) -> list[str]:
+        """The joined report, split once.
+
+        Every reading below is positional over these lines -- a header prefix, a
+        banner index, the span between two banners -- and a finished child's output
+        cannot change, so the split is done once rather than per question asked.
+        """
+        return self.output.splitlines()
 
     @property
     def tail(self) -> str:
@@ -75,7 +99,7 @@ class ChildPytestReport:
         return next(
             (
                 line.rstrip()[len(prefix) :]
-                for line in self.output.splitlines()
+                for line in self._lines
                 if line.startswith(prefix)
             ),
             f"<no '{key}:' line in the child's header>",
@@ -83,19 +107,23 @@ class ChildPytestReport:
 
     def section(self, name: str) -> str:
         """The body between a named banner and the next one, or "" if absent."""
-        lines = self.output.splitlines()
         banners = self._banners()
-        # Each banner's body ends where the next one starts, and the last one's at
-        # the end of the report -- so the ends are the starts shifted by one.
-        ends = [number for number, _ in banners[1:]] + [len(lines)]
         return next(
             (
-                "\n".join(lines[number + 1 : end])
-                for (number, banner), end in zip(banners, ends, strict=True)
-                if banner == name
+                "\n".join(self._lines[banner.line_number + 1 : end])
+                for banner, end in zip(banners, self._body_ends(banners), strict=True)
+                if banner.name == name
             ),
             "",
         )
+
+    def _body_ends(self, banners: list[_Banner]) -> list[int]:
+        """Where each banner's body stops.
+
+        A body ends where the next banner starts, and the last one's at the end of
+        the report -- so the ends are the starts shifted by one.
+        """
+        return [banner.line_number for banner in banners[1:]] + [len(self._lines)]
 
     def failing_test_names(self) -> set[str]:
         """Which tests the FAILURES section is actually about, as a set to compare whole.
@@ -134,13 +162,13 @@ class ChildPytestReport:
             return {}
         return {
             match.group("outcome"): int(match.group("count"))
-            for part in _ELAPSED.sub("", banners[-1][1]).split(", ")
+            for part in _ELAPSED.sub("", banners[-1].name).split(", ")
             if (match := _COUNT.match(part.strip()))
         }
 
-    def _banners(self) -> list[tuple[int, str]]:
+    def _banners(self) -> list[_Banner]:
         return [
-            (number, match.group("name").strip())
-            for number, line in enumerate(self.output.splitlines())
+            _Banner(number, match.group("name").strip())
+            for number, line in enumerate(self._lines)
             if (match := _BANNER.match(line.rstrip()))
         ]
