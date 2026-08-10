@@ -1604,7 +1604,7 @@ within their file, not across the story.
       cannot see (`try/except` and `assert` are not branches):
       `_refuse_a_probe_inside_the_repository` is genuinely 2/2 — the `return` arm on every normal
       `write_probe`, the `raise` arm in the in-tree refusal test. Two real gaps got red/green pairs below.
-- [~] red-usecase (coverage: disarmed suite drives the arming probe red) — **the newly-written core of
+- [x] red-usecase (coverage: disarmed suite drives the arming probe red) — **the newly-written core of
       this unit has an unproven negative arm.** `live_harness_configuration_statements.py:97` — the
       `raise AssertionError` closing `_assert_a_runtime_warning_actually_raises` — has never executed, and
       coverage reports **0 branches** for the whole file, so the `L97` line number is the only signal
@@ -1617,7 +1617,59 @@ within their file, not across the story.
       environment — which needs a `ChildPytestRun` variant that does not scrub `LEAKY_CHILD_VARIABLES`
       (scrubbing is unconditional at `child_pytest_run.py:137-139`). That is a real design cost, and it is
       also precisely the claim in this step's own title.
-- [ ] green-usecase (coverage: disarmed suite drives the arming probe red)
+      **Outcome: a real RED — 2 failed, 1 passed, prediction matched in type, message, site and status.**
+      `test_disarmed_arming_probe.py` (57) over `disarmed_arming_probe_statements.py` (140), plus one
+      conftest fixture. Three tests, three environments, and **the two arms need two different vectors
+      because each is invisible to the other**: the override check runs *first*, so
+      `-W ignore::RuntimeWarning` short-circuits before the behavioural probe and can never reach L97.
+      `-p no:warnings` leaves `config.option.pythonwarnings` empty and `getini` intact, so only the
+      provoked warning sees it — that is the vector for L97. The third test is a live positive control
+      (env deleted), deliberately **not** skipped: a passing coverage test left skipped covers nothing.
+      Each failure is pinned three ways — whole tally + exit code, the whole *set* of failing test names
+      (so an absent FAILURES section cannot pass), and the arm's own sentence scoped to FAILURES. The
+      expected sentences are **literals, not read back from the module under test**: read back, they
+      would still pass with both messages blanked.
+      **The fifth inert guard was caught in review, and it was inside the RED itself.** Each `given_`
+      scrubbed only `PYTEST_ADDOPTS`, so each test differed from the control by more than the vector it
+      is named for — and the one that matters is `PYTHONWARNINGS`, a genuinely distinct mechanism:
+      `-W` filters land in `config.option.pythonwarnings`, while `PYTHONWARNINGS` is consumed by Python's
+      own warnings machinery before pytest sees anything. An ambient `PYTHONWARNINGS=ignore::RuntimeWarning`
+      stops the provoked RuntimeWarning from raising *by itself* — exactly the state
+      `test_..._unloads_the_warnings_plugin` asserts — so that test would have gone green with
+      `-p no:warnings` contributing nothing. Inert only while `ChildPytestRun` still scrubs
+      unconditionally; **live the moment this step's GREEN lifts that scrub, which is the whole point of
+      the step.** Fixed by deleting every name in `LEAKY_CHILD_VARIABLES` (imported, not relisted, so the
+      isolation cannot fall behind the scrub it replaces) before setting the single vector variable.
+      **Two detector proposals rejected as inert in turn:** mutual exclusion of the two refusal sentences
+      (only one arm can raise per test, so the negative is green whenever the positive is, and it cannot
+      fail while its partner passes), and control negative pins (their stated rejected state — a probe
+      whose body did nothing — yields `{"passed": 1}` and no refusal sentences, so the assertion stays
+      green in precisely that state).
+      **The discriminator carrying the second vector is load-bearing and unobvious, now documented in
+      place:** `-p no:warnings` unloads the plugin that *records* warnings, so the tally is exactly
+      `{failed: 1}`, whereas a `pyproject.toml` that merely lost its `filterwarnings` entries leaves that
+      plugin loaded and reports `{failed: 1, warning: 1}`. The whole-dict tally pin is the only reason
+      that second state is red — do not weaken it to a bare `failed` count.
+      **GREEN is satisfiable, verified out-of-band before the markers went on:** both vectors driven by
+      hand against the real config with the env kept, each firing its exact pinned sentence in FAILURES,
+      `1 failed`, exit 1. GREEN's only work is the one the step names — give `ChildPytestRun` a way to
+      keep the ambient environment for this family, leaving the unconditional scrub in place for the
+      forgotten-await gate, whose whole claim depends on it. Wiring the `given_` steps to that opt-in is
+      permitted setup work; **no assertion may change.**
+      Suite: **197 passed, 2 skipped, 0 failed** — the 2 skips are exactly the two RED tests, so the next
+      step's acceptance number is **0 skipped**. ruff, ruff format and mypy clean on all three files.
+      **Two structural findings deferred to `/refactor`** (they change committed shared files):
+      `_assert_the_arming_check_failed_saying` duplicates the base's `_assert_the_failure_was_charged_to`,
+      which was parameterised "for a family whose probe fails elsewhere" yet still hardcodes
+      `UNAWAITED_COROUTINE_TEXT`; and `DisarmedArmingProbeStatements` subclasses
+      `ForgottenAwaitGateStatements` for the child-run machinery and thereby inherits four public DSL
+      steps that are false for this family — the machinery wants extracting into a shared
+      `ChildProbeStatements` base.
+      **A coupling worth carrying:** the probe imports `statements.live_harness_configuration_statements`
+      and resolves it only because `pythonpath` in `backend/pyproject.toml` lists `usecase/tests` and the
+      child runs with `--rootdir backend`. Dropping that entry breaks this family with a
+      `ModuleNotFoundError` that reads as a harness defect rather than a config change.
+- [~] green-usecase (coverage: disarmed suite drives the arming probe red)
 - [ ] red-usecase (coverage: bannerless child report tallies empty) — `child_pytest_report.py:133-134`
       (`if not banners: return {}`) is a partial branch, False arm only. It matters because that empty
       `{}` is the exact symptom the `"\n".join` change was written to prevent — the docstring names it

@@ -4,6 +4,7 @@ import pytest
 
 from statements.arrangement_snapshot_guard_statements import ArrangementSnapshotGuardStatements
 from statements.child_report_join_statements import ChildReportJoinStatements
+from statements.disarmed_arming_probe_statements import DisarmedArmingProbeStatements
 from statements.forgotten_await_gate_statements import ForgottenAwaitGateStatements
 from statements.gate_reach_statements import GateReachStatements
 from statements.live_harness_configuration_statements import LiveHarnessConfigurationStatements
@@ -27,6 +28,12 @@ def child_report_join_statements():
 @pytest.fixture
 def arrangement_snapshot_guard_statements():
     return ArrangementSnapshotGuardStatements()
+
+
+@pytest.fixture
+def disarmed_arming_probe_statements(monkeypatch):
+    """Handed `monkeypatch` so the disarming env is restored however the test ends."""
+    return DisarmedArmingProbeStatements(monkeypatch)
 
 
 @pytest.fixture
