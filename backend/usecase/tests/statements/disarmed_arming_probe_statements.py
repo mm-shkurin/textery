@@ -27,10 +27,10 @@ arms are reached by different vectors and each is invisible to the other:
 
 The child must therefore be run with its ambient environment left alone, which is
 the opposite of what every other gate in this family needs: `ChildPytestRun`
-scrubs `LEAKY_CHILD_VARIABLES` unconditionally, precisely so the forgotten-await
-gate is proven against `pyproject.toml` and not against a shell. That scrub is why
-this file is red today, and lifting it for this family alone is the design cost
-the step is named for.
+scrubs `LEAKY_CHILD_VARIABLES` by default, precisely so the forgotten-await gate
+is proven against `pyproject.toml` and not against a shell. This family is the
+single `keep_ambient_environment=True` call site, and it pays for that exemption
+below -- it must scrub by hand what the base no longer scrubs for it.
 """
 
 from pathlib import Path
@@ -120,10 +120,11 @@ class DisarmedArmingProbeStatements(ChildProbeStatements):
         `-p no:warnings` test asserts. That test would pass with its own vector
         contributing nothing -- green in exactly the state it exists to reject.
 
-        Harmless while `ChildPytestRun` still scrubs these unconditionally, and
-        load-bearing the moment this family's step lifts that scrub, which is the
-        change the step exists to make. Read from `LEAKY_CHILD_VARIABLES` rather
-        than relisted, so the isolation cannot fall behind the scrub it replaces.
+        Load-bearing now rather than prospectively: this family opts out of the
+        base's scrub, so these two lines are the only isolation it has -- delete
+        them and every test here inherits whatever the developer's shell carries.
+        Read from `LEAKY_CHILD_VARIABLES` rather than relisted, so the isolation
+        cannot fall behind the scrub it replaces.
         """
         for name in LEAKY_CHILD_VARIABLES:
             self._monkeypatch.delenv(name, raising=False)

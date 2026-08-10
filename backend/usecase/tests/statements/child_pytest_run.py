@@ -9,6 +9,7 @@ it. Both are the reason a green here means anything.
 import os
 import subprocess
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 
 from statements.arranged import arranged
@@ -22,11 +23,11 @@ PROJECT_CONFIG = BACKEND_ROOT / "pyproject.toml"
 PROBE_TIMEOUT_SECONDS = 180
 
 # Anything the ambient shell or a CI runner can set that would change what the
-# child decides about warnings or which plugins it loads. Scrubbed so the gate is
-# proven against `pyproject.toml` alone: `PYTHONWARNINGS=ignore::RuntimeWarning`
-# in a runner's environment would otherwise make the gate un-failable, and
-# `PYTEST_DISABLE_PLUGIN_AUTOLOAD` would keep the control's `async def` test from
-# ever running.
+# child decides about warnings or which plugins it loads. Scrubbed by default so
+# the gate is proven against `pyproject.toml` alone: `PYTEST_ADDOPTS=-W
+# ignore::RuntimeWarning` in a runner's environment would otherwise make the gate
+# un-failable, and `PYTEST_DISABLE_PLUGIN_AUTOLOAD` would keep the control's
+# `async def` test from ever running.
 LEAKY_CHILD_VARIABLES = (
     "PYTEST_ADDOPTS",
     "PYTHONWARNINGS",
@@ -34,6 +35,11 @@ LEAKY_CHILD_VARIABLES = (
     "PYTEST_DISABLE_PLUGIN_AUTOLOAD",
     "PYTEST_CURRENT_TEST",
 )
+
+
+def _without_leaky_variables(environment: Mapping[str, str]) -> dict[str, str]:
+    """The ambient environment minus everything a runner could steer the child with."""
+    return {name: value for name, value in environment.items() if name not in LEAKY_CHILD_VARIABLES}
 
 
 def _refuse_a_probe_inside_the_repository(probe_path: Path) -> None:
@@ -135,7 +141,7 @@ class ChildPytestRun:
         ]
 
     def _child_environment(self) -> dict[str, str]:
-        """The child gets its own scratch root, and none of the ambient overrides.
+        """Its own scratch root always; the ambient overrides unless a caller kept them.
 
         A nested pytest that inherits `TEMP` builds its `tmp_path` factory under a
         directory this process does not own -- and a full-suite run was once seen
@@ -147,19 +153,18 @@ class ChildPytestRun:
         filter is opt-out, and dropping it is never a convenience -- it means the
         caller is asserting *about* those variables. That the filter still applies
         to the forgotten-await gate is itself asserted, by
-        `test_forgotten_await_gate.py`'s two hostile-environment tests: they set
-        `PYTHONWARNINGS`/`PYTEST_ADDOPTS` in the parent and require the gate to bite
-        anyway, so a flipped default here goes red rather than quietly un-arming it.
+        `test_forgotten_await_gate.py`'s parametrised hostile-environment test: it
+        sets a `PYTEST_ADDOPTS` measured to disarm the gate and requires the gate to
+        bite anyway, so a flipped default here goes red rather than quietly
+        un-arming it.
         """
         scratch = str(self._scratch_dir)
-        environment = dict(os.environ)
-        if not self._keep_ambient_environment:
-            environment = {
-                name: value
-                for name, value in environment.items()
-                if name not in LEAKY_CHILD_VARIABLES
-            }
-        return {**environment, "TMPDIR": scratch, "TEMP": scratch, "TMP": scratch}
+        inherited = (
+            dict(os.environ)
+            if self._keep_ambient_environment
+            else _without_leaky_variables(os.environ)
+        )
+        return {**inherited, "TMPDIR": scratch, "TEMP": scratch, "TMP": scratch}
 
     @property
     def _scratch_dir(self) -> Path:

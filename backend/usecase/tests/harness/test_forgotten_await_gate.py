@@ -76,26 +76,30 @@ class TestForgottenAwaitGate:
         unconditionally; it now takes an opt-in that keeps them, for the one family
         whose subject is a hostile runner environment. From that change on, "does
         *this* gate's child get scrubbed?" is a per-call-site decision, and nothing
-        watched it: `LEAKY_CHILD_VARIABLES` and `_child_environment` were each
-        referenced exactly once in the whole backend tree -- the definition and its
-        single use. No test set a hostile variable and required the gate to bite, so
-        the scrub was proven only by developer and CI shells happening to be clean,
-        which is the assumption it exists to remove.
+        watched it: before this test, `LEAKY_CHILD_VARIABLES` and
+        `_child_environment` were each referenced exactly once in the whole backend
+        tree -- the definition and its single use. No test set a hostile variable and
+        required the gate to bite, so the scrub was proven only by developer and CI
+        shells happening to be clean, which is the assumption it exists to remove.
 
-        A flipped default, an opt-in threaded through the shared base, or a later
-        refactor collapsing the two constructors would un-arm the forgotten-await
-        gate while every harness test stayed green -- and the loss would stay
-        invisible until someone forgot an `await` for real. This test is green today
-        and goes red the instant the scrub stops applying to this family.
+        An opt-in threaded through the shared base, or a later refactor collapsing
+        the two constructors, would un-arm the forgotten-await gate while every
+        harness test stayed green -- and the loss would stay invisible until someone
+        forgot an `await` for real. This test is green today and goes red the instant
+        the scrub stops applying to this family.
 
-        The parent's own run is unaffected: its filters and `config.option` were
-        resolved at startup, and `monkeypatch` restores the variable at teardown.
-
-        Both vectors were driven by hand before being written down, and the flipped
-        default was then run as a negative control -- each parametrisation goes red
-        the moment this family's child stops being scrubbed.
+        Both vectors were driven by hand before being written down, and a flipped
+        default was then run as a negative control: flipping
+        `ChildProbeStatements.__init__`'s default to True turns both parametrisations
+        red. Flipping `ChildPytestRun.__init__`'s default does *not* -- measured, not
+        assumed. That default is unobservable: `ChildProbeStatements` is its only
+        instantiator and always passes the argument explicitly, so the base's own
+        default is dead and this test cannot see it change. What is watched is the
+        one default a family actually inherits.
         """
-        monkeypatch.setenv(variable, value)
+        forgotten_await_gate_statements.given_a_hostile_runner_environment(
+            monkeypatch, variable, value
+        )
         forgotten_await_gate_statements.given_a_call_site_that_forgets_to_await_an_async_given_step(
             tmp_path
         )

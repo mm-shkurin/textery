@@ -22,6 +22,8 @@ child at all lives in `ChildProbeStatements`. What remains here is the claim.
 
 from pathlib import Path
 
+import pytest
+
 from statements.child_probe_statements import ChildProbeStatements
 from statements.forgotten_await_probes import (
     AWAITED_PROBE,
@@ -42,6 +44,22 @@ class ForgottenAwaitGateStatements(ChildProbeStatements):
 
     def given_a_call_site_that_awaits_the_async_given_step(self, tmp_path: Path) -> None:
         self._write_probe(tmp_path, AWAITED_PROBE)
+
+    def given_a_hostile_runner_environment(
+        self, monkeypatch: pytest.MonkeyPatch, variable: str, value: str
+    ) -> None:
+        """Set in the parent, so the question is whether the child inherits it.
+
+        Taking `monkeypatch` as a step argument the way the steps above take
+        `tmp_path`, rather than through the constructor: `GateReachStatements`
+        inherits this family and has no runner environment to stage, and a required
+        constructor dependency would make it carry one that is false for it.
+
+        The parent's own run is unaffected -- its filters and `config.option` were
+        resolved at startup -- and `monkeypatch` restores the variable at teardown
+        however the test ends.
+        """
+        monkeypatch.setenv(variable, value)
 
     def assert_the_failure_named_the_unawaited_coroutine(self) -> None:
         """Read out of the FAILURES section, which is the whole point of the check.
