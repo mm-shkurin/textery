@@ -567,6 +567,105 @@ pagination failure.
   this is a separate constant.) Cross-language, acceptance-layer; no vitest case can close it and
   none should try. Its own step, below.
   Suite 639 passed / 6 skipped / 0 failed; `tsc --noEmit` exit 0.
+- [ ] red-frontend (agent-review CONCERNS 1 over `36574438`) — **the sixth instance, and the
+  header does not admit this one.** `designNumbers.test.ts:9-10` claims the four assertions and the
+  collision check "share ONE declaration… deliberate and not being undone here" — a claim about
+  four lines in two OTHER files, checked by nothing. The new case pins the FIXTURE'S values; it
+  does not pin that `measuring.test.ts:99-100,186-187` and `laidOut.test.ts:82-83` still read
+  `MEASURING_SURFACE.railSkeletons` / `NO_SKELETONS` rather than re-typed literals. Edit
+  `measuring.test.ts:100` to `railSkeletonCount: 3` and: `designNumbers` green (fixture untouched),
+  `collisionsWithin` green (it reads `SURFACE_CONSTANTS`, not the assertion), and the drift hole the
+  sharing exists to close is reopened in one token — inside a `.skip`ped case, so undetectable
+  until green. Worse than its predecessors because this unit's `WHAT IT DOES NOT CLAIM` block
+  ENUMERATES limits (not-right, the Python copy, the mockup) and omits this one, so a reader taking
+  that block as complete inherits exactly the over-claim the unit was written to correct. Guard:
+  assert the assertion SITES reference the constants — a source-text check over the two files, or
+  unskipped cases driven from the fixture. No vitest case in the diff can do it.
+- [ ] red-frontend (premortem CREDIBLE 1 over `36574438`) — **even when the sites DO read the
+  constants, nothing pins WHICH FIELD each reaches.** Distinct from the finding above, and a guard
+  for that one which merely asserts the constants are referenced does NOT close this. The fixture
+  deliberately makes its keys not the field names (`sheetSkeletons` ≠ `sheetSkeletonCount`) so a
+  spread cannot be the shorter thing to write — sound for its purpose, and precisely what removes
+  the last mechanical link between a constant and the field it feeds. Transpose the two reads at
+  `measuring.test.ts:99-100` (`sheetSkeletonCount: MEASURING_SURFACE.railSkeletons` and vice versa):
+  the fixture is untouched, so `designNumbers` passes, `collisionsWithin` passes (`namedValuesOf`
+  still yields `{1,3,0,…}`), and the matrix, the collision halves and the derivation check never
+  look at that file. At green the implementation is written to match the transposed expectation and
+  the whole vitest suite is green with the surface INVERTED — 3 skeleton sheets, 1 rail row. The
+  only thing that would redden is the Selenium leg's `EXPECTED_RAIL_SKELETON_COUNT`, the copy this
+  same unit flagged as bound to TypeScript by nothing. Guard: a live case pinning the measuring
+  surface's expected `(sheetSkeletonCount, railSkeletonCount)` pair as an object built from the
+  constants, so the two cannot swap without an expectation moving. The values are asymmetric
+  (`1` vs `3`), so the transposition is detectable — nothing detects it.
+- [x] test-review follow-up to the step above — landed as `c2d76b3d`, and it closed a defect the
+  `designNumbers` unit did not create but sat next to. `crossRow.test.ts:127` read BOTH sides of
+  the hop-count equality out of the same fixture module
+  (`byName(splitAnywherePageCount)` vs `byName((row) => row.pageCount)`), so a retune that moves
+  `blockHeights` and `pageCount` TOGETHER keeps the two sides equal and leaves `4` and `6` pinned
+  by nothing. The literal is now a third side:
+  `{ derived: byName(splitAnywherePageCount), declared: byName((row) => row.pageCount) }` against
+  `{ derived: counts, declared: counts }`. Not accepted on argument — the first distinguishing
+  mutant was invalid (font-gate `pageCount: 8` also moved the hop matrix, so it died at HEAD too);
+  the valid one is `usableContentHeight 900→350`, `pageCount 4→8`, `currentPage 2→4`, which
+  preserves the hop matrix and both collision checks: **survives at HEAD (5 passed), killed after
+  the fix (1 failed / 4 passed)**. `/test-review` also declined to move `collisionsWithin` and
+  friends into the fixture — it would break the 200-line cap AND put the checker in the module it
+  checks, the exact defect this scenario has spent the week closing. `/refactor`: NO ACTION from
+  all three detectors. Suite 639 passed / 6 skipped / 0 failed; `tsc --noEmit` exit 0; oxlint
+  clean. crossRow 153 lines. **Note the greedy-agreement step chartered against `fabafd1d` below
+  is now MORE urgent, not less:** the added literal `4` makes the count LOOK pinned, while a
+  `usableContentHeight 900→700` retune keeps `ceil(2800/700) === 4` and all three live cases
+  green — and packing-agnosticism (`400+380 | 420+390 | 410+400 | 400`) is FALSE at 700px, where
+  greedy no-split gives 7. The literal that reads as protection covers neither half of that claim.
+- [ ] red-frontend (agent-review CONCERNS 1 + premortem REMOTE 1 over `c2d76b3d`, same finding;
+  cheap) — **the exhaustiveness claim is defeated by exactly one member name.**
+  `expect({ ...MEASURING_SURFACE, zero: NO_SKELETONS })` puts `zero` AFTER the spread, so a fourth
+  member literally named `zero` is silently overwritten and its addition PASSES — while the header
+  claims without qualification that "adding a fourth member to `MEASURING_SURFACE` … fails here".
+  `/test-review`'s fourth-member mutation used some other name, so it never probed the one name
+  that survives. Narrow, but `MEASURING_SURFACE`'s keys are deliberately NOT the field names, so a
+  short abstract key is exactly the register a future member is drawn from. Fix: order `zero`
+  before the spread so a real collision fails, or give the scalar a key that cannot collide — plus
+  the qualification in `WHAT IT DOES NOT CLAIM`.
+- [ ] docs, or fold into the next edit of the file (agent-review CONCERNS 3 over `c2d76b3d`;
+  trivial) — **the header says "the three stub-driven files"; there are TWO.**
+  `measuring.test.ts` and `laidOut.test.ts` hold THREE skipped CASES between them. A header whose
+  job is to tell a future reader which files run today, miscounting the files, is the same class
+  as the four line-number references `/test-review` corrected one unit earlier.
+- [ ] red-frontend (premortem CREDIBLE 2 over `36574438`) — **nothing forces the three skipped
+  cases to unskip at green, and the counter that was supposed to catch it cannot.** The whole
+  architecture of this unit and its four predecessors rests on "the stub cases are skipped for all
+  of RED, so the guard must be live" — an arrangement whose EXIT condition is enforced by nothing
+  executable. All five guards are fixture-internal; none calls `derivePaginationState`. Unskip two
+  of three and miss `laidOut.test.ts`, and the varied-geometry row — the SOLE killer of both the
+  frozen-literal mutation and `currentPage: pageCount / 2` — asserts nothing, with the suite green.
+  The precedent is in the repo: `grep it.skip frontend/src` returns six, three from this scenario
+  and three in `ManualEditor.autosaveAbandon*.test.tsx` last touched `2c07d89d` on 2026-08-02, a
+  different story still parked. So the whole-suite skip counter conflates two stories, and a green
+  run that unskips two of three reads `5 skipped` — the number the log already recorded three units
+  ago. (This sharpens the scoped-zero deliverable already charted at the green step: scope it to
+  these three files by name, not to a directory or a count.) Guard: a live case reading the three
+  files' sources and asserting zero `it.skip` among them.
+- [ ] red-frontend (premortem CREDIBLE 3 over `36574438`, low severity) — **the mockup binding got
+  no step while the Python one did.** The header calls the file "THE ONE PLACE THE MEASURING
+  SURFACE'S DESIGN NUMBERS ARE DECIDED" and, twenty lines later, "the mockup is the actual source
+  (`02-measuring.html:46-48` is three rail `.skeleton` divs)". Both cannot be true: if the mockup is
+  the source, this file is a second copy compared to it by prose. Rejecting the scrape was right —
+  it reddens on cosmetic CSS edits and stays green on a redesign that keeps three divs — but the
+  rejection produced no recorded step, whereas the structurally identical cross-language gap got
+  flagged AND a `[ ]` line. The asymmetry is the finding, and the "one place decided" framing is
+  what will stop the next reader from checking the mockup at all. Incident: rail redesigned to four
+  rows two sprints ago, editor still renders three, suite green throughout. Guard: a step for the
+  mockup↔fixture binding, and a line in `WHAT IT DOES NOT CLAIM` saying a mockup redesign is
+  detected by nothing.
+- [ ] red-frontend (agent-review CONCERNS 2 over `36574438`) — **the header's six line-number
+  cross-references are prose that already rotted once.** All six are correct at HEAD; four of five
+  were WRONG one commit ago and were repaired by `/test-review`. The repair restored accuracy
+  without adding anything that keeps it, and every chartered step queued against `measuring.test.ts`
+  shifts those lines. The commit message names the defect class exactly — "a header whose job is to
+  locate the assertions it guards is defective when it misdirects" — and then ships the same header
+  unmechanised, with no mention in `WHAT IT DOES NOT CLAIM`. Guard: anchor on a searchable token
+  instead of a line number; at minimum note in the header that the references are unpinned.
 - [ ] red-selenium or red-frontend (found by the `designNumbers` step) — **a third copy of the
   rail count lives in Python and nothing compares it to the TypeScript one.**
   `pagination_measuring_locators.py:77` holds `EXPECTED_RAIL_SKELETON_COUNT = 3` while
