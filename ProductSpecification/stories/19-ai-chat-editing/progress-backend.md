@@ -1873,6 +1873,63 @@ within their file, not across the story.
 - [~] green-usecase (coverage: bannerless child report tallies empty) — no marker to remove and no
       production change to make; the red step was a legitimate no-red and is already green. Acceptance:
       0 skipped.
+- [ ] red-usecase (a coloured report has no banners either, and the exit-code pins cannot fail) —
+      **the premortem's incident is the sharpest thing this scenario has produced, because this unit
+      is what removed the last signal.** pytest's terminal writer turns markup on in a non-tty when
+      `PY_COLORS=1` or `FORCE_COLOR` is set (`should_do_markup` checks exactly those), and `write_sep`
+      then wraps the whole separator line in ANSI escapes — so every banner line starts with `\x1b[`,
+      `_BANNER = re.compile(r"^=+ (?P<name>.+?) =+$")` matches none of them, `_banners()` returns `[]`,
+      and `summary_counts()` takes the `if not banners: return {}` arm. `LEAKY_CHILD_VARIABLES` scrubs
+      five variables and **none is a colour variable**; `PY_COLORS`/`FORCE_COLOR`/`NO_COLOR` appear
+      nowhere under `backend/usecase/tests` (grepped). The incident: "CI went green on a branch with a
+      forgotten `await` — the gate had been reporting `the child summarised {}, expected {'failed': 1}`
+      since we set `PY_COLORS=1` on the runner, and someone read that as pytest misbehaving in the
+      child and marked the gate flaky." **Before this commit the `{}` arm was an unexecuted partial
+      branch — an anomaly a reader would investigate. This commit ships two tests and a docstring
+      establishing `{}` as the *legitimate* answer for a bannerless report, so the sanctioned reading is
+      now exactly what a colour-decorated real report produces, and nothing distinguishes "the child
+      drew no banner" from "the child drew banners this regex cannot see."** Two guards, either
+      sufficient, both better: fabricate the existing `STDOUT_WITHOUT_A_TRAILING_NEWLINE` with each
+      banner wrapped in `\x1b[32m…\x1b[0m` and require `summary_counts() == {"failed": 1}` — the exact
+      fabrication the new shared base was built to make cheap, and the one shape the family did not
+      build — and/or assert `PY_COLORS`/`FORCE_COLOR` are scrubbed from `_child_environment()`, which
+      folds into the already-scheduled tuple work.
+      **(2) The seventh inert guard, shipped twice in the same file.** `_assert_the_exit_code_is` in
+      `bannerless_child_report_statements.py` reads `self._completed.returncode`, returned untouched
+      from the literal passed to `_fabricate` eleven lines above in the same file — and nothing in the
+      subject consumes it: `output`, `_lines`, `_banners()`, `section()` and `summary_counts()` never
+      read `returncode`. So the state its because-clause claims to reject ("a bannerless report from a
+      run that exited 0 or 1 would be a different subject") is **not reachable from this fixture at
+      all**, and its only possible failure mode is `ChildPytestReport.exit_code` ceasing to return
+      `returncode` — unrelated to the empty-banners arm. Same shape as the six before it: a premise pin
+      over a premise the test *authored* rather than observed. The honest forms are deleting both
+      exit-code assertions or moving the claim to a subject that actually derives the exit code.
+      (Contrast `_assert_the_report_is`, which re-applies the join formula by hand and would catch a
+      `+` mutant — genuinely load-bearing.)
+      **(3) The control's `section()` rationale describes a structurally unreachable bound.**
+      `_body_ends` ends the FAILURES body at the *next banner's* line number, so every line after it is
+      excluded regardless of how many there are — the only way stderr moves that bound is by carrying a
+      `=+ … =+` line, and the fixture is built to carry none. The commit message calls the assertion
+      "load-bearing, because four extra stderr lines … are a far likelier bound-mover": **line count is
+      not what moves the bound, banner presence is**, and both fixtures are identical on that axis.
+      What it re-checks is byte-identical to the pre-existing
+      `assert_the_failures_section_survived_the_second_stream`. The claim becomes falsifiable only
+      against a banner-carrying stderr — already scheduled — so fix the rationale, not the test count.
+      **(4) Two files in one commit contradict each other about the same production line.**
+      `child_report_join_statements.py:2-16` and `test_child_report_join.py`'s class docstring both
+      still say, present tense, that `ChildPytestReport` "fuses stdout and stderr with `+` and no
+      separator" and that "the tally reads `{}`" — production is `"\n".join(...)`, the fix landed, and
+      the new sibling written in the *same commit* describes it correctly. A reader reconstructing why
+      the test exists is told the defect is live.
+      **Rated remote, recorded so it is not re-litigated:** the whole-value expectations are the
+      production join re-typed by hand, so a legitimate hardening of `output` (suppressing the
+      separator on an empty stream, normalising trailing whitespace) turns three tests red with no way
+      to tell intent from regression — real brittleness, but loud rather than silent, and the real-run
+      families still pin the join against text pytest actually wrote. And
+      `FAILURES_BODY_STDOUT_REPORTED` has no `_____ test_probe _____` sub-banner, so a future family
+      reusing the fabrication could conclude something about `failing_test_names()` from a body real
+      pytest never writes — worth a comment on the fixture, not a test.
+- [ ] green-usecase (a coloured report has no banners either, and the exit-code pins cannot fail)
 - [ ] red-usecase (the scrub is watched through one variable of five, and the vectors' own potency
       is asserted nowhere) — **both review passes over `ae505cc6` converged on the first item, and the
       agent-review pass ran the negative control independently rather than trusting the commit
