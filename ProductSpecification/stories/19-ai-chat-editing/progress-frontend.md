@@ -459,9 +459,14 @@ under `frontend/src` or `acceptance/tests/frontend`.
       token, so one comparison subsumes both. 515 passed / 0 failed (117 files); the sibling
       `useEditorDocument.strictMode.test.tsx` still passes, which is what proves the dedupe guard
       survived being split off the stale-response check.
-      Both pairs target `useEditorDocument.ts` (branches 4/8). The dedupe guard `L35` and the two
-      stale-response guards `L41`/`L45` have their true arms taken by **no** test — all three
-      `return`s are deletable with the suite green, which is follow-up (k) still open: the
+      Both pairs target `useEditorDocument.ts` (branches 4/8). **Superseded by the green above for
+      the `.then` arm only** — deleting the guard now at `L46` fails the un-skipped
+      `supersededResponse` case, so follow-up (k) is closed for that arm and open for the other two.
+      What the paragraph below still describes correctly: the dedupe guard (now `L39`) and the
+      `.catch` token guard (now `L50`) survive deletion with the suite green — premortem verified the
+      `.catch` one by mutation (4 files / 10 tests still pass without it). The two guards written by
+      one commit therefore have asymmetric coverage. Original wording, with the stale `L35`/`L41`/
+      `L45` numbers, kept below for the reasoning it carries: the
       StrictMode double-fetch proof lives in `useDocumentInit.strictMode.test.tsx` for the *other*
       hook, and `toHaveBeenCalledExactlyOnceWith` here is asserted outside StrictMode, so it
       passes for a hook with no guard at all. The stale-response pair needs a rerender with a new
@@ -474,6 +479,21 @@ under `frontend/src` or `acceptance/tests/frontend`.
       suite-green — now located precisely rather than merely restated.
       Also uncovered and deliberately left alone: `DocumentEditorPage.tsx:20` `documentId ?? ''`
       right arm — reachable only by mounting the page off its route, no user-visible behavior.
+- [ ] red-frontend (coverage: a superseded *rejection* for the SAME id loses)
+      Inserted by the premortem over the green above. The `.catch` token guard is the twin of the
+      `.then` one and is unexercised — deleting it leaves `src/features/aiChat` green (4 files,
+      10 tests). This is the arm that produces the user-visible dead end rather than a
+      stale-but-plausible version: A's *first* request rejecting late (502, dropped connection,
+      expired session, or a `DocumentNotFoundError` for a since-deleted sibling) overwrites a good
+      `ready` with `failed` — or with `not-found`, which per the hook's own comment tells the user
+      their document is gone and invites them to re-create one that exists.
+      Named case: in `useEditorDocument.supersededResponse.test.tsx`, have `deferredLoads()` also
+      capture `reject`; run the ping-pong A→B→A, resolve `resolvers[2]` with `FRESH_DOCUMENT`, then
+      call `rejecters[0](new DocumentNotFoundError(...))` and assert `result.current` is still
+      `{ status: 'ready', document: FRESH_DOCUMENT }`.
+- [ ] green-frontend (coverage: a superseded *rejection* for the SAME id loses)
+      Expect no production change — the guard exists and is correct; this pair pins it. Say so
+      honestly if the diff is empty, and report the branch count as the measurable result.
 - [ ] green-selenium
 - [ ] demo
 

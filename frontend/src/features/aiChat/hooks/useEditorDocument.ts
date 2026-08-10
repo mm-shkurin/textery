@@ -26,7 +26,6 @@ export function useEditorDocument(documentId: string): EditorDocumentState {
   // without this the load fires twice per mount. A cleanup-flag guard (the pattern in
   // useDocumentInit) suppresses the second run's setState but NOT its fetch — here the fetch
   // itself must not repeat, so the guard sits before it.
-  //
   const requestedIdRef = useRef<string | null>(null)
 
   // Which *request* is current, not which id. Route ping-pong A → B → A issues two fetches for A,
