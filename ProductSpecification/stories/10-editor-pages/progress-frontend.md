@@ -681,7 +681,7 @@ pagination failure.
   Suite 640 passed / 6 skipped / 0 failed (a case extended, not added). `prettier --check` clean on
   both files; oxlint and `tsc -b --noEmit` each report only the pre-existing RED stub
   `paginationState.ts:100` (unused `input`).
-- [ ] red-frontend (premortem CREDIBLE 1 over `63a049fd`) — **the case's own NAME is not enforced;
+- [x] red-frontend (premortem CREDIBLE 1 over `63a049fd`) — **the case's own NAME is not enforced;
   one paste-repair legalizes a re-typed literal forever.** `PINNED_ASSIGNMENT` captures the
   right-hand side as `(.+)`, so `pageCount: 4` is a fully LEGAL member of `pinnedAssignments`. The
   `it` is named "states every count by naming a fixture constant or a row field, never by re-typing
@@ -700,6 +700,48 @@ pagination failure.
   `pageCount: 4` fails WHETHER OR NOT it is in the expected list. Kill-check with the same four
   mutants; each must die twice. This is the read-as-a-property move already made in `b8bde42d`,
   not carried across to the field the alternation just admitted.
+  **Done.** New file `paginationState.assignmentShape.test.ts` (97 lines, 2 LIVE cases) — own file
+  rather than an extension of `constantSites.test.ts` (148), because the subject differs (a
+  PROPERTY over the right-hand sides vs EXACT membership) and five more chartered steps land in
+  that file.
+  **The independence is measured, not argued — every mutant run TWICE.** For each of
+  `measuring.test.ts:184 → pageCount: 4`, `:185 → currentPage: 2`, `laidOut.test.ts:80 →
+  pageCount: 6`, `:81 → currentPage: 5`: with `constantSites`' expected list left stale, BOTH cases
+  fail; with the received array mechanically pasted over it — the exact incident in the charter —
+  **`constantSites` is GREEN and the shape case is RED ALONE** (`1 failed | 2 passed`). Four of
+  four. Two controls also red under the paste-repair: `pageCount: null → undefined` at `:97` (the
+  absence decision cannot be silently converted), and deleting all four `laidOut` pinned lines
+  (non-vacuity floor).
+  **Regex derived from the real right-hand sides, not taken from the charter.** Charter proposed
+  `/^([A-Z][A-Z_]*|[A-Z][A-Z_]*\.[a-zA-Z]+|null)$/`; shipped
+  `/^(?:[A-Z][A-Z0-9_]*(?:\.[a-z][A-Za-z0-9]*)?|null)$/` — same three admitted forms collapsed to
+  one alternative since the field read is an optional suffix, and the field half REQUIRED to start
+  lowercase, because the charter's `[a-zA-Z]+` would have admitted `FOO.Bar`. `/test-review`
+  probed fifteen rejections including `4`, `4 as number`, `'4'`, `pageCount`, `FOO.Bar`,
+  `undefined`, `` `${4}` ``, `Number(4)`, `null!`, `NO_SKELETONS as number`,
+  `MEASURING_SURFACE['railSkeletons']`, `X.y + 1` — and admitted only the four constant/field forms
+  and `null`. **A floor, not a count**, deliberately: pinning the exact number of sites would
+  re-import the hand-typed-expectation dependency this file exists to be free of.
+  **`/test-review` found the floor was boolean-collapsed** — `rightHandSidesIn(f).length > 0`
+  against `true`, so a failure prints `false` and "floor breached" is indistinguishable from "floor
+  read off the wrong file". Replaced with the collected lists against
+  `expect.arrayContaining([expect.any(String)])`: same unsatisfiable-by-empty semantics, no
+  hand-typed count, and the failure now prints each file's actual site list. Case 1 was already
+  strict (per-file offender lists via `toStrictEqual`, naming the offending RHS) and was left
+  alone.
+  **Second `/test-review` finding — `constantSites`' header claimed a mechanism the regex does not
+  have.** It said a doubled space and `MEASURING_SURFACE['railSkeletons']` are DROPPED. Measured:
+  both MATCH (`(.+)` swallows the extra space and the brackets) and surface as a CHANGED member,
+  not a missing one. Still fail-closed both ways, so nothing was weakened — but the paragraph is
+  the reader's map for interpreting a failure, so drop (line wrap, trailing comment) is now
+  separated from changed-member, with the matching note in `assignmentShape` that the RHS is
+  deliberately not trimmed.
+  **Still open, and this case does NOT close it:** the widened-regex hole (CREDIBLE 2 over
+  `63a049fd`, below) — `assignmentShape` reads the matcher's OUTPUT, so widening
+  `PINNED_ASSIGNMENT` still reddens nothing here.
+  Suite 642 passed / 6 skipped / 0 failed (2 cases added). `prettier --check` clean on both touched
+  files; oxlint and `tsc -b --noEmit` report only the pre-existing RED stub `paginationState.ts:100`.
+  Files: assignmentShape 97, constantSites 153, fixtureUsage.source 70.
 - [ ] red-frontend (premortem CREDIBLE 2 over `63a049fd`) — **the split this unit performed moved
   the guard's load-bearing narrowness into a file where relaxing it reddens NOTHING.**
   `fixtureUsage.source.ts` has zero tests of its own; its only importer never touches the regex,

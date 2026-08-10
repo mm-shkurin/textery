@@ -86,10 +86,15 @@ import { fixtureUsageIn, LAID_OUT_FILE, MEASURING_FILE } from './fixtureUsage.so
  *
  * IT IS FAIL-CLOSED UNDER REFORMATTING, AND THE FAILURE READS AS A DELETION. This was probed rather
  * than assumed, because a source-text check silently defeated by whitespace is prose again. Every
- * shape that is not exactly `<field>: <expression>,` on one trimmed line — a line wrap, a doubled
- * space, a trailing comment, `MEASURING_SURFACE['railSkeletons']` in bracket form — drops that site
- * from the collected list rather than admitting it, so the list SHORTENS and `toStrictEqual` fails.
- * All six variants were run; all six redden. The `3`-behind-a-comment and `3`-across-a-line-wrap
+ * shape that is not exactly `<field>: <expression>,` on one trimmed line reddens this case — but by
+ * TWO different mechanisms, and an earlier version of this paragraph claimed only the first for all
+ * of them, which was wrong where it mattered least and would have been read as a guarantee where it
+ * mattered most. A line wrap and a trailing comment (`pageCount: 4, // frozen`) fail the line regex
+ * outright and DROP the site, so the list SHORTENS. A doubled space (`pageCount:  4,`) and
+ * `MEASURING_SURFACE['railSkeletons']` in bracket form are both MATCHED — `(.+)` swallows the extra
+ * space and the brackets alike — and surface as a CHANGED member (`pageCount:  4`) rather than a
+ * missing one. All variants were re-run against the regex directly; every one reddens, so the
+ * fail-closed claim stands and only its mechanism is restated here. The `3`-behind-a-comment and `3`-across-a-line-wrap
  * attacks are therefore caught, but they surface as a MISSING member, not as a changed one — read a
  * short list here as "an assertion is no longer in the recognised form", which includes having been
  * re-typed, and go look at the site. Two consequences a reader must not "repair" by loosening the
