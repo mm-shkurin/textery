@@ -4,22 +4,25 @@ Navigation note (`.claude/guidelines/frontend-rules.md`, "FORBIDDEN in-app navig
 URL"): this scenario is reached by a direct `driver.get` of the editor route, which is the
 rule's allowed exception (2) — an external entry point where users genuinely arrive by URL.
 
-Two independent reasons, both true as of 2026-08-08:
+One reason, and it is the load-bearing one:
 
-1. No in-app path to this state can exist *by construction*. A documents list, once it
-   ships, lists only documents that exist and belong to the signed-in user, so no sequence
-   of clicks inside the app can ever select an absent or foreign document. The Given is
-   only reachable from outside: a stale bookmark, or a link shared by another account.
-2. No in-app path exists *yet*, either. There is no documents-list screen in the app at
-   all, and `frontend/src/app/App.tsx` has no `/documents/:id` route — that path currently
-   falls through the `/*` catch-all to `DocumentGenerationFlow`. So there is presently no
-   UI to click even for the documents that do exist.
+1. No in-app path to this state can exist *by construction*. The documents list shows only
+   documents that exist and belong to the signed-in user, so no sequence of clicks inside
+   the app can ever select an absent or foreign document. The Given is only reachable from
+   outside: a stale bookmark, or a link shared by another account.
 
-Re-check obligation: reason (2) expires the moment the documents list ships. Reason (1) is
-the load-bearing one and is expected to survive, but when the list lands, re-verify that it
-offers no click path to a foreign or deleted document (for example, a "recently deleted"
-row or a shared-with-me tab). If such a path appears, replace the `driver.get` below with
-UI-click navigation.
+A second reason used to stand beside it — that no documents-list screen and no
+`/documents/:id` route existed at all, so there was nothing to click even for documents
+that do exist. That reason has expired. `App.tsx` now routes both `/documents` and
+`/documents/:documentId`, and `HistoryPage` opens a document by click
+(`onOpenDocument` → `navigate(/documents/${documentId})`).
+
+Re-check performed at green-selenium, when the routes went live: `listDocuments` returns
+only the signed-in account's own live documents, and the list has no "recently deleted"
+row and no shared-with-me tab — the two shapes that would have created a click path to a
+foreign or absent id. Reason (1) therefore survives the list shipping, and the `driver.get`
+below stays legal. Re-run this check if either of those shapes is ever added; if one is,
+replace the `driver.get` with UI-click navigation.
 """
 
 import uuid
@@ -42,8 +45,8 @@ MANUAL_EDITOR = (By.CSS_SELECTOR, "[data-testid='manual-editor']")
 # `ai-chat-*` testid namespace means no naming choice in 1.1 can slip past this assertion.
 AI_CHAT_ANY = (By.CSS_SELECTOR, "[data-testid^='ai-chat']")
 
-# The documents-list route this scenario's way-out link must lead to. No such route exists
-# yet; this test is the specification that defines it, and green-frontend must match.
+# The documents-list route this scenario's way-out link must lead to. This test specified it
+# before it existed; `App.tsx` now routes it to `DocumentsListRoute` and the two must match.
 DOCUMENTS_LIST_PATH = "/documents"
 
 EXPECTED_NOT_FOUND_TITLE = "Документ не найден"

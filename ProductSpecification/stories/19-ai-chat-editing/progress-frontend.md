@@ -580,6 +580,40 @@ under `frontend/src` or `acceptance/tests/frontend`.
       be observed. The *register* equivalents pass, so this is the login path's response latency, not
       a shared harness problem. The suite run was stopped at 14% per stop-on-first-failure — 12
       passed, 2 failed, **21 tests did not run**, so there may be more.
+      **Review-pass findings. One discharged here, two open:**
+      *(discharged)* The Statements file's own re-check obligation fired and nobody noticed. Its
+      docstring justified the forbidden in-app-URL `driver.get` with two reasons, and reason (2) —
+      "there is no documents-list screen in the app at all, and `App.tsx` has no `/documents/:id`
+      route" — became false when `70ef65eb` shipped both routes; `HistoryPage.tsx:95` now opens a
+      document by click. The obligation the file wrote for itself was to re-verify reason (1) when
+      the list landed. Performed: `listDocuments` returns only the signed-in account's own live
+      documents, and the list has no "recently deleted" row and no shared-with-me tab — the two
+      shapes that would create a click path to a foreign or absent id. Reason (1) survives, the
+      `driver.get` stays legal, and the docstring plus the `DOCUMENTS_LIST_PATH` comment now say so
+      instead of the opposite.
+      *(open)* **269.55s for one test, unexplained and accepted as green.** Every Selenium wait on
+      the path is bounded at `WAIT_TIMEOUT_SECONDS = 5`, the test does one `driver.get`, one live
+      session (three HTTP calls) and two `find_elements` absence checks — a worst case near 20-30s
+      plus browser startup. Neighbours in the same suite run ~3s each. So ~4 minutes is going
+      somewhere unaccounted: Chrome startup, backend password hashing, or the editor route's on-mount
+      call. Both passes flagged it independently; at this cost the suite fits no CI budget, and if it
+      is the editor mount it is a product latency signal, not a harness one. Nothing bounds a test's
+      wall clock, so only a human eye can notice an outlier. Related and named by the premortem:
+      `useEditorDocument` has no timeout and no `AbortController`, and `DocumentEditorPage` renders
+      the loading message for anything not `ready`/`not-found`/`failed` — so a request that never
+      settles never reaches `failed`, and the "try again" screen is unreachable by hang.
+      *(open)* **No full frontend acceptance run has completed since the routes landed.** `70ef65eb`
+      inserted `/documents` and `/documents/:documentId` *above* the `/*` catch-all in `App.tsx` —
+      the change shape that silently re-routes existing scenarios — and the generation-flow tests
+      behind that catch-all are among the 21 that did not run. No interception path was found by
+      inspection (no existing test appears to use a `/documents*` URL), so severity is low, but the
+      verification is absent rather than merely unlikely to matter. Owed: one run without `-x`, with
+      the two known-red login tests deselected.
+      *(out of trace, flagged not fixed)* `acceptance/statements/frontend/live_auth_session.py:52`
+      reads `verification_code` straight out of the `POST /api/v1/auth/register` 201 response body.
+      If that is production behaviour rather than a test-only affordance, email verification is
+      bypassable by the registrant and by anyone who observes the response. Pre-existing, backend's
+      to answer — but the whole frontend acceptance harness depends on it.
 - [ ] demo
 
 ### 0.2 An account over its daily quota cannot type an instruction
