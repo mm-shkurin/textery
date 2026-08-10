@@ -497,7 +497,7 @@ pagination failure.
   changes four assertions in silence. Do not rely on this sentence.
   One residue, deliberately left: nothing forces a NEWLY ADDED surface constant to be routed
   through `SURFACE_CONSTANTS`. That is the name-keyed map exhaustiveness item below.
-- [ ] red-frontend (agent-review CONCERNS 1 + premortem CREDIBLE 1 over `5eec272c`, both
+- [x] red-frontend (agent-review CONCERNS 1 + premortem CREDIBLE 1 over `5eec272c`, both
   independently) — **the fifth time, and this one is worse than its predecessors: the mutation
   kill was an accident of two row numbers, and the copy that used to backstop it is gone.**
   `collisionsWithin` is a UNIQUENESS check, not a VALUE check. It fires only when the mutated
@@ -520,6 +520,60 @@ pagination failure.
   `expect({ ...MEASURING_SURFACE, zero: NO_SKELETONS }).toStrictEqual({ sheetSkeletons: 1,
   railSkeletons: 3, zero: 0 })`, with a header stating this is the one place the design numbers
   are decided and a legitimate rail-count change is edited HERE, deliberately.
+  **Done.** New file `paginationState.designNumbers.test.ts` (68 lines), **LIVE not skipped** — it
+  checks the constants, not the stub, so it runs today. Own file rather than joining
+  `crossRow.test.ts`: these constants are precisely what `crossRow` EXCLUDES from its cross-row
+  half, and `crossRow` at 142 lines must keep headroom for the chartered companion case. The
+  recorded shape was taken rather than a mockup scrape — scraping would pin the number to CSS
+  classes in a non-normative artifact with no testids, reddening on a cosmetic mockup edit and
+  staying green on a rail redesign that keeps three divs for another purpose; and a scrape is not
+  a DECISION SITE, which is what this step's charter asks for. Mockup and spec provenance is in
+  the header instead.
+  **The hole proved rather than assumed:** `railSkeletons: 3 → 8` **SURVIVES at HEAD** —
+  `5 passed | 3 skipped`, ZERO failures — and is killed by the new case (`- 3 / + 8`). Also
+  killed: `sheetSkeletons: 1 → 9`, and `NO_SKELETONS: 0 → 9` (the latter fails on ONE case only,
+  `collisionsWithin` silent, confirming the thesis directly). Every previously-recorded kill still
+  lands, and `railSkeletons = 4` / `NO_SKELETONS = 2` now fail TWICE — the collision check plus the
+  new value check.
+  RED as predicted: unskipping the three stub cases gives `3 failed | 6 passed`, all
+  `Error: Not implemented` at `paginationState.ts:101:9`, none reaching an `expect`; the new case
+  passes unmutated. No correction loop.
+  **Is this the "value typed twice with nothing comparing them" pattern one level over? Answered
+  honestly, and `/test-review` verified the load-bearing half by mutation rather than taking it.**
+  It is genuinely different: in all five prior repetitions the two copies were compared by nothing
+  executable — a doc comment, a `.skip`ped case, or a uniqueness check that never read the value.
+  Here the comparison runs on every suite run during RED, turning a one-token silent rewrite into a
+  red test. But it is a **TRIPWIRE, not a DERIVATION**: both sides are authored in this repo, so a
+  wrong-but-deliberate change is a two-file edit rather than an impossible one. That limit is
+  stated in the file's own header under `WHAT IT DOES NOT CLAIM`, so no later reader inherits the
+  last unit's mistake of over-claiming a guard's coverage — and `/test-review` checked for exactly
+  that repeat and found none.
+  `/test-review` ran five fixture mutations against both live files: `railSkeletons: 8`,
+  `sheetSkeletons: 9`, `NO_SKELETONS: 9`, adding a fourth member, and removing one — **all five
+  RED in designNumbers and GREEN in crossRow.** That green column is the independent confirmation
+  that `collisionsWithin` never guarded these values. The add/remove pair also proves the spread
+  is safe here: `toStrictEqual` over `{ ...MEASURING_SURFACE, zero: NO_SKELETONS }` makes the check
+  exhaustive over the object's members, and the mistaken-licence risk is mechanical rather than
+  prose — the fixture's keys are deliberately not the field names, so spreading it into a
+  `PaginationViewState` expectation fails on the key list.
+  One fix applied: four of the header's five cross-references pointed at the wrong lines
+  (`measuring.test.ts:98-99` → 99-100, `:185-186` → 186-187, `laidOut.test.ts:78-79` → 82-83,
+  `02-measuring.html:52` → 53). A header whose whole function is to point at the assertions it
+  guards, misdirecting the reader, is the same class of defect as prose over-claiming coverage.
+  **New finding, flagged not absorbed — there is a THIRD copy of the `3`, in Python.**
+  `acceptance/statements/frontend/editor/pagination_measuring_locators.py:77` holds
+  `EXPECTED_RAIL_SKELETON_COUNT = 3`, with its own justification comment, compared with the
+  TypeScript one by nothing. (The `MEASURING_SURFACE` locator tuple in that file is unrelated —
+  this is a separate constant.) Cross-language, acceptance-layer; no vitest case can close it and
+  none should try. Its own step, below.
+  Suite 639 passed / 6 skipped / 0 failed; `tsc --noEmit` exit 0.
+- [ ] red-selenium or red-frontend (found by the `designNumbers` step) — **a third copy of the
+  rail count lives in Python and nothing compares it to the TypeScript one.**
+  `pagination_measuring_locators.py:77` holds `EXPECTED_RAIL_SKELETON_COUNT = 3` while
+  `MEASURING_SURFACE.railSkeletons` holds `3` in the fixture. Binding them is cross-language, so
+  the vitest guard cannot reach it; the natural home is the Selenium leg asserting the rendered
+  rail against a value derived from one side. Until then, a rail redesign updates one language and
+  leaves the other asserting the old count.
 - [ ] red-frontend (premortem CREDIBLE 2 over `5eec272c`) — **the collision expectation can be
   widened on its own; its sibling cannot, and the file argues against itself about exactly this.**
   The hop matrix has a second COMPUTED case precisely so it "cannot be quietly shortened" — the
