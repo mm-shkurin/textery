@@ -1010,7 +1010,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   — fold a re-read of the citation into the coverage green once that skip lifts. And a non-dict body
   raises a bare `AttributeError` with no leg label, guarded in practice because all ten live sites
   assert whole-body equality on the line above.)
-- [ ] red-acceptance (premortem on `f935be3c`, the finding that outranks the whole wire-shape
+- [~] red-acceptance (premortem on `f935be3c`, the finding that outranks the whole wire-shape
   cluster: **nothing in the repo drives the real save path end to end, so nothing goes red when the
   erasure ships.** `SaveDocumentRequestDto` is INBOUND-ONLY — two occurrences in `backend/**/src`
   (its definition and the router parameter), zero `model_dump` call sites anywhere in
@@ -1025,8 +1025,39 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   asserting the stored title survives. That row is the only thing that would catch the frontend
   regression, and it is the row nobody chartered. Sequencing: this is the guard the six chartered
   fence rows do not add up to — do not let 2.1's green-acceptance stand in for it, and do not read
-  the fence cluster going green as this being covered.)
+  the fence cluster going green as this being covered.
+  **RE-RAISED AND SHARPENED by premortem on `7b0a9c51`, now with the row spelled out and its
+  scaffolding measured as already built.** The absent-title path is guarded piecewise and never in
+  composition: `test_save_document_title_router.py:57` drives `{"content", "version"}` but against a
+  MOCKED usecase and asserts only that `execute` was called with `TitleUpdate.preserve()` — nothing
+  below the port runs; `backend/adapters/db/tests/access/document/test_document_storage_title.py:61`
+  passes a HAND-CONSTRUCTED `TitleUpdate.preserve()` — nothing above the port runs. Acceptance covers
+  the BLANK row full-stack (`document_blank_title_save_statements.py`) and never the ABSENT row: both
+  backend `save_document(` call sites pass a title (`document_blank_title_save_statements.py:53`,
+  `document_export_filename_statements.py:56`). `title_update()` is the single hinge and its one
+  honest exercise is against a mock.
+  THE ROW, named: `given_owner_autosaves_content_only_over_a_stored_title` in
+  `acceptance/statements/document_blank_title_save_statements.py`, calling `save_document(...)` with
+  `title=None`, then reusing the existing `assert_filename_rfc5987_encoded_from_title` step. Nearly
+  free — the client already omits the key when `title is None`
+  (`acceptance/clients/application/application_client.py:127-129`), the statements class already
+  subclasses `DocumentExportFilenameStatements`, and the export header is already documented there as
+  the only black-box observation of the stored title that exists.
+  premortem rates this BLOCK-adjacent: it and the parked roundtrip RED below are the same incident
+  from two sides, and they compound — unparking that RED and fixing the reader WITHOUT first landing
+  this end-to-end row means the fix is verified only by tests that were already green while the bug
+  was present. Land this first.)
 - [ ] green-acceptance (premortem: a content-only save must leave the stored title alone, end to end)
+- [ ] unpark the roundtrip RED (premortem finding 2 on `7b0a9c51`, sequenced AFTER the two rows
+  above): `test_save_document_request_dto_roundtrip.py:7` carries a class-level `@pytest.mark.skip`
+  over both legs whose reason names a LIVE defect in production code (`document_dtos.py:55` reads
+  `model_fields_set`, which neither `model_dump()`/`model_validate()` nor the JSON pair round-trips,
+  so an absent title reparses as `clear()` on BOTH legs). This is not a coverage gap — the guard is
+  written and switched off, and it is two of this suite's four skips. Re-check its docstring premise
+  while unparking: it says "the incident it forecloses is the day someone adds a save queue", and a
+  save queue already exists (`acceptance/statements/frontend/generation/manual_editor_save_queue_
+  statements.py`). TypeScript, so it does not round-trip this Python DTO and the claim is still
+  literally true — but the distance is shorter than when it was written; re-grep, don't inherit.
 - [x] red-adapter rest (coverage: refusal co-occurring with the other two faults). The partition's
   arms are pinned INDIVIDUALLY but never in combination, and coverage cannot see the gap:
   `wire_shape_key_fence.py` reports **100% line and 100% branch** (17 stmts, 6 branches) because
@@ -1109,7 +1140,42 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   fence says, this asserts WHICH of two things it says when both are armed. Not the refusal file
   either: the fixture omits `title`, but the expected message carries none of the refusal's
   title-specific wording and no cross-file class name, which is the entire point of the row.
-- [ ] green-adapter rest (coverage: leg guard preempts a genuinely broken body)
+- [S] green-adapter rest (coverage: leg guard preempts a genuinely broken body) — SKIPPED as a step
+  in substance, on the same reasoning as the identical case one unit above: the guard order was
+  already correct, so the red half was a coverage guard over already-correct code and a green commit
+  here would be a no-op. Marker corrected from `[ ]` by agent-review on `7b0a9c51`, which caught the
+  narrative ("LANDED GREEN ON ARRIVAL") contradicting the marker it left.
+  `/refactor` on that commit applied the one finding `/test-review` handed it and MEASURED it first
+  rather than taking it on faith: renaming `title` to `heading` on the model and calling the fence
+  with a `content`+`version` body emits `['heading'] was declared on the model and dropped by the
+  serializer` — the generic dropped-field wording, on the one field the helper's own comment says
+  must never be called "dropped", because that wording is what invites a green emitting
+  `"title": null`, which `title_update()` maps to `TitleUpdate.clear()`. The refusal branch does not
+  fail loudly when it goes stale; it degrades silently into the message it exists to prevent. Closed
+  with an import-time guard asserting `"title" in SaveDocumentRequestDto.model_fields`, mirroring the
+  leg guard's `get_args(WireLeg)` check — import-time because it is a static fact about the class,
+  and with an explicit message because this module is not assert-rewritten. Verified to bite under
+  the simulated rename. 115 passed, 4 skipped. `wire_shape_key_fence.py` is now 187/200 — the next
+  comment block added to it forces a split, not an insertion.
+  DECLINED by `/refactor`: extracting the twice-spelled `"title"` literal into a constant — one guard
+  covers both spellings, and the refusal wording is pinned by exact equality in the siblings, so
+  interpolation would add a layer between the message and its pin for nothing.
+  STANDING FRAGILITY, named by `/refactor` after tripping it: this file family cites siblings by hard
+  line number (the new row's `:12` cited "lines 100-108", now 131-139, and was corrected), so every
+  insertion into `wire_shape_key_fence.py` silently rots the pointers. Kept the convention — changing
+  it is outside a refactor pass — but it costs a fix-up every time.
+  agent-review finding 3, RECORDED not chartered: `assert_body_keys_track_the_model(body, "dmped
+  JSON")` type-checks today only because of the resolution hole the helper documents at
+  `wire_shape_key_fence.py:8-21`. The helper names the fix as a live intention (`mypy_path` reorder,
+  or move the helper), and doing it turns this call and the sibling at `test_wire_shape_key_fence.py`
+  into `arg-type` errors. This unit took that from one site to two with nothing recording that the
+  two rows testing the RUN-TIME guard are exactly the rows that must be exempted. Whoever moves the
+  file discovers it as a red mypy run.
+  premortem finding 3, RECORDED: the helper's comment claims the leg label catches "a typo **or a
+  swapped label**". The run-time guard catches the typo half only — `"dumped"` passed at a JSON call
+  site is in `get_args`, sails through, and misnames the leg in the one report anybody reads. The
+  swap half is structurally unreachable from inside the helper and rests on call-site review; the
+  honest close is a correction to that comment, not a test.
 - [ ] red-adapter rest (both review passes on `b1991508`, converging as their top finding: **two LIVE
   rows now certify the erasure body as key-set-clean.** `test_wire_shape_key_fence.py` rows 1 and 3
   use `{"title": None, "version": 1}` (and `+ {"note": "spurious"}`) with `['content']` pinned by

@@ -49,6 +49,37 @@ from dto.document.document_dtos import SaveDocumentRequestDto
 # pyproject.toml is what keeps the mismatch silent rather than an error.
 WireLeg = Literal["dumped", "dumped JSON"]
 
+# The `missing` partition below spells `title` as a bare literal, and it is the one
+# name in this helper NOT read off the model at run time -- `declared` is, and so is
+# `WireLeg`'s guard. That asymmetry is a hole with a measured consequence. Renaming
+# the field to `heading` leaves this file importing and every existing row green,
+# because the refusal branch simply stops matching: measured on the current model
+# with `title` renamed in `model_fields`, a body carrying `content` and `version`
+# reports
+#
+#     ['heading'] was declared on the model and dropped by the serializer
+#
+# -- the GENERIC dropped-field wording, on the one field whose absence lines 159-166
+# argue must never be called "dropped", because that wording is what asks a future
+# green to emit `"title": null` and erase a title the save never touched. The
+# refusal does not fail loudly when it goes stale; it degrades into the exact
+# message it exists to prevent.
+#
+# So the literal is pinned against the model at IMPORT time, mirroring the leg
+# guard's run-time check of `get_args(WireLeg)`. Import time rather than inside the
+# function because this is a static fact about the class, not a per-call one: the
+# guard would otherwise re-check a constant at all 10-plus call sites, and it fires
+# at collection -- before any row runs -- so a rename surfaces as one loud error
+# naming its own fix instead of a quietly relabelled fault. A bare `assert` gets no
+# introspection here (this module is not assert-rewritten -- see
+# `test_wire_shape_key_fence.py:44`), hence the explicit message.
+assert "title" in SaveDocumentRequestDto.model_fields, (
+    "wire_shape_key_fence partitions its `missing` leg on the literal 'title', which "
+    "is no longer a declared field of SaveDocumentRequestDto -- rename it in the "
+    "refusal branch too, or the absent-title refusal silently degrades to the generic "
+    f"dropped-field wording, got declared fields {sorted(SaveDocumentRequestDto.model_fields)}"
+)
+
 
 def assert_body_keys_track_the_model(body: dict[str, object], leg: WireLeg):
     """The half of the shape that whole-body equality against a literal cannot hold.

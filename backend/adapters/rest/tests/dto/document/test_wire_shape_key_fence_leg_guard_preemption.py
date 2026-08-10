@@ -9,7 +9,7 @@ class TestWireShapeKeyFenceLegGuardPreemptsTheFaultLegs:
     `WireLeg` is refused, and by exact wording -- but it does so with a
     WELL-FORMED body, deliberately, so that the message can only have come from
     the guard. That choice is what makes the row unable to hold the property the
-    guard's comment (`wire_shape_key_fence.py`, lines 100-108) argues for at
+    guard's comment (`wire_shape_key_fence.py`, lines 131-139) argues for at
     length: with both fault legs quiet, the guard could sit ABOVE them or BELOW
     them and the observed message would be identical. Moving the guard under
     `faults` leaves all six rows of the two sibling files green (four in
