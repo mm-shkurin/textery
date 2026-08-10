@@ -1802,6 +1802,56 @@ within their file, not across the story.
       itself has still never been executed, so a report with no banner lines at all has never been fed
       through `summary_counts()`.
 - [ ] green-usecase (coverage: bannerless child report tallies empty)
+- [ ] red-usecase (the scrub is watched through one variable of five, and the vectors' own potency
+      is asserted nowhere) — **both review passes over `ae505cc6` converged on the first item, and the
+      agent-review pass ran the negative control independently rather than trusting the commit
+      message: with a scratchpad plugin forcing `keep_ambient_environment`, both new parametrisations
+      go red and the two pre-existing tests stay green. The guard is real — it is the first assertion
+      on this scenario that fails in the state it exists to reject.** These are the gaps beside it.
+      (1) `LEAKY_CHILD_VARIABLES` has five entries; the guard drives **`PYTEST_ADDOPTS` twice**.
+      Delete `PYTEST_DISABLE_PLUGIN_AUTOLOAD`, `PYTHONWARNINGS`, `PYTEST_PLUGINS` or
+      `PYTEST_CURRENT_TEST` from the tuple and the whole suite stays green. Not hypothetical: with the
+      scrub lifted and `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` ambient, **all four** gate tests fail —
+      including the control — exactly the "the `async def` probe never runs" breakage the constant's
+      own comment predicts. And `PYTHONWARNINGS` is measured inert as a *disarm* vector, so the
+      end-to-end shape ("set it, require the gate to bite") can never guard it at all. **The right
+      guard is not another child run but a direct unit assertion on `_child_environment()`:** with
+      every entry set in the parent, `ChildPytestRun()._child_environment()` contains none of them and
+      `ChildPytestRun(keep_ambient_environment=True)._child_environment()` contains all of them. That
+      is the only shape that goes red on tuple shrinkage, and it covers the entries with no disarm
+      vector that produces a *failing* rather than merely *erroring* child.
+      (2) **The vectors' potency is asserted nowhere — the sixth inert guard, arriving on schedule.**
+      The guard's only assertion is that the gate bites; it passes when the vector is potent *and*
+      when the vector is a no-op. If pytest 9 reorders `-W` application or folds the
+      `unraisableexception` plugin, both vectors quietly stop disarming anything, the test keeps
+      passing, and the scrub is unwatched again. Potency rests entirely on a terminal session recorded
+      in prose; nothing re-measures it. The sibling family already ships the answer as a shape — its
+      unskipped armed control — so: run the forgotten-await probe through a `keep_ambient_environment=True`
+      child under each vector and require exit **0**. The negative control that *was* run validated the
+      guard once at authoring time; it is not in the suite.
+      (3) `ChildProbeStatements` opts the whole disarmed class into `keep_ambient_environment=True`,
+      but the compensating scrub lives in `_disarm_the_child_with_only`, reachable only through the
+      three `given_a_runner_environment_*` steps. Nothing couples "this child keeps its environment"
+      to "a vector was deliberately chosen", so the already-scheduled third-arming-arm test can be
+      written without a `given_` step, pass locally, and fail on a runner that exports `PYTEST_ADDOPTS`
+      — pointing at the harness rather than the runner. The repo's own `arranged(...)` idiom is the
+      fix: refuse the act when no vector was chosen, `None` case included.
+      (4) Two stale-prose items in files this commit edited. `test_forgotten_await_gate.py`'s new
+      docstring claims `LEAKY_CHILD_VARIABLES` and `_child_environment` "were each referenced exactly
+      once in the whole backend tree" — as of this commit `LEAKY_CHILD_VARIABLES` has a second
+      reference at `disarmed_arming_probe_statements.py:41` (the `/refactor` commit `63a251a5` already
+      corrected the *tense* here; the count is the part still wrong). And `_child_environment`'s
+      docstring says callers "set `PYTHONWARNINGS`/`PYTEST_ADDOPTS` in the parent and require the gate
+      to bite anyway" — no parametrisation sets `PYTHONWARNINGS`, and per (1) none can. Fixing that
+      docstring is the moment to fix the constant's comment too, which names
+      `PYTHONWARNINGS=ignore::RuntimeWarning` as the flagship threat that "would otherwise make the
+      gate un-failable" — also false.
+      **Rated remote by the premortem, recorded so it is not re-litigated:** the kept environment
+      leaks nothing new (the five variables are still removed, by `monkeypatch` instead of the filter,
+      and no environment is printed), and the added child-run wall time is bounded — the real
+      weakness there is the already-scheduled `TimeoutExpired` diagnosability item.
+- [ ] green-usecase (the scrub is watched through one variable of five, and the vectors' own potency
+      is asserted nowhere)
 - [~] red-usecase (coverage: third arming arm refuses a rewritten declaration) —
       **the one arm this unit's own diff promises and does not deliver.**
       `disarmed_arming_probe_statements.py`'s module docstring states it outright: the third check,
