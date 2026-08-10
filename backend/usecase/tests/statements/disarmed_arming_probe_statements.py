@@ -33,8 +33,8 @@ from pathlib import Path
 
 import pytest
 
+from statements.child_probe_statements import ChildProbeStatements
 from statements.child_pytest_run import LEAKY_CHILD_VARIABLES
-from statements.forgotten_await_gate_statements import ForgottenAwaitGateStatements
 
 # The probe's single test. Named rather than reused from the forgotten-await
 # family: the FAILURES section is compared as a whole set of names, so the name is
@@ -73,8 +73,13 @@ EXPECTED_OVERRIDE_REFUSAL = (
 )
 EXPECTED_INERT_FILTER_REFUSAL = "a RuntimeWarning raised in this very run did not fail it"
 
+# What a run whose FAILURES section lacks the expected sentence actually means.
+# Both arms are a `raise` and an `assert` that coverage.py does not count as
+# branches, so the sentence is the only evidence the arm executed at all.
+NOT_THE_DISARMED_ENVIRONMENT = "the arming check failed, but not for the disarmed environment"
 
-class DisarmedArmingProbeStatements(ForgottenAwaitGateStatements):
+
+class DisarmedArmingProbeStatements(ChildProbeStatements):
     """Run the live arming check as a child, under an environment of our choosing."""
 
     def __init__(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -122,7 +127,7 @@ class DisarmedArmingProbeStatements(ForgottenAwaitGateStatements):
             self._monkeypatch.setenv(RUNNER_OVERRIDE_VARIABLE, vector)
 
     def given_the_live_arming_check_as_the_probe(self, tmp_path: Path) -> None:
-        self._run.write_probe(tmp_path, ARMING_PROBE)
+        self._write_probe(tmp_path, ARMING_PROBE)
 
     def assert_the_arming_check_refused_the_command_line_override(self) -> None:
         self._assert_the_arming_check_failed_saying(EXPECTED_OVERRIDE_REFUSAL)
@@ -141,6 +146,9 @@ class DisarmedArmingProbeStatements(ForgottenAwaitGateStatements):
 
     def _assert_the_arming_check_failed_saying(self, expected: str) -> None:
         """The tally, the charged test, and the sentence -- all three or none.
+
+        The arming check is the only test in the probe, so anything else in the
+        FAILURES section means the child broke before it ran.
 
         The tally alone cannot say *which* arm fired, and the sentence alone is
         satisfied by a run that also failed something else or that printed the
@@ -164,17 +172,6 @@ class DisarmedArmingProbeStatements(ForgottenAwaitGateStatements):
         passes proves nothing and is the exact shape this scenario keeps shipping.
         """
         self.assert_the_probe_suite_failed()
-        child = self._child()
-        failing = child.failing_test_names()
-        assert failing == {ARMING_PROBE_TEST_NAME}, (
-            f"the child's FAILURES section is about {failing or 'no test at all'}, expected "
-            f"exactly {{{ARMING_PROBE_TEST_NAME!r}}} -- the arming check is the only test in "
-            f"the probe, so anything else failing means the child broke before it ran:"
-            f"\n{child.tail}"
-        )
-        assert child.failure_text_contains(expected), (
-            f"the arming check failed, but not for the disarmed environment: no "
-            f'"{expected}" in its FAILURES section. That arm is a `raise` and an `assert` '
-            f"that coverage.py does not count as branches, so this sentence is the only "
-            f"evidence the arm executed at all:\n{child.tail}"
+        self._assert_the_failure_was_charged_to(
+            {ARMING_PROBE_TEST_NAME}, expected, NOT_THE_DISARMED_ENVIRONMENT
         )

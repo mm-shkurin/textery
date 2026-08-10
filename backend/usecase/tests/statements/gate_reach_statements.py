@@ -79,7 +79,7 @@ class GateReachStatements(ForgottenAwaitGateStatements):
     def given_a_probe_whose_leak_is_in_one_test_and_whose_next_test_is_clean(
         self, tmp_path: Path
     ) -> None:
-        self._run.write_probe(tmp_path, ATTRIBUTION_PROBE)
+        self._write_probe(tmp_path, ATTRIBUTION_PROBE)
 
     def try_to_write_a_probe_inside_the_repository(self) -> None:
         """The write that must be refused, attempted for real.
@@ -89,7 +89,7 @@ class GateReachStatements(ForgottenAwaitGateStatements):
         dropped the file by the time anything notices.
         """
         try:
-            self._run.write_probe(IN_TREE_SCRATCH, NO_PROBE_SOURCE)
+            self._write_probe(IN_TREE_SCRATCH, NO_PROBE_SOURCE)
         except AssertionError as refused:
             self._refusal = refused
         finally:
@@ -135,7 +135,7 @@ class GateReachStatements(ForgottenAwaitGateStatements):
         unraisable that fired late enough to be charged to the following test still
         puts the coroutine sentence in a FAILURES section.
         """
-        self._assert_the_failure_was_charged_to({ATTRIBUTION_LEAKING_TEST_NAME})
+        self._assert_the_await_leak_was_charged_to({ATTRIBUTION_LEAKING_TEST_NAME})
 
     def assert_one_test_failed_and_the_other_passed(self) -> None:
         self._assert_the_child_reported(1, {"failed": 1, "passed": 1})

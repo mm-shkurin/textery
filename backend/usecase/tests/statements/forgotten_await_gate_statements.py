@@ -16,14 +16,13 @@ itself have to fail once the gate bites.
 
 The mechanics of getting a trustworthy child -- the configuration it is pointed
 at, the ambient state taken away from it -- live in `ChildPytestRun`; reading its
-report as structured values lives in `ChildPytestReport`. What remains here is
-the claim.
+report as structured values lives in `ChildPytestReport`; running a probe as a
+child at all lives in `ChildProbeStatements`. What remains here is the claim.
 """
 
 from pathlib import Path
 
-from statements.child_pytest_report import ChildPytestReport
-from statements.child_pytest_run import BACKEND_ROOT, PROJECT_CONFIG, ChildPytestRun
+from statements.child_probe_statements import ChildProbeStatements
 from statements.forgotten_await_probes import (
     AWAITED_PROBE,
     FORGOTTEN_AWAIT_PROBE,
@@ -31,65 +30,18 @@ from statements.forgotten_await_probes import (
     UNAWAITED_COROUTINE_TEXT,
 )
 
+# What a run whose FAILURES section lacks the coroutine sentence actually means.
+NOT_THE_FORGOTTEN_AWAIT = "the child failed, but not for the forgotten `await`"
 
-class ForgottenAwaitGateStatements:
-    """Run a probe suite under this project's pytest configuration and read it."""
 
-    def __init__(self) -> None:
-        self._run = ChildPytestRun()
-        self._report: ChildPytestReport | None = None
+class ForgottenAwaitGateStatements(ChildProbeStatements):
+    """The forgotten-await probe, and what the child must say about it."""
 
     def given_a_call_site_that_forgets_to_await_an_async_given_step(self, tmp_path: Path) -> None:
-        self._run.write_probe(tmp_path, FORGOTTEN_AWAIT_PROBE)
+        self._write_probe(tmp_path, FORGOTTEN_AWAIT_PROBE)
 
     def given_a_call_site_that_awaits_the_async_given_step(self, tmp_path: Path) -> None:
-        self._run.write_probe(tmp_path, AWAITED_PROBE)
-
-    def run_the_probe_under_the_projects_own_pytest_configuration(self) -> None:
-        self._report = self._run.execute()
-
-    def assert_the_projects_own_configuration_was_in_force(self) -> None:
-        """Without this, a child that silently found no config proves nothing.
-
-        pytest falls back to built-in defaults when `-c` cannot be read, and a
-        defaults-only run passes the forgotten-await probe for a reason that has
-        nothing to do with what this repository declares. Both header lines are
-        pinned as whole values in one mapping: a substring check would also accept
-        a `rootdir:` that merely starts with this path, and asserting the two
-        separately would let the first mismatch hide the second.
-        """
-        child = self._child()
-        expected = {"rootdir": str(BACKEND_ROOT), "configfile": PROJECT_CONFIG.name}
-        actual = child.header_values(tuple(expected))
-        assert actual == expected, (
-            f"the child run's header reported {actual}, expected {expected} -- a run that fell "
-            f"back to pytest's built-in defaults says nothing about the configuration "
-            f"this repository actually declares:\n{child.tail}"
-        )
-
-    def assert_the_probe_suite_failed(self) -> None:
-        self._assert_the_child_reported(1, {"failed": 1})
-
-    def assert_the_probe_suite_passed(self) -> None:
-        """The control that makes the failing probe attributable to the `await`.
-
-        Exactly one passed and nothing else: a warning counted here would mean the
-        control is not clean, and a skip would mean pytest declined to run an
-        `async def` test rather than running it green.
-        """
-        self._assert_the_child_reported(0, {"passed": 1})
-
-    def _assert_the_child_reported(self, exit_code: int, counts: dict[str, int]) -> None:
-        child = self._child()
-        assert child.exit_code == exit_code, (
-            f"the child pytest exited {child.exit_code}, expected {exit_code}:\n{child.tail}"
-        )
-        summarised = child.summary_counts()
-        assert summarised == counts, (
-            f"the child pytest summarised {summarised}, expected {counts} -- the "
-            f"whole tally is pinned so a second failure, a skip or a stray warning cannot "
-            f"hide inside a substring match:\n{child.tail}"
-        )
+        self._write_probe(tmp_path, AWAITED_PROBE)
 
     def assert_the_failure_named_the_unawaited_coroutine(self) -> None:
         """Read out of the FAILURES section, which is the whole point of the check.
@@ -104,25 +56,19 @@ class ForgottenAwaitGateStatements:
         assertion says both which test was charged and which were not, and cannot
         pass over an absent section.
         """
-        self._assert_the_failure_was_charged_to({PROBE_TEST_NAME})
+        self._assert_the_await_leak_was_charged_to({PROBE_TEST_NAME})
 
-    def _assert_the_failure_was_charged_to(self, expected: set[str]) -> None:
-        """The same claim against a named set, for a family whose probe fails elsewhere.
+    def _assert_the_await_leak_was_charged_to(self, expected: set[str]) -> None:
+        """The same claim against a named set, for a probe that fails elsewhere.
 
         Parameterised here rather than on the public step so that step keeps its
         no-argument reading -- a test body naming the probe's own test would be
-        restating this family's fixture back at it.
+        restating this family's fixture back at it. The expected sentence is fixed
+        because it is what makes this family's claim about the `await` and not
+        about a child that failed for any reason at all.
         """
-        child = self._child()
-        failing = child.failing_test_names()
-        assert failing == expected, (
-            f"the child's FAILURES section is about {failing or 'no test at all'}, expected "
-            f"exactly {expected} -- an unraisable fires at collection time, so a leak can be "
-            f"charged to a test that passes in isolation:\n{child.tail}"
-        )
-        assert child.failure_text_contains(UNAWAITED_COROUTINE_TEXT), (
-            f"the child failed, but not for the forgotten `await`: no "
-            f'"{UNAWAITED_COROUTINE_TEXT}" in its FAILURES section:\n{child.tail}'
+        self._assert_the_failure_was_charged_to(
+            expected, UNAWAITED_COROUTINE_TEXT, NOT_THE_FORGOTTEN_AWAIT
         )
 
     def assert_nothing_was_left_unawaited_on_the_control(self) -> None:
@@ -131,9 +77,3 @@ class ForgottenAwaitGateStatements:
             f"the control probe itself left a coroutine unawaited, so it is not a control:"
             f"\n{child.tail}"
         )
-
-    # Not `arranged()`: that helper's message tells the reader to call a `given_*`
-    # step, and the step that sets this one is the act step, not an arrangement.
-    def _child(self) -> ChildPytestReport:
-        assert self._report is not None, "the probe must be run before it is asserted on"
-        return self._report
