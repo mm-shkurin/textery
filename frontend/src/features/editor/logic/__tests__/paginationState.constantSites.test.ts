@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import measuringSource from './paginationState.measuring.test.ts?raw'
-import laidOutSource from './paginationState.laidOut.test.ts?raw'
+import { fixtureUsageIn, LAID_OUT_FILE, MEASURING_FILE } from './fixtureUsage.source'
 
 /**
  * Story 10, UI scenario 1.1 — THE SITES, not the values.
  *
  * `paginationState.designNumbers.test.ts` pins what `MEASURING_SURFACE` and `NO_SKELETONS` HOLD.
- * It does not pin — and its header wrongly implied it did — that the six skeleton-count assertions
- * in `paginationState.measuring.test.ts` and `paginationState.laidOut.test.ts` still READ those
- * constants. Those are lines in two OTHER files, and until this case existed nothing executable
+ * It does not pin — and its header wrongly implied it did — that the count assertions in
+ * `paginationState.measuring.test.ts` and `paginationState.laidOut.test.ts` still READ the
+ * declarations they are stated in. Those are lines in two OTHER files, and until this case existed nothing executable
  * looked at them. Edit `measuring.test.ts:100` to `railSkeletonCount: 3` and the whole suite stayed
  * green: `designNumbers` passes (the fixture is untouched), `collisionsWithin` passes (it refutes
  * against `SURFACE_CONSTANTS`, never against the assertion), and the drift hole that the sharing
@@ -32,10 +31,36 @@ import laidOutSource from './paginationState.laidOut.test.ts?raw'
  * WHY THE WHOLE ASSIGNMENT LIST, RATHER THAN "the constant is mentioned somewhere". A check that
  * merely greps for `MEASURING_SURFACE` in each file passes while a seventh assertion is added with
  * a raw literal, or while an existing one is retyped and the import is left in place by another
- * case. So every `sheetSkeletonCount:` / `railSkeletonCount:` assignment in the two files is
- * collected IN ORDER with its right-hand side and compared as one object: a re-typed literal, a
- * deleted assertion, an added one, a renamed constant, and a swapped field→constant pairing each
- * move a member of that list.
+ * case. So every assignment of a PINNED field in the two files is collected IN ORDER with its
+ * right-hand side and compared as one object: a re-typed literal, a deleted assertion, an added one,
+ * a renamed constant, and a swapped field→constant pairing each move a member of that list.
+ *
+ * WHY THE PINNED FIELDS ARE `pageCount` AND `currentPage` AS WELL AS THE TWO SKELETON COUNTS — AND
+ * A CORRECTION TO WHAT THIS HEADER USED TO SAY. The first version of this file matched only
+ * `(?:sheet|rail)SkeletonCount` and justified the omission by asserting that `pageCount` /
+ * `currentPage` "reach their assertions through `FONT_GATE_ROW` / `VARIED_GEOMETRY_ROW` and are
+ * guarded from the value side by `paginationState.crossRow.test.ts`'s derivation check". THAT
+ * SENTENCE WAS FALSE, in precisely the way the header it was written to replace was false.
+ * `crossRow.test.ts:126` derives from `row.blockHeights` and compares the result against
+ * `row.pageCount` — the FIXTURE'S declared field. It never reads either test file's assertion, and
+ * neither does anything else. `measuring.test.ts:184-185` and `laidOut.test.ts:80-81` are the same
+ * construct this file exists for: a fixture value read BY NAME at an assertion site. Retype
+ * `pageCount: 4` at `measuring.test.ts:184` and, measured rather than argued, the whole suite stays
+ * green — `crossRow` untouched (the fixture did not move), `designNumbers` untouched (it pins only
+ * the surface constants), this file untouched under the old pattern (wrong field name), and all six
+ * skeleton lines byte-identical. All four of those mutants (`pageCount: 4` / `currentPage: 2` at
+ * `measuring.test.ts:184-185`, `pageCount: 6` / `currentPage: 5` at `laidOut.test.ts:80-81`)
+ * SURVIVED with zero failures before the alternation was added; each is killed now. The incident
+ * they ship is a reader on sheet 3 of a six-page document reading "Страница 5 из 4" — a readout
+ * frozen to one fixture's numbers, with every test that could see it derived from those same
+ * numbers.
+ *
+ * `pageCount: null` and `currentPage: null` at `measuring.test.ts:97-98` are therefore legitimate
+ * members of the expected list, not omissions. The measuring phase's second Then is "no page count
+ * is displayed", and a literal `null` is where that absence is DECIDED — there is no fixture value
+ * to name, and the pin belongs at the assertion. They are listed so that an implementation-shaped
+ * edit replacing either with a fixture read (or with `undefined`, or with `0`) moves a member of
+ * this list rather than passing quietly.
  *
  * WHY THE IMPORT IS PINNED ALONGSIDE THE ASSIGNMENTS. The assignment list alone reads a NAME, and a
  * name is only worth as much as where it is bound. Replacing
@@ -53,11 +78,8 @@ import laidOutSource from './paginationState.laidOut.test.ts?raw'
  * WHAT IT DOES NOT CLAIM. It does not check that the right-hand sides are the RIGHT constants —
  * `designNumbers` owns the values, and both files here are authored in this repo, so a
  * wrong-but-deliberate change remains a two-file edit rather than an impossible one. Its job is to
- * make an edit at the assertion site VISIBLE. It is scoped to the skeleton counts, which are the
- * fields the fixture supplies; `pageCount` / `currentPage` reach their assertions through
- * `FONT_GATE_ROW` / `VARIED_GEOMETRY_ROW` and are guarded from the value side by
- * `paginationState.crossRow.test.ts`'s derivation check, which DOES run against the numbers. It
- * says nothing about the acceptance layer's third copy of the `3` in
+ * make an edit at the assertion site VISIBLE. It says nothing about the acceptance layer's third
+ * copy of the `3` in
  * `acceptance/statements/frontend/editor/pagination_measuring_locators.py:77`, which is
  * cross-language and has its own step, nor about the mockup. It reads only these two files: a
  * seventh skeleton assertion written into a THIRD file is outside its window entirely.
@@ -85,77 +107,38 @@ import laidOutSource from './paginationState.laidOut.test.ts?raw'
  * the same commit, having looked at what moved. It is NOT repaired by loosening the match or
  * deleting the case. It is deliberately brittle in the one dimension — assertion-site text — that
  * every other check in this suite is blind to.
+ *
+ * HOW THE TWO FILES ARE READ lives in `./fixtureUsage.source` — the `?raw` imports, the pinned-field
+ * and fixture-import regexes, and the comment-stripping line filter, with their own rationale. That
+ * module is mechanics only; the claim, and every mutation that measured it, is stated here. The
+ * split was forced by the 200-line ceiling: this case is designed to redden on exactly the edits
+ * that lengthen its expectation, so the ingestion had to leave for the next correct repair to fit.
  */
 
-/**
- * The sources arrive through Vite's `?raw` suffix rather than through `node:fs`. Three reasons, in
- * order of weight. `tsconfig.app.json` covers `src` with `"types": ["vite/client"]` and no `node`,
- * so `readFileSync` / `resolve` / `process.cwd()` do not typecheck here at all — an earlier draft of
- * this file ran green under vitest, which strips types, while `tsc -b --noEmit` reported five errors
- * against it; the repair is not to add `"node"` to the app tsconfig, which would make `process.env`
- * legal in frontend source. Second, `?raw` is resolved by the module graph, so a wrong or moved path
- * fails at TRANSFORM time with a resolution error rather than at assertion time. Third, it removes
- * the `process.cwd()` dependency, which silently assumed vitest is always invoked from `frontend/`.
- * `import.meta.url` was not an option either: under the jsdom environment this suite runs in it is
- * not a `file:` URL and `fileURLToPath` throws at import time.
- */
-const MEASURING_FILE = 'paginationState.measuring.test.ts'
-const LAID_OUT_FILE = 'paginationState.laidOut.test.ts'
-
-const SOURCES: Readonly<Record<string, string>> = {
-  [MEASURING_FILE]: measuringSource,
-  [LAID_OUT_FILE]: laidOutSource,
-}
-
-const SKELETON_ASSIGNMENT = /^((?:sheet|rail)SkeletonCount): (.+),$/
-const FIXTURE_IMPORT = /^import \{ (.+) \} from '\.\/laidOutRows\.fixture'$/
-
-/**
- * Comment bodies are dropped before matching. Both headers discuss these fields in prose — e.g.
- * "emitting `sheetSkeletonCount: 1`" in `measuring.test.ts` — and a guard that counted a sentence
- * as an assertion site would be satisfied by the very literal it exists to forbid.
- */
-const codeLinesOf = (fileName: string): readonly string[] =>
-  SOURCES[fileName]
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => !line.startsWith('*') && !line.startsWith('/'))
-
-const matchesOf = (fileName: string, pattern: RegExp): readonly RegExpExecArray[] =>
-  codeLinesOf(fileName)
-    .map((line) => pattern.exec(line))
-    .filter((match): match is RegExpExecArray => match !== null)
-
-interface FixtureUsage {
-  readonly fixtureImports: readonly string[]
-  readonly skeletonAssignments: readonly string[]
-}
-
-const fixtureUsageIn = (fileName: string): FixtureUsage => ({
-  fixtureImports: matchesOf(fileName, FIXTURE_IMPORT).map(([, specifiers]) => specifiers),
-  skeletonAssignments: matchesOf(fileName, SKELETON_ASSIGNMENT).map(
-    ([, field, expression]) => `${field}: ${expression}`,
-  ),
-})
-
-describe('the skeleton-count assertions, as sites that must read the shared constants', () => {
-  it('states every skeleton count by naming a fixture constant, never by re-typing its value', () => {
+describe('the fixture-supplied assertions, as sites that must read the shared declarations', () => {
+  it('states every count by naming a fixture constant or a row field, never by re-typing its value', () => {
     expect({
       [MEASURING_FILE]: fixtureUsageIn(MEASURING_FILE),
       [LAID_OUT_FILE]: fixtureUsageIn(LAID_OUT_FILE),
     }).toStrictEqual({
       [MEASURING_FILE]: {
         fixtureImports: ['FONT_GATE_ROW, MEASURING_SURFACE, NO_SKELETONS'],
-        skeletonAssignments: [
+        pinnedAssignments: [
+          'pageCount: null',
+          'currentPage: null',
           'sheetSkeletonCount: MEASURING_SURFACE.sheetSkeletons',
           'railSkeletonCount: MEASURING_SURFACE.railSkeletons',
+          'pageCount: FONT_GATE_ROW.pageCount',
+          'currentPage: FONT_GATE_ROW.currentPage',
           'sheetSkeletonCount: NO_SKELETONS',
           'railSkeletonCount: NO_SKELETONS',
         ],
       },
       [LAID_OUT_FILE]: {
         fixtureImports: ['NO_SKELETONS, VARIED_GEOMETRY_ROW'],
-        skeletonAssignments: [
+        pinnedAssignments: [
+          'pageCount: VARIED_GEOMETRY_ROW.pageCount',
+          'currentPage: VARIED_GEOMETRY_ROW.currentPage',
           'sheetSkeletonCount: NO_SKELETONS',
           'railSkeletonCount: NO_SKELETONS',
         ],

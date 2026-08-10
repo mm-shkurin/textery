@@ -636,7 +636,7 @@ pagination failure.
   Suite 640 passed / 6 skipped / 0 failed; `tsc -b --noEmit` and oxlint clean except the
   pre-existing RED stub `paginationState.ts:100` (unused `input`). Files: constantSites 165,
   designNumbers 80 — under 200.
-- [ ] red-frontend (premortem CREDIBLE 1 over `c0e35fc6`) — **the guarded defect class ships one
+- [x] red-frontend (premortem CREDIBLE 1 over `c0e35fc6`) — **the guarded defect class ships one
   field over, and the header's reason for excluding it is false in the same way the last header
   was.** `SKELETON_ASSIGNMENT` is scoped to `sheet|railSkeletonCount`, but `measuring.test.ts:184-185`
   and `laidOut.test.ts:80-81` are the SAME construct — a fixture constant read by name at an
@@ -650,6 +650,37 @@ pagination failure.
   document sees "Страница 5 из 4". Guard is one alternation away:
   `/^(pageCount|currentPage|(?:sheet|rail)SkeletonCount): (.+),$/`, with `pageCount: null` /
   `currentPage: null` as legitimate members of the expected list.
+  **Done, exactly as charted — the guard is one alternation wider and nothing else moved.**
+  **Four survivals measured at HEAD before any edit**, each retyping a fixture read as the literal
+  it evaluates to today: `measuring.test.ts:184 → pageCount: 4`, `:185 → currentPage: 2`,
+  `laidOut.test.ts:80 → pageCount: 6`, `:81 → currentPage: 5` — all four `7 passed | 3 skipped`,
+  ZERO failures. All four killed now, one case each. Two control probes also red: converting the
+  absence pin `measuring.test.ts:97 pageCount: null` into `FONT_GATE_ROW.pageCount` (so the `null`
+  decision can no longer be silently turned into a fixture read), and the already-guarded
+  `railSkeletonCount: 3` regression. `pageCount: null` / `currentPage: null` at `:97-98` pass
+  unmutated as legitimate members — the measuring phase's absence decision, with no fixture value
+  to name. No correction loop; predicted and actual matched on type, message, and counts.
+  **Fail-closed re-probed on the NEW fields specifically** — trailing comment, doubled space after
+  the colon, space before the comma: all three DROP the site, shorten the list, and fail. The
+  widened alternation bought admittance nowhere.
+  **The false sentence is gone.** `WHAT IT DOES NOT CLAIM` had said `pageCount`/`currentPage` were
+  "guarded from the value side by `crossRow.test.ts`'s derivation check". `crossRow.test.ts:126`
+  compares its derivation against `row.pageCount` — the FIXTURE'S declared field, never either test
+  file's assertion. Deleted, and replaced with the four survival measurements and the
+  "Страница 5 из 4" incident recorded in the file itself, so the next reader cannot re-inherit it.
+  **`/test-review` split the file at the seam the red-agent named**, because the extension took it
+  to 194 of 200 and three more chartered steps land in the same file. New
+  `fixtureUsage.source.ts` (70 lines) holds the `?raw` imports, `SOURCES`, both regexes,
+  `codeLinesOf`, `matchesOf`, `fixtureUsageIn`; the `?raw` imports stayed INSIDE it rather than
+  being threaded in as arguments, preserving transform-time path resolution.
+  `constantSites.test.ts` is now 148 lines — header, `describe`/`it`, expected object — and six
+  lines of headroom became fifty-two, which matters for a case designed to redden on precisely the
+  edits that lengthen its own expectation. Full mutation matrix re-run AFTER the split: 8 of 8
+  still killed. `PINNED_ASSIGNMENT` left byte-identical; widening it is what makes the
+  trailing-comment mutant pass.
+  Suite 640 passed / 6 skipped / 0 failed (a case extended, not added). `prettier --check` clean on
+  both files; oxlint and `tsc -b --noEmit` each report only the pre-existing RED stub
+  `paginationState.ts:100` (unused `input`).
 - [ ] red-frontend (premortem CREDIBLE 2 over `c0e35fc6`) — **nothing forces the three `.skip`s off
   at green, and this unit walked past the one file that could see them.** `constantSites` already
   ingests both files AS TEXT and reads their assertion lines, and never looks at `it.skip`. The
