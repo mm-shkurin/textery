@@ -3,6 +3,10 @@ from clients.application.dto.document.get_document_response_dto import (
     GetDocumentResponseDto,
 )
 from clients.application.application_client import ApplicationClient
+from statements.document_body_assertions import (
+    assert_document_body,
+    body_of_successful_response,
+)
 from statements.document_export_filename_statements import (
     VERSION_AFTER_TITLE_SAVE,
     DocumentExportFilenameStatements,
@@ -84,7 +88,9 @@ class DocumentBlankTitleSaveStatements(DocumentExportFilenameStatements):
         # title survival on this row is pinned by the companion
         # `assert_filename_rfc5987_encoded_from_title` step reading the export header,
         # and the sibling content-only row pins it directly off its save response.
-        body = self._body_of_the_successful_reread()
+        body = body_of_successful_response(
+            self._reread_after_blank_save, "re-read after the blank-title save"
+        )
         expected = {
             "document_id": self._document_id_after_blank_save,
             "document_type": SUPPORTED_DOCUMENT_TYPE,
@@ -92,25 +98,4 @@ class DocumentBlankTitleSaveStatements(DocumentExportFilenameStatements):
             "content": BLANK_SAVE_CONTENT,
             "version": VERSION_AFTER_BLANK_SAVE,
         }
-        assert {key: body.get(key) for key in expected} == expected, (
-            f"expected the blank-title autosave to leave {expected!r}, got body={body!r}"
-        )
-        # created_at/updated_at are the only remaining response fields; their values are
-        # wall-clock and so unpinnable, but their presence is not.
-        assert {"created_at", "updated_at"} <= body.keys(), (
-            f"expected the re-read to carry both timestamps, got body={body!r}"
-        )
-
-    def _body_of_the_successful_reread(self) -> dict:
-        # The guard half of the persistence assertion: the arrange really ran, and the
-        # post-save re-read really succeeded. Without both, `body` would fall back to
-        # {} and every field pin below would compare None against its expectation --
-        # failing for the wrong reason, or (for a future all-optional expectation)
-        # passing vacuously.
-        reread = self._reread_after_blank_save
-        assert reread is not None, "arrange did not run: no re-read after the blank-title save"
-        assert reread.status_code == 200, (
-            f"expected the post-save re-read to succeed with 200, got "
-            f"status_code={reread.status_code}, body={reread.body}"
-        )
-        return reread.body or {}
+        assert_document_body(body, expected, "blank-title autosave")

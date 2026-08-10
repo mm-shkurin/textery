@@ -1103,8 +1103,79 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   `content_disposition is not None and ...startswith("attachment")`, the one loose matcher in the
   inherited kit.)
 - [~] green-acceptance (premortem: a content-only save must leave the stored title alone, end to end)
-- [ ] unpark the roundtrip RED (premortem finding 2 on `7b0a9c51`, sequenced AFTER the two rows
-  above): `test_save_document_request_dto_roundtrip.py:7` carries a class-level `@pytest.mark.skip`
+  `/refactor` on `65c94c8a` extracted the duplicated ASSERTION mechanics — both statements files
+  hand-rolled the same guard (`is not None` → `status_code == 200` → `body or {}`) and the same field
+  pin, verbatim in shape, differing only in the noun naming the call. New plain-function module
+  `acceptance/statements/document_body_assertions.py` (60), mirroring `setup_assertions.py` /
+  `export_envelope.py` rather than sitting on the parent, whose charter is filename derivation.
+  `document_content_only_save_statements.py` 123→110, `document_blank_title_save_statements.py`
+  116→101. Net **+32 lines** overall and said so honestly: the logic shrank ~28, the shared rationale
+  is now documented once. A THIRD copy of the idiom lives at `document_page_settings_read_statements.py:139,167`
+  — left alone (different scenario, committed row, 195/200). Verified the extracted assertions still
+  FIRE: all four failure modes trip with faithful messages, including the wiped-title case. 13 passed,
+  2 skipped unchanged; re-run with the skip stripped via a throwaway plugin gives 14 passed, 1 skipped.
+  `/refactor` DECLINED the handed `_save_over_the_stored_title(...)` extraction: the shared arrange is
+  already extracted (both rows call `_document_carrying_the_cyrillic_title()` and `_export_as_pdf()`),
+  what remains is a two-line pairing whose args differ and whose post-save behaviour diverges, so
+  collapsing it needs a 3-param helper threading content/title/response to save ~6 lines while touching
+  3.1/3.2's committed rows. Also declined `export_envelope.py`'s loose matcher as out of scope: it
+  belongs to `assert_export_attachment`, whose docstring charters the looseness for rows where the
+  filename is not part of the scenario, and tightening it would change what two committed 3.x rows
+  assert — a behaviour change to someone else's rows inside a RED unit.
+- [ ] red-acceptance (BOTH review passes on `65c94c8a`, converging as their top finding: **the row's
+  ABSENT-key identity rests on one line of shared client code that nothing asserts.**
+  `acceptance/clients/application/application_client.py:127-129` builds the payload and omits `title`
+  only when it `is not None`; three Statements call it, and no test anywhere pins the body it
+  produces. A "simplify" pass writing `payload = {"content": ..., "version": ..., "title": title}` is
+  invisible TODAY — because `clear()` is unmapped, both shapes no-op identically — and silently
+  converts this row from the absent row into the null row. The statements file names the distinction
+  (`document_content_only_save_statements.py:64-66`) in a COMMENT, and this same work unit found a
+  load-bearing comment that was simply false. The failure lands at the worst moment: once `clear()`
+  maps, the red points at the arm that just shipped, not at the client that drifted three weeks
+  earlier. Test: assert `"title" not in payload` for the `title=None` call and `"title" in payload`
+  for a titled call.
+  SECOND HALF of the same finding, agent-review #1: the explicit-`null` branch of `title_update()` is
+  UNREACHABLE from acceptance at all — the client collapses absent and null onto one wire shape, so
+  the row that is supposed to be THE composition guard for `title_update()` guards one of its two
+  no-value branches. Needs a client affordance for an explicit-null payload (a sentinel distinct from
+  `None`) plus a row pinning that null clears and absent does not. Sequence this AFTER
+  `adapters-discovery (b)` maps `clear()` — until then the two branches are the same value and the
+  row cannot discriminate.)
+- [ ] red-acceptance (agent-review #2 and #3 on `65c94c8a`, both about claims the code does not keep.
+  (a) `assert_content_only_save_preserved_the_title` compares `{k: body.get(k) for k in expected} ==
+  expected` plus a `<=` on the timestamps — two SUBSET checks, while the comment argues "an omitted
+  key is an unasserted key" and pins `generation_id` specifically to make the comparison total. A
+  TENTH key appearing on the write response — a leaked internal field, a mistakenly widened DTO —
+  passes silently. `body.keys() == set(expected) | {"created_at","updated_at"}` is what the comment
+  claims. The blank-title sibling has the same shape, so this is a convention, not a slip; fix both.
+  (b) `assert_blank_title_save_persisted_the_document` still carries `# created_at/updated_at are the
+  only remaining response fields` — `GetDocumentResponseDto` declares EIGHT keys including
+  `page_settings` (`get_document_response_dto.py:65`), which is neither pinned nor mentioned. The
+  whole point of the block this commit rewrote was correcting a false comment that had been
+  load-bearing; the adjacent falsehood in the same method deserves the same treatment.
+  Minor, recorded: `DRAFT_STATUS` is copy-duplicated between the two sibling statement modules with no
+  note, unlike `VERSION_AFTER_CONTENT_ONLY_SAVE` whose duplication is deliberately argued.)
+- [ ] unpark the roundtrip RED (premortem finding 2 on `7b0a9c51`, **re-raised and sharpened by
+  premortem on `65c94c8a` into a hard ORDERING CONSTRAINT: this must land BEFORE
+  `adapters-discovery (b)` maps the erasure arm.** The moment `SET title = NULL` ships, `clear()`
+  becomes destructive — and `document_dtos.py:55` manufactures a spurious `clear()` from an absent
+  title under two ordinary spellings, including `SaveDocumentRequestDto(content='c', version=1,
+  title=None)`, the field's own declared default and the safest-LOOKING spelling. The one row in the
+  repo that goes red on that is switched off. This commit's new guard does NOT backstop it: it covers
+  the wire-absent path only and cannot see a DTO reconstructed in-process. Today's dormancy is an
+  accident of `clear()` no-opping; the work unit that removes the accident is the next-but-one step,
+  and until this row is written nothing sequences them. Incident: a title vanishes on a routine
+  content save the user never asked to clear, overwritten with NULL in Postgres, no history row.)
+- [ ] guard the RED markers themselves (premortem finding 3 on `65c94c8a`): nothing fails when a
+  RED-phase skip outlives its work unit. `test_content_only_save_acceptance.py:6-12` carries a
+  class-level skip whose own reason says the row is GREEN on arrival, so it has never been observed
+  executing in the suite — only under a hand-applied mutation. The repo carries 7 skip markers, one
+  parked over a live production defect, so the pattern is demonstrated rather than hypothetical. The
+  suite reports "13 passed, 2 skipped" every run and nobody reads the second number. Note the sibling
+  that got this right: `test_wire_shape_key_fence_leg_guard_preemption.py:51` explicitly DECLINES a
+  marker on the identical reasoning. Guard: a skip inventory pinned by exact equality, so an
+  un-removed marker fails the suite rather than shrinking it.
+  (Original charter, unchanged:) `test_save_document_request_dto_roundtrip.py:7` carries a class-level `@pytest.mark.skip`
   over both legs whose reason names a LIVE defect in production code (`document_dtos.py:55` reads
   `model_fields_set`, which neither `model_dump()`/`model_validate()` nor the JSON pair round-trips,
   so an absent title reparses as `clear()` on BOTH legs). This is not a coverage gap — the guard is

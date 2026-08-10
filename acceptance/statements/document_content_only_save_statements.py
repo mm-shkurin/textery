@@ -3,6 +3,10 @@ from clients.application.dto.document.save_document_response_dto import (
     SaveDocumentResponseDto,
 )
 from clients.application.application_client import ApplicationClient
+from statements.document_body_assertions import (
+    assert_document_body,
+    body_of_successful_response,
+)
 from statements.document_export_filename_statements import (
     VERSION_AFTER_TITLE_SAVE,
     DocumentExportFilenameStatements,
@@ -91,7 +95,9 @@ class DocumentContentOnlySaveStatements(DocumentExportFilenameStatements):
         # title by refusing, short-circuiting, or partially applying the save fails
         # here. In particular `content` pins that CONTENT_ONLY_SAVE_CONTENT landed and
         # `version` pins that the CAS really incremented.
-        body = self._body_of_the_successful_content_only_save()
+        body = body_of_successful_response(
+            self._content_only_save, "content-only save"
+        )
         expected = {
             "document_id": self._document_id_after_content_only_save,
             "document_type": SUPPORTED_DOCUMENT_TYPE,
@@ -101,23 +107,4 @@ class DocumentContentOnlySaveStatements(DocumentExportFilenameStatements):
             "generation_id": MANUAL_DOCUMENT_GENERATION_ID,
             "version": VERSION_AFTER_CONTENT_ONLY_SAVE,
         }
-        assert {key: body.get(key) for key in expected} == expected, (
-            f"expected the content-only autosave to leave {expected!r}, got body={body!r}"
-        )
-        # created_at/updated_at are the only remaining response fields; their values are
-        # wall-clock and so unpinnable, but their presence is not.
-        assert {"created_at", "updated_at"} <= body.keys(), (
-            f"expected the save response to carry both timestamps, got body={body!r}"
-        )
-
-    def _body_of_the_successful_content_only_save(self) -> dict:
-        # The guard half of the assertion: the arrange really ran, and the save really
-        # succeeded. Without both, `body` would fall back to {} and every field pin
-        # would compare None against its expectation -- failing for the wrong reason.
-        save = self._content_only_save
-        assert save is not None, "arrange did not run: no content-only save response"
-        assert save.status_code == 200, (
-            f"expected the content-only save to succeed with 200, got "
-            f"status_code={save.status_code}, body={save.body}"
-        )
-        return save.body or {}
+        assert_document_body(body, expected, "content-only autosave")
