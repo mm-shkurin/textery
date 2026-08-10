@@ -742,7 +742,7 @@ pagination failure.
   Suite 642 passed / 6 skipped / 0 failed (2 cases added). `prettier --check` clean on both touched
   files; oxlint and `tsc -b --noEmit` report only the pre-existing RED stub `paginationState.ts:100`.
   Files: assignmentShape 97, constantSites 153, fixtureUsage.source 70.
-- [ ] red-frontend (premortem CREDIBLE 1 over `4f095594`) — **the paste-repair still works; it just
+- [x] red-frontend (premortem CREDIBLE 1 over `4f095594`) — **the paste-repair still works; it just
   changes failure mode from WRONG VALUE to DROPPED ASSERTION.** Green phase,
   `derivePaginationState` emits a laid-out state without `currentPage`, suite red. Retyping
   `currentPage: 5` is now closed, so the developer takes the next-shortest path: **delete the line**
@@ -757,6 +757,44 @@ pagination failure.
   captures), pinning the field set each file contributes — hand-typed FIELD NAMES, already spelled
   twice in the repo, not hand-typed VALUES, so it imports none of the dependency the header rules
   out. Reddens on a dropped assertion and prints which field left which file.
+  **Done.** Case 3 added to `paginationState.assignmentShape.test.ts` (97 → 184 lines, 3 LIVE
+  cases): it reads the FIELD half of the `PINNED_ASSIGNMENT` group via a new `fieldsIn` and
+  compares each scanned file's ORDERED field list against a hand-typed
+  `PINNED_FIELDS_PER_EXPECTATION` × `EXPECTATION_BLOCKS` (measuring 2 blocks, laid-out 1). Field
+  names only, never values — the dependency the header rules out is not imported.
+  **The charter's claim was confirmed by measurement, not argued.** Under the exact incident
+  (delete `laidOut.test.ts:81`, then paste vitest's received array over `constantSites`' expected
+  object) the committed five-work-unit guard stack at HEAD is **completely green** — `3 passed, 0
+  failed`, mutant survives. With case 3 present the same incident is `2 failed | 2 passed`, and the
+  diff prints `- "currentPage"` under `paginationState.laidOut.test.ts`. The `measuring.test.ts:185`
+  side behaves identically. A **transpose** of `pageCount`/`currentPage` under the paste-repair is
+  caught by case 3 ALONE — once `constantSites` is repaired, nothing else in the repo sees it.
+  **`/test-review` found the first attempt at case 2 was dead code, and that killing the floor
+  opened a vacuity hole.** The red-agent had upgraded case 2 from a floor
+  (`arrayContaining([expect.any(String)])`) to an exact count derived from `EXPECTATION_BLOCKS`,
+  reasoning that the previous unit's floor-over-count justification ("pinning the count would
+  re-import the hand-typed-expectation dependency") became false once case 3 hand-types the
+  multiplicity anyway. That premise is sound — the multiplicity is in the file either way — but the
+  replacement was wrong twice. (a) **Dead code:** `rightHandSidesIn` and `fieldsIn` are both `.map`s
+  over the same `pinnedAssignments`, so their lengths are identically equal and case 3's ordered
+  `toStrictEqual` already implied case 2's length equality; case 2 could not fail in any run where
+  case 3 passed. (b) **Vacuity:** the floor's real value was never "avoiding a count" — it was being
+  the one assertion whose expected side was NOT computed from `EXPECTATION_BLOCKS`. With it gone,
+  deleting all four pinned lines from `laidOut.test.ts` and setting its entry to `0` — a two-token
+  edit inside this very file, the same paste-repair motion the header is written against — yields
+  `Tests 3 passed`. Fixed by making case 2 pin the **first expectation block** of each file:
+  `fieldsIn(f)` truncated to `PINNED_FIELDS_PER_EXPECTATION.length` against those four names.
+  Strictly stronger than the floor (names fields, prints which left which file), non-vacuous (an
+  emptied file yields `[]` against four names), and it reads no block count — so zeroing
+  `EXPECTATION_BLOCKS` reddens case 2 while case 3 goes quiet. Redundancy with case 3 under an
+  honest constant IS the guard.
+  Suite 643 passed / 6 skipped / 0 failed (1 case added). `prettier --check` clean; oxlint and
+  `tsc -b --noEmit` report only the pre-existing RED stub `paginationState.ts:100`.
+  Files: assignmentShape **184** (16 from the ceiling — the next header revision forces a split;
+  `fixtureUsage.source.ts` at 70 is the natural destination for `fieldsIn` / `rightHandSidesIn`),
+  constantSites 153, fixtureUsage.source 70.
+  **Still open, and this case does NOT close it:** CREDIBLE 2 below — case 3 reads through the same
+  `fixtureUsageIn`, so it inherits the duplicated-`SOURCES` blind spot rather than covering it.
 - [ ] red-frontend (premortem CREDIBLE 2 over `4f095594`) — **both guards can be pointed at the
   same file, and neither can tell.** A chartered step splits or renames the assertion surfaces; in
   `fixtureUsage.source.ts` a developer copy-pastes the import/map pair and leaves
