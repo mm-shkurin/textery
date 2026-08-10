@@ -1,4 +1,25 @@
+import pytest
+
 from statements.forgotten_await_gate_statements import ForgottenAwaitGateStatements
+
+# Two ambient states, each *measured* to disarm this gate on its own when the
+# child is allowed to keep them, and each by a different mechanism: a command-line
+# `-W` filter is applied after the ini entries and the last matching filter wins,
+# while `-p no:unraisableexception` unloads the plugin that turns the destructor's
+# swallowed RuntimeWarning into a warning at all, so the second ini entry matches
+# nothing. Both were driven by hand against the real `pyproject.toml`: probe exit 1
+# with the environment clean, exit 0 with either one set.
+#
+# `PYTHONWARNINGS=ignore::RuntimeWarning` is deliberately *not* in this list. It
+# reads like the obvious vector and it is inert here -- measured, not assumed:
+# pytest applies its own ini `filterwarnings` after the ones it inherits from
+# `PYTHONWARNINGS`, so the probe still fails (exit 1) with it set, and a test
+# carrying only that variable would be green in every state including the one it
+# exists to reject.
+HOSTILE_RUNNER_ENVIRONMENTS = [
+    ("PYTEST_ADDOPTS", "-W ignore::RuntimeWarning"),
+    ("PYTEST_ADDOPTS", "-p no:unraisableexception"),
+]
 
 
 class TestForgottenAwaitGate:
@@ -39,3 +60,48 @@ class TestForgottenAwaitGate:
         forgotten_await_gate_statements.assert_the_projects_own_configuration_was_in_force()
         forgotten_await_gate_statements.assert_the_probe_suite_passed()
         forgotten_await_gate_statements.assert_nothing_was_left_unawaited_on_the_control()
+
+    @pytest.mark.parametrize(("variable", "value"), HOSTILE_RUNNER_ENVIRONMENTS)
+    def test_should_still_fail_the_forgotten_await_probe_when_the_runner_environment_ignores_runtime_warnings(  # noqa: E501
+        self,
+        tmp_path,
+        monkeypatch,
+        variable,
+        value,
+        forgotten_await_gate_statements: ForgottenAwaitGateStatements,
+    ):
+        """The scrub itself, watched -- and it is watched because it stopped being total.
+
+        `ChildPytestRun` used to strip `LEAKY_CHILD_VARIABLES` from every child
+        unconditionally; it now takes an opt-in that keeps them, for the one family
+        whose subject is a hostile runner environment. From that change on, "does
+        *this* gate's child get scrubbed?" is a per-call-site decision, and nothing
+        watched it: `LEAKY_CHILD_VARIABLES` and `_child_environment` were each
+        referenced exactly once in the whole backend tree -- the definition and its
+        single use. No test set a hostile variable and required the gate to bite, so
+        the scrub was proven only by developer and CI shells happening to be clean,
+        which is the assumption it exists to remove.
+
+        A flipped default, an opt-in threaded through the shared base, or a later
+        refactor collapsing the two constructors would un-arm the forgotten-await
+        gate while every harness test stayed green -- and the loss would stay
+        invisible until someone forgot an `await` for real. This test is green today
+        and goes red the instant the scrub stops applying to this family.
+
+        The parent's own run is unaffected: its filters and `config.option` were
+        resolved at startup, and `monkeypatch` restores the variable at teardown.
+
+        Both vectors were driven by hand before being written down, and the flipped
+        default was then run as a negative control -- each parametrisation goes red
+        the moment this family's child stops being scrubbed.
+        """
+        monkeypatch.setenv(variable, value)
+        forgotten_await_gate_statements.given_a_call_site_that_forgets_to_await_an_async_given_step(
+            tmp_path
+        )
+
+        forgotten_await_gate_statements.run_the_probe_under_the_projects_own_pytest_configuration()
+
+        forgotten_await_gate_statements.assert_the_projects_own_configuration_was_in_force()
+        forgotten_await_gate_statements.assert_the_probe_suite_failed()
+        forgotten_await_gate_statements.assert_the_failure_named_the_unawaited_coroutine()

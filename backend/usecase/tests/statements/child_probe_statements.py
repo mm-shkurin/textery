@@ -26,8 +26,14 @@ from statements.child_pytest_run import BACKEND_ROOT, PROJECT_CONFIG, ChildPytes
 class ChildProbeStatements:
     """Run a probe suite under this project's pytest configuration and read it."""
 
-    def __init__(self) -> None:
-        self._run = ChildPytestRun()
+    def __init__(self, keep_ambient_environment: bool = False) -> None:
+        """Threaded through rather than re-decided, so there is one place to read.
+
+        A family that says nothing gets the scrubbed child every claim about
+        `pyproject.toml` depends on; the one family whose subject *is* the ambient
+        environment opts in explicitly. See `ChildPytestRun.__init__`.
+        """
+        self._run = ChildPytestRun(keep_ambient_environment)
         self._report: ChildPytestReport | None = None
 
     def run_the_probe_under_the_projects_own_pytest_configuration(self) -> None:

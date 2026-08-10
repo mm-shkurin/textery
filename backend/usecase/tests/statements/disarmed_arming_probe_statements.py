@@ -1,7 +1,11 @@
 """The arming check, driven red by a runner environment the child gets to keep.
 
 `LiveHarnessConfigurationStatements` is the one guard that asserts on the run
-executing it rather than on a file. Its two negative arms have never executed.
+executing it rather than on a file. It runs **three** checks, and none of their
+negative arms has ever executed. Two of the three are driven here; the third,
+`_assert_the_declaration_is_exactly_the_required_entries`, is unreachable by
+either vector below because both short-circuit ahead of it, and is scheduled
+separately with its own vector (`-o filterwarnings=...`).
 `_assert_a_runtime_warning_actually_raises` ends in a `raise AssertionError` that
 no test has reached, and `_assert_no_command_line_filter_overrides_the_declaration`
 ends in `assert overrides == []` on a list that has always been empty -- and
@@ -83,7 +87,7 @@ class DisarmedArmingProbeStatements(ChildProbeStatements):
     """Run the live arming check as a child, under an environment of our choosing."""
 
     def __init__(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        super().__init__()
+        super().__init__(keep_ambient_environment=True)
         self._monkeypatch = monkeypatch
 
     def given_a_runner_environment_that_overrides_the_declared_filters(self) -> None:
@@ -136,11 +140,22 @@ class DisarmedArmingProbeStatements(ChildProbeStatements):
         self._assert_the_arming_check_failed_saying(EXPECTED_INERT_FILTER_REFUSAL)
 
     def assert_the_arming_check_passed_under_an_armed_environment(self) -> None:
-        """The control that makes the two refusals attributable to the environment.
+        """The only run in this family that executes the arming check's passing arm.
 
-        Without it a probe that failed to import, or a statement that raised for
-        any reason at all, would satisfy both refusals above on their tally and
-        leave only the message text carrying the claim.
+        Its earlier justification was wrong in both halves and is corrected rather
+        than carried. A probe that failed to import does *not* satisfy the refusals
+        above: it yields `{errors: 1}` and exit 2, which the whole-tally-plus-exit-
+        code pin rejects on its own, and it produces an empty `failing_test_names()`,
+        which the set equality rejects independently. Nor does this test make those
+        refusals attributable to their environments -- it is a separate test with its
+        own child run, and three independent runs cannot cross-check each other; a
+        shared fixture would.
+
+        What it does do is the reason to keep it: every other test here requires the
+        check to *fail*, so without this one the `return` arm of
+        `_assert_a_runtime_warning_actually_raises` -- the path the whole suite runs
+        under -- would never be executed by any test at all, and an arming check that
+        refused every environment would look identical.
         """
         self.assert_the_probe_suite_passed()
 

@@ -56,9 +56,19 @@ def _refuse_a_probe_inside_the_repository(probe_path: Path) -> None:
 class ChildPytestRun:
     """A probe module written to disk, then run by a child pytest."""
 
-    def __init__(self) -> None:
+    def __init__(self, keep_ambient_environment: bool = False) -> None:
+        """Scrubbed by default, because the default is what every gate but one needs.
+
+        `keep_ambient_environment=True` is the single opt-in, and it exists for the
+        one family whose *subject* is a hostile runner environment: the disarmed
+        arming probe has to hand the child a `PYTEST_ADDOPTS` the scrub would
+        otherwise remove. Everywhere else -- the forgotten-await gate above all --
+        the scrub is the reason a green means anything, so it stays the default and
+        the opt-in has to be typed out at the one call site that wants it.
+        """
         self._probe_path: Path | None = None
         self._scratch: Path | None = None
+        self._keep_ambient_environment = keep_ambient_environment
 
     def write_probe(self, tmp_path: Path, source: str) -> None:
         """The probe on disk -- but only once the destination has been judged.
@@ -132,11 +142,23 @@ class ChildPytestRun:
         to abort the child's collection with `FileNotFoundError` on exactly such a
         path. The gate must fail only when the gate is wrong, so the shared mutable
         things between parent and child are taken away.
+
+        The scratch redirection is unconditional; only the `LEAKY_CHILD_VARIABLES`
+        filter is opt-out, and dropping it is never a convenience -- it means the
+        caller is asserting *about* those variables. That the filter still applies
+        to the forgotten-await gate is itself asserted, by
+        `test_forgotten_await_gate.py`'s two hostile-environment tests: they set
+        `PYTHONWARNINGS`/`PYTEST_ADDOPTS` in the parent and require the gate to bite
+        anyway, so a flipped default here goes red rather than quietly un-arming it.
         """
         scratch = str(self._scratch_dir)
-        environment = {
-            name: value for name, value in os.environ.items() if name not in LEAKY_CHILD_VARIABLES
-        }
+        environment = dict(os.environ)
+        if not self._keep_ambient_environment:
+            environment = {
+                name: value
+                for name, value in environment.items()
+                if name not in LEAKY_CHILD_VARIABLES
+            }
         return {**environment, "TMPDIR": scratch, "TEMP": scratch, "TMP": scratch}
 
     @property

@@ -1,5 +1,3 @@
-import pytest
-
 from statements.disarmed_arming_probe_statements import DisarmedArmingProbeStatements
 
 
@@ -11,15 +9,13 @@ class TestDisarmedArmingProbe:
     Then the child fails, naming the vector that disarmed it -- while the same
       check under an untouched environment passes
 
-    Both negative arms of `LiveHarnessConfigurationStatements` are a `raise` and a
-    bare `assert`, neither of which coverage.py counts as a branch, and neither has
-    ever executed. The evidence that they bite was a terminal session. This is that
-    session, written down as two tests and a control.
+    Two of the three checks `LiveHarnessConfigurationStatements` runs end in a
+    `raise` and a bare `assert`, neither of which coverage.py counts as a branch,
+    and neither had ever executed. (The third check's arm is unreachable by either
+    vector here and is driven separately.) The evidence that they bite was a
+    terminal session. This is that session, written down as two tests and a control.
     """
 
-    @pytest.mark.skip(
-        reason="RED: ChildPytestRun scrubs PYTEST_ADDOPTS unconditionally, so the child is armed"
-    )
     def test_should_fail_the_arming_check_when_a_runner_env_overrides_the_declared_filters(
         self, tmp_path, disarmed_arming_probe_statements: DisarmedArmingProbeStatements
     ):
@@ -31,9 +27,6 @@ class TestDisarmedArmingProbe:
         disarmed_arming_probe_statements.assert_the_projects_own_configuration_was_in_force()
         disarmed_arming_probe_statements.assert_the_arming_check_refused_the_command_line_override()
 
-    @pytest.mark.skip(
-        reason="RED: ChildPytestRun scrubs PYTEST_ADDOPTS unconditionally, so the child is armed"
-    )
     def test_should_fail_the_arming_check_when_a_runner_env_unloads_the_warnings_plugin(
         self, tmp_path, disarmed_arming_probe_statements: DisarmedArmingProbeStatements
     ):

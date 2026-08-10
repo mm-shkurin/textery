@@ -1669,7 +1669,7 @@ within their file, not across the story.
       and resolves it only because `pythonpath` in `backend/pyproject.toml` lists `usecase/tests` and the
       child runs with `--rootdir backend`. Dropping that entry breaks this family with a
       `ModuleNotFoundError` that reads as a harness defect rather than a config change.
-- [~] green-usecase (coverage: disarmed suite drives the arming probe red) — give `ChildPytestRun` an
+- [x] green-usecase (coverage: disarmed suite drives the arming probe red) — give `ChildPytestRun` an
       opt-in that keeps the ambient environment for this family, leaving the unconditional scrub in place
       for the forgotten-await gate. Acceptance number **0 skipped**. No assertion may change.
       **The premortem's severe finding must land WITH or BEFORE this GREEN, because this GREEN is what
@@ -1740,6 +1740,61 @@ within their file, not across the story.
       weakness in child cost is diagnosability, not time: a `subprocess.run` timeout raises
       `TimeoutExpired` as an error and `child_pytest_run.py:80-87` never reads its captured stdout, so an
       operator gets a bare traceback with no child tail — pre-existing, not charged to this unit.
+      **Outcome: 0 skipped, met.** `usecase/tests/harness` **17 passed**; full usecase module **201
+      passed, 0 failed, 0 skipped**. `ChildPytestRun.__init__` takes `keep_ambient_environment=False`;
+      the scrub is now conditional while the scratch redirection (`TMPDIR`/`TEMP`/`TMP`) stays
+      unconditional, since only the variables are what a caller can be asserting *about*. The flag is
+      threaded through `ChildProbeStatements` with the same default, so a family that says nothing keeps
+      the scrubbed child; `disarmed_arming_probe_statements.py` is the single opt-in call site. No
+      `given_` needed rewiring — `_disarm_the_child_with_only` already scrubbed and set one vector, and
+      that isolation is now the live thing it was written to be.
+      **The premortem's guard landed, and the vector this file prescribed for it turned out to be inert
+      — measured, not argued.** `PYTHONWARNINGS="ignore::RuntimeWarning"` does **not** disarm the
+      forgotten-await gate: driven by hand against the real config with the child keeping its
+      environment, clean gives exit 1, `PYTHONWARNINGS=ignore::RuntimeWarning` still exit 1, and
+      `PYTHONWARNINGS=ignore` still exit 1 — pytest applies its own ini `filterwarnings` *after* the
+      filters inherited from that variable, and the last matching filter wins. A guard carrying only it
+      would have been **the sixth inert guard on this scenario**, green in every state including the one
+      it exists to reject. The two vectors that do disarm it, each verified individually to exit 0, are
+      `PYTEST_ADDOPTS="-W ignore::RuntimeWarning"` and `PYTEST_ADDOPTS="-p no:unraisableexception"`; the
+      guard is parametrised over those, and the rejected `PYTHONWARNINGS` is documented in place with its
+      measurement so it is not re-proposed.
+      **Negative control run rather than assumed:** flipping `ChildProbeStatements`' default to `True`
+      turns both parametrisations RED (`2 failed, 2 passed`) and reverts clean. Flipping
+      `ChildPytestRun`'s default *alone* changes nothing — the base passes the flag positionally — which
+      is itself the argument for the guard sitting where it does.
+      Prose corrections: the "two negative arms" undercount fixed in both the module and class
+      docstrings, with the third check named as unreachable by either vector here; and the control's
+      false justification replaced with what is true — an import failure is rejected by the
+      tally/exit-code pin and independently by the set equality, a separate child run cannot make other
+      tests' refusals attributable — plus the real reason to keep it: it is the only execution anywhere
+      of the `return` arm.
+      **`/test-coverage` confirmed the agent-review measurement and drew the line the report cannot.**
+      The standard focus filter returns empty again (everything is under `usecase/tests/`) — a **sixth**
+      false all-clear avoided only by naming the files. `child_pytest_run.py` 42/42 lines **4/4
+      branches**, `child_probe_statements.py` 33/33, `disarmed_arming_probe_statements.py` 38/38 **4/4**;
+      both new branch pairs are genuinely two-armed rather than the 0/0 ternary trap — the scrub arm is
+      taken by the forgotten-await family and the keep arm by the disarmed family, and
+      `if vector is not None` has the armed control on its `None` side.
+      `live_harness_configuration_statements.py:101` reads missed and **must not be scheduled**: it is
+      the `raise` whose sentence the `-p no:warnings` test requires in the child's FAILURES section, so
+      it is provably executed and merely unmeasured — coverage.py does not follow the child (no
+      `[tool.coverage]`, no `COVERAGE_PROCESS_START`, no `.pth`). Same for the `assert overrides == []`
+      arm, hand-checked because `assert` is not a branch. **The success criterion this step satisfies is
+      "the arm is watched biting", not "the report shows it covered"** — L97-101 will still read
+      uncovered in `backend/coverage.xml`, and closing that would need subprocess-coverage wiring nobody
+      has asked for.
+      One real gap was hand-found and scheduled below (the third arming arm, which this unit's own
+      docstring promised a schedule for and no checkbox carried), and a fourth never-executed arm —
+      `assert_the_unraisable_plugin_is_loaded_in_this_run`'s `assert loaded is True`, outside the
+      three-check method so no vector reaches it — was folded into the already-scheduled "half of the
+      arming never probed" step as item (5) rather than opening a step of its own.
+      **Two reds left alone, both outside this unit and both contradicting earlier "ruff clean" entries
+      in this file:** `ruff check usecase` reports two pre-existing E501s in
+      `test_resolve_owned_revision_records.py:65,80` (long `await` step names, another scenario's tests,
+      committed at HEAD), and `ruff format --check` would still reformat four pre-existing files
+      (`usecase/src/document_edit/ai_edit_repository.py`, `arrangement_snapshot_guard_statements.py`,
+      `child_pytest_report.py`, `document_arrangement.py`).
 - [ ] red-usecase (coverage: bannerless child report tallies empty) — `child_pytest_report.py:133-134`
       (`if not banners: return {}`) is a partial branch, False arm only. It matters because that empty
       `{}` is the exact symptom the `"\n".join` change was written to prevent — the docstring names it
@@ -1747,6 +1802,29 @@ within their file, not across the story.
       itself has still never been executed, so a report with no banner lines at all has never been fed
       through `summary_counts()`.
 - [ ] green-usecase (coverage: bannerless child report tallies empty)
+- [~] red-usecase (coverage: third arming arm refuses a rewritten declaration) —
+      **the one arm this unit's own diff promises and does not deliver.**
+      `disarmed_arming_probe_statements.py`'s module docstring states it outright: the third check,
+      `_assert_the_declaration_is_exactly_the_required_entries`, "is unreachable by either vector below
+      because both short-circuit ahead of it, and is scheduled separately with its own vector
+      (`-o filterwarnings=...`)" — but no checkbox carried that schedule until now. Its failing arm has
+      never executed in any process, parent or child: the parent's `test_live_harness_configuration.py`
+      runs it green, and both disarmed vectors bite at check one or check two.
+      It does not show up as a coverage gap and never will — the arm is a bare `assert`, and `assert` is
+      not a branch to coverage.py. `live_harness_configuration_statements.py` reports 26/27 lines with
+      only L101 missed; check three's failure path is invisible to the report entirely. Hand-checked.
+      The vector is already verified against the real config and recorded in the GREEN step above:
+      `PYTEST_ADDOPTS="-o filterwarnings=error::RuntimeWarning"` overrides the ini value **without**
+      populating `config.option.pythonwarnings`, so check one passes; `error::RuntimeWarning` survives so
+      check two passes; check three bites with `{failed: 1}`. Same shape as the two existing tests —
+      a third `given_a_runner_environment_that_*` on `DisarmedArmingProbeStatements`, a third expected
+      sentence literal, and a fourth test on `TestDisarmedArmingProbe`. The child already keeps its
+      ambient environment (`keep_ambient_environment=True`), so no production change is needed.
+      Pin the sentence to the "no third one may follow them / last matching filter wins" clause — the
+      longest and most reasoned message in the file, and one no reader has ever seen. Correct the
+      "two negative arms" undercount in both the module and class docstrings in the same breath; that
+      undercount is what let the arm go unscheduled.
+- [ ] green-usecase (coverage: third arming arm refuses a rewritten declaration)
 - [ ] red-usecase (the half of the join that was never fixed, and the half of the arming never probed) —
       **scheduled by both review passes over `74810821`, which converged on the first item
       independently.** The agent-review pass hunted the fourth-inert-guard question *empirically* and
@@ -1792,6 +1870,16 @@ within their file, not across the story.
       claims "`resolve()` on both sides" while the code resolves only `probe_path` — correct today solely
       because `BACKEND_ROOT` happens to be resolved at its definition 20 lines up, and silently inert the
       day that changes.
+      (5) **The fourth never-executed arm, found by the coverage pass over the disarmed-probe GREEN.**
+      `assert_the_unraisable_plugin_is_loaded_in_this_run`'s `assert loaded is True` has never failed in
+      any process. It is a sibling of the three arms inside
+      `assert_both_filter_entries_are_in_force_in_this_run` but sits outside it, so neither the two
+      shipped vectors nor the third one now scheduled above reaches it — and like them it is a bare
+      `assert`, invisible to coverage.py, so no report will ever flag it. Its own message names the
+      vector that drives it: `-p no:unraisableexception` in `PYTEST_ADDOPTS`, which `child_pytest_run.py`
+      already names as the second forgotten-await vector and which drops straight into the
+      `DisarmedArmingProbeStatements` fixture. Belongs with item (2): both are the unraisable half of the
+      arming check being declaration-checked rather than watched biting.
 - [ ] green-usecase (the half of the join that was never fixed, and the half of the arming never probed)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares
