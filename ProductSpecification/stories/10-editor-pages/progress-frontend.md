@@ -578,7 +578,7 @@ pagination failure.
   this is a separate constant.) Cross-language, acceptance-layer; no vitest case can close it and
   none should try. Its own step, below.
   Suite 639 passed / 6 skipped / 0 failed; `tsc --noEmit` exit 0.
-- [ ] red-frontend (agent-review CONCERNS 1 over `36574438`) — **the sixth instance, and the
+- [x] red-frontend (agent-review CONCERNS 1 over `36574438`) — **the sixth instance, and the
   header does not admit this one.** `designNumbers.test.ts:9-10` claims the four assertions and the
   collision check "share ONE declaration… deliberate and not being undone here" — a claim about
   four lines in two OTHER files, checked by nothing. The new case pins the FIXTURE'S values; it
@@ -592,6 +592,50 @@ pagination failure.
   that block as complete inherits exactly the over-claim the unit was written to correct. Guard:
   assert the assertion SITES reference the constants — a source-text check over the two files, or
   unskipped cases driven from the fixture. No vitest case in the diff can do it.
+  **Done.** New file `paginationState.constantSites.test.ts` (165 lines, **LIVE**), a SOURCE-TEXT
+  check, because the claim is about how an expectation is WRITTEN: `railSkeletonCount: 3` and
+  `railSkeletonCount: MEASURING_SURFACE.railSkeletons` evaluate identically, so no runtime
+  assertion over values can separate them. It ingests both files via Vite `?raw`, strips comments
+  (`measuring.test.ts:120-121` discusses these fields in prose), collects every
+  `sheet|railSkeletonCount:` assignment **in order with its right-hand side**, and compares the two
+  lists in one `toStrictEqual`. That form catches a re-typed literal, an added or deleted
+  assertion, a renamed constant, and a swapped field→constant pairing.
+  **Hole proved, not asserted.** The chartered mutant `measuring.test.ts:100 → railSkeletonCount:
+  3` **survives at HEAD** (`6 passed | 3 skipped`, zero failures — `designNumbers` green because
+  the fixture is untouched, `collisionsWithin` green because it refutes against
+  `SURFACE_CONSTANTS`) and is killed by the guard. Same for transposing `:99-100` and for
+  `laidOut.test.ts:82 → sheetSkeletonCount: 0`.
+  **One correction loop in RED:** predicted a plain pass, got `TypeError: The URL must be of scheme
+  file` — under jsdom `import.meta.url` is not a `file:` URL, so `fileURLToPath` throws. Test-setup
+  mechanics, not the subject.
+  **`/test-review` found the hole this step's own charter did not name, one level up.** Replace the
+  import with a local redeclaration — `const MEASURING_SURFACE = { sheetSkeletons: 1,
+  railSkeletons: 3 }` — and all six assertion lines stay BYTE-IDENTICAL: guard green, `designNumbers`
+  green, `collisionsWithin` green, sharing severed. An assignment list reads a NAME; a name is worth
+  only where it is bound. Fixed by collecting each file's fixture import specifier list as a list
+  and comparing it in the same `toStrictEqual`, so deleting the import fails as loudly as editing a
+  site. Keeping the import AND shadowing it locally is not a third route — that is a TS
+  redeclaration error. Eight mutations killed after the fix.
+  **Fail-closed against formatting**, verified over six variants (line wrap, doubled space,
+  `MEASURING_SURFACE['railSkeletons']` bracket form, `3` behind a same-line comment, `3` across a
+  wrap, trailing space): anything not exactly `<field>: <expression>,` on one trimmed line is
+  DROPPED rather than admitted, so the list shortens and the check fails. Two consequences now in
+  the header: a re-typed literal surfaces as a MISSING member, not a changed one; and the
+  strictness is load-bearing — widening the regex to tolerate wrapping is what makes the
+  trailing-comment attack start passing. `prettier --check` is clean on both files (widest site 59
+  columns against `printWidth: 100`), so `npm run format` cannot redden it.
+  **Second `/test-review` defect: the new file did not typecheck.** `node:fs`/`node:path`/`process`
+  are untyped — `tsconfig.app.json` covers `src` with `"types": ["vite/client"]`. It ran green
+  under vitest only because esbuild strips types. Adding `"node"` was refused (it would make
+  `process.env` legal in frontend source); ingestion moved to `?raw`, which also fails at transform
+  time on a wrong path and drops the assumption that vitest always runs from `frontend/`.
+  Header over-claim fixed in `designNumbers.test.ts` (67 → 80 lines, header only): "four
+  assertions" → six, it no longer implies it guards the sharing, and `WHAT IT DOES NOT CLAIM` gains
+  both the omitted limit and the sentence that the block lists KNOWN limits and is not a proof no
+  others exist — which is what let a reader inherit the over-claim.
+  Suite 640 passed / 6 skipped / 0 failed; `tsc -b --noEmit` and oxlint clean except the
+  pre-existing RED stub `paginationState.ts:100` (unused `input`). Files: constantSites 165,
+  designNumbers 80 — under 200.
 - [ ] red-frontend (premortem CREDIBLE 1 over `36574438`) — **even when the sites DO read the
   constants, nothing pins WHICH FIELD each reaches.** Distinct from the finding above, and a guard
   for that one which merely asserts the constants are referenced does NOT close this. The fixture

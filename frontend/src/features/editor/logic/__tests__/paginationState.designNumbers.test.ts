@@ -6,8 +6,9 @@ import { MEASURING_SURFACE, NO_SKELETONS } from './laidOutRows.fixture'
  *
  * `MEASURING_SURFACE.sheetSkeletons` is `1`, `MEASURING_SURFACE.railSkeletons` is `3`, and
  * `NO_SKELETONS` is `0`. Those three values are what `paginationState.measuring.test.ts:99-100,186-187`
- * and `paginationState.laidOut.test.ts:82-83` expect, read by name so the four assertions and the
+ * and `paginationState.laidOut.test.ts:82-83` expect, read by name so the six assertions and the
  * collision check share ONE declaration. That sharing is deliberate and is not being undone here.
+ * THIS FILE DOES NOT CHECK THAT SHARING — see the second paragraph of `WHAT IT DOES NOT CLAIM`.
  *
  * A LEGITIMATE DESIGN CHANGE IS EDITED HERE, ON PURPOSE. Grow the rail to four rows, or change how
  * many skeleton sheets the measuring surface shows, and the correct motion is: change the constant in
@@ -45,6 +46,18 @@ import { MEASURING_SURFACE, NO_SKELETONS } from './laidOutRows.fixture'
  * `acceptance/statements/frontend/editor/pagination_measuring_locators.py:77`
  * (`EXPECTED_RAIL_SKELETON_COUNT = 3`), compared with this one by nothing — a cross-LANGUAGE binding
  * no vitest case can close. Both are flagged for their own steps, not absorbed here.
+ *
+ * AND — the limit this block ONCE OMITTED, which is why it must not be read as complete. This case
+ * pins what the constants HOLD. It says nothing about whether the assertions in
+ * `paginationState.measuring.test.ts` and `paginationState.laidOut.test.ts` still READ them: those
+ * are lines in other files, and `railSkeletonCount: 3` typed back in at `measuring.test.ts:100`
+ * leaves this case green (the fixture is untouched) and `collisionsWithin` green (it refutes
+ * against `SURFACE_CONSTANTS`, not against the assertion) while the drift hole the sharing exists
+ * to close is reopened in one token, inside a `.skip`ped case. That gap is closed by
+ * `paginationState.constantSites.test.ts`, which reads the two files' SOURCE — no assertion over
+ * values can distinguish a named read from a re-typed literal, since they evaluate the same. A
+ * reader who took this block as exhaustive would have inherited exactly the over-claim this file
+ * was written to correct; it is a list of KNOWN limits, not a proof that no others exist.
  *
  * The spread is safe in this direction and only in this direction. Spreading `MEASURING_SURFACE` into
  * a `PaginationViewState` expectation is ruled out twice over, because it deletes the key list from
