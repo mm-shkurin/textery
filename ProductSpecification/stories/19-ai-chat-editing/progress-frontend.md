@@ -614,7 +614,23 @@ under `frontend/src` or `acceptance/tests/frontend`.
       If that is production behaviour rather than a test-only affordance, email verification is
       bypassable by the registrant and by anyone who observes the response. Pre-existing, backend's
       to answer — but the whole frontend acceptance harness depends on it.
-- [ ] demo
+- [x] demo — `TestDocumentNotFoundBlockerAcceptance` run headed at 1.2s per wait: **1 passed,
+      93 deselected, in 25.39s.** Demo changes (headless off, `--window-size=1280,800`,
+      `_demo_delay()` in `_wait_for_visible` and `_assert_absent`) reverted; working tree clean.
+      **This closes the open 269s follow-up, and the answer is that the number was never the
+      test's.** The same test, *with* ~5 injected seconds of deliberate slow-motion, finishes in
+      25s — an order of magnitude under the green-selenium reading. So the ~4 minutes was
+      environmental, not the editor route's on-mount call and not a product latency signal: the
+      green-selenium run paid for a cold stack (backend had just restarted onto a freshly created
+      and freshly migrated `textery_s19`) and first-run chromedriver setup. The review passes were
+      right to refuse the number as unexplained, and wrong about where it pointed — worth keeping
+      as the shape of the mistake: a wall-clock outlier measured once, on a cold environment,
+      reads exactly like a latency defect.
+      Two things the demo did NOT do, both deliberate: the skill's stop/restart-backend step was
+      skipped, because the stack is shared with the parallel backend session and this test mints
+      its own account through `issue_live_session`, so a clean database buys nothing; and
+      `FRONTEND_PORT=80` was passed explicitly, since the `app_url` fixture defaults to Vite's 5173
+      while the compose route serves on 80.
 
 ### 0.2 An account over its daily quota cannot type an instruction
 - [ ] red-selenium
