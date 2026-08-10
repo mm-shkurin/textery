@@ -124,7 +124,18 @@ const byRowPair = <T>(read: (left: LaidOutRow, right: LaidOutRow) => T): Record<
 
 describe('each laid-out row, read against its own geometry', () => {
   it('derives its expected pageCount from its own blockHeights, not from a number typed beside them', () => {
-    expect(byName(splitAnywherePageCount)).toStrictEqual(byName((row) => row.pageCount))
+    // Both sides used to be read out of the fixture, so a geometry retune that moved `blockHeights`
+    // and `pageCount` TOGETHER kept the two sides equal and left `4` and `6` — the numbers the
+    // header argues are load-bearing — pinned by nothing. The literal is the third side.
+    const counts = {
+      'the font-gate row': 4,
+      'the varied-geometry row': 6,
+    }
+
+    expect({
+      derived: byName(splitAnywherePageCount),
+      declared: byName((row) => row.pageCount),
+    }).toStrictEqual({ derived: counts, declared: counts })
   })
 
   it('states every expected number in a value no other expected number of that row can echo', () => {
