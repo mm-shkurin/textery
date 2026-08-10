@@ -477,6 +477,29 @@ under `frontend/src` or `acceptance/tests/frontend`.
       `DocumentEditorPage.tsx:27` (the whole `document-load-failed` screen, statement + `if` arm).
       That is follow-ups (h)/(p) — the regression to `catch { setNotFound(true) }` is still
       suite-green — now located precisely rather than merely restated.
+      **Both review passes over the rejection RED found this independently and rated it credible**,
+      so 8.8 inherits two named cases rather than a restatement. (1) Hook level: reject
+      `loadEditorDocument` with a plain `new Error('boom')`, assert `toStrictEqual({ status:
+      'failed' })`, kept beside the `DocumentNotFoundError` → `not-found` case so the two are pinned
+      as *different*; verify by mutation that the ternary collapsed *either* way fails. Today
+      `'failed'` is asserted nowhere under `features/aiChat` — every such assertion in the repo
+      belongs to `features/generation` — and every rejection path in this feature uses
+      `DocumentNotFoundError`, so the exact regression the hook's header comment argues against is
+      held up by prose alone. (2) Component level: a `DocumentEditorPage.loadFailed.test.tsx`
+      rejecting generically, asserting the `document-load-failed` panel renders, that no editor /
+      `ai-chat-*` node is present, and — the design decision this forces open — that the screen
+      offers *some* way out. It currently offers none: prose only, no link, no retry, while the
+      sibling `not-found` branch has its anchor pinned down to `tagName === 'A'` and
+      `href === '/documents'`. In-SPA retry is impossible by construction anyway
+      (`requestedIdRef.current === documentId` means a same-id re-render never re-fetches), so
+      recovery needs a remount or a reload — which on a flaky connection hits the same failure.
+      Also surfaced, not owned by 8.8: a newest request that never settles leaves the spinner
+      forever, because the superseded-but-good response was deliberately dropped and
+      `expectPingPongNotRepeated` forbids a recovery re-fetch. `shared/api/send.ts` has no timeout
+      or `AbortController` — a request deadline belongs in the transport layer, not this hook.
+      And: **ESLint does not run in this repo at all.** `npx eslint` dies with "couldn't find an
+      eslint.config.(js|mjs|cjs)" — ESLint 10.8.1 no longer reads `.eslintrc.*` and the config
+      migration was never done, so the frontend currently has zero lint coverage.
       Also uncovered and deliberately left alone: `DocumentEditorPage.tsx:20` `documentId ?? ''`
       right arm — reachable only by mounting the page off its route, no user-visible behavior.
 - [x] red-frontend (coverage: a superseded *rejection* for the SAME id loses) — **un-skipped and

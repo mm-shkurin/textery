@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, waitFor } from '@testing-library/react'
+import { act } from '@testing-library/react'
 import { loadEditorDocument } from '../../api/editorDocumentApi'
 import {
-  FRESH_DOCUMENT,
   OTHER_DOCUMENT,
   READY_ON_FRESH,
   SUPERSEDED_DOCUMENT,
   expectPingPongNotRepeated,
+  settleNewestRequestFirst,
   startPingPong,
 } from './supersededRequestFixture'
 
@@ -54,19 +54,13 @@ describe('useEditorDocument with two outstanding requests for the same document'
 
   // RED: verified failing against unmodified main —
   // AssertionError: expected { status: 'ready', document: { content: '<p>Введение к докладу</p>',
-  // version: 3 } } to deeply equal { …, version: 9 }. The superseded first response for A wins
-  // because `requestedIdRef.current` is back to A when it resolves. `green-frontend` adds a
-  // per-request token beside the id key and un-skips this.
+  // version: 3 } } to deeply equal { …, version: 9 }. The superseded first response for A won
+  // because `requestedIdRef.current` was back to A when it resolved. Green has since landed the
+  // per-request token beside the id key, so this now passes; delete the `.then` token guard and
+  // the failure above returns.
   it('keeps the newest response when the superseded request for the same id resolves last', async () => {
     const { result, resolvers } = startPingPong(loadEditorDocumentMock)
-
-    // The second request for A answers first.
-    await act(async () => {
-      resolvers[2](FRESH_DOCUMENT)
-    })
-    await waitFor(() => {
-      expect(result.current).toStrictEqual(READY_ON_FRESH)
-    })
+    await settleNewestRequestFirst(result, resolvers)
 
     // Then B's response, from the id the user has already left. Resolved in its OWN act and
     // asserted on its own, so the pre-existing old-id guard is genuinely pinned: flushed together

@@ -1,6 +1,6 @@
 import { expect } from 'vitest'
 import type { MockedFunction } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { useEditorDocument, type EditorDocumentState } from '../useEditorDocument'
 import type { loadEditorDocument, EditorDocument } from '../../api/editorDocumentApi'
 
@@ -45,13 +45,15 @@ export const READY_ON_FRESH: EditorDocumentState = { status: 'ready', document: 
 const PING_PONG_CALLS = [[DOCUMENT_ID], [OTHER_DOCUMENT_ID], [DOCUMENT_ID]]
 
 type LoadMock = MockedFunction<typeof loadEditorDocument>
+type Resolvers = ((document: EditorDocument) => void)[]
+type HookResult = { readonly current: EditorDocumentState }
 
 // One deferred per call, in call order: the settlement order is the whole experiment, so it must be
 // driven by the test rather than by whatever order the mock happens to settle in. Both levers are
 // captured per call — which of the two a case pulls is exactly what separates the `.then` arm from
 // the `.catch` arm of the same guard.
 function deferredLoads(loadEditorDocumentMock: LoadMock) {
-  const resolvers: ((document: EditorDocument) => void)[] = []
+  const resolvers: Resolvers = []
   const rejecters: ((error: unknown) => void)[] = []
   loadEditorDocumentMock.mockImplementation(
     () =>
@@ -92,6 +94,18 @@ export function startPingPong(loadEditorDocumentMock: LoadMock) {
   expect(rejecters).toHaveLength(3)
 
   return { result, resolvers, rejecters }
+}
+
+// The SECOND request for A answers first and succeeds — the good state that each case's late
+// settlement must not be allowed to destroy. Still premise, not conclusion: it is identical in both
+// cases, and living here means the two can never drift into standing on different good states.
+export async function settleNewestRequestFirst(result: HookResult, resolvers: Resolvers) {
+  await act(async () => {
+    resolvers[2](FRESH_DOCUMENT)
+  })
+  await waitFor(() => {
+    expect(result.current).toStrictEqual(READY_ON_FRESH)
+  })
 }
 
 // No recovery re-fetch: a green that noticed the mismatch and re-issued a fetch for A would land on

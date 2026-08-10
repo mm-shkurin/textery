@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, waitFor } from '@testing-library/react'
+import { act } from '@testing-library/react'
 import { DocumentNotFoundError, loadEditorDocument } from '../../api/editorDocumentApi'
 import {
-  FRESH_DOCUMENT,
   READY_ON_FRESH,
   expectPingPongNotRepeated,
+  settleNewestRequestFirst,
   startPingPong,
 } from './supersededRequestFixture'
 
@@ -47,15 +47,7 @@ describe('useEditorDocument when the superseded request for the same document fa
 
   it('keeps the newest response when the superseded request for the same id rejects last', async () => {
     const { result, resolvers, rejecters } = startPingPong(loadEditorDocumentMock)
-
-    // The second request for A answers first and succeeds — the good state the late failure must
-    // not be allowed to destroy.
-    await act(async () => {
-      resolvers[2](FRESH_DOCUMENT)
-    })
-    await waitFor(() => {
-      expect(result.current).toStrictEqual(READY_ON_FRESH)
-    })
+    await settleNewestRequestFirst(result, resolvers)
 
     // …and only now the first, superseded request for A comes back — as a failure.
     await act(async () => {
