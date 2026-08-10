@@ -416,10 +416,37 @@ under `frontend/src` or `acceptance/tests/frontend`.
       **5/8 branches** (50% → 62.5%), the newly-covered arm being the dedupe guard's `return`. Lines
       41-46 remain uncovered — the two stale-response guards, which belong to the re-scoped sibling
       step (aj), and the `'failed'` arm of the `instanceof` ternary, which belongs to scenario 8.8.
-- [ ] red-frontend (coverage: a superseded response for the SAME id loses) — re-scoped by
+- [x] red-frontend (coverage: a superseded response for the SAME id loses) — re-scoped by
       follow-up (aj): the original wording ("stale response for old id ignored") describes the case
       `requestedIdRef` already handles. The unpinned arm is two outstanding requests for the *same*
       id (A→B→A), where the first response passes the id check and installs a stale `version`.
+      One case in `hooks/__tests__/useEditorDocument.supersededResponse.test.tsx` (148 lines).
+      **This is a real defect on main, not a mutation exercise** — unlike the previous coverage pair,
+      the test fails against the unmodified hook. Predicted and got `AssertionError: expected
+      { status: 'ready', document: {… version: 3} } to strictly equal {… version: 9}` — the
+      superseded first response for A wins because `requestedIdRef.current` is back to `A` by the
+      time it resolves. Every earlier assertion passes on main, which is what proves the premise:
+      the hook really does issue `[A], [B], [A]`, so there really are two outstanding requests for
+      one id. No StrictMode wrapper — the subject is *which response wins*, and the dedupe guard
+      already collapses each double-invoke to one fetch, so StrictMode would leave the call list
+      identical while implying the defect is a dev-mode artefact. It is not: three distinct ids
+      being requested is plain navigation.
+      `/test-review` landed four fixes. The load-bearing one: B's response and A's second response
+      were flushed inside **one** `act`, so B lost by microtask ordering rather than by the
+      pre-existing old-id guard — deleting that guard failed nothing, and the header comment's claim
+      that it was "exercised in the same run" was false. B now resolves alone with its own
+      unchanged-state assertion. Also: `toEqual`→`toStrictEqual` throughout (`toEqual` treats a key
+      holding `undefined` as absent, so a green widening the state with an `error?` beside a
+      stale-but-present document would have passed — exactly this file's bug class); a
+      `{ status: 'loading' }` assertion after each `rerender`, without which a hook that stopped
+      clearing the previous document on an id change still satisfied the final assertion; and
+      `expect(resolvers).toHaveLength(3)`, so a missing resolver dies with a diff rather than a
+      `TypeError` inside the fixture. One finding rejected: a redundant per-field `version` assertion
+      beside the whole-state `toStrictEqual` — `tdd-rules.md:130` prefers structural comparison, and
+      the extra check could only ever fail alongside the one above it.
+      514 passed / 0 failed / 1 skipped (the skip is this case).
+      **Green needs a per-request token beside the id key** — a monotonic sequence or a per-effect
+      flag captured in the effect closure. The id alone cannot separate two outstanding requests.
 - [ ] green-frontend (coverage: a superseded response for the SAME id loses)
       Both pairs target `useEditorDocument.ts` (branches 4/8). The dedupe guard `L35` and the two
       stale-response guards `L41`/`L45` have their true arms taken by **no** test — all three
