@@ -1102,7 +1102,18 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   committed scenario. Also noted, off this row's path: `export_envelope.py:88-92` uses
   `content_disposition is not None and ...startswith("attachment")`, the one loose matcher in the
   inherited kit.)
-- [~] green-acceptance (premortem: a content-only save must leave the stored title alone, end to end)
+- [x] green-acceptance (premortem: a content-only save must leave the stored title alone, end to end)
+  **Marker removed, nothing else touched** — the only edit was deleting the class-level
+  `@pytest.mark.skip` and its now-unused `import pytest` from
+  `test_content_only_save_acceptance.py`. No production code, no Statements change; the row was
+  chartered GREEN on arrival and arrived green: **14 passed, 1 skipped** in
+  `tests/backend/documents/` (was 13 passed, 2 skipped with the marker on). The one remaining skip is
+  the parked roundtrip RED over the live `model_fields_set` defect, which has its own step below.
+  Worth restating plainly, because it is what this row's value rests on: a green here proves the
+  absent-title path is correct in COMPOSITION today, not that the composition is guarded against the
+  erasure work. `clear()` is still unmapped, so `title_update()`'s two no-value branches remain the
+  same value end to end; the mutation that would make this row fail needs BOTH legs, and that pair is
+  exactly the forecast the `adapters-discovery (b)` work will make real.
   `/refactor` on `65c94c8a` extracted the duplicated ASSERTION mechanics — both statements files
   hand-rolled the same guard (`is not None` → `status_code == 200` → `body or {}`) and the same field
   pin, verbatim in shape, differing only in the noun naming the call. New plain-function module
@@ -1122,7 +1133,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   belongs to `assert_export_attachment`, whose docstring charters the looseness for rows where the
   filename is not part of the scenario, and tightening it would change what two committed 3.x rows
   assert — a behaviour change to someone else's rows inside a RED unit.
-- [ ] red-acceptance (BOTH review passes on `65c94c8a`, converging as their top finding: **the row's
+- [~] red-acceptance (BOTH review passes on `65c94c8a`, converging as their top finding: **the row's
   ABSENT-key identity rests on one line of shared client code that nothing asserts.**
   `acceptance/clients/application/application_client.py:127-129` builds the payload and omits `title`
   only when it `is not None`; three Statements call it, and no test anywhere pins the body it

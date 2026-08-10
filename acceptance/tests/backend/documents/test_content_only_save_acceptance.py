@@ -1,15 +1,6 @@
-import pytest
-
 from tests.backend.abstract_backend_test import AbstractBackendTest
 
 
-@pytest.mark.skip(
-    reason="RED-phase marker only, and deliberately NOT a failure claim: this row is "
-    "GREEN on arrival because the absent-title path is already correct end to end. It "
-    "is chartered as a REGRESSION guard, not as a driver of new behaviour -- the "
-    "class docstring carries the two-legged mutation that proves it earns its place. "
-    "green-acceptance removes this marker and changes nothing else."
-)
 class TestContentOnlySaveDoesNotWipeStoredTitle(AbstractBackendTest):
     """Scenario 2.1 guard: a content-only autosave leaves the stored title untouched.
 
