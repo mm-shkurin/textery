@@ -1263,8 +1263,71 @@ under `frontend/src` or `acceptance/tests/frontend`.
       negative in `empty_chat_panel_statements.py`, (bi) the baseline-revision question, (bj)
       the re-resolving locator. Follow-up (ak) was not pulled in — it did not fall out of any
       case here and belongs to the AI-applied-edit scenarios.
+      `/refactor`: **NO ACTION**, with three duplication candidates found and each rejected on
+      merit. The one with teeth: `ANY_MESSAGE = '[data-testid^="ai-chat-message"]'` is used
+      asymmetrically across the two chat files — `history` asserts presence, which goes loudly
+      red if the prefix stops matching, while `emptyChat` asserts emptiness, which goes
+      *silently vacuous*. Extraction was still rejected because the actual source of truth for
+      these names is `empty_chat_panel_statements.py`, which TypeScript cannot import, so a
+      shared TS constant would sync the two TS copies with each other and not with the layer
+      that defines them — drift resistance against the wrong axis. Also rejected: sharing the
+      render/mock harness with `overQuota.test.tsx`, because `vi.mock` is hoisted per file and
+      cannot move into a support module — a shared harness would leave the mocks behind and
+      fail at runtime with "not a mock" rather than at compile time.
+      **Two review-pass findings were fixed in the follow-up commit**, both being this unit's
+      own defects: the progress file listed `green-frontend` **twice** (the edit added a `[~]`
+      line while the scenario's original `[ ]` line was still below it), which would have made
+      `/continue` run a second green pass with no red ahead of it against an
+      already-implemented scenario; and `ChatMessage`'s comment claimed the tests read all
+      three of its fields when they read only `text`, in the very file scenario 1.2 inherits.
+      **Review-pass follow-ups (both CONCERNS), for `green-frontend` and later:**
+      (bk) **Nothing pins that a row's `data-document-id` and the id its own `onClick` passes
+      are the same document.** Every `HistoryPage` case uses the single-item `DOC` fixture and
+      `findByTestId`, which throws on multiple matches, so the file structurally cannot hold a
+      multi-row case as written; the acceptance base cannot cover it either
+      (`EXPECTED_DOCUMENT_ROW_COUNT = 1`, then `rows[0]`). With exactly one row, a green that
+      sources the attribute from a different expression than the click handler is green at both
+      layers — and the user-visible failure is the AI rewriting a document they never opened.
+      Needs `findAllByTestId` and two rows, asserting per row that the attribute equals the id
+      that row's click passes.
+      (bl) **The unit layer never checks the composer is *visible*, and the omission is
+      justified by a case that does not check it either.** `emptyChat.test.tsx:34-38` defers the
+      third Then to `overQuota.test.tsx:173`, but that case is `findByTestId` + `toBeEnabled` —
+      absence and the `disabled` property, never visibility. The acceptance layer explicitly
+      refuses to accept that as sufficient, in `assert_the_message_input_is_enabled`'s own
+      comment. So the two layers are not duplicates: the unit layer asserts strictly less, and
+      the composer is the one element in the panel whose visibility nothing under `frontend/src`
+      checks. If green's new list/empty-state markup collapses or overlaps the composer box,
+      529 vitest cases stay green and only the blocked Selenium scenario would catch it. Same
+      gap, smaller, in `AiChatPanel.history.test.tsx:44`: the list is taken with `getByTestId`
+      and only `querySelectorAll`ed, so a `display:none` list satisfies the non-empty case.
+      (bm) **The passing quota test cements the loading notice as the correct answer to a
+      failure.** `useEditQuota` collapses rejection to `null` with a once-per-mount ref — no
+      retry, no error state — and `quotaReadFailed.test.tsx` now asserts `CHAT_PANEL_NOTICE`
+      ("Проверяем дневной лимит правок…") is visible, framed in-file as "the positive anchor".
+      Scenario 8.8, which the hook's own comment names as owner of the failure screen, cannot
+      ship an error message or a retry without turning this test red. A deferral a test forbids
+      is not a deferral: mark the anchor provisional in the file, or the endpoint 500ing leaves
+      every user staring at "checking your daily limit" forever with nothing saying it failed.
+      (bn) **After green there will be three independent copies of the empty-state sentence**
+      (component, vitest, `empty_chat_panel_statements.py`) and only the first two can be
+      mechanically tied. This file breaks its own pattern: `quotaReadFailed.test.tsx` *imports*
+      `CHAT_PANEL_NOTICE` from `AiChatPanel`, while `emptyChat.test.tsx` hardcodes the sentence.
+      Green should export `CHAT_EMPTY_STATE_TEXT` and have the test import it. The
+      frontend↔acceptance copy stays uncheckable by construction; the frontend↔vitest one need
+      not be. Verified byte-identical today — the drift is future, not present.
+      (bo) **Nothing mechanically requires the three skips to disappear at green.** Un-skipping
+      is a manual edit in three places across three files; vitest does not fail on a non-zero
+      skip count and there is no `allowOnly`-style gate in `vitest.config.ts`. A green that
+      satisfies two and forgets the third reports "passed, 1 skipped", which reads as normal.
+      Green's verification must pin `0 skipped` explicitly, not diff a count against a
+      paragraph. (This is follow-up (l) from `green-frontend` 0.1, recurring — it is now a
+      pattern, not an incident.)
+      Rated REMOTE and not owed: `DocumentEditorPage.tsx` passes a literal `messages={[]}`, so
+      the conditional branch is exercised only by a direct panel render, never through the page.
+      Scenario 1.2 owns the read and its page-level tests would redden on a forgotten
+      thread-through.
 - [~] green-frontend
-- [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design

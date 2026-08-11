@@ -8,9 +8,13 @@ export const CHAT_PANEL_HEADING = 'Редактор с ИИ'
 // composer: it is what the panel can honestly say before it knows whether typing is allowed.
 export const CHAT_PANEL_NOTICE = 'Проверяем дневной лимит правок…'
 
-// One turn of the conversation. RED stub for Frontend Scenario 1.1: only the three fields the
-// tests read — an id to key the row, the side it sits on, and what it says. The wire shape and
-// its timestamps belong to `red-frontend-api` / scenario 1.2, which owns the history read.
+// One turn of the conversation. RED stub for Frontend Scenario 1.1, which reads `text` and
+// NOTHING ELSE: `AiChatPanel.history.test.tsx` asserts row text alone. `messageId` and `role`
+// are shaped for scenario 1.2 — which owns the history read, the ordering and the per-side
+// rendering — and are asserted by nothing today. Do not read this interface as a claim that
+// keying rows by id or splitting them by side is covered; pinning either means inventing
+// `data-message-id` / `data-message-role`, which is 1.2's spec. The wire shape and its
+// timestamps belong to `red-frontend-api` / 1.2 as well.
 export interface ChatMessage {
   messageId: string
   role: 'user' | 'assistant'
