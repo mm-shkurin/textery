@@ -2226,7 +2226,7 @@ within their file, not across the story.
       `acceptance/statements/` in the green commit — swept in by `git add -A`, written by the parallel
       frontend session, imported by nothing at HEAD. Removed from the index in `801d2782`; they stay on
       disk untracked, as that session left them. `git add -A` is the wrong verb in a two-session story.
-- [~] red-usecase (coverage: third arming arm refuses a rewritten declaration) —
+- [x] red-usecase (coverage: third arming arm refuses a rewritten declaration) —
       **the one arm this unit's own diff promises and does not deliver.**
       `disarmed_arming_probe_statements.py`'s module docstring states it outright: the third check,
       `_assert_the_declaration_is_exactly_the_required_entries`, "is unreachable by either vector below
@@ -2248,8 +2248,52 @@ within their file, not across the story.
       longest and most reasoned message in the file, and one no reader has ever seen. Correct the
       "two negative arms" undercount in both the module and class docstrings in the same breath; that
       undercount is what let the arm go unscheduled.
-- [ ] green-usecase (coverage: third arming arm refuses a rewritten declaration)
-- [ ] red-usecase (the half of the join that was never fixed, and the half of the arming never probed) —
+      **A legitimate no-red, following the line-156 and line-331 precedents — and this time the `[S]`
+      that follows is checked against the line-358 lesson rather than assumed.** Predicted PASS on first
+      run, child exit 1, child tally `{failed: 1}`, the failure sentence present, no production change;
+      actual `1 passed in 3.82s`, every predicted cell matching. No marker was applied — a passing
+      coverage test left skipped covers nothing. Nothing was broken here: the arm was never *wrong*, it
+      had simply never *executed* on its failing side in any process, and it can never surface as a
+      coverage gap because a bare `assert` is not a branch.
+      **Non-vacuity measured, not assumed — five mutations, all red.** Altering the expected sentence
+      reddens at `live_harness_configuration_statements.py:72`, which *is* the third arm, so the arm has
+      now demonstrably executed — the entire point of the step. Swapping to the other vector reddens with
+      `the arming check failed, but not for the disarmed environment`, confirming the file's standing
+      claim that the third arm is genuinely unreachable by the other two: the failure is charged to
+      `-o filterwarnings=...` specifically, not to "some disarming happened".
+      `/test-review` applied 2 strictness fixes and 9 stale-prose corrections, and declined one with a
+      reason. Both fixes are this family's catalogue, caught again. **(1) The arm proved "check three
+      failed", not "the vector worked."** The expected sentence pinned only the *static reasoning tail* —
+      a constant emitted on every failure of that arm whatever the declaration actually was — so a child
+      whose `filterwarnings` was wrong for an unrelated reason passed identically and the `-o` vector's
+      potency was watched by nothing. Each expectation is now a **pair** (the clause carrying the observed
+      value, and the clause carrying the reasoning), both required, applied to all three arms; the shared
+      helper asserts its tuple non-empty so a family passing `()` cannot silently assert nothing.
+      **(2) The vector roster was a snapshot — the exact weakness that produced this work unit.** Each
+      vector constant was referenced from one place and nothing compared the roster whole, so a fourth
+      vector would be driven by no test and flagged by no report. That is history, not hypothesis: this
+      arm's vector was named in a docstring as "scheduled separately" and went unscheduled for the file's
+      whole life. New `arming_probe_roster_statements.py` discovers the roster from the module and pins
+      it against hand-written literals, with a second guard reading which constants the `given_` steps
+      actually name **out of their own source** — a count comparison would be green on a copy-pasted step
+      naming one vector twice. Three further mutations prove the additions are not inert: corrupting the
+      observed-value clause reddens, adding a fourth constant reddens naming it, removing one is caught
+      at import. Declined: collapsing the two middleman delegators — cluster P ruled that row clean and
+      both forwarders carry load-bearing docstrings recording why the mechanics moved to the shared base.
+      **Carried, and now un-silenceable:** a *fourth* never-executed arm is already waiting —
+      `assert_the_unraisable_plugin_is_loaded_in_this_run`'s `assert loaded is True`, whose own message
+      names the `-p no:unraisableexception` that would drive it. Already scheduled as item (5) of the next
+      red-usecase unit; the new roster guard makes adding its vector impossible to do quietly.
+      **213 passed, 0 failed, 0 skipped** (211 after RED, +2 from the roster guard).
+      *Process note carried:* `git checkout -- <file>` to revert a potency mutation silently discards
+      uncommitted edits to that file. Use a scratch copy for mutations on an uncommitted file.
+- [S] green-usecase (coverage: third arming arm refuses a rewritten declaration) — **`[S]` verified, not
+      assumed.** The line-358 lesson is that a `/test-review` fix can reach across into production and
+      falsify the "zero production files modified" premise a skip rests on. Checked here against
+      `git status` rather than recalled: every file this unit touched is under `backend/usecase/tests/`,
+      and nothing under any `src/` tree changed. The subject is harness code; the third arm's failing side
+      needed a vector to reach it, not a fix.
+- [~] red-usecase (the half of the join that was never fixed, and the half of the arming never probed) —
       **scheduled by both review passes over `74810821`, which converged on the first item
       independently.** The agent-review pass hunted the fourth-inert-guard question *empirically* and
       found none — it drove `PYTEST_ADDOPTS="-W ignore::RuntimeWarning"` red, drove `-p no:warnings` red

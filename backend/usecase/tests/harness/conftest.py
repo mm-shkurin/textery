@@ -2,6 +2,7 @@
 
 import pytest
 
+from statements.arming_probe_roster_statements import ArmingProbeRosterStatements
 from statements.arrangement_snapshot_guard_statements import ArrangementSnapshotGuardStatements
 from statements.bannerless_child_report_statements import BannerlessChildReportStatements
 from statements.child_environment_scrub_statements import ChildEnvironmentScrubStatements
@@ -44,6 +45,12 @@ def coloured_child_report_statements():
 @pytest.fixture
 def arrangement_snapshot_guard_statements():
     return ArrangementSnapshotGuardStatements()
+
+
+@pytest.fixture
+def arming_probe_roster_statements():
+    """Session-free: its subject is the probe module's own text, not a child run."""
+    return ArmingProbeRosterStatements()
 
 
 @pytest.fixture

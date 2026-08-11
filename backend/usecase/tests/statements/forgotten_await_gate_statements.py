@@ -86,7 +86,7 @@ class ForgottenAwaitGateStatements(ChildProbeStatements):
         about a child that failed for any reason at all.
         """
         self._assert_the_failure_was_charged_to(
-            expected, UNAWAITED_COROUTINE_TEXT, NOT_THE_FORGOTTEN_AWAIT
+            expected, (UNAWAITED_COROUTINE_TEXT,), NOT_THE_FORGOTTEN_AWAIT
         )
 
     def assert_nothing_was_left_unawaited_on_the_control(self) -> None:

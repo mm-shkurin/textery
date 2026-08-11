@@ -25,24 +25,53 @@ def {ARMING_PROBE_TEST_NAME}(pytestconfig) -> None:
     ).assert_both_filter_entries_are_in_force_in_this_run()
 """
 
-# The two disarming vectors. The variable they ride in is `DisarmedChildEnvironment`'s
-# `RUNNER_OVERRIDE_VARIABLE`, along with the scrub that has to precede it.
+# The two vectors that trip the first two arms. They ride in
+# `DisarmedChildEnvironment`'s `RUNNER_OVERRIDE_VARIABLE`, along with the scrub that has
+# to precede it. The third vector, which has to survive both of these to be judged by
+# the arm it is for, is below.
 COMMAND_LINE_FILTER_OVERRIDE = "-W ignore::RuntimeWarning"
 UNLOADED_WARNINGS_PLUGIN = "-p no:warnings"
 
+# The only vector that reaches the declaration check. `-o` rewrites the ini value itself
+# rather than layering a command-line filter over it, so `config.option.pythonwarnings`
+# stays empty (check one passes) and the surviving `error::RuntimeWarning` still promotes
+# the provoked warning (check two passes) -- leaving the declaration, now a list of one,
+# as the only thing left to be wrong about.
+REWRITTEN_FILTER_DECLARATION = "-o filterwarnings=error::RuntimeWarning"
+
 # What each arm must say when it bites. Literals rather than imports from the
-# module under test: read back from it, the assertion would still pass with both
-# messages rewritten to the empty string, and the whole point of these two arms is
+# module under test: read back from it, the assertion would still pass with all three
+# messages rewritten to the empty string, and the whole point of these three arms is
 # that a reader meeting them in CI is told which vector disarmed the suite.
 #
-# The override refusal carries the parsed filter list, so this pins that the
-# override genuinely reached the child rather than that the message merely fired.
+# Each expectation is a *pair*: the clause carrying the value the arm actually observed,
+# and the clause carrying its reasoning. The observed half is what makes the failure
+# attributable to this vector rather than to the arm having fired for any reason at all;
+# the reasoning half is what a reader meeting it in CI cannot reconstruct. Pinning only
+# one leaves the other free to be emptied, so both are required.
 EXPECTED_OVERRIDE_REFUSAL = (
-    "this run carries command-line warning filters ['ignore::RuntimeWarning']"
+    "this run carries command-line warning filters ['ignore::RuntimeWarning']",
+    "these override the declaration while `getini` still reads exactly the",
 )
-EXPECTED_INERT_FILTER_REFUSAL = "a RuntimeWarning raised in this very run did not fail it"
+EXPECTED_INERT_FILTER_REFUSAL = (
+    "a RuntimeWarning raised in this very run did not fail it",
+    "so a forgotten `await` warns and passes here, whatever the configuration files",
+)
 
-# What a run whose FAILURES section lacks the expected sentence actually means.
-# Both arms are a `raise` and an `assert` that coverage.py does not count as
-# branches, so the sentence is the only evidence the arm executed at all.
+# The declaration refusal, whose arm no reader had seen before this family: until the
+# third vector above, it had never failed in any process. The observed half pins the
+# list `-o filterwarnings=error::RuntimeWarning` actually leaves behind -- without it the
+# arm is satisfied by a declaration wrong for some unrelated reason, and the vector's
+# potency goes unwatched. The reasoning half is the longest clause in the file, and the
+# one an appended-entry regression turns on: both required entries stay present and the
+# appended one still wins.
+EXPECTED_REWRITTEN_DECLARATION_REFUSAL = (
+    "this run's `filterwarnings` is ['error::RuntimeWarning'], expected exactly",
+    "no third one may follow them: the last matching filter wins, so an appended "
+    "`ignore::RuntimeWarning` overrides both while leaving both present",
+)
+
+# What a run whose FAILURES section lacks an expected sentence actually means.
+# All three arms end in a bare `assert` or a `raise`, none of which coverage.py counts
+# as a branch, so the sentence is the only evidence the arm executed at all.
 NOT_THE_DISARMED_ENVIRONMENT = "the arming check failed, but not for the disarmed environment"

@@ -98,7 +98,7 @@ class ChildProbeStatements:
         )
 
     def _assert_the_failure_was_charged_to(
-        self, expected: set[str], expected_text: str, because: str
+        self, expected: set[str], expected_texts: tuple[str, ...], because: str
     ) -> None:
         """Which tests failed, and that they failed for the stated reason.
 
@@ -106,13 +106,20 @@ class ChildProbeStatements:
         assertion says both which test was charged and which were not, and cannot
         pass over an absent FAILURES section.
 
-        `expected_text` is looked for in that section rather than anywhere in the
+        Every clause in `expected_texts` is required, not any one of them. A
+        family's message has two halves that fail independently -- the value the
+        arm observed, and the reasoning it gives for refusing -- and pinning one
+        leaves the other free to be emptied by a rewrite no test would notice.
+        Each is looked for in the FAILURES section rather than anywhere in the
         output, because the sentences these families care about also appear in a
         child's *warnings summary* on precisely the runs they exist to reject --
         so an unscoped search would be satisfied by the rejected state, leaving
         the exit code as the only real assertion. `because` is the calling
-        family's one-line reading of what a missing sentence would mean, since
+        family's one-line reading of what a missing clause would mean, since
         that is the part a reader meeting this failure in CI cannot reconstruct.
+
+        Required non-empty: a family that passed `()` would assert nothing about
+        the reason at all while still reading as though it had.
         """
         child = self._child()
         failing = child.failing_test_names()
@@ -121,9 +128,14 @@ class ChildProbeStatements:
             f"exactly {expected} -- the failing set is compared whole, so neither an extra "
             f"failure nor an absent section can pass:\n{child.tail}"
         )
-        assert child.failure_text_contains(expected_text), (
-            f'{because}: no "{expected_text}" in its FAILURES section:\n{child.tail}'
+        assert expected_texts, (
+            "no expected clause was given, so nothing about the reason for the failure "
+            "would have been asserted -- the caller must name at least one"
         )
+        for expected_text in expected_texts:
+            assert child.failure_text_contains(expected_text), (
+                f'{because}: no "{expected_text}" in its FAILURES section:\n{child.tail}'
+            )
 
     # Not `arranged()`: that helper's message tells the reader to call a `given_*`
     # step, and the step that sets this one is the act step, not an arrangement.

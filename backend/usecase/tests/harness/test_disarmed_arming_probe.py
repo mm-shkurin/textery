@@ -1,3 +1,4 @@
+from statements.arming_probe_roster_statements import ArmingProbeRosterStatements
 from statements.disarmed_arming_probe_statements import DisarmedArmingProbeStatements
 
 
@@ -9,11 +10,16 @@ class TestDisarmedArmingProbe:
     Then the child fails, naming the vector that disarmed it -- while the same
       check under an untouched environment passes
 
-    Two of the three checks `LiveHarnessConfigurationStatements` runs end in a
-    `raise` and a bare `assert`, neither of which coverage.py counts as a branch,
-    and neither had ever executed. (The third check's arm is unreachable by either
-    vector here and is driven separately.) The evidence that they bite was a
-    terminal session. This is that session, written down as two tests and a control.
+    All three checks `LiveHarnessConfigurationStatements` runs end in a `raise` or a
+    bare `assert`, none of which coverage.py counts as a branch, and none of the three
+    had ever executed -- the file reported 26 of 27 lines covered throughout. The
+    evidence that they bite was a terminal session. This is that session, written down
+    as three tests and a control.
+
+    One vector per arm, and they cannot be pooled: the checks run in sequence, so a
+    vector that trips an earlier one short-circuits the rest. The third test is the
+    only one whose vector has to pass the first two checks honestly in order to be
+    judged by the third.
     """
 
     def test_should_fail_the_arming_check_when_a_runner_env_overrides_the_declared_filters(
@@ -38,6 +44,17 @@ class TestDisarmedArmingProbe:
         disarmed_arming_probe_statements.assert_the_projects_own_configuration_was_in_force()
         disarmed_arming_probe_statements.assert_the_arming_check_refused_the_inert_filter()
 
+    def test_should_fail_the_arming_check_when_a_runner_env_rewrites_the_declaration(
+        self, tmp_path, disarmed_arming_probe_statements: DisarmedArmingProbeStatements
+    ):
+        disarmed_arming_probe_statements.given_a_runner_environment_that_rewrites_the_declaration()
+        disarmed_arming_probe_statements.given_the_live_arming_check_as_the_probe(tmp_path)
+
+        disarmed_arming_probe_statements.run_the_probe_under_the_projects_own_pytest_configuration()
+
+        disarmed_arming_probe_statements.assert_the_projects_own_configuration_was_in_force()
+        disarmed_arming_probe_statements.assert_the_arming_check_refused_the_rewritten_declaration()
+
     def test_should_pass_the_arming_check_when_the_runner_environment_leaves_it_alone(
         self, tmp_path, disarmed_arming_probe_statements: DisarmedArmingProbeStatements
     ):
@@ -59,15 +76,15 @@ class TestDisarmedArmingProbeArrangement:
 
     `DisarmedArmingProbeStatements` opts the whole class into
     `keep_ambient_environment=True`, while the compensating scrub lives in
-    `_disarm_the_child_with_only`, reachable only through the three `given_a_runner_
+    `_disarm_the_child_with_only`, reachable only through the four `given_a_runner_
     environment_*` steps. Nothing in that arrangement couples "this child keeps its
     environment" to "a vector was deliberately chosen"; the guard in
     `KeptAmbientChildBase` is what couples them, and this test is what holds it
-    there. Without it the already-scheduled third-arming-arm test could be written
-    without a `given_` step, pass on a clean laptop, and fail on a runner that
+    there. Without it the third arming-arm test above could have been written
+    without a `given_` step, passed on a clean laptop, and failed on a runner that
     exports `PYTEST_ADDOPTS`, diagnosing the harness rather than the runner -- and
-    that is not a hypothesis about a future test; it is the shape the next scheduled
-    test in this file would otherwise be written in.
+    that is not a hypothesis: it is the shape that test would have taken had this
+    guard not already been here, and the shape any fourth arm would take next.
 
     The `None` case is inside the guard on purpose. `given_a_runner_environment_that_
     leaves_the_suite_armed` chooses an untouched environment, and "chose nothing" must
@@ -84,3 +101,33 @@ class TestDisarmedArmingProbeArrangement:
 
         disarmed_arming_probe_statements.assert_the_refusal_named_the_unchosen_environment()
         disarmed_arming_probe_statements.assert_no_child_was_run_before_the_refusal()
+
+
+class TestArmingProbeRoster:
+    """A vector added to this family must be driven, not merely declared.
+
+    Given the probe module's declared constants and the steps that spend them
+    When the roster is read off the module rather than transcribed from it
+    Then it is exactly the known names, and every vector is named by a `given_` step
+
+    Each constant in `arming_probe.py` is referenced from exactly one step, and
+    until now nothing compared the roster whole -- so a fourth vector would have
+    been driven by no test and flagged by no report. That is this family's own
+    history rather than a worry about it: the third arm's vector was named in a
+    module docstring as "scheduled separately", went unscheduled for the file's
+    whole life, and could not surface as a coverage gap because the arm it belonged
+    to is a bare `assert`. A fourth is already known to be waiting --
+    `assert_the_unraisable_plugin_is_loaded_in_this_run`'s `assert loaded is True`
+    has never failed in any process either, and its message names the
+    `-p no:unraisableexception` that would drive it.
+    """
+
+    def test_should_declare_exactly_the_known_probe_constants(
+        self, arming_probe_roster_statements: ArmingProbeRosterStatements
+    ):
+        arming_probe_roster_statements.assert_the_probe_module_declares_exactly_the_known_roster()
+
+    def test_should_spend_every_declared_vector_on_a_given_step(
+        self, arming_probe_roster_statements: ArmingProbeRosterStatements
+    ):
+        arming_probe_roster_statements.assert_every_declared_vector_is_spent_on_a_given_step()
