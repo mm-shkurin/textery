@@ -13,13 +13,15 @@ export const CHAT_PANEL_NOTICE = 'Проверяем дневной лимит �
 export const CHAT_EMPTY_STATE_TEXT =
   'Документ готов. Напишите, что нужно изменить — я поправлю текст и сохраню новую версию.'
 
-// One turn of the conversation. RED stub for Frontend Scenario 1.1, which reads `text` and
-// NOTHING ELSE: `AiChatPanel.history.test.tsx` asserts row text alone. `messageId` and `role`
-// are shaped for scenario 1.2 — which owns the history read, the ordering and the per-side
-// rendering — and are asserted by nothing today. Do not read this interface as a claim that
-// keying rows by id or splitting them by side is covered; pinning either means inventing
-// `data-message-id` / `data-message-role`, which is 1.2's spec. The wire shape and its
-// timestamps belong to `red-frontend-api` / 1.2 as well.
+// One turn of the conversation.
+//
+// `text` is the only field any ASSERTION reads — `AiChatPanel.history.test.tsx` checks row
+// text and nothing else. `messageId` is READ BY THE CODE, as the React key on each row, but
+// pinned by no test: both fixtures use distinct ids, so duplicate or absent ids would make
+// React silently reuse or drop rows with every layer green. `role` is read by nothing at all;
+// it is shaped for scenario 1.2, which owns the history read, the ordering and the per-side
+// split. Pinning either field means inventing `data-message-id` / `data-message-role`, which
+// is 1.2's spec. The wire shape and its timestamps belong to `red-frontend-api` / 1.2 too.
 export interface ChatMessage {
   messageId: string
   role: 'user' | 'assistant'

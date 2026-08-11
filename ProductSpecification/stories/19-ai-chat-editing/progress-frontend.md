@@ -1356,6 +1356,66 @@ under `frontend/src` or `acceptance/tests/frontend`.
       the acceptance layer's, against a pristine document with an empty list. The first real
       guard would be a Selenium case with a populated conversation. This is the same shape as
       (af) from `align-design` 0.2: a scrolling model no jsdom test can see.
+      `/refactor`: **NO ACTION.** Its sharpest rejection is worth keeping: `.ac-chat-empty` and
+      `.ac-chat-message` share three declarations and differ only in `color`, but scenario 1.2
+      owns the per-side split, which gives `.ac-chat-message` its own background, alignment and
+      max-width while the empty state is a single centred paragraph that gets none of that —
+      merging now creates a coupling the very next scenario has to unpick. `AiChatPanel.tsx` at
+      94 lines stays one file: `frontend-rules.md` keeps a helper used by one view in that
+      view's file.
+      **Fixed in the follow-up commit** — the `ChatMessage` comment written by the previous unit
+      now contradicted the code it sits above. It said scenario 1.1 reads `text` and NOTHING
+      ELSE; green keys every row by `messageId`. The comment now separates the two axes it was
+      conflating: read-by-an-assertion (`text` alone) versus read-by-the-code (`messageId`, as
+      the React key, pinned by nothing).
+      **Review-pass follow-ups (both CONCERNS), for scenarios 1.2 / 1.3 and later:**
+      (bp) **"Empty" and "unknown" are the same value, so a failed history read renders the
+      empty state.** `messages` is a non-nullable `ChatMessage[]` and `AiChatHistory` branches
+      on `length === 0` alone, so there is no representable third state. On a 500 the panel says
+      "Документ готов. Напишите, что нужно изменить…" to a user whose earlier instruction *did*
+      land — they retype it, burn a quota unit and stack a second AI revision on a document that
+      already has one. Scenario 1.3 owns the fetch-error state but now has to *widen a shipped
+      prop type* to have anywhere to put it, and `emptyChat.test.tsx` asserts the empty state on
+      a page whose history read is not mocked at all — so "unknown → empty state" is the path
+      the suite currently rewards. Distinct from the recorded REMOTE about `messages={[]}`:
+      that is 1.2 forgetting to thread the read through; this is the type and branch shipped
+      here making the failure silent. Cheapest fix: `messages: ChatMessage[] | null` plus a case
+      asserting the `null` state renders neither rows nor the empty state.
+      (bq) **The populated case never asserts the composer is still present, and that half is
+      not a layout problem.** `AiChatPanel.history.test.tsx` asserts panel, absent empty state
+      and two rows — never `ai-chat-message-input`. An implementation rendering the history
+      *instead of* the composer whenever a conversation exists passes it, passes the pristine
+      page-level test (composer asserted there, empty history) and passes acceptance (pristine
+      by construction). (bl) covers *visibility*, which jsdom cannot see; presence in the DOM it
+      can. One assertion in the existing populated test closes it.
+      (br) **Duplicate or absent `messageId` silently drops rows.** Green keys rows by it and no
+      test pins uniqueness; both fixtures use distinct `m-1`/`m-2`. Streamed assistant turns
+      before persistence assigns an id, or a wire field actually named `id`, make React reuse or
+      drop rows with every layer green. Owe a two-message case sharing one id asserting both
+      texts still render — or key by index and let 1.2 introduce the id key with its own guard.
+      Related and undocumented until now: every row carries the same
+      `data-testid="ai-chat-message"`, so `getByTestId` on a populated list throws; both current
+      layers happen to use `querySelectorAll`, and 1.2 will trip it.
+      (bs) **The new scroll container never scrolls to the newest turn.** `.ac-chat-history` has
+      `overflow-y: auto` and nothing anywhere under `frontend/src` calls `scrollIntoView` or
+      sets `scrollTop` (zero hits). On a dozen turns the panel shows the *oldest* messages and
+      the user reports "the AI didn't respond". Unlike (bl)/(af) this one **does** have an
+      executable guard available before Selenium — jsdom can spy on `scrollIntoView` even though
+      it cannot verify the layout.
+      (bt) **The most frequently-updating region in the app has no live semantics**, against
+      this repo's own tested convention: `AuthLoadingIndicator.tsx` uses
+      `<output aria-live="polite">` and `LoginForm.test.tsx:133` / `RegisterForm.test.tsx:41`
+      assert it. `.ac-chat-history` is a bare `<div>` with no `role`, no `aria-live` and no
+      accessible name; rows are bare `<p>`. A screen-reader user hears nothing when a reply
+      arrives and re-sends. Sits beside the open accessibility follow-ups (av)–(bc).
+      (bu) **`.ac-chat-history` is the only shrinkable sibling in the column, so the conversation
+      can collapse to zero height.** `min-height: 0` is what lets the composer stay put; it is
+      also what lets the history shrink to nothing. The head is not fixed — `AiChatRevisions`
+      renders its panel *inline inside* `.ac-chat-head` — so opening revisions grows the head,
+      and with `.ac-chat-quota-hint` on a short viewport the history absorbs all of it, showing
+      no messages and no scrollbar while `.ac-chat`'s own `overflow: auto` never fires. Symptom
+      is the *messages* vanishing, not the composer, so it is a different failure from (bl). No
+      `min-height` floor.
 - [~] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
