@@ -5,6 +5,16 @@ import {
   NAMED_VALUE,
   PINNED_ASSIGNMENT,
 } from './fixtureUsage.source'
+import {
+  MUST_MATCH_ASSIGNMENTS,
+  MUST_MATCH_CASES,
+  MUST_MATCH_OPENERS,
+  MUST_MATCH_VALUES,
+  MUST_NOT_MATCH_ASSIGNMENTS,
+  MUST_NOT_MATCH_CASES,
+  MUST_NOT_MATCH_OPENERS,
+  MUST_NOT_MATCH_VALUES,
+} from './fixtureUsage.probes'
 
 /**
  * Story 10, UI scenario 1.1 — the four source patterns, guarded WHERE THEY LIVE.
@@ -65,11 +75,14 @@ import {
  * in a module titled "mechanics only". This file does not claim the patterns are CORRECT, only that
  * they still mean what the two consumer headers say they mean.
  *
- * AND WHAT NOTHING GUARDS AT ALL. The six probe lists below are UNPINNED: emptying a
- * `MUST_NOT_MATCH_*` array makes its own case pass vacuously (`{ accepted: [], rejected: [] }`
- * equals itself), is not a regex edit so `fixtureUsage.patternText.test.ts` is byte-identical
- * through it, and is worst for `PINNED_ASSIGNMENT`, whose probe case is its only leg. A length pin
- * over the six is charter'd and NOT written — do not read either header as covering it.
+ * AND WHAT NOTHING GUARDS AT ALL. The eight probe lists — in `./fixtureUsage.probes`, which carries
+ * the same disclosure over the data itself — are UNPINNED: emptying a `MUST_NOT_MATCH_*` array makes
+ * ITS CASE BELOW pass vacuously (`{ accepted: [], rejected: [] }` equals itself), is not a regex edit
+ * so `fixtureUsage.patternText.test.ts` is byte-identical through it, and is worst for
+ * `PINNED_ASSIGNMENT`, whose probe case is its only leg. A length pin over the eight is charter'd and
+ * NOT written — do not read any of the three headers as covering it. The lists were moved out of this
+ * file to make room to write it; the per-member rationale for two entries that look like mistakes
+ * moved with them, to the file where those lines now are.
  *
  * THE NEGATIVE CONTROL, AND WHY IT ASSERTS THE ERROR'S FIELDS RATHER THAN A PARTITION. All four
  * cases above route through one helper, and nothing above proves that helper CONSULTS `pattern`:
@@ -90,69 +103,7 @@ import {
  * call — the two halves are complements, so computed `accepted` matches its list exactly when
  * computed `rejected` does — but that gap is empty: one side still filtered keeps all four cases
  * fully discriminating. Only the TWO-sided neutralisation empties the leg.
- *
- * TWO RECORDED FACTS THAT LOOK LIKE MISTAKES AND ARE NOT. `'pageCount:  4,'` (doubled space) sits in
- * the ACCEPTED list: `(.+)` swallows the extra space, the site is admitted with expression `' 4'`,
- * and `NAMED_VALUE` then rejects it — `constantSites` reports it as a CHANGED member and
- * `assignmentShape` as a re-typed value. That is the documented behaviour of both files and moving
- * it to `rejected` here would be a widening in disguise. And `'it.only(...)'` sits in CASE_OPENER's
- * REJECTED list: an `it.only` case is genuinely not counted today. That is fail-closed rather than
- * correct — the case count SHRINKS, so `assignmentShape`'s fourth case reddens — and it is pinned as
- * it stands so that admitting `.only` is a deliberate edit here rather than a side effect elsewhere.
  */
-
-const MUST_MATCH_ASSIGNMENTS: readonly string[] = [
-  'pageCount: NO_SKELETONS,',
-  'railSkeletonCount: MEASURING_SURFACE.railSkeletons,',
-  'pageCount:  4,',
-]
-
-const MUST_NOT_MATCH_ASSIGNMENTS: readonly string[] = [
-  'pageCount: 4, // agrees with ceil',
-  'pageCount : 4,',
-  'pageCount: 4',
-  'const pageCount: 4,',
-  'totalPages: NO_SKELETONS,',
-  'pageCount:',
-]
-
-const MUST_MATCH_OPENERS: readonly string[] = ['expect(state).toStrictEqual({']
-
-const MUST_NOT_MATCH_OPENERS: readonly string[] = [
-  'expect(state).toMatchObject({',
-  'expect(state).toStrictEqual(EXPECTED)',
-  'expect(other).toStrictEqual({',
-  'expect(state).toStrictEqual({ pageCount: NO_PAGES })',
-  'const expected = {',
-]
-
-const MUST_MATCH_CASES: readonly string[] = [
-  "it('names a constant', () => {",
-  "it.skip('measures the surface', () => {",
-]
-
-const MUST_NOT_MATCH_CASES: readonly string[] = [
-  "describe('the pinned assignments', () => {",
-  "it.each([1, 2])('varies', () => {",
-  "it.only('names a constant', () => {",
-  'itemCount(rows)',
-]
-
-const MUST_MATCH_VALUES: readonly string[] = [
-  'NO_SKELETONS',
-  'MEASURING_SURFACE.railSkeletons',
-  'null',
-]
-
-const MUST_NOT_MATCH_VALUES: readonly string[] = [
-  '4',
-  '0',
-  "'4'",
-  '4 as number',
-  'pageCount',
-  'undefined',
-  'NO_SKELETONS + 1',
-]
 
 /**
  * The probe array is built FROM the two expected lists, so neither side of the comparison is a

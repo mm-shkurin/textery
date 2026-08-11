@@ -995,11 +995,69 @@ pagination failure.
   neutralised). Guard, named: a negative control — feed a deliberately-wrong pattern to the same
   helper, `expectPartition(/^never$/, [], [...MUST_MATCH_VALUES, ...MUST_NOT_MATCH_VALUES])` — red
   the moment the helper stops consulting `pattern`. One case.
-- [~] red-frontend (agent-review CONCERNS 1 over `ad850488` + premortem CREDIBLE 2, the same
-  finding from two directions) — **BLOCKED ON A SPLIT FIRST: `fixtureUsage.patterns.test.ts` is at
-  exactly 200 after `/test-review`, zero headroom, so this step cannot land in that file.** Do the
-  split as the first half of this unit (the split step below anticipates it; it arrives one unit
-  earlier than expected). Also of note from `/test-review` on the preceding unit: the split-out
+- [~] red-frontend (agent-review CONCERNS 1 over `6464272f`) — **the negative control certifies ONE
+  BOOLEAN BIT — "did any probe match?" — not per-probe application, and the header asserts the
+  opposite as an absolute.** The shipped claim is "pinning `actual` … forces the pattern to have
+  been applied to EVERY probe, so no degenerate consult survives". Surviving mutant, spelled out by
+  the reviewer:
+
+  ```ts
+  const anyMatch = probes.some((probe) => pattern.test(probe))
+  expect(anyMatch ? { accepted, rejected } : { accepted: [], rejected: probes })
+    .toStrictEqual({ accepted, rejected })
+  ```
+
+  Every real pattern matches at least one of its own must-match probes, so `anyMatch` is true and
+  all four probe cases compare an object against itself — tautological, green. `patternText` is
+  byte-identical, green. And the control feeds `/^never$/`, which matches nothing, so the mutant
+  produces exactly the `actual` and `expected` the control pins — green. **The whole behavioural leg
+  still goes vacuous in one edit to one function, with every case in both files green**: the thing
+  the last two units were written to prevent, one degenerate class further out. This is NOT the
+  mirrored always-matching control the header weighed and rejected (that rejection was correct and
+  does not cover this). Guard, named: a PARTIAL-MATCH control — a pattern matching a strict,
+  non-empty SUBSET of one list, with the resulting split partition pinned in `actual`, e.g.
+  `expectPartition(/^null$/, MUST_MATCH_VALUES, MUST_NOT_MATCH_VALUES)` throwing with
+  `actual: {accepted: ['null'], rejected: [<the other nine, in probe order>]}`. No `some`- or
+  `every`-shaped shortcut can produce a SPLIT `actual`; only genuine per-probe evaluation can.
+  While there: agent-review CONCERNS 2 (minor) — the `expected` field in the pin is
+  non-discriminating. It is literally the two arguments the call passed in, reproduced by
+  construction by every mutant under discussion, and cannot fail while the signature is unchanged.
+  Only `actual` does work. Drop it or annotate it, so a later reader does not count strength that is
+  not there.
+- [ ] red-frontend (premortem CREDIBLE 1 over `6464272f`) — **the guard tier measures the ingested
+  files' case count and nothing measures its OWN — a mechanism this story built and pointed away
+  from itself.** Created by this unit: the checksum used to be case 5 inside `patterns.test.ts`
+  under a header narrating it as "THE SECOND LEG", so removing it left visible damage in a file
+  holding four other cases. It is now the entire content of a leaf nothing imports — one `rm`
+  deletes the text-pin leg and the suite is green. Symmetrically the negative control, the sole case
+  that can see the two-sided neutralisation, is one deletable `it`; `caseOpenersIn` runs only over
+  `MEASURING_FILE` and `LAID_OUT_FILE`. Guard, named: ingest the guard files themselves through
+  `caseOpenersIn` and pin the counts (`patterns` 5, `patternText` 1, and assert the latter exists).
+  Distinct from the chartered `import.meta.glob` row, which is about the two ingested SUBJECT files
+  and the `SourceFile` union. Note the reviewer also found the control accidentally half-closes the
+  lists gap: emptying `MUST_MATCH_VALUES` makes the `/^never$/` call stop throwing, so `toThrowError`
+  reddens — the `VALUES` pair only, and emptying `MUST_NOT_MATCH_VALUES` alone is still invisible.
+- [ ] red-frontend (premortem CREDIBLE 2 over `6464272f`) — **nothing asserts the DOMAIN: which
+  patterns exist.** Coverage is now asserted in two places and each is scoped to a hardcoded
+  enumeration of what it happens to cover — four probe cases in one file, a three-key object literal
+  in the other. Exporting and widening a fifth pattern (`FIXTURE_IMPORT`, say, to accept a second
+  fixture path, so `fixtureUsageIn` starts collecting specifiers from a file it was never meant to
+  read) is a green edit in both. The split made this worse, not neutral: the "why three and not
+  four" argument now lives in a file that cannot see the probe lists, and the "where the other leg
+  lives" argument in a file that cannot see the pin, so the arithmetic that would catch a fifth
+  belongs to neither. Guard, named: `import * as source` and pin
+  `Object.entries(source).filter(([, v]) => v instanceof RegExp).map(([k]) => k).sort()` against a
+  named list. Strictly different from the docs row about "the four patterns" — that fixes a
+  sentence, this is the assertion that would have stopped the sentence going stale.
+- [ ] red-frontend (agent-review CONCERNS 1 over `ad850488` + premortem CREDIBLE 2 over the same,
+  the same finding from two directions) — **UNBLOCKED**: `/refactor` over `6464272f` extracted the
+  eight lists into `fixtureUsage.probes.ts` (82 lines), taking `patterns.test.ts` from 200 to 151 —
+  49 lines of headroom, which is what this step was waiting for. Two things it surfaced that this
+  step must carry: the header said "the SIX probe lists" and there are **eight** (struck — same
+  class as the false claim below, and a reader trusting "six" writes a pin covering three quarters
+  of the data and closes this row); and `probes.ts` is itself unguarded — the extraction makes room
+  for the length pin, it is not the length pin. Also of note from `/test-review` on `6464272f`: the
+  split-out
   `patternText` header had claimed "the probe lists are pinned by their own length assertion, not
   here" — no such assertion exists anywhere, this row IS that assertion, and the claim was struck.
   The disclosure now lives in `patterns.test.ts`, the file that owns the lists, under a new "AND
