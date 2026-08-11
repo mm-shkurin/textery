@@ -491,6 +491,8 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   same run regardless of what the RED file says. Cost is a confused reader, not a shipped fault.
   Still worth the one comment line at the foot of `..._wire_shape.py`, since the split was argued
   on legibility grounds and currently only half-delivers it.
+  **(SUPERSEDED — see "RESUMED AND CLOSED 2026-08-09" below; this paragraph is history. The checkbox
+  above is `[x]` and correct. Do NOT resume here.)**
   **STEP INCOMPLETE — STAYS `[~]`. Resume here.** red-agent finished all four jobs and its output
   is COMMITTED with this note. `/test-review` was dispatched over it and **died mid-run on a
   session limit**, having reached the point of checking `ruff format --check`. `/refactor` and the
@@ -1552,6 +1554,61 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   Both passes also proposed deriving the ids from `__name__`; the mapping form was kept instead
   because it keeps the label explicit while making order-drift impossible. Revisit only if a fifth
   arrangement makes the mapping unwieldy.
+- [ ] pin the id to the arrangement it names (agent-review #1 on the guard commit, and it is the ONE
+  failure mode of four that is green rather than loud). `_LISTED` is built from
+  `{arrange.__name__ for arrange in EVERY_SAVE_ARRANGEMENT.values()}` — the KEYS are discarded. Swap
+  two values between keys (`"blank_title"` ↦ the whitespace arrangement and vice versa) and both sets
+  are byte-identical: guard passes, 8 rows pass, and the envelope row reports `blank_title` when the
+  whitespace arrangement ran. The file's own comment says the mapping form forecloses exactly this
+  ("Keyed BY parametrize id … which a reorder of one side alone would relabel silently") and the
+  progress record above claims "making order-drift impossible." Order drift IS impossible;
+  MIS-PAIRING is not, and the record overstates the guarantee. One line next to the existing assert
+  closes it: `assert all(key in arrange.__name__ for key, arrange in EVERY_SAVE_ARRANGEMENT.items())`
+  — verified to hold for all four today. Correct the two prose claims in the same edit.
+- [ ] the narrowed prefix does not deliver the property it was sold on (agent-review #2, same commit,
+  and it is a correction to what is written above, not just a new step). The narrowing was justified
+  as keeping out a future `given_*` that is NOT a single save — a precondition, or one dispatching
+  ≠ 1 request. But `carrying_` describes the PAYLOAD, not the request count:
+  `given_a_save_carrying_a_title_after_a_prior_save` matches the prefix, is FORCED into the
+  parametrization by the guard's own `unlisted` message, and then reds `_the_only_save_request()` —
+  the exact failure the narrowing claims to prevent. A name-based prefix is unsound in BOTH
+  directions; the record above writes down only the under-capture one. Fails loudly, so nothing
+  ships — the defect is in the claim. Fix the record; decide separately whether the guard should key
+  on something other than a name.
+- [ ] the guard's contract silently widened to the whole MRO (agent-review #3 + premortem REMOTE, same
+  commit, converging). `dir()` closes the under-collection hole and opens its mirror: once a shared
+  Statements base defines any `given_a_save_carrying_*` for another file's use — and the whole premise
+  of this change is that a base WILL exist, since the 200-line cap makes the split the next likely
+  edit — it is pulled into `_DEFINED`, the guard demands it be listed, and it lands in this file's
+  envelope parametrization asserting a single authorized PUT it was never written to satisfy. `vars()`
+  was immune to this by construction. The guard's contract is now "every prefixed name anywhere in the
+  MRO belongs to this file," which is stronger than anything the file claims. Loud, not silent. Decide
+  whether to state that contract explicitly or to scope the lookup to the class the parametrization
+  actually belongs to.
+- [ ] listing an arrangement is not covering it (premortem CREDIBLE #1 on the guard commit): the
+  guard's `unlisted {...}` collection error is silenced by adding ONE line to `EVERY_SAVE_ARRANGEMENT`
+  — but that dict feeds exactly one row, the envelope parametrization. The four BODY-shape assertions
+  are hand-written per arrangement and are NOT derived from the dict. So a fifth arrangement can be
+  fully "listed", collection green, 10 rows passing, with no assertion at all on the thing this file
+  exists for — the wire body (`title` absent vs `null` vs value). The constant is named
+  EVERY_SAVE_ARRANGEMENT and the comment says failing to list one "reopens exactly the hole this
+  parametrization closed", which reads as coverage and is not. Nothing maps arrangement → body
+  assertion, and nothing tells the person who just hit the collection error that satisfying it is not
+  the same as covering the arrangement. Minimum: say so at the guard. Better: assert each key has a
+  corresponding `assert_the_*_title_key_*`.
+- [ ] guard the guard (premortem CREDIBLE #2 on the guard commit, and the repo has this exact failure
+  class on record one scenario over — "guard the RED markers themselves"). The completeness check is
+  four module-scope lines with NO automated evidence that it fires: all three of its proofs
+  (`vars` fifth-on-base green, `dir` fifth-on-base collection error, `-O` still raises) were hand-run
+  probes, each reverted, surviving only as prose here. Deleting those four lines changes no test
+  result. The named next edit is a split that moves or copies `EVERY_SAVE_ARRANGEMENT`, where the
+  guard is exactly the kind of thing dropped as "duplicated across the two files" — green the whole
+  way, with a commit message on record saying the hole is closed. Fix: a row that builds a throwaway
+  class with the four arrangements plus one extra `given_a_save_carrying_*`, runs the same set
+  comparison, and asserts it is unequal. NOTE the cost this collides with: both files are at exactly
+  200 lines, and adding a row falsifies every "out of 8" count in the file — the reason the last
+  guard was written as an import-time assert rather than a row. Budget the split, or find a form that
+  is neither a row nor unguarded.
 - [ ] make the whitespace row's tie to 3.2 structural (premortem CREDIBLE #2 on `ab560d97`):
   `WHITESPACE_TITLE_ON_THE_WIRE = "   "` and `BLANK_TITLE_ON_THE_WIRE = ""` are fresh literals;
   scenario 3.2's values are independent literals at `test_export_document_acceptance.py:141-142`
