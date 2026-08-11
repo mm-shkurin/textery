@@ -45,7 +45,15 @@ interface MessagePageWire {
   next_cursor?: unknown
 }
 
-const ROLES = ['user', 'assistant']
+// Typed against the union rather than inferred as `string[]`, and narrowed by a predicate rather
+// than by a cast: a cast would keep compiling if `ChatMessage['role']` ever gained a value this
+// list did not, and would be an outright lie in the other direction. With both tied together,
+// either drift is a compile error rather than a page silently refused at runtime.
+const ROLES: readonly ChatMessage['role'][] = ['user', 'assistant']
+
+function isRole(value: unknown): value is ChatMessage['role'] {
+  return typeof value === 'string' && (ROLES as readonly string[]).includes(value)
+}
 
 // Silence must REFUSE. `performRequest` ends with `res.json().catch(() => ({}))`, so a 204, an
 // empty 200 and a proxy's HTML page served with a 200 all arrive as `{}` — and `items ?? []`
@@ -60,10 +68,10 @@ function mapMessage(row: unknown): ChatMessage {
   }
   // Against the ENUM, not merely against `string`: scenario 1.2 splits the conversation on this
   // field, and a third value would silently pick a side.
-  if (typeof role !== 'string' || !ROLES.includes(role)) {
+  if (!isRole(role)) {
     throw new Error(FALLBACK)
   }
-  return { messageId, role: role as ChatMessage['role'], text }
+  return { messageId, role, text }
 }
 
 // `nextCursor` is `string | null` by declaration, so the wire has to keep that promise: absent and
@@ -81,6 +89,14 @@ function mapCursor(nextCursor: unknown): string | null {
 }
 
 function mapPage(body: MessagePageWire): ChatMessagePage {
+  // The page itself is object-checked for the same reason each ROW is. `performRequest` substitutes
+  // `{}` only when `res.json()` THROWS; a body of literal `null` parses fine and arrives as `null`,
+  // so reading `body.items` off it raises a TypeError — an untyped English escape past the
+  // invariant every other refusal here keeps, and past the plain `Error` scenario 1.3 is told to
+  // treat as its signal.
+  if (typeof body !== 'object' || body === null) {
+    throw new Error(FALLBACK)
+  }
   if (!Array.isArray(body.items)) {
     throw new Error(FALLBACK)
   }

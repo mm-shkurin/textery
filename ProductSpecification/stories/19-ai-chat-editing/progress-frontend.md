@@ -1598,6 +1598,60 @@ under `frontend/src` or `acceptance/tests/frontend`.
       Incidentally resolved: the pre-existing prettier warning on
       `DocumentEditorPage.notFound.test.tsx`, recorded as out-of-unit debt since
       `green-frontend` 0.1, no longer appears.
+      `/refactor`: **NO ACTION**, and its rejection is the interesting part. All three api
+      modules are now thin `send` wrappers, but what they share is a *pattern* — import `send`,
+      a `FALLBACK` const, a wire interface of `?: unknown` keys, a `map*` that throws — not
+      shared code: beyond the literal token `throw new Error(FALLBACK)` there is not one
+      statement in common, because the guard **is** the fact that distinguishes each endpoint.
+      It also rejected sharing `mapCursor` with `historyApi.ts`, and correctly: that module
+      declares `next_cursor` as a typed wire field and passes it through unguarded, so unifying
+      would add throws to two shipped list endpoints in another feature — a behavior change, not
+      a refactor.
+      **Two defects in this unit's own shipped code, fixed in the follow-up commit:**
+      `mapPage` read `body.items` with no object check. `performRequest` substitutes `{}` only
+      when `res.json()` **throws**; a body of literal `null` parses fine and arrives as `null`,
+      so that read raised `TypeError: Cannot read properties of null` — an untyped English
+      escape past this module's own stated invariant that every refusal is one plain
+      `Error(FALLBACK)`, and past the `Error` scenario 1.3 is being told to treat as its signal.
+      `mapMessage` already had the row-level check; the page had none. And `ROLES` inferred as
+      `string[]` with a cast at the return, so a union that later gained `'system'` would
+      compile while the client refused every such row at runtime — and a value added to `ROLES`
+      but not the union made the cast an outright lie. Now `readonly ChatMessage['role'][]`
+      narrowed by an `isRole` predicate, so either drift is a compile error and the cast is gone.
+      **Review-pass follow-ups:**
+      (ca) **`typeof === 'string'` admits `''`, which is the exact degenerate value two guards
+      exist to stop.** `message_id: ''` passes, and it is the React key — two such rows collide,
+      which is the failure the interface comment names, arriving *through* the guard.
+      `next_cursor: ''` passes and returns `''`, not `null`: it is falsy, so 1.2's
+      `if (page.nextCursor)` reads "last page" while the server said there is more, silently
+      truncating a restored conversation. The declared type is kept; the invariant it protects is
+      not. `send.ts`'s own `describeFailure` already uses `detail.trim()`, so blank-vs-present is
+      a distinction this codebase draws elsewhere. Left for a red step — tightening it is a
+      behavior change and needs a failing case first.
+      (cb) **Nothing programmatic ties the client's wire keys to
+      `api-specs/documents_messages_list.yaml`, and the backend does not exist yet.** Every key
+      here was transcribed by hand from a spec no running system has satisfied. Combined with the
+      all-or-nothing refusal, one renamed field is not a degraded page — it is a permanent hard
+      failure for every user, with 200s in the access log and zero server-side signal. Compounding
+      it: all five refusal sites throw an **identical** `Error(FALLBACK)` — no `cause`, no field
+      name — and it is the same sentence `send` produces for a transport failure or a 500, so at
+      triage the malformed-payload, network and server-error cases are indistinguishable strings.
+      Owe a contract test reading the schema, and a distinguishing `cause`.
+      (cc) **`loadChatMessages` returns no echo of which document it was for**, and takes no
+      `AbortSignal` — the only `AbortController` is `httpClient.ts:90`, created internally for the
+      timeout and unreachable from a caller. This is the class the story already paid a full
+      red/green pair for in `useEditorDocument` (A→B→A installing a stale `version`), and that fix
+      lived entirely in the hook. Scenario 1.2 gets no help: it cannot ask the resolved page "are
+      you mine", it must re-derive the whole guard. Either thread a `signal` or return the
+      `documentId` on the page.
+      (cd) **`documentId` is interpolated unescaped** (no `encodeURIComponent` anywhere under
+      `frontend/src`, so this matches `documentApi.ts:75,132` — house style, not a regression).
+      Worth naming because the 404 case pins the interpolation as a feature: an empty id yields
+      `/api/v1/documents//messages`, whose routed 404 carries no `error_code` and so lands as the
+      generic fallback — telling a user the history is broken when the *id* was. Follow-up (ab)
+      already has a live stale-stored-id path.
+      (ce) Cosmetic, in this file: the comment explaining the absent `refusals` argument sits on
+      `const FALLBACK`, 58 lines from the call it justifies, and would be carried off by a rename.
 - [~] align-design
 - [ ] green-selenium
 - [ ] demo
