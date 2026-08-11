@@ -2442,6 +2442,59 @@ within their file, not across the story.
       authorship, not assertion tightening.
       **210 passed, 6 skipped** (the 6 skips are exactly this unit's markers; all six reproduce on their
       own recorded assertion line, re-verified after `/test-review`'s changes).
+      `/refactor` (commit `cec987b7`) took `child_pytest_run.py` 200 → 163 by splitting off
+      `child_environment_scrub.py` — the cycle-free direction, since `LEAKY_CHILD_VARIABLES` and its
+      filter had **zero external importers**, so nothing was rewired and `probe_destinations.py` still
+      reads `BACKEND_ROOT` from where it did. GREEN now has 37 lines of headroom for its anchor. It
+      **declined** the other obvious split, a shared roots module: that re-fuses `BACKEND_ROOT` and
+      `REPOSITORY_ROOT` and reopens the tautology `/test-review` had just closed. Split-site prose was
+      stale in both directions, including one inert-guard inversion a file over —
+      `coloured_child_report_statements.py` said the roster "scrubs five names and not one of them is a
+      colour variable" when it scrubs ten, two of them added for exactly that reason. All six skips
+      re-verified by **lifting the markers through a collection-time plugin**, not by reasoning.
+      **Both review passes over `5fc3bb5f` returned CONCERNS and converged on the same two items, one of
+      which is a safety finding rather than a test-strength one. All are GREEN's inputs, not later
+      follow-ups — GREEN already has to touch both files.**
+      (α) **An unguarded recursive delete, newly aimed inside the repository.** `_try_to_write_a_probe_to`
+      ends in `shutil.rmtree(scratch, ignore_errors=True)` on an unvalidated caller-supplied `Path`, and
+      this commit is the first to point `scratch` under `REPOSITORY_ROOT`. The delete is unconditional
+      (it runs even when the refusal fired before `mkdir`, so a pre-existing directory at that path is
+      destroyed by a test that never wrote to it), recursive, and silent. A fifth destination, or a typo
+      trimming the `.gate_reach_repository_scratch` suffix, deletes tracked source with nothing going red.
+      Named guards: assert the target `is_relative_to(REPOSITORY_ROOT)` and carries the scratch prefix
+      **before** deleting; and assert the scratch is **gone after** the `finally` — the class already
+      captures `_probe_landed` before the rmtree and has no symmetric check, and on Windows
+      `ignore_errors=True` swallows the `PermissionError` an AV scanner or editor indexer produces, so the
+      litter survives a green run. **Partially closed already** in `8a9db1bf`: `.gitignore` now carries
+      `/.gate_reach_repository_scratch/`, which stops a routine `git add -A` from committing a root-level
+      `test_*.py` that every root-scoped pytest would then collect — falsifying the gate's own central
+      claim. That is a containment line, not the guard; the two assertions above are still owed.
+      (β) **A previously-green guard was traded away, not merely added to — self-inflicted, and exactly
+      this sub-thread's own theme.** `test_should_refuse_to_write_a_probe_inside_the_repository` was
+      *passing*; it was renamed to `..._inside_the_backend_tree` and skipped, because it shares
+      `assert_the_write_was_refused_before_it_landed` whose expectation moved to the single re-anchored
+      `EXPECTED_REPOSITORY_REFUSAL`. So for the whole RED→GREEN window the backend-tree refusal — a real
+      working guard against dropping a collectable `test_*.py` under `backend/` — is enforced by nothing.
+      Avoidable: pass the expected sentence per destination instead of hardcoding it in the shared
+      assertion. Keep one arm live.
+      (γ) *`probe_destinations.py` contradicts its own stated invariant.* Its docstring says "the roots
+      here are the specification, not a reading of the guard" while it imports `BACKEND_ROOT` **from the
+      module under test** and builds `IN_TREE_SCRATCH` from it — so the drift is closed for the repository
+      destination only, and a wrong `parents[3]` still moves anchor and expectation together with the
+      backend-tree test green. `REPOSITORY_ROOT / "backend" / ...` closes it; the independent derivation
+      already sits two lines above, unused for this.
+      (δ) *The roster guard is off exactly while the roster changed.* `TestArmingProbeRoster` is skipped in
+      the same commit that adds an entry to `EXPECTED_VECTORS` and to `EXPECTED_SENTENCES` — the guard
+      whose stated purpose is "a vector added here must be driven, not merely declared" cannot observe the
+      addition it was written for. Unavoidable for a RED, but it makes the point that **nothing counts or
+      expires skip markers**: five now sit in `harness/`, and the only record that they must come off is a
+      commit message.
+      (ε) *Two module-scope bare `assert`s in `probe_destinations.py` defend the `parents[4]` index.*
+      Optimizer-removable: under `-O`/`PYTHONOPTIMIZE` a drifted index yields the checkout's **parent** and
+      the rmtree fires outside the repository with errors suppressed. And `PYTHONOPTIMIZE` is not in
+      `LEAKY_CHILD_VARIABLES`, so it would void every `assert` in a child probe too — pre-existing, and the
+      first steerable variable found since the roster grew to ten. `raise RuntimeError` instead of
+      `assert` closes the first half.
 - [~] green-usecase (the half of the join that was never fixed, and the half of the arming never probed)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares
