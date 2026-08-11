@@ -24,10 +24,21 @@ PROBE_TIMEOUT_SECONDS = 180
 
 # Anything the ambient shell or a CI runner can set that would change what the
 # child decides about warnings or which plugins it loads. Scrubbed by default so
-# the gate is proven against `pyproject.toml` alone: `PYTEST_ADDOPTS=-W
-# ignore::RuntimeWarning` in a runner's environment would otherwise make the gate
-# un-failable, and `PYTEST_DISABLE_PLUGIN_AUTOLOAD` would keep the control's
-# `async def` test from ever running.
+# the gate is proven against `pyproject.toml` alone. Two entries are measured
+# threats rather than assumed ones: `PYTEST_ADDOPTS=-W ignore::RuntimeWarning`
+# makes the forgotten-await gate un-failable, and `PYTEST_DISABLE_PLUGIN_AUTOLOAD`
+# keeps the control's `async def` test from ever running -- with the scrub lifted
+# and that variable ambient, all four gate tests fail, the control included.
+#
+# `PYTHONWARNINGS=ignore::RuntimeWarning` reads like the flagship threat and is
+# *not* one: pytest applies its own ini `filterwarnings` after the ones inherited
+# from `PYTHONWARNINGS`, so the probe still fails with it set. It is scrubbed
+# because it steers a different mechanism -- Python's own warnings machinery,
+# before pytest sees anything -- which is enough to silence a warning a *probe*
+# provokes directly, not because it can disarm this gate.
+#
+# The roster is asserted against, in both directions, by
+# `test_child_environment_scrub.py`: shrink this tuple and that test goes red.
 LEAKY_CHILD_VARIABLES = (
     "PYTEST_ADDOPTS",
     "PYTHONWARNINGS",
@@ -151,12 +162,18 @@ class ChildPytestRun:
 
         The scratch redirection is unconditional; only the `LEAKY_CHILD_VARIABLES`
         filter is opt-out, and dropping it is never a convenience -- it means the
-        caller is asserting *about* those variables. That the filter still applies
-        to the forgotten-await gate is itself asserted, by
-        `test_forgotten_await_gate.py`'s parametrised hostile-environment test: it
-        sets a `PYTEST_ADDOPTS` measured to disarm the gate and requires the gate to
-        bite anyway, so a flipped default here goes red rather than quietly
-        un-arming it.
+        caller is asserting *about* those variables.
+
+        Both halves of that opt-out are asserted on directly, by
+        `test_child_environment_scrub.py`: it sets every entry of the roster in the
+        parent, calls this method on a default run and on a kept-environment run, and
+        compares the set of names each one removed. That is what pins the roster
+        itself -- an entry deleted from `LEAKY_CHILD_VARIABLES` is red there and
+        nowhere else, because the end-to-end shape can only watch entries with a
+        measured disarming vector. `test_forgotten_await_gate.py`'s parametrised
+        hostile-environment test is the end-to-end half: it sets a `PYTEST_ADDOPTS`
+        measured to disarm the gate and requires the gate to bite anyway, so a
+        flipped default here goes red rather than quietly un-arming it.
         """
         scratch = str(self._scratch_dir)
         inherited = (

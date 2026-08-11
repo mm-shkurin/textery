@@ -2027,7 +2027,7 @@ within their file, not across the story.
       child under `PY_COLORS=1` and requires the gate to bite. Priority order for the deliverables:
       (3) → (1) → (2). **(3) folds directly into the already-scheduled tuple work in the next red step**,
       which is why that step keeps the `[~]`.
-- [~] red-usecase (the scrub is watched through one variable of five, and the vectors' own potency
+- [x] red-usecase (the scrub is watched through one variable of five, and the vectors' own potency
       is asserted nowhere) — **both review passes over `ae505cc6` converged on the first item, and the
       agent-review pass ran the negative control independently rather than trusting the commit
       message: with a scratchpad plugin forcing `keep_ambient_environment`, both new parametrisations
@@ -2075,7 +2075,30 @@ within their file, not across the story.
       leaks nothing new (the five variables are still removed, by `monkeypatch` instead of the filter,
       and no environment is printed), and the added child-run wall time is bounded — the real
       weakness there is the already-scheduled `TimeoutExpired` diagnosability item.
-- [ ] green-usecase (the scrub is watched through one variable of five, and the vectors' own potency
+      **RED landed.** Two disabled tests, each carrying its measured failure. (1)
+      `test_child_environment_scrub.py` reads `ChildPytestRun._child_environment()` directly — the only
+      shape that goes red on tuple shrinkage — and fails on
+      `removed [5 names] expected [7]` (`PY_COLORS`/`FORCE_COLOR` still leak into the child, which is
+      also deliverable (3) of the previous unit's review passes). (2) `test_disarmed_arming_probe.py`'s
+      new `TestDisarmedArmingProbeArrangement` fails `DID NOT RAISE AssertionError`: the arming family
+      inherits the act unguarded, so a run with no vector chosen executes a real child. Deliverable (2)
+      ships as `test_hostile_runner_environment_potency.py` — the forgotten-await probe run through a
+      `keep_ambient_environment=True` child under each vector, required to exit 0; green from birth
+      (armed control, no marker), so the vectors' potency is now re-measured by the suite instead of
+      resting on a terminal session recorded in prose. Deliverable (4)'s three stale-prose claims
+      corrected; the tuple itself is untouched — that is the green.
+      The earlier untracked attempt called `run.child_environment()`, which does not exist; it would
+      have produced `AttributeError`, not the roster assertion. Rewritten, not extended.
+      `/test-review` applied 6 fixes and declined 4 with reasons. The two that matter: the scrub
+      assertions were asymmetric (the default half pinned only removed names, so a builder that
+      rewrote every surviving value stayed green) — both halves now pin `added_names == []`,
+      `rewritten_names == []` computed from the **ambient snapshot**, not filtered through the roster,
+      so they see names the expectation has never heard of; and the two refusal tests pinned the message
+      only, which a guard that ran the child *first* and then raised the same sentence would pass —
+      both now assert `_no_child_was_run()`. It verified the RED survives its own strictness by
+      stripping the markers through an out-of-tree plugin (no file edits) and re-confirming both
+      recorded failure reasons.
+- [~] green-usecase (the scrub is watched through one variable of five, and the vectors' own potency
       is asserted nowhere)
 - [ ] red-usecase (coverage: third arming arm refuses a rewritten declaration) —
       **the one arm this unit's own diff promises and does not deliver.**

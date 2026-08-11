@@ -74,6 +74,17 @@ class ChildProbeStatements:
     def _write_probe(self, tmp_path: Path, source: str) -> None:
         self._run.write_probe(tmp_path, source)
 
+    def _no_child_was_run(self) -> bool:
+        """Whether the act got as far as executing a child at all.
+
+        Read by the families whose act is *guarded*: their refusal test asserts a
+        message, and a message alone cannot tell a guard that short-circuited from
+        one that ran a real child and then raised the same sentence -- which is the
+        only property those guards exist for, since the whole cost of running under
+        an unchosen environment is paid inside that child.
+        """
+        return self._report is None
+
     def _assert_the_child_reported(self, exit_code: int, counts: dict[str, int]) -> None:
         child = self._child()
         assert child.exit_code == exit_code, (

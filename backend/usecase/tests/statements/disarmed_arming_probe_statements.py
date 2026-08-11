@@ -28,59 +28,28 @@ arms are reached by different vectors and each is invisible to the other:
 The child must therefore be run with its ambient environment left alone, which is
 the opposite of what every other gate in this family needs: `ChildPytestRun`
 scrubs `LEAKY_CHILD_VARIABLES` by default, precisely so the forgotten-await gate
-is proven against `pyproject.toml` and not against a shell. This family is the
-single `keep_ambient_environment=True` call site, and it pays for that exemption
-below -- it must scrub by hand what the base no longer scrubs for it.
+is proven against `pyproject.toml` and not against a shell. This family was the
+first `keep_ambient_environment=True` call site and the potency control beside the
+forgotten-await gate is the second; both pay the same price for that exemption --
+scrub by hand what the base no longer scrubs, then put back exactly one vector --
+which is why the mechanics live in the shared `DisarmedChildEnvironment`.
 """
 
 from pathlib import Path
 
 import pytest
 
+from statements.arming_probe import (
+    ARMING_PROBE,
+    ARMING_PROBE_TEST_NAME,
+    COMMAND_LINE_FILTER_OVERRIDE,
+    EXPECTED_INERT_FILTER_REFUSAL,
+    EXPECTED_OVERRIDE_REFUSAL,
+    NOT_THE_DISARMED_ENVIRONMENT,
+    UNLOADED_WARNINGS_PLUGIN,
+)
 from statements.child_probe_statements import ChildProbeStatements
-from statements.child_pytest_run import LEAKY_CHILD_VARIABLES
-
-# The probe's single test. Named rather than reused from the forgotten-await
-# family: the FAILURES section is compared as a whole set of names, so the name is
-# an assertion expectation and must belong to this probe alone.
-ARMING_PROBE_TEST_NAME = "test_the_live_arming_check_runs_here"
-
-# The subject, invoked exactly as the real suite invokes it -- through the public
-# statement, from a `pytestconfig` that is the child's own. A probe that
-# constructed a `Config` by hand would assert on a fabrication.
-ARMING_PROBE = f"""
-from statements.live_harness_configuration_statements import (
-    LiveHarnessConfigurationStatements,
-)
-
-
-def {ARMING_PROBE_TEST_NAME}(pytestconfig) -> None:
-    LiveHarnessConfigurationStatements(
-        pytestconfig
-    ).assert_both_filter_entries_are_in_force_in_this_run()
-"""
-
-# The two disarming vectors, and the variable a runner actually sets.
-RUNNER_OVERRIDE_VARIABLE = "PYTEST_ADDOPTS"
-COMMAND_LINE_FILTER_OVERRIDE = "-W ignore::RuntimeWarning"
-UNLOADED_WARNINGS_PLUGIN = "-p no:warnings"
-
-# What each arm must say when it bites. Literals rather than imports from the
-# module under test: read back from it, the assertion would still pass with both
-# messages rewritten to the empty string, and the whole point of these two arms is
-# that a reader meeting them in CI is told which vector disarmed the suite.
-#
-# The override refusal carries the parsed filter list, so this pins that the
-# override genuinely reached the child rather than that the message merely fired.
-EXPECTED_OVERRIDE_REFUSAL = (
-    "this run carries command-line warning filters ['ignore::RuntimeWarning']"
-)
-EXPECTED_INERT_FILTER_REFUSAL = "a RuntimeWarning raised in this very run did not fail it"
-
-# What a run whose FAILURES section lacks the expected sentence actually means.
-# Both arms are a `raise` and an `assert` that coverage.py does not count as
-# branches, so the sentence is the only evidence the arm executed at all.
-NOT_THE_DISARMED_ENVIRONMENT = "the arming check failed, but not for the disarmed environment"
+from statements.disarmed_child_environment import DisarmedChildEnvironment
 
 
 class DisarmedArmingProbeStatements(ChildProbeStatements):
@@ -88,7 +57,7 @@ class DisarmedArmingProbeStatements(ChildProbeStatements):
 
     def __init__(self, monkeypatch: pytest.MonkeyPatch) -> None:
         super().__init__(keep_ambient_environment=True)
-        self._monkeypatch = monkeypatch
+        self._environment = DisarmedChildEnvironment(monkeypatch)
 
     def given_a_runner_environment_that_overrides_the_declared_filters(self) -> None:
         self._disarm_the_child_with_only(COMMAND_LINE_FILTER_OVERRIDE)
@@ -107,32 +76,44 @@ class DisarmedArmingProbeStatements(ChildProbeStatements):
         self._disarm_the_child_with_only(None)
 
     def _disarm_the_child_with_only(self, vector: str | None) -> None:
-        """Every leaky variable removed, then the one vector put back.
+        """Every steerable variable removed, then the one vector put back.
 
-        Scrubbing only `PYTEST_ADDOPTS` would leave each test differing from the
-        control by more than the thing it is about. `PYTHONWARNINGS` is the case
-        that matters and it is not hypothetical: it is a *different* mechanism from
-        the `-W` filters this file's first vector uses -- those land in
-        `config.option.pythonwarnings`, while `PYTHONWARNINGS` is read by Python's
-        own warnings machinery before pytest sees anything. An ambient
-        `PYTHONWARNINGS=ignore::RuntimeWarning` therefore stops the provoked
-        RuntimeWarning from raising all by itself, which is precisely the state the
-        `-p no:warnings` test asserts. That test would pass with its own vector
-        contributing nothing -- green in exactly the state it exists to reject.
-
-        Load-bearing now rather than prospectively: this family opts out of the
-        base's scrub, so these two lines are the only isolation it has -- delete
-        them and every test here inherits whatever the developer's shell carries.
-        Read from `LEAKY_CHILD_VARIABLES` rather than relisted, so the isolation
-        cannot fall behind the scrub it replaces.
+        The mechanics moved to `DisarmedChildEnvironment` when the potency control
+        beside the forgotten-await gate needed the identical price for the identical
+        exemption; why the whole roster is scrubbed rather than `PYTEST_ADDOPTS`
+        alone, and why that roster is not the subject's own, is recorded there.
+        What stays this family's is *which* vectors exist.
         """
-        for name in LEAKY_CHILD_VARIABLES:
-            self._monkeypatch.delenv(name, raising=False)
-        if vector is not None:
-            self._monkeypatch.setenv(RUNNER_OVERRIDE_VARIABLE, vector)
+        self._environment.disarm_with_only(vector)
 
     def given_the_live_arming_check_as_the_probe(self, tmp_path: Path) -> None:
         self._write_probe(tmp_path, ARMING_PROBE)
+
+    def run_the_probe_expecting_it_to_be_refused(self) -> None:
+        """The act for the arrangement guard this family does not yet have.
+
+        The sibling overrides its act to call
+        `refuse_the_act_until_a_vector_was_chosen()` first; this one runs a child
+        straight away, so the `pytest.raises` below is what goes red today -- and
+        `assert_no_child_was_run_before_the_refusal` is red independently of it.
+        """
+        with pytest.raises(AssertionError) as refusal:
+            self.run_the_probe_under_the_projects_own_pytest_configuration()
+        self._environment.record_the_refusal(refusal.value)
+
+    def assert_the_refusal_named_the_unchosen_environment(self) -> None:
+        self._environment.assert_the_refusal_named_the_unchosen_environment()
+
+    def assert_no_child_was_run_before_the_refusal(self) -> None:
+        """Red for a second, independent reason today, and that is deliberate.
+
+        This family's act is unguarded, so it runs a real child under whatever the
+        ambient environment carries and only the `pytest.raises` above goes red. Once
+        the guard lands, this is what keeps it from being satisfied by a check placed
+        *after* the run -- which would raise the right sentence while paying the whole
+        cost the guard exists to avoid.
+        """
+        self._environment.assert_no_child_was_run_before_the_refusal(self._no_child_was_run())
 
     def assert_the_arming_check_refused_the_command_line_override(self) -> None:
         self._assert_the_arming_check_failed_saying(EXPECTED_OVERRIDE_REFUSAL)

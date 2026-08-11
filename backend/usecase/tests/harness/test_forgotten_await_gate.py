@@ -1,25 +1,7 @@
 import pytest
 
 from statements.forgotten_await_gate_statements import ForgottenAwaitGateStatements
-
-# Two ambient states, each *measured* to disarm this gate on its own when the
-# child is allowed to keep them, and each by a different mechanism: a command-line
-# `-W` filter is applied after the ini entries and the last matching filter wins,
-# while `-p no:unraisableexception` unloads the plugin that turns the destructor's
-# swallowed RuntimeWarning into a warning at all, so the second ini entry matches
-# nothing. Both were driven by hand against the real `pyproject.toml`: probe exit 1
-# with the environment clean, exit 0 with either one set.
-#
-# `PYTHONWARNINGS=ignore::RuntimeWarning` is deliberately *not* in this list. It
-# reads like the obvious vector and it is inert here -- measured, not assumed:
-# pytest applies its own ini `filterwarnings` after the ones it inherits from
-# `PYTHONWARNINGS`, so the probe still fails (exit 1) with it set, and a test
-# carrying only that variable would be green in every state including the one it
-# exists to reject.
-HOSTILE_RUNNER_ENVIRONMENTS = [
-    ("PYTEST_ADDOPTS", "-W ignore::RuntimeWarning"),
-    ("PYTEST_ADDOPTS", "-p no:unraisableexception"),
-]
+from statements.hostile_runner_environments import HOSTILE_RUNNER_ENVIRONMENTS
 
 
 class TestForgottenAwaitGate:
@@ -76,11 +58,20 @@ class TestForgottenAwaitGate:
         unconditionally; it now takes an opt-in that keeps them, for the one family
         whose subject is a hostile runner environment. From that change on, "does
         *this* gate's child get scrubbed?" is a per-call-site decision, and nothing
-        watched it: before this test, `LEAKY_CHILD_VARIABLES` and
-        `_child_environment` were each referenced exactly once in the whole backend
-        tree -- the definition and its single use. No test set a hostile variable and
-        required the gate to bite, so the scrub was proven only by developer and CI
-        shells happening to be clean, which is the assumption it exists to remove.
+        watched it: before this test, no assertion anywhere in the backend tree read
+        `LEAKY_CHILD_VARIABLES` or `_child_environment` at all -- the constant had its
+        definition and its single use inside `ChildPytestRun`, and nothing else. No
+        test set a hostile variable and required the gate to bite, so the scrub was
+        proven only by developer and CI shells happening to be clean, which is the
+        assumption it exists to remove.
+
+        This test remains a *partial* witness and should not be read as more. It can
+        only watch entries for which a disarming vector exists, and both of its
+        parametrisations drive `PYTEST_ADDOPTS`; four of the roster's entries could be
+        deleted with this file staying green. `test_child_environment_scrub.py`
+        asserts on the built environment directly and is the pin on the roster itself;
+        `test_hostile_runner_environment_potency.py` is what keeps the two vectors
+        below from quietly becoming no-ops and leaving this test green over nothing.
 
         An opt-in threaded through the shared base, or a later refactor collapsing
         the two constructors, would un-arm the forgotten-await gate while every
