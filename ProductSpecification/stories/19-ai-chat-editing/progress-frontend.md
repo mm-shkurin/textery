@@ -1435,9 +1435,14 @@ under `frontend/src` or `acceptance/tests/frontend`.
       deleting the `refusals.notFound &&` conjunct in `send.ts` — making the mapping
       unconditional for every caller — fails **exactly one case in 540**, this file's
       `keeps the shared 404 as a described generic failure`, with
-      `AssertionError: expected 'DocumentNotFoundError' to be 'Error'`. The claim was true in
-      its strong form: this is the only case anywhere holding the opt-in guard, which
-      previously had zero coverage.
+      `AssertionError: expected 'DocumentNotFoundError' to be 'Error'`. This is the only case
+      anywhere holding the opt-in guard, which previously had zero coverage.
+      **Correction, caught by the review pass: (x) is closed CONDITIONALLY on green un-skipping,
+      and the commit message states it unconditionally.** The mutation run necessarily had the
+      block un-skipped (540 cases, not the 532 this commit reports). As of `e3804d36` the case
+      sits inside `describe.skip`, so deleting `refusals.notFound &&` from `send.ts:110` still
+      leaves the suite green — exactly the condition (x) describes. Nothing is wrong with the
+      test; the record was overstated. Treat (x) as closed at `green-frontend-api`, not here.
       **(bp)'s client half is closed:** a 200 that does not carry a page — `{}` from
       `res.json().catch(() => ({}))`, or a non-list `items` — **rejects** rather than mapping
       to an empty conversation. An empty-defaulting client is precisely what would make a
@@ -1489,8 +1494,68 @@ under `frontend/src` or `acceptance/tests/frontend`.
       reader. And `editorDocumentApi.test.ts:93,103,123,139` still use `toEqual` on
       `requestedUrls` — same looseness as fix 2, but committed green tests outside this unit's
       file set.
+      `/refactor` landed two changes over `e3804d36`. The file was **201 lines, over the hard
+      limit** — the three chat-specific support declarations moved into `aiChatApiFixtures.ts`
+      (151→176), the same support seam `editorDocumentApiFixtures.ts` took, so all nine cases
+      and the single `describe.skip` stay in one file and no `vi.mock` block is duplicated
+      (190 lines now). And the OWED `ChatMessage` duplication was consolidated: one declaration
+      in `chatMessagesApi.ts` — the api layer is where the wire rename lands — with
+      `AiChatPanel.tsx` importing it exactly as it already imports `EditQuotaState` from
+      `../api/editQuotaApi`, so this is the feature's existing direction rather than a new one
+      (panel 96→84 lines). The `expectTypeOf` gate was **re-anchored, not dropped**: with one
+      declaration a type-to-type comparison is tautological, so it now pins the panel's *prop*
+      (`ComponentProps<typeof AiChatPanel>['messages']`), which catches the same divergence the
+      two-copy version existed to catch. Verified by mutation — widening the prop with an
+      optional `at?: string` fails the build with `TS2344`.
+      **Toolchain finding worth acting on repo-wide: `npx tsc --noEmit` is a NO-OP here.**
+      `frontend/tsconfig.json` is `{"files": [], "references": [...]}`, so a bare
+      `tsc --noEmit` compiles zero files and exits 0. Every type-level claim ever "verified"
+      with that command was verified by nothing; the real check is `npm run typecheck`
+      (`tsc -b`). Every `expectTypeOf` in this feature is enforced only under `tsc -b`.
+      Pressure point for green: `aiChatApiFixtures.ts` is at 176 lines with ~24 left, and
+      `green-frontend-api` will likely add wire fixtures there.
+      **Review-pass follow-ups (both CONCERNS):**
+      (bv) **A 404 on the history read after a successful document read is the wrong diagnosis,
+      and the spec says so in its own words.** This unit's header argues a history 404 means
+      "the history endpoint failing", but `api-specs/documents_messages_list.yaml` documents its
+      404 as *"No document with this id FOR THIS OWNER — byte-identical for absent and foreign;
+      never 403."* There is no documented 404 on this endpoint meaning "history is broken". The
+      rationale holds for the *concurrent* case (both reads in flight, document read
+      authoritative) and fails for the *sequential* one: a document deleted in another tab after
+      the document read resolved gives a live, editable editor beside a broken sidebar, with
+      every save failing and nothing telling the user the document is gone. Owe a page-level
+      case in 1.3 or 8.8 that a messages-404 arriving after a successful document load reaches
+      the not-found blocker — which makes this file's ownership claim executable rather than
+      argued.
+      (bw) **A truncated conversation is indistinguishable from a complete one at the call
+      site.** `documents_messages_list.yaml` fixes order oldest-first with `limit` defaulting to
+      50, and the URL is pinned with no query string — so page one is the *oldest* 50. The one
+      case producing a non-null cursor asserts only that the string is carried; `messages` is a
+      plain array and a consumer that never reads `nextCursor` type-checks cleanly. The user
+      sees a conversation stopping mid-history, re-sends the instruction that already ran, and
+      pays a second quota unit and a second revision. Either make incompleteness unrepresentable
+      (`{ complete: true } | { complete: false, nextCursor }`) or owe an explicit 1.2 case that
+      a first page with a cursor triggers a follow-up fetch.
+      (bx) **One unknown row loses the whole conversation, and the blast radius is unmeasured.**
+      Both shape-guard cases stub `items` containing exactly one row, which is the bad one, so
+      nothing states whether a bad row *among good ones* drops that row or rejects the page —
+      and rejecting is the only behavior the file demonstrates, so it is what green will ship.
+      When the backend adds a third message kind (a system notice, a tool marker, an
+      `edit_id`-only placeholder for a failed edit), every user holding one loses their entire
+      history to a deterministic, unrecoverable failure. Owe `items: [MESSAGE_WIRE, badRow]`
+      asserting which policy holds. Also missing from the same table: `text: 42` (the current
+      case covers only an *absent* key, so `typeof m.text !== 'undefined'` passes while `{}`
+      reaches React as `[object Object]`) and a non-string `message_id`, which becomes a React
+      key.
+      (by) The 404 case pins `'Document not found'` — **English, in an all-Russian UI**.
+      `describeFailure` prefers `body.message` over the fallback, so that is the sentence this
+      client hands 1.3's panel. Declining the `refusals.notFound` mapping also declined the
+      *localization* the mapping carried, which is not addressed anywhere; 1.3 will render it or
+      override it. Nothing asserts UI strings are Russian.
+      (bz) Minor: the second happy path drops the `stubFetch` return, so unlike the first it
+      pins neither call count nor URL. Effectively guarded only because there is one stubbed
+      response and a second call would hit the default throw — the asymmetry looks unintentional.
 - [~] green-frontend-api
-- [ ] green-frontend-api
 - [ ] align-design
 - [ ] green-selenium
 - [ ] demo

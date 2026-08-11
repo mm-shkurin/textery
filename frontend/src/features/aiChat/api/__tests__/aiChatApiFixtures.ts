@@ -1,5 +1,6 @@
-// Test-support for the aiChat API-client tests — `editorDocumentApi.test.ts` and
-// `editQuotaApi.test.ts`: the fetch stub, the assertion helpers, and the wire fixtures. Split out
+// Test-support for the aiChat API-client tests — `editorDocumentApi.test.ts`,
+// `editQuotaApi.test.ts` and `chatMessagesApi.test.ts`: the fetch stub, the assertion helpers,
+// the endpoint table, and the wire fixtures. Split out
 // on the 200-line limit, along the seam that costs nothing — each test file keeps all of its cases
 // and its own describe marker, and what moved here is the machinery none of them narrate.
 //
@@ -136,6 +137,30 @@ export const NOT_FOUND_RESPONSE = {
   json: async () => ({ error_code: 'NOT_FOUND', message: NOT_FOUND_WIRE_MESSAGE }),
 }
 export const NOT_FOUND_MESSAGE = 'Документ не найден'
+
+// One turn of the chat history AS THE WIRE SPELLS IT — snake_case, and carrying the two fields
+// (`created_at`, `edit_id`) no view reads. Both are present deliberately: the mapping case asserts
+// the whole mapped object with `toStrictEqual`, so a green that passes them through unrenamed fails
+// on keys the fixture would not otherwise have supplied.
+export const MESSAGE_WIRE = {
+  message_id: 'm-1',
+  role: 'user',
+  text: 'Сократи введение',
+  created_at: '2026-08-11T09:12:00+03:00',
+  edit_id: 'e-1',
+}
+// A SECOND turn, differing in the two fields the mapping must carry per-row (`message_id`, `text`)
+// and in the one scenario 1.2 splits the conversation on (`role`). Spread from the first so the
+// pair cannot drift in the fields that are not the point of the difference.
+export const SECOND_MESSAGE_WIRE = {
+  ...MESSAGE_WIRE,
+  message_id: 'm-2',
+  role: 'assistant',
+  text: 'Готово',
+}
+// What every history refusal reaches the caller as: `send`'s `describeFailure` fallback for a
+// response that stated no usable page. Lives here beside the wire it is the answer to.
+export const CHAT_HISTORY_FALLBACK = 'Не удалось загрузить историю чата'
 
 // The 500 both api test files drive their "everything else stays a described generic failure" case
 // with. Unlike the 404 pair above, the asserted MESSAGE here is the body's own text — `send`

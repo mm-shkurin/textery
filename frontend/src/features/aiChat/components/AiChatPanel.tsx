@@ -1,4 +1,7 @@
 import type { EditQuotaState } from '../api/editQuotaApi'
+// The conversation's row type, owned by the api layer that produces it. Rationale beside the
+// declaration; the panel is a consumer of the shape, not its author.
+import type { ChatMessage } from '../api/chatMessagesApi'
 import { AiChatComposer } from './AiChatComposer'
 import { AiChatRevisions } from './AiChatRevisions'
 import './AiChatPanel.css'
@@ -12,21 +15,6 @@ export const CHAT_PANEL_NOTICE = 'Проверяем дневной лимит �
 // separate language and cannot share it, so two copies is the floor, three was avoidable.
 export const CHAT_EMPTY_STATE_TEXT =
   'Документ готов. Напишите, что нужно изменить — я поправлю текст и сохраню новую версию.'
-
-// One turn of the conversation.
-//
-// `text` is the only field any ASSERTION reads — `AiChatPanel.history.test.tsx` checks row
-// text and nothing else. `messageId` is READ BY THE CODE, as the React key on each row, but
-// pinned by no test: both fixtures use distinct ids, so duplicate or absent ids would make
-// React silently reuse or drop rows with every layer green. `role` is read by nothing at all;
-// it is shaped for scenario 1.2, which owns the history read, the ordering and the per-side
-// split. Pinning either field means inventing `data-message-id` / `data-message-role`, which
-// is 1.2's spec. The wire shape and its timestamps belong to `red-frontend-api` / 1.2 too.
-export interface ChatMessage {
-  messageId: string
-  role: 'user' | 'assistant'
-  text: string
-}
 
 interface AiChatPanelProps {
   // `null` = not yet known. The composer is WITHHELD until the quota resolves rather than

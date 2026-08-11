@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
-import { AiChatPanel, type ChatMessage } from '../AiChatPanel'
+import { AiChatPanel } from '../AiChatPanel'
 import type { EditQuotaState } from '../../api/editQuotaApi'
+import type { ChatMessage } from '../../api/chatMessagesApi'
 
 // Story 19, Frontend Scenario 1.1 — the half its own Given structurally cannot reach.
 //

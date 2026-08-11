@@ -1,17 +1,21 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import { loadChatMessages, type ChatMessage, type ChatMessagePage } from '../chatMessagesApi'
-import type { ChatMessage as PanelChatMessage } from '../../components/AiChatPanel'
+import type { ComponentProps } from 'react'
+import type { AiChatPanel } from '../../components/AiChatPanel'
 import { DocumentNotFoundError } from '../../../../shared/api/send'
 import { SessionExpiredError } from '../../../auth/api/authorizedRequest'
 import { rejectionOf } from '../../../../test/rejectionOf'
 import {
+  CHAT_HISTORY_FALLBACK,
   expectErrorIdentity,
+  MESSAGE_WIRE,
   MESSAGES_URL,
   NOT_FOUND_RESPONSE,
   NOT_FOUND_WIRE_MESSAGE,
   okJson,
   REFRESH_URL,
   requestedUrls,
+  SECOND_MESSAGE_WIRE,
   SESSION_EXPIRED_MESSAGE,
   signedInSessionAroundEach,
   stubFetch,
@@ -39,27 +43,12 @@ import {
 // branch cannot fire for it even if `refusals` were deleted outright. The 404 case below is the
 // first anywhere that meets `{status: 404, error_code: 'NOT_FOUND'}` from a caller passing no
 // refusals — deleting the `refusals` parameter turns it red.
-const FALLBACK = 'Не удалось загрузить историю чата'
-
-const MESSAGE_WIRE = {
-  message_id: 'm-1',
-  role: 'user',
-  text: 'Сократи введение',
-  created_at: '2026-08-11T09:12:00+03:00',
-  edit_id: 'e-1',
-}
-const SECOND_MESSAGE_WIRE = {
-  ...MESSAGE_WIRE,
-  message_id: 'm-2',
-  role: 'assistant',
-  text: 'Готово',
-}
 
 // TDD RED (Story 19, Frontend Scenario 1.1). `chatMessagesApi.ts` is a stub that throws
 // `Not implemented: loadChatMessages(<id>)` unconditionally, so every case below fails on it: the
 // two mapping cases as a rejection where a resolution is required, and every refusal case on the
-// asserted message (and, for the session case, on the class). Verified failing 2026-08-11, 8 of 8,
-// with exactly those messages. `describe.skip` rather than eight
+// asserted message (and, for the session case, on the class). Verified failing 2026-08-11, 9 of 9,
+// with exactly those messages. `describe.skip` rather than nine
 // `it.skip`s: one function under test, one marker — the convention this feature's two sibling API
 // test files already follow. Unskipped in `green-frontend-api`.
 describe.skip('chatMessagesApi loadChatMessages', () => {
@@ -117,13 +106,13 @@ describe.skip('chatMessagesApi loadChatMessages', () => {
       nextCursor: 'c-2',
     })
 
-    // A COMPILE-TIME gate against the second copy of this type. `AiChatPanel` already exports its
-    // own `ChatMessage` (shipped by `green-frontend` before any read existed) and the api layer is
-    // where the wire rename happens, so there are now two declarations of one concept. TypeScript
-    // is structural, so they cannot diverge by `instanceof` — they diverge silently, by one
-    // growing a field. This fails `tsc` the moment they do; consolidating them is green's or
-    // `/refactor`'s, and moving a shipped production type is not a RED phase's licence to take.
-    expectTypeOf<ChatMessage>().toEqualTypeOf<PanelChatMessage>()
+    // A COMPILE-TIME gate that what this module MAPS TO is exactly what the panel RENDERS. Written
+    // as a claim about the panel's prop rather than about a second `ChatMessage` declaration:
+    // `/refactor` consolidated the two copies into the one above, so a type-to-type comparison is
+    // now tautological, while this still fails `tsc` if the panel re-declares a local row shape or
+    // narrows/widens `messages` — the divergence the two-copy version existed to catch. Structural
+    // typing gives no runtime signal for it, so the compiler is the only place it can be caught.
+    expectTypeOf<ComponentProps<typeof AiChatPanel>['messages']>().toEqualTypeOf<ChatMessage[]>()
   })
 
   // SILENCE MUST REFUSE, and this is the client-layer half of follow-up (bp): `AiChatPanel`
@@ -149,7 +138,7 @@ describe.skip('chatMessagesApi loadChatMessages', () => {
     stubFetch(okJson(body))
 
     const error = await rejectionOf(loadChatMessages('doc-1'))
-    expectErrorIdentity(error, Error, 'Error', FALLBACK)
+    expectErrorIdentity(error, Error, 'Error', CHAT_HISTORY_FALLBACK)
   })
 
   // Per-ROW guards, for the same reason one level down. An unchecked rename yields
@@ -164,7 +153,7 @@ describe.skip('chatMessagesApi loadChatMessages', () => {
     stubFetch(okJson({ items: [message] }))
 
     const error = await rejectionOf(loadChatMessages('doc-1'))
-    expectErrorIdentity(error, Error, 'Error', FALLBACK)
+    expectErrorIdentity(error, Error, 'Error', CHAT_HISTORY_FALLBACK)
   })
 
   // FOLLOW-UP (x)'s closer, and the decision at the top of this file made executable. Pinning
