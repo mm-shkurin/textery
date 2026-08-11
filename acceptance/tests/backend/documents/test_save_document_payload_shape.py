@@ -4,14 +4,14 @@ from statements.document_save_payload_statements import DocumentSavePayloadState
 
 # The four arrangements, referenced as UNBOUND methods rather than as name strings: a
 # rename or a typo is then an AttributeError at collection time, not a row that quietly
-# stops covering the arrangement it is named after.
-EVERY_SAVE_ARRANGEMENT = [
-    DocumentSavePayloadStatements.given_a_save_carrying_no_title_intent,
-    DocumentSavePayloadStatements.given_a_save_carrying_an_explicit_title,
-    DocumentSavePayloadStatements.given_a_save_carrying_a_blank_title,
-    DocumentSavePayloadStatements.given_a_save_carrying_a_whitespace_title,
-]
-ARRANGEMENT_IDS = ["no_title_intent", "explicit_title", "blank_title", "whitespace_title"]
+# stops covering the arrangement it is named after. Keyed BY parametrize id, not paired
+# with a second list, which a reorder of one side alone would relabel silently, green.
+EVERY_SAVE_ARRANGEMENT = {
+    "no_title_intent": DocumentSavePayloadStatements.given_a_save_carrying_no_title_intent,
+    "explicit_title": DocumentSavePayloadStatements.given_a_save_carrying_an_explicit_title,
+    "blank_title": DocumentSavePayloadStatements.given_a_save_carrying_a_blank_title,
+    "whitespace_title": DocumentSavePayloadStatements.given_a_save_carrying_a_whitespace_title,
+}
 
 # "EVERY" is the word in the name, so it is checked rather than promised: a fifth
 # `given_*` added to the Statements class without a line above reopens exactly the hole
@@ -19,7 +19,7 @@ ARRANGEMENT_IDS = ["no_title_intent", "explicit_title", "blank_title", "whitespa
 # catch it. Asserted at IMPORT, so it fails at collection like the rename guard does --
 # a ninth test row would instead silently falsify every "out of 8" count below, which is
 # this file's own recorded failure mode.
-_LISTED = {arrange.__name__ for arrange in EVERY_SAVE_ARRANGEMENT}
+_LISTED = {arrange.__name__ for arrange in EVERY_SAVE_ARRANGEMENT.values()}
 _DEFINED = {n for n in vars(DocumentSavePayloadStatements) if n.startswith("given_")}
 assert _LISTED == _DEFINED, (
     "EVERY_SAVE_ARRANGEMENT must list every `given_*` on "
@@ -187,7 +187,7 @@ class TestSaveDocumentPayloadShape:
         statements.assert_the_whitespace_title_key_was_sent()
 
     @pytest.mark.parametrize(
-        "arrange", EVERY_SAVE_ARRANGEMENT, ids=ARRANGEMENT_IDS
+        "arrange", EVERY_SAVE_ARRANGEMENT.values(), ids=EVERY_SAVE_ARRANGEMENT.keys()
     )
     async def test_a_save_is_dispatched_as_an_authorized_put(
         self, document_save_payload_statements, arrange
