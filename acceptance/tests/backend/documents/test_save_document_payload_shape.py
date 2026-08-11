@@ -13,16 +13,17 @@ EVERY_SAVE_ARRANGEMENT = {
     "whitespace_title": DocumentSavePayloadStatements.given_a_save_carrying_a_whitespace_title,
 }
 
-# "EVERY" is the word in the name, so it is checked rather than promised: a fifth
-# `given_*` added to the Statements class without a line above reopens exactly the hole
-# this parametrization closed, and the comment that used to state this coupling could not
-# catch it. Asserted at IMPORT, so it fails at collection like the rename guard does --
-# a ninth test row would instead silently falsify every "out of 8" count below, which is
-# this file's own recorded failure mode.
+# "EVERY" is the word in the name, so it is checked rather than promised: a fifth save
+# arrangement added to the Statements class without a line above reopens exactly the hole
+# this parametrization closed, which the comment that used to state it could not catch.
+# At IMPORT so it fails at collection like the rename guard -- a ninth row would instead
+# silently falsify every "out of 8" count below, this file's own failure mode. `dir` not
+# `vars`: MEASURED -- under `vars` a fifth arrangement on a BASE is invisible here, green.
+_ARRANGEMENT = "given_a_save_carrying_"
 _LISTED = {arrange.__name__ for arrange in EVERY_SAVE_ARRANGEMENT.values()}
-_DEFINED = {n for n in vars(DocumentSavePayloadStatements) if n.startswith("given_")}
+_DEFINED = {n for n in dir(DocumentSavePayloadStatements) if n.startswith(_ARRANGEMENT)}
 assert _LISTED == _DEFINED, (
-    "EVERY_SAVE_ARRANGEMENT must list every `given_*` on "
+    f"EVERY_SAVE_ARRANGEMENT must list every `{_ARRANGEMENT}*` on "
     f"DocumentSavePayloadStatements: unlisted {_DEFINED - _LISTED}, "
     f"stale {_LISTED - _DEFINED}"
 )

@@ -1478,7 +1478,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   cap mid-run and left one mutation applied on disk despite a `finally` revert; caught by
   `git diff --stat` before continuing. Run ONE mutation per call here — a sweep that dies mid-loop
   leaves the client mutated and every subsequent number meaningless.
-- [ ] harden the completeness guard itself (premortem CREDIBLE #2 on `4cb1cb12`, and the two passes
+- [x] harden the completeness guard itself (premortem CREDIBLE #2 on `4cb1cb12`, and the two passes
   DISAGREE on it — record the disagreement, do not pick a side by default). The module-scope guard
   reads `_DEFINED = {n for n in vars(DocumentSavePayloadStatements) if n.startswith("given_")}`.
   premortem: `vars()` sees the class `__dict__` ONLY, not inherited members — the day this Statements
@@ -1492,7 +1492,52 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   and see which way the guard goes) rather than argue. If premortem is right, the fix is `dir(...)`
   instead of `vars(...)` and an explicit `raise AssertionError` instead of a bare `assert`, which
   costs nothing and survives both inheritance and `-O`.
-- [ ] narrow the guard's prefix from `given_` to `given_a_save_carrying_` (both passes, REMOTE, same
+  **DONE — measured, and BOTH passes were wrong about the mechanism, in opposite directions. The
+  sibling prefix step below was folded into this same unit.** Probes run one per call, each reverted:
+  - shape (a), all four arrangements moved to a base: collection error under `vars()`,
+    `stale {all four}`. Shape (b), ONE moved and three left: collection error, `stale {the one}`.
+    So moving an EXISTING arrangement never silently reopens the hole — premortem's incident as
+    written does not exist. Mechanism neither pass gave: `_LISTED` is built from `arrange.__name__`
+    where the arrange came from ATTRIBUTE ACCESS, which follows the MRO, so the moved name never
+    leaves the listed side while `vars()` drops it from the defined side. The sets diverge, loudly.
+  - `PYTHONOPTIMIZE=1` / `python -O` with a real mismatch: the assert **still fires**. Pytest rewrites
+    asserts in COLLECTED TEST MODULES into explicit raises; pytest's own warning names the boundary —
+    "assertions not in test modules or plugins will be ignored". agent-review's `-O` conclusion was
+    right for a reason neither pass gave. So the `raise AssertionError` half of the named fix buys
+    nothing measurable and was NOT applied.
+  - the shape neither pass wrote down, added because it is the guard's actual job: a FIFTH arrangement
+    declared on a base while the four stay on the subclass. **8 passed, RC 0 — green, with an unlisted
+    and uncovered arrangement.** `vars()` cannot see it. That is the real hole, and it is what
+    `dir(...)` closes: re-measured after the change, `unlisted {'given_a_save_carrying_a_fifth_thing'}`
+    at collection.
+  So premortem was right that `vars()` is a hole and wrong about which edit opens it; agent-review was
+  right that the argued edit fails safe and wrong to conclude the guard needed nothing.
+  `/test-review` re-measured all three independently and overturned one more claim: under `dir()`,
+  moving an existing arrangement to a base is **8 passed, silent** — and the `vars()` collection error
+  it replaces was a FALSE ALARM (the arrangement is still listed, parametrized and covered). So
+  `dir()` is better than the charter credits: it closes the fifth-on-base hole AND removes a spurious
+  failure on a legitimate split — which matters precisely because the 200-line cap makes that split
+  the next likely edit. The file's own comment claims only the fifth-on-base property and is accurate;
+  the error was confined to the review narrative, so nothing shipped needed correcting.
+  `dir()` pulls in nothing unintended: the MRO is `[DocumentSavePayloadStatements, object]` and all 23
+  names it adds over `vars()` are `object` dunders. `_given_a_save_titled` stays excluded by its
+  leading underscore, not by the prefix.
+  TWO NOTES CARRIED. (1) `/test-review` flags a small real LOOSENING in the narrowing: `given_` already
+  matched all four and nothing else, so the narrow prefix bought no false-alarm reduction TODAY while
+  making the guard depend on a naming convention nothing enforces — a fifth arrangement named
+  `given_a_save_with_an_odd_title` escapes the guard entirely. Left as-is (zero headroom, and it is a
+  judgment call, not a defect), but it is the guard's new blind spot and belongs in the next reader's
+  hands. (2) The `-O` resilience covers the GUARD ONLY, not the suite: measured with a mutated expected
+  body, a normal run is `4 failed, 4 passed` and `-O` is `8 passed` — every assertion inside
+  `document_save_payload_statements.py` is stripped, because a Statements module is neither a test
+  module nor a registered plugin. Pre-existing and repo-wide across the Statements-DSL pattern; do not
+  read this unit as making the suite `-O`-safe.
+  Payload rows 8 passed, 0 failed. `tests/backend/documents` 14 failed / 8 passed / 1 skipped — same
+  14 environmental (Docker down). `ruff check` passes. Test file is now **200** — the one line of
+  headroom is spent, and `document_save_payload_statements.py` is also at 200. Both are at the cap:
+  the next assertion added to either forces the split `/refactor` already named (the two blank-title
+  rows move out together).
+- [x] narrow the guard's prefix from `given_` to `given_a_save_carrying_` (both passes, REMOTE, same
   finding): the guard equates "every `given_*` on the class" with "every arrangement the envelope row
   can assert". A future `given_*` that is NOT a single save — a recorder precondition, or one that
   dispatches ≠ 1 request — trips the assert and errors out all 8 rows including 2.1's core absent-key
