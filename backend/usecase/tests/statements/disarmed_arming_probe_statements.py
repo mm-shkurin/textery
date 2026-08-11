@@ -1,8 +1,9 @@
 """The arming check, driven red by a runner environment the child gets to keep.
 
 `LiveHarnessConfigurationStatements` is the one guard that asserts on the run
-executing it rather than on a file. It runs **three** checks, and none of their
-negative arms has ever executed. Two of the three are driven here; the third,
+executing it rather than on a file. It runs **three** checks, and before this
+family none of their negative arms had ever executed. Two of the three are
+driven here; the third,
 `_assert_the_declaration_is_exactly_the_required_entries`, is unreachable by
 either vector below because both short-circuit ahead of it, and is scheduled
 separately with its own vector (`-o filterwarnings=...`).
@@ -32,12 +33,11 @@ is proven against `pyproject.toml` and not against a shell. This family was the
 first `keep_ambient_environment=True` call site and the potency control beside the
 forgotten-await gate is the second; both pay the same price for that exemption --
 scrub by hand what the base no longer scrubs, then put back exactly one vector --
-which is why the mechanics live in the shared `DisarmedChildEnvironment`.
+which is why the mechanics live in the shared `DisarmedChildEnvironment` and the
+steps that wire them into a family live in `KeptAmbientChildBase`.
 """
 
 from pathlib import Path
-
-import pytest
 
 from statements.arming_probe import (
     ARMING_PROBE,
@@ -49,15 +49,11 @@ from statements.arming_probe import (
     UNLOADED_WARNINGS_PLUGIN,
 )
 from statements.child_probe_statements import ChildProbeStatements
-from statements.disarmed_child_environment import DisarmedChildEnvironment
+from statements.kept_ambient_child_base import KeptAmbientChildBase
 
 
-class DisarmedArmingProbeStatements(ChildProbeStatements):
+class DisarmedArmingProbeStatements(KeptAmbientChildBase, ChildProbeStatements):
     """Run the live arming check as a child, under an environment of our choosing."""
-
-    def __init__(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        super().__init__(keep_ambient_environment=True)
-        self._environment = DisarmedChildEnvironment(monkeypatch)
 
     def given_a_runner_environment_that_overrides_the_declared_filters(self) -> None:
         self._disarm_the_child_with_only(COMMAND_LINE_FILTER_OVERRIDE)
@@ -88,45 +84,6 @@ class DisarmedArmingProbeStatements(ChildProbeStatements):
 
     def given_the_live_arming_check_as_the_probe(self, tmp_path: Path) -> None:
         self._write_probe(tmp_path, ARMING_PROBE)
-
-    def run_the_probe_under_the_projects_own_pytest_configuration(self) -> None:
-        """Refused until a vector was chosen -- see `DisarmedChildEnvironment`.
-
-        This family keeps its ambient environment, so a test that forgot its
-        `given_` step would run under whatever the developer's shell carries: green
-        on a clean laptop, red on a runner that exports `PYTEST_ADDOPTS`, and
-        pointing at the harness rather than at the runner either way. The guard runs
-        before the act, not after it, because the entire cost it exists to avoid is
-        paid inside the child.
-        """
-        self._environment.refuse_the_act_until_a_vector_was_chosen()
-        super().run_the_probe_under_the_projects_own_pytest_configuration()
-
-    def run_the_probe_expecting_it_to_be_refused(self) -> None:
-        """The act for this family's arrangement guard -- see the sibling family.
-
-        The sibling ships the same two steps. Collapsing them into a shared base is
-        the refactor that was deliberately held until this guard landed, since what
-        such a base would naturally also carry is the guarded act above.
-        """
-        with pytest.raises(AssertionError) as refusal:
-            self.run_the_probe_under_the_projects_own_pytest_configuration()
-        self._environment.record_the_refusal(refusal.value)
-
-    def assert_the_refusal_named_the_unchosen_environment(self) -> None:
-        self._environment.assert_the_refusal_named_the_unchosen_environment()
-
-    def assert_no_child_was_run_before_the_refusal(self) -> None:
-        """What keeps the guard from being satisfied by a check placed *after* the run.
-
-        It was never red on its own: while the act was unguarded the `pytest.raises`
-        above failed with `DID NOT RAISE` inside the act itself, so the test body
-        never reached its assertion phase and this step was dead until the guard
-        landed. What it watches now is a guard moved below the child run -- which
-        would raise the identical sentence while paying the whole cost the guard
-        exists to avoid.
-        """
-        self._environment.assert_no_child_was_run_before_the_refusal(self._no_child_was_run())
 
     def assert_the_arming_check_refused_the_command_line_override(self) -> None:
         self._assert_the_arming_check_failed_saying(EXPECTED_OVERRIDE_REFUSAL)

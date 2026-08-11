@@ -18,21 +18,17 @@ the only place that loss can show.
 The sibling family already ships this shape as
 `assert_the_arming_check_passed_under_an_armed_environment`. This is its mirror:
 there, an untouched environment must leave the check passing; here, a touched one
-must leave the gate silent.
+must leave the gate silent. Both pay the same price for keeping their ambient
+environment, and both charge it in the same place: `DisarmedChildEnvironment` for
+the mechanics, `KeptAmbientChildBase` for the steps that wire them in.
 """
 
-import pytest
-
-from statements.disarmed_child_environment import DisarmedChildEnvironment
 from statements.forgotten_await_gate_statements import ForgottenAwaitGateStatements
+from statements.kept_ambient_child_base import KeptAmbientChildBase
 
 
-class DisarmedForgottenAwaitProbeStatements(ForgottenAwaitGateStatements):
+class DisarmedForgottenAwaitProbeStatements(KeptAmbientChildBase, ForgottenAwaitGateStatements):
     """Run the forgotten-await probe under a vector the child is allowed to keep."""
-
-    def __init__(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        super().__init__(keep_ambient_environment=True)
-        self._environment = DisarmedChildEnvironment(monkeypatch)
 
     def given_a_runner_environment_carrying_only(self, variable: str, value: str) -> None:
         """Passed by keyword: this step reads `(variable, value)` and the collaborator
@@ -44,41 +40,12 @@ class DisarmedForgottenAwaitProbeStatements(ForgottenAwaitGateStatements):
     def given_a_runner_environment_carrying_no_vector_at_all(self) -> None:
         """The same kept-ambient child, chosen deliberately to carry nothing.
 
-        `disarm_with_only(None)` is the "chose nothing" state the guard above is
-        careful to keep distinct from "chose nothing yet", and it is what makes the
+        `disarm_with_only(None)` is the "chose nothing" state `KeptAmbientChildBase`'s
+        refusal is careful to keep distinct from "chose nothing yet", and it is what makes the
         negative control differ from the two arms by the vector *alone* -- same
         probe, same `keep_ambient_environment=True` child, same hand scrub.
         """
         self._environment.disarm_with_only(vector=None)
-
-    def run_the_probe_under_the_projects_own_pytest_configuration(self) -> None:
-        """Refused until a vector was chosen -- see `DisarmedChildEnvironment`.
-
-        This family keeps its ambient environment, so a test that forgot its
-        `given_` step would run under whatever the developer's shell carries: green
-        on a clean laptop, red on a runner that exports `PYTEST_ADDOPTS`, and
-        pointing at the harness rather than at the runner either way.
-        """
-        self._environment.refuse_the_act_until_a_vector_was_chosen()
-        super().run_the_probe_under_the_projects_own_pytest_configuration()
-
-    def run_the_probe_expecting_it_to_be_refused(self) -> None:
-        """The act for this family's own refusal test -- see the sibling family.
-
-        The sibling ships the same two steps. They are not collapsed into a shared
-        base yet: the extraction was held until the sibling's act was guarded too --
-        a base would naturally carry the guarded act above -- and that guard has
-        now landed, so the extraction is the next refactor rather than a blocked one.
-        """
-        with pytest.raises(AssertionError) as refusal:
-            self.run_the_probe_under_the_projects_own_pytest_configuration()
-        self._environment.record_the_refusal(refusal.value)
-
-    def assert_the_refusal_named_the_unchosen_environment(self) -> None:
-        self._environment.assert_the_refusal_named_the_unchosen_environment()
-
-    def assert_no_child_was_run_before_the_refusal(self) -> None:
-        self._environment.assert_no_child_was_run_before_the_refusal(self._no_child_was_run())
 
     def assert_the_gate_was_disarmed_by_the_vector(self) -> None:
         """Exit 0 and a clean tally: the forgotten `await` went entirely unnoticed.

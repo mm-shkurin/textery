@@ -87,11 +87,11 @@ class ChildPytestRun:
         """Scrubbed by default, because the default is what every gate but one needs.
 
         `keep_ambient_environment=True` is the single opt-in, and it exists for the
-        one family whose *subject* is a hostile runner environment: the disarmed
-        arming probe has to hand the child a `PYTEST_ADDOPTS` the scrub would
-        otherwise remove. Everywhere else -- the forgotten-await gate above all --
-        the scrub is the reason a green means anything, so it stays the default and
-        the opt-in has to be typed out at the one call site that wants it.
+        families whose *subject* is a hostile runner environment: they have to hand
+        the child a `PYTEST_ADDOPTS` the scrub would otherwise remove. Everywhere
+        else -- the forgotten-await gate above all -- the scrub is the reason a green
+        means anything, so it stays the default, and the two call sites that want it
+        reach it through `KeptAmbientChildBase`, which charges the price beside it.
         """
         self._probe_path: Path | None = None
         self._scratch: Path | None = None

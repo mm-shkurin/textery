@@ -10,8 +10,9 @@ class TestHostileRunnerEnvironmentPotency:
     """Each vector the scrub test relies on must be shown to actually disarm the gate.
 
     Given the forgotten-await probe and a child that keeps its ambient environment
-    When the probe is run under one of the hostile vectors
-    Then the child passes -- the forgotten `await` went entirely unnoticed
+    When the probe is run under one of the hostile vectors, and then under none
+    Then the child passes under each vector -- the forgotten `await` went entirely
+      unnoticed -- and fails without one
 
     The armed control for `TestForgottenAwaitGate`, and its mirror: there the gate
     must bite through the vector, here the vector must be strong enough that the
@@ -24,7 +25,9 @@ class TestHostileRunnerEnvironmentPotency:
     own is also what a probe that never leaked a coroutine would report. What makes
     this a measurement of the *vector* is that both classes parametrise over the
     same `HOSTILE_RUNNER_ENVIRONMENTS` and stage the same `FORGOTTEN_AWAIT_PROBE`,
-    so the environment is the only difference between a run that fails and this one.
+    so the environment is the only difference between a run that fails and this one
+    -- and the last test here closes that argument inside this class, where the
+    isolation mechanism is identical and the vector is the only difference at all.
     """
 
     @pytest.mark.parametrize(("variable", "value"), HOSTILE_RUNNER_ENVIRONMENTS)
@@ -44,7 +47,7 @@ class TestHostileRunnerEnvironmentPotency:
         statements.assert_the_projects_own_configuration_was_in_force()
         statements.assert_the_gate_was_disarmed_by_the_vector()
 
-    def test_should_still_fail_the_forgotten_await_probe_when_the_kept_environment_carries_no_vector(
+    def test_should_still_fail_the_forgotten_await_probe_when_the_kept_environment_carries_no_vector(  # noqa: E501
         self,
         tmp_path,
         disarmed_forgotten_await_probe_statements: DisarmedForgottenAwaitProbeStatements,
@@ -80,13 +83,16 @@ class TestDisarmedForgottenAwaitProbeArrangement:
     only then noticed the unchosen environment raises the identical sentence while
     having already paid the whole cost the guard exists to avoid.
 
-    Green from the day it was written, and that is the point: the guard exists in
-    `DisarmedForgottenAwaitProbeStatements` and nothing watched it. The sibling
-    family got this test as a RED; here the coupling is already in place, so this
-    is the armed control that stops a later refactor from deleting the override --
-    a class that keeps its ambient environment and forgot its `given_` step is
-    green on a clean laptop and red on a runner that exports `PYTEST_ADDOPTS`,
-    diagnosing the harness rather than the runner.
+    Green from the day it was written, and that is the point: the guard existed and
+    nothing watched it. The sibling family got this test as a RED; here the coupling
+    was already in place, so this is the armed control that stops a later refactor
+    from deleting the guard -- a class that keeps its ambient environment and forgot
+    its `given_` step is green on a clean laptop and red on a runner that exports
+    `PYTEST_ADDOPTS`, diagnosing the harness rather than the runner.
+
+    Both families' guards are now the one in `KeptAmbientChildBase`, so this test
+    and its sibling watch the same lines from two different hierarchies -- which is
+    what the extraction traded the duplication for.
     """
 
     def test_should_refuse_the_probe_run_when_no_runner_environment_was_chosen(

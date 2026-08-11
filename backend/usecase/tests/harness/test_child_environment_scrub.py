@@ -8,14 +8,17 @@ class TestChildEnvironmentScrub:
     When a default child's environment is built, and then an opt-in child's
     Then the default removed exactly those and the opt-in removed nothing
 
-    The scrub had exactly one witness -- a parametrised gate test that set a
-    hostile `PYTEST_ADDOPTS` and required the forgotten-await gate to bite anyway.
-    That witness can only watch entries for which a disarming vector exists, and it
-    drives `PYTEST_ADDOPTS` twice; four of the five entries could be deleted with
-    the suite staying green. This asserts on `_child_environment()` directly, which
-    is the only shape that goes red on tuple shrinkage, and it is where the two
-    colour variables belong: they steer no filter, they turn pytest's markup on,
-    and the anchored banner pattern then matches nothing the child drew.
+    Until this test the scrub had exactly one witness -- a parametrised gate test
+    that set a hostile `PYTEST_ADDOPTS` and required the forgotten-await gate to
+    bite anyway. That witness can only watch entries for which a disarming vector
+    exists, and it drives `PYTEST_ADDOPTS` twice; every other entry of the roster
+    could be deleted with the suite staying green. This asserts on
+    `_child_environment()` directly, which is the only shape that goes red on tuple
+    shrinkage, and it is why the roster could then be grown past what any vector
+    reaches: `PY_COLORS`/`FORCE_COLOR` steer no filter, they turn pytest's markup
+    on and the anchored banner pattern then matches nothing the child drew, and
+    `COV_CORE_*` starts a coverage run inside the child. Neither group has a
+    disarming vector, so neither is watchable anywhere but here.
     """
 
     def test_should_scrub_every_steerable_variable_from_a_child_and_keep_them_on_the_opt_in(

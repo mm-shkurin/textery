@@ -58,14 +58,16 @@ class TestDisarmedArmingProbeArrangement:
     Then it refuses, naming the arrangement that was never made
 
     `DisarmedArmingProbeStatements` opts the whole class into
-    `keep_ambient_environment=True`, but the compensating scrub lives in
+    `keep_ambient_environment=True`, while the compensating scrub lives in
     `_disarm_the_child_with_only`, reachable only through the three `given_a_runner_
-    environment_*` steps. Nothing couples "this child keeps its environment" to "a
-    vector was deliberately chosen" -- so the already-scheduled third-arming-arm test
-    can be written without a `given_` step, pass on a clean laptop, and fail on a
-    runner that exports `PYTEST_ADDOPTS`, diagnosing the harness rather than the
-    runner. That is not a hypothesis about a future test; it is the shape the next
-    scheduled test in this file will be written in.
+    environment_*` steps. Nothing in that arrangement couples "this child keeps its
+    environment" to "a vector was deliberately chosen"; the guard in
+    `KeptAmbientChildBase` is what couples them, and this test is what holds it
+    there. Without it the already-scheduled third-arming-arm test could be written
+    without a `given_` step, pass on a clean laptop, and fail on a runner that
+    exports `PYTEST_ADDOPTS`, diagnosing the harness rather than the runner -- and
+    that is not a hypothesis about a future test; it is the shape the next scheduled
+    test in this file would otherwise be written in.
 
     The `None` case is inside the guard on purpose. `given_a_runner_environment_that_
     leaves_the_suite_armed` chooses an untouched environment, and "chose nothing" must
