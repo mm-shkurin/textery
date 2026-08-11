@@ -10,16 +10,14 @@ class TestDisarmedArmingProbe:
     Then the child fails, naming the vector that disarmed it -- while the same
       check under an untouched environment passes
 
-    All three checks `LiveHarnessConfigurationStatements` runs end in a `raise` or a
-    bare `assert`, none of which coverage.py counts as a branch, and none of the three
-    had ever executed -- the file reported 26 of 27 lines covered throughout. The
-    evidence that they bite was a terminal session. This is that session, written down
-    as three tests and a control.
+    None of the three checks `LiveHarnessConfigurationStatements` runs had ever
+    executed on its failing side, and no report could say so. The evidence that they
+    bite was a terminal session; this is that session, written down as three tests
+    and a control.
 
-    One vector per arm, and they cannot be pooled: the checks run in sequence, so a
-    vector that trips an earlier one short-circuits the rest. The third test is the
-    only one whose vector has to pass the first two checks honestly in order to be
-    judged by the third.
+    One vector per arm, and they cannot be pooled. Why -- and why the third vector is
+    the only one that has to pass the first two checks honestly to be judged by the
+    third -- is in `DisarmedArmingProbeStatements`.
     """
 
     def test_should_fail_the_arming_check_when_a_runner_env_overrides_the_declared_filters(
@@ -110,16 +108,12 @@ class TestArmingProbeRoster:
     When the roster is read off the module rather than transcribed from it
     Then it is exactly the known names, and every vector is named by a `given_` step
 
-    Each constant in `arming_probe.py` is referenced from exactly one step, and
-    until now nothing compared the roster whole -- so a fourth vector would have
-    been driven by no test and flagged by no report. That is this family's own
-    history rather than a worry about it: the third arm's vector was named in a
-    module docstring as "scheduled separately", went unscheduled for the file's
-    whole life, and could not surface as a coverage gap because the arm it belonged
-    to is a bare `assert`. A fourth is already known to be waiting --
-    `assert_the_unraisable_plugin_is_loaded_in_this_run`'s `assert loaded is True`
-    has never failed in any process either, and its message names the
-    `-p no:unraisableexception` that would drive it.
+    Each constant in `arming_probe.py` is referenced from a single place in
+    `DisarmedArmingProbeStatements`, and until now nothing compared the roster
+    whole -- so a fourth vector would have been driven by no test and flagged by no
+    report. Why that is this family's own history rather than a worry about it, and
+    why the roster is discovered rather than transcribed, is in
+    `ArmingProbeRosterStatements`.
     """
 
     def test_should_declare_exactly_the_known_probe_constants(

@@ -58,6 +58,7 @@ from statements.arming_probe import (
     NOT_THE_DISARMED_ENVIRONMENT,
     REWRITTEN_FILTER_DECLARATION,
     UNLOADED_WARNINGS_PLUGIN,
+    ArmRefusal,
 )
 from statements.child_probe_statements import ChildProbeStatements
 from statements.kept_ambient_child_base import KeptAmbientChildBase
@@ -136,7 +137,7 @@ class DisarmedArmingProbeStatements(KeptAmbientChildBase, ChildProbeStatements):
         """
         self.assert_the_probe_suite_passed()
 
-    def _assert_the_arming_check_failed_saying(self, expected: tuple[str, ...]) -> None:
+    def _assert_the_arming_check_failed_saying(self, expected: ArmRefusal) -> None:
         """The tally, the charged test, and both clauses of the sentence -- all or none.
 
         The arming check is the only test in the probe, so anything else in the
