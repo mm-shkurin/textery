@@ -2287,6 +2287,45 @@ within their file, not across the story.
       **213 passed, 0 failed, 0 skipped** (211 after RED, +2 from the roster guard).
       *Process note carried:* `git checkout -- <file>` to revert a potency mutation silently discards
       uncommitted edits to that file. Use a scratch copy for mutations on an uncommitted file.
+      **`/refactor` (commit `508b3c2e`) and both review passes over `653f33ab` independently found the
+      same two defects, and the refactor had already fixed them by the time the passes reported** — the
+      roster guard written to kill snapshots was itself inert in this family's signature way, twice over.
+      (1) *A linkage check that counted docstrings.* `_vector_names_the_given_steps_use` matched constant
+      names as substrings of `inspect.getsource(...)`, which returns the docstring — so a step that merely
+      **mentioned** a vector in prose counted as having spent it, and a copy-pasted step arrives carrying
+      the copied docstring. Both passes named it; the refactor proved it rather than argued it (a step
+      rewritten to name its vector only in prose passes the old check, fails the AST-based replacement)
+      and it now reads `ast.Name` nodes. This family's docstrings are unusually long and habitually name
+      constants, so the false-positive substrate was already in the file.
+      (2) *Two literal sets free to drift apart.* The method built its result by filtering
+      `EXPECTED_VECTORS`, so the equality could only ever mean "nothing is missing" — it was structurally
+      incapable of seeing a vector not already hand-listed. Worse one step downstream, which is the
+      premortem's incident verbatim: when the membership guard reddens, its message names exactly one
+      place to fix, the author adds the name to `EXPECTED_ROSTER`, the suite goes green, and the fourth
+      vector is driven by no step — **the exact state this work unit exists to prevent, now with a passing
+      guard on top of it.** The roster is a partition now
+      (`EXPECTED_VECTORS | EXPECTED_SENTENCES | EXPECTED_PROBE_SOURCE | EXPECTED_TYPES`), so a name cannot
+      enter without being classified, and the reader narrows to the whole declared roster. Still all
+      hand-written literals — the union derives from this file's own expectations, never from the guarded
+      module, so the double-entry argument survives. Declined: deriving `EXPECTED_ROSTER` from the
+      consumer's import list, which would have gutted the guard (an author adding a constant imports it in
+      the same motion, so both sides move together — `steerable_child_variables.py:66-70` already records
+      this as house style).
+      The premortem's second credible finding is closed by the same refactor: `_assert_the_failure_was_
+      charged_to` took `tuple[str, ...]` where a bare `str` degrades to per-character `contains` calls,
+      each trivially true, and the only new guard rejected `()` — the mistake nobody makes — while passing
+      the one the signature change had just made available. `ArmRefusal` is a NamedTuple now, so a missing
+      half is a construction error.
+      **Three findings survive the refactor and are follow-ups, not inputs to anything already scheduled:**
+      (a) `_declared_names()` filters on `not name.startswith("_")`, so a `_`-prefixed vector escapes the
+      roster entirely and **both** guards stay green — the cheapest version of the same hole;
+      (b) the commit's own thesis turned on itself — `_assert_the_failure_was_charged_to`'s non-empty
+      `assert` is a new bare assert that has never executed on its failing side and, by this unit's own
+      argument, never can surface as a coverage gap. Lower stakes (it guards a caller mistake, not the
+      product), but it is the same debt, newly incurred;
+      (c) no test asserts the linkage reader ignores docstrings — the AST fix is correct but unwatched, so
+      a revert to substring matching is green.
+      `arming_probe_roster_statements.py` is at **190 lines**; the next addition needs a split.
 - [S] green-usecase (coverage: third arming arm refuses a rewritten declaration) — **`[S]` verified, not
       assumed.** The line-358 lesson is that a `/test-review` fix can reach across into production and
       falsify the "zero production files modified" premise a skip rests on. Checked here against
