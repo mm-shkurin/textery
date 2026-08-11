@@ -2098,8 +2098,51 @@ within their file, not across the story.
       both now assert `_no_child_was_run()`. It verified the RED survives its own strictness by
       stripping the markers through an out-of-tree plugin (no file edits) and re-confirming both
       recorded failure reasons.
+      `/refactor` (commit after `e1bb5864`) declined the obvious duplication on merit: the three
+      refusal steps are near-verbatim across the two disarmed families, but a shared base would
+      naturally also carry the *guarded* act, and the arming family's act being unguarded IS the
+      recorded RED — extraction belongs after the green. It applied two docstring corrections only,
+      both naming a public `child_environment()` that does not exist (same defect class as this
+      commit's own fourth deliverable). **207 passed, 2 skipped, 0 failed.**
 - [~] green-usecase (the scrub is watched through one variable of five, and the vectors' own potency
-      is asserted nowhere)
+      is asserted nowhere) — **both review passes over `e1bb5864` returned CONCERNS; three items are
+      inputs to this green, not follow-ups for later.**
+      (a) *premortem CREDIBLE 1 — the potency control is itself the seventh inert guard.*
+      `test_hostile_runner_environment_potency.py` asserts one direction only: the probe **passes**
+      under each vector in a kept-ambient child. Its docstring claims the vector is "the only
+      difference between a run that fails and this one", and that is false of the shipped code —
+      the sibling `TestForgottenAwaitGate` runs a *scrubbed* child, so the two differ by the vector
+      *and* by the isolation mechanism *and* by every ambient variable outside
+      `REQUIRED_SCRUBBED_VARIABLES`. `{passed: 1}` is therefore equally explained by "a kept-ambient
+      child cannot fail this probe at all". The asymmetry is the tell: the arming family ships 2
+      disarmed arms + 1 armed control, this one ships 2 arms and no control.
+      `disarm_with_only(vector=None)` already exists as the "chose nothing" state — add
+      `test_should_still_fail_the_forgotten_await_probe_when_the_kept_environment_carries_no_vector`
+      and require the failure to name the unawaited coroutine.
+      (b) *premortem CREDIBLE 2 — `COV_CORE_*` is steerable and is on neither roster.* `pytest-cov`
+      exports `COV_CORE_SOURCE`/`COV_CORE_CONFIG`/`COV_CORE_DATAFILE`, and its `.pth` bootstrap starts
+      coverage in any child that inherits them; this commit doubles the kept-ambient child count and
+      those children run with `cwd=BACKEND_ROOT`, so `/test-coverage` writes stray `.coverage.*` files
+      into the repo root and merges probe-module lines into the combined report. `COV_CORE_*` loads a
+      plugin into the child — squarely inside `steerable_child_variables.py`'s stated scope — and is
+      neither listed nor excluded-with-a-reason, unlike `PYTHONWARNINGS`, which got a paragraph.
+      The roster pin is bidirectional (`removed == set(REQUIRED_SCRUBBED_VARIABLES)`), so this must be
+      closed on **both** sides deliberately or recorded as a measured exclusion — assumed is not
+      enough, that is this file's own standard.
+      (c) *agent-review — a fourth stale-prose claim, introduced by the commit that fixed three.*
+      Two docstrings in `disarmed_arming_probe_statements.py` say
+      `assert_no_child_was_run_before_the_refusal` is "red independently" / "red for a second reason".
+      It is not: `pytest.raises` fails inside the **act** with `DID NOT RAISE`, so the body never
+      reaches its assertion phase and that step is dead until the guard lands. One-line correction.
+      Rated non-blocking by agent-review and recorded so it is not re-litigated: it verified the RED
+      reproduces word for word, and independently proved the potency control discriminates — with a
+      deliberately inert vector (`PYTEST_ADDOPTS=-q`) the disarmed family goes red on
+      `PytestUnraisableExceptionWarning`. It is a real measurement, which is why (a) is about the
+      *missing control*, not about the arms being tautological.
+      Premortem REMOTE, tracked not scheduled: two skip markers are cleared by this single green step —
+      clearing one and forgetting the other leaves the roster unpinned with a fully green suite; and the
+      three added child runs at `PROBE_TIMEOUT_SECONDS = 180` still surface as an outputless
+      `TimeoutExpired` (the already-scheduled diagnosability item).
 - [ ] red-usecase (coverage: third arming arm refuses a rewritten declaration) —
       **the one arm this unit's own diff promises and does not deliver.**
       `disarmed_arming_probe_statements.py`'s module docstring states it outright: the third check,

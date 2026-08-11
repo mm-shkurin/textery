@@ -8,7 +8,7 @@ green in exactly the state they exist to reject.
 Two consumers, and they are deliberately different in kind:
 
 * `child_environment_scrub_statements.py` compares this roster against what
-  `ChildPytestRun.child_environment()` actually removes, in both directions. That
+  `ChildPytestRun._child_environment()` actually removes, in both directions. That
   is the pin: `LEAKY_CHILD_VARIABLES` may neither shrink below this roster nor grow
   beyond it without a red test.
 * `DisarmedChildEnvironment` scrubs *this* roster by hand for the two families that

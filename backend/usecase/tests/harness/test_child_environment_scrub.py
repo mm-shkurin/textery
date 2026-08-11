@@ -20,7 +20,7 @@ class TestChildEnvironmentScrub:
     hostile `PYTEST_ADDOPTS` and required the forgotten-await gate to bite anyway.
     That witness can only watch entries for which a disarming vector exists, and it
     drives `PYTEST_ADDOPTS` twice; four of the five entries could be deleted with
-    the suite staying green. This asserts on `child_environment()` directly, which
+    the suite staying green. This asserts on `_child_environment()` directly, which
     is the only shape that goes red on tuple shrinkage, and it is where the two
     colour variables belong: they steer no filter, they turn pytest's markup on,
     and the anchored banner pattern then matches nothing the child drew.
