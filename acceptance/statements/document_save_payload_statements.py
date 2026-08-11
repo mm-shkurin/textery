@@ -71,35 +71,37 @@ class DocumentSavePayloadStatements:
 
     async def given_a_save_carrying_no_title_intent(self) -> None:
         """`title=None` — the spelling the content-only autosave row uses."""
-        await self._recording_client.save_document(
-            document_id=DOCUMENT_ID_ON_THE_WIRE,
-            content=CONTENT_ON_THE_WIRE,
-            version=VERSION_ON_THE_WIRE,
-            access_token=ACCESS_TOKEN_ON_THE_WIRE,
-            title=None,
-        )
+        await self._given_a_save_titled(None)
 
     async def given_a_save_carrying_an_explicit_title(self) -> None:
         """The titled spelling the export-filename rows use."""
-        await self._recording_client.save_document(
-            document_id=DOCUMENT_ID_ON_THE_WIRE,
-            content=CONTENT_ON_THE_WIRE,
-            version=VERSION_ON_THE_WIRE,
-            access_token=ACCESS_TOKEN_ON_THE_WIRE,
-            title=TITLE_ON_THE_WIRE,
-        )
+        await self._given_a_save_titled(TITLE_ON_THE_WIRE)
 
     async def given_a_save_carrying_a_blank_title(self) -> None:
         """`title=""` — scenario 3.2's blank value, where a blank-but-present title is
         the whole subject. Spelled as a literal at
         `tests/backend/documents/test_export_document_acceptance.py:142` and forwarded
         to the client at `document_blank_title_save_statements.py:74-80`."""
+        await self._given_a_save_titled(BLANK_TITLE_ON_THE_WIRE)
+
+    async def _given_a_save_titled(self, title: str | None) -> None:
+        """The one save call all three rows make, with the ONE argument that differs.
+
+        Written as a parameter rather than three linear bodies for the same reason
+        `BLANK_TITLED_BODY` is written as `NO_TITLE_INTENT_BODY` plus a key: the entire
+        claim of this file is that the rows are identical requests EXCEPT for `title`.
+        Three copies of the call state that by resemblance, and a stray edit to
+        `content` or `version` in one of them would leave the expected-body constants —
+        which are all composed from `NO_TITLE_INTENT_BODY` — asserting a difference the
+        arrange never intended to make. Here the sameness is structural, so the only
+        thing a row can vary is the thing it is named after.
+        """
         await self._recording_client.save_document(
             document_id=DOCUMENT_ID_ON_THE_WIRE,
             content=CONTENT_ON_THE_WIRE,
             version=VERSION_ON_THE_WIRE,
             access_token=ACCESS_TOKEN_ON_THE_WIRE,
-            title=BLANK_TITLE_ON_THE_WIRE,
+            title=title,
         )
 
     def assert_the_title_key_was_omitted_entirely(self) -> None:

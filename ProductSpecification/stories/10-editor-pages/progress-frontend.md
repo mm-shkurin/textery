@@ -1021,6 +1021,14 @@ pagination failure.
   branching on `pattern.source === '^never$'` defeats any finite set of behavioural controls — out
   of reach by construction, and not the plausible-simplification class these target. Tests 18 passed
   | 3 skipped | 0 failed. Cap: patterns 200 — **at the limit again**.
+  **WORK UNIT INCOMPLETE — the behaviour commit `42a72db0` landed, the `/refactor` batch did NOT.**
+  `/refactor`, `agent-review`, and `premortem` were dispatched over `42a72db0` and all three
+  terminated on an API session limit before producing anything. So this unit has, uniquely among
+  the four in this block, **no fresh-context pass over it** — the three preceding units each had
+  their shipped claim found false by exactly that pass, so the base rate here is 3 for 3 and the
+  absence is a live risk, not a formality. Re-run the batch over `42a72db0` before treating this
+  row as settled, and expect it to find something. The `/refactor` brief also carried the
+  headroom question, which is why the row below is still blocked.
   Original charter — **the negative control certifies ONE
   BOOLEAN BIT — "did any probe match?" — not per-probe application, and the header asserts the
   opposite as an absolute.** The shipped claim is "pinning `actual` … forces the pattern to have
