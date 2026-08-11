@@ -961,7 +961,49 @@ pagination failure.
   every `expect(state).toStrictEqual({` line — pinned to an exact count (2 for `measuring`, 1 for
   `laidOut`). Fold into the `.skip`-count step; both read the same two source texts for the same
   reason.
-- [~] red-frontend (residual measured by `/test-review` over `ed2ab7bb`, stated as a limit in the
+- [~] red-frontend (premortem CREDIBLE 1 over `ad850488`) — **nothing proves the probe helper
+  DISCRIMINATES, and the refactor commit made it the single point of failure for all four cases.**
+  `expectPartition(pattern, accepted, rejected)` filters the concatenation by `pattern` and compares
+  against those same two arrays. Rewrite the body to `expect({accepted, rejected}).toStrictEqual({
+  accepted, rejected })` — a plausible "the filter was doing the same thing" simplification — and all
+  four cases pass with `pattern` never read. No lint rule here fails an unused function parameter
+  preceded by used ones. The whole behavioural leg goes vacuous in ONE edit in ONE file, and the
+  `.source` checksum cannot see it because no regex text changed. This is NOT the vacuity the header
+  claims to cover (that argument is about a probe list emptied to `[]`; this is the comparator
+  neutralised). Guard, named: a negative control — feed a deliberately-wrong pattern to the same
+  helper, `expectPartition(/^never$/, [], [...MUST_MATCH_VALUES, ...MUST_NOT_MATCH_VALUES])` — red
+  the moment the helper stops consulting `pattern`. One case.
+- [ ] red-frontend (agent-review CONCERNS 1 over `ad850488` + premortem CREDIBLE 2, the same
+  finding from two directions) — **the probe LISTS are unpinned, so the advertised "three edits in
+  two files" attacker floor is one deletion in one file for the headline mutant.** Both headers and
+  the commit message claim the `.source` checksum covers "a probe list quietly emptied so its own
+  case passes vacuously". It does not: emptying a `MUST_NOT_MATCH_*` array is not a regex edit, the
+  checksum is byte-identical, and the probe case compares the partition against those same lists —
+  `{accepted: [], rejected: []}` equals itself. Worst for `PINNED_ASSIGNMENT`, which is deliberately
+  excluded from the checksum: delete the single member `'pageCount: 4'` from
+  `MUST_NOT_MATCH_ASSIGNMENTS` and the non-greedy `(.+?),?$` widening — the one `ad850488` names as
+  its headline kill and measured as leaving BOTH consumers green — is legal again with no leg left.
+  Guard, named: pin the eight list lengths in one `toStrictEqual`, which covers all four probes;
+  adding `PINNED_ASSIGNMENT.source` to the checksum closes the pattern half only, so the length pin
+  is the stronger of the two. Fold the `.flags` REMOTE into the same object while it is open —
+  `.source` excludes flags (traced: `/g`, `/i` redden loudly today, `/m` is a genuine no-op, so no
+  silent path exists — it is free, not urgent).
+- [ ] docs, fold into the next edit of these two files (agent-review CONCERNS 2 + 3 + notes over
+  `ad850488`) — **three coverage claims in the headers are false, and this story keeps reddening on
+  exactly that class.** (a) `PINNED_ASSIGNMENT`'s exemption from the pin is justified as
+  "`constantSites` … already moves on any change to either" — it moves only on changes that alter
+  what the CURRENT source lines yield, and the commit message itself disproves the general claim.
+  The honest rationale is "its probe is the only leg", which is an argument for pinning it, not
+  exempting it. (b) `PINNED_FIELDS` is excused as "widening IS caught — it lengthens `constantSites`'
+  hand-typed list", true only for fields already present in the two ingested files: adding
+  `|totalPages` (a field whose near-miss line already sits in the rejected probe list) lengthens
+  nothing, moves no count, leaves everything green, and silently widens `PINNED_ASSIGNMENT`, which
+  is built from it. (c) `fixtureUsage.source.ts` says "the four patterns in this module" while five
+  exist — `FIXTURE_IMPORT` is neither exported, probed, nor pinned. Its coverage is materially fine
+  (`constantSites` pins `fixtureImports` as a hand-typed specifier list, so a path-widening admits
+  the `vitest` import and lengthens it), but the COUNT is wrong, in a header slot this story has
+  already corrected eight times.
+- [ ] red-frontend (residual measured by `/test-review` over `ed2ab7bb`, stated as a limit in the
   header rather than closed) — **deleting a whole `it` (opener, `expect`, and its four pinned
   lines) moves blocks and cases DOWN TOGETHER, so the derived leg cannot see it, and the only leg
   that can is the hand-typed `EXPECTED_EXPECTATION_BLOCKS` — one token wide.** Measured: delete

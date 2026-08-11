@@ -128,56 +128,38 @@ const MUST_NOT_MATCH_VALUES: readonly string[] = [
   'NO_SKELETONS + 1',
 ]
 
-interface Partition {
-  readonly accepted: readonly string[]
-  readonly rejected: readonly string[]
-}
-
 /**
- * The probe array is built FROM the two expected lists, so neither side of any comparison below is
- * a second spelling of the other. A pattern that changes its mind about one probe moves that probe
+ * The probe array is built FROM the two expected lists, so neither side of the comparison is a
+ * second spelling of the other. A pattern that changes its mind about one probe moves that probe
  * between the two halves of the received value and the named line prints in the diff.
  */
-const partitionOf = (
+const expectPartition = (
   pattern: RegExp,
-  mustMatch: readonly string[],
-  mustNotMatch: readonly string[],
-): Partition => {
-  const probes = [...mustMatch, ...mustNotMatch]
-  return {
+  accepted: readonly string[],
+  rejected: readonly string[],
+): void => {
+  const probes = [...accepted, ...rejected]
+  expect({
     accepted: probes.filter((probe) => pattern.test(probe)),
     rejected: probes.filter((probe) => !pattern.test(probe)),
-  }
+  }).toStrictEqual({ accepted, rejected })
 }
 
 describe('the source patterns, as the narrowness their consumers assume', () => {
   it('admits only `<pinned field>: <expression>,` on one trimmed line', () => {
-    expect(
-      partitionOf(PINNED_ASSIGNMENT, MUST_MATCH_ASSIGNMENTS, MUST_NOT_MATCH_ASSIGNMENTS),
-    ).toStrictEqual({
-      accepted: MUST_MATCH_ASSIGNMENTS,
-      rejected: MUST_NOT_MATCH_ASSIGNMENTS,
-    })
+    expectPartition(PINNED_ASSIGNMENT, MUST_MATCH_ASSIGNMENTS, MUST_NOT_MATCH_ASSIGNMENTS)
   })
 
   it('admits only a whole-state `toStrictEqual` opener — never the `toMatchObject` downgrade', () => {
-    expect(
-      partitionOf(EXPECTATION_OPENER, MUST_MATCH_OPENERS, MUST_NOT_MATCH_OPENERS),
-    ).toStrictEqual({ accepted: MUST_MATCH_OPENERS, rejected: MUST_NOT_MATCH_OPENERS })
+    expectPartition(EXPECTATION_OPENER, MUST_MATCH_OPENERS, MUST_NOT_MATCH_OPENERS)
   })
 
   it('counts only `it(` and `it.skip(` as a case opener', () => {
-    expect(partitionOf(CASE_OPENER, MUST_MATCH_CASES, MUST_NOT_MATCH_CASES)).toStrictEqual({
-      accepted: MUST_MATCH_CASES,
-      rejected: MUST_NOT_MATCH_CASES,
-    })
+    expectPartition(CASE_OPENER, MUST_MATCH_CASES, MUST_NOT_MATCH_CASES)
   })
 
   it('admits only a named constant, a field of one, or `null` — never a bare number', () => {
-    expect(partitionOf(NAMED_VALUE, MUST_MATCH_VALUES, MUST_NOT_MATCH_VALUES)).toStrictEqual({
-      accepted: MUST_MATCH_VALUES,
-      rejected: MUST_NOT_MATCH_VALUES,
-    })
+    expectPartition(NAMED_VALUE, MUST_MATCH_VALUES, MUST_NOT_MATCH_VALUES)
   })
 
   it('pins the source text of the three patterns no consumer list covers', () => {
