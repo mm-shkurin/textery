@@ -6,15 +6,16 @@ from clients.application.dto.document.get_document_response_dto import (
     GetDocumentResponseDto,
 )
 from statements.document_arrange_statements import (
+    DRAFT_STATUS,
     SUPPORTED_DOCUMENT_TYPE,
     DocumentArrangeStatements,
 )
 
-# The whole state a freshly created document is in, pinned as literals rather than
-# echoed back from the response. Document.create hardcodes them (domain/document.py:
+# The rest of the state a freshly created document is in, pinned as literals rather
+# than echoed back from the response. Document.create hardcodes them (domain/document.py:
 # status=draft, content="", version=1), so an assertion that read them out of the very
-# response under test would pass for any value the server chose to invent.
-DRAFT_STATUS = "draft"
+# response under test would pass for any value the server chose to invent. `status` is
+# the same claim and shares DRAFT_STATUS, imported above.
 FRESH_DOCUMENT_CONTENT = ""
 VERSION_AFTER_CREATE = 1
 # Slack on the created_at/updated_at window: the stamp is taken by the server clock,

@@ -1264,8 +1264,11 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   bound, `created_at <= updated_at`) and `assert_save_advanced_the_update_stamp` (strict `>`, save
   rows only — the one assertion a short-circuiting green cannot fake). It also removed
   `_assert_setup_save_succeeded` from 3.2's arrange: that save is 3.2's ACT, and reporting it as
-  broken setup contradicted the sibling's own stated convention; replaced by a named Then step
-  pinning the full 9-key write shape, which pins `title` off the save response for the first time —
+  broken setup contradicted the sibling's own stated convention; replaced by
+  `_assert_the_save_returned_the_surviving_title` pinning the full 9-key write shape — a PRIVATE
+  helper called from inside `assert_blank_title_save_persisted_the_document`, not a step the test
+  class names (this line said "named Then step" and agent-review caught it as a false claim about
+  the very nesting convention the block argues for). It pins `title` off the save response —
   3.2's central claim previously rested on the export header alone.
   CARRIED, refactor-scope, not folded as steps: `DRAFT_STATUS` is duplicated THREE ways (a third
   site, `document_page_settings_read_statements.py:17`, joined since this block was written); the
@@ -1286,6 +1289,56 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   `given_a_save_carrying_a_blank_title()` over `save_document(title="")`, whole-body equality against
   `{**NO_TITLE_INTENT_BODY, "title": ""}`. Nothing in the repo goes RED on
   `if title is not None` → `if title:` today.)
+- [ ] red-acceptance (agent-review #1 on `84e47dff`, and the finding is that the pin I just argued
+  hardest for discriminates nothing: **`assert_save_advanced_the_update_stamp` cannot detect the
+  refusal it was written to detect.** Its docstring claims "a save that never ran cannot move a clock
+  it never read" — true only for a document created and saved exactly once. Neither row is that. Both
+  arrange through `_document_carrying_the_cyrillic_title` (`document_export_filename_statements.py:57-70`),
+  which performs a title-bearing setup save, and `SaveDocument` stamps `updated_at=self.clock.now()`
+  on it — so `updated_at > created_at` is already true BEFORE the act save is issued, at all four call
+  sites. A green that accepts the setup save and then refuses the act save passes. The discrimination
+  is still carried entirely by the `version` and `content` literals the docstring dismisses as
+  fakeable. Fix: capture `updated_at` off the SETUP save's response and assert the act save advanced
+  past THAT, not past `created_at`. The commit message and this file both currently record a guard
+  the code does not provide.)
+- [ ] red-acceptance (premortem CREDIBLE #1 on `84e47dff`, converging with agent-review #2 and with
+  the carried duplication note: **the shared kit bounds stamps by a wall-clock age heuristic against
+  the wrong clock, and it is now on the path of every caller.** `MAX_STAMP_AGE = 2min` /
+  `CLOCK_SKEW_TOLERANCE = 5s` compare the CONTAINER's stamp to the RUNNER's `datetime.now(utc)`, and
+  `assert_document_timestamps` fires from inside `assert_document_body`, so one Docker Desktop clock
+  drift after a laptop sleep reddens every row at once — including pure shape assertions that have
+  nothing to say about time — with a message blaming the backend. The blank-title row is the budget
+  risk in the other direction: auth arrange, create, title save, blank save, a PDF render+export and
+  a GET all sit inside the 2 minutes, so a cold CI runner reports slowness as a shape defect. And the
+  window is weak where it matters: a stamp 110s stale — an `updated_at` wrongly copied from creation —
+  passes. The repo solved this two scenarios earlier and this commit did not adopt it:
+  `document_page_settings_read_statements.py:145-178` records an ARRANGE window around the call and
+  bounds against that, immune to absolute offset. No statement module captures such a bound around a
+  SAVE. Note the two copies of the key-set-equality pair have now DIVERGED on exactly this — recorded
+  window vs. age heuristic — and the weaker copy is the one on the shared path.)
+- [ ] red-acceptance (premortem CREDIBLE #3 on `84e47dff`: **a durable constraint on the write path
+  shipped as a test assertion, phrased as an accusation.** `assert_save_advanced_the_update_stamp`
+  asserts `updated_at > created_at` STRICTLY and its message hard-codes one reading of equality
+  ("created but never actually saved"). The obvious efficiency win — `SaveDocument` skipping the
+  UPDATE when content and title are unchanged — turns two rows red with a message that diagnoses a
+  broken save, so the engineer reverts working code. The constraint "a save always touches the clock,
+  even for an identical payload" is arguably correct but is stated nowhere the backend session reads:
+  not in this file, not in the API spec, and in no scenario that would go red on the no-op
+  optimization for the RIGHT reason. Either pin it as a product claim or stop asserting it strictly.)
+- [ ] red-acceptance (agent-review #3 on `84e47dff`, small and mechanical: `assert_document_timestamps`
+  runs TWICE per save body — once from `assert_document_body`'s last line, once from
+  `assert_save_advanced_the_update_stamp`'s first — against two different `now` values. A body at the
+  `MAX_STAMP_AGE` boundary can pass the first and fail the second, pointing the failure at the wrong
+  assertion. Folded here rather than dismissed because the fix falls out of the two findings above.)
+- [ ] fix the build-provenance hole (premortem CREDIBLE #2 on `84e47dff`, and it is the one to act on
+  first because it invalidates evidence rather than producing noise): `infra/docker-compose.yml` gives
+  the backend NO source mount, and **this work unit already got bitten** — probe A's RED came from a
+  39-minute-old image still carrying the previous session's DTO deletion, not from the checkout. The
+  mechanism runs symmetrically: a stale image serving old-but-correct code greens the suite over a
+  broken checkout. `git grep` for `build_sha|git_sha|/version|BUILD_` across `backend/adapters/rest`
+  and `acceptance` returns NOTHING, so every acceptance verdict in this repo — red and green alike —
+  is unattributed to a commit. Cheap fix: one build-identity field on the health route, one assert in
+  the suite's entry fixture pinning it to the checkout's HEAD.
 - [ ] red-acceptance (BOTH passes on `1228fd65`, same gap class one field over: **the `Authorization`
   header is client-manufactured and unasserted anywhere in the repo.** `RecordedRequest` carries
   `method`/`path`/`body` and the commit's own argument for pinning the save URL — "unasserted anywhere

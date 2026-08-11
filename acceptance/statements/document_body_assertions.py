@@ -9,9 +9,18 @@ wall-clock timestamps to the window this test run occupies.
 
 Held once here because it is *assertion* logic, not setup: the guard and the field
 pin were verbatim copies in the two rows, differing only in the noun naming the
-call. `document_page_settings_read_statements` hand-rolls a third variant of the
-guard against its own read; it is left alone deliberately (a different scenario,
-its own committed row) and can adopt this module when it is next touched.
+call. `document_page_settings_read_statements` runs the same two-step SHAPE against
+its own read (key-set equality, then a value comparison) and will keep doing so:
+adoption was examined and DECLINED, not deferred again. Three things it would cost,
+none of them cosmetic. Its key set is a ClassVar pinned to the OpenAPI schema
+(documents_get.yaml properties), so it stays correct independently of what any caller
+remembers to name; derived here from `expected.keys()`, it would only ever restate the
+caller. Its failure message names the specific failure the scenario exists to catch (a
+materialized page-settings default flattened onto the body) -- the message IS the
+row's content, and this module's generic wording cannot carry it. And its timestamps
+are bound to the recorded ARRANGE window and asserted EQUAL (a never-saved document),
+which is strictly tighter than the run-window bound here; adopting would add a second,
+weaker stamp check beside the real one. Different claims that happen to share a shape.
 
 Distinct from `setup_assertions.assert_setup_ok`, which pins ARRANGE calls and says
 so in its message ("setup: ..."). These assertions are the act under test, so a

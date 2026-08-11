@@ -16,6 +16,12 @@ from clients.application.dto.auth.verify_request_dto import VerifyRequestDto
 
 ACCOUNT_PASSWORD = "Str0ng!Pass"
 SUPPORTED_DOCUMENT_TYPE = "доклад"
+# The status every document is created with and keeps across saves (domain
+# ALLOWED_STATUSES is ("draft",)). Held here, beside the document_type this module
+# creates documents with, because it is a fact about the CREATED document rather than
+# about any one scenario -- unlike the per-row VERSION_AFTER_* constants, which encode
+# each row's own save arithmetic and are deliberately kept separate.
+DRAFT_STATUS = "draft"
 
 
 class DocumentArrangeStatements:

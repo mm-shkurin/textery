@@ -12,10 +12,8 @@ from statements.document_export_filename_statements import (
     VERSION_AFTER_TITLE_SAVE,
     DocumentExportFilenameStatements,
 )
-from statements.document_export_statements import SUPPORTED_DOCUMENT_TYPE
+from statements.document_export_statements import DRAFT_STATUS, SUPPORTED_DOCUMENT_TYPE
 
-# The status a draft document keeps across saves (ALLOWED_STATUSES is ("draft",)).
-DRAFT_STATUS = "draft"
 # The content-only save takes the document from 2 to 3. Named apart from the
 # blank-title row's VERSION_AFTER_BLANK_SAVE despite sharing the value: the two rows
 # submit DIFFERENT wire shapes (blank string vs. absent key) and nothing guarantees

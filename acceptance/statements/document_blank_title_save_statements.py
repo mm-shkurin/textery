@@ -15,7 +15,7 @@ from statements.document_export_filename_statements import (
     VERSION_AFTER_TITLE_SAVE,
     DocumentExportFilenameStatements,
 )
-from statements.document_export_statements import SUPPORTED_DOCUMENT_TYPE
+from statements.document_export_statements import DRAFT_STATUS, SUPPORTED_DOCUMENT_TYPE
 
 # Each successful save is a CAS that increments: the title-bearing setup save takes
 # the document from 1 to 2, the blank-title autosave from 2 to 3. Pinned as an exact
@@ -23,8 +23,6 @@ from statements.document_export_statements import SUPPORTED_DOCUMENT_TYPE
 # check passes for a version the CAS never incremented, and threading the observed
 # value forward would let a silently-added setup save go unnoticed.
 VERSION_AFTER_BLANK_SAVE = 3
-# The status a draft document keeps across saves (ALLOWED_STATUSES is ("draft",)).
-DRAFT_STATUS = "draft"
 # The body carried by the blank-title autosave. DISTINCT from DOCUMENT_CONTENT on
 # purpose: the premise of that save is that it is a CONTENT-only autosave, so a green
 # that rejects or short-circuits the whole blank-title request would lose the content

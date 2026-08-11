@@ -60,16 +60,32 @@ class DocumentExportFilenameStatements(DocumentExportStatements):
             access_token=access_token,
             title=self.CYRILLIC_TITLE,
         )
-        self._assert_setup_save_succeeded(save, "title-bearing", VERSION_AFTER_TITLE_SAVE)
+        self._assert_setup_save_succeeded(
+            save, "title-bearing", VERSION_AFTER_TITLE_SAVE, self.CYRILLIC_TITLE
+        )
         return access_token, document_id
 
     @staticmethod
-    def _assert_setup_save_succeeded(save, described_as: str, expected_version: int) -> None:
+    def _assert_setup_save_succeeded(
+        save, described_as: str, expected_version: int, expected_title: str
+    ) -> None:
         assert_setup_ok(save, f"the {described_as} save")
-        version = (save.body or {}).get("version")
+        body = save.body or {}
+        version = body.get("version")
         assert version == expected_version, (
             f"setup: expected the {described_as} save to leave the document at version "
             f"{expected_version}, got {version!r} (body={save.body})"
+        )
+        # The one thing this arrange is NAMED for and the only claim the callers build
+        # on: every row reached through `_document_carrying_the_cyrillic_title` asserts
+        # something about the title that survives a later save. Until this pin, the
+        # arrange guarded only that A save landed -- a green that accepted the request
+        # and stored no title at all would leave the downstream rows to fail as
+        # behaviour regressions ("the title was not preserved") when the truth is that
+        # there was never a stored title to preserve.
+        assert body.get("title") == expected_title, (
+            f"setup: expected the {described_as} save to store title "
+            f"{expected_title!r}, got {body.get('title')!r} (body={save.body})"
         )
 
     async def given_owner_exports_document_with_cyrillic_title_as_pdf(
