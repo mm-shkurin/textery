@@ -809,7 +809,19 @@ pagination failure.
   names are honest. Guard: assert `PINNED_FIELDS_PER_EXPECTATION` equals the field set
   `PINNED_ASSIGNMENT`'s alternation recognises (the second spelling, in a module the list never
   consults) — or, stronger, the count-bearing member names of `PaginationViewState`.
-- [ ] red-frontend (agent-review CONCERNS 2 over `5151f390`, minor) — **`pinnedFieldsExpectedIn`
+  **PREMISE PARTLY STALE after `ed2ab7bb`** (agent-review CONCERNS 3 over that commit): only case 2
+  reads `PINNED_FIELDS_PER_EXPECTATION` now — case 3 is `fieldsIn(f)` against
+  `pinnedFieldBlocksIn(f).flat()`, with no hand-typed side at all. The hole SURVIVES (delete
+  `currentPage` from the source blocks and from the list, everything returns to green) but it is a
+  one-case, one-token repair, not "two cases, one edit". The second spelling the guard proposes to
+  compare against is also gone — `ed2ab7bb` collapsed both into one `PINNED_FIELDS`, so the
+  remaining honest comparand is `PaginationViewState`'s member names.
+- [x] red-frontend (agent-review CONCERNS 2 over `5151f390`, minor) — closed incidentally by
+  `ed2ab7bb`, which deleted `pinnedFieldsExpectedIn` and typed the records
+  `Readonly<Record<SourceFile, …>>` with `SourceFile = typeof MEASURING_FILE | typeof LAID_OUT_FILE`
+  — byte-for-byte the guard this item proposed. Flagged by agent-review over `ed2ab7bb` as CONCERNS
+  2: the item was filed as open in the same commit that closed it, which is the stale-corrective
+  class this file already tracks, one layer out. Original text: **`pinnedFieldsExpectedIn`
   silently yields `[]` for an unlisted file.** `EXPECTATION_BLOCKS[fileName]` is typed
   `Readonly<Record<string, number>>`, so an absent filename returns `undefined` and
   `Array.from({length: undefined})` produces `[]` rather than throwing. Fails CLOSED (red), so it is
@@ -857,7 +869,24 @@ pagination failure.
   `paginationState.someNewCase.test.ts` now escapes TWO guards rather than one, and because the
   shape property is stated per-key rather than over the directory, the new-file route is also the
   cheapest escape from the property this unit exists to enforce.
-- [ ] red-frontend (premortem CREDIBLE 2 over `63a049fd`) — **the split this unit performed moved
+- [~] red-frontend (premortem CREDIBLE 2 over `63a049fd`) — **RE-RANKED TO THE FRONT and WIDENED by
+  two independent fresh-context passes over `ed2ab7bb` (agent-review CONCERNS 1 and premortem
+  CREDIBLE 1, the same finding).** That commit did not just leave this hazard standing, it enlarged
+  it from one regex to four: `NAMED_VALUE` MOVED out of the test file into the unguarded module, and
+  `EXPECTATION_OPENER`, `CASE_OPENER`, `PINNED_FIELDS` were ADDED there. Every consuming assertion
+  is negative or count-shaped, so each has a zero-result-delta widening: `NAMED_VALUE` + `|\d+`
+  leaves case 1's received and expected sides both `[]` — the re-typed-literal property, this file's
+  headline deliverable, dead in one token; `EXPECTATION_OPENER` + `|MatchObject` re-admits the
+  downgrade mutant `ed2ab7bb` exists to catch, cases 2/3/4 all green. Note the asymmetry that makes
+  it non-obvious: widening `PINNED_FIELDS` IS caught (it shortens `constantSites`' hand-typed list),
+  so the module reads as guarded when only one of its four patterns is. This is the same sin the
+  `ed2ab7bb` commit message indicts — a constant sitting far from the assertion it authorises — with
+  the constant now in a different FILE rather than 40 lines away. Guard, named: pin the pattern
+  SOURCE TEXT — add the helper itself to the `?raw` ingestion and `toStrictEqual` at least
+  `EXPECTATION_OPENER.source` and `NAMED_VALUE.source` against exact literals (`PINNED_ASSIGNMENT`
+  and `PINNED_FIELDS` are covered transitively by `constantSites`, so say so and pin two, not four);
+  or export the predicates and run them over a fixed array of near-miss lines. Original charter
+  below. **The split this unit performed moved
   the guard's load-bearing narrowness into a file where relaxing it reddens NOTHING.**
   `fixtureUsage.source.ts` has zero tests of its own; its only importer never touches the regex,
   and no line in either source file is currently dropped — so widening `PINNED_ASSIGNMENT` to
@@ -913,7 +942,7 @@ pagination failure.
   every `expect(state).toStrictEqual({` line — pinned to an exact count (2 for `measuring`, 1 for
   `laidOut`). Fold into the `.skip`-count step; both read the same two source texts for the same
   reason.
-- [~] red-frontend (residual measured by `/test-review` on this unit, stated as a limit in the
+- [ ] red-frontend (residual measured by `/test-review` on this unit, stated as a limit in the
   header rather than closed) — **deleting a whole `it` (opener, `expect`, and its four pinned
   lines) moves blocks and cases DOWN TOGETHER, so the derived leg cannot see it, and the only leg
   that can is the hand-typed `EXPECTED_EXPECTATION_BLOCKS` — one token wide.** Measured: delete
@@ -928,6 +957,43 @@ pagination failure.
   the headroom has to come from a split. Note the split itself is a hazard with a chartered guard
   (premortem CREDIBLE 2 over `63a049fd`, above): the last split moved a load-bearing regex into a
   file where relaxing it reddens nothing.
+- [ ] red-frontend (premortem CREDIBLE 3 over `ed2ab7bb`) — **`CASE_OPENER` admits `it.skip(`, so a
+  case that never runs counts the same as one that does, and nothing anywhere asserts the skips
+  reach zero.** Admitting `.skip` is correct for the red phase — all three cases are skipped today —
+  but it is a permanent property of the counter with no phase awareness. Incident: green-frontend
+  un-skips two of the three and `measuring.test.ts:179` keeps its `it.skip` (or is re-skipped later
+  under a red suite, the fastest possible green). Every text guard stays green: the block is in the
+  source, `blocks == cases` holds, all four pinned fields are in place, and the suite reports
+  `passed` with a skip count nobody reads in CI. The teardown assertion is prose again — the exact
+  failure `constantSites`' and `designNumbers`' headers each declare themselves LIVE to avoid.
+  Guard: a `skippedCaseOpenersIn` counter (`/^it\.skip\(/`) pinned per file against a stated
+  expectation — `{measuring: 2, laidOut: 1}` for the red phase, which the green work unit must then
+  flip to `0` as a visible step rather than a remembered one. Supersedes and subsumes the two
+  narrower `.skip`-count entries below (premortem CREDIBLE 2 over `c0e35fc6` and over `36574438`).
+- [ ] red-frontend (premortem CREDIBLE 2 over `ed2ab7bb`) — **RE-RANK of the `import.meta.glob`
+  step chartered as agent-review CONCERNS 3 over `c0e35fc6`, with a measured trigger it did not
+  have: `paginationState.measuring.test.ts` is at 194 lines, six from the hard ceiling, and
+  green-frontend must un-skip and GROW its two stub-driven cases.** The split is not hypothetical —
+  it is scheduled by the cap. When it lands, `MEASURING_FILE`'s blocks drop 2→1, case 4 reddens, and
+  the repair vitest's own diff suggests is flipping `2` to `1`. Green, and the new file's four pinned
+  assignments are read by no guard ever: it may re-type `pageCount: 6` freely. `SourceFile` does not
+  help — it makes naming a WRONG file a compile error, and not naming a NEW file invisible. Guard:
+  `import.meta.glob('./paginationState.*.test.ts', {query: '?raw', eager: true})`, filter to sources
+  containing the `expect(state).toStrictEqual({` opener, `toStrictEqual` the key set against the two
+  constants — a split or a new sibling is then red on arrival and must be enrolled.
+- [ ] docs, fold into the next edit of `paginationState.assignmentShape.test.ts` (agent-review
+  CONCERNS 4 + premortem REMOTE 1 over `ed2ab7bb`) — two header claims wider than what was measured.
+  (a) `THE THIRD CASE IS THE HOISTING GUARD` says "the lines fall outside every group and the two
+  counts part company"; `pinnedFieldBlocksIn` attributes by source ORDER, not nesting, so
+  downgrading `measuring.test.ts` BLOCK TWO leaves its lines attributed to block one and case 3
+  green — only block one's downgrade parts the counts, which is exactly what the sentence beneath it
+  measured. The mutant is still caught (case 2 sees a long group, case 4 sees blocks drop), so this
+  is a documentation defect, not a hole — but an over-general claim sitting directly above its own
+  narrower measurement is the pattern this file's backlog keeps re-opening. (b) `codeLinesOf` has no
+  block-comment state machine: a `/* … */` wrapper leaves the interior lines fully counted while
+  vitest stops asserting them. Rated REMOTE (prettier and the repo's `//` convention make it
+  unlikely, and it needs a deliberate select-and-comment) — belongs under KNOWN limits, not a work
+  unit.
 - [ ] red-frontend or docs (agent-review CONCERNS 1 over `63a049fd`) — **the corrective sentence is
   itself stale, in the same header slot, about the same file: the eighth instance.** The new header
   and this unit's commit message both say "`crossRow.test.ts:126` derives from `row.blockHeights`

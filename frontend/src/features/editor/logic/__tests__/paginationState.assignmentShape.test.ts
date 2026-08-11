@@ -74,7 +74,8 @@ import {
  * downgrading block one to `toMatchObject` reddens this case and the fourth.
  *
  * THE FOURTH CASE, AND THE ONE MUTANT THAT REMAINS ONE TOKEN WIDE. It pins blocks against cases —
- * `caseOpenersIn` on the expected side, so both sides are read from the text — because every case in
+ * `caseOpenersIn` read on the subject side against `expectationBlocksIn` on the expected side, so
+ * neither side of that leg is hand-typed — because every case in
  * both files asserts the whole state exactly once. Deleting an expectation from inside its `it`, or
  * adding an `it` that asserts nothing, fails on that leg alone. The second leg pins blocks against
  * `EXPECTED_EXPECTATION_BLOCKS` (2 and 1), and this is a STATED LIMIT rather than a closed hole:
@@ -128,56 +129,46 @@ const EXPECTED_EXPECTATION_BLOCKS: Readonly<Record<SourceFile, number>> = {
 const everyBlockExpectedIn = (fileName: SourceFile): readonly (readonly string[])[] =>
   Array.from({ length: expectationBlocksIn(fileName) }, () => PINNED_FIELDS_PER_EXPECTATION)
 
+/**
+ * Every case below asserts one reading of BOTH files at once, so each side of each `toStrictEqual`
+ * was the same two-key record spelled out longhand — eight copies whose only moving part was the
+ * reading. Reading both through here leaves each case as the two readings it actually compares.
+ * It also removes a way to go green that the longhand allowed: a file could be dropped from a
+ * subject and its expected side together, silently narrowing the case to one file. The key set is
+ * now `SourceFile`'s own, total and identical on both sides, so a file can only be dropped by
+ * deleting it from the union — where `SOURCES` and every per-file record redden with it.
+ */
+const perFile = <T>(read: (fileName: SourceFile) => T): Readonly<Record<SourceFile, T>> => ({
+  [MEASURING_FILE]: read(MEASURING_FILE),
+  [LAID_OUT_FILE]: read(LAID_OUT_FILE),
+})
+
 describe('the pinned assignments, as a property rather than as a list', () => {
   it('names a constant, a field of one, or null — never a re-typed value', () => {
-    expect({
-      [MEASURING_FILE]: reTypedValuesIn(MEASURING_FILE),
-      [LAID_OUT_FILE]: reTypedValuesIn(LAID_OUT_FILE),
-    }).toStrictEqual({
-      [MEASURING_FILE]: [],
-      [LAID_OUT_FILE]: [],
-    })
+    expect(perFile(reTypedValuesIn)).toStrictEqual(perFile(() => []))
   })
 
   it('states all four fields, in order, inside EVERY expectation block — not just the first', () => {
-    expect({
-      [MEASURING_FILE]: pinnedFieldBlocksIn(MEASURING_FILE),
-      [LAID_OUT_FILE]: pinnedFieldBlocksIn(LAID_OUT_FILE),
-    }).toStrictEqual({
-      [MEASURING_FILE]: everyBlockExpectedIn(MEASURING_FILE),
-      [LAID_OUT_FILE]: everyBlockExpectedIn(LAID_OUT_FILE),
-    })
+    expect(perFile(pinnedFieldBlocksIn)).toStrictEqual(perFile(everyBlockExpectedIn))
   })
 
   it('keeps every pinned field INSIDE an expectation block — a hoisted one belongs to no block', () => {
-    expect({
-      [MEASURING_FILE]: fieldsIn(MEASURING_FILE),
-      [LAID_OUT_FILE]: fieldsIn(LAID_OUT_FILE),
-    }).toStrictEqual({
-      [MEASURING_FILE]: pinnedFieldBlocksIn(MEASURING_FILE).flat(),
-      [LAID_OUT_FILE]: pinnedFieldBlocksIn(LAID_OUT_FILE).flat(),
-    })
+    expect(perFile(fieldsIn)).toStrictEqual(
+      perFile((fileName) => pinnedFieldBlocksIn(fileName).flat()),
+    )
   })
 
   it('keeps one whole-state expectation per case, and that many blocks — the count is read, not declared', () => {
-    expect({
-      [MEASURING_FILE]: {
-        blocks: expectationBlocksIn(MEASURING_FILE),
-        cases: caseOpenersIn(MEASURING_FILE),
-      },
-      [LAID_OUT_FILE]: {
-        blocks: expectationBlocksIn(LAID_OUT_FILE),
-        cases: caseOpenersIn(LAID_OUT_FILE),
-      },
-    }).toStrictEqual({
-      [MEASURING_FILE]: {
-        blocks: EXPECTED_EXPECTATION_BLOCKS[MEASURING_FILE],
-        cases: expectationBlocksIn(MEASURING_FILE),
-      },
-      [LAID_OUT_FILE]: {
-        blocks: EXPECTED_EXPECTATION_BLOCKS[LAID_OUT_FILE],
-        cases: expectationBlocksIn(LAID_OUT_FILE),
-      },
-    })
+    expect(
+      perFile((fileName) => ({
+        blocks: expectationBlocksIn(fileName),
+        cases: caseOpenersIn(fileName),
+      })),
+    ).toStrictEqual(
+      perFile((fileName) => ({
+        blocks: EXPECTED_EXPECTATION_BLOCKS[fileName],
+        cases: expectationBlocksIn(fileName),
+      })),
+    )
   })
 })
