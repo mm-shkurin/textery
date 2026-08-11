@@ -49,12 +49,24 @@ def assert_document_body(body: dict, expected: dict, described_as: str) -> None:
     a green that preserves a title by REFUSING, short-circuiting, or only partially
     applying the save would satisfy a title-only assertion and fails here instead.
 
+    The key set is compared for EQUALITY, not containment, and it is compared FIRST.
+    Two things follow, and neither held while these were subset checks. A key the
+    caller did not name -- a leaked internal field, a mistakenly widened DTO -- fails
+    instead of passing silently; for the write shape this row is the only black-box
+    guard, so `owner_id` or `share_token` appearing on a save response goes red here or
+    nowhere. And because the shape is already pinned when the values are compared, the
+    lookup below can be `body[key]` rather than `body.get(key)`: a caller pinning a key
+    to `None` (`generation_id` on a manually created document) then asserts that the key
+    is PRESENT AND NULL, not merely that it is absent-or-null. Scenario 2.1 exists to
+    distinguish absent from null; asserting its own fields through `.get` conflated
+    exactly the two states under test.
+
     `described_as` is an article-free noun phrase naming the operation that left the
     body, e.g. "content-only autosave"."""
-    assert {key: body.get(key) for key in expected} == expected, (
-        f"expected the {described_as} to leave {expected!r}, got body={body!r}"
+    assert body.keys() == expected.keys() | TIMESTAMP_FIELDS, (
+        f"expected the body left by the {described_as} to carry exactly "
+        f"{sorted(expected.keys() | TIMESTAMP_FIELDS)}, got {sorted(body.keys())}"
     )
-    assert TIMESTAMP_FIELDS <= body.keys(), (
-        f"expected the body left by the {described_as} to carry both timestamps, "
-        f"got body={body!r}"
+    assert {key: body[key] for key in expected} == expected, (
+        f"expected the {described_as} to leave {expected!r}, got body={body!r}"
     )

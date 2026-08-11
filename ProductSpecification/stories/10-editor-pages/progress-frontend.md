@@ -869,7 +869,26 @@ pagination failure.
   `paginationState.someNewCase.test.ts` now escapes TWO guards rather than one, and because the
   shape property is stated per-key rather than over the directory, the new-file route is also the
   cheapest escape from the property this unit exists to enforce.
-- [~] red-frontend (premortem CREDIBLE 2 over `63a049fd`) — **RE-RANKED TO THE FRONT and WIDENED by
+- [x] red-frontend (premortem CREDIBLE 2 over `63a049fd`) — closed by
+  `fixtureUsage.patterns.test.ts` (new, 194 lines): four behavioural probes, one per pattern, each
+  partitioning a named `MUST_MATCH` ++ `MUST_NOT_MATCH` array by the live pattern and comparing the
+  partition against those same two lists — so a widening prints the offending near-miss line, not a
+  count. Second leg: a `.source` checksum over `NAMED_VALUE`, `EXPECTATION_OPENER` and
+  `CASE_OPENER`. Both routes the charter offered, delivered as (b)-primary + (a)-backstop; the
+  charter's "pin two, not four" was WRONG and `/test-review` measured why — `CASE_OPENER` widened on
+  its alternation HEAD (`/^(?:it|test)(?:\.skip)?\(/`) matches no probe in either list, so the probe
+  case stays green, and its only consumer is count-shaped. Three patterns had no covering leg, not
+  two; only `PINNED_ASSIGNMENT`/`PINNED_FIELDS` have a hand-typed backstop (`constantSites`' typed
+  list). The pin also backstops the probes' one vacuity: a probe list later emptied to `[]` passes
+  silently. Five mutants predicted and measured. One prediction MISSED and was corrected before
+  moving on: `PINNED_ASSIGNMENT` → `(.+),?$` was predicted to redden case 1 alone, but greedy `(.+)`
+  swallows the comma so every real expression became `NO_SKELETONS,` and both consumers reddened too
+  — re-predicted, re-run unchanged, 3/3 fields matched. The miss is the informative one: greedy vs
+  non-greedy is exactly the line between a widening the EXISTING consumers catch and the
+  zero-result-delta one they do not, and the non-greedy `(.+?),?$` — which admits
+  `'pageCount: 4, // agrees with ceil'` and `'pageCount: 4'` with both consumers green — is now the
+  case-1 kill. Tests 16 passed | 3 skipped | 0 failed. Caps: patterns 194, source 154.
+  Original charter — **RE-RANKED TO THE FRONT and WIDENED by
   two independent fresh-context passes over `ed2ab7bb` (agent-review CONCERNS 1 and premortem
   CREDIBLE 1, the same finding).** That commit did not just leave this hazard standing, it enlarged
   it from one regex to four: `NAMED_VALUE` MOVED out of the test file into the unguarded module, and
@@ -942,7 +961,7 @@ pagination failure.
   every `expect(state).toStrictEqual({` line — pinned to an exact count (2 for `measuring`, 1 for
   `laidOut`). Fold into the `.skip`-count step; both read the same two source texts for the same
   reason.
-- [ ] red-frontend (residual measured by `/test-review` on this unit, stated as a limit in the
+- [~] red-frontend (residual measured by `/test-review` over `ed2ab7bb`, stated as a limit in the
   header rather than closed) — **deleting a whole `it` (opener, `expect`, and its four pinned
   lines) moves blocks and cases DOWN TOGETHER, so the derived leg cannot see it, and the only leg
   that can is the hand-typed `EXPECTED_EXPECTATION_BLOCKS` — one token wide.** Measured: delete
@@ -956,7 +975,12 @@ pagination failure.
   trimming prose; the next incident paragraph hits the cap again. Trimming is spent as a strategy —
   the headroom has to come from a split. Note the split itself is a hazard with a chartered guard
   (premortem CREDIBLE 2 over `63a049fd`, above): the last split moved a load-bearing regex into a
-  file where relaxing it reddens nothing.
+  file where relaxing it reddens nothing. **Now TWO files, not one:**
+  `fixtureUsage.patterns.test.ts` landed at 194 — six lines of headroom on arrival, and its header
+  carries the same grows-on-every-incident property. `/test-review` judged trimming its prose a
+  worse trade than the remaining headroom and said so; the next addition to that file needs a split
+  rather than an edit. Note the recursion this file is walking into: the guard against the last
+  split's hazard is itself now a file that must be split.
 - [ ] red-frontend (premortem CREDIBLE 3 over `ed2ab7bb`) — **`CASE_OPENER` admits `it.skip(`, so a
   case that never runs counts the same as one that does, and nothing anywhere asserts the skips
   reach zero.** Admitting `.skip` is correct for the red phase — all three cases are skipped today —

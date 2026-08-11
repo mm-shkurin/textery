@@ -53,9 +53,13 @@ const SOURCES: Readonly<Record<SourceFile, string>> = {
  * section of `constantSites`' header. Anything that is not exactly `<field>: <expression>,` on one
  * trimmed line DROPS the site from the collected list rather than admitting it, which is what makes
  * the trailing-comment and line-wrap attacks redden instead of pass.
+ *
+ * That narrowness is no longer only prose: the four patterns in this module are exported and run
+ * over named near-miss lines by `fixtureUsage.patterns.test.ts`, which reddens on a widening HERE
+ * rather than waiting for a consumer's count to move. Read its header before relaxing any of them.
  */
 const PINNED_FIELDS = '(?:pageCount|currentPage|(?:sheet|rail)SkeletonCount)'
-const PINNED_ASSIGNMENT = new RegExp(`^(${PINNED_FIELDS}): (.+),$`)
+export const PINNED_ASSIGNMENT = new RegExp(`^(${PINNED_FIELDS}): (.+),$`)
 const FIXTURE_IMPORT = /^import \{ (.+) \} from '\.\/laidOutRows\.fixture'$/
 
 /**
@@ -65,15 +69,15 @@ const FIXTURE_IMPORT = /^import \{ (.+) \} from '\.\/laidOutRows\.fixture'$/
  * `expect(state).toMatchObject({`, an expected object hoisted to module scope, or an assertion
  * severed from its `expect` all yield NO match, so the count SHRINKS rather than being admitted.
  */
-const EXPECTATION_OPENER = /^expect\(state\)\.toStrictEqual\(\{$/
-const CASE_OPENER = /^it(?:\.skip)?\(/
+export const EXPECTATION_OPENER = /^expect\(state\)\.toStrictEqual\(\{$/
+export const CASE_OPENER = /^it(?:\.skip)?\(/
 
 /**
  * A right-hand side names a SCREAMING_SNAKE constant, a lowercase field read off one, or the literal
  * `null` — and nothing else. See `assignmentShape`' header for why `null` is admitted by name and why
  * widening this to tolerate a bare number would delete that file rather than repair it.
  */
-const NAMED_VALUE = /^(?:[A-Z][A-Z0-9_]*(?:\.[a-z][A-Za-z0-9]*)?|null)$/
+export const NAMED_VALUE = /^(?:[A-Z][A-Z0-9_]*(?:\.[a-z][A-Za-z0-9]*)?|null)$/
 
 /**
  * Comment bodies are dropped before matching. Both headers discuss these fields in prose — e.g.

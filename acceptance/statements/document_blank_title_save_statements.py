@@ -27,6 +27,12 @@ DRAFT_STATUS = "draft"
 # update. With the same content resubmitted, that regression is indistinguishable from
 # success; with a distinct body, the re-read pins that the save really landed.
 BLANK_SAVE_CONTENT = "Обновлённое тело документа"
+# The read shape's eighth key. This document is created bare and never configured, and
+# the read DTO carries absence as an explicit `page_settings: null` rather than by
+# omitting the key or by substituting today's preset -- the confusion story 10 exists to
+# prevent. Pinned to null, not merely tolerated: a save path that started defaulting a
+# preset onto an unconfigured document would go red here.
+PAGE_SETTINGS_NEVER_CONFIGURED = None
 
 
 class DocumentBlankTitleSaveStatements(DocumentExportFilenameStatements):
@@ -81,6 +87,12 @@ class DocumentBlankTitleSaveStatements(DocumentExportFilenameStatements):
         # the read shape, deliberately separate from the write shape -- declares no
         # title key (get_document_response_dto.py:60-67, and its docstring says so).
         #
+        # `page_settings` IS on this shape and is pinned below. It was previously
+        # neither pinned nor mentioned, behind a comment claiming the timestamps were
+        # "the only remaining response fields" -- the read DTO declares eight keys
+        # (get_document_response_dto.py:60-67), and the tightened key-set equality in
+        # `assert_document_body` is what turned that claim from plausible into red.
+        #
         # That is a fact about the READ route only. It is NOT true that no endpoint
         # returns the title: the three write routes return DocumentResponseDto, which
         # does carry `title` (document_dtos.py:108, populated at :126) -- verified at
@@ -97,5 +109,6 @@ class DocumentBlankTitleSaveStatements(DocumentExportFilenameStatements):
             "status": DRAFT_STATUS,
             "content": BLANK_SAVE_CONTENT,
             "version": VERSION_AFTER_BLANK_SAVE,
+            "page_settings": PAGE_SETTINGS_NEVER_CONFIGURED,
         }
         assert_document_body(body, expected, "blank-title autosave")

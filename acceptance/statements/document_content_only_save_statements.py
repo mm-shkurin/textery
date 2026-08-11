@@ -30,7 +30,11 @@ VERSION_AFTER_CONTENT_ONLY_SAVE = 3
 CONTENT_ONLY_SAVE_CONTENT = "Тело, сохранённое без заголовка"
 # The save response's `generation_id` for a manually created document: never converted
 # from a generation, so null. Pinned rather than omitted so the full write shape is
-# compared -- an omitted key is an unasserted key.
+# compared -- an omitted key is an unasserted key. That claim only became true when
+# `assert_document_body` started comparing key sets for equality and reading values with
+# `body[key]`: under the previous `body.get(key)` this null pin was satisfied just as
+# well by the key VANISHING from the response, which is the one distinction -- absent
+# vs. null -- this scenario exists to make.
 MANUAL_DOCUMENT_GENERATION_ID = None
 
 
