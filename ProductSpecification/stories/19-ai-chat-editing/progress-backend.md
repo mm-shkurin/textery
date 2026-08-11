@@ -1876,7 +1876,27 @@ within their file, not across the story.
       from the red commit — which is the whole content of this step. Progress-only commit: no
       production or test file was touched, so `/refactor` and the two review passes have nothing to
       read and are skipped per the progress-only rule.
-- [~] red-usecase (a coloured report has no banners either, and the exit-code pins cannot fail) —
+- [x] red-usecase (a coloured report has no banners either, and the exit-code pins cannot fail) —
+      **Shipped.** `test_coloured_child_report.py` (30) + `coloured_child_report_statements.py` (95,
+      subclassing the fabrication base), disabled with the prediction in the skip reason. Predicted:
+      `summary_counts()` answers `{}` for a report whose every banner is ANSI-wrapped. Actual, against
+      a temporarily unskipped copy: `AssertionError: the report summarised {}, expected {'failed': 1}`
+      at `fabricated_child_report_statements.py:82` — the predicted arm, the predicted value, and the
+      one assertion predicted to fire. Items (2) and (4) of the review notes above were closed in the
+      same commit: both inert `_assert_the_exit_code_is` pins are deleted from
+      `bannerless_child_report_statements.py` with the reason recorded in its docstring (nothing the
+      subject computes reads `returncode`; where it *is* derived, `child_probe_statements` asserts it),
+      and the two present-tense docstrings still claiming the `+` join is live were corrected. Item (3)
+      is closed as a rationale fix, not a test: the control's `section()` clause now says the bound is
+      moved by *banner presence*, not line count.
+      `/test-review` upheld one finding: `COLOURED_STDOUT` was derived from the plain constant by a
+      regex helper, and the expected `COLOURED_REPORT` came out of that same helper — so the premise
+      pin ("the escapes have to be in the text the reader is handed") would have **passed in exactly
+      the state it exists to reject**, had `_SEPARATOR_LINE` stopped matching. The fixture is now a
+      literal with the escapes typed in place; the helper, its regex and the `re` import are gone.
+      Rejected on merit: rewriting the three `"\n"`-joined report constants as hand-copied literals —
+      the newline is typed by the test, not read from the subject, so a revert to `+` still fails them.
+      **203 passed, 1 skipped** (the new RED), unchanged from the previous commit's 203.
       **the premortem's incident is the sharpest thing this scenario has produced, because this unit
       is what removed the last signal.** pytest's terminal writer turns markup on in a non-tty when
       `PY_COLORS=1` or `FORCE_COLOR` is set (`should_do_markup` checks exactly those), and `write_sep`
@@ -1932,7 +1952,7 @@ within their file, not across the story.
       `FAILURES_BODY_STDOUT_REPORTED` has no `_____ test_probe _____` sub-banner, so a future family
       reusing the fabrication could conclude something about `failing_test_names()` from a body real
       pytest never writes — worth a comment on the fixture, not a test.
-- [ ] green-usecase (a coloured report has no banners either, and the exit-code pins cannot fail)
+- [~] green-usecase (a coloured report has no banners either, and the exit-code pins cannot fail)
 - [ ] red-usecase (the scrub is watched through one variable of five, and the vectors' own potency
       is asserted nowhere) — **both review passes over `ae505cc6` converged on the first item, and the
       agent-review pass ran the negative control independently rather than trusting the commit

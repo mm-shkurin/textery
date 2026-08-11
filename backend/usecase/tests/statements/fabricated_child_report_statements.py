@@ -1,11 +1,12 @@
 """A finished child run, built rather than run, and the ways it is read back.
 
-Two scenario families address a fabricated `CompletedProcess`: the stream *join*
-(`child_report_join_statements`) and the *bannerless* report that reaches
-`summary_counts()`' empty-banners arm (`bannerless_child_report_statements`).
-They share the fabrication and the four things worth asserting about the result,
-and nothing else -- so the shared half lives here and each family states only its
-own arrangement and its own claims.
+Three scenario families address a fabricated `CompletedProcess`: the stream *join*
+(`child_report_join_statements`), the *bannerless* report that reaches
+`summary_counts()`' empty-banners arm (`bannerless_child_report_statements`), and
+the *colour-decorated* report that must not be mistaken for one
+(`coloured_child_report_statements`). They share the fabrication and the three
+things worth asserting about the result, and nothing else -- so the shared half
+lives here and each family states only its own arrangement and its own claims.
 
 Fabricated rather than run: the subject is the reading, not the running, and
 neither a stdout without a trailing newline nor a child that dies before its
@@ -41,6 +42,10 @@ STDOUT_WITHOUT_A_TRAILING_NEWLINE = (
 # properties of the constant above; naming them keeps the expectation and the
 # fixture from drifting apart in opposite directions.
 TALLY_STDOUT_REPORTED = {"failed": 1}
+# Note for anyone reusing this fixture: the body carries the test's *name* but no
+# `_____ test_probe _____` sub-banner, which real pytest always draws. Nothing here
+# may be used to conclude anything about `failing_test_names()` -- it would be a
+# conclusion about a body pytest never writes.
 FAILURES_BODY_STDOUT_REPORTED = f"{FAILING_TEST_NAME}\n"
 
 # What a run that got as far as reporting a failure exits with.
@@ -48,7 +53,7 @@ REPORTED_FAILURES_EXIT_CODE = 1
 
 
 class FabricatedChildReportStatements:
-    """Holds one fabricated report, and states the four claims worth making of it.
+    """Holds one fabricated report, and states the three claims worth making of it.
 
     Every assertion is whole-value. `output` in particular is pinned by equality
     rather than searched for a sentence: every byte of these fixtures is written
@@ -71,10 +76,6 @@ class FabricatedChildReportStatements:
         assert actual == expected, (
             f"the joined report read '{actual}', expected '{expected}' -- {because}"
         )
-
-    def _assert_the_exit_code_is(self, expected: int, because: str) -> None:
-        actual = self._child().exit_code
-        assert actual == expected, f"the report exited {actual}, expected {expected} -- {because}"
 
     def _assert_the_tally_is(self, expected: dict[str, int], because: str) -> None:
         actual = self._child().summary_counts()

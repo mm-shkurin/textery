@@ -5,6 +5,7 @@ import pytest
 from statements.arrangement_snapshot_guard_statements import ArrangementSnapshotGuardStatements
 from statements.bannerless_child_report_statements import BannerlessChildReportStatements
 from statements.child_report_join_statements import ChildReportJoinStatements
+from statements.coloured_child_report_statements import ColouredChildReportStatements
 from statements.disarmed_arming_probe_statements import DisarmedArmingProbeStatements
 from statements.forgotten_await_gate_statements import ForgottenAwaitGateStatements
 from statements.gate_reach_statements import GateReachStatements
@@ -29,6 +30,11 @@ def child_report_join_statements():
 @pytest.fixture
 def bannerless_child_report_statements():
     return BannerlessChildReportStatements()
+
+
+@pytest.fixture
+def coloured_child_report_statements():
+    return ColouredChildReportStatements()
 
 
 @pytest.fixture

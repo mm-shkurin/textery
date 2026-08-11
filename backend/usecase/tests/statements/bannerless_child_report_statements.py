@@ -10,9 +10,21 @@ An `== {}` asserted alone is satisfied by every way a report can be bannerless
 for the wrong reason: a fixture that never ran, an empty `CompletedProcess`, a
 `_lines` that lost the streams, or a report whose banners are present but tally
 to nothing. So the joined report is pinned whole first -- which is itself the
-proof of bannerlessness, since there is no `=+ ... =+` line anywhere in it -- and
-the exit code with it. The control beside it holds the identical stderr behind a
-stdout that *does* carry a final tally banner.
+proof of bannerlessness, since there is no `=+ ... =+` line anywhere in it. The
+control beside it holds the identical stderr behind a stdout that *does* carry a
+final tally banner.
+
+The exit code is *not* asserted here, deliberately. Nothing the subject computes
+reads `returncode` -- `output`, `_lines`, `_banners()`, `section()` and
+`summary_counts()` all ignore it -- so a pin on it is a pin on a literal this file
+handed to `_fabricate` a dozen lines earlier, and the state it claims to reject
+("a bannerless report from a run that exited 0 or 1") is not reachable from these
+fixtures at all. Where the exit code is genuinely derived it is genuinely
+asserted, by `child_probe_statements` over a child that really ran.
+
+This family sanctions `{}` for a report with no banner in it, and only for that:
+`coloured_child_report_statements` holds the other side, where a report full of
+banners the pattern cannot see must not reach the same answer.
 """
 
 from statements.fabricated_child_report_statements import (
@@ -74,10 +86,6 @@ class BannerlessChildReportStatements(FabricatedChildReportStatements):
             "subject at all -- and one carrying a banner line would reach the tally "
             "through a different arm entirely",
         )
-        self._assert_the_exit_code_is(
-            USAGE_ERROR_EXIT_CODE,
-            "a bannerless report from a run that exited 0 or 1 would be a different subject",
-        )
         self._assert_the_tally_is(
             {},
             "there is no banner in it to read a tally off, and inventing one would let the "
@@ -100,13 +108,10 @@ class BannerlessChildReportStatements(FabricatedChildReportStatements):
             "the control only isolates the absence of banners if the very same stderr "
             "demonstrably reached this report too",
         )
-        self._assert_the_exit_code_is(
-            REPORTED_FAILURES_EXIT_CODE,
-            "the control is a run that got as far as reporting a failure, not one refused "
-            "its arguments",
-        )
         self._assert_the_failures_section_is_the_one_stdout_reported(
-            "four extra stderr lines behind the final banner must stay outside the section"
+            "the section stops at the *next banner*, so what has to stay outside it is the "
+            "stderr behind the final one -- not because there are four lines of it, but "
+            "because none of them is a `=+ ... =+` line that could become that bound"
         )
         self._assert_the_tally_is(
             TALLY_STDOUT_REPORTED,

@@ -4,11 +4,12 @@ from statements.child_report_join_statements import ChildReportJoinStatements
 class TestChildReportJoin:
     """A child's two output streams must not be able to eat each other's lines.
 
-    `ChildPytestReport` fuses the streams with `+`, and every assertion the
-    forgotten-await gate makes is positional over that fused text: the tally is the
-    last banner, and a section is the span between two banners. A merged final line
-    stops being a banner, so the tally reads `{}` and the section runs to the end of
-    the report -- and the gate reports both as pytest misbehaving.
+    `ChildPytestReport` joins the streams with `"\\n".join`, and every assertion the
+    forgotten-await gate makes is positional over that joined text: the tally is the
+    last banner, and a section is the span between two banners. Joined with a bare
+    `+` -- as it once was -- a merged final line stops being a banner, so the tally
+    reads `{}` and the section runs to the end of the report, and the gate reports
+    both as pytest misbehaving. These tests hold the separator in place.
     """
 
     def test_should_read_the_tally_when_the_child_also_wrote_to_stderr(
