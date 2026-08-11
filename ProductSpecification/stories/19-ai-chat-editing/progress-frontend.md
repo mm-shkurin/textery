@@ -1000,6 +1000,60 @@ under `frontend/src` or `acceptance/tests/frontend`.
       `used`/`limit` off a quota API that 0.2 does not surface; the `.keys` line, unclaimed by any
       scenario; and the send/gauge icons — this app has no icon package, and `SparkMark` in
       `AiChatPanel.tsx` is the inline-SVG precedent if they are ever wanted.
+      `/refactor` landed two changes over `cb15a798`. The send moved from `--accent`/`--text-inverse`
+      to `--btn-primary-bg`/`--btn-primary-fg` — this is the app's *fourth* primary button and the
+      other three all resolve through the pair `index.css:36-37` exists to keep from diverging;
+      appearance-preservation was verified by alias identity (both pairs bottom out in `--blue-700`
+      / `--neutral-000`, and there is one `:root` with no theme block that could split them). And
+      `quota.exhausted`, restated four times, became one `const disabled` with the box's className a
+      modifier-only template literal — the box, the input and the send now read the same fact from
+      one place and cannot drift into disagreeing about which state they are in. 528 passed;
+      tsc, oxlint, prettier clean; 69 / 127 lines.
+      **Review-pass follow-ups — both CONCERNS, nine findings, and they land in the colour and
+      interaction layer, which is exactly what neither jsdom nor coverage touches. The commit
+      message's own "proves nothing about the stylesheet" is what these are.**
+      (av) **The dead field is painted in the app's accent-emphasis tint — the one direction a dead
+      field must not go.** `--bg-page` is `var(--blue-50)` and `--accent-soft` is *also* `var(--blue-50)`:
+      the same colour, and the exact value the quota hint carried before this diff. The mockup's
+      `--bg-sunken` is `#f7f8fa`, 2% off its white surface — a barely-there recession. So the reasoning
+      recorded above ("`--bg-page` is this app's sunken surface") is where it goes wrong: `--bg-page`
+      is the *page* colour. The over-quota box reads as highlighted, not recessed.
+      (aw) **The documented two-surface deviation buys 1.16:1 and delivers nothing.** Disabled send
+      `--bg-card-muted` `#d2e2f2` on the disabled box `#e3f2ff`; the button carries no border, so the
+      edge the comment argues for is dissolved anyway — and both are blues, so the same comment's
+      "the mockup greys the control" describes a treatment this code does not apply.
+      (ax) **The disabled field's boundary is invisible**: `--border-subtle` `#d5e6f7` on `#e3f2ff` is
+      1.11:1 against WCAG 1.4.11's 3:1 for a component boundary. (av)+(aw)+(ax) are ONE fix and must
+      travel together — today the only screen this scenario ships collapses into a flat pale-blue
+      rectangle with neither field edge nor button edge distinguishable. The mockup's equivalent pair
+      reads only because it sits on white.
+      (ay) **The band silently stops being a band on Safari < 16.2.** `color-mix()` sits in both the
+      `background` and inside the `border` shorthand with no preceding fallback and no `@supports`;
+      it is parse-time invalid where unsupported, so the *whole declaration* drops — background and
+      border together — and the hint degrades to ordinary prose. There is no `browserslist` and no
+      `build.cssTarget`, and esbuild does not downlevel it. One fallback declaration per property.
+      (az) **`display: flex` on the hint will glue the countdown to the lead.** The component's own
+      comment says a wall-clock tail is coming into this element; under flex a whitespace-only
+      anonymous run between two child boxes is not a flex item, so the separating space vanishes and
+      there is no `gap` to replace it (the `gap` was dropped this unit as inert). The flex does no
+      work today either — `align-items: center` on one full-width item is a no-op. Drop it or gap it.
+      (ba) **The visible field is larger than the clickable field** — and this one jsdom *can* catch.
+      Before the diff every pixel inside the border focused the textarea; now the 14px ring and the
+      whole row strip are dead, `.ac-chat-box` is a plain div with no `<label>` and no handler, and
+      nothing anywhere focuses the input. `green-selenium` will not catch it either: `sendKeys` on a
+      located element bypasses the click path. Owe a case that clicks the box and asserts
+      `document.activeElement` is `ai-chat-message-input`.
+      (bb) **No focus affordance on the thing that is now the field.** The border moved onto the box,
+      nothing styles `:focus-within`, and the input never sets `outline: none` — so the UA ring draws
+      14px *inside* the visible edge, a double edge, and the field itself never reacts. Both existing
+      text inputs in the app pair `outline: none` with a `:focus` border-colour change.
+      (bc) **The new `::placeholder` rule fails AA**: `--text-muted` `#797d81` on white is 4.15:1, and
+      the placeholder is the only text saying what the field is for. `AuthForm.css:79` uses
+      `--neutral-900` at `opacity: .7` instead; this diverges without a note.
+      (bd) Guarding rather than merely fixing (av)–(ax) needs a computed-style or contrast assertion
+      that exists nowhere in this suite. Worth deciding deliberately — by default it will not happen,
+      and `green-selenium` as written in this repo (presence + attribute) would not have caught any
+      of the nine.
 - [ ] green-selenium
 - [ ] demo
 

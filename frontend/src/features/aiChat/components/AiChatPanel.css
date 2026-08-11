@@ -87,10 +87,10 @@
 /* `.composer .send`, pushed right by the row rather than by `align-self` — the box is now the
    flex parent's only child, so the old `flex-end` had nothing meaningful to align against. */
 .ac-chat-send {
-  background: var(--accent);
+  background: var(--btn-primary-bg);
   border: none;
   border-radius: var(--radius-sm);
-  color: var(--text-inverse);
+  color: var(--btn-primary-fg);
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
