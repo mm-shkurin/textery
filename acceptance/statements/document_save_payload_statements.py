@@ -115,7 +115,7 @@ class DocumentSavePayloadStatements:
         than the dict-literal simplify those rows were written to kill. Under it,
         `title=""` stops being sent and 3.2's request becomes byte-identical to 2.1's:
         3.2 quietly stops testing its own premise and stays green, because both shapes
-        preserve. Measured for `if title:` over THIS file: 1 failed, 4 passed, the
+        preserve. Measured for `if title:` over THIS file: 1 failed, 7 passed, the
         failure being this row. Scoped deliberately: the repo-wide claim made here
         before ("the only assertion in the repo that reds on that edit") was never
         measurable, since a full `-m backend` run needs Docker and without it 60 of
@@ -145,11 +145,11 @@ class DocumentSavePayloadStatements:
           `if title and title.strip()` -- key-absent for `"   "`. 3.2's
           `whitespace_title` parametrization then dispatches a request byte-identical
           to 2.1's and stays green for 2.1's reason. This reds the blank row TOO
-          (`""` is falsy), so that row already bounds it: 2 failed, 3 passed.
+          (`""` is falsy), so that row already bounds it: 2 failed, 6 passed.
 
           `payload["title"] = title.strip()` -- key PRESENT, value normalised to `""`.
           The blank row is blind to it: `"".strip()` is `""`, so its expected body is
-          unchanged. 1 failed, 4 passed, and that one is this row. That is what makes
+          unchanged. 1 failed, 7 passed, and that one is this row. That is what makes
           this assertion non-redundant against its blank sibling, and why the message
           names the spaces rather than the key.
 
@@ -168,13 +168,13 @@ class DocumentSavePayloadStatements:
         )
 
     def assert_the_save_was_dispatched_as_an_authorized_put(self) -> None:
-        """The envelope the four body rows ride in, asserted ONCE and by name.
+        """The envelope EVERY arrangement's save rides in, asserted by name.
 
-        This lived in `_the_only_save_request()` and so ran on all four body rows,
-        destroying the diagnostic split they exist for: a dropped Authorization header
-        reddened every row with a message about a header none is named after. One
-        dedicated row instead. Measured with the header dropped from the client:
-        1 failed, 4 passed, the failure being this row -- it was all four before.
+        Formerly inside `_the_only_save_request()`, where it ran in all four body rows
+        and destroyed their diagnostic split: a dropped Authorization header reddened
+        every one with a message about a header none is named after. One dedicated row
+        instead, parametrized over all four `given_*` -- arranging the titled save ALONE
+        left 2.1's own content-only save unasserted. Mutation counts: the test class.
         """
         request = self._the_only_save_request()
         assert (request.method, request.path) == (SAVE_METHOD, SAVE_PATH), (

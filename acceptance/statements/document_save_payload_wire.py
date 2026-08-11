@@ -36,9 +36,14 @@ BLANK_TITLE_ON_THE_WIRE = ""
 # client side: deciding that these spaces mean "no title" is the backend's call to make.
 WHITESPACE_TITLE_ON_THE_WIRE = "   "
 
-# The request line a save must use. Pinned so the body being asserted is provably the
-# save request: the recorder answers every request, so without this the assertions
-# would key off dispatch position alone.
+# The request line a save must use. The recorder answers every request, so without this
+# nothing would say WHERE a save went. Stated precisely, because the older phrasing here
+# ("the body being asserted is provably the save request") over-claimed: these are
+# asserted in the envelope row, which is a SEPARATE test invocation with its own
+# recorder, so a body row still reads position within its own single dispatch. What the
+# envelope row buys is that every one of the four arrangements is pinned to this method
+# and path -- it is parametrized over all four `given_*`, which it was not when this
+# comment was first written and three of the four arrangements went unchecked.
 SAVE_METHOD = "PUT"
 SAVE_PATH = f"/api/v1/documents/{DOCUMENT_ID_ON_THE_WIRE}"
 # One `given_*` is one `save_document` call, so one request. Asserted exactly rather

@@ -1411,7 +1411,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   the statements print it with `!r` on failure. Safe only because the sole construction site is the
   mock transport and the sole token is the literal `ACCESS_TOKEN_ON_THE_WIRE`. Becomes credible the
   moment a `RecordedRequest` records a real login token — attach the note to the field.
-- [ ] restore the envelope to all four arranges (BOTH passes on `ab560d97`, each as its top finding,
+- [x] restore the envelope to all four arranges (BOTH passes on `ab560d97`, each as its top finding,
   and it is a hole THIS unit opened). Before the commit, `_the_only_save_request()` asserted method,
   path and `Authorization`, and every body row called it — four saves with their envelope checked.
   The split moved those three into `assert_the_save_was_dispatched_as_an_authorized_put`, which
@@ -1431,6 +1431,53 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   a wrong path reddening four rows names the path, not a header; the auth diagnostic problem does not
   apply to path). Wording-only repair of the docstring is NOT enough — the measured 5-passed mutation
   survives it.
+  **DONE.** The parametrized form worked; the weaker alternative was not needed. The envelope row is
+  parametrized over all four `given_*`, referenced as UNBOUND METHODS off `DocumentSavePayloadStatements`
+  rather than name strings — a rename is then an `AttributeError` at COLLECTION, not a silently
+  uncovered arrangement. Verified by actually renaming one: `no tests collected, 1 error`. Method and
+  path stayed in the named row rather than going back to the shared locator, because the parametrize
+  ids name WHICH arrangement broke and the shared accessor could not.
+  Baseline reproduced first: the conditional-drop mutation measured **5 passed, 0 failed** before the
+  change, exactly as agent-review measured it. Five mutations predicted before running, matched in
+  every cell — counts, ids, message text, assertion line:
+  - `headers=(... if title else {})` → 2 failed, 6 passed: envelope `[no_title_intent]`, `[blank_title]`
+  - conditional wrong path, same predicate → 2 failed, 6 passed: the same two ids
+  - `if title:` → 1 failed, 7 passed: blank body row
+  - `if title and title.strip()` → 2 failed, 6 passed: blank + whitespace body rows
+  - `payload["title"] = title.strip()` → 1 failed, 7 passed: whitespace body row
+  The two failure-SITE claims hold structurally too: the auth mutation leaves the path intact so it
+  reds on the Authorization assert; the path mutation reds on the request-line assert, which runs
+  first. All re-measured independently by `/test-review`, mutation by mutation.
+  `document_save_payload_wire.py:39-41` was over-claiming in a SECOND way beyond the one charted:
+  even parametrized, the envelope row is a separate invocation with its own recorder, so a body row
+  still reads position within its own single dispatch. Rewritten to claim only what is true.
+  Four counts phrased as totals were falsified by the new rows and are corrected by re-measurement,
+  not arithmetic (1/4 → 1/7, 2/3 → 2/6, 1/4 → 1/7, and the test file's 1/4 → 1/7); the two historical
+  figures from `ab560d97` are now explicitly labelled "of 5".
+  `/test-review` closed the coupling red-agent flagged as unenforced — `EVERY_SAVE_ARRANGEMENT` must
+  equal the set of `given_*` on the Statements class, or a fifth arrangement reopens this exact hole.
+  Judged a HOW-only tightening (no product behavior, no test's subject changes, and the file ALREADY
+  states the invariant in three separate prose places), so it was enforced rather than left: a
+  module-scope assert comparing `{a.__name__ for a in EVERY_SAVE_ARRANGEMENT}` against the class's
+  `given_*` members. Two deliberate calls: (a) an import-time assert, NOT a ninth row — a ninth row
+  would silently falsify every "out of 8" count in the file, which is this file's recorded failure
+  mode; at import it fails at collection, matching the rename guard, and the row count stays 8;
+  (b) the explicit list is KEPT rather than replaced by introspection — deriving it would close the
+  coupling but weaken the rename guard to a changed id. Asserting one against the other gets both.
+  Proven by adding a fifth `given_*`: `AssertionError ... unlisted {'given_a_save_carrying_a_fifth_thing'}`
+  at collection.
+  The class docstring's "in every case … an authorized PUT" is now TRUE, not reworded — the mutation
+  that survives a wording repair dies against this change.
+  Files: 199 / 200 / 69. `ruff check` passes. Payload rows 8 passed, 0 failed;
+  `tests/backend/documents` 14 failed / 8 passed / 1 skipped — the same 14 environmental (Docker
+  down), the 8 passing are exactly these rows.
+  TWO CARRIED NOTES. (1) `ruff format --check` flags the test file (`ARRANGEMENT_IDS` on one line, the
+  expanded parametrize decorator). Left alone deliberately: applying it is +2 lines, putting the file
+  at exactly 200 with zero headroom. The prior unit established `ruff format` already fails on three
+  files at HEAD and is NOT an enforced gate. (2) red-agent's batched mutation loop hit the 2-minute
+  cap mid-run and left one mutation applied on disk despite a `finally` revert; caught by
+  `git diff --stat` before continuing. Run ONE mutation per call here — a sweep that dies mid-loop
+  leaves the client mutated and every subsequent number meaningless.
 - [ ] make the whitespace row's tie to 3.2 structural (premortem CREDIBLE #2 on `ab560d97`):
   `WHITESPACE_TITLE_ON_THE_WIRE = "   "` and `BLANK_TITLE_ON_THE_WIRE = ""` are fresh literals;
   scenario 3.2's values are independent literals at `test_export_document_acceptance.py:141-142`
