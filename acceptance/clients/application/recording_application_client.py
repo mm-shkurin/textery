@@ -54,11 +54,20 @@ class RecordedRequest:
     from the dict the caller passed, so a key the client dropped or added between the
     two is visible here. `method` and `path` are carried so an assertion can pin that
     the body it reads belongs to the save call, rather than trusting position.
+
+    `authorization` is carried because the caller supplies an access token and, until
+    it was recorded, nothing observed it: a client that stopped sending the header, or
+    sent someone else's token, was invisible to a row whose stated subject is the
+    request as it went onto the wire. Only this one header is captured — the rest are
+    httpx's own (host, accept, content-length), so a whole-header equality would pin
+    the transport's defaults rather than anything the client decides. `None` when the
+    header is absent, which is itself the regression worth naming.
     """
 
     method: str
     path: str
     body: dict
+    authorization: str | None
 
 
 class RecordingApplicationClient(ApplicationClient):
@@ -95,6 +104,7 @@ class RecordingApplicationClient(ApplicationClient):
                 method=request.method,
                 path=request.url.path,
                 body=json.loads(request.content),
+                authorization=request.headers.get("authorization"),
             )
         )
         return httpx.Response(RECORDED_STATUS_CODE, json={})

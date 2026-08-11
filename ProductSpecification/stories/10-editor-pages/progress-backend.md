@@ -1275,7 +1275,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   `document_body_assertions.py:12-14` adoption deferral has now survived a cycle and that row still
   duplicates the key-set-equality pair verbatim at its lines 124-142; and
   `_assert_setup_save_succeeded` never pins `title` on the title-bearing setup save it guards.
-- [~] red-acceptance (premortem CREDIBLE on `1228fd65`: **the payload guard shipped with a hole one
+- [x] red-acceptance (premortem CREDIBLE on `1228fd65`: **the payload guard shipped with a hole one
   value wide, and the value is the one scenario 3.2 owns.** `application_client.py` builds the payload
   with `if title is not None`. The tidy-up that turns it into `if title:` is MORE plausible than the
   dict-literal simplify the row was written to kill, and BOTH new rows survive it: `None` still
@@ -1289,6 +1289,42 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   `given_a_save_carrying_a_blank_title()` over `save_document(title="")`, whole-body equality against
   `{**NO_TITLE_INTENT_BODY, "title": ""}`. Nothing in the repo goes RED on
   `if title is not None` → `if title:` today.)
+  **DONE.** Third row `test_a_save_carrying_a_blank_title_sends_the_title_key` shipped, following the
+  two siblings exactly: `BLANK_TITLED_BODY = {**NO_TITLE_INTENT_BODY, "title": ""}` so the one-key
+  difference between 2.1's and 3.2's requests cannot drift, `given_a_save_carrying_a_blank_title()`,
+  and `assert_the_blank_title_key_was_sent()` doing whole-body equality through the shared
+  `_the_only_save_request()`. RED by MEASURED MUTATION, not by a failing run against correct code —
+  the value is sent correctly today. Applied `if title is not None` → `if title:`: exactly one row
+  red (the blank one), predicted message character-identical, other two green; reverted, and
+  `git diff --stat` on `application_client.py` confirmed clean before the final run.
+  `/test-review` found the file's real assertion gap was one field over: `ACCESS_TOKEN_ON_THE_WIRE`
+  was passed by all three `given_*` methods and read by NOTHING — `RecordedRequest` captured only
+  method/path/body, so a save that stopped sending `Authorization` entirely satisfied every assertion
+  in the file, three lines under a comment promising a mismatched argument "reads as a mismatch rather
+  than a coincidence." The record now carries `authorization` and `_the_only_save_request()` asserts
+  it, so all three rows inherit it; proven non-vacuous by dropping the header (all three red). Only
+  that one header is captured — the rest are httpx's own defaults, and pinning those asserts the
+  transport, not the client. This is why the commit touches `recording_application_client.py`, which
+  was NOT part of the red-agent's diff: the record has to carry the header before any Statement can
+  assert it.
+  Also corrected: a FALSE line citation in both files (`document_blank_title_save_statements.py:57-64`
+  is `__init__` and three attribute initialisers; that file never spells `""` at all — it forwards a
+  parameter at 74-80 and the literal lives at `test_export_document_acceptance.py:142`), a stale
+  citation 61-70 → 71-73, a stale BDD header describing only the two original legs, and an overclaim
+  calling `""` "the ONE value scenario 3.2 is built on" when 3.2 is parametrised over TWO, `["", "   "]`.
+  This file's own docstring says "Two comments in this scenario have already turned out to be false";
+  the citation would have been the third.
+- [ ] red-acceptance (**the guard closes `if title:` but not `if title and title.strip()`, and the
+  strip-normalising variant is at least as plausible** — 3.2's own premise is literally "blank includes
+  whitespace-only." Under it `"   "` drops to key-absent, so 3.2's `whitespace_title` parametrization
+  becomes byte-identical to 2.1's request and goes green for 2.1's reason. Same failure class this
+  work unit exists to foreclose, one parametrization over, and nothing in the repo goes red on it.
+  `/test-review` declined to write it — a fourth row is a red-phase decision, not a HOW-only
+  tightening — and recorded it in the assertion docstring instead. Note why the third row was
+  correctly ONE and not two: `"   "` is truthy, so it survives `if title:` and a whitespace row would
+  have been green for a reason the guard did not earn. That reasoning does not extend to `.strip()`,
+  which is exactly why this step exists. Test: a fourth row over `save_document(title="   ")` against
+  `{**NO_TITLE_INTENT_BODY, "title": "   "}`.)
 - [ ] red-acceptance (agent-review #1 on `84e47dff`, and the finding is that the pin I just argued
   hardest for discriminates nothing: **`assert_save_advanced_the_update_stamp` cannot detect the
   refusal it was written to detect.** Its docstring claims "a save that never ran cannot move a clock

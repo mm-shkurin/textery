@@ -9,7 +9,9 @@ class TestSaveDocumentPayloadShape:
     When it is made with no title intent (`title=None`)
     Then the request body carries exactly {"content", "version"} -- no `title` key
     And when it is made with a real title
-    Then the request body carries `title` as well.
+    Then the request body carries `title` as well
+    And when it is made with a blank title (`title=""`)
+    Then the request body carries `title` as an empty string, not as a missing key.
 
     Why this row exists at all. The whole of scenario 2.1 is the ABSENT-key row: the
     content-only autosave must leave the stored title alone, and it must do so through
@@ -52,10 +54,20 @@ class TestSaveDocumentPayloadShape:
     actually run with -- collect the row; leaving it unmarked would keep it out of every
     standard run, which is the same silent non-execution a skip marker causes.
 
-    Two methods, not one, and both are load-bearing. The omission assertion alone is
+    Three methods, not one, and all are load-bearing. The omission assertion alone is
     satisfied by a client that drops `title` unconditionally; the titled assertion is
-    what pins the omission as CONDITIONAL. Split across two test methods rather than
-    one so a failure names which direction broke.
+    what pins the omission as CONDITIONAL. The blank-title assertion pins WHERE that
+    condition sits: on `is not None`, not on truthiness. The first two rows both survive
+    a tidy-up to `if title:` -- None is still omitted, a Cyrillic title is still sent --
+    while `title=""` silently drops from `{"title": ""}` to key-absent. That is the
+    empty half of the two blank values scenario 3.2 is parametrised over
+    (`["", "   "]`, test_export_document_acceptance.py:142; forwarded to the client at
+    `document_blank_title_save_statements.py:74-80`). Under that edit 3.2's empty_title
+    request becomes byte-identical to 2.1's and 3.2 stays green while testing 2.1's
+    premise instead of its own. One row, not two, is correct for this mutation: `"   "`
+    is truthy and survives `if title:`, so a whitespace row would be green for a reason
+    the guard did not earn. Split across three test methods rather than one so a failure
+    names which direction broke.
     """
 
     async def test_a_save_with_no_title_intent_omits_the_title_key(
@@ -75,3 +87,12 @@ class TestSaveDocumentPayloadShape:
         await statements.given_a_save_carrying_an_explicit_title()
 
         statements.assert_the_title_key_was_sent()
+
+    async def test_a_save_carrying_a_blank_title_sends_the_title_key(
+        self, document_save_payload_statements
+    ):
+        statements = document_save_payload_statements
+
+        await statements.given_a_save_carrying_a_blank_title()
+
+        statements.assert_the_blank_title_key_was_sent()
