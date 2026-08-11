@@ -2332,7 +2332,7 @@ within their file, not across the story.
       `git status` rather than recalled: every file this unit touched is under `backend/usecase/tests/`,
       and nothing under any `src/` tree changed. The subject is harness code; the third arm's failing side
       needed a vector to reach it, not a fix.
-- [~] red-usecase (the half of the join that was never fixed, and the half of the arming never probed) —
+- [x] red-usecase (the half of the join that was never fixed, and the half of the arming never probed) —
       **scheduled by both review passes over `74810821`, which converged on the first item
       independently.** The agent-review pass hunted the fourth-inert-guard question *empirically* and
       found none — it drove `PYTEST_ADDOPTS="-W ignore::RuntimeWarning"` red, drove `-p no:warnings` red
@@ -2387,7 +2387,62 @@ within their file, not across the story.
       already names as the second forgotten-await vector and which drops straight into the
       `DisarmedArmingProbeStatements` fixture. Belongs with item (2): both are the unraisable half of the
       arming check being declaration-checked rather than watched biting.
-- [ ] green-usecase (the half of the join that was never fixed, and the half of the arming never probed)
+      **RED landed: six predictions, six verbatim matches, six markers.** Deliverables (1), (3) and (5)
+      are red; (4) is prose; **(2) is `[S]`, and the skip is a measurement rather than a concession.**
+      (1) The third join statement fails at `fabricated_child_report_statements.py:82` with
+      `the report summarised {'failed': 3}, expected {'failed': 1}` — the separator fixed the *merge*, not
+      the *order*, so a `=+ 3 failed in 9.99s =+` line on stderr becomes `banners[-1]` and the gate reports
+      a count no pytest ever wrote. The section assertion in the same statement passes today (FAILURES is
+      bounded by stdout's own banner at line 9, before stderr's arrives at line 10); it is there to stop a
+      GREEN that discards stderr or stops at the first banner.
+      (5) Three tests: `AttributeError` on the missing `given_a_runner_environment_that_unloads_the_
+      unraisable_plugin`, plus both roster guards naming the gap —
+      `missing: ['EXPECTED_UNLOADED_UNRAISABLE_PLUGIN_REFUSAL', 'UNLOADED_UNRAISABLE_PLUGIN']` and
+      `Undriven: ['UNLOADED_UNRAISABLE_PLUGIN']`. Expectation-first, and neither name underscore-prefixed —
+      the `_declared_names()` hole the last unit's premortem found stays shut by construction here.
+      (3) Two tests, and the new one **proves the damage is real rather than arguing it**: aimed at
+      `<repo>/.gate_reach_repository_scratch`, the write genuinely lands today (`a probe was written under
+      …\textery-s19, and nothing objected`), removed by the `finally` and confirmed gone by `ls -a` and
+      `git status`. The refusal is now anchored to `REPOSITORY_ROOT`, matching its own remedy clause.
+      **(2) is not implementable as specified, measured twice, independently.** A symmetric
+      `_assert_an_unraisable_warning_actually_raises` written the way its RuntimeWarning twin is written
+      **passes** under `-p no:unraisableexception`: the ini entry is untouched, so the warning is still
+      promoted; what the vector removes is only the machinery that would *produce* one from a real
+      destructor exception (`hasplugin` False, `getini` still exactly the two entries). The one vector that
+      does disarm it, `-p no:warnings`, is already claimed by the RuntimeWarning arm, which runs first and
+      short-circuits. And provoking a *real* unraisable is not observable from inside the statement —
+      pytest's plugin flushes at hook boundaries, after the call phase, so it fails the test rather than
+      being catchable. `/test-review` rebuilt the scenario in a throwaway repo and reproduced all of it.
+      So the unraisable half is watchable only through `hasplugin`, which is item (5). **A vacuous
+      `_assert_an_unraisable_warning_actually_raises` was deliberately not written to tick the box** — that
+      is the seventh-inert-guard shape this sub-thread keeps catching, and writing one knowingly would be
+      worse than the six it caught by accident.
+      `/test-review` applied 3 strict-assertion fixes and 5 stale-prose corrections (family total now 19),
+      declined 4 with reasons, and verified the split did not weaken either roster guard (both discovery
+      methods moved byte-identically; the AST linkage fix did not regress to substring matching). The two
+      that matter: **a tautology** — `REPOSITORY_ROOT = BACKEND_ROOT.parent` read the guard's own anchor
+      back out to build the guard's expectation, so a wrong `parents[3]` moved both together and stayed
+      green; it is derived independently now, from two committed layout facts rather than the directory
+      name (worktrees rename the checkout). And **`assert_the_write_was_refused_before_it_landed` never
+      asserted "before"** — the `finally` destroyed the evidence ahead of any assertion, so a guard moved
+      to *after* `write_text` passed identically; existence is recorded inside the `finally` now, and both
+      arms were driven (`False` on the backend path, `True` on the repository path).
+      **Two files split to stay under the limit, both before the addition that would have breached it:**
+      `arming_probe_roster_statements.py` 190 → 140 + new `arming_probe_roster_reader.py`, and
+      `gate_reach_statements.py` 229 → 166 + new `probe_destinations.py`.
+      **Binding on GREEN, flagged rather than pre-empted:** fixing (1) means `summary_counts()` can no
+      longer read `banners[-1]` off the joined text — it must know which stream a banner came from. That is
+      a change to `ChildPytestReport`'s core reading model, not a one-liner, and it interacts with
+      `section()`, which the same test pins. And `child_pytest_run.py` sits at **exactly 200 lines with
+      zero headroom** while deliverable (3) needs a `REPOSITORY_ROOT` anchor added to it — that file must
+      be split first, and `probe_destinations.py` is the natural home but currently imports `BACKEND_ROOT`
+      *from* `child_pytest_run`, so importing back would cycle.
+      **Worth scheduling, declined here on scope:** the `POISONED_CONFTEST_MESSAGE not in` guard is a real
+      inert guard whose failing arm has never executed, but its fix is a whole new probe scenario — new RED
+      authorship, not assertion tightening.
+      **210 passed, 6 skipped** (the 6 skips are exactly this unit's markers; all six reproduce on their
+      own recorded assertion line, re-verified after `/test-review`'s changes).
+- [~] green-usecase (the half of the join that was never fixed, and the half of the arming never probed)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares
       the parameter as `str` precisely so that FastAPI does not answer it 422 ahead of the Bearer

@@ -59,9 +59,17 @@ class LiveHarnessConfigurationStatements:
 
         So the command-line override is refused, then the actual behaviour is
         provoked, and only then is the declaration pinned. That order is the
-        diagnostic one: the effective state is what a reader needs told first, and
-        provoking it also covers a `-W` smuggled into `addopts` inside
-        `pyproject.toml`, which neither of the other two can see.
+        diagnostic one: the effective state is what a reader needs told first.
+
+        A `-W` smuggled into `addopts` inside `pyproject.toml` is *not* the second
+        check's to catch, and crediting it there mis-maps the vectors for whoever
+        later trims a "redundant" check. pytest merges `addopts` and `PYTEST_ADDOPTS`
+        into one argument list during `_preparse`, so such a filter lands in
+        `config.option.pythonwarnings` like any other and the **first** check refuses
+        it. What only the behavioural check can see is a run where the filters are
+        never applied at all -- `-p no:warnings` leaves `pythonwarnings` empty and
+        `getini` reading exactly the two required entries, and both of the other
+        checks pass.
         """
         self._assert_no_command_line_filter_overrides_the_declaration()
         self._assert_a_runtime_warning_actually_raises()
@@ -93,10 +101,23 @@ class LiveHarnessConfigurationStatements:
         Whatever combination of ini entries, `-W` filters and session-time plugin
         meddling this run ended up with, the only claim that matters is that the
         forgotten-`await` warning class still stops a test. So one is emitted.
+
+        What is caught is then identified rather than merely counted. Bare, the
+        `except` arm passes on any `RuntimeWarning` reaching it and
+        `ARMING_PROBE_MESSAGE` is a constant nothing asserts -- so widening the
+        clause to `Exception`, the mutation this family's own docstrings name as
+        unwatched, stays green. Comparing the text is what closes it: an exception
+        that is not the one this line raised cannot carry that sentence.
         """
         try:
             warnings.warn(ARMING_PROBE_MESSAGE, RuntimeWarning, stacklevel=2)
-        except RuntimeWarning:
+        except RuntimeWarning as raised:
+            assert str(raised) == ARMING_PROBE_MESSAGE, (
+                f"the arming probe's own RuntimeWarning was expected to stop this run, but "
+                f"what stopped it read '{raised}', expected '{ARMING_PROBE_MESSAGE}' -- so "
+                f"something other than the probe's warning was caught here, and this check "
+                f"says nothing about whether a forgotten `await` still fails the suite"
+            )
             return
         raise AssertionError(
             "a RuntimeWarning raised in this very run did not fail it -- so a forgotten "

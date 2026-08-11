@@ -8,11 +8,12 @@ class TestArrangementSnapshotGuard:
     When the version assertions are called
     Then the post-act comparison refuses, and the arrangement comparison still holds
 
-    `_refuse_a_snapshot_of_a_store_the_act_never_used` guards every version
-    assertion in three guard families and executes in no run today, so it is
-    mutation-proof by hand only. These tests are its only exercise -- and the last
-    two are the reason it must not guard both assertions: one of them compares two
-    values that the act's choice of store cannot reach.
+    `_refuse_a_snapshot_of_a_store_the_act_never_used` guards exactly one version
+    assertion -- the post-act comparison -- and executed in no run before these
+    tests, so it was mutation-proof by hand only. The last two tests are why it
+    guards only that one: they call the *arrangement* comparison after the same
+    foreign act and require it to hold, because it compares two values the act's
+    choice of store cannot reach. A guard on both would refuse them.
     """
 
     async def test_should_refuse_a_post_act_version_comparison_when_the_act_used_a_foreign_store(

@@ -66,9 +66,11 @@ def _without_leaky_variables(environment: Mapping[str, str]) -> dict[str, str]:
 def _refuse_a_probe_inside_the_repository(probe_path: Path) -> None:
     """Refuse a destination the parent suite would collect from.
 
-    `resolve()` on both sides, and ancestry rather than a string prefix: a
-    scratch reached through a symlink or an `8.3` short path compares unequal as
-    text while being the very directory the parent walks.
+    Ancestry rather than a string prefix: a scratch reached through a symlink or
+    an `8.3` short path compares unequal as text while being the directory the
+    parent walks. Only `probe_path` is resolved here -- the anchor is resolved at
+    its own definition above, and an unresolved one would never appear in a
+    resolved path's `.parents`, leaving this refusal silently inert.
     """
     if BACKEND_ROOT not in probe_path.resolve().parents:
         return

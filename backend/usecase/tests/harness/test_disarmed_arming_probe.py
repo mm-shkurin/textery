@@ -1,3 +1,5 @@
+import pytest
+
 from statements.arming_probe_roster_statements import ArmingProbeRosterStatements
 from statements.disarmed_arming_probe_statements import DisarmedArmingProbeStatements
 
@@ -53,6 +55,38 @@ class TestDisarmedArmingProbe:
         disarmed_arming_probe_statements.assert_the_projects_own_configuration_was_in_force()
         disarmed_arming_probe_statements.assert_the_arming_check_refused_the_rewritten_declaration()
 
+    @pytest.mark.skip(
+        reason="RED: AttributeError -- DisarmedArmingProbeStatements has no "
+        "given_a_runner_environment_that_unloads_the_unraisable_plugin; the vector, "
+        "its refusal sentence and a probe that calls the fourth arm do not exist yet"
+    )
+    def test_should_fail_the_arming_check_when_a_runner_env_unloads_the_unraisable_plugin(
+        self, tmp_path, disarmed_arming_probe_statements: DisarmedArmingProbeStatements
+    ):
+        """The fourth arm, and the only one that lives outside the three-check sequence.
+
+        `assert_the_unraisable_plugin_is_loaded_in_this_run` is a sibling of the
+        three arms rather than one of them, so none of the three vectors above
+        reaches it: its `assert loaded is True` has never failed in any process, and
+        being a bare `assert` it will never be reported as a coverage gap either.
+
+        `-p no:unraisableexception` is the vector its own message names, and it is
+        the one that passes all three earlier checks honestly -- nothing lands in
+        `pythonwarnings`, the ini declaration is untouched so a provoked
+        RuntimeWarning still raises, and the two required entries are both still
+        there. What it removes is the plugin that turns a swallowed destructor
+        exception into a `PytestUnraisableExceptionWarning` at all, so the second
+        entry matches nothing and the forgotten-await guard is disarmed with every
+        line of configuration intact.
+        """
+        disarmed_arming_probe_statements.given_a_runner_environment_that_unloads_the_unraisable_plugin()
+        disarmed_arming_probe_statements.given_the_live_arming_check_as_the_probe(tmp_path)
+
+        disarmed_arming_probe_statements.run_the_probe_under_the_projects_own_pytest_configuration()
+
+        disarmed_arming_probe_statements.assert_the_projects_own_configuration_was_in_force()
+        disarmed_arming_probe_statements.assert_the_arming_check_refused_the_unloaded_unraisable_plugin()
+
     def test_should_pass_the_arming_check_when_the_runner_environment_leaves_it_alone(
         self, tmp_path, disarmed_arming_probe_statements: DisarmedArmingProbeStatements
     ):
@@ -101,6 +135,11 @@ class TestDisarmedArmingProbeArrangement:
         disarmed_arming_probe_statements.assert_no_child_was_run_before_the_refusal()
 
 
+@pytest.mark.skip(
+    reason="RED: the roster expectations name the fourth vector first -- "
+    "arming_probe.py is missing UNLOADED_UNRAISABLE_PLUGIN and "
+    "EXPECTED_UNLOADED_UNRAISABLE_PLUGIN_REFUSAL, and no given_ step drives it"
+)
 class TestArmingProbeRoster:
     """A vector added to this family must be driven, not merely declared.
 

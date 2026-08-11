@@ -11,10 +11,13 @@ summarised {}, expected {'failed': 1}", pointing the reader at pytest rather tha
 at the join. That defect is fixed; these tests exist so a future `+` cannot
 reintroduce it unnoticed.
 
-What the separator does not address, and no assertion here claims it does: stderr
-still lands *after* the final tally banner, so anything the child writes there
-that carries a `=+ ... =+` line of its own becomes the last banner
-`summary_counts()` reads. The fabricated stderr below is built to carry none.
+The separator fixed the *merge*; it did nothing about the *order*. stderr still
+lands after the final tally banner, so anything the child writes there carrying a
+`=+ ... =+` line of its own becomes the last banner `summary_counts()` reads --
+which is the same "the gate blames pytest for it" failure by the other door, and
+the one the original fixture was deliberately built to be unable to see. Both are
+now stated: `STDERR_NOISE` carries no banner and holds the separator, and
+`STDERR_CARRYING_ITS_OWN_BANNER` carries one and holds the ordering.
 
 The fabrication and the assertions are shared with the bannerless family; see
 `fabricated_child_report_statements`.
@@ -35,6 +38,22 @@ STDERR_NOISE = "Exception ignored in: <coroutine object>\n"
 # Exactly what the two streams must read as once joined -- `"\n".join` of them,
 # pinned whole so the tally below is read off a report proven to carry both.
 REPORT_OF_BOTH_STREAMS = STDOUT_WITHOUT_A_TRAILING_NEWLINE + "\n" + STDERR_NOISE
+
+# A stderr line shaped exactly like pytest's closing tally banner. Not contrived:
+# a child that itself shells out to pytest, a wrapper script echoing a summary, or
+# a plugin writing its own separator all produce one, and `_BANNER` is matched
+# against the joined text with no idea which stream a line came from.
+#
+# A *different* tally from stdout's, and deliberately not a superset of it: read by
+# accident, `{'failed': 3}` cannot agree with the right answer for the wrong
+# reason, which `1 failed` on both streams would.
+STDERR_CARRYING_ITS_OWN_BANNER = (
+    "============================== 3 failed in 9.99s ==============================\n"
+)
+
+REPORT_OF_A_BANNER_CARRYING_STDERR = (
+    STDOUT_WITHOUT_A_TRAILING_NEWLINE + "\n" + STDERR_CARRYING_ITS_OWN_BANNER
+)
 
 
 class ChildReportJoinStatements(FabricatedChildReportStatements):
@@ -76,4 +95,44 @@ class ChildReportJoinStatements(FabricatedChildReportStatements):
         self._assert_the_failures_section_is_the_one_stdout_reported(
             "the section is bounded by the next banner, and a banner merged away by the "
             "stream join moves that bound past the end of the report"
+        )
+
+    def given_a_child_whose_stderr_carries_a_banner_of_its_own(self) -> None:
+        self._fabricate(
+            stdout=STDOUT_WITHOUT_A_TRAILING_NEWLINE,
+            stderr=STDERR_CARRYING_ITS_OWN_BANNER,
+            returncode=REPORTED_FAILURES_EXIT_CODE,
+        )
+
+    def assert_the_tally_was_read_off_the_stdout_banner(self) -> None:
+        """The half the separator never addressed: stderr lands *after* the tally.
+
+        `summary_counts()` takes `banners[-1]`, and the join appends stderr to the
+        end of the report -- so a stderr line shaped like a banner is the last one,
+        and the tally the gate reports is stderr's rather than pytest's. That is
+        the same reader-facing failure the `+` join produced ("the child summarised
+        X, expected Y", pointing at pytest), reached by ordering rather than by
+        merging, and the original fixture could not see it because its stderr was
+        chosen to carry no banner.
+
+        The section is asserted in the same breath because it is the half that is
+        *already* right and must stay so: a repair that discarded stderr, or that
+        stopped at the first banner instead of the last, would fix the tally and
+        move the section's bound. Pinning the report whole first is what keeps
+        either claim from being satisfied by a reading that lost a stream.
+        """
+        self._assert_the_report_is(
+            REPORT_OF_A_BANNER_CARRYING_STDERR,
+            "a tally read off a report that lost one of the two streams says nothing about "
+            "which stream the tally came from",
+        )
+        self._assert_the_tally_is(
+            TALLY_STDOUT_REPORTED,
+            "the tally is `banners[-1]` and stderr is joined after stdout, so a child whose "
+            "stderr carries a banner of its own has that banner read as pytest's closing "
+            "tally -- and the gate then reports a count no pytest ever wrote",
+        )
+        self._assert_the_failures_section_is_the_one_stdout_reported(
+            "a section is the span to the next banner, so a banner arriving from stderr "
+            "must not be allowed to move where stdout's sections end"
         )

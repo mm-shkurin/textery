@@ -8,7 +8,7 @@ the source of a test suite and the machinery for reading one.
 # Imported as a module rather than `from typing import NamedTuple`: the roster guard
 # discovers this module's public names with `vars()` and sees through imports only
 # when they are modules, so a bare name bound here would read as an unclassified
-# roster entry. See `ArmingProbeRosterStatements._declared_names`.
+# roster entry. See `ArmingProbeRosterReader.declared_names`.
 import typing
 
 # The probe's single test. Named rather than reused from the forgotten-await

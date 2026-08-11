@@ -26,11 +26,18 @@ from it, and all three are prose today rather than assertions.
 import shutil
 from pathlib import Path
 
-from statements.child_pytest_run import BACKEND_ROOT
 from statements.forgotten_await_gate_statements import ForgottenAwaitGateStatements
 from statements.forgotten_await_probes import (
     ATTRIBUTION_LEAKING_TEST_NAME,
     ATTRIBUTION_PROBE,
+    PROBE_MODULE_NAME,
+)
+from statements.probe_destinations import (
+    EXPECTED_REPOSITORY_REFUSAL,
+    IN_REPOSITORY_SCRATCH,
+    IN_TREE_SCRATCH,
+    NO_PROBE_SOURCE,
+    REPOSITORY_ROOT,
 )
 
 # A conftest placed one directory *above* the probe. Importing it is fatal, which
@@ -39,29 +46,6 @@ from statements.forgotten_await_probes import (
 POISONED_CONFTEST_MESSAGE = "the child pytest walked its conftest search past the probe directory"
 POISONED_CONFTEST_SOURCE = f'raise RuntimeError("{POISONED_CONFTEST_MESSAGE}")\n'
 
-# Where the probe-path refusal is exercised. Inside the repository on purpose --
-# that is the condition being refused -- and removed in a `finally`, because until
-# the refusal lands the write actually happens, and a stray `test_*_probe.py`
-# under `backend/` is collected by the real suite on the next run.
-IN_TREE_SCRATCH = BACKEND_ROOT / "usecase" / "tests" / "harness" / "_gate_reach_scratch"
-
-# Deliberately no probe body: the refusal must land on the path alone, before the
-# source is ever looked at, so this write has nothing for a lenient guard to
-# approve of. An empty literal at the call site would read as an oversight.
-NO_PROBE_SOURCE = ""
-
-# The refusal `ChildPytestRun.write_probe` must raise, decided here because the
-# test is the specification -- GREEN writes the guard to this text, not the other
-# way round. Compared whole rather than searched for the root path: a refusal
-# raised for some other reason echoes the attempted path too, since the path is
-# under `BACKEND_ROOT` by construction, so a substring check cannot tell the
-# path-refusal apart from any other AssertionError on that write.
-EXPECTED_IN_TREE_REFUSAL = (
-    f"a probe may not be written under {BACKEND_ROOT}: the parent suite collects "
-    f"`test_*.py` from that tree, so the probe survives as a real test of this suite "
-    f"and the gate's claim that the parent never collects it becomes false. Write the "
-    f"probe to a tmp_path outside the repository"
-)
 
 
 class GateReachStatements(ForgottenAwaitGateStatements):
@@ -70,6 +54,9 @@ class GateReachStatements(ForgottenAwaitGateStatements):
     def __init__(self) -> None:
         super().__init__()
         self._refusal: AssertionError | None = None
+        # Not `False`: a default that reads as "nothing landed" is the answer the
+        # assertion wants, so an attempt step that never ran would satisfy it.
+        self._probe_landed: bool | None = None
 
     def given_a_conftest_above_the_probe_directory(self, tmp_path: Path) -> None:
         """The poisoned conftest, then the ordinary defective probe beneath it."""
@@ -81,31 +68,69 @@ class GateReachStatements(ForgottenAwaitGateStatements):
     ) -> None:
         self._write_probe(tmp_path, ATTRIBUTION_PROBE)
 
-    def try_to_write_a_probe_inside_the_repository(self) -> None:
+    def try_to_write_a_probe_inside_the_backend_tree(self) -> None:
         """The write that must be refused, attempted for real.
 
         Attempted rather than asserted about the path: the refusal has to sit
         *before* the write, or a CI image with `TMP` in the workspace has already
         dropped the file by the time anything notices.
         """
+        self._try_to_write_a_probe_to(IN_TREE_SCRATCH)
+
+    def try_to_write_a_probe_inside_the_repository_but_outside_the_backend_tree(self) -> None:
+        """The destination that separates the anchor from the claim.
+
+        The refusal is anchored to `backend/` while its remedy clause says "outside
+        the repository", and the existing refusal test only ever aims at a path
+        already under `backend/` -- so the one place the anchor differs from the
+        sentence is untested. `<repo>/.tmp` is not a hypothetical: it is what a
+        `--basetemp` or a CI image with `TMP` at the workspace root produces, and it
+        satisfies the guard while leaving a collectable `test_*.py` behind for any
+        run scoped at the repository root rather than at `backend/`.
+        """
+        self._try_to_write_a_probe_to(IN_REPOSITORY_SCRATCH)
+
+    def _try_to_write_a_probe_to(self, scratch: Path) -> None:
+        """Attempt, record what reached disk, and remove the scratch however it ended.
+
+        The `finally` is not tidiness. Until the refusal is re-anchored the write
+        for the out-of-backend destination genuinely lands, and a leftover
+        `test_*_probe.py` at the repository root is collected by the next run --
+        which is precisely the damage this test exists to prove is possible.
+
+        Which is also why the probe's existence is read *before* the `rmtree` and
+        kept. The `finally` destroys the only evidence for the "before it landed"
+        half of the claim, and a guard moved to after `write_text` -- the exact
+        regression `ChildPytestRun.write_probe`'s docstring warns about -- raises
+        the same `AssertionError` with the file already on disk. Read afterwards
+        the two are indistinguishable; read here they are not.
+        """
+        probe_path = scratch / PROBE_MODULE_NAME
         try:
-            self._write_probe(IN_TREE_SCRATCH, NO_PROBE_SOURCE)
+            self._write_probe(scratch, NO_PROBE_SOURCE)
         except AssertionError as refused:
             self._refusal = refused
         finally:
-            shutil.rmtree(IN_TREE_SCRATCH, ignore_errors=True)
+            self._probe_landed = probe_path.exists()
+            shutil.rmtree(scratch, ignore_errors=True)
 
     def assert_the_write_was_refused_before_it_landed(self) -> None:
         assert self._refusal is not None, (
-            f"a probe was written under {BACKEND_ROOT}, and nothing objected. The gate's "
+            f"a probe was written under {REPOSITORY_ROOT}, and nothing objected. The gate's "
             f"claim that the parent suite never collects the probe rests on the probe living "
             f"outside the repository, which is a sentence in a docstring rather than a check "
             f"-- a runner pointing TMP at the workspace satisfies the sentence and breaks the "
             f"claim, and the leftover module is collected by the real suite for three runs"
         )
+        assert self._probe_landed is False, (
+            f"the write was refused, but the probe was already on disk when it was -- so the "
+            f"guard sits after `write_text` rather than before it. The refusal is then only a "
+            f"report: the `test_*.py` exists, and whether the parent collects it depends on "
+            f"something happening to delete it again, which is the claim's whole content"
+        )
         actual = str(self._refusal)
-        assert actual == EXPECTED_IN_TREE_REFUSAL, (
-            f"the refusal read '{actual}', expected '{EXPECTED_IN_TREE_REFUSAL}' -- the reader "
+        assert actual == EXPECTED_REPOSITORY_REFUSAL, (
+            f"the refusal read '{actual}', expected '{EXPECTED_REPOSITORY_REFUSAL}' -- the reader "
             f"has to be told which tree the probe may not be written into and where to put it "
             f"instead, and any other AssertionError on that write must not be mistaken for it"
         )
