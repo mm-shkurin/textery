@@ -26,9 +26,9 @@ from statements.live_harness_configuration_statements import (
 
 
 def {ARMING_PROBE_TEST_NAME}(pytestconfig) -> None:
-    LiveHarnessConfigurationStatements(
-        pytestconfig
-    ).assert_both_filter_entries_are_in_force_in_this_run()
+    live = LiveHarnessConfigurationStatements(pytestconfig)
+    live.assert_both_filter_entries_are_in_force_in_this_run()
+    live.assert_the_unraisable_plugin_is_loaded_in_this_run()
 """
 
 # The two vectors that trip the first two arms. They ride in
@@ -44,6 +44,15 @@ UNLOADED_WARNINGS_PLUGIN = "-p no:warnings"
 # the provoked warning (check two passes) -- leaving the declaration, now a list of one,
 # as the only thing left to be wrong about.
 REWRITTEN_FILTER_DECLARATION = "-o filterwarnings=error::RuntimeWarning"
+
+# The fourth vector, and the only one aimed at the arm that sits *outside* the
+# three-check sequence. It passes all three earlier checks honestly: nothing lands in
+# `pythonwarnings`, the ini declaration is untouched so the provoked RuntimeWarning
+# still raises, and both required entries are still there. What it removes is the
+# plugin that turns a swallowed destructor exception into a
+# `PytestUnraisableExceptionWarning` at all -- so the second entry matches nothing and
+# the forgotten-await guard is disarmed with every line of configuration intact.
+UNLOADED_UNRAISABLE_PLUGIN = "-p no:unraisableexception"
 
 
 class ArmRefusal(typing.NamedTuple):
@@ -91,6 +100,19 @@ EXPECTED_REWRITTEN_DECLARATION_REFUSAL = ArmRefusal(
     observed="this run's `filterwarnings` is ['error::RuntimeWarning'], expected exactly",
     reasoning="no third one may follow them: the last matching filter wins, so an appended "
     "`ignore::RuntimeWarning` overrides both while leaving both present",
+)
+
+# The fourth arm's refusal. Its `assert loaded is True` had never failed in any
+# process before this vector existed, and being a bare `assert` it could never be
+# reported as a coverage gap either -- so the sentence a reader meets in CI had never
+# been read by anyone. The observed half is the plugin the run was asked about, which
+# is what makes the failure attributable to this vector rather than to the arm having
+# fired for any reason at all; the reasoning half is the consequence, and it is the
+# half that says *why* an untouched `filterwarnings` is not enough.
+EXPECTED_UNLOADED_UNRAISABLE_PLUGIN_REFUSAL = ArmRefusal(
+    observed="pytest's 'unraisableexception' plugin is not loaded in this run",
+    reasoning="so no PytestUnraisableExceptionWarning is ever raised and the second filter "
+    "entry matches nothing",
 )
 
 # What a run whose FAILURES section lacks an expected sentence actually means: the

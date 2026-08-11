@@ -8,42 +8,18 @@ anywhere in the output may be sitting in the warnings summary of a run that
 otherwise reported a pass.
 """
 
-import re
 import subprocess
 from functools import cached_property
-from typing import NamedTuple
 
-# Banner lines pytest draws around every report section, e.g.
-# `======== FAILURES ========` and the closing `======== 1 failed in 4s ========`.
-_BANNER = re.compile(r"^=+ (?P<name>.+?) =+$")
-# The per-test sub-banner pytest draws inside FAILURES, e.g. `____ test_probe ____`.
-# Underscored rather than `=`, so `_BANNER` leaves these inside the section body.
-_FAILING_TEST = re.compile(r"^_+ (?P<name>\S+?) _+$")
-_COUNT = re.compile(r"^(?P<count>\d+) (?P<outcome>[a-z]+)$")
-# The SGR escapes pytest's `write_sep` wraps a whole separator line in once markup
-# is on -- which it is in a non-tty whenever `PY_COLORS=1` or `FORCE_COLOR` is set.
-# Stripped before `_BANNER` is tried, because that pattern is anchored: a coloured
-# report would otherwise answer no banners at all, and tally as the empty dict a
-# report that drew no banner honestly answers.
-_MARKUP = re.compile(r"\x1b\[[0-9;]*m")
-_ELAPSED = re.compile(r" in \d[\d.]*s.*$")
+from statements.child_report_banners import (
+    FAILURES_SECTION,
+    Banner,
+    banners_in,
+    counts_in,
+    failing_test_names_in,
+)
 
-# The section pytest writes only for tests that actually failed. Named because
-# both this module and the join test address it, and a bare literal in two files
-# is a rename waiting to leave one of them silently reading "".
-FAILURES_SECTION = "FAILURES"
-
-
-class _Banner(NamedTuple):
-    """One `==== name ====` line: where it sits in the report, and what it announces.
-
-    Named rather than left an anonymous pair because the position is read in three
-    places and the tally reads the name off the last one -- `banners[-1][1]` does
-    not say which half of the pair the tally is parsed from.
-    """
-
-    line_number: int
-    name: str
+__all__ = ["FAILURES_SECTION", "ChildPytestReport"]
 
 
 class ChildPytestReport:
@@ -67,6 +43,24 @@ class ChildPytestReport:
         pytest for it.
         """
         return "\n".join((self._completed.stdout, self._completed.stderr))
+
+    @cached_property
+    def _stdout_line_count(self) -> int:
+        """How many of the joined lines came from stdout, so a banner can be attributed.
+
+        The join appends stderr *after* stdout, and a banner is recognised by line shape
+        alone, with no idea which stream a line came from -- so a child whose
+        stderr carries a `=+ ... =+` line of its own has that line read as pytest's
+        closing tally. Counting the first stream's lines is what makes the streams
+        distinguishable again without dropping either from the report.
+
+        Under-counts by design when stdout ends in a newline: `splitlines()` drops
+        the trailing empty field, and the separator then contributes a blank line
+        that this count attributes to stderr. A blank line is not a banner, so the
+        boundary line's side never changes an answer -- and erring toward stderr can
+        only ever make the tally stricter, never let a stderr banner through.
+        """
+        return len(self._completed.stdout.splitlines())
 
     @cached_property
     def _lines(self) -> list[str]:
@@ -123,7 +117,7 @@ class ChildPytestReport:
             "",
         )
 
-    def _body_ends(self, banners: list[_Banner]) -> list[int]:
+    def _body_ends(self, banners: list[Banner]) -> list[int]:
         """Where each banner's body stops.
 
         A body ends where the next banner starts, and the last one's at the end of
@@ -141,11 +135,7 @@ class ChildPytestReport:
         and on a child that never ran. A set equality carries both halves and
         cannot be satisfied by an empty section.
         """
-        return {
-            match.group("name")
-            for line in self.section(FAILURES_SECTION).splitlines()
-            if (match := _FAILING_TEST.match(line.rstrip()))
-        }
+        return failing_test_names_in(self.section(FAILURES_SECTION))
 
     def failure_text_contains(self, text: str) -> bool:
         """Whether the FAILURES section carries `text`, scoped rather than global.
@@ -162,18 +152,30 @@ class ChildPytestReport:
 
         The whole dict is the value to compare against, so a second failure, a
         skip, or a stray warning cannot hide behind a match on one of the terms.
+
+        Read off the *stdout* banners rather than off `self._banners[-1]`. pytest
+        writes its report to stdout; anything on stderr is the child's own noise --
+        a wrapper script echoing a summary, a nested pytest, a plugin drawing its
+        own separator -- and joined after stdout it would otherwise be the last
+        banner in the report and be reported as pytest's closing tally, a count no
+        pytest ever wrote. `section()` deliberately still spans the banners of both
+        streams: a section is bounded by whatever line comes next, and discarding
+        stderr to make the tally right would move where stdout's sections end.
         """
-        banners = self._banners
+        banners = self._stdout_banners
         if not banners:
             return {}
-        return {
-            match.group("outcome"): int(match.group("count"))
-            for part in _ELAPSED.sub("", banners[-1].name).split(", ")
-            if (match := _COUNT.match(part.strip()))
-        }
+        return counts_in(banners[-1].name)
 
     @cached_property
-    def _banners(self) -> list[_Banner]:
+    def _stdout_banners(self) -> list[Banner]:
+        """The banners pytest itself drew, as opposed to the ones stderr contributed."""
+        return [
+            banner for banner in self._banners if banner.line_number < self._stdout_line_count
+        ]
+
+    @cached_property
+    def _banners(self) -> list[Banner]:
         """Every banner line in the report, found once.
 
         Cached for the same reason `_lines` is: a finished child's output cannot
@@ -182,8 +184,4 @@ class ChildPytestReport:
         strip landed, each of those asks re-ran a regex substitution over every
         line of the report to rediscover banners already found.
         """
-        return [
-            _Banner(number, match.group("name").strip())
-            for number, line in enumerate(self._lines)
-            if (match := _BANNER.match(_MARKUP.sub("", line).rstrip()))
-        ]
+        return banners_in(self._lines)

@@ -35,6 +35,16 @@ from collections.abc import Mapping
 # bootstrap, which starts coverage inside any child that inherits it. Both groups
 # are reasoned about in full in `steerable_child_variables.py`.
 #
+# `PYTHONOPTIMIZE` steers no filter and loads no plugin, and it is in the roster
+# anyway: at level 1 the interpreter compiles away every `assert` statement, and the
+# probe suites this package writes state their claims *as* bare asserts. Inherited by
+# a child, it does not disarm the gate -- it empties the probe, which then passes
+# having asserted nothing, and the gate reads that pass as evidence. That is a worse
+# failure than a disarmed filter, because the report looks identical to a real green.
+# Decided deliberately rather than assumed either way, the standard this file family
+# holds itself to; the alternative was recording it as a measured exclusion, and there
+# is no reading under which a child that cannot assert is a child worth believing.
+#
 # The roster is asserted against, in both directions, by
 # `test_child_environment_scrub.py`: shrink this tuple and that test goes red.
 LEAKY_CHILD_VARIABLES = (
@@ -48,6 +58,7 @@ LEAKY_CHILD_VARIABLES = (
     "COV_CORE_SOURCE",
     "COV_CORE_CONFIG",
     "COV_CORE_DATAFILE",
+    "PYTHONOPTIMIZE",
 )
 
 

@@ -23,6 +23,16 @@ from statements.forgotten_await_probes import PROBE_MODULE_NAME
 BACKEND_ROOT = Path(__file__).resolve().parents[3]
 PROJECT_CONFIG = BACKEND_ROOT / "pyproject.toml"
 
+# The tree the probe refusal is anchored to. `backend/` is where the *parent suite*
+# collects from, but the refusal's own remedy clause says "outside the repository",
+# and a guard anchored one level in leaves `<repo>/.tmp` -- what a plain
+# `--basetemp`, or a CI image pointing `TMP` at the workspace root, produces --
+# approved, with a collectable `test_*.py` left behind for any root-scoped run.
+# Resolved, because `_refuse_a_probe_inside_the_repository` compares it against a
+# resolved path's `.parents` and an unresolved anchor would never appear there,
+# leaving the refusal silently inert.
+REPOSITORY_ROOT = BACKEND_ROOT.parent
+
 PROBE_TIMEOUT_SECONDS = 180
 
 
@@ -34,11 +44,16 @@ def _refuse_a_probe_inside_the_repository(probe_path: Path) -> None:
     parent walks. Only `probe_path` is resolved here -- the anchor is resolved at
     its own definition above, and an unresolved one would never appear in a
     resolved path's `.parents`, leaving this refusal silently inert.
+
+    Anchored to the *repository*, not to `backend/`, so that the tree this refuses
+    and the tree its own remedy clause names are the same one. Anchored one level
+    in, every destination between the two -- `<repo>/.tmp` above all -- passed the
+    guard while breaking exactly the claim the guard exists to protect.
     """
-    if BACKEND_ROOT not in probe_path.resolve().parents:
+    if REPOSITORY_ROOT not in probe_path.resolve().parents:
         return
     raise AssertionError(
-        f"a probe may not be written under {BACKEND_ROOT}: the parent suite collects "
+        f"a probe may not be written under {REPOSITORY_ROOT}: the parent suite collects "
         f"`test_*.py` from that tree, so the probe survives as a real test of this suite "
         f"and the gate's claim that the parent never collects it becomes false. Write the "
         f"probe to a tmp_path outside the repository"

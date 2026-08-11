@@ -35,6 +35,13 @@ inside any process that inherits them. The children here run with
 written by a Statements module, executed once, never imported by the suite --
 into the combined report the parent then reads as its own.
 
+`PYTHONOPTIMIZE` is in the roster for a fourth reason, and it is the only entry that
+attacks the *probes* rather than the child's configuration: at level 1 the interpreter
+compiles away every `assert`, and a probe suite states its claim as a bare `assert`.
+Inherited, it does not disarm a gate -- it empties the probe, which passes having
+asserted nothing, and a gate reading that pass sees a green indistinguishable from a
+real one. It is scrubbed because a child that cannot assert cannot be believed.
+
 What is deliberately *not* in the roster, so a later reader does not have to
 re-derive it: `PYTEST_XDIST_*`, `CI`, `GITHUB_ACTIONS` and the rest of a runner's
 badge variables steer nothing a child pytest decides -- no filter, no plugin, no
@@ -58,6 +65,7 @@ REQUIRED_SCRUBBED_VARIABLES = (
     "COV_CORE_SOURCE",
     "COV_CORE_CONFIG",
     "COV_CORE_DATAFILE",
+    "PYTHONOPTIMIZE",
 )
 
 # One recognisable value for all of them: the claim is about names surviving, and
@@ -80,4 +88,5 @@ EXPECTED_KEPT_ENVIRONMENT = {
     "COV_CORE_SOURCE": "set-by-the-parent",
     "COV_CORE_CONFIG": "set-by-the-parent",
     "COV_CORE_DATAFILE": "set-by-the-parent",
+    "PYTHONOPTIMIZE": "set-by-the-parent",
 }

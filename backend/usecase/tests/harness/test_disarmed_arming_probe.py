@@ -1,5 +1,3 @@
-import pytest
-
 from statements.arming_probe_roster_statements import ArmingProbeRosterStatements
 from statements.disarmed_arming_probe_statements import DisarmedArmingProbeStatements
 
@@ -55,11 +53,6 @@ class TestDisarmedArmingProbe:
         disarmed_arming_probe_statements.assert_the_projects_own_configuration_was_in_force()
         disarmed_arming_probe_statements.assert_the_arming_check_refused_the_rewritten_declaration()
 
-    @pytest.mark.skip(
-        reason="RED: AttributeError -- DisarmedArmingProbeStatements has no "
-        "given_a_runner_environment_that_unloads_the_unraisable_plugin; the vector, "
-        "its refusal sentence and a probe that calls the fourth arm do not exist yet"
-    )
     def test_should_fail_the_arming_check_when_a_runner_env_unloads_the_unraisable_plugin(
         self, tmp_path, disarmed_arming_probe_statements: DisarmedArmingProbeStatements
     ):
@@ -135,11 +128,6 @@ class TestDisarmedArmingProbeArrangement:
         disarmed_arming_probe_statements.assert_no_child_was_run_before_the_refusal()
 
 
-@pytest.mark.skip(
-    reason="RED: the roster expectations name the fourth vector first -- "
-    "arming_probe.py is missing UNLOADED_UNRAISABLE_PLUGIN and "
-    "EXPECTED_UNLOADED_UNRAISABLE_PLUGIN_REFUSAL, and no given_ step drives it"
-)
 class TestArmingProbeRoster:
     """A vector added to this family must be driven, not merely declared.
 

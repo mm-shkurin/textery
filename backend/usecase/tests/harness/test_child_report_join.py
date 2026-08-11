@@ -1,5 +1,3 @@
-import pytest
-
 from statements.child_report_join_statements import ChildReportJoinStatements
 
 
@@ -36,11 +34,6 @@ class TestChildReportJoin:
 
         child_report_join_statements.assert_the_failures_section_survived_the_second_stream()
 
-    @pytest.mark.skip(
-        reason="RED: summary_counts() reads banners[-1] over the joined text, so a "
-        "banner-shaped stderr line is read as pytest's closing tally -- "
-        "summarised {'failed': 3}, expected {'failed': 1}"
-    )
     def test_should_read_the_tally_off_stdout_when_stderr_carries_a_banner_of_its_own(
         self, child_report_join_statements: ChildReportJoinStatements
     ):

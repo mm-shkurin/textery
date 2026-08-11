@@ -14,12 +14,13 @@ sat in a module docstring as "scheduled separately" for the whole life of the fi
 driven by nothing and reported by nothing. Why coverage could not find it is with
 the arms themselves, in `DisarmedArmingProbeStatements`.
 
-The fourth arm this file was written to anticipate is now scheduled:
+The fourth arm this file was written to anticipate is now driven:
 `assert_the_unraisable_plugin_is_loaded_in_this_run` sits outside
 `assert_both_filter_entries_are_in_force_in_this_run`, its `assert loaded is True`
 has never failed in any process, and its own message names the
-`-p no:unraisableexception` that drives it. The expectations below are written
-first, so the roster guard is red until that vector and its sentence exist.
+`-p no:unraisableexception` that drives it. The expectations below were written
+first and the vector was added to satisfy them, which is the order this file exists
+to enforce.
 
 So the roster is **discovered** from the module rather than transcribed from it,
 and pinned against hand-written literal names. Transcribed, the expectation would

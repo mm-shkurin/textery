@@ -17,19 +17,20 @@ assertion here now, and the third is still only half closed.
   collects it" rests on `tmp_path` landing outside the repository, and a CI image
   pointing `TMP` at the workspace -- or a plain `--basetemp` at `<repo>/.tmp` --
   breaks that without touching a line of configuration, leaving a collectable
-  `test_*.py` behind for three runs under a fixed module name. There is a refusal
-  now, but it is anchored to `backend/` while its own remedy clause says "outside
-  the repository", so the destinations between those two trees are still approved.
-  Both refusal tests are red on exactly that gap.
+  `test_*.py` behind for three runs under a fixed module name. The refusal is
+  anchored to the repository now, matching its own remedy clause, and both trees it
+  used to disagree about are exercised: a destination under `backend/` and one under
+  the repository root but outside `backend/`. Each carries its own expected sentence,
+  so neither arm has to go dark when the other's expectation moves.
 * Which test an unraisable is charged to. It fires at garbage-collection time, so
   the run that fails is whichever one the collector lands in. `error::RuntimeWarning`
   alone could never misattribute; the second filter entry introduced a failure class
   that can. The leak is pinned here to the test that committed it.
 """
 
-import shutil
 from pathlib import Path
 
+from statements.arranged import arranged
 from statements.forgotten_await_gate_statements import ForgottenAwaitGateStatements
 from statements.forgotten_await_probes import (
     ATTRIBUTION_LEAKING_TEST_NAME,
@@ -42,6 +43,7 @@ from statements.probe_destinations import (
     IN_TREE_SCRATCH,
     NO_PROBE_SOURCE,
     REPOSITORY_ROOT,
+    remove_only_a_scratch_of_ours,
 )
 
 # A conftest placed one directory *above* the probe. Importing it is fatal, which
@@ -57,6 +59,13 @@ class GateReachStatements(ForgottenAwaitGateStatements):
     def __init__(self) -> None:
         super().__init__()
         self._refusal: AssertionError | None = None
+        # The sentence *this* destination's write must be refused with, recorded by
+        # the attempt step. Held per destination rather than hardcoded in the shared
+        # assertion: when the expectation moved to a single re-anchored constant, the
+        # backend-tree arm could only be kept green by skipping it, and a previously
+        # passing guard went dark for the duration. Carried alongside the attempt,
+        # both arms stay live whatever either one expects.
+        self._expected_refusal: str | None = None
         # Not `False`: a default that reads as "nothing landed" is the answer the
         # assertion wants, so an attempt step that never ran would satisfy it.
         self._probe_landed: bool | None = None
@@ -78,22 +87,22 @@ class GateReachStatements(ForgottenAwaitGateStatements):
         *before* the write, or a CI image with `TMP` in the workspace has already
         dropped the file by the time anything notices.
         """
-        self._try_to_write_a_probe_to(IN_TREE_SCRATCH)
+        self._try_to_write_a_probe_to(IN_TREE_SCRATCH, EXPECTED_REPOSITORY_REFUSAL)
 
     def try_to_write_a_probe_inside_the_repository_but_outside_the_backend_tree(self) -> None:
         """The destination that separates the anchor from the claim.
 
-        The refusal is anchored to `backend/` while its remedy clause says "outside
-        the repository", and the existing refusal test only ever aims at a path
-        already under `backend/` -- so the one place the anchor differs from the
-        sentence is untested. `<repo>/.tmp` is not a hypothetical: it is what a
+        The destination the anchor and the message used to disagree about, and the
+        only one that can tell a repository-anchored guard from a `backend/`-anchored
+        one -- the other refusal test aims at a path already under `backend/` and
+        passes either way. `<repo>/.tmp` is not a hypothetical: it is what a
         `--basetemp` or a CI image with `TMP` at the workspace root produces, and it
         satisfies the guard while leaving a collectable `test_*.py` behind for any
         run scoped at the repository root rather than at `backend/`.
         """
-        self._try_to_write_a_probe_to(IN_REPOSITORY_SCRATCH)
+        self._try_to_write_a_probe_to(IN_REPOSITORY_SCRATCH, EXPECTED_REPOSITORY_REFUSAL)
 
-    def _try_to_write_a_probe_to(self, scratch: Path) -> None:
+    def _try_to_write_a_probe_to(self, scratch: Path, expected_refusal: str) -> None:
         """Attempt, record what reached disk, and remove the scratch however it ended.
 
         The `finally` is not tidiness. Until the refusal is re-anchored the write
@@ -109,13 +118,22 @@ class GateReachStatements(ForgottenAwaitGateStatements):
         the two are indistinguishable; read here they are not.
         """
         probe_path = scratch / PROBE_MODULE_NAME
+        self._expected_refusal = expected_refusal
         try:
             self._write_probe(scratch, NO_PROBE_SOURCE)
         except AssertionError as refused:
             self._refusal = refused
         finally:
             self._probe_landed = probe_path.exists()
-            shutil.rmtree(scratch, ignore_errors=True)
+            remove_only_a_scratch_of_ours(scratch)
+        assert not scratch.exists(), (
+            f"{scratch} survived the removal that was supposed to take it away. On Windows "
+            f"`ignore_errors=True` swallows the PermissionError an antivirus scanner or an "
+            f"editor indexer produces on a directory it has open, so the scratch is left "
+            f"inside the repository behind a fully green run -- and the next root-scoped run "
+            f"collects whatever `test_*.py` is in it, which is the damage this test exists "
+            f"to prove is possible"
+        )
 
     def assert_the_write_was_refused_before_it_landed(self) -> None:
         assert self._refusal is not None, (
@@ -131,9 +149,10 @@ class GateReachStatements(ForgottenAwaitGateStatements):
             "report: the `test_*.py` exists, and whether the parent collects it depends on "
             "something happening to delete it again, which is the claim's whole content"
         )
+        expected = arranged(self._expected_refusal, "the expected refusal for this destination")
         actual = str(self._refusal)
-        assert actual == EXPECTED_REPOSITORY_REFUSAL, (
-            f"the refusal read '{actual}', expected '{EXPECTED_REPOSITORY_REFUSAL}' -- the reader "
+        assert actual == expected, (
+            f"the refusal read '{actual}', expected '{expected}' -- the reader "
             f"has to be told which tree the probe may not be written into and where to put it "
             f"instead, and any other AssertionError on that write must not be mistaken for it"
         )

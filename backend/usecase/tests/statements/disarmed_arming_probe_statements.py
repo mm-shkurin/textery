@@ -1,39 +1,40 @@
 """The arming check, driven red by a runner environment the child gets to keep.
 
 `LiveHarnessConfigurationStatements` is the one guard that asserts on the run
-executing it rather than on a file. It runs **three** checks, and before this
-family none of their negative arms had ever executed.
-`_assert_a_runtime_warning_actually_raises` ends in a `raise AssertionError` that
-no test had reached, `_assert_no_command_line_filter_overrides_the_declaration`
-ends in `assert overrides == []` on a list that had always been empty, and
-`_assert_the_declaration_is_exactly_the_required_entries` ends in an `assert` the
-parent suite has only ever run green -- and none of the three shows up as a
-coverage gap, because `try`/`except` and `assert` are not branches to coverage.py.
-(`live_harness_configuration_statements.py` reported 26 of 27 lines covered while
-all three failure paths were unexecuted.) The evidence that they bite was measured
-by hand at a terminal. Nothing in the suite would notice if the
-`except RuntimeWarning` were widened to `Exception`, or if a future pytest stopped
-promoting the warning.
+executing it rather than on a file. It runs three sequenced checks plus a fourth
+that stands apart, and before this family none of their negative arms had ever
+executed.
+Each ends in a `raise AssertionError` or a bare `assert` no test had ever reached,
+and none of them shows up as a coverage gap, because `try`/`except` and `assert`
+are not branches to coverage.py -- `live_harness_configuration_statements.py`
+reported 26 of 27 lines covered while every failure path was unexecuted. The
+evidence that they bite was measured by hand at a terminal. Nothing in the suite
+would notice if the `except RuntimeWarning` were widened to `Exception`, or if a
+future pytest stopped promoting the warning.
 
 So the arming check is run as a child suite under a deliberately disarmed
-environment, and the child is required to fail. **Three** disarming environments --
+environment, and the child is required to fail. **Four** disarming environments --
 one per arm -- because the checks run in sequence and each vector is invisible to
-the other two: a vector that trips an earlier check short-circuits the later ones,
-so reaching the third arm means passing the first two deliberately. Plus a fourth
+the others: a vector that trips an earlier check short-circuits the later ones, so
+reaching a later arm means passing the earlier ones deliberately. Plus a fifth
 environment that deliberately leaves the suite armed, because "chose nothing" has
 to stay distinguishable from "chose nothing yet".
 
-* `-W ignore::RuntimeWarning` lands in `config.option.pythonwarnings`, which is
-  applied after the ini entries and wins -- the shape a `PYTEST_ADDOPTS` in a CI
-  runner produces. The declaration still reads exactly the two required entries.
+* `-W ignore::RuntimeWarning` lands in `config.option.pythonwarnings`, applied
+  after the ini entries and winning -- the shape a CI `PYTEST_ADDOPTS` produces.
+  The declaration still reads exactly the two required entries.
 * `-p no:warnings` unloads the plugin that applies `filterwarnings` at all.
   `pythonwarnings` is then empty and the declaration is still intact, so only the
   provoked warning can see it.
-* `-o filterwarnings=error::RuntimeWarning` rewrites the ini value in place. Nothing
-  lands in `pythonwarnings`, and the one surviving entry still promotes the provoked
-  RuntimeWarning -- so both earlier checks pass honestly and the declaration itself,
-  now short of `error::pytest.PytestUnraisableExceptionWarning`, is the only thing
-  left to be wrong about. This is the vector the third arm was always waiting for.
+* `-o filterwarnings=error::RuntimeWarning` rewrites the ini value in place, so
+  both earlier checks pass honestly and the declaration -- now short of
+  `error::pytest.PytestUnraisableExceptionWarning` -- is the only thing left to be
+  wrong about. The vector the third arm was always waiting for.
+* `-p no:unraisableexception` passes all three honestly and reaches the fourth arm,
+  which sits *outside* the three-check sequence. The declaration is untouched; what
+  is gone is the plugin that emits a `PytestUnraisableExceptionWarning` at all, so
+  the second entry promotes a class nothing can produce. The suite is disarmed with
+  every line of configuration intact, which is why reading files cannot see it.
 
 The child must therefore be run with its ambient environment left alone, which is
 the opposite of what every other gate in this family needs: `ChildPytestRun`
@@ -55,8 +56,10 @@ from statements.arming_probe import (
     EXPECTED_INERT_FILTER_REFUSAL,
     EXPECTED_OVERRIDE_REFUSAL,
     EXPECTED_REWRITTEN_DECLARATION_REFUSAL,
+    EXPECTED_UNLOADED_UNRAISABLE_PLUGIN_REFUSAL,
     NOT_THE_DISARMED_ENVIRONMENT,
     REWRITTEN_FILTER_DECLARATION,
+    UNLOADED_UNRAISABLE_PLUGIN,
     UNLOADED_WARNINGS_PLUGIN,
     ArmRefusal,
 )
@@ -83,6 +86,15 @@ class DisarmedArmingProbeStatements(KeptAmbientChildBase, ChildProbeStatements):
         around, which is what makes a failure here attributable to the declaration.
         """
         self._disarm_the_child_with_only(REWRITTEN_FILTER_DECLARATION)
+
+    def given_a_runner_environment_that_unloads_the_unraisable_plugin(self) -> None:
+        """The vector for the arm that sits outside the three-check sequence.
+
+        Like the third it passes the earlier checks honestly rather than stepping
+        around them, and unlike any of them it leaves every line of configuration
+        intact -- which is exactly why no assertion that reads a file can see it.
+        """
+        self._disarm_the_child_with_only(UNLOADED_UNRAISABLE_PLUGIN)
 
     def given_a_runner_environment_that_leaves_the_suite_armed(self) -> None:
         """Removed rather than left alone: the control has to be a control.
@@ -116,6 +128,9 @@ class DisarmedArmingProbeStatements(KeptAmbientChildBase, ChildProbeStatements):
 
     def assert_the_arming_check_refused_the_rewritten_declaration(self) -> None:
         self._assert_the_arming_check_failed_saying(EXPECTED_REWRITTEN_DECLARATION_REFUSAL)
+
+    def assert_the_arming_check_refused_the_unloaded_unraisable_plugin(self) -> None:
+        self._assert_the_arming_check_failed_saying(EXPECTED_UNLOADED_UNRAISABLE_PLUGIN_REFUSAL)
 
     def assert_the_arming_check_passed_under_an_armed_environment(self) -> None:
         """The only run in this family that executes the arming check's passing arm.

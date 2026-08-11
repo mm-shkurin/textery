@@ -1,5 +1,3 @@
-import pytest
-
 from statements.gate_reach_statements import GateReachStatements
 
 
@@ -31,11 +29,6 @@ class TestGateReach:
         gate_reach_statements.assert_the_probe_suite_failed()
         gate_reach_statements.assert_the_failure_named_the_unawaited_coroutine()
 
-    @pytest.mark.skip(
-        reason="RED: _refuse_a_probe_inside_the_repository is anchored to backend/ while "
-        "its own remedy clause says 'outside the repository' -- the refusal names "
-        "...\\textery-s19\\backend, expected ...\\textery-s19"
-    )
     def test_should_refuse_to_write_a_probe_inside_the_backend_tree(
         self, gate_reach_statements: GateReachStatements
     ):
@@ -43,11 +36,6 @@ class TestGateReach:
 
         gate_reach_statements.assert_the_write_was_refused_before_it_landed()
 
-    @pytest.mark.skip(
-        reason="RED: a probe was written under the repository root and nothing objected "
-        "-- the guard's ancestry check is BACKEND_ROOT, so <repo>/.tmp passes it "
-        "and leaves a collectable test_*.py behind"
-    )
     def test_should_refuse_to_write_a_probe_inside_the_repository_above_the_backend_tree(
         self, gate_reach_statements: GateReachStatements
     ):
@@ -56,8 +44,8 @@ class TestGateReach:
         Then it is refused before it lands, naming the repository rather than `backend/`
 
         The one destination where the guard's anchor and the guard's own sentence
-        disagree -- and the destination a plain `--basetemp` at `<repo>/.tmp`
-        produces. Approved today, with a collectable `test_*.py` left behind.
+        used to disagree -- and the destination a plain `--basetemp` at
+        `<repo>/.tmp` produces.
         """
         gate_reach_statements.try_to_write_a_probe_inside_the_repository_but_outside_the_backend_tree()
 

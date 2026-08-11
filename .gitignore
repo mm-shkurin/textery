@@ -57,5 +57,7 @@ bash.exe.stackdump
 # Local project documentation (not committed)
 /Test/
 
-# Harness gate-reach probe scratch (written at the repo root on purpose, removed in a finally)
-/.gate_reach_repository_scratch/
+# Harness gate-reach probe scratches (aimed inside the repository on purpose, removed
+# in a finally, and asserted gone after it). Containment only -- the guards that keep
+# the removal aimed correctly are in `probe_destinations.remove_only_a_scratch_of_ours`.
+.gate_reach_*/

@@ -2495,7 +2495,71 @@ within their file, not across the story.
       `LEAKY_CHILD_VARIABLES`, so it would void every `assert` in a child probe too — pre-existing, and the
       first steerable variable found since the roster grew to ten. `raise RuntimeError` instead of
       `assert` closes the first half.
-- [~] green-usecase (the half of the join that was never fixed, and the half of the arming never probed)
+- [x] green-usecase (the half of the join that was never fixed, and the half of the arming never probed) —
+      **all six markers cleared in the one step, per the standing warning that clearing some and forgetting
+      the rest leaves guards unpinned with a fully green suite.** Verified by grep: no `pytest.mark.skip`
+      remains anywhere under `backend/usecase/tests`. **216 passed, 0 failed, 0 skipped** — the arithmetic
+      closes exactly against 210 + 6.
+      (1) **The reading model changed, not the join.** `ChildPytestReport` now knows which stream a banner
+      came from: `_stdout_line_count` counts the first stream's lines, `_stdout_banners` filters to those,
+      and `summary_counts()` reads its tally from that list. `section()` deliberately still spans **both**
+      streams' banners — that assertion was the RED's tripwire against a repair that simply discarded
+      stderr, and it stays green, so the fix is stream-attribution rather than truncation. Mutation-checked:
+      reverting `_stdout_banners` → `_banners` reproduces the recorded failure at
+      `fabricated_child_report_statements.py:82` verbatim. The boundary line when stdout ends in a newline
+      is attributed to stderr — recorded in the docstring, and it can only ever make the tally stricter.
+      (3) The refusal is anchored to `REPOSITORY_ROOT` on the guard's side and independently derived as
+      `parents[4]` on the expectation's side, so the tautology stays closed. (5) The fourth vector is
+      implemented to the roster's pre-written expectations; `ARMING_PROBE` now calls
+      `assert_the_unraisable_plugin_is_loaded_in_this_run` after the three-check sequence, so its
+      `assert loaded is True` **executed its failing arm for the first time in any process** — the test
+      passes only because the child's FAILURES section carries both clauses of that refusal.
+      **The safety item (α) is closed on both halves, and both were probed rather than reasoned about.**
+      `shutil.rmtree` moved into `probe_destinations.remove_only_a_scratch_of_ours`, behind an ancestry
+      check **and** a name-prefix check, raising `RuntimeError` before deleting: a `.gate_reach_*`
+      directory outside the repository is refused by ancestry, `<repo>/backend` is refused by name —
+      neither guard is inert. The symmetric post-`finally` `not scratch.exists()` check is in place for
+      exactly the Windows case `ignore_errors=True` hides. (β) The expected sentence is carried **per
+      destination** now, so the backend-tree guard is live again instead of dark. (γ)
+      `probe_destinations.py` no longer imports from the module under test — `IN_TREE_SCRATCH` is
+      `REPOSITORY_ROOT / "backend" / …`, so a wrong `parents[3]` can no longer move anchor and destination
+      together. (ε) Both module-scope bare `assert`s are `raise RuntimeError` now, and **`PYTHONOPTIMIZE`
+      was decided rather than assumed**: added to both sides of the bidirectional pin, because it does not
+      merely disarm a gate — it *empties the probe*, which then passes having asserted nothing, producing a
+      green indistinguishable from a real one. There was no reading under which exclusion was defensible.
+      **Changes beyond the deliverables, flagged:** two more splits for the 200-line limit (largest file now
+      199) — `child_report_banners.py` carries the banner grammar out of `child_pytest_report.py` (223), and
+      `remove_only_a_scratch_of_ours` lives in `probe_destinations.py` rather than `gate_reach_statements.py`
+      (222); both scratch destinations renamed to share `SCRATCH_NAME_PREFIX = ".gate_reach_"`, which is what
+      makes α's name guard expressible at all, with the `.gitignore` line widened to match. Three docstrings
+      that described the RED state as current were corrected. No assertion, expectation or setup touched.
+      `/test-coverage usecase --focus`, filenames passed explicitly and `--cov-branch` by hand (a sixth
+      false all-clear avoided — every changed file is test-side, so `--cov=usecase/src` would have reported
+      on none of them): package 99%, and six of the ten changed files clean. **The hand-verification claim
+      held for three of four items and failed for one**, which is why the coverage pass exists: both refusal
+      arms of `remove_only_a_scratch_of_ours` are unexecuted, and `--cov-branch` confirms it — 4 partial
+      branches, both `if`s only ever taken false. They are ordinary function guards on a caller-supplied
+      `Path`, so any test reaches them; the only proof they work today is that the happy path still deletes,
+      and they guard the line this file's own docstring calls the most destructive in the package. Four
+      steps inserted below.
+      **Accepted gaps, no steps:** `probe_destinations.py:48,53` (the module-scope layout checks) run at
+      import against a fixed filesystem and the module is cached in `sys.modules` before any test body runs
+      — closing them needs the predicate extracted into a function taking a root, which is a refactor, not a
+      red/green pair; `child_pytest_report.py:77` (`tail`) and
+      `live_harness_configuration_statements.py:122` are both diagnostic arms evaluated only inside a
+      failing assertion's f-string, uncovered by construction on a green run.
+      **The ternary quirk in a second form:** `_stdout_banners` filters with a single-line comprehension
+      condition, so deliverable (1)'s whole attribution split contributes **no measurable branch** — the
+      file's 2 branches both belong to `if not banners:`. Hand-checked covered on all three arms: excluded
+      via `given_a_child_whose_stderr_carries_a_banner_of_its_own`, kept via the coloured and bannerless
+      reports, empty via `bannerless_child_report_statements.py`.
+      **Carried:** the two new `rmtree` guards and the post-`finally` disappearance check were themselves
+      hand-verified — the same shape this sub-thread keeps converting into RED work, and the first two are
+      now scheduled immediately below.
+- [~] red-usecase (coverage: scratch removal refuses a path outside the repository)
+- [ ] green-usecase (coverage: scratch removal refuses a path outside the repository)
+- [ ] red-usecase (coverage: scratch removal refuses a non-`.gate_reach_` name)
+- [ ] green-usecase (coverage: scratch removal refuses a non-`.gate_reach_` name)
 - [ ] red-adapter rest (the restore route declares its revision number as a string) — **the guard's
       docstring asserts a fact about the route that is false as shipped.** It says "the route declares
       the parameter as `str` precisely so that FastAPI does not answer it 422 ahead of the Bearer
