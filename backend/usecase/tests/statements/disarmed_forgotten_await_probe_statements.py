@@ -41,6 +41,16 @@ class DisarmedForgottenAwaitProbeStatements(ForgottenAwaitGateStatements):
         """
         self._environment.disarm_with_only(vector=value, variable=variable)
 
+    def given_a_runner_environment_carrying_no_vector_at_all(self) -> None:
+        """The same kept-ambient child, chosen deliberately to carry nothing.
+
+        `disarm_with_only(None)` is the "chose nothing" state the guard above is
+        careful to keep distinct from "chose nothing yet", and it is what makes the
+        negative control differ from the two arms by the vector *alone* -- same
+        probe, same `keep_ambient_environment=True` child, same hand scrub.
+        """
+        self._environment.disarm_with_only(vector=None)
+
     def run_the_probe_under_the_projects_own_pytest_configuration(self) -> None:
         """Refused until a vector was chosen -- see `DisarmedChildEnvironment`.
 
@@ -56,9 +66,9 @@ class DisarmedForgottenAwaitProbeStatements(ForgottenAwaitGateStatements):
         """The act for this family's own refusal test -- see the sibling family.
 
         The sibling ships the same two steps. They are not collapsed into a shared
-        base yet on purpose: what a base would naturally also carry is the guarded
-        act above, and the sibling's act is deliberately *unguarded* right now --
-        that is the RED. The extraction belongs after it goes green.
+        base yet: the extraction was held until the sibling's act was guarded too --
+        a base would naturally carry the guarded act above -- and that guard has
+        now landed, so the extraction is the next refactor rather than a blocked one.
         """
         with pytest.raises(AssertionError) as refusal:
             self.run_the_probe_under_the_projects_own_pytest_configuration()
@@ -80,3 +90,17 @@ class DisarmedForgottenAwaitProbeStatements(ForgottenAwaitGateStatements):
         tell from fully disarmed.
         """
         self.assert_the_probe_suite_passed()
+
+    def assert_the_gate_still_bit_without_a_vector(self) -> None:
+        """The control that makes the two arms above measurements of their vectors.
+
+        Without it, `{passed: 1}` under a vector is equally explained by "a
+        kept-ambient child cannot fail this probe at all" -- the sibling gate runs a
+        *scrubbed* child, so it differs from these arms by the isolation mechanism
+        as well as by the vector and cannot serve as the control. Here the only
+        difference from an arm is the vector, and the child must fail *and* name the
+        unawaited coroutine: an exit code alone would also be produced by a child
+        that broke before collecting the probe.
+        """
+        self.assert_the_probe_suite_failed()
+        self.assert_the_failure_named_the_unawaited_coroutine()

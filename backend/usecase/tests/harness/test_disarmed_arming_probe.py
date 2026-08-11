@@ -1,5 +1,3 @@
-import pytest
-
 from statements.disarmed_arming_probe_statements import DisarmedArmingProbeStatements
 
 
@@ -52,11 +50,6 @@ class TestDisarmedArmingProbe:
         disarmed_arming_probe_statements.assert_the_arming_check_passed_under_an_armed_environment()
 
 
-@pytest.mark.skip(
-    reason="RED: Failed: DID NOT RAISE AssertionError -- "
-    "DisarmedArmingProbeStatements inherits ChildProbeStatements' act unguarded, so "
-    "a run with no vector chosen executes a real child instead of refusing"
-)
 class TestDisarmedArmingProbeArrangement:
     """This family keeps its ambient environment, so it must be told which one to keep.
 

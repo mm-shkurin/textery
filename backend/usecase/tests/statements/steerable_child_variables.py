@@ -24,6 +24,24 @@ rest. They steer no filter and load no plugin; they turn pytest's markup on, and
 so every gate in this package reports `the child summarised {}` -- blaming pytest
 for a report pytest wrote correctly. `coloured_child_report_statements.py` proves
 the reader survives colour once it arrives; the scrub keeps it from arriving.
+
+`COV_CORE_SOURCE`/`COV_CORE_CONFIG`/`COV_CORE_DATAFILE` are in the roster for a
+third reason, and they are *measured* rather than assumed: `pytest-cov` exports
+them for the duration of a coverage run and its `.pth` bootstrap starts coverage
+inside any process that inherits them. The children here run with
+`cwd=BACKEND_ROOT`, so under `/test-coverage` an inheriting child writes stray
+`.coverage.*` files into the repository and merges probe-module lines -- code
+written by a Statements module, executed once, never imported by the suite --
+into the combined report the parent then reads as its own.
+
+What is deliberately *not* in the roster, so a later reader does not have to
+re-derive it: `PYTEST_XDIST_*`, `CI`, `GITHUB_ACTIONS` and the rest of a runner's
+badge variables steer nothing a child pytest decides -- no filter, no plugin, no
+markup -- and `COVERAGE_FILE` is left alone on purpose, because it names a file
+rather than loading anything and the children start no coverage once `COV_CORE_*`
+is gone. The standard this file holds itself to is that an exclusion is written
+down with its reason, the way `PYTHONWARNINGS` documents being scrubbed for a
+mechanism other than the one it looks like.
 """
 
 # Everything an ambient shell or a CI runner can set that changes what the child
@@ -36,6 +54,9 @@ REQUIRED_SCRUBBED_VARIABLES = (
     "PYTEST_CURRENT_TEST",
     "PY_COLORS",
     "FORCE_COLOR",
+    "COV_CORE_SOURCE",
+    "COV_CORE_CONFIG",
+    "COV_CORE_DATAFILE",
 )
 
 # One recognisable value for all of them: the claim is about names surviving, and
@@ -55,4 +76,7 @@ EXPECTED_KEPT_ENVIRONMENT = {
     "PYTEST_CURRENT_TEST": "set-by-the-parent",
     "PY_COLORS": "set-by-the-parent",
     "FORCE_COLOR": "set-by-the-parent",
+    "COV_CORE_SOURCE": "set-by-the-parent",
+    "COV_CORE_CONFIG": "set-by-the-parent",
+    "COV_CORE_DATAFILE": "set-by-the-parent",
 }

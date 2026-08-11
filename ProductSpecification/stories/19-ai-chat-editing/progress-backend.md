@@ -2104,7 +2104,7 @@ within their file, not across the story.
       recorded RED — extraction belongs after the green. It applied two docstring corrections only,
       both naming a public `child_environment()` that does not exist (same defect class as this
       commit's own fourth deliverable). **207 passed, 2 skipped, 0 failed.**
-- [~] green-usecase (the scrub is watched through one variable of five, and the vectors' own potency
+- [x] green-usecase (the scrub is watched through one variable of five, and the vectors' own potency
       is asserted nowhere) — **both review passes over `e1bb5864` returned CONCERNS; three items are
       inputs to this green, not follow-ups for later.**
       (a) *premortem CREDIBLE 1 — the potency control is itself the seventh inert guard.*
@@ -2143,7 +2143,53 @@ within their file, not across the story.
       clearing one and forgetting the other leaves the roster unpinned with a fully green suite; and the
       three added child runs at `PROBE_TIMEOUT_SECONDS = 180` still surface as an outputless
       `TimeoutExpired` (the already-scheduled diagnosability item).
-- [ ] red-usecase (coverage: third arming arm refuses a rewritten declaration) —
+      **GREEN landed — both markers cleared in the one step the premortem warned about splitting.**
+      `LEAKY_CHILD_VARIABLES` went 5 → 10: `PY_COLORS`/`FORCE_COLOR` (the roster gap the RED measured
+      as `removed [5 names] expected [7]`) plus `COV_CORE_SOURCE`/`COV_CORE_CONFIG`/`COV_CORE_DATAFILE`,
+      which is item (b) **decided rather than assumed** — added on both sides of the bidirectional pin
+      (`LEAKY_CHILD_VARIABLES`, `REQUIRED_SCRUBBED_VARIABLES`, `EXPECTED_KEPT_ENVIRONMENT`), with the
+      measured reason written next to it (pytest-cov's `.pth` bootstrap starts coverage in any
+      inheriting child, and these children run with `cwd=BACKEND_ROOT`) and a companion exclusion
+      paragraph for `COVERAGE_FILE`, `PYTEST_XDIST_*` and runner badge variables, matching the standard
+      `PYTHONWARNINGS` already set in that file. The arming family's act now calls
+      `refuse_the_act_until_a_vector_was_chosen()` **before** delegating, so the refusal fires ahead of
+      any child process — the `None` case included, since `disarm_with_only(None)` records
+      `UNTOUCHED_ENVIRONMENT` rather than leaving `_chosen` unset.
+      **Neither guard is assumed to bite; both were driven.** Deleting one entry from
+      `LEAKY_CHILD_VARIABLES` (temporarily, reverted) fails `child_environment_scrub_statements.py:97` —
+      the roster pin is real in the shrink direction, which is the whole point of replacing the
+      end-to-end child run with a direct `_child_environment()` assertion. Removing the new guard line
+      from the act (temporarily, reverted) reproduces the recorded RED word for word, `DID NOT RAISE
+      AssertionError`.
+      Item (a)'s missing control shipped: `test_hostile_runner_environment_potency.py` gains
+      `..._when_the_kept_environment_carries_no_vector`, which runs the *same* fixture, *same* probe and
+      *same* kept-ambient child with `disarm_with_only(None)` and requires the failure to name the
+      unawaited coroutine — so the two passing arms can no longer be explained by "a kept-ambient child
+      cannot fail this probe at all". Item (c)'s two stale docstrings corrected, plus a third found in
+      the sibling (`disarmed_forgotten_await_probe_statements.py` still called its act "deliberately
+      unguarded right now — that is the RED", which this commit falsifies).
+      `/test-coverage usecase --focus`, filenames passed **explicitly** and `--cov-branch` added by hand
+      (the template's filter would have reported on none of these — all four changed files are test-side
+      under `usecase/tests/statements/`, and `--cov=usecase/src` covers none of them; a fifth false
+      all-clear avoided): 100% lines on all four, `child_pytest_run.py` 2/2 branches. The carryover's
+      ternary quirk reproduced exactly — `child_pytest_run.py:189-193`'s keep-ambient ternary carries
+      **no branch entry at all** and its arms do not appear as separate lines, so the file's 2/2 is
+      entirely the unrelated `L73` guard. Both arms hand-checked to named tests that assert on the
+      returned dict, not merely execute it. **Incidental first measurement of (b):** running the harness
+      suite *under coverage* is the exact condition `COV_CORE_*` was scrubbed for, and it left no stray
+      `.coverage.*` in the repo root.
+      **Three test-file changes beyond marker removal, flagged not hidden:** the new control above and
+      its two supporting steps (an explicitly scheduled deliverable, no existing assertion or expected
+      value altered); and `import pytest` deleted from both unskipped files, unused once the markers
+      went (ruff F401 — same shape as the line-316 precedent).
+      **Two things left for `/refactor` rather than done here:** the two unskipped classes' docstrings
+      still argue for guards that now exist (prose in test files, outside what a green may touch); and
+      `ruff check` reports 3 × E501 — two pre-existing at
+      `test_resolve_owned_revision_records.py:65,80`, the third this step's own, the mandated control's
+      `def` line at 101 characters. The name was specified by the step and the repo already tolerates
+      two identical violations, so it was left rather than renamed or `noqa`'d.
+      **210 passed, 0 failed, 0 skipped** (was 207 passed / 2 skipped).
+- [~] red-usecase (coverage: third arming arm refuses a rewritten declaration) —
       **the one arm this unit's own diff promises and does not deliver.**
       `disarmed_arming_probe_statements.py`'s module docstring states it outright: the third check,
       `_assert_the_declaration_is_exactly_the_required_entries`, "is unreachable by either vector below

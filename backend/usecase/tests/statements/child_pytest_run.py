@@ -37,6 +37,11 @@ PROBE_TIMEOUT_SECONDS = 180
 # before pytest sees anything -- which is enough to silence a warning a *probe*
 # provokes directly, not because it can disarm this gate.
 #
+# `PY_COLORS`/`FORCE_COLOR` turn pytest's markup on, and the anchored banner pattern
+# then matches nothing the child drew; `COV_CORE_*` is `pytest-cov`'s `.pth`
+# bootstrap, which starts coverage inside any child that inherits it. Both groups
+# are reasoned about in full in `steerable_child_variables.py`.
+#
 # The roster is asserted against, in both directions, by
 # `test_child_environment_scrub.py`: shrink this tuple and that test goes red.
 LEAKY_CHILD_VARIABLES = (
@@ -45,6 +50,11 @@ LEAKY_CHILD_VARIABLES = (
     "PYTEST_PLUGINS",
     "PYTEST_DISABLE_PLUGIN_AUTOLOAD",
     "PYTEST_CURRENT_TEST",
+    "PY_COLORS",
+    "FORCE_COLOR",
+    "COV_CORE_SOURCE",
+    "COV_CORE_CONFIG",
+    "COV_CORE_DATAFILE",
 )
 
 

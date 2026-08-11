@@ -44,6 +44,29 @@ class TestHostileRunnerEnvironmentPotency:
         statements.assert_the_projects_own_configuration_was_in_force()
         statements.assert_the_gate_was_disarmed_by_the_vector()
 
+    def test_should_still_fail_the_forgotten_await_probe_when_the_kept_environment_carries_no_vector(
+        self,
+        tmp_path,
+        disarmed_forgotten_await_probe_statements: DisarmedForgottenAwaitProbeStatements,
+    ):
+        """The control the class shipped without, and the reason the arms mean anything.
+
+        The arms assert one direction only -- the probe passes under each vector --
+        and `{passed: 1}` is equally explained by "a kept-ambient child cannot fail
+        this probe at all". The sibling `TestForgottenAwaitGate` cannot rule that out
+        on their behalf: it runs a *scrubbed* child, so it differs from an arm by the
+        isolation mechanism and by every ambient variable outside the roster, not by
+        the vector. This run differs from an arm by the vector alone.
+        """
+        statements = disarmed_forgotten_await_probe_statements
+        statements.given_a_runner_environment_carrying_no_vector_at_all()
+        statements.given_a_call_site_that_forgets_to_await_an_async_given_step(tmp_path)
+
+        statements.run_the_probe_under_the_projects_own_pytest_configuration()
+
+        statements.assert_the_projects_own_configuration_was_in_force()
+        statements.assert_the_gate_still_bit_without_a_vector()
+
 
 class TestDisarmedForgottenAwaitProbeArrangement:
     """This family keeps its ambient environment, so it must be told which one to keep.

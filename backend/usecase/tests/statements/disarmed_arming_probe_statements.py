@@ -89,13 +89,25 @@ class DisarmedArmingProbeStatements(ChildProbeStatements):
     def given_the_live_arming_check_as_the_probe(self, tmp_path: Path) -> None:
         self._write_probe(tmp_path, ARMING_PROBE)
 
-    def run_the_probe_expecting_it_to_be_refused(self) -> None:
-        """The act for the arrangement guard this family does not yet have.
+    def run_the_probe_under_the_projects_own_pytest_configuration(self) -> None:
+        """Refused until a vector was chosen -- see `DisarmedChildEnvironment`.
 
-        The sibling overrides its act to call
-        `refuse_the_act_until_a_vector_was_chosen()` first; this one runs a child
-        straight away, so the `pytest.raises` below is what goes red today -- and
-        `assert_no_child_was_run_before_the_refusal` is red independently of it.
+        This family keeps its ambient environment, so a test that forgot its
+        `given_` step would run under whatever the developer's shell carries: green
+        on a clean laptop, red on a runner that exports `PYTEST_ADDOPTS`, and
+        pointing at the harness rather than at the runner either way. The guard runs
+        before the act, not after it, because the entire cost it exists to avoid is
+        paid inside the child.
+        """
+        self._environment.refuse_the_act_until_a_vector_was_chosen()
+        super().run_the_probe_under_the_projects_own_pytest_configuration()
+
+    def run_the_probe_expecting_it_to_be_refused(self) -> None:
+        """The act for this family's arrangement guard -- see the sibling family.
+
+        The sibling ships the same two steps. Collapsing them into a shared base is
+        the refactor that was deliberately held until this guard landed, since what
+        such a base would naturally also carry is the guarded act above.
         """
         with pytest.raises(AssertionError) as refusal:
             self.run_the_probe_under_the_projects_own_pytest_configuration()
@@ -105,13 +117,14 @@ class DisarmedArmingProbeStatements(ChildProbeStatements):
         self._environment.assert_the_refusal_named_the_unchosen_environment()
 
     def assert_no_child_was_run_before_the_refusal(self) -> None:
-        """Red for a second, independent reason today, and that is deliberate.
+        """What keeps the guard from being satisfied by a check placed *after* the run.
 
-        This family's act is unguarded, so it runs a real child under whatever the
-        ambient environment carries and only the `pytest.raises` above goes red. Once
-        the guard lands, this is what keeps it from being satisfied by a check placed
-        *after* the run -- which would raise the right sentence while paying the whole
-        cost the guard exists to avoid.
+        It was never red on its own: while the act was unguarded the `pytest.raises`
+        above failed with `DID NOT RAISE` inside the act itself, so the test body
+        never reached its assertion phase and this step was dead until the guard
+        landed. What it watches now is a guard moved below the child run -- which
+        would raise the identical sentence while paying the whole cost the guard
+        exists to avoid.
         """
         self._environment.assert_no_child_was_run_before_the_refusal(self._no_child_was_run())
 

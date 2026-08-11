@@ -1,14 +1,6 @@
-import pytest
-
 from statements.child_environment_scrub_statements import ChildEnvironmentScrubStatements
 
 
-@pytest.mark.skip(
-    reason="RED: AssertionError: a default child's environment removed ['PYTEST_ADDOPTS', "
-    "'PYTEST_CURRENT_TEST', 'PYTEST_DISABLE_PLUGIN_AUTOLOAD', 'PYTEST_PLUGINS', "
-    "'PYTHONWARNINGS'] from the parent's, expected exactly that list plus 'FORCE_COLOR' "
-    "and 'PY_COLORS' -- LEAKY_CHILD_VARIABLES carries neither colour variable"
-)
 class TestChildEnvironmentScrub:
     """A child pytest must inherit no variable a runner could steer it with.
 
