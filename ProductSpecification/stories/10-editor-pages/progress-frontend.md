@@ -1119,7 +1119,9 @@ pagination failure.
   **Done.** The split came first, as chartered: the seam was *"the patterns are narrow"* vs *"the
   comparator is not tautological"* — two arguments sharing a file through one `const`. `expectPartition`
   became `fixtureUsage.partition.ts` (29) and the two negative controls `fixtureUsage.partitionControl.test.ts`
-  (98); `patterns.test.ts` went 200 → 126, and the guard spent 26 of the 74 freed.
+  (116); `patterns.test.ts` went 200 → 165. (The 126/74-freed figures the red-agent reported, and
+  which this row and the commit message both carried, were wrong — see the correction row below;
+  every count here is now `wc -l` at the commit.)
   RED as predicted, then measured three ways: (1) the charter's headline mutant — delete
   `'pageCount: 4'` from `MUST_NOT_MATCH_ASSIGNMENTS` — reddens ONLY the new case, 18 others green,
   so the gap the row named is confirmed real rather than argued; (2) `MUST_NOT_MATCH_OPENERS`
@@ -1145,11 +1147,61 @@ pagination failure.
   and nowhere else — fixed to name both sides, with the no-borrowed-credit rule kept explicit (the
   two now share literals but are stated as having different subjects); and a pointer to a
   non-existent `paginationState.assignmentShape.ts`.
-  Suite 652 passed / 6 skipped / 0 failed. Prettier clean. Files: patterns.test **165**, partitionControl
-  98, probes 86, patternText 55, partition 29. `tsc` reports only the pre-existing RED stub
+  Suite 652 passed / 6 skipped / 0 failed. Prettier clean. Files (`wc -l`): patterns.test **165**,
+  partitionControl 116, probes 88, patternText 56, partition 29. `tsc` reports only the pre-existing RED stub
   `paginationState.ts:100` (TS6133 `input` unused) — it resolves at `green-frontend`, but it WILL
   fail a typecheck gate until then.
-- [~] docs, fold into the next edit of these two files (agent-review CONCERNS 2 + 3 + notes over
+- [~] red-frontend (premortem CREDIBLE 1 over `6a789f67`) — **`PINNED_ASSIGNMENT` is the one pattern
+  with no spelling pin at all, and the unit that closed the emptied-list vacuity left the reason
+  that list mattered most wide open.** `patternText.test.ts` pins the whole `RegExp` — source AND
+  flags — for exactly three patterns and excludes `PINNED_ASSIGNMENT` by charter, so its entire
+  guard is a hand-imagined near-miss list. Three widenings of `fixtureUsage.source.ts:61-62`, each
+  measured full-suite green (652 passed / 0 failed): adding the `'i'` flag (legalises `PAGECOUNT: 4,`
+  — one character, no probe spells a case variant), `PINNED_FIELDS + '|caretIndex'`, and `(.+),$` →
+  `(.*),$`. The `'i'` one is the sharpest and reads as closed only because `'g'` DOES redden three
+  files. The stated rationale — `constantSites` compares against a hand-typed assignment list — is
+  sound and insufficient, and that header already concedes it covers "changes that alter the CURRENT
+  yield, not every edit"; all three mutants alter no current yield. Guard, named: pin
+  `PINNED_ASSIGNMENT` as a whole `RegExp` the way `patternText.test.ts:47-55` pins the other three.
+  The `new RegExp(...)` construction forces `PINNED_FIELDS` to be spelled a second time on the
+  expected side — which is the "second spelling IS the guard" idiom the sibling file already argues
+  for, not an obstacle.
+- [ ] red-frontend (premortem CREDIBLE 2 over `6a789f67`) — **"all eight lists" is asserted by a
+  hand-written key list that nothing ties to the module's exports, so the pin that closed the
+  vacuity can be re-opened by deletion and is blind to addition.** Measured: delete
+  `mustNotMatchAssignments` from both sides of the new pin (two line-group deletions in one file)
+  and set `MUST_NOT_MATCH_ASSIGNMENTS = []` — 19 tests, 0 failed. The case whose own name reads
+  "pins every member of all eight probe lists" then passes while pinning seven. Deletion needs
+  intent; ADDITION does not — a future unit adding a fifth pattern and a ninth list gets no probe
+  case and no pin membership silently, while three headers keep asserting "all eight" as settled
+  fact. This is the next instance of this story's own recurring failure family, shipped by the unit
+  that fixed four others. Guard, named: assert `Object.keys(probesModule).sort()` equals the eight
+  pinned names, and that every `RegExp`-valued export of `fixtureUsage.source.ts` has a probe case.
+  Note the row below already charters the source half (`instanceof RegExp` over
+  `Object.entries(source)`) — `grep -rn "instanceof RegExp" frontend/src` returns nothing, so
+  neither half exists; the probes-module half was not chartered anywhere until now. Fold the two
+  halves into one unit: they are the same assertion pointed at two modules.
+- [ ] docs, fold into the next edit of these files (agent-review CONCERNS 1-5 over `6a789f67`) —
+  **five stated-coverage defects, no assertion defect: agent-review checked both control literals
+  against what `expectPartition` actually emits and the eight-list pin against `probes.ts`
+  member-for-member and order-for-order, and all are exact.** (1) **Already applied above** — the
+  line counts were wrong in every number and self-contradicted inside one paragraph (126 vs the
+  "Files:" line's own 165). Load-bearing, because the 200-line cap is what has driven the last three
+  units: a reader taking 126 believes there is room for three more guards of the size just written,
+  and there is room for one. The named absence is that nothing checks a recorded size against the
+  file — `wc -l` at commit time. (2) `fixtureUsage.partition.ts:15` says the split "blocked the
+  length pin the first file now carries" — `patterns.test.ts` carries a MEMBERSHIP pin, and its own
+  header records the length pin as drafted-and-rejected. The exact defect class this unit set out to
+  fix, surviving in a file this unit created. (3) The "`'null'` is covered by the split pin's
+  `accepted` side and by nothing else here" correction is false as written: the `/^never$/` control's
+  hand-typed `rejected` array lists `'null'` as its third member — added BY THIS COMMIT as part of
+  the derived-expected fix. Two corrections in one edit, the second invalidating the first. Direction
+  is safe (understates coverage) but it is the sentence that justifies hand-typing. (4) Same
+  paragraph, "the nine-member `rejected` arrays" — the `/^never$/` one is TEN; only the split
+  control's is nine. (5) `patterns.test.ts` "WHAT NO LEG CLAIMS" says "four edits in three files" and
+  then enumerates four files. The 3→4 edit-count correction was made while probes and the pin shared
+  one file — i.e. before this commit's own split — so the attacker floor is now understated by a file.
+- [ ] docs, fold into the next edit of these two files (agent-review CONCERNS 2 + 3 + notes over
   `ad850488`) — **three coverage claims in the headers are false, and this story keeps reddening on
   exactly that class.** (a) `PINNED_ASSIGNMENT`'s exemption from the pin is justified as
   "`constantSites` … already moves on any change to either" — it moves only on changes that alter
