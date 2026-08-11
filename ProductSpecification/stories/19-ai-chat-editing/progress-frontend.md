@@ -1897,6 +1897,82 @@ under `frontend/src` or `acceptance/tests/frontend`.
       `ruff check .` still reports the 10 pre-existing errors (follow-up (e)) and
       `ruff format --check` wants to reformat 90 files, all in unrelated `generation`/`landing`
       tests.
+      `/refactor` applied one change and it is the same class as `4cd9fd58`: this commit added
+      `OVER_QUOTA_CONTEXT` under a comment claiming it "prefixes every diagnostic this setup
+      raises" — it prefixed **one of nine**, the other eight hand-typing the same literal. A
+      comment false in exactly the way already fixed once on this branch. Messages are
+      byte-identical (the constant equals the literal); zero net lines.
+      It re-judged the shared-open-sequence question with a **third** instance now in evidence and
+      confirmed NO ACTION, with a stronger argument than 1.1's: the three Givens do not agree on a
+      shape — `over_quota` returns the account, `restored_conversation` stores `_expected_texts`
+      and returns `None`, `empty_chat_panel` returns `None` — so a template method would need to be
+      generic in **both** the factory and the post-step, two callables, not one.
+      Rejected but worth acting on later: `assert_status`/`body_of` are duplicated four ways across
+      the three scenarios' Givens (byte-identical modulo the context prefix) — real
+      assertion-logic duplication, declined only because the fix spans two committed scenarios and
+      Docker being down leaves "it still imports" as the only verification. And `MESSAGE_LIST` /
+      `EMPTY_STATE` are declared in both `restored_conversation_statements.py` and
+      `empty_chat_panel_statements.py` while `editor_route_statements.py` already holds
+      `CHAT_PANEL`/`MESSAGE_INPUT`/`SEND_BUTTON` for exactly that purpose — the strongest remaining
+      candidate. Also: 1.2's copy of `DOCUMENT_CONTENT` **dropped the rationale** for the `<p>`
+      wrapper, so the reason the markup matters now lives in only one of the two places depending
+      on it.
+      **Three defects fixed in the follow-up commit — both passes found the first two
+      independently, and both are defects of this unit's own test code:**
+      (1) **The Given was SELF-FULFILLING on the one fact it exists to establish.** Everything
+      anchored only the `user` rows; nothing demanded an `assistant` row. If the server records the
+      instruction and drops the reply — an async write after `status: done` is exactly that shape,
+      and `wait_for_edit_to_complete` returns when the status flips without reading the reply back
+      — `transcript_texts` becomes the three instructions, the browser Then compares the panel
+      against those three, and it **passes**, certifying a panel that restores half a conversation.
+      Now one `assistant` row per submitted instruction, counted rather than merely non-zero.
+      (2) **The in-view assertion was UNSATISFIABLE for an over-tall newest row.** It demanded both
+      edges inside the box, while `rows[-1]` is a model-generated reply of unbounded length and
+      `SEED_INSTRUCTIONS` is long *on purpose* to force the overflow the gate requires — the same
+      lever that buys non-vacuity raises the odds the last bubble alone exceeds the box. For such a
+      row no scroll position satisfies both edges, so green could not have satisfied it in the
+      view, nondeterministically, presenting as flake rather than a design gap. Now separated: a
+      row taller than `clientHeight` must have its **top** in view — how a chat pins an over-tall
+      newest message, since the user reads from the beginning — and the failure text says which
+      rule applied.
+      (3) **The geometry never checked the list against the WINDOW.** Every rect is
+      viewport-relative, so comparing row to list is invariant to the *page* scrolling: a green
+      calling `row.scrollIntoView()` scrolls ancestor scrollers including the document, which can
+      push `.ac-chat-history` itself off screen while the row sits perfectly inside the list's box
+      — all list-relative assertions pass and the user still cannot see the newest message. That is
+      the "passes for the wrong reason" this module was built to rule out, one level up.
+      `assert_the_history_itself_is_on_screen` now runs first.
+      97 collected / 0 errors, ruff clean, `conversation_transcript.py` at exactly 200 after
+      trimming the new docstring.
+      **Review-pass follow-ups:**
+      (cl) **`created_at` ordering does not close its hole on TIES.** `instants == sorted(instants)`
+      is satisfied by *any* permutation of equal timestamps. A user message and its reply written
+      in one transaction, or stored at second granularity, plausibly share `created_at` — the
+      server could return the reply before the instruction that produced it and both this check and
+      the user-subsequence check pass, pinning the view to a server bug at tie granularity. Needs
+      turn-pairing by `message_id` or index.
+      (cm) **The second Then forces scroll-pinning and nothing constrains WHEN it fires.** The
+      cheapest green is an effect keyed on `messages` calling `scrollIntoView`, which also fires on
+      every later history change — and story 19's streaming replies change `messages` continuously,
+      so a user who deliberately scrolled up loses their place on every token. (bs) recorded the
+      *absence* of scrolling; this over-correction is its mirror and is unrecorded. Owe a case that
+      after the user scrolls up, an arriving message leaves `scrollTop` where they put it.
+      (cn) **The transcript equality silently makes "assistant text is plain" a contract.** It
+      compares whitespace-normalised `row.text` to the raw stored text. Model replies routinely
+      contain markdown; any panel that *renders* it produces different `.text`, so the assertion
+      fails against a **better** implementation and pushes green toward dumping raw text into a
+      `<p>` forever — decided by a test whose subject is ordering.
+      (co) **The Given spends 3 real model calls per run with no ceiling and no teardown**, while
+      0.2 spends up to 25. On CI, a retry, or two parallel worktrees that is dozens of real
+      completions against a provider whose rate limit is shared across the whole suite, and a
+      provider-side 429 surfaces as a status that is neither 202 nor `done`, with nothing naming
+      rate limiting. Distinct from the recorded app-quota window: that is configuration, this is
+      unbounded spend and shared upstream capacity. 0.2 has `MAX_QUOTA_PROBES`; 1.2 has no
+      analogue, leaks an account and a document per run, and blocks up to 180s before the browser
+      opens.
+      (cp) Remote: `_rows_when_all_present` requires *exactly* the expected count, so a green
+      rendering one extra row (an optimistic or streaming placeholder) times out reporting "render
+      all N stored messages" — accusing the panel of too few when it rendered too many.
 - [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api

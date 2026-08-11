@@ -20,6 +20,7 @@ CONTEXT = "restored-conversation setup"
 OK_STATUS = 200
 
 USER_ROLE = "user"
+ASSISTANT_ROLE = "assistant"
 MESSAGE_FIELDS = ("message_id", "role", "text", "created_at")
 MESSAGE_ROLES = ("user", "assistant")
 
@@ -76,7 +77,29 @@ async def read_the_transcript_back(
         _assert_the_message_is_well_formed(row)
     _assert_the_instructions_are_in_submission_order(items)
     _assert_the_page_is_ordered_oldest_first(items)
+    _assert_both_sides_of_every_turn_are_recorded(items)
     return tuple(str(row["text"]) for row in items)
+
+
+def _assert_both_sides_of_every_turn_are_recorded(items: list) -> None:
+    """Without this the Given is SELF-FULFILLING on the one fact it exists to establish.
+
+    Everything above anchors only the `user` rows — texts this setup chose. Nothing demanded an
+    `assistant` row. If the server records the instruction and drops the reply (an async write
+    after `status: done` is exactly that shape, and `wait_for_edit_to_complete` returns when the
+    status flips, without reading the reply back), `transcript_texts` becomes the three
+    instructions, the browser Then compares the panel against those three, and it PASSES —
+    certifying a panel that restores half a conversation, from the scenario whose whole premise
+    is that a real one exists. Counted per instruction, not merely non-zero: one reply for three
+    edits is the same defect wearing a smaller number.
+    """
+    replies = [row for row in items if row["role"] == ASSISTANT_ROLE]
+    assert len(replies) == len(SEED_INSTRUCTIONS), (
+        f"{CONTEXT}: expected one {ASSISTANT_ROLE} message per submitted instruction — this "
+        f"scenario's Given is that BOTH sides of each turn are stored — got "
+        f"{len(replies)} for {len(SEED_INSTRUCTIONS)} instructions. The edits reached `done`, "
+        f"so the edit ran; what is missing is the reply write."
+    )
 
 
 def _assert_the_page_is_the_whole_conversation(body: dict) -> None:

@@ -25,6 +25,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.wait import WebDriverWait
 
 from statements.frontend.ai_chat.chat_history_viewport import (
+    assert_the_history_itself_is_on_screen,
     assert_the_history_overflows,
     assert_the_row_is_fully_in_view,
     measure,
@@ -127,6 +128,7 @@ class RestoredConversationStatements(EditorRouteStatements):
         # above has already proved the rendered rows match that order item for item.
         box = measure(driver, message_list, rows[-1])
         assert_the_history_overflows(box)
+        assert_the_history_itself_is_on_screen(box)
         assert_the_row_is_fully_in_view(box, "the newest message")
 
     def _wait_for_the_whole_transcript_to_render(self, driver: WebDriver) -> list[WebElement]:

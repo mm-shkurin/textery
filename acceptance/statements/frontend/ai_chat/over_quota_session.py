@@ -104,7 +104,7 @@ async def _create_document(client: DocumentEditClient, token: str) -> str:
     # `version` is asserted, not assumed: every probe submits `base_version=FIRST_VERSION`, and
     # a document created at another version would meet a 409 that charges no quota.
     assert (body["document_type"], body["version"]) == (DOCUMENT_TYPE, FIRST_VERSION), (
-        f"over-quota setup: expected the new document to be a "
+        f"{OVER_QUOTA_CONTEXT}: expected the new document to be a "
         f"'{DOCUMENT_TYPE}' at version {FIRST_VERSION}, got {response.text}"
     )
     return str(body["document_id"])
@@ -128,7 +128,7 @@ async def _spend_the_daily_quota(
         # Each probe carries a fresh Idempotency-Key, so each is a FIRST submission, whose
         # status the contract server-sets to exactly `queued`; a replay charged nothing.
         assert body["status"] == QUEUED_EDIT_STATUS, (
-            f"over-quota setup: probe {probe} was accepted with status "
+            f"{OVER_QUOTA_CONTEXT}: probe {probe} was accepted with status "
             f"'{body['status']}', expected a first submission's '{QUEUED_EDIT_STATUS}'"
         )
         await wait_for_edit_to_complete(
@@ -141,7 +141,7 @@ async def _spend_the_daily_quota(
             f"loop to {MAX_QUOTA_PROBES}",
         )
     raise AssertionError(
-        f"over-quota setup: {MAX_QUOTA_PROBES} edits completed without a "
+        f"{OVER_QUOTA_CONTEXT}: {MAX_QUOTA_PROBES} edits completed without a "
         f"{OVER_QUOTA_STATUS}; configure the daily AI-edit quota below {MAX_QUOTA_PROBES} "
         "in the acceptance environment"
     )
@@ -153,17 +153,17 @@ def _resets_at_of(response: RawResponseDto) -> str:
     byte what the API answered."""
     raw = _body_of(response).get("resets_at")
     assert isinstance(raw, str), (
-        f"over-quota setup: the {OVER_QUOTA_STATUS} body must carry a string resets_at "
+        f"{OVER_QUOTA_CONTEXT}: the {OVER_QUOTA_STATUS} body must carry a string resets_at "
         f"(documents_ai_edits_create.yaml QuotaError), got {response.text}"
     )
     instant = datetime.fromisoformat(raw.replace("Z", "+00:00"))
     assert instant.tzinfo is not None, (
-        f"over-quota setup: resets_at must be an offset-aware date-time, got '{raw}'"
+        f"{OVER_QUOTA_CONTEXT}: resets_at must be an offset-aware date-time, got '{raw}'"
     )
     now = datetime.now(timezone.utc)
     latest = now + timedelta(hours=QUOTA_DAY_MAX_HOURS, seconds=CLOCK_SLACK_SECONDS)
     assert now < instant <= latest, (
-        f"over-quota setup: resets_at must be the start of the NEXT quota day — after "
+        f"{OVER_QUOTA_CONTEXT}: resets_at must be the start of the NEXT quota day — after "
         f"'{now.isoformat()}' and no later than '{latest.isoformat()}' — got '{raw}'"
     )
     return raw
@@ -171,13 +171,13 @@ def _resets_at_of(response: RawResponseDto) -> str:
 
 def _assert_status(response: RawResponseDto, expected: int, what: str) -> None:
     assert response.status_code == expected, (
-        f"over-quota setup: {what} expected {expected}, "
+        f"{OVER_QUOTA_CONTEXT}: {what} expected {expected}, "
         f"got {response.status_code}: {response.text}"
     )
 
 
 def _body_of(response: RawResponseDto) -> dict:
     assert response.body is not None, (
-        f"over-quota setup: expected a JSON object body, got {response.text}"
+        f"{OVER_QUOTA_CONTEXT}: expected a JSON object body, got {response.text}"
     )
     return response.body

@@ -26,12 +26,19 @@ EDGE_TOLERANCE_PX = 1.0
 # `scrollHeight`/`clientHeight` come along because they are what proves the assertion is not
 # vacuous: on a conversation that fits, "visible without scrolling" is true of every row and pins
 # nothing.
+#
+# `windowHeight` comes along because every rect below is VIEWPORT-relative, so comparing the row
+# to the list is invariant to the PAGE being scrolled: a green calling `row.scrollIntoView()`
+# scrolls ancestor scrollers including the document, which can push `.ac-chat-history` itself
+# out of the window while the row sits perfectly inside the list's box. All three list-relative
+# assertions would pass and the user still could not see the newest message without scrolling —
+# the same "passes for the wrong reason" this module was built to rule out, one level up.
 MEASURE_SCRIPT = """
 const list = arguments[0], row = arguments[1];
 const l = list.getBoundingClientRect(), r = row.getBoundingClientRect();
 return {
   scrollHeight: list.scrollHeight, clientHeight: list.clientHeight,
-  scrollTop: list.scrollTop,
+  scrollTop: list.scrollTop, windowHeight: window.innerHeight,
   listTop: l.top, listBottom: l.bottom, rowTop: r.top, rowBottom: r.bottom,
 };
 """
@@ -58,13 +65,49 @@ def assert_the_history_overflows(box: dict[str, Any]) -> None:
     )
 
 
+def assert_the_history_itself_is_on_screen(box: dict[str, Any]) -> None:
+    """The scroller must be in the WINDOW before "in view" inside it means anything.
+
+    See MEASURE_SCRIPT: the row-vs-list comparison cannot see the page scrolling underneath it.
+    Asserted first so a green that scrolls the document to reveal the row fails here, naming the
+    page, instead of passing three list-relative checks.
+    """
+    assert box["listTop"] >= -EDGE_TOLERANCE_PX, (
+        f"the chat history's own top is above the window (listTop={box['listTop']}) — the page "
+        f"scrolled, so a row 'in view' inside the list may still be off screen"
+    )
+    assert box["listBottom"] <= box["windowHeight"] + EDGE_TOLERANCE_PX, (
+        f"the chat history's own bottom is below the window "
+        f"(listBottom={box['listBottom']}, windowHeight={box['windowHeight']}) — part of the "
+        f"list the assertions treat as visible is not"
+    )
+
+
 def assert_the_row_is_fully_in_view(box: dict[str, Any], what: str) -> None:
     """BOTH edges of the row lie inside the history's visible box.
 
     Bottom alone would accept a message so tall that its top is above the fold — the user sees
     the tail of a reply whose beginning is out of view and cannot tell it began. `visible` means
     the whole row.
+
+    UNLESS the row cannot fit, and that case is separated rather than failed. The newest row is
+    a model-generated reply of unbounded length, and `SEED_INSTRUCTIONS` is long ON PURPOSE to
+    force the overflow the gate above requires — the same lever that buys non-vacuity raises the
+    odds the last bubble alone exceeds the box. For such a row NO scroll position satisfies both
+    edges, so demanding both would make the scenario impossible for green to satisfy in the view,
+    nondeterministically, presenting as flake rather than as a design gap. A chat pins an
+    over-tall newest row by its TOP — the user reads from the beginning and scrolls down — so
+    that is what is asserted, and the `what` in the message says which rule applied.
     """
+    row_height = box["rowBottom"] - box["rowTop"]
+    if row_height > box["clientHeight"] + EDGE_TOLERANCE_PX:
+        assert box["rowTop"] >= box["listTop"] - EDGE_TOLERANCE_PX, (
+            f"{what} is taller than the chat history ({row_height} > "
+            f"clientHeight={box['clientHeight']}), so it cannot fit whole; its TOP must then be "
+            f"in view and is not (rowTop={box['rowTop']}, listTop={box['listTop']}, "
+            f"scrollTop={box['scrollTop']}) — the user cannot read it from its beginning"
+        )
+        return
     assert box["rowTop"] >= box["listTop"] - EDGE_TOLERANCE_PX, (
         f"{what} starts above the visible top of the chat history "
         f"(rowTop={box['rowTop']}, listTop={box['listTop']}, "
