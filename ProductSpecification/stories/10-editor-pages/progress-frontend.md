@@ -1151,7 +1151,7 @@ pagination failure.
   partitionControl 116, probes 88, patternText 56, partition 29. `tsc` reports only the pre-existing RED stub
   `paginationState.ts:100` (TS6133 `input` unused) — it resolves at `green-frontend`, but it WILL
   fail a typecheck gate until then.
-- [~] red-frontend (premortem CREDIBLE 1 over `6a789f67`) — **`PINNED_ASSIGNMENT` is the one pattern
+- [x] red-frontend (premortem CREDIBLE 1 over `6a789f67`) — **`PINNED_ASSIGNMENT` is the one pattern
   with no spelling pin at all, and the unit that closed the emptied-list vacuity left the reason
   that list mattered most wide open.** `patternText.test.ts` pins the whole `RegExp` — source AND
   flags — for exactly three patterns and excludes `PINNED_ASSIGNMENT` by charter, so its entire
@@ -1166,7 +1166,38 @@ pagination failure.
   The `new RegExp(...)` construction forces `PINNED_FIELDS` to be spelled a second time on the
   expected side — which is the "second spelling IS the guard" idiom the sibling file already argues
   for, not an obstacle.
-- [ ] red-frontend (premortem CREDIBLE 2 over `6a789f67`) — **"all eight lists" is asserted by a
+  **Done.** One file, `patternText.test.ts` (56 → 103, `wc -l`). The expected side spells the
+  alternation out in full; `PINNED_FIELDS` is module-private in `fixtureUsage.source.ts` and is not
+  exported at all, so a derived side was not merely discouraged here, it was unavailable — and the
+  proof the side is genuinely hand-typed is that a derived one would have passed all three mutants.
+  All three widenings premortem measured GREEN are now RED, each reddening exactly the new case and
+  nothing else: `'i'` flag, `|caretIndex`, `(.+),$` → `(.*),$`, all `1 failed | 19 passed | 3 skipped`.
+  `toStrictEqual` on whole `RegExp` objects is what carries the flags half — the `'i'` mutant is the
+  one a `.source` pin would still pass.
+  **No `it.skip`, deliberately** — a characterization pin has nothing to be red about: it passes on
+  correct source and fails on mutated source, which is also why the three sibling pins in this file
+  carry no marker either. `/test-review` judged this and agreed. The RED here is the mutant table,
+  not the baseline.
+  **The header reddened again — fifth consecutive review finding this same class**, and this time in
+  BOTH directions. (a) The opening line still said the file pins "three of the four patterns"; it now
+  pins all four. (b) The red-agent self-flagged that the header asserted the three widenings "was
+  measured green across all nineteen cases BEFORE the case below existed" while this run had measured
+  only the post-guard red — the claim was inherited from premortem and restated as first-hand fact.
+  `/test-review` did not soften the sentence; it re-measured all four mutants and replaced the claim
+  with the counts, so the nineteen green under each mutant ARE the pre-guard state, measured here.
+  (c) The unmeasured "`'g'` DOES redden three files" survived contact but was restated with its real
+  counts — `4 failed | 16 passed`, naming `patterns`, `constantSites`, `assignmentShape` plus the new
+  case. (d) "All nineteen cases" had been quietly standing in for twenty-two; the three skips are the
+  unrelated `paginationState` red-phase stubs and the header now says so.
+  **Scope held:** none of the CREDIBLE 2 row below was taken. It needs `import * as probesModule` and
+  an `Object.entries(source)` sweep in a different file with a different subject — folding it in would
+  put one failing assertion in front of two unrelated claims, which is the very argument this file's
+  own header gives for keeping its two cases separate.
+  Suite 653 passed / 6 skipped / 0 failed. Prettier clean. Files (`wc -l`): patternText **103**,
+  patterns.test 165, source 154. Note the ratio, not just the headroom: 103 lines carry two cases and
+  ~68 of header, so the next guard added here costs ~35 lines, not ~5. `tsc` still reports only the
+  pre-existing RED stub `paginationState.ts:100` (TS6133), which resolves at `green-frontend`.
+- [~] red-frontend (premortem CREDIBLE 2 over `6a789f67`) — **"all eight lists" is asserted by a
   hand-written key list that nothing ties to the module's exports, so the pin that closed the
   vacuity can be re-opened by deletion and is blind to addition.** Measured: delete
   `mustNotMatchAssignments` from both sides of the new pin (two line-group deletions in one file)
