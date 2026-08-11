@@ -20,6 +20,12 @@ _BANNER = re.compile(r"^=+ (?P<name>.+?) =+$")
 # Underscored rather than `=`, so `_BANNER` leaves these inside the section body.
 _FAILING_TEST = re.compile(r"^_+ (?P<name>\S+?) _+$")
 _COUNT = re.compile(r"^(?P<count>\d+) (?P<outcome>[a-z]+)$")
+# The SGR escapes pytest's `write_sep` wraps a whole separator line in once markup
+# is on -- which it is in a non-tty whenever `PY_COLORS=1` or `FORCE_COLOR` is set.
+# Stripped before `_BANNER` is tried, because that pattern is anchored: a coloured
+# report would otherwise answer no banners at all, and tally as the empty dict a
+# report that drew no banner honestly answers.
+_MARKUP = re.compile(r"\x1b\[[0-9;]*m")
 _ELAPSED = re.compile(r" in \d[\d.]*s.*$")
 
 # The section pytest writes only for tests that actually failed. Named because
@@ -170,5 +176,5 @@ class ChildPytestReport:
         return [
             _Banner(number, match.group("name").strip())
             for number, line in enumerate(self._lines)
-            if (match := _BANNER.match(line.rstrip()))
+            if (match := _BANNER.match(_MARKUP.sub("", line).rstrip()))
         ]

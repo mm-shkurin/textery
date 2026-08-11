@@ -1952,8 +1952,45 @@ within their file, not across the story.
       `FAILURES_BODY_STDOUT_REPORTED` has no `_____ test_probe _____` sub-banner, so a future family
       reusing the fabrication could conclude something about `failing_test_names()` from a body real
       pytest never writes — worth a comment on the fixture, not a test.
-- [~] green-usecase (a coloured report has no banners either, and the exit-code pins cannot fail)
-- [ ] red-usecase (the scrub is watched through one variable of five, and the vectors' own potency
+- [x] green-usecase (a coloured report has no banners either, and the exit-code pins cannot fail) —
+      one module constant and one call-site change in `child_pytest_report.py`:
+      `_MARKUP = re.compile(r"\x1b\[[0-9;]*m")`, and `_banners()` now matches
+      `_BANNER` against `_MARKUP.sub("", line).rstrip()`. The strip is applied **only to the match** —
+      `_Banner.line_number` and the raw `self._lines` the body is sliced from are untouched, so
+      `section()` still returns the child's own bytes and `output` still carries every escape (the
+      premise pin `_assert_the_report_is(COLOURED_REPORT, ...)` proves the fix is not passing by
+      scrubbing the child's evidence upstream). Fixed inside `_banners()` rather than at the tally, so
+      `summary_counts()`, `section()` and `failing_test_names()` are all covered by one change — which
+      is what the third because-clause in the Statements demanded.
+      **204 passed, 0 failed, 0 skipped** (was 203 + 1 skipped; the skipped one is the test this step
+      enabled, so the totals reconcile exactly). Red-note items (2) and (4) verified as already closed
+      in the red commit, not redone: no `_assert_the_exit_code_is` survives in
+      `bannerless_child_report_statements.py`, and no present-tense `+`-join claim survives in the join
+      files. One test change beyond the marker, flagged not hidden: removing `@pytest.mark.skip` left
+      `import pytest` unused (ruff F401), so that import line was deleted — no assertion, setup or
+      docstring touched.
+      `/test-coverage usecase --focus`: **the template's command measures nothing for this file** and
+      the first honest-looking attempt was a fifth false all-clear. The subject lives under
+      `usecase/tests/statements/`, not `{module}/src`, so `--cov=usecase/src` covers zero of it; and
+      `--cov=<path>` answers `Module ... was never imported` / `No data was collected`. The measurement
+      that works uses the **import name**, since `usecase/tests` is on `sys.path`:
+      `python -m pytest --cov=statements.child_pytest_report --cov-branch ... usecase/tests/`.
+      49 stmts, 1 miss, 2/2 branches, 0 partial, 98%.
+      The one uncovered line is `tail`'s `return self.output[-2000:]` (L83), reachable only from inside
+      f-strings that build assertion **failure** messages — a green suite never renders them. Untouched
+      by this change, owned by no scenario, so no coverage step was added; **it is not dead code — do
+      not let `/refactor` strip it.**
+      Per the carryover trap, the un-instrumented arms were hand-checked rather than read off the
+      number: the three walrus-in-comprehension filters (L147, L172, L179) are not counted as branches.
+      The new arm — a match that succeeds *only because* markup was stripped — is exactly what
+      `test_should_tally_the_report_when_the_child_coloured_every_banner` exercises, and it asserts the
+      FAILURES **section** as well as the tally, which proves the stripped match feeds correct line
+      numbers into `_body_ends` and not merely into `summary_counts()`.
+      **Lint gate is red on `backend/usecase` and it is not this work:** `ruff check backend/usecase`
+      reports 2 × E501 in `test_resolve_owned_revision_records.py:65,80`, confirmed present at HEAD by
+      stashing. An earlier scenario's test file — fix it in the `/refactor` step or a targeted commit,
+      but do not carry it as unnoticed.
+- [~] red-usecase (the scrub is watched through one variable of five, and the vectors' own potency
       is asserted nowhere) — **both review passes over `ae505cc6` converged on the first item, and the
       agent-review pass ran the negative control independently rather than trusting the commit
       message: with a scratchpad plugin forcing `keep_ambient_environment`, both new parametrisations

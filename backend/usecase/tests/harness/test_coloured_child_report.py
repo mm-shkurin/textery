@@ -1,12 +1,6 @@
-import pytest
-
 from statements.coloured_child_report_statements import ColouredChildReportStatements
 
 
-@pytest.mark.skip(
-    reason="RED: ChildPytestReport._banners() matches on `^=+ ... =+$` over raw lines, so "
-    "a colour-decorated report summarised {} instead of {'failed': 1}"
-)
 class TestColouredChildReport:
     """A colour-decorated report is not a bannerless one, and must not tally as one.
 
