@@ -995,7 +995,33 @@ pagination failure.
   neutralised). Guard, named: a negative control — feed a deliberately-wrong pattern to the same
   helper, `expectPartition(/^never$/, [], [...MUST_MATCH_VALUES, ...MUST_NOT_MATCH_VALUES])` — red
   the moment the helper stops consulting `pattern`. One case.
-- [~] red-frontend (agent-review CONCERNS 1 over `6464272f`) — **the negative control certifies ONE
+- [x] red-frontend (agent-review CONCERNS 1 over `6464272f`) — closed by a second control pinning a
+  SPLIT partition: `expectPartition(/^null$/, MUST_MATCH_VALUES, MUST_NOT_MATCH_VALUES)` throws with
+  `actual: {accepted: ['null'], rejected: [<the other nine, in probe order>]}`. No `some`- or
+  `every`-shaped shortcut can produce a split, so the `anyMatch` mutant that was green in all six
+  places now dies. Five mutants predicted, 5/5 matched. CONCERNS 2 also done: the `expected` field
+  came off BOTH pins — measured, not assumed, that every mutant in the class reproduces it by
+  construction from the call's own arguments and it could not fail while the signature is unchanged.
+  Two things the agents got wrong and corrected themselves on, both worth keeping. (1) The red-agent
+  reported "no subsumption in either direction, keep both"; `/test-review` re-derived the table and
+  found the witness for one direction (`(p) => p === 'null'` hardcoded) is **already red at case 1**,
+  so it never reaches the controls — it shows `/^never$/`'s margin over the split pin ALONE, not over
+  the file. Anything surviving the four cases AND the split pin but failing `/^never$/` needs a
+  helper that filters correctly for five patterns and deviates only on the empty-match case
+  (`pattern.test(p) || probes.every((q) => !pattern.test(q))`) — constructible, not a plausible
+  simplification, i.e. outside the hazard class the header itself defines. The controls are
+  ASYMMETRIC and the header now says so, per this file's own rule that no reader should count
+  strength that is not there. (2) The hand-typed nine-string `rejected` side was challenged as
+  duplicating `probes.ts`; the anti-shortcut property does NOT depend on hand-typing (the `!== 'null'`
+  predicate would still be written in the test, not read back from the helper), so deriving is sound
+  on that axis — but with `MUST_NOT_MATCH_VALUES` emptied a derived expected side collapses to `[]`
+  alongside the computed one and the pin goes GREEN, where hand-typed it reddens. That makes this
+  case the ONLY coverage two of the eight probe lists have, so the re-typing is bought deliberately
+  and the header records the decided trade. One limit stated rather than claimed closed: a mutant
+  branching on `pattern.source === '^never$'` defeats any finite set of behavioural controls — out
+  of reach by construction, and not the plausible-simplification class these target. Tests 18 passed
+  | 3 skipped | 0 failed. Cap: patterns 200 — **at the limit again**.
+  Original charter — **the negative control certifies ONE
   BOOLEAN BIT — "did any probe match?" — not per-probe application, and the header asserts the
   opposite as an absolute.** The shipped claim is "pinning `actual` … forces the pattern to have
   been applied to EVERY probe, so no degenerate consult survives". Surviving mutant, spelled out by
@@ -1049,10 +1075,16 @@ pagination failure.
   `Object.entries(source).filter(([, v]) => v instanceof RegExp).map(([k]) => k).sort()` against a
   named list. Strictly different from the docs row about "the four patterns" — that fixes a
   sentence, this is the assertion that would have stopped the sentence going stale.
-- [ ] red-frontend (agent-review CONCERNS 1 over `ad850488` + premortem CREDIBLE 2 over the same,
-  the same finding from two directions) — **UNBLOCKED**: `/refactor` over `6464272f` extracted the
-  eight lists into `fixtureUsage.probes.ts` (82 lines), taking `patterns.test.ts` from 200 to 151 —
-  49 lines of headroom, which is what this step was waiting for. Two things it surfaced that this
+- [~] red-frontend (agent-review CONCERNS 1 over `ad850488` + premortem CREDIBLE 2 over the same,
+  the same finding from two directions) — **BLOCKED ON ROOM AGAIN, and this is now a pattern worth
+  naming: `patterns.test.ts` has hit the 200-line cap on three consecutive units** (201 → split →
+  200 → extraction to 151 → 200). Each unit's guard costs more lines than the last because each
+  carries the argument for why the previous one was insufficient. Do the extraction or split as the
+  first half of this unit. Two lists are now covered incidentally — the split pin's hand-typed
+  `rejected` side reddens if either `VALUES` list is emptied — so this row covers the OTHER SIX, and
+  the header must not borrow credit for the two. `/refactor` over `6464272f` had extracted the eight
+  lists into `fixtureUsage.probes.ts` (82 lines), taking `patterns.test.ts` from 200 to 151;
+  the partial-match control spent all 49. Two things it surfaced that this
   step must carry: the header said "the SIX probe lists" and there are **eight** (struck — same
   class as the false claim below, and a reader trusting "six" writes a pin covering three quarters
   of the data and closes this row); and `probes.ts` is itself unguarded — the extraction makes room

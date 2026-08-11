@@ -95,14 +95,42 @@ import {
  * `name`, `actual`, `expected`. A bare `toThrowError()` was tried and MEASURED INSUFFICIENT: it
  * passes on any throw, so a helper that reads `pattern`, tests ONE probe and short-circuits
  * satisfies it while staying tautological for the four real cases — green under the bare form, red
- * under this one. Pinning `actual` to what `/^never$/` actually yields (everything rejected, nothing
- * accepted) is what forces the pattern to have been applied to EVERY probe, so no degenerate consult
- * survives. The message is deliberately NOT matched: it is vitest's diff formatting, presentation
- * rather than data, and `objectContaining` ignores it and its `showDiff`/`operator` siblings for the
- * same reason. A ONE-SIDED neutralisation (`rejected: rejected` hardcoded) survives and survives ANY
- * call — the two halves are complements, so computed `accepted` matches its list exactly when
- * computed `rejected` does — but that gap is empty: one side still filtered keeps all four cases
- * fully discriminating. Only the TWO-sided neutralisation empties the leg.
+ * under this one. The message is deliberately NOT matched: it is vitest's diff formatting,
+ * presentation rather than data, and `objectContaining` ignores it and its `showDiff`/`operator`
+ * siblings for the same reason. Neither pin asserts `expected`: that field is literally the two
+ * arguments the call passed in, reproduced by construction by every mutant discussed here, and it
+ * cannot fail while the helper's signature is unchanged. Only `actual` does work, and it is the only
+ * field pinned, so no later reader counts strength that is not there.
+ *
+ * TWO CONTROLS, AND WHAT EACH IS WORTH — MEASURED, NOT ARGUED. An earlier draft claimed the
+ * `/^never$/` pin "forces the pattern to have been applied to EVERY probe, so no degenerate consult
+ * survives". That was FALSE, and the counterexample is one line:
+ * `const anyMatch = probes.some((p) => pattern.test(p))`, then compare
+ * `anyMatch ? { accepted, rejected } : { accepted: [], rejected: probes }`. Every real pattern
+ * matches one of its own must-match probes, so all four cases above compare an object with itself;
+ * `/^never$/` matches none, so the mutant yields exactly the `actual` that pin demanded. A
+ * matches-NOTHING (or -EVERYTHING) control certifies ONE BOOLEAN BIT. Hence the second control,
+ * `/^null$/`, matching a strict non-empty SUBSET of one list: its `actual` is a SPLIT partition, and
+ * no `some`/`every`/first-probe-only shortcut can produce a split. Two patterns pinned to two
+ * DIFFERENT partitions is what forces the output to vary WITH `pattern`. They are NOT equally
+ * load-bearing, and that is disclosed rather than averaged: the `some` mutant survives all four
+ * cases above, so the split pin is the only leg here that kills it, while the mutant that redeems
+ * `/^never$/` — ignore `pattern`, hardcode `(p) => p === 'null'` — answers `[]` for every other
+ * pattern and is ALREADY red at case 1. That pin's margin is over the split pin ALONE, not over the
+ * file; it is kept for the degenerate END — nothing accepted — that no other call reaches. The split
+ * pin's `rejected` side is HAND-TYPED, so emptying `MUST_MATCH_VALUES` or `MUST_NOT_MATCH_VALUES`
+ * reddens it too — those two lists only; the charter'd length pin over the other six is unwritten.
+ * Deriving that side (`'null'` filtered out of the two lists concatenated) keeps the anti-shortcut
+ * property — the predicate is written HERE — but goes vacuous under that emptying. Hence hand-typed.
+ *
+ * WHAT SURVIVES BOTH, STATED AS A LIMIT RATHER THAN CLAIMED CLOSED. (a) A ONE-SIDED neutralisation
+ * (`rejected: rejected` hardcoded) survives ANY call — the two halves are complements, so computed
+ * `accepted` matches its list exactly when computed `rejected` does — and that gap is empty: one side
+ * still filtered keeps all four cases fully discriminating. (b) A mutant that BRANCHES ON PATTERN
+ * IDENTITY (`pattern.source === '^never$' ? … : …`) satisfies any finite set of controls and is
+ * closed by none of them. It is out of reach of this leg by construction, and it is also not the
+ * hazard these controls are for: every mutant above is a plausible SIMPLIFICATION a reader could
+ * make while believing the helper unchanged, and a source-string switch is not.
  */
 
 /**
@@ -144,7 +172,28 @@ describe('the source patterns, as the narrowness their consumers assume', () => 
       expect.objectContaining({
         name: 'AssertionError',
         actual: { accepted: [], rejected: [...MUST_MATCH_VALUES, ...MUST_NOT_MATCH_VALUES] },
-        expected: { accepted: MUST_MATCH_VALUES, rejected: MUST_NOT_MATCH_VALUES },
+      }),
+    )
+  })
+
+  it('fails with a SPLIT partition when the pattern matches exactly one probe of ten', () => {
+    expect(() => expectPartition(/^null$/, MUST_MATCH_VALUES, MUST_NOT_MATCH_VALUES)).toThrowError(
+      expect.objectContaining({
+        name: 'AssertionError',
+        actual: {
+          accepted: ['null'],
+          rejected: [
+            'NO_SKELETONS',
+            'MEASURING_SURFACE.railSkeletons',
+            '4',
+            '0',
+            "'4'",
+            '4 as number',
+            'pageCount',
+            'undefined',
+            'NO_SKELETONS + 1',
+          ],
+        },
       }),
     )
   })
