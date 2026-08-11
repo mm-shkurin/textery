@@ -56,18 +56,27 @@ export function stubFetch(...responses: unknown[]): ReturnType<typeof vi.fn> {
 // The URLs the client actually requested, in call order — the actual half of every "no renew, no
 // replay" and "renew and replay" assertion in both api test files. Named rather than re-spelled as
 // `mock.calls.map(([url]) => url)` at each of its six call sites: the destructure is transport
-// mechanics, while what the cases are claiming is the SEQUENCE of endpoints, and a list compared
-// with toEqual is what pins both its contents and its length.
+// mechanics, while what the cases are claiming is the SEQUENCE of endpoints, and comparing the
+// whole list is what pins both its contents and its length. Call sites use `toStrictEqual`: the
+// return type is `unknown[]`, so `toEqual` would let a holey or array-like call list through.
 export function requestedUrls(fetchMock: ReturnType<typeof vi.fn>): unknown[] {
   return fetchMock.mock.calls.map((call: unknown[]) => call[0])
 }
 
-// The three claims every refusal case makes about the thrown value, in one place because they only
-// mean something together: the CLASS is what `useEditorDocument` branches on, the `name` is what
+// The claims every refusal case makes about the thrown value, in one place because they only mean
+// something together: the CLASS is what `useEditorDocument` branches on, the `name` is what
 // survives a green that re-declares the class in a second module (two structurally identical
 // classes, one `instanceof` that silently goes false), and the MESSAGE is what separates a raised
-// class from an implementation that merely echoes `body.message`. Dropping any one of the three
-// re-opens a green that the other two let through — so they travel together.
+// class from an implementation that merely echoes `body.message`. Dropping any one re-opens a green
+// that the others let through — so they travel together.
+//
+// The CONSTRUCTOR is pinned in addition to `instanceof`, because `instanceof` is one-directional:
+// `toBeInstanceOf(Error)` is vacuously true of EVERY thrown error, so on the cases that assert a
+// plain `Error` the whole discriminating load fell on `name` — and `name` only reads 'Error' for a
+// subclass by accident of that subclass setting `this.name`. A green introducing
+// `class ChatHistoryError extends Error {}` and never assigning `name` inherits 'Error' for free
+// and passed every generic-failure case in both api test files. `constructor` is exact in both
+// directions, so `(Error, 'Error')` now means "a plain Error, not some subclass of one".
 export function expectErrorIdentity(
   error: unknown,
   type: new (...args: never[]) => Error,
@@ -75,6 +84,7 @@ export function expectErrorIdentity(
   message: string,
 ): void {
   expect(error).toBeInstanceOf(type)
+  expect((error as Error).constructor).toBe(type)
   expect((error as Error).name).toBe(name)
   expect((error as Error).message).toBe(message)
 }
@@ -94,6 +104,12 @@ export const REFRESH_URL = '/api/v1/auth/refresh'
 // Account-scoped, NOT '/api/v1/documents/{id}/ai-edits/quota'. Lives here beside its peers so the
 // endpoint table has one home rather than two.
 export const QUOTA_URL = '/api/v1/ai-edits/quota'
+// The first page of the chat history, with NO query string. `documents_messages_list.yaml` gives
+// `limit` a server-side default of 50 and `cursor` is by definition absent on the first page, so a
+// client that spells either out is stating a policy the contract already owns. Pinned with `toBe`,
+// so appending `?limit=50` fails here rather than silently freezing a page size scenario 1.2 has to
+// choose. When 1.2 adds paging this constant becomes the no-cursor case rather than changing.
+export const MESSAGES_URL = '/api/v1/documents/doc-1/messages'
 
 // The 401 both API test files drive their renew-and-replay case with. Stubbed twice per case: the
 // first is the original request, the second is the refresh, whose failure is the only path that
@@ -109,10 +125,15 @@ export const SESSION_EXPIRED_MESSAGE = 'Сессия истекла. Войди�
 // is constructed with no arguments and owns its message, so asserting the Russian constant while
 // the body says something else proves the class was raised — where matching bodies would also pass
 // for an implementation that merely echoes `body.message` into a plain Error.
+// Named rather than left inline now that a second file asserts it: `chatMessagesApi.test.ts` is
+// about a caller that does NOT opt into the `notFound` mapping, so what reaches it is this wire
+// sentence echoed through `describeFailure` — and the response and that expectation are two halves
+// of one claim. Two hand-kept copies would be two places for them to drift.
+export const NOT_FOUND_WIRE_MESSAGE = 'Document not found'
 export const NOT_FOUND_RESPONSE = {
   ok: false,
   status: 404,
-  json: async () => ({ error_code: 'NOT_FOUND', message: 'Document not found' }),
+  json: async () => ({ error_code: 'NOT_FOUND', message: NOT_FOUND_WIRE_MESSAGE }),
 }
 export const NOT_FOUND_MESSAGE = 'Документ не найден'
 

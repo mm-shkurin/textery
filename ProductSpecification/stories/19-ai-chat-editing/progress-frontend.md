@@ -1416,7 +1416,80 @@ under `frontend/src` or `acceptance/tests/frontend`.
       no messages and no scrollbar while `.ac-chat`'s own `overflow: auto` never fires. Symptom
       is the *messages* vanishing, not the composer, so it is a different failure from (bl). No
       `min-height` floor.
-- [~] red-frontend-api
+- [x] red-frontend-api — nine cases over `loadChatMessages` in
+      `api/__tests__/chatMessagesApi.test.ts`, covering `GET /api/v1/documents/{id}/messages`
+      (`endpoints.md:9`). All nine fail against the stub's unconditional
+      `Not implemented: loadChatMessages(<id>)`: the two happy paths as
+      `promise rejected … instead of resolving`, the four page-guard cases on
+      `expected 'Not implemented…' to be 'Не удалось загрузить историю чата'`, the 404 on
+      `… to be 'Document not found'`, and the session case one assertion earlier on
+      `… to be an instance of SessionExpiredError`. The two `resolves` cases fail **at the
+      matcher**, not inside `httpClient` — no fetch was reached, so nothing passed vacuously.
+      **Decisions this unit made, each pinned by a case rather than only argued:**
+      The messages read deliberately does **not** opt into `refusals.notFound`. The page's
+      *document* read already opts in and owns the not-found blocker; a 404 reaching the
+      history read while the document loaded fine is the history endpoint failing — scenario
+      1.3's panel — and `DocumentNotFoundError` there would blank the whole editor over a
+      broken sidebar. The `send.ts` opt-in design from `green-frontend-api` 0.1 is untouched.
+      **That closes (x), and `/test-review` verified it by mutation rather than by argument:**
+      deleting the `refusals.notFound &&` conjunct in `send.ts` — making the mapping
+      unconditional for every caller — fails **exactly one case in 540**, this file's
+      `keeps the shared 404 as a described generic failure`, with
+      `AssertionError: expected 'DocumentNotFoundError' to be 'Error'`. The claim was true in
+      its strong form: this is the only case anywhere holding the opt-in guard, which
+      previously had zero coverage.
+      **(bp)'s client half is closed:** a 200 that does not carry a page — `{}` from
+      `res.json().catch(() => ({}))`, or a non-list `items` — **rejects** rather than mapping
+      to an empty conversation. An empty-defaulting client is precisely what would make a
+      failed read render "Документ готов…". Widening `messages` to `ChatMessage[] | null`
+      stays 1.3's.
+      **(bn) closed:** `emptyChat.test.tsx` now imports `CHAT_EMPTY_STATE_TEXT` from
+      `AiChatPanel` instead of retyping it. Three copies down to two; the Python acceptance
+      copy is unshareable by construction.
+      `/test-review` landed three fixes plus the mutation verification. The load-bearing one is
+      in the **shared** helper: `expectErrorIdentity` asserted `toBeInstanceOf(Error)`, which is
+      true of every thrown error, so on the four generic-failure cases the entire discriminating
+      load fell on `name` — and `name` reads `'Error'` for a subclass only by accident of that
+      subclass assigning `this.name`. Now also `expect(error.constructor).toBe(type)`. Verified
+      by mutation: with a green throwing `class ChatHistoryError extends Error {}` and no `name`
+      assignment, 5 refusal cases fail with the check and **4 of those 5 passed without it** — a
+      green inventing a nameless error subclass would have walked through this file *and* both
+      sibling api test files. Also: `toEqual`→`toStrictEqual` on both `requestedUrls` lists
+      (`requestedUrls` returns `unknown[]`, so `toEqual` tolerates holes and array-likes); and a
+      **ninth case added** because `next_cursor` had no type guard — `nextCursor: string | null`
+      is a promise the module's own exported type makes, and a green written as
+      `body.next_cursor ?? null` passed all eight existing cases while typing an arbitrary value
+      `string` by declaration alone. Scenario 1.2 is the first to send the cursor back and would
+      interpolate `[object Object]` into a query string.
+      Rejected findings worth keeping: no 500 case, because in `send.ts` a 500 reaches
+      `new Error(describeFailure(...))` by a strict *subset* of the 404 case's path — the 404
+      case exercises that same final line having additionally traversed the notFound branch
+      without firing it, so it is strictly stronger, not merely equivalent. No verb pin on the
+      404 case: the request is fully constructed before any response arrives, so no branch lets
+      a 404 alter the verb of a request already sent.
+      Other pins: the URL is `toBe` with **no query string** — `limit` has a server-side default
+      and `cursor` is absent on the first page, so a client spelling either out states a policy
+      the contract owns; the return is a `ChatMessagePage`, not a bare array, because the
+      endpoint is keyset-paginated by contract and an array asserts "this is the whole
+      conversation"; `nextCursor: null` comes from an **absent** key, pinned with
+      `toStrictEqual`; and the 404 case sends `doc-gone`, not `doc-1`, so path interpolation is
+      pinned — every other case would pass for a hardcoded path.
+      (z) not repeated: the module imports only `shared/api/send`, no peer-feature import.
+      532 passed / 0 failed / **9 skipped**; tsc, prettier, oxlint clean. The 9 skips are this
+      unit's single `describe.skip` and nothing else.
+      **Owed to green or `/refactor`:** the duplicate `ChatMessage` (this api module vs
+      `AiChatPanel`) is held only by a compile-time `expectTypeOf<ChatMessage>()
+      .toEqualTypeOf<PanelChatMessage>()` gate — moving a shipped production type is beyond a
+      RED phase's licence, so consolidation is owed. **Note the file is 192 of 200 lines: a
+      tenth case forces a split.** Green must also report **0 skipped** explicitly, per (bo).
+      **Recorded, not fixed:** `emptyChat.test.tsx:103` carries a stale `// RED:` comment
+      claiming neither `ai-chat-message-list` nor `ai-chat-empty-state` exists anywhere under
+      `frontend/src`. Both exist at `AiChatPanel.tsx:64,66` and the test passes — narrative in a
+      file greened by a prior unit, not an assertion defect, but it will mislead the next
+      reader. And `editorDocumentApi.test.ts:93,103,123,139` still use `toEqual` on
+      `requestedUrls` — same looseness as fix 2, but committed green tests outside this unit's
+      file set.
+- [~] green-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
 - [ ] green-selenium

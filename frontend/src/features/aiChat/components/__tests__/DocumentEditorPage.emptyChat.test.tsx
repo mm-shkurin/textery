@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { DocumentEditorPage } from '../DocumentEditorPage'
 import { loadEditorDocument } from '../../api/editorDocumentApi'
 import { loadEditQuota, type EditQuotaState } from '../../api/editQuotaApi'
+import { CHAT_EMPTY_STATE_TEXT } from '../AiChatPanel'
 
 // Story 19, Frontend Scenario 1.1 — "The editor and chat panel render side by side with an empty
 // history" (`tests/02_UI_Tests.md`).
@@ -41,8 +42,12 @@ const EMPTY_STATE = 'ai-chat-empty-state'
 // past it. The list scope is what keeps the composer's own `ai-chat-message-input` from matching.
 const ANY_MESSAGE = '[data-testid^="ai-chat-message"]'
 
-const EXPECTED_EMPTY_STATE_TEXT =
-  'Документ готов. Напишите, что нужно изменить — я поправлю текст и сохраню новую версию.'
+// IMPORTED, not retyped — follow-up (bn), owed since `green-frontend` exported the constant and
+// declined to rewire a test it had no licence to touch. The sibling `quotaReadFailed.test.tsx`
+// already imports `CHAT_PANEL_NOTICE` from the same module; this file was the one breaking that
+// pattern. Two copies of the sentence is the floor (the acceptance layer's
+// `empty_chat_panel_statements.py` is Python and unshareable by construction); three was avoidable.
+const EXPECTED_EMPTY_STATE_TEXT = CHAT_EMPTY_STATE_TEXT
 
 const DOCUMENT_ID = '3f1c6a20-9d4e-4b71-a0c8-5e2b7d84f193'
 const DOCUMENT_PARAGRAPH_TEXT = 'Введение к докладу о квантовых вычислениях'
