@@ -1555,8 +1555,50 @@ under `frontend/src` or `acceptance/tests/frontend`.
       (bz) Minor: the second happy path drops the `stubFetch` return, so unlike the first it
       pins neither call count nor URL. Effectively guarded only because there is one stubbed
       response and a second call would hit the default throw — the asymmetry looks unintentional.
-- [~] green-frontend-api
-- [ ] align-design
+- [x] green-frontend-api — **541 passed / 0 failed / 0 skipped** (124 files), up from 532/9;
+      all nine cases report *passed* individually. `npm run typecheck` (`tsc -b`), prettier and
+      oxlint clean. (bo) honored by absence *and* arithmetic: the `skipped` line is gone from
+      the summary entirely, and 532 + 9 = 541.
+      `loadChatMessages` is 97 lines over `send`, modelled on the sibling `editQuotaApi.ts`:
+      `GET /api/v1/documents/${documentId}/messages`, no query string, `{}` options, fallback
+      `'Не удалось загрузить историю чата'`, **no `refusals` argument**. `mapPage` refuses a
+      non-array `items`; `mapMessage` refuses a non-object row, a non-string `message_id`/`text`
+      and a `role` outside the enum; `mapCursor` returns `null` for absent **or** null and
+      refuses anything else non-string. All four throw the same fallback-message plain `Error`.
+      **(x) is now genuinely closed, and verified by mutation at this step rather than claimed
+      at the last one.** Deleting the `refusals.notFound &&` conjunct — at `send.ts:106`, not
+      110; the line had moved — gives 1 failed / 8 passed in this file, on
+      `keeps the shared 404 as a described generic failure`, with
+      `AssertionError: expected [Function DocumentNotFoundError] to be [Function Error]`. Note
+      the text differs from the prediction `expected 'DocumentNotFoundError' to be 'Error'`:
+      that is `expectErrorIdentity`'s **new constructor check firing one assertion earlier** than
+      the `name` check — the same defect caught sooner, which is the fix from the RED unit paying
+      off immediately. Restored; `git diff --quiet src/shared/api/send.ts` exits 0.
+      **(by) answered, and the answer is worse than the follow-up assumed: the shipped client
+      CANNOT produce a Russian message for a history 404 at all.** `describeFailure` returns
+      `body.detail ?? body.message` whenever it is a non-blank string and only falls through to
+      `` `${fallback} (HTTP 404)` `` when the body carries no usable text — and this endpoint's
+      404 always carries `message`. So the Russian fallback is *unreachable* for a real 404;
+      whatever the server says, in whatever language, is what reaches 1.3. Opting into
+      `{ notFound: true }` is the only lever inside this module and this unit's design rules it
+      out. **The consequence for 1.3: it must NOT render `error.message` verbatim** for the
+      history panel — it needs its own Russian copy and must treat the thrown `Error` as a
+      signal, not as display text. That is the discipline `useGeneration.ts:89` and
+      `useHistoryList.ts:52` already get wrong by rendering `error.message` straight through.
+      (bz) answered: a double fetch **would** have been caught, though not by the assertion the
+      follow-up wanted. `stubFetch`'s default implementation throws
+      `'fetch called more times than the test stubbed'` and that case stubs exactly one response,
+      so a second call fails as an unexpected rejection rather than on a count. A wrong *URL*
+      there still would not be caught — only the first happy path and the 404 case pin that. The
+      shipped client issues exactly one `send` call with no retry, proven by the first happy
+      path's `toHaveBeenCalledTimes(1)`.
+      Only test change: `describe.skip` → `describe`, plus deleting the RED paragraph above it.
+      `aiChatApiFixtures.ts` untouched at 176 lines — green added no wire fixtures, so the
+      ~24-line headroom the refactor flagged is still there.
+      Incidentally resolved: the pre-existing prettier warning on
+      `DocumentEditorPage.notFound.test.tsx`, recorded as out-of-unit debt since
+      `green-frontend` 0.1, no longer appears.
+- [~] align-design
 - [ ] green-selenium
 - [ ] demo
 

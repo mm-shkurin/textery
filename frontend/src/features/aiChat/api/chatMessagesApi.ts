@@ -1,7 +1,5 @@
 // The chat history read behind `GET /api/v1/documents/{document_id}/messages` (`endpoints.md:9`).
 //
-// TDD RED STUB — no implementation. `red-frontend-api`, Story 19, Frontend Scenario 1.1.
-//
 // Imports `shared/api/send` and NOTHING from a peer feature: follow-up (z) flagged
 // `editorDocumentApi.ts:7` pulling `getDocument` out of `generation` as a `frontend-rules.md`
 // "Feature Structure" violation, and a second one is not owed to this endpoint — no other feature
@@ -13,6 +11,8 @@
 // together only by an `expectTypeOf` gate; TypeScript being structural, two copies diverge
 // silently — by one growing a field — rather than by any runtime signal.
 //
+import { send } from '../../../shared/api/send'
+
 // `text` is the only field any ASSERTION reads — `AiChatPanel.history.test.tsx` checks row text
 // and nothing else. `messageId` is READ BY THE CODE, as the React key on each row, but pinned by
 // no test: both fixtures use distinct ids, so duplicate or absent ids would make React silently
@@ -32,6 +32,68 @@ export interface ChatMessagePage {
   nextCursor: string | null
 }
 
+// Deliberately NOT `{ notFound: true }`. `error_code: 'NOT_FOUND'` is shared by all seven
+// endpoints, and a 404 reaching the HISTORY read while the document itself loaded is the history
+// endpoint failing — not "your document is gone". `loadEditorDocument` is the authoritative read
+// and already opts in; a second typed 404 here would blank the whole editor over a broken sidebar.
+const FALLBACK = 'Не удалось загрузить историю чата'
+
+// The wire shape as UNKNOWN keys, not as a declared response type: a declared type is a promise
+// the server makes, and every guard below exists because the server can break it.
+interface MessagePageWire {
+  items?: unknown
+  next_cursor?: unknown
+}
+
+const ROLES = ['user', 'assistant']
+
+// Silence must REFUSE. `performRequest` ends with `res.json().catch(() => ({}))`, so a 204, an
+// empty 200 and a proxy's HTML page served with a 200 all arrive as `{}` — and `items ?? []`
+// would answer "this document has never been edited" for an endpoint that said nothing.
+function mapMessage(row: unknown): ChatMessage {
+  if (typeof row !== 'object' || row === null) {
+    throw new Error(FALLBACK)
+  }
+  const { message_id: messageId, role, text } = row as Record<string, unknown>
+  if (typeof messageId !== 'string' || typeof text !== 'string') {
+    throw new Error(FALLBACK)
+  }
+  // Against the ENUM, not merely against `string`: scenario 1.2 splits the conversation on this
+  // field, and a third value would silently pick a side.
+  if (typeof role !== 'string' || !ROLES.includes(role)) {
+    throw new Error(FALLBACK)
+  }
+  return { messageId, role: role as ChatMessage['role'], text }
+}
+
+// `nextCursor` is `string | null` by declaration, so the wire has to keep that promise: absent and
+// null are the contract's two "last page" spellings, anything else is the endpoint failing to
+// state a page. A pass-through rename would type an arbitrary value `string` and scenario 1.2
+// would interpolate `[object Object]` into a query string.
+function mapCursor(nextCursor: unknown): string | null {
+  if (nextCursor === undefined || nextCursor === null) {
+    return null
+  }
+  if (typeof nextCursor !== 'string') {
+    throw new Error(FALLBACK)
+  }
+  return nextCursor
+}
+
+function mapPage(body: MessagePageWire): ChatMessagePage {
+  if (!Array.isArray(body.items)) {
+    throw new Error(FALLBACK)
+  }
+  return {
+    messages: body.items.map(mapMessage),
+    nextCursor: mapCursor(body.next_cursor),
+  }
+}
+
+// No query string: `limit` is server-defaulted by the contract and `cursor` is by definition
+// absent on the first page, so spelling either out states a policy the contract already owns.
 export async function loadChatMessages(documentId: string): Promise<ChatMessagePage> {
-  throw new Error(`Not implemented: loadChatMessages(${documentId})`)
+  return mapPage(
+    await send<MessagePageWire>(`/api/v1/documents/${documentId}/messages`, {}, FALLBACK),
+  )
 }

@@ -44,14 +44,7 @@ import {
 // first anywhere that meets `{status: 404, error_code: 'NOT_FOUND'}` from a caller passing no
 // refusals — deleting the `refusals` parameter turns it red.
 
-// TDD RED (Story 19, Frontend Scenario 1.1). `chatMessagesApi.ts` is a stub that throws
-// `Not implemented: loadChatMessages(<id>)` unconditionally, so every case below fails on it: the
-// two mapping cases as a rejection where a resolution is required, and every refusal case on the
-// asserted message (and, for the session case, on the class). Verified failing 2026-08-11, 9 of 9,
-// with exactly those messages. `describe.skip` rather than nine
-// `it.skip`s: one function under test, one marker — the convention this feature's two sibling API
-// test files already follow. Unskipped in `green-frontend-api`.
-describe.skip('chatMessagesApi loadChatMessages', () => {
+describe('chatMessagesApi loadChatMessages', () => {
   // Stores the session every case needs and tears down `stubFetch`'s global. Rationale beside it.
   signedInSessionAroundEach()
 
