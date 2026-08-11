@@ -1411,6 +1411,43 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   the statements print it with `!r` on failure. Safe only because the sole construction site is the
   mock transport and the sole token is the literal `ACCESS_TOKEN_ON_THE_WIRE`. Becomes credible the
   moment a `RecordedRequest` records a real login token — attach the note to the field.
+- [ ] restore the envelope to all four arranges (BOTH passes on `ab560d97`, each as its top finding,
+  and it is a hole THIS unit opened). Before the commit, `_the_only_save_request()` asserted method,
+  path and `Authorization`, and every body row called it — four saves with their envelope checked.
+  The split moved those three into `assert_the_save_was_dispatched_as_an_authorized_put`, which
+  arranges through `given_a_save_carrying_an_explicit_title` ALONE. So for `title=None`, `""` and
+  `"   "` nothing now asserts where the request went or what it carried, and the dropped case is
+  scenario 2.1's own. agent-review MEASURED the mutation that exploits it — `headers=({"Authorization":
+  f"Bearer {access_token}"} if title else {})`, auth dropped on exactly the content-only autosave —
+  and got **5 passed, 0 failed**; before the split it reddened three rows. The commit's own
+  "header dropped: 1 failed, 4 passed" measurement used an UNCONDITIONAL drop, which is why it missed
+  this. The diff also contradicts itself twice: `document_save_payload_wire.py:39-41` justifies
+  `SAVE_PATH` as making the body "provably the save request … without this the assertions would key
+  off dispatch position alone" — which is now true of three rows; and
+  `test_save_document_payload_shape.py:16` still says "in every case the save is dispatched as an
+  authorized PUT", which is one case. In a file whose recorded history is three false comments, this
+  unit shipped a fourth. Fix: parametrize the envelope row over all four `given_*` (agent-review notes
+  the weaker alternative — method/path back in the shared locator, auth alone in the named row, since
+  a wrong path reddening four rows names the path, not a header; the auth diagnostic problem does not
+  apply to path). Wording-only repair of the docstring is NOT enough — the measured 5-passed mutation
+  survives it.
+- [ ] make the whitespace row's tie to 3.2 structural (premortem CREDIBLE #2 on `ab560d97`):
+  `WHITESPACE_TITLE_ON_THE_WIRE = "   "` and `BLANK_TITLE_ON_THE_WIRE = ""` are fresh literals;
+  scenario 3.2's values are independent literals at `test_export_document_acceptance.py:141-142`
+  (`["", "   "]`). Nothing imports across — the linkage is three comments citing file:line, which
+  ordinary editing invalidates without failing anything. Worse, the row cannot self-detect: arrange
+  and expected body are built from the SAME constant, so editing it to any value keeps the row green.
+  Its whole claim ("this is 3.2's other blank value") rests on a constant no assertion touches. Fix:
+  export `["", "   "]` from one module both files import — strictly better than asserting equality,
+  because it makes drift structurally impossible rather than detectable after the fact.
+- [ ] the split bought zero headroom (agent-review #2 on `ab560d97`, bookkeeping not correctness):
+  `document_save_payload_statements.py` is EXACTLY 200. The split was created because the file "was at
+  181 and the fourth row would cross the cap" — it crossed anyway and landed on the boundary. One more
+  docstring sentence breaks the rule, in a file where the docstrings are where the reasoning lives.
+  `/refactor` independently declined to manufacture a second split with no content to justify it and
+  named the seam for the day it is needed: the two blank-title rows (empty + whitespace) share 3.2 as
+  their subject and move out together, the way `document_blank_title_save_statements.py` did. No
+  line-count check runs over `acceptance/` — the cap is convention only.
 - [~] red-acceptance (agent-review #1 on `84e47dff`, and the finding is that the pin I just argued
   hardest for discriminates nothing: **`assert_save_advanced_the_update_stamp` cannot detect the
   refusal it was written to detect.** Its docstring claims "a save that never ran cannot move a clock
