@@ -1478,6 +1478,35 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   cap mid-run and left one mutation applied on disk despite a `finally` revert; caught by
   `git diff --stat` before continuing. Run ONE mutation per call here — a sweep that dies mid-loop
   leaves the client mutated and every subsequent number meaningless.
+- [ ] harden the completeness guard itself (premortem CREDIBLE #2 on `4cb1cb12`, and the two passes
+  DISAGREE on it — record the disagreement, do not pick a side by default). The module-scope guard
+  reads `_DEFINED = {n for n in vars(DocumentSavePayloadStatements) if n.startswith("given_")}`.
+  premortem: `vars()` sees the class `__dict__` ONLY, not inherited members — the day this Statements
+  class gains a base or mixin holding arrangements (and it sits AT the 200-line cap, so the next split
+  is exactly that trigger) the moved `given_*` vanishes from `_DEFINED`, the assert stays green, and
+  the hole this unit closed reopens invisibly; plus a bare module-scope `assert` is stripped under
+  `python -O`/`PYTHONOPTIMIZE` and nothing reds when the guard stops running. agent-review reviewed
+  the same lines and reached the OPPOSITE conclusion: `_DEFINED` empties, so the assert fires as
+  `stale {...}` at collection — it fails SAFE, loudly — and the suite runs pytest without `-O`.
+  Both cannot be right; the cheap resolution is to MEASURE it (build a subclass holding a `given_*`
+  and see which way the guard goes) rather than argue. If premortem is right, the fix is `dir(...)`
+  instead of `vars(...)` and an explicit `raise AssertionError` instead of a bare `assert`, which
+  costs nothing and survives both inheritance and `-O`.
+- [ ] narrow the guard's prefix from `given_` to `given_a_save_carrying_` (both passes, REMOTE, same
+  finding): the guard equates "every `given_*` on the class" with "every arrangement the envelope row
+  can assert". A future `given_*` that is NOT a single save — a recorder precondition, or one that
+  dispatches ≠ 1 request — trips the assert and errors out all 8 rows including 2.1's core absent-key
+  premise, and the message ("unlisted") invites listing it into a parametrization where it does not
+  belong. Loud, not silent, so it ships nothing — but all four arrangements already share the longer
+  prefix, so making the contract exact rather than incidental is one word.
+  NOTE the finding both passes led with — `ARRANGEMENT_IDS` positionally coupled to
+  `EVERY_SAVE_ARRANGEMENT`, ids able to label the wrong arrangement silently — was ALREADY closed by
+  `/refactor` in `f88ca563`, which reached it independently and folded the two lists into one mapping
+  keyed by id. The passes read `4cb1cb12`, which is by design (they review the immutable behavior
+  commit while `/refactor` edits the tree), so the convergence is three-way and the fix is in.
+  Both passes also proposed deriving the ids from `__name__`; the mapping form was kept instead
+  because it keeps the label explicit while making order-drift impossible. Revisit only if a fifth
+  arrangement makes the mapping unwieldy.
 - [ ] make the whitespace row's tie to 3.2 structural (premortem CREDIBLE #2 on `ab560d97`):
   `WHITESPACE_TITLE_ON_THE_WIRE = "   "` and `BLANK_TITLE_ON_THE_WIRE = ""` are fresh literals;
   scenario 3.2's values are independent literals at `test_export_document_acceptance.py:141-142`
