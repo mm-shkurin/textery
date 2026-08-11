@@ -74,21 +74,22 @@ async def _create_the_document(session: LiveAuthSession) -> PristineDocumentAcco
 
 
 async def _create_empty_document(client: DocumentEditClient, token: str) -> str:
-    title = f"pristine-document-setup-{time.time_ns()}"
-    response = await client.create_document(token, DOCUMENT_TYPE, title)
+    idempotency_key = f"pristine-document-setup-{time.time_ns()}"
+    response = await client.create_document(token, DOCUMENT_TYPE, idempotency_key)
     _assert_status(response, CREATED_STATUS, "creating the document")
     body = _body_of(response)
     # `version` is asserted, not assumed: the save below submits `version=FIRST_VERSION`, and
-    # a document created at another version would meet a 409 and store nothing. `title` is in
-    # the tuple because it is the only field distinguishing this document from any other the
-    # account could hold, and the browser layer later pins the documents-list row by identity.
-    assert (body["document_type"], body["version"], body["title"]) == (
+    # a document created at another version would meet a 409 and store nothing. There is no
+    # title to assert: `create_document`'s third argument is the `Idempotency-Key` HEADER, and
+    # `CreateDocumentRequestDto` accepts `document_type` alone, so the response carries no
+    # `title` field at all. The browser layer pins the documents-list row by
+    # `data-document-id`, so nothing downstream needs a title either.
+    assert (body["document_type"], body["version"]) == (
         DOCUMENT_TYPE,
         FIRST_VERSION,
-        title,
     ), (
-        f"pristine-document setup: expected the new document to be a '{DOCUMENT_TYPE}' titled "
-        f"'{title}' at version {FIRST_VERSION}, got {response.text}"
+        f"pristine-document setup: expected the new document to be a '{DOCUMENT_TYPE}' at "
+        f"version {FIRST_VERSION}, got {response.text}"
     )
     return str(body["document_id"])
 

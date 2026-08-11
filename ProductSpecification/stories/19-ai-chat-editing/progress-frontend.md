@@ -1133,6 +1133,72 @@ under `frontend/src` or `acceptance/tests/frontend`.
       unused-`pytest` imports in untouched files (1 backend, 8 frontend/auth, 2
       frontend/generation) — the suite lints red until someone clears them. This is
       follow-up (e) from scenario 0.1, still open.
+      `/refactor`: **NO ACTION.** It judged the deferred duplication finding (the three-step
+      open sequence) and rejected it on merit: the sign-in and row-click halves are already
+      *in* the base, so what remains per scenario is a factory call plus two named base calls,
+      and the factory is the single most important fact in each Given — hiding it behind a
+      callable makes the reader chase a function object to learn which account a scenario
+      opens. A wrapper would add four lines to the base to remove one from each of two
+      callers.
+      **All three agents independently found the same defect in this unit's own setup, and it
+      was fixed in the follow-up commit — the RED prediction recorded above was wrong.**
+      `_create_empty_document` asserted `body["title"]`, but `create_document`'s third
+      argument is the `Idempotency-Key` **header**, not a title: `CreateDocumentRequestDto`
+      accepts `document_type` alone and `DocumentResponseDto` carries no `title` field. It
+      raises `KeyError: 'title'` unconditionally, in the Given, before any Then — so against a
+      live stack this test would have failed in setup, not with the predicted
+      `TimeoutException`. The irony is that the line came *from* a `/test-review` fix ("the
+      unique title was sent but never asserted"): it was never sent as a title, the reviewer
+      read an idempotency key as one. The sibling `over_quota_session` passes the same string
+      in the same slot and correctly asserts only `(document_type, version)`. The docstring
+      rationale went with it — the row is pinned by `data-document-id`, not by a title.
+      Also fixed in the same commit, because the extraction is what introduced it: the
+      panel-scoped poll captured `panel` **once** and then polled `panel.find_elements`, while
+      `WebDriverWait` ignores only `NoSuchElementException` by default. This panel re-renders
+      under the test's own feet — `AiChatPanel` swaps its notice for the composer when the
+      quota read settles — so a swap mid-poll raises `StaleElementReferenceException` straight
+      out of `.until()` and the scenario dies with a driver error instead of the scoped
+      timeout the helper exists to produce. The panel is now re-resolved inside the lambda and
+      both exceptions are ignored. This one is on 0.2's committed path too.
+      **Review-pass follow-ups (both CONCERNS), for `red-frontend`/`green-frontend` and
+      `green-selenium`:**
+      (be) **`data-document-id` exists nowhere under `frontend/src`, and the extraction spread
+      the dependency.** `editor_route_statements.py` requires it on the row;
+      `HistoryPage.tsx:90-97` renders a `<button>` carrying only
+      `data-testid="history-document-row"`. So the Given of 0.2 *and* 1.1 — and every future
+      scenario built on `EditorRouteStatements` — fails at the click, again not with the
+      predicted timeout. `HistoryPage.test.tsx` asserts row text and click behavior but never
+      the attribute, so the frontend suite stays green while the acceptance base is
+      un-runnable. Owe a `HistoryPage` case pinning the attribute to the fixture's
+      `documentId`. **Fix this before the stack comes back**, or the first real run reports
+      two scenarios failing for a reason none of their prose predicts.
+      (bf) **Every assertion in this scenario is satisfied by a chat panel that can never show
+      a message.** The document is pristine by construction, so an `ai-chat-message-list` that
+      renders nothing under any condition and an unconditional `ai-chat-empty-state` are
+      green here — and scenario 1.2 (restored history) is unwritten. Owe an `AiChatPanel` case
+      with a non-empty history mock asserting `ai-chat-empty-state` is null *and* at least one
+      `ai-chat-message-*` row renders inside the list.
+      (bg) **The cheapest green for "the message input is enabled" turns a failed quota read
+      into permission to type.** `AiChatPanel.tsx:39` withholds the composer while
+      `quota === null`, and `useEditQuota.ts:31` collapses a *rejected* read into that same
+      `null`; flipping that branch satisfies this Then and silently converts "quota unknown"
+      into "typing allowed" — users burn instructions that all bounce off a server-side 429.
+      `DocumentEditorPage.overQuota.test.tsx` only ever `mockResolvedValue`s, so the catch
+      branch has no test observing the resulting UI. Owe a `mockRejectedValue` case.
+      (bh) **The "no messages" check is an unsynchronised negative** — `assert not messages`
+      runs the instant the list becomes visible, so once 1.2 introduces an async history read
+      it passes for the wrong reason on any document. The base's own `_assert_absent` docstring
+      warns about exactly this. Needs a positive anchor (a settled marker on the list); the
+      empty-state assertion that follows only accidentally orders it.
+      (bi) **`save_document` in the Given may write a baseline revision holding empty content.**
+      `endpoints.md:53-55`: a document with no history gets a baseline revision on its first
+      mutation, holding the *pre-mutation* content — which here is empty. Whether a manual PUT
+      counts is unresolved, and 1.1 never opens the revisions panel. Owe an assertion that
+      `GET /documents/{id}/revisions` is empty for the pristine document — it either confirms
+      the Given's name or exposes that rollback would offer a blank page.
+      (bj) Low: `assert_the_document_content_is_shown_in_the_editor` passes the *locator* to
+      `_assert_element_text_equals`, which re-resolves document-wide, so the `len(editors) == 1`
+      assert above it is advisory rather than load-bearing. Pass `editors[0]`.
 - [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api

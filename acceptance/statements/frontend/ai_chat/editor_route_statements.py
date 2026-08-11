@@ -20,6 +20,10 @@ Re-verify then; if a click path into the list exists, click it instead of this `
 
 from typing import Protocol
 
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    StaleElementReferenceException,
+)
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
@@ -110,10 +114,25 @@ class EditorRouteStatements(BaseFrontendStatements):
         Only DISPLAYED descendants count. A rendered-but-hidden element must not be able to
         stand in for one the user can see — every caller goes on to assert something (enabled,
         text, open) that a hidden element would satisfy or silently distort.
+
+        The panel is re-resolved on every poll, and `StaleElementReferenceException` is
+        ignored, because this panel re-renders under the test's own feet: `AiChatPanel` swaps
+        its notice for the composer when the quota read settles. A handle captured once and
+        polled would raise out of `.until()` on that swap — `WebDriverWait` ignores only
+        `NoSuchElementException` by default — and the scenario would die with a driver error
+        instead of the scoped timeout this method exists to produce.
         """
-        panel = self._wait_for_visible(driver, CHAT_PANEL)
-        matches = WebDriverWait(driver, WAIT_TIMEOUT_SECONDS).until(
-            lambda _: [e for e in panel.find_elements(*locator) if e.is_displayed()],
+        self._wait_for_visible(driver, CHAT_PANEL)
+        matches = WebDriverWait(
+            driver,
+            WAIT_TIMEOUT_SECONDS,
+            ignored_exceptions=(NoSuchElementException, StaleElementReferenceException),
+        ).until(
+            lambda d: [
+                element
+                for element in d.find_element(*CHAT_PANEL).find_elements(*locator)
+                if element.is_displayed()
+            ],
             f"expected a visible {label} inside the chat panel, found none",
         )
         assert len(matches) == 1, (
