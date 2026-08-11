@@ -1195,9 +1195,63 @@ pagination failure.
   own header gives for keeping its two cases separate.
   Suite 653 passed / 6 skipped / 0 failed. Prettier clean. Files (`wc -l`): patternText **103**,
   patterns.test 165, source 154. Note the ratio, not just the headroom: 103 lines carry two cases and
-  ~68 of header, so the next guard added here costs ~35 lines, not ~5. `tsc` still reports only the
+  **76** of header (lines 9-84, counted — the "~68" first written here was itself an estimate, caught
+  by agent-review as the same genre of number the last two units got wrong), so the next guard added
+  here costs ~35 lines, not ~5. `tsc` still reports only the
   pre-existing RED stub `paginationState.ts:100` (TS6133), which resolves at `green-frontend`.
-- [~] red-frontend (premortem CREDIBLE 2 over `6a789f67`) — **"all eight lists" is asserted by a
+- [~] red-frontend (agent-review CONCERNS 1 + premortem CREDIBLE 1 over `4d7af431`, the two passes
+  reaching it independently) — **there is a FIFTH pattern, `FIXTURE_IMPORT`, and it is the one the
+  header's miscount hides.** `fixtureUsage.source.ts:63` defines
+  `/^import \{ (.+) \} from '\.\/laidOutRows\.fixture'$/`. It has no spelling pin, no probe list, and
+  unlike the other four it is `const`, not `export const`. The unit that just shipped wrote "ALL FOUR
+  of `fixtureUsage.source.ts`' patterns" — the module holds five, and the pattern that was not counted
+  is the pattern that is not guarded. Sixth consecutive review to find this class; the mechanism is
+  now visible, and it is worth naming because it is the reason the class keeps recurring: the count is
+  **copied forward from a sibling header, never re-derived from the file**. `fixtureUsage.source.ts:57`
+  already said "the four patterns in this module" before this unit read it.
+  Measured, both passes independently: widen it to `/^import \{ (.+) \} from '\.\/(?:.+)\.fixture'$/i`
+  — any fixture filename, any casing — and the whole `__tests__` directory runs `20 passed | 3 skipped`,
+  fully green. Zero result delta, because the specifier string `constantSites` pins is unchanged: the
+  module PATH is what binds both test files to `laidOutRows.fixture`, and it is pinned nowhere but
+  inside the regex itself. The incident premortem worked back to: point `measuring.test.ts` at a copied
+  `laidOutRows2.fixture` exporting the same names with drifted numbers — every assertion line stays
+  byte-identical, `fixtureImports` stays byte-identical, `designNumbers` pins the ORIGINAL fixture and
+  passes, and the drift hole this whole scenario exists to close is reopened green. That is the
+  "Страница 5 из 4" readout `constantSites:54` names. `constantSites`' longest section argues severing
+  the shared declaration is caught — it is caught for DELETION only.
+  **This row must be settled BEFORE the export-sweep row below, or that row will certify the gap.**
+  Its stated mechanism is `Object.entries(source)` over the module's exports; `FIXTURE_IMPORT` is not
+  exported, so the sweep enumerates four patterns, finds four probe cases, and reports complete
+  coverage while the fifth sits outside the window. Cheaper repair: export `FIXTURE_IMPORT` so the
+  sweep can see it — decide that here, not after.
+  Guard, named: export it, pin it as a whole `RegExp` alongside the other four, and add a
+  `MUST_MATCH_IMPORTS` / `MUST_NOT_MATCH_IMPORTS` pair rejecting `from './otherRows.fixture'` and
+  `from '../fixtures/laidOutRows.fixture'`. That makes the "all eight lists" pin ten.
+- [ ] red-frontend (premortem CREDIBLE 2 over `4d7af431`) — **the guard's SCOPE is a hand-typed field
+  list now spelled in three places, and a new numeric field asserted with a raw literal is invisible to
+  every leg.** Measured at full-suite scale: add `visibleSheetCount: 3` to a live pinned expectation
+  block at `paginationState.measuring.test.ts:101` — `653 passed | 6 skipped | 0 failed`, the exact
+  baseline. `PINNED_ASSIGNMENT` only sees the four names in `PINNED_FIELDS`, so `reTypedValuesIn` stays
+  `[]`, `constantSites`' list does not grow, and `assignmentShape`'s per-block expectation derives from
+  `PINNED_FIELDS_PER_EXPECTATION` — a SECOND hand-typed copy of the same four names — so it stays four
+  wide. `PaginationViewState` is still growing: `pageCount` and `currentPage` were themselves added
+  late, and `constantSites:39-43` records that their omission was defended by a sentence that turned
+  out false. The next field repeats that exactly.
+  **What this unit owes:** the new pin re-spells the alternation a THIRD time. Correct for its own
+  subject, but extending coverage to a fifth field is now a three-file hand-edit whose first redness is
+  `patternText.test.ts` — which reads as "the pin broke, retype the literal", a mechanical repair that
+  never surfaces the question of whether the field list is complete.
+  Guard, named: assert `PINNED_FIELDS` and `PINNED_FIELDS_PER_EXPECTATION` spell the same set, and tie
+  that set to the numeric fields of `PaginationViewState` so a new count field cannot be asserted with a
+  raw literal in silence.
+- [ ] docs, fold into the next edit of `fixtureUsage.source.ts` (REMOTE, premortem over `4d7af431`) —
+  **`codeLinesOf`'s comment filter is inert, and its justification is a worked example that does not
+  work.** Dropping `&& !line.startsWith('/')` (`fixtureUsage.source.ts:91`) runs fully green, and so
+  would any mutant of it: every pattern is `^`-anchored and a stripped line still carries its `* ` or
+  `// ` prefix. The header's own named example, `railSkeletonCount: 3` in prose at `measuring.test.ts:121`,
+  does not match `PINNED_ASSIGNMENT` with or without the filter. A dead defense with a false example —
+  correct the sentence, or delete the filter and say why it was never load-bearing.
+- [ ] red-frontend (premortem CREDIBLE 2 over `6a789f67`) — **"all eight lists" is asserted by a
   hand-written key list that nothing ties to the module's exports, so the pin that closed the
   vacuity can be re-opened by deletion and is blind to addition.** Measured: delete
   `mustNotMatchAssignments` from both sides of the new pin (two line-group deletions in one file)
