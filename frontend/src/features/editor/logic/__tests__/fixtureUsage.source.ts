@@ -54,13 +54,23 @@ const SOURCES: Readonly<Record<SourceFile, string>> = {
  * trimmed line DROPS the site from the collected list rather than admitting it, which is what makes
  * the trailing-comment and line-wrap attacks redden instead of pass.
  *
- * That narrowness is no longer only prose: the four patterns in this module are exported and run
+ * That narrowness is no longer only prose: the five patterns in this module are exported and run
  * over named near-miss lines by `fixtureUsage.patterns.test.ts`, which reddens on a widening HERE
  * rather than waiting for a consumer's count to move. Read its header before relaxing any of them.
  */
 const PINNED_FIELDS = '(?:pageCount|currentPage|(?:sheet|rail)SkeletonCount)'
 export const PINNED_ASSIGNMENT = new RegExp(`^(${PINNED_FIELDS}): (.+),$`)
-const FIXTURE_IMPORT = /^import \{ (.+) \} from '\.\/laidOutRows\.fixture'$/
+/**
+ * The fixture import line, yielding the SPECIFIERS inside the braces. It is exported for the same
+ * reason the four above are — every leg that guards it lives in the sibling test files — and it was
+ * the last to be, which is exactly why it was the last to be guarded: unexported, it was invisible
+ * to a reader counting this module's patterns, and every header in the cluster said "four".
+ *
+ * The PATH is the load-bearing half and the half no consumer reads. `constantSites` pins the
+ * specifier list this yields; it is byte-identical when the module those names come from changes.
+ * Widening to `'\.\/(?:.+)\.fixture'` was measured green across the whole directory. Do not.
+ */
+export const FIXTURE_IMPORT = /^import \{ (.+) \} from '\.\/laidOutRows\.fixture'$/
 
 /**
  * The two openers below are what let a caller read the expectation BLOCKS and the CASES out of the

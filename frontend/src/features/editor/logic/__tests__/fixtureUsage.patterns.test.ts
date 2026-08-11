@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, it } from 'vitest'
 import {
   CASE_OPENER,
   EXPECTATION_OPENER,
+  FIXTURE_IMPORT,
   NAMED_VALUE,
   PINNED_ASSIGNMENT,
 } from './fixtureUsage.source'
@@ -9,16 +10,23 @@ import { expectPartition } from './fixtureUsage.partition'
 import {
   MUST_MATCH_ASSIGNMENTS,
   MUST_MATCH_CASES,
+  MUST_MATCH_IMPORTS,
   MUST_MATCH_OPENERS,
   MUST_MATCH_VALUES,
   MUST_NOT_MATCH_ASSIGNMENTS,
   MUST_NOT_MATCH_CASES,
+  MUST_NOT_MATCH_IMPORTS,
   MUST_NOT_MATCH_OPENERS,
   MUST_NOT_MATCH_VALUES,
 } from './fixtureUsage.probes'
 
 /**
- * Story 10, UI scenario 1.1 — the four source patterns, guarded WHERE THEY LIVE.
+ * Story 10, UI scenario 1.1 — the FIVE source patterns, guarded WHERE THEY LIVE. Five is counted
+ * off the exports of `fixtureUsage.source.ts` rather than copied from this header's own previous
+ * revision, which said four: `FIXTURE_IMPORT` was `const`, not `export const`, and every count in
+ * this cluster of files had been carried forward from a sibling instead of re-derived, so the one
+ * pattern nobody counted was the one pattern nobody probed. See the last section below for what
+ * that cost and what closes it.
  *
  * THE INCIDENT THIS FILE EXISTS FOR. `fixtureUsage.source.ts` had zero tests of its own. It holds
  * `PINNED_ASSIGNMENT`, `EXPECTATION_OPENER`, `CASE_OPENER` and `NAMED_VALUE`, and every consuming
@@ -65,31 +73,31 @@ import {
  * at a time. And nothing below proves that `expectPartition` CONSULTS its pattern — a tautological
  * body is green for all four cases at once. That leg is `fixtureUsage.partitionControl.test.ts`.
  *
- * THE MEMBERSHIP PIN, AND WHY LENGTH ALONE WAS MEASURED INSUFFICIENT. The four cases above compare
- * the partition against THE SAME TWO LISTS the probes were built from, so an emptied list satisfies
- * its own case VACUOUSLY: `{ accepted: [], rejected: [] }` equals itself. That is not a regex edit, so
- * the checksum file is byte-identical through it, and it is worst for `PINNED_ASSIGNMENT`, whose
- * probe case is its only leg — deleting `'pageCount: 4, // agrees with ceil'` from
- * `MUST_NOT_MATCH_ASSIGNMENTS` re-legalises the non-greedy `(.+?),?$` widening this file was written
- * to kill, with everything green. A LENGTH pin over the eight lists was drafted for that and rejected
- * as a floor: it sees a deletion, but SWAPPING a near-miss for a different near-miss keeps every
- * length, and for whichever probe the swap drops a swap is exactly a deletion. The members are fixed
- * literals in a sibling module — nothing about them is indeterminate — so there was no value being
- * counted in place of read, and the final case pins all eight lists BY MEMBER instead. The expected
- * side is a second spelling on purpose, the same idiom as the regex literals in
- * `fixtureUsage.patternText.test.ts`: a deletion, a swap or a re-ordering is a diff that prints both
- * spellings, and the failing key names the list.
+ * THE VACUITY THIS FILE NO LONGER CARRIES, AND WHERE IT WENT. Every case below compares the
+ * partition against THE SAME TWO LISTS its probes were built from, so an emptied list satisfies its
+ * own case VACUOUSLY: `{ accepted: [], rejected: [] }` equals itself. The member-by-member pin over
+ * all ten lists that closes this was the last case of this file until the fifth pattern arrived and
+ * the 200-line cap forced a choice; it now lives in `fixtureUsage.probeMembership.test.ts`, which
+ * carries the argument for by-member over by-length and for a hand-typed expected side. The seam is
+ * the subject: below is what the patterns MEAN, there is that the lists saying so are intact.
  *
- * WHAT THAT PIN DOES NOT MAKE REDUNDANT. The split control's hand-typed sides in
- * `fixtureUsage.partitionControl.test.ts` also spell out `MUST_MATCH_VALUES` and
- * `MUST_NOT_MATCH_VALUES` member by member, but they are not a duplicate of the case below: their
- * subject is that `expectPartition` CONSULTS its pattern, and the members are how they say it. Two
- * legs, one shared literal, neither one credit for the other.
+ * THE FIFTH PATTERN, AND WHY ITS PROBE LIST IS THE LOAD-BEARING ONE. `FIXTURE_IMPORT` matches the
+ * fixture import line of each source file and yields the SPECIFIERS inside the braces.
+ * `paginationState.constantSites.test.ts` pins those specifiers against a hand-typed list — and is
+ * byte-identical when the MODULE they come from changes, because the path is spelled nowhere but
+ * inside the pattern. Point `paginationState.measuring.test.ts` at a copied `laidOutRows2.fixture`
+ * exporting the same names with drifted numbers and the whole suite stays green. The case below and
+ * the third case of `fixtureUsage.patternText.test.ts` are the only two assertions in the directory
+ * that read the path AS THE PATTERN'S — one by behaviour, one by spelling; no consumer reads it.
+ * The qualifier is load-bearing and was added by review: `fixtureUsage.probeMembership.test.ts`
+ * hand-types that same path six times on its expected side, but as the text of a PROBE, so it is
+ * unmoved by any edit to the pattern. Counting it would have been the third header in this cluster
+ * to claim a coverage its assertions do not hold.
  *
  * WHAT NO LEG CLAIMS. A determined widener can still do it: edit the regex, re-type the pinned regex
  * literal in `fixtureUsage.patternText.test.ts`, move the near-miss line from `rejected` to
  * `accepted` in `fixtureUsage.probes.ts`, and re-type that same line on the other side of the
- * membership pin below — four edits in three files, all of them reading as "this near-miss is now
+ * membership pin — four edits in four files, all of them reading as "this near-miss is now
  * legal", which is the point: the motion is no longer a token, and it no longer happens off screen in
  * a module titled "mechanics only". This file does not claim the patterns are CORRECT, only that they
  * still mean what the two consumer headers say they mean.
@@ -111,55 +119,7 @@ describe('the source patterns, as the narrowness their consumers assume', () => 
     expectPartition(NAMED_VALUE, MUST_MATCH_VALUES, MUST_NOT_MATCH_VALUES)
   })
 
-  it('pins every member of all eight probe lists, so no case above can be emptied or re-spelled', () => {
-    expect({
-      mustMatchAssignments: MUST_MATCH_ASSIGNMENTS,
-      mustNotMatchAssignments: MUST_NOT_MATCH_ASSIGNMENTS,
-      mustMatchOpeners: MUST_MATCH_OPENERS,
-      mustNotMatchOpeners: MUST_NOT_MATCH_OPENERS,
-      mustMatchCases: MUST_MATCH_CASES,
-      mustNotMatchCases: MUST_NOT_MATCH_CASES,
-      mustMatchValues: MUST_MATCH_VALUES,
-      mustNotMatchValues: MUST_NOT_MATCH_VALUES,
-    }).toStrictEqual({
-      mustMatchAssignments: [
-        'pageCount: NO_SKELETONS,',
-        'railSkeletonCount: MEASURING_SURFACE.railSkeletons,',
-        'pageCount:  4,',
-      ],
-      mustNotMatchAssignments: [
-        'pageCount: 4, // agrees with ceil',
-        'pageCount : 4,',
-        'pageCount: 4',
-        'const pageCount: 4,',
-        'totalPages: NO_SKELETONS,',
-        'pageCount:',
-      ],
-      mustMatchOpeners: ['expect(state).toStrictEqual({'],
-      mustNotMatchOpeners: [
-        'expect(state).toMatchObject({',
-        'expect(state).toStrictEqual(EXPECTED)',
-        'expect(other).toStrictEqual({',
-        'expect(state).toStrictEqual({ pageCount: NO_PAGES })',
-        'const expected = {',
-      ],
-      mustMatchCases: ["it('names a constant', () => {", "it.skip('measures the surface', () => {"],
-      mustNotMatchCases: [
-        "describe('the pinned assignments', () => {",
-        "it.each([1, 2])('varies', () => {",
-        "it.only('names a constant', () => {",
-        'itemCount(rows)',
-      ],
-      mustMatchValues: ['NO_SKELETONS', 'MEASURING_SURFACE.railSkeletons', 'null'],
-      mustNotMatchValues: [
-        '4',
-        '0',
-        "'4'",
-        '4 as number',
-        'pageCount',
-        'undefined',
-        'NO_SKELETONS + 1',
-      ],
-    })
+  it("admits only a './laidOutRows.fixture' import — never another path, casing or default", () => {
+    expectPartition(FIXTURE_IMPORT, MUST_MATCH_IMPORTS, MUST_NOT_MATCH_IMPORTS)
   })
 })

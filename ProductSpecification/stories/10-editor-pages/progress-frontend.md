@@ -1199,7 +1199,7 @@ pagination failure.
   by agent-review as the same genre of number the last two units got wrong), so the next guard added
   here costs ~35 lines, not ~5. `tsc` still reports only the
   pre-existing RED stub `paginationState.ts:100` (TS6133), which resolves at `green-frontend`.
-- [~] red-frontend (agent-review CONCERNS 1 + premortem CREDIBLE 1 over `4d7af431`, the two passes
+- [x] red-frontend (agent-review CONCERNS 1 + premortem CREDIBLE 1 over `4d7af431`, the two passes
   reaching it independently) — **there is a FIFTH pattern, `FIXTURE_IMPORT`, and it is the one the
   header's miscount hides.** `fixtureUsage.source.ts:63` defines
   `/^import \{ (.+) \} from '\.\/laidOutRows\.fixture'$/`. It has no spelling pin, no probe list, and
@@ -1227,7 +1227,53 @@ pagination failure.
   Guard, named: export it, pin it as a whole `RegExp` alongside the other four, and add a
   `MUST_MATCH_IMPORTS` / `MUST_NOT_MATCH_IMPORTS` pair rejecting `from './otherRows.fixture'` and
   `from '../fixtures/laidOutRows.fixture'`. That makes the "all eight lists" pin ten.
-- [ ] red-frontend (premortem CREDIBLE 2 over `4d7af431`) — **the guard's SCOPE is a hand-typed field
+  **Done, all three parts.** `FIXTURE_IMPORT` exported, pinned as a whole `RegExp` (patternText case
+  3, path typed out in full), probe pair added (`MUST_MATCH_IMPORTS` 2 / `MUST_NOT_MATCH_IMPORTS` 5)
+  with its own probe case, and the membership pin re-derived to ten lists / 39 members.
+  **The prediction MISSED, and the miss is worth keeping.** v1 predicted a load-time `SyntaxError`
+  — "does not provide an export named 'FIXTURE_IMPORT'" — with 2 suites failing before any case ran.
+  Actual: `TypeError: Cannot read properties of undefined (reading 'test')` at `partition.ts:26` plus
+  `AssertionError: expected undefined to strictly equal /^import \{ (.+) \} from …/`, `2 failed |
+  20 passed | 3 skipped`. All three fields NO. **Vite 8 / Vitest 4 does not validate imported names
+  — a missing export binds `undefined` rather than throwing**, so an import typo in this suite
+  surfaces as a confusing downstream `TypeError`, never as a module-resolution error. Re-predicted v2
+  against the unchanged state and it matched byte-for-byte. Worth remembering for every future red in
+  this repo: "the export does not exist yet" does not redden where you expect it to.
+  **The split came first**, `patterns.test.ts` having stood at 165 with a fifth pattern to absorb.
+  Seam is subject, not size: the probe cases say what the patterns MEAN, one named line at a time;
+  the membership pin says the lists those cases are built from are still the lists that were
+  reviewed. Two claims must not sit behind one failing key — the file's own rule. The pin moved whole
+  into `fixtureUsage.probeMembership.test.ts` and grew to ten there.
+  Four mutants, each measured and reverted: the charter's widening
+  (`'\.\/(?:.+)\.fixture'` + `'i'`) reddens 2 — the probe case (`./otherRows.fixture` and
+  `./LaidOutRows.fixture` cross to `accepted`) and the patternText pin; `MUST_NOT_MATCH_IMPORTS = []`
+  reddens **only** probeMembership, the probe case passing vacuously, which is exactly the vacuity
+  that pin exists for; `MUST_MATCH_IMPORTS = []` the same; a length-preserving member swap reddens
+  probeMembership, confirming by-member beats by-length.
+  **Seven consecutive reviews have now found the same class, and this unit produced FIVE more
+  instances of it — including one contradicted by a file the same unit created.** The red-agent
+  caught and struck one itself ("the only assertion anywhere that reads that path", false the moment
+  the patternText case existed). `/test-review` found four more: (a) the narrowed version of that same
+  claim was still false — `probeMembership` hand-types the path six times — now narrowed to "reads the
+  path AS THE PATTERN'S", with the reason a probe spelling does not count; (b) `probes.ts:19` still
+  said "`PINNED_ASSIGNMENT`, whose probe case is its only leg", false since the previous unit, struck;
+  (c) the worst — `probeMembership.test.ts:31-35` justified itself by claiming an emptied probe list
+  "re-legalises" the `(.+?),?$` widening and the copied-fixture attack, when those are precisely the
+  two patterns now whole-text pinned, so both redden regardless of any probe list. The premise it
+  generalised from — "lists whose probe case is their pattern's only behavioural leg" — describes an
+  **empty set** now that all five patterns are whole-text pinned. Rewritten to the real, smaller gap:
+  an emptied list silently kills the MEANING leg while the spelling leg survives, and a spelling pin
+  cannot tell a correct regex from a wrong one it was handed; (d) `patternText.test.ts:89` said "the
+  last case of `probeMembership`" implying several — it has one. Plus `partition.ts` carried two stale
+  claims ("the four patterns", and a length pin `patterns.test.ts` no longer carries at all).
+  Suite 655 passed / 6 skipped / 0 failed (653 + the two new cases). Prettier clean. Files (`wc -l`,
+  counted after `/test-review`'s edits): source **164**, patternText 126, patterns.test 125,
+  probeMembership 125, probes 118, partitionControl 116, partition 31. `tsc` reports only the
+  pre-existing RED stub `paginationState.ts:100`.
+  **Note for the export-sweep row below: its blocker is cleared.** `FIXTURE_IMPORT` is exported, so
+  an `Object.entries(source)` sweep now enumerates five patterns and can no longer certify a gap by
+  looking past a module-private one.
+- [~] red-frontend (premortem CREDIBLE 2 over `4d7af431`) — **the guard's SCOPE is a hand-typed field
   list now spelled in three places, and a new numeric field asserted with a raw literal is invisible to
   every leg.** Measured at full-suite scale: add `visibleSheetCount: 3` to a live pinned expectation
   block at `paginationState.measuring.test.ts:101` — `653 passed | 6 skipped | 0 failed`, the exact

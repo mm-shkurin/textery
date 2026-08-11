@@ -2,15 +2,22 @@ import { describe, expect, it } from 'vitest'
 import {
   CASE_OPENER,
   EXPECTATION_OPENER,
+  FIXTURE_IMPORT,
   NAMED_VALUE,
   PINNED_ASSIGNMENT,
 } from './fixtureUsage.source'
 
 /**
- * Story 10, UI scenario 1.1 — the SOURCE TEXT of ALL FOUR of `fixtureUsage.source.ts`' patterns,
- * pinned against exact hand-typed literals, split across two cases with different subjects. The
+ * Story 10, UI scenario 1.1 — the SOURCE TEXT of ALL FIVE of `fixtureUsage.source.ts`' patterns,
+ * pinned against exact hand-typed literals, split across three cases with different subjects. The
  * three whose consumer assertions are count-shaped are the first case; `PINNED_ASSIGNMENT` is the
- * second, for the different reason set out below.
+ * second and `FIXTURE_IMPORT` the third, for the different reasons set out below.
+ *
+ * FIVE, RE-DERIVED. This header said "ALL FOUR" while the module held five: `FIXTURE_IMPORT` was
+ * `const`, not `export const`, so it was invisible to a reader counting imports and to every leg in
+ * this cluster. The count had been copied forward from a sibling header rather than read off the
+ * module — the mechanism six consecutive reviews of this scenario found, each time as a header
+ * claiming coverage its assertions did not hold. Count off the file, never off a neighbour.
  *
  * WHAT THIS BACKSTOPS THAT A PROBE LIST CANNOT. `fixtureUsage.patterns.test.ts` partitions a named
  * list of must-match lines and a named list of near-misses by each live pattern. That is a strong
@@ -55,6 +62,17 @@ import {
  * `assignmentShape` and the second case below. A reader who checks that one edit generalises from it
  * to the three above, which redden nothing but this file. So the exclusion is retired, not narrowed.
  *
+ * WHY THE THIRD IS A CASE OF ITS OWN, AND WHAT ONLY IT SEES. `FIXTURE_IMPORT`'s consumer leg is the
+ * hand-typed specifier list in `paginationState.constantSites.test.ts` — the names inside the braces.
+ * The MODULE PATH is not in that list, is not in any other assertion in the directory, and is
+ * spelled nowhere but inside the pattern literal. So the third case is not a checksum backstop over
+ * a covered pattern the way the second is; for the path it is the only whole-text leg there is,
+ * beside the probe case in `fixtureUsage.patterns.test.ts`. Widening the path to `'\.\/(?:.+)\.fixture'`
+ * with an `'i'` flag was applied to the module and the whole `__tests__` directory run against it
+ * BEFORE this case and its probe list existed: `20 passed | 3 skipped`, fully green, zero result
+ * delta — which is what leaves a source file free to be re-pointed at a copied fixture with drifted
+ * numbers while every assertion around it stays byte-identical. Its own subject, its own case.
+ *
  * WHY A SECOND CASE AND NOT A FOURTH KEY IN THE FIRST. The two cases have different subjects and
  * should fail separately: the first says three patterns nothing else spells have not moved, the
  * second says the residue that `PINNED_ASSIGNMENT`'s consumer list and probe case together miss has
@@ -68,8 +86,9 @@ import {
  *
  * WHAT THIS LEG DOES NOT COVER, STATED SO NO READER BORROWS IT. (a) It sees the PATTERN only. A
  * probe list quietly emptied so its own case passes vacuously is not a pattern edit — this file is
- * byte-identical through it. That is guarded ELSEWHERE: the last case of
- * `fixtureUsage.patterns.test.ts` pins all eight lists member by member against hand-typed literals.
+ * byte-identical through it. That is guarded ELSEWHERE: the single case of
+ * `fixtureUsage.probeMembership.test.ts` pins all ten lists member by member against hand-typed
+ * literals.
  * An earlier draft of this header claimed the lists "are pinned by their own length assertion" while
  * no such assertion existed anywhere; the claim was struck rather than softened, and a pin stronger
  * than the one it described was then written — so the sentence above is a pointer to a real case, not
@@ -99,5 +118,9 @@ describe('the pattern source text, as the spelling its consumers were measured a
     expect(PINNED_ASSIGNMENT).toStrictEqual(
       /^((?:pageCount|currentPage|(?:sheet|rail)SkeletonCount)): (.+),$/,
     )
+  })
+
+  it('pins the spelling AND the flags of `FIXTURE_IMPORT`, fixture path typed out in full', () => {
+    expect(FIXTURE_IMPORT).toStrictEqual(/^import \{ (.+) \} from '\.\/laidOutRows\.fixture'$/)
   })
 })
