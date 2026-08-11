@@ -1,39 +1,13 @@
-/* The chat panel's own interior — composer, quota hint, revisions. A file of its own because
-   DocumentEditorPage.css (the workspace grid, the document card, the blocker screens) is at 190
-   of its 200 permitted lines and these rules belong to a different element anyway.
-   Geometry is copied from the mockups: the composer and quota hint from
-   mockups/desktop/06-over-quota.html (scenario 0.2), the history region — `.msgs`, `.msg`,
-   `.bubble` — from mockups/desktop/01-editor-chat.html (scenario 1.1). COLOURS are not copied:
-   they resolve through the app's tokens, never the mockup's literals — see the header of
-   DocumentEditorPage.css for why. Nor is the mockup's payload: its sample conversation, its
-   `14:02` stamps, its `История изменений · 7 версий` strip and its `Осталось правок сегодня:
-   17 из 20` are placeholder data owned by later scenarios, not markup this file styles. */
-
-.ac-chat-revisions {
-  margin-left: auto;
-  position: relative;
-}
-
-.ac-chat-revisions-toggle {
-  background: none;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-size: 12.5px;
-  padding: 5px 10px;
-  cursor: pointer;
-}
-
-.ac-chat-revisions-panel {
-  border-top: 1px solid var(--border-subtle);
-  padding: 14px 20px;
-}
-
-.ac-chat-revisions-empty {
-  color: var(--text-secondary);
-  font-size: 13px;
-  margin: 0;
-}
+/* The panel's history region — the conversation, its empty state, its bubbles. The panel's own
+   outer shell (`.ac-chat`, `.ac-chat-head`, `.ac-chat-mark`, `.ac-chat-heading`, `.ac-chat-notice`)
+   is in DocumentEditorPage.css, which owns the workspace grid this panel is a column of; the
+   composer and the revisions control style themselves, in AiChatComposer.css and
+   AiChatRevisions.css beside their components.
+   Geometry is copied from mockups/desktop/01-editor-chat.html (scenario 1.1) — `.msgs`, `.msg`,
+   `.bubble`. COLOURS are not copied: they resolve through the app's tokens, never the mockup's
+   literals — see the header of DocumentEditorPage.css for why. Nor is the mockup's payload: its
+   sample conversation and its `14:02` stamps are placeholder data owned by later scenarios, not
+   markup this file styles. */
 
 /* The mockup's `.msgs`, between the head and the composer. `flex: 1` + a shrinkable minimum is
    what keeps a long conversation from pushing the composer out of the column: a flex child
@@ -48,7 +22,11 @@
    head and composer scrolling out of view until the user scrolls back. That is worse than a
    collapsed history for someone trying to type, and still the better default, because the
    collapsed case is SILENT: no scrollbar, no messages, nothing to discover. A viewport that short
-   is the real defect; neither branch fixes it. Padding is the mockup's flat 20px. */
+   is the real defect; neither branch fixes it.
+   ALL OF THAT IS THE ≥900px LAYOUT ONLY. Below 900px `DocumentEditorPage.css` sets
+   `.ac-chat { overflow: visible }` and drops the grid to `height: auto`, so there is no bounded
+   column to compress and neither the collapse nor the nested-scrollbar fallback arises.
+   Padding is the mockup's flat 20px. */
 .ac-chat-history {
   flex: 1;
   min-height: 120px;
@@ -88,11 +66,23 @@
 
    No border. `--border-subtle` on `--bg-page` is the pair follow-up (ax) measures at 1.11:1
    against WCAG 1.4.11's 3:1 — this element is not the one (ax) names, so shipping it would have
-   been a second instance of a failure already measured one align-design entry above. The fill
-   alone separates the bubble from the white panel. */
+   been a second instance of a failure already measured one align-design entry above.
+   AND THE FILL LEFT BEHIND IS NO BETTER, which the first version of this comment claimed it was:
+   `--bg-page` `#e3f2ff` on the panel's `--bg-surface` `#ffffff` is ~1.14:1, indistinguishable
+   from the 1.11:1 the border was dropped for. Removing the border removed the REDUNDANT boundary
+   and promoted an equally-failing one to being the only thing delineating a message. Both are
+   downstream of the same missing token as the split above — a real surface fixes the boundary and
+   the sides at once. Recorded as (ch) rather than patched here with a literal.
+
+   `overflow-wrap` because `max-width` bounds the BOX, not an unbreakable inline token: a pasted
+   URL, a base64 blob or a long snake_case identifier would run past the bubble and out of the
+   panel — and since this container sets `overflow-y` while leaving `overflow-x` at `visible`,
+   which computes to `auto`, the escape becomes a horizontal scrollbar inside the history rather
+   than being clipped. Nothing else in `frontend/src` sets this, so there is nothing to inherit. */
 .ac-chat-message {
   align-self: flex-start;
   max-width: 88%;
+  overflow-wrap: anywhere;
   background: var(--bg-page);
   border-radius: 12px;
   color: var(--text-primary);
@@ -100,99 +90,4 @@
   line-height: 1.5;
   margin: 0;
   padding: 12px 14px;
-}
-
-/* Pinned to the bottom of the column, which is what the bounded `height` on `.ac-layout` is for:
-   in an unbounded column `margin-top: auto` has nothing to push against. */
-.ac-chat-composer {
-  margin-top: auto;
-  border-top: 1px solid var(--border-subtle);
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* `.composer .box` — one field holding input and send, not two siblings. 12px is the mockup's
-   own literal here, not `--radius-md` (10px): the box is the largest control on the panel and
-   the mockup deliberately rounds it past its own --radius-md too. */
-.ac-chat-box {
-  border: 1px solid var(--border-strong);
-  border-radius: 12px;
-  padding: 14px;
-}
-
-.ac-chat-box--disabled {
-  background: var(--bg-page);
-  border-color: var(--border-subtle);
-}
-
-/* `.composer .row`. The mockup's 26px is the gap under a one-line placeholder; here the input is
-   a real 3-row textarea that already occupies that height, so the row sits directly under it. */
-.ac-chat-box-row {
-  display: flex;
-  align-items: center;
-  margin-top: 10px;
-}
-
-.ac-chat-input {
-  background: transparent;
-  border: none;
-  display: block;
-  font: inherit;
-  font-size: 13.5px;
-  padding: 0;
-  resize: none;
-  width: 100%;
-}
-
-.ac-chat-input::placeholder {
-  color: var(--text-muted);
-}
-
-.ac-chat-input:disabled {
-  color: var(--text-muted);
-  cursor: not-allowed;
-}
-
-/* `.composer .send`, pushed right by the row rather than by `align-self` — the box is now the
-   flex parent's only child, so the old `flex-end` had nothing meaningful to align against. */
-.ac-chat-send {
-  background: var(--btn-primary-bg);
-  border: none;
-  border-radius: var(--radius-sm);
-  color: var(--btn-primary-fg);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  margin-left: auto;
-  padding: 8px 14px;
-}
-
-/* `.send.off`. The mockup greys the control to its sunken surface rather than fading the accent:
-   a translucent brand blue still reads as "primary action, momentarily busy". It takes
-   `--bg-card-muted` where the box above takes `--bg-page`, which the mockup does not do — it
-   renders both on one `--bg-sunken`. Here the dead control sits INSIDE the dead field, and one
-   shared surface would dissolve the button's edge into it. */
-.ac-chat-send:disabled {
-  background: var(--bg-card-muted);
-  color: var(--text-muted);
-  cursor: not-allowed;
-}
-
-/* The mockup states the spent quota twice — `.docnote-warn` over the document and a muted
-   `.keys` line under the box. This panel has one hint and it takes the warn treatment, because
-   a limit that stops the user is not a keyboard tip. The amber is derived from the app's own
-   `--warning`, never the mockup's `#fff7ed`/`#c2410c` literals: the mockup ships a whole second
-   palette (see the header of DocumentEditorPage.css). */
-.ac-chat-quota-hint {
-  background: color-mix(in srgb, var(--warning) 12%, var(--neutral-000));
-  border: 1px solid color-mix(in srgb, var(--warning) 35%, var(--neutral-000));
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  font-size: 13.5px;
-  margin: 0;
-  padding: 12px 16px;
 }

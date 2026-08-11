@@ -1,0 +1,31 @@
+/* `AiChatRevisions` — the toggle in the panel head and the panel it opens inline beneath it.
+   COLOURS are not copied from the mockup: they resolve through the app's tokens, never the
+   mockup's literals — see the header of DocumentEditorPage.css for why. Nor is the mockup's
+   payload: its `История изменений · 7 версий` strip is placeholder data owned by scenario 1.3,
+   which reads the revisions, not markup this file styles. */
+
+.ac-chat-revisions {
+  margin-left: auto;
+  position: relative;
+}
+
+.ac-chat-revisions-toggle {
+  background: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.ac-chat-revisions-panel {
+  border-top: 1px solid var(--border-subtle);
+  padding: 14px 20px;
+}
+
+.ac-chat-revisions-empty {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 0;
+}

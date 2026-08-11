@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import './AiChatRevisions.css'
 
 export const REVISIONS_TOGGLE_LABEL = 'История правок'
 // What the panel says while it has nothing to list. The revision ROWS are read by

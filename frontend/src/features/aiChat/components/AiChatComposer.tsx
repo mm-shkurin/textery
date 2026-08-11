@@ -1,4 +1,5 @@
 import type { EditQuotaState } from '../api/editQuotaApi'
+import './AiChatComposer.css'
 
 export const COMPOSER_PLACEHOLDER = 'Напишите, что нужно изменить'
 export const SEND_LABEL = 'Отправить'

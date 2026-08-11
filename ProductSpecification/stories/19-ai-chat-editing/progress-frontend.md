@@ -1725,9 +1725,64 @@ under `frontend/src` or `acceptance/tests/frontend`.
       bubble inside it. Here `.ac-chat-message` is a direct child of the column and carries the
       alignment itself, so the assistant avatar tile has no wrapper to live in — 1.2 introduces the
       row element and both properties migrate up to it.
-- [ ] green-selenium
-- [ ] demo
-- [ ] green-selenium
+      `/refactor` split the stylesheet, and its finding is structural rather than cosmetic:
+      `AiChatPanel.css` sat at 198/200 holding rules for **three** components, and
+      `AiChatComposer.tsx` / `AiChatRevisions.tsx` rendered `ac-chat-*` classes while importing
+      **no stylesheet at all** — they worked only because the parent happened to import the shared
+      file, and nothing pointed a reader at where their styles lived. The file's own header
+      admitted it existed to relieve line pressure on `DocumentEditorPage.css` (190/200), not to
+      group an element's rules. Every selector was grepped against every component and the
+      partition is exact — no class crosses a file boundary, so no cascade or specificity risk.
+      93 / 100 / 31 lines now, each beside its component, rationale redistributed rather than
+      deleted. Flagged and deliberately NOT taken: five of `AiChatPanel.tsx`'s own shell selectors
+      still live in `DocumentEditorPage.css` — the same smell one level up, but that file is not
+      in this commit and moving ~53 lines out of it is a separate call about who owns the
+      workspace grid. It is at 190/200 with the pressure unrelieved.
+      **Three defects fixed in the follow-up commit, all found by the review passes:**
+      (1) **The progress file listed `green-selenium` and `demo` TWICE under this scenario** — the
+      third occurrence of this exact editing mistake (`4701aa29`, `f29bca17`, here). Both passes
+      caught it independently and both called it state corruption in the file that decides what
+      runs next: the selector would hand out `green-selenium`, mark the first copy `[x]`, and find
+      the second waiting. **This is a pattern in how these entries get edited, not three slips** —
+      when replacing a `[~]` line with a completed block, the block must not re-append the
+      scenario's remaining steps.
+      (2) **The no-border rationale was false by its own standard.** It claimed "the fill alone
+      separates the bubble from the white panel" — but the fill was never measured: `--bg-page`
+      `#e3f2ff` on the panel's `--bg-surface` `#ffffff` is **~1.14:1**, indistinguishable from the
+      1.11:1 the border was dropped for. Dropping the border removed the *redundant* boundary and
+      promoted an equally-failing one to being the only thing delineating a message. The comment
+      now says so.
+      (3) **`max-width: 88%` bounds the box, not an unbreakable inline token.** A pasted URL, a
+      base64 blob or a long `snake_case` identifier would run past the bubble and out of the
+      panel — and because the container sets `overflow-y` while leaving `overflow-x` at `visible`
+      (which computes to `auto`), the escape becomes a *horizontal* scrollbar inside the history
+      rather than being clipped. `overflow-wrap: anywhere` added; nothing else in `frontend/src`
+      sets it, so there was nothing to inherit. The property `max-width` was added for was exactly
+      the case it did not cover.
+      Also corrected: the `min-height` comment described its fallback unconditionally, but below
+      900px `DocumentEditorPage.css` sets `.ac-chat { overflow: visible }` and drops the grid to
+      `height: auto` — there is no bounded column to compress, so neither the collapse nor the
+      nested-scrollbar trade arises. The deciding argument for the floor is ≥900px-only.
+      **Review-pass follow-ups:**
+      (ch) **The bubble's fill fails 1.4.11 against the panel (~1.14:1) and there is no boundary
+      left that passes.** Not patchable with a literal without breaking the tokens-not-literals
+      rule — it is downstream of the same missing surface token as the per-side split, so one new
+      token fixes the boundary and the sides together. Belongs with 1.2's token decision.
+      (ci) **`role="log"` / `aria-live` are asserted by nothing, and this is the one thing this
+      unit shipped that jsdom CAN test.** (bt) is marked closed, so the next reader has no signal
+      it is unprotected — and (cg) schedules 1.2 to move markup around this exact `<div>`. The
+      attributes can be dropped, moved to the wrong node, or nested inside a new wrapper (which
+      breaks announcement for insertions outside it) with all 541 green.
+      `AiChatPanel.history.test.tsx` already renders the component and already locates the list;
+      a `getByRole('log')` plus a `toHaveAttribute('aria-live', 'polite')` is the whole guard.
+      (cj) **A long unbroken string is now handled but not guarded** — no test asserts a row with a
+      200-character unbreakable token stays inside the history's width. Nothing exercises the
+      bubble rules at all today: not jsdom (no layout), not Selenium (1.1's layer is skipped and
+      blocked on the unbuilt backend), not a human (the panel's only content is the empty state,
+      which is deliberately outside the bubble treatment).
+      (ck) **`AiChatPanel.css` has room again (93 lines) but `DocumentEditorPage.css` does not**
+      (190/200), and it still holds five of this panel's own shell selectors.
+- [~] green-selenium
 - [ ] demo
 
 ### 1.2 An existing conversation is restored when the document is reopened
