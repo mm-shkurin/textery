@@ -1083,7 +1083,7 @@ pagination failure.
   `Object.entries(source).filter(([, v]) => v instanceof RegExp).map(([k]) => k).sort()` against a
   named list. Strictly different from the docs row about "the four patterns" — that fixes a
   sentence, this is the assertion that would have stopped the sentence going stale.
-- [~] red-frontend (agent-review CONCERNS 1 over `ad850488` + premortem CREDIBLE 2 over the same,
+- [x] red-frontend (agent-review CONCERNS 1 over `ad850488` + premortem CREDIBLE 2 over the same,
   the same finding from two directions) — **BLOCKED ON ROOM AGAIN, and this is now a pattern worth
   naming: `patterns.test.ts` has hit the 200-line cap on three consecutive units** (201 → split →
   200 → extraction to 151 → 200). Each unit's guard costs more lines than the last because each
@@ -1116,7 +1116,40 @@ pagination failure.
   is the stronger of the two. Fold the `.flags` REMOTE into the same object while it is open —
   `.source` excludes flags (traced: `/g`, `/i` redden loudly today, `/m` is a genuine no-op, so no
   silent path exists — it is free, not urgent).
-- [ ] docs, fold into the next edit of these two files (agent-review CONCERNS 2 + 3 + notes over
+  **Done.** The split came first, as chartered: the seam was *"the patterns are narrow"* vs *"the
+  comparator is not tautological"* — two arguments sharing a file through one `const`. `expectPartition`
+  became `fixtureUsage.partition.ts` (29) and the two negative controls `fixtureUsage.partitionControl.test.ts`
+  (98); `patterns.test.ts` went 200 → 126, and the guard spent 26 of the 74 freed.
+  RED as predicted, then measured three ways: (1) the charter's headline mutant — delete
+  `'pageCount: 4'` from `MUST_NOT_MATCH_ASSIGNMENTS` — reddens ONLY the new case, 18 others green,
+  so the gap the row named is confirmed real rather than argued; (2) `MUST_NOT_MATCH_OPENERS`
+  emptied entirely leaves its own probe case **green**, the vacuity exactly as charted; (3)
+  `CASE_OPENER` + `/g` reddens `patternText.test.ts`. All reverted.
+  **Two charter items resolved by measurement rather than by writing them:** the `.flags` fold is
+  already closed — a prior unit moved `patternText.test.ts` off `.source` to a whole-`RegExp`
+  `toStrictEqual`, which compares source and flags in one call (mutant 3 measured this instead of
+  trusting the header), so a `.flags` key would be a second spelling of a claim already made.
+  `/test-review` then found five defects, and the first one **replaced the chartered deliverable
+  with a strictly stronger one**: a length pin over deterministic string literals is itself the
+  loose-assertion case (#18) — the members are fixed literals in a sibling module, so there was no
+  reason to count instead of read. Now a member-level `toStrictEqual` over all eight lists against
+  hand-typed literals. Measured: swapping `'0'` → `'00'` in `MUST_NOT_MATCH_VALUES` keeps every
+  length, was green under the length pin, and is now red naming the list — with the four probe
+  cases green through it, confirming they are blind to it as their header claims. The other four:
+  the `/^never$/` control computed its expected `rejected` side from the very lists it reads (a
+  member swap reproduced itself on both sides) — now ten hand-typed literals; the "three edits in
+  three files" attacker floor was false as written (moving a probe between a `MUST_MATCH`/
+  `MUST_NOT_MATCH` pair necessarily changes both lengths) — corrected to four and re-stated against
+  the membership pin; member-level credit for the two `*_VALUES` lists was attributed to the split
+  control's `rejected` side in three headers, but `'null'` lives on its hand-typed `accepted` side
+  and nowhere else — fixed to name both sides, with the no-borrowed-credit rule kept explicit (the
+  two now share literals but are stated as having different subjects); and a pointer to a
+  non-existent `paginationState.assignmentShape.ts`.
+  Suite 652 passed / 6 skipped / 0 failed. Prettier clean. Files: patterns.test **165**, partitionControl
+  98, probes 86, patternText 55, partition 29. `tsc` reports only the pre-existing RED stub
+  `paginationState.ts:100` (TS6133 `input` unused) — it resolves at `green-frontend`, but it WILL
+  fail a typecheck gate until then.
+- [~] docs, fold into the next edit of these two files (agent-review CONCERNS 2 + 3 + notes over
   `ad850488`) — **three coverage claims in the headers are false, and this story keeps reddening on
   exactly that class.** (a) `PINNED_ASSIGNMENT`'s exemption from the pin is justified as
   "`constantSites` … already moves on any change to either" — it moves only on changes that alter

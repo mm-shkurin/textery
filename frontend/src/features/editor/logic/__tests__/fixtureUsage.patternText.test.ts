@@ -22,15 +22,17 @@ import { CASE_OPENER, EXPECTATION_OPENER, NAMED_VALUE } from './fixtureUsage.sou
  * it covers changes that alter the CURRENT yield, not every edit, so `PINNED_ASSIGNMENT`'s probe
  * case is effectively its only leg. The three pinned here are exactly the three whose every
  * consumer assertion is count-shaped or negative, and therefore blind to a zero-result-delta
- * widening. See `paginationState.constantSites.test.ts` and `paginationState.assignmentShape.ts`
+ * widening. See `paginationState.constantSites.test.ts` and `paginationState.assignmentShape.test.ts`
  * headers for what those consumers do and do not see.
  *
  * WHAT THIS LEG DOES NOT COVER, STATED SO NO READER BORROWS IT. (a) It sees the PATTERN only. A
  * probe list quietly emptied so its own case passes vacuously is not a pattern edit — this file is
- * byte-identical through it. **Nothing guards that today.** An earlier draft of this header claimed
- * the lists "are pinned by their own length assertion"; no such assertion exists anywhere in
- * `__tests__`, and the length pin is charter'd and unwritten. The claim is struck rather than
- * softened, because a reader who trusts it closes the chartered step as already done. (b) It says
+ * byte-identical through it. That is guarded ELSEWHERE: the last case of
+ * `fixtureUsage.patterns.test.ts` pins all eight lists member by member against hand-typed literals.
+ * An earlier draft of this header claimed the lists "are pinned by their own length assertion" while
+ * no such assertion existed anywhere; the claim was struck rather than softened, and a pin stronger
+ * than the one it described was then written — so the sentence above is a pointer to a real case, not
+ * a restored promise. (b) It says
  * nothing about whether the patterns are CORRECT — only that changing one is a deliberate edit to a
  * literal that reads as a spelling, in a file whose only subject is that spelling.
  *

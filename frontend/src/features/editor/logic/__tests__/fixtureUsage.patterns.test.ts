@@ -5,6 +5,7 @@ import {
   NAMED_VALUE,
   PINNED_ASSIGNMENT,
 } from './fixtureUsage.source'
+import { expectPartition } from './fixtureUsage.partition'
 import {
   MUST_MATCH_ASSIGNMENTS,
   MUST_MATCH_CASES,
@@ -44,11 +45,6 @@ import {
  * it lengthens `constantSites`' hand-typed expected list. One pattern of four is transitively
  * covered, and it is the one a reader checks first.
  *
- * WHY THIS IS A NEW FILE AND NOT A CASE IN EITHER CONSUMER. Both are at the 200-line ceiling (174
- * and 153), and both are ABOUT the two `paginationState` test files' text; this one is about the
- * matcher itself, and its subject never moves when a pinned assertion is added or a case is
- * renamed. Filing it under either header would also put it behind an argument it does not share.
- *
  * WHAT IT ASSERTS, AND WHY BEHAVIOUR RATHER THAN A CHECKSUM. Each case takes a named list of lines
  * the pattern MUST match and a named list of near-misses it MUST NOT, concatenates them into one
  * probe array, partitions that array by the live pattern, and compares the partition with
@@ -59,97 +55,45 @@ import {
  * NARROWING is caught by the same comparison from the other side, which the consumers' count-shaped
  * cases do see but only after the fact.
  *
- * WHAT THIS FILE IS BLIND TO, AND WHERE THE OTHER LEG LIVES. A probe list only catches a widening
- * SOMEBODY IMAGINED and wrote down here. An alternation head admitting a shape no probe spells —
+ * WHAT THIS FILE IS BLIND TO, AND WHERE THE OTHER LEGS LIVE. A probe list only catches a widening
+ * SOMEBODY IMAGINED and wrote down. An alternation head admitting a shape no probe spells —
  * `CASE_OPENER` grown to `^(?:it|test)(?:\.skip)?\(` — moves no probe between the two halves and
  * every case below stays green. That gap is closed by a whole-pattern pin on the three patterns
  * whose every consumer leg is count-shaped or negative, and it lives in
  * `fixtureUsage.patternText.test.ts`, which carries its own argument for why three and not four.
  * Do not read the cases below as covering pattern TEXT; they cover pattern MEANING, one named line
- * at a time.
+ * at a time. And nothing below proves that `expectPartition` CONSULTS its pattern — a tautological
+ * body is green for all four cases at once. That leg is `fixtureUsage.partitionControl.test.ts`.
  *
- * WHAT NO LEG CLAIMS. A determined widener can edit the regex, re-type the pinned regex literal
- * in `fixtureUsage.patternText.test.ts`, and move the near-miss line from `rejected` to `accepted`
- * here in one commit — three edits in three files, all of them reading as "this near-miss is now
- * legal", which is the point: the motion is no longer a token, and it no longer happens off screen
- * in a module titled "mechanics only". This file does not claim the patterns are CORRECT, only that
- * they still mean what the two consumer headers say they mean.
+ * THE MEMBERSHIP PIN, AND WHY LENGTH ALONE WAS MEASURED INSUFFICIENT. The four cases above compare
+ * the partition against THE SAME TWO LISTS the probes were built from, so an emptied list satisfies
+ * its own case VACUOUSLY: `{ accepted: [], rejected: [] }` equals itself. That is not a regex edit, so
+ * the checksum file is byte-identical through it, and it is worst for `PINNED_ASSIGNMENT`, whose
+ * probe case is its only leg — deleting `'pageCount: 4, // agrees with ceil'` from
+ * `MUST_NOT_MATCH_ASSIGNMENTS` re-legalises the non-greedy `(.+?),?$` widening this file was written
+ * to kill, with everything green. A LENGTH pin over the eight lists was drafted for that and rejected
+ * as a floor: it sees a deletion, but SWAPPING a near-miss for a different near-miss keeps every
+ * length, and for whichever probe the swap drops a swap is exactly a deletion. The members are fixed
+ * literals in a sibling module — nothing about them is indeterminate — so there was no value being
+ * counted in place of read, and the final case pins all eight lists BY MEMBER instead. The expected
+ * side is a second spelling on purpose, the same idiom as the regex literals in
+ * `fixtureUsage.patternText.test.ts`: a deletion, a swap or a re-ordering is a diff that prints both
+ * spellings, and the failing key names the list.
  *
- * AND WHAT NOTHING GUARDS AT ALL. The eight probe lists — in `./fixtureUsage.probes`, which carries
- * the same disclosure over the data itself — are UNPINNED: emptying a `MUST_NOT_MATCH_*` array makes
- * ITS CASE BELOW pass vacuously (`{ accepted: [], rejected: [] }` equals itself), is not a regex edit
- * so `fixtureUsage.patternText.test.ts` is byte-identical through it, and is worst for
- * `PINNED_ASSIGNMENT`, whose probe case is its only leg. A length pin over the eight is charter'd and
- * NOT written — do not read any of the three headers as covering it. The lists were moved out of this
- * file to make room to write it; the per-member rationale for two entries that look like mistakes
- * moved with them, to the file where those lines now are.
+ * WHAT THAT PIN DOES NOT MAKE REDUNDANT. The split control's hand-typed sides in
+ * `fixtureUsage.partitionControl.test.ts` also spell out `MUST_MATCH_VALUES` and
+ * `MUST_NOT_MATCH_VALUES` member by member, but they are not a duplicate of the case below: their
+ * subject is that `expectPartition` CONSULTS its pattern, and the members are how they say it. Two
+ * legs, one shared literal, neither one credit for the other.
  *
- * THE NEGATIVE CONTROL, AND WHY IT ASSERTS THE ERROR'S FIELDS RATHER THAN A PARTITION. All four
- * cases above route through one helper, and nothing above proves that helper CONSULTS `pattern`:
- * rewrite its body to `expect({ accepted, rejected }).toStrictEqual({ accepted, rejected })` — a
- * plausible "the filter was doing the same thing" simplification — and the whole behavioural leg
- * goes vacuous in one edit, with the sibling pattern pin blind because no regex text moved. The
- * named in the charter, a PASSING call with a matches-nothing pattern, cannot see that: the mutant's
- * body is tautological, so it is green for EVERY argument list and no passing call can redden it.
- * The control must therefore demand a FAILURE, and demand it by the error's STRUCTURED FIELDS —
- * `name`, `actual`, `expected`. A bare `toThrowError()` was tried and MEASURED INSUFFICIENT: it
- * passes on any throw, so a helper that reads `pattern`, tests ONE probe and short-circuits
- * satisfies it while staying tautological for the four real cases — green under the bare form, red
- * under this one. The message is deliberately NOT matched: it is vitest's diff formatting,
- * presentation rather than data, and `objectContaining` ignores it and its `showDiff`/`operator`
- * siblings for the same reason. Neither pin asserts `expected`: that field is literally the two
- * arguments the call passed in, reproduced by construction by every mutant discussed here, and it
- * cannot fail while the helper's signature is unchanged. Only `actual` does work, and it is the only
- * field pinned, so no later reader counts strength that is not there.
- *
- * TWO CONTROLS, AND WHAT EACH IS WORTH — MEASURED, NOT ARGUED. An earlier draft claimed the
- * `/^never$/` pin "forces the pattern to have been applied to EVERY probe, so no degenerate consult
- * survives". That was FALSE, and the counterexample is one line:
- * `const anyMatch = probes.some((p) => pattern.test(p))`, then compare
- * `anyMatch ? { accepted, rejected } : { accepted: [], rejected: probes }`. Every real pattern
- * matches one of its own must-match probes, so all four cases above compare an object with itself;
- * `/^never$/` matches none, so the mutant yields exactly the `actual` that pin demanded. A
- * matches-NOTHING (or -EVERYTHING) control certifies ONE BOOLEAN BIT. Hence the second control,
- * `/^null$/`, matching a strict non-empty SUBSET of one list: its `actual` is a SPLIT partition, and
- * no `some`/`every`/first-probe-only shortcut can produce a split. Two patterns pinned to two
- * DIFFERENT partitions is what forces the output to vary WITH `pattern`. They are NOT equally
- * load-bearing, and that is disclosed rather than averaged: the `some` mutant survives all four
- * cases above, so the split pin is the only leg here that kills it, while the mutant that redeems
- * `/^never$/` — ignore `pattern`, hardcode `(p) => p === 'null'` — answers `[]` for every other
- * pattern and is ALREADY red at case 1. That pin's margin is over the split pin ALONE, not over the
- * file; it is kept for the degenerate END — nothing accepted — that no other call reaches. The split
- * pin's `rejected` side is HAND-TYPED, so emptying `MUST_MATCH_VALUES` or `MUST_NOT_MATCH_VALUES`
- * reddens it too — those two lists only; the charter'd length pin over the other six is unwritten.
- * Deriving that side (`'null'` filtered out of the two lists concatenated) keeps the anti-shortcut
- * property — the predicate is written HERE — but goes vacuous under that emptying. Hence hand-typed.
- *
- * WHAT SURVIVES BOTH, STATED AS A LIMIT RATHER THAN CLAIMED CLOSED. (a) A ONE-SIDED neutralisation
- * (`rejected: rejected` hardcoded) survives ANY call — the two halves are complements, so computed
- * `accepted` matches its list exactly when computed `rejected` does — and that gap is empty: one side
- * still filtered keeps all four cases fully discriminating. (b) A mutant that BRANCHES ON PATTERN
- * IDENTITY (`pattern.source === '^never$' ? … : …`) satisfies any finite set of controls and is
- * closed by none of them. It is out of reach of this leg by construction, and it is also not the
- * hazard these controls are for: every mutant above is a plausible SIMPLIFICATION a reader could
- * make while believing the helper unchanged, and a source-string switch is not.
+ * WHAT NO LEG CLAIMS. A determined widener can still do it: edit the regex, re-type the pinned regex
+ * literal in `fixtureUsage.patternText.test.ts`, move the near-miss line from `rejected` to
+ * `accepted` in `fixtureUsage.probes.ts`, and re-type that same line on the other side of the
+ * membership pin below — four edits in three files, all of them reading as "this near-miss is now
+ * legal", which is the point: the motion is no longer a token, and it no longer happens off screen in
+ * a module titled "mechanics only". This file does not claim the patterns are CORRECT, only that they
+ * still mean what the two consumer headers say they mean.
  */
-
-/**
- * The probe array is built FROM the two expected lists, so neither side of the comparison is a
- * second spelling of the other. A pattern that changes its mind about one probe moves that probe
- * between the two halves of the received value and the named line prints in the diff.
- */
-const expectPartition = (
-  pattern: RegExp,
-  accepted: readonly string[],
-  rejected: readonly string[],
-): void => {
-  const probes = [...accepted, ...rejected]
-  expect({
-    accepted: probes.filter((probe) => pattern.test(probe)),
-    rejected: probes.filter((probe) => !pattern.test(probe)),
-  }).toStrictEqual({ accepted, rejected })
-}
-
 describe('the source patterns, as the narrowness their consumers assume', () => {
   it('admits only `<pinned field>: <expression>,` on one trimmed line', () => {
     expectPartition(PINNED_ASSIGNMENT, MUST_MATCH_ASSIGNMENTS, MUST_NOT_MATCH_ASSIGNMENTS)
@@ -167,34 +111,55 @@ describe('the source patterns, as the narrowness their consumers assume', () => 
     expectPartition(NAMED_VALUE, MUST_MATCH_VALUES, MUST_NOT_MATCH_VALUES)
   })
 
-  it('fails the probe helper with the real partition when the pattern contradicts both lists', () => {
-    expect(() => expectPartition(/^never$/, MUST_MATCH_VALUES, MUST_NOT_MATCH_VALUES)).toThrowError(
-      expect.objectContaining({
-        name: 'AssertionError',
-        actual: { accepted: [], rejected: [...MUST_MATCH_VALUES, ...MUST_NOT_MATCH_VALUES] },
-      }),
-    )
-  })
-
-  it('fails with a SPLIT partition when the pattern matches exactly one probe of ten', () => {
-    expect(() => expectPartition(/^null$/, MUST_MATCH_VALUES, MUST_NOT_MATCH_VALUES)).toThrowError(
-      expect.objectContaining({
-        name: 'AssertionError',
-        actual: {
-          accepted: ['null'],
-          rejected: [
-            'NO_SKELETONS',
-            'MEASURING_SURFACE.railSkeletons',
-            '4',
-            '0',
-            "'4'",
-            '4 as number',
-            'pageCount',
-            'undefined',
-            'NO_SKELETONS + 1',
-          ],
-        },
-      }),
-    )
+  it('pins every member of all eight probe lists, so no case above can be emptied or re-spelled', () => {
+    expect({
+      mustMatchAssignments: MUST_MATCH_ASSIGNMENTS,
+      mustNotMatchAssignments: MUST_NOT_MATCH_ASSIGNMENTS,
+      mustMatchOpeners: MUST_MATCH_OPENERS,
+      mustNotMatchOpeners: MUST_NOT_MATCH_OPENERS,
+      mustMatchCases: MUST_MATCH_CASES,
+      mustNotMatchCases: MUST_NOT_MATCH_CASES,
+      mustMatchValues: MUST_MATCH_VALUES,
+      mustNotMatchValues: MUST_NOT_MATCH_VALUES,
+    }).toStrictEqual({
+      mustMatchAssignments: [
+        'pageCount: NO_SKELETONS,',
+        'railSkeletonCount: MEASURING_SURFACE.railSkeletons,',
+        'pageCount:  4,',
+      ],
+      mustNotMatchAssignments: [
+        'pageCount: 4, // agrees with ceil',
+        'pageCount : 4,',
+        'pageCount: 4',
+        'const pageCount: 4,',
+        'totalPages: NO_SKELETONS,',
+        'pageCount:',
+      ],
+      mustMatchOpeners: ['expect(state).toStrictEqual({'],
+      mustNotMatchOpeners: [
+        'expect(state).toMatchObject({',
+        'expect(state).toStrictEqual(EXPECTED)',
+        'expect(other).toStrictEqual({',
+        'expect(state).toStrictEqual({ pageCount: NO_PAGES })',
+        'const expected = {',
+      ],
+      mustMatchCases: ["it('names a constant', () => {", "it.skip('measures the surface', () => {"],
+      mustNotMatchCases: [
+        "describe('the pinned assignments', () => {",
+        "it.each([1, 2])('varies', () => {",
+        "it.only('names a constant', () => {",
+        'itemCount(rows)',
+      ],
+      mustMatchValues: ['NO_SKELETONS', 'MEASURING_SURFACE.railSkeletons', 'null'],
+      mustNotMatchValues: [
+        '4',
+        '0',
+        "'4'",
+        '4 as number',
+        'pageCount',
+        'undefined',
+        'NO_SKELETONS + 1',
+      ],
+    })
   })
 })

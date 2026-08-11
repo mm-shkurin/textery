@@ -2,20 +2,26 @@
  * Story 10, UI scenario 1.1 — the eight probe lists that define what the four patterns in
  * `fixtureUsage.source.ts` are ASSERTED to mean.
  *
- * WHY THESE ARE A MODULE AND NOT LITERALS IN THE TEST. They are the SUBJECT of the next chartered
- * step — a length pin over all eight — and `fixtureUsage.patterns.test.ts` was sitting at the
- * 200-line cap with zero room to write it. They are also data with a life of their own: a reader
+ * WHY THESE ARE A MODULE AND NOT LITERALS IN THE TEST. They are the SUBJECT of the membership pin
+ * now carried by `fixtureUsage.patterns.test.ts`, which was sitting at the 200-line cap with zero room
+ * to write it. They are also data with a life of their own: a reader
  * adding a near-miss line is doing something different from a reader adding a case. Splitting on
  * that seam is what this file is; it is not a key lookup, and each list stays a separately named
  * export precisely so that emptying one is a visible deletion of a named thing rather than a row
  * vanishing from a table.
  *
- * WHAT NOTHING GUARDS AT ALL — STATED HERE BECAUSE THE LISTS LIVE HERE. These eight arrays are
- * UNPINNED. Emptying a `MUST_NOT_MATCH_*` array makes its own case in `fixtureUsage.patterns.test.ts`
- * pass VACUOUSLY (`{ accepted: [], rejected: [] }` equals itself); it is not a regex edit, so
- * `fixtureUsage.patternText.test.ts` is byte-identical through it; and it is worst for
- * `PINNED_ASSIGNMENT`, whose probe case is its only leg. The length pin over the eight is charter'd
- * and NOT written — do not read this file, or either test header, as covering it.
+ * WHAT GUARDS THESE, AND EXACTLY HOW FAR IT REACHES — STATED HERE BECAUSE THE LISTS LIVE HERE.
+ * Emptying a `MUST_NOT_MATCH_*` array used to make its own case in `fixtureUsage.patterns.test.ts`
+ * pass VACUOUSLY (`{ accepted: [], rejected: [] }` equals itself), was not a regex edit so
+ * `fixtureUsage.patternText.test.ts` stayed byte-identical through it, and was worst for
+ * `PINNED_ASSIGNMENT`, whose probe case is its only leg. All eight lists are now pinned BY MEMBER
+ * against hand-typed literals in one object in `fixtureUsage.patterns.test.ts`: a deletion, a swap or
+ * a re-ordering is a diff printing both spellings, and the failing key names the list. A LENGTH pin
+ * was drafted there first and rejected as a floor — swapping a member for another string keeps every
+ * length, and for the probe it drops a swap is a deletion. `MUST_MATCH_VALUES` and
+ * `MUST_NOT_MATCH_VALUES` are additionally spelled out member by member on BOTH hand-typed sides of
+ * the split control in `fixtureUsage.partitionControl.test.ts`, whose subject is different: not that
+ * these lists are intact, but that the comparator reads the pattern it is handed.
  *
  * TWO RECORDED FACTS THAT LOOK LIKE MISTAKES AND ARE NOT. `'pageCount:  4,'` (doubled space) sits in
  * the ACCEPTED list: `(.+)` swallows the extra space, the site is admitted with expression `' 4'`,
