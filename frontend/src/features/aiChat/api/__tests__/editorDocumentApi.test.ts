@@ -8,6 +8,8 @@ import {
   NOT_FOUND_MESSAGE,
   NOT_FOUND_RESPONSE,
   REFRESH_URL,
+  SESSION_EXPIRED_MESSAGE,
+  UNAUTHORIZED_RESPONSE,
   expectErrorIdentity,
   stubFetch,
 } from './editorDocumentApiFixtures'
@@ -127,20 +129,10 @@ describe('editorDocumentApi loadEditorDocument', () => {
   // guard instead of the refusal this follow-up is about — and the call list below is what pins
   // that the path actually taken was that one.
   it('lets SessionExpiredError through instead of folding it into not-found', async () => {
-    const unauthorized = {
-      ok: false,
-      status: 401,
-      json: async () => ({ error_code: 'UNAUTHORIZED', message: 'Unauthorized' }),
-    }
-    const fetchMock = stubFetch(unauthorized, unauthorized)
+    const fetchMock = stubFetch(UNAUTHORIZED_RESPONSE, UNAUTHORIZED_RESPONSE)
 
     const error = await rejectionOf(loadEditorDocument('doc-1'))
-    expectErrorIdentity(
-      error,
-      SessionExpiredError,
-      'SessionExpiredError',
-      'Сессия истекла. Войдите снова.',
-    )
+    expectErrorIdentity(error, SessionExpiredError, 'SessionExpiredError', SESSION_EXPIRED_MESSAGE)
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([DOCUMENT_URL, REFRESH_URL])
   })
 

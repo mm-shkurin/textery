@@ -769,7 +769,76 @@ under `frontend/src` or `acceptance/tests/frontend`.
       per-file floor is evaluated at the `features/aiChat/api` directory = 66.66%. The red phase's
       "un-skipping closes it" is true by aggregation, not because the module became covered —
       `red-frontend-api` is what actually covers it.
-- [ ] red-frontend-api
+- [x] red-frontend-api — six cases in
+      `frontend/src/features/aiChat/api/__tests__/editQuotaApi.test.ts` (145 lines), one
+      `describe.skip` marker (one function under test — this feature's `editorDocumentApi.test.ts`
+      convention). No new fixtures file: `stubFetch` and `expectErrorIdentity` are imported from
+      the existing `editorDocumentApiFixtures.ts` rather than copied.
+      **THE CONTRACT ADDITION, stated here so the backend session can honour it verbatim:**
+      `GET /api/v1/ai-edits/quota` → `200 {"exhausted": bool, "resets_at": string | null}`.
+      Account-scoped — **no `document_id` in the path**, matching the zero-argument
+      `loadEditQuota()` the component layer already pins with `toHaveBeenCalledExactlyOnceWith()`.
+      This closes the gap `red-selenium` and `red-frontend` recorded: none of `endpoints.md`'s
+      seven endpoints reports quota state, `resets_at` living only in the 429 body of
+      `POST /ai-edits` — i.e. only *after* the user has typed an instruction and been refused,
+      which is one attempt too late for a composer that must be dead on arrival.
+      Predicted and got all six as the stub's unconditional throw, at three distinct assertion
+      sites: two `resolves` cases as `AssertionError: promise rejected "Error: loadEditQuota is
+      not implemented y…" instead of resolving`, the bare-await case as `Error: loadEditQuota is
+      not implemented yet`, two message cases as `expected 'loadEditQuota is not implemented yet'
+      to be '…'`, and the 401 case as `expected Error: loadEditQuota is not implemented y… to be
+      an instance of SessionExpiredError`.
+      **Two cases guard the discriminated union from the WIRE side**, which is where TypeScript
+      cannot: `{exhausted: true, resets_at: null}` must be refused as a load failure (an exhausted
+      quota that cannot say when it lifts would render `data-resets-at="null"`), and
+      `{exhausted: false, resets_at: <instant>}` must have the instant dropped. The forbidden
+      `{exhausted: true, resetsAt: null}` is unrepresentable in the result type; only these two
+      cases stop a mapping from casting its way there.
+      `resetsAt` byte-equality is pinned by the same non-canonical `'2026-08-11T00:00:00+03:00'`
+      the component test uses — a `Date` round trip rewrites it to `'2026-08-10T21:00:00.000Z'`
+      and fails here, so the Selenium layer's `data-resets-at` assertion stays safe.
+      The happy path also asserts `init.method` and `init.body` are undefined: without them the
+      test passes for a POST that returns the quota, i.e. for a client that SPENDS a charge on
+      every document open. And the 500 case pins `name === 'Error'`, which rules out a green that
+      opts this call into `send`'s `notFound` mapping — a 404 here means the endpoint is missing,
+      not that a document is.
+      Evidence: full frontend suite **520 passed / 0 failed / 8 skipped** (119 files passed,
+      1 skipped); tsc, oxlint and prettier clean. RED re-verified after review by temporarily
+      un-skipping: all eight cases fail on `Error: loadEditQuota is not implemented yet`.
+      `/test-review` landed six fixes and grew the file from six cases to eight. The load-bearing
+      one is a **new case pair for a 200 that never states the quota**: `performRequest` ends with
+      `await res.json().catch(() => ({}))` (`httpClient.ts:154`), so a 204, an empty 200 or an HTML
+      page served with a 200 all arrive as `{}` — a green written `exhausted: Boolean(body.exhausted)`
+      would then answer "the quota has room" for an endpoint that said nothing, and the composer goes
+      live, which is the one state this scenario exists to prevent. Reached through the *success*
+      path, where none of the three refusal cases look; added as an `it.each` over an empty body and
+      a non-boolean `exhausted`, both refusing with the fallback text.
+      `expect(loadEditQuota.length).toBe(0)` was vacuous — `Function.prototype.length` stops at the
+      first optional parameter, so `loadEditQuota(documentId?: string)`, the exact green its comment
+      named, still reported 0. Replaced by `expectTypeOf(...).toEqualTypeOf<() => Promise<EditQuotaState>>()`,
+      exact in both directions and a `tsc` gate, so it is the one assertion live while the describe is
+      skipped. `expect(quota.exhausted && quota.resetsAt).toBe(...)` computed its actual through a
+      boolean branch (a false `exhausted` would report `expected false to be '2026-…'`, naming the
+      wrong field) and restated the whole-object assertion; it became a guard on the constant's
+      *non-canonicality* — `new Date(RESETS_AT_WIRE).toISOString()` must NOT equal `RESETS_AT_WIRE` —
+      because the byte-equality trap is worthless if someone tidies the literal to canonical `Z` form,
+      and nothing enforced that. Plus `toEqual`→`toStrictEqual` on every whole-object result assertion
+      (`toEqual` treats a key holding `undefined` as absent, so `resets_at: undefined` leaked through
+      the very "no wire field survives unrenamed" claim the comments make), the local `wire()` helper
+      promoted to a shared `okJson()`, and `QUOTA_URL` / `UNAUTHORIZED_RESPONSE` /
+      `SESSION_EXPIRED_MESSAGE` deduped into `editorDocumentApiFixtures.ts`, now consumed by both API
+      test files.
+      One finding rejected: `RESETS_AT_WIRE` is duplicated with `DocumentEditorPage.overQuota.test.tsx:45`
+      and the comment's "the two layers cannot drift" is enforced by nothing — real, but its correct
+      home is a shared aiChat test constant reachable from the api *and* component layers, and
+      `editorDocumentApiFixtures.ts` is api-only; creating that module is `/refactor` scope. The
+      non-canonicality guard above mitigates the actual risk meanwhile.
+      **The file is at 195 of 200 lines** — a ninth case forces a split, the same squeeze the
+      component test hit at 194.
+      **Green owes the real client** (`send('/api/v1/ai-edits/quota', {}, 'Не удалось загрузить
+      лимит правок')` plus the two union guards) and the backend endpoint behind it; this is also
+      the step that actually covers `editQuotaApi.ts`, which `green-frontend` left at 0% behind a
+      directory-level coverage aggregate.
 - [ ] green-frontend-api
 - [ ] align-design
 - [ ] green-selenium

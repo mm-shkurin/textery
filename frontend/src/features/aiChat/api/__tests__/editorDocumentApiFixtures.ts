@@ -38,11 +38,31 @@ export function expectErrorIdentity(
   expect((error as Error).message).toBe(message)
 }
 
+// A 200 carrying `body`. Shared rather than re-declared per test file: the shape is pure transport
+// machinery no case narrates, and a local copy in each file is a second place for the `ok`/`status`
+// pair to drift out of agreement with what httpClient actually branches on (`res.ok`).
+export function okJson(body: unknown): { ok: true; status: 200; json: () => Promise<unknown> } {
+  return { ok: true, status: 200, json: async () => body }
+}
+
 // VITE_API_BASE_URL is empty (frontend/.env), so httpClient's API_BASE is '' and the fetched URL is
 // the path verbatim. Asserted with toBe, not toContain: `toContain` passes for
 // '/api/v1/documents/doc-1/versions' and for a doubled base, which are different endpoints.
 export const DOCUMENT_URL = '/api/v1/documents/doc-1'
 export const REFRESH_URL = '/api/v1/auth/refresh'
+// Account-scoped, NOT '/api/v1/documents/{id}/ai-edits/quota'. Lives here beside its peers so the
+// endpoint table has one home rather than two.
+export const QUOTA_URL = '/api/v1/ai-edits/quota'
+
+// The 401 both API test files drive their renew-and-replay case with. Stubbed twice per case: the
+// first is the original request, the second is the refresh, whose failure is the only path that
+// reaches a caller as SessionExpiredError.
+export const UNAUTHORIZED_RESPONSE = {
+  ok: false,
+  status: 401,
+  json: async () => ({ error_code: 'UNAUTHORIZED', message: 'Unauthorized' }),
+}
+export const SESSION_EXPIRED_MESSAGE = 'Сессия истекла. Войдите снова.'
 
 // The wire text is deliberately NOT the Russian sentence the error carries. DocumentNotFoundError
 // is constructed with no arguments and owns its message, so asserting the Russian constant while
