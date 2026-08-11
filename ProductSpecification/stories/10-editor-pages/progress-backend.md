@@ -1554,7 +1554,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   Both passes also proposed deriving the ids from `__name__`; the mapping form was kept instead
   because it keeps the label explicit while making order-drift impossible. Revisit only if a fifth
   arrangement makes the mapping unwieldy.
-- [ ] pin the id to the arrangement it names (agent-review #1 on the guard commit, and it is the ONE
+- [x] pin the id to the arrangement it names (agent-review #1 on the guard commit, and it is the ONE
   failure mode of four that is green rather than loud). `_LISTED` is built from
   `{arrange.__name__ for arrange in EVERY_SAVE_ARRANGEMENT.values()}` — the KEYS are discarded. Swap
   two values between keys (`"blank_title"` ↦ the whitespace arrangement and vice versa) and both sets
@@ -1565,6 +1565,49 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   MIS-PAIRING is not, and the record overstates the guarantee. One line next to the existing assert
   closes it: `assert all(key in arrange.__name__ for key, arrange in EVERY_SAVE_ARRANGEMENT.items())`
   — verified to hold for all four today. Correct the two prose claims in the same edit.
+  **DONE, and the named one-line fix was NOT used verbatim — measurement improved it twice.**
+  The defect reproduced exactly as charted: with the swap applied and no pin, **8 passed, 0 failed** —
+  set equality over `.values()` is byte-identical under a permutation, so the envelope row reported
+  `blank_title` while the whitespace arrangement ran.
+  First correction, from a MESSAGE mismatch red-agent refused to accept as cosmetic: the bare
+  one-liner fires but reports `assert False` over a generator repr and NAMES NO OFFENDING PAIR — the
+  same unreadable-failure defect this file's own docstring criticises in the old shared accessor. The
+  final form names them: `ids not pinned to the arrangement they name: {'whitespace_title',
+  'blank_title'}`, predicted and matched character for character.
+  Second correction: `endswith`, not the charted `in`. All 16 pairs checked — both relations are
+  perfectly diagonal TODAY, so containment would have caught the swap; the difference is a FUTURE
+  mispair that is not a permutation. `given_a_save_carrying_a_blank_title_after_trim` keyed
+  `blank_title` satisfies `in` and fails `endswith`. `/test-review` took the judgment further and it
+  is worth keeping: `endswith(k)` IMPLIES `in(k)`, so the two relations differ on exactly one set —
+  ids that are a proper INFIX of the method name, i.e. the suffix-extended-sibling family
+  (`_after_trim`, `_v2`). An id in that set is ambiguous between the base arrangement and its
+  extension, so rejecting it is the point, not collateral damage. Names that reorder words
+  (`..._a_whitespace_only_title` keyed `whitespace_title`) fail `in` too, so `endswith` is never the
+  binding constraint there. The convention is already `given_a_save_carrying_<qualifier>` with the id
+  AS the qualifier, so "id equals the tail" restates the convention rather than imposing one.
+  `/test-review` also established that the two asserts compose into a full BIJECTION, which neither
+  states alone, and measured both halves: a PERMUTATION leaves `_LISTED` intact and only the pin
+  catches it; a DUPLICATE (`whitespace_title` ↦ the blank arrangement) collapses `_LISTED` to 3 and
+  only the set equality catches it (`unlisted {'given_a_save_carrying_a_whitespace_title'}`). Neither
+  guard is redundant — do not "simplify" one away.
+  The comment now concedes the limit instead of overclaiming: the mapping form "rules out ORDER drift
+  but NOT mis-pairing, hence the pin below". The old line credited the form itself with foreclosing
+  relabeling, and the HEAD-plus-swap run at 8 passed is its counterexample.
+  The prefix claim (next step) turned out NOT to be in the file at all — grepped for
+  `prefix|single save|precondition|narrow` across both files, no hits. It lives only in THIS record,
+  so the next step is a pure record correction with no code to change.
+  Line budget: the pin cost 5 lines and all 5 were paid back out of PROSE. `/test-review` diffed the
+  docstrings word by word against HEAD: only filler was lost (`and`, `is`, `which`, `so`), every
+  compression preserved its claim, and every file reference, line reference and count survives. The
+  three re-measurable counts were re-measured against today's 8 rows and are exact
+  (`title.strip()` → 1/7 whitespace alone; conditional auth drop → 2/6 on Authorization; conditional
+  wrong path → 2/6 on the request line); the 5/0 and 1/4 figures remain correctly scoped as history
+  "out of the 5 rows this file had then". File ends at **200**, statements file untouched at 200.
+  Payload rows 8 passed, 0 failed. `tests/backend/documents` 14 failed / 8 passed / 1 skipped — the
+  same 14 environmental (Docker down), all 8 passes from this file.
+  CARRIED: the pin relates an id to a method NAME, so it closes the green mis-pairing hole without
+  touching the deeper point — a name cannot express "is a single save request". That decision stays
+  open in the step below.
 - [ ] the narrowed prefix does not deliver the property it was sold on (agent-review #2, same commit,
   and it is a correction to what is written above, not just a new step). The narrowing was justified
   as keeping out a future `given_*` that is NOT a single save — a precondition, or one dispatching
