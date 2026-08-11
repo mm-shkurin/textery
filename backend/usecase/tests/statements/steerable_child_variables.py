@@ -1,6 +1,7 @@
 """The roster of everything a runner could steer a child pytest with.
 
-Spelled out here rather than imported from `child_pytest_run.LEAKY_CHILD_VARIABLES`.
+Spelled out here rather than imported from
+`child_environment_scrub.LEAKY_CHILD_VARIABLES`.
 Read back from the module under test, every consumer below would agree with that
 tuple by construction and go on agreeing with it after an entry was deleted --
 green in exactly the state they exist to reject.

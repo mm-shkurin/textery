@@ -3,16 +3,19 @@
 Kept apart from the gate that asserts on the result, so that file reads as the
 claim being made and this one holds the mechanics of getting a trustworthy child:
 which configuration it is pointed at, and which ambient state is taken away from
-it. Both are the reason a green here means anything.
+it. Both are the reason a green here means anything. *Which* ambient state that is
+-- the roster itself and the reasoning behind each entry -- is one file further
+out, in `child_environment_scrub.py`, so that this file holds the applying and not
+the choosing.
 """
 
 import os
 import subprocess
 import sys
-from collections.abc import Mapping
 from pathlib import Path
 
 from statements.arranged import arranged
+from statements.child_environment_scrub import without_leaky_variables
 from statements.child_pytest_report import ChildPytestReport
 from statements.forgotten_await_probes import PROBE_MODULE_NAME
 
@@ -21,46 +24,6 @@ BACKEND_ROOT = Path(__file__).resolve().parents[3]
 PROJECT_CONFIG = BACKEND_ROOT / "pyproject.toml"
 
 PROBE_TIMEOUT_SECONDS = 180
-
-# Anything the ambient shell or a CI runner can set that would change what the
-# child decides about warnings or which plugins it loads. Scrubbed by default so
-# the gate is proven against `pyproject.toml` alone. Two entries are measured
-# threats rather than assumed ones: `PYTEST_ADDOPTS=-W ignore::RuntimeWarning`
-# makes the forgotten-await gate un-failable, and `PYTEST_DISABLE_PLUGIN_AUTOLOAD`
-# keeps the control's `async def` test from ever running -- with the scrub lifted
-# and that variable ambient, all four gate tests fail, the control included.
-#
-# `PYTHONWARNINGS=ignore::RuntimeWarning` reads like the flagship threat and is
-# *not* one: pytest applies its own ini `filterwarnings` after the ones inherited
-# from `PYTHONWARNINGS`, so the probe still fails with it set. It is scrubbed
-# because it steers a different mechanism -- Python's own warnings machinery,
-# before pytest sees anything -- which is enough to silence a warning a *probe*
-# provokes directly, not because it can disarm this gate.
-#
-# `PY_COLORS`/`FORCE_COLOR` turn pytest's markup on, and the anchored banner pattern
-# then matches nothing the child drew; `COV_CORE_*` is `pytest-cov`'s `.pth`
-# bootstrap, which starts coverage inside any child that inherits it. Both groups
-# are reasoned about in full in `steerable_child_variables.py`.
-#
-# The roster is asserted against, in both directions, by
-# `test_child_environment_scrub.py`: shrink this tuple and that test goes red.
-LEAKY_CHILD_VARIABLES = (
-    "PYTEST_ADDOPTS",
-    "PYTHONWARNINGS",
-    "PYTEST_PLUGINS",
-    "PYTEST_DISABLE_PLUGIN_AUTOLOAD",
-    "PYTEST_CURRENT_TEST",
-    "PY_COLORS",
-    "FORCE_COLOR",
-    "COV_CORE_SOURCE",
-    "COV_CORE_CONFIG",
-    "COV_CORE_DATAFILE",
-)
-
-
-def _without_leaky_variables(environment: Mapping[str, str]) -> dict[str, str]:
-    """The ambient environment minus everything a runner could steer the child with."""
-    return {name: value for name, value in environment.items() if name not in LEAKY_CHILD_VARIABLES}
 
 
 def _refuse_a_probe_inside_the_repository(probe_path: Path) -> None:
@@ -191,7 +154,7 @@ class ChildPytestRun:
         inherited = (
             dict(os.environ)
             if self._keep_ambient_environment
-            else _without_leaky_variables(os.environ)
+            else without_leaky_variables(os.environ)
         )
         return {**inherited, "TMPDIR": scratch, "TEMP": scratch, "TMP": scratch}
 

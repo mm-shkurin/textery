@@ -8,10 +8,15 @@ begins with `\\x1b[` and ends with `\\x1b[0m`.
 `_BANNER = re.compile(r"^=+ (?P<name>.+?) =+$")` is anchored, so it matches none of
 them: `_banners` answers `[]`, `summary_counts()` takes its empty-banners arm,
 and the gate reports `the child summarised {}, expected {'failed': 1}` -- a
-sentence that points the reader at pytest for a report pytest wrote correctly.
-`LEAKY_CHILD_VARIABLES` scrubs five names and not one of them is a colour
-variable, so a runner exporting `PY_COLORS=1` puts every gate in this package into
-that state at once.
+sentence that points the reader at pytest for a report pytest wrote correctly. A
+runner exporting `PY_COLORS=1` would put every gate in this package into that state
+at once, which is why `LEAKY_CHILD_VARIABLES` carries `PY_COLORS` and `FORCE_COLOR`
+-- they were added to that roster for this reason and no other.
+
+So this family is the second layer rather than the only one, and it is not
+redundant: the scrub keeps colour from reaching the child, and these tests are what
+say what the reader does if it arrives anyway -- through a mechanism the roster was
+never told about, or in a child whose family opts out of the scrub entirely.
 
 The bannerless family beside this one sanctioned `{}` as the honest answer for a
 report with no banner in it. This family is what keeps that sanction narrow: a

@@ -2,25 +2,29 @@
 
 The gate proves "a bare run of a probe module under this configuration file fails
 a forgotten `await`". Three things stand between that and the claim a reader takes
-from it, and all three are prose today rather than assertions.
+from it. Each was a sentence in a docstring before this file existed; each is an
+assertion here now, and the third is still only half closed.
 
-* The child is launched with `--rootdir` but no `--confcutdir`. pytest walks
-  conftests upward from the *collected file*, not from rootdir, and the probe is
-  written outside the repository -- so the walk does not stop at the repository
-  either, it runs past it to the filesystem root. Today that loads nothing,
-  because nothing above the scratch happens to be a conftest. It is still the
-  wrong reach in both directions: a repository conftest that touched `warnings`
-  would never reach the child, and any conftest that appears above the scratch
-  would.
-* "written outside `rootdir`, so the parent never collects it" is a sentence in a
-  docstring. If `tmp_path` ever lands inside the repository -- a CI image pointing
-  `TMP` at the workspace -- the child imports the repository's conftests and the
-  parent collects the leftover probe on a later run, since `tmp_path` roots
-  survive three runs under a fixed module name.
-* An unraisable warning fires at garbage-collection time, so the run that fails is
-  whichever one the collector lands in. `error::RuntimeWarning` alone could never
-  misattribute; the second filter entry introduced a failure class that can. What
-  the gate must pin is that the leak is reported against the test that leaked.
+* How far the child's conftest walk reaches. pytest walks conftests upward from
+  the *collected file*, not from rootdir, and the probe is written outside the
+  repository -- so an unpinned walk does not stop at the repository either, it
+  runs past it to the filesystem root. That is the wrong reach in both directions:
+  a repository conftest that touched `warnings` would never reach the child, and
+  any conftest that happened to sit above the scratch would. `--confcutdir` at the
+  probe's own directory is what bounds it, and a poisoned conftest one level above
+  the probe is what proves the bound is really there rather than merely passed.
+* Where the probe may be written. "written outside `rootdir`, so the parent never
+  collects it" rests on `tmp_path` landing outside the repository, and a CI image
+  pointing `TMP` at the workspace -- or a plain `--basetemp` at `<repo>/.tmp` --
+  breaks that without touching a line of configuration, leaving a collectable
+  `test_*.py` behind for three runs under a fixed module name. There is a refusal
+  now, but it is anchored to `backend/` while its own remedy clause says "outside
+  the repository", so the destinations between those two trees are still approved.
+  Both refusal tests are red on exactly that gap.
+* Which test an unraisable is charged to. It fires at garbage-collection time, so
+  the run that fails is whichever one the collector lands in. `error::RuntimeWarning`
+  alone could never misattribute; the second filter entry introduced a failure class
+  that can. The leak is pinned here to the test that committed it.
 """
 
 import shutil
@@ -45,7 +49,6 @@ from statements.probe_destinations import (
 # whose conftest walk is cut at the probe directory never sees it.
 POISONED_CONFTEST_MESSAGE = "the child pytest walked its conftest search past the probe directory"
 POISONED_CONFTEST_SOURCE = f'raise RuntimeError("{POISONED_CONFTEST_MESSAGE}")\n'
-
 
 
 class GateReachStatements(ForgottenAwaitGateStatements):
@@ -123,10 +126,10 @@ class GateReachStatements(ForgottenAwaitGateStatements):
             f"claim, and the leftover module is collected by the real suite for three runs"
         )
         assert self._probe_landed is False, (
-            f"the write was refused, but the probe was already on disk when it was -- so the "
-            f"guard sits after `write_text` rather than before it. The refusal is then only a "
-            f"report: the `test_*.py` exists, and whether the parent collects it depends on "
-            f"something happening to delete it again, which is the claim's whole content"
+            "the write was refused, but the probe was already on disk when it was -- so the "
+            "guard sits after `write_text` rather than before it. The refusal is then only a "
+            "report: the `test_*.py` exists, and whether the parent collects it depends on "
+            "something happening to delete it again, which is the claim's whole content"
         )
         actual = str(self._refusal)
         assert actual == EXPECTED_REPOSITORY_REFUSAL, (

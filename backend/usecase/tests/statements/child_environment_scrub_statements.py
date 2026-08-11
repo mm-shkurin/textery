@@ -39,7 +39,9 @@ whose loss shows up as a child collecting into a directory this process does not
 rather than as a scrub failure.
 
 The opt-in half stays, and now says the thing it was always meant to: nothing was
-removed, and all seven names arrived carrying the values the parent set. Without it
+removed, and every name in the roster arrived carrying the value the parent set --
+stated as a whole-set comparison rather than as a count, because a count is what
+goes stale the next time the roster grows. Without it
 a scrub that reached the opt-in would leave the disarmed families' gates asserting
 nothing.
 """

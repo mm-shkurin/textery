@@ -2,11 +2,11 @@
 
 Split out of `ArmingProbeRosterStatements` when the fourth vector arrived: that file
 stood at 190 lines and the two new roster entries left it ten short of the 200-line
-limit, with a fifth vector already the thing it exists to anticipate. The division
-is the one the harness families
-already use -- `ChildPytestReport` reads a child run, `ForgottenAwaitGateStatements`
-states the claims -- so the expectations and the assertions stay in the Statements
-class and the reflection that answers them lives here.
+limit, with a fifth vector already the thing it exists to anticipate. The division is
+the one the harness families already use -- `ChildPytestReport` reads a child run,
+`ForgottenAwaitGateStatements` states the claims -- so the expectations and the
+assertions stay in the Statements class and the reflection that answers them lives
+here.
 
 Nothing in this file carries an expectation. It answers two questions about code as
 it is written: which public names the probe module declares, and which of those the

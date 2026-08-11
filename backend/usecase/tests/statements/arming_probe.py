@@ -45,6 +45,7 @@ UNLOADED_WARNINGS_PLUGIN = "-p no:warnings"
 # as the only thing left to be wrong about.
 REWRITTEN_FILTER_DECLARATION = "-o filterwarnings=error::RuntimeWarning"
 
+
 class ArmRefusal(typing.NamedTuple):
     """The two clauses an arm's failure must carry, required by construction.
 
