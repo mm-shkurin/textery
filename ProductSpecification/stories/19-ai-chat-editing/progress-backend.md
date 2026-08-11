@@ -1989,7 +1989,44 @@ within their file, not across the story.
       **Lint gate is red on `backend/usecase` and it is not this work:** `ruff check backend/usecase`
       reports 2 × E501 in `test_resolve_owned_revision_records.py:65,80`, confirmed present at HEAD by
       stashing. An earlier scenario's test file — fix it in the `/refactor` step or a targeted commit,
-      but do not carry it as unnoticed.
+      but do not carry it as unnoticed. `/refactor` declined them on merit: line 65 is 105 columns and
+      the inner line still lands at 103 when wrapped, so getting under 100 needs a rename or a local
+      alias — not a reflow. `/refactor` applied one change: `_banners` became a `cached_property`,
+      mirroring `_lines`' stated precedent (it is asked three times per report and the new substitution
+      was re-running across every line each time). Commit `897b71eb`.
+      **Review-pass follow-ups (non-gating, both CONCERNS, and they converge on the same item).**
+      **(1) The commit message of `5c61ff50` is wrong, and this is the correction of record.** It
+      claims "`summary_counts()`, `section()` and `failing_test_names()` are all covered by the one
+      change." `failing_test_names()` is covered only for its *section boundaries*, not for its own
+      regex: it matches a **second** pattern, `_FAILING_TEST = ^_+ (\S+?) _+$` (`child_pytest_report.py:152`),
+      against the **raw** section lines — and `section()` returning raw lines is the whole point of the
+      fix. Real pytest draws that sub-banner through the same `write_sep` (`red=True, bold=True`), so
+      under exactly the `PY_COLORS=1` condition this commit exists for it arrives wrapped in
+      `\x1b[31m\x1b[1m…\x1b[0m` and matches nothing → empty set. That feeds the gate's actual verdict at
+      `child_probe_statements.py:107`, so a coloured runner moves the failure from "the child summarised
+      `{}`" to "the FAILURES section is about no test at all" — the same misleading class, one layer
+      down, on a healthy repo, with the colour fix already landed to misdirect the reader.
+      **No test can catch it and the colour fixture provably cannot provide one:**
+      `fabricated_child_report_statements.py:47` documents that `FAILURES_BODY_STDOUT_REPORTED` carries
+      no `_____ test_probe _____` sub-banner at all, and `COLOURED_STDOUT` reuses that body — so the new
+      family asserts a FAILURES body real pytest never writes. `failure_text_contains()` (L163) is the
+      second raw-bytes consumer and shares the hole.
+      **(2) A regression this commit introduces, not a pre-existing gap.** The strip is now applied to
+      **every** line, body text included. `_assert_the_report_is` embeds `COLOURED_REPORT` verbatim into
+      its assertion message (`fabricated_child_report_statements.py:73-76`) — lines that literally read
+      `\x1b[32m====== FAILURES ======\x1b[0m`. Before this commit those could not match `_BANNER`; now
+      they strip clean and become **phantom banners**, and `summary_counts()` reads `banners[-1]` while
+      `_body_ends` slices on banner positions. Guard: fabricate a report whose *body* contains an
+      escaped separator-looking line and require `_banners` to find exactly the separators pytest drew.
+      **(3) The cheapest guard is upstream of all of this, and it collapses (1) and (2) to
+      defence-in-depth.** `LEAKY_CHILD_VARIABLES` (`child_pytest_run.py:31-37`) scrubs five names and
+      **neither `PY_COLORS` nor `FORCE_COLOR` is among them** — the colour-blindness is inherited
+      ambient state, and parsing through it is strictly harder to keep true than scrubbing it, which is
+      what every other steering variable already gets. Every colour claim in this work unit rests on
+      hand-typed fabricated bytes; no test asserts the child's environment, and no test runs a real
+      child under `PY_COLORS=1` and requires the gate to bite. Priority order for the deliverables:
+      (3) → (1) → (2). **(3) folds directly into the already-scheduled tuple work in the next red step**,
+      which is why that step keeps the `[~]`.
 - [~] red-usecase (the scrub is watched through one variable of five, and the vectors' own potency
       is asserted nowhere) — **both review passes over `ae505cc6` converged on the first item, and the
       agent-review pass ran the negative control independently rather than trusting the commit
