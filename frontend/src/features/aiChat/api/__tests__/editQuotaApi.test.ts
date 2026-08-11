@@ -1,17 +1,23 @@
-import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 import { loadEditQuota, type EditQuotaState } from '../editQuotaApi'
 import { SessionExpiredError } from '../../../auth/api/authorizedRequest'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
 import { rejectionOf } from '../../../../test/rejectionOf'
+// Shared with `components/__tests__/DocumentEditorPage.overQuota.test.tsx` — the byte-equality this
+// file pins and the `data-resets-at` the component pins are one claim about one instant.
+import { RESETS_AT_WIRE } from '../../__tests__/editQuotaWireFixtures'
 import {
   expectErrorIdentity,
+  INTERNAL_ERROR_MESSAGE,
+  INTERNAL_ERROR_RESPONSE,
   okJson,
   QUOTA_URL,
   REFRESH_URL,
+  requestedUrls,
   SESSION_EXPIRED_MESSAGE,
+  signedInSessionAroundEach,
   stubFetch,
   UNAUTHORIZED_RESPONSE,
-} from './editorDocumentApiFixtures'
+} from './aiChatApiFixtures'
 
 // THE CONTRACT ADDITION THIS FILE DEFINES, stated here because it does not exist yet and a
 // parallel backend session has to honour it verbatim:
@@ -30,27 +36,13 @@ import {
 // half of that claim; the `expectTypeOf` below is the signature half.
 const FALLBACK = 'Не удалось загрузить лимит правок'
 
-// Deliberately non-canonical: a +03:00 offset and no fractional seconds. Any `new Date(...)` /
-// `toISOString()` on the mapping path rewrites it to '2026-08-10T21:00:00.000Z' and fails this file
-// loudly — the point, because the Selenium layer asserts `data-resets-at` is byte-equal to what the
-// API returned. Same constant as `DocumentEditorPage.overQuota.test.tsx`, so the layers cannot drift.
-const RESETS_AT_WIRE = '2026-08-11T00:00:00+03:00'
-
 // TDD RED (Story 19, Frontend Scenario 0.2). Verified failing 2026-08-11: every case fails on the
 // stub's unconditional `Error: loadEditQuota is not implemented yet`. `describe.skip` rather than
 // eight `it.skip`s: one function under test, one marker (the adapter-class convention this feature's
 // `editorDocumentApi.test.ts` already uses). Unskipped in green-frontend-api.
 describe.skip('editQuotaApi loadEditQuota', () => {
-  // Setup, not subject: the read goes through `send` -> `authorizedRequest`, which throws
-  // SessionExpiredError before fetch is reached when no token is stored.
-  beforeEach(() => {
-    saveSession({ accessToken: 'access-1', refreshToken: 'refresh-1' })
-  })
-
-  afterEach(() => {
-    clearSession()
-    vi.unstubAllGlobals()
-  })
+  // Stores the session every case needs and tears down `stubFetch`'s global. Rationale beside it.
+  signedInSessionAroundEach()
 
   it('reads the account-scoped quota and reports a quota that still has room', async () => {
     const fetchMock = stubFetch(okJson({ exhausted: false, resets_at: null }))
@@ -172,7 +164,7 @@ describe.skip('editQuotaApi loadEditQuota', () => {
 
     const error = await rejectionOf(loadEditQuota())
     expectErrorIdentity(error, SessionExpiredError, 'SessionExpiredError', SESSION_EXPIRED_MESSAGE)
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([QUOTA_URL, REFRESH_URL])
+    expect(requestedUrls(fetchMock)).toEqual([QUOTA_URL, REFRESH_URL])
   })
 
   // Everything else keeps the describing `send` already does. Pinning `name` to 'Error' is
@@ -181,15 +173,11 @@ describe.skip('editQuotaApi loadEditQuota', () => {
   // that opts this call into the `notFound` mapping, which would be wrong here (a 404 on the
   // quota endpoint means the endpoint is missing, not that a document is).
   it('keeps a 500 as a described generic failure', async () => {
-    const fetchMock = stubFetch({
-      ok: false,
-      status: 500,
-      json: async () => ({ error_code: 'INTERNAL_ERROR', message: 'Внутренняя ошибка' }),
-    })
+    const fetchMock = stubFetch(INTERNAL_ERROR_RESPONSE)
 
     const error = await rejectionOf(loadEditQuota())
-    expectErrorIdentity(error, Error, 'Error', 'Внутренняя ошибка')
+    expectErrorIdentity(error, Error, 'Error', INTERNAL_ERROR_MESSAGE)
     // Not a session problem: no renew, no replay.
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([QUOTA_URL])
+    expect(requestedUrls(fetchMock)).toEqual([QUOTA_URL])
   })
 })

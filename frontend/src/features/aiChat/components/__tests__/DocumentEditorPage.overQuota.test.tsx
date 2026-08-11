@@ -5,6 +5,10 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { DocumentEditorPage } from '../DocumentEditorPage'
 import { loadEditorDocument } from '../../api/editorDocumentApi'
 import { loadEditQuota, type EditQuotaState } from '../../api/editQuotaApi'
+// The non-canonical wire instant review follow-up (an) is about, shared with
+// `api/__tests__/editQuotaApi.test.ts` so this layer and the mapping layer cannot canonicalise
+// independently. Its rationale lives beside the constant.
+import { RESETS_AT_WIRE } from '../../__tests__/editQuotaWireFixtures'
 
 // Story 19, Frontend Scenario 0.2 — "An account over its daily quota cannot type an instruction"
 // (`tests/02_UI_Tests.md`).
@@ -36,13 +40,6 @@ const AI_CHAT_PANEL = 'ai-chat-panel'
 // If the two lists ever disagree the layers specify two different UIs and one of them passes
 // against a screen no user sees.
 const EXPECTED_RESET_HINT_LEAD = 'Дневной лимит правок исчерпан'
-
-// A NON-CANONICAL instant on purpose: a Moscow offset, not `Z`, and no fractional seconds. This is
-// the case that pins review follow-up (an) — `data-resets-at` must carry the wire string the API
-// returned, byte for byte. Any `new Date(...).toISOString()` on the way to the attribute rewrites
-// this to `2026-08-10T21:00:00.000Z` and fails here, which is precisely the fragility the Selenium
-// layer's byte-equality assertion would otherwise discover across two serializations.
-const RESETS_AT_WIRE = '2026-08-11T00:00:00+03:00'
 
 const DOCUMENTS_LIST_PATH = '/documents'
 const DOCUMENT_ID = '7a3d5e19-2c64-4b08-8f52-91ad3e7c0b6f'

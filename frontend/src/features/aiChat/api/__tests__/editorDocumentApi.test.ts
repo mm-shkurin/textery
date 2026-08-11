@@ -1,18 +1,22 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { DocumentNotFoundError, loadEditorDocument } from '../editorDocumentApi'
 import { SessionExpiredError } from '../../../auth/api/authorizedRequest'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
 import { rejectionOf } from '../../../../test/rejectionOf'
 import {
   DOCUMENT_URL,
+  INTERNAL_ERROR_MESSAGE,
+  INTERNAL_ERROR_RESPONSE,
   NOT_FOUND_MESSAGE,
   NOT_FOUND_RESPONSE,
+  okJson,
   REFRESH_URL,
   SESSION_EXPIRED_MESSAGE,
+  signedInSessionAroundEach,
   UNAUTHORIZED_RESPONSE,
   expectErrorIdentity,
+  requestedUrls,
   stubFetch,
-} from './editorDocumentApiFixtures'
+} from './aiChatApiFixtures'
 
 // DESIGN DECISION, recorded here because the previous /refactor pass deferred it to this work
 // unit and the tests below only make sense once it is settled.
@@ -49,28 +53,13 @@ import {
 // than five `it.skip`s: one function under test, one marker (the adapter-class convention).
 // Unskipped in green-frontend-api.
 describe('editorDocumentApi loadEditorDocument', () => {
-  // Setup, not subject: the load goes through `authorizedRequest`, which throws
-  // SessionExpiredError before fetch is ever reached when no token is stored.
-  beforeEach(() => {
-    saveSession({ accessToken: 'access-1', refreshToken: 'refresh-1' })
-  })
-
-  afterEach(() => {
-    clearSession()
-    vi.unstubAllGlobals()
-  })
+  // Stores the session every case needs and tears down `stubFetch`'s global. Rationale beside it.
+  signedInSessionAroundEach()
 
   it('loads the document behind /documents/{id} and renames the wire fields', async () => {
-    const fetchMock = stubFetch({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        document_id: 'doc-1',
-        status: 'draft',
-        content: '<p>Привет</p>',
-        version: 4,
-      }),
-    })
+    const fetchMock = stubFetch(
+      okJson({ document_id: 'doc-1', status: 'draft', content: '<p>Привет</p>', version: 4 }),
+    )
 
     // `status` is deliberately absent from the result: the editor renders content and sends
     // `version` back on save, and nothing in this feature branches on the document's status.
@@ -101,7 +90,7 @@ describe('editorDocumentApi loadEditorDocument', () => {
     expectErrorIdentity(error, DocumentNotFoundError, 'DocumentNotFoundError', NOT_FOUND_MESSAGE)
     // Exactly one call: a 404 is a statement about the document, not about the session, so it
     // must not send the request through `authorizedRequest`'s renew-and-replay.
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([DOCUMENT_URL])
+    expect(requestedUrls(fetchMock)).toEqual([DOCUMENT_URL])
   })
 
   it('rejects a foreign account document — the same 404 — with the same error type', async () => {
@@ -111,9 +100,7 @@ describe('editorDocumentApi loadEditorDocument', () => {
     expectErrorIdentity(error, DocumentNotFoundError, 'DocumentNotFoundError', NOT_FOUND_MESSAGE)
     // The id reaches the URL: without this the case is indistinguishable from the one above and
     // would pass for an implementation that ignores its argument.
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-      '/api/v1/documents/doc-owned-by-someone-else',
-    ])
+    expect(requestedUrls(fetchMock)).toEqual(['/api/v1/documents/doc-owned-by-someone-else'])
   })
 
   // Review follow-up (n): an expired session must NOT arrive as DocumentNotFoundError. It is not
@@ -133,7 +120,7 @@ describe('editorDocumentApi loadEditorDocument', () => {
 
     const error = await rejectionOf(loadEditorDocument('doc-1'))
     expectErrorIdentity(error, SessionExpiredError, 'SessionExpiredError', SESSION_EXPIRED_MESSAGE)
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([DOCUMENT_URL, REFRESH_URL])
+    expect(requestedUrls(fetchMock)).toEqual([DOCUMENT_URL, REFRESH_URL])
   })
 
   // The other side of the same line: everything that is NOT the 404 keeps the describing `send`
@@ -144,15 +131,11 @@ describe('editorDocumentApi loadEditorDocument', () => {
   // DocumentNotFoundError)`: it also rules out SessionExpiredError, VersionConflictError and any
   // other subclass a green might reach for.
   it('keeps a 500 as a described generic failure, not not-found', async () => {
-    const fetchMock = stubFetch({
-      ok: false,
-      status: 500,
-      json: async () => ({ error_code: 'INTERNAL_ERROR', message: 'Внутренняя ошибка' }),
-    })
+    const fetchMock = stubFetch(INTERNAL_ERROR_RESPONSE)
 
     const error = await rejectionOf(loadEditorDocument('doc-1'))
-    expectErrorIdentity(error, Error, 'Error', 'Внутренняя ошибка')
+    expectErrorIdentity(error, Error, 'Error', INTERNAL_ERROR_MESSAGE)
     // A 500 is not a session problem either — no renew, no replay.
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([DOCUMENT_URL])
+    expect(requestedUrls(fetchMock)).toEqual([DOCUMENT_URL])
   })
 })

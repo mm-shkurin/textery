@@ -833,8 +833,50 @@ under `frontend/src` or `acceptance/tests/frontend`.
       home is a shared aiChat test constant reachable from the api *and* component layers, and
       `editorDocumentApiFixtures.ts` is api-only; creating that module is `/refactor` scope. The
       non-canonicality guard above mitigates the actual risk meanwhile.
-      **The file is at 195 of 200 lines** — a ninth case forces a split, the same squeeze the
-      component test hit at 194.
+      **The file is at 191 of 200 lines after `/refactor`** — a ninth case is close to forcing a
+      split, the same squeeze the component test hit at 194.
+      `/refactor` took the deferred candidate: `RESETS_AT_WIRE` moved to
+      `features/aiChat/__tests__/editQuotaWireFixtures.ts` (20 lines) — `aiChat/__tests__/` is the
+      one directory both the api and component layers sit below, and `generation/__tests__/` and
+      `landing/__tests__/` are the precedent. The comment claiming "the layers cannot drift" is now
+      true rather than aspirational: previously a tidy-up canonicalising one copy to
+      `2026-08-10T21:00:00.000Z` left both files green while deleting the round-trip trap on one
+      side, because the non-canonicality guard only protects the copy it can see. It also extracted
+      `requestedUrls(fetchMock)` (six call sites) and renamed `editorDocumentApiFixtures.ts` to
+      `aiChatApiFixtures.ts`, which two files now share. 520 passed / 8 skipped; tsc, oxlint,
+      prettier clean.
+      **Review-pass follow-ups (both CONCERNS) — (al) and (am) are green-frontend-api's, act on them
+      before writing the client:**
+      (al) **The union guard has a hole a mirror-image green walks straight through.** The only
+      exhausted-with-no-instant case sends `{exhausted: true, resets_at: null}`; nothing sends
+      `{exhausted: true}` with the key **absent**, and the `it.each` pair does not reach it (both its
+      bodies fail at the `exhausted` check first). A green written `if (body.resets_at === null)
+      throw` passes all eight and returns `resetsAt: undefined`, i.e. `data-resets-at="undefined"` —
+      the identical incident the case exists to prevent, found by the Selenium byte-equality
+      assertion. One extra `it.each` row, not a new `it` block, given the line count.
+      (am) **`resets_at` is never wire-validated for TYPE.** An epoch number or `''` passes all eight
+      cases, a green forwarding `body.resets_at` types it as `string` by declaration only, and the
+      Selenium assertion passes *trivially* because both sides carry the same garbage. Same `it.each`.
+      (an) **The contract exists in no file the backend session reads.** `GET /api/v1/ai-edits/quota`
+      is written only in this file's `QUOTA_URL` and in `progress-frontend.md`; `endpoints.md` still
+      lists its original seven endpoints and `progress-backend.md` has no scenario for a quota read.
+      Per CLAUDE.md File Ownership the backend session never reads this file. One table row in
+      `endpoints.md` is the only artifact that crosses the session boundary — but `endpoints.md` is
+      shared, so land it deliberately rather than as a side effect of a frontend unit.
+      (ao) **The 401 case has no consumer.** A whole case preserves `SessionExpiredError` identity
+      through `loadEditQuota`, and `hooks/useEditQuota.ts` discards it with `.catch(() =>
+      setQuota(null))` — `null` means "not yet known", so the composer stays dead on arrival
+      permanently and the user is never told they are signed out. `useGeneration.ts:87` and
+      `useDocumentSave.ts:34` both branch on the type; this hook is the odd one out. No test
+      distinguishes the two rejections at hook or component level.
+      (ap) **The eight guards can ship never having run.** If green un-skips nothing the suite still
+      reports all-green, and the directory-aggregated coverage floor (`features/aiChat/api` = 66.66%)
+      cannot catch it — this story has already recorded that masking once. Green's verification must
+      report the eight cases as *passed* individually.
+      (aq) Housekeeping, corrected above: the entry's opening sentence said "six cases … 145 lines"
+      pre-review. It is eight cases. And the file's header cites `editorDocumentApi.test.ts` as the
+      `describe.skip` precedent — that describe is live since its own green phase (its stale comment
+      at `:48` is the source of the confusion), so the citation is false and should go at green.
       **Green owes the real client** (`send('/api/v1/ai-edits/quota', {}, 'Не удалось загрузить
       лимит правок')` plus the two union guards) and the backend endpoint behind it; this is also
       the step that actually covers `editQuotaApi.ts`, which `green-frontend` left at 0% behind a
