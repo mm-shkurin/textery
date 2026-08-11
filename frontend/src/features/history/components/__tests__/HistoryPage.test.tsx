@@ -65,6 +65,30 @@ describe('HistoryPage', () => {
     expect(onOpenDocument).toHaveBeenCalledExactlyOnceWith('doc-1', 'доклад')
   })
 
+  // Story 19, Frontend Scenario 1.1 (follow-up (be)). Every AI-chat UI scenario reaches the editor
+  // by CLICKING a row here, and `acceptance/statements/frontend/ai_chat/editor_route_statements.py`
+  // pins that click to the document its setup prepared by reading `data-document-id` off the row.
+  // The attribute exists nowhere under `frontend/src`, so the Given of scenarios 0.2 AND 1.1 — and
+  // of everything later built on `EditorRouteStatements` — dies at the click, for a reason none of
+  // their prose predicts. The cases above assert row text and click behavior and would stay green
+  // through it: `onOpenDocument` carries the id in a closure, which no browser can read.
+  //
+  // RED: `HistoryPage.tsx:90-97` renders the row as a `<button>` carrying only
+  // `data-testid="history-document-row"`.
+  it.skip('carries the document id on the row itself, where a browser can read it', async () => {
+    vi.mocked(historyApi.listDocuments).mockResolvedValue({ items: [DOC], nextCursor: null })
+
+    renderPage()
+
+    // Exact equality against the fixture's own id: an attribute present but holding the index, the
+    // type, or an empty string satisfies presence and still opens the wrong document — or fails
+    // the acceptance identity assert with a value no one can explain.
+    expect(await screen.findByTestId('history-document-row')).toHaveAttribute(
+      'data-document-id',
+      DOC.documentId,
+    )
+  })
+
   it('says the list is empty rather than showing nothing at all', async () => {
     vi.mocked(historyApi.listDocuments).mockResolvedValue({ items: [], nextCursor: null })
 

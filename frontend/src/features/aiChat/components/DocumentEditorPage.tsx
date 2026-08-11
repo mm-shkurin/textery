@@ -43,7 +43,10 @@ export function DocumentEditorPage() {
   return (
     <div className="ac-layout">
       <EditorDocumentView content={state.document.content} />
-      <AiChatPanel quota={quota} />
+      {/* Empty by construction for scenario 1.1 — the document it opens has never been edited
+          by AI. The history READ is scenario 1.2's ("an existing conversation is restored"), and
+          landing one here would be a fetch no test in this unit observes. */}
+      <AiChatPanel quota={quota} messages={[]} />
     </div>
   )
 }

@@ -1199,7 +1199,71 @@ under `frontend/src` or `acceptance/tests/frontend`.
       (bj) Low: `assert_the_document_content_is_shown_in_the_editor` passes the *locator* to
       `_assert_element_text_equals`, which re-resolves document-wide, so the `len(editors) == 1`
       assert above it is advisory rather than load-bearing. Pass `editors[0]`.
-- [~] red-frontend
+- [x] red-frontend — four cases across three new files plus one added to `HistoryPage.test.tsx`.
+      Three fail genuinely and land skipped; the fourth lands **un-skipped** on this story's
+      `42ba5d94` precedent, since it pins an already-correct guard and only a mutation can
+      redden it.
+      Predicted and got, per case: `TestingLibraryElementError: Unable to find an element by:
+      [data-testid="ai-chat-message-list"]` in both `DocumentEditorPage.emptyChat.test.tsx:121`
+      and `AiChatPanel.history.test.tsx:44`; `Expected the element to have attribute:
+      data-document-id="doc-1" / Received: null` at `HistoryPage.test.tsx:86`; and — under
+      mutation only — `AssertionError: expected <textarea …> to be null` for the quota case.
+      **Three review-pass follow-ups from the Selenium unit are closed here**, which is the
+      point of the unit: (bf) `AiChatPanel.history.test.tsx` renders a non-empty history and
+      requires the empty state to be *absent* while message rows are present — without it,
+      an `ai-chat-message-list` that renders nothing under any condition and an unconditional
+      `ai-chat-empty-state` satisfy the whole scenario, because 1.1's document is pristine by
+      construction; (bg) `DocumentEditorPage.quotaReadFailed.test.tsx` pins that a *rejected*
+      quota read withholds the composer rather than becoming permission to type; (be)
+      `HistoryPage.test.tsx` now requires `data-document-id` on the row — the attribute the
+      acceptance base needs and that exists nowhere under `frontend/src`, so this unblocks the
+      Given of both 0.2 and 1.1 at the click step.
+      **`/test-review` found the un-skipped case vacuous, and this is the finding of the unit.**
+      Mutation-tested as instructed, it killed only 1 of 3 mutants: deleting `useEditQuota`'s
+      `.catch` **survived**, and deleting the `act(reject)` block entirely **survived**. Root
+      cause: a rejected read and an in-flight read render an identical panel — `useEditQuota`
+      collapses both to `null` — so every assertion in the file was satisfied by the *pending*
+      state. The file's whole stated purpose was untested; it was testing the loading screen.
+      Fixed with a settlement barrier (`await expect(quotaRead).rejects.toThrow(...)` before the
+      DOM assertions, so a test that stops firing the rejection hangs rather than passes), an
+      `unhandledRejection` listener asserted empty at the end — which is what actually pins the
+      `.catch`, since our own `.rejects` handler attaches to the base promise and not to the
+      derived `.then` chain the escape travels — and `toHaveBeenCalledExactlyOnceWith` on both
+      reads, which the file had omitted while both its siblings pin them. All three mutants now
+      die. `process` is reached through a locally-typed `globalThis` destructure: this app has
+      no `@types/node` and adding one would be a build-config change riding in on a test review.
+      Second fix: `toHaveLength(HISTORY.length)` in the history case agreed with itself under any
+      edit to the fixture — replaced with a literal `EXPECTED_ROW_COUNT = 2`.
+      Rejected findings worth keeping: `screen.findByTestId(MANUAL_EDITOR)` *looks* like the
+      container-scope violation this story keeps hitting, but `findByTestId` throws on multiple
+      matches, so it enforces the same uniqueness the acceptance layer spells out as
+      `EXPECTED_MANUAL_EDITOR_COUNT = 1` (needed because story 5's `ManualEditor.tsx:158` shares
+      the testid). `toContain` on row text stays: the mockup renders each `.msg` with a `.mark`
+      glyph and a sibling `.time`, so exact `textContent` equality would forbid markup the
+      mockup already specifies and force scenario 1.2 to edit a 1.1 test. `ChatMessage.role` and
+      `.messageId` stay unasserted — pinning them means inventing `data-message-role`/
+      `data-message-id`, which is **scenario 1.2's** spec; deferred to a named sequenced owner,
+      not to "later".
+      **The third Then got no case of its own, deliberately:** `DocumentEditorPage.overQuota
+      .test.tsx:173` already asserts input and send enabled through this same page for a
+      within-quota account (verified line by line). What 1.1 genuinely adds there is the
+      failed-read guard, which is the un-skipped file.
+      RED plumbing audited and inert: `AiChatPanel.tsx` is `+14/-0` — an exported `ChatMessage`
+      interface and a `messages` prop **not destructured** by the body, no list, no empty state,
+      no branch; `DocumentEditorPage.tsx` passes `messages={[]}`. Both skipped describes were
+      un-skipped temporarily and fail with the predicted locator error, not a crash.
+      529 passed / 0 failed / 3 skipped (121 files passed, 2 skipped); tsc, prettier and oxlint
+      clean. The 3 skips are exactly this unit's three RED markers.
+      **Green's scope is four things:** `ai-chat-message-list` (always rendered), a
+      **conditional** `ai-chat-empty-state` carrying the exact sentence `Документ готов.
+      Напишите, что нужно изменить — я поправлю текст и сохраню новую версию.`, message rows
+      under the `ai-chat-message*` prefix, and `data-document-id` on the row button at
+      `HistoryPage.tsx:90-97`.
+      Untouched by this unit and still open from the Selenium one: (bh) the unsynchronised
+      negative in `empty_chat_panel_statements.py`, (bi) the baseline-revision question, (bj)
+      the re-resolving locator. Follow-up (ak) was not pulled in — it did not fall out of any
+      case here and belongs to the AI-applied-edit scenarios.
+- [~] green-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api

@@ -8,11 +8,25 @@ export const CHAT_PANEL_HEADING = 'Редактор с ИИ'
 // composer: it is what the panel can honestly say before it knows whether typing is allowed.
 export const CHAT_PANEL_NOTICE = 'Проверяем дневной лимит правок…'
 
+// One turn of the conversation. RED stub for Frontend Scenario 1.1: only the three fields the
+// tests read — an id to key the row, the side it sits on, and what it says. The wire shape and
+// its timestamps belong to `red-frontend-api` / scenario 1.2, which owns the history read.
+export interface ChatMessage {
+  messageId: string
+  role: 'user' | 'assistant'
+  text: string
+}
+
 interface AiChatPanelProps {
   // `null` = not yet known. The composer is WITHHELD until the quota resolves rather than
   // rendered live and disabled a tick later — an enabled send control the user may click before
   // the read lands is a promise the account cannot keep.
   quota: EditQuotaState | null
+  // The conversation so far. Deliberately a PROP and not a read of its own: the panel is what
+  // scenario 1.1's empty state and scenario 1.2's restored history disagree about, so the panel
+  // is where the branch has to be testable. Unread by the body below — RED plumbing, so the
+  // tests compile and fail on the missing history region rather than on a type error.
+  messages: ChatMessage[]
 }
 
 // The mockup's accent tile beside the heading (`.chat-head .mark`). There is no icon package
