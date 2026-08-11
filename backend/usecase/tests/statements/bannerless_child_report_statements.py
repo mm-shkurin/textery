@@ -15,7 +15,7 @@ control beside it holds the identical stderr behind a stdout that *does* carry a
 final tally banner.
 
 The exit code is *not* asserted here, deliberately. Nothing the subject computes
-reads `returncode` -- `output`, `_lines`, `_banners()`, `section()` and
+reads `returncode` -- `output`, `_lines`, `_banners`, `section()` and
 `summary_counts()` all ignore it -- so a pin on it is a pin on a literal this file
 handed to `_fabricate` a dozen lines earlier, and the state it claims to reject
 ("a bannerless report from a run that exited 0 or 1") is not reachable from these

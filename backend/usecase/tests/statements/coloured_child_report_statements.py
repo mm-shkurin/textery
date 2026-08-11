@@ -6,7 +6,7 @@ pytest's terminal writer turns markup on in a non-tty whenever `PY_COLORS=1` or
 begins with `\\x1b[` and ends with `\\x1b[0m`.
 
 `_BANNER = re.compile(r"^=+ (?P<name>.+?) =+$")` is anchored, so it matches none of
-them: `_banners()` answers `[]`, `summary_counts()` takes its empty-banners arm,
+them: `_banners` answers `[]`, `summary_counts()` takes its empty-banners arm,
 and the gate reports `the child summarised {}, expected {'failed': 1}` -- a
 sentence that points the reader at pytest for a report pytest wrote correctly.
 `LEAKY_CHILD_VARIABLES` scrubs five names and not one of them is a colour

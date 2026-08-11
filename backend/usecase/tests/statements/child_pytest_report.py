@@ -113,7 +113,7 @@ class ChildPytestReport:
 
     def section(self, name: str) -> str:
         """The body between a named banner and the next one, or "" if absent."""
-        banners = self._banners()
+        banners = self._banners
         return next(
             (
                 "\n".join(self._lines[banner.line_number + 1 : end])
@@ -163,7 +163,7 @@ class ChildPytestReport:
         The whole dict is the value to compare against, so a second failure, a
         skip, or a stray warning cannot hide behind a match on one of the terms.
         """
-        banners = self._banners()
+        banners = self._banners
         if not banners:
             return {}
         return {
@@ -172,7 +172,16 @@ class ChildPytestReport:
             if (match := _COUNT.match(part.strip()))
         }
 
+    @cached_property
     def _banners(self) -> list[_Banner]:
+        """Every banner line in the report, found once.
+
+        Cached for the same reason `_lines` is: a finished child's output cannot
+        change, and this is asked twice per section read -- `failing_test_names`
+        and `failure_text_contains` each go through `section`. Since the markup
+        strip landed, each of those asks re-ran a regex substitution over every
+        line of the report to rediscover banners already found.
+        """
         return [
             _Banner(number, match.group("name").strip())
             for number, line in enumerate(self._lines)
