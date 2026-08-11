@@ -98,7 +98,7 @@ async function chatPanel() {
 // RED: neither `ai-chat-message-list` nor `ai-chat-empty-state` exists anywhere under
 // `frontend/src` — `AiChatPanel` renders a heading, the revisions control and (while the quota is
 // unknown) a notice, and has no history region at all.
-describe.skip('DocumentEditorPage — a document never edited by AI', () => {
+describe('DocumentEditorPage — a document never edited by AI', () => {
   beforeEach(() => {
     loadEditorDocumentMock.mockReset()
     loadEditQuotaMock.mockReset()

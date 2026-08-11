@@ -75,7 +75,7 @@ describe('HistoryPage', () => {
   //
   // RED: `HistoryPage.tsx:90-97` renders the row as a `<button>` carrying only
   // `data-testid="history-document-row"`.
-  it.skip('carries the document id on the row itself, where a browser can read it', async () => {
+  it('carries the document id on the row itself, where a browser can read it', async () => {
     vi.mocked(historyApi.listDocuments).mockResolvedValue({ items: [DOC], nextCursor: null })
 
     renderPage()

@@ -92,6 +92,12 @@ function DocumentsTab({
           key={d.documentId}
           className="history-row"
           data-testid="history-document-row"
+          // The same `d.documentId` the click below opens, read off the same row of the same
+          // map. A browser (Selenium) has no way to see which document a click will open, so it
+          // reads this instead — sourcing it from anything else (an index, an outer value) would
+          // let the attribute and the click name two different documents while every test that
+          // uses a single-row fixture stays green.
+          data-document-id={d.documentId}
           onClick={() => onOpenDocument(d.documentId, d.documentType)}
         >
           <span className="history-row-title">{documentTypeLabelFromWire(d.documentType)}</span>

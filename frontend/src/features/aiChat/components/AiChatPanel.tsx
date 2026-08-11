@@ -7,6 +7,11 @@ export const CHAT_PANEL_HEADING = 'Редактор с ИИ'
 // Shown only while the account's quota is still unknown. It is not a placeholder for the
 // composer: it is what the panel can honestly say before it knows whether typing is allowed.
 export const CHAT_PANEL_NOTICE = 'Проверяем дневной лимит правок…'
+// Shown only while the conversation is empty. Exported so the vitest layer can import the one
+// copy instead of retyping it — the acceptance layer (`empty_chat_panel_statements.py`) is a
+// separate language and cannot share it, so two copies is the floor, three was avoidable.
+export const CHAT_EMPTY_STATE_TEXT =
+  'Документ готов. Напишите, что нужно изменить — я поправлю текст и сохраню новую версию.'
 
 // One turn of the conversation. RED stub for Frontend Scenario 1.1, which reads `text` and
 // NOTHING ELSE: `AiChatPanel.history.test.tsx` asserts row text alone. `messageId` and `role`
@@ -28,8 +33,7 @@ interface AiChatPanelProps {
   quota: EditQuotaState | null
   // The conversation so far. Deliberately a PROP and not a read of its own: the panel is what
   // scenario 1.1's empty state and scenario 1.2's restored history disagree about, so the panel
-  // is where the branch has to be testable. Unread by the body below — RED plumbing, so the
-  // tests compile and fail on the missing history region rather than on a type error.
+  // is where the branch has to be testable.
   messages: ChatMessage[]
 }
 
@@ -46,7 +50,32 @@ function SparkMark() {
   )
 }
 
-export function AiChatPanel({ quota }: AiChatPanelProps) {
+// The history region. The list is rendered unconditionally — it is where messages go, and a
+// region that appears only once a message exists would have to be built twice. The empty state
+// is the conditional half: it claims "this document has never been edited", which is false the
+// moment a single turn exists.
+//
+// Rows carry `text` and nothing else. Keying by id, splitting user from assistant and ordering
+// the turns are scenario 1.2's, which owns the history read.
+function AiChatHistory({ messages }: { messages: ChatMessage[] }) {
+  return (
+    <div className="ac-chat-history" data-testid="ai-chat-message-list">
+      {messages.length === 0 ? (
+        <p className="ac-chat-empty" data-testid="ai-chat-empty-state">
+          {CHAT_EMPTY_STATE_TEXT}
+        </p>
+      ) : (
+        messages.map((message) => (
+          <p className="ac-chat-message" key={message.messageId} data-testid="ai-chat-message">
+            {message.text}
+          </p>
+        ))
+      )}
+    </div>
+  )
+}
+
+export function AiChatPanel({ quota, messages }: AiChatPanelProps) {
   return (
     <aside className="ac-chat" aria-label={CHAT_PANEL_HEADING} data-testid="ai-chat-panel">
       <div className="ac-chat-head">
@@ -54,6 +83,7 @@ export function AiChatPanel({ quota }: AiChatPanelProps) {
         <h2 className="ac-chat-heading">{CHAT_PANEL_HEADING}</h2>
         <AiChatRevisions />
       </div>
+      <AiChatHistory messages={messages} />
       {quota === null ? (
         <p className="ac-chat-notice">{CHAT_PANEL_NOTICE}</p>
       ) : (

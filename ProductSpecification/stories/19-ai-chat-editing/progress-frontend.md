@@ -1327,8 +1327,36 @@ under `frontend/src` or `acceptance/tests/frontend`.
       the conditional branch is exercised only by a direct panel render, never through the page.
       Scenario 1.2 owns the read and its page-level tests would redden on a forgotten
       thread-through.
-- [~] green-frontend
-- [ ] red-frontend-api
+- [x] green-frontend — 532 passed / 0 failed / **0 skipped** (was 529/3); tsc, prettier and
+      oxlint clean. (bo) honored explicitly: vitest printed no skipped bucket at all across
+      the whole `frontend/src` suite, so all three un-skips demonstrably landed rather than
+      two of them landing and the count reading as normal.
+      An internal `AiChatHistory` renders `ai-chat-message-list` **unconditionally** — it is
+      where messages go, and a region that appears only once a message exists would have to be
+      built twice — with `ai-chat-empty-state` as the conditional half, present only at
+      `messages.length === 0`. Rows carry `text` alone, keyed by `messageId`; ordering and the
+      per-side split stay scenario 1.2's.
+      (bk) closed by construction rather than by a test: the attribute and the `onClick` read
+      the **same `d.documentId`, in the same `items.map` callback, three lines apart** — no
+      index, no memoised outer value, no second expression to diverge through. The single-row
+      fixture that made the divergence invisible is unchanged; what changed is that there is
+      now nothing to diverge. A comment on the line says why.
+      (bn) partially closed: `CHAT_EMPTY_STATE_TEXT` is exported from `AiChatPanel.tsx` beside
+      `CHAT_PANEL_NOTICE`. **Rewiring `emptyChat.test.tsx`'s `EXPECTED_EMPTY_STATE_TEXT` to
+      import it is OWED** — changing a test's imports is beyond "remove the skip marker", so
+      green declined it rather than widening its own licence. Until that lands the copies are:
+      component (exported), vitest (hardcoded), `empty_chat_panel_statements.py` (Python,
+      unshareable by construction). Two is the floor; three was avoidable.
+      (bl) answered in CSS and **guarded by nothing executable, stated plainly**: `.ac-chat` is
+      a flex column and the new history takes `flex: 1; min-height: 0; overflow-y: auto`, so a
+      populated list scrolls inside itself instead of pushing `.ac-chat-composer` (which keeps
+      its `margin-top: auto`) out of the column. jsdom applies no layout, so no vitest case can
+      catch a regression here, and no Selenium case asserts composer visibility against a
+      **non-empty** conversation either — the only composer-visibility assertion in the repo is
+      the acceptance layer's, against a pristine document with an empty list. The first real
+      guard would be a Selenium case with a populated conversation. This is the same shape as
+      (af) from `align-design` 0.2: a scrolling model no jsdom test can see.
+- [~] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design
 - [ ] green-selenium

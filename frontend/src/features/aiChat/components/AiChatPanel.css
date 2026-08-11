@@ -31,6 +31,34 @@
   margin: 0;
 }
 
+/* The history region, between the head and the composer. `flex: 1` + `min-height: 0` is what
+   keeps a long conversation from pushing the composer out of the column: without the zero
+   minimum a flex child refuses to shrink below its content, so the box below would be scrolled
+   off instead of the messages scrolling inside here. */
+.ac-chat-history {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ac-chat-empty {
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.ac-chat-message {
+  color: var(--text-primary);
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 0;
+}
+
 /* Pinned to the bottom of the column, which is what the bounded `height` on `.ac-layout` is for:
    in an unbounded column `margin-top: auto` has nothing to push against. */
 .ac-chat-composer {

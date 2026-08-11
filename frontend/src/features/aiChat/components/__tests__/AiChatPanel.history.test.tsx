@@ -37,7 +37,7 @@ const EXPECTED_ROW_COUNT = 2
 
 // RED: `AiChatPanel` has no history region at all — no `ai-chat-message-list`, no
 // `ai-chat-empty-state`, and `messages` is an unread prop.
-describe.skip('AiChatPanel — a document that already has a conversation', () => {
+describe('AiChatPanel — a document that already has a conversation', () => {
   it('renders the messages and drops the empty state', () => {
     render(<AiChatPanel quota={WITHIN_QUOTA} messages={HISTORY} />)
 
