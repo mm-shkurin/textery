@@ -1,0 +1,80 @@
+/* The chat panel's own interior — composer, quota hint, revisions. A file of its own because
+   DocumentEditorPage.css (the workspace grid, the document card, the blocker screens) is at 190
+   of its 200 permitted lines and these rules belong to a different element anyway.
+   Geometry here is provisional: `align-design` for scenario 0.2 aligns it to
+   mockups/desktop/06-over-quota.html. Colours resolve through the app's tokens, never the
+   mockup's literals — see the header of DocumentEditorPage.css for why. */
+
+.ac-chat-revisions {
+  margin-left: auto;
+  position: relative;
+}
+
+.ac-chat-revisions-toggle {
+  background: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.ac-chat-revisions-panel {
+  border-top: 1px solid var(--border-subtle);
+  padding: 14px 20px;
+}
+
+.ac-chat-revisions-empty {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* Pinned to the bottom of the column, which is what the bounded `height` on `.ac-layout` is for:
+   in an unbounded column `margin-top: auto` has nothing to push against. */
+.ac-chat-composer {
+  margin-top: auto;
+  border-top: 1px solid var(--border-subtle);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ac-chat-input {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 13.5px;
+  padding: 10px 12px;
+  resize: none;
+}
+
+.ac-chat-input:disabled,
+.ac-chat-send:disabled {
+  background: var(--bg-page);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+}
+
+.ac-chat-send {
+  align-self: flex-end;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+}
+
+.ac-chat-quota-hint {
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  margin: 0;
+  padding: 10px 12px;
+}

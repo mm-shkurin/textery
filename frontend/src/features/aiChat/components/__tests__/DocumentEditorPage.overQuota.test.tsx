@@ -114,8 +114,7 @@ describe('DocumentEditorPage — an account over its daily edit quota', () => {
     loadEditQuotaMock.mockReset()
   })
 
-  // RED: TestingLibraryElementError: Unable to find an element by: [data-testid="ai-chat-message-input"]
-  it.skip('disables the chat input and the send control', async () => {
+  it('disables the chat input and the send control', async () => {
     renderEditorFor(OVER_QUOTA)
 
     const panel = await chatPanel()
@@ -128,8 +127,7 @@ describe('DocumentEditorPage — an account over its daily edit quota', () => {
     expectBothLoadsIssuedExactlyOnce()
   })
 
-  // RED: TestingLibraryElementError: Unable to find an element by: [data-testid="ai-chat-quota-reset-hint"]
-  it.skip('shows the reset hint carrying the instant the API returned, verbatim', async () => {
+  it('shows the reset hint carrying the instant the API returned, verbatim', async () => {
     renderEditorFor(OVER_QUOTA)
 
     const panel = await chatPanel()
@@ -152,8 +150,7 @@ describe('DocumentEditorPage — an account over its daily edit quota', () => {
     expectBothLoadsIssuedExactlyOnce()
   })
 
-  // RED: TestingLibraryElementError: Unable to find an element by: [data-testid="ai-chat-revisions-toggle"]
-  it.skip('leaves the revisions control usable', async () => {
+  it('leaves the revisions control usable', async () => {
     renderEditorFor(OVER_QUOTA)
 
     const panel = await chatPanel()
@@ -176,8 +173,7 @@ describe('DocumentEditorPage — an account over its daily edit quota', () => {
     expectBothLoadsIssuedExactlyOnce()
   })
 
-  // RED: TestingLibraryElementError: Unable to find an element by: [data-testid="ai-chat-message-input"]
-  it.skip('leaves the input and the send control live for an account within its quota', async () => {
+  it('leaves the input and the send control live for an account within its quota', async () => {
     renderEditorFor(WITHIN_QUOTA)
 
     const panel = await chatPanel()

@@ -734,7 +734,41 @@ under `frontend/src` or `acceptance/tests/frontend`.
       "Remains usable" is asserted here as: the toggle is enabled over quota, the panel is closed
       before the click and open after it. **Green must not read that gap as licence to ship an
       empty panel** — `green-selenium` will not pass on one.
-- [ ] green-frontend
+- [x] green-frontend — four new files, two modified. `hooks/useEditQuota.ts` (35 lines) does the
+      one-per-mount account-scoped read; its StrictMode guard is a `useRef` set **before** the
+      `loadEditQuota()` call, not the `useDocumentInit` cancel-flag — that flag suppresses the
+      second `setState`, not the second request, which is exactly what
+      `toHaveBeenCalledExactlyOnceWith` measures. A failed read resolves to `null` ("not yet
+      known") so a dead endpoint cannot take the route down; a distinct `failed` state is 8.8's.
+      `components/AiChatComposer.tsx` (58) gives input and send one shared
+      `disabled={quota.exhausted}`, and `QuotaResetHint` writes `data-resets-at={resetsAt}`
+      straight from the wire string — **no `Date` anywhere on the path**, with the lead in its own
+      `ai-chat-quota-reset-hint-lead` span so the countdown tail can land later without loosening
+      the assertion. `components/AiChatRevisions.tsx` (34) keeps the toggle and panel **outside**
+      the quota branch — its enabled state is never conditioned on quota — and the panel ships an
+      empty-state notice rather than an empty container, per the red phase's warning that
+      `green-selenium` will not pass on one. `AiChatPanel.css` is a new file rather than an append
+      to `DocumentEditorPage.css`, which sits at 190/200.
+      **The judgement call:** `AiChatPanel` takes `quota: EditQuotaState | null` and **withholds**
+      the composer while `null`, showing a notice instead. Rendering it live-then-dead a tick later
+      would invite the user to start typing an instruction that was never going to be accepted.
+      `editQuotaApi.ts`'s type became a discriminated union
+      (`{exhausted:false;resetsAt:null} | {exhausted:true;resetsAt:string}`); the body still
+      throws and the endpoint remains `red-frontend-api`'s — the seam the tests pin (zero
+      arguments) is unchanged.
+      Evidence: the four cases un-skipped and passing (the only edit was removing `it.skip` and
+      its `// RED:` comment — diffed to confirm no assertion moved); full frontend suite
+      **520 passed / 0 failed / 0 skipped** (119 files); tsc, oxlint and prettier clean.
+      **One test change outside the un-skip, named on purpose:** `DocumentEditorPage.notFound.test.tsx`
+      gains an 11-line `vi.mock` of `../../api/editQuotaApi` resolving the within-quota value.
+      Unavoidable collateral — adding the quota read to the shared `ready` branch means scenario
+      0.1's success case now reaches the real `loadEditQuota`, which throws by design. Setup only;
+      no assertion touched.
+      **The coverage gate's exit 0 is weaker than it looks:** `editQuotaApi.ts` still reads 0%
+      line/function (its one function is mocked in every test) and passes only because the
+      per-file floor is evaluated at the `features/aiChat/api` directory = 66.66%. The red phase's
+      "un-skipping closes it" is true by aggregation, not because the module became covered —
+      `red-frontend-api` is what actually covers it.
 - [ ] red-frontend-api
 - [ ] green-frontend-api
 - [ ] align-design

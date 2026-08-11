@@ -1,5 +1,6 @@
 import { useParams } from 'react-router-dom'
 import { useEditorDocument } from '../hooks/useEditorDocument'
+import { useEditQuota } from '../hooks/useEditQuota'
 import { DocumentNotFoundBlocker } from './DocumentNotFoundBlocker'
 import { EditorDocumentView } from './EditorDocumentView'
 import { AiChatPanel } from './AiChatPanel'
@@ -18,6 +19,10 @@ export const LOAD_FAILED_MESSAGE =
 export function DocumentEditorPage() {
   const { documentId } = useParams<{ documentId: string }>()
   const state = useEditorDocument(documentId ?? '')
+  // Account-scoped and unconditional — it takes no document id, and it is read at the top of the
+  // component because hooks cannot live behind the early returns below. Both reads are issued
+  // exactly once per mount, each guarded by its own pre-fetch ref.
+  const quota = useEditQuota()
 
   if (state.status === 'not-found') {
     return <DocumentNotFoundBlocker />
@@ -38,7 +43,7 @@ export function DocumentEditorPage() {
   return (
     <div className="ac-layout">
       <EditorDocumentView content={state.document.content} />
-      <AiChatPanel />
+      <AiChatPanel quota={quota} />
     </div>
   )
 }

@@ -1,9 +1,19 @@
+import type { EditQuotaState } from '../api/editQuotaApi'
+import { AiChatComposer } from './AiChatComposer'
+import { AiChatRevisions } from './AiChatRevisions'
+import './AiChatPanel.css'
+
 export const CHAT_PANEL_HEADING = 'Редактор с ИИ'
-// Deliberately NOT the mockup's "Напишите, что нужно изменить" opener: there is no composer on
-// this route yet (scenario 1.1 owns the message list, the composer and the quota line), and an
-// invitation to type into an input that does not exist is a lie told by a placeholder. This says
-// what is true today and nothing more.
-export const CHAT_PANEL_NOTICE = 'Редактирование через чат появится здесь.'
+// Shown only while the account's quota is still unknown. It is not a placeholder for the
+// composer: it is what the panel can honestly say before it knows whether typing is allowed.
+export const CHAT_PANEL_NOTICE = 'Проверяем дневной лимит правок…'
+
+interface AiChatPanelProps {
+  // `null` = not yet known. The composer is WITHHELD until the quota resolves rather than
+  // rendered live and disabled a tick later — an enabled send control the user may click before
+  // the read lands is a promise the account cannot keep.
+  quota: EditQuotaState | null
+}
 
 // The mockup's accent tile beside the heading (`.chat-head .mark`). There is no icon package
 // in this app — every other screen inlines its glyph — and it is decoration, so it is hidden
@@ -18,14 +28,19 @@ function SparkMark() {
   )
 }
 
-export function AiChatPanel() {
+export function AiChatPanel({ quota }: AiChatPanelProps) {
   return (
     <aside className="ac-chat" aria-label={CHAT_PANEL_HEADING} data-testid="ai-chat-panel">
       <div className="ac-chat-head">
         <SparkMark />
         <h2 className="ac-chat-heading">{CHAT_PANEL_HEADING}</h2>
+        <AiChatRevisions />
       </div>
-      <p className="ac-chat-notice">{CHAT_PANEL_NOTICE}</p>
+      {quota === null ? (
+        <p className="ac-chat-notice">{CHAT_PANEL_NOTICE}</p>
+      ) : (
+        <AiChatComposer quota={quota} />
+      )}
     </aside>
   )
 }

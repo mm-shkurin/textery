@@ -74,6 +74,20 @@ vi.mock('../../api/editorDocumentApi', async (importOriginal) => {
   return { ...actual, loadEditorDocument: vi.fn() }
 })
 
+// The quota seam, mocked because the success case below drives the page to its `ready` branch —
+// where the editor route issues its account-scoped quota read. Left unmocked, that read reaches
+// the real `loadEditQuota`, which throws by design, and this file would go red for a reason
+// having nothing to do with scenario 0.1. The resolved value is the within-quota one because
+// this scenario is about a document that loads, not about a spent quota; the quota branch itself
+// is pinned by `DocumentEditorPage.overQuota.test.tsx`.
+vi.mock('../../api/editQuotaApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../api/editQuotaApi')>()
+  return {
+    ...actual,
+    loadEditQuota: vi.fn().mockResolvedValue({ exhausted: false, resetsAt: null }),
+  }
+})
+
 const loadEditorDocumentMock = vi.mocked(loadEditorDocument)
 
 function renderAtDocumentRoute(documentId: string) {
