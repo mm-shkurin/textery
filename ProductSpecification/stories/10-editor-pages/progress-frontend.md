@@ -795,6 +795,27 @@ pagination failure.
   constantSites 153, fixtureUsage.source 70.
   **Still open, and this case does NOT close it:** CREDIBLE 2 below — case 3 reads through the same
   `fixtureUsageIn`, so it inherits the duplicated-`SOURCES` blind spot rather than covering it.
+- [ ] red-frontend (premortem CREDIBLE 2 over `5151f390`) — **cases 2 and 3 read the SAME
+  hand-typed `PINNED_FIELDS_PER_EXPECTATION`, so deleting a field from that list repairs both at
+  once — three tokens inside the guard file, measured green.** Incident: green phase, the emitted
+  laid-out state has no `currentPage`; the developer deletes the `currentPage:` line from all three
+  expectation blocks. Cases 2 and 3 both redden and both print `- "currentPage"`, which reads as
+  "this file's list is stale"; the shortest repair is deleting `'currentPage',` from the list.
+  `constantSites` is repaired by the paste. `pageCount` is still asserted so the page-count guards
+  look alive — nothing asserts the visible page. Measured: `Tests 10 passed | 3 skipped, 0 failed`.
+  The `/test-review` redundancy argument was built against edits to `EXPECTATION_BLOCKS` only —
+  against edits to the FIELD list the two cases are one claim wearing two names, and the
+  non-vacuity claim ("an emptied file yields `[]` against four names") holds only while those four
+  names are honest. Guard: assert `PINNED_FIELDS_PER_EXPECTATION` equals the field set
+  `PINNED_ASSIGNMENT`'s alternation recognises (the second spelling, in a module the list never
+  consults) — or, stronger, the count-bearing member names of `PaginationViewState`.
+- [ ] red-frontend (agent-review CONCERNS 2 over `5151f390`, minor) — **`pinnedFieldsExpectedIn`
+  silently yields `[]` for an unlisted file.** `EXPECTATION_BLOCKS[fileName]` is typed
+  `Readonly<Record<string, number>>`, so an absent filename returns `undefined` and
+  `Array.from({length: undefined})` produces `[]` rather than throwing. Fails CLOSED (red), so it is
+  a diagnosis-quality problem, not a hole: the failure reads "the file has fields it shouldn't"
+  instead of "you forgot the block count". Guard: key the map
+  `Record<typeof MEASURING_FILE | typeof LAID_OUT_FILE, number>` so the omission is a `tsc` error.
 - [ ] red-frontend (premortem CREDIBLE 2 over `4f095594`) — **both guards can be pointed at the
   same file, and neither can tell.** A chartered step splits or renames the assertion surfaces; in
   `fixtureUsage.source.ts` a developer copy-pastes the import/map pair and leaves
@@ -851,7 +872,34 @@ pagination failure.
   yields NO match — red the instant the regex is widened, in the module where the widening happens.
   Needs the matcher exported, or a `pinnedAssignmentsIn(text)` seam taking a string; the `?raw`
   argument against threading covers the IMPORTS, not the regex.
-- [ ] red-frontend (premortem CREDIBLE 3 over `63a049fd`) — **the assignment is matched
+- [x] red-frontend (premortem CREDIBLE 3 over `63a049fd`) — closed. Four mutants predicted and
+  measured, 4/4 matched: the charter's HEAD-surviving mutant (delete a `measuring` block's four
+  pinned lines + flip the count 2→1 + paste-repair `constantSites`) now dies, and flipping the
+  constant back leaves case 3 red — no hand-typed token restores green. `toMatchObject` downgrade,
+  module-scope hoist, and whole-`it` deletion all redden. `/test-review` then found the delivered
+  case asserted LESS than its name: `blocks` and `cases` were both compared to the same hand-typed
+  `EXPECTED_EXPECTATION_BLOCKS`, never to each other, and `firstBlockOf`'s `slice(0, 4)` was
+  position-blind — block one's four lines could be deleted and block two's names slid into the
+  slice, green under the very mutant the case was added for. Fixed by `pinnedFieldBlocksIn`, which
+  files each pinned field under the `expect(state).toStrictEqual({` opener it follows; case 2 now
+  asserts EVERY group, and a new case compares flat `fieldsIn` against the flattened groups
+  (derived-vs-derived, no hand-typed side). Also collapsed the two spellings of the field
+  alternation into one `PINNED_FIELDS` and gave the file names a `SourceFile` literal union, so a
+  typo'd filename is a `tsc` error rather than a silent `[]`. Tests 11 passed | 3 skipped | 0
+  failed. Cap: assignmentShape 200 → 183, fixtureUsage.source 109 → 150.
+  Charter, for the record — **RE-RANKED TO THE FRONT of this block
+  by two independent fresh-context passes over `5151f390` (agent-review CONCERNS 1 and premortem
+  CREDIBLE 1), which converged on this step's guard from a second direction and measured its
+  mutant surviving at HEAD.** Their incident: case 2 (`firstBlockOf`) covers only the FIRST
+  expectation block of each file — that is the price of its non-vacuity ("it reads NO block
+  count"), so `measuring.test.ts` block 2 is covered by case 3 alone, whose expected side is
+  `Array.from({length: EXPECTATION_BLOCKS[f]}, …)` — a hand-typed number sitting 40 lines from the
+  assertion it authorises. Delete the four pinned lines of either `measuring` block, flip
+  `EXPECTATION_BLOCKS[MEASURING_FILE]` from `2` to `1` (the repair vitest's own diff suggests), and
+  paste-repair `constantSites`: `Tests 10 passed | 3 skipped, 0 failed`, mutant survives. Note the
+  obvious patch does NOT work — a `lastBlockOf` pin is still green, since with one block left first
+  == last == the same four names. Only a count derived from the SOURCE TEXT closes it, which is
+  exactly what this step already charters. **the assignment is matched
   location-blind: the pinned text can be intact while nothing asserts it.** `codeLinesOf` trims and
   drops comment lines, then the regex is applied PER LINE, with no notion of which `expect`, which
   `it`, or whether inside an `it` at all — every pinned line today lives in an `it.skip` body and
@@ -865,6 +913,21 @@ pagination failure.
   every `expect(state).toStrictEqual({` line — pinned to an exact count (2 for `measuring`, 1 for
   `laidOut`). Fold into the `.skip`-count step; both read the same two source texts for the same
   reason.
+- [~] red-frontend (residual measured by `/test-review` on this unit, stated as a limit in the
+  header rather than closed) — **deleting a whole `it` (opener, `expect`, and its four pinned
+  lines) moves blocks and cases DOWN TOGETHER, so the derived leg cannot see it, and the only leg
+  that can is the hand-typed `EXPECTED_EXPECTATION_BLOCKS` — one token wide.** Measured: delete
+  `measuring.test.ts`' first case wholesale, then flip `2`→`1`; all cases green. Closing it needs a
+  case count read from a source the deletion does not touch — the scenario spec (`02_UI_Tests.md`)
+  or the `describe` title set — which no guard in this repo reads yet. This is the same shape as
+  the `EXPECTATION_BLOCKS` hole this unit just closed, one level up.
+- [ ] red-frontend, split (raised independently by red-agent and `/test-review`) — **the header is
+  ~60% of `paginationState.assignmentShape.test.ts` and grows BY DESIGN on every edit the file is
+  built to redden on.** It hit exactly 200 lines this unit and was bought back to 183 only by
+  trimming prose; the next incident paragraph hits the cap again. Trimming is spent as a strategy —
+  the headroom has to come from a split. Note the split itself is a hazard with a chartered guard
+  (premortem CREDIBLE 2 over `63a049fd`, above): the last split moved a load-bearing regex into a
+  file where relaxing it reddens nothing.
 - [ ] red-frontend or docs (agent-review CONCERNS 1 over `63a049fd`) — **the corrective sentence is
   itself stale, in the same header slot, about the same file: the eighth instance.** The new header
   and this unit's commit message both say "`crossRow.test.ts:126` derives from `row.blockHeights`
