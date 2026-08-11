@@ -1652,7 +1652,81 @@ under `frontend/src` or `acceptance/tests/frontend`.
       already has a live stale-stored-id path.
       (ce) Cosmetic, in this file: the comment explaining the absent `refusals` argument sits on
       `const FALLBACK`, 58 lines from the call it justifies, and would be carried off by a rename.
-- [~] align-design
+- [x] align-design — aligned the chat panel's history region to `mockups/desktop/01-editor-chat.html`
+      + `editor.css`: `.ac-chat-history` took the mockup's flat `20px` padding, and
+      `.ac-chat-message` took the `.bubble` geometry (`border-radius: 12px`, `padding: 12px 14px`)
+      plus `align-self: flex-start` and `max-width: 88%`. Those last two are not in the mockup's
+      rule — its bubble shrink-wraps because it sits in a flex *row*, while ours are block `<p>`s
+      in a flex *column*, so without them a row would span the full 380px and have to be undone
+      to make either side.
+      **Geometry copied, colour not** — same rule as 0.2, and `/design-review` verified no mockup
+      literal leaked (`#1e293b`, `#e8effe`, `#f7f8fa` all stayed out).
+      **`/design-review`: PASS on the placeholder gate.** It grepped the whole `features/aiChat`
+      tree for every value the mockup carries — `версий`, `версия`, `14:0`, `17 из 20`, `415`,
+      `Осталось` — and the only hits are inside the CSS header documenting what was *not* ported.
+      All six not-ported claims verified against the diff rather than taken on trust: the
+      `.history` strip (revisions entry point, 7.x), the three-turn sample conversation, `.time`,
+      `.quote`, `.typing`/`.dots`, and the `.msg .mark` avatar tile.
+      **Its finding 1 is the one that matters, and it invalidates a design decision 1.2 was about
+      to inherit: this app CANNOT express the mockup's per-side fill split.** `--bg-page` and
+      `--accent-soft` **both** resolve to `--blue-50` (`index.css:19,47`) — already recorded in
+      this same feature at `DocumentEditorPage.css:44-47` — so painting the user's bubble
+      `--bg-page` and the assistant's `--accent-soft` paints them identically. There is no sunken
+      neutral token: `--bg-page` is the page ground and this panel is `--bg-surface` (white), so
+      the fill reads as an *accent* tile, the same blue as `.ac-chat-mark`, not the mockup's
+      near-white neutral. The comment claiming a neutral-now/accent-later split was rewritten to
+      state the collision instead. **1.2 needs a real second surface before it can split the sides
+      at all** — a new token is the honest fix; `--bg-card-muted` is not, that is the
+      disabled-control fill and (aw) already measures it at 1.16:1 against its neighbour.
+      **Finding 2 fixed rather than recorded:** the bubble shipped `--border-subtle` on
+      `--bg-page`, which is the exact pair (ax) measures at **1.11:1** against WCAG 1.4.11's 3:1 —
+      a second instance of a failure measured one align-design entry above, on an element (ax)
+      does not name. The border was dead weight anyway: the fill already separates the bubble from
+      the white panel, and the border is indistinguishable from the fill. Dropped.
+      **(bu) closed.** `.ac-chat-history` went from `min-height: 0` to `min-height: 120px`.
+      `/design-review` verified the floor does not break the composer's pinning, and corrected the
+      mechanism: above the floor `margin-top: auto` is a no-op anyway, because `flex: 1` consumes
+      all free space and leaves the auto margin nothing to absorb — the composer is pinned by the
+      history's *growth*. Below the floor free space goes negative and auto margins resolve to
+      zero rather than misbehaving. It also caught the comment selling one side of the trade: below
+      the floor there are **two nested scrollbars** and the head and composer scroll out of view,
+      so the input is unreachable until the user scrolls back — worse than a collapsed history for
+      someone trying to type. Kept anyway, because the collapsed case is *silent* (no scrollbar, no
+      messages, nothing to discover); both sides are now in the comment.
+      **(bt) closed.** The region is `role="log" aria-live="polite" aria-label="История переписки с
+      ИИ"` (label a module-local const; nothing asserts it). `/design-review` was right that the
+      `AuthLoadingIndicator` convention claim was half-accurate: that file argues for `<output>`
+      *over* `role="status"` on a div, on the grounds that an implicit role states semantics rather
+      than annotating them — and no element carries `role="log"` implicitly, so annotating is
+      forced here. The comment now names the departure instead of claiming the convention whole.
+      `.ac-chat-empty` deliberately stays **outside** the bubble treatment, and `/design-review`
+      judged it correct: in the mockup that sentence is the assistant's first bubble; here it is
+      what the panel says when there are no turns. A bubble would render a message with no
+      `messageId`, and 1.2 would then have the same sentence appearing as both an empty state and
+      never as a real message.
+      `/test-coverage frontend --focus` with the filenames passed **explicitly** (the standing
+      `carryover.md` quirk — the default `git diff HEAD --name-only` filter has produced four false
+      all-clears on this story). `AiChatPanel.tsx` is 8/8 statements, 4/4 branches and
+      `AiChatPanel.css` reports `{"total":0}`, confirming stylesheets are not instrumented.
+      **That clean report is not evidence and is recorded as such:** this unit added attributes,
+      comments and a constant to an already-rendered element, none of which v8 can turn into a
+      statement or a branch. Neither test layer asserts `role="log"` or the label, and coverage
+      cannot tell you that. Pre-existing gaps it did surface, none newly reachable: the `'failed'`
+      arm at `useEditorDocument.ts:50` and the screen it drives at `DocumentEditorPage.tsx:32` (75%
+      branch, the feature's weakest file) — that is (h)/(p)/8.8 again, located; `chatMessagesApi.ts`
+      lines 63 and 98, the non-object-row and literal-`null`-body refusals, the second of which
+      this session just added; and `editQuotaApi.ts:58`, the `resets_at` garbage-value refusal.
+      **Review-pass follow-ups for scenario 1.2:**
+      (cf) **`role="log"` announces on insert, which is right for one arriving reply and wrong for
+      the restore path 1.2 owns** — a whole transcript injected after mount is read out in full.
+      1.2 must suppress announcement during initial hydration. Recorded in the component too.
+      (cg) **`align-self`/`max-width` are planted where 1.2 will have to move them off.** The
+      mockup gets alignment from `.msg` being a flex *row* wrapper with `justify-content`, the
+      bubble inside it. Here `.ac-chat-message` is a direct child of the column and carries the
+      alignment itself, so the assistant avatar tile has no wrapper to live in — 1.2 introduces the
+      row element and both properties migrate up to it.
+- [ ] green-selenium
+- [ ] demo
 - [ ] green-selenium
 - [ ] demo
 

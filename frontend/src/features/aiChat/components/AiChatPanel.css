@@ -1,9 +1,13 @@
 /* The chat panel's own interior — composer, quota hint, revisions. A file of its own because
    DocumentEditorPage.css (the workspace grid, the document card, the blocker screens) is at 190
    of its 200 permitted lines and these rules belong to a different element anyway.
-   Geometry here is provisional: `align-design` for scenario 0.2 aligns it to
-   mockups/desktop/06-over-quota.html. Colours resolve through the app's tokens, never the
-   mockup's literals — see the header of DocumentEditorPage.css for why. */
+   Geometry is copied from the mockups: the composer and quota hint from
+   mockups/desktop/06-over-quota.html (scenario 0.2), the history region — `.msgs`, `.msg`,
+   `.bubble` — from mockups/desktop/01-editor-chat.html (scenario 1.1). COLOURS are not copied:
+   they resolve through the app's tokens, never the mockup's literals — see the header of
+   DocumentEditorPage.css for why. Nor is the mockup's payload: its sample conversation, its
+   `14:02` stamps, its `История изменений · 7 версий` strip and its `Осталось правок сегодня:
+   17 из 20` are placeholder data owned by later scenarios, not markup this file styles. */
 
 .ac-chat-revisions {
   margin-left: auto;
@@ -31,20 +35,33 @@
   margin: 0;
 }
 
-/* The history region, between the head and the composer. `flex: 1` + `min-height: 0` is what
-   keeps a long conversation from pushing the composer out of the column: without the zero
-   minimum a flex child refuses to shrink below its content, so the box below would be scrolled
-   off instead of the messages scrolling inside here. */
+/* The mockup's `.msgs`, between the head and the composer. `flex: 1` + a shrinkable minimum is
+   what keeps a long conversation from pushing the composer out of the column: a flex child
+   otherwise refuses to shrink below its content, so the box below would be scrolled off instead
+   of the messages scrolling inside here.
+   The floor is 120px rather than the mockup's implicit 0. `.ac-chat-history` is the column's only
+   shrinkable sibling, and the head is not fixed — `AiChatRevisions` opens its panel INLINE inside
+   `.ac-chat-head` — so on a short viewport the head plus the composer plus the quota hint could
+   absorb the whole column and the conversation collapsed to nothing, with no scrollbar, because
+   the box had nothing left to overflow. Above the floor nothing changes; below it `.ac-chat`'s own
+   `overflow: auto` takes over and the panel scrolls — which means two nested scrollbars, and the
+   head and composer scrolling out of view until the user scrolls back. That is worse than a
+   collapsed history for someone trying to type, and still the better default, because the
+   collapsed case is SILENT: no scrollbar, no messages, nothing to discover. A viewport that short
+   is the real defect; neither branch fixes it. Padding is the mockup's flat 20px. */
 .ac-chat-history {
   flex: 1;
-  min-height: 0;
+  min-height: 120px;
   overflow-y: auto;
-  padding: 16px 20px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
+/* The mockup states this sentence as the assistant's first `.bubble`. Here it is not a message —
+   it is what the panel says when there are none — so it stays a muted paragraph outside the
+   bubble treatment, at the mockup's own body scale. */
 .ac-chat-empty {
   color: var(--text-secondary);
   font-size: 13.5px;
@@ -52,11 +69,37 @@
   margin: 0;
 }
 
+/* `.msg .bubble`. Shape, padding and scale are the mockup's and are shared by both sides.
+   `align-self` is stated rather than left to `stretch` because a full-width row would have to be
+   undone to make either side; `max-width` keeps a long turn off the panel's edge, which the
+   mockup gets for free from the flex row its bubble sits in.
+
+   THE SURFACE IS THE PROBLEM SCENARIO 1.2 INHERITS, and it is stated here rather than discovered
+   there. The mockup distinguishes its two sides by fill: near-white `#f7f8fa` for the user, a
+   soft accent for the assistant, both on white. This app cannot express that split — `--bg-page`
+   and `--accent-soft` BOTH resolve to `--blue-50` (`index.css:19,47`), which
+   `DocumentEditorPage.css:44-47` already records, so painting one side `--bg-page` and the other
+   `--accent-soft` paints them identically. There is no sunken neutral token: `--bg-page` is the
+   page ground, and this panel is `--bg-surface` (white), so the fill below reads as an ACCENT
+   tile — the same blue as `.ac-chat-mark` — not as the mockup's neutral.
+   1.2 needs a real second surface before it can split the sides at all. Adding a token is the
+   honest fix; reaching for `--bg-card-muted` is not, that is the disabled-control fill and
+   follow-up (aw) already measures it at 1.16:1 against its neighbour.
+
+   No border. `--border-subtle` on `--bg-page` is the pair follow-up (ax) measures at 1.11:1
+   against WCAG 1.4.11's 3:1 — this element is not the one (ax) names, so shipping it would have
+   been a second instance of a failure already measured one align-design entry above. The fill
+   alone separates the bubble from the white panel. */
 .ac-chat-message {
+  align-self: flex-start;
+  max-width: 88%;
+  background: var(--bg-page);
+  border-radius: 12px;
   color: var(--text-primary);
   font-size: 13.5px;
   line-height: 1.5;
   margin: 0;
+  padding: 12px 14px;
 }
 
 /* Pinned to the bottom of the column, which is what the bounded `height` on `.ac-layout` is for:

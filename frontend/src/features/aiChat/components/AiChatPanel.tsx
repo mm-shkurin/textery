@@ -40,6 +40,10 @@ function SparkMark() {
   )
 }
 
+// The history region's accessible name. Not exported: no assertion reads it, and both test layers
+// locate the region by `data-testid`.
+const CHAT_HISTORY_LABEL = 'История переписки с ИИ'
+
 // The history region. The list is rendered unconditionally — it is where messages go, and a
 // region that appears only once a message exists would have to be built twice. The empty state
 // is the conditional half: it claims "this document has never been edited", which is false the
@@ -47,9 +51,29 @@ function SparkMark() {
 //
 // Rows carry `text` and nothing else. Keying by id, splitting user from assistant and ordering
 // the turns are scenario 1.2's, which owns the history read.
+//
+// `role="log"` + `aria-live="polite"` because this is the app's most frequently-updating region
+// and a reply that arrives silently is a reply a screen-reader user never hears — they retype the
+// instruction and burn a quota unit. It follows the `aria-live` half of the convention
+// `AuthLoadingIndicator.tsx` sets, and DEPARTS from the other half: that file argues for `<output>`
+// over `role="status"` on a div, on the grounds that an element carrying the role implicitly states
+// its semantics instead of annotating them. No HTML element carries `role="log"` implicitly, so
+// annotating is forced here — `log` rather than `output` because the semantic is an appended
+// transcript, not one computed result. Attributes only, and every locator in both test layers is a
+// `data-testid`, which is why no assertion moved.
+//
+// WARNING FOR SCENARIO 1.2: this announces on insert, which is right for one arriving reply and
+// wrong for the restore path 1.2 owns — a whole transcript injected after mount would be read out
+// in full. 1.2 must suppress announcement during initial hydration.
 function AiChatHistory({ messages }: { messages: ChatMessage[] }) {
   return (
-    <div className="ac-chat-history" data-testid="ai-chat-message-list">
+    <div
+      className="ac-chat-history"
+      role="log"
+      aria-live="polite"
+      aria-label={CHAT_HISTORY_LABEL}
+      data-testid="ai-chat-message-list"
+    >
       {messages.length === 0 ? (
         <p className="ac-chat-empty" data-testid="ai-chat-empty-state">
           {CHAT_EMPTY_STATE_TEXT}
