@@ -1314,6 +1314,25 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   calling `""` "the ONE value scenario 3.2 is built on" when 3.2 is parametrised over TWO, `["", "   "]`.
   This file's own docstring says "Two comments in this scenario have already turned out to be false";
   the citation would have been the third.
+  `/refactor` landed separately as `319b05d7`: extracted `_given_a_save_titled(title)`. The expected
+  bodies already stated the rows-differ-only-by-title invariant structurally; the arrange side stated
+  it by three near-identical six-argument calls, so a stray edit to `content` or `version` in one copy
+  would have left the composed constants asserting a difference the arrange never intended. The three
+  `assert_*` skeletons were considered and DECLINED — shared part is two lines, the hand-written
+  failure message is the body, and extracting it pushes each message to a call-site argument for no
+  clarity gained, in a file whose recorded history is misdiagnosed failures.
+  **Verification is partial and the gap is deliberate, not an oversight.** The three payload rows pass
+  (3 passed). The rest of `tests/backend/documents` could NOT be measured: the Docker daemon is down,
+  so every container-backed row in the package fails to connect (14 failed, 3 passed, 1 skipped
+  against a 17/1 baseline). Those failures are environmental and untouched by this work unit, but the
+  17/1 baseline has NOT been re-confirmed since — re-run the package once Docker is back before
+  trusting it.
+  **The two fresh-context review passes did not run.** `agent-review` and `premortem` were dispatched
+  against `15549ca7` and both were cut off by an API session limit before reporting; `/refactor` was
+  cut off too, but after its edit had landed complete, which is why the refactor commit exists and the
+  review findings do not. They are non-gating by workflow rule, so the commits stand — but this work
+  unit has NOT had its adversarial pass, unlike every unit before it. Re-dispatch both against
+  `15549ca7` and `319b05d7` before the next red step if any finding would change the fourth row.
 - [ ] red-acceptance (**the guard closes `if title:` but not `if title and title.strip()`, and the
   strip-normalising variant is at least as plausible** — 3.2's own premise is literally "blank includes
   whitespace-only." Under it `"   "` drops to key-absent, so 3.2's `whitespace_title` parametrization
