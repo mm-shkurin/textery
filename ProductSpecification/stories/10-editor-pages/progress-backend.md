@@ -1333,7 +1333,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   review findings do not. They are non-gating by workflow rule, so the commits stand — but this work
   unit has NOT had its adversarial pass, unlike every unit before it. Re-dispatch both against
   `15549ca7` and `319b05d7` before the next red step if any finding would change the fourth row.
-- [ ] red-acceptance (**the guard closes `if title:` but not `if title and title.strip()`, and the
+- [x] red-acceptance (**the guard closes `if title:` but not `if title and title.strip()`, and the
   strip-normalising variant is at least as plausible** — 3.2's own premise is literally "blank includes
   whitespace-only." Under it `"   "` drops to key-absent, so 3.2's `whitespace_title` parametrization
   becomes byte-identical to 2.1's request and goes green for 2.1's reason. Same failure class this
@@ -1344,7 +1344,74 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   have been green for a reason the guard did not earn. That reasoning does not extend to `.strip()`,
   which is exactly why this step exists. Test: a fourth row over `save_document(title="   ")` against
   `{**NO_TITLE_INTENT_BODY, "title": "   "}`.)
-- [ ] red-acceptance (agent-review #1 on `84e47dff`, and the finding is that the pin I just argued
+  **DONE — and the premise the step was written on did not survive measurement.** The step argued
+  `if title and title.strip()` as the mutation this row alone would catch. It isn't: `""` is falsy,
+  so that mutation is a strict SUPERSET of `if title:` and reddens the blank sibling too (measured
+  2 failed, 3 passed). red-agent predicted 1-failed, got 2-failed, and looped rather than accepting
+  the mismatch — as measured, that mutation would NOT have justified a fourth row at all. The
+  discriminating mutation is one the step never named: `payload["title"] = title.strip()` — key
+  present, value normalised. `"".strip()` is `""`, so the blank row's expected body is unchanged and
+  the whitespace row reds ALONE (1 failed, 4 passed). That, not the step's own reasoning, is what
+  makes this row non-redundant.
+  Four mutations re-measured independently by `/test-review` (not trusted from prose): `title.strip()`
+  → whitespace row alone; `if title and title.strip()` → blank + whitespace; `if title:` → blank
+  alone; dict-literal `"title": null` → omission row alone. All four discriminate as documented.
+  Files: new row `test_a_save_carrying_a_whitespace_title_sends_the_title_key`, plus
+  `given_a_save_carrying_a_whitespace_title` / `assert_the_whitespace_title_key_was_sent`. NEW file
+  `acceptance/statements/document_save_payload_wire.py` (64) — the wire constants had to move: the
+  Statements file was at 181 and the fourth row would have crossed the 200 cap. Now 200 / 64 / 136.
+  Getting under the cap cost prose, not assertions — docstring rationale is tighter than it was.
+  `/test-review` applied two fixes carrying findings from the passes on `89eaa946` (see below):
+  (i) **the auth check left the shared accessor.** `_the_only_save_request()` is now a pure locator
+  (keeping only the dispatch-count check, its own named contract); method/path and `Authorization`
+  moved to a named row `test_a_save_is_dispatched_as_an_authorized_put`. Measured with the header
+  dropped: 1 failed, 4 passed — the envelope row alone. Before, that same edit reddened all four body
+  rows with an auth message and destroyed the which-direction-broke split that is the file's stated
+  reason for separate methods.
+  (ii) **the repo-wide claim was downgraded to what was measured.** "the only assertion in the repo
+  that goes red on that edit" was never measurable here — full `-m backend` under the mutation gives
+  60 failed / 3 passed / 2 errors, almost entirely Docker-down infrastructure. Now reads "measured
+  over THIS file: 1 failed, 4 passed," with the reason for the narrower scope recorded.
+  Also corrected: `/test-review`'s own first fix made the recorded counts false — the docstrings said
+  1/3 and 2/2 against four rows, and adding the fifth row shifted every count. Left alone this file
+  would have gained its FOURTH false comment via the review meant to catch that.
+  Revert confirmed: `application_client.py` byte-identical to HEAD. Payload rows 5 passed.
+  `tests/backend/documents` 14 failed / 4 passed / 1 skipped — the same 14 environmental failures as
+  the prior unit (Docker down); passed moved 3→4 purely from this row. The 17/1 healthy baseline is
+  STILL unconfirmed.
+  **The two debt passes owed from the prior unit ran here** (they had died on a session limit), over
+  `15549ca7..89eaa946`. Both CONCERNS, and both converge on the same top finding — recorded as new
+  steps below.
+- [ ] fix the wire-shape docstrings' production claim (agent-review #1 and premortem CREDIBLE #1 on
+  `89eaa946`, independently, as each pass's top finding). The subject of all five payload rows is
+  `acceptance/clients/application/application_client.py:113-135` — the ACCEPTANCE harness's client.
+  The shipped save path is `frontend/src/features/generation/api/documentApi.ts:90-104`, whose body
+  is `{ content, version }`: `title` is not a parameter of `putDocument`/`saveDocument` and appears
+  nowhere in the save path. So the conditional-omission invariant these rows pin is a property of a
+  test double no production caller can exercise — the real client is permanently in the absent
+  branch. The direction is locked the other way too:
+  `frontend/src/features/generation/api/__tests__/documentApi.test.ts:129-132` asserts the parsed PUT
+  body `toEqual({ content, version })`, so the first attempt to send a title from the real client
+  goes RED there while all five acceptance rows stay green. The rows are still a legitimate anti-drift
+  guard for 2.1/3.2 — what is false is the prose: `document_content_only_save_statements.py:72-74`
+  calls this "the shape a real frontend autosave puts on the wire." Cheapest fix is honest wording
+  ("the acceptance client"). Do that here; the frontend row over `putDocument`'s title contract is a
+  frontend-layer step, not this file's.
+- [ ] guard the regex control against fix-by-paste (premortem CREDIBLE #3 on `89eaa946`):
+  `frontend/src/features/editor/logic/__tests__/fixtureUsage.patterns.test.ts:180-197` hand-types all
+  nine rejected probes in the helper's concatenation order. Hand-typing is right against the emptying
+  mutant — but adding a probe fails with a nine-element list diff naming nothing the developer
+  changed, and the obvious repair is pasting the received value, which converts a mutation-killing
+  control into a snapshot. Assert the PROPERTY (both sides non-empty) rather than the census, and say
+  at the list "reflect additions by hand; do not paste the received value." Also `accepted: ['null']`
+  assumes `'null'` occurs in exactly one list and nothing enforces it. NOTE: this is a FRONTEND file —
+  hand to `progress-frontend.md`, do not edit it from a backend work unit.
+- [ ] note the token-in-logs field (premortem REMOTE on `89eaa946`, one line, not a step of its own if
+  a nearer unit touches the file): `recording_application_client.py:107` captures `Authorization` and
+  the statements print it with `!r` on failure. Safe only because the sole construction site is the
+  mock transport and the sole token is the literal `ACCESS_TOKEN_ON_THE_WIRE`. Becomes credible the
+  moment a `RecordedRequest` records a real login token — attach the note to the field.
+- [~] red-acceptance (agent-review #1 on `84e47dff`, and the finding is that the pin I just argued
   hardest for discriminates nothing: **`assert_save_advanced_the_update_stamp` cannot detect the
   refusal it was written to detect.** Its docstring claims "a save that never ran cannot move a clock
   it never read" — true only for a document created and saved exactly once. Neither row is that. Both

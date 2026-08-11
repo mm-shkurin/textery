@@ -11,7 +11,10 @@ class TestSaveDocumentPayloadShape:
     And when it is made with a real title
     Then the request body carries `title` as well
     And when it is made with a blank title (`title=""`)
-    Then the request body carries `title` as an empty string, not as a missing key.
+    Then the request body carries `title` as an empty string, not as a missing key
+    And when it is made with a whitespace-only title (`title="   "`)
+    Then the request body carries `title` with its spaces intact, unstripped
+    And in every case the save is dispatched as an authorized PUT to the document.
 
     Why this row exists at all. The whole of scenario 2.1 is the ABSENT-key row: the
     content-only autosave must leave the stored title alone, and it must do so through
@@ -37,8 +40,8 @@ class TestSaveDocumentPayloadShape:
     the erasure work that just shipped, not at the client that drifted weeks earlier.
     That delay is the cost this row removes.
 
-    NOT skipped, and no class-level marker. Both assertions hold against the client as
-    it stands, so a marker would park a live mutation-killing guard for a red period
+    NOT skipped, and no class-level marker. All five assertions hold against the client
+    as it stands, so a marker would park live mutation-killing guards for a red period
     that buys nothing -- and this scenario has a recorded defect (progress-backend.md,
     "guard the RED markers themselves") of markers outliving their work unit unnoticed.
     Same call `test_wire_shape_key_fence_leg_guard_preemption.py` makes and argues at
@@ -54,7 +57,7 @@ class TestSaveDocumentPayloadShape:
     actually run with -- collect the row; leaving it unmarked would keep it out of every
     standard run, which is the same silent non-execution a skip marker causes.
 
-    Three methods, not one, and all are load-bearing. The omission assertion alone is
+    Five methods, not one, and all are load-bearing. The omission assertion alone is
     satisfied by a client that drops `title` unconditionally; the titled assertion is
     what pins the omission as CONDITIONAL. The blank-title assertion pins WHERE that
     condition sits: on `is not None`, not on truthiness. The first two rows both survive
@@ -64,10 +67,27 @@ class TestSaveDocumentPayloadShape:
     (`["", "   "]`, test_export_document_acceptance.py:142; forwarded to the client at
     `document_blank_title_save_statements.py:74-80`). Under that edit 3.2's empty_title
     request becomes byte-identical to 2.1's and 3.2 stays green while testing 2.1's
-    premise instead of its own. One row, not two, is correct for this mutation: `"   "`
+    premise instead of its own. One row, not two, is correct for THAT mutation: `"   "`
     is truthy and survives `if title:`, so a whitespace row would be green for a reason
-    the guard did not earn. Split across three test methods rather than one so a failure
-    names which direction broke.
+    the guard did not earn.
+
+    The fourth row covers the strip-normalising family, which the first three do not.
+    Two mutations, both measured rather than argued. `if title and title.strip()` drops
+    `"   "` to key-absent, so 3.2's OTHER parametrization, `whitespace_title`, becomes
+    byte-identical to 2.1's request and goes green for 2.1's reason -- same failure
+    class as the blank row's, one value over. That one reds the blank row as well
+    (`""` is falsy), so it does not by itself justify a fourth row. What does is
+    `payload["title"] = title.strip()`: the key stays, the value becomes `""`, and the
+    blank row is blind to it because `"".strip()` is `""`. Measured: 1 failed, 4
+    passed, and the failure is this row alone. It is also the layering claim --
+    stripping decides what a title MEANS, and `model_fields_set` is where that decision
+    is read, so a client that strips has answered the DTO's question before the DTO is
+    built. Split across separate test methods rather than one so a failure names which
+    direction broke -- which is also why the fifth row exists. The request line and the
+    Authorization header were asserted inside the shared accessor the four body rows
+    call, so a dropped header reddened all four with an auth message and the "which
+    title direction broke" split it names above was unreadable. That envelope is now
+    one row of its own.
     """
 
     async def test_a_save_with_no_title_intent_omits_the_title_key(
@@ -96,3 +116,21 @@ class TestSaveDocumentPayloadShape:
         await statements.given_a_save_carrying_a_blank_title()
 
         statements.assert_the_blank_title_key_was_sent()
+
+    async def test_a_save_carrying_a_whitespace_title_sends_the_title_key(
+        self, document_save_payload_statements
+    ):
+        statements = document_save_payload_statements
+
+        await statements.given_a_save_carrying_a_whitespace_title()
+
+        statements.assert_the_whitespace_title_key_was_sent()
+
+    async def test_a_save_is_dispatched_as_an_authorized_put(
+        self, document_save_payload_statements
+    ):
+        statements = document_save_payload_statements
+
+        await statements.given_a_save_carrying_an_explicit_title()
+
+        statements.assert_the_save_was_dispatched_as_an_authorized_put()
