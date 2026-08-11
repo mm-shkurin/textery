@@ -2189,6 +2189,43 @@ within their file, not across the story.
       `def` line at 101 characters. The name was specified by the step and the repo already tolerates
       two identical violations, so it was left rather than renamed or `noqa`'d.
       **210 passed, 0 failed, 0 skipped** (was 207 passed / 2 skipped).
+      `/refactor` (commit `72a1b7aa`) applied the extraction the *previous* refactor declined on merit —
+      its premise ("a shared base would carry the guarded act, and the arming act being unguarded IS the
+      RED") died with this green. `KeptAmbientChildBase` holds the five verbatim members, mixed in
+      **ahead** of each family's own base rather than pushed into a common ancestor: the two families
+      descend from different places, and the MRO makes the mixin's `super()` resolve to whichever base
+      the concrete family placed after it. Seven files 802 → 740 lines including the new one. Five more
+      docstrings corrected, each naming a count or a location this green invalidated. The E501 took
+      `# noqa` following the established answer at `test_forgotten_await_gate.py:47`, rather than
+      renaming a test the step specified. 210 passed, unchanged.
+      **Both review passes over `6e2088e3` returned CONCERNS, and they converge on one root: the five
+      new roster entries are _asserted_, not _measured_.**
+      (i) *The bidirectional pin is only half real.* `observed_child_environment.py` computes
+      `removed_names` against what the **parent set**, and the parent sets `REQUIRED_SCRUBBED_VARIABLES`
+      only. A name added to `LEAKY_CHILD_VARIABLES` and **not** to the roster removes nothing observable,
+      `removed_names` still equals `REQUIRED`, and the suite stays green — so the *shrink* direction is
+      genuinely red but the *grow* direction rests on the author's discipline, which is what the pin was
+      written to replace. `child_environment_scrub_statements.py`'s own docstring claims otherwise. The
+      comparison is deliberately name-independent (it must not read the subject's constant), so closing
+      this is a decision, not a one-line edit.
+      (ii) *Neither premortem-credible finding has a vector.* Of the five entries added, **zero** have a
+      disarming vector, so the end-to-end shape cannot watch any of them — the colour claim still rests
+      entirely on hand-typed fabricated bytes in `coloured_child_report_statements.py`, never on a real
+      child pytest actually coloured. Named guard: a `FORCE_COLOR=1`/`PY_COLORS=1` **pair** in
+      `HOSTILE_RUNNER_ENVIRONMENTS` — a potency arm on a kept-ambient child requiring `summary_counts()`
+      to come back `{}`, plus the matching scrubbed arm requiring the banner to parse anyway. Same for
+      `COV_CORE_*`: no test asserts the **observable effect**, only the name list — named guard is a
+      snapshot of `BACKEND_ROOT` for `.coverage*` files across a real scrubbed child run.
+      (iii) *Stale counts, again, in the file whose stated standard is written-down accuracy.*
+      `child_environment_scrub_statements.py:18,42` still say "all five of them" and "all seven names"
+      — untouched by the green, invalidated by it. Fifth stale-prose defect in this family.
+      (iv) `COV_CORE_CONTEXT` is in neither the roster nor the exclusion paragraph — inert (the
+      bootstrap keys off `SOURCE`/`DATAFILE`), but the family's membership was derived by reading rather
+      than enumeration, so the file's own completeness standard is not met.
+      **Fixed immediately rather than carried:** agent-review found three files under
+      `acceptance/statements/` in the green commit — swept in by `git add -A`, written by the parallel
+      frontend session, imported by nothing at HEAD. Removed from the index in `801d2782`; they stay on
+      disk untracked, as that session left them. `git add -A` is the wrong verb in a two-session story.
 - [~] red-usecase (coverage: third arming arm refuses a rewritten declaration) —
       **the one arm this unit's own diff promises and does not deliver.**
       `disarmed_arming_probe_statements.py`'s module docstring states it outright: the third check,
