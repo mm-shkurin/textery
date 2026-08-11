@@ -34,6 +34,19 @@ class DocumentEditClient:
         """Story 5's read, used here as the baseline for "the document was untouched"."""
         return await self._request("GET", f"{DOCUMENTS_PATH}/{document_id}", token)
 
+    async def save_document(
+        self, token: str, document_id: str, content: str, version: int
+    ) -> RawResponseDto:
+        """Story 5's write. Story 19 needs it in SETUP only: `POST /documents` creates an
+        empty document, and a scenario whose Then is "the content is shown in the editor"
+        cannot assert anything against an empty one."""
+        return await self._request(
+            "PUT",
+            f"{DOCUMENTS_PATH}/{document_id}",
+            token,
+            json={"content": content, "version": version},
+        )
+
     async def queue_edit(
         self, token: str, document_id: str, body: dict, idempotency_key: str
     ) -> RawResponseDto:

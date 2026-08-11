@@ -9,6 +9,7 @@ import pytest
 from statements.frontend.ai_chat.document_not_found_statements import (
     DocumentNotFoundStatements,
 )
+from statements.frontend.ai_chat.empty_chat_panel_statements import EmptyChatPanelStatements
 from statements.frontend.ai_chat.over_quota_statements import OverQuotaStatements
 from statements.frontend.auth.login_page_statements import LoginPageStatements
 from statements.frontend.auth.register_page_statements import RegisterPageStatements
@@ -47,6 +48,11 @@ from statements.frontend.responsive_statements import ResponsiveStatements
 @pytest.fixture
 def document_not_found_statements():
     return DocumentNotFoundStatements()
+
+
+@pytest.fixture
+def empty_chat_panel_statements():
+    return EmptyChatPanelStatements()
 
 
 @pytest.fixture

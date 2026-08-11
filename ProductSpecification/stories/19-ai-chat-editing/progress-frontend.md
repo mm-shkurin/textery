@@ -1083,8 +1083,57 @@ under `frontend/src` or `acceptance/tests/frontend`.
       while the routes it drives are unregistered. Un-skip together.
 
 ### 1.1 The editor and chat panel render side by side with an empty history
-- [~] red-selenium
-- [ ] red-frontend
+- [x] red-selenium — one test,
+      `acceptance/tests/frontend/ai_chat/test_empty_chat_panel_acceptance.py`, landed skipped.
+      Predicted `TimeoutException` inside `_chat_panel_descendant` on
+      `[data-testid='ai-chat-message-list']` — the **second** Then. Neither
+      `ai-chat-message-list` nor `ai-chat-empty-state` exists anywhere under `frontend/src`
+      (grep confirms). The first Then already passes (`EditorDocumentView` renders stored
+      content, both document routes registered). Executable evidence only: 1 test collected,
+      3 in the directory, 96 across `acceptance/`, 0 import errors, ruff clean.
+      **The brief was stale and the correction matters:** `AiChatComposer.tsx` already exists
+      — 0.2's green built it, input and send both `disabled={quota.exhausted}`. So the
+      enabled-input Then is not red for want of a component; it is red because `AiChatPanel`
+      withholds the composer until quota resolves, and `loadEditQuota` reads the unregistered
+      `GET /api/v1/ai-edits/quota`, so `useEditQuota` stays `null` and nothing renders.
+      **Unlike 0.2, this test's setup is NOT blocked** — it touches only `POST /documents` and
+      `PUT /documents/{id}`, both registered. When Docker returns, run it for real before
+      `green-selenium`: it should produce exactly the predicted `TimeoutException`, upgrading
+      the RED evidence from prediction to observation. `save_document` (PUT) was added to
+      `document_edit_client.py` for the Given — `POST /documents` creates an *empty*
+      document, so without a write "the content is shown in the editor" asserts emptiness
+      against emptiness.
+      0.2's sign-in / row-click / panel-descendant helpers were extracted to
+      `editor_route_statements.py` (an `EditorAccount` Protocol keeps the base ignorant of
+      each scenario's extra fields) rather than copied; `over_quota_statements.py` 200→130.
+      `/test-review` landed six fixes. The load-bearing one is the story's own recurring
+      failure mode, found again: `_chat_panel_descendant` **claimed** panel scope in its
+      docstring while waiting on a whole-document condition — a same-named element visible
+      anywhere else satisfied the wait while the panel held none, and the `len(matches) == 1`
+      assert then ran unsynchronised and failed with 0 rather than naming the scope. Now a
+      panel-scoped poll filtered by `is_displayed()`, so a rendered-but-hidden element can no
+      longer stand in for a visible one. Also: `is_enabled()` had no visibility companion on
+      the input, the send control or 0.2's revisions toggle — `is_enabled()` is `True` for a
+      `display:none` input, so "the message input is enabled" passed on a composer nobody can
+      reach; `manual-editor` is carried by *both* story 5's `ManualEditor.tsx:158` and story
+      19's `EditorDocumentView.tsx:31`, so a document-scoped text equality would read
+      whichever came first in the DOM — pinned with an explicit count of 1; the fixed
+      paragraph text stopped travelling through the test class (the Statements layer owns the
+      constant); and the unique title sent to `POST /documents` was never verified, though it
+      is the only field distinguishing this document from the account's others.
+      **Verified explicitly that the shared-base extraction did not weaken 0.2:** all four of
+      its assertions (row count, `data-document-id` identity, `_assert_url_path`,
+      `len(matches) == 1`) are present verbatim in the base at lines 78/85/91/119. Net effect
+      on 0.2 is two assertions *stronger*, zero weaker.
+      One rejected finding worth recording: a shared `_assert_composer_enabled(driver,
+      expected: bool)` across 1.1 and 0.2 — a boolean-flag assertion helper makes the
+      assertion's meaning depend on an argument, and it would couple 0.2's committed
+      assertions to 1.1's.
+      **Pre-existing, out of unit:** `ruff check .` over `acceptance/` reports 10 `F401`
+      unused-`pytest` imports in untouched files (1 backend, 8 frontend/auth, 2
+      frontend/generation) — the suite lints red until someone clears them. This is
+      follow-up (e) from scenario 0.1, still open.
+- [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api

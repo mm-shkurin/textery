@@ -5,42 +5,28 @@ quota. **Green owes a quota-state read the editor route can issue on open**, car
 exhausted flag and the same `resets_at` instant the 429 body carries. `over_quota_session.py`'s
 docstring states the gap in full and shows how the Given is reached over HTTP.
 
-Navigation note (`frontend-rules.md`, "FORBIDDEN in-app navigation by URL"): unlike scenario
-0.1's, this document exists and belongs to the signed-in user, so the Given's own verb — *open
-a document* — is performed by CLICKING its row in the documents list, never by typing its URL.
-
-The one `driver.get` is of the LIST, `/documents`, and stands on the rule's allowed exception
-(2): a bookmarkable, shareable entry point, and today the only way in — `App.tsx` registers
-`/documents` as a bare route and no chrome links to it. `DocumentGenerationFlow`'s history
-screen is a different surface: its rows open the manual editor in component state, not this
-route.
-
-**Re-check obligation.** That second reason expires the moment any navigable element (header
-link, breadcrumb, landing card) points at `/documents` — scenario 7.2 is the likeliest to add
-one. Re-verify then whether the bookmark reason alone carries it; if a click path exists, click.
+Sign-in, the click-through into the editor route and the chat-panel element resolver live in
+`editor_route_statements.py` — shared with scenario 1.1, which needs the same three steps.
+The navigation rationale for this scenario (the document exists and belongs to the signed-in
+user, so its row is CLICKED) is recorded there.
 """
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.remote.webelement import WebElement
 
+from statements.frontend.ai_chat.editor_route_statements import (
+    MESSAGE_INPUT,
+    SEND_BUTTON,
+    EditorRouteStatements,
+)
 from statements.frontend.ai_chat.over_quota_session import (
     OverQuotaAccount,
     issue_account_over_its_daily_quota,
 )
-from statements.frontend.base_frontend_statements import BaseFrontendStatements
 
-DOCUMENTS_LIST_PATH = "/documents"
-HISTORY_PAGE = (By.CSS_SELECTOR, "[data-testid='history-page']")
-DOCUMENT_ROW = (By.CSS_SELECTOR, "[data-testid='history-document-row']")
-
-# The chat panel exists (scenario 0.1's green built it); everything inside it is named by
-# THIS test and does not exist yet. Presence assertions use exact testids on purpose — a
-# `[data-testid^='ai-chat']` prefix would be satisfied by any incidental wrapper, which is
-# the mirror of why 0.1's *absence* check needed the prefix.
-CHAT_PANEL = (By.CSS_SELECTOR, "[data-testid='ai-chat-panel']")
-MESSAGE_INPUT = (By.CSS_SELECTOR, "[data-testid='ai-chat-message-input']")
-SEND_BUTTON = (By.CSS_SELECTOR, "[data-testid='ai-chat-send-button']")
+# Named by THIS test and existing nowhere else when it was written. Presence assertions use
+# exact testids on purpose — a `[data-testid^='ai-chat']` prefix would be satisfied by any
+# incidental wrapper, which is the mirror of why 0.1's *absence* check needed the prefix.
 QUOTA_RESET_HINT = (By.CSS_SELECTOR, "[data-testid='ai-chat-quota-reset-hint']")
 REVISIONS_TOGGLE = (By.CSS_SELECTOR, "[data-testid='ai-chat-revisions-toggle']")
 REVISIONS_PANEL = (By.CSS_SELECTOR, "[data-testid='ai-chat-revisions-panel']")
@@ -57,11 +43,6 @@ EXPECTED_RESET_HINT_LEAD = "Дневной лимит правок исчерп�
 # A hint whose prose says one thing while the contract says another fails here.
 RESETS_AT_ATTRIBUTE = "data-resets-at"
 
-# Required of each document row so the click below can be pinned to the document the setup
-# created, rather than merely to "the only row present".
-DOCUMENT_ID_ATTRIBUTE = "data-document-id"
-EXPECTED_DOCUMENT_ROW_COUNT = 1
-
 # The revisions panel is "backed by GET /revisions" (02_UI_Tests.md, DSL Technical Reference),
 # so "remains usable" means it lists history — an empty container would satisfy a
 # presence-only check while the read behind it is broken. Revision 1 is the one row that can
@@ -74,7 +55,7 @@ BASELINE_REVISION_ROW = (
 )
 
 
-class OverQuotaStatements(BaseFrontendStatements):
+class OverQuotaStatements(EditorRouteStatements):
     def open_a_document_of_an_account_over_its_quota(
         self, driver: WebDriver, app_url: str
     ) -> OverQuotaAccount:
@@ -87,39 +68,6 @@ class OverQuotaStatements(BaseFrontendStatements):
         self._sign_in_as(driver, app_url, account)
         self._open_the_only_document_by_clicking_it(driver, app_url, account)
         return account
-
-    def _sign_in_as(self, driver: WebDriver, app_url: str, account: OverQuotaAccount) -> None:
-        """Load the origin, then put THIS account's real tokens in sessionStorage.
-
-        The base class's `_establish_logged_in_precondition` cannot serve here: its live
-        grade issues a session of its own, and this scenario must sign in as the one
-        account the setup already spent a day's quota on.
-        """
-        driver.get(app_url)
-        self._seed_session_tokens(driver, account.access_token, account.refresh_token)
-
-    def _open_the_only_document_by_clicking_it(
-        self, driver: WebDriver, app_url: str, account: OverQuotaAccount
-    ) -> None:
-        driver.get(f"{app_url}{DOCUMENTS_LIST_PATH}")
-        self._wait_for_visible(driver, HISTORY_PAGE)
-        rows = driver.find_elements(*DOCUMENT_ROW)
-        # The setup spends the whole quota on ONE document precisely so this holds: with a
-        # second row the click below could open a document this scenario knows nothing about.
-        assert len(rows) == EXPECTED_DOCUMENT_ROW_COUNT, (
-            f"expected the account under test to own exactly {EXPECTED_DOCUMENT_ROW_COUNT} "
-            f"document, found {len(rows)} rows in the documents list"
-        )
-        # Identity, not just arity: the count alone is satisfied by one row for some OTHER
-        # document, leaving the URL check below to diagnose the click far downstream of it.
-        actual_document_id = rows[0].get_attribute(DOCUMENT_ID_ATTRIBUTE) or ""
-        assert actual_document_id == account.document_id, (
-            f"expected the only documents-list row to carry {DOCUMENT_ID_ATTRIBUTE}="
-            f"'{account.document_id}' (the document the setup spent the quota on), "
-            f"got '{actual_document_id}'"
-        )
-        rows[0].click()
-        self._assert_url_path(driver, app_url, f"{DOCUMENTS_LIST_PATH}/{account.document_id}")
 
     def assert_the_chat_input_is_disabled(self, driver: WebDriver) -> None:
         """Both halves of "cannot type an instruction".
@@ -163,6 +111,7 @@ class OverQuotaStatements(BaseFrontendStatements):
         control along with the composer.
         """
         toggle = self._chat_panel_descendant(driver, REVISIONS_TOGGLE, "revisions control")
+        assert toggle.is_displayed(), "expected the revisions control to stay displayed"
         assert toggle.is_enabled(), "expected the revisions control to stay enabled over quota"
         toggle.click()
 
@@ -180,20 +129,3 @@ class OverQuotaStatements(BaseFrontendStatements):
             "expected the revisions panel to list exactly one baseline revision 1 (written "
             f"by the first mutation the setup completed), found {len(baseline_rows)}"
         )
-
-    def _chat_panel_descendant(
-        self, driver: WebDriver, locator: tuple[str, str], label: str
-    ) -> WebElement:
-        """Resolve `locator` INSIDE the chat panel, waiting for the panel first.
-
-        Anchoring on the panel does two jobs: nothing can pass vacuously against a route
-        that has not rendered yet, and a same-named element elsewhere in the page chrome
-        cannot stand in for the chat panel's own.
-        """
-        panel = self._wait_for_visible(driver, CHAT_PANEL)
-        self._wait_for_visible(driver, locator)
-        matches = panel.find_elements(*locator)
-        assert len(matches) == 1, (
-            f"expected exactly one {label} inside the chat panel, found {len(matches)}"
-        )
-        return matches[0]
