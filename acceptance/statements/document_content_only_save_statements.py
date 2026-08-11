@@ -5,6 +5,7 @@ from clients.application.dto.document.save_document_response_dto import (
 from clients.application.application_client import ApplicationClient
 from statements.document_body_assertions import (
     assert_document_body,
+    assert_save_advanced_the_update_stamp,
     body_of_successful_response,
 )
 from statements.document_export_filename_statements import (
@@ -112,3 +113,8 @@ class DocumentContentOnlySaveStatements(DocumentExportFilenameStatements):
             "version": VERSION_AFTER_CONTENT_ONLY_SAVE,
         }
         assert_document_body(body, expected, "content-only autosave")
+        # The one pin a REFUSING green cannot fake. `version` and `content` above are
+        # literals -- a short-circuit that echoed the request back would produce them --
+        # but updated_at comes off the server clock inside SaveDocument, so equal stamps
+        # mean the save never reached the write path at all.
+        assert_save_advanced_the_update_stamp(body, "content-only autosave")

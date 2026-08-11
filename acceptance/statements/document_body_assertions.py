@@ -5,7 +5,7 @@ carries no title intent (the key absent, or the key sent blank) must leave the
 stored document otherwise correctly updated. Each row therefore does the same two
 things to the response it kept: guard that the call really happened and really
 succeeded, then pin the document fields it can name to literals and the two
-wall-clock timestamps to mere presence.
+wall-clock timestamps to the window this test run occupies.
 
 Held once here because it is *assertion* logic, not setup: the guard and the field
 pin were verbatim copies in the two rows, differing only in the noun naming the
@@ -21,10 +21,21 @@ Nothing here touches auth, document setup, or any scenario constant, so it is a
 plain module of functions rather than a mixin.
 """
 
-# The only two response fields whose values are wall-clock and so unpinnable. Their
-# presence is not — an omitted timestamp is a shape regression the field pins cannot
-# see, because those compare only the keys they name.
+from datetime import datetime, timedelta, timezone
+
+# The two response fields the caller cannot pin to a literal, because the value is
+# taken from the server's wall clock. Not "unpinnable": a stamp is BOUNDABLE, and
+# these are bounded below. Naming them here keeps them out of every caller's
+# `expected` dict while still making them part of the compared key set.
 TIMESTAMP_FIELDS = frozenset({"created_at", "updated_at"})
+# How far back a stamp may sit and still belong to this test's own run. The whole
+# arrange is a handful of HTTP round trips against a local server, so anything older
+# came from a fixed epoch, a seeded fixture, or a previous run -- all of which a mere
+# presence check waves through.
+MAX_STAMP_AGE = timedelta(minutes=2)
+# The server stamps with its own clock, which may sit a little ahead of the runner's.
+# Slack for that, and no more: a stamp further into the future is a defect, not skew.
+CLOCK_SKEW_TOLERANCE = timedelta(seconds=5)
 
 
 def body_of_successful_response(response, described_as: str) -> dict:
@@ -42,8 +53,76 @@ def body_of_successful_response(response, described_as: str) -> dict:
     return response.body or {}
 
 
+def _parsed_timestamp(body: dict, field: str, described_as: str) -> datetime:
+    raw = body[field]
+    try:
+        stamp = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        raise AssertionError(
+            f"expected {field} on the {described_as} to be an ISO-8601 timestamp, "
+            f"got {raw!r}"
+        )
+    # A naive stamp is UTC by contract (the route declares date-time and SystemClock
+    # stamps `datetime.now(UTC)`); attaching the zone keeps the window comparison from
+    # raising on mixed awareness instead of failing with a readable message.
+    return stamp if stamp.tzinfo else stamp.replace(tzinfo=timezone.utc)
+
+
+def assert_document_timestamps(
+    body: dict, described_as: str
+) -> tuple[datetime, datetime]:
+    """Bound both stamps to this run's window and order them.
+
+    Key-set equality already proves the two keys are PRESENT; that is the shape
+    question. This is the value question, and it is a separate one -- a `created_at`
+    of `null`, `"N/A"`, or `1970-01-01` satisfies presence perfectly. A wall-clock
+    value is not unpinnable, only unpinnable to a *literal*: it is deterministic
+    within a bound, so it gets a bound rather than a shrug.
+
+    Returns the parsed pair so callers can assert the relation their own operation
+    implies."""
+    now = datetime.now(timezone.utc)
+    created_at = _parsed_timestamp(body, "created_at", described_as)
+    updated_at = _parsed_timestamp(body, "updated_at", described_as)
+    for field, stamp in (("created_at", created_at), ("updated_at", updated_at)):
+        assert now - MAX_STAMP_AGE <= stamp <= now + CLOCK_SKEW_TOLERANCE, (
+            f"expected {field} on the {described_as} to be stamped during this test "
+            f"run, between {(now - MAX_STAMP_AGE).isoformat()} and "
+            f"{(now + CLOCK_SKEW_TOLERANCE).isoformat()}, got {stamp.isoformat()}"
+        )
+    # True of every document on every path: it cannot have been updated before it
+    # existed. The stricter save-specific relation is asserted by the function below.
+    assert created_at <= updated_at, (
+        f"expected the {described_as} to carry updated_at at or after created_at, got "
+        f"created_at={created_at.isoformat()}, updated_at={updated_at.isoformat()}"
+    )
+    return created_at, updated_at
+
+
+def assert_save_advanced_the_update_stamp(body: dict, described_as: str) -> None:
+    """The relation a document that was CREATED and then SAVED must satisfy: the save
+    took the update stamp strictly past the creation stamp.
+
+    This is where "preserved the title by refusing the save" dies. Every other pin in
+    this kit is satisfied by a document that was created correctly and then never
+    touched -- content and version are compared against literals a refusing green can
+    still be made to produce, but a save that never ran cannot move a clock it never
+    read. `SaveDocument` stamps `updated_at=self.clock.now()` on the write path, so a
+    landed save separates the two stamps by the two HTTP round trips between them.
+
+    Kept out of `assert_document_body` deliberately: a never-saved document carries
+    `updated_at == created_at` (Document.create sets them equal), so this relation
+    belongs to the save rows, not to every body this kit ever compares."""
+    created_at, updated_at = assert_document_timestamps(body, described_as)
+    assert updated_at > created_at, (
+        f"expected the {described_as} to advance updated_at past created_at -- equal "
+        f"stamps mean the document was created but never actually saved -- got "
+        f"created_at={created_at.isoformat()}, updated_at={updated_at.isoformat()}"
+    )
+
+
 def assert_document_body(body: dict, expected: dict, described_as: str) -> None:
-    """Pin the named document fields to exact values, and both timestamps to presence.
+    """Pin the named document fields to exact values, and both timestamps to a window.
 
     The whole nameable write shape is compared rather than the one field under test:
     a green that preserves a title by REFUSING, short-circuiting, or only partially
@@ -70,3 +149,8 @@ def assert_document_body(body: dict, expected: dict, described_as: str) -> None:
     assert {key: body[key] for key in expected} == expected, (
         f"expected the {described_as} to leave {expected!r}, got body={body!r}"
     )
+    # The caller's `expected` names every key but these two, so without this line the
+    # timestamps would be the one part of the shape that is checked for existence and
+    # nothing else -- the exact looseness the key-set equality above was tightened to
+    # remove, surviving in the two fields that opted out of the value comparison.
+    assert_document_timestamps(body, described_as)

@@ -2,9 +2,13 @@ from clients.application.dto.document.export_response_dto import ExportResponseD
 from clients.application.dto.document.get_document_response_dto import (
     GetDocumentResponseDto,
 )
+from clients.application.dto.document.save_document_response_dto import (
+    SaveDocumentResponseDto,
+)
 from clients.application.application_client import ApplicationClient
 from statements.document_body_assertions import (
     assert_document_body,
+    assert_save_advanced_the_update_stamp,
     body_of_successful_response,
 )
 from statements.document_export_filename_statements import (
@@ -33,6 +37,11 @@ BLANK_SAVE_CONTENT = "Обновлённое тело документа"
 # prevent. Pinned to null, not merely tolerated: a save path that started defaulting a
 # preset onto an unconfigured document would go red here.
 PAGE_SETTINGS_NEVER_CONFIGURED = None
+# The write shape's `generation_id` for a manually created document: never converted
+# from a generation, so null. Pinned rather than omitted for the reason the key-set
+# equality in `assert_document_body` enforces -- an omitted key is an unasserted key,
+# and `body[key]` makes this pin mean present-and-null rather than absent-or-null.
+MANUAL_DOCUMENT_GENERATION_ID = None
 
 
 class DocumentBlankTitleSaveStatements(DocumentExportFilenameStatements):
@@ -53,6 +62,7 @@ class DocumentBlankTitleSaveStatements(DocumentExportFilenameStatements):
         # Filled by the blank-title save so the persistence assertion can run as its
         # own named step rather than hiding inside the arrange.
         self._document_id_after_blank_save: str | None = None
+        self._blank_save: SaveDocumentResponseDto | None = None
         self._reread_after_blank_save: GetDocumentResponseDto | None = None
 
     async def given_owner_saves_a_blank_title_over_a_stored_title_and_exports(
@@ -70,7 +80,12 @@ class DocumentBlankTitleSaveStatements(DocumentExportFilenameStatements):
             access_token=access_token,
             title=blank_title,
         )
-        self._assert_setup_save_succeeded(blank_save, "blank-title", VERSION_AFTER_BLANK_SAVE)
+        # Kept, not asserted here. The blank-title save is this row's ACT, not its
+        # arrange: guarding it with `_assert_setup_save_succeeded` reported a real
+        # regression in the operation under test as `setup: ...`, i.e. as a broken
+        # fixture. The sibling row states the same convention at
+        # document_content_only_save_statements.py:83-86; the two now agree.
+        self._blank_save = blank_save
         self._document_id_after_blank_save = document_id
         self._reread_after_blank_save = await self._client.get_document(
             document_id=document_id, access_token=access_token
@@ -87,19 +102,16 @@ class DocumentBlankTitleSaveStatements(DocumentExportFilenameStatements):
         # the read shape, deliberately separate from the write shape -- declares no
         # title key (get_document_response_dto.py:60-67, and its docstring says so).
         #
-        # `page_settings` IS on this shape and is pinned below. It was previously
-        # neither pinned nor mentioned, behind a comment claiming the timestamps were
-        # "the only remaining response fields" -- the read DTO declares eight keys
-        # (get_document_response_dto.py:60-67), and the tightened key-set equality in
-        # `assert_document_body` is what turned that claim from plausible into red.
+        # `page_settings` IS on this shape and is pinned below: the read DTO declares
+        # eight keys (get_document_response_dto.py:60-67), and key-set equality in
+        # `assert_document_body` makes leaving any of them unnamed a red.
         #
-        # That is a fact about the READ route only. It is NOT true that no endpoint
-        # returns the title: the three write routes return DocumentResponseDto, which
-        # does carry `title` (document_dtos.py:108, populated at :126) -- verified at
-        # runtime, the PUT save response body carries all nine keys including it. So
-        # title survival on this row is pinned by the companion
-        # `assert_filename_rfc5987_encoded_from_title` step reading the export header,
-        # and the sibling content-only row pins it directly off its save response.
+        # The title's absence is a fact about the READ route only. The write routes
+        # return DocumentResponseDto, which does carry `title` (document_dtos.py:108,
+        # populated at :126) -- so the surviving title is pinned directly off this
+        # row's own save response, below, rather than resting on the export header
+        # that `assert_filename_rfc5987_encoded_from_title` reads.
+        self._assert_the_save_returned_the_surviving_title()
         body = body_of_successful_response(
             self._reread_after_blank_save, "re-read after the blank-title save"
         )
@@ -112,3 +124,24 @@ class DocumentBlankTitleSaveStatements(DocumentExportFilenameStatements):
             "page_settings": PAGE_SETTINGS_NEVER_CONFIGURED,
         }
         assert_document_body(body, expected, "blank-title autosave")
+        assert_save_advanced_the_update_stamp(body, "blank-title autosave")
+
+    def _assert_the_save_returned_the_surviving_title(self) -> None:
+        # The blank-title save's OWN response, previously observed only through an
+        # arrange-phase guard that checked its status and version and dropped the other
+        # seven keys. It is the write shape, so it carries the one field the re-read
+        # cannot show: `title`, which must still be CYRILLIC_TITLE. Pinning the whole
+        # shape here makes this row's central claim -- a blank title carries no title
+        # intent -- observable on the response to the very request that made it.
+        body = body_of_successful_response(self._blank_save, "blank-title save")
+        expected = {
+            "document_id": self._document_id_after_blank_save,
+            "document_type": SUPPORTED_DOCUMENT_TYPE,
+            "status": DRAFT_STATUS,
+            "content": BLANK_SAVE_CONTENT,
+            "title": self.CYRILLIC_TITLE,
+            "generation_id": MANUAL_DOCUMENT_GENERATION_ID,
+            "version": VERSION_AFTER_BLANK_SAVE,
+        }
+        assert_document_body(body, expected, "blank-title save response")
+        assert_save_advanced_the_update_stamp(body, "blank-title save response")

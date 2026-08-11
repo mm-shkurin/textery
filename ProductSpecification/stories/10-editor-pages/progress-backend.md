@@ -1219,7 +1219,7 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   mimicry, not shared identity, and importing would let a change to 2.1's constant silently retarget
   this row. Full acceptance suite collects clean (112 tests, no import errors); 16 passed, 1 skipped
   unchanged.
-- [~] red-acceptance (agent-review #2 and #3 on `65c94c8a`, both about claims the code does not keep.
+- [x] red-acceptance (agent-review #2 and #3 on `65c94c8a`, both about claims the code does not keep.
   (a) `assert_content_only_save_preserved_the_title` compares `{k: body.get(k) for k in expected} ==
   expected` plus a `<=` on the timestamps — two SUBSET checks, while the comment argues "an omitted
   key is an unasserted key" and pins `generation_id` specifically to make the comparison total. A
@@ -1248,7 +1248,31 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   load-bearing; the adjacent falsehood in the same method deserves the same treatment.
   Minor, recorded: `DRAFT_STATUS` is copy-duplicated between the two sibling statement modules with no
   note, unlike `VERSION_AFTER_CONTENT_ONLY_SAVE` whose duplication is deliberately argued.)
-- [ ] red-acceptance (premortem CREDIBLE on `1228fd65`: **the payload guard shipped with a hole one
+  **DONE.** All three parts of (a) and part (b) shipped: `assert_document_body` now compares the key
+  set for EQUALITY first (`expected.keys() | TIMESTAMP_FIELDS`) and reads values with `body[key]`, so
+  a key pinned to `None` asserts PRESENT-AND-NULL — the absent-vs-null conflation 2.1 exists to
+  prevent. `page_settings` is pinned null on the read shape and the false "only remaining response
+  fields" comment is gone. RED shown by mutation, not by a green suite: probe A (`generation_id`
+  deleted from the DTO — arrived accidentally, the compose file gives the backend no source mount so
+  a 39-minute-old image still carried the previous session's deletion) and probe B (`page_settings`
+  pin dropped) both went red at `document_body_assertions.py:66` with the predicted message,
+  character-identical for B. Replaying both guard versions against probe A's recorded wire body:
+  OLD green `True`, NEW green `False`. `/test-review` then found the tightening stopped one field
+  short — `TIMESTAMP_FIELDS` were merged into the key union and nothing else, so the stamps were
+  key-presence-only, weaker than a non-null check, against a repo standard set two scenarios earlier
+  (`document_page_settings_read_statements.py:145-178`). Added `assert_document_timestamps` (window
+  bound, `created_at <= updated_at`) and `assert_save_advanced_the_update_stamp` (strict `>`, save
+  rows only — the one assertion a short-circuiting green cannot fake). It also removed
+  `_assert_setup_save_succeeded` from 3.2's arrange: that save is 3.2's ACT, and reporting it as
+  broken setup contradicted the sibling's own stated convention; replaced by a named Then step
+  pinning the full 9-key write shape, which pins `title` off the save response for the first time —
+  3.2's central claim previously rested on the export header alone.
+  CARRIED, refactor-scope, not folded as steps: `DRAFT_STATUS` is duplicated THREE ways (a third
+  site, `document_page_settings_read_statements.py:17`, joined since this block was written); the
+  `document_body_assertions.py:12-14` adoption deferral has now survived a cycle and that row still
+  duplicates the key-set-equality pair verbatim at its lines 124-142; and
+  `_assert_setup_save_succeeded` never pins `title` on the title-bearing setup save it guards.
+- [~] red-acceptance (premortem CREDIBLE on `1228fd65`: **the payload guard shipped with a hole one
   value wide, and the value is the one scenario 3.2 owns.** `application_client.py` builds the payload
   with `if title is not None`. The tidy-up that turns it into `if title:` is MORE plausible than the
   dict-literal simplify the row was written to kill, and BOTH new rows survive it: `None` still
