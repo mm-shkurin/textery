@@ -881,7 +881,35 @@ under `frontend/src` or `acceptance/tests/frontend`.
       лимит правок')` plus the two union guards) and the backend endpoint behind it; this is also
       the step that actually covers `editQuotaApi.ts`, which `green-frontend` left at 0% behind a
       directory-level coverage aggregate.
-- [ ] green-frontend-api
+- [x] green-frontend-api — **528 passed / 0 failed / 0 skipped** (120 files), up from 520/8; the
+      delta is exactly the eight un-skipped cases and nothing regressed. All eight report *passed*
+      individually under the verbose reporter, closing follow-up (ap). tsc, oxlint, prettier clean.
+      `editQuotaApi.ts` went 0% → **91.66% statements / 90.9% branches / 100% functions**, measured
+      on the file rather than the `features/aiChat/api` directory aggregate that masked the zero —
+      this is the step `green-frontend` said would actually cover the module.
+      One production file, 75 lines: `send<QuotaWire>('/api/v1/ai-edits/quota', {}, 'Не удалось
+      загрузить лимит правок')` with **no** `{notFound: true}` — a 404 here means the endpoint is
+      missing, not that a document is, and opting in would admit `DocumentNotFoundError` into the
+      path the 500 case pins to `name === 'Error'`.
+      The wire→union mapping is where the scenario actually lives. `typeof exhausted !== 'boolean'`
+      refuses, which is what makes the `{}` that `res.json().catch(() => ({}))` substitutes a load
+      failure rather than "the quota has room"; `exhausted: false` returns `resetsAt: null`
+      unconditionally, dropping any instant sent alongside room; `exhausted: true` with a missing
+      instant refuses; and the surviving string is returned **verbatim**, with no `Date` anywhere on
+      the path, which is what keeps the Selenium `data-resets-at` byte-equality assertion safe.
+      **(al) and (am) are honored in production but still owed as cases.** The guard refuses an
+      absent `exhausted`/`resets_at` key, an epoch number and `''` — but no test drives it, because
+      adding cases in a green phase is not this step's job. That `throw` (line 58) is the one
+      uncovered line in the file: protected by production code alone, deletable by a future green
+      with the suite green. The test file is at 179/200, so both rows still fit as `it.each` rows
+      rather than new `it` blocks, as the RED entry anticipated.
+      Only test change: removing `describe.skip` and its four-line RED comment — which also carried
+      the false `editorDocumentApi.test.ts` precedent citation, so (aq) went with it.
+      Still open and untouched here: (an) `endpoints.md` has no row for `GET /api/v1/ai-edits/quota`,
+      so the contract crosses no artifact the backend session reads; (ao) `useEditQuota.ts` swallows
+      the `SessionExpiredError` this module carefully preserves via `.catch(() => setQuota(null))`,
+      so case 7's guarantee has no consumer — the composer stays dead on arrival forever and the
+      user is never told they are signed out.
 - [ ] align-design
 - [ ] green-selenium
 - [ ] demo

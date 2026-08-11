@@ -36,11 +36,7 @@ import {
 // half of that claim; the `expectTypeOf` below is the signature half.
 const FALLBACK = 'Не удалось загрузить лимит правок'
 
-// TDD RED (Story 19, Frontend Scenario 0.2). Verified failing 2026-08-11: every case fails on the
-// stub's unconditional `Error: loadEditQuota is not implemented yet`. `describe.skip` rather than
-// eight `it.skip`s: one function under test, one marker (the adapter-class convention this feature's
-// `editorDocumentApi.test.ts` already uses). Unskipped in green-frontend-api.
-describe.skip('editQuotaApi loadEditQuota', () => {
+describe('editQuotaApi loadEditQuota', () => {
   // Stores the session every case needs and tears down `stubFetch`'s global. Rationale beside it.
   signedInSessionAroundEach()
 
