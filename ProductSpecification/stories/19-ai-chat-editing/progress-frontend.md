@@ -1782,8 +1782,24 @@ under `frontend/src` or `acceptance/tests/frontend`.
       which is deliberately outside the bubble treatment).
       (ck) **`AiChatPanel.css` has room again (93 lines) but `DocumentEditorPage.css` does not**
       (190/200), and it still holds five of this panel's own shell selectors.
-- [~] green-selenium
-- [ ] demo
+- [S] green-selenium — **SKIPPED 2026-08-11: blocked, same two backend gaps as 0.2, re-verified
+      at HEAD rather than inherited.** `backend/application/src/app/main.py:115-118` includes only
+      `generation`, `auth`, `oauth` and `document` — `document_edit_router` is still unregistered —
+      and a Grep for `quota` over `backend/adapters/rest/src/router` returns **no files**. Docker
+      is also down (`failed to connect to the docker API at npipe:...dockerDesktopLinuxEngine`), so
+      `/run-backend` could not start a stack even if the routes existed.
+      **What is different from 0.2, and worth knowing when this un-skips:** this test's *Given* is
+      reachable — it drives only `POST /documents` and `PUT /documents/{id}`, both registered — and
+      `green-frontend` has since built the two testids the second Then waits on
+      (`ai-chat-message-list`, `ai-chat-empty-state`). So the first two Thens should now pass. The
+      **third** is what fails: `AiChatPanel` withholds the composer until quota resolves, and
+      `loadEditQuota` reads the unregistered `GET /api/v1/ai-edits/quota`, so `useEditQuota` stays
+      `null` and no input renders. One route unblocks this scenario.
+      The step is remove-marker-only, so it may not be attempted against a stack that provably
+      cannot serve it; the marker was not touched. Per CLAUDE.md File Ownership this session writes
+      neither `backend/` nor `progress-backend.md`.
+- [S] demo — skipped with `green-selenium` above: a demo replays that Selenium test. Un-skip
+      together, once the router and the quota route land.
 
 ### 1.2 An existing conversation is restored when the document is reopened
 - [ ] red-selenium
