@@ -1802,8 +1802,102 @@ under `frontend/src` or `acceptance/tests/frontend`.
       together, once the router and the quota route land.
 
 ### 1.2 An existing conversation is restored when the document is reopened
-- [ ] red-selenium
-- [ ] red-frontend
+- [x] red-selenium — one test,
+      `acceptance/tests/frontend/ai_chat/test_restored_conversation_acceptance.py`, landed skipped.
+      **The blocker is a DIFFERENT one from 1.1's** and the skip reason says so: seeding "a
+      document with earlier chat messages" needs `POST /documents/{id}/ai-edits` — `endpoints.md`
+      lists no endpoint that writes a message, they are a side effect of queueing an edit — and
+      `document_edit_router` is unregistered, so the Given 404s. 1.1 is blocked on the *quota*
+      route; this is the edit router itself.
+      Predicted first failure, in the Given:
+      `AssertionError: restored-conversation setup: queueing the edit '…' expected 202, got 404`
+      from `_submit_one_edit`. `_current_version_of` (`GET /documents/{id}`, registered) succeeds
+      first, so the 404 is the first refusal. Once that router is registered, the two failures the
+      scenario exists to force, in order: (1) `TimeoutException: expected the chat history to
+      render all N stored messages` — `DocumentEditorPage.tsx:49` passes the literal
+      `messages={[]}` and `loadChatMessages` is called by **no production file** (grep's only
+      non-test hit is its own definition), so the panel can render rows and the client can fetch
+      them and nothing joins the two; (2) `AssertionError: the newest message ends below the
+      visible bottom of the chat history (rowBottom=…, listBottom=…, scrollTop=0)`.
+      Actual: not observable — Docker down, test skipped. Executed evidence: **97 collected, 0
+      errors** (baseline 96), 4 in `tests/frontend/ai_chat/` (was 3), ruff clean on every touched
+      file.
+      **The second Then is follow-up (bs) becoming a requirement, and it is asserted
+      geometrically.** `is_displayed()` is deliberately NOT used: Selenium reports a row scrolled
+      far below the bottom of an `overflow-y: auto` container as displayed, so a check built on it
+      passes on the exact layout this Then rejects. One `execute_script` round trip returns both
+      rects plus `scrollHeight`/`clientHeight`/`scrollTop` — one layout, not two moments — and
+      three asserts run in Python so the numbers land in the failure text: a **non-vacuity gate**
+      (`scrollHeight > clientHeight`, else fail naming the seed — on a conversation that fits,
+      every row is trivially in view and the Then proves nothing), `rowTop >= listTop - 1` (bottom
+      alone would accept a bubble so tall its beginning is above the fold), and
+      `rowBottom <= listBottom + 1`. `/test-review` verified the gate is real: the browser fixture
+      pins `--window-size=1400,1000`, above the 900px breakpoint, so the column is genuinely
+      bounded and three long Russian instructions plus three replies overflow a ~700px panel by a
+      wide margin.
+      Ordering is a whole-list equality, not per-row membership — reversal or a dropped middle turn
+      satisfies containment while failing the only thing asserted. Rows use `find_elements`: every
+      row carries the same `ai-chat-message` testid, so the singular form would silently return the
+      *oldest* row and make ordering unfalsifiable. The empty-state absence check runs **after** the
+      settled row count (follow-up (bh)'s lesson), so it means "the empty state is gone", not "the
+      fetch hasn't landed".
+      `_wait_for_edit_to_complete` was **extracted**, not copied, into `edit_completion_wait.py`;
+      `over_quota_session.py` rewired onto it (200→184). `/test-review` diffed the two: identical
+      poll count (60), interval, non-terminal set and `done`-only terminal rule, all three
+      diagnostics byte-equivalent for 0.2 via parameters, and the body assertion *gained* the edit
+      id. No weakening.
+      `/test-review` landed eight fixes. The load-bearing one: `conversation_transcript.py` asserted
+      only that `message_id`/`role`/`text`/`created_at` were *keys*. Since `transcript_texts`
+      becomes the expected row text for the browser comparison, an empty `text` would put `""` on
+      **both sides** and make that turn of the ordering assertion vacuous. Now `role` is pinned to
+      the contract enum, `message_id`/`text` are non-empty strings, `created_at` parses as
+      ISO-8601. Two more in the same file: the ordering claim covered only `user` rows (the seeded
+      texts are their anchor) while the model-generated assistant replies had none, so they could
+      return in any position and the browser layer would faithfully expect them there — **pinning
+      the view to a server bug**; `created_at` is now asserted non-decreasing. And `next_cursor` is
+      asserted null, because with `limit` defaulting to 50 an unread second page would make
+      `transcript_texts` a *prefix* and the browser `==` would then fail against a correctly
+      rendering panel.
+      Also: the setup's first failure named only `expected 202, got 404`, sending the reader after
+      a bad id or a lost token — it now states that `document_edit_router` is unmounted. The Given
+      guard moved into `_wait_for_the_whole_transcript_to_render`, which both Thens enter through:
+      it previously protected only the first, so the second would burn the full timeout and report
+      "render all **0** stored messages", accusing the panel of the test's own setup gap. The
+      overflow gate pointed at the wrong file for `SEED_INSTRUCTIONS` and now also names the second
+      real cause (a sub-900px window makes the container unbounded and the Then meaningless). Dead
+      `OK_STATUS` left by the extraction removed — ruff does not flag unused module constants.
+      The file hit 208 lines under those additions, so the geometry moved to
+      `chat_history_viewport.py` (77) at a real seam: that module narrates Gherkin, this one
+      measures the browser. 171 now.
+      Rejected finding worth keeping: whitespace normalisation cannot mask a genuine difference —
+      `" ".join(text.split())` only equates strings differing *solely* in whitespace runs, and it is
+      load-bearing because HTML collapses runs before Selenium reads `.text`.
+      **Follow-ups weighed and NOT folded in, with reasons:**
+      (cj) the long-unbreakable-token check is a layout invariant, not "conversation restored" —
+      folding it in would let this test fail for two unrelated reasons at once and would need a
+      fourth instruction (a quota unit and a model round trip) to carry the token. Owed its own
+      scenario; Selenium is the right layer, since jsdom cannot measure it.
+      (bw) invisible here by construction: the seed makes 3 turns (6 messages), far under the
+      server default `limit=50`, so page one holds the whole conversation. **It belongs to a
+      pagination scenario that does not exist in `02_UI_Tests.md`** — nothing in sections 0–1 owns
+      it. Worth adding one.
+      (cf) Selenium cannot assert announcement, and this test reads rendered text and geometry only,
+      so it stays green whether or not hydration announces the whole transcript. **This test will
+      not catch that regression** — the guard has to be a jsdom case at `green-frontend`.
+      **New tension recorded here because nowhere else states it:** `over_quota_session.py` needs
+      the acceptance environment's daily quota **low** (0.2 must exhaust it cheaply); this Given
+      needs it **above 3** (the seed must not hit a 429 mid-setup). Both are satisfiable, but the
+      window is narrow — a quota of 1 or 2 breaks 1.2 with a setup 429 whose message will not
+      explain why.
+      **Systemic, flagged not fixed:** six acceptance tests now carry an unconditional
+      `@pytest.mark.skip(reason="RED: …")` and **nothing fails if any of them outlives its RED**.
+      `/test-review` declined to make this one conditional unilaterally — it would diverge from the
+      established pattern without fixing the class. Needs one decision across all six.
+      **Scoping note on "ruff clean":** it means *scoped* to this story's files. Repo-wide
+      `ruff check .` still reports the 10 pre-existing errors (follow-up (e)) and
+      `ruff format --check` wants to reformat 90 files, all in unrelated `generation`/`landing`
+      tests.
+- [~] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
 - [ ] green-frontend-api

@@ -11,6 +11,9 @@ from statements.frontend.ai_chat.document_not_found_statements import (
 )
 from statements.frontend.ai_chat.empty_chat_panel_statements import EmptyChatPanelStatements
 from statements.frontend.ai_chat.over_quota_statements import OverQuotaStatements
+from statements.frontend.ai_chat.restored_conversation_statements import (
+    RestoredConversationStatements,
+)
 from statements.frontend.auth.login_page_statements import LoginPageStatements
 from statements.frontend.auth.register_page_statements import RegisterPageStatements
 from statements.frontend.auth.verify_code_page_statements import VerifyCodePageStatements
@@ -58,6 +61,11 @@ def empty_chat_panel_statements():
 @pytest.fixture
 def over_quota_statements():
     return OverQuotaStatements()
+
+
+@pytest.fixture
+def restored_conversation_statements():
+    return RestoredConversationStatements()
 
 
 @pytest.fixture

@@ -38,7 +38,11 @@ from datetime import datetime, timedelta, timezone
 
 from clients.application.document_edit_client import DocumentEditClient
 from clients.application.dto.document.raw_response_dto import RawResponseDto
+from statements.frontend.ai_chat.edit_completion_wait import wait_for_edit_to_complete
 from statements.frontend.live_auth_session import LiveAuthSession, issue_live_session
+
+# Prefixes every diagnostic this setup raises, including the shared edit poll's.
+OVER_QUOTA_CONTEXT = "over-quota setup"
 
 DOCUMENT_TYPE = "доклад"
 QUOTA_PROBE_INSTRUCTION = "Сократи введение."
@@ -46,18 +50,13 @@ FIRST_VERSION = 1
 
 CREATED_STATUS = 201
 ACCEPTED_STATUS = 202
-OK_STATUS = 200
 OVER_QUOTA_STATUS = 429
 
 QUEUED_EDIT_STATUS = "queued"
-COMPLETED_EDIT_STATUS = "done"
-NON_TERMINAL_EDIT_STATUSES = frozenset({QUEUED_EDIT_STATUS, "streaming"})
 
 # Ceiling on how many edits the setup will spend before declaring the environment
 # misconfigured. Also the cost ceiling — see the module docstring.
 MAX_QUOTA_PROBES = 25
-EDIT_POLL_ATTEMPTS = 60
-EDIT_POLL_INTERVAL_SECONDS = 1
 
 # `resets_at` is "start of the next quota day in the server's canonical zone" (QuotaError).
 # No literal can pin the instant, but it is fully BOUNDED: strictly future, never more than one
@@ -132,7 +131,15 @@ async def _spend_the_daily_quota(
             f"over-quota setup: probe {probe} was accepted with status "
             f"'{body['status']}', expected a first submission's '{QUEUED_EDIT_STATUS}'"
         )
-        await _wait_for_edit_to_complete(client, token, document_id, str(body["edit_id"]))
+        await wait_for_edit_to_complete(
+            client,
+            token,
+            document_id,
+            str(body["edit_id"]),
+            OVER_QUOTA_CONTEXT,
+            "Only a completed edit demonstrably charges the quota — a refunded one would "
+            f"loop to {MAX_QUOTA_PROBES}",
+        )
     raise AssertionError(
         f"over-quota setup: {MAX_QUOTA_PROBES} edits completed without a "
         f"{OVER_QUOTA_STATUS}; configure the daily AI-edit quota below {MAX_QUOTA_PROBES} "
@@ -160,30 +167,6 @@ def _resets_at_of(response: RawResponseDto) -> str:
         f"'{now.isoformat()}' and no later than '{latest.isoformat()}' — got '{raw}'"
     )
     return raw
-
-
-async def _wait_for_edit_to_complete(
-    client: DocumentEditClient, token: str, document_id: str, edit_id: str
-) -> None:
-    """Poll the edit until it reaches `done` — terminal-but-failed is not good enough (see the
-    module docstring). Polling at all is required because the next probe would otherwise meet
-    the 409 that one active edit per document produces, which charges no quota."""
-    for _ in range(EDIT_POLL_ATTEMPTS):
-        response = await client.get_edit(token, document_id, edit_id)
-        _assert_status(response, OK_STATUS, f"reading edit {edit_id}")
-        status = _body_of(response)["status"]
-        if status not in NON_TERMINAL_EDIT_STATUSES:
-            assert status == COMPLETED_EDIT_STATUS, (
-                f"over-quota setup: edit {edit_id} terminalized as '{status}', not "
-                f"'{COMPLETED_EDIT_STATUS}'. Only a completed edit demonstrably charges the "
-                f"quota — a refunded one would loop to {MAX_QUOTA_PROBES}: {response.text}"
-            )
-            return
-        await asyncio.sleep(EDIT_POLL_INTERVAL_SECONDS)
-    raise AssertionError(
-        f"over-quota setup: edit {edit_id} was still non-terminal after "
-        f"{EDIT_POLL_ATTEMPTS * EDIT_POLL_INTERVAL_SECONDS}s"
-    )
 
 
 def _assert_status(response: RawResponseDto, expected: int, what: str) -> None:
