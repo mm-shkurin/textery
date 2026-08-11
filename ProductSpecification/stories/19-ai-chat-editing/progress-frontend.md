@@ -1054,7 +1054,14 @@ under `frontend/src` or `acceptance/tests/frontend`.
       that exists nowhere in this suite. Worth deciding deliberately — by default it will not happen,
       and `green-selenium` as written in this repo (presence + attribute) would not have caught any
       of the nine.
-- [~] green-selenium — **BLOCKED on the backend, not started.** The step is remove-marker-only, so
+- [S] green-selenium — **SKIPPED 2026-08-11: blocked on backend, re-verified live at HEAD.**
+      `backend/application/src/app/main.py:116-119` still includes only `generation`, `auth`, `oauth`
+      and `document` — `document_edit_router` is not registered — and `grep -rn quota
+      backend/adapters/rest/src/router/` is still empty. Unblocking is backend-session work; per
+      CLAUDE.md File Ownership this session writes neither `backend/` nor `progress-backend.md`.
+      Un-skip this step (and `demo` below) once the backend registers the router and ships
+      `GET /api/v1/ai-edits/quota`. Original blocker record follows.
+      **BLOCKED on the backend, not started.** The step is remove-marker-only, so
       it may not be attempted against a stack that provably cannot serve it; the stack was not
       started and the marker was not touched. Both blockers named in the test's own RED comment are
       still live, verified at `f8acfebb`:
@@ -1072,10 +1079,11 @@ under `frontend/src` or `acceptance/tests/frontend`.
       **Unblocking is backend-session work** (a row in the shared `endpoints.md`, then a backend
       scenario), and per CLAUDE.md File Ownership this session does not write `progress-backend.md`
       or `backend/`. The frontend side of scenario 0.2 is complete through `align-design`.
-- [ ] demo
+- [S] demo — skipped with `green-selenium` above: a demo replays the Selenium test, which cannot run
+      while the routes it drives are unregistered. Un-skip together.
 
 ### 1.1 The editor and chat panel render side by side with an empty history
-- [ ] red-selenium
+- [~] red-selenium
 - [ ] red-frontend
 - [ ] green-frontend
 - [ ] red-frontend-api
