@@ -1608,6 +1608,61 @@ Scenario ids map to `tests/01_API_Tests.md`, `06_Integration_Tests.md`,
   CARRIED: the pin relates an id to a method NAME, so it closes the green mis-pairing hole without
   touching the deeper point — a name cannot express "is a single save request". That decision stays
   open in the step below.
+- [ ] the pin is not injective — suffix-nested ids defeat it (premortem CREDIBLE #1 on the pin commit,
+  and it lands directly on the claim the last unit just made). `endswith` is a RELATION, not a
+  function: a transposition of keys `x, y` survives the pin whenever each id is a tail of the OTHER's
+  method name, which happens as soon as one id is a proper SUFFIX of another. Worked example, drawn
+  from the same family the unit already reasoned about, just the other end of the string:
+  `a_title` ↦ `given_a_save_carrying_a_title` and `title` ↦ `given_a_save_carrying_the_a_title` —
+  swap the two values and BOTH still satisfy `endswith`, while `_LISTED` stays byte-identical because
+  it is a set over `.values()`. That is the measured 8-passed hole, reopened. The unit reasoned
+  carefully about ids that are a proper INFIX (`_after_trim`, `_v2`) and chose `endswith` to reject
+  them; the suffix-NESTED case was never considered, and `endswith` does not reject it. Today's four
+  ids are suffix-disjoint, so the bijection holds BY ACCIDENT and nothing holds it in place — while
+  the file's prose and this record both state it as established. This is NOT the "guard the guard"
+  step below: that one asks whether the pin fires; this one says the pin, firing correctly, does not
+  imply what is claimed for it. Named fix, one line beside the pin — the precondition the bijection
+  claim already assumes: `_NESTED = {(a, b) for a in EVERY_SAVE_ARRANGEMENT for b in
+  EVERY_SAVE_ARRANGEMENT if a != b and a.endswith(b)}` asserted empty. Correct the two prose claims
+  in the same edit.
+- [ ] the pin names the offending KEYS, not the offending PAIRS (agent-review #1 on the pin commit,
+  and it is the very reason the unit gave for rejecting the one-liner). The commit rejected
+  `assert all(...)` because it "names no offending pair — the same unreadable failure this file
+  criticises", and claims "The pin names them." It names one half. For the measured two-way swap a
+  reader can infer the other; for a mis-pair against a FIFTH arrangement — the case the set-equality
+  guard exists for — the message says which id is wrong and gives no hint what it is bound to, so the
+  reader must open the file. A dict comprehension (`{k: a.__name__ ...}`) delivers what the commit
+  claims. Cheap, and it makes the commit message true.
+- [ ] the pin's failure message has unstable element order (agent-review #2 on the pin commit, low but
+  it falsifies a recorded claim): `_MISPAIRED` is a `set`, so its repr is subject to string hash
+  randomization — MEASURED across six `PYTHONHASHSEED` values, `{'whitespace_title', 'blank_title'}`
+  four times and the reverse twice. This record says the message was "predicted and matched character
+  for character"; that match was a coin flip, not a property. Cosmetic today, a flake the moment
+  anything asserts on the text — which is exactly what the "guard the guard" step would write.
+  `sorted(_MISPAIRED)` makes the claim true.
+- [ ] `endswith` imposes a naming rule rather than restating one, and the rule is documented in the
+  wrong file (agent-review #3 on the pin commit). The unit argued the convention is already
+  `given_a_save_carrying_<qualifier>` with the id AS the qualifier. Read against the actual names:
+  the qualifiers are `an_explicit_title`, `a_blank_title`, `a_whitespace_title` — the ids drop the
+  ARTICLE in three of four cases, so the id is the qualifier minus its article and "id is the literal
+  tail" is a NEW constraint that is diagonal today by luck. Practical edge: a future arrangement whose
+  natural id reorders or omits words (`given_a_save_carrying_a_title_with_emoji` keyed `emoji_title`)
+  fails at IMPORT, taking all 8 rows down at collection with a message about pinning rather than about
+  naming. And the constraint is enforced in the test file while arrangements are NAMED in
+  `document_save_payload_statements.py`, where nothing states the rule. Either state it at the point of
+  authorship or stop calling it a restatement.
+- [ ] a compression dropped a time-scoping clause and left a claim this file falsifies (agent-review #4
+  on the pin commit, and it is a concrete counterexample to that commit's own "only filler was lost").
+  The docstring now reads "…the absent shape is manufactured entirely by three lines of shared client
+  code that nothing asserted. Three Statements call it, inheriting it on trust." The pre-image was
+  "…and UNTIL THIS FILE nothing anywhere asserted the body they produce." Without the scope qualifier
+  the sentence claims, in the present tense, that nothing asserts that body — inside the file whose
+  whole purpose is asserting it. Three words restore it. The same edit also left "Three Statements call
+  IT" with a weaker antecedent than "that method" had.
+  NOTE both passes independently rated the `-O` exposure REMOTE and premortem verified why: CI runs
+  plain `pytest --cov` (`.github/workflows/backend-ci.yml:78`) with no `-O` anywhere, so there is no
+  live path. Consistent with the earlier measurement that pytest's assertion rewriting keeps these
+  particular asserts alive anyway.
 - [ ] the narrowed prefix does not deliver the property it was sold on (agent-review #2, same commit,
   and it is a correction to what is written above, not just a new step). The narrowing was justified
   as keeping out a future `given_*` that is NOT a single save — a precondition, or one dispatching
