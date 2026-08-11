@@ -910,6 +910,48 @@ under `frontend/src` or `acceptance/tests/frontend`.
       the `SessionExpiredError` this module carefully preserves via `.catch(() => setQuota(null))`,
       so case 7's guarantee has no consumer — the composer stays dead on arrival forever and the
       user is never told they are signed out.
+      `/refactor`: **NO ACTION**, and one declined candidate is worth recording. The `resets_at`
+      guard (L57) and the `resetsAt === null` guard (L65) collapse into one if the `!exhausted` early
+      return is hoisted above them — but that is **not behavior-preserving**: today
+      `{exhausted: false, resets_at: 123}` is refused, and after the reorder it would answer "the
+      quota has room". No test covers that combination, so the suite would not have caught it.
+      Also declined: extracting the three `throw new Error(FALLBACK)` into a `never`-returning
+      `refuse()` (a `never` call reads as fall-through where a literal `throw` reads as a stop), and
+      wrapping `resetsAt` in a value object (any parsing or normalization *is* the `+03:00` → `Z`
+      round trip this module exists to avoid). Consumers checked: `useEditQuota.ts` and
+      `AiChatComposer.tsx` branch on the resolved union only — the verbatim-instant rule is restated
+      as a comment in both, but the code enforcing it exists once. 528 passed / 0 failed / 0 skipped;
+      tsc, oxlint, prettier clean.
+      **Review-pass follow-ups (both CONCERNS, and they converge on the same defect):**
+      (ar) **The happy path is the strictest branch in the file — fix this before `align-design`.**
+      The `resets_at` guard runs *above* the `!exhausted` arm that declares the field dropped, so it
+      never gets the chance: `{"exhausted": false}` with the key omitted — the ordinary shape from a
+      pydantic model with `exclude_none`, which is the default nobody will think to override — is
+      refused as a load failure. `useEditQuota`'s `.catch(() => setQuota(null))` then leaves the
+      quota unknown for the whole mount (`requestedRef` blocks any retry), so the composer is dead
+      **for every user who has room**, silently, indistinguishable from still-loading. The field is
+      tolerated-and-ignored when it is a valid string and fatal when it is not, for a value the
+      function has already decided not to read. The scenario's invariant is only *silence must not
+      read as room*, which `typeof exhausted !== 'boolean'` delivers alone. Hoisting
+      `if (!exhausted) return {...}` above the guard preserves every asserted case and removes the
+      failure mode — but it inverts what `{exhausted: false, resets_at: 123}` does, so it needs the
+      (al)/(am) rows landed first to say which answer is intended. The defect and the file's one
+      uncovered line are the same line.
+      (as) **(ao) is no longer pre-existing — this commit is what made it live.** Before it,
+      `loadEditQuota` always threw a plain `Error`, so the session path was unreachable; now case 7's
+      two-401 renew-and-replay guarantee ships with nothing downstream honoring it. A signed-out user
+      gets a permanently disabled composer, no redirect, no message, and no retry after re-auth.
+      (at) **(an) is shipping-blocking, not a note.** The endpoint does not exist: every response is a
+      404, so on today's backend the composer is dead for 100% of users and it looks exactly like
+      loading. The path and body live only in a frontend test comment, this module and two commit
+      messages — `endpoints.md` has no row and `progress-backend.md` no scenario. The endpoints.md row
+      must also say **`resets_at` is required, send explicit `null`**, which is the hidden
+      serialization requirement (ar) currently encodes in a guard nobody can read from the backend.
+      (au) Cosmetic, not worth its own unit: `mapQuota` returns any non-empty string verbatim, so
+      `"soon"` reaches `data-resets-at` and renders `Invalid Date`. The verbatim rule is a load-bearing
+      cross-layer decision; validating the shape here would be the first step back toward a `Date`.
+      Also noted: the "Deliberately NOT `{ notFound: true }`" comment sits ~25 lines from the `send`
+      call it explains, and an orphan `//` line survives where the stub's comment was spliced.
 - [ ] align-design
 - [ ] green-selenium
 - [ ] demo
