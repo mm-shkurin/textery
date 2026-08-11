@@ -49,21 +49,47 @@ import {
  * NARROWING is caught by the same comparison from the other side, which the consumers' count-shaped
  * cases do see but only after the fact.
  *
- * THE SECOND LEG IS A SOURCE-TEXT PIN, AND THREE PATTERNS ARE PINNED, NOT FOUR. `NAMED_VALUE`,
- * `EXPECTATION_OPENER` and `CASE_OPENER` have their `.source` compared against exact literals.
- * Probes only catch widenings someone imagined; the checksum catches ANY edit — an alternation
- * admitting a shape not listed below (`test(` openers), or a probe list quietly emptied so its own
- * case passes vacuously. `PINNED_ASSIGNMENT` and (through it) `PINNED_FIELDS` are deliberately NOT
- * pinned: `constantSites` compares `fixtureUsageIn` against a HAND-TYPED assignment list, so it
- * already moves on any change to either, and a third copy would buy no new failure mode. The three
- * pinned here are exactly the three whose every consumer leg is count-shaped or negative.
+ * WHAT THIS FILE IS BLIND TO, AND WHERE THE OTHER LEG LIVES. A probe list only catches a widening
+ * SOMEBODY IMAGINED and wrote down here. An alternation head admitting a shape no probe spells —
+ * `CASE_OPENER` grown to `^(?:it|test)(?:\.skip)?\(` — moves no probe between the two halves and
+ * every case below stays green. That gap is closed by a whole-pattern pin on the three patterns
+ * whose every consumer leg is count-shaped or negative, and it lives in
+ * `fixtureUsage.patternText.test.ts`, which carries its own argument for why three and not four.
+ * Do not read the cases below as covering pattern TEXT; they cover pattern MEANING, one named line
+ * at a time.
  *
- * WHAT NEITHER LEG CLAIMS. A determined widener can edit the regex, re-type the pinned `.source`
- * literal, and move the near-miss line from `rejected` to `accepted` in one commit — three edits in
- * two files, all of them reading as "this near-miss is now legal", which is the point: the motion is
- * no longer a token, and it no longer happens off screen in a module titled "mechanics only". This
- * file does not claim the patterns are CORRECT, only that they still mean what the two consumer
- * headers say they mean.
+ * WHAT NO LEG CLAIMS. A determined widener can edit the regex, re-type the pinned regex literal
+ * in `fixtureUsage.patternText.test.ts`, and move the near-miss line from `rejected` to `accepted`
+ * here in one commit — three edits in three files, all of them reading as "this near-miss is now
+ * legal", which is the point: the motion is no longer a token, and it no longer happens off screen
+ * in a module titled "mechanics only". This file does not claim the patterns are CORRECT, only that
+ * they still mean what the two consumer headers say they mean.
+ *
+ * AND WHAT NOTHING GUARDS AT ALL. The six probe lists below are UNPINNED: emptying a
+ * `MUST_NOT_MATCH_*` array makes its own case pass vacuously (`{ accepted: [], rejected: [] }`
+ * equals itself), is not a regex edit so `fixtureUsage.patternText.test.ts` is byte-identical
+ * through it, and is worst for `PINNED_ASSIGNMENT`, whose probe case is its only leg. A length pin
+ * over the six is charter'd and NOT written — do not read either header as covering it.
+ *
+ * THE NEGATIVE CONTROL, AND WHY IT ASSERTS THE ERROR'S FIELDS RATHER THAN A PARTITION. All four
+ * cases above route through one helper, and nothing above proves that helper CONSULTS `pattern`:
+ * rewrite its body to `expect({ accepted, rejected }).toStrictEqual({ accepted, rejected })` — a
+ * plausible "the filter was doing the same thing" simplification — and the whole behavioural leg
+ * goes vacuous in one edit, with the sibling pattern pin blind because no regex text moved. The
+ * named in the charter, a PASSING call with a matches-nothing pattern, cannot see that: the mutant's
+ * body is tautological, so it is green for EVERY argument list and no passing call can redden it.
+ * The control must therefore demand a FAILURE, and demand it by the error's STRUCTURED FIELDS —
+ * `name`, `actual`, `expected`. A bare `toThrowError()` was tried and MEASURED INSUFFICIENT: it
+ * passes on any throw, so a helper that reads `pattern`, tests ONE probe and short-circuits
+ * satisfies it while staying tautological for the four real cases — green under the bare form, red
+ * under this one. Pinning `actual` to what `/^never$/` actually yields (everything rejected, nothing
+ * accepted) is what forces the pattern to have been applied to EVERY probe, so no degenerate consult
+ * survives. The message is deliberately NOT matched: it is vitest's diff formatting, presentation
+ * rather than data, and `objectContaining` ignores it and its `showDiff`/`operator` siblings for the
+ * same reason. A ONE-SIDED neutralisation (`rejected: rejected` hardcoded) survives and survives ANY
+ * call — the two halves are complements, so computed `accepted` matches its list exactly when
+ * computed `rejected` does — but that gap is empty: one side still filtered keeps all four cases
+ * fully discriminating. Only the TWO-sided neutralisation empties the leg.
  *
  * TWO RECORDED FACTS THAT LOOK LIKE MISTAKES AND ARE NOT. `'pageCount:  4,'` (doubled space) sits in
  * the ACCEPTED list: `(.+)` swallows the extra space, the site is admitted with expression `' 4'`,
@@ -162,15 +188,13 @@ describe('the source patterns, as the narrowness their consumers assume', () => 
     expectPartition(NAMED_VALUE, MUST_MATCH_VALUES, MUST_NOT_MATCH_VALUES)
   })
 
-  it('pins the source text of the three patterns no consumer list covers', () => {
-    expect({
-      namedValue: NAMED_VALUE.source,
-      expectationOpener: EXPECTATION_OPENER.source,
-      caseOpener: CASE_OPENER.source,
-    }).toStrictEqual({
-      namedValue: '^(?:[A-Z][A-Z0-9_]*(?:\\.[a-z][A-Za-z0-9]*)?|null)$',
-      expectationOpener: '^expect\\(state\\)\\.toStrictEqual\\(\\{$',
-      caseOpener: '^it(?:\\.skip)?\\(',
-    })
+  it('fails the probe helper with the real partition when the pattern contradicts both lists', () => {
+    expect(() => expectPartition(/^never$/, MUST_MATCH_VALUES, MUST_NOT_MATCH_VALUES)).toThrowError(
+      expect.objectContaining({
+        name: 'AssertionError',
+        actual: { accepted: [], rejected: [...MUST_MATCH_VALUES, ...MUST_NOT_MATCH_VALUES] },
+        expected: { accepted: MUST_MATCH_VALUES, rejected: MUST_NOT_MATCH_VALUES },
+      }),
+    )
   })
 })

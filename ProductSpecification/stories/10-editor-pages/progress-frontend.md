@@ -961,7 +961,29 @@ pagination failure.
   every `expect(state).toStrictEqual({` line — pinned to an exact count (2 for `measuring`, 1 for
   `laidOut`). Fold into the `.skip`-count step; both read the same two source texts for the same
   reason.
-- [~] red-frontend (premortem CREDIBLE 1 over `ad850488`) — **nothing proves the probe helper
+- [x] red-frontend (premortem CREDIBLE 1 over `ad850488`) — closed, and the charter's own guard was
+  measured WRONG twice on the way. (1) The charter named a PASSING call
+  (`expectPartition(/^never$/, [], [...MUST_MATCH, ...MUST_NOT_MATCH])`); the mutant body
+  `expect({accepted, rejected}).toStrictEqual({accepted, rejected})` is tautological for every
+  argument list, so no passing call through the helper can ever redden it — the chartered control
+  would have shipped as decoration. Delivered instead as a demand for a failure the mutant cannot
+  produce: `expect(() => expectPartition(/^never$/, MUST_MATCH_VALUES, MUST_NOT_MATCH_VALUES))
+  .toThrowError(…)`. (2) `/test-review` then measured that the bare `toThrowError()` was ALSO
+  satisfiable degenerately — a helper that reads `pattern`, tests ONE probe, throws, and leaves the
+  tautological compare below is green under it. The shipped header claim "not satisfiable by
+  consulting `pattern` degenerately" was false when written. Now strict on the AssertionError's
+  DATA (`name`/`actual`/`expected` via `objectContaining`, not its rendered message — the message is
+  vitest's diff, i.e. presentation that moves between minor versions), which forces the pattern to
+  have been applied to EVERY probe. Also: the checksum case was split into
+  `fixtureUsage.patternText.test.ts` to clear the cap, and `/test-review` upgraded it from `.source`
+  to whole-`RegExp` comparison — `toStrictEqual` discriminates flags, verified — so the flags blind
+  spot is deleted rather than documented. Mutants: helper self-compare caught by the control ALONE
+  (four probes + checksum all green, which is the finding's claim, now measured); `NAMED_VALUE` +
+  `|\d+` and `EXPECTATION_OPENER` + `|MatchObject` still redden BOTH legs across the two files;
+  one-sided `rejected: rejected` survives and is provably uncatchable AND harmless (complementary
+  halves, surviving side keeps full discrimination — measured, not argued). Tests 17 passed |
+  3 skipped | 0 failed. Caps: patterns 200, patternText 54, source 154.
+  Original charter — **nothing proves the probe helper
   DISCRIMINATES, and the refactor commit made it the single point of failure for all four cases.**
   `expectPartition(pattern, accepted, rejected)` filters the concatenation by `pattern` and compares
   against those same two arrays. Rewrite the body to `expect({accepted, rejected}).toStrictEqual({
@@ -973,8 +995,16 @@ pagination failure.
   neutralised). Guard, named: a negative control — feed a deliberately-wrong pattern to the same
   helper, `expectPartition(/^never$/, [], [...MUST_MATCH_VALUES, ...MUST_NOT_MATCH_VALUES])` — red
   the moment the helper stops consulting `pattern`. One case.
-- [ ] red-frontend (agent-review CONCERNS 1 over `ad850488` + premortem CREDIBLE 2, the same
-  finding from two directions) — **the probe LISTS are unpinned, so the advertised "three edits in
+- [~] red-frontend (agent-review CONCERNS 1 over `ad850488` + premortem CREDIBLE 2, the same
+  finding from two directions) — **BLOCKED ON A SPLIT FIRST: `fixtureUsage.patterns.test.ts` is at
+  exactly 200 after `/test-review`, zero headroom, so this step cannot land in that file.** Do the
+  split as the first half of this unit (the split step below anticipates it; it arrives one unit
+  earlier than expected). Also of note from `/test-review` on the preceding unit: the split-out
+  `patternText` header had claimed "the probe lists are pinned by their own length assertion, not
+  here" — no such assertion exists anywhere, this row IS that assertion, and the claim was struck.
+  The disclosure now lives in `patterns.test.ts`, the file that owns the lists, under a new "AND
+  WHAT NOTHING GUARDS AT ALL" section: a file should not learn from its sibling that its own data is
+  unguarded. **The probe LISTS are unpinned, so the advertised "three edits in
   two files" attacker floor is one deletion in one file for the headline mutant.** Both headers and
   the commit message claim the `.source` checksum covers "a probe list quietly emptied so its own
   case passes vacuously". It does not: emptying a `MUST_NOT_MATCH_*` array is not a regex edit, the
