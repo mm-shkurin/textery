@@ -1054,7 +1054,24 @@ under `frontend/src` or `acceptance/tests/frontend`.
       that exists nowhere in this suite. Worth deciding deliberately — by default it will not happen,
       and `green-selenium` as written in this repo (presence + attribute) would not have caught any
       of the nine.
-- [ ] green-selenium
+- [~] green-selenium — **BLOCKED on the backend, not started.** The step is remove-marker-only, so
+      it may not be attempted against a stack that provably cannot serve it; the stack was not
+      started and the marker was not touched. Both blockers named in the test's own RED comment are
+      still live, verified at `f8acfebb`:
+      1. **The AI-edit routes are unregistered.** `document_edit_router` exists
+         (`backend/adapters/rest/src/router/document_edit/document_edit_router.py`, prefix
+         `/api/v1/documents`, with `POST /{document_id}/ai-edits` and the stream route) but
+         `backend/application/src/app/main.py:116-119` includes only `generation`, `auth`, `oauth`
+         and `document`. So the setup probe still gets the `404 {"detail":"Not Found"}` its comment
+         records, and the quota counter cannot be moved — the Given is unreachable.
+      2. **`GET /api/v1/ai-edits/quota` does not exist at all.** `grep` over `backend/` finds the
+         `ai_edits` table, its migration and its model, and no quota route anywhere. This is
+         follow-up (at): the contract the frontend now calls lives only in frontend files, so on
+         today's backend every editor open 404s and the composer is dead for 100% of users while
+         looking exactly like it is still loading.
+      **Unblocking is backend-session work** (a row in the shared `endpoints.md`, then a backend
+      scenario), and per CLAUDE.md File Ownership this session does not write `progress-backend.md`
+      or `backend/`. The frontend side of scenario 0.2 is complete through `align-design`.
 - [ ] demo
 
 ### 1.1 The editor and chat panel render side by side with an empty history
