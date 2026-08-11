@@ -22,22 +22,30 @@ export function AiChatComposer({ quota }: AiChatComposerProps) {
   return (
     <div className="ac-chat-composer">
       {quota.exhausted ? <QuotaResetHint resetsAt={quota.resetsAt} /> : null}
-      <textarea
-        className="ac-chat-input"
-        data-testid="ai-chat-message-input"
-        placeholder={COMPOSER_PLACEHOLDER}
-        aria-label={COMPOSER_PLACEHOLDER}
-        rows={3}
-        disabled={quota.exhausted}
-      />
-      <button
-        type="button"
-        className="ac-chat-send"
-        data-testid="ai-chat-send-button"
-        disabled={quota.exhausted}
-      >
-        {SEND_LABEL}
-      </button>
+      {/* The mockup's `.composer .box`: input and send share ONE bordered field rather than
+          sitting as siblings, and the box is what carries the disabled treatment — a field that
+          stays live-looking around a greyed control reads as "the send broke", not as "you cannot
+          type here". */}
+      <div className={quota.exhausted ? 'ac-chat-box ac-chat-box--disabled' : 'ac-chat-box'}>
+        <textarea
+          className="ac-chat-input"
+          data-testid="ai-chat-message-input"
+          placeholder={COMPOSER_PLACEHOLDER}
+          aria-label={COMPOSER_PLACEHOLDER}
+          rows={3}
+          disabled={quota.exhausted}
+        />
+        <div className="ac-chat-box-row">
+          <button
+            type="button"
+            className="ac-chat-send"
+            data-testid="ai-chat-send-button"
+            disabled={quota.exhausted}
+          >
+            {SEND_LABEL}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

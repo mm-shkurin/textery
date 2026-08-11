@@ -42,39 +42,86 @@
   gap: 10px;
 }
 
-.ac-chat-input {
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  font: inherit;
-  font-size: 13.5px;
-  padding: 10px 12px;
-  resize: none;
+/* `.composer .box` — one field holding input and send, not two siblings. 12px is the mockup's
+   own literal here, not `--radius-md` (10px): the box is the largest control on the panel and
+   the mockup deliberately rounds it past its own --radius-md too. */
+.ac-chat-box {
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 14px;
 }
 
-.ac-chat-input:disabled,
-.ac-chat-send:disabled {
+.ac-chat-box--disabled {
   background: var(--bg-page);
-  color: var(--text-secondary);
+  border-color: var(--border-subtle);
+}
+
+/* `.composer .row`. The mockup's 26px is the gap under a one-line placeholder; here the input is
+   a real 3-row textarea that already occupies that height, so the row sits directly under it. */
+.ac-chat-box-row {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.ac-chat-input {
+  background: transparent;
+  border: none;
+  display: block;
+  font: inherit;
+  font-size: 13.5px;
+  padding: 0;
+  resize: none;
+  width: 100%;
+}
+
+.ac-chat-input::placeholder {
+  color: var(--text-muted);
+}
+
+.ac-chat-input:disabled {
+  color: var(--text-muted);
   cursor: not-allowed;
 }
 
+/* `.composer .send`, pushed right by the row rather than by `align-self` — the box is now the
+   flex parent's only child, so the old `flex-end` had nothing meaningful to align against. */
 .ac-chat-send {
-  align-self: flex-end;
   background: var(--accent);
   border: none;
   border-radius: var(--radius-sm);
-  color: #fff;
+  color: var(--text-inverse);
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  padding: 8px 16px;
+  margin-left: auto;
+  padding: 8px 14px;
 }
 
+/* `.send.off`. The mockup greys the control to its sunken surface rather than fading the accent:
+   a translucent brand blue still reads as "primary action, momentarily busy". It takes
+   `--bg-card-muted` where the box above takes `--bg-page`, which the mockup does not do — it
+   renders both on one `--bg-sunken`. Here the dead control sits INSIDE the dead field, and one
+   shared surface would dissolve the button's edge into it. */
+.ac-chat-send:disabled {
+  background: var(--bg-card-muted);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* The mockup states the spent quota twice — `.docnote-warn` over the document and a muted
+   `.keys` line under the box. This panel has one hint and it takes the warn treatment, because
+   a limit that stops the user is not a keyboard tip. The amber is derived from the app's own
+   `--warning`, never the mockup's `#fff7ed`/`#c2410c` literals: the mockup ships a whole second
+   palette (see the header of DocumentEditorPage.css). */
 .ac-chat-quota-hint {
-  background: var(--accent-soft);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-size: 12.5px;
+  background: color-mix(in srgb, var(--warning) 12%, var(--neutral-000));
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, var(--neutral-000));
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  font-size: 13.5px;
   margin: 0;
-  padding: 10px 12px;
+  padding: 12px 16px;
 }

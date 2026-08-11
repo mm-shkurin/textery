@@ -952,7 +952,54 @@ under `frontend/src` or `acceptance/tests/frontend`.
       cross-layer decision; validating the shape here would be the first step back toward a `Date`.
       Also noted: the "Deliberately NOT `{ notFound: true }`" comment sits ~25 lines from the `send`
       call it explains, and an orphan `//` line survives where the stub's comment was spliced.
-- [ ] align-design
+- [x] align-design — aligned to `mockups/desktop/06-over-quota.html` + `editor.css`. The structural
+      change is the mockup's `.composer .box`: input and send now share **one bordered field**
+      instead of sitting as siblings, and the box is what carries the disabled treatment. A field
+      that stays live-looking around a greyed control reads as "the send broke", not as "you cannot
+      type here" — which is the whole claim of this scenario. `.ac-chat-box` copies the mockup's
+      literal `12px` radius rather than `--radius-md` (10px): the box is the panel's largest control
+      and the mockup rounds it past its own `--radius-md` too. The textarea lost its border and
+      padding to become the field's interior, and the send moved into a `.ac-chat-box-row` that
+      pushes it right with `margin-left: auto` — the old `align-self: flex-end` had nothing
+      meaningful to align against once the box became the composer's only child.
+      **Two documented deviations.** The row's `margin-top` is 10px, not the mockup's 26px: that 26px
+      is the gap under a one-line `.ph` div, while a real 3-row `textarea` already occupies the
+      height. And the disabled send takes `--bg-card-muted` where the disabled box takes `--bg-page`,
+      whereas the mockup renders both on one `--bg-sunken` — here the dead control sits *inside* the
+      dead field, and one shared surface would dissolve the button's edge into it.
+      **The quota hint took the warn treatment**, matching `.docnote-warn`'s geometry exactly
+      (`--radius-md`, `12px 16px`, `13.5px`, flex/centre) — a limit that stops the user is not a
+      keyboard tip, so the mockup's muted `.keys` line was not the right analogue. The amber is
+      derived from the app's own `--warning` through `color-mix`, never the mockup's `#fff7ed` /
+      `#fed7aa` / `#c2410c` literals, per the palette rationale in `DocumentEditorPage.css`'s header.
+      `--bg-sunken` has no counterpart in `index.css`; `--bg-page` is this app's sunken surface.
+      `/design-review`: **PASS on the placeholder gate** — none of the mockup's payload reached the
+      component (`415 слов · версия 27`, `Осталось правок сегодня: 0 из 20`, `20 из 20`, `27 версий`,
+      the `17:48` stamps, `История ИИ`, the whole `.msgs` conversation, and — the one most likely to
+      slip — the mockup's own `.ph` copy `Лимит исчерпан — обновится в 00:00 МСК`, which carries a
+      wall-clock literal where the component carries `data-resets-at` from the API). Two of its minor
+      findings were fixed in this unit: the undocumented two-surface divergence above is now
+      commented, and an inert `gap: 10px` on the hint was dropped (single child until the mockup's
+      gauge glyph lands). Its third stands recorded: `color-mix` against the fixed `--neutral-000`
+      rather than a surface token is safe only while `index.css` defines no dark palette.
+      `/test-coverage frontend --focus` (filenames passed explicitly): `AiChatComposer.tsx`
+      **100% statements / 100% branches (4/4) / 100% functions**, and 4/4 is the load-bearing number —
+      both arms of the hint ternary *and* both arms of the new `ac-chat-box--disabled` className
+      execute, so the box's live form is exercised too, not only the dead one. No steps owed.
+      **What that clean report does not prove, stated rather than dressed up:** the box wrapper and
+      its row are unconditional JSX, so rendering the component at all marks them covered — a wrapper
+      nested wrongly, carrying the wrong class, or wrapping the wrong children reports identically.
+      And `AiChatPanel.css` is not instrumented at all, so **zero** of this unit's styling work was
+      verified by coverage. The correctness claim rests on the mockup comparison and on the Selenium
+      layer. Worth recording against `carryover.md`: the `git diff HEAD --name-only` focus filter
+      *did* list both files this time — one observation, not yet a reason to trust it.
+      **Still absent, with their owners:** the `.msgs` transcript and `.time` stamps (the send/response
+      scenarios); the `27 версий` count and revision rows (scenario 1.3, per `AiChatRevisions.tsx`'s
+      own comment); the `.docnote-warn` band over the *document*, deliberately not ported since the
+      panel states the limit once; the `Осталось правок сегодня: 0 из 20` counter, which needs
+      `used`/`limit` off a quota API that 0.2 does not surface; the `.keys` line, unclaimed by any
+      scenario; and the send/gauge icons — this app has no icon package, and `SparkMark` in
+      `AiChatPanel.tsx` is the inline-SVG precedent if they are ever wanted.
 - [ ] green-selenium
 - [ ] demo
 
