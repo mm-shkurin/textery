@@ -58,8 +58,8 @@ from document_export_fixtures import (  # noqa: F401
 # Story-12 projects-feed Statements fixtures, same 200-line-cap reason.
 from project_feed_fixtures import project_feed_statements  # noqa: F401
 
-# Story-13 profile + avatar Statements fixtures, same reason.
-from profile_fixtures import avatar_statements, profile_statements  # noqa: F401
+# Story-13 profile/avatar/deletion Statements fixtures, same reason.
+from profile_fixtures import avatar_statements, deletion_statements, profile_statements  # noqa
 
 # Story-10 page-settings Statements fixtures, split out for the same reason.
 from document_page_settings_fixtures import (  # noqa: F401

@@ -110,6 +110,14 @@ async def account_name_storage_statements():
 
 
 @pytest_asyncio.fixture
+async def account_deletion_statements():
+    from statements.account_deletion_statements import AccountDeletionStatements
+
+    async for statements in _engine_scoped(AccountDeletionStatements):
+        yield statements
+
+
+@pytest_asyncio.fixture
 async def avatar_storage_statements():
     from statements.avatar_storage_statements import AvatarStorageStatements
 

@@ -16,6 +16,7 @@ should not touch it.
 
 from container.auth_wiring import (
     create_account_existence,
+    create_delete_account,
     create_delete_avatar,
     create_get_avatar,
     create_get_profile,
@@ -82,6 +83,7 @@ __all__ = [
     "create_list_generations",
     "create_retry_generation",
     "create_list_projects",
+    "create_delete_account",
     "create_delete_avatar",
     "create_get_avatar",
     "create_get_profile",

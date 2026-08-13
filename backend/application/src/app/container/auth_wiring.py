@@ -2,9 +2,11 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access.auth.account_eraser import SqlAlchemyAccountEraser
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.auth.avatar_storage import SqlAlchemyAvatarRepository
 from access.auth.verification_code_storage import SqlAlchemyVerificationCodeRepository
+from auth.delete_account import DeleteAccount
 from auth.delete_avatar import DeleteAvatar
 from auth.get_avatar import GetAvatar
 from auth.get_profile import GetProfile
@@ -108,6 +110,22 @@ def create_delete_avatar(session: AsyncSession) -> DeleteAvatar:
     return DeleteAvatar(
         account_repository=SqlAlchemyAccountRepository(session),
         avatar_repository=SqlAlchemyAvatarRepository(session),
+        unit_of_work=SqlAlchemyUnitOfWork(session),
+    )
+
+
+@request_scoped
+def create_delete_account(session: AsyncSession) -> DeleteAccount:
+    return DeleteAccount(
+        account_repository=SqlAlchemyAccountRepository(session),
+        account_eraser=SqlAlchemyAccountEraser(session),
+        # The same hasher registration and login use -- the stored hash must be
+        # verified by whatever produced it.
+        password_hasher=BcryptPasswordHasher(),
+        # One UnitOfWork on the SAME session the eraser executes on, so all five
+        # DELETEs are one transaction. Wired explicitly because the default
+        # NullUnitOfWork commits nothing: the endpoint would answer 204 while the
+        # session rolled every DELETE back on close.
         unit_of_work=SqlAlchemyUnitOfWork(session),
     )
 

@@ -2,11 +2,9 @@ import os
 
 import httpx
 
+from clients.application.profile_client import ProfileApiClient
 from clients.application.dto.auth.login_request_dto import LoginRequestDto
 from clients.application.dto.auth.login_response_dto import LoginResponseDto
-from clients.application import profile_api
-from clients.application.dto.auth.avatar_response_dto import AvatarResponseDto
-from clients.application.dto.auth.profile_response_dto import ProfileResponseDto
 from clients.application.dto.auth.register_request_dto import RegisterRequestDto
 from clients.application.dto.auth.register_response_dto import RegisterResponseDto
 from clients.application.dto.auth.resend_request_dto import ResendRequestDto
@@ -23,7 +21,7 @@ from clients.application.dto.generation.generation_response_dto import Generatio
 from clients.application.dto.project.project_list_response_dto import ProjectListResponseDto
 
 
-class ApplicationClient:
+class ApplicationClient(ProfileApiClient):
     def __init__(self):
         backend_port = os.environ.get("BACKEND_PORT", "8000")
         self._client = httpx.AsyncClient(base_url=f"http://localhost:{backend_port}")
@@ -171,23 +169,6 @@ class ApplicationClient:
         return ProjectListResponseDto(
             status_code=response.status_code, body=self._parsed_body(response)
         )
-
-    async def get_me(self, access_token: str | None) -> ProfileResponseDto:
-        return await profile_api.get_me(self._client, access_token)
-
-    async def patch_me(self, body: dict, access_token: str | None) -> ProfileResponseDto:
-        return await profile_api.patch_me(self._client, body, access_token)
-
-    async def put_avatar(
-        self, data: bytes, content_type: str, access_token: str | None
-    ) -> ProfileResponseDto:
-        return await profile_api.put_avatar(self._client, data, content_type, access_token)
-
-    async def delete_avatar(self, access_token: str | None) -> ProfileResponseDto:
-        return await profile_api.delete_avatar(self._client, access_token)
-
-    async def get_avatar(self, access_token: str | None) -> AvatarResponseDto:
-        return await profile_api.get_avatar(self._client, access_token)
 
     @staticmethod
     def _parsed_body(response: httpx.Response) -> dict | None:

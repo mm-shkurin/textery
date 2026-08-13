@@ -7,6 +7,7 @@ Split out of `ApplicationClient` only because that file is at the 200-line cap;
 import httpx
 
 from clients.application.dto.auth.avatar_response_dto import AvatarResponseDto
+from clients.application.dto.auth.deletion_response_dto import DeletionResponseDto
 from clients.application.dto.auth.profile_response_dto import ProfileResponseDto
 
 
@@ -59,6 +60,18 @@ async def get_avatar(client: httpx.AsyncClient, access_token: str | None) -> Ava
         cache_control=response.headers.get("cache-control"),
         x_content_type_options=response.headers.get("x-content-type-options"),
     )
+
+
+async def delete_account(
+    client: httpx.AsyncClient, body: dict, access_token: str | None
+) -> DeletionResponseDto:
+    # POST, not DELETE: the confirmation needs a request body, and a body on
+    # DELETE is what some proxies and clients drop silently -- a confirmation that
+    # vanished in transit would be answered "that did not match".
+    response = await client.post(
+        "/api/v1/auth/me/deletion", json=body, headers=_bearer(access_token)
+    )
+    return DeletionResponseDto(status_code=response.status_code, body=_parsed_body(response))
 
 
 def _profile(response: httpx.Response) -> ProfileResponseDto:
