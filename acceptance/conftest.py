@@ -58,6 +58,9 @@ from document_export_fixtures import (  # noqa: F401
 # Story-12 projects-feed Statements fixtures, same 200-line-cap reason.
 from project_feed_fixtures import project_feed_statements  # noqa: F401
 
+# Story-13 profile Statements fixture, same reason.
+from profile_fixtures import profile_statements  # noqa: F401
+
 # Story-10 page-settings Statements fixtures, split out for the same reason.
 from document_page_settings_fixtures import (  # noqa: F401
     document_page_settings_read_statements,
@@ -194,6 +197,3 @@ def verify_code_page_statements():
 @pytest.fixture
 def responsive_statements():
     return ResponsiveStatements()
-
-
-

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Integer, String
+from sqlalchemy import Boolean, DateTime, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -20,15 +20,28 @@ class AccountModel(Base):
     failed_attempt_count: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default="0", default=0
     )
+    name: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     @classmethod
     def from_domain(cls, account: Account) -> "AccountModel":
+        # Every column the entity carries is listed, and that completeness is the
+        # point: this mapping used to omit failed_attempt_count, which was
+        # invisible only because the column defaults to 0 and the sole caller is
+        # registration, where 0 is right. `name` has no such alibi -- an INSERT
+        # that skipped it would store NULL over a real value.
+        #
+        # There are three places that enumerate account columns by hand (here,
+        # to_domain, and SqlAlchemyAccountRepository.save's update branch). A
+        # field added to two of them produces a write that answers 200 and
+        # persists nothing.
         return cls(
             id=account.id,
             email=account.email,
             password_hash=account.password_hash,
             is_verified=account.is_verified,
             created_at=account.created_at,
+            failed_attempt_count=account.failed_attempt_count,
+            name=account.name,
         )
 
     def to_domain(self) -> Account:
@@ -43,4 +56,5 @@ class AccountModel(Base):
             created_at=self.created_at,
             is_verified=self.is_verified,
             failed_attempt_count=self.failed_attempt_count,
+            name=self.name,
         )

@@ -4,9 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.auth.verification_code_storage import SqlAlchemyVerificationCodeRepository
+from auth.get_profile import GetProfile
 from auth.login_user import LoginUser
 from auth.refresh_access_token import RefreshAccessToken
 from auth.register_user import RegisterUser
+from auth.rename_account import RenameAccount
 from auth.resend_code import ResendCode
 from auth.token_service import TokenService
 from auth.verify_account import VerifyAccount
@@ -60,6 +62,26 @@ def create_resend_code(session: AsyncSession) -> ResendCode:
         account_repository=SqlAlchemyAccountRepository(session),
         verification_code_repository=SqlAlchemyVerificationCodeRepository(session),
         clock=SystemClock(),
+        unit_of_work=SqlAlchemyUnitOfWork(session),
+    )
+
+
+@request_scoped
+def create_get_profile(session: AsyncSession) -> GetProfile:
+    return GetProfile(account_repository=SqlAlchemyAccountRepository(session))
+
+
+@request_scoped
+def create_rename_account(session: AsyncSession) -> RenameAccount:
+    return RenameAccount(
+        account_repository=SqlAlchemyAccountRepository(session),
+        # A REAL UnitOfWork, on the SAME session the repository holds. Omitting it
+        # falls back to NullUnitOfWork, whose commit() returns None without
+        # touching the transaction: the UPDATE would be rolled back when
+        # request_scoped closes the session, and PATCH would answer 200 with the
+        # new name while the database kept the old one. No exception, no log, no
+        # failing unit test -- the fakes commit nothing either. That is precisely
+        # the defect test_login_wiring.py was written for.
         unit_of_work=SqlAlchemyUnitOfWork(session),
     )
 

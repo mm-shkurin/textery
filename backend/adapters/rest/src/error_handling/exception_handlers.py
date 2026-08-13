@@ -2,6 +2,7 @@ import logging
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from middleware.no_store import NO_STORE, PROFILE_PATHS
 
 from shared.exceptions import ConflictException, NotFoundException, ValidationException
 
@@ -93,4 +94,19 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     return JSONResponse(
         status_code=500,
         content={"error_code": "INTERNAL_ERROR", "message": INTERNAL_ERROR_MESSAGE},
+        headers=_no_store_headers(request),
     )
+
+
+def _no_store_headers(request: Request) -> dict[str, str]:
+    """`Cache-Control: no-store` for the profile routes, on the 500 path too.
+
+    NoStoreMiddleware stamps every other response on these paths, but Starlette
+    builds ServerErrorMiddleware -- which renders this handler -- OUTSIDE the user
+    middleware stack, so a 500 never reaches it. Without this the two routes would
+    satisfy "no-store on every response" for four statuses and quietly miss the
+    fifth. Keyed on the middleware's own path set so there is one list, not two.
+    """
+    if request.url.path in PROFILE_PATHS:
+        return {"Cache-Control": NO_STORE}
+    return {}

@@ -16,6 +16,7 @@ class FakeAccountRepository:
         # Scenario 5.4: spy on the atomic failed-attempt RESET so a usecase test can
         # assert a successful login zeroes the counter for the found account id.
         self.reset_failed_attempts_calls: list[UUID] = []
+        self.update_name_calls: list[tuple[UUID, str | None]] = []
         # Shared across the two Fakes so a test can assert the RELATIVE order of
         # lock_for_update vs the cooldown read (find_active_by_account_id). Left None
         # by default so existing Statements pay no cost; a test opts in by assigning
@@ -72,6 +73,17 @@ class FakeAccountRepository:
         self.reset_failed_attempts_calls.append(account_id)
         if self.call_log is not None:
             self.call_log.append("reset_failed_attempts")
+
+    async def update_name(self, account_id: UUID, name: str | None) -> None:
+        # Mirrors the db adapter's single-column UPDATE. Present so this Fake still
+        # satisfies the AccountRepository Protocol structurally -- but note that a
+        # rename asserted only here proves nothing about persistence: the real
+        # hazard is a column missing from one of the three hand-kept mapping lists,
+        # which a list-backed Fake cannot have. That claim belongs to the db test.
+        self.update_name_calls.append((account_id, name))
+        account = await self.find_by_id(account_id)
+        if account is not None:
+            account.rename(name)
 
     async def transition_to_verified(self, account_id: UUID) -> bool:
         # Spy + real semantics, mirroring the atomic conditional UPDATE the db

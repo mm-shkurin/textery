@@ -87,6 +87,25 @@ class SqlAlchemyAccountRepository:
             update(AccountModel).where(AccountModel.id == account_id).values(failed_attempt_count=0)
         )
 
+    async def update_name(self, account_id: UUID, name: str | None) -> None:
+        """Write the display name, and nothing else.
+
+        A targeted single-column UPDATE rather than save(): save()'s update branch
+        also carries email, password_hash and is_verified from an entity that was
+        read at the start of the request, so a rename racing a verify or a
+        password change would write that stale snapshot back over the winner. A
+        display name has no business touching either column.
+
+        `name=None` is an assignment to NULL, not a skip -- clearing is a
+        first-class outcome of PATCH /auth/me. Any `if name:` guard between here
+        and the caller turns "снять имя" into a 200 that changes nothing.
+
+        No commit here -- the caller owns the transaction boundary.
+        """
+        await self._session.execute(
+            update(AccountModel).where(AccountModel.id == account_id).values(name=name)
+        )
+
     async def save(self, account: Account) -> None:
         """Insert a new account, or update the one that already exists.
 
@@ -96,6 +115,15 @@ class SqlAlchemyAccountRepository:
         emitted a second INSERT with the same primary key and Postgres rejected it
         with accounts_pkey. The usecase's broad except turned that into a 500. The
         fakes append to a list, so no unit test could see it.
+
+        The update branch below enumerates the columns it carries over BY HAND,
+        and so do AccountModel.from_domain and AccountModel.to_domain. Three
+        hand-kept lists of the same thing: a field added to two of them yields a
+        write that flushes cleanly, answers 200, and stores nothing. A test that
+        proves otherwise has to re-read on a NEW session -- the factory sets
+        expire_on_commit=False and find_by_id is session.get off the identity
+        map, so a same-session re-read hands back the in-memory object and is
+        green against a row that does not exist.
         """
         existing = await self._session.get(AccountModel, account.id)
         if existing is None:
@@ -104,6 +132,7 @@ class SqlAlchemyAccountRepository:
             existing.email = account.email
             existing.password_hash = account.password_hash
             existing.is_verified = account.is_verified
+            existing.name = account.name
         try:
             await self._session.flush()
         except IntegrityError as error:

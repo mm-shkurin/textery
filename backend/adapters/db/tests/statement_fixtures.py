@@ -100,6 +100,16 @@ async def account_to_domain_roundtrip_statements():
 
 
 @pytest_asyncio.fixture
+async def account_name_storage_statements():
+    from statements.account_name_storage_statements import AccountNameStorageStatements
+
+    # Engine-scoped, not db_session-scoped: these two claims are about what a
+    # DIFFERENT session sees, so the Statements needs the factory, not one session.
+    async for statements in _engine_scoped(AccountNameStorageStatements):
+        yield statements
+
+
+@pytest_asyncio.fixture
 async def reset_failed_attempts_statements():
     from statements.reset_failed_attempts_statements import (
         ResetFailedAttemptsStatements,
