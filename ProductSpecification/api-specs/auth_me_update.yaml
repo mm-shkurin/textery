@@ -1,0 +1,184 @@
+openapi: 3.0.3
+info:
+  title: Update Own Profile
+  version: 1.0.0
+
+paths:
+  /api/v1/auth/me:
+    patch:
+      summary: Set or clear the caller's display name.
+      description: >
+        PATCH, not PUT: the request carries a proper subset of the profile — `email`
+        and `created_at` are server-owned and have no writable representation — so a
+        PUT would advertise a full replacement this route will never perform.
+
+
+        Binds a **purpose-built request DTO carrying `name` only**, never the `/me`
+        response DTO. Any other key in the body is ignored, and the re-read row must
+        be unchanged for it: `email`, `is_verified`, `created_at`, `password_hash`,
+        `failed_attempt_count`, `id`. Ignored rather than rejected, matching
+        `documents_save`'s server-owned-fields decision. The rename emits an UPDATE
+        setting **only** `name`.
+
+
+        Concurrent renames are **last-write-wins by decision**, not by omission:
+        there is no version column, no `If-Match`, and no 409. The second write wins
+        and the first is silently lost — and because clearing is first-class, a stale
+        tab can *undo* a rename rather than merely overwrite it. Proportionate for a
+        display name; recorded so it is not mistaken for a missed hazard.
+
+
+        A successful response returns the full profile so the client can update its
+        identity snapshot without a second `GET /me`. Same `Cache-Control: no-store`
+        as the read route.
+      operationId: updateOwnProfile
+      tags:
+        - auth
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateProfileRequest'}
+      responses:
+        '200':
+          description: >-
+            The profile after the write, including a rename to the value it already
+            held and a clear on an account that had no name — both are successes, not
+            no-ops to be refused. Repeating an identical PATCH answers 200 again, with
+            one row and no IntegrityError.
+          headers:
+            Cache-Control:
+              schema: {type: string}
+              description: Always `no-store`.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProfileResponse'}
+        '400':
+          description: >-
+            `NAME_INPUT_TOO_LARGE` — the **raw** value exceeds 256 code points,
+            refused before trim and NFC so a long or adversarial input never reaches
+            the expensive checks (`Email` and `Password` gate the same way, and
+            `Email`'s docstring records why). The cap is deliberately generous: NFD
+            input is longer than its NFC form and must not be cut off by the cheap
+            gate.
+
+
+            `INVALID_NAME` — the **normalized** value (trim + NFC) is over 60 code
+            points. Nothing is persisted in either case.
+
+
+            The two codes are distinct on purpose. `Email` raises the identical
+            message at both stages, so no test there can prove the cheap gate ran at
+            all; here a test can.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401':
+          description: >-
+            UNAUTHORIZED — identical set of causes and identical body as on
+            `GET /me`. The rejection happens before any write, and the transaction
+            commits exactly once on success and never on a refusal.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '413':
+          description: >-
+            REQUEST_BODY_TOO_LARGE — the body exceeds the app-wide cap and is refused
+            at the transport boundary, before it is buffered and parsed. The 256
+            code-point raw gate above cannot do this job: it runs after the JSON body
+            has already been read into memory, so a 10 MB `name` would be fully
+            buffered on the way to being rejected. See `README.md` § Request Body Cap.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '500':
+          description: >-
+            INTERNAL_ERROR, fixed generic message. Neither the submitted name nor the
+            account's email appears in the body or in any log line.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token from POST /api/v1/auth/login.
+  schemas:
+    Error:
+      type: object
+      required: [error_code, message]
+      properties:
+        error_code: {type: string}
+        message: {type: string}
+    UpdateProfileRequest:
+      type: object
+      description: >
+        `name` is the only field the server reads. Unknown keys are ignored, not
+        rejected — the input allow-list is the DTO itself.
+      properties:
+        name:
+          type: string
+          nullable: true
+          description: >
+            TRI-STATE, and the three are distinguishable — do not collapse them.
+            OMITTED: the stored name is left untouched (fail closed). EXPLICIT null:
+            clears the name to NULL. STRING: set, after trim + NFC — and a string
+            that is **blank** clears the name exactly as `null` does.
+
+
+            The obvious `name: str | None = None` model makes the first two
+            indistinguishable, so the request model must carry presence
+            (Pydantic v2 `model_fields_set`) rather than collapsing all three to
+            `None`. It reads as harmless while `name` is the only field, and turns
+            destructive the moment this route grows a second one — which story 8
+            (subscription block) and story 14 (ТЗ §3 columns) both intend.
+
+
+            **Blank** means no visible characters after stripping Unicode whitespace
+            **and category `Cf`**, reusing `Generation._is_blank_topic`'s definition.
+            A name of only U+200B / U+FEFF / U+00A0 therefore clears rather than
+            persisting as a set-but-unrenderable value — which would defeat the
+            NULL-keyed email fallback and render a blank identity with an
+            `aria-label` ending in «Меню профиля: ».
+
+
+            Bounds, in Unicode code points, never bytes and never UTF-16 units: raw
+            ≤ 256 (checked first, before normalization), then normalized 1..60. The
+            exact edges are 60 accept / 61 refuse and 256 accept / 257 refuse. An NFD
+            fixture of 60 NFC characters written as base+combining pairs is 120 raw
+            code points and 60 normalized, and is **accepted** — red if the bound is
+            applied before normalization. No `maxLength` in this schema, for the same
+            UTF-16-vs-code-point reason given in `auth_me_get.yaml`.
+
+
+            The value is typed permissively enough that a non-string (`123`, `[]`,
+            `{}`) is refused by the domain as `INVALID_NAME` in the canonical
+            envelope, rather than by FastAPI's `RequestValidationError`, whose 422
+            body uses a different shape and echoes the rejected input back to the
+            caller. The over-length case must reach the domain path for the same
+            reason.
+    ProfileResponse:
+      type: object
+      required: [email, name, created_at]
+      description: >
+        Identical to the `GET /me` body — see `auth_me_get.yaml` for the field rules
+        (`name` always present and nullable, `created_at` as a `Z`-suffixed UTC
+        instant). Returned by the write path so the client's identity snapshot is
+        updated from the response it already has.
+      properties:
+        email: {type: string, format: email}
+        name:
+          type: string
+          nullable: true
+          description: >
+            The persisted, normalized value — not an echo of the request. A request
+            in NFD comes back canonically equivalent to, but not byte-equal to, what
+            was sent; a request with a trailing space comes back trimmed. The client
+            must recompute its "unsaved changes" flag against this value, or a name
+            with a trailing space stays dirty forever after a successful save.
+        created_at: {type: string, format: date-time}
