@@ -15,7 +15,7 @@
 | 4  | Auto-generate: реферат                    | ✅   | 🔧   | —    | 🔧   | —     | n/a  | n/a   | 4/27  | 15% |
 | 10 | Editor pages (pagination, page setup, headers/footers) | ✅ | 🔧 | — | — | — | — | — | 0/70 | 0% |
 | 12 | Мои проекты (list/search/sort, grid + list view) | ✅ | 🔧 | — | 🔧 | — | — | — | 1/177 | 1% |
-| 13 | Profile management                     | 🔧   | ·    | ·    | ·   | ·     | ·    | ·     | 0/0   | 0% |
+| 13 | Profile management                     | ✅   | —    | —    | —   | —     | —    | —     | 0/130 | 0% |
 
 # Backlog — Core sequence (build order, decided 2026-07-06)
 

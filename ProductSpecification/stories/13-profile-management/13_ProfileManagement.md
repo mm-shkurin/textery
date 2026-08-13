@@ -62,6 +62,14 @@ The full folded guard set is in `13_ProfileManagement_AcceptanceCriteria.md`.
 - Profile — saving (submit non-interactive until the response returns).
 - Profile — inline validation error.
 - Profile — load failed: a message plus a retry affordance, not a perpetual spinner.
+- Profile — **save failed** (5xx, 413, or the network dropping on `PATCH`): a banner over a
+  filled card, «Повторить», the typed value still in the field, the form interactive again.
+  Distinct from the inline validation error, which blames the input; this one blames the
+  attempt and keeps the input valid. Added after the `mockups` review passes found the
+  write path had no failure state at all, which made the acceptance criterion "a 5xx and a
+  4xx are distinguishable in behaviour" untestable on that path. **The mockup for this state
+  is not drawn** — the eight files under `mockups/` cover the read path plus one client-side
+  validation; the frontend scenarios own its visual definition.
 - Avatar menu with «Мой профиль» added.
 - Header — degraded identity, visibly distinct from the loading placeholder.
 
