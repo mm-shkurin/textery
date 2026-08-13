@@ -20,11 +20,32 @@ paths:
         authenticated page view and becomes the highest-rate endpoint in the
         product. The client issues **one** request per page — shared across both
         mounted `ProfileMenu` instances and across in-app navigation — with a
-        bounded timeout and capped, jittered retries. The per-request server cost is
-        the primary-key read `get_current_owner_id` already performs (`session.get`
-        consults the request-scoped identity map, so `/me` adds no second SELECT);
-        the load risk is request rate and connection-pool checkout, not per-request
-        work.
+        bounded timeout and capped, jittered retries.
+
+
+        **Per-request cost, measured rather than assumed.** An earlier draft of this
+        contract claimed `/me` adds no second SELECT because `session.get` consults a
+        request-scoped identity map. That is wrong: `request_scoped` in
+        `backend/application/src/app/container/runtime.py` opens **one session per
+        dependency**, not per request, and `create_account_existence` is itself
+        `@request_scoped`. So `get_current_owner_id`'s existence check and the `/me`
+        read run on two different sessions — SQLAlchemy's identity map is per-session
+        — and one request emits **two** `SELECT … FROM accounts WHERE id = …` while
+        holding **two** pool connections at once, each paying a `pool_pre_ping`
+        round-trip. With SQLAlchemy's pool defaults (5 + 10 overflow per process),
+        making this the product's highest-rate endpoint halves effective concurrency,
+        and the checkout queue is shared with documents and generations.
+
+
+        This contract does not decide the fix — sharing one session across a
+        request's dependencies is a change to all thirteen factories and belongs in
+        an ADR (`/architecture`) before the backend scenarios. What it does fix is
+        the assumption: the load scenario is sized against **two** connections per
+        request, and a SQL-capture guard pins the count so a later change cannot
+        drift it silently in either direction.
+      x-open-decision: >
+        Whether GET /me holds one pool connection or two. Needs an ADR before the
+        backend scenarios; see the per-request cost paragraph above.
 
 
         `is_verified` is deliberately absent. Only a verified account can hold an
@@ -32,8 +53,12 @@ paths:
         produce and tells the client nothing.
 
 
-        The body is account-specific and must never be stored by a shared cache
-        (`Cache-Control: no-store`).
+        The body is account-specific and must never be stored by a shared cache.
+        `Cache-Control: no-store` is set on **every** response of both routes, not
+        only the 200 — the header is applied at the route, before the outcome is
+        known, so a test written from the acceptance criteria ("both routes answer
+        `Cache-Control: no-store`") and a test written from this contract cannot
+        disagree on the 401 and 500 cases.
       operationId: getOwnProfile
       tags:
         - auth
@@ -43,9 +68,11 @@ paths:
         '200':
           description: The caller's profile.
           headers:
-            Cache-Control:
+            Cache-Control: &noStore
               schema: {type: string}
-              description: Always `no-store` — the body carries the account's email.
+              description: >-
+                Always `no-store`, on this and every other response of the route —
+                the body carries the account's email.
           content:
             application/json:
               schema: {$ref: '#/components/schemas/ProfileResponse'}
@@ -57,6 +84,15 @@ paths:
             token whose account row is gone. Distinguishing them tells a caller which
             half of the header they got right; the deleted-account case in particular
             must not be distinguishable from a forged token.
+
+
+            **A 401 here must never end the client's session by itself.** See
+            `stories/13-profile-management/endpoints.md` § "A `/me` failure is not a
+            sign-out" — the header fires this call on every page, so routing it
+            through the ordinary renewal path converts a transient blip into a mass
+            sign-out.
+          headers:
+            Cache-Control: *noStore
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}
@@ -65,6 +101,8 @@ paths:
             INTERNAL_ERROR with the fixed generic message. Never the email, never the
             name, never a driver string — the endpoint's two PII fields must appear in
             no failure body and in no log line.
+          headers:
+            Cache-Control: *noStore
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}
@@ -108,11 +146,20 @@ components:
             representation (NULL), never `""`.
 
 
-            Free-form user text with no character restrictions beyond length, echoed
-            into the header on every page: the whole escaping burden sits at the
-            client's output sinks (element text **and** the initials `aria-label` /
-            `title` attributes). The server neither escapes nor sanitizes it — a
-            server-escaped name would round-trip differently than it was saved.
+            Free-form user text, echoed into the header on every page, so the output
+            burden sits at the client's sinks (element text **and** the initials
+            `aria-label` / `title` attributes). The server neither escapes nor
+            sanitizes it — a server-escaped name would round-trip differently than it
+            was saved. Two distinct obligations, not one: **escaping**, which stops
+            markup in a name from becoming an element or a handler, and **bidi
+            isolation** (`<bdi>` or `unicode-bidi: isolate`), which stops a U+202E in
+            a name from reordering the text around it. Escaping does nothing about
+            the second, and the acceptance criteria test for it.
+
+
+            The characters that cannot reach here at all are refused on the write
+            path rather than handled here: see `auth_me_update.yaml` for the `Cc` /
+            `Cs` refusal and the invisible-character clearing rule.
 
 
             No `maxLength` here on purpose. OpenAPI counts UTF-16 units and the

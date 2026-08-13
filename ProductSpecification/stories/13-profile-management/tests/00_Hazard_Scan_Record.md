@@ -41,7 +41,7 @@ confirmed which side carries it, rather than letting each pass assume the other 
 | Seam | Passes | Single guard |
 |------|--------|--------------|
 | Rename rewrites status columns | 4 (blind write) + 3 (lost update) | The UPDATE sets only `name` — SQL-shape capture, plus a whole-row re-read after renaming a verified account |
-| Invisible / blank name | 1 + 4 + 5 | Blankness reuses `Generation._is_blank_topic`'s whitespace + category `Cf` definition; blank clears to NULL, so "no name" has one representation |
+| Invisible / blank name | 1 + 4 + 5 | Blankness is modelled on `required_topic()` (`generation_validation.py`) but stricter: whitespace + `Cf` + named invisible non-format code points, and `Cc`/`Cs` refused outright. Blank clears to NULL, so "no name" has one representation. Widened at `/api-spec` — the borrowed predicate let U+3164 persist as an unrenderable name and let a NUL (U+0000) reach Postgres as a 500 |
 | Write actually reaches Postgres | 1 + 2 + 3 + 7 | One db test: real Postgres, separate-session re-read, INSERT and UPDATE paths, maximal-astral + NFD fixture |
 | Absent vs null vs empty | 4 (data loss) + 5 (parsing) | Three presence tests, plus a request model that carries presence instead of collapsing all three to `None` |
 | Identity snapshot staleness | 3 + 5 + 7 + 8 | Session-generation stamping: superseded responses dropped, snapshot updated on the write path and cleared on sign-out |

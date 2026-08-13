@@ -65,13 +65,21 @@ paths:
             gate.
 
 
-            `INVALID_NAME` — the **normalized** value (trim + NFC) is over 60 code
-            points. Nothing is persisted in either case.
+            `INVALID_NAME` — three causes, all of them "this value cannot be a name":
+            the normalized value (trim + NFC) is over 60 code points; the value
+            contains a `Cc` control character or a `Cs` lone surrogate; or the value
+            is not a JSON string at all (`123`, `[]`, `{}`). Nothing is persisted in
+            any case.
 
 
-            The two codes are distinct on purpose. `Email` raises the identical
-            message at both stages, so no test there can prove the cheap gate ran at
-            all; here a test can.
+            The raw-cap and normalized-bound codes are distinct on purpose. `Email`
+            raises the identical message at both stages, so no test there can prove
+            the cheap gate ran at all; here a test can. The three `INVALID_NAME`
+            causes deliberately share one code, because a client can act on none of
+            them differently — its own counter prevents the length case and its own
+            form cannot produce the other two.
+          headers:
+            Cache-Control: {schema: {type: string}, description: Always `no-store`.}
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}
@@ -80,6 +88,8 @@ paths:
             UNAUTHORIZED — identical set of causes and identical body as on
             `GET /me`. The rejection happens before any write, and the transaction
             commits exactly once on success and never on a refusal.
+          headers:
+            Cache-Control: {schema: {type: string}, description: Always `no-store`.}
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}
@@ -89,14 +99,31 @@ paths:
             at the transport boundary, before it is buffered and parsed. The 256
             code-point raw gate above cannot do this job: it runs after the JSON body
             has already been read into memory, so a 10 MB `name` would be fully
-            buffered on the way to being rejected. See `README.md` § Request Body Cap.
+            buffered on the way to being rejected.
+
+
+            **This body is produced by the app, and a browser only reaches the app
+            through nginx** (`infra/docker/nginx/frontend.conf` proxies `/api/` to the
+            backend). nginx's `client_max_body_size` must therefore be set **above**
+            the app cap, or its own HTML 413 answers first and this contract is
+            unreachable for every real user while acceptance tests — which call
+            `BACKEND_PORT` directly — still see it. Full reasoning, and the guard that
+            asserts this through the frontend origin, in `README.md` § Request Body
+            Cap.
+          headers:
+            Cache-Control: {schema: {type: string}, description: Always `no-store`.}
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}
         '500':
           description: >-
             INTERNAL_ERROR, fixed generic message. Neither the submitted name nor the
-            account's email appears in the body or in any log line.
+            account's email appears in the body or in any log line. Nothing is
+            persisted, and the client keeps what the user typed — the write path's
+            failure state is a screen this story still owes (`13_ProfileManagement.md`
+            § Screen States).
+          headers:
+            Cache-Control: {schema: {type: string}, description: Always `no-store`.}
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}
@@ -139,21 +166,53 @@ components:
             (subscription block) and story 14 (ТЗ §3 columns) both intend.
 
 
-            **Blank** means no visible characters after stripping Unicode whitespace
-            **and category `Cf`**, reusing `Generation._is_blank_topic`'s definition.
-            A name of only U+200B / U+FEFF / U+00A0 therefore clears rather than
-            persisting as a set-but-unrenderable value — which would defeat the
-            NULL-keyed email fallback and render a blank identity with an
-            `aria-label` ending in «Меню профиля: ».
+            **Blank** means nothing visible remains after stripping Unicode
+            whitespace, category `Cf`, and the invisible-but-not-format code points
+            listed below. A blank name clears rather than persisting as a
+            set-but-unrenderable value — which would defeat the NULL-keyed email
+            fallback and render a blank identity with an `aria-label` ending in
+            «Меню профиля: ».
+
+
+            The starting point is `required_topic()` in
+            `backend/domain/src/generation/generation_validation.py` (a module-level
+            function — there is no `Generation._is_blank_topic`, despite that name
+            appearing in this story's earlier drafts). This rule is deliberately
+            **stricter** than that one, in two ways, because the topic predicate's
+            gaps are already recorded as debt (`.memory-bank/tasks/known-debt.md` #8)
+            and they land harder on a name than on a topic:
+
+
+            (a) **`Cc` and `Cs` anywhere in the value are refused**, not stripped —
+            `INVALID_NAME`, before the blank test. A display name has no legitimate
+            control character or lone surrogate, and U+0000 (NUL) is not merely
+            invisible: it passes a whitespace+`Cf` filter, reaches Postgres, and is
+            rejected by the `text` type, turning a 400 into a **500**.
+
+
+            (b) The invisible set the blank test strips is whitespace, `Cf`, and the
+            named code points **U+115F, U+1160, U+3164, U+FFA0** (Hangul fillers,
+            category `Lo`), **U+2800** (Braille blank, `So`), **U+17B4, U+17B5**
+            (Khmer inherent vowels). None are whitespace or `Cf`, all render as
+            nothing, and a name made only of them would otherwise persist as the
+            exact blank identity clause (a) and the `Cf` clause exist to prevent.
+
+
+            Because it is stricter, this is a **new shared domain helper**, not a call
+            into `required_topic` — and adopting it there too would close known-debt
+            #8, which is that story's call to make, not this one's.
 
 
             Bounds, in Unicode code points, never bytes and never UTF-16 units: raw
-            ≤ 256 (checked first, before normalization), then normalized 1..60. The
-            exact edges are 60 accept / 61 refuse and 256 accept / 257 refuse. An NFD
-            fixture of 60 NFC characters written as base+combining pairs is 120 raw
-            code points and 60 normalized, and is **accepted** — red if the bound is
-            applied before normalization. No `maxLength` in this schema, for the same
-            UTF-16-vs-code-point reason given in `auth_me_get.yaml`.
+            ≤ 256 (checked first, before normalization), then normalized ≤ 60. The
+            exact edges are 60 accept / 61 refuse and 256 accept / 257 refuse. There
+            is **no lower bound**: a normalized length of zero is the blank case and
+            clears with 200, so a "1..60" reading that refuses `""` contradicts the
+            tri-state rule above. An NFD fixture of 60 NFC characters written as
+            base+combining pairs is 120 raw code points and 60 normalized, and is
+            **accepted** — red if the bound is applied before normalization. No
+            `maxLength` in this schema, for the same UTF-16-vs-code-point reason given
+            in `auth_me_get.yaml`.
 
 
             The value is typed permissively enough that a non-string (`123`, `[]`,

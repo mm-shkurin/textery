@@ -48,6 +48,17 @@ received), cover **both** the INSERT and UPDATE paths (`from_domain` already sil
 - A name of only zero-width/format characters (U+200B, U+FEFF, U+00A0) clears the name — it must
   never persist as a set-but-unrenderable value, which would defeat the NULL-keyed email fallback
   and render a blank identity with `aria-label` ending in «Меню профиля: ».
+- **Added at `/api-spec`, because the three characters above are exactly the ones the borrowed
+  predicate already caught** — a test over them proves nothing about the rule's edge:
+  - A name of only U+3164 (Hangul filler, `Lo`) or U+2800 (Braille blank, `So`) clears too.
+    Neither is whitespace nor `Cf`, both render as nothing, and under the first draft's rule
+    both persisted as the blank identity the rule exists to forbid.
+  - A name of a single NUL (U+0000) and a name containing a lone surrogate each answer
+    **400 `INVALID_NAME`** —
+    not 200, and above all not the **500** that reaching Postgres's `text` type produces.
+    Same hole as known-debt #8 on the topic predicate, arriving here as a contract violation.
+  - `{"name": 123}` (and `[]`, `{}`) answers 400 `INVALID_NAME` in the canonical envelope —
+    never FastAPI's 422, whose body echoes the rejected input back.
 - Exact boundaries: 60 accept / 61 refuse (normalized), 256 accept / 257 refuse (raw).
 - An NFD fixture of 60 NFC characters written as base+combining pairs (120 raw code points, 60
   after NFC) is **accepted 200** — red if the bound is applied before normalization.
@@ -57,8 +68,15 @@ received), cover **both** the INSERT and UPDATE paths (`from_domain` already sil
   the header and on the profile screen — no element created, no handler bound — including the
   initials/`aria-label` attribute sink. The header is a global sink, so this is the widest stored-
   XSS surface in the app. No `dangerouslySetInnerHTML` on this value.
-- A bidi-override character (U+202E) in a name does not reorder surrounding header text.
-- An oversized body (e.g. 10 MB `name`) is refused at the boundary, not after full buffering.
+- A bidi-override character (U+202E) in a name does not reorder surrounding header text. Note
+  this is **not** the escaping guard above and is not satisfied by escaping: it needs bidi
+  isolation at the sink (`<bdi>` or `unicode-bidi: isolate`).
+- An oversized body (e.g. 10 MB `name`) is refused at the boundary, not after full buffering —
+  and the assertion is made **through the frontend origin** (`app_url`), not only through
+  `BACKEND_PORT`. `infra/docker/nginx/frontend.conf` proxies `/api/` and carries no
+  `client_max_body_size`, so its 1 MiB default currently answers first with an HTML error page:
+  a backend-port-only test is green on a path no user takes. The nginx cap must be set above
+  the app's, and CI must pin that (`frontend/scripts/check-nginx-503.mjs` already reads the file).
 - Every failure family answers `{error_code, message}` exactly — no extra keys, no stack-trace
   markers, no SQL keywords, no paths. The over-length case must reach the domain path and **not**
   FastAPI's `RequestValidationError`, whose 422 body echoes the rejected input back.
@@ -101,6 +119,11 @@ received), cover **both** the INSERT and UPDATE paths (`from_domain` already sil
   This is a cross-account identity leak, strictly worse than a stale name.
 - After a session change where `/me` answers 401 or times out, the header shows **no** identity —
   never the previously fetched one.
+- **A failing `/me` never signs the user out** (added at `/api-spec`). A 5xx, a timeout, and a
+  401 whose renewal then fails each leave the stored session intact — `clearSession()` is not
+  reached. `performRenewal` ends the session on *any* renewal failure by design, and this story
+  puts `/me` on every page at boot, so without this guard a blip during a rolling deploy signs
+  out every open tab and takes typed-but-unsaved editor content with it.
 - After `clearSession()` with no subsequent sign-in, no `sessionStorage`/`localStorage` key and no
   DOM node contains the sentinel email or name.
 - After a 400, the shared snapshot is unchanged.
@@ -135,7 +158,18 @@ received), cover **both** the INSERT and UPDATE paths (`from_domain` already sil
 
 `GET /me` becomes the highest-rate endpoint in the product. A load scenario drives it at the
 page-view rate implied by hundreds of concurrent users and asserts sustained rate without
-connection-pool exhaustion, with checked-out connections returning to baseline. This **revises**
+connection-pool exhaustion, with checked-out connections returning to baseline.
+
+**Sized against two connections per request, not one** (corrected at `/api-spec`).
+`request_scoped` opens one session per **dependency**, and `create_account_existence` is
+itself `@request_scoped`, so `get_current_owner_id`'s existence check and the profile read
+run on separate sessions: two `SELECT … FROM accounts`, two simultaneous checkouts, two
+`pool_pre_ping` round-trips, against SQLAlchemy's default 5 + 10 overflow per process. A
+SQL-capture test (`before_cursor_execute`, as in `test_generation_storage_cas_shape.py`) pins
+the per-request SELECT count so the load scenario's premise cannot drift silently. Whether to
+collapse it to one connection is an ADR due before the backend scenarios.
+
+This **revises**
 the interview's Performance paragraph, which declined a load scenario on the grounds that the
 story adds no queue, no external API and no table scan — true, and beside the point under a
 Throughput profile whose binding constraint is request rate.

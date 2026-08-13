@@ -81,9 +81,11 @@
 
 ### Technical Suggestions
 
-- Extract the blankness predicate (`Cf` + whitespace) that `Generation._is_blank_topic` already
-  owns into a shared domain helper rather than a second copy — two implementations of "blank"
-  will drift.
+- The blankness predicate this story needs is **stricter** than the one `required_topic()`
+  (`generation_validation.py`) already owns — it refuses `Cc`/`Cs` and strips invisible
+  non-`Cf` characters — so it lands as a shared domain helper rather than a call into the
+  existing one. Adopting it for topics too would close known-debt #8; that is story 1's call.
+  Two implementations of "blank" will otherwise drift.
 - The name value object is the fourth text VO with trim/NFC/bound; the shape is stable enough to
   factor.
 

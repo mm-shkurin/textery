@@ -48,7 +48,8 @@ The full folded guard set is in `13_ProfileManagement_AcceptanceCriteria.md`.
 |-------|------|
 | `name` (raw request value) | refused **before** trim/NFC when over 256 code points, with its own `error_code` distinct from the normalized-bound refusal |
 | `name` (normalized) | trim + NFC, then 1–60 **code points**; the client counter counts the same unit |
-| `name` — blankness | blank = no visible characters after stripping Unicode whitespace **and category `Cf`** (reuses `Generation._is_blank_topic`'s definition); a blank value clears the name to NULL, so "no name" has exactly one stored representation |
+| `name` — blankness | blank = no visible characters after stripping Unicode whitespace, category `Cf`, and the named invisible-but-not-format code points (U+115F, U+1160, U+3164, U+FFA0, U+2800, U+17B4, U+17B5); a blank value clears the name to NULL, so "no name" has exactly one stored representation. Stricter than `required_topic()` in `generation_validation.py`, which it is modelled on — see `endpoints.md` |
+| `name` — control characters | any `Cc` or `Cs` code point anywhere in the value → 400 `INVALID_NAME`, refused rather than stripped. A NUL (U+0000) otherwise passes every visible-character check and is then rejected by Postgres's `text` type, turning a documented 400 into a 500 |
 | `name` — field presence | absent key → name unchanged (fail closed); explicit `null` → clears, same as blank; the request model must carry presence, not collapse all three to `None` |
 | request body | bounded at the transport boundary; an oversized body is refused without being fully buffered and parsed |
 | Authorization header | Bearer access token required; missing, expired, refresh-typed, or unknown-typed → 401; a valid token whose account row is gone → the identical 401 |
