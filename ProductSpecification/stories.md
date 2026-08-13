@@ -15,6 +15,7 @@
 | 4  | Auto-generate: реферат                    | ✅   | 🔧   | —    | 🔧   | —     | n/a  | n/a   | 4/27  | 15% |
 | 10 | Editor pages (pagination, page setup, headers/footers) | ✅ | 🔧 | — | — | — | — | — | 0/70 | 0% |
 | 12 | Мои проекты (list/search/sort, grid + list view) | ✅ | 🔧 | — | 🔧 | — | — | — | 1/177 | 1% |
+| 13 | Profile management                     | 🔧   | ·    | ·    | ·   | ·     | ·    | ·     | 0/0   | 0% |
 
 # Backlog — Core sequence (build order, decided 2026-07-06)
 
@@ -37,7 +38,6 @@ types) may run in any order relative to each other and may interleave with #5–
 |----|----------------------------------------|------|------|------|-----|-------|------|-------|-------|----|
 | 9  | Landing & Marketing                    |      |      |      |     |       |      |       |       |    |
 | 11 | Document Management (rename/delete/duplicate) |      |      |      |     |       |      |       |       |    |
-| 13 | Profile management                     |      |      |      |     |       |      |       |       |    |
 | 14 | Analytics Event Tracking                |      |      |      |     |       |      |       |       |    |
 | 15 | Funnels & Reports (CSV export)          |      |      |      |     |       |      |       |       |    |
 
