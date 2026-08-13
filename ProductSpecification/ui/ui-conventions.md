@@ -209,11 +209,16 @@ Never render the two the same way: one means "your values are wrong", the other 
 
 ### Shell width by page kind (new in story 13)
 
-The light system has two shell widths, and which one a page gets follows from its content,
-not from when it was drawn: a **feed** («Мои проекты», 1640px) spreads across the viewport,
-a **single-column form** (профиль, 1240px) does not. Widening a form page to feed width
-leaves one column of fields marooned in whitespace. Both centre with `margin: 0 auto` and
-share the same header/footer cards.
+Shell max-width is a separate number from the mockup **viewport** (see above: 1400px since
+story 10). Which shell a page gets follows from its content, not from when it was drawn: a
+**feed** («Мои проекты», 1640px) spreads across the viewport, a **single-column form**
+(профиль, 1240px) does not. The narrower shell keeps the header and footer cards
+proportionate to one column of fields — at feed width the chrome reads as belonging to a
+page much wider than the form under it. Both centre with `margin: 0 auto`.
+
+The form column itself is left-aligned under the H1, not centred in the shell — it hangs
+off the same edge as the page title, which is what makes it read as that page's content
+rather than a floating dialog.
 
 ### Account avatar — three states, all distinguishable (new in story 13)
 
@@ -251,9 +256,22 @@ outage would trap the user in a session they cannot end.
 ### Bounded text field with a counter (new in story 13)
 
 `<label>` and counter share a baseline row above the input; the counter is
-`font-variant-numeric: tabular-nums` so it does not jitter while typing, and it counts the
-**same unit the server bounds** (code points, not UTF-16 units — they diverge at the emoji
-boundary). Over the limit: counter turns `--danger` and bold, input border turns `--danger`,
-and a caption below states the arithmetic («сейчас 61»), not just "invalid". This is the
-inline channel from story 10 — the banner channel still means "your value is fine but did
-not reach the server".
+`font-variant-numeric: tabular-nums` so it does not jitter while typing. It must match the
+server's bound on **both** axes, and each is a separate way to get it wrong:
+
+- **Unit** — code points, not UTF-16 units. `.length` disagrees by 2× on any non-BMP name.
+- **Stage** — the value *after* the same normalization the server applies (trim + NFC), not
+  the raw keystrokes. A 60-character NFD name is 120 raw code points and is accepted `200`;
+  a counter reading the raw value shows `120 / 60` and, if over-limit also disables submit,
+  blocks a value the server would have taken.
+
+Over the limit: counter turns `--danger` and bold, input border turns `--danger`, and a
+caption below states the arithmetic («сейчас 61»), not just "invalid". This is the inline
+channel from story 10 — the banner channel still means "your value is fine but did not reach
+the server", and a form with a write path needs **both** drawn.
+
+Paired action buttons: primary is «Сохранить», secondary is «Отмена», and both are disabled
+while the form is pristine. «Отмена» restores the last server-confirmed value and clears the
+dirty flag — it is not a navigation. The dirty comparison runs on the normalized value
+against the last server-confirmed one, for the same reason the counter does: compared raw, a
+trailing space or an NFD paste leaves the form permanently dirty after a successful save.

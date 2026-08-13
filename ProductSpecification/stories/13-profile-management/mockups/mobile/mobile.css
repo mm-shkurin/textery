@@ -1,7 +1,9 @@
 /* Textery — «Мой профиль», мобильные правки (story 13).
    Загружается ПОСЛЕ ../desktop/theme.css и ../desktop/profile.css и только переопределяет их:
    вторая копия правил разошлась бы с десктопной при первой же правке.
-   Все нажимаемые цели — не меньше 44px. */
+   Нажимаемые цели — не меньше 44px, с одним намеренным исключением: аватар-триггер 36px,
+   как у уже реализованного ProfileMenu на ≤640px. Он не одинокая цель — вокруг него
+   `.profile-trigger` с шевроном, и вся связка выше 44px по высоте шапки. */
 
 body { max-width: 375px; margin: 0 auto; }
 
@@ -50,7 +52,8 @@ h1 { font-size: 22px; }
 
 /* Панель меню не может быть шире экрана: якорь по правому краю плюс запас на поля шапки. */
 .profile-panel { width: calc(100vw - 44px); max-width: 260px; }
-.panel-item { padding: 11px 8px; }
+/* 12px + 12px + 21px строки = 45px: 11px давало 43px и не дотягивало до порога. */
+.panel-item { padding: 12px 8px; }
 
 .compare { max-width: none; margin-top: 20px; padding: 18px; }
 .compare .pair { flex-direction: column; gap: 16px; }

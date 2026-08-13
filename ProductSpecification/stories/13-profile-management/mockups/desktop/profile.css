@@ -52,13 +52,22 @@
    /me this state is every page for the length of a request, not an edge case. */
 .sk { background: linear-gradient(90deg, var(--bg-sunken), #eef0f4, var(--bg-sunken));
   background-size: 200% 100%; animation: sh 1.3s ease-in-out infinite; border-radius: 6px; }
-/* The placeholder keeps the avatar's circle: a shape that changes when the response lands is
-   the same pop the placeholder exists to prevent, just one step later. */
-.avatar.sk, .ava.sk { border-radius: 50%; }
+/* Re-asserted at two classes because `.avatar.is-placeholder` and `.sk-ava` below both set the
+   `background` SHORTHAND, which silently drops `.sk`'s gradient and its size — the first cut of
+   this file shipped a placeholder that did not move at all, leaving the загрузка/отказ pair
+   distinguishable only by a hairline. The circle is here for the same reason: a placeholder
+   whose shape changes when the response lands is the pop it exists to prevent, one step later. */
+.avatar.sk, .ava.sk, .sk-ava.sk {
+  border-radius: 50%;
+  background: linear-gradient(90deg, var(--bg-sunken), #eef0f4, var(--bg-sunken));
+  background-size: 200% 100%;
+}
 @keyframes sh { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+/* `:not(.sk)` on the fill so the flat fallback cannot outrank the shimmer above by source
+   order — the two rules would otherwise be one reshuffle away from silently swapping. */
 .sk-ava { width: 72px; height: 72px; border-radius: 50%; flex: none; display: flex;
-  align-items: center; justify-content: center; color: var(--text-muted);
-  background: var(--bg-sunken); box-shadow: none; }
+  align-items: center; justify-content: center; color: var(--text-muted); box-shadow: none; }
+.sk-ava:not(.sk) { background: var(--bg-sunken); }
 .sk-ava i { width: 30px; height: 30px; }
 .sk-line { height: 12px; }
 .sk-input { height: 48px; border-radius: var(--radius-md); }
@@ -70,7 +79,8 @@
   background: var(--bg-sunken); border: 1.5px dashed var(--border-strong);
   color: var(--text-muted); box-shadow: none;
 }
-.avatar.is-placeholder { background: var(--bg-sunken); color: var(--text-muted); box-shadow: none; }
+.avatar.is-placeholder { color: var(--text-muted); box-shadow: none; }
+.avatar.is-placeholder:not(.sk) { background: var(--bg-sunken); }
 .avatar i, .ava i { width: 18px; height: 18px; }
 .ava.is-degraded i { width: 28px; height: 28px; }
 
