@@ -45,6 +45,7 @@ from error_handling.exception_handlers import (
 )
 from logging_config import configure_logging
 from router.auth.auth_router import router as auth_router
+from router.auth.avatar_router import router as avatar_router
 from router.auth.oauth_router import router as oauth_router
 from router.auth.profile_router import router as profile_router
 from router.document.document_router import router as document_router
@@ -101,6 +102,7 @@ app = FastAPI(
 app.include_router(generation_router)
 app.include_router(auth_router)
 app.include_router(profile_router)
+app.include_router(avatar_router)
 app.include_router(oauth_router)
 app.include_router(document_router)
 app.include_router(health_router)

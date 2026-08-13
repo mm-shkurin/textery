@@ -3,7 +3,10 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from access.auth.account_storage import SqlAlchemyAccountRepository
+from access.auth.avatar_storage import SqlAlchemyAvatarRepository
 from access.auth.verification_code_storage import SqlAlchemyVerificationCodeRepository
+from auth.delete_avatar import DeleteAvatar
+from auth.get_avatar import GetAvatar
 from auth.get_profile import GetProfile
 from auth.login_user import LoginUser
 from auth.refresh_access_token import RefreshAccessToken
@@ -11,6 +14,7 @@ from auth.register_user import RegisterUser
 from auth.rename_account import RenameAccount
 from auth.resend_code import ResendCode
 from auth.token_service import TokenService
+from auth.update_avatar import UpdateAvatar
 from auth.verify_account import VerifyAccount
 from container.runtime import request_scoped, token_service
 from hashing.bcrypt_password_hasher import BcryptPasswordHasher
@@ -84,6 +88,34 @@ def create_rename_account(session: AsyncSession) -> RenameAccount:
         # the defect test_login_wiring.py was written for.
         unit_of_work=SqlAlchemyUnitOfWork(session),
     )
+
+
+@request_scoped
+def create_update_avatar(session: AsyncSession) -> UpdateAvatar:
+    return UpdateAvatar(
+        account_repository=SqlAlchemyAccountRepository(session),
+        avatar_repository=SqlAlchemyAvatarRepository(session),
+        clock=SystemClock(),
+        # Same session as both repositories, and a REAL UnitOfWork -- the default
+        # NullUnitOfWork commits nothing and would answer 200 with a fresh
+        # avatar_updated_at over an unchanged row.
+        unit_of_work=SqlAlchemyUnitOfWork(session),
+    )
+
+
+@request_scoped
+def create_delete_avatar(session: AsyncSession) -> DeleteAvatar:
+    return DeleteAvatar(
+        account_repository=SqlAlchemyAccountRepository(session),
+        avatar_repository=SqlAlchemyAvatarRepository(session),
+        unit_of_work=SqlAlchemyUnitOfWork(session),
+    )
+
+
+@request_scoped
+def create_get_avatar(session: AsyncSession) -> GetAvatar:
+    # No UnitOfWork: this one only reads.
+    return GetAvatar(avatar_repository=SqlAlchemyAvatarRepository(session))
 
 
 class _AccountExistence:

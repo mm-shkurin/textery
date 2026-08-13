@@ -30,10 +30,20 @@ class ProfileResponseDto(BaseModel):
     email: str
     name: str | None
     created_at: datetime
+    # ALWAYS emitted, `null` when the account has no avatar -- the same rule
+    # `name` follows, and for a sharper reason: this key is how a client decides
+    # whether to request the image at all, and it is the cache-buster it puts on
+    # the URL when it does. Omitting it on the no-avatar case would leave the
+    # client unable to tell "no avatar" from "this response does not say".
+    #
+    # The IMAGE is not here and must never be. `GET /me` runs on every
+    # authenticated page view; a base64 image inline would add hundreds of
+    # kilobytes to the product's highest-rate response.
+    avatar_updated_at: datetime | None
 
-    @field_validator("created_at")
+    @field_validator("created_at", "avatar_updated_at")
     @classmethod
-    def _as_utc(cls, value: datetime, info: ValidationInfo) -> datetime:
+    def _as_utc(cls, value: datetime | None, info: ValidationInfo) -> datetime | None:
         """Convert to UTC, refusing a naive value rather than guessing its zone.
 
         The same rule `ProjectItemDto._as_utc` applies, and for the same reason:
@@ -42,10 +52,19 @@ class ProfileResponseDto(BaseModel):
         -- into an invisible one: a well-formed `Z` naming the wrong instant,
         correct inside a UTC container and silently shifted on a developer machine.
         """
+        # None is the absent avatar, not a violation -- it passes through
+        # untouched. Only a present instant has a zone to be wrong about.
+        if value is None:
+            return None
         if value.tzinfo is None or value.tzinfo.utcoffset(value) is None:
             raise ValueError(f"{info.field_name} must be timezone-aware")
         return value.astimezone(UTC)
 
     @classmethod
     def from_domain(cls, account: Account) -> "ProfileResponseDto":
-        return cls(email=account.email, name=account.name, created_at=account.created_at)
+        return cls(
+            email=account.email,
+            name=account.name,
+            created_at=account.created_at,
+            avatar_updated_at=account.avatar_updated_at,
+        )

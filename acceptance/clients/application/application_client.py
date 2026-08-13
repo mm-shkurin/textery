@@ -5,6 +5,7 @@ import httpx
 from clients.application.dto.auth.login_request_dto import LoginRequestDto
 from clients.application.dto.auth.login_response_dto import LoginResponseDto
 from clients.application import profile_api
+from clients.application.dto.auth.avatar_response_dto import AvatarResponseDto
 from clients.application.dto.auth.profile_response_dto import ProfileResponseDto
 from clients.application.dto.auth.register_request_dto import RegisterRequestDto
 from clients.application.dto.auth.register_response_dto import RegisterResponseDto
@@ -176,6 +177,17 @@ class ApplicationClient:
 
     async def patch_me(self, body: dict, access_token: str | None) -> ProfileResponseDto:
         return await profile_api.patch_me(self._client, body, access_token)
+
+    async def put_avatar(
+        self, data: bytes, content_type: str, access_token: str | None
+    ) -> ProfileResponseDto:
+        return await profile_api.put_avatar(self._client, data, content_type, access_token)
+
+    async def delete_avatar(self, access_token: str | None) -> ProfileResponseDto:
+        return await profile_api.delete_avatar(self._client, access_token)
+
+    async def get_avatar(self, access_token: str | None) -> AvatarResponseDto:
+        return await profile_api.get_avatar(self._client, access_token)
 
     @staticmethod
     def _parsed_body(response: httpx.Response) -> dict | None:

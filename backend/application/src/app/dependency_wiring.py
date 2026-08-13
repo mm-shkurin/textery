@@ -18,10 +18,12 @@ from container import (
     create_complete_oauth_callback,
     create_create_document,
     create_create_document_from_generation,
+    create_delete_avatar,
     create_exchange_handoff_code,
     create_export_document,
     create_frontend_callback_url,
     create_generate_document,
+    create_get_avatar,
     create_get_document,
     create_get_generation,
     create_get_profile,
@@ -38,6 +40,7 @@ from container import (
     create_save_document,
     create_start_oauth,
     create_token_service,
+    create_update_avatar,
     create_verify_account,
 )
 from router.auth.auth_router import (
@@ -46,6 +49,11 @@ from router.auth.auth_router import (
     get_register_user_usecase,
     get_resend_code_usecase,
     get_verify_account_usecase,
+)
+from router.auth.avatar_router import (
+    get_delete_avatar_usecase,
+    get_get_avatar_usecase,
+    get_update_avatar_usecase,
 )
 from router.auth.oauth_router import (
     get_complete_oauth_callback_usecase,
@@ -89,6 +97,9 @@ def install_dependency_overrides(app: FastAPI) -> None:
     app.dependency_overrides[get_login_user_usecase] = create_login_user
     app.dependency_overrides[get_get_profile_usecase] = create_get_profile
     app.dependency_overrides[get_rename_account_usecase] = create_rename_account
+    app.dependency_overrides[get_update_avatar_usecase] = create_update_avatar
+    app.dependency_overrides[get_delete_avatar_usecase] = create_delete_avatar
+    app.dependency_overrides[get_get_avatar_usecase] = create_get_avatar
     app.dependency_overrides[get_refresh_access_token_usecase] = create_refresh_access_token
     app.dependency_overrides[get_create_document_usecase] = create_create_document
     app.dependency_overrides[get_get_document_usecase] = create_get_document

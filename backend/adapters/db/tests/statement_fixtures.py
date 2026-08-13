@@ -110,6 +110,16 @@ async def account_name_storage_statements():
 
 
 @pytest_asyncio.fixture
+async def avatar_storage_statements():
+    from statements.avatar_storage_statements import AvatarStorageStatements
+
+    # Engine-scoped for the same reason the name fixture is: both claims are about
+    # what a DIFFERENT session sees, so the Statements needs the factory.
+    async for statements in _engine_scoped(AvatarStorageStatements):
+        yield statements
+
+
+@pytest_asyncio.fixture
 async def reset_failed_attempts_statements():
     from statements.reset_failed_attempts_statements import (
         ResetFailedAttemptsStatements,
