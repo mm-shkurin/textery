@@ -39,7 +39,16 @@ const LATEST_PLAUSIBLE_YEAR = 2200
 // NOT shared with `HistoryPage`'s `formatDate`: that one always renders the year (era suffix and
 // all) and knows nothing about sentinel bounds. The overlap is two lines of em-dash fallback;
 // unifying them would mean a mode flag threaded through both screens' contracts.
-export function formatCardDate(iso: string): string {
+interface FormatCardDateOptions {
+  // Hiding the year when it matches the current one is right for «последнее изменение» on a
+  // project card — «15 июля» reads as recent because it is. It is wrong for «На Textery с …»,
+  // where the year is half the fact and an account opened this January would render as
+  // «3 февраля», indistinguishable from a date with no year at all. The flag is opt-in so the
+  // feed keeps the behaviour its own tests pin.
+  alwaysShowYear?: boolean
+}
+
+export function formatCardDate(iso: string, options: FormatCardDateOptions = {}): string {
   if (typeof iso !== 'string') return UNUSABLE_DATE
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return UNUSABLE_DATE
@@ -48,6 +57,6 @@ export function formatCardDate(iso: string): string {
     return UNUSABLE_DATE
   }
   const dayAndMonth = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
-  const showYear = parsedYear !== new Date().getFullYear()
+  const showYear = options.alwaysShowYear === true || parsedYear !== new Date().getFullYear()
   return showYear ? `${dayAndMonth} ${parsedYear}` : dayAndMonth
 }

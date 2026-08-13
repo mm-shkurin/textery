@@ -27,14 +27,33 @@ export const ALLOWED_SHARED_TO_FEATURE = [
     why: 'send = transport + session + readable refusal; the session half is authorizedRequest, and httpClient must stay auth-free or the /auth/refresh client imports the client that refreshes it',
   },
   {
-    from: 'shared/components/profile/ProfileMenu.tsx',
-    to: 'features/auth/hooks/useAccountEmail',
-    why: 'the header menu renders who is signed in; the identity it reads is the session layer',
-  },
-  {
     from: 'shared/components/profile/ProfileAvatar.tsx',
     to: 'features/auth/utils/accountEmail',
-    why: 'initials are derived from the session email by the same function the menu reads it with',
+    why: 'initials are derived from the identity by the same function the menu reads it with',
+  },
+  // Story 13 moved identity off the access token and onto `GET /api/v1/auth/me`. The snapshot has
+  // to live in `shared/` — the header that reads it is a shared component on every authenticated
+  // page, and `features/profile` is only ONE of its readers — but reaching that endpoint is a
+  // session concern, so these three cross the same seam every row above does.
+  {
+    from: 'shared/identity/api/identityRequest.ts',
+    to: 'features/auth/api/refreshApi',
+    why: 'the identity read renews its own token on a 401 WITHOUT the session-ending clearSession authorizedRequest applies — that difference is the module',
+  },
+  {
+    from: 'shared/identity/api/identityRequest.ts',
+    to: 'features/auth/utils/authSession',
+    why: 'it attaches the stored access token and persists a renewed one; the store is the session layer',
+  },
+  {
+    from: 'shared/identity/api/profileApi.ts',
+    to: 'features/auth/api/authorizedRequest',
+    why: 'PATCH /me is user-initiated, so unlike the GET it goes through the session layer and may end a dead session',
+  },
+  {
+    from: 'shared/identity/identityStore.ts',
+    to: 'features/auth/utils/authSession',
+    why: 'the identity snapshot is invalidated on every session change — signing in as somebody else keeps isAuthenticated true and changes only who you are',
   },
 ]
 

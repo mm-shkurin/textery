@@ -1,67 +1,47 @@
-import { getAccessToken } from './authSession'
-
-// The signed-in user's own email, read from the access token the backend already issued.
+// The avatar's letters, and nothing else.
 //
-// There is no `GET /me` on the backend (verified against the OpenAPI document: register / verify
-// / login / refresh / oauth, and nothing else), so a request for the address would have nowhere
-// to go. The access token carries it: `jwt_token_service._encode` puts `email` next to `sub` in
-// every access and refresh token, and the client is already holding that token to send it.
+// HISTORY: this module used to DECODE the access token to find the account's address
+// (`accountEmailFromToken` / `currentAccountEmail`), because there was no `GET /me` to ask. Story
+// 13 built that endpoint, so the address now comes from the server over `features/profile`, and
+// both decoders were deleted rather than left as a second, quietly diverging source of identity.
+// Do not reintroduce them: a token payload is not a profile — it carries no `name`, and it goes
+// stale against a rename the moment the user saves one.
+
+// Splitting a string with `[...s]` yields CODE POINTS, and `s[0]` yields a UTF-16 UNIT. On an
+// astral first character (an emoji, a rare CJK ideograph) the unit is a lone surrogate, which
+// renders as U+FFFD — a black diamond where an initial should be. That never surfaced while the
+// only input was the local part of an email address, which is ASCII-ish in practice; a display
+// name is free user text and hits it immediately.
 //
-// This DECODES, it does not verify. The payload is read for one purpose — printing the address
-// back to the person who typed it — and a forged token buys an attacker nothing here but a
-// wrong label on their own screen. Nothing downstream trusts this value: authorization is the
-// backend's 401. Never widen this into an authorization check.
-const PAYLOAD_SEGMENT = 1
-
-function decodeSegment(segment: string): string | null {
-  try {
-    const base64 = segment.replace(/-/g, '+').replace(/_/g, '/')
-    // `atob` rejects an unpadded length in strict implementations, and JWT segments are stripped
-    // of their '=' by construction — so the padding is put back rather than hoped for.
-    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=')
-    const binary = window.atob(padded)
-    // The claim is UTF-8 on the wire and an email may be non-ASCII; `atob` yields bytes, so
-    // decoding through TextDecoder rather than using the string directly keeps those intact.
-    return new TextDecoder().decode(Uint8Array.from(binary, (char) => char.charCodeAt(0)))
-  } catch {
-    return null
+// A code point is still not the last word — a grapheme is (a base letter plus a combining accent,
+// a flag, an emoji with a skin-tone modifier are each ONE thing the reader sees). `Intl.Segmenter`
+// gives that where it exists; the code-point split is the fallback, never `[0]`.
+function firstGrapheme(word: string): string {
+  const segmenter = typeof Intl.Segmenter === 'function' ? new Intl.Segmenter() : null
+  if (segmenter === null) {
+    return [...word][0] ?? ''
   }
+  const first = segmenter.segment(word)[Symbol.iterator]().next()
+  return first.done === true ? '' : first.value.segment
 }
 
-// Anything that is not a token carrying a non-blank string `email` is `null` — a missing claim, a
-// non-JWT string (tests hold one), a truncated token. The callers render an account without a
-// visible address rather than the word "undefined".
-export function accountEmailFromToken(token: string | null): string | null {
-  const segment = token?.split('.')[PAYLOAD_SEGMENT]
-  if (!segment) return null
+function initialsFrom(words: string[]): string {
+  return words.slice(0, 2).map(firstGrapheme).join('').toLocaleUpperCase('ru-RU')
+}
 
-  const json = decodeSegment(segment)
-  if (json === null) return null
-
-  try {
-    const claims: unknown = JSON.parse(json)
-    if (typeof claims !== 'object' || claims === null) return null
-    const email = (claims as Record<string, unknown>).email
-    return typeof email === 'string' && /\S/.test(email) ? email : null
-  } catch {
-    return null
+// A name's words are separated by whitespace: "Анна Ковалёва" → "АК". The address is the
+// fallback, and its only evidence of a second word is a separator in the local part:
+// "ivan.petrov@mail.ru" → "IP", "emailname@gmail.com" → "E". Inventing a second letter from a
+// single word would be inventing data — one letter is the honest answer.
+export function accountInitials(identity: { name: string | null; email: string }): string {
+  const name = identity.name?.trim() ?? ''
+  if (name !== '') {
+    return initialsFrom(name.split(/\s+/).filter((word) => word !== ''))
   }
-}
-
-export function currentAccountEmail(): string | null {
-  return accountEmailFromToken(getAccessToken())
-}
-
-// The avatar's letters. The design draws two ("АИ") because it was drawn against a full name,
-// and the account has no name — only the address. So the initials are derived from the address
-// itself: "ivan.petrov@mail.ru" → "IP", "emailname@gmail.com" → "E". Separators are the only
-// evidence of a second word an email carries; inventing a second letter from a single word would
-// be inventing data.
-export function accountInitials(email: string): string {
-  const words = email
-    .split('@')[0]
-    .split(/[._\-+]+/)
-    .filter((word) => word !== '')
-  const letters = words.slice(0, 2).map((word) => word[0])
-  return letters.join('').toUpperCase()
+  return initialsFrom(
+    identity.email
+      .split('@')[0]
+      .split(/[._\-+]+/)
+      .filter((word) => word !== ''),
+  )
 }

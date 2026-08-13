@@ -5,7 +5,7 @@ import {
   type DocumentType,
 } from '../../../shared/documentTypes'
 import { ProjectFolderIcon } from './ProjectFolderIcon'
-import { formatCardDate } from '../formatCardDate'
+import { formatCardDate } from '../../../shared/formatCardDate'
 import { projectKey } from '../projectKey'
 import './ProjectCard.css'
 

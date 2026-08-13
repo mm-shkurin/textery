@@ -1,0 +1,156 @@
+/* «Мой профиль» — shell, identity card, load-failed state, footer.
+   The form's own rules are in ProfileForm.css; the avatar's three states belong to
+   ProfileMenu.css, which owns the disc everywhere it appears. */
+
+/* 1240, not the 1640 «Мои проекты» uses. One column of form, not a feed. */
+.profile-screen {
+  --profile-shell: 1240px;
+  min-height: 100vh;
+  background: var(--bg-page);
+}
+
+.profile-navbar {
+  max-width: var(--profile-shell);
+  margin: 24px auto 0;
+  padding: 20px 32px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.profile-navbar-logo {
+  height: 38px;
+  width: auto;
+}
+
+.profile-page {
+  max-width: var(--profile-shell);
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.profile-heading {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.profile-subtitle {
+  margin-top: 6px;
+  color: var(--text-secondary);
+}
+
+/* Narrower still than the shell: a text field 1200px wide is not a form, it is a horizon. */
+.profile-wrap {
+  max-width: 760px;
+  margin-top: 22px;
+}
+
+.profile-card {
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 32px;
+}
+
+.profile-identity {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.profile-who {
+  flex: 1;
+  min-width: 0;
+}
+
+/* `anywhere`, because both of these are user data: a display name with no spaces and a long
+   address must wrap inside the card rather than widen it. */
+.profile-primary {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.profile-secondary {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.profile-since {
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.profile-divider {
+  height: 1px;
+  margin: 28px 0;
+  background: var(--border-subtle);
+}
+
+/* ---- footer ---- */
+.profile-footer {
+  max-width: var(--profile-shell);
+  margin: 36px auto 24px;
+  padding: 26px 32px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.profile-footer-links {
+  display: flex;
+  gap: 28px;
+}
+
+@media (max-width: 640px) {
+  .profile-navbar {
+    margin: 12px;
+    padding: 14px 16px;
+  }
+
+  .profile-page {
+    padding: 14px;
+  }
+
+  .profile-heading {
+    font-size: 22px;
+  }
+
+  .profile-card {
+    padding: 20px 18px;
+  }
+
+  /* The identity stays a ROW: a 56px disc and the text fit inside 375 and keep the screen short. */
+  .profile-identity {
+    gap: 14px;
+  }
+
+  .profile-primary {
+    font-size: 17px;
+  }
+
+  .profile-footer {
+    flex-direction: column;
+    gap: 14px;
+    text-align: center;
+    margin: 26px 12px 16px;
+    padding: 22px;
+  }
+
+  .profile-footer-links {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
