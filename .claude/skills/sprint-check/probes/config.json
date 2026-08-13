@@ -1,0 +1,108 @@
+{
+  "_comment": "Project binding for /sprint-check. The rule catalogue is generic; this file is the only place that knows THIS repo's layout. Porting the skill to another repo means editing this file and nothing else.",
+  "layers": {
+    "back": {
+      "root": "backend",
+      "kind": "service",
+      "code": [
+        "backend"
+      ],
+      "src": [
+        "*.py"
+      ],
+      "docs": [
+        "backend/README.md"
+      ],
+      "config": [
+        "backend/pyproject.toml"
+      ],
+      "styles": [],
+      "changelog": [
+        "backend/CHANGELOG.md"
+      ],
+      "env_example": [
+        "backend/.env.example",
+        "infra/.env.example"
+      ],
+      "forbidden_imports": [
+        {
+          "name": "domain imports nothing outward",
+          "in": [
+            "backend/domain"
+          ],
+          "regex": "^\\s*(from|import)\\s+.*\\b(usecase|adapters|application|fastapi|sqlalchemy|pydantic|starlette)\\b"
+        },
+        {
+          "name": "usecase free of transport and framework detail",
+          "in": [
+            "backend/usecase"
+          ],
+          "regex": "application/(pdf|json|vnd)|text/html|Content-Type|status_code|HTTP_\\d|^\\s*(from|import)\\s+.*\\b(fastapi|starlette|adapters)\\b"
+        },
+        {
+          "name": "delivery layer does not steer persistence",
+          "in": [
+            "backend/adapters/rest"
+          ],
+          "regex": "AsyncSession|Depends\\([^)]*session"
+        }
+      ],
+      "release_ref": "gitverse-backend/main",
+      "artifact_remote": "gitverse-backend"
+    },
+    "front": {
+      "root": "frontend",
+      "kind": "ui",
+      "code": [
+        "frontend/src"
+      ],
+      "src": [
+        "*.ts",
+        "*.tsx"
+      ],
+      "docs": [
+        "frontend/README.md"
+      ],
+      "config": [
+        "frontend/package.json"
+      ],
+      "styles": [
+        "*.css"
+      ],
+      "changelog": [
+        "frontend/CHANGELOG.md"
+      ],
+      "env_example": [
+        "frontend/.env.example"
+      ],
+      "forbidden_imports": [
+        {
+          "name": "shared layer does not import features",
+          "in": [
+            "frontend/src/shared",
+            "frontend/src/entities"
+          ],
+          "regex": "from\\s+['\\\"].*(features|widgets|pages|app)/"
+        }
+      ],
+      "release_ref": "gitverse-frontend/main",
+      "artifact_remote": "gitverse-frontend"
+    }
+  },
+  "shared_roots": [
+    "infra"
+  ],
+  "main_branch": "main",
+  "style_token_files": "styles/(palette|tokens[\\w-]*|theme[\\w-]*)\\.css|index\\.css",
+  "state_libraries": "zustand|@reduxjs/toolkit|mobx|@tanstack/react-query|\"swr\"|jotai|recoil|valtio",
+  "file_line_limit": 200,
+  "commit_file_limit": 40,
+  "changelog_commit_limit": 25,
+  "artifact_host": "gitverse.ru",
+  "test_artifacts": [
+    "docs/testing",
+    "Testing",
+    "ProductSpecification/testing"
+  ],
+  "branch_pattern": "^(features?|feat|fix|hotfix|release|chore|task)/[\\w.-]+$"
+}
