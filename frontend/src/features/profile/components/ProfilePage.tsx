@@ -5,6 +5,7 @@ import { reloadIdentity } from '../../../shared/identity/identityStore'
 import { useIdentity } from '../../../shared/identity/useIdentity'
 import { ProfileHeader } from './ProfileHeader'
 import { ProfileFooter } from './ProfileFooter'
+import { ProfileAvatarField } from './ProfileAvatarField'
 import { ProfileIdentityCard } from './ProfileIdentityCard'
 import { ProfileLoadFailed } from './ProfileLoadFailed'
 import { ProfileNameForm } from './ProfileNameForm'
@@ -49,6 +50,7 @@ export function ProfilePage() {
             {identity.status === 'ready' ? (
               <>
                 <ProfileIdentityCard profile={identity.profile} />
+                <ProfileAvatarField profile={identity.profile} />
                 <div className="profile-divider" />
                 <ProfileNameForm
                   profile={identity.profile}

@@ -15,6 +15,7 @@
 // "authenticated" alone would show the previous account's name and address to the new one.
 import { getAccessToken, subscribeAuthSession } from '../../features/auth/utils/authSession'
 import { fetchProfile, type Profile } from './api/profileApi'
+import { resetAvatar, syncAvatar } from './avatarStore'
 
 export type IdentityState =
   // 'idle' is never rendered: the first subscriber turns it into 'loading'. It exists so a
@@ -48,6 +49,11 @@ export function subscribeIdentity(listener: () => void): () => void {
 
 function setState(next: IdentityState): void {
   state = next
+  // The avatar's bytes hang off the same snapshot, so they are synced HERE rather than by a
+  // component effect: every path that changes the identity — the boot fetch, a rename, an upload,
+  // a session change — is a path that may change the picture, and none of them should have to
+  // remember to say so.
+  syncAvatar(next.profile)
   for (const listener of [...listeners]) listener()
 }
 
@@ -93,6 +99,7 @@ export function applyProfile(profile: Profile): void {
 
 export function resetIdentity(): void {
   inFlight = false
+  resetAvatar()
   lastToken = getAccessToken()
   setState(IDLE)
 }

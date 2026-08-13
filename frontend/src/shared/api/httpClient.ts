@@ -131,13 +131,23 @@ async function performRequest<T>(
   signal: AbortSignal,
 ): Promise<T> {
   const { method = 'GET', headers = {}, body, responseType = 'json' } = options
+  // A BINARY body goes to the wire untouched. `PUT /auth/me/avatar` takes the image bytes
+  // themselves, not multipart and not a JSON envelope — and `JSON.stringify(blob)` is the string
+  // `"{}"`, which is a two-byte upload the server rejects as a corrupt image with no clue why.
+  // Its caller supplies the real Content-Type (`image/webp`); claiming `application/json` over
+  // image bytes is the same lie one layer up.
+  const isBinaryBody =
+    body instanceof Blob || body instanceof ArrayBuffer || ArrayBuffer.isView(body)
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     signal,
     // Content-Type is only truthful when there IS a body. Sending it on a GET tells the server
     // to expect JSON that never arrives.
-    headers: body === undefined ? headers : { 'Content-Type': 'application/json', ...headers },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    headers:
+      body === undefined || isBinaryBody
+        ? headers
+        : { 'Content-Type': 'application/json', ...headers },
+    body: body === undefined ? undefined : isBinaryBody ? (body as BodyInit) : JSON.stringify(body),
   })
   if (!res.ok) {
     // A non-JSON error page (a proxy's 502, an HTML 404) makes `res.json()` throw. Substituting

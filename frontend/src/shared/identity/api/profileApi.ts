@@ -9,29 +9,14 @@ import { isHttpError } from '../../api/httpClient'
 import { authorizedRequest } from '../../../features/auth/api/authorizedRequest'
 import { identityRequest } from './identityRequest'
 import { NameRejectedError } from './profileErrors'
+import { toProfile, type Profile } from './profileWire'
 import { stubbedProfile, stubbedRename, profileStubEnabled } from './profileStub'
 
 export { NameRejectedError } from './profileErrors'
+// Re-exported so existing importers keep one import site for "the profile and how to get it".
+export type { Profile } from './profileWire'
 
 const ME_PATH = '/api/v1/auth/me'
-
-export interface Profile {
-  email: string
-  // Always PRESENT on the wire, `null` when unset — never absent. `null` is the one stored
-  // representation of "no name", so an account that never had one and an account that cleared
-  // one are indistinguishable here, by design.
-  name: string | null
-  createdAt: string
-}
-
-function toProfile(body: Record<string, unknown>): Profile {
-  const name = body.name
-  return {
-    email: typeof body.email === 'string' ? body.email : '',
-    name: typeof name === 'string' && name !== '' ? name : null,
-    createdAt: typeof body.created_at === 'string' ? body.created_at : '',
-  }
-}
 
 // Never ends the session on failure — see identityRequest.
 export async function fetchProfile(): Promise<Profile> {

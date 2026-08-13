@@ -25,6 +25,7 @@ describe('ProfilePage identity', () => {
       email: 'anna.ivanova@example.com',
       name: 'Анна Ковалёва',
       createdAt: '2025-02-03T09:26:53Z',
+      avatarUpdatedAt: null,
     })
 
     renderWithRouter(<ProfilePage />)
@@ -47,6 +48,7 @@ describe('ProfilePage identity', () => {
       email: 'anna.ivanova@example.com',
       name: null,
       createdAt: '2025-02-03T09:26:53Z',
+      avatarUpdatedAt: null,
     })
 
     renderWithRouter(<ProfilePage />)

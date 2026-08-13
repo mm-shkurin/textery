@@ -51,6 +51,11 @@ export const ALLOWED_SHARED_TO_FEATURE = [
     why: 'PATCH /me is user-initiated, so unlike the GET it goes through the session layer and may end a dead session',
   },
   {
+    from: 'shared/identity/api/avatarApi.ts',
+    to: 'features/auth/api/authorizedRequest',
+    why: 'PUT/DELETE of the picture are user-initiated, so unlike the GET of its bytes they go through the session layer and may end a dead session',
+  },
+  {
     from: 'shared/identity/identityStore.ts',
     to: 'features/auth/utils/authSession',
     why: 'the identity snapshot is invalidated on every session change — signing in as somebody else keeps isAuthenticated true and changes only who you are',

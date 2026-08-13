@@ -16,7 +16,12 @@ const fetchProfileMock = vi.mocked(fetchProfile)
 
 function signedInAs(name: string | null, email: string): void {
   saveSession({ accessToken: 'access-token', refreshToken: 'refresh-token' })
-  fetchProfileMock.mockResolvedValue({ email, name, createdAt: '2025-02-03T09:26:53Z' })
+  fetchProfileMock.mockResolvedValue({
+    email,
+    name,
+    createdAt: '2025-02-03T09:26:53Z',
+    avatarUpdatedAt: null,
+  })
 }
 
 async function openMenu(prefix: string): Promise<void> {

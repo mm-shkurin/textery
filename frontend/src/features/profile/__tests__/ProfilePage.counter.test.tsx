@@ -27,6 +27,7 @@ describe('ProfilePage name counter', () => {
       email: 'anna.ivanova@example.com',
       name: null,
       createdAt: '2025-02-03T09:26:53Z',
+      avatarUpdatedAt: null,
     })
   })
 

@@ -1,5 +1,21 @@
 import { accountInitials } from '../../../features/auth/utils/accountEmail'
 import type { IdentityState } from '../../identity/identityStore'
+import { useAvatarUrl } from '../../identity/useAvatarUrl'
+
+// Geometry only — no colour, no token, nothing the theme owns. It is inline rather than in a
+// stylesheet because the disc's stylesheet (`ProfileMenu.css`) is being rewritten onto theme
+// tokens in a parallel session this sprint, and a second writer in that file would be a merge
+// conflict for three declarations that no theme would ever want to change.
+const PICTURE_STYLE = {
+  width: '100%',
+  height: '100%',
+  borderRadius: '50%',
+  // `cover`, so a portrait crop fills the circle instead of being letterboxed inside it. The
+  // upload path already crops to a square, but a picture that predates it — or one the server
+  // stored differently — must still not arrive stretched.
+  objectFit: 'cover',
+  display: 'block',
+} as const
 
 interface ProfileAvatarProps {
   identity: IdentityState
@@ -28,6 +44,12 @@ interface ProfileAvatarProps {
 // would read it as somebody else's account.
 export function ProfileAvatar({ identity, size }: ProfileAvatarProps) {
   const initials = identity.profile === null ? '' : accountInitials(identity.profile)
+  // Shared across every mounted avatar: one fetch for the page, one object URL, one revoke.
+  const pictureUrl = useAvatarUrl()
+  // The picture belongs to the identity that is CURRENTLY ready. Drawing it over a loading or a
+  // degraded disc would put the previous account's face on the next account's header, and would
+  // erase the difference between those two states that mockup 08 exists to pin.
+  const showsPicture = identity.status === 'ready' && pictureUrl !== null
   const modifier =
     identity.status === 'failed'
       ? ' profile-avatar-degraded'
@@ -41,7 +63,16 @@ export function ProfileAvatar({ identity, size }: ProfileAvatarProps) {
       data-testid={`profile-avatar-${identity.status}`}
       aria-hidden="true"
     >
-      {identity.status === 'failed' ? (
+      {showsPicture ? (
+        // `alt=""` and not a description: the wrapper is already `aria-hidden`, and the control
+        // around it carries the account's name. An alt here would be a second, competing label.
+        <img
+          src={pictureUrl ?? undefined}
+          alt=""
+          style={PICTURE_STYLE}
+          data-testid="profile-avatar-picture"
+        />
+      ) : identity.status === 'failed' ? (
         <svg viewBox="0 0 24 24" fill="none" focusable="false">
           <path
             d="M12 4.5 21 20H3L12 4.5Z"

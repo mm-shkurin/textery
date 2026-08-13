@@ -28,6 +28,26 @@ export function nameRejectionMessage(errorCode: string): string {
 export const SAVE_FAILED_MESSAGE =
   'Не удалось сохранить имя — сервер не ответил. Введённое сохранено, попробуйте ещё раз.'
 
+export const AVATAR_RESIZE_FAILED_MESSAGE =
+  'Не удалось прочитать изображение — попробуйте другой файл.'
+
+export const AVATAR_FAILED_MESSAGE =
+  'Не удалось отправить изображение — сервер не ответил. Попробуйте ещё раз.'
+
+// The server's three refusals of an image. Reachable even though the client downscales first: it
+// bounds bytes and type, and the server additionally bounds pixel dimensions — a picture can pass
+// here and still be refused there.
+export function avatarRejectionMessage(errorCode: string): string {
+  if (errorCode === 'AVATAR_TOO_LARGE') return 'Изображение слишком тяжёлое — выберите другое.'
+  if (errorCode === 'AVATAR_UNSUPPORTED_TYPE') {
+    return 'Такой формат изображения не поддерживается — подойдёт PNG, JPEG или WebP.'
+  }
+  if (errorCode === 'AVATAR_DIMENSIONS_TOO_LARGE') {
+    return 'Изображение слишком большое по размеру — выберите другое.'
+  }
+  return 'Изображение не принято — попробуйте другое.'
+}
+
 export const LOAD_FAILED_TITLE = 'Не удалось загрузить профиль'
 export const LOAD_FAILED_BODY =
   'Данные учётной записи сейчас недоступны. Ничего не потеряно — попробуйте ещё раз через минуту.'

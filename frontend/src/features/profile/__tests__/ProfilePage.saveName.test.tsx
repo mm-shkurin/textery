@@ -24,6 +24,7 @@ describe('ProfilePage saving a name', () => {
       email: 'anna.ivanova@example.com',
       name: null,
       createdAt: '2025-02-03T09:26:53Z',
+      avatarUpdatedAt: null,
     })
   })
 
@@ -35,6 +36,7 @@ describe('ProfilePage saving a name', () => {
       email: 'anna.ivanova@example.com',
       name: 'Анна Ковалёва',
       createdAt: '2025-02-03T09:26:53Z',
+      avatarUpdatedAt: null,
     })
 
     renderWithRouter(<ProfilePage />)
@@ -72,11 +74,13 @@ describe('ProfilePage saving a name', () => {
       email: 'anna.ivanova@example.com',
       name: 'Анна Ковалёва',
       createdAt: '2025-02-03T09:26:53Z',
+      avatarUpdatedAt: null,
     })
     saveProfileNameMock.mockResolvedValue({
       email: 'anna.ivanova@example.com',
       name: null,
       createdAt: '2025-02-03T09:26:53Z',
+      avatarUpdatedAt: null,
     })
 
     renderWithRouter(<ProfilePage />)
