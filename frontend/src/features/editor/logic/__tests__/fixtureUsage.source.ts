@@ -62,13 +62,19 @@ const PINNED_FIELDS = '(?:pageCount|currentPage|(?:sheet|rail)SkeletonCount)'
 export const PINNED_ASSIGNMENT = new RegExp(`^(${PINNED_FIELDS}): (.+),$`)
 /**
  * The fixture import line, yielding the SPECIFIERS inside the braces. It is exported for the same
- * reason the four above are — every leg that guards it lives in the sibling test files — and it was
+ * reason the four OTHERS are (only `PINNED_ASSIGNMENT` sits above it; the rest are below) — every
+ * leg that guards it lives in the sibling test files — and it was
  * the last to be, which is exactly why it was the last to be guarded: unexported, it was invisible
  * to a reader counting this module's patterns, and every header in the cluster said "four".
  *
  * The PATH is the load-bearing half and the half no consumer reads. `constantSites` pins the
  * specifier list this yields; it is byte-identical when the module those names come from changes.
- * Widening to `'\.\/(?:.+)\.fixture'` was measured green across the whole directory. Do not.
+ * Widening to `'\.\/(?:.+)\.fixture'` was measured fully green across the whole directory BEFORE
+ * this pattern was exported — that measurement is the reason the leg exists, not a live one. It now
+ * reddens the third case of `fixtureUsage.patternText.test.ts` and the fifth of
+ * `fixtureUsage.patterns.test.ts`, and those two are the only assertions in the directory that read
+ * the path AS THIS PATTERN'S — `fixtureUsage.probeMembership.test.ts` also spells it, but as the
+ * text of a PROBE, so it is unmoved by any edit here. Do not.
  */
 export const FIXTURE_IMPORT = /^import \{ (.+) \} from '\.\/laidOutRows\.fixture'$/
 

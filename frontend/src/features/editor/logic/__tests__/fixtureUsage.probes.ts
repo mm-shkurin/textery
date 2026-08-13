@@ -5,17 +5,20 @@
  * unprobed, which is how a pattern stayed outside every leg for six consecutive reviews.
  *
  * WHY THESE ARE A MODULE AND NOT LITERALS IN THE TEST. They are the SUBJECT of the membership pin
- * now carried by `fixtureUsage.patterns.test.ts`, which was sitting at the 200-line cap with zero room
- * to write it. They are also data with a life of their own: a reader
+ * now carried by `fixtureUsage.probeMembership.test.ts`, split out of `fixtureUsage.patterns.test.ts`,
+ * which stood at 165 with a fifth pattern to absorb and no room left to write it. An earlier revision
+ * of this sentence still named `patterns.test.ts` as the pin's home, contradicting the paragraph
+ * below. They are also data with a life of their own: a reader
  * adding a near-miss line is doing something different from a reader adding a case. Splitting on
  * that seam is what this file is; it is not a key lookup, and each list stays a separately named
  * export precisely so that emptying one is a visible deletion of a named thing rather than a row
  * vanishing from a table.
  *
  * WHAT GUARDS THESE, AND EXACTLY HOW FAR IT REACHES — STATED HERE BECAUSE THE LISTS LIVE HERE.
- * Emptying a `MUST_NOT_MATCH_*` array used to make its own case in `fixtureUsage.patterns.test.ts`
- * pass VACUOUSLY (`{ accepted: [], rejected: [] }` equals itself), and was not a regex edit, so
- * `fixtureUsage.patternText.test.ts` stayed byte-identical through it. What it costs is the MEANING
+ * Emptying a `MUST_NOT_MATCH_*` array still makes its own case in `fixtureUsage.patterns.test.ts`
+ * pass VACUOUSLY (`{ accepted: [], rejected: [] }` equals itself), and is not a regex edit, so
+ * `fixtureUsage.patternText.test.ts` stays byte-identical through it — the vacuity is not removed,
+ * it is caught by a separate leg named below. What it costs is the MEANING
  * leg, not the widening: all five patterns are whole-text pinned by `patternText`, so a widened
  * regex reddens there whatever these lists say. An earlier revision of this paragraph named
  * `PINNED_ASSIGNMENT` as the worst case "whose probe case is its only leg" — false since

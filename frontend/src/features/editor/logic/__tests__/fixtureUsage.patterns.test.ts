@@ -28,9 +28,10 @@ import {
  * pattern nobody counted was the one pattern nobody probed. See the last section below for what
  * that cost and what closes it.
  *
- * THE INCIDENT THIS FILE EXISTS FOR. `fixtureUsage.source.ts` had zero tests of its own. It holds
- * `PINNED_ASSIGNMENT`, `EXPECTATION_OPENER`, `CASE_OPENER` and `NAMED_VALUE`, and every consuming
- * assertion in `constantSites.test.ts` / `assignmentShape.test.ts` is NEGATIVE (`reTypedValuesIn`
+ * THE INCIDENT THIS FILE EXISTS FOR. `fixtureUsage.source.ts` had zero tests of its own. The four a
+ * reader could then count were `PINNED_ASSIGNMENT`, `EXPECTATION_OPENER`, `CASE_OPENER` and
+ * `NAMED_VALUE` — `FIXTURE_IMPORT` was the unexported fifth, which is the defect above — and every
+ * consuming assertion in `constantSites.test.ts` / `assignmentShape.test.ts` is NEGATIVE (`reTypedValuesIn`
  * must be `[]`) or COUNT-shaped (blocks, cases, group lengths). A negative assertion cannot see a
  * widening: admitting MORE lines adds nothing to an empty list, and admitting more of a line the
  * pattern already matched adds nothing to a count. So three of the four had a ZERO-RESULT-DELTA
@@ -50,8 +51,8 @@ import {
  *   side of that leg and, in a file where the two happen to stay balanced, changes nothing at all.
  *
  * AND THE ASYMMETRY THAT MADE THE MODULE READ AS GUARDED. Widening `PINNED_FIELDS` IS caught —
- * it lengthens `constantSites`' hand-typed expected list. One pattern of four is transitively
- * covered, and it is the one a reader checks first.
+ * it lengthens `constantSites`' hand-typed expected list. One pattern of the four then counted was
+ * transitively covered, and it is the one a reader checks first.
  *
  * WHAT IT ASSERTS, AND WHY BEHAVIOUR RATHER THAN A CHECKSUM. Each case takes a named list of lines
  * the pattern MUST match and a named list of near-misses it MUST NOT, concatenates them into one
@@ -66,12 +67,15 @@ import {
  * WHAT THIS FILE IS BLIND TO, AND WHERE THE OTHER LEGS LIVE. A probe list only catches a widening
  * SOMEBODY IMAGINED and wrote down. An alternation head admitting a shape no probe spells —
  * `CASE_OPENER` grown to `^(?:it|test)(?:\.skip)?\(` — moves no probe between the two halves and
- * every case below stays green. That gap is closed by a whole-pattern pin on the three patterns
- * whose every consumer leg is count-shaped or negative, and it lives in
- * `fixtureUsage.patternText.test.ts`, which carries its own argument for why three and not four.
- * Do not read the cases below as covering pattern TEXT; they cover pattern MEANING, one named line
- * at a time. And nothing below proves that `expectPartition` CONSULTS its pattern — a tautological
- * body is green for all four cases at once. That leg is `fixtureUsage.partitionControl.test.ts`.
+ * every case below stays green. That gap is closed by a whole-pattern pin, and it lives in
+ * `fixtureUsage.patternText.test.ts`, which now pins ALL FIVE across three cases with a separate
+ * argument for each: the three whose every consumer leg is count-shaped or negative are its first
+ * case, `PINNED_ASSIGNMENT` its second, `FIXTURE_IMPORT` its third. An earlier revision of this
+ * paragraph said "the three patterns", from before the second and third cases retired that
+ * exclusion. Do not read the cases below as covering pattern TEXT; they cover pattern MEANING, one
+ * named line at a time. And nothing below proves that `expectPartition` CONSULTS its pattern — a
+ * tautological body is green for all five cases at once. That leg is
+ * `fixtureUsage.partitionControl.test.ts`.
  *
  * THE VACUITY THIS FILE NO LONGER CARRIES, AND WHERE IT WENT. Every case below compares the
  * partition against THE SAME TWO LISTS its probes were built from, so an emptied list satisfies its
