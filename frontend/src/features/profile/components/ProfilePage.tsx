@@ -6,6 +6,7 @@ import { useIdentity } from '../../../shared/identity/useIdentity'
 import { ProfileHeader } from './ProfileHeader'
 import { ProfileFooter } from './ProfileFooter'
 import { ProfileAvatarField } from './ProfileAvatarField'
+import { ProfileDangerZone } from './ProfileDangerZone'
 import { ProfileIdentityCard } from './ProfileIdentityCard'
 import { ProfileLoadFailed } from './ProfileLoadFailed'
 import { ProfileNameForm } from './ProfileNameForm'
@@ -66,6 +67,11 @@ export function ProfilePage() {
               <ProfileSkeleton />
             )}
           </div>
+
+          {/* Outside the card, below everything reversible. It renders only once the identity is
+              known: the address IS the confirmation for an OAuth account, and the account type
+              decides which field the panel shows — neither is guessable from a failed load. */}
+          {identity.status === 'ready' && <ProfileDangerZone profile={identity.profile} />}
         </div>
       </main>
 

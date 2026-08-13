@@ -16,6 +16,20 @@ export class AvatarRejectedError extends Error {
   }
 }
 
+// The deletion confirmation did not match — a wrong password, or an address typed differently
+// from the account's. `DELETION_CONFIRMATION_INVALID` is the only code this route returns, so
+// unlike its siblings this error carries no `errorCode`: a field nobody can branch on is a field
+// that invites a `switch` with one arm.
+//
+// It is emphatically NOT a session ending. The user stays on the screen with what they typed, and
+// the tokens are untouched.
+export class DeletionRejectedError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'DeletionRejectedError'
+  }
+}
+
 export class NameRejectedError extends Error {
   readonly errorCode: string
   constructor(errorCode: string, message: string) {

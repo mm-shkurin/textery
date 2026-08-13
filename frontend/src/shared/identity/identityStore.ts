@@ -57,17 +57,32 @@ function setState(next: IdentityState): void {
   for (const listener of [...listeners]) listener()
 }
 
+// Bumped by `resetIdentity`, and read by every in-flight load when it settles. Without it a
+// request that was already on the wire can land AFTER the identity was deliberately thrown away
+// and put it back — which on the account-deletion path means the deleted account's name
+// reappearing in the header, or a `failed` state rendering the expired-session screen on the way
+// to the landing page. A request cannot be un-sent; it can be disowned.
+let generation = 0
+
 function load(): void {
+  const forGeneration = generation
   inFlight = true
   setState({ status: 'loading', profile: null })
   fetchProfile()
     .then(
-      (profile) => setState({ status: 'ready', profile }),
+      (profile) => {
+        if (forGeneration !== generation) return
+        setState({ status: 'ready', profile })
+      },
       // Every failure mode lands here — 5xx, a timeout, a 401 whose renewal failed — and NONE of
       // them touches the stored session.
-      () => setState({ status: 'failed', profile: null }),
+      () => {
+        if (forGeneration !== generation) return
+        setState({ status: 'failed', profile: null })
+      },
     )
     .finally(() => {
+      if (forGeneration !== generation) return
       inFlight = false
       // The fetch may have renewed the access token on its own 401. Recording it here is what
       // stops that renewal from looking like a session change and re-triggering this load.
@@ -97,7 +112,16 @@ export function applyProfile(profile: Profile): void {
   setState({ status: 'ready', profile })
 }
 
+// Throw the identity away AND disown whatever is still in flight for it.
+//
+// This is the first step of the account-deletion path, and the order there is load-bearing:
+// abandon the identity requests, then clear the session, then navigate. Clearing the session
+// first would leave a `/me` in flight against a token the backend now answers 401 to, and the
+// user's last screen in the product would be "your session expired" instead of the landing page.
+// It also revokes the avatar's object URL, so a deleted account's picture is not still in memory
+// for whoever signs in next in this tab.
 export function resetIdentity(): void {
+  generation += 1
   inFlight = false
   resetAvatar()
   lastToken = getAccessToken()

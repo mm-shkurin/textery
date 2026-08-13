@@ -48,6 +48,22 @@ export function avatarRejectionMessage(errorCode: string): string {
   return 'Изображение не принято — попробуйте другое.'
 }
 
+// The one sentence that tells a user what "delete my account" actually costs. It names the
+// documents and the generations, not just "your account": those are the user's own texts, and
+// this block is the only place in the product where anyone finds out they go too. It is not there
+// to frighten anybody out of leaving — it is there so that nobody leaves without knowing.
+export const DELETION_TITLE = 'Удаление аккаунта'
+export const DELETION_WARNING =
+  'Аккаунт, все ваши документы и генерации будут удалены безвозвратно. Отменить это будет нельзя.'
+export const DELETION_CONFIRM_TITLE = 'Подтвердите удаление'
+export const DELETION_PASSWORD_HINT = 'Введите пароль от аккаунта, чтобы подтвердить удаление.'
+export const DELETION_FAILED_MESSAGE =
+  'Не удалось удалить аккаунт — сервер не ответил. Аккаунт на месте, попробуйте ещё раз.'
+
+export function deletionEmailHint(email: string): string {
+  return `Введите адрес аккаунта — ${email} — чтобы подтвердить удаление.`
+}
+
 export const LOAD_FAILED_TITLE = 'Не удалось загрузить профиль'
 export const LOAD_FAILED_BODY =
   'Данные учётной записи сейчас недоступны. Ничего не потеряно — попробуйте ещё раз через минуту.'

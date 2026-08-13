@@ -10,7 +10,8 @@
 // against the live backend: the rename response carries the NORMALIZED value (trim + NFC), the
 // length bound counts CODE POINTS of it, and an upload changes `avatar_updated_at` — which is
 // what makes every mounted avatar refetch its bytes.
-import { NameRejectedError } from './profileErrors'
+import { DeletionRejectedError, NameRejectedError } from './profileErrors'
+import type { DeletionConfirmation } from './deleteAccountApi'
 import { countCodePoints, NAME_MAX_CODE_POINTS, normalizeName } from '../nameValue'
 import type { Profile } from './profileWire'
 
@@ -37,6 +38,7 @@ function snapshot(): Profile {
     name: stubName,
     createdAt: '2025-02-03T09:26:53Z',
     avatarUpdatedAt: stubAvatarUpdatedAt,
+    hasPassword: STUB_HAS_PASSWORD,
   }
 }
 
@@ -65,6 +67,26 @@ export function stubbedAvatarDelete(): Promise<Profile> {
   stubAvatar = null
   stubAvatarUpdatedAt = null
   return delay(snapshot())
+}
+
+// The stub for the account this checkout signs in as has a password, so the local screen shows
+// the password field. Flip it to `false` to see the OAuth-only path, which is what an account
+// with no password gets and what the client also falls back to while `has_password` is missing
+// from `GET /me`.
+const STUB_HAS_PASSWORD = true
+const STUB_PASSWORD = 'Str0ng!Pass'
+
+export async function deletionStub(confirmation: DeletionConfirmation): Promise<void> {
+  await delay(null)
+  const matches =
+    confirmation.kind === 'password'
+      ? confirmation.password === STUB_PASSWORD
+      : confirmation.email === snapshot().email
+  // The stub REFUSES a wrong value rather than always succeeding: the refusal path is the one
+  // that must leave the session alive, and a stub that cannot fail cannot show that.
+  if (!matches) {
+    throw new DeletionRejectedError('Подтверждение не принято. Проверьте введённое.')
+  }
 }
 
 export async function stubbedAvatarBytes(): Promise<Blob> {

@@ -1,0 +1,123 @@
+/* «Мой профиль» — the account-deletion block (story 13, deletion step).
+   The ONLY stylesheet this step adds; the existing ones were moved onto theme tokens for the dark
+   theme and are not touched here.
+
+   Every colour is a SEMANTIC token. A literal red on a literal pale background is exactly the
+   combination that survives into the dark theme as an unreadable stripe — and this is the block
+   that must stay readable, because it is the one that cannot be undone. */
+
+.profile-danger {
+  max-width: 760px;
+  margin-top: 24px;
+  padding: 24px;
+  border: 1px solid var(--error-soft-border);
+  border-radius: var(--radius-lg);
+  background: var(--error-soft-bg);
+}
+
+.profile-danger-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.profile-danger-warning {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* The confirmation opens INSIDE the block rather than over the page: a modal here would need a
+   focus trap and a scroll lock to be correct, and this panel needs neither to be understood. */
+.profile-danger-confirm {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--error-soft-border);
+}
+
+.profile-danger-confirm-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.profile-danger-hint {
+  margin-top: 6px;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+
+.profile-danger-input {
+  width: 100%;
+  max-width: 360px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+}
+
+.profile-danger-input::placeholder {
+  color: var(--text-muted);
+}
+
+.profile-danger-error {
+  margin-top: 10px;
+  color: var(--error);
+  font-size: 12.5px;
+}
+
+.profile-danger-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.profile-danger-button,
+.profile-danger-cancel {
+  border-radius: var(--radius-md);
+  padding: 12px 22px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Filled, not ghost: it is the action this block exists for, and a destructive action that looks
+   tentative gets clicked to find out what it does. */
+.profile-danger-button {
+  border: 1px solid var(--error);
+  background: var(--error);
+  color: var(--text-inverse);
+}
+
+.profile-danger-cancel {
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.profile-danger-button:disabled {
+  background: var(--bg-sunken);
+  border-color: var(--border-subtle);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .profile-danger {
+    padding: 18px;
+  }
+
+  .profile-danger-actions {
+    flex-direction: column-reverse;
+  }
+
+  .profile-danger-actions button {
+    width: 100%;
+  }
+}
