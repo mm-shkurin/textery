@@ -55,6 +55,10 @@ class ProfileStatements:
             await self._client.patch_me({"name": "Иван"}, FORGED_TOKEN),
         ]
 
+    async def read_the_profile_of_a_password_account(self) -> ProfileResponseDto:
+        token = await self.given_an_authenticated_account()
+        return await self._client.get_me(token)
+
     async def submit_a_name_of_one_nul(self) -> ProfileResponseDto:
         token = await self.given_an_authenticated_account()
         return await self._client.patch_me({"name": LONE_NUL}, token)
@@ -73,6 +77,21 @@ class ProfileStatements:
         # between the display name and its email fallback on this key.
         assert "name" in reread.body and reread.body["name"] is None, (
             f"expected the re-read profile to carry name=None, got {reread.body!r}"
+        )
+
+    def assert_the_profile_names_its_confirmation_form(
+        self, profile: ProfileResponseDto
+    ) -> None:
+        self._assert_ok(profile, "reading the profile of a password account")
+        # Present and a real boolean, not merely truthy: the client treats a missing
+        # key as "the backend did not say" and falls back to the address form. A
+        # password account refused on that form has no other form on screen, so an
+        # absent key here is not a degradation -- it is deletion becoming impossible
+        # for every account that has a password. That is what shipped before this
+        # key existed.
+        assert profile.body.get("has_password") is True, (
+            "expected a password account's profile to report has_password=True, "
+            f"got {profile.body!r}"
         )
 
     def assert_the_emoji_name_round_tripped(

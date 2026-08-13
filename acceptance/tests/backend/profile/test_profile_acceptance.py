@@ -34,6 +34,23 @@ class TestSixtyCodePointName(AbstractBackendTest):
         profile_statements.assert_the_emoji_name_round_tripped(stored, reread)
 
 
+class TestTheProfileNamesItsDeletionConfirmationForm(AbstractBackendTest):
+    """The profile reports whether this account can be confirmed by password.
+
+    The deletion route accepts a password ONLY from an account that has one, and
+    an address ONLY from one that does not. Nothing else on the wire lets a client
+    tell the two apart — the hash is not there and must not be. Without this key
+    the client falls back to the address form for everyone, the backend refuses
+    every password account on it, and there is no second form to fall back to:
+    deletion becomes impossible for them. That is exactly what shipped, and this
+    is the assertion that would have caught it."""
+
+    async def test_should_report_has_password_for_a_password_account(self, profile_statements):
+        profile = await profile_statements.read_the_profile_of_a_password_account()
+
+        profile_statements.assert_the_profile_names_its_confirmation_form(profile)
+
+
 class TestBothRoutesRefuseInvalidCredentials(AbstractBackendTest):
     """Neither route serves anything without a valid access token.
 

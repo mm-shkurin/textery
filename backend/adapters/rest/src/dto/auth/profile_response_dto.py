@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from pydantic import BaseModel, ValidationInfo, field_validator
 
 from auth.account import Account
+from auth.deletion_confirmation import has_password
 
 
 class ProfileResponseDto(BaseModel):
@@ -40,6 +41,24 @@ class ProfileResponseDto(BaseModel):
     # authenticated page view; a base64 image inline would add hundreds of
     # kilobytes to the product's highest-rate response.
     avatar_updated_at: datetime | None
+    # Which confirmation the deletion endpoint will accept from THIS account, and
+    # the only way the client can know it. An OAuth-only account is created with
+    # `password_hash=""` (complete_oauth_callback.py), so it can never be confirmed
+    # by password; an account that has one can never be confirmed by address,
+    # because the deletion screen displays that address and the gate would reduce
+    # to reading it.
+    #
+    # Emitted rather than inferred client-side because there is nothing to infer
+    # from: the hash is not on the wire and must not be. Without this key the
+    # client falls back to the address form for everyone, and every password
+    # account is then refused on a form that has no alternative on screen --
+    # deletion becomes impossible for them, which is what shipped before this
+    # field existed.
+    #
+    # It discloses nothing an attacker with a session does not already have: the
+    # account is theirs, and the sign-in screen already reveals which methods an
+    # address supports.
+    has_password: bool
 
     @field_validator("created_at", "avatar_updated_at")
     @classmethod
@@ -67,4 +86,5 @@ class ProfileResponseDto(BaseModel):
             name=account.name,
             created_at=account.created_at,
             avatar_updated_at=account.avatar_updated_at,
+            has_password=has_password(account),
         )
