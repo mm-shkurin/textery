@@ -1273,7 +1273,68 @@ pagination failure.
   **Note for the export-sweep row below: its blocker is cleared.** `FIXTURE_IMPORT` is exported, so
   an `Object.entries(source)` sweep now enumerates five patterns and can no longer certify a gap by
   looking past a module-private one.
-- [~] red-frontend (premortem CREDIBLE 2 over `4d7af431`) — **the guard's SCOPE is a hand-typed field
+- [~] red-frontend (premortem CREDIBLE 1 over `94b3c34a`) — **the unit pinned the fixture path and
+  left the SOURCE path unpinned, one level up — the identical defect, one layer above the one it just
+  closed.** `fixtureUsage.source.ts:1-2` reads
+  `import measuringSource from './paginationState.measuring.test.ts?raw'` (and the `laidOut` twin).
+  Those two `?raw` specifiers are the ONLY thing binding `MEASURING_FILE` / `LAID_OUT_FILE` to real
+  files on disk, and nothing in the directory pins them. That is byte-for-byte the argument
+  `94b3c34a` made for `FIXTURE_IMPORT` — "the module path is the only thing binding either test file
+  to `laidOutRows.fixture`, and it was pinned nowhere but inside the regex" — applied to the layer the
+  unit did not look at. `FIXTURE_IMPORT` only reads ANALYZED text; it cannot see its own module's
+  imports.
+  Measured, in two steps. Copy `paginationState.measuring.test.ts` to a `.snapshot.ts` suffix (not
+  collected, so counts do not move) and repoint line 1 at the copy: `22 passed | 3 skipped`, the full
+  pre-mutant state, **zero result delta** — the exact signature `patternText`'s third-case header
+  names as "what leaves a source file free to be re-pointed at a copy". Then, with the detachment in
+  place, drift the REAL file (`measuring.test.ts:186`, `sheetSkeletonCount: NO_SKELETONS,` → `: 0,` —
+  same runtime value, so the executed assertion still passes): still `22 passed | 3 skipped`, fully
+  green. Control with line 1 restored and the same drift: `2 failed` (`assignmentShape` "never a
+  re-typed value", `constantSites` "never by re-typing its value"). The guard works only while the
+  path is right, and the path is unguarded.
+  Incident: "Scenario 1.1's whole guard cluster has been reading a stale copy of `measuring.test.ts`
+  for three weeks. The pinned-assignment and re-typed-value guards were green the entire time; the
+  live file had a bare `0` in a `toStrictEqual` block."
+  Guard, named: pin the two `?raw` specifier strings as hand-typed literals (the `patternText` idiom,
+  simply never applied to the module's own two paths), and/or assert a sentinel line is present in
+  each ingested source so the text is provably the live file. **The export sweep does not reach this**
+  — `?raw` imports are not exports.
+- [ ] red-frontend (premortem CREDIBLE 2 over `94b3c34a`) — **the guard's FILE scope is two hand-typed
+  names, so a third pinned surface is invisible.** `fixtureUsage.source.ts:28-41` — `MEASURING_FILE`,
+  `LAID_OUT_FILE` and the two-key `SOURCES` record are the whole domain; nothing enumerates the
+  directory or ties the guarded set to what exists. Measured: add `paginationState.extra.test.ts`
+  containing literally `expect(state).toStrictEqual({ pageCount: 4, })` — the exact shape
+  `PINNED_ASSIGNMENT` + `NAMED_VALUE` exist to forbid — and every guard stays green,
+  `23 passed | 3 skipped`. Incident: "The new `paginationState.*` test added last sprint re-types
+  every count as a bare literal. The guard cluster never saw it — it only reads two filenames typed in
+  2026." Guard, named: pin the SET of covered source files against the directory's actual
+  `paginationState.*.test.ts` listing (`import.meta.glob` against a hand-typed roster, with an
+  explicit "these and only these are exempt"). Same FAMILY as the `PINNED_FIELDS`-scope row below
+  (hand-typed scope unbound to reality) but a different AXIS — that row is which FIELDS, this is which
+  FILES; fixing one does nothing for the other.
+- [ ] red-frontend (agent-review CONCERNS 1 over `94b3c34a`) — **"five patterns" and "ten probe lists"
+  are prose only; nothing asserts either number, so the exact defect this unit repaired can be
+  reintroduced.** Add a SIXTH module-private pattern to `fixtureUsage.source.ts` and the suite stays
+  green — that is precisely the shape of the `FIXTURE_IMPORT` gap, reproducible the day after it was
+  closed. The new `probeMembership.test.ts` cannot catch the probes-side twin either: its received
+  side is a hand-built object of ten named keys, so an ELEVENTH exported list is invisible to
+  `toStrictEqual`. It is a membership pin, not a completeness pin. **`94b3c34a`'s commit message
+  overstated this** — exporting `FIXTURE_IMPORT` UNBLOCKS the sweep, it does not WRITE it. This row
+  and the export-sweep row below are the same guard; fold them. Fold in premortem CREDIBLE 3 over the
+  same commit while writing it: nothing asserts `patterns.test.ts` contains a case per pattern —
+  deleting the fifth `it(...)` leaves `21 passed | 3 skipped`, green, visible only as a total moving
+  22 → 21 (partially mitigated: `tsc` then reports `TS6133` on the three orphaned imports, so the
+  naive deletion is caught by typecheck, but deleting the imports too makes it silent). The sweep as
+  chartered asserts exports vs pinned NAMES and would not notice a missing CASE.
+- [ ] docs (agent-review CONCERNS 4 over `94b3c34a`) — **`94b3c34a`'s commit message says "ten lists,
+  39 members"; the actual total is 38.** Counted from the file, and re-verified independently by
+  enumerating the module: 3 + 2 + 2 + 1 + 3 + 6 + 4 + 5 + 5 + 7 = 38. The single-member
+  `MUST_MATCH_OPENERS` is the one easy to skip. Ten lists is right. The number appears only in the
+  commit message — which this project treats as the sole review surface, so it cannot be corrected in
+  place; noted here instead. Agent-review's other three (the `probes.ts:8` wrong carrier, the
+  `source.ts:65` "four above", and `patterns.test.ts`'s present-tense four-pattern inventory) were all
+  found independently by `/refactor` and are **already fixed in `fd8b91d0`**.
+- [ ] red-frontend (premortem CREDIBLE 2 over `4d7af431`) — **the guard's SCOPE is a hand-typed field
   list now spelled in three places, and a new numeric field asserted with a raw literal is invisible to
   every leg.** Measured at full-suite scale: add `visibleSheetCount: 3` to a live pinned expectation
   block at `paginationState.measuring.test.ts:101` — `653 passed | 6 skipped | 0 failed`, the exact
