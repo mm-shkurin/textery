@@ -84,7 +84,7 @@
 }
 
 .chat-avatar.error-avatar {
-  background: rgba(239, 68, 68, 0.15);
+  background: var(--error-soft-bg);
   color: var(--error);
 }
 

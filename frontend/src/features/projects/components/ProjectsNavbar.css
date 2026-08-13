@@ -18,7 +18,7 @@
   padding: 10px 26px;
   border-radius: 22px;
   background: var(--bg-surface);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.09);
+  box-shadow: var(--shadow-navbar);
   margin-bottom: 30px;
 }
 

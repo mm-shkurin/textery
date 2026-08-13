@@ -6,6 +6,7 @@ import { useDismissOnOutside } from '../../hooks/useDismissOnOutside'
 import { ProfileAvatar } from './ProfileAvatar'
 import { ProfileMenuIdentityRow } from './ProfileMenuIdentityRow'
 import { ChevronIcon, ProfileItemIcon, SignOutIcon } from './profileMenuIcons'
+import { ThemeMenuItem } from './ThemeMenuItem'
 import './ProfileMenu.css'
 
 interface ProfileMenuProps {
@@ -90,6 +91,8 @@ export function ProfileMenu({ onLogoutClick, testIdPrefix }: ProfileMenuProps) {
             <ProfileItemIcon />
             Мой профиль
           </button>
+
+          <ThemeMenuItem testIdPrefix={testIdPrefix} />
 
           <button
             type="button"

@@ -91,7 +91,7 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid rgba(17, 18, 20, 0.35);
+  border: 2px solid var(--border-swatch);
   border-top-color: var(--btn-primary-fg);
   animation: me-spin 0.7s linear infinite;
 }

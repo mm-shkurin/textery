@@ -46,13 +46,13 @@
 .showcase-orb-2 {
   left: 8%;
   top: 0;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--glass-border-strong);
 }
 
 .showcase-orb-3 {
   right: 8%;
   top: 250px;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--glass-border-strong);
 }
 
 .showcase-card {

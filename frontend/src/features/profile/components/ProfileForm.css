@@ -128,8 +128,10 @@
   height: 14px;
   border-radius: 50%;
   flex: none;
-  border: 2px solid rgba(255, 255, 255, 0.45);
-  border-top-color: #fff;
+  /* Keyed to the button's own foreground, not to the page: this ring only ever spins on the
+     filled primary button, which is saturated blue in both themes. */
+  border: 2px solid var(--spinner-track);
+  border-top-color: var(--btn-primary-fg);
   animation: profile-spin 0.7s linear infinite;
 }
 
