@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1400">
+<title>Textery — Шапка · личность недоступна</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="profile.css">
+</head>
+<body>
+<!-- /me ответил 401, 5xx или не ответил вовсе. Шапка обязана отрисовать страницу с
+     ОПРЕДЕЛЁННОЙ личностью — «недоступна» это тоже определённость, в отличие от пустоты.
+
+     Два правила, которые этот экран фиксирует:
+     1. «Выйти» никогда не зависит от /me. Иначе отказ эндпоинта запирает пользователя в
+        сессии, которую он не может завершить.
+     2. «Мой профиль» остаётся на месте намеренно (он ведёт на экран, который откажет так же
+        и покажет это явно — см. 06). Скрывать его — тоже допустимое решение; недопустимо
+        забрести в одно из двух случайно.
+
+     Прежняя личность здесь НЕ показывается: после смены сессии показать её — утечка чужого
+     аккаунта, а не устаревшее имя. -->
+
+<div class="header">
+  <div class="logo"><div class="logo-mark">T<span>AI</span></div>Textery</div>
+  <div class="header-actions">
+    <button class="icon-btn"><i data-lucide="bell"></i></button>
+    <div class="profile-menu">
+      <div class="profile-trigger">
+        <div class="avatar is-degraded"><i data-lucide="alert-triangle"></i></div>
+        <i data-lucide="chevron-up"></i>
+      </div>
+      <div class="profile-panel">
+        <div class="panel-account">
+          <div class="ava is-degraded" style="width:28px;height:28px;">
+            <i data-lucide="alert-triangle" style="width:15px;height:15px;"></i>
+          </div>
+          <span class="panel-degraded">Данные профиля недоступны</span>
+        </div>
+        <div class="panel-item"><i data-lucide="user"></i>Мой профиль</div>
+        <div class="panel-item"><i data-lucide="log-out"></i>Выйти</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <h1>Мой профиль</h1>
+  <div class="subtitle">Данные вашей учётной записи</div>
+
+  <div class="profile-wrap">
+    <div class="card">
+      <div class="state">
+        <div class="art"><i data-lucide="cloud-off"></i></div>
+        <h2>Не удалось загрузить профиль</h2>
+        <p>Тот же отказ /me, что деградировал шапку. Экран и шапка приходят в согласованное
+          состояние, а не расходятся.</p>
+        <div class="state-actions">
+          <button class="btn btn-primary"><i data-lucide="rotate-cw"></i>Повторить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Аннотация макета, а не элемент экрана: требование «деградация видимо отличается от
+       загрузки» проверяемо только рядом. Слева — плейсхолдер (мерцает, запрос идёт),
+       справа — отказ (пунктир, статичен, со знаком). -->
+  <div class="compare">
+    <div class="cap">Сравнение состояний — аннотация макета</div>
+    <div class="pair">
+      <div class="one">
+        <div class="avatar is-placeholder sk"><i data-lucide="user"></i></div>
+        <div class="t"><b>Загрузка</b>мерцает, запрос в полёте</div>
+      </div>
+      <div class="one">
+        <div class="avatar is-degraded"><i data-lucide="alert-triangle"></i></div>
+        <div class="t"><b>Отказ</b>пунктир, статичен, со знаком</div>
+      </div>
+      <div class="one">
+        <div class="avatar">АК</div>
+        <div class="t"><b>Норма</b>инициалы личности</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="logo"><div class="logo-mark">T<span>AI</span></div>Textery</div>
+  <div>© 2026 Textery. Все права защищены.</div>
+  <div class="foot-links">
+    <span>Условия использования</span><span>Политика конфиденциальности</span><span>Поддержка</span>
+  </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

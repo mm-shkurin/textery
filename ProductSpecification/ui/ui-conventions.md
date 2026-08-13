@@ -136,7 +136,7 @@ this story (e.g., the header bar, the status badge) actually repeats in story #2
 
 ---
 
-## Light system (current) — stories 18, 10
+## Light system (current) — stories 18, 10, 12, 13
 
 Adopted 2026-07-28 from the customer's design. Tokens are shared, not re-declared per
 story: copy `theme.css` next to the mockups and `<link>` it. Story 10 adds a second
@@ -206,3 +206,54 @@ Never render the two the same way: one means "your values are wrong", the other 
 - Settings panel → bottom sheet with a grabber, `max-height: 88vh`.
 - Status bar → fixed to the bottom edge.
 - All touch targets ≥ 44px.
+
+### Shell width by page kind (new in story 13)
+
+The light system has two shell widths, and which one a page gets follows from its content,
+not from when it was drawn: a **feed** («Мои проекты», 1640px) spreads across the viewport,
+a **single-column form** (профиль, 1240px) does not. Widening a form page to feed width
+leaves one column of fields marooned in whitespace. Both centre with `margin: 0 auto` and
+share the same header/footer cards.
+
+### Account avatar — three states, all distinguishable (new in story 13)
+
+The avatar is now backed by a network call (`GET /me`), so it has three states and each must
+be legible against the other two at a glance:
+
+| State | Rendering |
+|-------|-----------|
+| Норма | initials on the Figma gradient `linear-gradient(135deg,#51a2ff,#4f39f6)` (`Button/Container`, node 573:4506) — **not** the flat `--accent` fill theme.css declares |
+| Загрузка | sunken circle, muted user glyph, shimmer — a *defined* placeholder, never a blank that pops into initials |
+| Отказ | sunken circle, **dashed** `--border-strong` border, alert glyph, static — no shimmer |
+
+The circle radius is constant across all three: a placeholder that changes shape when the
+response lands is the same pop it exists to prevent. A degraded avatar that looks healthy
+reads as "account with no name", which is why the failure state is dashed rather than merely
+grey. The comparison strip in `13-profile-management/mockups/desktop/08-header-degraded.html`
+is the reference — it is a mockup annotation, not a screen element.
+
+### Identity block (new in story 13)
+
+Top of a profile-like card: large avatar (72px desktop / 56px mobile) + primary line +
+secondary line + a muted `since` row with a calendar icon. The primary line is the display
+name when set and the **email** otherwise, with the secondary line carrying the other value.
+The user's identity therefore never renders blank, whatever is missing.
+
+### Account menu (`ProfileMenu`, Figma `profile navbar` 1218:5171)
+
+238px panel anchored to the trigger's right edge. First row is the identity — avatar +
+name/email, divider under it — and it is **not** a menu item: it answers "whose account am I
+in", so it is never focusable or activatable. Items below, in order: «Мой профиль», «Выйти».
+On mobile the panel is `calc(100vw - 44px)` capped at 260px, items padded to a 44px target.
+«Выйти» never depends on `/me`: if the menu's contents were gated on a successful fetch, an
+outage would trap the user in a session they cannot end.
+
+### Bounded text field with a counter (new in story 13)
+
+`<label>` and counter share a baseline row above the input; the counter is
+`font-variant-numeric: tabular-nums` so it does not jitter while typing, and it counts the
+**same unit the server bounds** (code points, not UTF-16 units — they diverge at the emoji
+boundary). Over the limit: counter turns `--danger` and bold, input border turns `--danger`,
+and a caption below states the arithmetic («сейчас 61»), not just "invalid". This is the
+inline channel from story 10 — the banner channel still means "your value is fine but did
+not reach the server".

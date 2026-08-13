@@ -1,0 +1,60 @@
+/* Textery — «Мой профиль», мобильные правки (story 13).
+   Загружается ПОСЛЕ ../desktop/theme.css и ../desktop/profile.css и только переопределяет их:
+   вторая копия правил разошлась бы с десктопной при первой же правке.
+   Все нажимаемые цели — не меньше 44px. */
+
+body { max-width: 375px; margin: 0 auto; }
+
+.header { margin: 12px; padding: 14px 16px; border-radius: var(--radius-lg); }
+.logo { font-size: 19px; gap: 10px; }
+.logo-mark { width: 32px; height: 32px; font-size: 13px; border-radius: 9px; }
+.header-actions { gap: 10px; }
+.icon-btn { width: 44px; height: 44px; justify-content: center; }
+/* 36px аватар — то же значение, что у реализованного ProfileMenu на ≤640px. */
+.avatar { width: 36px; height: 36px; font-size: 13px; }
+.avatar i { width: 16px; height: 16px; }
+.profile-trigger { gap: 4px; }
+
+.page { padding: 14px; }
+h1 { font-size: 22px; }
+.subtitle { font-size: 13px; }
+
+.profile-wrap { max-width: none; margin-top: 16px; }
+.card { padding: 20px 18px; }
+
+/* Личность остаётся строкой: аватар 56px + текст помещаются в 375 и держат экран компактным. */
+.identity { gap: 14px; }
+.ava { width: 56px; height: 56px; font-size: 19px; }
+.ava.is-degraded i { width: 22px; height: 22px; }
+.who .primary { font-size: 17px; }
+.who .secondary { font-size: 13px; }
+.divider { margin: 22px 0; }
+
+.form-title { font-size: 15px; }
+.form-hint { margin-bottom: 16px; }
+.input { padding: 13px 14px; }
+
+/* Кнопки — во всю ширину и в обратном порядке: главное действие ближе к большому пальцу. */
+.actions { flex-direction: column-reverse; gap: 10px; margin-top: 22px; }
+.actions .btn { width: 100%; justify-content: center; padding: 15px 20px; }
+
+.sk-ava { width: 56px; height: 56px; }
+.sk-ava i { width: 24px; height: 24px; }
+
+.state { padding: 40px 8px; }
+.state .art { width: 72px; height: 72px; margin-bottom: 18px; }
+.state h2 { font-size: 17px; }
+.state p { font-size: 13px; }
+.state .state-actions { flex-direction: column; }
+.state .state-actions .btn { width: 100%; justify-content: center; padding: 15px 20px; }
+
+/* Панель меню не может быть шире экрана: якорь по правому краю плюс запас на поля шапки. */
+.profile-panel { width: calc(100vw - 44px); max-width: 260px; }
+.panel-item { padding: 11px 8px; }
+
+.compare { max-width: none; margin-top: 20px; padding: 18px; }
+.compare .pair { flex-direction: column; gap: 16px; }
+
+.footer { flex-direction: column; gap: 14px; text-align: center; margin: 26px 12px 16px;
+  padding: 22px; font-size: 12px; }
+.foot-links { flex-direction: column; gap: 10px; }

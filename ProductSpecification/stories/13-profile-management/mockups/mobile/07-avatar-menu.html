@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375">
+<title>Textery — Меню аватара с «Мой профиль» · мобильный</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="../desktop/theme.css">
+<link rel="stylesheet" href="../desktop/profile.css">
+<link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+<!-- Меню аккаунта — Figma `profile navbar` (node 1218:5171), уже реализовано в ProfileMenu.
+     Эта история добавляет ровно один пункт: «Мой профиль» над «Выйти», маршрут /profile.
+     Прошлая история его сознательно не сделала — «a link to nowhere belongs to the story that
+     builds those screens»; экран построен здесь, значит пункт появляется здесь.
+
+     Строка с личностью — не пункт меню: она отвечает на вопрос «в чьём я аккаунте» и не
+     получает role="menuitem", иначе метку личности объявили бы как то, что можно нажать.
+     Блок «Базовый тариф» из дизайна по-прежнему не рисуем: тарифа в домене нет (story 8).
+     Имя выводится текстом узла — никакого dangerouslySetInnerHTML: это самая широкая
+     поверхность для хранимой XSS в приложении. -->
+
+<div class="header">
+  <div class="logo"><div class="logo-mark">T<span>AI</span></div>Textery</div>
+  <div class="header-actions">
+    <button class="icon-btn"><i data-lucide="bell"></i></button>
+    <div class="profile-menu">
+      <div class="profile-trigger">
+        <div class="avatar">АК</div>
+        <i data-lucide="chevron-up"></i>
+      </div>
+      <div class="profile-panel">
+        <div class="panel-account">
+          <div class="ava">АК</div>
+          <span class="panel-email">Анна Ковалёва</span>
+        </div>
+        <div class="panel-item"><i data-lucide="user"></i>Мой профиль</div>
+        <div class="panel-item"><i data-lucide="log-out"></i>Выйти</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <h1>Мой профиль</h1>
+  <div class="subtitle">Данные вашей учётной записи</div>
+
+  <div class="profile-wrap">
+    <div class="card">
+      <div class="identity">
+        <div class="ava">АК</div>
+        <div class="who">
+          <div class="primary">Анна Ковалёва</div>
+          <div class="secondary">anna.ivanova@example.com</div>
+          <div class="since"><i data-lucide="calendar"></i>На Textery с 15 июля 2026</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="form-title">Отображаемое имя</div>
+      <div class="form-hint">Показывается в шапке и на этом экране вместо адреса почты.</div>
+
+      <div class="field">
+        <div class="label-row">
+          <span class="label">Имя</span>
+          <span class="counter">13 / 60</span>
+        </div>
+        <input class="input" value="Анна Ковалёва">
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-ghost is-disabled">Отмена</button>
+        <button class="btn btn-primary is-disabled">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="logo"><div class="logo-mark">T<span>AI</span></div>Textery</div>
+  <div>© 2026 Textery. Все права защищены.</div>
+  <div class="foot-links">
+    <span>Условия использования</span><span>Политика конфиденциальности</span><span>Поддержка</span>
+  </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

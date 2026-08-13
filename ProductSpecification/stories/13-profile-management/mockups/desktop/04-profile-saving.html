@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1400">
+<title>Textery — Мой профиль · сохранение</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="profile.css">
+</head>
+<body>
+<!-- PATCH /api/v1/auth/me в полёте. Поле и обе кнопки неинтерактивны до ответа: двойной клик
+     по «Сохранить» и двойной Enter обязаны дать ровно один PATCH.
+     Шапка ещё показывает прежнюю личность — снимок обновляется на ответе 200, не на отправке. -->
+
+<div class="header">
+  <div class="logo"><div class="logo-mark">T<span>AI</span></div>Textery</div>
+  <div class="header-actions">
+    <button class="icon-btn"><i data-lucide="bell"></i></button>
+    <div class="profile-menu">
+      <div class="profile-trigger">
+        <div class="avatar">AI</div>
+        <i data-lucide="chevron-down"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <h1>Мой профиль</h1>
+  <div class="subtitle">Данные вашей учётной записи</div>
+
+  <div class="profile-wrap">
+    <div class="card">
+      <div class="identity">
+        <div class="ava">AI</div>
+        <div class="who">
+          <div class="primary">anna.ivanova@example.com</div>
+          <div class="secondary">Имя не задано</div>
+          <div class="since"><i data-lucide="calendar"></i>На Textery с 15 июля 2026</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="form-title">Отображаемое имя</div>
+      <div class="form-hint">Показывается в шапке и на этом экране вместо адреса почты.</div>
+
+      <div class="field">
+        <div class="label-row">
+          <span class="label">Имя</span>
+          <span class="counter">13 / 60</span>
+        </div>
+        <input class="input is-locked" value="Анна Ковалёва" readonly>
+        <div class="field-note">Сохраняем имя…</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-ghost is-disabled">Отмена</button>
+        <button class="btn btn-primary" style="opacity:.75; cursor:progress;">
+          <span class="spinner"></span>Сохранение…
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="logo"><div class="logo-mark">T<span>AI</span></div>Textery</div>
+  <div>© 2026 Textery. Все права защищены.</div>
+  <div class="foot-links">
+    <span>Условия использования</span><span>Политика конфиденциальности</span><span>Поддержка</span>
+  </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>
