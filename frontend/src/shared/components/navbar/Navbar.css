@@ -108,8 +108,19 @@
 }
 
 @media (max-width: 640px) {
+  /* The landing bar is allowed to wrap here. On a 360px phone the row has 328px while the wordmark
+     and the two actions want about 385 — unwrapped that is a horizontal scroll on the first screen
+     a visitor sees. Arithmetic rather than a screenshot: headless Chrome on this host will not
+     render a window narrower than ~500px, so anything below that was checked on paper. The other
+     two shells carry an avatar rather than buttons and stay on one line at any width. */
   .navbar-flat {
+    flex-wrap: wrap;
+    row-gap: 12px;
     padding: 20px 16px 0;
+  }
+
+  .navbar-flat .navbar-actions {
+    margin-left: auto;
   }
 
   .navbar-logo {

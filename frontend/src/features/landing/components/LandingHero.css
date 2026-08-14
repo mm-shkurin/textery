@@ -177,6 +177,10 @@
 
   .hero-prompt {
     flex-wrap: wrap;
+    /* The 91px is the design's one-row bar. Once the button wraps under the field there are two
+       rows to hold, and a fixed height would crop the second one. */
+    height: auto;
+    padding: 12px;
   }
 
   .hero-prompt-button {
