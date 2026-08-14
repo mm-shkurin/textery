@@ -24,9 +24,9 @@ HANDOFF_TTL_ENV_VAR = "OAUTH_HANDOFF_CODE_TTL_SECONDS"
 FRONTEND_CALLBACK_URL_ENV_VAR = "OAUTH_FRONTEND_CALLBACK_URL"
 RATE_LIMIT_MAX_ENV_VAR = "OAUTH_RATE_LIMIT_MAX_REQUESTS"
 RATE_LIMIT_WINDOW_ENV_VAR = "OAUTH_RATE_LIMIT_WINDOW_SECONDS"
+FAKE_AUTHORIZE_URL_ENV_VAR = "OAUTH_FAKE_AUTHORIZE_URL"
+YANDEX_REDIRECT_URI_ENV_VAR = "YANDEX_REDIRECT_URI"
 DEFAULT_HANDOFF_TTL_SECONDS = 300
-DEFAULT_FRONTEND_CALLBACK_URL = "http://localhost/auth/callback"
-DEFAULT_FAKE_AUTHORIZE_URL = "https://fake-oauth.local/authorize"
 DEFAULT_RATE_LIMIT_MAX_REQUESTS = 40
 DEFAULT_RATE_LIMIT_WINDOW_SECONDS = 60
 
@@ -40,19 +40,23 @@ def _require(var_name: str) -> str:
     value = os.environ.get(var_name, "")
     if not value:
         raise OAuthConfigurationError(
-            f"{var_name} is not set. Yandex OAuth requires YANDEX_CLIENT_ID and "
-            "YANDEX_CLIENT_SECRET (and YANDEX_REDIRECT_URI) at boot."
+            f"{var_name} is not set. OAuth needs YANDEX_CLIENT_ID, "
+            "YANDEX_CLIENT_SECRET, YANDEX_REDIRECT_URI and "
+            "OAUTH_FRONTEND_CALLBACK_URL at boot; see .env.example."
         )
     return value
 
 
 _client_id = _require("YANDEX_CLIENT_ID")
 _client_secret = _require("YANDEX_CLIENT_SECRET")
-_redirect_uri = os.environ.get("YANDEX_REDIRECT_URI", DEFAULT_FRONTEND_CALLBACK_URL)
+# No default for either URL, and that is the point. `http://localhost/auth/callback`
+# as a fallback meant a misconfigured deployment silently sent the one-time handoff
+# code -- exchangeable for a token pair -- over plaintext HTTP to a host that is not
+# the frontend. A missing value is now a boot failure naming the variable, the same
+# contract JWT_SECRET and the Yandex credentials already had.
+_redirect_uri = _require(YANDEX_REDIRECT_URI_ENV_VAR)
 _handoff_ttl_seconds = int(os.environ.get(HANDOFF_TTL_ENV_VAR, DEFAULT_HANDOFF_TTL_SECONDS))
-_frontend_callback_url = os.environ.get(
-    FRONTEND_CALLBACK_URL_ENV_VAR, DEFAULT_FRONTEND_CALLBACK_URL
-)
+_frontend_callback_url = _require(FRONTEND_CALLBACK_URL_ENV_VAR)
 _rate_limit_max = int(os.environ.get(RATE_LIMIT_MAX_ENV_VAR, DEFAULT_RATE_LIMIT_MAX_REQUESTS))
 _rate_limit_window = int(
     os.environ.get(RATE_LIMIT_WINDOW_ENV_VAR, DEFAULT_RATE_LIMIT_WINDOW_SECONDS)
@@ -74,7 +78,11 @@ def _create_provider():
     if os.environ.get(OAUTH_PROVIDER_ENV_VAR, "yandex") == "fake":
         return FakeOAuthProvider(
             name="yandex",
-            authorize_url=os.environ.get("OAUTH_FAKE_AUTHORIZE_URL", DEFAULT_FAKE_AUTHORIZE_URL),
+            # Required when the fake is selected, rather than defaulting to a stub
+            # URL in source: a test address compiled into the image is one
+            # mis-set OAUTH_PROVIDER away from being the address a real sign-in
+            # is sent to.
+            authorize_url=_require(FAKE_AUTHORIZE_URL_ENV_VAR),
             redirect_uri=_redirect_uri,
             client_id=_client_id,
         )
