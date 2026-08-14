@@ -13,7 +13,6 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import select
-from sqlalchemy.engine import Row
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from access.auth.account_storage import SqlAlchemyAccountRepository
@@ -32,7 +31,7 @@ class AccountNameStorageStatements:
         self._email: str | None = None
         self._created_at: datetime | None = None
         self._read_back: Account | None = None
-        self._row: Row | None = None
+        self._row: AccountModel | None = None
 
     async def given_a_verified_account_with_failed_attempts_and_a_name(self) -> None:
         self._account_id = account_id = uuid4()

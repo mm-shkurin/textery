@@ -109,6 +109,12 @@ class DeleteAccountStatements(ProfileStatementsBase):
         assert self.thrown_exception.error_code == self.CONFIRMATION_INVALID_CODE
 
     def assert_the_refusal_does_not_say_which_form_was_wrong(self) -> None:
+        # Same isinstance gate as the assertion above: without it, a refusal that
+        # never happened reads as `None has no attribute message` instead of
+        # "nothing was raised".
+        assert isinstance(self.thrown_exception, ValidationException), (
+            f"expected a ValidationException, got {self.thrown_exception!r}"
+        )
         assert self.thrown_exception.message == (
             "The confirmation does not match. Nothing was deleted."
         )

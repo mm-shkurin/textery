@@ -33,8 +33,12 @@ UNRELATED_DIRECTIVE = "max-age=60"
 def build_app() -> FastAPI:
     app = FastAPI()
     app.add_middleware(NoStoreMiddleware)
-    app.add_exception_handler(ValidationException, validation_exception_handler)
-    app.add_exception_handler(NotFoundException, not_found_exception_handler)
+    # Same suppression `main.py` carries, for the same reason: Starlette types the
+    # handler as taking `Exception`, and the app registers handlers that take the
+    # specific exception they are registered for. Loosening them to `Exception` to
+    # satisfy the stub would erase a real guarantee.
+    app.add_exception_handler(ValidationException, validation_exception_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(NotFoundException, not_found_exception_handler)  # type: ignore[arg-type]
     app.add_exception_handler(Exception, unhandled_exception_handler)
 
     def refuse_the_token() -> None:

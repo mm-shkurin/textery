@@ -7,6 +7,10 @@ class FakeAccountRepository:
     def __init__(self) -> None:
         self.saved_accounts: list[Account] = []
         self.raise_on_save: Exception | None = None
+        # Same lever as raise_on_save, for the single-column rename UPDATE. A
+        # Statement that reached in and replaced the method instead would be
+        # binding itself to the Fake's shape rather than to the port's.
+        self.raise_on_update_name: Exception | None = None
         self.find_by_email_call_count = 0
         self.transition_to_verified_calls: list[UUID] = []
         self.lock_for_update_calls: list[UUID] = []
@@ -80,6 +84,8 @@ class FakeAccountRepository:
         # rename asserted only here proves nothing about persistence: the real
         # hazard is a column missing from one of the three hand-kept mapping lists,
         # which a list-backed Fake cannot have. That claim belongs to the db test.
+        if self.raise_on_update_name is not None:
+            raise self.raise_on_update_name
         self.update_name_calls.append((account_id, name))
         account = await self.find_by_id(account_id)
         if account is not None:

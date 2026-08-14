@@ -27,7 +27,7 @@ class RenameAccountStatements(ProfileStatementsBase):
         await self.rename_to(None)
 
     def given_the_update_fails(self) -> None:
-        self.account_repository.update_name = self._failing_update
+        self.account_repository.raise_on_update_name = self.write_failure
 
     def given_the_commit_fails(self) -> None:
         self.unit_of_work.raise_on_commit = self.write_failure
@@ -36,9 +36,6 @@ class RenameAccountStatements(ProfileStatementsBase):
         return RenameAccount(
             account_repository=self.account_repository, unit_of_work=self.unit_of_work
         )
-
-    async def _failing_update(self, account_id, name) -> None:  # noqa: ARG002 -- port shape
-        raise self.write_failure
 
     def assert_the_stored_name_is(self, expected: str | None) -> None:
         assert self.account_repository.update_name_calls == [(self.account_id, expected)], (

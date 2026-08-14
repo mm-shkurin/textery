@@ -85,8 +85,11 @@ def build_app(**usecases) -> FastAPI:
     app.include_router(profile_router.router)
     app.include_router(avatar_router.router)
     app.include_router(deletion_router.router)
-    app.add_exception_handler(ValidationException, validation_exception_handler)
-    app.add_exception_handler(NotFoundException, not_found_exception_handler)
+    # See main.py: Starlette types every handler as taking `Exception`; these take
+    # the exception they are registered for. Suppressed per line rather than
+    # widening the handlers to satisfy the stub.
+    app.add_exception_handler(ValidationException, validation_exception_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(NotFoundException, not_found_exception_handler)  # type: ignore[arg-type]
     app.add_exception_handler(Exception, unhandled_exception_handler)
     app.dependency_overrides[get_current_owner_id] = lambda: OWNER_ID
     for name, usecase in usecases.items():

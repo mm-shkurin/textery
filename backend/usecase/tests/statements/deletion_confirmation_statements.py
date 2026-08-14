@@ -57,8 +57,19 @@ class DeletionConfirmationStatements:
             is_verified=True,
         )
 
+    def _the_account(self) -> Account:
+        """The account a `given_...` step built, or a named failure if none did.
+
+        The attribute starts as None because the Statement is constructed before
+        any step runs. Reading it through here means a Statement that confirms
+        without arranging an account fails saying so, instead of handing None to
+        a function whose whole contract is about a real account.
+        """
+        assert self.account is not None, "no account was arranged for this statement"
+        return self.account
+
     def confirm_with_password(self, password: object) -> None:
-        self.answer = password_confirms(self.account, password, self.password_hasher)
+        self.answer = password_confirms(self._the_account(), password, self.password_hasher)
 
     def confirm_with_the_correct_password(self) -> None:
         self.confirm_with_password(self.PASSWORD)
@@ -67,13 +78,13 @@ class DeletionConfirmationStatements:
         self.confirm_with_password(self.ACCENTED_PASSWORD_NFD)
 
     def confirm_with_email(self, confirm_email: object) -> None:
-        self.answer = email_confirms(self.account, confirm_email)
+        self.answer = email_confirms(self._the_account(), confirm_email)
 
     def confirm_with_the_accounts_own_email(self) -> None:
         self.confirm_with_email(self.EMAIL)
 
     def ask_whether_the_account_has_a_password(self) -> None:
-        self.answer = has_password(self.account)
+        self.answer = has_password(self._the_account())
 
     def assert_confirmed(self) -> None:
         assert self.answer is True, f"expected the confirmation to be accepted, got {self.answer!r}"
