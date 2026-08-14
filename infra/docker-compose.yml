@@ -69,6 +69,12 @@ services:
       # import time. The whole stack failed to boot on exactly that.
       OAUTH_PROVIDER: ${OAUTH_PROVIDER:-yandex}
       OAUTH_HANDOFF_CODE_TTL_SECONDS: ${OAUTH_HANDOFF_CODE_TTL_SECONDS:-300}
+      # Read only under OAUTH_PROVIDER=fake, and required there since the stub URL
+      # stopped being a default inside the source: a test address compiled into
+      # the image is one mis-set OAUTH_PROVIDER away from being where a real
+      # sign-in is sent. The default here is the app's own stub page, so the
+      # acceptance suite (which selects the fake) boots with nothing extra set.
+      OAUTH_FAKE_AUTHORIZE_URL: ${OAUTH_FAKE_AUTHORIZE_URL:-http://localhost/auth/fake-provider}
     ports:
       - "${BACKEND_PORT}:8000"
     depends_on:
