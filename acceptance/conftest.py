@@ -55,25 +55,6 @@ from document_export_fixtures import (  # noqa: F401
     document_blank_title_save_statements,
 )
 
-# Story-12 projects-feed Statements fixtures, same 200-line-cap reason.
-from project_feed_fixtures import project_feed_statements  # noqa: F401
-
-# Story-13 profile/avatar/deletion Statements fixtures, same reason.
-from profile_fixtures import avatar_statements, deletion_statements, profile_statements  # noqa
-
-# Story-13 profile BROWSER Statements fixtures, same reason.
-from profile_frontend_fixtures import (  # noqa: F401
-    profile_avatar_statements,
-    profile_deletion_statements,
-    profile_page_statements,
-    profile_theme_statements,
-)
-
-# Story-10 page-settings Statements fixtures, split out for the same reason.
-from document_page_settings_fixtures import (  # noqa: F401
-    document_page_settings_read_statements,
-)
-
 # iPhone 12/13-class viewport — the smallest common real-device width the
 # "design for phone" scenarios must not horizontally overflow at.
 MOBILE_WINDOW_SIZE = "390,844"
@@ -83,9 +64,18 @@ HANDOFF_CODE_TTL_ENV_VAR = "OAUTH_HANDOFF_CODE_TTL_SECONDS"
 PROVIDER_SECRET_ENV_VAR = "YANDEX_CLIENT_SECRET"
 MAX_TESTABLE_TTL_SECONDS = 10
 
-# Manual-editor Statements fixtures live in their own plugin module to keep this
-# root conftest under the 200-line file cap.
-pytest_plugins = ("statements.frontend.generation.manual_editor_fixtures",)
+# Every fixture module that exists only to keep this file under the 200-line cap is
+# registered HERE, as a plugin, rather than re-imported name by name below. This is the
+# root conftest, so `pytest_plugins` is permitted; a plugin entry costs one line where
+# the equivalent `from ... import (...)` cost up to seven, and the name list could drift
+# from the module it mirrored.
+pytest_plugins = (
+    "statements.frontend.generation.manual_editor_fixtures",
+    "project_feed_fixtures",
+    "profile_fixtures",
+    "profile_frontend_fixtures",
+    "document_page_settings_fixtures",
+)
 
 
 @pytest_asyncio.fixture
