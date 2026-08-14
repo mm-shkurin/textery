@@ -1,3 +1,4 @@
+import { afterEach } from 'vitest'
 import '@testing-library/jest-dom'
 // Imported from @testing-library/react, not @testing-library/dom: the latter is NOT declared in
 // package.json and resolves today only by hoisting through the former, so a lockfile or resolver

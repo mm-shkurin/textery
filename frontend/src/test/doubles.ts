@@ -13,7 +13,7 @@
  * members to assert on two would be a worse test. What this adds is a name at every call site,
  * so a reader sees "partial double" instead of a cast that could mean anything.
  */
-export function partialDouble<T>(members: Partial<T>): T {
+export function partialDouble<T>(members: object): T {
   return members as T
 }
 

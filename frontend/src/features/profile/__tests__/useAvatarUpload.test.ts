@@ -23,7 +23,7 @@ vi.mock('../../../shared/identity/api/avatarApi', () => ({
   fetchAvatarBytes: vi.fn(),
 }))
 vi.mock('../utils/avatarImage', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../avatarImage')>()),
+  ...(await importOriginal<typeof import('../utils/avatarImage')>()),
   resizeAvatar: vi.fn(),
 }))
 

@@ -1,4 +1,4 @@
-import './LandingFaq.css'
+import styles from './LandingFaq.module.css'
 
 // Figma `Desktop` (node 90:880), y=2159: four 850x70 white rows at 10px radius, each with a
 // `+` glyph at the right edge. The design shows every row collapsed, so the answer copy is
@@ -28,17 +28,17 @@ const FAQ_ITEMS = [
 
 export function LandingFaq() {
   return (
-    <section className="faq" data-testid="landing-faq">
-      <h2 className="faq-title">Часто задаваемые вопросы</h2>
+    <section className={styles.faq} data-testid="landing-faq">
+      <h2 className={styles['faq-title']}>Часто задаваемые вопросы</h2>
 
-      <div className="faq-list">
+      <div className={styles['faq-list']}>
         {FAQ_ITEMS.map((item) => (
-          <details className="faq-item" key={item.question}>
-            <summary className="faq-question">
+          <details className={styles['faq-item']} key={item.question}>
+            <summary className={styles['faq-question']}>
               {item.question}
-              <span className="faq-marker" aria-hidden="true" />
+              <span className={styles['faq-marker']} aria-hidden="true" />
             </summary>
-            <p className="faq-answer">{item.answer}</p>
+            <p className={styles['faq-answer']}>{item.answer}</p>
           </details>
         ))}
       </div>

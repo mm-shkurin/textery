@@ -49,7 +49,8 @@ export interface UseGeneration {
 
 export function useGeneration(): UseGeneration {
   const [run, dispatch] = useReducer(generationReducer, IDLE_GENERATION)
-  const intervalRef = useRef<number | null>(null)
+  // Whatever the platform's timer id is: `number` in the browser, an object in Node's types.
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const attemptsRef = useRef(0)
   // Consecutive, not total: reset by any successful check, so a poll that misses once every
   // couple of minutes rides out the whole generation instead of accumulating toward a limit.

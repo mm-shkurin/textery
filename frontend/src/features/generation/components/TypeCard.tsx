@@ -1,4 +1,5 @@
-import type { DocumentType, DocumentTypeOption } from '../../../shared/documentTypes'
+import type { DocumentType } from '../../../shared/documentTypes'
+import type { DocumentTypeOption } from '../../../shared/copy/documentTypeCopy'
 import './TypeCard.css'
 
 // Which coloured folder tile backs which type, read off the creation modal (788:5094). The

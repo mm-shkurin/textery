@@ -1,4 +1,4 @@
-import './LandingShowcase.css'
+import styles from './LandingShowcase.module.css'
 
 interface LandingShowcaseProps {
   onPrimaryCtaClick?: () => void
@@ -10,18 +10,18 @@ const CARD_VARIANTS = ['muted', 'plain', 'plain', 'muted'] as const
 
 export function LandingShowcase({ onPrimaryCtaClick }: LandingShowcaseProps) {
   return (
-    <section className="showcase" data-testid="landing-showcase">
-      <h2 className="showcase-title">
-        Создайте свой первый <span className="showcase-title-accent">доклад</span> за 30 сек
+    <section className={styles.showcase} data-testid="landing-showcase">
+      <h2 className={styles['showcase-title']}>
+        Создайте свой первый <span className={styles['showcase-title-accent']}>доклад</span> за 30 сек
       </h2>
 
-      <div className="showcase-stage" aria-hidden="true">
-        <span className="showcase-orb showcase-orb-1" />
-        <span className="showcase-orb showcase-orb-2" />
-        <span className="showcase-orb showcase-orb-3" />
+      <div className={styles['showcase-stage']} aria-hidden="true">
+        <span className={styles['showcase-orb'] + ' ' + styles['showcase-orb-1']} />
+        <span className={styles['showcase-orb'] + ' ' + styles['showcase-orb-2']} />
+        <span className={styles['showcase-orb'] + ' ' + styles['showcase-orb-3']} />
         {CARD_VARIANTS.map((variant, index) => (
           <span
-            className={`showcase-card showcase-card-${index + 1} showcase-card-${variant}`}
+            className={`${styles['showcase-card']} showcase-card-${index + 1} showcase-card-${variant}`}
             key={index}
           />
         ))}
@@ -29,7 +29,7 @@ export function LandingShowcase({ onPrimaryCtaClick }: LandingShowcaseProps) {
 
       <button
         type="button"
-        className="showcase-cta"
+        className={styles['showcase-cta']}
         data-testid="features-primary-cta-button"
         onClick={onPrimaryCtaClick}
       >

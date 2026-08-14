@@ -34,7 +34,14 @@ export const IDLE_GENERATION: GenerationState = {
 export type GenerationAction =
   | { type: 'submitted' }
   | { type: 'accepted'; generationId: string }
-  | { type: 'completed'; content: string; volumePages: number | null; createdAt: string | null }
+  | {
+      type: 'completed'
+      // The server may report a finished run with no text — a completed generation that produced
+      // nothing is still a completed generation, and the screen says so rather than staying pending.
+      content: string | null
+      volumePages: number | null
+      createdAt: string | null
+    }
   | { type: 'failed'; message: string }
   | { type: 'reset' }
 
