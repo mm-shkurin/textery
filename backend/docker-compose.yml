@@ -1,0 +1,50 @@
+# The backend and the database it needs, standalone.
+#
+# This is the whole stack for THIS repository: `docker compose up --build` from
+# here gives a migrated database and a serving API, with no other repository
+# checked out. The monorepo's infra/docker-compose.yml is the full product stack
+# (frontend, nginx, redis) and is not reachable from here.
+#
+# Secrets come from a local `.env` next to this file -- copy `.env.example` and
+# fill it in. Nothing here carries a default credential.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-textery}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-textery}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # The API waits on this rather than on the container merely existing:
+    # Postgres accepts connections seconds after the process starts, and
+    # `alembic upgrade head` against a database that is not yet listening kills
+    # the app container on boot.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-textery} -d ${POSTGRES_DB:-textery}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Composed from the service name, not from .env: inside the compose network
+      # the database is `postgres`, and a DATABASE_URL copied from a local run
+      # would point at localhost and fail in a way that reads like a broken image.
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-textery}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-textery}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
