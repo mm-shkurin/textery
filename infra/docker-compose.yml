@@ -46,6 +46,24 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379/0
+      # The Yandex OAuth contract. These four live in infra/.env and were never
+      # forwarded, so the container booted with them unset: every OAuth route
+      # answered a configuration error and nine acceptance tests failed in setup
+      # against a backend whose code was fine. Declared here without defaults —
+      # an empty value is a boot-time failure that names the missing variable,
+      # which is preferable to a runtime error on the first sign-in attempt.
+      YANDEX_CLIENT_ID: ${YANDEX_CLIENT_ID}
+      YANDEX_CLIENT_SECRET: ${YANDEX_CLIENT_SECRET}
+      YANDEX_REDIRECT_URI: ${YANDEX_REDIRECT_URI}
+      OAUTH_FRONTEND_CALLBACK_URL: ${OAUTH_FRONTEND_CALLBACK_URL}
+      # Which provider fetches the identity, and how long a handoff code lives.
+      # Defaulted so this file changes nothing on its own: `yandex` is what the
+      # image already assumed, and an unset TTL keeps the application's own
+      # default. They are forwarded so the OAuth acceptance suite can select the
+      # in-process fake provider (`OAUTH_PROVIDER=fake`) and a short TTL from
+      # infra/.env instead of nobody being able to run it at all.
+      OAUTH_PROVIDER: ${OAUTH_PROVIDER:-yandex}
+      OAUTH_HANDOFF_CODE_TTL_SECONDS: ${OAUTH_HANDOFF_CODE_TTL_SECONDS:-}
     ports:
       - "${BACKEND_PORT}:8000"
     depends_on:
