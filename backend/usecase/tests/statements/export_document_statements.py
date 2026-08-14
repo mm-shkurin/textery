@@ -2,7 +2,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from document.export_document import _MEDIA_TYPE, ExportDocument
+from document.export_document import ExportDocument
 from document.export_format import ExportFormat
 from document.get_document import GetDocument
 from document.rendered_export import RenderedExport
@@ -125,9 +125,9 @@ class ExportStatements:
             f"{export_format!r}, got {self.renderer.calls!r}"
         )
 
-    def assert_export_is(self, media_type: str, filename: str) -> None:
+    def assert_export_is(self, export_format: ExportFormat, filename: str) -> None:
         expected = RenderedExport(
-            content=FAKE_RENDERED_PDF, media_type=media_type, filename=filename
+            content=FAKE_RENDERED_PDF, export_format=export_format, filename=filename
         )
         assert self.result == expected, f"expected {expected!r}, got {self.result!r}"
 
@@ -163,16 +163,4 @@ class ExportStatements:
         assert dict(stored.__dict__) == before, (
             f"exporting must not mutate ANY stored field: expected {before!r}, "
             f"got {stored.__dict__!r}"
-        )
-
-    def assert_every_export_format_resolves_to_a_media_type(self) -> None:
-        """Reaches into the usecase's private `_MEDIA_TYPE` deliberately.
-
-        The map has no public accessor -- exposing one would widen the usecase's
-        API for a test's convenience. Keeping the private read here, behind a
-        named step, is what lets the test class stay pure DSL.
-        """
-        unmapped = set(ExportFormat) - set(_MEDIA_TYPE)
-        assert unmapped == set(), (
-            f"every ExportFormat member must map to a media type; unmapped: {unmapped}"
         )

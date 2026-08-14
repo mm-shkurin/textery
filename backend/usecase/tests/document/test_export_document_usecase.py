@@ -13,32 +13,26 @@ target document exists -- and, again, never reaches render.
 
 Scenario 2.1 -- a found document exports as a valid PDF. `execute` renders the
 STORED content through the `DocumentRenderer` port under the parsed
-`ExportFormat` and returns a result carrying the rendered bytes and the media
-type `application/pdf`. Rendering the stored content (not the request, not the
+`ExportFormat` and returns a result carrying the rendered bytes and the format
+they were rendered under. Rendering the stored content (not the request, not the
 raw entity) and pinning the exact sentinel bytes is the positive control: it
 proves the render step ran on the caller's own content rather than being
 tautologically refused.
 
-Scenario 2.2 -- a found document exports as a valid DOCX. The docx positive
-control mirrors 2.1 but pins the Word media type
-`application/vnd.openxmlformats-officedocument.wordprocessingml.document`. Its
-companion is an exhaustiveness guard: EVERY `ExportFormat` member must resolve
-to a media type in the usecase's `_MEDIA_TYPE` map, so a future format added
-without a media type fails loudly here at import-check time rather than 500-ing
-at runtime the first time a caller requests it. Fail-fast ordering (media lookup
-before render) is deliberately NOT tested: with only pdf/docx and both mapped
-after GREEN, no parseable-but-unmapped format exists, so the ordering is
-un-observable via the public API and contriving an invalid enum member is
-forbidden -- tests 2.2 + the exhaustiveness guard cover the invariant.
+Scenario 2.2 -- a found document exports as a valid DOCX, mirroring 2.1 under the
+other format.
+
+The MEDIA TYPE is not asserted here and is no longer this layer's to know:
+`application/pdf` is an HTTP wire name, so the map and its exhaustiveness guard
+live with the rest adapter (`dto/document/export_media_type.py`, pinned by
+`adapters/rest/tests/router/document/test_export_document_router.py`). What this
+layer owes the router is the FORMAT, and that is what these tests pin.
 """
 
 import pytest
 
 from document.export_format import ExportFormat
 from statements.export_document_statements import ExportStatements
-
-PDF_MEDIA_TYPE = "application/pdf"
-DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
 @pytest.fixture
@@ -85,7 +79,7 @@ class TestExportDocument:
         await statements.when_exporting("pdf")
 
         statements.assert_rendered_stored_content("<p>Привет</p>", ExportFormat.PDF)
-        statements.assert_export_is(media_type=PDF_MEDIA_TYPE, filename="document.pdf")
+        statements.assert_export_is(export_format=ExportFormat.PDF, filename="document.pdf")
 
     async def test_should_render_the_stored_content_and_return_docx_bytes(self, statements):
         await statements.given_a_stored_document(content="<p>Пока</p>")
@@ -93,16 +87,16 @@ class TestExportDocument:
         await statements.when_exporting("docx")
 
         statements.assert_rendered_stored_content("<p>Пока</p>", ExportFormat.DOCX)
-        statements.assert_export_is(media_type=DOCX_MEDIA_TYPE, filename="document.docx")
+        statements.assert_export_is(export_format=ExportFormat.DOCX, filename="document.docx")
 
     @pytest.mark.parametrize(
-        "title, export_format, expected_media_type, expected_filename",
+        "title, export_format, expected_format, expected_filename",
         [
-            ("Привет Мир", "pdf", PDF_MEDIA_TYPE, "Привет Мир.pdf"),
-            ("Привет Мир", "docx", DOCX_MEDIA_TYPE, "Привет Мир.docx"),
-            (None, "pdf", PDF_MEDIA_TYPE, "document.pdf"),
-            ("   ", "pdf", PDF_MEDIA_TYPE, "document.pdf"),
-            (" Отчёт ", "pdf", PDF_MEDIA_TYPE, "Отчёт.pdf"),
+            ("Привет Мир", "pdf", ExportFormat.PDF, "Привет Мир.pdf"),
+            ("Привет Мир", "docx", ExportFormat.DOCX, "Привет Мир.docx"),
+            (None, "pdf", ExportFormat.PDF, "document.pdf"),
+            ("   ", "pdf", ExportFormat.PDF, "document.pdf"),
+            (" Отчёт ", "pdf", ExportFormat.PDF, "Отчёт.pdf"),
         ],
         ids=[
             "cyrillic_title_pdf",
@@ -113,7 +107,7 @@ class TestExportDocument:
         ],
     )
     async def test_should_derive_the_plain_filename_from_the_title(
-        self, statements, title, export_format, expected_media_type, expected_filename
+        self, statements, title, export_format, expected_format, expected_filename
     ):
         # Derivation is a usecase policy: the filename stem is the title when
         # present, else the default "document"; the extension follows the format
@@ -140,17 +134,10 @@ class TestExportDocument:
         # The whole export envelope, not just the filename: the media type and the
         # rendered bytes are deterministic on every one of these params, so pinning
         # only the stem would let either regress unnoticed across all five.
-        statements.assert_export_is(media_type=expected_media_type, filename=expected_filename)
+        statements.assert_export_is(export_format=expected_format, filename=expected_filename)
         # The other half of the ADR sentence: the strip belongs to the FILENAME,
         # never to the stored entity. Asserted for every param, since the invariant
         # is not specific to the padded case -- but it is the padded one it makes
         # load-bearing, because there a green is tempted to normalise the entity
         # (or the mapper) instead of the derived stem.
         await statements.assert_stored_document_unchanged(title)
-
-    def test_every_export_format_resolves_to_a_media_type(self, statements):
-        # Structural invariant, not a transient state: it stays green for any
-        # future format once that format is mapped, and fails loudly the moment a
-        # member is added without a media type -- the loud failure the moved
-        # media lookup (ADR) turns from a runtime 500 into an import-time guard.
-        statements.assert_every_export_format_resolves_to_a_media_type()

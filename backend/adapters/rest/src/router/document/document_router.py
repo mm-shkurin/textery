@@ -16,6 +16,7 @@ from dto.document.document_dtos import (
     DocumentSummaryDto,
     SaveDocumentRequestDto,
 )
+from dto.document.export_media_type import media_type_for
 from dto.document.get_document_response_dto import GetDocumentResponseDto
 from dto.shared.page_dto import PageDto
 from security.current_owner import get_current_owner_id
@@ -147,9 +148,10 @@ async def export_document(
         # Absent and foreign collapse to the same None, translated into the
         # sanctioned 404 rather than leaking which case it was.
         raise NotFoundException(f"document {document_id} not found")
-    # Stream the rendered bytes back verbatim as a binary attachment. media_type
-    # is threaded from the RenderedExport so a future DOCX export is typed
-    # correctly rather than mislabelled application/pdf.
+    # Stream the rendered bytes back verbatim as a binary attachment. The
+    # Content-Type is derived HERE from the format the usecase rendered under:
+    # naming `application/pdf` is a wire decision, and the usecase that used to
+    # hold that map was speaking the transport it is meant to be free of.
     #
     # The filename is RFC 5987 percent-encoded. safe="" encodes control chars too
     # (CR->%0D, LF->%0A), so a title carrying raw CRLF cannot inject a header line;
@@ -157,7 +159,7 @@ async def export_document(
     encoded = quote(rendered.filename, safe="")
     return Response(
         content=rendered.content,
-        media_type=rendered.media_type,
+        media_type=media_type_for(rendered.export_format),
         headers={"Content-Disposition": f"attachment; filename*=UTF-8''{encoded}"},
     )
 
