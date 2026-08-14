@@ -53,7 +53,7 @@ export function HistoryPage({ onOpenDocument, onBack }: HistoryPageProps) {
         {items.map((d) => (
           <HistoryRow
             key={d.documentId}
-            document={d}
+            entry={d}
             formatDate={formatDate}
             onOpen={onOpenDocument}
           />

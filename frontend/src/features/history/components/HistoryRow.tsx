@@ -3,23 +3,25 @@ import { documentTypeLabelFromWire } from '../../../shared/copy/documentTypeCopy
 import type { DocumentSummary } from '../api/historyApi'
 
 interface HistoryRowProps {
-  document: DocumentSummary
+  entry: DocumentSummary
   formatDate: (iso: string) => string
   onOpen: (documentId: string, documentType: string) => void
 }
 
 // One row of «Мои работы».
 //
-// Extracted from the list's `.map` and memoized because it was the jury's remark: a row rendered
+// The prop is `entry`, not `document`: a prop named after a browser global shadows it inside
+// the component, which is how a stray `document.querySelector` becomes a type error nobody can
+// read. Extracted from the list's `.map` and memoized because it was the jury's remark: a row rendered
 // inline is re-created on every parent render, so paging in twenty more documents repainted the
 // twenty already on screen. Its props are a document, a formatter and a callback — all stable
 // across renders — so a row now re-renders only when its own document changes.
-function HistoryRowComponent({ document, formatDate, onOpen }: HistoryRowProps) {
+function HistoryRowComponent({ entry, formatDate, onOpen }: HistoryRowProps) {
   // Bound here rather than as an inline arrow at the call site: an arrow in the parent's JSX is a
   // new function every render, which is exactly what defeats the memo above.
   const open = useCallback(
-    () => onOpen(document.documentId, document.documentType),
-    [document.documentId, document.documentType, onOpen],
+    () => onOpen(entry.documentId, entry.documentType),
+    [entry.documentId, entry.documentType, onOpen],
   )
 
   return (
@@ -34,10 +36,10 @@ function HistoryRowComponent({ document, formatDate, onOpen }: HistoryRowProps) 
           Falls back to the type label for a manual document created before titles existed — a
           blank row is a worse regression than a repeated one. */}
       <span className="history-row-title">
-        {document.title?.trim() || documentTypeLabelFromWire(document.documentType)}
+        {entry.title?.trim() || documentTypeLabelFromWire(entry.documentType)}
       </span>
       <span className="history-row-meta">
-        {documentTypeLabelFromWire(document.documentType)} · {formatDate(document.updatedAt)}
+        {documentTypeLabelFromWire(entry.documentType)} · {formatDate(entry.updatedAt)}
       </span>
     </button>
   )

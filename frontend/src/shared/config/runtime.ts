@@ -14,6 +14,11 @@ function positiveInt(raw: string | undefined, fallback: number, floor: number): 
   return Math.max(floor, Math.trunc(parsed))
 }
 
+function csv(raw: string | undefined, fallback: string[]): readonly string[] {
+  const parts = (raw ?? '').split(',').map((p) => p.trim()).filter(Boolean)
+  return parts.length > 0 ? parts : fallback
+}
+
 export const RUNTIME = {
   // How often a running generation is asked for its status, and for how long. The product of the
   // two is the ceiling on a single generation: 5s × 60 ≈ 5 minutes.
@@ -28,4 +33,13 @@ export const RUNTIME = {
     3,
     1,
   ),
+
+  // Autosave backoff. The editor retries a failed save on a doubling delay from base to max; a
+  // stand with a slower backend wants a longer floor, and that is a deployment's call.
+  autosaveRetryBaseMs: positiveInt(import.meta.env.VITE_AUTOSAVE_RETRY_BASE_MS, 1000, 250),
+  autosaveRetryMaxMs: positiveInt(import.meta.env.VITE_AUTOSAVE_RETRY_MAX_MS, 8000, 1000),
+
+  // Which image formats an avatar may be uploaded in. Policy, not logic: tightening or widening it
+  // must not require a code change and a release.
+  avatarTypes: csv(import.meta.env.VITE_AVATAR_TYPES, ['image/png', 'image/jpeg', 'image/webp']),
 } as const

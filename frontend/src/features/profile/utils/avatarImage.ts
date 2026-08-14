@@ -1,4 +1,5 @@
 import { browserDocument } from '../../../shared/lib/browser'
+import { RUNTIME } from '../../../shared/config/runtime'
 // Validation and downscaling, both on the CLIENT, both before a single byte is uploaded.
 //
 // The server stores the bytes and does not decode them — decided, not an oversight — so nothing
@@ -9,7 +10,8 @@ import { browserDocument } from '../../../shared/lib/browser'
 // SVG is refused everywhere: it is not an image the way the others are, it is a document that can
 // carry script, and an avatar is displayed on every authenticated page. It is out of the `accept`
 // attribute AND out of the check below, because `accept` is a hint the file dialog may ignore.
-export const ALLOWED_AVATAR_TYPES = ['image/png', 'image/jpeg', 'image/webp']
+// Policy, held as configuration: see RUNTIME.avatarTypes.
+export const ALLOWED_AVATAR_TYPES = RUNTIME.avatarTypes
 
 // The bound on what the user may PICK, not on what is sent. Generous on purpose: everything under
 // it is downscaled to ~20 KB anyway, and the only job of this number is to stop the browser
