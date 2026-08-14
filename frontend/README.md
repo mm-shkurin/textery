@@ -89,6 +89,37 @@ features/*/api/*Api    — конкретные эндпоинты, перево
 Как здесь принято работать — ветки, коммиты, границы файлов, правило self-тестов для гейтов —
 описано в [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Контейнеризация
+
+Собранный фронтенд раздаётся nginx-ом из образа, который собирается **из этого каталога**
+и ничего выше себя не требует:
+
+```bash
+docker compose up --build            # http://localhost:8080
+FRONTEND_PORT=3000 docker compose up # другой порт
+```
+
+Или без compose:
+
+```bash
+docker build -t textery-frontend .
+docker run -p 8080:80 -e API_UPSTREAM=http://127.0.0.1:8100 textery-frontend
+```
+
+| Файл | Что делает |
+|------|------------|
+| `Dockerfile` | двухстадийная сборка: `node:20-alpine` собирает, `nginx:alpine` раздаёт |
+| `docker-compose.yml` | один сервис — фронт сам по себе, полный стек живёт в монорепе |
+| `docker/nginx.conf.template` | SPA-fallback на `index.html` и проксирование `/api/` |
+| `.dockerignore` | `node_modules`, `dist`, `coverage`, `.env` в контекст сборки не попадают |
+
+`API_UPSTREAM` — куда уходит `/api/`. Бэкенд этим compose-файлом не поднимается: укажите
+адрес работающего API (стенд, стек монорепы или порт на хосте), и приложение заработает
+целиком. По умолчанию `http://host.docker.internal:8100`.
+
+Сборка образа выполняет `npm run build`, то есть проверку типов и бюджет бандла: образ
+нельзя собрать из кода, который не прошёл бы CI.
+
 ## Тесты
 
 | Уровень | Где | Сколько | Чем гоняется |

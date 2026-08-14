@@ -89,7 +89,10 @@
         }
       ],
       "release_ref": "gitverse-frontend/main",
-      "artifact_remote": "gitverse-frontend"
+      "artifact_remote": "gitverse-frontend",
+      "test_artifacts": [
+        "frontend/docs/testing"
+      ]
     }
   },
   "shared_roots": [
