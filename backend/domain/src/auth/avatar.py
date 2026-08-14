@@ -11,6 +11,14 @@ MAX_AVATAR_BYTES = 512 * 1024
 # being handed to every browser that later renders the image.
 MAX_AVATAR_SIDE_PIXELS = 1024
 
+# And any side below this is refused too. A header declaring 0x0 passes a ceiling
+# check -- `max(0, 0)` is under any maximum -- so without a floor the one file
+# that states an impossible size is the one file that gets through. It is not a
+# renderable image in any browser, and the whole reason the dimensions are read at
+# all is that a size no guard has checked is a size the browser will find its own
+# answer for.
+MIN_AVATAR_SIDE_PIXELS = 1
+
 AVATAR_TOO_LARGE_CODE = "AVATAR_TOO_LARGE"
 AVATAR_TOO_LARGE_MESSAGE = "The image is too large."
 AVATAR_UNSUPPORTED_TYPE_CODE = "AVATAR_UNSUPPORTED_TYPE"
@@ -53,7 +61,7 @@ class Avatar:
                 message=AVATAR_UNSUPPORTED_TYPE_MESSAGE,
             )
         dimensions = read_dimensions(media_type, data)
-        if dimensions is None or max(dimensions) > MAX_AVATAR_SIDE_PIXELS:
+        if dimensions is None or not self._within_bounds(dimensions):
             # `None` -- a header this parser cannot read -- is refused, not waved
             # through. A file whose declared size cannot be found is a file whose
             # size no guard has checked, and the browser that renders it later
@@ -65,6 +73,12 @@ class Avatar:
         self._data = data
         self._media_type = media_type
         self._width, self._height = dimensions
+
+    @staticmethod
+    def _within_bounds(dimensions: tuple[int, int]) -> bool:
+        return (
+            min(dimensions) >= MIN_AVATAR_SIDE_PIXELS and max(dimensions) <= MAX_AVATAR_SIDE_PIXELS
+        )
 
     @property
     def data(self) -> bytes:

@@ -13,6 +13,7 @@ from auth.avatar import (
     AVATAR_UNSUPPORTED_TYPE_CODE,
     MAX_AVATAR_BYTES,
     MAX_AVATAR_SIDE_PIXELS,
+    MIN_AVATAR_SIDE_PIXELS,
     Avatar,
 )
 from auth.avatar_format import JPEG, PNG, WEBP
@@ -95,3 +96,23 @@ class TestRefusals:
             Avatar(image_bytes.jpeg_without_frame_header())
 
         assert refusal.value.error_code == AVATAR_DIMENSIONS_TOO_LARGE_CODE
+
+    @pytest.mark.parametrize(("width", "height"), [(0, 0), (0, 64), (64, 0)])
+    def test_refuses_an_image_that_declares_a_side_of_zero(self, width: int, height: int):
+        """A 0-pixel side is a size no browser can render and no guard has cleared.
+
+        The ceiling check alone lets it through -- `max(0, 0)` is under any
+        maximum -- so the floor is stated here explicitly.
+        """
+        with pytest.raises(ValidationException) as refusal:
+            Avatar(image_bytes.png(width, height))
+
+        assert refusal.value.error_code == AVATAR_DIMENSIONS_TOO_LARGE_CODE
+
+    def test_accepts_an_image_exactly_on_the_floor(self):
+        avatar = Avatar(image_bytes.png(MIN_AVATAR_SIDE_PIXELS, MIN_AVATAR_SIDE_PIXELS))
+
+        assert (avatar.width, avatar.height) == (
+            MIN_AVATAR_SIDE_PIXELS,
+            MIN_AVATAR_SIDE_PIXELS,
+        )
