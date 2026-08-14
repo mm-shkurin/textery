@@ -15,10 +15,14 @@
   padding: 40px 0 48px;
 }
 
+/* «Назад» sits ABOVE the title, not beside it. As a flex row it was pinned to the top edge of a
+   two-line title block, so it floated level with the heading's cap-height with the subtitle
+   running on below it — a control wearing the title's whitespace. Stacked, it reads as what it
+   is: the way out of this screen, before the screen names itself. Same order as «Мой профиль». */
 .projects-header {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
 }
 
 /* 28/600 in frame 527:1863, not 30/700 — the heading is a size and a half above the section
@@ -42,7 +46,15 @@
   border: 1px solid var(--projects-edge);
   border-radius: 8px;
   padding: 6px 12px;
+  margin-bottom: 16px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
   cursor: pointer;
+}
+
+.projects-back:hover {
+  background: var(--bg-sunken);
 }
 
 /* 20/600. The spacing is measured off the render rather than guessed: «Недавние проекты» sits

@@ -19,10 +19,10 @@
   /* 10 in the frame. */
   border-radius: 8px;
   font-family: inherit;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  height: 64px;
+  height: 52px;
 }
 
 /* `Component 20` — the secondary action: white fill, black label.
@@ -33,7 +33,7 @@
 .btn-ghost {
   background: var(--bg-surface);
   color: var(--text-primary);
-  padding: 0 31px;
+  padding: 0 26px;
 }
 
 .btn-ghost:hover {
@@ -46,7 +46,7 @@
 .btn-light {
   background: var(--accent);
   color: var(--text-inverse);
-  padding: 0 48px;
+  padding: 0 40px;
 }
 
 .btn-light:hover {
@@ -59,8 +59,8 @@
 @media (max-width: 1000px) {
   .btn-ghost,
   .btn-light {
-    height: 52px;
-    font-size: 14px;
+    height: 44px;
+    font-size: 13px;
   }
 
   .btn-ghost {
@@ -79,8 +79,8 @@
      neither. */
   .btn-ghost,
   .btn-light {
-    height: 44px;
-    font-size: 13px;
+    height: 38px;
+    font-size: 12px;
     padding: 0 14px;
   }
 }

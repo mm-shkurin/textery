@@ -50,8 +50,17 @@ export function Navbar({
   return (
     <Element className={classes} data-testid={testId}>
       {/* Exported from the Figma `Logo` component (node 577:2034) rather than redrawn, and one
-          file for every screen, so the mark cannot drift between them. */}
-      <img className="navbar-logo" src="/design/logo-textery.svg" alt="Textery" />
+          file per theme for every screen, so the mark cannot drift between them.
+
+          TWO files, swapped in CSS, rather than one filtered: the wordmark is black and has to
+          become near-white in the dark theme, but the glyph beside it is `--blue-700` and must
+          NOT move. A CSS filter cannot invert one and spare the other. Both are rendered and one
+          is hidden, so the swap costs no repaint and cannot flash the wrong mark between themes.
+
+          `alt` on the visible one only — the hidden twin would otherwise announce the product
+          name twice to a screen reader. */}
+      <img className="navbar-logo navbar-logo-light" src="/design/logo-textery.svg" alt="Textery" />
+      <img className="navbar-logo navbar-logo-dark" src="/design/logo-textery-dark.svg" alt="" />
       <div className="navbar-actions">
         {actions}
         {profileMenu !== undefined && (

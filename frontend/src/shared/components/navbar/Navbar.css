@@ -41,6 +41,24 @@
   flex: none;
 }
 
+/* The wordmark is black artwork, so in the dark theme it disappeared into the bar. Two exports,
+   one shown — see the comment in Navbar.tsx for why a filter cannot do this job.
+
+   Keyed off `[data-theme]`, never `prefers-color-scheme`: the attribute is written before first
+   paint by the inline script in index.html, and a stored light choice has to survive a dark OS
+   setting. A media query here would show a white wordmark on a white bar to exactly that user. */
+.navbar-logo-dark {
+  display: none;
+}
+
+:root[data-theme='dark'] .navbar-logo-light {
+  display: none;
+}
+
+:root[data-theme='dark'] .navbar-logo-dark {
+  display: block;
+}
+
 .navbar-actions {
   display: flex;
   align-items: center;
