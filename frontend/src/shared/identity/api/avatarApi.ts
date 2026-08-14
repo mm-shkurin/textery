@@ -15,8 +15,9 @@ import { authorizedRequest } from '../../../features/auth/api/authorizedRequest'
 import { identityRequest } from './identityRequest'
 import { AvatarRejectedError } from './profileErrors'
 import { toProfile, type Profile } from './profileWire'
+import { API } from '../../../shared/api/endpoints'
 
-const AVATAR_PATH = '/api/v1/auth/me/avatar'
+const AVATAR_PATH = API.identity.avatar
 
 // `image/webp` because that is what the client encodes to — see `avatarImage.ts`. The server
 // stores bytes and does not decode them, so this header is the only statement of what they are.

@@ -9,6 +9,7 @@
 import { postJson } from '../../../shared/api/httpClient'
 import { toAuthApiError } from './apiError'
 import { sessionTokensFromWire, type SessionTokens } from './sessionTokens'
+import { API } from '../../../shared/api/endpoints'
 
 export interface OAuthExchangeRequest {
   code: string
@@ -27,7 +28,7 @@ function toOAuthExchangeError(error: unknown): unknown {
 
 export async function oauthExchange(request: OAuthExchangeRequest): Promise<OAuthSession> {
   try {
-    const body = await postJson<Record<string, unknown>>('/api/v1/auth/oauth/exchange', {
+    const body = await postJson<Record<string, unknown>>(API.auth.oauthExchange, {
       code: request.code,
     })
     return sessionTokensFromWire(body)

@@ -10,6 +10,7 @@
 //   ?limit=0 and ?limit=999                -> 400   (bounds enforced; 20 is the server default)
 //   no token                               -> 401 {"error_code":"UNAUTHORIZED"}
 import { send } from '../../../shared/api/send'
+import { API } from '../../../shared/api/endpoints'
 
 // One page of either list. `nextCursor === null` means the end — not an error, and not an empty
 // page: the last page carries items AND a null cursor, so paging must stop on the cursor, never
@@ -81,7 +82,7 @@ function pagePath(base: string, limit: number, cursor?: string): string {
 
 export async function listDocuments(limit = 20, cursor?: string): Promise<Page<DocumentSummary>> {
   const data = await send<PageWire<DocumentSummaryWire>>(
-    pagePath('/api/v1/documents', limit, cursor),
+    pagePath(API.documents.collection, limit, cursor),
     {},
     'Не удалось загрузить документы',
   )
@@ -106,7 +107,7 @@ export async function listGenerations(
   cursor?: string,
 ): Promise<Page<GenerationSummary>> {
   const data = await send<PageWire<GenerationSummaryWire>>(
-    pagePath('/api/v1/generations', limit, cursor),
+    pagePath(API.generations.collection, limit, cursor),
     {},
     'Не удалось загрузить генерации',
   )

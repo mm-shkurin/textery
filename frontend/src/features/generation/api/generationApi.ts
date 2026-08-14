@@ -10,6 +10,7 @@ import {
   WIRE_DOCUMENT_TYPE,
   type DocumentType,
 } from '../../../shared/documentTypes'
+import { API } from '../../../shared/api/endpoints'
 
 export interface CreateGenerationResult {
   generationId: string
@@ -57,7 +58,7 @@ export async function createGeneration(
   parameters: GenerationParameters = EMPTY_PARAMETERS,
 ): Promise<CreateGenerationResult> {
   const data = await send<CreateGenerationWire>(
-    '/api/v1/generations',
+    API.generations.collection,
     {
       method: 'POST',
       // Generated once per call, so an internal 401-retry replays the SAME key and the backend
@@ -83,7 +84,7 @@ export async function createGeneration(
 
 export async function getGeneration(id: string): Promise<GenerationStatus> {
   const data = await send<GenerationStatusWire>(
-    `/api/v1/generations/${id}`,
+    API.generations.one(id),
     {},
     'Не удалось получить статус',
   )

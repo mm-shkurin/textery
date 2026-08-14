@@ -9,6 +9,7 @@
 // field that makes this call worth anything read `undefined` — and no test caught it, because no
 // caller read the result at all.
 import { postJson, isHttpError } from '../../../shared/api/httpClient'
+import { API } from '../../../shared/api/endpoints'
 
 const RESEND_FAILURE_MESSAGE = 'Не удалось отправить код повторно'
 
@@ -22,7 +23,7 @@ interface ResendCodeWire {
 
 export async function resendCode(email: string): Promise<ResendCodeResult> {
   try {
-    const body = await postJson<ResendCodeWire>('/api/v1/auth/resend-code', { email })
+    const body = await postJson<ResendCodeWire>(API.auth.resendCode, { email })
     const code = body.verification_code
     return { code: typeof code === 'string' ? code : '' }
   } catch (error) {

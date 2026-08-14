@@ -10,12 +10,13 @@ import { authorizedRequest } from '../../../features/auth/api/authorizedRequest'
 import { identityRequest } from './identityRequest'
 import { NameRejectedError } from './profileErrors'
 import { toProfile, type Profile } from './profileWire'
+import { API } from '../../../shared/api/endpoints'
 
 export { NameRejectedError } from './profileErrors'
 // Re-exported so existing importers keep one import site for "the profile and how to get it".
 export type { Profile } from './profileWire'
 
-const ME_PATH = '/api/v1/auth/me'
+const ME_PATH = API.identity.me
 
 // Never ends the session on failure — see identityRequest.
 export async function fetchProfile(): Promise<Profile> {

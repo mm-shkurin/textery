@@ -12,8 +12,9 @@ import { isHttpError } from '../../api/httpClient'
 import { authorizedRequest } from '../../../features/auth/api/authorizedRequest'
 import { DeletionRejectedError } from './profileErrors'
 import type { Profile } from './profileWire'
+import { API } from '../../../shared/api/endpoints'
 
-const DELETION_PATH = '/api/v1/auth/me/deletion'
+const DELETION_PATH = API.identity.deletion
 
 export type DeletionConfirmation =
   { kind: 'password'; password: string } | { kind: 'email'; email: string }

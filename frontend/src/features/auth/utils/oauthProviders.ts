@@ -1,3 +1,4 @@
+import { API } from '../../../shared/api/endpoints'
 // The single source of truth for which OAuth providers this client speaks. OAuthProviderButtons
 // renders one control per entry, and the /auth/callback interstitial rejects any provider that is
 // not exactly one of these — so adding a provider (or removing one) is a ONE-place edit here, and
@@ -11,13 +12,13 @@ export const OAUTH_PROVIDERS = [
     provider: 'vk',
     label: 'Войти через VK ID',
     badgeSrc: '/design/icon-vk.svg',
-    startPath: '/api/v1/auth/oauth/vk/start',
+    startPath: API.auth.oauthStart('vk'),
   },
   {
     provider: 'yandex',
     label: 'Войти через Yandex ID',
     badgeSrc: '/design/icon-yandex.svg',
-    startPath: '/api/v1/auth/oauth/yandex/start',
+    startPath: API.auth.oauthStart('yandex'),
   },
 ] as const
 
