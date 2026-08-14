@@ -37,11 +37,9 @@ export function ProfileNameForm({ profile, markDirty, markClean }: ProfileNameFo
         </div>
       )}
 
-      <div className="profile-form-title">Отображаемое имя</div>
-      <p className="profile-form-hint">
-        Показывается в шапке и на этом экране вместо адреса почты.
-      </p>
-
+      {/* No «Отображаемое имя» heading over the field any more: the design's row is labelled «Имя»
+          and the card it sits in is already titled «Личные данные». Two headings and a label for
+          one text input is three names for the same thing. */}
       <div className="profile-field">
         <div className="profile-label-row">
           <label className="profile-label" htmlFor="profile-name-input">

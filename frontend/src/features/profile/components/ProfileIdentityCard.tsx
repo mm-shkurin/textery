@@ -1,4 +1,3 @@
-import { ProfileAvatar } from '../../../shared/components/profile/ProfileAvatar'
 import { formatCardDate } from '../../../shared/formatCardDate'
 import type { Profile } from '../../../shared/identity/api/profileApi'
 
@@ -6,7 +5,12 @@ interface ProfileIdentityCardProps {
   profile: Profile
 }
 
-// The card's top half: who this account is (mockups 02 and 03).
+// Who this account is, in the row the design gives to the picture.
+//
+// The mockup labels that row «Фото профиля». This says who the account belongs to instead: the
+// name, the address and the join date have to be on this screen somewhere — they are the account —
+// and the mockup's three cards give them no other row. A label naming the control next to it is
+// the cheapest thing on the screen to lose.
 //
 // With a name, the name is the headline and the address is the second line. Without one, the
 // ADDRESS is the headline and the second line says so in words — «Имя не задано» rather than an
@@ -19,21 +23,18 @@ export function ProfileIdentityCard({ profile }: ProfileIdentityCardProps) {
   const hasName = (profile.name?.trim() ?? '') !== ''
 
   return (
-    <div className="profile-identity">
-      <ProfileAvatar identity={{ status: 'ready', profile }} size="card" />
-      <div className="profile-who">
-        <div className="profile-primary" data-testid="profile-identity-primary">
-          {hasName ? profile.name : profile.email}
-        </div>
-        <div className="profile-secondary" data-testid="profile-identity-secondary">
-          {hasName ? profile.email : 'Имя не задано'}
-        </div>
-        {/* The year is FORCED on. `formatCardDate` hides it when it matches the current year,
-            which is right for «изменено 15 июля» on a project card and wrong here: «На Textery с
-            3 февраля» is a sentence missing its point. */}
-        <div className="profile-since" data-testid="profile-since">
-          На Textery с {formatCardDate(profile.createdAt, { alwaysShowYear: true })}
-        </div>
+    <div className="profile-who">
+      <div className="profile-primary" data-testid="profile-identity-primary">
+        {hasName ? profile.name : profile.email}
+      </div>
+      <div className="profile-secondary" data-testid="profile-identity-secondary">
+        {hasName ? profile.email : 'Имя не задано'}
+      </div>
+      {/* The year is FORCED on. `formatCardDate` hides it when it matches the current year, which
+          is right for «изменено 15 июля» on a project card and wrong here: «На Textery с 3 февраля»
+          is a sentence missing its point. */}
+      <div className="profile-since" data-testid="profile-since">
+        На Textery с {formatCardDate(profile.createdAt, { alwaysShowYear: true })}
       </div>
     </div>
   )

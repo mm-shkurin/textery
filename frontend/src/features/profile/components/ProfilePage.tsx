@@ -4,32 +4,34 @@ import { UNSAVED_LEAVE_MESSAGE_PROFILE, useUnsavedGuard } from '../../auth/utils
 import { reloadIdentity } from '../../../shared/identity/identityStore'
 import { useIdentity } from '../../../shared/identity/useIdentity'
 import { ProfileHeader } from './ProfileHeader'
-import { ProfileFooter } from './ProfileFooter'
-import { ProfileAvatarField } from './ProfileAvatarField'
-import { ProfileDangerZone } from './ProfileDangerZone'
-import { ProfileIdentityCard } from './ProfileIdentityCard'
+import { ProfileAccountCard } from './ProfileAccountCard'
+import { ProfileAppearanceCard } from './ProfileAppearanceCard'
 import { ProfileLoadFailed } from './ProfileLoadFailed'
-import { ProfileNameForm } from './ProfileNameForm'
+import { ProfilePersonalCard } from './ProfilePersonalCard'
 import { ProfileSkeleton } from './ProfileSkeleton'
 import './ProfilePage.css'
+import './ProfileButtons.css'
 import './ProfileForm.css'
+import './ProfileTheme.css'
+import './ProfileModal.css'
 import './ProfileStates.css'
 
-// «Мой профиль» — mockups 01–08.
+// «Мой профиль» — Figma nodes 1127:10768 (base), 1202:6364 (editing), 1227:9790 (saving) and
+// 1202:6227 (deleting).
 //
-// A ONE-COLUMN page: the shell is 1240px, narrower than «Мои проекты» at 1640. That screen is a
-// feed and wants the width; this one is a single form, and a form stretched to feed width has its
-// label at one end of the monitor and its counter at the other.
+// THREE cards, not one: personal data, appearance, account. The split is the design's and it is
+// the right one — «выйти» and «удалить аккаунт» are not personal data, and burying them under the
+// same heading as a display name is how a user ends up hunting for the way out.
 //
-// It reads the SAME identity snapshot the header does — one `GET /me` for the page, not one per
-// component. The card and the menu therefore cannot disagree, and the failure state is shared:
-// mockup 08's whole point is that a degraded header and a failed screen are one event, not two.
+// Every card reads the SAME identity snapshot the header does — one `GET /me` for the page, not
+// one per component. The cards and the menu therefore cannot disagree, and the failure state is
+// shared: a degraded header and a failed screen are one event, not two.
 export function ProfilePage() {
   const identity = useIdentity()
   const navigate = useNavigate()
   // The guard lives here rather than in the form because the seam it protects is above the form:
-  // signing out from the menu leaves the page too. `beforeunload` (refresh, tab close) is covered
-  // by the hook itself.
+  // signing out from the menu — or from the account card — leaves the page too. `beforeunload`
+  // (refresh, tab close) is covered by the hook itself.
   const guard = useUnsavedGuard(UNSAVED_LEAVE_MESSAGE_PROFILE)
 
   const handleLogout = () => {
@@ -44,38 +46,35 @@ export function ProfilePage() {
 
       <main className="profile-page">
         <h1 className="profile-heading">Мой профиль</h1>
-        <p className="profile-subtitle">Данные вашей учётной записи</p>
+        <p className="profile-subtitle">
+          Личные данные, внешний вид приложения и управление аккаунтом
+        </p>
 
-        <div className="profile-wrap">
+        {identity.status === 'ready' ? (
+          <>
+            <ProfilePersonalCard
+              profile={identity.profile}
+              markDirty={guard.markDirty}
+              markClean={guard.markClean}
+            />
+            <ProfileAppearanceCard />
+            {/* Renders only once the identity is known: the address IS the confirmation for an
+                OAuth account, and the account type decides which field the dialog shows — neither
+                is guessable from a failed load. */}
+            <ProfileAccountCard profile={identity.profile} onLogoutClick={handleLogout} />
+          </>
+        ) : identity.status === 'failed' ? (
+          // A message and «Повторить», never an endless spinner: a spinner with no bound is
+          // indistinguishable from a hung tab, and this request can genuinely never answer.
           <div className="profile-card">
-            {identity.status === 'ready' ? (
-              <>
-                <ProfileIdentityCard profile={identity.profile} />
-                <ProfileAvatarField profile={identity.profile} />
-                <div className="profile-divider" />
-                <ProfileNameForm
-                  profile={identity.profile}
-                  markDirty={guard.markDirty}
-                  markClean={guard.markClean}
-                />
-              </>
-            ) : identity.status === 'failed' ? (
-              // A message and «Повторить», never an endless spinner: a spinner with no bound is
-              // indistinguishable from a hung tab, and this request can genuinely never answer.
-              <ProfileLoadFailed onRetry={reloadIdentity} onBack={() => navigate(-1)} />
-            ) : (
-              <ProfileSkeleton />
-            )}
+            <ProfileLoadFailed onRetry={reloadIdentity} onBack={() => navigate(-1)} />
           </div>
-
-          {/* Outside the card, below everything reversible. It renders only once the identity is
-              known: the address IS the confirmation for an OAuth account, and the account type
-              decides which field the panel shows — neither is guessable from a failed load. */}
-          {identity.status === 'ready' && <ProfileDangerZone profile={identity.profile} />}
-        </div>
+        ) : (
+          <div className="profile-card">
+            <ProfileSkeleton />
+          </div>
+        )}
       </main>
-
-      <ProfileFooter />
     </div>
   )
 }

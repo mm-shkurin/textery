@@ -3,6 +3,16 @@
    200-line cap. */
 
 /* ---- loading placeholder (mockup 01) ---- */
+
+/* The rule between the placeholder's two halves. It lives here rather than in ProfilePage.css
+   because the skeleton is now its only caller: the real card divides its rows with
+   `.profile-row-divided`, which draws the same hairline from the row below it. */
+.profile-divider {
+  height: 1px;
+  margin: 28px 0;
+  background: var(--profile-card-line);
+}
+
 .profile-skeleton-avatar {
   width: 72px;
   height: 72px;

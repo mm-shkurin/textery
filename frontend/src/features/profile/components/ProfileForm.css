@@ -1,31 +1,25 @@
-/* «Мой профиль» — the display-name form (mockups 02–05, plus the save-failed banner). */
+/* «Мой профиль» — the display-name row and the avatar controls beside the picture.
 
-.profile-form-title {
-  font-weight: 700;
-  font-size: 16px;
-  margin-bottom: 6px;
-}
+   The mockup's name row is a read line with «Изменить» (node 1127:10768) that swaps for this form
+   (node 1202:6364). The form is rendered permanently instead — see the note in
+   ProfilePersonalCard.tsx — so what is styled here is the second frame, in the first frame's slot. */
 
-.profile-form-hint {
-  color: var(--text-secondary);
-  font-size: 12.5px;
-  margin-bottom: 20px;
-}
-
-.profile-field {
-  margin-bottom: 22px;
+.profile-form {
+  padding-top: 24px;
+  border-top: 1px solid var(--profile-card-line);
 }
 
 .profile-label-row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  gap: 16px;
   margin-bottom: 8px;
 }
 
 .profile-label {
+  font-size: 14px;
   font-weight: 600;
-  font-size: 13px;
 }
 
 /* Tabular figures so the counter does not jitter as it counts. It counts CODE POINTS of the
@@ -37,15 +31,17 @@
 }
 
 .profile-counter-over {
-  color: var(--error);
+  color: var(--profile-danger-fg);
   font-weight: 600;
 }
 
 .profile-input {
   width: 100%;
-  padding: 14px 16px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
+  max-width: 560px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--profile-card-line);
+  border-radius: 12px;
   font-family: inherit;
   font-size: 14px;
   color: var(--text-primary);
@@ -57,24 +53,24 @@
 }
 
 .profile-input-error {
-  border-color: var(--error);
+  border-color: var(--profile-danger-fg);
 }
 
 /* `readonly` rather than `disabled` while saving: a disabled input drops out of the tab order and
    loses focus mid-save, which moves the caret somewhere else the moment the response lands. */
 .profile-input-locked {
   background: var(--bg-sunken);
-  color: var(--text-secondary);
+  color: var(--profile-row-fg);
 }
 
 .profile-field-error {
-  color: var(--error);
+  color: var(--profile-danger-fg);
   font-size: 12.5px;
   margin-top: 8px;
 }
 
 .profile-field-note {
-  color: var(--text-muted);
+  color: var(--profile-row-fg);
   font-size: 12.5px;
   margin-top: 8px;
 }
@@ -82,67 +78,12 @@
 .profile-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 14px;
-  margin-top: 28px;
-}
-
-.profile-btn-primary,
-.profile-btn-ghost {
-  border: none;
-  border-radius: var(--radius-md);
-  padding: 14px 26px;
-  font-family: inherit;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.profile-btn-primary {
-  background: var(--accent);
-  color: var(--text-inverse);
-}
-
-.profile-btn-primary:hover:enabled {
-  background: var(--accent-hover);
-}
-
-.profile-btn-ghost {
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  border: 1px solid var(--border-strong);
-}
-
-.profile-btn-primary:disabled,
-.profile-btn-ghost:disabled {
-  background: var(--bg-sunken);
-  color: var(--text-muted);
-  border: 1px solid var(--border-subtle);
-  cursor: not-allowed;
-}
-
-.profile-spinner {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  flex: none;
-  /* Keyed to the button's own foreground, not to the page: this ring only ever spins on the
-     filled primary button, which is saturated blue in both themes. */
-  border: 2px solid var(--spinner-track);
-  border-top-color: var(--btn-primary-fg);
-  animation: profile-spin 0.7s linear infinite;
-}
-
-@keyframes profile-spin {
-  to {
-    transform: rotate(360deg);
-  }
+  gap: 12px;
+  margin-top: 24px;
 }
 
 /* The state with no mockup: a save that never reached the server. A banner ABOVE the still-filled
-   card, not an inline field error — the field is not what is wrong. */
+   row, not an inline field error — the field is not what is wrong. */
 .profile-save-failed {
   display: flex;
   align-items: center;
@@ -151,35 +92,86 @@
   margin-bottom: 20px;
   padding: 14px 16px;
   border: 1px solid var(--error-soft-border);
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   background: var(--error-soft-bg);
   color: var(--text-primary);
   font-size: 13px;
 }
 
-.profile-save-failed .profile-btn-ghost {
-  flex: none;
-  padding: 10px 18px;
+/* ---- the two controls at the right end of the picture row ---- */
+.profile-avatar-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
 }
 
-@media (max-width: 640px) {
-  .profile-input {
-    padding: 13px 14px;
+.profile-avatar-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Visually hidden rather than `display: none`: a hidden input is still the control being activated,
+   and `display: none` makes it unfocusable in some engines — which breaks the keyboard path through
+   the visible button that clicks it. */
+.profile-avatar-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The file was never sent — this is a fact about the file, so it sits with the buttons rather than
+   in the banner below. */
+.profile-avatar-rejection {
+  color: var(--profile-danger-fg);
+  font-size: 12.5px;
+  text-align: right;
+}
+
+.profile-avatar-failed {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--error-soft-border);
+  border-radius: 12px;
+  background: var(--error-soft-bg);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  .profile-avatar-field {
+    align-items: stretch;
+  }
+
+  .profile-avatar-buttons button {
+    flex: 1;
+  }
+
+  .profile-avatar-rejection {
+    text-align: left;
   }
 
   /* Full width and reversed: the primary action sits closest to the thumb. */
   .profile-actions {
     flex-direction: column-reverse;
     gap: 10px;
-    margin-top: 22px;
   }
 
   .profile-actions button {
     width: 100%;
-    justify-content: center;
-    padding: 15px 20px;
   }
 
+  .profile-avatar-failed,
   .profile-save-failed {
     flex-direction: column;
     align-items: stretch;

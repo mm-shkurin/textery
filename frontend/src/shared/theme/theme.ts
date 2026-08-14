@@ -43,6 +43,28 @@ export function storeTheme(theme: Theme): void {
   }
 }
 
+// "Follow the OS" is the ABSENCE of a stored choice, not a third value written into storage.
+// Modelling it as a stored `'system'` would need the inline boot script in `index.html` to learn a
+// third case, and that script is duplicated logic pinned by `theme.test.tsx` — the cheapest correct
+// change is the one that leaves it alone. Removing the key is exactly what `resolveInitialTheme`
+// already reads as "ask the OS".
+export function clearStoredTheme(): void {
+  try {
+    localStorage.removeItem(THEME_STORAGE_KEY)
+  } catch {
+    // Same private-mode throw the writer guards against.
+  }
+}
+
+// What the SWITCH shows as selected, which is a different question from what the page is painted
+// in: an OS-dark visitor on 'system' is looking at a dark page, and both «Системная» and «Тёмная»
+// would be truthful answers to "what theme is this" — only one of them is the choice they made.
+export type ThemePreference = 'system' | Theme
+
+export function readStoredPreference(): ThemePreference {
+  return readStoredTheme() ?? 'system'
+}
+
 export function systemTheme(): Theme {
   // jsdom implements no `matchMedia` at all, and neither do a few embedded webviews. Guarding the
   // FUNCTION rather than the result is what keeps this from throwing in the test environment.

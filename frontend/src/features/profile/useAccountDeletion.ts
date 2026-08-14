@@ -85,3 +85,9 @@ export function useAccountDeletion(profile: Profile) {
 
   return { kind, open, value, busy, error, confirmed, openConfirmation, cancel, confirm, setValue }
 }
+
+// Named so the modal can take the whole gate as one prop. Derived from the hook rather than
+// hand-written above it: a duplicated interface is one rename away from describing a shape the
+// hook no longer returns, and the compiler would not notice.
+export type AccountDeletion = ReturnType<typeof useAccountDeletion>
+
