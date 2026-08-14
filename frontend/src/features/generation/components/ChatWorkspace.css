@@ -37,14 +37,19 @@
   background: var(--error);
 }
 
+/* `minmax(0, ...)`, not `1fr`: a `1fr` track refuses to shrink below its content's min-content
+   width, and the document column holds model output — a long code line or an unbroken URL is
+   enough to push the track wider than the screen and put a horizontal scrollbar on the whole
+   page. The code block's own `overflow-x` cannot help while the track around it is growing. */
 .cw-layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 24px;
 }
 
 .chat-panel {
   order: 2;
+  min-width: 0;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: 16px;
@@ -54,6 +59,9 @@
 
 .doc-area {
   order: 1;
+  /* Same reason as the track above — belt to its braces, because this panel is the one that holds
+     content nobody on this side wrote. */
+  min-width: 0;
 }
 
 .chat-panel h3 {
@@ -143,7 +151,7 @@
   }
 
   .cw-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .doc-area {

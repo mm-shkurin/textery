@@ -97,6 +97,40 @@
   color: var(--text-primary);
 }
 
+/* The frame's type sizes are tuned to a 121.5px card. On a phone the same card is drawn two to a
+   row and comes out WIDER than that — 158px on a 360px screen — so keeping 11.25/9.75 there would
+   leave the smallest text in the product floating in the most space. The scale steps up with the
+   card rather than being frozen to the desktop frame, and 9.75px is below what anyone should be
+   asked to read on a phone in the first place.
+
+   No matching mobile frame exists to check this against: the nine «Mobile Generation screen»
+   nodes render blank through the API. These are proportions carried over from the desktop frame,
+   not measurements, and they are the first thing to re-measure when those frames can be read. */
+@media (max-width: 640px) {
+  .type-card {
+    padding: 14px 14px 16px;
+  }
+
+  .type-card-heading {
+    margin-top: 12px;
+  }
+
+  .type-card-name {
+    font-size: 14px;
+  }
+
+  .type-card-chevron {
+    width: 6.5px;
+    height: 11px;
+  }
+
+  .type-card-description {
+    margin-top: 5px;
+    font-size: 12px;
+    line-height: 15.5px;
+  }
+}
+
 /* The «скоро» marker for a type that cannot be generated yet. Sits on the tile, clear of the
    text, so it reads as a stamp on the card rather than as part of the description. All four types
    are available today; the frame therefore does not draw this, and its placement is ours. */

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import './ChatWorkspace.css'
 import './ChatWorkspaceDoc.css'
+import './DocMarkdown.css'
 import type { GenerationUiState } from '../hooks/useGeneration'
 import { Composer, MAX_TOPIC_LENGTH } from './Composer'
 import { EMPTY_PARAMETERS, type GenerationParameters } from '../generationParameters'

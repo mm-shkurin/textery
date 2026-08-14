@@ -91,12 +91,12 @@
   /* Restated here because `.modal`'s own mobile padding in Modal.css has equal specificity to
      `.type-modal-panel` and loses only by import order — which is not a thing to rely on. */
   .type-modal-panel {
-    width: auto;
+    width: 100%;
     padding: 24px 16px;
   }
 
   .type-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
 }
