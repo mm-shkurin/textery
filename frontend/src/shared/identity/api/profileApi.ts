@@ -10,7 +10,6 @@ import { authorizedRequest } from '../../../features/auth/api/authorizedRequest'
 import { identityRequest } from './identityRequest'
 import { NameRejectedError } from './profileErrors'
 import { toProfile, type Profile } from './profileWire'
-import { stubbedProfile, stubbedRename, profileStubEnabled } from './profileStub'
 
 export { NameRejectedError } from './profileErrors'
 // Re-exported so existing importers keep one import site for "the profile and how to get it".
@@ -20,7 +19,6 @@ const ME_PATH = '/api/v1/auth/me'
 
 // Never ends the session on failure — see identityRequest.
 export async function fetchProfile(): Promise<Profile> {
-  if (profileStubEnabled()) return stubbedProfile()
   return toProfile(await identityRequest<Record<string, unknown>>(ME_PATH))
 }
 
@@ -40,7 +38,6 @@ function nameRejection(error: unknown): NameRejectedError | null {
 // `name: null`. Sending `{}` would mean "leave the name alone" (the tri-state the contract pins),
 // which is the opposite instruction.
 export async function saveProfileName(name: string): Promise<Profile> {
-  if (profileStubEnabled()) return stubbedRename(name)
   try {
     return toProfile(
       await authorizedRequest<Record<string, unknown>>(ME_PATH, {

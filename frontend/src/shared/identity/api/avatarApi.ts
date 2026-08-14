@@ -15,12 +15,6 @@ import { authorizedRequest } from '../../../features/auth/api/authorizedRequest'
 import { identityRequest } from './identityRequest'
 import { AvatarRejectedError } from './profileErrors'
 import { toProfile, type Profile } from './profileWire'
-import {
-  profileStubEnabled,
-  stubbedAvatarBytes,
-  stubbedAvatarDelete,
-  stubbedAvatarUpload,
-} from './profileStub'
 
 const AVATAR_PATH = '/api/v1/auth/me/avatar'
 
@@ -40,7 +34,6 @@ function avatarRejection(error: unknown): AvatarRejectedError | null {
 // Raw bytes in the body — not FormData, not multipart. `httpClient` passes a Blob through
 // untouched; anything else there would be JSON-stringified into the string "{}".
 export async function uploadAvatar(bytes: Blob): Promise<Profile> {
-  if (profileStubEnabled()) return stubbedAvatarUpload(bytes)
   try {
     return toProfile(
       await authorizedRequest<Record<string, unknown>>(AVATAR_PATH, {
@@ -57,7 +50,6 @@ export async function uploadAvatar(bytes: Blob): Promise<Profile> {
 }
 
 export async function deleteAvatar(): Promise<Profile> {
-  if (profileStubEnabled()) return stubbedAvatarDelete()
   return toProfile(
     await authorizedRequest<Record<string, unknown>>(AVATAR_PATH, { method: 'DELETE' }),
   )
@@ -66,6 +58,5 @@ export async function deleteAvatar(): Promise<Profile> {
 // Only ever called when `avatarUpdatedAt` is non-null. Asking unconditionally would put a 404 in
 // the console on every page load of every account that has no picture — the common case.
 export async function fetchAvatarBytes(): Promise<Blob> {
-  if (profileStubEnabled()) return stubbedAvatarBytes()
   return identityRequest<Blob>(AVATAR_PATH, { responseType: 'blob' })
 }

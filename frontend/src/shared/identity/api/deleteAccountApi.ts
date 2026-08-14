@@ -11,7 +11,6 @@
 import { isHttpError } from '../../api/httpClient'
 import { authorizedRequest } from '../../../features/auth/api/authorizedRequest'
 import { DeletionRejectedError } from './profileErrors'
-import { deletionStub, profileStubEnabled } from './profileStub'
 import type { Profile } from './profileWire'
 
 const DELETION_PATH = '/api/v1/auth/me/deletion'
@@ -43,7 +42,6 @@ function deletionRejection(error: unknown): DeletionRejectedError | null {
 }
 
 export async function requestAccountDeletion(confirmation: DeletionConfirmation): Promise<void> {
-  if (profileStubEnabled()) return deletionStub(confirmation)
   const body =
     confirmation.kind === 'password'
       ? { password: confirmation.password }
