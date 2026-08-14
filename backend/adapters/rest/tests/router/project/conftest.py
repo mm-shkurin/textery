@@ -57,7 +57,7 @@ class _RejectingTokenService:
     """Rejects every token. Tests that need a resolved owner override the owner
     dependency instead."""
 
-    def read_access_subject(self, access_token):
+    def read_access_subject(self, access_token):  # noqa: ARG002 -- AccountExistence port shape
         raise InvalidTokenException("token rejected by the test double")
 
 

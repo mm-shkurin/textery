@@ -41,7 +41,7 @@ _WRITE_FACTORIES = [
 
 class TestEveryProfileWriteCommitsForReal:
     @pytest.mark.parametrize(("factory", "collaborators"), _WRITE_FACTORIES)
-    async def test_should_wire_a_real_unit_of_work(self, factory, collaborators):
+    async def test_should_wire_a_real_unit_of_work(self, factory, collaborators):  # noqa: ARG002 -- port shape
         async with wired_on_one_session(factory) as (usecase, _):
             assert isinstance(usecase.unit_of_work, SqlAlchemyUnitOfWork), (
                 f"expected {factory.__name__} to wire a real SqlAlchemyUnitOfWork so the "

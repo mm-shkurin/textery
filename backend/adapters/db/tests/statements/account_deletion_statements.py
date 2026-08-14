@@ -42,10 +42,10 @@ class _StubHasher:
     def __init__(self, accepts: bool) -> None:
         self._accepts = accepts
 
-    def hash(self, plain_password: str) -> str:
+    def hash(self, plain_password: str) -> str:  # noqa: ARG002 -- PasswordHasher port shape
         return PASSWORD_HASH
 
-    def verify(self, plain_password: str, hashed_password: str) -> bool:
+    def verify(self, plain_password: str, hashed_password: str) -> bool:  # noqa: ARG002 -- PasswordHasher port shape
         return self._accepts
 
 
