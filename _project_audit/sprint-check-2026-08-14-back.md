@@ -4,7 +4,7 @@
 |---|---|
 | Scope | `--back` (backend/ only; frontend untouched) |
 | Branch | `features/story-13-profile-management` |
-| HEAD at report time | `feb67eff` |
+| HEAD at report time | `a65203e7` |
 | Stage A final score | **3.0 / 3.0** (iterations 10 → 2.5, 11 → 2.5, 12 → 3.0; log in `backend/AUDIT_LOG.md`) |
 | Grading target | working tree (see `## Not yet released`) |
 
@@ -34,13 +34,13 @@ with new findings → 0.5; everything PASS or WAIVED → 1.
 | Git-репозиторий, README, Wiki | **0 / 1** | `GIT-DIRECT-MAIN` (regression) FAIL |
 | Консистентность, арх. стиль | **0 / 1** | `ARCH-PATH-HACK`, `ARCH-TEST-DOUBLE-STANDARD` (regression) FAIL |
 | Качество кода (Code Smells) | **0 / 1** | six `SMELL-*` regressions FAIL |
-| Тест-кейсы | **0 / 2** | `TEST-SKIPS` (regression) FAIL; no test-case documents in the published repo |
+| Тест-кейсы | **0 / 2** | `TEST-SKIPS` (regression) FAIL. The test cases themselves are now published — `DOC-TESTCASES` PASS |
 
 Frontend was not graded in this run, so no average is stated. Rounding applies to
 the pair, not to one repository — `/sprint-check --front` before quoting a number.
 
-Probes: 29 PASS / 16 FAIL (was 27 / 18). Closed this run: `ARCH-BOUNDARY-2`,
-`TEST-TIMEOUT`.
+Probes: 31 PASS / 14 FAIL (was 27 / 18). Closed this run: `ARCH-BOUNDARY-2`,
+`TEST-TIMEOUT`, `DOC-TESTCASES`, `DOC-DECISIONS`.
 
 ## Regression watch (the grader's own 2026-08-07 remarks)
 
@@ -75,15 +75,18 @@ force-fixed inside a single-layer run.
 | `07b4d886` | export usecase no longer names an HTTP media type |
 | `65309bc7` | coverage measured the tests (94% real); `pip-audit` red on Markdown 3.7 |
 | `feb67eff` | four race tests could hang instead of failing |
+| `96a987a4` + ten | 722 test cases published into `backend/docs/testing/`, synced by script |
 
 ## New findings
 
 Ranked by what a grader reading the repository cold sees first.
 
-1. **No test-case documents in the published repository.** `ProductSpecification/
-   stories/*/tests/` holds a full set per story (API, UI, Load, Infrastructure,
-   Security, Integration) — none of it ships to `slide_backend`. The criterion is
-   worth 0–2 and is currently graded against an empty directory. `DOC-TESTCASES`.
+1. ~~No test-case documents in the published repository.~~ **Fixed**: the five
+   backend-facing suites of all ten stories (722 cases) are copied into
+   `backend/docs/testing/` by `scripts/sync_test_cases.py`, with an index that
+   states the Gherkin reading (Given = preconditions, When = steps, Then =
+   expected result). Source of truth stays in `ProductSpecification/`; `--check`
+   fails on a stale copy. Run it before every release push.
 2. **README is not a repository-root README.** No containerization section, and
    it points at `infra/docker/backend.Dockerfile`, a path that does not exist in
    the published repo. No "create the application database" step (only the test
@@ -142,9 +145,8 @@ Git/docs: commit granularity PASS, branching strategy PASS, test quality PASS
 
 ## Needs a task
 
-- **Publish the test cases into the backend repository.** Either sync
-  `ProductSpecification/stories/*/tests/` into `backend/docs/testing/` at release
-  time, or move the backend-facing ones there outright. 0–2 points ride on it.
+- **Run `scripts/sync_test_cases.py` before every release push**, or the
+  published cases drift behind the ones the team actually maintains.
 - **Retire `sys.path.insert` from the entry point.** Declare the layer roots as
   packages (`[tool.setuptools.packages.find] where = [...]`) and install the
   distribution, so imports resolve without a runtime path patch. Touches the
