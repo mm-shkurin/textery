@@ -215,3 +215,33 @@ process and packaging gaps were closed, 3.0 at iteration 9. Three checks were
 verified by breaking the thing they guard and watching them name it: the
 file-size gate, the `.env.example` inventory (both detection paths), and the
 route-ownership gate.
+
+## Iteration 10 — Score: 2.5 / 3.0 — 2026-08-14 — d5990cf9
+
+First run of the sprint-check after the story-13 slice landed. Fresh auditor, no
+memory of iterations 1-9.
+
+### Fixed Issues:
+- `DeleteAccount._confirmed` annotated every parameter but `account`, so the CI
+  job `types` (`mypy --disallow-incomplete-defs usecase/src`) was red on HEAD.
+  Commit `6bbd7f72`.
+- `NoStoreMiddleware` matched `/api/v1/auth/me` as an exact string, so every
+  error rendered for `/me/avatar` and `/me/deletion` came back with no
+  `Cache-Control` at all. The rule is now the profile family by path segment and
+  a default rather than an override, so `avatar_response`'s deliberate
+  `private, no-cache` survives it. Commit `d1aa309e`.
+- `README.md` documented the API of two stories ago (no profile, avatar,
+  deletion, retry, save-from-generation or projects feed) and promised `/docs`
+  came up with the app after it moved behind `API_DOCS_ENABLED`. `CHANGELOG.md`
+  `[Unreleased]` recorded none of the story-13 commits. Commit `a1781df4`.
+
+### Outstanding Blockers:
+- The release ref `gitverse-backend/main` is 385 backend commits behind HEAD.
+  Nothing in this log is graded until that is pushed.
+- No deployed link is recorded anywhere in the repository, so the Stage 0 live
+  check cannot be run from here.
+- `pyproject.toml` is still `version = "0.1.0"` against a changelog whose own
+  rule is a minor bump per closed story slice. Deliberately not bumped here: the
+  bump belongs to the release, not to an audit fix.
+- Bus factor of one — 382 of 385 commits from a single author, two merge commits
+  for nineteen story branches. Not fixable by code.
