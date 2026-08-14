@@ -245,3 +245,51 @@ memory of iterations 1-9.
   bump belongs to the release, not to an audit fix.
 - Bus factor of one — 382 of 385 commits from a single author, two merge commits
   for nineteen story branches. Not fixable by code.
+
+## Iteration 11 — Score: 2.5 / 3.0 — 2026-08-14 — 20515fdf
+
+Confirmation run for iteration 10. Score held, and the fresh auditor found a gate
+the previous fix had not actually run.
+
+### Fixed Issues:
+- CI runs bare `mypy` over everything, tests included; iteration 10 only ran it
+  over the src roots, so twelve errors in the story-13 statements were sitting on
+  HEAD with the gate never executed against them. All twelve fixed: an
+  `Account | None` handed to three functions requiring an account, a Statement
+  replacing the Fake's `update_name` method instead of using a lever, `.message`
+  read off `Exception | None`, two db Statements declaring `Row | None` while
+  storing an `AccountModel`, and four `add_exception_handler` calls needing the
+  per-line suppression `main.py` already documents. Commit `d4c1eca2`.
+- `scripts/check.py` — the six blocking gates as one command, in CI's order,
+  without stopping at the first failure. The divergence between
+  `mypy <src roots>` and bare `mypy` is exactly what let a red `types` job land
+  twice. Commit `9d4f2530`.
+
+### Outstanding Blockers:
+- Root `.github/workflows/backend-ci.yml` enforces none of lint/types/audit/
+  coverage and still installs and waits on `redis-server`, which nothing reads.
+  Shared root file — out of scope for a `--back` session.
+- `oauth_wiring.py` defaults `YANDEX_REDIRECT_URI` and
+  `OAUTH_FRONTEND_CALLBACK_URL` to `http://localhost/auth/callback`. Making them
+  required changes boot semantics everywhere; a deployment decision, not an
+  audit fix.
+- `requirements.txt` pins direct dependencies exactly but not the transitive set
+  (`starlette` resolved to 1.3.1 locally), so a typing verdict can differ between
+  runner and developer.
+
+## Iteration 12 — Score: 3.0 / 3.0 — 2026-08-14 — 9d4f2530
+
+### Fixed Issues:
+- Nothing outstanding from this iteration's findings; all six gates green from a
+  clean run (ruff, ruff format on 463 files, file sizes, mypy on 452 files,
+  mypy --disallow-incomplete-defs on 179, pytest 1191 passed / 2 skipped).
+
+### Outstanding Blockers:
+- The release ref `gitverse-backend/main` is still 385+ commits behind HEAD.
+  Nothing above is graded until that is pushed.
+- No deployed link is recorded anywhere in the repository.
+- `DeleteAccount.execute` types both confirmation inputs as `object`, so the
+  strict pass accepts effectively untyped input on the product's only
+  irreversible operation.
+- Single-author history (388 vs 3) with no PR gate; six live `features/*`
+  branches across three remotes against two merge commits.
