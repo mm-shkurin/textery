@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { formatRelativeTime } from '../formatRelativeTime'
+import { formatRelativeTime } from '../utils/formatRelativeTime'
 
 const NOW = new Date('2026-01-10T12:00:00Z').getTime()
 

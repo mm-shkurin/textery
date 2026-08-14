@@ -1,4 +1,5 @@
 import { RequestTimeoutError, isHttpError } from '../../../shared/api/httpClient'
+import { RUNTIME } from '../../../shared/config/runtime'
 
 // The autosave retry policy (H9.3): which failures a backoff can heal, the attempt ceiling, and the
 // gap between attempts. Pure and React-free — the save state machine in useDocumentSave consumes it.
@@ -12,8 +13,8 @@ export const MAX_AUTOSAVE_ATTEMPTS = 4
 // Capped exponential backoff between attempts: 1s, 2s, 4s… ceilinged at 8s so a long outage does not
 // stretch a single retry gap to minutes. `attempt` is the 1-based number of the attempt that just
 // failed; the whole schedule for MAX_AUTOSAVE_ATTEMPTS stays well inside the tests' RETRY_WINDOW_MS.
-const RETRY_BASE_MS = 1000
-const RETRY_MAX_MS = 8000
+const RETRY_BASE_MS = RUNTIME.autosaveRetryBaseMs
+const RETRY_MAX_MS = RUNTIME.autosaveRetryMaxMs
 export function backoffDelay(attempt: number): number {
   return Math.min(RETRY_BASE_MS * 2 ** (attempt - 1), RETRY_MAX_MS)
 }

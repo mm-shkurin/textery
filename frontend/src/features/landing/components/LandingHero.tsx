@@ -18,9 +18,13 @@ export function LandingHero({ onPromptSubmit }: LandingHeroProps) {
     <section className="hero">
       {/* Decorative only (aria-hidden), and they used to cost 6.5 MB of PNG — more than the rest
           of the page put together, on the one screen a first-time visitor sees before anything
-          else. Re-encoded to WebP at 900px, which is above the ~640 CSS px these ever render at,
-          for ~0.8 MB total. Keep any replacement in that budget: an ornament that delays the
-          heading is worse than no ornament. */}
+          else. Re-encoded to WebP at twice the CSS box each one actually renders at (798, 714,
+          732, 738 px wide respectively), for 0.84 MB total. Keep any replacement in that budget:
+          an ornament that delays the heading is worse than no ornament.
+
+          The renders themselves are the ones embedded in the design frame, not the versions that
+          shipped first: those were a washed-out, near-white variant of the same four shapes, and
+          on the pale blue page they read as smudges rather than glass. */}
       <div className="hero-glass hero-glass-left" aria-hidden="true">
         <img src="/design/glass-16.webp" alt="" decoding="async" />
         <img src="/design/glass-8.webp" alt="" decoding="async" />

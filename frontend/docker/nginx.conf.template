@@ -1,0 +1,48 @@
+# How the built SPA is served. Rendered by envsubst at container start (nginx:alpine reads
+# /etc/nginx/templates), which is what lets ${API_UPSTREAM} differ per environment without a
+# separate image per environment.
+#
+# Kept in step with `infra/docker/nginx/frontend.conf` in the monorepo — same body cap, same proxy
+# seam, same prohibition below. Two files because the two contexts cannot see each other, not
+# because the rules differ.
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # ABOVE the application's own body cap, never below it. Unset, nginx enforces its 1 MiB
+    # default, which is smaller than the largest legitimate request in the product (a saved
+    # document allows 200 000 code points, ~800 KB as UTF-8 before JSON escaping) — and it refuses
+    # with an nginx HTML error page, not {error_code, message}. Every browser request crosses this
+    # proxy, so that default makes the canonical 413 unreachable for real users while tests hitting
+    # the backend port directly go green on it.
+    client_max_body_size 4m;
+
+    # Mirrors the Vite dev proxy so the built SPA calls the API through its own origin, with no
+    # VITE_API_BASE_URL override and no CORS.
+    #
+    # DO NOT make this conf — or anything in front of the origin — answer 503 without reading
+    # src/features/generation/hooks/autosaveRetryPolicy.ts first. `mayHaveLandedServerSide` treats
+    # 503 as the one 5xx that PROVES the write was never taken, so on a 503 the autosave KEEPS its
+    # memory of the last saved content; if the user then reverts to that content during the backoff
+    # window, the retry's fire-time gate suppresses the write entirely. On every other 5xx the
+    # memory is dropped and the write always goes out. That carve-out is only safe while nothing in
+    # front of the origin can emit 503 after a write has been accepted: a limit_req/limit_conn zone
+    # (at http/server level too — it inherits here), an error_page maintenance page,
+    # max_fails/proxy_next_upstream failover, a WAF, or a reverse proxy in front of this container
+    # all break the premise. The failure is silent: the editor shows «Сохранено» over content the
+    # server never received. Change the frontend branch in the same commit, or do not add the
+    # directive.
+    location /api/ {
+        proxy_pass ${API_UPSTREAM};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # A single-page app: every route the router owns must resolve to the entry document, or a
+    # refresh on /projects returns 404 from the filesystem.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

@@ -84,8 +84,8 @@ button.history-row:hover {
 }
 
 .history-error {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: var(--error-soft-bg);
+  border: 1px solid var(--error-soft-border);
   border-radius: 8px;
   color: var(--error);
   font-size: 13px;

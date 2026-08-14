@@ -94,7 +94,7 @@ class OverflowingSanitizer:
     def __init__(self, length: int) -> None:
         self.length = length
 
-    def sanitize(self, content: str) -> str:
+    def sanitize(self, content: str) -> str:  # noqa: ARG002 -- DocumentRenderer port shape
         return "a" * self.length
 
 

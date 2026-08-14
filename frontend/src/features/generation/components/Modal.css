@@ -2,29 +2,40 @@
    Modal.css that both modals imported whole: each file is now owned by the component
    whose classes it holds, so a card change cannot touch the panel. */
 /* Figma `Generation screen` (node 422:1439): the modal sits over a blurred `#71b7fd` wash of
-   the landing behind it, not a dark scrim. */
+   the landing behind it, not a dark scrim. That is a LIGHT-theme device — over a dark page the
+   same pale blue is a bright fog that makes the backdrop louder than the panel — so the colour is
+   `--scrim-modal` and the dark sheet swaps it for a conventional dark scrim. */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(113, 183, 253, 0.55);
+  background: var(--scrim-modal);
   backdrop-filter: blur(8px);
   display: flex;
-  align-items: center;
+  /* `auto` margins on the panel rather than `align-items: center`: centring a flex child taller
+     than the container pushes its top edge off-screen, and an overflowing box cannot be scrolled
+     back to. With `overflow-y` here and `margin: auto` there, the panel centres while it fits and
+     scrolls once it does not — which is the whole of a landscape phone. */
+  overflow-y: auto;
   justify-content: center;
+  padding: 16px;
   z-index: 100;
 }
 /* `Rectangle 15` — the 1173x573 panel is `blue-50` at 8px radius, no border. */
 .modal {
   width: 880px;
-  max-width: calc(100vw - 32px);
+  /* The backdrop's own 16px padding is what holds the panel off the screen edges now, so the
+     width cap is the content box the backdrop gives it rather than the viewport. */
+  max-width: 100%;
+  /* A flex item's default `min-width: auto` refuses to shrink below its own min-content, and the
+     card grid's min-content is wider than a phone — so without this the panel ignores `max-width`
+     and pushes the page sideways. */
+  min-width: 0;
+  margin: auto;
   background: var(--bg-page);
   border: none;
   border-radius: var(--radius-sm);
   padding: 40px;
   text-align: left;
-}
-.modal.modal-narrow {
-  width: 640px;
 }
 .modal-header {
   display: flex;

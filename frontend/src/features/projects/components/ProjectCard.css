@@ -41,7 +41,10 @@
 /* The ring is drawn on the overlay, so focus outlines the card the user is about to open rather
    than the two lines of text that name it. */
 .project-card-open:focus-visible::after {
-  outline: 2px solid var(--accent, #1552f0);
+  /* No literal fallback. `--accent` is defined on bare `:root` in every theme, so the fallback
+     could only fire if the token sheet failed to load — in which case a hardcoded light-theme
+     blue is not a recovery, it is a second bug wearing the first one's clothes. */
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -55,7 +58,7 @@
 .project-card-retry {
   margin-top: 10px;
   padding: 6px 14px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--projects-edge);
   border-radius: 8px;
   background: var(--bg-surface);
   cursor: pointer;

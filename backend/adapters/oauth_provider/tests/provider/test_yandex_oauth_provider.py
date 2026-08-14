@@ -17,7 +17,7 @@ def _provider() -> YandexOAuthProvider:
 
 
 def _install(monkeypatch, handler) -> None:
-    def factory(*args, **kwargs):
+    def factory(*args, **kwargs):  # noqa: ARG001 -- httpx handler shape
         kwargs.pop("timeout", None)
         return _REAL_ASYNC_CLIENT(transport=httpx.MockTransport(handler))
 

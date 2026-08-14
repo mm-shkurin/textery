@@ -1,15 +1,15 @@
-import { useSyncExternalStore } from 'react'
-import { subscribeAuthSession } from '../utils/authSession'
-import { currentAccountEmail } from '../utils/accountEmail'
+import { useIdentity } from '../../../shared/identity/useIdentity'
 
-// The sibling of `useAuthSession`, and for the same reason: the token lives outside React, so a
-// value read during render goes deaf the moment something non-React replaces it. Signing out and
-// back in as somebody else keeps `isAuthenticated` at `true` throughout — only the address
-// changes — so a component subscribed to the boolean alone would keep printing the previous
-// account's email until an unrelated re-render happened to correct it.
+// The signed-in account's address, from `GET /api/v1/auth/me`.
 //
-// The snapshot is a string (or null), which `Object.is` compares by value, so re-reads that
-// decode the same token are stable and cannot loop.
+// It used to be DECODED from the access token, because there was no endpoint to ask (see the
+// history note in `auth/utils/accountEmail.ts`). Story 13 built one, and the token is no longer
+// consulted for identity anywhere.
+//
+// It returns null both while the request is in flight and after it has failed. That is enough for
+// a caller that only wants the address and has one way to say "not available"; a caller that must
+// tell «загрузка» from «отказ» apart — the header does, because a silent failure would read as an
+// account with no name — reads `useIdentity()` and switches on `status`.
 export function useAccountEmail(): string | null {
-  return useSyncExternalStore(subscribeAuthSession, currentAccountEmail, currentAccountEmail)
+  return useIdentity().profile?.email ?? null
 }

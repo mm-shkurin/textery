@@ -1,6 +1,10 @@
 from uuid import uuid4
 
+from document.export_format import ExportFormat
 from document.rendered_export import RenderedExport
+from dto.document.export_media_type import MEDIA_TYPE
+
+DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
 class TestExportDocumentRoute:
@@ -28,20 +32,17 @@ class TestExportDocumentAsPdfResponse:
     async def test_should_stream_the_rendered_pdf_as_a_binary_attachment(
         self, mocker, export_client
     ):
-        # The usecase now yields the rendered payload + its media type; the route
-        # must hand those bytes back unchanged as a binary Response, never re-wrap
-        # them in the DocumentResponseDto JSON placeholder.
+        # The usecase yields the rendered payload and the FORMAT it rendered under;
+        # naming the Content-Type is this layer's job. The route must hand the bytes
+        # back unchanged as a binary Response, never re-wrap them in the
+        # DocumentResponseDto JSON placeholder.
         #
-        # media_type is a DISTINCTIVE sentinel, not "application/pdf": the route
-        # must THREAD RenderedExport.media_type into the response, and a green that
-        # hardcodes "application/pdf" (ignoring the field) would pass a pdf-literal
-        # assertion while silently mis-typing a future DOCX export. Asserting the
-        # header echoes this sentinel forces the pass-through here rather than
-        # leaking the bug into Scenario 2.2. The real "application/pdf" type on a
-        # genuine render is pinned end to end by green-acceptance.
+        # The type is asserted per format rather than through a sentinel: with the
+        # map on this side of the boundary, a route that hardcoded "application/pdf"
+        # is caught by the DOCX case below instead of by a marker string.
         rendered = RenderedExport(
             content=b"%PDF-1.7 fake pdf bytes",
-            media_type="application/x-render-marker",
+            export_format=ExportFormat.PDF,
             filename="document.pdf",
         )
         usecase = mocker.Mock()
@@ -51,7 +52,7 @@ class TestExportDocumentAsPdfResponse:
             response = await client.get(f"/api/v1/documents/{uuid4()}/export?format=pdf")
 
         assert response.status_code == 200, f"got {response.status_code}: {response.text}"
-        assert response.headers["content-type"] == "application/x-render-marker"
+        assert response.headers["content-type"] == "application/pdf"
         assert response.content == b"%PDF-1.7 fake pdf bytes"
         assert (
             response.headers["content-disposition"] == "attachment; filename*=UTF-8''document.pdf"
@@ -72,7 +73,7 @@ class TestExportFilenameRfc5987:
         # a runtime encode() here would be a tautology that a hardcoded green passes.
         rendered = RenderedExport(
             content=b"%PDF-1.7 x",
-            media_type="application/pdf",
+            export_format=ExportFormat.PDF,
             filename="Привет Мир.pdf",
         )
         usecase = mocker.Mock()
@@ -85,4 +86,37 @@ class TestExportFilenameRfc5987:
         assert response.headers["content-disposition"] == (
             "attachment; filename*=UTF-8''"
             "%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%9C%D0%B8%D1%80.pdf"
+        )
+
+
+class TestExportContentTypePerFormat:
+    """Scenario 2.2: the Content-Type follows the format, and every format has one.
+
+    The map moved here from the usecase, and so did the exhaustiveness guard that
+    used to live beside it: a format added without a media type must fail loudly
+    at this layer rather than KeyError into a 500 the first time someone asks for
+    it.
+    """
+
+    async def test_should_type_a_docx_export_as_a_word_document(self, mocker, export_client):
+        rendered = RenderedExport(
+            content=b"PK\x03\x04 fake docx bytes",
+            export_format=ExportFormat.DOCX,
+            filename="document.docx",
+        )
+        usecase = mocker.Mock()
+        usecase.execute = mocker.AsyncMock(return_value=rendered)
+
+        async with export_client(usecase) as client:
+            response = await client.get(f"/api/v1/documents/{uuid4()}/export?format=docx")
+
+        assert response.status_code == 200, f"got {response.status_code}: {response.text}"
+        assert response.headers["content-type"] == DOCX_MEDIA_TYPE
+        assert response.content == b"PK\x03\x04 fake docx bytes"
+
+    def test_every_export_format_resolves_to_a_media_type(self):
+        unmapped = set(ExportFormat) - set(MEDIA_TYPE)
+
+        assert unmapped == set(), (
+            f"every ExportFormat member must map to a media type; unmapped: {unmapped}"
         )

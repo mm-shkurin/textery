@@ -17,6 +17,7 @@
 // co-location. `documentApi` re-exports both names, so callers (and the wire test) still import
 // from there.
 import { send } from '../../../shared/api/send'
+import { API } from '../../../shared/api/endpoints'
 
 // The wire body, narrowed to the six fields this client surfaces. `document_type`, `created_at` and
 // `updated_at` are documented on the response and deliberately absent: nothing in the app reads
@@ -55,7 +56,7 @@ export async function createDocumentFromGeneration(
   // resolves — and both hand back the document the user must now edit. `send` returns only the
   // parsed body, so this client is status-agnostic by construction and must stay that way.
   const data = await send<DocumentFromGenerationWire>(
-    '/api/v1/documents/from-generation',
+    API.documents.fromGeneration,
     {
       method: 'POST',
       headers: { 'Idempotency-Key': idempotencyKey },

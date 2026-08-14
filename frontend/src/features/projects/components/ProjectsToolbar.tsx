@@ -1,4 +1,4 @@
-import type { ProjectView } from '../useProjectView'
+import type { ProjectView } from '../hooks/useProjectView'
 import { SearchIcon, GridIcon, ListIcon, SparkleIcon } from './ProjectsIcons'
 import './ProjectsToolbar.css'
 

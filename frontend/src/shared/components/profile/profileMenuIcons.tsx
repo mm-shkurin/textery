@@ -1,6 +1,27 @@
-// The two glyphs the profile menu draws, inline rather than as files under /design: both are a
-// handful of path data, and an <img> for each would be two more network requests for shapes that
+// The glyphs the profile menu draws, inline rather than as files under /design: each is a
+// handful of path data, and an <img> for each would be more network requests for shapes that
 // must recolour with the text around them (`currentColor` cannot cross an <img> boundary).
+
+// The «Мой профиль» row (mockup 07, lucide `user`).
+export function ProfileItemIcon() {
+  return (
+    <svg
+      className="profile-menu-icon"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="8" cy="5.5" r="2.5" stroke="currentColor" strokeWidth="1.4" />
+      <path
+        d="M3 13.25c0-2.2 2.24-3.5 5-3.5s5 1.3 5 3.5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
 
 // Figma `Icons/Set 24px` (node 676:4256) — the chevron beside the avatar, pointing at the menu:
 // up while it is open, down while it is closed, because it points AT the panel, not at an action.

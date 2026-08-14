@@ -46,6 +46,35 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379/0
+      # The Yandex OAuth contract. These four live in infra/.env and were never
+      # forwarded, so the container booted with them unset: every OAuth route
+      # answered a configuration error and nine acceptance tests failed in setup
+      # against a backend whose code was fine. Declared here without defaults —
+      # an empty value is a boot-time failure that names the missing variable,
+      # which is preferable to a runtime error on the first sign-in attempt.
+      YANDEX_CLIENT_ID: ${YANDEX_CLIENT_ID}
+      YANDEX_CLIENT_SECRET: ${YANDEX_CLIENT_SECRET}
+      YANDEX_REDIRECT_URI: ${YANDEX_REDIRECT_URI}
+      OAUTH_FRONTEND_CALLBACK_URL: ${OAUTH_FRONTEND_CALLBACK_URL}
+      # Which provider fetches the identity, and how long a handoff code lives.
+      # Forwarded so the OAuth acceptance suite can select the in-process fake
+      # provider (`OAUTH_PROVIDER=fake`) and a short TTL from infra/.env instead
+      # of nobody being able to run it at all.
+      #
+      # The TTL default is repeated from `oauth_wiring.DEFAULT_HANDOFF_TTL_SECONDS`
+      # rather than left empty, and that is not redundancy. `${VAR:-}` forwards an
+      # EMPTY STRING, which is not the same as unset: the variable then exists in
+      # the container, `os.environ.get(KEY, DEFAULT)` returns `""` because the key
+      # is present, the default never fires, and `int("")` kills the process at
+      # import time. The whole stack failed to boot on exactly that.
+      OAUTH_PROVIDER: ${OAUTH_PROVIDER:-yandex}
+      OAUTH_HANDOFF_CODE_TTL_SECONDS: ${OAUTH_HANDOFF_CODE_TTL_SECONDS:-300}
+      # Read only under OAUTH_PROVIDER=fake, and required there since the stub URL
+      # stopped being a default inside the source: a test address compiled into
+      # the image is one mis-set OAUTH_PROVIDER away from being where a real
+      # sign-in is sent. The default here is the app's own stub page, so the
+      # acceptance suite (which selects the fake) boots with nothing extra set.
+      OAUTH_FAKE_AUTHORIZE_URL: ${OAUTH_FAKE_AUTHORIZE_URL:-http://localhost/auth/fake-provider}
     ports:
       - "${BACKEND_PORT}:8000"
     depends_on:

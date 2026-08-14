@@ -1,5 +1,6 @@
 import { TypeCard } from './TypeCard'
-import { DOCUMENT_TYPES, type DocumentType } from '../../../shared/documentTypes'
+import { type DocumentType } from '../../../shared/documentTypes'
+import { DOCUMENT_TYPES } from '../../../shared/copy/documentTypeCopy'
 import './Modal.css'
 import './TypeModal.css'
 
@@ -11,7 +12,7 @@ interface TypeModalProps {
 export function TypeModal({ onSelect, onClose }: TypeModalProps) {
   return (
     <div className="modal-backdrop">
-      <div className="modal modal-narrow type-modal-panel" data-testid="type-modal">
+      <div className="modal type-modal-panel" data-testid="type-modal">
         <div className="modal-header">
           {/* «Создание проекта», not «Создание документа»: the screen this opens from is «Мои
               проекты», the thing being created is called a project everywhere else in the flow,
@@ -29,6 +30,13 @@ export function TypeModal({ onSelect, onClose }: TypeModalProps) {
           Выберите <span className="modal-subtitle-accent">тип документа</span>, с которым будете
           работать
         </p>
+        {/* The frame groups the four cards under «Учебные» — a section label, left-aligned while
+            the title and subtitle above it are centred. It is written here rather than derived
+            from a `group` field on DocumentType because all four types the product has are
+            учебные: a field carrying one constant value would be a data model for a distinction
+            nothing yet makes. The day a деловой type is specced, this heading is what has to
+            move into the data, and it will be the only thing that does. */}
+        <h2 className="type-group-heading">Учебные</h2>
         <div className="type-grid">
           {DOCUMENT_TYPES.map((option) => (
             <TypeCard key={option.id} option={option} onSelect={onSelect} />

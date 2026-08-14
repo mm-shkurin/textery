@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { listen } from '../../../shared/lib/browser'
 
 // Unsaved work lives only in Tiptap's in-memory state, so a tab-close or refresh drops it silently.
 // beforeunload's native "leave?" prompt is the browser's one built-in defence, shown only when a
@@ -22,7 +23,6 @@ export function useBeforeUnloadGuard(hasUnsavedChanges: boolean) {
       event.preventDefault()
       event.returnValue = ''
     }
-    window.addEventListener('beforeunload', guard)
-    return () => window.removeEventListener('beforeunload', guard)
+    return listen('beforeunload', guard)
   }, [hasUnsavedChanges])
 }

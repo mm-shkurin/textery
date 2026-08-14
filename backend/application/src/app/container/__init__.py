@@ -16,11 +16,17 @@ should not touch it.
 
 from container.auth_wiring import (
     create_account_existence,
+    create_delete_account,
+    create_delete_avatar,
+    create_get_avatar,
+    create_get_profile,
     create_login_user,
     create_refresh_access_token,
     create_register_user,
+    create_rename_account,
     create_resend_code,
     create_token_service,
+    create_update_avatar,
     create_verify_account,
 )
 from container.document_wiring import (
@@ -77,7 +83,13 @@ __all__ = [
     "create_list_generations",
     "create_retry_generation",
     "create_list_projects",
+    "create_delete_account",
+    "create_delete_avatar",
+    "create_get_avatar",
+    "create_get_profile",
     "create_login_user",
+    "create_rename_account",
+    "create_update_avatar",
     "create_refresh_access_token",
     "create_register_user",
     "create_request_generation",

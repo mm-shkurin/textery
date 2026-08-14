@@ -37,7 +37,7 @@ class TestUpdateIsASingleCompareAndSwapStatement:
 
         captured: list[str] = []
 
-        def record(conn, cursor, statement, parameters, context, executemany):
+        def record(conn, cursor, statement, parameters, context, executemany):  # noqa: ARG001 -- SQLAlchemy before_cursor_execute hook shape
             captured.append(" ".join(statement.split()).upper())
 
         try:

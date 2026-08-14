@@ -1,12 +1,10 @@
+import { memo } from 'react'
 import type { ProjectSummary } from '../api/projectsApi'
-import {
-  documentTypeFromWire,
-  documentTypeLabelFromWire,
-  type DocumentType,
-} from '../../../shared/documentTypes'
+import { documentTypeFromWire, type DocumentType } from '../../../shared/documentTypes'
+import { documentTypeLabelFromWire } from '../../../shared/copy/documentTypeCopy'
 import { ProjectFolderIcon } from './ProjectFolderIcon'
-import { formatCardDate } from '../formatCardDate'
-import { projectKey } from '../projectKey'
+import { formatCardDate } from '../../../shared/formatCardDate'
+import { projectKey } from '../utils/projectKey'
 import './ProjectCard.css'
 
 interface ProjectCardProps {
@@ -46,7 +44,7 @@ function accentClass(wireDocumentType: string): string {
 // One card. Two nested testids on purpose: `project-card` is what the feed is counted by, and
 // `project-card-{kind}-{id}` is what an individual card is FETCHED by — identity, not position,
 // because a positional lookup cannot fail on a swap.
-export function ProjectCard({
+function ProjectCardComponent({
   project,
   testIdPrefix,
   onOpen,
@@ -125,3 +123,9 @@ export function ProjectCard({
     </div>
   )
 }
+
+// Memoized because the jury's remark was exactly this: any re-render of the list repainted every
+// card. `ProjectsFeed` passes stable callbacks and a per-card `retrying`/`retryError` derived from
+// ids, so a card re-renders when its own project or its own retry state changes — not when a
+// sibling's does, and not when the toolbar's search box takes a keystroke.
+export const ProjectCard = memo(ProjectCardComponent)

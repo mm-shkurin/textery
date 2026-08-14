@@ -1,3 +1,4 @@
+/* Цвета экрана — в src/styles/tokens-*.css (--projects-*). */
 /* «Мои проекты» — the grid feed and the cards in it. The rest of the screen is owned by the file
    named after it: ProjectsScreen.css (header, sections, list view, skeleton, pager),
    ProjectsToolbar.css and ProjectsEmptyState.css.
@@ -5,28 +6,37 @@
    The per-type swatches below are read off the Figma frame 484:1104; everything else comes from
    the tokens in index.css, so this screen follows a theme change like every other. */
 
+/* Two screen-local roles, in both themes, because the semantic token that fits in light does NOT
+   fit in dark — and the token sheets belong to another session.
+   `--projects-well` is the recessed fill: a card's thumbnail area, a skeleton, the chosen half of
+   the view toggle. In light `--bg-sunken` is a grey step below white and reads as recessed. In
+   dark it is #12161b, which measures 1.03 against the page — the thumbnail area stops being part
+   of the card and becomes a hole punched through to the background, and the card loses the
+   two-part silhouette the design gives it. "Recessed" on a dark page has to be a step UP, so the
+   dark form is the card-muted fill (1.15 against the card, 1.30 against the page).
+   `--projects-edge` is the hairline around a card and around a toolbar control. The dark
+   `--border-hairline` measures 1.28 against the surface it encloses where the light one measures
+   1.41, and it is drawn on a page only 1.13 away from that surface — the two together left every
+   edge on the screen at the threshold of visible. The dark form steps to `--border-strong` (1.7).
+   Both are listed in the report for session 1 to fold into the token sheets. */
+
+
+/* The card is a FIXED 220px in frame 484:1104, not a sixth of the row. Measured off the render:
+   the six cards of «Все проекты» sit at x=140…1559 inside a content column that runs to 1780 —
+   a whole card's worth of empty space is left over on the right, which only happens if the track
+   is sized by the card rather than by the container. Stretching them to `repeat(6, 1fr)` made every
+   card 208px at the design's own width and wider still on a 1920 screen, and the thumbnail,
+   badge and two-line title were all drawn for 220.
+   `auto-fill` is also what the three step-down media queries were hand-writing: 6 tracks fit the
+   design's 1640 column, 4 fit 1000px, and the count follows the viewport with no breakpoint to
+   keep in step with the card's width. */
 .projects-page {
   max-width: 1640px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 24px 0;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 22px;
-}
-
-/* The mockup is drawn at a fixed 1640px viewport (`width=1640`), so its six columns are a
-   statement about card width, not about the number six. Below that the count steps down rather
-   than letting a card squeeze under its 128px thumbnail. */
-@media (max-width: 1400px) {
-  .projects-page {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-@media (max-width: 1000px) {
-  .projects-page {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  grid-template-columns: repeat(auto-fill, 220px);
+  gap: 20px;
 }
 
 /* One column below 720px, not two: the Figma mobile frames (674:2534, 1141:12494) are drawn at
@@ -62,7 +72,11 @@
      click target of the one real button inside it. */
   position: relative;
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  /* The card's hairline is the neutral #d9d9d9 of the frame, not the blue-tinted `--border-subtle`
+     the rest of the screen uses: sampled at the card edge in the render it comes out flat grey,
+     and the blue version drew a faint halo around every card on the blue page. In dark
+     `--projects-edge` steps up — see the note at the top of this file. */
+  border: 1px solid var(--projects-edge);
   border-radius: 14px;
   box-shadow: var(--shadow-card);
   overflow: hidden;
@@ -70,34 +84,43 @@
 
 .project-card-thumb {
   height: 128px;
-  background: var(--bg-sunken);
+  background: var(--projects-well);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+/* 45x56 in the frame's thumbnail well, not 52x64 — the glyph sat a size too large for a 128px
+   well and crowded the card's only piece of air. */
 .project-card-folder {
-  width: 52px;
-  height: 64px;
+  width: 45px;
+  height: 56px;
 }
 
+/* The body is 124px under a 128px thumbnail in the frame — the card totals 254. Every value here
+   is measured off it: the badge sits 16px below the thumbnail, the title 16px below the badge,
+   the date 12px below the title's last line, and 19px of air under that. */
 .project-card-body {
-  padding: 14px 16px 18px;
+  padding: 14px 16px 16px;
 }
 
 .project-card-type {
   display: inline-block;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 11.5px;
+  /* 47x23 with an 8px radius in the frame, measured off the «Эссе» chip of the first card. */
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-size: 12px;
   font-weight: 600;
 }
 
 .project-card-title {
   font-weight: 700;
-  font-size: 13.5px;
-  line-height: 1.35;
-  margin: 10px 0 8px;
+  /* 15/1.25 rather than 13.5/1.35: the frame's two title lines sit ~19px apart with glyphs a
+     shade taller than the card shipped with. The tighter leading is what keeps a two-line title
+     and its date inside the card's 254px without the body growing. */
+  font-size: 15px;
+  line-height: 1.2;
+  margin: 8px 0 6px;
   /* Two lines, then ellipsis — a title is free text and an unbounded one would push the date out
      of alignment with every neighbouring card in the row. */
   display: -webkit-box;
@@ -107,48 +130,49 @@
 }
 
 .project-card-date {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-muted);
 }
 
 /* Per-type tints. Two swatches per type — the badge pair and the folder colour — kept adjacent so
-   a new document type is one block here and never another copy of the glyph. The literals are read
-   off the Figma frame 484:1104 (badge fill/text, and the mid stop of the folder's gradient);
-   neither palette has tokens for them. */
+   a new document type is one block here and never another copy of the glyph. The Figma literals
+   (frame 484:1104) moved to `--chip-*-bg/fg/icon` in the token sheets, because they were the one
+   remaining place where a light-theme fill was written into a component: a pale #e5f3fe badge is
+   a white patch on a dark page, and its #004ee0 text on that patch measures 1.3:1. */
 .project-card-accent-blue .project-card-type {
-  background: #e5f3fe;
-  color: #004ee0;
+  background: var(--chip-blue-bg);
+  color: var(--chip-blue-fg);
 }
 
 .project-card-accent-blue .project-card-folder {
-  color: #4894fe;
+  color: var(--chip-blue-icon);
 }
 
 .project-card-accent-coral .project-card-type {
-  background: #fff0ed;
-  color: #e76455;
+  background: var(--chip-coral-bg);
+  color: var(--chip-coral-fg);
 }
 
 .project-card-accent-coral .project-card-folder {
-  color: #e76455;
+  color: var(--chip-coral-icon);
 }
 
 .project-card-accent-purple .project-card-type {
-  background: #efeaff;
-  color: #6730ff;
+  background: var(--chip-purple-bg);
+  color: var(--chip-purple-fg);
 }
 
 .project-card-accent-purple .project-card-folder {
-  color: #8a38f5;
+  color: var(--chip-purple-icon);
 }
 
 .project-card-accent-teal .project-card-type {
-  background: #eafffd;
-  color: #2d978d;
+  background: var(--chip-teal-bg);
+  color: var(--chip-teal-fg);
 }
 
 .project-card-accent-teal .project-card-folder {
-  color: #2d978d;
+  color: var(--chip-teal-icon);
 }
 
 /* The list view's own rules moved to ProjectsScreen.css, which its header already claims to own —

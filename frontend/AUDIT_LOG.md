@@ -323,3 +323,63 @@ Outstanding итерации 5, но то, что удерживает план�
 - Открытые moderate-уязвимости `react-router` (GHSA-wrjc-x8rr-h8h6,
   GHSA-337j-9hxr-rhxg) остаются: `npm run audit` намеренно поднимает порог до `high`,
   поэтому гейт зелёный, а адвизори — нет.
+
+## Iteration 2 — Score: 2.5 / 3.0 — 2026-08-14 — 41445397
+
+### Fixed Issues:
+
+- (нет — итерация только зафиксировала состояние; правки ниже, в итерации 3)
+
+### Outstanding Blockers:
+
+- Два CI-гейта красные на вершине ветки `features/story-13-profile-management`:
+  `npm run lint` падает на `ProfileDeleteModal.tsx:45`
+  (`jsx-a11y/prefer-tag-over-role` — нужен `<dialog>` вместо `role="dialog"`),
+  `npm run format:check` — пять неотформатированных файлов. Обе поломки внесены
+  двумя последними коммитами (`9e90c6cc`, `41445397`), то есть локальная
+  предкоммитная дисциплина для последнего work unit была пропущена.
+- Тесты при этом зелёные: 222 файла / 960 тестов, покрытие 97.1 % statements /
+  92.6 % branches / 98.5 % functions с пофайловым полом.
+- `ProfileMenu.css` — 201 строка при жёстком лимите 200.
+- Обходы границ (`send`, `ProfileMenu`, `ProfileAvatar`) остаются: `shared/`
+  импортирует из `features/auth/`. Правильное решение — вынести session-модуль
+  из `features/` — названо в `scripts/boundaryRules.mjs`, но отложено.
+- README только на русском, комментарии в коде — на английском.
+
+## Iteration 3 — Score: 3.0 / 3.0 — 2026-08-14 — eb964863
+
+### Fixed Issues:
+
+- `ProfileDeleteModal` теперь настоящий `<dialog open>`, а не `<div role="dialog">`;
+  `.profile-modal` сбрасывает `position/margin/color`, потому что UA-таблица стилей
+  выносит `dialog` из flex-центрирования скрима. Гейт `lint` зелёный.
+- Прогнан форматтер: гейт `format:check` зелёный. Полный прогон тестов после
+  правки — 222 файла / 960 тестов, все зелёные.
+
+### Outstanding Blockers:
+
+- Латентные дефекты, найденные аудитом (ни один не блокирует счёт, все — с
+  конкретным адресом):
+  - `useAccountDeletion.ts:44` сравнивает введённый адрес с `profile.email`,
+    который `profileWire.ts:40` приводит к `''` при отсутствии поля: битый 200
+    открывает необратимую кнопку при пустом вводе.
+  - `authSession.ts:66` (`saveSession`) может записать access-токен без refresh и
+    только вернуть AND; `OAuthCallback.tsx` не чистит сессию при `false`, поэтому
+    `isAuthenticated()` затем врёт «да» на половинной записи.
+  - Два независимых пути обновления токена: `performRenewal`
+    (`authorizedRequest.ts:54`) с single-flight и `renewWithoutEndingSession`
+    (`identityRequest.ts:43`) без него — два параллельных `/auth/refresh`, когда
+    `GET /me` и `GET /me/avatar` получают 401 одновременно.
+  - `useDocumentInit.ts:68-111` применяет загруженный документ через
+    `editor?.commands.setContent(...)`: если ответ пришёл раньше инстанса
+    редактора, документ отрисуется пустым. Соседний
+    `useGeneratedDocumentInit.ts:59` в этом месте делает `if (!editor) return`.
+  - `ManualEditor.tsx:49` стартует с `hasUnsavedChanges = true` — чистый пустой
+    редактор просит подтверждение ухода со страницы.
+- Дублирование: `withBearer` побайтово совпадает в `authorizedRequest.ts:22` и
+  `identityRequest.ts:30`; маппер «400 → типизированный reject» написан трижды
+  (`profileApi.ts:25`, `avatarApi.ts:25`, `deleteAccountApi.ts:34`); guard от
+  двойного сабмита (`busyRef`) переизобретён в трёх хуках профиля.
+- `safeRedirectTarget.ts` фактически мёртв: единственный вызов
+  (`OAuthCallback.tsx:60`) передаёт `undefined`, функция может вернуть только `'/'`.
+- `ProfileMenu.css` (201) и два тест-файла профиля (269, 212) — над лимитом 200.

@@ -38,5 +38,5 @@ htmldocx==0.0.6
 # conversion is what makes a generated document editable at all. Pure-Python, no
 # native libs. Its output is NOT trusted -- it goes through Nh3HtmlSanitizer like
 # any client-submitted content, because a markdown document may embed raw HTML.
-Markdown==3.7
+Markdown==3.10.3
 alembic==1.18.4

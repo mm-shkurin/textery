@@ -3,6 +3,7 @@ import { postJson } from '../../../shared/api/httpClient'
 import { toAuthApiError, type AuthApiError } from './apiError'
 import { sessionTokensFromWire, type SessionTokens } from './sessionTokens'
 import { GENERIC_LOGIN_FAILURE_MESSAGE } from '../utils/authMessages'
+import { API } from '../../../shared/api/endpoints'
 
 // The wire is snake_case — verified by curl against the live backend 2026-07-16:
 //   200 → {access_token, refresh_token, access_token_expires_at, refresh_token_expires_at}
@@ -59,7 +60,7 @@ function fallbackMessageFor(errorCode: string): string {
 
 export async function login(email: string, password: string): Promise<LoginResult> {
   try {
-    const body = await postJson<Record<string, unknown>>('/api/v1/auth/login', { email, password })
+    const body = await postJson<Record<string, unknown>>(API.auth.login, { email, password })
     return sessionTokensFromWire(body)
   } catch (error) {
     throw toLoginApiError(error)

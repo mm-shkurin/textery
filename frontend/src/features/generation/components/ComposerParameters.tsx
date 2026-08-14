@@ -4,7 +4,7 @@ import {
   MAX_VOLUME_PAGES,
   MIN_VOLUME_PAGES,
   type GenerationParameters,
-} from '../generationParameters'
+} from '../utils/generationParameters'
 
 interface ComposerParametersProps {
   parameters: GenerationParameters

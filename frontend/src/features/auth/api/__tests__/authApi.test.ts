@@ -9,11 +9,13 @@ import { resendCode } from '../authApi'
 // wrong. `error as HttpError` satisfied the compiler and lied at run time, so an offline user was
 // told "HTTP undefined" - a status invented for a request no server ever saw.
 //
-// Worth pinning now rather than when the endpoint ships: POST /api/v1/auth/resend-code does not
-// exist on the running backend (404, verified 2026-07-17), so today EVERY call takes a failure arm.
-// These are the only paths this module has in production.
-
-const SUCCESS = { code: '123456' }
+// The success arm is pinned to the WIRE shape the backend actually answers with. It used to be
+// `{code}`, which the client passed straight through, so the test agreed with the client about a
+// field neither of them had ever seen: the route answers `verification_code`. Both were wrong
+// together, which is why the suite stayed green while the one field that makes this call useful
+// read `undefined` — and a user who pressed «Отправить снова» went on being shown the retired
+// code, could never verify, and met 403 UNVERIFIED at the login screen.
+const WIRE_SUCCESS = { verification_code: '123456', code_expires_at: '2026-08-14T10:00:00+00:00' }
 
 function stubFetch(response: unknown) {
   const mock = vi.fn().mockResolvedValue(response)
@@ -27,11 +29,12 @@ afterEach(() => {
 
 describe('resendCode', () => {
   it('posts the email and returns the issued code', async () => {
-    const fetchMock = stubFetch({ ok: true, status: 200, json: async () => SUCCESS })
+    const fetchMock = stubFetch({ ok: true, status: 200, json: async () => WIRE_SUCCESS })
 
     const result = await resendCode('user@example.com')
 
-    expect(result).toEqual(SUCCESS)
+    // The client's own shape, mapped from the wire — not a pass-through of the response.
+    expect(result).toEqual({ code: '123456' })
     const [url, init] = fetchMock.mock.calls[0]
     expect(url).toBe('/api/v1/auth/resend-code')
     expect(init.method).toBe('POST')

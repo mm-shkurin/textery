@@ -1,32 +1,44 @@
 import { useCallback, useRef, useState } from 'react'
-import { useAccountEmail } from '../../../features/auth/hooks/useAccountEmail'
+import { useNavigate } from 'react-router-dom'
+import { useIdentity } from '../../identity/useIdentity'
+import { identityLabel } from '../../identity/identityLabel'
 import { useDismissOnOutside } from '../../hooks/useDismissOnOutside'
 import { ProfileAvatar } from './ProfileAvatar'
-import { ChevronIcon, SignOutIcon } from './profileMenuIcons'
+import { ProfileMenuIdentityRow } from './ProfileMenuIdentityRow'
+import { ChevronIcon, ProfileItemIcon, SignOutIcon } from './profileMenuIcons'
+import { ThemeMenuItem } from './ThemeMenuItem'
 import './ProfileMenu.css'
 
 interface ProfileMenuProps {
   onLogoutClick: () => void
-  // Two of these can be on screen across the app (the landing header and an app header), and a
-  // test that clicks «Выйти» must be able to say WHICH one. The prefix is required rather than
-  // defaulted: a default would silently give both instances the same id the first time a third
-  // screen adopted the menu.
+  // Several of these can be on screen across the app (the landing header, an app header, the
+  // profile screen's own navbar), and a test that clicks «Выйти» must be able to say WHICH one.
+  // The prefix is required rather than defaulted: a default would silently give both instances
+  // the same id the first time a third screen adopted the menu.
   testIdPrefix: string
 }
 
 // The signed-in account in the top-right corner — Figma group `profile navbar` (node 1218:5171).
 //
-// It replaces the bare «Выйти» button that used to sit in both headers. Sign-out is not a
-// top-level action: it is the rarest thing a signed-in user does, and it was competing for the
-// corner with the actions they came for. Behind the avatar it stays one click away and stops
-// being the loudest control on the screen.
+// Sign-out is not a top-level action: it is the rarest thing a signed-in user does, and behind the
+// avatar it stays one click away without being the loudest control on the screen.
 //
-// The dropdown's header row shows the address the token carries and nothing else. The design also
-// draws «Базовый тариф» and a «Мой профиль» item; there is no tariff in the domain and no profile
-// screen in the app, so both would be a label with nothing behind it and a link to nowhere.
-// They belong to the story that builds those screens.
+// «Мой профиль» sits ABOVE «Выйти». It was deliberately left out when this menu was built — the
+// screen it points at did not exist, and a link to nowhere belongs to the story that builds the
+// screen. Story 13 built it, so the item arrives with it.
+//
+// TWO RULES this component must not lose, both of which the /me move created:
+//
+//  1. «Выйти» NEVER depends on the profile request. The menu renders, opens, and offers the way
+//     out whatever `/me` did. Gating its contents on a successful fetch locks a user inside a
+//     session they cannot end, on the exact failure where they most want to leave.
+//  2. The identity row is TEXT. `name` is free user input rendered in the header of every
+//     authenticated page — the widest stored-XSS surface in the product. React escapes children
+//     and attributes by default; the only way to lose that is to reach for
+//     `dangerouslySetInnerHTML`, here or on the avatar's aria-label. Never.
 export function ProfileMenu({ onLogoutClick, testIdPrefix }: ProfileMenuProps) {
-  const email = useAccountEmail()
+  const identity = useIdentity()
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -41,6 +53,8 @@ export function ProfileMenu({ onLogoutClick, testIdPrefix }: ProfileMenuProps) {
 
   useDismissOnOutside(open, containerRef, close)
 
+  const label = identity.profile === null ? null : identityLabel(identity.profile)
+
   return (
     <div className="profile-menu" ref={containerRef}>
       <button
@@ -50,27 +64,35 @@ export function ProfileMenu({ onLogoutClick, testIdPrefix }: ProfileMenuProps) {
         data-testid={`${testIdPrefix}-profile-button`}
         aria-haspopup="menu"
         aria-expanded={open}
-        // The avatar is a picture of initials, so it names nothing on its own. The address makes
-        // the control identifiable when several accounts are open in different tabs.
-        aria-label={email === null ? 'Меню профиля' : `Меню профиля: ${email}`}
+        // The avatar is a picture of initials, so it names nothing on its own. The identity makes
+        // the control identifiable when several accounts are open in different tabs. Plain string
+        // interpolation into a prop — React escapes attribute values too.
+        aria-label={label === null ? 'Меню профиля' : `Меню профиля: ${label}`}
         onClick={() => setOpen((wasOpen) => !wasOpen)}
       >
-        <ProfileAvatar email={email} size="trigger" />
+        <ProfileAvatar identity={identity} size="trigger" />
         <ChevronIcon expanded={open} />
       </button>
 
       {open && (
         <div className="profile-panel" role="menu" data-testid={`${testIdPrefix}-profile-menu`}>
-          {email !== null && (
-            // Not a menu item: it is the answer to "whose account am I in", and giving it
-            // `role="menuitem"` would announce an identity label as something to activate.
-            <div className="profile-panel-account">
-              <ProfileAvatar email={email} size="menu" />
-              <span className="profile-panel-email" data-testid={`${testIdPrefix}-profile-email`}>
-                {email}
-              </span>
-            </div>
-          )}
+          <ProfileMenuIdentityRow identity={identity} testIdPrefix={testIdPrefix} />
+
+          <button
+            type="button"
+            role="menuitem"
+            className="profile-panel-item"
+            data-testid={`${testIdPrefix}-profile-link`}
+            onClick={() => {
+              setOpen(false)
+              navigate('/profile')
+            }}
+          >
+            <ProfileItemIcon />
+            Мой профиль
+          </button>
+
+          <ThemeMenuItem testIdPrefix={testIdPrefix} />
 
           <button
             type="button"

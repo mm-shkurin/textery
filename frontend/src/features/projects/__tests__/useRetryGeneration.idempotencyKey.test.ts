@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import { useRetryGeneration } from '../useRetryGeneration'
+import { useRetryGeneration } from '../hooks/useRetryGeneration'
 import { retryGeneration } from '../api/retryGenerationApi'
 
 vi.mock('../api/retryGenerationApi', async (importOriginal) => {

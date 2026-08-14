@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { Composer, MAX_TOPIC_LENGTH } from '../Composer'
-import { topicFieldLabel } from '../../../../shared/documentTypes'
-import { EMPTY_PARAMETERS, type GenerationParameters } from '../../generationParameters'
+import { topicFieldLabel } from '../../../../shared/copy/documentTypeCopy'
+import { EMPTY_PARAMETERS, type GenerationParameters } from '../../utils/generationParameters'
 
 function renderComposer(
   topic: string,

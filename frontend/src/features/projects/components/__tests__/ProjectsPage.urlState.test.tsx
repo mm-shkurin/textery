@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { mockFeed, mockFeedFailure, renderProjectsPage, resetFeedMocks } from './feedTestHarness'
 import { listProjects } from '../../api/projectsApi'
-import { SEARCH_DEBOUNCE_MS } from '../../useProjectsFeed'
+import { SEARCH_DEBOUNCE_MS } from '../../hooks/useProjectsFeed'
 import { DOCUMENT } from './projectFixtures'
 
 vi.mock('../../api/projectsApi')
@@ -31,8 +31,13 @@ describe('ProjectsPage url state', () => {
     vi.useRealTimers()
   })
 
+  // The filter the last request carried, without the cancellation signal the query cache attaches
+  // to every fetch. These cases are about WHICH page was asked for; the signal is transport
+  // plumbing that would otherwise have to be restated in each of the six assertions below.
   function lastQuery() {
-    return mockedList.mock.calls[mockedList.mock.calls.length - 1][0]
+    const params = mockedList.mock.calls[mockedList.mock.calls.length - 1][0]
+    const { signal: _signal, ...filter } = params ?? {}
+    return filter
   }
 
   it('asks for the filter the URL describes on first load', async () => {

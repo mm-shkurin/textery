@@ -44,9 +44,15 @@ def require_database() -> None:
 # asks for it, "fixture not found", listing the ones that were remembered. Four
 # fixtures sat in that state, and only CI could see it: without Postgres the whole
 # suite skips.
+#
+# TWO modules, split by what each fixture needs: `statement_fixtures` holds the ones
+# that share one `db_session`, `engine_scoped_fixtures` the ones whose claim is about
+# what a DIFFERENT session sees. Both are star-imported for the same reason.
+from engine_scoped_fixtures import *  # noqa: E402,F401,F403
+from engine_scoped_fixtures import __all__ as _engine_fixture_names  # noqa: E402
 from statement_fixtures import *  # noqa: E402,F401,F403
-from statement_fixtures import __all__ as _fixture_names  # noqa: E402
+from statement_fixtures import __all__ as _session_fixture_names  # noqa: E402
 
 # `require_database` lives here, not there, so it is added on top of whatever the
-# fixture module exports rather than re-listed alongside it.
-__all__ = [*_fixture_names, "require_database"]
+# fixture modules export rather than re-listed alongside them.
+__all__ = [*_session_fixture_names, *_engine_fixture_names, "require_database"]

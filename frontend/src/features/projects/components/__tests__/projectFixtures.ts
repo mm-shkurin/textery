@@ -1,4 +1,5 @@
 import type { ProjectSummary } from '../../api/projectsApi'
+import { fromWire } from '../../../../test/doubles'
 
 // A document and a generation deliberately seeded with THE SAME id. That is not a contrived
 // fixture: the two arms of the merged feed come from different tables, so their ids can collide,
@@ -101,7 +102,9 @@ export const EDITED_LONG_AFTER_CREATION_PROJECT: ProjectSummary = {
 // first. `projectsApi.ts` maps `item.updated_at` straight through with no validation, against an
 // endpoint the backend has not built (`endpoints.md`) — so what arrives is whatever the server
 // eventually sends, and `ProjectSummary.updatedAt: string` is a compile-time claim about a runtime
-// JSON body, which is why both casts below are `as unknown as string` rather than fixture sloppiness.
+// JSON body, which is why the three fixtures below are PARSED from wire text rather than written as
+// typed literals: the malformed value has to exist as the server would send it, and a cast on a
+// literal would claim the opposite of what the fixture is for.
 //
 // Malformed: `new Date('30 февраля, наверное')` is an Invalid Date, `getFullYear()` is NaN, and
 // `NaN !== currentYear` is TRUE — so the card takes the year-SHOWING branch and concatenates two
@@ -115,7 +118,7 @@ export const UNPARSEABLE_DATE_PROJECT: ProjectSummary = {
   status: 'draft',
   retryable: false,
   createdAt: '2026-07-15T09:00:00Z',
-  updatedAt: '30 февраля, наверное' as unknown as string,
+  ...fromWire<Pick<ProjectSummary, 'updatedAt'>>('{"updatedAt": "30 февраля, наверное"}'),
 }
 
 // Missing: `new Date(null)` is the epoch — a perfectly VALID Date — so it renders '1 января 1970',
@@ -131,7 +134,7 @@ export const MISSING_DATE_PROJECT: ProjectSummary = {
   status: 'draft',
   retryable: false,
   createdAt: '2026-07-15T09:00:00Z',
-  updatedAt: null as unknown as string,
+  ...fromWire<Pick<ProjectSummary, 'updatedAt'>>('{"updatedAt": null}'),
 }
 
 // A NUMBER where the wire contract promises an ISO string — an epoch-millis body, the single most
@@ -139,8 +142,8 @@ export const MISSING_DATE_PROJECT: ProjectSummary = {
 // `new Date(1755000000)` is valid, non-NaN and non-null; it reads '21 января 1970'. So it is caught
 // by neither an `isNaN` check nor a null check — only by the `typeof iso !== 'string'` INPUT guard,
 // which shipped in the same green as the two fixtures above while nothing asserted this arm of it.
-// Same `as unknown as string` cast as its two siblings, for the same reason: `updatedAt: string` is
-// a compile-time claim about a runtime JSON body from an endpoint the backend has not built.
+// Parsed from wire text like its two siblings, for the same reason: `updatedAt: string` is a
+// compile-time claim about a runtime JSON body from an endpoint the backend has not built.
 export const NUMERIC_DATE_PROJECT: ProjectSummary = {
   kind: 'document',
   id: '19',
@@ -150,7 +153,7 @@ export const NUMERIC_DATE_PROJECT: ProjectSummary = {
   status: 'draft',
   retryable: false,
   createdAt: '2026-07-15T09:00:00Z',
-  updatedAt: 1755000000 as unknown as string,
+  ...fromWire<Pick<ProjectSummary, 'updatedAt'>>('{"updatedAt": 1755000000}'),
 }
 
 // The CONVERSE of every fixture above: a genuine, well-formed, perfectly usable timestamp that

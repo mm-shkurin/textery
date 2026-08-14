@@ -3,6 +3,7 @@ import { RegisterForm } from '../features/auth/components/RegisterForm'
 import { LoginForm } from '../features/auth/components/LoginForm'
 import { VerifyCodeForm } from '../features/auth/components/VerifyCodeForm'
 import { OAuthCallback } from '../features/auth/components/OAuthCallback'
+import { ProfilePage } from '../features/profile/components/ProfilePage'
 import { DocumentGenerationFlow } from './DocumentGenerationFlow'
 import { ErrorBoundary } from '../shared/components/ErrorBoundary'
 
@@ -13,6 +14,13 @@ function AppRoutes() {
       <Route path="/login" element={<LoginForm />} />
       <Route path="/verify" element={<VerifyCodeForm />} />
       <Route path="/auth/callback" element={<OAuthCallback />} />
+      {/* The one authenticated screen with a URL of its own — the rest of the signed-in app is
+          flow state under `/*`. It needs one because the account menu links to it from every
+          page, and «open in a new tab» on an account link that resolves to nowhere is worse than
+          no link. Rendered without a client-side gate: the screen's data comes from an endpoint
+          that 401s without a session, and it degrades to its own failure state rather than to a
+          blank page. */}
+      <Route path="/profile" element={<ProfilePage />} />
       <Route path="/*" element={<DocumentGenerationFlow />} />
     </Routes>
   )
@@ -26,7 +34,7 @@ function AppRoutes() {
 // there unmounts the tree into a blank white page with no explanation. No recovery button here on
 // purpose: at the root there is nowhere safe left to send the user, and a button that re-renders
 // the same crash is worse than none.
-function App() {
+export function App() {
   const isInsideRouter = useInRouterContext()
   const routes = <AppRoutes />
 
@@ -36,5 +44,3 @@ function App() {
     </ErrorBoundary>
   )
 }
-
-export default App

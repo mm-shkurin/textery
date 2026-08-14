@@ -2,8 +2,9 @@ import { useCallback } from 'react'
 import { listDocuments } from '../api/historyApi'
 import { useHistoryList } from '../hooks/useHistoryList'
 import { HistoryRows } from './HistoryRows'
-import { documentTypeLabelFromWire } from '../../../shared/documentTypes'
 import './HistoryPage.css'
+import { HistoryRow } from './HistoryRow'
+import { QueryBoundary } from '../../../shared/query/QueryBoundary'
 
 interface HistoryPageProps {
   // The wire's `document_type` (Cyrillic) travels with the id: the caller needs it to label the
@@ -23,14 +24,14 @@ interface HistoryPageProps {
 // `listGenerations` stays in the API module: it is the generations endpoint's client, covered by
 // its own tests, and deleting a working binding because this screen stopped calling it would be
 // throwing away the part that was never broken.
-export function HistoryPage({ onOpenDocument, onBack }: HistoryPageProps) {
+function HistoryPageScreen({ onOpenDocument, onBack }: HistoryPageProps) {
   // useCallback so the hook's effect does not see a new fetcher on every render.
   //
   // No explicit page size: `listDocuments` defaults to the server's own default (20), so passing
   // it here was a third copy of one number — restating a value this component has no opinion
   // about, in a place that would not be updated if the server's changed.
   const fetchPage = useCallback((cursor?: string) => listDocuments(undefined, cursor), [])
-  const { items, isLoading, error, hasMore, loadMore } = useHistoryList(fetchPage)
+  const { items, isLoading, error, hasMore, loadMore } = useHistoryList('documents', fetchPage)
 
   return (
     <div className="history-page" data-testid="history-page">
@@ -51,24 +52,12 @@ export function HistoryPage({ onOpenDocument, onBack }: HistoryPageProps) {
         testId="history-documents"
       >
         {items.map((d) => (
-          <button
-            type="button"
+          <HistoryRow
             key={d.documentId}
-            className="history-row"
-            data-testid="history-document-row"
-            onClick={() => onOpenDocument(d.documentId, d.documentType)}
-          >
-            {/* The title is what identifies the row, and its absence is what made reopening a
-                document impossible: every row read "Доклад" and the user could not tell three
-                reports apart. Falls back to the type label for a manual document created before
-                titles existed — a blank row is a worse regression than a repeated one. */}
-            <span className="history-row-title">
-              {d.title?.trim() || documentTypeLabelFromWire(d.documentType)}
-            </span>
-            <span className="history-row-meta">
-              {documentTypeLabelFromWire(d.documentType)} · {formatDate(d.updatedAt)}
-            </span>
-          </button>
+            entry={d}
+            formatDate={formatDate}
+            onOpen={onOpenDocument}
+          />
         ))}
       </HistoryRows>
     </div>
@@ -82,4 +71,19 @@ function formatDate(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+/**
+ * The screen, with the data cache it reads through.
+ *
+ * Wrapped here rather than only at the app root so the page can be rendered on its own — by a
+ * test, by a future route — without silently requiring an ancestor it never names. The boundary
+ * carries the same client either way, so nesting changes nothing at runtime.
+ */
+export function HistoryPage(props: Parameters<typeof HistoryPageScreen>[0]) {
+  return (
+    <QueryBoundary>
+      <HistoryPageScreen {...props} />
+    </QueryBoundary>
+  )
 }

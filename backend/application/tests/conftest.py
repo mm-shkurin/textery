@@ -19,3 +19,13 @@ os.environ.setdefault("GENERATION_PROVIDER", "fake")
 os.environ.setdefault("YANDEX_CLIENT_ID", "wiring-import-only")
 os.environ.setdefault("YANDEX_CLIENT_SECRET", "wiring-import-only")
 os.environ.setdefault("OAUTH_PROVIDER", "fake")
+# The two callback URLs are required now rather than defaulting to a localhost
+# address inside the source: the handoff code exchanges for a token pair, and a
+# plaintext fallback is not something a misconfigured deployment should get
+# silently. Same dummy treatment as the credentials above.
+os.environ.setdefault("YANDEX_REDIRECT_URI", "https://wiring-import-only.example/auth/callback")
+os.environ.setdefault(
+    "OAUTH_FRONTEND_CALLBACK_URL", "https://wiring-import-only.example/auth/callback"
+)
+# Read only under OAUTH_PROVIDER=fake, which this conftest selects.
+os.environ.setdefault("OAUTH_FAKE_AUTHORIZE_URL", "https://wiring-import-only.example/authorize")

@@ -31,6 +31,11 @@ class LiveAuthSession:
         self.email = email
         self.access_token = access_token
         self.refresh_token = refresh_token
+        # The password this account was registered with. Carried because the account-deletion
+        # screen asks for it: a browser test that deletes an account has to type the same value
+        # the registration used, and reaching into the module constant from the test would be
+        # two places to change.
+        self.password = _PASSWORD
 
 
 def _backend_base_url() -> str:

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitForElementToBeRemoved } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
 import { ExportControl } from '../ExportControl'
+import { stubbed } from '../../../../test/doubles'
 
 // exportDocument is the only runtime import ExportControl pulls from documentApi; an ES module
 // namespace is frozen, so the mock must be declared via an explicit factory.
@@ -104,7 +105,7 @@ describe('ExportControl export failure surfacing', () => {
   it('shows the localized failure text when the export rejects with a non-Error value', async () => {
     const deferred = renderAndExport()
     // A non-Error rejection (thrown string, undefined) must not leak its stringified form either.
-    deferred.reject('boom' as unknown as Error)
+    deferred.reject(stubbed<Error>('boom'))
 
     const error = await screen.findByTestId('export-error')
     expect(error).toHaveTextContent(EXPORT_ERROR_TEXT)

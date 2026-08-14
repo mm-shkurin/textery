@@ -13,6 +13,7 @@
 import { postJson } from '../../../shared/api/httpClient'
 import { toAuthApiError, type AuthApiError } from './apiError'
 import { GENERIC_VERIFY_FAILURE_MESSAGE } from '../utils/authMessages'
+import { API } from '../../../shared/api/endpoints'
 
 export interface VerifyResult {
   isVerified: boolean
@@ -26,7 +27,7 @@ function toVerifyApiError(error: unknown): unknown {
 
 export async function verify(email: string, code: string): Promise<VerifyResult> {
   try {
-    const body = await postJson<Record<string, unknown>>('/api/v1/auth/verify', { email, code })
+    const body = await postJson<Record<string, unknown>>(API.auth.verify, { email, code })
     return { isVerified: Boolean(body.is_verified) }
   } catch (error) {
     throw toVerifyApiError(error)

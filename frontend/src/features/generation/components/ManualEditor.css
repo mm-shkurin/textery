@@ -27,8 +27,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(239, 68, 68, 0.1);
-  border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+  background: var(--error-soft-bg);
+  border-bottom: 1px solid var(--error-soft-border);
   color: var(--error);
   padding: 12px 20px;
   font-size: 13px;

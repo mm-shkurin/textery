@@ -32,36 +32,11 @@ import logging
 from collections.abc import AsyncIterator
 
 from api_docs import docs_urls
+from dependency_wiring import install_dependency_overrides
 from fastapi import FastAPI
+from middleware.no_store import NoStoreMiddleware
 
-from container import (
-    create_account_existence,
-    create_check_health,
-    create_complete_oauth_callback,
-    create_create_document,
-    create_create_document_from_generation,
-    create_exchange_handoff_code,
-    create_export_document,
-    create_frontend_callback_url,
-    create_generate_document,
-    create_get_document,
-    create_get_generation,
-    create_list_documents,
-    create_list_generations,
-    create_list_projects,
-    create_login_user,
-    create_refresh_access_token,
-    create_register_user,
-    create_request_generation,
-    create_resend_code,
-    create_retry_generation,
-    create_save_document,
-    create_start_oauth,
-    create_token_service,
-    create_verify_account,
-    provider,
-    run_stale_generation_sweep,
-)
+from container import provider, run_stale_generation_sweep
 from error_handling.exception_handlers import (
     conflict_exception_handler,
     not_found_exception_handler,
@@ -69,43 +44,15 @@ from error_handling.exception_handlers import (
     validation_exception_handler,
 )
 from logging_config import configure_logging
-from router.auth.auth_router import (
-    get_login_user_usecase,
-    get_refresh_access_token_usecase,
-    get_register_user_usecase,
-    get_resend_code_usecase,
-    get_verify_account_usecase,
-)
 from router.auth.auth_router import router as auth_router
-from router.auth.oauth_router import (
-    get_complete_oauth_callback_usecase,
-    get_exchange_handoff_code_usecase,
-    get_frontend_callback_url,
-    get_start_oauth_usecase,
-)
+from router.auth.avatar_router import router as avatar_router
+from router.auth.deletion_router import router as deletion_router
 from router.auth.oauth_router import router as oauth_router
-from router.document.document_router import (
-    get_create_document_from_generation_usecase,
-    get_create_document_usecase,
-    get_export_document_usecase,
-    get_get_document_usecase,
-    get_list_documents_usecase,
-    get_save_document_usecase,
-)
+from router.auth.profile_router import router as profile_router
 from router.document.document_router import router as document_router
-from router.generation.generation_router import (
-    get_generate_document_usecase,
-    get_get_generation_usecase,
-    get_list_generations_usecase,
-    get_request_generation_usecase,
-    get_retry_generation_usecase,
-)
 from router.generation.generation_router import router as generation_router
-from router.health.health_router import get_check_health_usecase
 from router.health.health_router import router as health_router
-from router.project.project_router import get_list_projects_usecase
 from router.project.project_router import router as project_router
-from security.current_owner import get_account_existence, get_token_service
 from shared.exceptions import ConflictException, NotFoundException, ValidationException
 
 SWEEP_INTERVAL_SECONDS = 60
@@ -155,6 +102,9 @@ app = FastAPI(
 )
 app.include_router(generation_router)
 app.include_router(auth_router)
+app.include_router(profile_router)
+app.include_router(avatar_router)
+app.include_router(deletion_router)
 app.include_router(oauth_router)
 app.include_router(document_router)
 app.include_router(health_router)
@@ -170,30 +120,15 @@ app.add_exception_handler(ValidationException, validation_exception_handler)  # 
 app.add_exception_handler(NotFoundException, not_found_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(ConflictException, conflict_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(Exception, unhandled_exception_handler)
+# Stamps Cache-Control: no-store on every response the profile routes produce --
+# the 200 and, because it wraps the router rather than living inside a route body,
+# the 401 the auth dependency raises before any body runs. The 500 is stamped by
+# unhandled_exception_handler instead: Starlette builds ServerErrorMiddleware
+# outside the user middleware stack, so that one response never passes through
+# here. Both read the same is_profile_path predicate.
+app.add_middleware(NoStoreMiddleware)
 
-app.dependency_overrides[get_request_generation_usecase] = create_request_generation
-app.dependency_overrides[get_get_generation_usecase] = create_get_generation
-app.dependency_overrides[get_list_generations_usecase] = create_list_generations
-app.dependency_overrides[get_retry_generation_usecase] = create_retry_generation
-app.dependency_overrides[get_generate_document_usecase] = create_generate_document
-app.dependency_overrides[get_register_user_usecase] = create_register_user
-app.dependency_overrides[get_verify_account_usecase] = create_verify_account
-app.dependency_overrides[get_resend_code_usecase] = create_resend_code
-app.dependency_overrides[get_login_user_usecase] = create_login_user
-app.dependency_overrides[get_refresh_access_token_usecase] = create_refresh_access_token
-app.dependency_overrides[get_create_document_usecase] = create_create_document
-app.dependency_overrides[get_get_document_usecase] = create_get_document
-app.dependency_overrides[get_export_document_usecase] = create_export_document
-app.dependency_overrides[get_create_document_from_generation_usecase] = (
-    create_create_document_from_generation
-)
-app.dependency_overrides[get_list_documents_usecase] = create_list_documents
-app.dependency_overrides[get_save_document_usecase] = create_save_document
-app.dependency_overrides[get_token_service] = create_token_service
-app.dependency_overrides[get_account_existence] = create_account_existence
-app.dependency_overrides[get_check_health_usecase] = create_check_health
-app.dependency_overrides[get_list_projects_usecase] = create_list_projects
-app.dependency_overrides[get_start_oauth_usecase] = create_start_oauth
-app.dependency_overrides[get_complete_oauth_callback_usecase] = create_complete_oauth_callback
-app.dependency_overrides[get_exchange_handoff_code_usecase] = create_exchange_handoff_code
-app.dependency_overrides[get_frontend_callback_url] = create_frontend_callback_url
+# Every wiring of a router's placeholder dependency to its composition-root
+# factory lives in dependency_wiring: it is one line per usecase and grows with
+# every endpoint, which is what pushed this file past the 200-line cap.
+install_dependency_overrides(app)

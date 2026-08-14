@@ -1,0 +1,25 @@
+# What must never enter the build context.
+#
+# node_modules is the big one: it is hundreds of megabytes, it is rebuilt inside the image by
+# `npm ci` anyway, and a host copy built on Windows carries binaries the Linux image cannot run.
+node_modules
+dist
+coverage
+.git
+
+# Real configuration. `.env.example` is deliberately NOT here — it is the documented template and
+# belongs in the image's source; `.env` is the developer's own and must not be baked into a layer.
+.env
+.env.*
+!.env.example
+
+# Editor and OS noise.
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Test output and local reports.
+*.log
+.vitest
+html

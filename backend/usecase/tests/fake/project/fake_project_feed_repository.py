@@ -41,8 +41,8 @@ class FakeSearchSlots:
     recording alongside the assertion that reads it.
     """
 
-    async def acquire(self, owner_id: UUID) -> bool:
+    async def acquire(self, owner_id: UUID) -> bool:  # noqa: ARG002 -- ProjectFeedRepository port shape
         return True
 
-    async def release(self, owner_id: UUID) -> None:
+    async def release(self, owner_id: UUID) -> None:  # noqa: ARG002 -- ProjectFeedRepository port shape
         return None

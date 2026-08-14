@@ -20,23 +20,23 @@
 }
 
 /* Figma `Button/Container` (node 573:4506): a linear gradient from #51a2ff to #4f39f6 at 135°,
-   the one gradient surface left in the UI. It is declared here rather than in index.css because
-   the avatar is the only thing that wears it — the palette's `--accent-gradient` resolves to the
-   flat brand blues and must not be repurposed. */
+   the one gradient surface left in the UI. It moved to `--avatar-gradient` in the token sheets
+   when the dark theme landed — not because it changes there (it does not; a saturated gradient
+   reads on either page), but because it was the last colour literal in this file, and leaving one
+   behind is how the next one gets added. `--accent-gradient` is still the wrong token: it resolves
+   to the flat brand blues. */
 .profile-avatar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: none;
   border-radius: var(--radius-pill);
-  background: linear-gradient(135deg, #51a2ff, #4f39f6);
+  background: var(--avatar-gradient);
   color: var(--text-inverse);
   font-weight: 700;
   /* Both drop shadows of the Figma node, kept as two: together they read as a soft lift, and the
      single merged shadow that replaced them looked pasted onto the white pill behind it. */
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.1),
-    0 1px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--avatar-shadow);
 }
 
 .profile-avatar svg {
@@ -44,6 +44,10 @@
   height: 60%;
 }
 
+/* 44 — this group's own node, which the header of this file records as drawn at CSS scale. It was
+   briefly 48, taken from `Navbar/Variant4` (node 1086:4934) read as 1:1; under the 1.3333 division
+   the bar actually uses, that same component is 36, and neither number belongs here. The disc
+   sitting in a 75px bar is this node's 44. */
 .profile-avatar-trigger {
   width: 44px;
   height: 44px;
@@ -54,6 +58,48 @@
   width: 28px;
   height: 28px;
   font-size: 10px;
+}
+
+.profile-avatar-card {
+  width: 72px;
+  height: 72px;
+  font-size: 24px;
+}
+
+/* The two non-ready discs. Both override the `background` SHORTHAND above, which is what silently
+   drops the gradient AND its size — the mockup's first cut shipped a placeholder that did not
+   move at all for exactly this reason, leaving загрузка and отказ apart only by a hairline. */
+.profile-avatar-placeholder {
+  color: var(--text-muted);
+  box-shadow: none;
+  background: linear-gradient(90deg, var(--bg-sunken), var(--skeleton-highlight), var(--bg-sunken));
+  background-size: 200% 100%;
+  animation: profile-shimmer 1.3s ease-in-out infinite;
+}
+
+/* Static, dashed, carrying an alert glyph: a failure that shimmered would read as "still
+   loading", and one that looked healthy would read as "an account with no name". */
+.profile-avatar-degraded {
+  background: var(--bg-sunken);
+  border: 1.5px dashed var(--border-strong);
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+.profile-shimmer {
+  background: linear-gradient(90deg, var(--bg-sunken), var(--skeleton-highlight), var(--bg-sunken));
+  background-size: 200% 100%;
+  animation: profile-shimmer 1.3s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+@keyframes profile-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .profile-chevron {
@@ -79,10 +125,10 @@
   flex-direction: column;
   gap: 4px;
   padding: 8px;
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--border-hairline);
   border-radius: 6px;
   background: var(--bg-surface);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.09);
+  box-shadow: var(--shadow-panel);
 }
 
 .profile-panel-account {
@@ -90,7 +136,7 @@
   align-items: center;
   gap: 12px;
   padding: 6px 8px 12px;
-  border-bottom: 1px solid #d9d9d9;
+  border-bottom: 1px solid var(--border-hairline);
 }
 
 .profile-panel-email {
@@ -99,6 +145,18 @@
   color: var(--text-primary);
   /* An address longer than the panel must not widen it or spill past the border. */
   overflow-wrap: anywhere;
+}
+
+.profile-panel-degraded {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.profile-panel-skeleton {
+  display: block;
+  width: 130px;
+  height: 12px;
 }
 
 .profile-panel-item {

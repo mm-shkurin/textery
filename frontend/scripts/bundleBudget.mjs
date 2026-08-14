@@ -17,7 +17,12 @@ export const BUDGETS = [
     // The entry chunk: React, the router, the session layer, and every screen that is not the
     // editor. This is what a first-time visitor waits for before anything renders at all.
     pattern: /^index-.*\.js$/,
-    maxGzipKb: 125,
+    // Raised from 125 for TanStack Query (~4 kB gzipped here), which is a deliberate architectural
+    // addition rather than an accident: the lists it backs used to refetch in full on every visit,
+    // so the bytes buy back more network than they cost on a session with any navigation in it.
+    // Measured at 128.1 kB after the change; 132 keeps the same "just above today" margin the
+    // other budgets have.
+    maxGzipKb: 132,
     why: 'the entry chunk is what a first visit blocks on',
   },
   {

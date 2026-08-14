@@ -2,6 +2,7 @@ import os
 
 import httpx
 
+from clients.application.profile_client import ProfileApiClient
 from clients.application.dto.auth.login_request_dto import LoginRequestDto
 from clients.application.dto.auth.login_response_dto import LoginResponseDto
 from clients.application.dto.auth.register_request_dto import RegisterRequestDto
@@ -20,7 +21,7 @@ from clients.application.dto.generation.generation_response_dto import Generatio
 from clients.application.dto.project.project_list_response_dto import ProjectListResponseDto
 
 
-class ApplicationClient:
+class ApplicationClient(ProfileApiClient):
     def __init__(self):
         backend_port = os.environ.get("BACKEND_PORT", "8000")
         self._client = httpx.AsyncClient(base_url=f"http://localhost:{backend_port}")

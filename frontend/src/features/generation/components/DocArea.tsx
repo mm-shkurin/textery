@@ -1,13 +1,9 @@
 import ReactMarkdown from 'react-markdown'
 import './ChatButton.css'
 import type { GenerationUiState } from '../hooks/useGeneration'
-import { formatRelativeTime } from '../formatRelativeTime'
-import {
-  generatingTitle,
-  generationFailedTitle,
-  topicPromptTitle,
-  type DocumentType,
-} from '../../../shared/documentTypes'
+import { formatRelativeTime } from '../utils/formatRelativeTime'
+import { type DocumentType } from '../../../shared/documentTypes'
+import { generatingTitle, generationFailedTitle, topicPromptTitle } from '../../../shared/copy/documentTypeCopy'
 
 interface DocAreaProps {
   state: GenerationUiState

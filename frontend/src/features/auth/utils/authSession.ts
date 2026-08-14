@@ -1,3 +1,4 @@
+import { readStored, removeStored, writeStored } from '../../../shared/lib/browser'
 // Where the auth tokens live.
 //
 // The backend returns tokens in the RESPONSE BODY, not an httpOnly cookie, so the client is
@@ -48,7 +49,7 @@ function notifySessionChanged(): void {
 // unavailable, so reads and writes degrade instead of throwing.
 function safeSet(key: string, value: string): boolean {
   try {
-    window.sessionStorage.setItem(key, value)
+    if (!writeStored('session', key, value)) return false
     return true
   } catch {
     return false
@@ -57,7 +58,7 @@ function safeSet(key: string, value: string): boolean {
 
 function safeGet(key: string): string | null {
   try {
-    return window.sessionStorage.getItem(key)
+    return readStored('session', key)
   } catch {
     return null
   }
@@ -84,8 +85,8 @@ export function isAuthenticated(): boolean {
 
 export function clearSession(): void {
   try {
-    window.sessionStorage.removeItem(ACCESS_TOKEN_KEY)
-    window.sessionStorage.removeItem(REFRESH_TOKEN_KEY)
+    removeStored('session', ACCESS_TOKEN_KEY)
+    removeStored('session', REFRESH_TOKEN_KEY)
   } catch {
     // Nothing to clear if storage is unavailable.
   }

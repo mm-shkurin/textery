@@ -13,17 +13,24 @@ things that make it trustworthy.
 
 from _pytest.fixtures import FixtureFunctionDefinition
 
-# Every fixture this module family is expected to define. A registry that silently
-# EMPTIES is the same bug with the same symptom, and the detection below is the part
-# that can quietly stop matching — pytest's fixture marker is private and has been
-# renamed at least once (`_pytestfixturefunction` -> `_fixture_function_marker`), and
-# a `hasattr` against a name that no longer exists returns an empty list without a
+# How many fixtures a module is expected to define, when it does not say. A registry
+# that silently EMPTIES is the same bug with the same symptom, and the detection below
+# is the part that can quietly stop matching — pytest's fixture marker is private and
+# has been renamed at least once (`_pytestfixturefunction` -> `_fixture_function_marker`),
+# and a `hasattr` against a name that no longer exists returns an empty list without a
 # word. Raising on a short count turns that into a collection-time failure that names
-# its own cause. Raise this number when fixtures are added.
-_EXPECTED_AT_LEAST = 15
+# its own cause.
+#
+# Each caller passes its OWN count, because the registry now lives in two modules and
+# one shared number would be satisfied by either of them alone — which is exactly the
+# silent-empty case this guard exists for. Raise a module's number when fixtures are
+# added to it.
+_EXPECTED_AT_LEAST = 9
 
 
-def fixture_names(namespace: dict[str, object]) -> list[str]:
+def fixture_names(
+    namespace: dict[str, object], expected_at_least: int = _EXPECTED_AT_LEAST
+) -> list[str]:
     """The public fixture names in `namespace`, for a module's `__all__`.
 
     Detected by the wrapper type pytest puts a decorated fixture in, not by a naming
@@ -35,9 +42,9 @@ def fixture_names(namespace: dict[str, object]) -> list[str]:
         for name, value in list(namespace.items())
         if not name.startswith("_") and isinstance(value, FixtureFunctionDefinition)
     ]
-    if len(found) < _EXPECTED_AT_LEAST:
+    if len(found) < expected_at_least:
         raise RuntimeError(
-            f"Found {len(found)} fixtures, fewer than the {_EXPECTED_AT_LEAST} expected — "
+            f"Found {len(found)} fixtures, fewer than the {expected_at_least} expected — "
             f"fixture detection has stopped recognising pytest's wrapper type. conftest "
             f"re-exports this list, so an empty one makes every db test fail with "
             f"'fixture not found'."

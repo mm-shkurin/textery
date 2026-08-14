@@ -42,6 +42,25 @@ pythonpath = [
     "adapters/generation_provider/tests/provider",
 ]
 
+# --- Coverage ----------------------------------------------------------------
+# `pytest --cov` with no source argument measures every imported file, tests
+# included -- and the tests are ~100% covered by construction, because running
+# them IS executing them. That inflated the reported number well above production
+# coverage and made the 90% floor far weaker than it reads. Naming the src roots
+# is what makes the gate mean "the code that ships is covered".
+[tool.coverage.run]
+source = [
+    "domain/src",
+    "usecase/src",
+    "adapters/rest/src",
+    "adapters/db/src",
+    "adapters/security/src",
+    "adapters/generation_provider/src",
+    "adapters/oauth_provider/src",
+    "adapters/rendering/src",
+    "application/src",
+]
+
 # --- Linter / formatter ------------------------------------------------------
 [tool.ruff]
 line-length = 100
@@ -85,10 +104,6 @@ ignore = [
 # decides on the attribute alone and is deliberately uniform across tags; the
 # parameter is nh3's signature, not ours to narrow.
 "adapters/security/src/sanitization/nh3_html_sanitizer.py" = ["ARG001"]
-# Test doubles implement production ports, and SQLAlchemy event hooks have a
-# fixed five-argument shape; an unused argument in either is the signature doing
-# its job, not an oversight.
-"**/tests/**" = ["ARG001", "ARG002"]
 
 # --- Static type checker -----------------------------------------------------
 # ruff answers style questions; nothing was answering type questions, even though

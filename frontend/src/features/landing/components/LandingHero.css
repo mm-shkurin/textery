@@ -97,17 +97,22 @@
   font-weight: 700;
 }
 
-/* `Rectangle 116` — a 770x72 white bar at 10px radius holding the field and, inset 12px
-   from its right edge, the 208x50 black `Сгенерировать` button (`Component 23`). */
+/* `Rectangle 116` — the white bar at node 90:880, x=578 y=445: 763 wide, 91 tall, 12px radius,
+   holding the field and, inset 28 from its right edge, the 163x43 black `Сгенерировать` button
+   (`Component 23`, also 12px radius). The bar shipped at 770x72 with a 208x50 button — the width
+   was right and everything else was eyeballed. */
 .hero-prompt {
   display: flex;
   align-items: center;
   gap: 12px;
-  max-width: 770px;
+  max-width: 763px;
+  height: 91px;
   margin: 44px auto 0;
-  padding: 11px;
+  /* 24 vertical centres the 43px button in the 91px bar; 28 right is the design's inset; 29 left
+     is where the placeholder's first glyph starts (x=607 against the bar's 578). */
+  padding: 24px 28px 24px 29px;
   background: var(--bg-surface);
-  border-radius: var(--radius-md);
+  border-radius: 12px;
 }
 
 .hero-prompt-input {
@@ -119,24 +124,27 @@
   font-family: inherit;
   font-size: 16px;
   color: var(--text-primary);
-  padding: 0 12px;
+  padding: 0;
 }
 
+/* The design's placeholder is a flat grey, not the body colour at reduced opacity: on the white
+   bar those two are close, but an opacity is a different colour on every background it lands on
+   and this bar is white in one theme and a dark surface in the other. */
 .hero-prompt-input::placeholder {
-  color: var(--text-primary);
-  opacity: 0.75;
+  color: var(--input-placeholder);
+  opacity: 1;
 }
 
 .hero-prompt-button {
   flex-shrink: 0;
-  width: 208px;
-  height: 50px;
+  width: 163px;
+  height: 43px;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   background: var(--neutral-950);
   color: var(--text-inverse);
   font-family: inherit;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -169,6 +177,10 @@
 
   .hero-prompt {
     flex-wrap: wrap;
+    /* The 91px is the design's one-row bar. Once the button wraps under the field there are two
+       rows to hold, and a fixed height would crop the second one. */
+    height: auto;
+    padding: 12px;
   }
 
   .hero-prompt-button {

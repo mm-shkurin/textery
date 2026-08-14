@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { Composer } from '../Composer'
-import { topicFieldLabel } from '../../../../shared/documentTypes'
+import { topicFieldLabel } from '../../../../shared/copy/documentTypeCopy'
 import {
   DEFAULT_VOLUME_PAGES,
   EMPTY_PARAMETERS,
@@ -10,7 +10,7 @@ import {
   MAX_VOLUME_PAGES,
   MIN_VOLUME_PAGES,
   type GenerationParameters,
-} from '../../generationParameters'
+} from '../../utils/generationParameters'
 
 function renderComposer(topic = 'Тема', parameters: GenerationParameters = EMPTY_PARAMETERS) {
   const setParameters = vi.fn()

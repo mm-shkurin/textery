@@ -7,7 +7,7 @@ import {
   documentTypeFromWire,
   type DocumentType,
 } from '../shared/documentTypes'
-import type { GenerationParameters } from '../features/generation/generationParameters'
+import type { GenerationParameters } from '../features/generation/utils/generationParameters'
 import { useGeneration } from '../features/generation/hooks/useGeneration'
 
 // 'auto' generates from a topic, 'manual' opens the editor. Both are real destinations, not a

@@ -1,0 +1,51 @@
+/* WHERE a bar sits on its page, as opposed to what the bar looks like — the shell width it aligns
+   to and the air under it. Kept out of `Navbar.css` so that file stays a description of one
+   object, and kept out of the pages' own stylesheets because those belong to other sessions.
+
+   Both classes carry the numbers their screens already used, so this split moves nothing on
+   screen: «Мои проекты» is a 1640 feed and «Мой профиль» a 1240 form, and the pill matches the
+   column it heads. */
+
+/* The air above and below is PADDING on a transparent WRAPPER, not margin, and not padding on the
+   bar itself.
+
+   Margin was the bug: a vertical margin on a child escapes through a parent that has no padding,
+   border or overflow of its own, and `.profile-screen` is exactly that — a bare element that only
+   paints a background. The 24px top margin collapsed out of it, pushed the screen and its
+   background down, and left a 24px band of the page's own `--bg-page` above the bar, which reads
+   on screen as a deliberate blue rule.
+
+   Padding on the bar would not do either: the pill paints a background, so padding-top would grow
+   the white plate rather than the gap above it. Hence the wrapper, which paints nothing. */
+
+.navbar-projects-placement {
+  padding-bottom: 30px;
+}
+
+.navbar-profile-placement {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding-top: 24px;
+}
+
+@media (min-width: 1920px) {
+  .navbar-projects-placement {
+    margin-bottom: 40px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .navbar-projects-placement {
+    margin-bottom: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar-projects-placement {
+    margin-bottom: 16px;
+  }
+
+  .navbar-profile-placement {
+    margin: 12px;
+  }
+}

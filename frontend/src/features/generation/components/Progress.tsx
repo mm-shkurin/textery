@@ -1,10 +1,7 @@
 import type { ReactNode } from 'react'
 import type { GenerationUiState } from '../hooks/useGeneration'
-import {
-  writingProgressMessage,
-  writtenProgressMessage,
-  type DocumentType,
-} from '../../../shared/documentTypes'
+import { type DocumentType } from '../../../shared/documentTypes'
+import { writingProgressMessage, writtenProgressMessage } from '../../../shared/copy/documentTypeCopy'
 
 interface ProgressProps {
   state: GenerationUiState

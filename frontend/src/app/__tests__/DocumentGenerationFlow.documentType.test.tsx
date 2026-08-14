@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
-import App from '../App'
+import { App } from '../App'
 import * as api from '../../features/generation/api/generationApi'
 import * as documentApi from '../../features/generation/api/documentApi'
 import { clearSession, saveSession } from '../../features/auth/utils/authSession'
-import { EMPTY_PARAMETERS } from '../../features/generation/generationParameters'
+import { EMPTY_PARAMETERS } from '../../features/generation/utils/generationParameters'
 
 // Story 18, scenario 1.1 — the RENDER-level half of "the type the user picked is the type that
 // gets generated".
