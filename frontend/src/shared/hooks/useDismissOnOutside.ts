@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from 'react'
+import { listenToDocument } from '../lib/browser'
 
 // Closes a transient overlay the two ways a user expects to close one: clicking away from it, and
 // pressing Escape. Both listeners are on `document` because the gesture that dismisses a popup
@@ -28,12 +29,15 @@ export function useDismissOnOutside(
       if (event.key === 'Escape') dismiss()
     }
 
-    document.addEventListener('mousedown', handlePointerDown)
-    document.addEventListener('keydown', handleKeyDown)
+    // Through `listenToDocument` rather than `document` directly: the hook is imported by modules
+    // that can be evaluated without a DOM, and each subscription hands back its own unsubscribe,
+    // so the cleanup below cannot drift out of step with what was bound.
+    const stopPointer = listenToDocument('mousedown', handlePointerDown)
+    const stopKeys = listenToDocument('keydown', handleKeyDown)
 
     return () => {
-      document.removeEventListener('mousedown', handlePointerDown)
-      document.removeEventListener('keydown', handleKeyDown)
+      stopPointer()
+      stopKeys()
     }
   }, [active, containerRef, dismiss])
 }

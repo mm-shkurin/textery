@@ -146,7 +146,7 @@ export function useGeneration(): UseGeneration {
         const { generationId } = await createGeneration(topic, documentType, parameters)
         setGenerationId(generationId)
         void poll(generationId) // immediate first check
-        intervalRef.current = window.setInterval(() => {
+        intervalRef.current = setInterval(() => {
           void poll(generationId)
         }, POLL_INTERVAL_MS)
       } catch (e) {

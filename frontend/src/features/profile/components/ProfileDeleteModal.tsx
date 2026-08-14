@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { Profile } from '../../../shared/identity/api/profileApi'
 import { DELETION_CONFIRM_TITLE, DELETION_PASSWORD_HINT, deletionEmailHint } from '../profileCopy'
 import type { AccountDeletion } from '../useAccountDeletion'
+import { listenToDocument } from '../../../shared/lib/browser'
 
 interface ProfileDeleteModalProps {
   profile: Profile
@@ -30,8 +31,7 @@ export function ProfileDeleteModal({ profile, deletion }: ProfileDeleteModalProp
       // the DELETE is already gone, and closing would hide its answer.
       if (event.key === 'Escape' && !deletion.busy) deletion.cancel()
     }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
+    return listenToDocument('keydown', onKeyDown)
   }, [deletion])
 
   return (

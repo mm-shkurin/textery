@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { exportDocument, type ExportFormat } from '../api/documentApi'
 import './ExportControl.css'
+import { browserDocument } from '../../../shared/lib/browser'
 
 // Scenario 1.1: the control DISPLAY — a trigger that reveals a PDF and a DOCX choice.
 // Scenario 2.1: clicking a choice fires the export request and the control locks while it is
@@ -23,12 +24,14 @@ const EXPORT_ERROR_MESSAGE = 'Не удалось экспортировать �
 // selenium 5.1 real-browser test is the backstop.
 function triggerBrowserDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
+  const doc = browserDocument()
+  if (!doc) return
+  const anchor = doc.createElement('a')
   anchor.href = url
   anchor.download = filename
-  document.body.appendChild(anchor)
+  doc.body.appendChild(anchor)
   anchor.click()
-  document.body.removeChild(anchor)
+  doc.body.removeChild(anchor)
   URL.revokeObjectURL(url)
 }
 

@@ -1,3 +1,4 @@
+import { browserDocument, browserWindow } from '../lib/browser'
 // The theme's vocabulary and its four primitive operations. No React, no module state — this file
 // is the piece that `themeStore.ts` and the inline boot script in `index.html` must agree on.
 //
@@ -68,8 +69,9 @@ export function readStoredPreference(): ThemePreference {
 export function systemTheme(): Theme {
   // jsdom implements no `matchMedia` at all, and neither do a few embedded webviews. Guarding the
   // FUNCTION rather than the result is what keeps this from throwing in the test environment.
-  if (typeof window.matchMedia !== 'function') return 'light'
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  const view = browserWindow()
+  if (!view || typeof view.matchMedia !== 'function') return 'light'
+  return view.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
 // The precedence the whole feature rests on: an explicit choice, then the OS, then light.
@@ -80,13 +82,13 @@ export function resolveInitialTheme(): Theme {
 }
 
 export function applyTheme(theme: Theme): void {
-  document.documentElement.setAttribute(THEME_ATTRIBUTE, theme)
+  browserDocument()?.documentElement.setAttribute(THEME_ATTRIBUTE, theme)
 }
 
 // What is on <html> right now, which in the browser is whatever the boot script decided. Falls
 // back to resolving from scratch for the two callers that have no boot script: a unit test
 // rendering a component in isolation, and a page whose inline script was stripped by a CSP.
 export function currentTheme(): Theme {
-  const attribute = document.documentElement.getAttribute(THEME_ATTRIBUTE)
+  const attribute = browserDocument()?.documentElement.getAttribute(THEME_ATTRIBUTE) ?? null
   return isTheme(attribute) ? attribute : resolveInitialTheme()
 }

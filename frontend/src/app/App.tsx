@@ -34,7 +34,7 @@ function AppRoutes() {
 // there unmounts the tree into a blank white page with no explanation. No recovery button here on
 // purpose: at the root there is nowhere safe left to send the user, and a button that re-renders
 // the same crash is worse than none.
-function App() {
+export function App() {
   const isInsideRouter = useInRouterContext()
   const routes = <AppRoutes />
 
@@ -44,5 +44,3 @@ function App() {
     </ErrorBoundary>
   )
 }
-
-export default App

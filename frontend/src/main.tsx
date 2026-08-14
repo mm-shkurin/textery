@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './app/App.tsx'
+import { App } from './app/App.tsx'
 import { initTheme } from './shared/theme/themeStore'
 
 // The safety net, not the mechanism. The theme is already on <html> by the time this runs — the

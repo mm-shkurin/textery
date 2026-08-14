@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 import { normalizeHref } from './normalizeHref'
 import './LinkPopover.css'
+import { listenToDocument } from '../../../shared/lib/browser'
 
 export const LINK_INVALID_MESSAGE = 'Не удалось применить ссылку. Проверьте адрес.'
 
@@ -101,8 +102,7 @@ export function LinkPopover({ editor, onClose }: LinkPopoverProps) {
       }
       apply()
     }
-    document.addEventListener('mousedown', handleMouseDown)
-    return () => document.removeEventListener('mousedown', handleMouseDown)
+    return listenToDocument('mousedown', handleMouseDown)
     // apply reads current url/capturedRange via closure; re-bind when url changes
     // so click-outside applies the latest typed value.
     // eslint-disable-next-line react-hooks/exhaustive-deps

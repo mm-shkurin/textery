@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
+import { browserWindow, listen } from '../../../shared/lib/browser'
 
 // Scenario 5.8 — protect un-submitted registration input from being silently discarded.
 // Two navigation surfaces need guarding, and they fire on different events:
@@ -28,8 +29,7 @@ export function useUnsavedGuard(leaveMessage: string) {
         event.preventDefault()
       }
     }
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    return listen('beforeunload', handleBeforeUnload)
   }, [])
 
   const markDirty = useCallback(() => {
@@ -44,7 +44,7 @@ export function useUnsavedGuard(leaveMessage: string) {
   // the prompt. Callers prevent the navigation when this returns false.
   const confirmLeave = useCallback(() => {
     if (!isDirtyRef.current) return true
-    return window.confirm(leaveMessage)
+    return browserWindow()?.confirm(leaveMessage) ?? true
   }, [leaveMessage])
 
   return { markDirty, markClean, confirmLeave }

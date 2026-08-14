@@ -1,3 +1,4 @@
+import { browserDocument } from '../../shared/lib/browser'
 // Validation and downscaling, both on the CLIENT, both before a single byte is uploaded.
 //
 // The server stores the bytes and does not decode them — decided, not an oversight — so nothing
@@ -61,7 +62,9 @@ export async function resizeAvatar(file: File): Promise<Blob> {
   const sourceEdge = Math.min(source.width, source.height)
   const edge = Math.min(AVATAR_EDGE_PX, sourceEdge)
 
-  const canvas = document.createElement('canvas')
+  const doc = browserDocument()
+  if (!doc) throw new Error('Изображение можно обработать только в браузере.')
+  const canvas = doc.createElement('canvas')
   canvas.width = edge
   canvas.height = edge
   const context = canvas.getContext('2d')
