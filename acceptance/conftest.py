@@ -61,6 +61,14 @@ from project_feed_fixtures import project_feed_statements  # noqa: F401
 # Story-13 profile/avatar/deletion Statements fixtures, same reason.
 from profile_fixtures import avatar_statements, deletion_statements, profile_statements  # noqa
 
+# Story-13 profile BROWSER Statements fixtures, same reason.
+from profile_frontend_fixtures import (  # noqa: F401
+    profile_avatar_statements,
+    profile_deletion_statements,
+    profile_page_statements,
+    profile_theme_statements,
+)
+
 # Story-10 page-settings Statements fixtures, split out for the same reason.
 from document_page_settings_fixtures import (  # noqa: F401
     document_page_settings_read_statements,
