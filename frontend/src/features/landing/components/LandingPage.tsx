@@ -34,7 +34,6 @@ export function LandingPage({
       <LandingStats />
       <LandingShowcase onPrimaryCtaClick={onPrimaryCtaClick} />
       <LandingFaq />
-
     </div>
   )
 }

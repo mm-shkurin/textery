@@ -25,7 +25,11 @@ describe('VerifyCodeForm resend replaces the code on screen', () => {
 
   function renderWithCode(code: string) {
     return render(
-      <MemoryRouter initialEntries={[{ pathname: '/verify', state: { email: 'user@example.com', verificationCode: code } }]}>
+      <MemoryRouter
+        initialEntries={[
+          { pathname: '/verify', state: { email: 'user@example.com', verificationCode: code } },
+        ]}
+      >
         <VerifyCodeForm />
       </MemoryRouter>,
     )
@@ -39,7 +43,10 @@ describe('VerifyCodeForm resend replaces the code on screen', () => {
         ok: true,
         status: 200,
         // The real wire shape. With `{code}` here the test would pass against the broken client.
-        json: async () => ({ verification_code: '654321', code_expires_at: '2026-08-14T10:00:00+00:00' }),
+        json: async () => ({
+          verification_code: '654321',
+          code_expires_at: '2026-08-14T10:00:00+00:00',
+        }),
       }),
     )
 
@@ -67,7 +74,10 @@ describe('VerifyCodeForm resend replaces the code on screen', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        json: async () => ({ verification_code: '654321', code_expires_at: '2026-08-14T10:00:00+00:00' }),
+        json: async () => ({
+          verification_code: '654321',
+          code_expires_at: '2026-08-14T10:00:00+00:00',
+        }),
       }),
     )
 

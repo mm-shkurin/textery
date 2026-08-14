@@ -39,7 +39,14 @@
   pointer-events: none;
 }
 
+/* A real `<dialog open>`, so the element carries its own semantics instead of a hand-written
+   `role`. The UA sheet then styles it as an absolutely-positioned auto-margin box, which would
+   drop it out of the scrim's flex centring — the three resets below put it back where the
+   layout expects it, and `color` comes back from the page instead of `CanvasText`. */
 .profile-modal {
+  position: static;
+  margin: 0;
+  color: inherit;
   pointer-events: auto;
   width: min(624px, 100%);
   padding: 32px;

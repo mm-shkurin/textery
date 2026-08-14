@@ -1,10 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { Profile } from '../../../shared/identity/api/profileApi'
-import {
-  DELETION_CONFIRM_TITLE,
-  DELETION_PASSWORD_HINT,
-  deletionEmailHint,
-} from '../profileCopy'
+import { DELETION_CONFIRM_TITLE, DELETION_PASSWORD_HINT, deletionEmailHint } from '../profileCopy'
 import type { AccountDeletion } from '../useAccountDeletion'
 
 interface ProfileDeleteModalProps {
@@ -40,9 +36,9 @@ export function ProfileDeleteModal({ profile, deletion }: ProfileDeleteModalProp
 
   return (
     <div className="profile-modal-scrim">
-      <div
+      <dialog
         className="profile-modal"
-        role="dialog"
+        open
         aria-modal="true"
         aria-labelledby="profile-delete-title"
         data-testid="account-delete-confirm"
@@ -103,7 +99,7 @@ export function ProfileDeleteModal({ profile, deletion }: ProfileDeleteModalProp
             {deletion.busy ? 'Удаляем…' : 'Удалить аккаунт'}
           </button>
         </div>
-      </div>
+      </dialog>
     </div>
   )
 }

@@ -90,4 +90,3 @@ export function useAccountDeletion(profile: Profile) {
 // hand-written above it: a duplicated interface is one rename away from describing a shape the
 // hook no longer returns, and the compiler would not notice.
 export type AccountDeletion = ReturnType<typeof useAccountDeletion>
-
