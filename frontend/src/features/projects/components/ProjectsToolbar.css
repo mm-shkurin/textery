@@ -11,7 +11,9 @@
   justify-content: space-between;
   gap: 14px;
   flex-wrap: wrap;
-  margin: 22px 0 8px;
+  /* 37px under the subtitle in the frame, not 22 — the toolbar reads as its own band there
+     rather than as a continuation of the page title. */
+  margin: 34px 0 8px;
 }
 
 .projects-toolbar-filters,
@@ -21,11 +23,11 @@
   gap: 10px;
 }
 
-/* `Tabs/Search tab` is 240x48 in the frame. It stays flexible rather than fixed at 240 so the row
-   can breathe on a wide screen, but it no longer grows past the design's width. */
+/* The search field measures 200x50 in frame 484:1104 (x=140…339). It stays flexible rather than
+   fixed so the row can shrink, but it no longer grows past the design's width. */
 .projects-search {
-  flex: 1 1 240px;
-  max-width: 240px;
+  flex: 1 1 200px;
+  max-width: 200px;
 }
 
 /* The magnifier sits INSIDE the field, so the field is the positioning context and the input gets
@@ -45,10 +47,10 @@
   pointer-events: none;
 }
 
-/* 48px tall, 12px radius, 14px text — the frame's `Tabs/Search tab`. */
+/* 50px tall, 12px radius, 14px text — the frame's `Tabs/Search tab`. */
 .projects-search-input {
   width: 100%;
-  height: 48px;
+  height: 50px;
   padding: 0 14px 0 42px;
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
@@ -70,7 +72,7 @@
 /* Matches the 48px/12px-radius icon buttons it stands in for (`Dropdown/Icon only`, `Tabs/Sort`),
    so the filter row is one band rather than three heights. */
 .projects-sort select {
-  height: 48px;
+  height: 50px;
   padding: 0 12px;
   border: 1px solid var(--border-subtle);
   border-radius: 12px;

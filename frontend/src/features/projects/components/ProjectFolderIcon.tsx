@@ -15,10 +15,13 @@ export function ProjectFolderIcon({ className }: ProjectFolderIconProps) {
     <svg className={className} viewBox="0 0 52 64" aria-hidden="true">
       <path
         fill="currentColor"
-        opacity=".35"
         d="M4 8a6 6 0 0 1 6-6h20l18 18v36a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6V8z"
       />
-      <path fill="currentColor" d="M30 2l18 18H36a6 6 0 0 1-6-6V2z" />
+      {/* The FOLD is the lighter of the two, not the sheet. The card shipped with the opacities
+          the other way round, which drained the glyph to a pale outline with one solid corner —
+          in frame 484:1104 the sheet is the type's full colour and the turned corner is a wash
+          of it. */}
+      <path fill="currentColor" opacity=".55" d="M30 2l18 18H36a6 6 0 0 1-6-6V2z" />
     </svg>
   )
 }
