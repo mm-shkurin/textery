@@ -1,12 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useReducer, useRef } from 'react'
 import { createGeneration, getGeneration } from '../api/generationApi'
 import type { GenerationParameters } from '../generationParameters'
 import { SessionExpiredError } from '../../auth/api/authorizedRequest'
 import type { DocumentType } from '../../../shared/documentTypes'
 import { describeFailure } from '../../../shared/api/send'
 import { RUNTIME } from '../../../shared/config/runtime'
+import {
+  generationReducer,
+  IDLE_GENERATION,
+  type GenerationUiState,
+} from './generationState'
 
-export type GenerationUiState = 'idle' | 'pending' | 'completed' | 'failed'
+export type { GenerationUiState }
 
 const POLL_INTERVAL_MS = RUNTIME.generationPollIntervalMs
 const MAX_POLL_ATTEMPTS = RUNTIME.generationPollMaxAttempts
@@ -43,12 +48,7 @@ export interface UseGeneration {
 }
 
 export function useGeneration(): UseGeneration {
-  const [state, setState] = useState<GenerationUiState>('idle')
-  const [content, setContent] = useState<string | null>(null)
-  const [generationId, setGenerationId] = useState<string | null>(null)
-  const [volumePages, setVolumePages] = useState<number | null>(null)
-  const [createdAt, setCreatedAt] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [run, dispatch] = useReducer(generationReducer, IDLE_GENERATION)
   const intervalRef = useRef<number | null>(null)
   const attemptsRef = useRef(0)
   // Consecutive, not total: reset by any successful check, so a poll that misses once every
@@ -75,8 +75,7 @@ export function useGeneration(): UseGeneration {
       attemptsRef.current += 1
       if (attemptsRef.current > MAX_POLL_ATTEMPTS) {
         stopPolling()
-        setError('Превышено время ожидания генерации')
-        setState('failed')
+        dispatch({ type: 'failed', message: 'Превышено время ожидания генерации' })
         return
       }
       try {
@@ -84,14 +83,15 @@ export function useGeneration(): UseGeneration {
         consecutiveFailuresRef.current = 0
         if (res.status === 'completed') {
           stopPolling()
-          setContent(res.content)
-          setVolumePages(res.volumePages)
-          setCreatedAt(res.createdAt)
-          setState('completed')
+          dispatch({
+            type: 'completed',
+            content: res.content,
+            volumePages: res.volumePages,
+            createdAt: res.createdAt,
+          })
         } else if (res.status === 'failed') {
           stopPolling()
-          setError('Не удалось завершить генерацию')
-          setState('failed')
+          dispatch({ type: 'failed', message: 'Не удалось завершить генерацию' })
         }
         // pending / in_progress → keep polling
       } catch (e) {
@@ -99,8 +99,7 @@ export function useGeneration(): UseGeneration {
         // guaranteed 401. It ends the poll immediately, carrying its own message.
         if (e instanceof SessionExpiredError) {
           stopPolling()
-          setError(e.message)
-          setState('failed')
+          dispatch({ type: 'failed', message: e.message })
           return
         }
         // Anything else may be transient. The generation is still running on the server, so a
@@ -110,8 +109,7 @@ export function useGeneration(): UseGeneration {
           stopPolling()
           // `describeFailure`, not `e.message`: a 5xx now arrives as a bare `HttpError` object,
           // and the status is the only fact the user can quote when reporting a poll that gave up.
-          setError(describeFailure(e, 'Ошибка сети'))
-          setState('failed')
+          dispatch({ type: 'failed', message: describeFailure(e, 'Ошибка сети') })
         }
       }
     },
@@ -133,26 +131,20 @@ export function useGeneration(): UseGeneration {
 
   const submit = useCallback(
     async (topic: string, documentType?: DocumentType, parameters?: GenerationParameters) => {
-      setState('pending')
-      setContent(null)
-      setGenerationId(null)
-      setVolumePages(null)
-      setCreatedAt(null)
-      setError(null)
+      dispatch({ type: 'submitted' })
       stopPolling()
       attemptsRef.current = 0
       consecutiveFailuresRef.current = 0
       try {
         const { generationId } = await createGeneration(topic, documentType, parameters)
-        setGenerationId(generationId)
+        dispatch({ type: 'accepted', generationId })
         void poll(generationId) // immediate first check
         intervalRef.current = setInterval(() => {
           void poll(generationId)
         }, POLL_INTERVAL_MS)
       } catch (e) {
         stopPolling()
-        setError(describeFailure(e, 'Не удалось создать запрос'))
-        setState('failed')
+        dispatch({ type: 'failed', message: describeFailure(e, 'Не удалось создать запрос') })
       }
     },
     [poll, stopPolling],
@@ -160,16 +152,11 @@ export function useGeneration(): UseGeneration {
 
   const reset = useCallback(() => {
     stopPolling()
-    setState('idle')
-    setContent(null)
-    setGenerationId(null)
-    setVolumePages(null)
-    setCreatedAt(null)
-    setError(null)
+    dispatch({ type: 'reset' })
   }, [stopPolling])
 
   // Clean up any running interval on unmount.
   useEffect(() => stopPolling, [stopPolling])
 
-  return { state, content, generationId, volumePages, createdAt, error, submit, reset }
+  return { ...run, submit, reset }
 }
