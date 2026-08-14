@@ -7,6 +7,7 @@ import {
   resizeAvatar,
 } from '../utils/avatarImage'
 import { stubObjectUrls } from './avatarTestSupport'
+import { partialDouble } from '../../../test/doubles'
 
 // The module itself, not through the page. Everything that stands between a 12-megapixel
 // photograph and the request body lives here — the decode, the crop, the encode, and the object
@@ -29,11 +30,13 @@ function stubDecoderReturning(source: { width: number; height: number }) {
 function stubCanvas(): { draws: DrawCall[]; sizes: { width: number; height: number }[] } {
   const draws: DrawCall[] = []
   const sizes: { width: number; height: number }[] = []
-  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
-    drawImage: vi.fn((_source: unknown, ...args: number[]) => {
-      draws.push({ args })
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+    partialDouble<CanvasRenderingContext2D>({
+      drawImage: vi.fn((_source: unknown, ...args: number[]) => {
+        draws.push({ args })
+      }),
     }),
-  } as unknown as CanvasRenderingContext2D)
+  )
   vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (
     this: HTMLCanvasElement,
     callback: BlobCallback,

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AVATAR_EDGE_PX, resizeAvatar } from '../utils/avatarImage'
 import { stubObjectUrls } from './avatarTestSupport'
+import { partialDouble } from '../../../test/doubles'
 
 // The two ways this can go wrong at runtime, split from `avatarImage.test.ts` for the
 // 200-line cap. Both are about a promise that must REJECT: a resizer that neither
@@ -21,11 +22,13 @@ function stubDecoderReturning(source: { width: number; height: number }) {
 function stubCanvas(): { draws: DrawCall[]; sizes: { width: number; height: number }[] } {
   const draws: DrawCall[] = []
   const sizes: { width: number; height: number }[] = []
-  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
-    drawImage: vi.fn((_source: unknown, ...args: number[]) => {
-      draws.push({ args })
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+    partialDouble<CanvasRenderingContext2D>({
+      drawImage: vi.fn((_source: unknown, ...args: number[]) => {
+        draws.push({ args })
+      }),
     }),
-  } as unknown as CanvasRenderingContext2D)
+  )
   vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (
     this: HTMLCanvasElement,
     callback: BlobCallback,
@@ -116,9 +119,9 @@ describe('when the browser cannot finish the job', () => {
   it('reports an encoder that handed back nothing', async () => {
     // `toBlob` yields null when the encoder fails or the type is unsupported; uploading that
     // would put the string "null" on the wire.
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(partialDouble<CanvasRenderingContext2D>({
       drawImage: vi.fn(),
-    } as unknown as CanvasRenderingContext2D)
+    }))
     vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback: BlobCallback) => {
       callback(null)
     })

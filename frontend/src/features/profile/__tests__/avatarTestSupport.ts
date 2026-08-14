@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import type { Profile } from '../../../shared/identity/api/profileApi'
+import { partialDouble } from '../../../test/doubles'
 
 // jsdom implements neither object URLs nor a canvas, and both are load-bearing here: the picture
 // reaches the <img> as an object URL, and the upload path decodes and re-encodes through a canvas.
@@ -50,9 +51,9 @@ export function stubCanvasPipeline(source: { width: number; height: number }): E
     'createImageBitmap',
     vi.fn(async () => source),
   )
-  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(partialDouble<CanvasRenderingContext2D>({
     drawImage: vi.fn(),
-  } as unknown as CanvasRenderingContext2D)
+  }))
   vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (
     this: HTMLCanvasElement,
     callback: BlobCallback,

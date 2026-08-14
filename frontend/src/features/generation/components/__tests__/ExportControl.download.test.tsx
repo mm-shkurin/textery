@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
 import { ExportControl } from '../ExportControl'
+import { stubbed } from '../../../../test/doubles'
 
 // exportDocument is the only runtime import ExportControl pulls from documentApi; an ES module
 // namespace is frozen, so the mock must be declared via an explicit factory.
@@ -30,8 +31,8 @@ describe('ExportControl download delivery on successful export', () => {
     vi.clearAllMocks()
     createObjectURL = vi.fn(() => OBJECT_URL)
     revokeObjectURL = vi.fn()
-    URL.createObjectURL = createObjectURL as unknown as typeof URL.createObjectURL
-    URL.revokeObjectURL = revokeObjectURL as unknown as typeof URL.revokeObjectURL
+    URL.createObjectURL = stubbed<typeof URL.createObjectURL>(createObjectURL)
+    URL.revokeObjectURL = stubbed<typeof URL.revokeObjectURL>(revokeObjectURL)
     // Capture the `download` attribute of every anchor whose click() fires, without navigating.
     clickedDownloads = []
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (

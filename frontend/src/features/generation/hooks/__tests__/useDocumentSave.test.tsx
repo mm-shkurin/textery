@@ -4,6 +4,7 @@ import type { Editor } from '@tiptap/react'
 import * as documentApi from '../../api/documentApi'
 import type { SaveDocumentResult } from '../../api/documentApi'
 import { useDocumentSave } from '../useDocumentSave'
+import { partialDouble } from '../../../../test/doubles'
 
 // useDocumentSave pulls only saveDocument from documentApi at runtime; an ES module namespace is
 // frozen, so the mock is declared via an explicit factory naming that single symbol.
@@ -15,10 +16,10 @@ vi.mock('../../api/documentApi', () => ({
 // commands.setContent only when the server's content differs from what was sent (it never does
 // here). Cast because the real Editor is far larger than these two members.
 function fakeEditor(html = '<p>x</p>'): Editor {
-  return {
+  return partialDouble<Editor>({
     getHTML: () => html,
     commands: { setContent: vi.fn() },
-  } as unknown as Editor
+  })
 }
 
 function renderSave(overrides: { documentId: string | null; editor: Editor | null }) {

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { EditorView } from '@tiptap/pm/view'
 import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from '../editorDomSync'
+import { partialDouble } from '../../../../test/doubles'
 
 // The guards in editorDomSync, each of which exists because something reaches these two functions
 // that ProseMirror will not survive being handed.
@@ -19,13 +20,13 @@ import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from '../ed
 function fakeView(overrides: Record<string, unknown> = {}): EditorView {
   const dom = document.createElement('div')
   document.body.appendChild(dom)
-  return {
+  return partialDouble<EditorView>({
     dom,
     dispatch: vi.fn(),
     posAtDOM: vi.fn(() => 1),
     state: { doc: {}, tr: { setSelection: vi.fn() } },
     ...overrides,
-  } as unknown as EditorView
+  })
 }
 
 // A native Selection is not constructible, and jsdom's real one cannot be made to anchor at a node

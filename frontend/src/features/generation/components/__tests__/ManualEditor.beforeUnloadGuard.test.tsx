@@ -8,6 +8,7 @@ import {
   SAVED_STATUS,
   dispatchBeforeUnload,
 } from './ManualEditor.saveStatus.testSupport'
+import { partialDouble } from '../../../../test/doubles'
 
 vi.mock('../../api/documentApi')
 
@@ -106,10 +107,10 @@ describe('ManualEditor beforeunload guard', () => {
     expect(registered).toHaveLength(1)
     const handler = registered[0][1] as (event: BeforeUnloadEvent) => void
 
-    const event = {
+    const event = partialDouble<BeforeUnloadEvent>({
       preventDefault: vi.fn(),
       returnValue: undefined,
-    } as unknown as BeforeUnloadEvent
+    })
     handler(event)
 
     expect(event.preventDefault).toHaveBeenCalledTimes(1)
