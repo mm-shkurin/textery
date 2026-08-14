@@ -4,7 +4,7 @@
 // access token and a 401 renews the session and replays it, instead of surfacing as a generation
 // failure the user did nothing to cause.
 import { send } from '../../../shared/api/send'
-import { EMPTY_PARAMETERS, type GenerationParameters } from '../generationParameters'
+import { EMPTY_PARAMETERS, type GenerationParameters } from '../utils/generationParameters'
 import {
   DEFAULT_DOCUMENT_TYPE,
   WIRE_DOCUMENT_TYPE,

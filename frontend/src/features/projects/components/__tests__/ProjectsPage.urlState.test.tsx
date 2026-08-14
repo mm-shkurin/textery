@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { mockFeed, mockFeedFailure, renderProjectsPage, resetFeedMocks } from './feedTestHarness'
 import { listProjects } from '../../api/projectsApi'
-import { SEARCH_DEBOUNCE_MS } from '../../useProjectsFeed'
+import { SEARCH_DEBOUNCE_MS } from '../../hooks/useProjectsFeed'
 import { DOCUMENT } from './projectFixtures'
 
 vi.mock('../../api/projectsApi')

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { readStored, writeStored } from '../../shared/lib/browser'
+import { readStored, writeStored } from '../../../shared/lib/browser'
 
 export type ProjectView = 'grid' | 'list'
 

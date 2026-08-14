@@ -1,6 +1,6 @@
 import type { Profile } from '../../../shared/identity/api/profileApi'
-import { DELETION_TITLE, DELETION_WARNING } from '../profileCopy'
-import { useAccountDeletion } from '../useAccountDeletion'
+import { DELETION_TITLE, DELETION_WARNING } from '../utils/profileCopy'
+import { useAccountDeletion } from '../hooks/useAccountDeletion'
 import { ProfileDeleteModal } from './ProfileDeleteModal'
 
 interface ProfileAccountCardProps {

@@ -1,4 +1,4 @@
-import type { ProjectSummary } from './api/projectsApi'
+import type { ProjectSummary } from '../api/projectsApi'
 
 // A project's identity, in one place because both consumers of it explain the same hazard: the
 // two arms of the merged feed come from different tables, so `id` alone is NOT unique — the

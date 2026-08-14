@@ -10,7 +10,7 @@ import {
   MAX_VOLUME_PAGES,
   MIN_VOLUME_PAGES,
   type GenerationParameters,
-} from '../../generationParameters'
+} from '../../utils/generationParameters'
 
 function renderComposer(topic = 'Тема', parameters: GenerationParameters = EMPTY_PARAMETERS) {
   const setParameters = vi.fn()

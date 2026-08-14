@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useProfileNameForm } from '../useProfileNameForm'
+import { useProfileNameForm } from '../hooks/useProfileNameForm'
 import { NameRejectedError, saveProfileName } from '../../../shared/identity/api/profileApi'
 import { resetIdentity } from '../../../shared/identity/identityStore'
 import { NAME_MAX_CODE_POINTS, RAW_NAME_MAX_CODE_POINTS } from '../../../shared/identity/nameValue'

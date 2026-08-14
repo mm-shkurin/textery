@@ -1,8 +1,8 @@
 import { useRef } from 'react'
 import type { Profile } from '../../../shared/identity/api/profileApi'
-import { ALLOWED_AVATAR_TYPES } from '../avatarImage'
-import { AVATAR_FAILED_MESSAGE } from '../profileCopy'
-import { useAvatarUpload } from '../useAvatarUpload'
+import { ALLOWED_AVATAR_TYPES } from '../utils/avatarImage'
+import { AVATAR_FAILED_MESSAGE } from '../utils/profileCopy'
+import { useAvatarUpload } from '../hooks/useAvatarUpload'
 
 interface ProfileAvatarFieldProps {
   profile: Profile

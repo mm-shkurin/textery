@@ -5,7 +5,7 @@ import {
   MAX_AVATAR_SOURCE_BYTES,
   avatarFileRejection,
   resizeAvatar,
-} from '../avatarImage'
+} from '../utils/avatarImage'
 import { stubObjectUrls } from './avatarTestSupport'
 
 // The module itself, not through the page. Everything that stands between a 12-megapixel

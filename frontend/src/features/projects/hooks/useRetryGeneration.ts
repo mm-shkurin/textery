@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
-import { describeFailure } from '../../shared/api/send'
-import { retryGeneration, RETRY_FAILURE_FALLBACK } from './api/retryGenerationApi'
+import { describeFailure } from '../../../shared/api/send'
+import { retryGeneration, RETRY_FAILURE_FALLBACK } from '../api/retryGenerationApi'
 
 export interface RetryState {
   pendingId: string | null

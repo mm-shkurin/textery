@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { Composer, MAX_TOPIC_LENGTH } from './Composer'
-import { EMPTY_PARAMETERS, type GenerationParameters } from '../generationParameters'
+import { EMPTY_PARAMETERS, type GenerationParameters } from '../utils/generationParameters'
 
 interface ComposerPanelProps {
   topicLabel: string

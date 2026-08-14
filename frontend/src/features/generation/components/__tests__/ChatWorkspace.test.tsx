@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { ChatWorkspace } from '../ChatWorkspace'
 import type { ComponentProps } from 'react'
-import { EMPTY_PARAMETERS } from '../../generationParameters'
+import { EMPTY_PARAMETERS } from '../../utils/generationParameters'
 
 type WorkspaceProps = ComponentProps<typeof ChatWorkspace>
 

@@ -1,4 +1,4 @@
-import { NAME_MAX_CODE_POINTS } from '../../shared/identity/nameValue'
+import { NAME_MAX_CODE_POINTS } from '../../../shared/identity/nameValue'
 
 // The screen's words, in one file so a wording change is not a hunt through the markup.
 

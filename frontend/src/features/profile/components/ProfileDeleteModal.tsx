@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { Profile } from '../../../shared/identity/api/profileApi'
-import { DELETION_CONFIRM_TITLE, DELETION_PASSWORD_HINT, deletionEmailHint } from '../profileCopy'
-import type { AccountDeletion } from '../useAccountDeletion'
+import { DELETION_CONFIRM_TITLE, DELETION_PASSWORD_HINT, deletionEmailHint } from '../utils/profileCopy'
+import type { AccountDeletion } from '../hooks/useAccountDeletion'
 import { listenToDocument } from '../../../shared/lib/browser'
 
 interface ProfileDeleteModalProps {

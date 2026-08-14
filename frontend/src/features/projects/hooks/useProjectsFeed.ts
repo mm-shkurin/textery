@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { listProjects, type ProjectSummary } from './api/projectsApi'
-import { describeLoadFailure } from './api/loadFailureMessages'
+import { listProjects, type ProjectSummary } from '../api/projectsApi'
+import { describeLoadFailure } from '../api/loadFailureMessages'
 
 // The server's own default page size. Mirrored here only so the pager can compute a page count
 // before the first response arrives; every request still omits `limit` and lets the server decide.

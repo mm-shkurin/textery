@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import { useProjectView, VIEW_STORAGE_KEY } from '../useProjectView'
+import { useProjectView, VIEW_STORAGE_KEY } from '../hooks/useProjectView'
 
 // A device-local preference read from `localStorage`, which means three of this hook's four paths
 // are about storage misbehaving rather than about the toggle. Private-mode Safari and some

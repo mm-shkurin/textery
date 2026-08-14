@@ -1,7 +1,7 @@
 import './ChatButton.css'
 import './Composer.css'
 import { ComposerParameters } from './ComposerParameters'
-import { isVolumeAcceptable, type GenerationParameters } from '../generationParameters'
+import { isVolumeAcceptable, type GenerationParameters } from '../utils/generationParameters'
 
 export const MAX_TOPIC_LENGTH = 500
 

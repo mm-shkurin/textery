@@ -3,16 +3,16 @@ import {
   NameRejectedError,
   saveProfileName,
   type Profile,
-} from '../../shared/identity/api/profileApi'
-import { applyProfile } from '../../shared/identity/identityStore'
-import { nameRejectionMessage, overLengthMessage, RAW_INPUT_TOO_LARGE_MESSAGE } from './profileCopy'
+} from '../../../shared/identity/api/profileApi'
+import { applyProfile } from '../../../shared/identity/identityStore'
+import { nameRejectionMessage, overLengthMessage, RAW_INPUT_TOO_LARGE_MESSAGE } from '../utils/profileCopy'
 import {
   countCodePoints,
   isNameChanged,
   NAME_MAX_CODE_POINTS,
   normalizeName,
   RAW_NAME_MAX_CODE_POINTS,
-} from '../../shared/identity/nameValue'
+} from '../../../shared/identity/nameValue'
 
 interface DirtyTracking {
   markDirty: () => void

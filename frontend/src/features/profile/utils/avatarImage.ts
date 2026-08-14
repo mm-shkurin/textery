@@ -1,4 +1,4 @@
-import { browserDocument } from '../../shared/lib/browser'
+import { browserDocument } from '../../../shared/lib/browser'
 // Validation and downscaling, both on the CLIENT, both before a single byte is uploaded.
 //
 // The server stores the bytes and does not decode them — decided, not an oversight — so nothing

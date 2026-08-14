@@ -1,14 +1,14 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { clearSession } from '../auth/utils/authSession'
+import { clearSession } from '../../auth/utils/authSession'
 import {
   deletionConfirmationKind,
   requestAccountDeletion,
-} from '../../shared/identity/api/deleteAccountApi'
-import { DeletionRejectedError } from '../../shared/identity/api/profileErrors'
-import { resetIdentity } from '../../shared/identity/identityStore'
-import type { Profile } from '../../shared/identity/api/profileApi'
-import { DELETION_FAILED_MESSAGE } from './profileCopy'
+} from '../../../shared/identity/api/deleteAccountApi'
+import { DeletionRejectedError } from '../../../shared/identity/api/profileErrors'
+import { resetIdentity } from '../../../shared/identity/identityStore'
+import type { Profile } from '../../../shared/identity/api/profileApi'
+import { DELETION_FAILED_MESSAGE } from '../utils/profileCopy'
 
 // Deleting the account: the confirmation gate, the request, and the exit.
 //

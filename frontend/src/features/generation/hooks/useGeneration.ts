@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react'
 import { createGeneration, getGeneration } from '../api/generationApi'
-import type { GenerationParameters } from '../generationParameters'
+import type { GenerationParameters } from '../utils/generationParameters'
 import { SessionExpiredError } from '../../auth/api/authorizedRequest'
 import type { DocumentType } from '../../../shared/documentTypes'
 import { describeFailure } from '../../../shared/api/send'

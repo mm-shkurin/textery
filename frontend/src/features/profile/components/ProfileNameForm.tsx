@@ -1,7 +1,7 @@
 import type { Profile } from '../../../shared/identity/api/profileApi'
 import { NAME_MAX_CODE_POINTS } from '../../../shared/identity/nameValue'
-import { SAVE_FAILED_MESSAGE } from '../profileCopy'
-import { useProfileNameForm } from '../useProfileNameForm'
+import { SAVE_FAILED_MESSAGE } from '../utils/profileCopy'
+import { useProfileNameForm } from '../hooks/useProfileNameForm'
 
 interface ProfileNameFormProps {
   profile: Profile

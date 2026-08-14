@@ -1,4 +1,4 @@
-import { LOAD_FAILED_BODY, LOAD_FAILED_TITLE } from '../profileCopy'
+import { LOAD_FAILED_BODY, LOAD_FAILED_TITLE } from '../utils/profileCopy'
 
 interface ProfileLoadFailedProps {
   onRetry: () => void

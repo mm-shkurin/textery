@@ -4,7 +4,7 @@ import { documentTypeFromWire, type DocumentType } from '../../../shared/documen
 import { documentTypeLabelFromWire } from '../../../shared/copy/documentTypeCopy'
 import { ProjectFolderIcon } from './ProjectFolderIcon'
 import { formatCardDate } from '../../../shared/formatCardDate'
-import { projectKey } from '../projectKey'
+import { projectKey } from '../utils/projectKey'
 import './ProjectCard.css'
 
 interface ProjectCardProps {

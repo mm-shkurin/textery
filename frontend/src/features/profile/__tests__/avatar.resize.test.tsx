@@ -5,7 +5,7 @@ import { ProfilePage } from '../components/ProfilePage'
 import { resetIdentity } from '../../../shared/identity/identityStore'
 import { fetchProfile } from '../../../shared/identity/api/profileApi'
 import { fetchAvatarBytes, uploadAvatar } from '../../../shared/identity/api/avatarApi'
-import { AVATAR_EDGE_PX } from '../avatarImage'
+import { AVATAR_EDGE_PX } from '../utils/avatarImage'
 import { profileWith, stubCanvasPipeline, stubObjectUrls } from './avatarTestSupport'
 
 // Avatar scenario 3 — what leaves the browser is the RESIZED image, not the file that was picked.

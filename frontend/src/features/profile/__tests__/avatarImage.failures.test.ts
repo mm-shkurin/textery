@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AVATAR_EDGE_PX, resizeAvatar } from '../avatarImage'
+import { AVATAR_EDGE_PX, resizeAvatar } from '../utils/avatarImage'
 import { stubObjectUrls } from './avatarTestSupport'
 
 // The two ways this can go wrong at runtime, split from `avatarImage.test.ts` for the

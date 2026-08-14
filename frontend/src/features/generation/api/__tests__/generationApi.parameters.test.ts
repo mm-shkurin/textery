@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createGeneration } from '../generationApi'
 import * as send from '../../../../shared/api/send'
-import { EMPTY_PARAMETERS } from '../../generationParameters'
+import { EMPTY_PARAMETERS } from '../../utils/generationParameters'
 
 vi.mock('../../../../shared/api/send')
 

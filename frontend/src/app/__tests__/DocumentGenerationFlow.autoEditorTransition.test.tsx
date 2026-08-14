@@ -4,7 +4,7 @@ import { App } from '../App'
 import * as api from '../../features/generation/api/generationApi'
 import * as documentApi from '../../features/generation/api/documentApi'
 import { clearSession } from '../../features/auth/utils/authSession'
-import { EMPTY_PARAMETERS } from '../../features/generation/generationParameters'
+import { EMPTY_PARAMETERS } from '../../features/generation/utils/generationParameters'
 import {
   armCompletedGeneration,
   GENERATED_TEXT,

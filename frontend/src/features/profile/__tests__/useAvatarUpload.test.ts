@@ -1,13 +1,13 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAvatarUpload } from '../useAvatarUpload'
+import { useAvatarUpload } from '../hooks/useAvatarUpload'
 import {
   deleteAvatar,
   fetchAvatarBytes,
   uploadAvatar,
 } from '../../../shared/identity/api/avatarApi'
 import { AvatarRejectedError } from '../../../shared/identity/api/profileErrors'
-import { resizeAvatar } from '../avatarImage'
+import { resizeAvatar } from '../utils/avatarImage'
 import { resetIdentity } from '../../../shared/identity/identityStore'
 import type { Profile } from '../../../shared/identity/api/profileApi'
 import { stubObjectUrls } from './avatarTestSupport'
@@ -22,7 +22,7 @@ vi.mock('../../../shared/identity/api/avatarApi', () => ({
   deleteAvatar: vi.fn(),
   fetchAvatarBytes: vi.fn(),
 }))
-vi.mock('../avatarImage', async (importOriginal) => ({
+vi.mock('../utils/avatarImage', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../avatarImage')>()),
   resizeAvatar: vi.fn(),
 }))

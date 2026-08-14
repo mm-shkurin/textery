@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react'
-import { deleteAvatar, uploadAvatar } from '../../shared/identity/api/avatarApi'
-import { AvatarRejectedError } from '../../shared/identity/api/profileErrors'
-import { applyProfile } from '../../shared/identity/identityStore'
-import { avatarFileRejection, resizeAvatar } from './avatarImage'
-import { avatarRejectionMessage, AVATAR_RESIZE_FAILED_MESSAGE } from './profileCopy'
+import { deleteAvatar, uploadAvatar } from '../../../shared/identity/api/avatarApi'
+import { AvatarRejectedError } from '../../../shared/identity/api/profileErrors'
+import { applyProfile } from '../../../shared/identity/identityStore'
+import { avatarFileRejection, resizeAvatar } from '../utils/avatarImage'
+import { avatarRejectionMessage, AVATAR_RESIZE_FAILED_MESSAGE } from '../utils/profileCopy'
 
 // Picking, shrinking, sending and removing the picture.
 //
