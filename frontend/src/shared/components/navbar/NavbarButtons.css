@@ -1,20 +1,34 @@
-/* The top bar's action buttons — Figma `Component 20` (secondary) and `Component 19` (primary).
-   Only the landing bar has any today; the class names are kept because three landing actions
-   (Войти / Мои работы / Выйти) already share them. */
+/* The top bar's action buttons — Figma `Component 20` (secondary) and `Component 19` (primary),
+   read off the landing frame's header row (node 90:880, y=48.3..133.5).
 
-/* `Component 20` — the secondary action: white fill, black label, same 50px height and 8px radius
-   as the primary next to it. */
-.btn-ghost {
+   The design draws them 85.2 tall with a 10px radius: «Войти» 133.3 wide around a 50.1 wide
+   label, «Создать генерацию» 333.3 around 205.3. That is a ~20px bold label with 41px of air
+   either side on the secondary and 64px on the primary — so the padding is asymmetric between the
+   two by design, and is written out rather than shared.
+
+   Class names are kept because three landing actions (Войти / Мои работы / Выйти) already use
+   them. Sizes step down below the design's own width together with the bar around them. */
+
+.btn-ghost,
+.btn-light {
   border: none;
-  background: var(--neutral-000);
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
   font-family: inherit;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
-  color: var(--text-primary);
   cursor: pointer;
-  height: 50px;
-  padding: 0 24px;
+  height: 72px;
+}
+
+/* `Component 20` — the secondary action: white fill, black label.
+   The fill is `--bg-surface`, NOT the `--neutral-000` swatch it used to name: a raw swatch has no
+   light/dark opinion, so in the dark theme this button kept its white fill while the label
+   followed `--text-primary` to near-white — white on white, on the one control a returning user
+   needs to find. Every panel in the product uses this token for "a surface above the page". */
+.btn-ghost {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  padding: 0 34px;
 }
 
 .btn-ghost:hover {
@@ -25,21 +39,47 @@
 /* `Component 19` — the primary CTA. Its Variant2 (hover) state inverts to a `blue-50` fill with a
    `blue-700` label rather than darkening the blue. */
 .btn-light {
-  border: none;
-  border-radius: var(--radius-sm);
-  font-family: inherit;
-  cursor: pointer;
   background: var(--accent);
   color: var(--text-inverse);
-  font-weight: 700;
-  height: 50px;
-  padding: 0 28px;
-  font-size: 16px;
+  padding: 0 54px;
 }
 
 .btn-light:hover {
   background: var(--accent-soft);
   color: var(--accent);
+}
+
+/* The design's own width, where the numbers are the file's unrounded ones. */
+@media (min-width: 1920px) {
+  .btn-ghost,
+  .btn-light {
+    height: 85px;
+    font-size: 20px;
+  }
+
+  .btn-ghost {
+    padding: 0 41px;
+  }
+
+  .btn-light {
+    padding: 0 64px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .btn-ghost,
+  .btn-light {
+    height: 56px;
+    font-size: 15px;
+  }
+
+  .btn-ghost {
+    padding: 0 24px;
+  }
+
+  .btn-light {
+    padding: 0 32px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -49,8 +89,8 @@
      neither. */
   .btn-ghost,
   .btn-light {
-    height: 40px;
-    padding: 0 14px;
+    height: 44px;
     font-size: 13px;
+    padding: 0 14px;
   }
 }

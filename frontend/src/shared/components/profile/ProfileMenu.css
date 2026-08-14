@@ -44,10 +44,13 @@
   height: 60%;
 }
 
+/* 48, not the 44 this shipped with: Figma `Navbar/Variant4` (node 1086:4934) is a 48x48 component,
+   and it is the avatar as it sits in the bar. The menu's own 28px disc and the profile card's 72px
+   one are unchanged — they come from other nodes. */
 .profile-avatar-trigger {
-  width: 44px;
-  height: 44px;
-  font-size: 16px;
+  width: 48px;
+  height: 48px;
+  font-size: 17px;
 }
 
 .profile-avatar-menu {

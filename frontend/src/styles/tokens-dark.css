@@ -105,4 +105,7 @@
   --accent-hero: #6aa9ff;
   --accent-orb: var(--blue-500);
   --input-placeholder-fg: var(--dark-300);
+  /* #6b7280 measures 2.4:1 on the dark surface — a placeholder that reads as a disabled field.
+     `--dark-300` is the same role re-lit, and is what every other muted text in dark resolves to. */
+  --input-placeholder: var(--dark-300);
 }

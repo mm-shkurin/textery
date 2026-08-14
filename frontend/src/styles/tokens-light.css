@@ -121,6 +121,10 @@
   --accent-hero: #1252d3;
   --accent-orb: #1e87ff;
   --input-placeholder-fg: #fafdff;
+  /* The grey the landing's prompt placeholder is drawn in (node 90:880, the text at x=607 y=484).
+     Distinct from `--input-placeholder-fg` above, which is the near-white used for a placeholder
+     sitting ON a saturated field. */
+  --input-placeholder: #6b7280;
 
   --radius-sm: 8px;
   --radius-md: 10px;
