@@ -1,3 +1,4 @@
+import { useCallback } from 'react'
 import { useProjectsFeed } from '../useProjectsFeed'
 import { useProjectView } from '../useProjectView'
 import { ProjectsNavbar } from './ProjectsNavbar'
@@ -56,11 +57,13 @@ export function ProjectsPage({
   // what the section shows, and that reasoning survives the design.
   const showRecent = !searching && feed.sort === 'created_desc' && feed.items.length > 0
 
-  const open = (project: ProjectSummary) => {
+  // Stable across renders so the memoized cards are not invalidated by the page re-rendering
+  // for an unrelated reason — a keystroke in the toolbar's search box, most of all.
+  const open = useCallback((project: ProjectSummary) => {
     // Only a document has an editor to open. A generation card is a record of work that never
     // became one, and its id comes from the other table entirely.
     if (project.kind === 'document') onOpenDocument?.(project.id, project.documentType)
-  }
+  }, [onOpenDocument])
 
   return (
     <div className="projects-screen" data-testid="projects-screen">

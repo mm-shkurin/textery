@@ -2,8 +2,8 @@ import { useCallback } from 'react'
 import { listDocuments } from '../api/historyApi'
 import { useHistoryList } from '../hooks/useHistoryList'
 import { HistoryRows } from './HistoryRows'
-import { documentTypeLabelFromWire } from '../../../shared/copy/documentTypeCopy'
 import './HistoryPage.css'
+import { HistoryRow } from './HistoryRow'
 
 interface HistoryPageProps {
   // The wire's `document_type` (Cyrillic) travels with the id: the caller needs it to label the
@@ -51,24 +51,12 @@ export function HistoryPage({ onOpenDocument, onBack }: HistoryPageProps) {
         testId="history-documents"
       >
         {items.map((d) => (
-          <button
-            type="button"
+          <HistoryRow
             key={d.documentId}
-            className="history-row"
-            data-testid="history-document-row"
-            onClick={() => onOpenDocument(d.documentId, d.documentType)}
-          >
-            {/* The title is what identifies the row, and its absence is what made reopening a
-                document impossible: every row read "Доклад" and the user could not tell three
-                reports apart. Falls back to the type label for a manual document created before
-                titles existed — a blank row is a worse regression than a repeated one. */}
-            <span className="history-row-title">
-              {d.title?.trim() || documentTypeLabelFromWire(d.documentType)}
-            </span>
-            <span className="history-row-meta">
-              {documentTypeLabelFromWire(d.documentType)} · {formatDate(d.updatedAt)}
-            </span>
-          </button>
+            document={d}
+            formatDate={formatDate}
+            onOpen={onOpenDocument}
+          />
         ))}
       </HistoryRows>
     </div>
