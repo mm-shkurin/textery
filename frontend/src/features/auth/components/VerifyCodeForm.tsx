@@ -33,7 +33,12 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
   const navigate = useNavigate()
   const routerState = (useLocation().state ?? {}) as VerifyRouterState
   const email = emailProp ?? routerState.email
-  const mockedCode = routerState.verificationCode
+  // STATE, not a read of the router: a resend ISSUES A NEW CODE and retires the one on screen.
+  // Held as a constant, the screen went on showing the retired code after «Отправить снова», the
+  // user typed what they were shown, the server refused it, and the account stayed unverified —
+  // which is answered by 403 UNVERIFIED at the login screen, i.e. "I registered and now I cannot
+  // sign in". Seeded from the router state the registration hands over.
+  const [mockedCode, setMockedCode] = useState(routerState.verificationCode)
   const countdown = useResendCountdown()
   const [isResending, setIsResending] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -88,7 +93,14 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
     setIsResending(true)
     setFormError(null)
     try {
-      await resendCode(email)
+      const result = await resendCode(email)
+      // The new code REPLACES the one on screen. Discarding it left the retired code displayed,
+      // and since no mail is sent, the displayed code is the only one the user has.
+      if (result.code) {
+        setMockedCode(result.code)
+        setDigits(Array(CODE_LENGTH).fill(''))
+        setCodeError(false)
+      }
       // Only a resend that actually happened restarts the wait. Restarting on a failure would
       // lock the user out of retrying for a minute over a request the server never accepted.
       countdown.restart()
@@ -97,12 +109,10 @@ export function VerifyCodeForm({ email: emailProp }: VerifyCodeFormProps) {
       // code that was never issued, and blames the mail that never arrives. Saying "it failed"
       // is worth more than a tidy screen — they can retry, or go back and register again.
       //
-      // Today it always fails: `POST /api/v1/auth/resend-code` is 404, the route does not exist
-      // on the backend (verified 2026-07-17 — its OpenAPI document lists register/verify/login/
-      // refresh and nothing else) even though endpoints.md specifies it. This makes that gap
-      // visible instead of hiding it behind a spinner that resolves to nothing.
+      // The route ships now and answers 200 or 429 RESEND_COOLDOWN_ACTIVE, so this branch is a
+      // real failure again rather than the permanent 404 the note here used to describe.
       //
-      // The status code stays out of the copy on purpose — "HTTP 404" is a fact about our
+      // The status code stays out of the copy on purpose — an HTTP number is a fact about our
       // deployment, not a thing the user can act on.
       setFormError(RESEND_FAILURE_MESSAGE)
     } finally {

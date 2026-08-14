@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { ProfileMenu } from '../profile/ProfileMenu'
+import { ThemeSwitch } from './ThemeSwitch'
 import './Navbar.css'
 import './NavbarButtons.css'
 
@@ -63,6 +64,11 @@ export function Navbar({
       <img className="navbar-logo navbar-logo-dark" src="/design/logo-textery-dark.svg" alt="" />
       <div className="navbar-actions">
         {actions}
+        {/* The theme switch appears only where the account menu does NOT — the menu already
+            carries its own theme row, and two controls for one setting in one bar is a bug
+            report waiting to happen. Signed out, this is the only way to reach the setting at
+            all: the menu is behind the avatar, which is behind the auth gate. */}
+        {profileMenu === undefined && <ThemeSwitch />}
         {profileMenu !== undefined && (
           <ProfileMenu
             onLogoutClick={profileMenu.onLogoutClick}
