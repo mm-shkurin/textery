@@ -30,12 +30,38 @@
   background: var(--profile-page-bg);
 }
 
-/* `width`, not `max-width` + padding: the padding version subtracts the gutter FROM the 1640,
+/* 1240, NOT the feed's 1640, and the two numbers are not interchangeable: `ui-conventions.md`
+   records the width as a rule per PAGE TYPE, and this is a single-column form. The bar above is
+   already on 1240 (`.navbar-profile-placement`), so a 1640 column here put the heading and the
+   cards to the LEFT of the bar that heads them — two columns on one screen, which reads as the
+   bar being the wrong size rather than the content being it.
+
+   `width`, not `max-width` + padding: the padding version subtracts the gutter FROM the 1240,
    which starts the cards inside the column the design draws rather than on its edge. */
 .profile-page {
-  width: min(1640px, 100% - 80px);
+  width: min(1240px, 100% - 80px);
   margin: 0 auto;
-  padding: 72px 0 64px;
+  padding: 40px 0 64px;
+}
+
+/* The way back. Without it the only exits from this screen are «Выйти», which ends the session,
+   and the browser's own button, which is not on the page — so a user who came here to rename
+   themselves had to log out to leave. Mirrors «Назад» on the feed, and goes through the unsaved
+   guard: this screen has a form, and the feed's back button never had anything to lose. */
+.profile-back {
+  background: none;
+  border: 1px solid var(--border-hairline);
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin-bottom: 16px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.profile-back:hover {
+  background: var(--bg-sunken);
 }
 
 .profile-heading {

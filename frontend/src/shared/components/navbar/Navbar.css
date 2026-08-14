@@ -59,8 +59,20 @@
 }
 
 /* --- pill: «Мои проекты» and «Мой профиль». A white card floating on the page. --- */
+
+/* The wordmark steps down inside the pill, and only there. Variant5 is drawn full-bleed across a
+   1920 frame; the pill is not that object — it is a card sitting INSIDE a 1240 or 1640 column,
+   with page background visible either side of it. A logo sized for the full-width bar reads as
+   oversized once the bar itself is inset, because the eye measures it against the card it sits in
+   rather than against the viewport. The plate steps down with it, for the same reason — a 75px
+   card heading a 1240 column of 60px-tall form rows outweighs what it heads. `flat` and `bar`
+   keep the frame's own 54 and 75: those two ARE the full-width object the frame draws. */
+.navbar-pill .navbar-logo {
+  height: 42px;
+}
+
 .navbar-pill {
-  min-height: 75px;
+  min-height: 66px;
   /* 5.5, not 6: the frame puts an 85.2 button in a 100 bar, which is 7.4 of air above and below,
      and 64 + 5.5 + 5.5 is exactly the 75 this bar claims to be. At 6 the button pushes it to 76 —
      one pixel, but the kind that makes a stated height a lie. */
