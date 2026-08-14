@@ -1,4 +1,3 @@
-import asyncio
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
@@ -10,6 +9,7 @@ from auth.account import Account
 from auth.verification_code import VerificationCode
 from model.auth.verification_code_model import VerificationCodeModel
 from statements.arranged import arranged
+from statements.race_timeout import race
 
 
 class VerificationCodeConcurrencyStatements:
@@ -66,11 +66,9 @@ class VerificationCodeConcurrencyStatements:
 
     async def race_two_consumes(self) -> None:
         try:
-            self.results = list(
-                await asyncio.gather(
-                    self._consume_in_own_session(),
-                    self._consume_in_own_session(),
-                )
+            self.results = await race(
+                self._consume_in_own_session(),
+                self._consume_in_own_session(),
             )
         except Exception as error:  # noqa: BLE001 -- assertion (2) pins that none is raised
             self.race_error = error

@@ -1,4 +1,3 @@
-import asyncio
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -8,6 +7,7 @@ from access.auth.account_storage import SqlAlchemyAccountRepository
 from auth.account import Account
 from model.auth.account_model import AccountModel
 from statements.arranged import arranged
+from statements.race_timeout import race
 
 
 class AccountConcurrencyStatements:
@@ -54,11 +54,9 @@ class AccountConcurrencyStatements:
 
     async def race_two_transitions(self) -> None:
         try:
-            self.results = list(
-                await asyncio.gather(
-                    self._transition_in_own_session(),
-                    self._transition_in_own_session(),
-                )
+            self.results = await race(
+                self._transition_in_own_session(),
+                self._transition_in_own_session(),
             )
         except Exception as error:  # noqa: BLE001 -- assertion (2) pins that none is raised
             self.race_error = error
