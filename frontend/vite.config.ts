@@ -3,8 +3,31 @@ import react from '@vitejs/plugin-react'
 
 const frontendPort = Number(process.env.FRONTEND_PORT) || 5173
 
+// Is this run going to serve the app to a browser, i.e. does the proxy matter?
+//
+// `command` is 'serve' for `vite dev` AND for `vitest`, which loads this same config; the tests
+// never reach the proxy, so demanding the variable there would fail the suite over a value it
+// does not use. `VITEST` is set by the runner itself.
+function servesBrowser(command: string): boolean {
+  return command === 'serve' && !process.env.VITEST
+}
+
+// The dev proxy needs a real backend address, and only the checkout knows it.
+function requireProxyTarget(): string {
+  const target = process.env.VITE_API_PROXY_TARGET
+  if (target) return target
+  throw new Error(
+    'VITE_API_PROXY_TARGET is not set. The dev server proxies /api to the backend, and the ' +
+      'port is per-checkout. Copy .env.example to .env and set it from infra/.env:\n' +
+      '  grep BACKEND_PORT ../infra/.env',
+  )
+}
+
 // https://vite.dev/config/
-export default defineConfig({
+// Function form so the proxy target is demanded only when a dev server is actually started:
+// `vitest` loads this same file, and a throw at module scope would fail the test run over a
+// variable the tests never use.
+export default defineConfig(({ command }) => ({
   plugins: [react()],
   server: {
     host: '127.0.0.1',
@@ -12,12 +35,12 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        // A fallback, not the truth: the published backend port is per-checkout, lives in
-        // infra/.env's BACKEND_PORT, and reaches here via VITE_API_PROXY_TARGET. Set that.
-        // The one constraint on the fallback is that it must not be 8000 — another service
-        // occupies that port on this host, so forgetting the env var would not fail loudly, it
-        // would silently proxy to someone else's app.
-        target: process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8100',
+        // No fallback on purpose. The published backend port is per-checkout — it lives in
+        // infra/.env's BACKEND_PORT and reaches here through VITE_API_PROXY_TARGET. A default
+        // would be wrong for everyone but its author, and wrong quietly: the dev server would
+        // start, the app would load, and every request would go to whatever else holds that
+        // port on this host. Missing config fails here, once, with the fix in the message.
+        target: servesBrowser(command) ? requireProxyTarget() : '',
         changeOrigin: true,
       },
     },
@@ -82,4 +105,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))

@@ -4,11 +4,12 @@ import type { GenerationParameters } from '../generationParameters'
 import { SessionExpiredError } from '../../auth/api/authorizedRequest'
 import type { DocumentType } from '../../../shared/documentTypes'
 import { describeFailure } from '../../../shared/api/send'
+import { RUNTIME } from '../../../shared/config/runtime'
 
 export type GenerationUiState = 'idle' | 'pending' | 'completed' | 'failed'
 
-const POLL_INTERVAL_MS = 5000
-const MAX_POLL_ATTEMPTS = 60 // ~5 minutes at POLL_INTERVAL_MS
+const POLL_INTERVAL_MS = RUNTIME.generationPollIntervalMs
+const MAX_POLL_ATTEMPTS = RUNTIME.generationPollMaxAttempts
 
 // How many CONSECUTIVE failed status checks are tolerated before the generation is called lost.
 //
@@ -21,7 +22,7 @@ const MAX_POLL_ATTEMPTS = 60 // ~5 minutes at POLL_INTERVAL_MS
 //
 // Three because it must be small: a status endpoint that is genuinely down should be reported
 // promptly, not after a minute of silent retrying. Three misses is ~15s of tolerance.
-const MAX_CONSECUTIVE_POLL_FAILURES = 3
+const MAX_CONSECUTIVE_POLL_FAILURES = RUNTIME.generationPollMaxConsecutiveFailures
 
 export interface UseGeneration {
   state: GenerationUiState
