@@ -2,7 +2,7 @@ import logging
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from middleware.no_store import NO_STORE, PROFILE_PATHS
+from middleware.no_store import NO_STORE, is_profile_path
 
 from shared.exceptions import ConflictException, NotFoundException, ValidationException
 
@@ -105,8 +105,8 @@ def _no_store_headers(request: Request) -> dict[str, str]:
     builds ServerErrorMiddleware -- which renders this handler -- OUTSIDE the user
     middleware stack, so a 500 never reaches it. Without this the two routes would
     satisfy "no-store on every response" for four statuses and quietly miss the
-    fifth. Keyed on the middleware's own path set so there is one list, not two.
+    fifth. Keyed on the middleware's own predicate so there is one rule, not two.
     """
-    if request.url.path in PROFILE_PATHS:
+    if is_profile_path(request.url.path):
         return {"Cache-Control": NO_STORE}
     return {}

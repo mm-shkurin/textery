@@ -9,80 +9,19 @@ hand-built response with that number on it.
 """
 
 import pytest
-from fastapi import Depends, FastAPI, Response
-from httpx import ASGITransport, AsyncClient
-from middleware.no_store import NO_STORE, PROFILE_PATHS, NoStoreMiddleware
-
-from error_handling.exception_handlers import (
-    not_found_exception_handler,
-    unhandled_exception_handler,
-    validation_exception_handler,
+from middleware.no_store import NO_STORE, NoStoreMiddleware
+from no_store_fixtures import (
+    AVATAR_PATH,
+    DECLARED_DIRECTIVE,
+    DELETION_PATH,
+    NEIGHBOUR_PATH,
+    OTHER_PATH,
+    PROFILE_PATH,
+    UNRELATED_DIRECTIVE,
+    client,
 )
-from shared.exceptions import NotFoundException, ValidationException
 
-PROFILE_PATH = next(iter(PROFILE_PATHS))
-OTHER_PATH = "/api/v1/documents"
-
-
-def _build_app() -> FastAPI:
-    app = FastAPI()
-    app.add_middleware(NoStoreMiddleware)
-    app.add_exception_handler(ValidationException, validation_exception_handler)
-    app.add_exception_handler(NotFoundException, not_found_exception_handler)
-    app.add_exception_handler(Exception, unhandled_exception_handler)
-
-    def refuse_the_token() -> None:
-        raise ValidationException(error_code="UNAUTHORIZED", message="no token")
-
-    @app.get(PROFILE_PATH)
-    async def profile() -> dict:
-        return {"email": "ada@example.ru"}
-
-    @app.patch(PROFILE_PATH)
-    async def rename() -> dict:
-        raise ValidationException(error_code="INVALID_NAME", message="bad name")
-
-    @app.put(PROFILE_PATH)
-    async def missing() -> dict:
-        raise NotFoundException("nothing here")
-
-    @app.post(PROFILE_PATH)
-    async def broken() -> dict:
-        raise RuntimeError("the driver blew up naming a table")
-
-    @app.delete(PROFILE_PATH, dependencies=[Depends(refuse_the_token)])
-    async def guarded() -> dict:
-        return {}
-
-    @app.head(PROFILE_PATH)
-    async def cacheable(response: Response) -> dict:
-        # A route that sets a weaker directive of its own, so the middleware has
-        # something to overwrite rather than merely something to add.
-        response.headers["cache-control"] = "max-age=60"
-        return {}
-
-    @app.get(OTHER_PATH)
-    async def documents() -> dict:
-        return {"items": []}
-
-    @app.head(OTHER_PATH)
-    async def cacheable_elsewhere(response: Response) -> dict:
-        response.headers["cache-control"] = "max-age=60"
-        return {}
-
-    @app.get(PROFILE_PATH + "/avatar")
-    async def avatar() -> dict:
-        return {}
-
-    return app
-
-
-@pytest.fixture
-def client():
-    return AsyncClient(
-        transport=ASGITransport(app=_build_app(), raise_app_exceptions=False),
-        base_url="http://test",
-    )
+__all__ = ["client"]
 
 
 class TestTheHeaderIsOnEveryStatus:
@@ -131,33 +70,50 @@ class TestTheHeaderIsOnlyOnTheProfilePaths:
 
         assert "cache-control" not in response.headers
 
-    async def test_matches_the_path_exactly_rather_than_by_prefix(self, client):
-        # A prefix match would adopt any future `/auth/me*` route into a policy
-        # nobody chose for it.
+    @pytest.mark.parametrize(
+        ("method", "path", "expected_status"),
+        [("get", AVATAR_PATH, 404), ("post", DELETION_PATH, 400)],
+    )
+    async def test_stamps_the_errors_of_the_routes_under_the_profile_path(
+        self, client, method: str, path: str, expected_status: int
+    ):
+        # These two are the same account's surface, and their 4xx/5xx are rendered
+        # by the handlers -- whatever the route body set is gone by then.
         async with client:
-            response = await client.get(PROFILE_PATH + "/avatar")
+            response = await getattr(client, method)(path)
+
+        assert response.status_code == expected_status
+        assert response.headers["cache-control"] == NO_STORE
+
+    async def test_leaves_a_route_that_merely_shares_the_prefix_string_alone(self, client):
+        # `/api/v1/auth/members` starts with `/api/v1/auth/me` as text but is not
+        # under it; a bare `startswith` would adopt it into a policy nobody chose.
+        async with client:
+            response = await client.get(NEIGHBOUR_PATH)
 
         assert "cache-control" not in response.headers
 
 
-class TestTheHeaderIsAssignedNotAppended:
-    async def test_replaces_a_weaker_directive_the_route_already_set(self, client):
-        # Two contradictory directives would leave a proxy to pick between them.
+class TestTheHeaderIsADefaultNotAnOverride:
+    async def test_keeps_the_directive_the_route_declared_for_itself(self, client):
+        # `avatar_response` serves `private, no-cache` on purpose: the client may
+        # revalidate the image instead of re-downloading it on every paint.
+        # Exactly one directive either way -- two would leave a proxy to choose.
         async with client:
             response = await client.head(PROFILE_PATH)
 
-        assert response.headers.get_list("cache-control") == [NO_STORE]
+        assert response.headers.get_list("cache-control") == [DECLARED_DIRECTIVE]
 
     async def test_the_same_route_shape_off_the_profile_path_keeps_its_own_directive(self, client):
         """The control for the test above: it proves the route really sets one.
 
-        Without this, "the profile response says no-store" would pass just as
-        happily against a route that never set a directive at all.
+        Without this, "the profile response kept its directive" would pass just as
+        happily against a middleware that stamped nothing anywhere.
         """
         async with client:
             response = await client.head(OTHER_PATH)
 
-        assert response.headers["cache-control"] == "max-age=60"
+        assert response.headers["cache-control"] == UNRELATED_DIRECTIVE
 
 
 class TestNonHttpTraffic:

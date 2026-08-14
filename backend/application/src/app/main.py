@@ -125,7 +125,7 @@ app.add_exception_handler(Exception, unhandled_exception_handler)
 # the 401 the auth dependency raises before any body runs. The 500 is stamped by
 # unhandled_exception_handler instead: Starlette builds ServerErrorMiddleware
 # outside the user middleware stack, so that one response never passes through
-# here. Both read the same PROFILE_PATHS set.
+# here. Both read the same is_profile_path predicate.
 app.add_middleware(NoStoreMiddleware)
 
 # Every wiring of a router's placeholder dependency to its composition-root
