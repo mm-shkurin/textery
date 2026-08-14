@@ -39,7 +39,7 @@
 
 .projects-back {
   background: none;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--projects-edge);
   border-radius: 8px;
   padding: 6px 12px;
   cursor: pointer;
@@ -64,7 +64,7 @@
 
 .projects-error-block button {
   padding: 6px 14px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--projects-edge);
   border-radius: 8px;
   background: var(--bg-surface);
   cursor: pointer;
@@ -149,7 +149,7 @@
   /* The card's own height in the frame: 128px of thumbnail plus the body under it. */
   height: 254px;
   border-radius: 14px;
-  background: var(--bg-sunken);
+  background: var(--projects-well);
   animation: projects-skeleton-pulse 1.4s ease-in-out infinite;
 }
 
@@ -176,7 +176,7 @@
 
 .projects-pager button {
   padding: 8px 16px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--projects-edge);
   border-radius: 8px;
   background: var(--bg-surface);
   cursor: pointer;

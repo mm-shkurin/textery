@@ -58,7 +58,7 @@
 .project-card-retry {
   margin-top: 10px;
   padding: 6px 14px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--projects-edge);
   border-radius: 8px;
   background: var(--bg-surface);
   cursor: pointer;
