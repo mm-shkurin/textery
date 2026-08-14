@@ -1,10 +1,14 @@
 /* The top bar's action buttons — Figma `Component 20` (secondary) and `Component 19` (primary),
    read off the landing frame's header row (node 90:880, y=48.3..133.5).
 
-   The design draws them 85.2 tall with a 10px radius: «Войти» 133.3 wide around a 50.1 wide
-   label, «Создать генерацию» 333.3 around 205.3. That is a ~20px bold label with 41px of air
-   either side on the secondary and 64px on the primary — so the padding is asymmetric between the
-   two by design, and is written out rather than shared.
+   The design draws them 85.2 tall: «Войти» 133.3 wide around a 50.1 wide label, «Создать
+   генерацию» 333.3 around 205.3. Those are FRAME units, and this file's frames are drawn at
+   1.3333x — so the button is 64 CSS px, its label 15px, and its air 31px either side on the
+   secondary against 48px on the primary. The asymmetry between the two is the design's and is
+   written out rather than shared.
+
+   Divided, not raw: taking 85.2 as CSS px put an 85px control in a bar that is 75px tall, which
+   is how the bar came to read as oversized on a laptop. The bar next door divides the same way.
 
    Class names are kept because three landing actions (Войти / Мои работы / Выйти) already use
    them. Sizes step down below the design's own width together with the bar around them. */
@@ -12,12 +16,13 @@
 .btn-ghost,
 .btn-light {
   border: none;
-  border-radius: 10px;
+  /* 10 in the frame. */
+  border-radius: 8px;
   font-family: inherit;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  height: 72px;
+  height: 64px;
 }
 
 /* `Component 20` — the secondary action: white fill, black label.
@@ -28,7 +33,7 @@
 .btn-ghost {
   background: var(--bg-surface);
   color: var(--text-primary);
-  padding: 0 34px;
+  padding: 0 31px;
 }
 
 .btn-ghost:hover {
@@ -41,7 +46,7 @@
 .btn-light {
   background: var(--accent);
   color: var(--text-inverse);
-  padding: 0 54px;
+  padding: 0 48px;
 }
 
 .btn-light:hover {
@@ -49,36 +54,21 @@
   color: var(--accent);
 }
 
-/* The design's own width, where the numbers are the file's unrounded ones. */
-@media (min-width: 1920px) {
-  .btn-ghost,
-  .btn-light {
-    height: 85px;
-    font-size: 20px;
-  }
-
-  .btn-ghost {
-    padding: 0 41px;
-  }
-
-  .btn-light {
-    padding: 0 64px;
-  }
-}
+/* No step up above 1920, for the same reason as the bar: the frame already divides to a laptop. */
 
 @media (max-width: 1000px) {
   .btn-ghost,
   .btn-light {
-    height: 56px;
-    font-size: 15px;
+    height: 52px;
+    font-size: 14px;
   }
 
   .btn-ghost {
-    padding: 0 24px;
+    padding: 0 22px;
   }
 
   .btn-light {
-    padding: 0 32px;
+    padding: 0 30px;
   }
 }
 

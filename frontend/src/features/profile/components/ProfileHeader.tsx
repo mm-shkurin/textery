@@ -13,12 +13,17 @@ interface ProfileHeaderProps {
 // reachable even when the profile request has failed — that is the state the user is most likely
 // to want out of.
 export function ProfileHeader({ onLogoutClick }: ProfileHeaderProps) {
+  // The wrapper is what carries the air above the bar. Put on the bar itself it would be padding
+  // inside a plate that paints a background, growing the white rather than the gap; put as a
+  // margin it escaped through `.profile-screen`, which has no padding or border of its own, and
+  // opened a 24px band of page background above the header.
   return (
-    <Navbar
-      variant="pill"
-      className="navbar-profile-placement"
-      testId="profile-navbar"
-      profileMenu={{ onLogoutClick, testIdPrefix: 'profile' }}
-    />
+    <div className="navbar-profile-placement">
+      <Navbar
+        variant="pill"
+        testId="profile-navbar"
+        profileMenu={{ onLogoutClick, testIdPrefix: 'profile' }}
+      />
+    </div>
   )
 }
