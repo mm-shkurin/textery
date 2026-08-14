@@ -14,6 +14,13 @@ rounding.
   sprint scores 0 regardless of code quality, so it is reported before anything else
   and nothing later can compensate for it.
 
+  A failed gate **does not stop the run**. Stages A and B read files and history;
+  they do not need a live stand, and blocking them would burn sprint time for
+  nothing. The consequence of a failed gate is narrow and strict: the run may not
+  present a score — every criterion result is reported as provisional, under the
+  blocker — and fixing the gate is the top item of the report. Only an explicit
+  instruction from the user stops the run.
+
 Then:
 
 - **Stage A — audit loop.** The reviewers' own prompt (`auditor-prompt.md`), run by a
@@ -33,8 +40,9 @@ project-specific remark; Stage B cannot judge SRP.
 directories it walks; nothing else about the sequence changes.
 
 ```
-Stage 0  gate ──failed──▶ report "sprint = 0", stop
-   │ passed
+Stage 0  gate ──failed──▶ record the blocker, keep going
+   │                      (a failed gate forbids claiming a score,
+   │                       it does not forbid the work)
    ▼
 Stage A  per layer, up to 7 iterations:
    audit (fresh zero-bias agent) ─▶ score + findings

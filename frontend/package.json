@@ -19,7 +19,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage && node scripts/check-per-file-coverage.mjs"
+    "test:coverage": "vitest run --coverage && node scripts/check-per-file-coverage.mjs",
+    "testcases:sync": "node scripts/sync-test-cases.mjs",
+    "testcases:check": "node scripts/sync-test-cases.mjs --check"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.4",

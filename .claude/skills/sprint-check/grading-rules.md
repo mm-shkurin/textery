@@ -21,7 +21,14 @@ The jury opens the sprint at **22:00 Friday (GMT+6)**. Before that moment:
    matching the demo, the repo receives the group's average score instead of its own.
 
 Report the gate first, in this order, before any criterion score. A gate failure is
-the only finding that matters that day.
+the finding that matters most that day — but it is a **reporting** rule, not a stop
+button: the run continues, and every criterion score it produces is labelled
+provisional until the gate clears. Never announce a final score over a failed gate,
+and never halt the fixing work because of one.
+
+Pushing to the graded remotes is outward-facing and irreversible: propose it, show
+`git diff <release_ref>..<branch> --stat` (deletions especially), and wait for the
+user. Never push unasked.
 
 ## What the skill grades, and what it cannot
 
