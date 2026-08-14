@@ -1,7 +1,7 @@
 import './LandingStats.css'
 
-// Figma `Desktop` (node 90:880), the three 315x174 cards at y=504. Each carries a stacked
-// avatar cluster above the figure; the icon glyph on the front chip differs per card.
+// Figma `Desktop` (node 90:880), the three 386x213 cards at y=668. Each carries a stacked
+// avatar cluster straddling its top edge; the icon glyph on the front chip differs per card.
 const STATS = [
   {
     value: '1 млн+',
