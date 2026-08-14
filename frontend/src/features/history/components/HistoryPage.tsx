@@ -31,7 +31,7 @@ function HistoryPageScreen({ onOpenDocument, onBack }: HistoryPageProps) {
   // it here was a third copy of one number — restating a value this component has no opinion
   // about, in a place that would not be updated if the server's changed.
   const fetchPage = useCallback((cursor?: string) => listDocuments(undefined, cursor), [])
-  const { items, isLoading, error, hasMore, loadMore } = useHistoryList(fetchPage)
+  const { items, isLoading, error, hasMore, loadMore } = useHistoryList('documents', fetchPage)
 
   return (
     <div className="history-page" data-testid="history-page">

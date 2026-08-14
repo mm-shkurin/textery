@@ -2,6 +2,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { useHistoryList } from '../useHistoryList'
 import { listDocuments, type DocumentSummary } from '../../api/historyApi'
+import { QueryBoundary } from '../../../../shared/query/QueryBoundary'
 import {
   ORIGIN_INTERNAL_ERROR_BODY,
   ORIGIN_PROVIDER_UNAVAILABLE_BODY,
@@ -43,7 +44,9 @@ describe('useHistoryList server errors reach the user through the real send chai
   // racing the render that set it. No assertion on the outcome lives in here.
   async function loadAndObserve(body: Record<string, unknown>): Promise<Observed> {
     const fetchMock = stubOriginError(body)
-    const { result } = renderHook(() => useHistoryList(() => listDocuments()))
+    const { result } = renderHook(() => useHistoryList('documents', () => listDocuments()), {
+      wrapper: QueryBoundary,
+    })
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
     })
