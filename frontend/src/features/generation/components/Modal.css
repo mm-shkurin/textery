@@ -25,9 +25,6 @@
   padding: 40px;
   text-align: left;
 }
-.modal.modal-narrow {
-  width: 640px;
-}
 .modal-header {
   display: flex;
   align-items: flex-start;

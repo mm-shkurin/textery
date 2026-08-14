@@ -1,21 +1,21 @@
-/* One document-type tile on the creation modal, drawn from Figma 788:5094. The card's background
-   IS the image — the frame fills each card with a tile from «Cards/Images color folders» — and the
-   words sit on a frosted panel across its lower half. Tokens from index.css. */
+/* One document-type tile on the creation modal, measured off the Figma frame «Мои проекты -
+   Создать проект» (788:5094). Every length here is the frame's value divided by the 1.3333x the
+   frames are drawn at, as index.css records: the card is 162 frame-px wide, so 121.5 CSS.
+
+   The card is a pale panel — NOT a full-bleed image. It holds a coloured tile, then the name with
+   its chevron, then the description, each on the panel's own background. Tokens from index.css. */
 .type-card {
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
   width: 100%;
-  aspect-ratio: 161 / 175;
-  padding: 0;
+  padding: 18px 18px 21px;
   border: none;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  background-color: var(--bg-sunken);
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: cover;
+  border-radius: var(--radius-sm);
+  /* Frame value #f4f6fb; `--bg-sunken` is #f7f8fa, three points of red apart from it. The token is
+     taken instead of a private colour because the difference is invisible and the token is the
+     only one of the two that already has a dark-theme form. */
+  background: var(--bg-sunken);
   color: var(--text-primary);
   font-family: inherit;
   text-align: left;
@@ -23,7 +23,7 @@
 }
 
 .type-card:hover {
-  filter: brightness(1.03);
+  filter: brightness(0.985);
 }
 
 .type-card.disabled {
@@ -31,63 +31,75 @@
   cursor: not-allowed;
 }
 
+/* 114x99 in the frame — wider than it is tall, while the source art is square, so the tile crops
+   equally off the top and bottom of the folder. That crop is the frame's, not an accident of
+   `cover`: the papers touch the tile's top edge in 788:5094 and clear it by a margin in the
+   original image. */
+.type-card-tile {
+  width: 100%;
+  aspect-ratio: 228 / 198;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
 /* The four tiles the modal spends. The other four in the palette
-   (coral, green, yellow, magenta) are downloaded alongside them and wait for the document types
+   (orange, green, yellow, magenta) are downloaded alongside them and wait for the document types
    that do not exist yet. */
-.type-card-blue {
+.type-card-blue .type-card-tile {
   background-image: url('/design/doc-types/blue.png');
 }
 
-.type-card-orange {
-  background-image: url('/design/doc-types/orange.png');
+.type-card-coral .type-card-tile {
+  background-image: url('/design/doc-types/coral.png');
 }
 
-.type-card-violet {
+.type-card-violet .type-card-tile {
   background-image: url('/design/doc-types/violet.png');
 }
 
-.type-card-teal {
+.type-card-teal .type-card-tile {
   background-image: url('/design/doc-types/teal.png');
-}
-
-/* Translucent white over the tile rather than an opaque strip: the folder art shows through, which
-   is what makes the four cards read as one set of coloured objects instead of four captions. */
-.type-card-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 14px 14px;
-  background: var(--glass-bg-strong);
-  backdrop-filter: blur(6px);
 }
 
 .type-card-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
+  /* The chevron stops 6px short of the card's content edge in the frame rather than sitting flush
+     against it, which `space-between` alone would do. */
+  padding-right: 6px;
+  margin-top: 10px;
 }
 
 .type-card-name {
-  font-size: 15px;
+  min-width: 0;
+  font-size: 11.25px;
   font-weight: 700;
 }
 
 .type-card-chevron {
-  width: 18px;
-  height: 18px;
+  width: 5.25px;
+  height: 9px;
   flex: none;
   color: var(--text-secondary);
 }
 
+/* 13/17 in the frame. The description is drawn in the same near-black as the name — it reads as
+   the lighter of the two because it is smaller and unbolded, not because it is grey. */
 .type-card-description {
-  font-size: 12.5px;
-  line-height: 1.35;
-  color: var(--text-secondary);
+  margin-top: 4px;
+  font-size: 9.75px;
+  line-height: 12.75px;
+  color: var(--text-primary);
 }
 
 /* The «скоро» marker for a type that cannot be generated yet. Sits on the tile, clear of the
-   panel, so it reads as a stamp on the card rather than as part of the description. */
+   text, so it reads as a stamp on the card rather than as part of the description. All four types
+   are available today; the frame therefore does not draw this, and its placement is ours. */
 .soon-pill {
   position: absolute;
   top: 10px;
