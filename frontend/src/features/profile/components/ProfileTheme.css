@@ -1,13 +1,8 @@
+/* Цвета переключателя — в src/styles/tokens-*.css (--profile-track-*). */
 /* The «Тема оформления» segmented control — Figma node 1127:10768, the 289×48 track at x=1446 with
    its three pills at 109 / 90 / 83. */
 
-:root {
-  --profile-track-bg: #f5f5f7;
-}
 
-[data-theme='dark'] {
-  --profile-track-bg: #1e242c;
-}
 
 .profile-theme-switch {
   display: inline-flex;

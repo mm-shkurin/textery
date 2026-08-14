@@ -1,3 +1,4 @@
+/* Цвета экрана — в src/styles/tokens-*.css (--projects-*). */
 /* «Мои проекты» — the grid feed and the cards in it. The rest of the screen is owned by the file
    named after it: ProjectsScreen.css (header, sections, list view, skeleton, pager),
    ProjectsToolbar.css and ProjectsEmptyState.css.
@@ -18,15 +19,7 @@
    1.41, and it is drawn on a page only 1.13 away from that surface — the two together left every
    edge on the screen at the threshold of visible. The dark form steps to `--border-strong` (1.7).
    Both are listed in the report for session 1 to fold into the token sheets. */
-:root {
-  --projects-well: var(--bg-sunken);
-  --projects-edge: var(--border-hairline);
-}
 
-:root[data-theme='dark'] {
-  --projects-well: var(--bg-card-muted);
-  --projects-edge: var(--border-strong);
-}
 
 /* The card is a FIXED 220px in frame 484:1104, not a sixth of the row. Measured off the render:
    the six cards of «Все проекты» sit at x=140…1559 inside a content column that runs to 1780 —

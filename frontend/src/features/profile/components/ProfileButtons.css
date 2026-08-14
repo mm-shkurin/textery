@@ -1,3 +1,4 @@
+/* Цвет опасного действия — в src/styles/tokens-*.css (--profile-danger-*). */
 /* «Мой профиль» — the four button shapes the design uses, in one file so a fifth cannot be
    invented per component. Figma node 1127:10768: the outlined 144×44 at x=1592, the filled 172×43
    at x=1464, the borderless 175×43 at x=1406, and the red-outlined 200×44 at x=1536.
@@ -8,13 +9,7 @@
 /* #FF383C is the design's red and it is NOT `--error` (#ef4444) — near-misses retyped per
    component are exactly what makes a palette drift. Both themes are given: the light red measures
    3.3:1 on the dark surface and would be a stripe nobody can read. */
-:root {
-  --profile-danger-fg: #ff383c;
-}
 
-[data-theme='dark'] {
-  --profile-danger-fg: #ff6b6b;
-}
 
 .profile-btn-primary,
 .profile-btn-ghost,

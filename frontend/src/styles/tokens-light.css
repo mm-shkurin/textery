@@ -130,4 +130,28 @@
   --radius-md: 10px;
   --radius-lg: 16px;
   --radius-pill: 999px;
+
+  /* Component-scoped colours, moved here from the component sheets: a value written
+     beside the rule that uses it is a value the next screen retypes slightly differently. Names
+     keep their component prefix — they are specific, not general — but every colour in the
+     product is now declared in these two files. */
+
+  /* ProfileButtons */
+  --profile-danger-fg: #ff383c;
+
+  /* ProfileModal */
+  --profile-modal-line: #cbd5e1;
+  --profile-modal-scrim: rgba(15, 23, 42, 0.35);
+
+  /* ProfilePage */
+  --profile-page-bg: #f4f6fb;
+  --profile-row-fg: #6b7280;
+  --profile-card-line: #d9d9d9;
+
+  /* ProfileTheme */
+  --profile-track-bg: #f5f5f7;
+
+  /* ProjectsPage */
+  --projects-well: var(--bg-sunken);
+  --projects-edge: var(--border-hairline);
 }

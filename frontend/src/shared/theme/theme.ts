@@ -1,4 +1,10 @@
-import { browserDocument, browserWindow } from '../lib/browser'
+import {
+  browserDocument,
+  browserWindow,
+  readStored,
+  removeStored,
+  writeStored,
+} from '../lib/browser'
 // The theme's vocabulary and its four primitive operations. No React, no module state — this file
 // is the piece that `themeStore.ts` and the inline boot script in `index.html` must agree on.
 //
@@ -25,23 +31,16 @@ function isTheme(value: unknown): value is Theme {
 // renames a theme, and an unvalidated read would put `data-theme="sepia"` on <html>, which matches
 // no block and silently resolves every token to its light value while claiming otherwise.
 export function readStoredTheme(): Theme | null {
-  try {
-    const raw = localStorage.getItem(THEME_STORAGE_KEY)
-    return isTheme(raw) ? raw : null
-  } catch {
-    // Safari in private mode throws on `localStorage` access rather than returning null. A theme
-    // that cannot be REMEMBERED must still be usable, so this degrades to "no stored choice".
-    return null
-  }
+  // `readStored` already degrades where storage throws — Safari in private mode does, rather than
+  // returning null — so a theme that cannot be REMEMBERED is still usable.
+  const raw = readStored('local', THEME_STORAGE_KEY)
+  return isTheme(raw) ? raw : null
 }
 
 export function storeTheme(theme: Theme): void {
-  try {
-    localStorage.setItem(THEME_STORAGE_KEY, theme)
-  } catch {
-    // Same as above, plus a full quota. The switch already happened on screen; losing the record
-    // costs the user one extra click next visit and must not throw out of a click handler.
-  }
+  // A refused write — private mode, a full quota — costs the user one extra click next visit and
+  // must not throw out of a click handler. The switch already happened on screen.
+  writeStored('local', THEME_STORAGE_KEY, theme)
 }
 
 // "Follow the OS" is the ABSENCE of a stored choice, not a third value written into storage.
@@ -50,11 +49,7 @@ export function storeTheme(theme: Theme): void {
 // change is the one that leaves it alone. Removing the key is exactly what `resolveInitialTheme`
 // already reads as "ask the OS".
 export function clearStoredTheme(): void {
-  try {
-    localStorage.removeItem(THEME_STORAGE_KEY)
-  } catch {
-    // Same private-mode throw the writer guards against.
-  }
+  removeStored('local', THEME_STORAGE_KEY)
 }
 
 // What the SWITCH shows as selected, which is a different question from what the page is painted

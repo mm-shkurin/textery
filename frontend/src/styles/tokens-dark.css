@@ -108,4 +108,25 @@
   /* #6b7280 measures 2.4:1 on the dark surface — a placeholder that reads as a disabled field.
      `--dark-300` is the same role re-lit, and is what every other muted text in dark resolves to. */
   --input-placeholder: var(--dark-300);
+
+  /* Dark forms of the component-scoped colours above. */
+  /* ProfileButtons */
+  --profile-danger-fg: #ff6b6b;
+
+  /* ProfileModal */
+  --profile-modal-line: #3a4553;
+  --profile-modal-scrim: rgba(0, 0, 0, 0.6);
+
+  /* ProfilePage */
+  --profile-page-bg: #0f1216;
+  --profile-row-fg: #8d97a3;
+  --profile-card-line: #2a323c;
+
+  /* ProfileTheme */
+  --profile-track-bg: #1e242c;
+
+  /* Dark forms of the component-scoped colours. */
+  /* ProjectsPage */
+  --projects-well: var(--bg-card-muted);
+  --projects-edge: var(--border-strong);
 }

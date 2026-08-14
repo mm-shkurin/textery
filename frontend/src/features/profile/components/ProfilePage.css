@@ -1,3 +1,4 @@
+/* Цвета экрана объявлены в src/styles/tokens-*.css (--profile-page-bg, --profile-row-fg, --profile-card-line). */
 /* «Мой профиль» — shell, the three cards, and the rows inside them.
    Figma nodes 1127:10768 / 1202:6364 / 1227:9790 / 1202:6227.
 
@@ -13,17 +14,7 @@
    design puts these cards on #F4F6FB and the difference is visible when three white panels sit on
    it. Declared locally because the token sheets belong to another session this sprint; both themes
    are given here on purpose — a colour with only a light form is a white patch on a dark page. */
-:root {
-  --profile-page-bg: #f4f6fb;
-  --profile-row-fg: #6b7280;
-  --profile-card-line: #d9d9d9;
-}
 
-[data-theme='dark'] {
-  --profile-page-bg: #0f1216;
-  --profile-row-fg: #8d97a3;
-  --profile-card-line: #2a323c;
-}
 
 .profile-screen {
   min-height: 100vh;

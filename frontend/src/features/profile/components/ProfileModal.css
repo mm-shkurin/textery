@@ -1,3 +1,4 @@
+/* Цвета диалога — в src/styles/tokens-*.css (--profile-modal-*). */
 /* The deletion dialog — Figma node 1202:6227: a 624×250 panel centred over the blurred page.
 
    It is TALLER than 250 here, and deliberately. The mockup's dialog is a title, a sentence and two
@@ -5,17 +6,7 @@
    is a tested contract, so the panel grows to hold the field rather than the guard being dropped
    to fit the drawing. */
 
-:root {
-  --profile-modal-line: #cbd5e1;
-  --profile-modal-scrim: rgba(15, 23, 42, 0.35);
-}
 
-[data-theme='dark'] {
-  --profile-modal-line: #3a4553;
-  /* Deeper in dark: the same alpha over a near-black page separates nothing, and a dialog that does
-     not visibly lift off the page is a dialog people keep clicking behind. */
-  --profile-modal-scrim: rgba(0, 0, 0, 0.6);
-}
 
 /* The scrim DIMS but does not swallow clicks, and that is a compromise rather than a preference.
    A refused password leaves this dialog open with its error — and the acceptance suite then opens
