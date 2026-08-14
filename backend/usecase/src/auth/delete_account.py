@@ -1,6 +1,7 @@
 import logging
 from uuid import UUID
 
+from auth.account import Account
 from auth.account_eraser import AccountEraser
 from auth.account_repository import AccountRepository
 from auth.deletion_confirmation import (
@@ -87,7 +88,7 @@ class DeleteAccount:
             await rollback_quietly(self.unit_of_work)
             raise
 
-    def _confirmed(self, account, password: object, confirm_email: object) -> bool:
+    def _confirmed(self, account: Account, password: object, confirm_email: object) -> bool:
         if has_password(account):
             # Only the password path. `confirm_email` is not even looked at: an
             # account with a password must not be deletable by retyping an address
