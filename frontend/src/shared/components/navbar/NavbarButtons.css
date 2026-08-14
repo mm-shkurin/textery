@@ -1,0 +1,56 @@
+/* The top bar's action buttons — Figma `Component 20` (secondary) and `Component 19` (primary).
+   Only the landing bar has any today; the class names are kept because three landing actions
+   (Войти / Мои работы / Выйти) already share them. */
+
+/* `Component 20` — the secondary action: white fill, black label, same 50px height and 8px radius
+   as the primary next to it. */
+.btn-ghost {
+  border: none;
+  background: var(--neutral-000);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  height: 50px;
+  padding: 0 24px;
+}
+
+.btn-ghost:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* `Component 19` — the primary CTA. Its Variant2 (hover) state inverts to a `blue-50` fill with a
+   `blue-700` label rather than darkening the blue. */
+.btn-light {
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  cursor: pointer;
+  background: var(--accent);
+  color: var(--text-inverse);
+  font-weight: 700;
+  height: 50px;
+  padding: 0 28px;
+  font-size: 16px;
+}
+
+.btn-light:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  /* Signing out is the only way to end a session, and a phone is exactly where a borrowed device
+     gets left signed in. Signing in is how every returning user gets back to their work — hiding
+     it on mobile leaves them with "start over" as the only visible action. Shrink both, hide
+     neither. */
+  .btn-ghost,
+  .btn-light {
+    height: 40px;
+    padding: 0 14px;
+    font-size: 13px;
+  }
+}

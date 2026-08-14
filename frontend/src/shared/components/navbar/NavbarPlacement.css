@@ -1,0 +1,38 @@
+/* WHERE a bar sits on its page, as opposed to what the bar looks like — the shell width it aligns
+   to and the air under it. Kept out of `Navbar.css` so that file stays a description of one
+   object, and kept out of the pages' own stylesheets because those belong to other sessions.
+
+   Both classes carry the numbers their screens already used, so this split moves nothing on
+   screen: «Мои проекты» is a 1640 feed and «Мой профиль» a 1240 form, and the pill matches the
+   column it heads. */
+
+.navbar-projects-placement {
+  margin-bottom: 30px;
+}
+
+.navbar-profile-placement {
+  max-width: 1240px;
+  margin: 24px auto 0;
+}
+
+@media (min-width: 1920px) {
+  .navbar-projects-placement {
+    margin-bottom: 40px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .navbar-projects-placement {
+    margin-bottom: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar-projects-placement {
+    margin-bottom: 16px;
+  }
+
+  .navbar-profile-placement {
+    margin: 12px;
+  }
+}

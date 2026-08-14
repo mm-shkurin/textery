@@ -1,0 +1,137 @@
+/* The one top bar — Figma `Navbar/Variant5` (node 1086:4929, 1920x100).
+ *
+ * Geometry is the design's at the design's width and steps down below it: 100px on a 1920 frame is
+ * 5% of the height, and the same 100px on a 1440 laptop is half again as much of the screen, which
+ * is what "the header is too big" actually describes. Height, radius, padding and logo shrink
+ * together at each step, or the bar stops looking like the same object.
+ *
+ * Three shells, one bar. `flat` sits on the page background with no surface of its own (landing),
+ * `pill` floats as a rounded card (projects, profile), `bar` spans the viewport with a bottom rule
+ * (workspace). Nothing INSIDE the bar changes between them. */
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.navbar-logo {
+  height: 37px;
+  width: auto;
+  display: block;
+  flex: none;
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* --- flat: the landing. No bar behind it; the wordmark aligns to the content column. --- */
+.navbar-flat {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 20px 0;
+  background: none;
+}
+
+.navbar-flat .navbar-logo {
+  height: 45px;
+}
+
+/* --- pill: «Мои проекты» and «Мой профиль». A white card floating on the page. --- */
+.navbar-pill {
+  min-height: 72px;
+  padding: 10px 26px;
+  border-radius: 22px;
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-navbar);
+}
+
+/* --- bar: the workspace and the editor. Full width, hairline underneath. --- */
+.navbar-bar {
+  padding: 20px 48px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.navbar-bar .navbar-logo {
+  height: 34px;
+}
+
+/* The design's own width. Here — and only here — the pill is the size the Figma node draws. */
+@media (min-width: 1920px) {
+  .navbar-pill {
+    min-height: 88px;
+    padding: 12px 32px;
+    border-radius: 28px;
+  }
+
+  .navbar-pill .navbar-logo {
+    height: 45px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .navbar-pill {
+    min-height: 64px;
+    padding: 8px 20px;
+    border-radius: 20px;
+  }
+
+  .navbar-pill .navbar-logo {
+    height: 33px;
+  }
+
+  /* The avatar comes from the shared ProfileMenu, so it is overridden HERE rather than there — at
+     44px it is taller than the padding box this bar has left and would push the pill back up to
+     the height the step just took off it. */
+  .navbar-pill .profile-avatar-trigger {
+    width: 38px;
+    height: 38px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar-bar {
+    padding: 16px 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar-flat {
+    padding: 16px 16px 0;
+  }
+
+  .navbar-flat .navbar-logo {
+    height: 32px;
+  }
+
+  .navbar-actions {
+    gap: 8px;
+  }
+
+  .navbar-pill {
+    min-height: 56px;
+    padding: 8px 16px;
+    border-radius: 18px;
+  }
+
+  .navbar-pill .navbar-logo {
+    height: 29px;
+  }
+
+  .navbar-pill .profile-avatar-trigger {
+    width: 34px;
+    height: 34px;
+    font-size: 13px;
+  }
+
+  .navbar-pill .profile-chevron {
+    width: 20px;
+    height: 20px;
+  }
+}

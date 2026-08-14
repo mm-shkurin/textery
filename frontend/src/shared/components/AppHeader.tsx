@@ -1,5 +1,4 @@
-import { ProfileMenu } from './profile/ProfileMenu'
-import './AppHeader.css'
+import { Navbar } from './navbar/Navbar'
 
 interface AppHeaderProps {
   // Optional so a screen that has no session to end (or has not wired one yet) renders the
@@ -9,14 +8,19 @@ interface AppHeaderProps {
   onLogoutClick?: () => void
 }
 
+// The workspace and editor bar. Kept as its own name rather than replaced at the call sites: the
+// generation screens import `AppHeader`, and this wrapper lets the markup underneath become the
+// shared `Navbar` without editing them. The bar itself is the same object as every other screen's.
 export function AppHeader({ onLogoutClick }: AppHeaderProps) {
   return (
-    <header className="app-header">
-      <img className="app-logo" src="/design/logo-textery.svg" alt="Textery" />
-      {/* Sign-out lives inside the account menu here for the same reason it does on the landing:
-          one control for "this is my account, and here is the way out of it", identical on every
-          screen that has a session. */}
-      {onLogoutClick && <ProfileMenu onLogoutClick={onLogoutClick} testIdPrefix="workspace" />}
-    </header>
+    <Navbar
+      variant="bar"
+      // Sign-out lives inside the account menu here for the same reason it does on the landing:
+      // one control for "this is my account, and here is the way out of it", identical on every
+      // screen that has a session.
+      profileMenu={
+        onLogoutClick === undefined ? undefined : { onLogoutClick, testIdPrefix: 'workspace' }
+      }
+    />
   )
 }
