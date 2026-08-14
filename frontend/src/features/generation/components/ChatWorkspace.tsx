@@ -3,8 +3,8 @@ import './ChatWorkspace.css'
 import './ChatWorkspaceDoc.css'
 import './DocMarkdown.css'
 import type { GenerationUiState } from '../hooks/useGeneration'
-import { Composer, MAX_TOPIC_LENGTH } from './Composer'
-import { EMPTY_PARAMETERS, type GenerationParameters } from '../generationParameters'
+import { ComposerPanel } from './ComposerPanel'
+import type { GenerationParameters } from '../generationParameters'
 import { Progress } from './Progress'
 import { DocArea } from './DocArea'
 import { GenerationHeading } from './GenerationHeading'
@@ -42,26 +42,18 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
   const { documentType, documentTypeLabel, state, content, volumePages, createdAt, error } = props
   const { onSubmit, onReset } = props
   const { onLogoutClick } = props
-  const [topic, setTopic] = useState('')
-  const [parameters, setParameters] = useState<GenerationParameters>(EMPTY_PARAMETERS)
+  // Identifies the current draft. The workspace is never unmounted across a reset — only the
+  // idle branch swaps Progress back for the composer — so without this the «Создать новый
+  // доклад» screen came back pre-filled with the topic that was just generated, send button
+  // already enabled: one keystroke re-bills the user for the document they already have.
+  //
+  // A nonce rather than a `setTopic('')` reaching down: the draft now belongs to ComposerPanel,
+  // and remounting it is how an owner discards a draft without reading it first. The parameters
+  // — требования and объём — go with the topic, for the same re-billing reason.
+  const [draftId, setDraftId] = useState(0)
 
-  const send = () => {
-    const trimmed = topic.trim().slice(0, MAX_TOPIC_LENGTH)
-    if (trimmed) onSubmit(trimmed, parameters)
-  }
-
-  // The topic lives in this component's state, so `useGeneration.reset()` cannot reach it — it
-  // clears the generation, and the workspace is never unmounted across a reset (only the idle
-  // branch swaps Progress back for Composer). Without this the "Создать новый доклад" screen
-  // came back pre-filled with the topic that was just generated, send button already enabled:
-  // one keystroke re-bills the user for the document they already have. Clearing here keeps the
-  // topic owned by the one component that holds it.
   const reset = () => {
-    setTopic('')
-    // The parameters are cleared with the topic and for the same reason: a "Создать новый"
-    // screen carrying the previous run's требования and объём invites one keystroke to re-bill
-    // the user for a document they already have, this time with settings they never re-read.
-    setParameters(EMPTY_PARAMETERS)
+    setDraftId((n) => n + 1)
     onReset()
   }
 
@@ -84,13 +76,10 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
         <div className="cw-layout">
           <aside className="chat-panel" data-testid="chat-panel">
             {state === 'idle' ? (
-              <Composer
+              <ComposerPanel
+                key={draftId}
                 topicLabel={topicFieldLabel(documentType)}
-                topic={topic}
-                parameters={parameters}
-                setParameters={setParameters}
-                setTopic={setTopic}
-                onSend={send}
+                onSubmit={onSubmit}
               />
             ) : (
               <Progress state={state} documentType={documentType} />
