@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { TypeModal } from '../TypeModal'
 import { TypeCard } from '../TypeCard'
-import { DOCUMENT_TYPES } from '../../../../shared/documentTypes'
+import { DOCUMENT_TYPES } from '../../../../shared/copy/documentTypeCopy'
 
 describe('TypeModal', () => {
   // Every type, not just доклад: with a single card the assertion passes against a modal that

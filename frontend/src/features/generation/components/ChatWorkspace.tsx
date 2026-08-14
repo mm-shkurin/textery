@@ -9,7 +9,8 @@ import { Progress } from './Progress'
 import { DocArea } from './DocArea'
 import { GenerationHeading } from './GenerationHeading'
 import { AppHeader } from '../../../shared/components/AppHeader'
-import { topicFieldLabel, type DocumentType } from '../../../shared/documentTypes'
+import { type DocumentType } from '../../../shared/documentTypes'
+import { topicFieldLabel } from '../../../shared/copy/documentTypeCopy'
 
 interface ChatWorkspaceProps {
   // Both the id and its label, as ManualEditor already takes them: the label is what the

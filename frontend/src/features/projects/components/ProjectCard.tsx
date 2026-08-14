@@ -1,9 +1,6 @@
 import type { ProjectSummary } from '../api/projectsApi'
-import {
-  documentTypeFromWire,
-  documentTypeLabelFromWire,
-  type DocumentType,
-} from '../../../shared/documentTypes'
+import { documentTypeFromWire, type DocumentType } from '../../../shared/documentTypes'
+import { documentTypeLabelFromWire } from '../../../shared/copy/documentTypeCopy'
 import { ProjectFolderIcon } from './ProjectFolderIcon'
 import { formatCardDate } from '../../../shared/formatCardDate'
 import { projectKey } from '../projectKey'

@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { listDocuments } from '../api/historyApi'
 import { useHistoryList } from '../hooks/useHistoryList'
 import { HistoryRows } from './HistoryRows'
-import { documentTypeLabelFromWire } from '../../../shared/documentTypes'
+import { documentTypeLabelFromWire } from '../../../shared/copy/documentTypeCopy'
 import './HistoryPage.css'
 
 interface HistoryPageProps {

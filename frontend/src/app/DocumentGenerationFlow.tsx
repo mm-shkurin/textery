@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { DOCUMENT_TYPE_LABELS } from '../shared/documentTypes'
+import { DOCUMENT_TYPE_LABELS } from '../shared/copy/documentTypeCopy'
 import { ProjectsPage } from '../features/projects/components/ProjectsPage'
 import { LandingPage } from '../features/landing/components/LandingPage'
 import { ChatWorkspace } from '../features/generation/components/ChatWorkspace'
