@@ -46,7 +46,17 @@ GATES: list[tuple[str, list[str]]] = [
             "application/src",
         ],
     ),
-    ("pytest", [sys.executable, "-m", "pytest", "-q"]),
+    # --cov with the source roots named in pyproject, and the same floor CI
+    # blocks on. Running plain `pytest` here would have made this script claim to
+    # be the CI gate list while silently dropping the coverage ratchet.
+    (
+        "pytest --cov-fail-under=90",
+        [sys.executable, "-m", "pytest", "-q", "--cov", "--cov-fail-under=90"],
+    ),
+    # The only gate here that needs the network: it asks PyPI's advisory data
+    # about the pinned runtime set. Scoped to requirements.txt, not the installed
+    # environment, so a red result is unambiguous about what deploys.
+    ("pip-audit", [sys.executable, "-m", "pip_audit", "-r", "requirements.txt"]),
 ]
 
 
