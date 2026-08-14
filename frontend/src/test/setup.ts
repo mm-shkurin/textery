@@ -3,6 +3,7 @@ import '@testing-library/jest-dom'
 // package.json and resolves today only by hoisting through the former, so a lockfile or resolver
 // change would break this file. `configure` is re-exported, so this is the same function.
 import { configure } from '@testing-library/react'
+import { queryClient } from '../shared/query/queryClient'
 
 // Testing Library's default async budget is 1000ms, which is a fine budget for a state flush and
 // a bad one for a CHUNK LOAD. `DocumentGenerationFlow` lazy-imports ManualEditor (Tiptap +
@@ -40,3 +41,11 @@ if (typeof Range.prototype.getClientRects !== 'function') {
   Range.prototype.getClientRects = () => Object.assign([], { item: () => null })
   Range.prototype.getBoundingClientRect = emptyRect as never
 }
+
+// The data cache is a module singleton — one client for the whole app, which is what makes a
+// return to a list instant. In a test run that would also make it one cache for every case in the
+// file, so a feed fetched by one test would satisfy the next one's render and hide a missing
+// request. Cleared between cases; the app's own lifetime is unaffected.
+afterEach(() => {
+  queryClient.clear()
+})

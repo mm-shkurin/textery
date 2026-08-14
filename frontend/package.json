@@ -22,6 +22,7 @@
     "test:coverage": "vitest run --coverage && node scripts/check-per-file-coverage.mjs"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.101.4",
     "@tiptap/extension-document": "^3.27.4",
     "@tiptap/extension-placeholder": "^3.27.4",
     "@tiptap/extension-text-align": "3.27.4",

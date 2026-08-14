@@ -48,6 +48,12 @@ export interface RequestOptions {
   // response is still parsed as JSON into an HttpError, so a 4xx/5xx error body is never streamed
   // out and downloaded as if it were the document.
   responseType?: 'json' | 'blob'
+  // The CALLER's cancellation — an unmounting component, a superseded search, a query the cache
+  // has abandoned. Combined with the transport's own timeout signal rather than replacing it: a
+  // request must stay bounded even when nobody cancels it, and must stop immediately when someone
+  // does. Without this a fast re-navigation leaves responses in flight that resolve into
+  // components that are gone.
+  signal?: AbortSignal
 }
 
 // Client-side timeout for a single request. Its job is to stop a HUNG request (a proxy that
@@ -92,8 +98,18 @@ export class RequestTimeoutError extends Error {
 // what makes the timeout work — a black-holed connection may never honour it — so the timer still
 // rejects independently, and aborting changes nothing about the no-auto-retry reasoning above:
 // giving up on a response never unsends the request.
-function withTimeout<T>(work: (signal: AbortSignal) => Promise<T>, ms: number): Promise<T> {
+function withTimeout<T>(
+  work: (signal: AbortSignal) => Promise<T>,
+  ms: number,
+  caller?: AbortSignal,
+): Promise<T> {
   const controller = new AbortController()
+  // `AbortSignal.any` is not available everywhere this runs, so the two signals are joined by
+  // hand: the caller's abort aborts ours, and the listener is removed when the work settles.
+  const relay = () => controller.abort(caller?.reason)
+  if (caller?.aborted) relay()
+  else caller?.addEventListener('abort', relay, { once: true })
+
   let timer: ReturnType<typeof setTimeout>
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(() => {
@@ -101,7 +117,10 @@ function withTimeout<T>(work: (signal: AbortSignal) => Promise<T>, ms: number): 
       reject(new RequestTimeoutError())
     }, ms)
   })
-  return Promise.race([work(controller.signal), timeout]).finally(() => clearTimeout(timer))
+  return Promise.race([work(controller.signal), timeout]).finally(() => {
+    clearTimeout(timer)
+    caller?.removeEventListener('abort', relay)
+  })
 }
 
 // Rejections reach callers as `unknown`, and only SOME of them are HttpError: a transport
@@ -122,7 +141,11 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   // Every call — GET and mutating POST alike — is bounded: a hung POST is the one this scenario
   // exists for (login), and the bound is reject-only with no auto-retry, so bounding a POST is
   // safe against duplicates (see withTimeout).
-  return withTimeout((signal) => performRequest<T>(path, options, signal), REQUEST_TIMEOUT_MS)
+  return withTimeout(
+    (signal) => performRequest<T>(path, options, signal),
+    REQUEST_TIMEOUT_MS,
+    options.signal,
+  )
 }
 
 async function performRequest<T>(

@@ -10,6 +10,7 @@ import { useRetryGeneration } from '../hooks/useRetryGeneration'
 import type { ProjectSummary } from '../api/projectsApi'
 import './ProjectsPage.css'
 import './ProjectsScreen.css'
+import { QueryBoundary } from '../../../shared/query/QueryBoundary'
 
 // «Недавние проекты» is the first N items of the SAME response — never a second request for a
 // slice of data already in hand. It is hidden under an active search or a non-default order,
@@ -36,7 +37,7 @@ interface ProjectsPageProps {
   onLogoutClick?: () => void
 }
 
-export function ProjectsPage({
+function ProjectsPageScreen({
   onOpenDocument,
   onCreateProject,
   onBack,
@@ -44,7 +45,7 @@ export function ProjectsPage({
 }: ProjectsPageProps = {}) {
   const feed = useProjectsFeed()
   const [view, setView] = useProjectView()
-  const retry = useRetryGeneration(feed.reload)
+  const retry = useRetryGeneration(feed.markRetried)
 
   const searching = feed.q.trim() !== ''
   // The rail is part of the screen whenever there is anything to put in it. It shipped gated on
@@ -175,5 +176,20 @@ export function ProjectsPage({
         onPage={(page) => feed.update({ page })}
       />
     </div>
+  )
+}
+
+/**
+ * The screen, with the data cache it reads through.
+ *
+ * Wrapped here rather than only at the app root so the page can be rendered on its own — by a
+ * test, by a future route — without silently requiring an ancestor it never names. The boundary
+ * carries the same client either way, so nesting changes nothing at runtime.
+ */
+export function ProjectsPage(props: Parameters<typeof ProjectsPageScreen>[0]) {
+  return (
+    <QueryBoundary>
+      <ProjectsPageScreen {...props} />
+    </QueryBoundary>
   )
 }

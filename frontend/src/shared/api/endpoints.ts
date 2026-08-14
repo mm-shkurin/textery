@@ -33,6 +33,9 @@ export const API = {
     export: (id: string, format: string) =>
       `${V1}/documents/${encodeURIComponent(id)}/export?format=${encodeURIComponent(format)}`,
   },
+  projects: {
+    collection: `${V1}/projects`,
+  },
   generations: {
     collection: `${V1}/generations`,
     one: (id: string) => `${V1}/generations/${encodeURIComponent(id)}`,

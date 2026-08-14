@@ -21,7 +21,7 @@ export interface RetryState {
  * second generation for work already running. It is dropped on success, because the user's next
  * «Повторить» on that row is a new command rather than a replay of the one that landed.
  */
-export function useRetryGeneration(onRetried: () => void) {
+export function useRetryGeneration(onRetried: (generationId: string) => void) {
   const [state, setState] = useState<RetryState>({ pendingId: null, error: null })
   const keys = useRef(new Map<string, string>())
   // In-flight ids live in a ref, not in state: two clicks in the same tick both read the state
@@ -47,9 +47,10 @@ export function useRetryGeneration(onRetried: () => void) {
         // button would look broken.
         keys.current.delete(generationId)
         setState({ pendingId: null, error: null })
-        // Refetch rather than splice the new row in locally: the server decides the order, and a
-        // card inserted here would sit wherever the client guessed until the next load.
-        onRetried()
+        // The row is patched in the cache by the caller and the list is refreshed in the
+        // background: the server still decides the order, but the user sees their click land
+        // immediately instead of watching the whole grid reload.
+        onRetried(generationId)
       } catch (failure: unknown) {
         setState({
           pendingId: null,

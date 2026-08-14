@@ -7,6 +7,7 @@
 // something to render if the unknown value survives the boundary instead of failing to parse.
 
 import { send } from '../../../shared/api/send'
+import { API } from '../../../shared/api/endpoints'
 
 // FAIL-CLOSED CONTRACT. `updated_at` is declared required by projects_list.yaml, and `send`
 // casts the JSON blindly — so an absent field would map to `updatedAt: undefined` and every card
@@ -73,6 +74,9 @@ export interface ListProjectsParams {
   sort?: string
   page?: number
   limit?: number
+  // Cancellation from whoever asked — the query cache drops a request when its key changes or the
+  // screen unmounts, and an abandoned response must not stay on the wire.
+  signal?: AbortSignal
 }
 
 // The wire is snake_case on every field (ProductSpecification/api-specs/projects_list.yaml);
@@ -116,8 +120,8 @@ function queryStringOf(params: ListProjectsParams | undefined): string {
 
 export async function listProjects(params?: ListProjectsParams): Promise<ProjectPage> {
   const data = await send<ProjectPageWire>(
-    `/api/v1/projects${queryStringOf(params)}`,
-    {},
+    `${API.projects.collection}${queryStringOf(params)}`,
+    { signal: params?.signal },
     LOAD_FAILURE_FALLBACK,
   )
   // `Array.isArray`, not a presence or truthiness check, for the same reason `parseUpdatedAt`

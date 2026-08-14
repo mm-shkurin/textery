@@ -4,6 +4,7 @@ import './index.css'
 import { App } from './app/App.tsx'
 import { initTheme } from './shared/theme/themeStore'
 import { browserDocument } from './shared/lib/browser'
+import { QueryBoundary } from './shared/query/QueryBoundary'
 
 // The safety net, not the mechanism. The theme is already on <html> by the time this runs — the
 // inline script in index.html put it there before the first paint. This re-asserts it for the one
@@ -18,6 +19,8 @@ if (!host) throw new Error('Не найден корневой элемент #r
 
 createRoot(host).render(
   <StrictMode>
-    <App />
+    <QueryBoundary>
+      <App />
+    </QueryBoundary>
   </StrictMode>,
 )
