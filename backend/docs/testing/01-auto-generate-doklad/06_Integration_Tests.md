@@ -4,6 +4,16 @@
 
 # Auto-generate: доклад — Integration Tests
 
+> **Provider and worker: read as GigaChat + `BackgroundTasks`, not OpenRouter + arq.**
+> Written before 2026-07-09, when the engine was still planned as Claude via OpenRouter
+> and the queue as `arq`. Neither shipped: generation goes through a direct `httpx`
+> client to GigaChat (`backend/adapters/generation_provider/`), runs inline via
+> FastAPI `BackgroundTasks`, and stale jobs are recovered by a periodic DB sweep —
+> there is no worker process. `OPENROUTER_*` reads as the `GIGACHAT_*` credentials,
+> "a stub OpenRouter server" as a stub GigaChat server. Behaviour is unchanged; the
+> vendor and the transport are not. Source of truth: `ProductSpecification/technology.md`,
+> `known-debt.md` #11 and #13. Verified against the code 2026-08-15.
+
 Covers the worker ↔ external generation-provider integration (arq job → OpenRouter →
 Document/status), including the outbound half of the idempotency guarantee from
 `01_API_Tests.md` section 3 — re-run safety is mandatory in both files whenever an

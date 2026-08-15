@@ -1,5 +1,22 @@
 # Auto-generate: доклад
 
+> **Provider and worker: read as GigaChat + `BackgroundTasks`, not OpenRouter + arq.**
+> Written before 2026-07-09, when the generation engine was still planned as
+> Anthropic Claude via OpenRouter and the queue as `arq`. Neither shipped. Substitute
+> throughout, verified against the code 2026-08-15:
+>
+> | This document says | The code does |
+> |---|---|
+> | OpenRouter, the `openai` SDK | GigaChat (Sber), direct `httpx` client — `backend/adapters/generation_provider/src/provider/gigachat_provider.py`, custom Russian trusted CA bundle |
+> | `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` | `GIGACHAT_*` credentials, same "never in an HTTP response, never in a log" rule |
+> | "the worker picks up the job" | inline `BackgroundTasks` in the ASGI process + a periodic DB sweep that requeues stale generations — there is no separate worker process |
+> | a stub OpenRouter server in tests | a stub GigaChat server, same role |
+>
+> Everything else in this spec — flow, statuses, retry semantics, re-run safety —
+> stands unchanged; the swap was the transport and the vendor, not the behaviour.
+> `technology.md` is the source of truth for the stack, `known-debt.md` #11 and #13
+> for why. This banner is not a to-do: the migration already happened.
+
 ## Brief Description
 
 Anonymous user submits a "доклад" generation request (topic, volume, optional
