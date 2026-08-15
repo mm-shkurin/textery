@@ -73,4 +73,4 @@ matching the test under review (load only the one that matches):
 ## Progress Logging
 
 Read `.claude/guidelines/agent-logging.md` and append your required
-`test-review-agent` milestones to `infrastructure/agent-progress.log` as you work.
+`test-review-agent` milestones to `infra/agent-progress.log` as you work.

@@ -62,4 +62,4 @@ If every row is clean, return `## Cluster T candidates: none`.
 ## Progress Logging
 
 Read `.claude/guidelines/agent-logging.md` and append your required
-`refactor-duplication-agent` milestones to `infrastructure/agent-progress.log`.
+`refactor-duplication-agent` milestones to `infra/agent-progress.log`.

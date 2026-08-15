@@ -62,4 +62,4 @@ Use the Skill tool:
 
 ## Progress Logging
 
-Read `.claude/guidelines/agent-logging.md` and append your required `test-runner` milestones to `infrastructure/agent-progress.log` as you work.
+Read `.claude/guidelines/agent-logging.md` and append your required `test-runner` milestones to `infra/agent-progress.log` as you work.

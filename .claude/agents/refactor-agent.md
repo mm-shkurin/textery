@@ -67,4 +67,4 @@ refactoring; "partial overlap / NO ACTION" is often the correct verdict.
 ## Progress Logging
 
 Read `.claude/guidelines/agent-logging.md` and append your required
-`refactor-agent` milestones to `infrastructure/agent-progress.log` as you work.
+`refactor-agent` milestones to `infra/agent-progress.log` as you work.

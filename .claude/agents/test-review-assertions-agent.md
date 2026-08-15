@@ -60,4 +60,4 @@ If every row is clean, return `## Cluster A findings: none`.
 ## Progress Logging
 
 Read `.claude/guidelines/agent-logging.md` and append your required
-`test-review-assertions-agent` milestones to `infrastructure/agent-progress.log`.
+`test-review-assertions-agent` milestones to `infra/agent-progress.log`.

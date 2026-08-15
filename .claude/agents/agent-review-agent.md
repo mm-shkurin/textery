@@ -69,6 +69,6 @@ revert the commit. PASS is silent.
   posts twice" is.
 - **Did-not-do-the-work eyes.** Do not assume the author's intent filled a gap the
   diff leaves open — if the code does not show it, it is not there.
-- Log milestones to `infrastructure/agent-progress.log` per
+- Log milestones to `infra/agent-progress.log` per
   `.claude/guidelines/agent-logging.md`: START (commit under review), DONE
   (verdict and concern count).

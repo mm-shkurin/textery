@@ -61,4 +61,4 @@ If every row is clean, return `## Cluster D candidates: none`.
 ## Progress Logging
 
 Read `.claude/guidelines/agent-logging.md` and append your required
-`refactor-design-agent` milestones to `infrastructure/agent-progress.log`.
+`refactor-design-agent` milestones to `infra/agent-progress.log`.

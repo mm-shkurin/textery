@@ -49,4 +49,4 @@ If every row is clean, return `## Cluster Se findings: none`.
 ## Progress Logging
 
 Read `.claude/guidelines/agent-logging.md` and append your required
-`test-review-selenium-agent` milestones to `infrastructure/agent-progress.log`.
+`test-review-selenium-agent` milestones to `infra/agent-progress.log`.
