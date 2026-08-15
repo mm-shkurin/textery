@@ -78,7 +78,14 @@ export function useDocumentSave({
   })
   // Cancels a pending backoff retry on unmount and records a write abandoned by it — see
   // autosaveAbandonment.
-  const hasPendingEditRef = useAbandonedSaveRecord(isSavingRef, retryTimerRef)
+  // The third condition the record needs: whether the editor is holding bytes the server has not
+  // confirmed. Same comparison `save()` uses to decide there is nothing to write, so "abandoned" and
+  // "would have sent something" are the same question asked at two moments.
+  const hasPendingEditRef = useAbandonedSaveRecord(isSavingRef, retryTimerRef, () =>
+    editor === null
+      ? false
+      : !isAlreadySaved(serializeEditorHtml(editor), lastSavedContentRef.current),
+  )
 
   // The promise of the currently in-flight save chain. A second save() call while one is running
   // returns THIS, so a caller awaiting it (ExportControl on a dirty export) waits for the real
@@ -120,7 +127,17 @@ export function useDocumentSave({
       }
     },
     save: (): Promise<void> => {
+      // Note what is NOT here: the pending-edit flag is not cleared on this branch. There is no
+      // document to write to, so the edit the debounce armed is still unwritten and still unsent —
+      // exactly the loss the abandonment record exists to report. Clearing it when the timer merely
+      // FIRED (which is where the clear used to live) made a never-created document the quietest
+      // case of all: flag false, nothing in flight, and an unmount indistinguishable from an
+      // untouched editor.
       if (!documentId || !editor) return Promise.resolve()
+      // From here the edit has reached something that will write it, or has proven there is nothing
+      // left to write. Either way the debounce's claim on it is discharged, and whatever happens
+      // next is tracked by isSavingRef instead — which the record reads too.
+      hasPendingEditRef.current = false
       if (isSavingRef.current) {
         saveAgainRequested.current = true
         // The in-flight chain, not a resolved promise: the queued re-save is folded into it (its

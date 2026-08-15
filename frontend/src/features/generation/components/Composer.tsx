@@ -1,5 +1,7 @@
 import './ChatButton.css'
 import './Composer.css'
+import { ComposerParameters } from './ComposerParameters'
+import { isVolumeAcceptable, type GenerationParameters } from '../utils/generationParameters'
 
 export const MAX_TOPIC_LENGTH = 500
 
@@ -10,12 +12,21 @@ interface ComposerProps {
   topicLabel: string
   topic: string
   setTopic: (v: string) => void
+  parameters: GenerationParameters
+  setParameters: (parameters: GenerationParameters) => void
   onSend: () => void
 }
 
 const TOPIC_LABEL_ID = 'composer-topic-label'
 
-export function Composer({ topicLabel, topic, setTopic, onSend }: ComposerProps) {
+export function Composer({
+  topicLabel,
+  topic,
+  setTopic,
+  parameters,
+  setParameters,
+  onSend,
+}: ComposerProps) {
   return (
     <div className="composer">
       {/* Associated, not merely adjacent: the heading sat right above the field and named it to
@@ -48,12 +59,16 @@ export function Composer({ topicLabel, topic, setTopic, onSend }: ComposerProps)
         }}
         rows={4}
       />
+      <ComposerParameters parameters={parameters} onChange={setParameters} />
+      {/* Both required fields gate the button, not the topic alone. A volume outside 1..10 — or
+          an emptied number input, which reports NaN — would otherwise be refused by the server
+          with a 400 the user cannot act on from this screen. */}
       <button
         type="button"
         className="cw-btn cw-btn-primary composer-send"
         data-testid="topic-send"
         onClick={onSend}
-        disabled={!topic.trim()}
+        disabled={!topic.trim() || !isVolumeAcceptable(parameters.volumePages)}
       >
         Сгенерировать
       </button>

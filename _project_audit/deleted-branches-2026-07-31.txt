@@ -1,0 +1,43 @@
+# Ветки удалены 2026-07-31. Восстановление: git branch <имя> <хеш>
+# Все были полностью влиты в dev (unique=0) либо являются subtree-сплитами, сохранёнными на gitverse.
+
+## local
+9112c9ebaddf3ed42c9b9d9227ddcfd07949cb2d backfill/backend
+9112c9ebaddf3ed42c9b9d9227ddcfd07949cb2d backfill/frontend
+9112c9ebaddf3ed42c9b9d9227ddcfd07949cb2d backfill/reconcile
+6d464ed77c9ce14018a4d291f3ec2adffc1b5560 docs/cleanup-audit-fixes
+7369c855b54ac26e6b0441136d442b37c5033efb evening-demo-backend
+de453e1f8c0e3ffb694c4bd2fa2cf5563d0a6aeb feature/05-manual-mode-backend
+0e9bb889c97a0bd20001aaf0aef8ae194fe62615 feature/05-manual-mode-frontend
+fb1736c75f2393684736e7670cff21d8af0f1d3b feature/07-authorization-frontend
+dd063b89cb6ad726eed90eac0acbb60124d3b65c feature/story-7-authorization-backend
+17fb99fda93267810701e79632179d158cd46537 features/story-1-auto-generate-doklad
+136d921e92718bb0750f5d0bdad0b6bbd7023c5c features/story-1-frontend
+d4a200fc2621af60e04d1c7a6605dea0c8bfd9b8 features/story-17-backend
+09fea7437f9d6988d6f453475ee177535c2663b9 features/story-17-frontend
+823a7fb494ae8b1fd0e6834579d8ae365d257629 features/story-18-redesign
+f38418adf59e017728893000a9970a4c817d2058 features/story-5-frontend
+3bfcc18d27b901f858963eab93c8d4e1b9b8db8c merge/07-into-05
+f979d3e66d7b9f28b7b92db80619fbcc13e8c75a fe-split-05merged
+c19bc9f0156f19dd7e11a75f3995111b704c6eb5 fe-split-07
+71064f23a4b13125e59786b50044c3089c60da78 split/backend-dev
+4891b19ab34cce73342ce2273351de1ab00d8d2b split/frontend-dev
+17a548f9cdc1354f4b308875c3e968737db6d7cd split/frontend-publish
+
+## github
+30aa5749fe02caa2b5f3534245f5caa2e4812128 agent-frontend
+c632fa515db69527d278b07e746068bf057fabc7 backfill/backend
+c632fa515db69527d278b07e746068bf057fabc7 backfill/frontend
+c632fa515db69527d278b07e746068bf057fabc7 backfill/reconcile
+6d464ed77c9ce14018a4d291f3ec2adffc1b5560 docs/cleanup-audit-fixes
+7369c855b54ac26e6b0441136d442b37c5033efb evening-demo-backend
+46b97ba42bcfaa7fe1497fcd0ed17b711c1a985b feature/05-manual-mode-backend
+0e9bb889c97a0bd20001aaf0aef8ae194fe62615 feature/05-manual-mode-frontend
+192ec8cb5b5166121a28355bd8f5f0b37a26f740 feature/07-authorization-frontend
+dd063b89cb6ad726eed90eac0acbb60124d3b65c feature/story-7-authorization-backend
+17fb99fda93267810701e79632179d158cd46537 features/story-1-auto-generate-doklad
+4d9d16492e7712066de9037b2b067af38b322968 features/story-1-frontend
+d4a200fc2621af60e04d1c7a6605dea0c8bfd9b8 features/story-17-backend
+09fea7437f9d6988d6f453475ee177535c2663b9 features/story-17-frontend
+823a7fb494ae8b1fd0e6834579d8ae365d257629 features/story-18-redesign
+f38418adf59e017728893000a9970a4c817d2058 features/story-5-frontend

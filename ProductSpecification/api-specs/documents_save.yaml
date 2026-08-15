@@ -68,9 +68,20 @@ paths:
                 $ref: '#/components/schemas/Error'
         '422':
           description: >
-            version is absent or not an integer. Server-owned fields (document_type,
-            id, status) in the body are IGNORED, not rejected — see
-            decisions/server-owned-fields-ignored-decision.md.
+            version is absent or not an integer, OR page_settings is present and
+            invalid: an unknown key, an unknown page_size/orientation constant, a
+            value outside its range, a non-finite/overflowing number, a string where
+            a number is required, margins that leave no content box (their sum
+            reaching the sheet dimension is already too far), or a
+            size/orientation/font_size_pt/line_height combination whose content box
+            cannot hold a single line. Rejected whole — never clamped, never
+            partially applied, and content in the same request is left byte-identical
+            to its stored value. Note the asymmetry with server-owned fields
+            (document_type, id, status), which are IGNORED rather than rejected — see
+            decisions/server-owned-fields-ignored-decision.md; an unknown key INSIDE
+            page_settings is deliberately the stricter case, because the object is
+            re-serialized from a validated value object and a silently dropped key
+            would read back as a default the client never asked for.
           content:
             application/json:
               schema:
@@ -113,6 +124,86 @@ components:
         version:
           type: integer
           description: Must match the document's current version; stale value returns 409.
+        page_settings:
+          allOf:
+            - $ref: '#/components/schemas/PageSettings'
+          nullable: true
+          description: >
+            TRI-STATE, and the three are distinguishable — do not collapse them.
+            OMITTED: the stored page_settings is left untouched (a content-only
+            autosave must omit this field, or it would silently reset the user's page
+            setup). EXPLICIT null: reset to the default preset. SUPPLIED OBJECT:
+            replaces the stored object WHOLESALE — it is not merged per key, so an
+            object omitting header_text clears that header. The client must send the
+            complete object it wants persisted.
+    PageSettings:
+      type: object
+      additionalProperties: false
+      description: >
+        Page geometry for the whole document. Persisted as JSONB but re-serialized
+        from a validated domain value object, so the stored JSON contains exactly
+        these keys — no request blob is stored verbatim. A stored object missing a key
+        added in a later release reads as that key's default; a stored object carrying
+        a key or enum constant this version does not define is preserved and read as
+        the default, never crashing and never downgrading the whole object.
+      properties:
+        page_size:
+          type: string
+          enum: [A4, A5, Letter]
+          default: A4
+          description: A4 = 210x297 mm, A5 = 148x210 mm, Letter = 215.9x279.4 mm.
+        orientation:
+          type: string
+          enum: [portrait, landscape]
+          default: portrait
+        margins_mm:
+          type: object
+          additionalProperties: false
+          required: [top, right, bottom, left]
+          description: >
+            Millimetres. Each >= 0, and together they must leave a content box of
+            non-zero width and height that fits at least one line at the effective
+            font_size_pt/line_height — a positive but sub-line box would make
+            pagination emit pages without end.
+          properties:
+            top: {type: number, minimum: 0}
+            right: {type: number, minimum: 0}
+            bottom: {type: number, minimum: 0}
+            left: {type: number, minimum: 0}
+        font_size_pt:
+          type: number
+          minimum: 8
+          maximum: 72
+          default: 14
+          description: Points. Bounds inclusive.
+        line_height:
+          type: number
+          minimum: 1.0
+          maximum: 3.0
+          default: 1.5
+          description: Unitless multiplier. Bounds inclusive.
+        header_text:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: >
+            Plain text, NFC-normalized before storing and before length-checking;
+            length counted in Unicode code points. Over-length is rejected, never
+            truncated. Escaped at every sink (editor HTML, PDF, DOCX header XML, logs)
+            — markup, control characters and the page-number placeholder syntax cannot
+            inject into any of them.
+        footer_text:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: Same rules as header_text.
+        show_page_numbers:
+          type: boolean
+          default: true
+        skip_number_on_first_page:
+          type: boolean
+          default: true
+          description: ГОСТ behaviour — the title page counts as page 1 but prints no number.
     DocumentResponse:
       type: object
       properties:
@@ -129,6 +220,14 @@ components:
         version:
           type: integer
           description: Incremented on each successful save.
+        page_settings:
+          allOf:
+            - $ref: '#/components/schemas/PageSettings'
+          nullable: true
+          description: >
+            null means never configured — the client renders the default preset. The
+            server does not materialize defaults into the response, so null and an
+            explicitly-default object stay distinguishable.
         updated_at:
           type: string
           format: date-time

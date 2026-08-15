@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375">
+<title>Textery — Мой профиль · имя задано · мобильный</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="../desktop/theme.css">
+<link rel="stylesheet" href="../desktop/profile.css">
+<link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+<!-- GET /me ответил 200 с непустым name. Личность — имя, адрес остаётся второй строкой:
+     он никуда не девается, им пользователь входит. Инициалы «АК» посчитаны от имени;
+     в состоянии 03 (имени нет) на том же аккаунте они «AI» — от адреса.
+     Дата регистрации рендерится существующим formatCardDate (ru-RU, родительный падеж).
+     Дата намеренно прошлогодняя: formatCardDate прячет год, когда он совпадает с текущим
+     (`showYear = parsedYear !== new Date().getFullYear()`), и аккаунт, заведённый в этом году,
+     покажет «3 февраля» без года. Для «последнего изменения» на карточке это верно, для даты
+     регистрации — вряд ли. ОТКРЫТЫЙ ВОПРОС для /test-spec: либо год показывается всегда (тогда
+     нужен флаг у форматтера), либо это принимается сознательно. -->
+
+<div class="header">
+  <div class="logo"><div class="logo-mark">T<span>AI</span></div>Textery</div>
+  <div class="header-actions">
+    <button class="icon-btn"><i data-lucide="bell"></i></button>
+    <div class="profile-menu">
+      <div class="profile-trigger">
+        <div class="avatar">АК</div>
+        <i data-lucide="chevron-down"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <h1>Мой профиль</h1>
+  <div class="subtitle">Данные вашей учётной записи</div>
+
+  <div class="profile-wrap">
+    <div class="card">
+      <div class="identity">
+        <div class="ava">АК</div>
+        <div class="who">
+          <div class="primary">Анна Ковалёва</div>
+          <div class="secondary">anna.ivanova@example.com</div>
+          <div class="since"><i data-lucide="calendar"></i>На Textery с 3 февраля 2025</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="form-title">Отображаемое имя</div>
+      <div class="form-hint">Показывается в шапке и на этом экране вместо адреса почты.</div>
+
+      <div class="field">
+        <div class="label-row">
+          <span class="label">Имя</span>
+          <span class="counter">13 / 60</span>
+        </div>
+        <input class="input" value="Анна Ковалёва">
+        <div class="field-note">Очистите поле и сохраните, чтобы убрать имя — снова будет
+          показываться почта.</div>
+      </div>
+
+      <!-- Ничего не изменено: обе кнопки неактивны, пока значение равно сохранённому.
+           То же различие охраняет useUnsavedGuard при уходе со страницы. -->
+      <div class="actions">
+        <button class="btn btn-ghost is-disabled">Отмена</button>
+        <button class="btn btn-primary is-disabled">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="logo"><div class="logo-mark">T<span>AI</span></div>Textery</div>
+  <div>© 2026 Textery. Все права защищены.</div>
+  <div class="foot-links">
+    <span>Условия использования</span><span>Политика конфиденциальности</span><span>Поддержка</span>
+  </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

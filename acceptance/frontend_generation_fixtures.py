@@ -10,7 +10,6 @@ imports us, which makes the `statements.*` imports below resolve.
 import pytest
 
 from statements.frontend.generation.chat_workspace_statements import ChatWorkspaceStatements
-from statements.frontend.generation.mode_modal_statements import ModeModalStatements
 from statements.frontend.generation.manual_editor_aria_statements import (
     ManualEditorAriaStatements,
 )
@@ -93,11 +92,6 @@ def auto_editor_transition_statements():
 @pytest.fixture
 def chat_workspace_statements():
     return ChatWorkspaceStatements()
-
-
-@pytest.fixture
-def mode_modal_statements():
-    return ModeModalStatements()
 
 
 @pytest.fixture

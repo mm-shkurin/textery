@@ -13,8 +13,13 @@ import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, relative, resolve } from 'node:path'
 
-const MIN_STATEMENTS = 60
-const MIN_BRANCHES = 45
+// Ratcheted 60/45 -> 75/48 once the measured minimums were 80 statements and 50 branches. The
+// numbers stay far below the global thresholds ON PURPOSE - see above, the question here is "did a
+// module land with no tests at all", not "is this module well tested" - but 60/45 had drifted into
+// answering nothing at all: no file had been near it in months, so the gate was measuring a floor
+// the codebase could not reach even by regressing.
+const MIN_STATEMENTS = 75
+const MIN_BRANCHES = 48
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = resolve(here, '..')
@@ -44,11 +49,17 @@ for (const [file, totals] of Object.entries(summary)) {
 }
 
 if (failures.length > 0) {
-  console.error(`Per-file coverage floor: ${MIN_STATEMENTS}% statements, ${MIN_BRANCHES}% branches.`)
+  console.error(
+    `Per-file coverage floor: ${MIN_STATEMENTS}% statements, ${MIN_BRANCHES}% branches.`,
+  )
   for (const failure of failures) {
-    console.error(`  ${failure.file} — ${failure.statements}% statements, ${failure.branches}% branches`)
+    console.error(
+      `  ${failure.file} — ${failure.statements}% statements, ${failure.branches}% branches`,
+    )
   }
-  console.error('Test the module rather than lowering the floor; the floor only catches untested ones.')
+  console.error(
+    'Test the module rather than lowering the floor; the floor only catches untested ones.',
+  )
   process.exit(1)
 }
 

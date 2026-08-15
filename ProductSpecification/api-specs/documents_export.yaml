@@ -43,6 +43,21 @@ paths:
             wordprocessingml type. Content-Disposition is attachment with an RFC
             5987-encoded filename derived from the title (default document.pdf/.docx when
             the title is absent).
+
+            The render applies the document's page_settings (story 10) — sheet size,
+            orientation, margins, font size, line height, headers/footers and page
+            numbering — reading the default preset when page_settings is null. Manual
+            page breaks in the content are honoured. A 200 always carries EVERY
+            requested element: if geometry, a manual break, a header/footer or the
+            numbering cannot be applied, the export fails (500) rather than returning a
+            file with that element silently omitted.
+
+            PDF and DOCX do not carry the same guarantee. The PDF is laid out by
+            WeasyPrint, a different engine from the browser the editor runs in, so its
+            page boundaries are NOT claimed to match the editor's (known-debt #14). Word
+            repaginates a DOCX on open, so there the pages start where a manual break was
+            placed but may end elsewhere — unreachable by any implementation, a property
+            of the format.
           headers:
             Content-Disposition:
               schema:
@@ -84,6 +99,14 @@ paths:
             Render failure or render-deadline abort — generic client-safe message only, no
             DB text, filesystem path, id shape, or stack frame. Emits a server-side signal
             keyed by document id.
+
+            Includes the case where the bundled document font does not resolve. That is
+            deliberately a hard failure and not a substitution: WeasyPrint's blocked
+            url_fetcher raises per resource but WeasyPrint logs and continues, so a
+            missing face would otherwise yield a successful 200 laid out in fallback
+            metrics — a wrong document that looks like a right one. The font's presence is
+            additionally validated at boot, so this branch covers runtime loss, not a
+            misbuilt image.
           content:
             application/json:
               schema:

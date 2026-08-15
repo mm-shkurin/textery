@@ -1,50 +1,22 @@
-from datetime import datetime
-
 from document.document import Document
+from statements.document_page_settings_assertions import DocumentPageSettingsAssertions
 
 
-class DocumentStorageAssertions:
+class DocumentStorageAssertions(DocumentPageSettingsAssertions):
     """The assertion half of the document storage DSL.
 
-    Split off `DocumentStorageStatements` (which subclasses this) so the arrange
-    and act methods stay readable next to the post-CAS row assertions without the
-    file crossing the 200-line cap. This class owns `_last_updated_at` because it
-    is the side that reads it; the save action records into it.
+    Split off the statements half (`DocumentCoreStatements` subclasses this) so
+    the arrange and act methods stay readable next to the post-CAS row assertions
+    without the file crossing the 200-line cap.
+
+    The assertions are a linear inheritance chain rather than one class, for the
+    same cap: `DocumentRowAssertions` holds the two primitives every document
+    assertion is built from, `DocumentPageSettingsAssertions` holds scenario 2.1's
+    page-settings and column guards, and this class holds the post-CAS row
+    assertions. Chained rather than composed so every call site stays
+    `document_storage_statements.assert_*` with nothing to reach through, and so
+    each name resolves in exactly one place.
     """
-
-    def __init__(self) -> None:
-        # The clock the DSL hands the CAS. Captured so `updated_at` -- the fourth
-        # column the SET list writes -- can be asserted against the exact value that
-        # went in, rather than left unpinned or waved through with a monotonicity check.
-        self._last_updated_at: datetime | None = None
-
-    def assert_documents_match(self, actual: Document | None, expected: Document) -> None:
-        assert actual is not None, "expected a document, got None"
-        # Every persisted field, so a column that silently fails to round-trip
-        # (as `title` did before it was listed here) cannot hide behind a subset.
-        assert (
-            actual.id,
-            actual.owner_id,
-            actual.document_type,
-            actual.status,
-            actual.title,
-            actual.content,
-            actual.version,
-            actual.idempotency_key,
-            actual.created_at,
-            actual.updated_at,
-        ) == (
-            expected.id,
-            expected.owner_id,
-            expected.document_type,
-            expected.status,
-            expected.title,
-            expected.content,
-            expected.version,
-            expected.idempotency_key,
-            expected.created_at,
-            expected.updated_at,
-        ), f"stored document does not match: {actual.__dict__} != {expected.__dict__}"
 
     def assert_stored_state(
         self,
@@ -69,27 +41,32 @@ class DocumentStorageAssertions:
         the DSL generated for the last save -- category 2 "capturable from setup",
         not a monotonicity bound, because the DSL owns that clock and knows it.
 
-        The six columns the CAS must NOT touch are pinned against the pre-save
-        document, so an over-broad SET list (a clobbered `created_at`, a reset
-        `status`) is observable rather than invisible.
+        The four overrides below are exactly the SET list. Everything else is
+        carried over from the pre-save document by `_expected_like`, which is what
+        makes an over-broad SET list (a clobbered `created_at`, a reset `status`)
+        observable rather than invisible.
+
+        `page_settings` is carried over rather than defaulted for a reason: a CAS
+        whose SET list clobbers the column to NULL would otherwise be compared
+        against an expectation that is itself a fresh `None`, and NULL == NULL
+        would certify the data loss. Sourcing it from the pre-save document means
+        the day a configured document goes through this path, an over-broad SET
+        list fails here.
         """
         assert actual is not None, "expected a stored document, got None"
         assert self._last_updated_at is not None, (
             "assert_stored_state requires a preceding save_content_if_version_matches"
         )
-        expected = Document.reconstitute(
-            id=original.id,
-            owner_id=original.owner_id,
-            document_type=original.document_type,
-            status=original.status,
-            idempotency_key=original.idempotency_key,
-            created_at=original.created_at,
-            title=title,
-            content=content,
-            version=version,
-            updated_at=self._last_updated_at,
+        self.assert_documents_match(
+            actual,
+            self._expected_like(
+                original,
+                title=title,
+                content=content,
+                version=version,
+                updated_at=self._last_updated_at,
+            ),
         )
-        self.assert_documents_match(actual, expected)
 
     def assert_document_absent(self, actual: Document | None, why: str) -> None:
         """A read that must come back empty -- unknown id, or another owner's row.

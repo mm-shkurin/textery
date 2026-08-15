@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import App from '../App'
+import { App } from '../App'
 import * as api from '../../features/generation/api/generationApi'
 import * as documentApi from '../../features/generation/api/documentApi'
 import { clearSession } from '../../features/auth/utils/authSession'
+import { EMPTY_PARAMETERS } from '../../features/generation/utils/generationParameters'
 import {
   armCompletedGeneration,
   GENERATED_TEXT,
@@ -80,7 +81,10 @@ describe('DocumentGenerationFlow — a completed generation opens itself in the 
     fireEvent.click(screen.getByTestId('topic-send'))
 
     expect(api.createGeneration).toHaveBeenCalledTimes(1)
-    expect(api.createGeneration).toHaveBeenCalledWith(TOPIC, 'doklad')
+    // The parameters object travels with the topic: these tests drive the real
+    // Composer, so an untouched form sends its defaults rather than nothing. Asserted
+    // by value — a client that dropped the argument would still call with two.
+    expect(api.createGeneration).toHaveBeenCalledWith(TOPIC, 'doklad', EMPTY_PARAMETERS)
 
     // The editor shell is lazy (Tiptap), so this await covers a real chunk load, not just a state
     // flush. This is where the RED throws.

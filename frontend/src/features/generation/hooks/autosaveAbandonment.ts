@@ -45,16 +45,33 @@ export const ABANDONED_SAVE_LOG = 'Pending document save abandoned before it com
 //
 // Returns the pending-edit flag so the debounce scheduler can arm it. Owned here, beside the cleanup
 // that reads it, rather than in useDocumentSave — which is at the file-size limit.
+// `hasUnwrittenContent` is the third and last condition, and it is what keeps the record about the
+// SERVER's copy rather than about a flag. An edit reverted to the saved bytes inside the debounce
+// gap — Ctrl+Z, backspacing the one new character, bold-then-unbold — re-arms the deadline through
+// noteEdit, so the flag is honestly true while there is provably nothing to write: had the timer
+// been allowed to fire, `save()` would have taken the already-saved branch and sent nothing.
+// Reporting that as a lost write is how the one record that means something drowns.
+//
+// It is read through a callback rather than compared here because what "unwritten" means (serialize
+// the editor, compare against the last confirmed content) belongs to the save hook, and this file
+// deliberately knows nothing about editors.
 export function useAbandonedSaveRecord(
   isSavingRef: MutableRef<boolean>,
   retryTimerRef: MutableRef<ReturnType<typeof setTimeout> | null>,
+  hasUnwrittenContent: () => boolean,
 ): MutableRef<boolean> {
   const hasPendingEditRef = useRef(false)
+  // Read through a ref for the same reason `save` is in useAutosave: the cleanup below is []-scoped
+  // and closes over the FIRST render's callback, which would compare against a stale
+  // lastSavedContent — the value from before every save the editor went on to make.
+  const unwrittenRef = useRef(hasUnwrittenContent)
+  unwrittenRef.current = hasUnwrittenContent
 
   useEffect(
     () => () => {
       if (retryTimerRef.current !== null) clearTimeout(retryTimerRef.current)
-      if (isSavingRef.current || hasPendingEditRef.current) console.error(ABANDONED_SAVE_LOG)
+      const unfinished = isSavingRef.current || hasPendingEditRef.current
+      if (unfinished && unwrittenRef.current()) console.error(ABANDONED_SAVE_LOG)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],

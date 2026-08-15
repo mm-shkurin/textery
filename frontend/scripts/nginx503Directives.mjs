@@ -24,14 +24,21 @@ export const DIRECTIVES_THAT_CAN_EMIT_503 = [
     // Several forms, because ONE sample cannot pin a rule stated as broadly as "any mention of the
     // code": narrowing this to `return 503` would keep a single-sample case green while going blind
     // to every other way the status reaches a client.
-    samples: ['location = /maint { return 503; }', 'error_page 404 =503 /maint.html;', 'limit_req_status 503;'],
+    samples: [
+      'location = /maint { return 503; }',
+      'error_page 404 =503 /maint.html;',
+      'limit_req_status 503;',
+    ],
     fires: (line) => line.includes('503'),
   },
   {
     // Rejects with 503 by default; `limit_req_status` can change that, but its presence is the
     // signal either way.
     directive: 'limit_req',
-    samples: ['limit_req zone=api burst=5;', 'limit_req_zone $binary_remote_addr zone=api:10m rate=5r/s;'],
+    samples: [
+      'limit_req zone=api burst=5;',
+      'limit_req_zone $binary_remote_addr zone=api:10m rate=5r/s;',
+    ],
     fires: (line) => line.includes('limit_req'),
   },
   {
@@ -85,9 +92,14 @@ export const DIRECTIVES_THAT_CAN_EMIT_503 = [
     // direction — it could be blinded outright with every case still green. Two servers is the form
     // only this entry claims.
     samples: ['upstream backend { server a:8000; server b:8000; }'],
-    nearMisses: ['upstream backend { server backend:8000; }', 'upstream backend { server backend:8000 max_fails=0; }'],
+    nearMisses: [
+      'upstream backend { server backend:8000; }',
+      'upstream backend { server backend:8000 max_fails=0; }',
+    ],
     fires: (line, conf) =>
-      line.includes('upstream') && !line.includes('proxy_next_upstream') && hasEnabledCompanion(conf),
+      line.includes('upstream') &&
+      !line.includes('proxy_next_upstream') &&
+      hasEnabledCompanion(conf),
   },
 ]
 

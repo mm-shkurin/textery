@@ -164,7 +164,7 @@ describe('ManualEditor — what the abandonment record must and must not say (H9
   // fired and cleared hasPendingEditRef; save() bailed on !documentId without setting isSavingRef, so
   // the []-scoped cleanup sees neither key.
   // RED 2026-07-30, awaiting the H9.4 green that moves the clear site.
-  it.skip('records the abandonment when the editor unmounts with a document init never created', async () => {
+  it('records the abandonment when the editor unmounts with a document init never created', async () => {
     const { unmount } = await renderFailedInitDocument()
 
     // Type, then let the deadline pass — the flag's ONLY clear site runs, and the save it hands off to

@@ -1,4 +1,3 @@
-import asyncio
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -8,6 +7,7 @@ from access.auth.account_storage import SqlAlchemyAccountRepository
 from auth.account import Account
 from model.auth.account_model import AccountModel
 from statements.arranged import arranged
+from statements.race_timeout import race
 
 
 class FailedAttemptConcurrencyStatements:
@@ -68,7 +68,7 @@ class FailedAttemptConcurrencyStatements:
             await session.commit()
 
     async def race_two_increments(self) -> None:
-        await asyncio.gather(
+        await race(
             self._increment_in_own_session(),
             self._increment_in_own_session(),
         )

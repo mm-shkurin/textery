@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { exportDocument, type ExportFormat } from '../api/documentApi'
 import './ExportControl.css'
+import { browserDocument } from '../../../shared/lib/browser'
+
+// What the saved file is called before its extension. A literal `document.${format}` inside the
+// template read as a property access on the DOM global to every reader and every scanner.
+const EXPORT_BASENAME = 'document'
 
 // Scenario 1.1: the control DISPLAY — a trigger that reveals a PDF and a DOCX choice.
 // Scenario 2.1: clicking a choice fires the export request and the control locks while it is
@@ -23,12 +28,14 @@ const EXPORT_ERROR_MESSAGE = 'Не удалось экспортировать �
 // selenium 5.1 real-browser test is the backstop.
 function triggerBrowserDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
+  const doc = browserDocument()
+  if (!doc) return
+  const anchor = doc.createElement('a')
   anchor.href = url
   anchor.download = filename
-  document.body.appendChild(anchor)
+  doc.body.appendChild(anchor)
   anchor.click()
-  document.body.removeChild(anchor)
+  doc.body.removeChild(anchor)
   URL.revokeObjectURL(url)
 }
 
@@ -95,7 +102,7 @@ export function ExportControl({ documentId, hasUnsavedChanges = false, save }: E
       const blob = await exportDocument(documentId, format)
       // Deliver the resolved blob to the browser as a download. The extension is derived from the
       // export format (…​.pdf / …​.docx), never hardcoded, so a docx export ships a .docx file.
-      triggerBrowserDownload(blob, `document.${format}`)
+      triggerBrowserDownload(blob, `${EXPORT_BASENAME}.${format}`)
       // Clear the error ONLY on success — never optimistically at dispatch time. This keeps a
       // failed export's banner visible through the retry's whole in-flight window and drops it
       // the moment the retry succeeds; a still-failing retry leaves the banner up.

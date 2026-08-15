@@ -1,14 +1,23 @@
 import pytest
 
+from statements.avatar_statements import AvatarStatements
+from statements.delete_account_statements import DeleteAccountStatements
+from statements.deletion_confirmation_statements import DeletionConfirmationStatements
 from statements.generation_lifecycle_statements import GenerationLifecycleStatements
+from statements.generation_prompt_failure_statements import GenerationPromptFailureStatements
 from statements.generation_statements import GenerationStatements
+from statements.get_profile_statements import GetProfileStatements
 from statements.login_failed_attempt_statements import LoginFailedAttemptStatements
 from statements.login_lockout_statements import LoginLockoutStatements
 from statements.login_statements import LoginStatements
 from statements.port_shape_statements import PortShapeStatements
+from statements.project_feed_row_statements import ProjectFeedRowStatements
+from statements.project_feed_statements import ProjectFeedStatements
+from statements.project_item_shape_statements import ProjectItemShapeStatements
 from statements.refresh_statements import RefreshStatements
 from statements.register_atomic_write_statements import RegisterAtomicWriteStatements
 from statements.register_statements import RegisterStatements
+from statements.rename_account_statements import RenameAccountStatements
 from statements.requeue_stale_generations_statements import RequeueStaleGenerationsStatements
 from statements.resend_code_lock_statements import ResendCodeLockStatements
 from statements.resend_code_statements import ResendCodeStatements
@@ -39,6 +48,11 @@ def register_atomic_write_statements():
 @pytest.fixture
 def generation_statements():
     return GenerationStatements()
+
+
+@pytest.fixture
+def generation_prompt_failure_statements():
+    return GenerationPromptFailureStatements()
 
 
 @pytest.fixture
@@ -107,6 +121,21 @@ def refresh_statements():
 
 
 @pytest.fixture
+def project_feed_statements():
+    return ProjectFeedStatements()
+
+
+@pytest.fixture
+def project_feed_row_statements():
+    return ProjectFeedRowStatements()
+
+
+@pytest.fixture
+def project_item_shape_statements():
+    return ProjectItemShapeStatements()
+
+
+@pytest.fixture
 def port_shape_statements():
     return PortShapeStatements()
 
@@ -114,3 +143,28 @@ def port_shape_statements():
 @pytest.fixture
 def verify_account_failure_statements():
     return VerifyAccountFailureStatements()
+
+
+@pytest.fixture
+def get_profile_statements():
+    return GetProfileStatements()
+
+
+@pytest.fixture
+def rename_account_statements():
+    return RenameAccountStatements()
+
+
+@pytest.fixture
+def avatar_statements():
+    return AvatarStatements()
+
+
+@pytest.fixture
+def delete_account_statements():
+    return DeleteAccountStatements()
+
+
+@pytest.fixture
+def deletion_confirmation_statements():
+    return DeletionConfirmationStatements()

@@ -153,46 +153,32 @@ class TestReadRefreshSubject:
         with pytest.raises(InvalidTokenException):
             _service().read_refresh_subject("not-a-token")
 
-    def test_should_reject_a_validly_signed_token_with_no_subject(self):
-        # Scenario 6.4: a token whose claim shape no longer matches current code
-        # is a clean rejection, never a KeyError escaping as a 500.
-        shapeless = jwt.encode(
-            {"type": "refresh", "exp": _real_now() + timedelta(days=1)},
-            _SECRET,
-            algorithm=_ALGORITHM,
-        )
+    @pytest.mark.parametrize(
+        ("claims", "key", "algorithm"),
+        [
+            ({"type": "refresh"}, _SECRET, _ALGORITHM),
+            ({"sub": "not-a-uuid", "type": "refresh"}, _SECRET, _ALGORITHM),
+            ({"sub": str(uuid4())}, _SECRET, _ALGORITHM),
+            ({"sub": str(uuid4()), "type": "refresh"}, "", "none"),
+        ],
+        ids=["no_subject", "subject_is_not_a_uuid", "no_type_claim", "unsigned_alg_none"],
+    )
+    def test_should_reject_a_token_whose_claims_or_signature_do_not_hold(
+        self, claims, key, algorithm
+    ):
+        """Four ways a token can decode structurally and still be refused.
+
+        Scenario 6.4 for the first three: a token whose claim shape no longer
+        matches current code is a clean rejection, never a KeyError escaping as a
+        500. The fourth is the classic JWT forgery -- strip the signature, set
+        `alg` to `none` -- which PyJWT refuses only because `algorithms=` is
+        passed explicitly at decode.
+
+        One parametrized test rather than four near-identical bodies: the only
+        thing that varied was the claims dict, and four copies of the encode call
+        meant a fifth case was written by copying rather than by adding a row.
+        """
+        token = jwt.encode({**claims, "exp": _real_now() + timedelta(days=1)}, key, algorithm)
 
         with pytest.raises(InvalidTokenException):
-            _service().read_refresh_subject(shapeless)
-
-    def test_should_reject_a_validly_signed_token_whose_subject_is_not_a_uuid(self):
-        malformed = jwt.encode(
-            {"sub": "not-a-uuid", "type": "refresh", "exp": _real_now() + timedelta(days=1)},
-            _SECRET,
-            algorithm=_ALGORITHM,
-        )
-
-        with pytest.raises(InvalidTokenException):
-            _service().read_refresh_subject(malformed)
-
-    def test_should_reject_a_token_with_no_type_claim(self):
-        typeless = jwt.encode(
-            {"sub": str(uuid4()), "exp": _real_now() + timedelta(days=1)},
-            _SECRET,
-            algorithm=_ALGORITHM,
-        )
-
-        with pytest.raises(InvalidTokenException):
-            _service().read_refresh_subject(typeless)
-
-    def test_should_reject_an_unsigned_token_claiming_the_none_algorithm(self):
-        # The classic JWT forgery: strip the signature, set alg to "none". PyJWT
-        # refuses it only because algorithms= is passed explicitly at decode.
-        unsigned = jwt.encode(
-            {"sub": str(uuid4()), "type": "refresh", "exp": _real_now() + timedelta(days=1)},
-            key="",
-            algorithm="none",
-        )
-
-        with pytest.raises(InvalidTokenException):
-            _service().read_refresh_subject(unsigned)
+            _service().read_refresh_subject(token)

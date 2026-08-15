@@ -1,7 +1,16 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Integer, String, text
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -39,6 +48,13 @@ class GenerationModel(Base):
         # touches completed/failed rows, which are most of the table and are
         # never sweepable.
         Index("ix_generations_sweep", "status", "updated_at"),
+        # Mirrors uq_documents_owner_idempotency_key. Declared here so a fresh
+        # `create_all` (the test databases) gets it too, and built CONCURRENTLY by
+        # the migration against the populated production table.
+        UniqueConstraint(
+            "owner_id", "idempotency_key", name="uq_generations_owner_idempotency_key"
+        ),
+        Index("ix_generations_source_generation_id", "source_generation_id"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
@@ -65,6 +81,17 @@ class GenerationModel(Base):
     document_type: Mapped[str] = mapped_column(String, nullable=False)
     content: Mapped[str | None] = mapped_column(String, nullable=True)
     error_message: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Nullable, and unique per owner rather than globally: every generation
+    # created before retries existed has none, and keying on the header alone
+    # would let one account's replay return another account's row. Postgres
+    # treats NULLs as distinct, so the legacy rows neither collide nor are
+    # constrained. The index itself is created in the migration, CONCURRENTLY.
+    idempotency_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    # The row this one is a retry of. Without it a replay cannot tell a repeat of
+    # THIS retry from the same key aimed at a different source.
+    source_generation_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("generations.id", ondelete="SET NULL"), nullable=True
+    )
 
     @classmethod
     def from_domain(cls, generation: Generation) -> "GenerationModel":
@@ -84,6 +111,8 @@ class GenerationModel(Base):
             document_type=generation.document_type,
             content=generation.content,
             error_message=generation.error_message,
+            idempotency_key=generation.idempotency_key,
+            source_generation_id=generation.source_generation_id,
         )
 
     def to_domain(self) -> Generation:
@@ -100,4 +129,6 @@ class GenerationModel(Base):
             document_type=self.document_type,
             content=self.content,
             error_message=self.error_message,
+            idempotency_key=self.idempotency_key,
+            source_generation_id=self.source_generation_id,
         )

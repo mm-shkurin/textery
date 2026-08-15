@@ -12,6 +12,12 @@ class FakeUnitOfWork:
         # the RELATIVE order of a repo write vs the commit (scenario 5.3:
         # increment -> commit -> raise). Left None so existing Statements pay nothing.
         self.call_log: list[str] | None = None
+        # Callables run on rollback(), so a Fake that accumulated writes can undo
+        # them the way the real transaction would. Without this a test can only
+        # prove rollback was CALLED, never that it took anything back -- and
+        # "rollback was called" is exactly what a half-deleted account would also
+        # report. Empty by default, so existing Statements pay nothing.
+        self.rollback_hooks: list = []
 
     async def commit(self) -> None:
         self.commit_attempt_count += 1
@@ -25,3 +31,5 @@ class FakeUnitOfWork:
         self.rollback_call_count += 1
         if self.raise_on_rollback is not None:
             raise self.raise_on_rollback
+        for undo in self.rollback_hooks:
+            undo()

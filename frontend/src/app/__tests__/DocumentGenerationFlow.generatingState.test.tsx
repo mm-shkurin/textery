@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import App from '../App'
+import { App } from '../App'
 import * as api from '../../features/generation/api/generationApi'
 import * as documentApi from '../../features/generation/api/documentApi'
 import { clearSession, saveSession } from '../../features/auth/utils/authSession'
+import { EMPTY_PARAMETERS } from '../../features/generation/utils/generationParameters'
 
 // Story 18, scenario 1.2 — "When the result is not ready yet, a generating state is shown".
 //
@@ -92,7 +93,10 @@ describe('DocumentGenerationFlow — the generating state is shown while the cre
     // The POST is genuinely out and, by construction, still unresolved: the mock's promise has no
     // resolve function in existence. Anything rendered from here on was rendered without it.
     expect(api.createGeneration).toHaveBeenCalledTimes(1)
-    expect(api.createGeneration).toHaveBeenCalledWith(TOPIC, 'doklad')
+    // The parameters object travels with the topic: these tests drive the real
+    // Composer, so an untouched form sends its defaults rather than nothing. Asserted
+    // by value — a client that dropped the argument would still call with two.
+    expect(api.createGeneration).toHaveBeenCalledWith(TOPIC, 'doklad', EMPTY_PARAMETERS)
 
     // Existence alone would be satisfied by an empty div that merely carries the testid. The
     // pending surface is fully determined by DocArea's pending branch, so it is asserted at that

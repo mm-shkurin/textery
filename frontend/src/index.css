@@ -1,80 +1,16 @@
-/* Design tokens mirror the Figma file "Labs-2026 ООО ИИ" (page Textery), frame `Pallete`
-   (node 315:2139). The Figma frames are drawn at 1.3333x, so every px value taken from the
-   API is divided by 1.3333 before it lands here — Figma 21.33px text is 16px CSS. */
-:root {
-  /* Palette — the ten swatches of the `Pallete` frame, in the order they appear there. */
-  --blue-900: #042e7b;
-  --blue-700: #004ee0;
-  --blue-500: #1883ff;
-  --blue-200: #99caff;
-  --blue-50: #e3f2ff;
-  --neutral-000: #ffffff;
-  --neutral-600: #797d81;
-  --neutral-700: #4f555b;
-  --neutral-900: #262728;
-  --neutral-950: #161616;
-
-  /* Semantic surfaces. The product is a light theme: the page is `blue-50`, and every
-     panel that sits on it (nav pill, prompt bar, stat card, FAQ row) is plain white. */
-  --bg-page: var(--blue-50);
-  --bg-header: var(--neutral-000);
-  --bg-surface: var(--neutral-000);
-  --bg-surface-raised: var(--neutral-000);
-  --bg-card: var(--neutral-000);
-  --bg-card-muted: #d2e2f2;
-  --bg-inverse: var(--neutral-950);
-  --border-subtle: #d5e6f7;
-  --border-strong: var(--blue-200);
-  --text-primary: var(--neutral-950);
-  --text-secondary: var(--neutral-700);
-  --text-muted: var(--neutral-600);
-  --text-inverse: var(--neutral-000);
-  --surface-light: var(--neutral-000);
-  --surface-light-2: #d9d9d9;
-  /* The primary button pair, shared by .cw-btn-primary, .me-save-btn and .me-link-apply.
-     Kept as one token pair so a third copy of the literals can't drift from the other two. */
-  --btn-primary-bg: var(--blue-700);
-  --btn-primary-fg: var(--neutral-000);
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-pill: 999px;
-  /* The UI Kit draws no gradient accent — a button's second variant is a flat colour swap
-     (#004ee0 <-> #e3f2ff). The gradient tokens stay defined because older screens still
-     reference them, but they now resolve to the flat brand blues rather than violet. */
-  --accent: var(--blue-700);
-  --accent-hover: var(--blue-500);
-  --accent-soft: var(--blue-50);
-  --accent-start: var(--blue-700);
-  --accent-end: var(--blue-500);
-  --accent-gradient: linear-gradient(135deg, var(--accent-start), var(--accent-end));
-  --warning: #f59e0b;
-  --success: #22c55e;
-  --error: #ef4444;
-
-  /* Status BANNERS, as opposed to the three status accents above. A boxed alert needs three
-     related colours, not one, and every place that drew one was writing its own triple: the
-     network-failure banner in AuthStatus.css carried #b45309/#fffbeb/#fcd34d inline, and the
-     oauth banner re-typed #ef4444 twice as rgba() rather than reading --error. Named here so a
-     second banner cannot invent a fourth amber. */
-  --warning-fg: #b45309;
-  --warning-bg: #fffbeb;
-  --warning-border: #fcd34d;
-  --success-fg: #15803d;
-  --error-soft-bg: rgba(239, 68, 68, 0.1);
-  --error-soft-border: rgba(239, 68, 68, 0.3);
-
-  /* Off-palette Figma values: exact numbers read from the file that are NOT one of the ten
-     `Pallete` swatches. They stay byte-exact — the point is not to round them into the palette
-     but to stop them being retyped per component, where a near-miss (#222222 vs #262728) reads
-     as intentional and nobody can tell which one the design meant. */
-  --text-near-black: #222222;
-  --text-hero: #1f1f1f;
-  --text-divider: #454748;
-  --accent-hero: #1252d3;
-  --accent-orb: #1e87ff;
-  --input-placeholder-fg: #fafdff;
-}
+@import './styles/fonts.css';
+/* Three files, in this order: raw swatches, then the light roles built from them, then the dark
+   overrides. The split is not cosmetic — the light file is the only place a token may be BORN, and
+   keeping the dark file to overrides alone is what makes "every token has a light definition"
+   checkable by diffing the two (see `contrast.test.ts`). It also keeps all four under the 200-line
+   cap that one combined sheet had already outgrown.
+   Order is belt-and-braces: `:root[data-theme='dark']` outranks bare `:root` on specificity, so
+   the dark file would win from anywhere in the cascade.
+   The token values themselves mirror the Figma file "Labs-2026 ООО ИИ" (page Textery), frame
+   `Pallete` (node 315:2139), divided by the 1.3333x the frames are drawn at. */
+@import './styles/palette.css';
+@import './styles/tokens-light.css';
+@import './styles/tokens-dark.css';
 
 * {
   box-sizing: border-box;
@@ -85,8 +21,32 @@
 body {
   background: var(--bg-page);
   color: var(--text-primary);
-  font-family: 'Inter', sans-serif;
+  /* The fallback is what the page renders in for the few hundred milliseconds before Inter
+     arrives (font-display: swap), so it is a stack of faces that actually exist on the reading
+     device rather than a bare `sans-serif` that resolves to Times on some of them. */
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
   line-height: 1.5;
+}
+
+/* Tells the BROWSER which theme is active, as opposed to telling our own stylesheets. It is what
+   paints the scrollbars, the form controls we do not restyle, and the canvas behind an overscroll
+   bounce — all of which stay light-on-light without it, and are the last things anyone thinks to
+   check. `color-scheme` is not inherited from a custom property, so it is declared literally in
+   both blocks rather than routed through a token. */
+:root {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
 }
 
 /* The Suspense fallback shown while the lazily-loaded manual editor chunk arrives. It lives in

@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import './ChatWorkspace.css'
 import './ChatWorkspaceDoc.css'
+import './DocMarkdown.css'
 import type { GenerationUiState } from '../hooks/useGeneration'
-import { Composer, MAX_TOPIC_LENGTH } from './Composer'
+import { ComposerPanel } from './ComposerPanel'
+import type { GenerationParameters } from '../utils/generationParameters'
 import { Progress } from './Progress'
 import { DocArea } from './DocArea'
 import { GenerationHeading } from './GenerationHeading'
 import { AppHeader } from '../../../shared/components/AppHeader'
-import { topicFieldLabel, type DocumentType } from '../../../shared/documentTypes'
+import { type DocumentType } from '../../../shared/documentTypes'
+import { topicFieldLabel } from '../../../shared/copy/documentTypeCopy'
 
 interface ChatWorkspaceProps {
   // Both the id and its label, as ManualEditor already takes them: the label is what the
@@ -20,7 +23,7 @@ interface ChatWorkspaceProps {
   volumePages: number | null
   createdAt?: string | null
   error: string | null
-  onSubmit: (topic: string) => void
+  onSubmit: (topic: string, parameters: GenerationParameters) => void
   onReset: () => void
   // The workspace is where a signed-in user actually spends their time, and it replaces the
   // landing entirely — so without a sign-out here, the only way out of a session on a shared
@@ -39,21 +42,18 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
   const { documentType, documentTypeLabel, state, content, volumePages, createdAt, error } = props
   const { onSubmit, onReset } = props
   const { onLogoutClick } = props
-  const [topic, setTopic] = useState('')
+  // Identifies the current draft. The workspace is never unmounted across a reset — only the
+  // idle branch swaps Progress back for the composer — so without this the «Создать новый
+  // доклад» screen came back pre-filled with the topic that was just generated, send button
+  // already enabled: one keystroke re-bills the user for the document they already have.
+  //
+  // A nonce rather than a `setTopic('')` reaching down: the draft now belongs to ComposerPanel,
+  // and remounting it is how an owner discards a draft without reading it first. The parameters
+  // — требования and объём — go with the topic, for the same re-billing reason.
+  const [draftId, setDraftId] = useState(0)
 
-  const send = () => {
-    const trimmed = topic.trim().slice(0, MAX_TOPIC_LENGTH)
-    if (trimmed) onSubmit(trimmed)
-  }
-
-  // The topic lives in this component's state, so `useGeneration.reset()` cannot reach it — it
-  // clears the generation, and the workspace is never unmounted across a reset (only the idle
-  // branch swaps Progress back for Composer). Without this the "Создать новый доклад" screen
-  // came back pre-filled with the topic that was just generated, send button already enabled:
-  // one keystroke re-bills the user for the document they already have. Clearing here keeps the
-  // topic owned by the one component that holds it.
   const reset = () => {
-    setTopic('')
+    setDraftId((n) => n + 1)
     onReset()
   }
 
@@ -76,11 +76,10 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
         <div className="cw-layout">
           <aside className="chat-panel" data-testid="chat-panel">
             {state === 'idle' ? (
-              <Composer
+              <ComposerPanel
+                key={draftId}
                 topicLabel={topicFieldLabel(documentType)}
-                topic={topic}
-                setTopic={setTopic}
-                onSend={send}
+                onSubmit={onSubmit}
               />
             ) : (
               <Progress state={state} documentType={documentType} />

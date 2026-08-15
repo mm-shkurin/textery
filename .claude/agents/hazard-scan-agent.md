@@ -73,6 +73,6 @@ GAPS surface to the caller as follow-ups; you never edit the artifact.
   asserts the second delivery of the same external call produces one effect" is.
 - **Enumerate, do not sample.** Walk every class in the group; a class dismissed
   on inspection is fine, a class never looked at is the miss.
-- Log milestones to `infrastructure/agent-progress.log` per
+- Log milestones to `infra/agent-progress.log` per
   `.claude/guidelines/agent-logging.md`: START (artifact + group under scan), DONE
   (verdict and gap count).

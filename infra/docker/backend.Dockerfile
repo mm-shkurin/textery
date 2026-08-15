@@ -20,6 +20,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
+# requirements.txt only, never requirements-dev.txt. Until they were split on
+# 2026-08-07 they were one file, so this line installed pytest, pytest-cov,
+# pytest-mock, ruff, mypy and a stubs package into the production image -- weight
+# and attack surface for tooling the container never runs.
 COPY backend/requirements.txt backend/requirements.txt
 RUN pip install --no-cache-dir -r backend/requirements.txt
 
@@ -34,5 +38,17 @@ EXPOSE 8000
 # alembic must run with cwd = backend/adapters/db.
 CMD ["sh", "-c", "cd backend/adapters/db && alembic upgrade head && cd /app && uvicorn app.main:app --app-dir backend/application/src --host 0.0.0.0 --port 8000"]
 
-HEALTHCHECK --interval=10s --timeout=3s --retries=5 --start-period=15s \
-  CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/openapi.json', timeout=2)" || exit 1
+# Probes /health, which the app owns and which actually checks its dependencies
+# (router/health/health_router.py answers 503 when one is down).
+#
+# It used to probe /openapi.json, and two things were wrong with that. That route
+# answers 200 from a process whose database is unreachable, so the container
+# reported healthy while every request 500'd — it tested that uvicorn was
+# accepting sockets and nothing else. And it is the most expensive GET the app
+# serves: FastAPI builds the whole schema for it, and at a 10s interval that is
+# 8 640 schema fetches a day, each one a log line burying everything else.
+#
+# Interval widened to 30s to match: this is a liveness probe, not a monitor.
+# `compose up` still waits through start-period + retries.
+HEALTHCHECK --interval=30s --timeout=3s --retries=5 --start-period=15s \
+  CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)" || exit 1

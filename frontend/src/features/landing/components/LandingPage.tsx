@@ -34,12 +34,6 @@ export function LandingPage({
       <LandingStats />
       <LandingShowcase onPrimaryCtaClick={onPrimaryCtaClick} />
       <LandingFaq />
-
-      <footer className="landing-footer">
-        <div className="landing-footer-inner">
-          <img className="footer-logo" src="/design/logo-textery.svg" alt="Textery" />
-        </div>
-      </footer>
     </div>
   )
 }

@@ -39,6 +39,38 @@ class SqlAlchemyGenerationStorage:
         model = result.scalar_one_or_none()
         return model.to_domain() if model is not None else None
 
+    async def find_by_owner_and_idempotency_key(
+        self, owner_id: UUID, idempotency_key: str
+    ) -> Generation | None:
+        """The row this owner already created under that key, if any.
+
+        Both columns are in the predicate. Matching on the key alone would make
+        the replay path cross accounts before any ownership check runs -- the
+        short-circuit is the whole point of a replay, so there is no later guard
+        to catch it.
+        """
+        result = await self._session.execute(
+            select(GenerationModel).where(
+                GenerationModel.owner_id == owner_id,
+                GenerationModel.idempotency_key == idempotency_key,
+            )
+        )
+        model = result.scalar_one_or_none()
+        return model.to_domain() if model is not None else None
+
+    async def count_retries_of(self, source_generation_id: UUID) -> int:
+        """How many rows name this generation as their source.
+
+        Counted in SQL. A count held in this process would bound nothing: the
+        backend runs as several instances, and each would keep its own.
+        """
+        count = await self._session.scalar(
+            select(func.count())
+            .select_from(GenerationModel)
+            .where(GenerationModel.source_generation_id == source_generation_id)
+        )
+        return count or 0
+
     async def update(self, generation: Generation) -> None:
         """Compare-and-swap the generation's state on its version.
 

@@ -3,6 +3,16 @@
 Tracked deliberately instead of fixed now — each entry says what's deferred, why, and
 where it must resurface.
 
+**Живой файл.** Остальная `.memory-bank/` заморожена (см. `index.md`), этот — нет:
+читать и дополнять.
+
+**Нумерация.** Номера присваиваются по мере появления и **не переиспользуются**;
+физический порядок ниже местами не совпадает с числовым (закрытый #12 стоит после #15 —
+он был дописан позже, при закрытии). Номер — это идентификатор для ссылок вида
+«known-debt #13», а не позиция в файле. До 15.08.2026 номер **14** носили две разные
+записи; вторая (поиск по `ILIKE`) стала **#16**, ссылки на «#14» означают
+Editor↔PDF.
+
 ## 1. CSS / browser-testing profile — CLOSED 2026-07-07
 `ProductSpecification/technology.md` now has `css: plain-css` (matches the already-
 regenerated mockups' hand-written CSS) and `browser-testing: selenium` (tech-lead
@@ -175,7 +185,13 @@ slice BEFORE building further on it, and reconcile progress.md checkboxes agains
 the hand-built code actually does (mark `[S]` with this note where covered-by-slice,
 or write the missing red test). Do not treat the green checkboxes as truth until then.
 
-## 11. Generation provider is GigaChat (Sber), not OpenRouter as technology.md states
+## 11. Generation provider is GigaChat (Sber), not OpenRouter — CLOSED in the docs 2026-07-20
+<!-- Заголовок до 15.08.2026 гласил «...not OpenRouter as technology.md states». -->
+**`technology.md`, `BriefProductDescription.md` и `ExpectedLoad.md` исправлены** ещё
+20.07 (`_project_audit/06_REAUDIT_2026-07-20.md`); story-спеки и тест-спеки истории 1
+получили корректирующую врезку 15.08. Ниже — исходная запись решения, как она была
+сделана 2026-07-09.
+
 Decided 2026-07-09: the neural provider for generation is **GigaChat** (Sber) using its
 own credentials, NOT OpenRouter/`openai` SDK as `technology.md` ("Generation engine:
 OpenRouter ... via `openai` Python SDK") and known-debt #3/#5 currently say. GigaChat
@@ -212,6 +228,45 @@ Needed once: real worker redelivery/retry semantics (scenarios 3.2, 5.4-5.6), ho
 scaling of generation processing beyond one ASGI process, or removing the unused
 Redis service becomes worth doing instead of leaving it as a placeholder.
 
+## 14. Editor↔PDF page equality is not guaranteed — two layout engines, divergence unmeasured
+Decided 2026-08-01 during story 10's interview. Story 10 requires WYSIWYG: a page in the
+editor must hold the same text as that page of the exported PDF. It cannot hold by
+construction today — the editor is laid out by the user's browser (Blink) while the PDF
+is laid out by `WeasyPrintPdfRenderer`, an independent Python engine. Two engines break
+lines and round line-heights differently, and the drift accumulates down the document.
+The identified fix is to print the PDF with headless Chromium via Playwright, so both
+sides share one engine; that was costed (≈400 MB image growth, a rewritten `rendering`
+adapter, a rebuilt SSRF guard — `_blocked_url_fetcher` is WeasyPrint-specific and has no
+Chromium equivalent, and Chromium additionally executes scripts — plus re-verifying
+story 17's shipped export scenarios) and **deliberately deferred**: until pagination
+exists in the editor there is nothing to compare, and the divergence on a typical 5–10
+page реферат may turn out to be zero, in which case a working renderer would have been
+replaced for nothing.
+**Resurfaces:** the moment story 10's editor pagination is shippable. The next step is a
+measurement — same document, editor page boundaries vs. exported PDF page boundaries, on
+real documents at several lengths — and the engine swap is decided on those numbers, not
+in advance. Do NOT write an acceptance test asserting editor/PDF page equality before
+this is settled; it would encode a guarantee the system does not currently make. Note
+that DOCX can never carry the guarantee at all (Word repaginates on open) — that is a
+property of the format, not part of this debt.
+
+## 15. Only one document font — font choice is not a user setting yet
+Decided 2026-08-01 during story 10's interview. Page setup in story 10 lets the user
+change sheet size, orientation, margins, size and line height, but **not the typeface**.
+Reason: Times New Roman is Monotype's and may not be embedded or redistributed, so every
+offered font must first be licence-cleared for embedding, and each one has to ship in the
+repo as a webfont — the editor and the renderer must draw with the byte-identical file or
+the page geometry diverges (a Linux container has no Times and would silently substitute
+different metrics). The bundled default is **Liberation Serif** (SIL OFL, metrically
+compatible with Times New Roman, full Cyrillic) — chosen so a document keeps its Word
+page count while staying legally shippable.
+**Resurfaces:** when the font-choice setting is actually wanted. Owed then: an
+OFL/embedding-cleared family per offered face (Liberation Sans/Mono are the natural
+Arial/Courier substitutes), each bundled as a webfont and referenced by both the editor's
+`@font-face` and the export renderer, plus a `font_family` key in `page_settings` with a
+closed allowlist — an open string would let a document request a font the renderer does
+not have, which fails silently as a metric substitution rather than as an error.
+
 ## 12. CLOSED 2026-07-10 — Landing page acceptance test red — `hero-subheading` testid no longer exists
 Found 2026-07-10 during scenario 4.1's premortem pass. `test_should_display_hero_and_primary_cta`
 (`acceptance/tests/frontend/landing/test_landing_page_acceptance.py`) times out on
@@ -227,3 +282,27 @@ page, not worth a dedicated red/green cycle right now. Deprioritized, not delete
 **Resurfaces:** whenever scenario 1.1 (landing hero) gets touched again — drop the
 subheading assertion (or restore the subheading in the component, if it's coming back)
 and get the Selenium suite green again.
+## 16. Project search uses `ILIKE` over `content`, not a Postgres full-text index
+<!-- Записана 2026-08-01 как «#14», что было вторым #14 в файле. Перенумерована в #16
+     15.08.2026 (аудит документации). Ссылок на неё по старому номеру не найдено. -->
+
+Decided 2026-08-01 during story 12's `/interview`. The «Мои проекты» search box must match
+on title, generation topic, **and document body**. Body search is implemented as
+`ILIKE '%term%'` over `content` — up to 200,000 characters per document, no index.
+
+Two consequences, both known and accepted for the sprint:
+- **No morphology.** Russian is heavily inflected; «рефератов» does not match «реферат».
+  The user searching for a word they remember in a different form finds nothing and
+  concludes the document is gone.
+- **Linear scan.** Cost grows with total content size, not with result count. Fine at
+  tens of documents per owner, not fine later.
+
+The correct fix is `tsvector` + a GIN index with the `russian` text-search configuration,
+maintained on write. That is a migration plus backfill plus its own scenarios — it did not
+fit the week, and shipping the screen without body search at all was judged worse than
+shipping it approximate.
+
+**Resurfaces:** first complaint that search "doesn't find" a document the user knows
+exists (that is the morphology gap, not a bug), or the first list-latency measurement that
+implicates the search predicate. Also revisit if `/projects` acquires load scenarios —
+`ExpectedLoad.md` has no profile for this endpoint yet.

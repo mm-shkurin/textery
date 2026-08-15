@@ -1,0 +1,141 @@
+openapi: 3.0.3
+info:
+  title: Delete Own Account
+  version: 1.0.0
+
+paths:
+  /api/v1/auth/me/deletion:
+    post:
+      summary: Delete the caller's own account and everything belonging to it. Irreversibly.
+      description: >
+        Written after the fact (2026-08-15): the route shipped in story 13 without a
+        contract file. This spec describes the code as it stands
+        (`router/auth/deletion_router.py`, `usecase/src/auth/delete_account.py`,
+        `usecase/src/auth/deletion_confirmation.py`).
+
+
+        **The only irreversible operation in the product.** No soft delete, no grace
+        period, no recycle bin — a decision, not an omission, and the reason this
+        route confirms before it acts and does the whole removal inside ONE
+        transaction. A partial deletion is the worst outcome available: an account
+        whose documents are gone, or documents belonging to an account that is not
+        there.
+
+
+        **POST, not `DELETE /api/v1/auth/me`.** The operation needs a confirmation
+        body, and a body on DELETE is the thing some proxies, CDNs and HTTP clients
+        drop without saying so — a request arriving with the confirmation silently
+        missing would be answered by this endpoint's one refusal, and the user would
+        be told their password was wrong. A sub-resource that is CREATED ("a
+        deletion") is also an honest reading of POST, not a workaround.
+
+
+        **The confirmation branch is chosen by the ACCOUNT, never by the request.**
+        An account with a password can only be confirmed by that password; an
+        OAuth-only account (stored `password_hash=""`) can only be confirmed by
+        retyping its own address. Letting the client pick would mean an account with a
+        password could be deleted by someone who merely read the email off the
+        screen — which the deletion screen displays. The empty password never
+        confirms, checked before the hasher is reached.
+
+
+        **The caller's still-valid access token is deliberately left alone.** It stays
+        cryptographically valid for up to fifteen minutes, but `get_current_owner_id`
+        confirms the account row exists on every authenticated request, so the next
+        call from any tab or device answers 401 — indistinguishable from a forged
+        token. The deletion is effective immediately everywhere, with no revocation
+        list to build.
+      operationId: deleteOwnAccount
+      tags:
+        - auth
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        description: >
+          The confirmation. **Optional at this layer on purpose**: a request arriving
+          without a body takes the same `DELETION_CONFIRMATION_INVALID` path as a wrong
+          password, rather than FastAPI's 422 in a different envelope.
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/DeleteAccountRequest'}
+      responses:
+        '204':
+          description: >-
+            Deleted. No body: there is no resource left to describe, and an empty 200
+            would invite a client to look for a payload that will never exist.
+        '400':
+          description: >-
+            `DELETION_CONFIRMATION_INVALID` — "The confirmation does not match. Nothing
+            was deleted." One code for a wrong password AND for a mismatched address:
+            the caller already knows which form they sent, so splitting it would only
+            describe their own request back to them.
+
+
+            **Deliberately not 401.** The session is valid and the caller is who they
+            say they are; what failed is the confirmation. A 401 would tell a client
+            whose token is fine to go and renew it — and, in the frontend's
+            interceptor, potentially end a healthy session.
+
+
+            The refusal is raised **before** the eraser is reached, so "nothing was
+            deleted on a refusal" holds by control flow rather than by review.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401':
+          description: >-
+            UNAUTHORIZED — the usual auth-boundary causes, plus: the token resolved but
+            the account row is gone (already deleted, or deleted by a racing request).
+            Same refusal a forgery gets.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '500':
+          description: >-
+            INTERNAL_ERROR with the fixed generic message. The transaction is rolled
+            back; a failure here means nothing was deleted.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token from POST /api/v1/auth/login.
+  schemas:
+    Error:
+      type: object
+      required: [error_code, message]
+      properties:
+        error_code: {type: string}
+        message: {type: string}
+    DeleteAccountRequest:
+      type: object
+      description: >
+        Two fields, neither required, no exclusivity rule — and that is the contract,
+        not a gap in it. Sending both, or neither, is simply a confirmation that does
+        not match. A schema rejecting those shapes itself would answer in FastAPI's 422
+        envelope and would tell the caller which field the server cares about for their
+        account.
+
+
+        Both fields are typed permissively server-side for the same reason: a strict
+        `string` annotation makes Pydantic refuse `{"password": 123}` first, and
+        FastAPI renders that as a 422 **that echoes the rejected input back** — here, a
+        field carrying a password.
+
+
+        Neither value is ever logged, and neither appears in any response.
+      properties:
+        password:
+          nullable: true
+          description: For an account that has a password. The empty string never confirms.
+        confirm_email:
+          nullable: true
+          description: >-
+            The account's own address, retyped. The confirming form for OAuth-only
+            accounts.

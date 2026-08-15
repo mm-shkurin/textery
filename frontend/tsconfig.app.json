@@ -4,7 +4,19 @@
     "target": "es2023",
     "lib": ["ES2023", "DOM"],
     "module": "esnext",
-    "types": ["vite/client"],
+    // "node" is here for the TEST helpers under src/**/__tests__, which read source files off disk
+    // to assert on them: the theme boot script out of index.html, and the token sheets out of
+    // src/styles. Neither can come through Vite — `?raw` on a .css file is replaced with an empty
+    // string by vitest unless CSS processing is switched on for the whole suite, and `?raw` plus
+    // `new URL(…, import.meta.url)` are both rewritten at transform time in ways that read like a
+    // file path but are not one. The first cut of those helpers went that route and produced
+    // VACUOUSLY GREEN tests over empty data, which is the worst outcome available here.
+    //
+    // The cost is that production code under src/ could now import `node:fs` and still typecheck.
+    // It would fail at build time and in the browser, and nothing outside __tests__ has a reason
+    // to — but it is a real widening, so: if a non-test file imports a node builtin, that is a bug
+    // this line stopped TypeScript from catching, not a licence.
+    "types": ["vite/client", "node"],
     "allowArbitraryExtensions": true,
     "skipLibCheck": true,
 

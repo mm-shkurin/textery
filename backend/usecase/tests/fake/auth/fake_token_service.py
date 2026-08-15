@@ -37,7 +37,7 @@ class FakeTokenService:
             refresh_token_expires_at=self.ISSUED_AT + timedelta(days=7),
         )
 
-    def read_refresh_subject(self, refresh_token: str) -> UUID:
+    def read_refresh_subject(self, refresh_token: str) -> UUID:  # noqa: ARG002 -- TokenService port shape
         self.read_refresh_subject_call_count += 1
         if self.raise_on_read_refresh_subject is not None:
             raise self.raise_on_read_refresh_subject
@@ -45,7 +45,7 @@ class FakeTokenService:
             raise InvalidTokenException("refresh token is not valid")
         return self.refresh_subject
 
-    def read_access_subject(self, access_token: str) -> UUID:
+    def read_access_subject(self, access_token: str) -> UUID:  # noqa: ARG002 -- TokenService port shape
         """The access half of the port, kept distinct from the refresh half.
 
         Missing entirely until the type checker asked: `TokenService` grew this

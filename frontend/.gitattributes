@@ -1,0 +1,19 @@
+# Line endings are decided here, not by whoever cloned the repo.
+#
+# Without this file, a Windows clone with core.autocrlf=true gets CRLF in the working tree while
+# the blobs stay LF. Prettier's endOfLine:"auto" then infers per file from what it finds, and any
+# file that ends up MIXED - a CRLF checkout patched by a tool that writes LF - fails
+# `npm run format:check` locally while CI, which checks out LF-only, prints a pass. A red gate that
+# only one machine can see is the kind that gets dismissed as noise.
+#
+# `text=auto eol=lf` makes every text file LF in the working tree too, on every platform, so what
+# the formatter checks is what the repository holds. Scoped to frontend/ because this directory is
+# also published as the ROOT of a separate repository, where a root .gitattributes would not travel.
+* text=auto eol=lf
+
+# Binary: never normalized, never diffed as text.
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

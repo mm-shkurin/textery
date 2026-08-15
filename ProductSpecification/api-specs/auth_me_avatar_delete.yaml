@@ -1,0 +1,68 @@
+openapi: 3.0.3
+info:
+  title: Remove Own Avatar
+  version: 1.0.0
+
+paths:
+  /api/v1/auth/me/avatar:
+    delete:
+      summary: Remove the caller's avatar. 200 whether or not there was one.
+      description: >
+        Written after the fact (2026-08-15): the route shipped in story 13 without a
+        contract file. This spec describes the code as it stands (`avatar_router.py`).
+
+
+        **Idempotent by contract.** The client asked for "no avatar" and that is the
+        state it gets. A 404 on the second call would make a retry after a dropped
+        response look like a failure, which is exactly when a client retries.
+
+
+        Answers with the **full profile**, matching `PUT` on the same path, so the
+        client refreshes its identity snapshot from this response rather than
+        re-hitting `GET /me`.
+      operationId: removeOwnAvatar
+      tags:
+        - auth
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The profile after removal. Same body on the first call and on every repeat.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProfileResponse'}
+        '401':
+          description: UNAUTHORIZED. Same auth boundary as every other `/me` route — see `auth_me_get.yaml`.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '500':
+          description: INTERNAL_ERROR with the fixed generic message.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token from POST /api/v1/auth/login.
+  schemas:
+    Error:
+      type: object
+      required: [error_code, message]
+      properties:
+        error_code: {type: string}
+        message: {type: string}
+    ProfileResponse:
+      description: >-
+        The same three-field shape `GET /api/v1/auth/me` returns — see
+        `auth_me_get.yaml` for the per-field rules.
+      type: object
+      required: [email, name, created_at]
+      properties:
+        email: {type: string, format: email}
+        name: {type: string, nullable: true}
+        created_at: {type: string, format: date-time}

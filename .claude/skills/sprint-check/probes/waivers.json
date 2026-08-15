@@ -1,0 +1,8 @@
+[
+  {
+    "id": "EXAMPLE-ID",
+    "reason": "why this violation is accepted — link the decision doc",
+    "expires": "2026-01-01",
+    "owner": "who agreed"
+  }
+]

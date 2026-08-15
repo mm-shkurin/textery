@@ -7,7 +7,15 @@ paths:
   /api/v1/generations:
     get:
       summary: The caller's own generation history, newest first. Keyset-paginated.
+      deprecated: true
       description: >
+        DEPRECATED since story 12 in favour of `GET /api/v1/projects`. Unconverted
+        generations now reach the user as cards in the merged feed. Still called by
+        `frontend/src/features/history/api/historyApi.ts` — do NOT remove until that call
+        site has migrated; removal is a separate cleanup task, and this note is not
+        permission to skip checking. `GET /generations/{id}` is unaffected.
+
+
         Scoped to the Bearer token's account — `owner_id` is a query predicate, never
         a parameter, so a caller cannot ask for someone else's history. This spec was
         originally written as an unscoped stand-in ("no auth exists yet"); that premise
@@ -18,9 +26,17 @@ paths:
         Ordered by `created_at DESC, id DESC`. The `id` tiebreak is load-bearing:
         `created_at` alone is not unique, and a page boundary between two rows sharing a
         timestamp would drop or repeat one.
+
+
+        **Deprecated** as of story 12 in favour of `GET /api/v1/projects`. This endpoint
+        has no caller today — story 18 removed the separate «Генерации» tab, because a
+        generation and its document are one piece of work and were being listed twice.
+        `/projects` shows the only generations that still need showing: the ones no
+        document was ever made from. Behaviour here is unchanged and stays supported.
       security:
         - bearerAuth: []
       operationId: listGenerations
+      deprecated: true
       tags:
         - generations
       parameters:

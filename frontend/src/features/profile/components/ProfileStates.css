@@ -1,0 +1,85 @@
+/* «Мой профиль» — the two states that are not the card: the loading placeholder (mockup 01) and
+   the load failure (mockup 06). Split out of ProfilePage.css to keep every stylesheet under the
+   200-line cap. */
+
+/* ---- loading placeholder (mockup 01) ---- */
+
+/* The rule between the placeholder's two halves. It lives here rather than in ProfilePage.css
+   because the skeleton is now its only caller: the real card divides its rows with
+   `.profile-row-divided`, which draws the same hairline from the row below it. */
+.profile-divider {
+  height: 1px;
+  margin: 28px 0;
+  background: var(--profile-card-line);
+}
+
+.profile-skeleton-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  flex: none;
+  display: block;
+}
+
+.profile-skeleton-line {
+  display: block;
+  height: 12px;
+}
+
+.profile-skeleton-line-lg {
+  width: 210px;
+}
+
+.profile-skeleton-line-md {
+  width: 270px;
+  height: 10px;
+  margin-top: 12px;
+}
+
+.profile-skeleton-line-sm {
+  width: 150px;
+  height: 9px;
+  margin-top: 14px;
+}
+
+.profile-skeleton-input {
+  display: block;
+  height: 48px;
+  border-radius: var(--radius-md);
+}
+
+/* ---- load failed (mockup 06) ---- */
+.profile-state {
+  text-align: center;
+  padding: 56px 32px;
+}
+
+.profile-state-title {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.profile-state-body {
+  color: var(--text-secondary);
+  max-width: 430px;
+  margin: 0 auto 24px;
+}
+
+.profile-state-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .profile-skeleton-avatar {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+@media (max-width: 640px) {
+  .profile-state-actions {
+    flex-direction: column;
+  }
+}

@@ -1,13 +1,28 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { Composer, MAX_TOPIC_LENGTH } from '../Composer'
-import { topicFieldLabel } from '../../../../shared/documentTypes'
+import { topicFieldLabel } from '../../../../shared/copy/documentTypeCopy'
+import { EMPTY_PARAMETERS, type GenerationParameters } from '../../utils/generationParameters'
 
-function renderComposer(topic: string, topicLabel = topicFieldLabel('doklad')) {
+function renderComposer(
+  topic: string,
+  topicLabel = topicFieldLabel('doklad'),
+  parameters: GenerationParameters = EMPTY_PARAMETERS,
+) {
   const setTopic = vi.fn()
+  const setParameters = vi.fn()
   const onSend = vi.fn()
-  render(<Composer topicLabel={topicLabel} topic={topic} setTopic={setTopic} onSend={onSend} />)
-  return { setTopic, onSend }
+  const view = render(
+    <Composer
+      topicLabel={topicLabel}
+      topic={topic}
+      setTopic={setTopic}
+      parameters={parameters}
+      setParameters={setParameters}
+      onSend={onSend}
+    />,
+  )
+  return { ...view, setTopic, setParameters, onSend }
 }
 
 describe('Composer', () => {
@@ -32,11 +47,15 @@ describe('Composer', () => {
   // the test above stayed green while a real browser — which folds generated content into the
   // accessible-name computation — announced 'Тема доклада *'. Keeping the marker in markup and
   // aria-hidden is what makes the assertion above true outside jsdom too.
-  it('keeps the required marker out of the accessible name', () => {
-    renderComposer('')
+  // Every required field, not the first one found: there are two now (тема and объём), and a
+  // `getByText` over the shared class throws on the second rather than checking it — the volume
+  // field's marker could have shipped announced with nothing red.
+  it('keeps every required marker out of the accessible name', () => {
+    const { container } = renderComposer('')
 
-    const marker = screen.getByText('*', { exact: false, selector: '.composer-required-marker' })
-    expect(marker).toHaveAttribute('aria-hidden', 'true')
+    const markers = container.querySelectorAll('.composer-required-marker')
+    expect(markers).toHaveLength(2)
+    markers.forEach((marker) => expect(marker).toHaveAttribute('aria-hidden', 'true'))
   })
 
   it('reports every keystroke to the caller', () => {

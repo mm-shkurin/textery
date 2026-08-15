@@ -1,0 +1,130 @@
+openapi: 3.0.3
+info:
+  title: Replace Own Avatar
+  version: 1.0.0
+
+paths:
+  /api/v1/auth/me/avatar:
+    put:
+      summary: Replace the caller's avatar with the raw image bytes in the body.
+      description: >
+        Written after the fact (2026-08-15): the route shipped in story 13 without a
+        contract file. This spec describes the code as it stands
+        (`backend/adapters/rest/src/router/auth/avatar_router.py`,
+        `backend/domain/src/auth/avatar.py`), it does not propose a new shape.
+
+
+        **Not multipart.** The body is the image itself. There is exactly one field,
+        so a form part buys nothing and costs a multipart parser — boundary handling,
+        part limits, filename decoding — reached on an authenticated route before any
+        of our own checks run.
+
+
+        **The client's `Content-Type` decides nothing.** It is read once for the cheap
+        `Content-Length` gate and otherwise ignored. What the image IS gets decided
+        from its magic bytes (`detect_media_type`), and that decision is what gets
+        stored and what `GET .../avatar` later serves it back as. Taking the client's
+        word would let an uploader choose the type its own bytes are returned under.
+
+
+        **PUT, and idempotent by contract.** Uploading replaces whatever was there;
+        there is at most one avatar per account and no collection to POST into.
+
+
+        Scoped to the Bearer token's account. No account identifier appears in the
+        path, query or body on any of the three avatar routes — ownership is a
+        property of the route shape, not of a check somebody has to remember.
+
+
+        Answers with the **full profile**, not with the image, so the client refreshes
+        its identity snapshot from this response instead of re-hitting `GET /me`.
+      operationId: replaceOwnAvatar
+      tags:
+        - auth
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        description: >
+          Raw image bytes. PNG, JPEG or WebP — proven from the signature, not from
+          this header. At most 512 KiB (`MAX_AVATAR_BYTES`), each side 1–1024 px
+          (`MIN_AVATAR_SIDE_PIXELS`…`MAX_AVATAR_SIDE_PIXELS`). The client resizes to
+          256×256 before uploading; the ceiling is not the product's size rule but the
+          bound that keeps a decompression bomb from reaching every browser that later
+          renders the image. The floor exists because a header declaring 0×0 passes
+          any ceiling check — that was a real defect, fixed 2026-08-14.
+        content:
+          image/png:
+            schema: {type: string, format: binary}
+          image/jpeg:
+            schema: {type: string, format: binary}
+          image/webp:
+            schema: {type: string, format: binary}
+      responses:
+        '200':
+          description: The stored profile after the replacement.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProfileResponse'}
+        '400':
+          description: >-
+            One of three refusals, in the order the domain applies them — length,
+            then signature, then the dimensions in the image's own header:
+
+
+            `AVATAR_TOO_LARGE` — over 512 KiB. Raised twice by design: once at the
+            route on a `Content-Length` that declares too much, so an oversized upload
+            is refused before the process buffers it, and once in the domain on the
+            **actual** length, which is the real guard (`Content-Length` is
+            client-supplied and a chunked request carries none). Same code both times:
+            to the client it is one refusal.
+
+
+            `AVATAR_UNSUPPORTED_TYPE` — the bytes are not PNG, JPEG or WebP. `<svg`
+            and `%PDF` land here **by default** rather than by a rule naming them: the
+            check is an allowlist ("is it one of ours"), which no unforeseen format
+            can slip past.
+
+
+            `AVATAR_DIMENSIONS_TOO_LARGE` — a side outside 1…1024 px.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401':
+          description: >-
+            UNAUTHORIZED. One refusal for every cause — see `auth_me_get.yaml`, the
+            same auth boundary applies unchanged.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '500':
+          description: INTERNAL_ERROR with the fixed generic message. Never the bytes, never a driver string.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token from POST /api/v1/auth/login.
+  schemas:
+    Error:
+      type: object
+      required: [error_code, message]
+      properties:
+        error_code: {type: string}
+        message: {type: string}
+    ProfileResponse:
+      description: >-
+        The same three-field shape `GET /api/v1/auth/me` returns — see
+        `auth_me_get.yaml` for the per-field rules. Repeated here rather than
+        `$ref`-ed across files because each spec in this folder stands alone.
+      type: object
+      required: [email, name, created_at]
+      properties:
+        email: {type: string, format: email}
+        name: {type: string, nullable: true}
+        created_at: {type: string, format: date-time}

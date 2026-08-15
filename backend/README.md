@@ -27,17 +27,77 @@ FastAPI, ни про SQLAlchemy, `usecase` объявляет порты, а р�
 ## Установка и запуск
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt          # только то, что нужно приложению
 alembic -c adapters/db/alembic.ini upgrade head        # применить миграции
 uvicorn main:app --app-dir application/src/app --reload
 ```
+
+Для разработки нужен второй файл — он подтягивает первый и добавляет
+инструментарий (pytest, ruff, mypy):
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+Разделение не косметическое: `Dockerfile` ставит именно `requirements.txt`, и
+пока файл был один, в production-образ уезжали pytest, ruff и mypy. По той же
+причине джоб `audit` в CI проверяет уязвимости только по runtime-файлу — он
+отвечает на вопрос «уязвимо ли то, что мы деплоим».
+
+Локальный запуск требует поднятого PostgreSQL и созданной базы:
+
+```bash
+createdb textery                         # или: psql -c "CREATE DATABASE textery"
+cp .env.example .env                     # и заполнить значения
+```
+
+Проще — через Docker, тогда базу поднимать руками не нужно.
 
 Команды выполняются из этого каталога (`backend/`). `--app-dir` обязателен:
 `main.py` — это composition root, он добавляет корни слоёв в `sys.path` при
 старте, поэтому импортировать его нужно как модуль `main`.
 
-Документация API поднимается вместе с приложением: `/docs` (Swagger UI) и
-`/redoc`.
+Документация API (`/docs`, `/redoc`, `/openapi.json`) по умолчанию **выключена** —
+`API_DOCS_ENABLED` не задан. Порт бэкенда публикуется на хост
+(`${BACKEND_PORT}:8000`), поэтому «включено, пока не выключили» означало бы полную
+схему API наружу в тех окружениях, где о ней никто не подумал. `.env.example`
+включает её (`API_DOCS_ENABLED=1`) — то есть локально она есть сразу; в остальных
+окружениях это осознанная строка в `.env`. Признаются `1`, `true`, `yes`, `on`;
+всё прочее — выключено.
+
+## Контейнеризация
+
+Весь стек этого репозитория — API и его база — поднимается одной командой:
+
+```bash
+cp .env.example .env                     # заполнить POSTGRES_PASSWORD, JWT_SECRET, YANDEX_*
+docker compose up --build                # API на http://localhost:8000
+docker compose down                      # остановить; -v — снести и данные
+```
+
+| Файл | Что делает |
+|------|------------|
+| [`Dockerfile`](Dockerfile) | образ приложения: нативные библиотеки WeasyPrint, `requirements.txt` (без dev-инструментов), миграции и `uvicorn` при старте, `HEALTHCHECK` по `/health` |
+| [`docker-compose.yml`](docker-compose.yml) | `backend` + `postgres` в одной сети; API ждёт `service_healthy`, а не просто существования контейнера |
+| [`.dockerignore`](.dockerignore) | тесты, кеши и `.env` не попадают в контекст сборки — иначе локальные секреты уехали бы слоем в образ |
+
+`DATABASE_URL` внутри compose собирается из имени сервиса (`@postgres:5432`), а не
+берётся из `.env`: скопированный из локального запуска URL с `localhost` внутри
+сети не резолвится и выглядит как сломанный образ. Пароль базы без значения по
+умолчанию — `docker compose` откажется стартовать и назовёт переменную.
+
+Сборка образа отдельно, без compose:
+
+```bash
+docker build -t textery-backend .
+docker run --rm -p 8000:8000 --env-file .env \
+  -e DATABASE_URL=postgresql+asyncpg://textery:...@host.docker.internal:5432/textery \
+  textery-backend
+```
+
+В монорепозитории есть второй compose (`infra/docker-compose.yml`) — там весь
+продукт целиком: фронтенд, nginx, redis. Здешний самодостаточен: `docker build .`
+не требует ничего за пределами этого каталога.
 
 ## API
 
@@ -53,14 +113,23 @@ uvicorn main:app --app-dir application/src/app --reload
 | `GET /api/v1/auth/oauth/{provider}/start` | Шаг 1: редирект к провайдеру. | нет |
 | `GET /api/v1/auth/oauth/{provider}/callback` | Шаг 2: редирект обратно с одноразовым кодом передачи. | нет |
 | `POST /api/v1/auth/oauth/exchange` | Шаг 3: обмен кода передачи на пару токенов. | нет |
+| `GET /api/v1/auth/me` | Профиль владельца токена. | да |
+| `PATCH /api/v1/auth/me` | Переименование профиля. | да |
+| `PUT /api/v1/auth/me/avatar` | Загрузить аватар (тип определяется по байтам, не по заголовку). | да |
+| `GET /api/v1/auth/me/avatar` | Отдать аватар байтами (`ETag`, `private, no-cache`). | да |
+| `DELETE /api/v1/auth/me/avatar` | Убрать аватар. | да |
+| `POST /api/v1/auth/me/deletion` | Удалить свой аккаунт со всем содержимым. Необратимо; ветку подтверждения (пароль или свой e-mail) выбирает аккаунт, а не запрос. | да |
 | `POST /api/v1/generations` | Запустить генерацию документа. | да |
 | `GET /api/v1/generations` | История своих генераций (keyset-пагинация). | да |
 | `GET /api/v1/generations/{id}` | Статус и содержимое генерации. | да |
+| `POST /api/v1/generations/{id}/retry` | Повторить генерацию (идемпотентно по `Idempotency-Key`). | да |
 | `POST /api/v1/documents` | Создать документ (идемпотентно по `Idempotency-Key`). | да |
+| `POST /api/v1/documents/from-generation` | Сохранить готовую генерацию как документ. | да |
 | `GET /api/v1/documents` | История своих документов. | да |
 | `GET /api/v1/documents/{id}` | Прочитать документ. | да |
 | `GET /api/v1/documents/{id}/export` | Выгрузить документ файлом (`?format=pdf` или `docx`). | да |
 | `PUT /api/v1/documents/{id}` | Сохранить содержимое (оптимистичная блокировка по `version`). | да |
+| `GET /api/v1/projects` | Лента проектов: документы и генерации одним списком. | да |
 | `GET /health` | Готовность экземпляра: `200` — БД отвечает, `503` — нет. | нет |
 
 `GET /health` намеренно лежит вне `/api/v1` и не требует токена: его вызывает
@@ -95,9 +164,16 @@ uvicorn main:app --app-dir application/src/app --reload
 | `GIGACHAT_CA_BUNDLE` | нет | Переопределяет вшитый корневой сертификат, если цепочка GigaChat изменится. |
 | `GENERATION_STALE_AFTER_MINUTES` | нет | Через сколько минут зависшая генерация перезапускается (по умолчанию 10). |
 | `LOG_LEVEL` | нет | Уровень корневого логгера (`INFO` по умолчанию). Нераспознанное значение не роняет старт — приложение возвращается к `INFO`. |
-| `TEST_DATABASE_URL` | для тестов | БД для тестов адаптера `db`. |
+| `OAUTH_FAKE_AUTHORIZE_URL` | нет | Куда редиректит провайдер `fake` (только при `OAUTH_PROVIDER=fake`). |
+| `TEST_DATABASE_URL` | для тестов | БД для тестов адаптера `db`. В `.env.example` её нет намеренно: она нужна только тестовому прогону и живёт в окружении, а не в файле приложения — см. «База для тестов». |
 
 ## Тестирование и проверки
+
+```bash
+python scripts/check.py     # ВСЕ блокирующие гейты CI одной командой, в порядке CI
+```
+
+Отдельные шаги — когда нужен один из них:
 
 ```bash
 pytest                      # весь набор
@@ -108,18 +184,74 @@ mypy                        # статическая проверка типов
 mypy --disallow-incomplete-defs domain/src usecase/src adapters/*/src application/src
                             # то же по production-коду, но с запретом частично
                             # аннотированных сигнатур (см. джоб `types` в CI)
-pip-audit -r requirements.txt   # известные уязвимости в зависимостях
+python scripts/check_file_size.py   # лимит 200 строк на файл
+pip-audit -r requirements.txt   # уязвимости в том, что деплоится
 ```
+
+Это ровно те проверки, которые гоняет CI (`.github/workflows/ci.yml`), и все они
+блокирующие. Прогнать их локально до коммита дешевле, чем узнать о красном
+`lint` из отчёта.
 
 Тесты каждого слоя лежат рядом с модулем (`domain/tests`, `usecase/tests`,
 `adapters/*/tests`). Живой PostgreSQL нужен только тестам `adapters/db` —
 остальные работают без внешних сервисов. Без поднятой БД набор `adapters/db`
 целиком помечается `skipped` с указанием причины, а не падает и не зависает.
 
-CI держит покрытие не ниже 90% (`--cov-fail-under`); фактическое — 98%.
+### База для тестов `adapters/db`
+
+На свежем checkout эти ~70 тестов пропускаются: базы, которую они ждут, ещё нет.
+Чтобы они начали выполняться:
+
+```bash
+createdb textery_test                    # или: psql -c "CREATE DATABASE textery_test"
+export TEST_DATABASE_URL=postgresql://textery:change-me@localhost:5432/textery_test
+pytest adapters/db
+```
+
+`TEST_DATABASE_URL` можно не задавать — значение по умолчанию именно такое
+(`adapters/db/tests/statements/database_url.py`). Задавать его нужно, только
+если у вас другой хост, порт или пользователь.
+
+**Имя базы обязано содержать `test`.** Набор делает `TRUNCATE` всех таблиц между
+фикстурами, поэтому `resolve_test_database_url()` отказывается работать с базой,
+чьё имя этого не подтверждает. Проверка появилась не из осторожности: 2026-08-06
+значением по умолчанию была рабочая база `textery`, полный прогон `pytest`
+стёр данные локального стенда, и первым симптомом стал 401 на пароле, который
+минуту назад работал.
+
+CI держит покрытие не ниже 90% (`--cov-fail-under`); фактическое — 94%. Считается
+только production-код: `[tool.coverage.run]` в `pyproject.toml` перечисляет корни
+`*/src`. Без этого списка `--cov` мерил бы и сами тесты, покрытые на ~100% по
+построению — прогон теста и есть его исполнение, — и порог 90% не значил бы почти
+ничего.
 
 Корни слоёв подключаются через `pythonpath` в `pyproject.toml`, поэтому `pytest`
 запускается из этого каталога без настройки `PYTHONPATH`.
+
+## Тест-кейсы
+
+[`docs/testing/`](docs/testing/README.md) — 722 проектных тест-кейса по десяти
+историям: API, нагрузка, инфраструктура, безопасность, интеграция. Пишутся до
+кода, из них растёт TDD-цикл. Формат — Gherkin: `Given` — предусловия, `When` —
+шаги, `Then` — ожидаемый результат.
+
+## Принятые решения
+
+Почему так, а не иначе — там, где выбор был неочевиден и стоил обсуждения:
+
+| Решение | Где записано |
+|---------|--------------|
+| Удаление аккаунта необратимо, ветку подтверждения выбирает аккаунт, а не запрос | докстринга `usecase/src/auth/delete_account.py` |
+| `ON DELETE CASCADE` не добавляется миграцией — порядок удаления явный в eraser'е | докстринга `adapters/db/src/access/auth/account_eraser.py` |
+| Токен удалённого аккаунта не отзывается: существование строки проверяется на каждом запросе | `adapters/rest/src/security/current_owner.py` |
+| Тип аватара определяется по магическим байтам и перепроверяется при отдаче | `domain/src/auth/avatar_format.py` |
+| `/docs` выключены по умолчанию, а не «включены, пока не выключили» | `application/src/app/api_docs.py` |
+| Медиатип экспорта — забота rest-адаптера, usecase знает только формат | `adapters/rest/src/dto/document/export_media_type.py` |
+| Правка сгенерированного документа: границы области | `ProductSpecification/decisions/editable-generated-docs-scope.md` (монорепозиторий) |
+
+Решения живут в докстрингах модулей, которых они касаются, а не в отдельном
+каталоге ADR: докстринга не расходится с кодом, потому что её видит каждый, кто
+этот код открывает. Ход каждой итерации аудита — в [`AUDIT_LOG.md`](AUDIT_LOG.md).
 
 ## История изменений
 

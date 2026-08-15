@@ -15,6 +15,7 @@
 import { postJson } from '../../../shared/api/httpClient'
 import { toAuthApiError, type AuthApiError } from './apiError'
 import { GENERIC_REGISTER_FAILURE_MESSAGE } from '../utils/authMessages'
+import { API } from '../../../shared/api/endpoints'
 
 export interface RegisterResult {
   userId: string
@@ -42,7 +43,7 @@ export async function register(
   confirmPassword: string,
 ): Promise<RegisterResult> {
   try {
-    const body = await postJson<Record<string, unknown>>('/api/v1/auth/register', {
+    const body = await postJson<Record<string, unknown>>(API.auth.register, {
       email,
       password,
       confirm_password: confirmPassword,

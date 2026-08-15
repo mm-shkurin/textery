@@ -1,0 +1,131 @@
+/* Textery — «Мой профиль» (story 13). Depends on theme.css for tokens, header, buttons.
+   Only page-specific rules here. */
+
+/* One form column, not a feed: the shell is narrower than «Мои проекты» (1640). */
+.header, .page, .footer { max-width: 1240px; }
+.page { padding: 24px; }
+
+/* The avatar wears the Figma gradient (`Button/Container`, node 573:4506) — the same one the
+   implemented ProfileAvatar uses. theme.css's flat --accent fill is the older projects look;
+   overridden here so the mockup and the shipped component agree. */
+.avatar, .ava {
+  background: linear-gradient(135deg, #51a2ff, #4f39f6); color: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,.1), 0 1px 4px rgba(0,0,0,.1);
+}
+
+/* ---- profile card ---- */
+.profile-wrap { max-width: 760px; margin-top: 22px; }
+.identity { display: flex; align-items: center; gap: 20px; }
+.ava { width: 72px; height: 72px; border-radius: 50%; flex: none; display: flex;
+  align-items: center; justify-content: center; font-weight: 700; font-size: 24px; }
+.who .primary { font-size: 20px; font-weight: 700; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.who .secondary { color: var(--text-secondary); margin-top: 4px; overflow-wrap: anywhere; }
+.who .since { color: var(--text-muted); font-size: 12.5px; margin-top: 10px;
+  display: flex; align-items: center; gap: 6px; }
+.who .since i { width: 14px; height: 14px; }
+.divider { height: 1px; background: var(--border-subtle); margin: 28px 0; }
+
+/* ---- name form ---- */
+.form-title { font-weight: 700; font-size: 16px; margin-bottom: 6px; }
+.form-hint { color: var(--text-secondary); font-size: 12.5px; margin-bottom: 20px; }
+.label-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.label-row .label { margin-bottom: 0; }
+/* Tabular figures so the counter does not jitter as it counts. It counts code points —
+   the same unit the domain bound uses, so 60 emoji read 60, not 120. */
+.counter { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.counter.over { color: var(--danger); font-weight: 600; }
+.input.is-error { border-color: var(--danger); }
+.input.is-locked { background: var(--bg-sunken); color: var(--text-secondary); }
+.field-error { display: flex; align-items: flex-start; gap: 6px; color: var(--danger);
+  font-size: 12.5px; margin-top: 8px; }
+.field-error i { width: 14px; height: 14px; flex: none; margin-top: 1px; }
+.field-note { color: var(--text-muted); font-size: 12.5px; margin-top: 8px; }
+.btn.is-disabled { background: var(--bg-sunken); color: var(--text-muted);
+  border: 1px solid var(--border-subtle); cursor: not-allowed; }
+.spinner { width: 14px; height: 14px; border-radius: 50%; flex: none;
+  border: 2px solid rgba(255,255,255,.45); border-top-color: #fff;
+  animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- loading skeleton ----
+   A defined placeholder, never a blank avatar that pops into initials: after the move to
+   /me this state is every page for the length of a request, not an edge case. */
+.sk { background: linear-gradient(90deg, var(--bg-sunken), #eef0f4, var(--bg-sunken));
+  background-size: 200% 100%; animation: sh 1.3s ease-in-out infinite; border-radius: 6px; }
+/* Re-asserted at two classes because `.avatar.is-placeholder` and `.sk-ava` below both set the
+   `background` SHORTHAND, which silently drops `.sk`'s gradient and its size — the first cut of
+   this file shipped a placeholder that did not move at all, leaving the загрузка/отказ pair
+   distinguishable only by a hairline. The circle is here for the same reason: a placeholder
+   whose shape changes when the response lands is the pop it exists to prevent, one step later. */
+.avatar.sk, .ava.sk, .sk-ava.sk {
+  border-radius: 50%;
+  background: linear-gradient(90deg, var(--bg-sunken), #eef0f4, var(--bg-sunken));
+  background-size: 200% 100%;
+}
+@keyframes sh { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+/* `:not(.sk)` on the fill so the flat fallback cannot outrank the shimmer above by source
+   order — the two rules would otherwise be one reshuffle away from silently swapping. */
+.sk-ava { width: 72px; height: 72px; border-radius: 50%; flex: none; display: flex;
+  align-items: center; justify-content: center; color: var(--text-muted); box-shadow: none; }
+.sk-ava:not(.sk) { background: var(--bg-sunken); }
+.sk-ava i { width: 30px; height: 30px; }
+.sk-line { height: 12px; }
+.sk-input { height: 48px; border-radius: var(--radius-md); }
+
+/* ---- degraded identity — a /me that answered 401, 5xx or not at all ----
+   Must be visibly unlike both a healthy header and the placeholder above: dashed, muted,
+   carrying an alert glyph. A silently-identical failure reads as "account with no name". */
+.avatar.is-degraded, .ava.is-degraded {
+  background: var(--bg-sunken); border: 1.5px dashed var(--border-strong);
+  color: var(--text-muted); box-shadow: none;
+}
+.avatar.is-placeholder { color: var(--text-muted); box-shadow: none; }
+.avatar.is-placeholder:not(.sk) { background: var(--bg-sunken); }
+.avatar i, .ava i { width: 18px; height: 18px; }
+.ava.is-degraded i { width: 28px; height: 28px; }
+
+/* ---- load-failed / empty state ---- */
+.state { text-align: center; padding: 56px 32px; }
+.state .art { width: 84px; height: 84px; border-radius: 50%; background: var(--bg-sunken);
+  display: flex; align-items: center; justify-content: center; margin: 0 auto 22px;
+  color: var(--danger); }
+.state .art i { width: 32px; height: 32px; }
+.state h2 { font-size: 18px; margin-bottom: 10px; }
+.state p { color: var(--text-secondary); max-width: 430px; margin: 0 auto 24px; }
+.state .state-actions { display: flex; gap: 12px; justify-content: center; }
+
+/* ---- avatar menu — implemented ProfileMenu, Figma `profile navbar` (node 1218:5171) ---- */
+.profile-menu { position: relative; display: flex; align-items: center; }
+.profile-trigger { display: flex; align-items: center; gap: 12px; cursor: pointer;
+  color: var(--text-secondary); }
+.profile-panel { position: absolute; top: calc(100% + 8px); right: 0; z-index: 20; width: 238px;
+  display: flex; flex-direction: column; gap: 4px; padding: 8px; border: 1px solid #d9d9d9;
+  border-radius: 6px; background: var(--bg-surface); box-shadow: 0 4px 6px rgba(0,0,0,.09); }
+.panel-account { display: flex; align-items: center; gap: 12px; padding: 6px 8px 12px;
+  border-bottom: 1px solid #d9d9d9; }
+/* Not a menu item — it answers "whose account am I in", so it is never focusable. */
+.panel-account .ava { width: 28px; height: 28px; font-size: 10px; }
+.panel-account .ava i { width: 15px; height: 15px; }
+.panel-email { font-size: 14px; font-weight: 500; color: var(--text-primary);
+  overflow-wrap: anywhere; }
+.panel-degraded { font-size: 13px; color: var(--text-secondary); line-height: 1.35; }
+.panel-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px;
+  font-size: 14px; font-weight: 500; color: var(--text-primary); cursor: pointer; }
+.panel-item:hover { background: var(--accent-soft); }
+.panel-item i { width: 16px; height: 16px; flex: none; color: var(--text-secondary); }
+
+/* ---- comparison strip: a mockup annotation, not a screen element ---- */
+.compare { max-width: 760px; margin-top: 26px; background: var(--bg-surface);
+  border: 1px dashed var(--border-strong); border-radius: var(--radius-lg); padding: 20px 24px; }
+.compare .cap { font-size: 11.5px; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; }
+.compare .pair { display: flex; gap: 40px; }
+.compare .one { display: flex; align-items: center; gap: 12px; }
+.compare .one .t { font-size: 12.5px; color: var(--text-secondary); }
+.compare .one .t b { display: block; color: var(--text-primary); font-size: 13px; }
+
+/* ---- footer ---- */
+.footer { margin: 36px auto 24px; background: var(--bg-surface); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card); padding: 26px 32px; display: flex; align-items: center;
+  justify-content: space-between; color: var(--text-secondary); font-size: 13px; }
+.foot-links { display: flex; gap: 28px; }

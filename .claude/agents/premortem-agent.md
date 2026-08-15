@@ -65,6 +65,6 @@ revert the commit. PASS is silent.
   test asserts a 4xx when the quantity is negative" is.
 - **One incident per failure mode.** Three near-duplicates of one bug is one
   finding, not three.
-- Log milestones to `infrastructure/agent-progress.log` per
+- Log milestones to `infra/agent-progress.log` per
   `.claude/guidelines/agent-logging.md`: START (commit under review), DONE
   (verdict and credible-incident count).

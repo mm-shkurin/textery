@@ -8,10 +8,52 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Textery</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!--
+      The theme, decided BEFORE the first paint.
+
+      This is inline, classic (not `type="module"`), and sits above the stylesheet link Vite
+      injects here at build time — all three on purpose. A module script is deferred by
+      specification, and anything React does runs later still, so either one would let the browser
+      paint a full light page first and repaint it dark: a white flash on every single load, worst
+      on the slow devices least able to hide it. Four lines of blocking script is the price.
+
+      It duplicates `resolveInitialTheme()` from src/shared/theme/theme.ts, which nothing here can
+      import. The duplicate is pinned: theme.test.tsx reads THIS file, extracts THIS script, and
+      executes it against the three cases (no choice, system dark, stored choice beats system), so
+      the two implementations cannot drift apart silently.
+
+      Precedence: stored choice, then the OS, then light. `try` because Safari in private mode
+      throws on localStorage rather than returning null, and an exception here would abort the
+      script and leave <html> with no attribute at all.
+    -->
+    <script>
+      ;(function () {
+        var stored = null
+        try {
+          stored = localStorage.getItem('textery.theme')
+        } catch (e) {
+          stored = null
+        }
+        var theme = stored === 'dark' || stored === 'light' ? stored : null
+        if (theme === null) {
+          theme =
+            window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light'
+        }
+        document.documentElement.setAttribute('data-theme', theme)
+      })()
+    </script>
+    <!-- Inter is served from this origin (src/styles/fonts.css); there is no third-party font
+         request to preconnect to any more. The cyrillic subset is preloaded because it is what
+         every page of this Russian-language app needs first, and a font referenced only from a
+         stylesheet is not discovered until that stylesheet has been parsed. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      href="/fonts/inter-cyrillic.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
     />
   </head>
   <body>

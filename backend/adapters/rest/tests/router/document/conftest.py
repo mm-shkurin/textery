@@ -10,7 +10,7 @@ from error_handling.exception_handlers import (
     validation_exception_handler,
 )
 from router.document import document_router as document_router_module
-from security.current_owner import get_current_owner_id, get_token_service
+from security.current_owner import get_account_existence, get_current_owner_id, get_token_service
 from shared.exceptions import (
     ConflictException,
     InvalidTokenException,
@@ -19,6 +19,20 @@ from shared.exceptions import (
 )
 
 OWNER_ID = uuid4()
+
+
+class _EveryAccountExists:
+    """The `AccountExistence` port for tests that are not about a deleted account.
+
+    Wired everywhere `get_token_service` is, because `get_current_owner_id`
+    resolves both: without it every auth test dies on the composition root's
+    NotImplementedError instead of reaching the header check it is asserting.
+    Says yes unconditionally — a test that needs the "account is gone" branch
+    overrides this with its own double rather than parameterising this one.
+    """
+
+    async def exists(self, account_id) -> bool:  # noqa: ARG002
+        return True
 
 
 @pytest.fixture
@@ -35,6 +49,7 @@ def document_app():
     # reaching the header check. get_current_owner_id itself stays real -- and it
     # never touches the service when the header is missing or malformed, so those
     # tests still exercise the real path.
+    app.dependency_overrides[get_account_existence] = _EveryAccountExists
     app.dependency_overrides[get_token_service] = lambda: _RejectingTokenService()
     return app
 
@@ -44,7 +59,7 @@ class _RejectingTokenService:
     owner dependency instead; tests that need a specific rejection re-override this.
     """
 
-    def read_access_subject(self, access_token):
+    def read_access_subject(self, access_token):  # noqa: ARG002 -- AccountExistence port shape
         raise InvalidTokenException("token rejected by the test double")
 
 
@@ -83,6 +98,11 @@ def get_client(document_app):
 @pytest.fixture
 def save_client(document_app):
     return _client_factory(document_app, "get_save_document_usecase")
+
+
+@pytest.fixture
+def from_generation_client(document_app):
+    return _client_factory(document_app, "get_create_document_from_generation_usecase")
 
 
 @pytest.fixture

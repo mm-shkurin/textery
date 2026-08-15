@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends, Header
 
 from dto.generation.generation_request_dto import GenerationRequestDto
 from dto.generation.generation_response_dto import (
@@ -13,6 +13,7 @@ from generation.document_generator import DocumentGenerator
 from generation.get_generation import GetGeneration
 from generation.list_generations import ListGenerations
 from generation.request_generation import RequestGeneration
+from generation.retry_generation import RetryGeneration
 from security.current_owner import get_current_owner_id
 from shared.exceptions import NotFoundException
 from shared.page import DEFAULT_LIMIT
@@ -33,6 +34,10 @@ def get_generate_document_usecase() -> DocumentGenerator:
 
 
 def get_list_generations_usecase() -> ListGenerations:
+    raise NotImplementedError("wired by the application composition root")
+
+
+def get_retry_generation_usecase() -> RetryGeneration:
     raise NotImplementedError("wired by the application composition root")
 
 
@@ -75,6 +80,37 @@ async def create_generation(
     )
     background_tasks.add_task(generate_document.execute, generation.id, generation.owner_id)
     return GenerationCreatedDto.from_domain(generation)
+
+
+@router.post("/{generation_id}/retry", status_code=201, response_model=GenerationCreatedDto)
+async def retry_generation(
+    generation_id: UUID,
+    background_tasks: BackgroundTasks,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    owner_id: UUID = Depends(get_current_owner_id),
+    usecase: RetryGeneration = Depends(get_retry_generation_usecase),
+    generate_document: DocumentGenerator = Depends(get_generate_document_usecase),
+) -> GenerationCreatedDto:
+    """«Повторить» — re-run a failed generation from its own stored parameters.
+
+    No request body, by design rather than by omission: the source is named by id
+    and every parameter is copied from its row, so there is no `owner_id`,
+    `status` or timestamp for a client to over-bind. The header carries the only
+    client-supplied value, and it is validated in the domain rather than as a
+    `Header(max_length=...)` so a violation answers in this API's
+    `{error_code, message}` shape.
+
+    A replayed key returns the row the first attempt created and starts nothing:
+    the usecase says whether THIS call created the retry, and only a created one
+    is enqueued. Enqueuing on the replay path would run the work twice, which is
+    what the key exists to prevent.
+    """
+    retry, created = await usecase.execute(
+        generation_id=generation_id, owner_id=owner_id, idempotency_key=idempotency_key
+    )
+    if created:
+        background_tasks.add_task(generate_document.execute, retry.id, retry.owner_id)
+    return GenerationCreatedDto.from_domain(retry)
 
 
 @router.get("/{generation_id}", response_model=GenerationDetailDto)

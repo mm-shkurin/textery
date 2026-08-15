@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { ChatWorkspace } from '../ChatWorkspace'
 import type { ComponentProps } from 'react'
-import { DOCUMENT_TYPE_LABELS } from '../../../../shared/documentTypes'
+import { DOCUMENT_TYPE_LABELS } from '../../../../shared/copy/documentTypeCopy'
 
 type WorkspaceProps = ComponentProps<typeof ChatWorkspace>
 

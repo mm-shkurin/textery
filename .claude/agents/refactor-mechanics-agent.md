@@ -58,4 +58,4 @@ If every row is clean, return `## Cluster M candidates: none`.
 ## Progress Logging
 
 Read `.claude/guidelines/agent-logging.md` and append your required
-`refactor-mechanics-agent` milestones to `infrastructure/agent-progress.log`.
+`refactor-mechanics-agent` milestones to `infra/agent-progress.log`.

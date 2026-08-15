@@ -11,6 +11,7 @@ import {
 } from './ManualEditor.autosave.testSupport'
 import { renderCreatedDocument } from './ManualEditor.autosaveRender.testSupport'
 import {
+  EDITED_CONTENT,
   EDITED_PLAIN,
   SAVED_CONTENT,
   SAVED_PLAIN,
@@ -20,13 +21,13 @@ import {
 import {
   expectNoAbandonmentRecorded,
   expectNoSaveOnWire,
+  expectUnsentEditHeldInEditor,
 } from './ManualEditor.autosaveAbandonFixture'
 import {
   SAVE_BUTTON_LABEL,
   dispatchBeforeUnload,
   expectOnlyDirtyBadge,
   expectOnlySavedBadge,
-  expectSavedBadge,
 } from './ManualEditor.saveStatus.testSupport'
 
 vi.mock('../../api/documentApi')
@@ -72,7 +73,7 @@ describe('ManualEditor — no abandonment record when the armed write had nothin
   // ["Pending document save abandoned before it completed"]. hasPendingEditRef is still true because
   // the timer never fired, so the []-scoped cleanup logs over content the server provably holds.
   // RED 2026-07-30, awaiting the H9.4 green that moves the clear site.
-  it.skip('records nothing when the editor unmounts after an edit was reverted to the saved content', async () => {
+  it('records nothing when the editor unmounts after an edit was reverted to the saved content', async () => {
     const { unmount } = await renderCreatedDocument()
 
     armServerConfirmsSavedContent()
@@ -85,27 +86,51 @@ describe('ManualEditor — no abandonment record when the armed write had nothin
     await typeIntoEditor(SAVED_PLAIN)
     await crossDebounceBoundary()
     expectBaselineSaveOnWire()
-    expectSavedBadge()
+    // Exclusively clean, the mirror of the exclusively-dirty assertion after the revert below and of
+    // case (b)'s post-click baseline: a bare expectSavedBadge passes on a document rendering BOTH
+    // branches, which is precisely the shape this case then asserts has switched.
+    expectOnlySavedBadge()
     expect(dispatchBeforeUnload()).toBe(false)
 
-    // Type one more word and take it straight back out, clock frozen inside the debounce window.
+    // Type one more word, clock frozen inside the debounce window. THIS is the genuinely-dirty
+    // instant of the case: the editor holds bytes the server does not, nothing has been sent, and
+    // the browser guard must be armed. It is the non-vacuity gate for the `false` above —
+    // ManualEditor registers the beforeunload listener only while hasUnsavedChanges is true, so a
+    // regression that never arms it satisfies every toBe(false) in this file. Observing true while
+    // the document is really dirty is what makes the earlier false mean "stood down" instead of
+    // "was never there"; observing it AFTER the revert would have pinned a defect as specification
+    // (see the note below).
     await typeIntoEditor(EDITED_PLAIN)
+    // The bytes, not just the guard: this is what makes the revert below a REVERT. Without it, a
+    // typeIntoEditor that silently failed to change the content would leave the closing
+    // `toBe(SAVED_CONTENT)` passing over an editor that never left the saved bytes — the case would
+    // then assert "no record over an untouched document", which is the OTHER twin's subject.
+    expectUnsentEditHeldInEditor(EDITED_CONTENT)
+
+    // ...and take it straight back out, still inside the window.
     await typeIntoEditor(SAVED_PLAIN)
     // Exclusively dirty — the badge must have moved OFF «Сохранено», not merely acquired --dirty
     // alongside it, which is how a green that renders both branches would slip past a bare toHaveClass.
     expectOnlyDirtyBadge()
-    // The non-vacuity gate for the `false` above: ManualEditor registers the beforeunload listener
-    // only while hasUnsavedChanges is true, so a regression that never arms it satisfies every
-    // toBe(false) in this file. Observing true exactly here is what makes the earlier false mean
-    // "stood down" instead of "was never there".
-    expect(dispatchBeforeUnload()).toBe(true)
+    // The guard is not queried HERE — and that does NOT leave the post-revert dirty state unpinned.
+    // ManualEditor holds ONE `hasUnsavedChanges`; useBeforeUnloadGuard arms the guard from it and
+    // ManualEditorSaveStatus renders --dirty from the same value, so the badge call above and
+    // `dispatchBeforeUnload()).toBe(true)` read one bit. That bit is wrong here: the restoring
+    // transaction runs noteEdit -> onDirty, cleared only by save() reaching `isAlreadySaved ->
+    // onSaved`, which an unmount inside the gap never reaches — «Leave site?» over bytes the server
+    // provably holds (premortem CREDIBLE #4 on `ccd830c`; distinct from the `useState(true)` twin on
+    // `264fab2`). Dropping the guard call was right — this case's subject is the abandonment RECORD —
+    // but it did not free the fix, and dropping the badge would not either: the dirty badge is this
+    // case's proof the revert re-armed the deadline. Four UNSKIPPED siblings pin the same bit at this
+    // instant (autosaveDirtyGuardRevertedEdit / ...BackoffRevert / ...TimeoutRevert /
+    // autosaveRevertRepairsDivergence); all five re-spec together. Owed item:
+    // ProductSpecification/stories/05-manual-mode/progress-frontend.md.
     // "A deadline is armed" is deliberately NOT asserted via vi.getTimerCount(): the observed count
     // here is 3, not 1 — every input event arms ProseMirror-internal ticks beside our debounce, so the
-    // global count is a third-party number that would fail for reasons pointing nowhere near this
-    // record. The armed deadline is proven by the record itself: hasPendingEditRef is written in
-    // exactly one place (useAutosave's arm), so a fired assertion below IS the timer's fingerprint.
-    // ...and the armed write has nothing to carry: the editor holds the exact bytes asserted on the
-    // wire above. This, not the dirty flag, is why the record must stay silent.
+    // global count is a third-party number that would fail pointing nowhere near this record. The
+    // armed deadline is proven by the record itself: hasPendingEditRef is written in exactly one place
+    // (useAutosave's arm), so a fired assertion below IS the timer's fingerprint — and the armed write
+    // has nothing to carry: the editor holds the exact bytes asserted on the wire above.
     expect(editorContentHtml()).toBe(SAVED_CONTENT)
     expect(documentApi.saveDocument).toHaveBeenCalledTimes(1)
 
@@ -126,17 +151,20 @@ describe('ManualEditor — no abandonment record when the armed write had nothin
   // RED: expected "error" to not be called at all, but actually been called 1 times — same record,
   // same cause. The button bypasses the scheduler, so nothing clears the flag the keystroke set.
   // RED 2026-07-30, awaiting the H9.4 green that moves the clear site.
-  it.skip('records nothing when a manual save inside the debounce gap already persisted the edit', async () => {
+  it('records nothing when a manual save inside the debounce gap already persisted the edit', async () => {
     const { unmount } = await renderCreatedDocument()
 
     armServerConfirmsSavedContent()
 
     // One edit, deadline armed, nothing sent — genuinely unsent work, and the one moment in this
     // case where the guard SHOULD be armed. Asserting it here is what stops the closing false below
-    // from passing vacuously on a listener that was never registered.
+    // from passing vacuously on a listener that was never registered. Stated through the shared
+    // compound rather than a bare dispatchBeforeUnload: the guard alone reads true on a freshly
+    // created document with nothing typed, so the editor's bytes are what tie the armed guard to
+    // THIS case's edit — the same premise the positive abandonment cases assert.
     await typeIntoEditor(SAVED_PLAIN)
     expectNoSaveOnWire()
-    expect(dispatchBeforeUnload()).toBe(true)
+    expectUnsentEditHeldInEditor()
 
     // Part-way through the window the user clicks Сохранить rather than waiting.
     await act(async () => {

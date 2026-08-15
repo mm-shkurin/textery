@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375">
+<title>Textery — Параметры страницы</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="pages.css">
+</head>
+<body>
+  <!-- Боковая панель десктопа на телефоне становится нижним листом.
+       Все поля и правила те же — отличается только подача. -->
+  <div class="topbar">
+    <i data-lucide="arrow-left"></i>
+    <div class="t">История ИИ</div>
+    <span class="tag">Реферат</span>
+    <i data-lucide="more-vertical"></i>
+  </div>
+
+  <div class="strip">
+    <div class="chip active"><i data-lucide="file-text"></i>Стр. 1</div>
+    <div class="chip"><i data-lucide="file-text"></i>Стр. 2</div>
+    <div class="chip"><i data-lucide="file-text"></i>Стр. 3</div>
+  </div>
+
+  <div class="doc-wrap">
+    <div class="sheet short">
+      <h1>История ИИ</h1>
+      <h3>Введение</h3>
+      <p>Данный реферат посвящён истории искусственного интеллекта. Актуальность темы обусловлена стремительным развитием технологий.</p>
+    </div>
+  </div>
+
+  <div class="overlay"></div>
+  <div class="bottom-sheet">
+    <div class="grabber"></div>
+    <h2>Параметры страницы</h2>
+    <div class="hint">Применяются ко всему документу и к скачиваемым файлам.</div>
+
+    <div class="field">
+      <span class="label">Размер листа</span>
+      <select class="select"><option>A4 — 210 × 297 мм</option><option>A5 — 148 × 210 мм</option><option>Letter — 215,9 × 279,4 мм</option></select>
+    </div>
+
+    <div class="field">
+      <span class="label">Ориентация</span>
+      <select class="select"><option>Книжная</option><option>Альбомная</option></select>
+    </div>
+
+    <div class="field">
+      <span class="label">Поля, мм</span>
+      <div class="margins">
+        <div><span class="sub">Сверху</span><input class="input" value="20"></div>
+        <div><span class="sub">Справа</span><input class="input" value="10"></div>
+        <div><span class="sub">Снизу</span><input class="input" value="20"></div>
+        <div><span class="sub">Слева</span><input class="input" value="30"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="label">Кегль, пт <span class="opt">8–72</span></span>
+      <input class="input" value="14">
+    </div>
+
+    <div class="field">
+      <span class="label">Интерлиньяж <span class="opt">1,0–3,0</span></span>
+      <input class="input" value="1,5">
+    </div>
+
+    <div class="field">
+      <span class="label">Верхний колонтитул <span class="opt">до 200 символов</span></span>
+      <input class="input" placeholder="Например: История ИИ">
+    </div>
+
+    <div class="field">
+      <span class="label">Нижний колонтитул <span class="opt">до 200 символов</span></span>
+      <input class="input" placeholder="Не задан">
+    </div>
+
+    <div class="toggle">Нумеровать страницы<div class="sw"></div></div>
+    <div class="toggle">Не печатать номер на первой<div class="sw"></div></div>
+
+    <div class="sheet-actions">
+      <button class="btn btn-ghost">Сбросить</button>
+      <button class="btn btn-primary">Применить</button>
+    </div>
+    <div class="note">Шрифт документа — Liberation Serif. Выбор шрифта появится позже.</div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

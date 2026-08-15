@@ -2,6 +2,7 @@ import logging
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from middleware.no_store import NO_STORE, is_profile_path
 
 from shared.exceptions import ConflictException, NotFoundException, ValidationException
 
@@ -18,6 +19,10 @@ _ERROR_CODE_STATUS_MAP = {
     "INVALID_REFRESH_TOKEN": 401,
     "UNVERIFIED": 403,
     "UNAUTHORIZED": 401,
+    # projects_list.yaml declares 401 for an owner that cannot be resolved, and
+    # ListProjects.execute refuses one with this code. Without the entry the
+    # default answers 400, telling the client its request was malformed.
+    "UNAUTHENTICATED": 401,
     "INVALID_DOCUMENT_TYPE": 422,
     "INVALID_IDEMPOTENCY_KEY": 422,
     "INVALID_VERSION": 422,
@@ -29,6 +34,12 @@ _ERROR_CODE_STATUS_MAP = {
     # unactionable for a client that has not saved anything yet.
     "GENERATION_NOT_COMPLETED": 409,
     "IDEMPOTENCY_KEY_REUSED": 409,
+    # «Повторить» (generations_retry.yaml). NOT_RETRYABLE is a refusal to start
+    # work on a row in the wrong state; RETRY_LIMIT_REACHED is the per-source
+    # ceiling, which is a rate limit rather than a malformed request and so
+    # answers 429 like the other shed paths.
+    "NOT_RETRYABLE": 409,
+    "RETRY_LIMIT_REACHED": 429,
     "CONVERTED_CONTENT_TOO_LONG": 422,
     # CONTENT_TOO_LONG is absent deliberately: documents_save.yaml specifies 400 for
     # it, which is the default.
@@ -83,4 +94,19 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     return JSONResponse(
         status_code=500,
         content={"error_code": "INTERNAL_ERROR", "message": INTERNAL_ERROR_MESSAGE},
+        headers=_no_store_headers(request),
     )
+
+
+def _no_store_headers(request: Request) -> dict[str, str]:
+    """`Cache-Control: no-store` for the profile routes, on the 500 path too.
+
+    NoStoreMiddleware stamps every other response on these paths, but Starlette
+    builds ServerErrorMiddleware -- which renders this handler -- OUTSIDE the user
+    middleware stack, so a 500 never reaches it. Without this the two routes would
+    satisfy "no-store on every response" for four statuses and quietly miss the
+    fifth. Keyed on the middleware's own predicate so there is one rule, not two.
+    """
+    if is_profile_path(request.url.path):
+        return {"Cache-Control": NO_STORE}
+    return {}

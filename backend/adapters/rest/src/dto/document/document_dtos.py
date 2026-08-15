@@ -50,11 +50,20 @@ class DocumentSummaryDto(BaseModel):
     documents_save.yaml caps content at 200,000 characters, so a 20-item page of
     full documents is a multi-megabyte response for a screen that renders titles.
     The editor fetches the one document it opens via GET /documents/{id}.
+
+    It DOES carry `title`, and that is the fix for a real defect: without it the
+    history list had nothing per-row but the document type and a date, so every
+    доклад rendered as the same word and a user who had generated more than one
+    could not tell which row was the report they wanted to keep editing. The
+    title is already stored (CreateDocumentFromGeneration derives it from the
+    generation's topic) -- it was simply not on this shape. Null for a manual
+    document that has never been titled; the client falls back to the type label.
     """
 
     document_id: str
     document_type: str
     status: str
+    title: str | None = None
     version: int
     created_at: datetime
     updated_at: datetime
@@ -65,6 +74,7 @@ class DocumentSummaryDto(BaseModel):
             document_id=str(document.id),
             document_type=document.document_type,
             status=document.status,
+            title=document.title,
             version=document.version,
             created_at=document.created_at,
             updated_at=document.updated_at,

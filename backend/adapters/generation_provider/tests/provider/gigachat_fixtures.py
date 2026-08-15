@@ -6,11 +6,11 @@ Named _fixtures rather than conftest: these are helpers the tests call, not pyte
 fixtures they request, and a conftest would make them ambient.
 """
 
-import uuid
 from unittest.mock import AsyncMock, MagicMock
 
-from generation.generation import Generation
-from provider.gigachat_provider import CA_BUNDLE_ENV_VAR, CREDENTIALS_ENV_VAR
+from document.document_type import DOKLAD
+from generation.prompt_template import PromptRequest, build_prompt
+from provider.gigachat_provider import CA_BUNDLE_ENV_VAR, COMPLETIONS_URL, CREDENTIALS_ENV_VAR
 
 ACCESS_TOKEN = "tok-abc-123"
 GENERATED_CONTENT = "Готовый доклад про космос."
@@ -56,15 +56,13 @@ def patch_async_client(mocker, post_side_effect):
     return client
 
 
-def build_generation():
-    return Generation.create(
-        owner_id=uuid.uuid4(),
-        topic="Космос",
-        volume_pages=3,
-        requirements=None,
-        extra_wishes=None,
-        document_type="доклад",
-    )
+# What the provider is handed since scenario 2.1: composed text, not an entity.
+# Built by the domain from a real request rather than hand-typed, so it stays the
+# shape production actually sends -- but the provider tests assert only that this
+# exact string is posted back, never what is in it. What goes into a prompt is the
+# domain's claim and is pinned by the prompt goldens; this module's claim is that
+# the transport does not touch it.
+PROMPT = build_prompt(PromptRequest(document_type=DOKLAD, topic="Космос", volume_pages=3))
 
 
 def set_credentials(monkeypatch):
@@ -74,3 +72,22 @@ def set_credentials(monkeypatch):
 
 def posted_urls(client) -> list[str]:
     return [call.args[0] for call in client.post.await_args_list]
+
+
+def posted_completion_messages(client) -> list[dict]:
+    """The `messages` list out of the body the provider actually POSTed.
+
+    Read off the `json=` kwarg of the real call -- not a convenience attribute on
+    the double -- so what is asserted is the payload that would have gone over the
+    wire.
+
+    The call is located **by URL, not by position**. Picking `await_args_list[1]`
+    assumes call 2 is the completion; a provider that refreshed an expired token
+    mid-flight, or reordered its calls, would hand the wrong call's body back and
+    the caller would compare the wrong thing. Requiring exactly one match turns
+    both "no completion was posted at all" and "more than one" into a named
+    failure here rather than a tuple-unpack ValueError at the call site.
+    """
+    calls = [call for call in client.post.await_args_list if call.args[0] == COMPLETIONS_URL]
+    assert len(calls) == 1, f"expected exactly one POST to {COMPLETIONS_URL}, got {len(calls)}"
+    return calls[0].kwargs["json"]["messages"]

@@ -46,8 +46,9 @@ jobs:
       - name: nginx 503 guard
         run: npm run check:ingress
 
-      # Production dependencies only, high and above. See the monorepo workflow for why the two
-      # open moderate react-router advisories are not reachable here and why the floor is `high`.
+      # Production dependencies, at every severity — there is no threshold. Anything npm reports
+      # must be named in scripts/auditExceptions.mjs with a reason and an expiry date, or this
+      # fails. See that file for the one advisory currently accepted.
       - name: Audit production dependencies
         run: npm run audit
 

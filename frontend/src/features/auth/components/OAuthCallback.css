@@ -12,6 +12,9 @@
   margin: 0 auto 24px;
   border-radius: 50%;
   background: conic-gradient(from 0deg, var(--accent), var(--accent-hover), transparent 75%);
+  /* The `#000` below is NOT a colour and must never be tokenised: in a mask, only the alpha
+     channel is read, so it means "opaque here" and any opaque value would do. Swapping it for a
+     theme token would make the ring's SHAPE follow the theme. */
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 0);
   mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 0);
   animation: oauth-callback-spin 0.9s linear infinite;

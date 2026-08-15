@@ -1,7 +1,14 @@
 # Sprint Plan — Лаборатория, Сезон 2026
 
 Source of truth for scoring rules: `.memory-bank/sprint.txt`. This file is the working
-plan derived from it, kept in sync with `ProductSpecification/stories.md`.
+plan derived from it.
+
+> **Зафиксирован 08.07.2026 и с тех пор не сопровождается** (проверено 15.08 по
+> `git log`). Заявленная синхронизация с `ProductSpecification/stories.md` не
+> поддерживалась: истории 10, 12, 13, 16, 17, 18 сюда не попали. Читать как исходный
+> план, не как текущий спринт. Актуальный порядок работ — `stories.md`, что реально
+> сделано — `ProductSpecification/progress-summary.md`. Правила начисления баллов в
+> `sprint.txt` не менялись и остаются в силе.
 
 ## Working copies (2026-07-07)
 

@@ -1,0 +1,22 @@
+# Everything the image does not run. Without this the build context carries the
+# test suite, the caches and — worse — a local `.env`, which would then sit in a
+# layer of the published image.
+.env
+.env.*
+!.env.example
+
+**/tests/
+docs/
+scripts/
+.github/
+
+**/__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+requirements-dev.txt
+AUDIT_LOG.md

@@ -22,9 +22,10 @@
 // have a failed refresh trigger a refresh.
 import { postJson } from '../../../shared/api/httpClient'
 import type { AuthSession } from '../utils/authSession'
+import { API } from '../../../shared/api/endpoints'
 
 export async function refresh(refreshToken: string): Promise<AuthSession> {
-  const body = await postJson<Record<string, unknown>>('/api/v1/auth/refresh', {
+  const body = await postJson<Record<string, unknown>>(API.auth.refresh, {
     refresh_token: refreshToken,
   })
   // The wire is snake_case; the rest of the app sees camelCase, and this is the boundary.

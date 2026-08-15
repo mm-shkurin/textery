@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { register, type RegisterApiError } from '../api/registerApi'
 import { rememberRegistration } from '../utils/registrationHandoff'
-import { useUnsavedGuard } from '../utils/useUnsavedGuard'
+import { UNSAVED_LEAVE_MESSAGE_REGISTER, useUnsavedGuard } from '../utils/useUnsavedGuard'
 import { GENERIC_REGISTER_FAILURE_MESSAGE, isUsableMessage } from '../utils/authMessages'
 import { isConfirmMismatched, isPasswordCompliant } from '../utils/passwordPolicy'
 
@@ -46,7 +46,7 @@ export function useRegisterSubmit() {
   // Whether the confirm field has ever been blurred. Until it has, a password blur must not
   // light up a mismatch against a field the user has not reached yet.
   const confirmTouchedRef = useRef(false)
-  const { markDirty, markClean, confirmLeave } = useUnsavedGuard()
+  const { markDirty, markClean, confirmLeave } = useUnsavedGuard(UNSAVED_LEAVE_MESSAGE_REGISTER)
   const emailInputRef = useRef<HTMLInputElement>(null)
   const passwordInputRef = useRef<HTMLInputElement>(null)
   const confirmInputRef = useRef<HTMLInputElement>(null)

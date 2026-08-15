@@ -7,7 +7,7 @@ from shared.page import DEFAULT_LIMIT, Page
 _LONG_CONTENT = "<p>" + ("x" * 1000) + "</p>"
 
 
-def _document(owner_id) -> Document:
+def _document(owner_id, title: str | None = "Квантовые компьютеры") -> Document:
     stamp = datetime(2026, 7, 17, 12, 0, 0, tzinfo=UTC)
     return Document(
         id=uuid4(),
@@ -15,6 +15,7 @@ def _document(owner_id) -> Document:
         document_type="доклад",
         status="draft",
         content=_LONG_CONTENT,
+        title=title,
         version=3,
         idempotency_key="key-1",
         created_at=stamp,
@@ -42,6 +43,7 @@ class TestListDocuments:
                     "document_id": str(document.id),
                     "document_type": "доклад",
                     "status": "draft",
+                    "title": "Квантовые компьютеры",
                     "version": 3,
                     "created_at": "2026-07-17T12:00:00Z",
                     "updated_at": "2026-07-17T12:00:00Z",
@@ -49,6 +51,51 @@ class TestListDocuments:
             ],
             "next_cursor": "next-anchor",
         }, f"unexpected body {response.json()}"
+
+    async def test_should_carry_the_title_so_two_documents_of_one_type_differ(
+        self, mocker, list_client, owner_id
+    ):
+        """Without the title, every доклад in the list rendered as the same row.
+
+        The client has nothing else per-row that identifies the work: the type is
+        shared by every document of that type, and the timestamp is not what a
+        user recognises their report by. This is the field that makes "open the
+        one I generated yesterday" possible at all, so it is asserted on TWO rows
+        -- a single-row assertion passes on a response that repeats one title.
+        """
+        first = _document(owner_id, title="Квантовые компьютеры")
+        second = _document(owner_id, title="История Рима")
+        usecase = mocker.Mock()
+        usecase.execute = mocker.AsyncMock(
+            return_value=Page(items=[first, second], next_cursor=None)
+        )
+
+        async with list_client(usecase) as client:
+            response = await client.get("/api/v1/documents")
+
+        titles = [item["title"] for item in response.json()["items"]]
+        assert titles == ["Квантовые компьютеры", "История Рима"], f"got {titles}"
+
+    async def test_should_send_a_null_title_for_an_untitled_document(
+        self, mocker, list_client, owner_id
+    ):
+        """A manual document created before titles existed carries none.
+
+        Sent as an explicit null rather than an omitted key: the client falls back
+        to the type label, and it can only do that if the field is there to be
+        read as absent.
+        """
+        usecase = mocker.Mock()
+        usecase.execute = mocker.AsyncMock(
+            return_value=Page(items=[_document(owner_id, title=None)], next_cursor=None)
+        )
+
+        async with list_client(usecase) as client:
+            response = await client.get("/api/v1/documents")
+
+        item = response.json()["items"][0]
+        assert "title" in item, f"title key missing from {item}"
+        assert item["title"] is None, f"got {item['title']!r}"
 
     async def test_should_not_leak_content_into_the_list(self, mocker, list_client, owner_id):
         # documents_save.yaml caps content at 200,000 characters. A 20-item page of

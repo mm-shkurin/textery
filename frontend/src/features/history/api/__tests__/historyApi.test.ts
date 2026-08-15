@@ -39,6 +39,7 @@ describe('historyApi', () => {
     document_id: 'doc-1',
     document_type: 'doklad',
     status: 'draft',
+    title: 'Квантовые компьютеры',
     version: 3,
     created_at: '2026-07-17T10:00:00Z',
     updated_at: '2026-07-17T11:00:00Z',
@@ -64,6 +65,7 @@ describe('historyApi', () => {
           documentId: 'doc-1',
           documentType: 'doklad',
           status: 'draft',
+          title: 'Квантовые компьютеры',
           version: 3,
           createdAt: '2026-07-17T10:00:00Z',
           updatedAt: '2026-07-17T11:00:00Z',
@@ -71,6 +73,18 @@ describe('historyApi', () => {
       ],
       nextCursor: 'cursor-2',
     })
+  })
+
+  // A backend that has not yet deployed the title field sends no key at all. `undefined` would
+  // reach the row and render the string "undefined"; the mapper normalises it to null so the
+  // fallback to the type label is the one code path that handles both absences.
+  it('normalises a missing title to null rather than letting undefined reach the row', async () => {
+    const { title: _title, ...withoutTitle } = DOCUMENT_WIRE
+    stubFetchJson({ items: [withoutTitle], next_cursor: null })
+
+    const page = await listDocuments()
+
+    expect(page.items[0].title).toBeNull()
   })
 
   it('maps every generation wire field onto its camelCase counterpart', async () => {

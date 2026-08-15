@@ -1,0 +1,29 @@
+# The frontend, standing on its own.
+#
+# One service on purpose. This file lives in the repository the frontend is published as, where
+# there is no backend to compose with — its job is "clone, one command, see the app", which is the
+# thing the published repository could not do at all. The full stack (Postgres, the API, this
+# frontend behind one proxy) is composed in the monorepo's `infra/docker-compose.yml`.
+#
+#   docker compose up --build          # http://localhost:8080
+#   FRONTEND_PORT=3000 docker compose up
+#   API_UPSTREAM=http://host.docker.internal:8100 docker compose up
+#
+# The API is not started here, so /api/ has nowhere to go by default: point API_UPSTREAM at a
+# running backend — the monorepo stack, a stand, or a host port — and the SPA works end to end.
+
+services:
+  frontend:
+    build:
+      context: .
+    image: textery-frontend
+    ports:
+      # 8080 rather than 5173: the dev server's port stays free, so the container and `npm run dev`
+      # can run side by side without either one failing to bind.
+      - '${FRONTEND_PORT:-8080}:80'
+    environment:
+      # Where /api/ is forwarded. `host.docker.internal` resolves to the host from inside the
+      # container on Docker Desktop; on Linux add
+      # `extra_hosts: ["host.docker.internal:host-gateway"]` or name a service.
+      API_UPSTREAM: ${API_UPSTREAM:-http://host.docker.internal:8100}
+    restart: unless-stopped

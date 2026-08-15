@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1400">
+<title>Textery — Ручной разрыв страницы</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="pages.css">
+<style>
+  .brk-tip{position:absolute; right:-232px; top:-8px; width:210px; background:var(--bg-surface);
+    border:1px solid var(--border-subtle); border-radius:var(--radius-md);
+    box-shadow:var(--shadow-card); padding:12px 14px; font-size:12px;
+    color:var(--text-secondary);}
+  .brk-tip b{color:var(--text-primary); display:block; margin-bottom:4px; font-size:12.5px;}
+  .brk-tip .del{color:var(--danger); font-weight:600; display:flex; align-items:center;
+    gap:6px; margin-top:9px;}
+  .brk-tip .del i{width:13px; height:13px;}
+</style>
+</head>
+<body>
+  <!-- Разрыв — часть контента, а не индекс страницы: правка ВЫШЕ него
+       перегоняет текст, но сам разрыв остаётся на своём месте в тексте.
+       Маркер выделяем и удаляем как обычный блок. -->
+  <div class="topbar">
+    <div class="logo"><div class="logo-mark"><i data-lucide="sparkles" style="width:16px;height:16px;"></i></div>Textery</div>
+    <div class="header-actions">
+      <button class="icon-btn"><i data-lucide="bell"></i></button>
+      <div class="avatar">АИ</div><i data-lucide="chevron-down"></i>
+    </div>
+  </div>
+
+  <div class="crumbs">
+    <div class="back"><i data-lucide="arrow-left" style="width:15px;height:15px;"></i>Мои проекты</div>
+    <span class="muted">/</span><span class="tag">Реферат</span>
+    <span class="title">История ИИ</span>
+    <div class="right">
+      <button class="btn btn-ghost" style="padding:10px 20px;"><i data-lucide="settings-2"></i>Параметры страницы</button>
+      <button class="btn btn-ghost" style="padding:10px 20px;"><i data-lucide="download"></i>Скачать</button>
+    </div>
+  </div>
+
+  <div class="fmtbar">
+    <i data-lucide="heading-1"></i><i data-lucide="heading-2"></i><div class="sep"></div>
+    <i data-lucide="bold"></i><i data-lucide="italic"></i><i data-lucide="underline"></i>
+    <div class="sep"></div><i data-lucide="list"></i><i data-lucide="align-left"></i>
+    <div class="sep"></div><i data-lucide="separator-horizontal" class="on"></i>
+    <div class="sep"></div><i data-lucide="more-horizontal"></i>
+  </div>
+
+  <div class="layout">
+    <div class="pages">
+      <div class="cap">СТРАНИЦЫ</div>
+      <div class="page-item active">
+        <div class="sq"><i data-lucide="file-text" style="width:15px;height:15px;"></i></div>
+        <div>Страница 1<div class="st">Активная</div></div>
+      </div>
+      <div class="page-item">
+        <div class="sq"><i data-lucide="scissors" style="width:15px;height:15px;"></i></div>
+        <div>Страница 2<div class="st" style="color:var(--text-muted);">С разрыва</div></div>
+      </div>
+      <div class="page-item"><div class="sq"><i data-lucide="file-text" style="width:15px;height:15px;"></i></div>Страница 3</div>
+      <div class="page-item"><div class="sq"><i data-lucide="file-text" style="width:15px;height:15px;"></i></div>Страница 4</div>
+      <div class="add" style="color:var(--accent);"><i data-lucide="separator-horizontal" style="width:15px;height:15px;"></i>Вставить разрыв страницы</div>
+    </div>
+
+    <div class="doc-wrap">
+      <div class="doc">
+        <div class="sheet short">
+          <h1>История ИИ</h1>
+          <h3>Введение</h3>
+          <p>Данный реферат посвящён истории искусственного интеллекта. Целью работы является комплексное исследование ключевых аспектов темы на основе анализа научной литературы.</p>
+          <p>Для достижения поставленной цели были определены следующие задачи: изучить теоретические основы явления, проанализировать состояние проблемы и сформулировать выводы.</p>
+          <div style="position:relative;">
+            <div class="brk selected">Разрыв страницы
+              <div class="brk-tip">
+                <b>Разрыв страницы</b>
+                Всё, что ниже, начинается с новой страницы. Останется на этом месте, даже если текст выше изменится.
+                <div class="del"><i data-lucide="trash-2"></i>Удалить разрыв</div>
+              </div>
+            </div>
+          </div>
+          <div style="height:170px;"></div>
+        </div>
+
+        <div class="sheet a4">
+          <div class="running-head">История ИИ</div>
+          <h3>1. Теоретические основы</h3>
+          <p>Исследуемая область представляет собой сложный многоаспектный феномен, привлекавший внимание учёных на протяжении нескольких десятилетий. Согласно ключевым исследованиям, тема занимает центральное место в современных научных дискуссиях.</p>
+          <p>Среди основополагающих работ следует выделить труды ведущих специалистов, сформировавших концептуальную базу для последующих исследований. Первые формальные постановки задачи относятся к середине двадцатого века.</p>
+          <p>Дальнейшее развитие направления шло неравномерно: периоды интенсивного роста сменялись спадами интереса и сокращением финансирования.</p>
+          <div class="folio">2</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span>415 слов · Все изменения сохранены</span>
+    <span>Страница 1 из 4 · 1 ручной разрыв · A4, книжная</span>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

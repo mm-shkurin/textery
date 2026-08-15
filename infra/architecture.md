@@ -50,7 +50,14 @@ full list with dummy defaults). Container-internal ports are fixed.
 
 - `infra/.env` (gitignored, copy from `infra/.env.example`): `POSTGRES_USER`,
   `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_PORT`, `REDIS_PORT`,
-  `BACKEND_PORT`, `FRONTEND_PORT`.
+  `BACKEND_PORT`, `FRONTEND_PORT`, plus the OAuth contract forwarded into the
+  backend container — `YANDEX_CLIENT_ID`, `YANDEX_CLIENT_SECRET`,
+  `YANDEX_REDIRECT_URI`, `OAUTH_FRONTEND_CALLBACK_URL` (all four declared in
+  `docker-compose.yml` **without** defaults, so an unset value fails at boot naming
+  the variable), and `OAUTH_PROVIDER`, `OAUTH_HANDOFF_CODE_TTL_SECONDS`,
+  `OAUTH_FAKE_AUTHORIZE_URL` (defaulted). The OAuth half was added to this list
+  2026-08-15 — it had been in the compose file since story 16 and in neither
+  `.env.example` nor here.
 - `DATABASE_URL` and `REDIS_URL` are **not** read from `infra/.env` — they're
   composed inside `docker-compose.yml`'s `environment:` block from the Postgres
   vars plus the in-network service DNS names (`postgres`, `redis`), because

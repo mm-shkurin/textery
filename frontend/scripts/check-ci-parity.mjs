@@ -9,7 +9,9 @@
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
-import { bodyProblems, scanPipeline } from './ciPipelineScan.mjs'
+import { bodyProblems, runtimeProblems, scanPipeline } from './ciPipelineScan.mjs'
+import { pinProblems } from './ciActionPins.mjs'
+import { orderProblems, pathsProblems } from './ciTriggers.mjs'
 import { REQUIRED } from './ciRequiredGates.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -43,7 +45,9 @@ function isBelowFloor({ label, path }, { active, neutralized }) {
     // A neutralized step is the more likely of the two and reads as present to anyone skimming the
     // file, so it is named as such rather than reported as absent.
     const dead = neutralized.includes(script)
-    console.error(`  npm run ${script} — ${dead ? 'present but behind `if:`/`continue-on-error`' : 'absent'}: ${why}`)
+    console.error(
+      `  npm run ${script} — ${dead ? 'present but behind `if:`/`continue-on-error`' : 'absent'}: ${why}`,
+    )
   }
   console.error(`  (${path})`)
   return true
@@ -57,7 +61,18 @@ function exitIfBelowFloor(...checked) {
     console.error('CI gate hollowed out in package.json — the workflows still name it:')
     for (const problem of problems) console.error(problem)
   }
-  if (!checked.map((args) => isBelowFloor(...args)).some(Boolean) && problems.length === 0) return
+  // Checked for whichever pipelines are present, including the split-repo shape where there is only
+  // one — a workflow on the wrong runtime is wrong on its own, not only by comparison.
+  const runtime = runtimeProblems(
+    PACKAGE_JSON,
+    checked.map(([{ label }, scan]) => ({ label, node: scan.node })),
+  )
+  if (runtime.length > 0) {
+    console.error('CI runtime does not match the runtime this project declares:')
+    for (const problem of runtime) console.error(problem)
+  }
+  const belowFloor = checked.map((args) => isBelowFloor(...args)).some(Boolean)
+  if (!belowFloor && problems.length === 0 && runtime.length === 0) return
   console.error('Restore the step; do not remove or neutralize a gate to make a pipeline pass.')
   process.exit(1)
 }
@@ -104,4 +119,49 @@ if (standalone.active.join() !== monorepo.active.join()) {
   process.exit(1)
 }
 
-console.log(`CI parity OK — both pipelines run: ${monorepo.active.join(', ')}`)
+// Same scripts, different runtime, is still drift — and the invisible kind, because every gate
+// passes in both files. Compared after the script sets, since a difference in what runs explains a
+// difference in what it runs on, and reporting both at once reads as two unrelated faults.
+if (standalone.node.join() !== monorepo.node.join()) {
+  console.error('CI drift: the two frontend pipelines no longer run on the same Node version.')
+  console.error(`  ${STANDALONE.label} : ${standalone.node.join(', ') || '(unpinned)'}`)
+  console.error(`  ${MONOREPO.label}: ${monorepo.node.join(', ') || '(unpinned)'}`)
+  console.error('Bring the two setup-node steps back in step; an unpinned one drifts on its own.')
+  process.exit(1)
+}
+
+// The third way two pipelines diverge while running the same gate list: the same steps on
+// different tooling. An action only one file uses is not drift - the monorepo shape has a docker
+// job the split repo has no counterpart to - so only shared action names are compared.
+const pins = pinProblems([
+  { label: STANDALONE.label, pins: standalone.pins },
+  { label: MONOREPO.label, pins: monorepo.pins },
+])
+if (pins.length > 0) {
+  console.error('CI drift: the two frontend pipelines pin different action versions.')
+  for (const problem of pins) console.error(problem)
+  process.exit(1)
+}
+
+// Two ways a pipeline can be wrong that have nothing to do with the other one: an order the gates
+// were not meant to run in, and a `paths:` filter that no longer matches the code they gate. The
+// second is the quietest failure here — the workflow never starts, so nothing is red because
+// nothing ran.
+const triggers = [
+  ...orderProblems(
+    { label: STANDALONE.label, order: standalone.order },
+    { label: MONOREPO.label, order: monorepo.order },
+  ),
+  ...pathsProblems(
+    { label: MONOREPO.label, paths: monorepo.paths },
+    { gated: 'frontend/', own: '.github/workflows/frontend-ci.yml' },
+  ),
+]
+if (triggers.length > 0) {
+  console.error('CI drift: the two frontend pipelines do not fire and run the same way.')
+  for (const problem of triggers) console.error(problem)
+  process.exit(1)
+}
+
+const on = standalone.node.length > 0 ? ` on Node ${[...new Set(standalone.node)].join(', ')}` : ''
+console.log(`CI parity OK — both pipelines run${on}: ${monorepo.active.join(', ')}`)

@@ -11,6 +11,7 @@ from auth.account import Account
 from auth.verification_code import VerificationCode
 from model.auth.verification_code_model import VerificationCodeModel
 from statements.arranged import arranged
+from statements.race_timeout import race
 
 RESEND_COOLDOWN = timedelta(seconds=60)
 _RACE_WINDOW_SECONDS = 0.2
@@ -117,11 +118,9 @@ class ResendConcurrencyStatements:
     async def race_two_resends(self) -> None:
         # No broad try/except: the whole point of a lock test is to let a real
         # failure (today's missing method; tomorrow a deadlock) surface directly.
-        self.results = list(
-            await asyncio.gather(
-                self._resend_in_own_session(),
-                self._resend_in_own_session(),
-            )
+        self.results = await race(
+            self._resend_in_own_session(),
+            self._resend_in_own_session(),
         )
         await self._capture_final_state()
 

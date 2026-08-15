@@ -1,0 +1,104 @@
+/* Textery — «Мои проекты» page styles (story 12).
+   Depends on theme.css for tokens, header, buttons. Only page-specific rules here. */
+
+/* ---- toolbar ---- */
+.toolbar-row{display:flex; align-items:center; gap:12px; margin:22px 0 18px;}
+.search{flex:0 0 260px; display:flex; align-items:center; gap:10px; padding:12px 16px;
+  background:var(--bg-surface); border-radius:var(--radius-md); color:var(--text-muted);
+  box-shadow:var(--shadow-card);}
+.search i{width:18px; height:18px;}
+.round-btn{width:46px; height:46px; border-radius:var(--radius-md);
+  background:var(--bg-surface); display:flex; align-items:center; justify-content:center;
+  color:var(--text-secondary); box-shadow:var(--shadow-card); cursor:pointer;}
+.round-btn i{width:18px; height:18px;}
+.toolbar-row .spacer{flex:1;}
+
+/* view switch (grid / list) */
+.view-switch{display:flex; gap:4px; padding:4px; background:var(--bg-surface);
+  border-radius:var(--radius-md); box-shadow:var(--shadow-card);}
+.view-switch div{width:38px; height:38px; border-radius:var(--radius-sm);
+  display:flex; align-items:center; justify-content:center; color:var(--text-secondary);
+  cursor:pointer;}
+.view-switch div.active{background:var(--bg-sunken); color:var(--text-primary);}
+.view-switch i{width:18px; height:18px;}
+
+/* ---- category chips ---- */
+.chips{display:flex; gap:10px; margin-bottom:26px;}
+.chip{display:flex; align-items:center; gap:8px; padding:10px 18px;
+  border-radius:var(--radius-md); background:var(--bg-surface); color:var(--text-secondary);
+  font-weight:500; cursor:pointer;}
+.chip i{width:16px; height:16px;}
+.chip.active{background:var(--accent-soft); color:var(--accent);}
+
+.section-title{font-weight:700; font-size:15px; margin:26px 0 14px;}
+
+/* ---- project card (grid view) ---- */
+.proj-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:22px;}
+.proj{background:var(--bg-surface); border-radius:14px; box-shadow:var(--shadow-card);
+  border:1px solid var(--border-subtle); overflow:hidden; cursor:pointer;}
+.proj .thumb{height:128px; background:var(--bg-sunken); display:flex;
+  align-items:center; justify-content:center;}
+.proj .thumb svg{width:52px; height:64px;}
+.proj .body{padding:14px 16px 18px;}
+.proj .title{font-weight:700; font-size:13.5px; line-height:1.35; margin:10px 0 8px;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+.proj .date{font-size:12px; color:var(--text-muted);}
+
+/* type badge — soft tint per document type */
+.badge{display:inline-block; padding:4px 10px; border-radius:6px; font-size:11.5px;
+  font-weight:600;}
+.b-blue{background:#e8effe; color:#1552f0;}
+.b-orange{background:#fdf0e2; color:#c2701a;}
+.b-green{background:#e4f7e9; color:#1f8a44;}
+.b-purple{background:#efe8fd; color:#7040d8;}
+.b-red{background:#fde9e9; color:#cf3b3b;}
+.b-pink{background:#fde6f6; color:#c62b9c;}
+.b-yellow{background:#fdf4dd; color:#a97c12;}
+.b-teal{background:#dff5f2; color:#12857a;}
+
+/* folder glyph — one <symbol>, tinted per type through currentColor, so adding a
+   document type is a colour token and never another copy of the path data. */
+.f-blue{color:#4a93ef;}   .f-orange{color:#f39a45;}
+.f-green{color:#4cc46f;}  .f-purple{color:#9370ea;}
+.f-red{color:#ef6b6b;}    .f-pink{color:#ef6ccd;}
+.f-yellow{color:#f3c245;} .f-teal{color:#45c7b7;}
+
+/* ---- list view ---- */
+.proj-list{background:var(--bg-surface); border-radius:14px; box-shadow:var(--shadow-card);
+  border:1px solid var(--border-subtle); overflow:hidden;}
+.row{display:grid; grid-template-columns:44px 1fr 150px 150px 40px; gap:16px;
+  align-items:center; padding:16px 20px; border-bottom:1px solid var(--border-subtle);
+  cursor:pointer;}
+.row:last-child{border-bottom:none;}
+.row:hover{background:var(--bg-sunken);}
+.row .glyph svg{width:28px; height:34px; display:block;}
+.row .name{font-weight:600; font-size:13.5px;}
+.row .date{font-size:12.5px; color:var(--text-muted);}
+.row .more{color:var(--text-muted); display:flex; justify-content:flex-end;}
+.row .more i{width:18px; height:18px;}
+.list-head{display:grid; grid-template-columns:44px 1fr 150px 150px 40px; gap:16px;
+  padding:14px 20px; background:var(--bg-sunken); font-size:12px; font-weight:600;
+  color:var(--text-secondary); border-bottom:1px solid var(--border-subtle);}
+
+/* ---- empty / not-found state ---- */
+.empty{background:var(--bg-surface); border-radius:14px; box-shadow:var(--shadow-card);
+  border:1px solid var(--border-subtle); padding:72px 32px; text-align:center;}
+.empty .art{width:88px; height:88px; border-radius:50%; background:var(--bg-sunken);
+  display:flex; align-items:center; justify-content:center; margin:0 auto 22px;
+  color:var(--text-muted);}
+.empty .art i{width:34px; height:34px;}
+.empty h2{font-size:18px; margin-bottom:10px;}
+.empty p{color:var(--text-secondary); max-width:420px; margin:0 auto 24px;}
+.empty .empty-actions{display:flex; gap:12px; justify-content:center;}
+
+/* ---- footer ---- */
+.footer{max-width:1640px; margin:36px auto 24px; background:var(--bg-surface);
+  border-radius:var(--radius-lg); box-shadow:var(--shadow-card); padding:26px 32px;
+  display:flex; align-items:center; justify-content:space-between;
+  color:var(--text-secondary); font-size:13px;}
+.foot-links{display:flex; gap:28px;}
+
+/* ---- disabled document types (drawn, not clickable — see README) ---- */
+.is-locked{opacity:.45; cursor:not-allowed; pointer-events:none; position:relative;}
+.is-locked .lock{position:absolute; top:10px; right:10px; color:var(--text-muted);}
+.is-locked .lock i{width:14px; height:14px;}

@@ -1,0 +1,200 @@
+/* «Мои проекты» — the chrome around the feed: header, sections, list view, loading state and
+   pager. Split from ProjectsPage.css, which owns the grid and the cards, and from
+   ProjectsToolbar.css / ProjectsEmptyState.css, which own the two blocks named after them — all
+   four to keep every file under the 200-line cap. Tokens come from index.css. */
+
+/* The design's `Main` frame: the CONTENT runs x=140…1780 on a 1920 page — a 1640px column, and
+   the 140px either side is what centring a 1640px column leaves over, not padding inside it.
+   Written as `width` rather than `max-width` + padding because the two are not the same thing:
+   the padding version subtracted the gutter FROM the 1640, which started the cards at x=216 and
+   made every column 40px narrower than the frame draws.
+   Below the design's width the column shrinks and keeps a 40px gutter of its own. */
+.projects-screen {
+  width: min(1640px, 100% - 80px);
+  margin: 0 auto;
+  padding: 40px 0 48px;
+}
+
+/* «Назад» sits ABOVE the title, not beside it. As a flex row it was pinned to the top edge of a
+   two-line title block, so it floated level with the heading's cap-height with the subtitle
+   running on below it — a control wearing the title's whitespace. Stacked, it reads as what it
+   is: the way out of this screen, before the screen names itself. Same order as «Мой профиль». */
+.projects-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* 28/600 in frame 527:1863, not 30/700 — the heading is a size and a half above the section
+   titles under it, and it had drifted heavier than either. */
+.projects-heading {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* One quiet line under the title, as in frame 527:1863: 18/400, and 12px below the heading. It
+   shipped at 15px, which read as a caption rather than as the page's own description. */
+.projects-subtitle {
+  margin: 12px 0 0;
+  font-size: 18px;
+  color: var(--text-secondary);
+}
+
+.projects-back {
+  background: none;
+  border: 1px solid var(--projects-edge);
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin-bottom: 16px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.projects-back:hover {
+  background: var(--bg-sunken);
+}
+
+/* 20/600. The spacing is measured off the render rather than guessed: «Недавние проекты» sits
+   ~60px under the toolbar and ~21px above the first row of cards, and the same 21px separates
+   «Все проекты» from the row under it. It shipped with a 4px bottom margin, which pulled the
+   cards up against their own heading. */
+.projects-section-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 44px 0 14px;
+}
+
+.projects-error-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.projects-error-block button {
+  padding: 6px 14px;
+  border: 1px solid var(--projects-edge);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  cursor: pointer;
+}
+
+/* The list view is the same components in one column: switching re-renders data already in
+   hand, so the rows must not need markup of their own. */
+.projects-view-list {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.projects-view-list .project-card {
+  display: flex;
+  align-items: center;
+}
+
+.projects-view-list .project-card-thumb {
+  width: 96px;
+  height: 76px;
+  flex: none;
+}
+
+.projects-view-list .project-card-body {
+  padding: 10px 16px;
+}
+
+.projects-view-list .project-card-title {
+  -webkit-line-clamp: 1;
+}
+
+/* The list view has no way IN on mobile — the toggle is hidden there — but a stored preference
+   from a wide viewport still arrives as `view="list"`. Without this the phone would render the
+   squat 96px-thumbnail rows the design does not have, chosen on a screen the user is no longer
+   looking at. The grid is what mobile shows, whatever the preference says. */
+@media (max-width: 720px) {
+  /* 24/16 in the 360px frame 1141:12494 — the mobile heading is one step down from the desktop's
+     28, and the subtitle one step down from its 18. */
+  .projects-heading {
+    font-size: 24px;
+  }
+
+  .projects-subtitle {
+    font-size: 16px;
+    margin-top: 8px;
+  }
+
+  .projects-section-title {
+    margin-top: 28px;
+  }
+
+  .projects-view-list .project-card {
+    display: block;
+  }
+
+  .projects-view-list .project-card-thumb {
+    width: auto;
+    height: 128px;
+  }
+
+  .projects-view-list .project-card-body {
+    padding: 14px 16px 18px;
+  }
+
+  .projects-view-list .project-card-title {
+    -webkit-line-clamp: 2;
+  }
+}
+
+/* Cards in outline, so the wait reads as "this is loading" rather than as an empty feed. Marked
+   aria-hidden in the markup: an assistive-technology user gets nothing from four empty boxes. */
+.projects-skeleton {
+  display: grid;
+  /* Same track and gap as the real feed, or the wait would lay out four wide boxes that jump to
+     six narrow cards the moment the response lands. */
+  grid-template-columns: repeat(auto-fill, 220px);
+  gap: 20px;
+  padding: 24px 0;
+}
+
+.projects-skeleton-card {
+  /* The card's own height in the frame: 128px of thumbnail plus the body under it. */
+  height: 254px;
+  border-radius: 14px;
+  background: var(--projects-well);
+  animation: projects-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes projects-skeleton-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Motion is decoration here; a user who asked the OS to stop it gets a static placeholder. */
+@media (prefers-reduced-motion: reduce) {
+  .projects-skeleton-card {
+    animation: none;
+  }
+}
+
+.projects-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.projects-pager button {
+  padding: 8px 16px;
+  border: 1px solid var(--projects-edge);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  cursor: pointer;
+}
+
+.projects-pager button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

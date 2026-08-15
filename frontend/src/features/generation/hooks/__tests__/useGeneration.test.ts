@@ -2,6 +2,7 @@ import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useGeneration } from '../useGeneration'
 import * as api from '../../api/generationApi'
+import { fromWire } from '../../../../test/doubles'
 
 vi.mock('../../api/generationApi')
 
@@ -86,7 +87,8 @@ describe('useGeneration', () => {
       status: 'pending',
       content: null,
       topic: 't',
-      volumePages: null as unknown as number,
+      // The wire may omit a page count entirely; the type says it cannot.
+      volumePages: fromWire<number>('null'),
       documentType: 'doklad',
       createdAt: 'now',
     })

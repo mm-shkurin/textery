@@ -1,34 +1,32 @@
-import unicodedata
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from document.document_type import SUPPORTED_DOCUMENT_TYPES, DocumentType
+# Imported for use below AND re-exported: the constants moved to
+# `generation_rules` for file size, not to be renamed, so every existing
+# `from generation.generation import PENDING_STATUS` must keep resolving.
+from generation.generation_rules import (  # noqa: F401
+    COMPLETED_STATUS,
+    EXTRA_WISHES_TOO_LONG_MESSAGE,
+    FAILED_STATUS,
+    IN_PROGRESS_STATUS,
+    INVALID_DOCUMENT_TYPE_MESSAGE,
+    MAX_EXTRA_WISHES_LENGTH,
+    MAX_REQUIREMENTS_LENGTH,
+    MAX_TOPIC_LENGTH,
+    MAX_VOLUME_PAGES,
+    MIN_VOLUME_PAGES,
+    MISSING_TOPIC_MESSAGE,
+    OUT_OF_RANGE_VOLUME_MESSAGE,
+    PENDING_STATUS,
+    REQUIREMENTS_TOO_LONG_MESSAGE,
+    TOPIC_TOO_LONG_MESSAGE,
+)
+from generation.generation_validation import (
+    is_out_of_range_volume,
+    required_topic,
+    validate_document_type,
+)
 from shared.exceptions import ValidationException
-
-MIN_VOLUME_PAGES = 1
-MAX_VOLUME_PAGES = 10
-MAX_TOPIC_LENGTH = 500
-MAX_REQUIREMENTS_LENGTH = 2000
-MAX_EXTRA_WISHES_LENGTH = 2000
-
-# Declared after the bounds and interpolated from them. These messages used to
-# restate each number as a literal five lines from the constant it described, so
-# changing a bound left the message quoting the old one -- the one place the
-# discrepancy is guaranteed to be seen, by the user who just tripped the rule.
-MISSING_TOPIC_MESSAGE = "topic is required"
-OUT_OF_RANGE_VOLUME_MESSAGE = (
-    f"volume_pages must be between {MIN_VOLUME_PAGES} and {MAX_VOLUME_PAGES}"
-)
-TOPIC_TOO_LONG_MESSAGE = f"topic must be at most {MAX_TOPIC_LENGTH} characters"
-REQUIREMENTS_TOO_LONG_MESSAGE = f"requirements must be at most {MAX_REQUIREMENTS_LENGTH} characters"
-EXTRA_WISHES_TOO_LONG_MESSAGE = f"extra_wishes must be at most {MAX_EXTRA_WISHES_LENGTH} characters"
-INVALID_DOCUMENT_TYPE_MESSAGE = (
-    f"document_type must be one of: {', '.join(SUPPORTED_DOCUMENT_TYPES)}"
-)
-PENDING_STATUS = "pending"
-IN_PROGRESS_STATUS = "in_progress"
-COMPLETED_STATUS = "completed"
-FAILED_STATUS = "failed"
 
 
 class Generation:
@@ -46,6 +44,8 @@ class Generation:
         content: str | None = None,
         error_message: str | None = None,
         version: int = 1,
+        idempotency_key: str | None = None,
+        source_generation_id: UUID | None = None,
     ) -> None:
         self.id = id
         # Required positionally, with no default: a default would let a caller that
@@ -62,6 +62,12 @@ class Generation:
         self.document_type = document_type
         self.content = content
         self.error_message = error_message
+        # Both default to None because every generation created before retries
+        # existed has neither. NULL is "no key was ever supplied", which is a
+        # different statement from "the empty key" -- and the one the unique
+        # index needs, since Postgres treats NULLs as distinct.
+        self.idempotency_key = idempotency_key
+        self.source_generation_id = source_generation_id
 
     def mark_in_progress(self) -> None:
         self.status = IN_PROGRESS_STATUS
@@ -91,10 +97,10 @@ class Generation:
         # be honest: a predicate that answers True for None leaves `topic` typed
         # `str | None` afterwards, and `len(topic)` was only safe by reading the
         # two lines together. The validator returns the narrowed value instead.
-        topic = cls._required_topic(topic)
+        topic = required_topic(topic)
         if len(topic) > MAX_TOPIC_LENGTH:
             raise ValidationException(TOPIC_TOO_LONG_MESSAGE)
-        if cls._is_out_of_range_volume(volume_pages):
+        if is_out_of_range_volume(volume_pages):
             raise ValidationException(OUT_OF_RANGE_VOLUME_MESSAGE)
         if requirements is not None and len(requirements) > MAX_REQUIREMENTS_LENGTH:
             raise ValidationException(REQUIREMENTS_TOO_LONG_MESSAGE)
@@ -109,57 +115,37 @@ class Generation:
             volume_pages=volume_pages,
             requirements=requirements,
             extra_wishes=extra_wishes,
-            document_type=cls._validate_document_type(document_type),
+            document_type=validate_document_type(document_type),
         )
 
-    @staticmethod
-    def _validate_document_type(document_type: str) -> str:
-        """Reject anything outside the four supported types.
+    @classmethod
+    def retry_of(cls, source: "Generation", idempotency_key: str) -> "Generation":
+        """A fresh run of `source`, from the parameters stored on that row.
 
-        Load-bearing, not cosmetic: GigaChatProvider interpolates this value
-        straight into the prompt ("{document_type} на тему: {topic}"), so an
-        unvalidated string here reaches the model. The generations table carries
-        no CHECK on the column either -- unlike documents -- which makes this the
-        only guard.
+        Every field is copied from the source row rather than taken from the
+        request, which is what makes the retry endpoint bodiless: there is no
+        `owner_id`, `status`, `id` or timestamp for a client to over-bind,
+        because none of them is read from a client at all.
 
-        DocumentType is reused rather than reimplemented so the allowlist stays
-        one tuple, shared with Document.create and the documents CHECK constraint.
+        The new row starts `pending` with a server-assigned id and creation
+        instant -- never the source's status, and never `completed` carried
+        across, which would produce a finished generation that was never run.
+
+        Validation is deliberately NOT re-run: the source row is already stored,
+        and refusing here would strand a user whose generation was created under
+        an older, wider rule with a button that can never succeed. A document
+        type that is no longer offered is caught downstream by the provider.
         """
-        try:
-            return DocumentType(document_type).value
-        except ValueError as error:
-            # error_code="INVALID_DOCUMENT_TYPE", matching CreateDocument, rather
-            # than the bare VALIDATION_ERROR this factory's other rules raise. It
-            # is the same field under the same allowlist, so a client that learned
-            # to handle the code from /documents handles it here unchanged -- and
-            # the shared handler already maps it to 422.
-            raise ValidationException(
-                error_code="INVALID_DOCUMENT_TYPE",
-                message=INVALID_DOCUMENT_TYPE_MESSAGE,
-            ) from error
-
-    @staticmethod
-    def _is_out_of_range_volume(volume_pages: int | None) -> bool:
-        if volume_pages is None:
-            return True
-        return not (MIN_VOLUME_PAGES <= volume_pages <= MAX_VOLUME_PAGES)
-
-    @staticmethod
-    def _required_topic(topic: str | None) -> str:
-        """The topic, proven present, or `MISSING_TOPIC_MESSAGE`.
-
-        Returns the value rather than answering a yes/no question, so the caller
-        holds a `str` afterwards instead of a `str | None` it has to remember is
-        already checked.
-        """
-        if topic is None:
-            raise ValidationException(MISSING_TOPIC_MESSAGE)
-        # str.strip() only removes Unicode whitespace (category Zs/Zl/Zp), not
-        # format characters like U+200B ZERO WIDTH SPACE (category Cf). Strip
-        # both ordinary whitespace and format characters before checking emptiness.
-        visible_chars = [
-            char for char in topic if not char.isspace() and unicodedata.category(char) != "Cf"
-        ]
-        if not visible_chars:
-            raise ValidationException(MISSING_TOPIC_MESSAGE)
-        return topic
+        return cls(
+            id=uuid4(),
+            owner_id=source.owner_id,
+            status=PENDING_STATUS,
+            created_at=datetime.now(UTC),
+            topic=source.topic,
+            volume_pages=source.volume_pages,
+            requirements=source.requirements,
+            extra_wishes=source.extra_wishes,
+            document_type=source.document_type,
+            idempotency_key=idempotency_key,
+            source_generation_id=source.id,
+        )

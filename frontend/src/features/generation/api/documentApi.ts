@@ -9,6 +9,7 @@
 // visitor can neither generate nor write.
 import { send, VersionConflictError } from '../../../shared/api/send'
 import { WIRE_DOCUMENT_TYPE, type DocumentType } from '../../../shared/documentTypes'
+import { API } from '../../../shared/api/endpoints'
 
 // FAIL-CLOSED CONTRACT (H9.5). `version` is the optimistic-concurrency token every subsequent PUT
 // must carry. `send<DocumentWire>` casts the JSON blindly, so a response whose `version` is absent,
@@ -57,7 +58,7 @@ export async function createDocument(
   idempotencyKey: string,
 ): Promise<CreateDocumentResult> {
   const data = await send<DocumentWire>(
-    '/api/v1/documents',
+    API.documents.collection,
     {
       method: 'POST',
       headers: { 'Idempotency-Key': idempotencyKey },
@@ -93,7 +94,7 @@ async function putDocument(
   version: number,
 ): Promise<SaveDocumentResult> {
   const data = await send<DocumentWire>(
-    `/api/v1/documents/${documentId}`,
+    API.documents.one(documentId),
     {
       method: 'PUT',
       body: { content, version },
@@ -155,7 +156,7 @@ export type ExportFormat = 'pdf' | 'docx'
 // concern in the component, not this transport's.
 export async function exportDocument(documentId: string, format: ExportFormat): Promise<Blob> {
   return await send<Blob>(
-    `/api/v1/documents/${documentId}/export?format=${format}`,
+    API.documents.export(documentId, format),
     { method: 'GET', responseType: 'blob' },
     'Не удалось экспортировать документ',
   )
@@ -163,7 +164,7 @@ export async function exportDocument(documentId: string, format: ExportFormat): 
 
 export async function getDocument(documentId: string): Promise<GetDocumentResult> {
   const data = await send<DocumentWire>(
-    `/api/v1/documents/${documentId}`,
+    API.documents.one(documentId),
     {},
     'Не удалось загрузить документ',
   )

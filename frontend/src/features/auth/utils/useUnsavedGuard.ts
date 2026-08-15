@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
+import { browserWindow, listen } from '../../../shared/lib/browser'
 
 // Scenario 5.8 — protect un-submitted registration input from being silently discarded.
 // Two navigation surfaces need guarding, and they fire on different events:
@@ -8,9 +9,16 @@ import { useCallback, useEffect, useRef } from 'react'
 // `isDirty` lives in a component-scoped ref (never a module global): the ref keeps the
 // beforeunload effect reading the live value without re-subscribing, and the effect returns a
 // cleanup so the listener + dirty state never leak past unmount onto login/verify/workspace.
-export const UNSAVED_LEAVE_MESSAGE = 'Введённые данные не сохранены. Покинуть страницу регистрации?'
+// The message names the SCREEN, so it cannot be a module constant baked into the hook: this hook
+// is reused by the profile screen, and the first version hard-coded «страницу регистрации» —
+// a user editing their display name would have been asked about a registration form they are not
+// on. Each caller supplies its own; the parameter is required rather than defaulted, so adopting
+// the hook on a third screen cannot silently inherit somebody else's wording.
+export const UNSAVED_LEAVE_MESSAGE_REGISTER =
+  'Введённые данные не сохранены. Покинуть страницу регистрации?'
+export const UNSAVED_LEAVE_MESSAGE_PROFILE = 'Имя не сохранено. Покинуть страницу профиля?'
 
-export function useUnsavedGuard() {
+export function useUnsavedGuard(leaveMessage: string) {
   const isDirtyRef = useRef(false)
 
   useEffect(() => {
@@ -21,8 +29,7 @@ export function useUnsavedGuard() {
         event.preventDefault()
       }
     }
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    return listen('beforeunload', handleBeforeUnload)
   }, [])
 
   const markDirty = useCallback(() => {
@@ -37,8 +44,8 @@ export function useUnsavedGuard() {
   // the prompt. Callers prevent the navigation when this returns false.
   const confirmLeave = useCallback(() => {
     if (!isDirtyRef.current) return true
-    return window.confirm(UNSAVED_LEAVE_MESSAGE)
-  }, [])
+    return browserWindow()?.confirm(leaveMessage) ?? true
+  }, [leaveMessage])
 
   return { markDirty, markClean, confirmLeave }
 }

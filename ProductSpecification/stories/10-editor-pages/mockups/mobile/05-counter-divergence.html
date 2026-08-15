@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375">
+<title>Textery — Объём меньше запрошенного</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="pages.css">
+<style>
+  .vbar{height:6px; border-radius:999px; background:#fde68a; overflow:hidden; margin-top:9px;}
+  .vbar > span{display:block; height:100%; width:60%; background:#f59e0b; border-radius:999px;}
+</style>
+</head>
+<body>
+  <!-- Заказано 5 страниц, вышло 3. Только факт — кнопки «дописать» нет,
+       автоматической догенерации в этой истории не существует. -->
+  <div class="topbar">
+    <i data-lucide="arrow-left"></i>
+    <div class="t">Экология городов</div>
+    <span class="tag">Доклад</span>
+    <i data-lucide="more-vertical"></i>
+  </div>
+
+  <div class="fmtbar">
+    <i data-lucide="heading-1"></i><i data-lucide="heading-2"></i>
+    <i data-lucide="bold"></i><i data-lucide="italic"></i><i data-lucide="underline"></i>
+    <i data-lucide="list"></i><i data-lucide="align-left"></i>
+    <i data-lucide="separator-horizontal"></i><i data-lucide="settings-2"></i>
+  </div>
+
+  <div style="padding:14px 16px 0;">
+    <div class="banner warn" style="margin-bottom:0;">
+      <i data-lucide="alert-triangle"></i>
+      <div>
+        <b>3 из запрошенных 5 страниц.</b> Документ получился короче заказанного объёма.
+        <div class="vbar"><span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="strip" style="margin-top:14px;">
+    <div class="chip active"><i data-lucide="file-text"></i>Стр. 1</div>
+    <div class="chip"><i data-lucide="file-text"></i>Стр. 2</div>
+    <div class="chip"><i data-lucide="file-text"></i>Стр. 3</div>
+  </div>
+
+  <div class="doc-wrap">
+    <div class="doc">
+      <div class="sheet a4">
+        <h1>Экология городов</h1>
+        <h3>Введение</h3>
+        <p>Урбанизация последних десятилетий изменила характер антропогенной нагрузки на природные системы. Плотность застройки, транспортные потоки и промышленные объекты формируют специфическую городскую среду.</p>
+        <p>Цель доклада — обобщить современные подходы к оценке экологического состояния городских территорий и выделить наиболее чувствительные показатели.</p>
+        <h3>1. Источники нагрузки</h3>
+        <p>Основными источниками загрязнения остаются автомобильный транспорт, теплоэнергетика и строительная деятельность. Их вклад различается по сезонам и районам.</p>
+      </div>
+      <div class="sheet-gap">— разрыв страницы —</div>
+      <div class="sheet short">
+        <div class="running-head">Экология городов</div>
+        <h3>2. Показатели и методы оценки</h3>
+        <p>Для оценки состояния городской среды применяется набор индикаторов, охватывающих качество воздуха, состояние зелёных насаждений и уровень шума.</p>
+        <div class="folio">2</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span class="warn"><i data-lucide="alert-triangle"></i>3 из 5</span>
+    <span>Стр. 1 из 3 · A4</span>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

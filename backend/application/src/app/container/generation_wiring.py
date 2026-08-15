@@ -11,6 +11,7 @@ from generation.get_generation import GetGeneration
 from generation.list_generations import ListGenerations
 from generation.request_generation import RequestGeneration
 from generation.requeue_stale_generations import RequeueStaleGenerations
+from generation.retry_generation import RetryGeneration
 
 
 class NoOpGenerationQueue:
@@ -28,6 +29,13 @@ class NoOpGenerationQueue:
 @request_scoped
 def create_request_generation(session: AsyncSession) -> RequestGeneration:
     return RequestGeneration(
+        storage=SqlAlchemyGenerationStorage(session), queue=NoOpGenerationQueue()
+    )
+
+
+@request_scoped
+def create_retry_generation(session: AsyncSession) -> RetryGeneration:
+    return RetryGeneration(
         storage=SqlAlchemyGenerationStorage(session), queue=NoOpGenerationQueue()
     )
 

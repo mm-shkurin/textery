@@ -6,12 +6,12 @@ Universal workflow, module mapping, report format, and remediation: see `.claude
 
 For `usecase` or `domain`:
 ```bash
-cd backend && pytest --cov={module}/src --cov-report=xml:coverage.xml --cov-report=html:htmlcov {module}/tests/
+cd backend && pytest --cov={module}/src --cov-branch --cov-report=xml:coverage.xml --cov-report=html:htmlcov {module}/tests/
 ```
 
 For adapter modules:
 ```bash
-cd backend && pytest --cov=adapters/{adapter}/src --cov-report=xml:coverage.xml --cov-report=html:htmlcov adapters/{adapter}/tests/
+cd backend && pytest --cov=adapters/{adapter}/src --cov-branch --cov-report=xml:coverage.xml --cov-report=html:htmlcov adapters/{adapter}/tests/
 ```
 
 ## Report locations
@@ -35,13 +35,15 @@ cd backend && python -m coverage report --show-missing | grep -v "100%" | grep -
 ## Focus filter — touched files
 
 ```bash
-git diff HEAD --name-only -- 'backend/*/src/' 'backend/adapters/*/src/' | grep -v 'tests/' | sed 's/.*\///' | sed 's/\.py//'
+# NOTE: the trailing `*` is required. A pathspec ending in `/` matches no blobs,
+# so the filter silently returns nothing and focus mode analyses an empty set.
+git diff HEAD --name-only -- 'backend/*/src/*' 'backend/adapters/*/src/*' | grep -v 'tests/' | sed 's/.*\///' | sed 's/\.py//'
 ```
 
 ## Multi-module grouping
 
 ```bash
-git diff HEAD --name-only -- 'backend/*/src/' 'backend/adapters/*/src/' | grep -v 'tests/' | sed -n 's|backend/adapters/\([^/]*\)/.*|\1|p; s|backend/\([^/]*\)/src/.*|\1|p' | sort -u
+git diff HEAD --name-only -- 'backend/*/src/*' 'backend/adapters/*/src/*' | grep -v 'tests/' | sed -n 's|backend/adapters/\([^/]*\)/.*|\1|p; s|backend/\([^/]*\)/src/.*|\1|p' | sort -u
 ```
 
 ## Extract uncovered lines from XML

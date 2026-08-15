@@ -47,7 +47,11 @@ export function useAutosave(
     hasPendingEdit.current = true
     timerRef.current = setTimeout(() => {
       timerRef.current = null
-      hasPendingEdit.current = false
+      // The flag is NOT cleared here. A fired timer means the save was HANDED OVER, not that it
+      // happened: `save()` returns at once when there is no document to write to, and clearing on
+      // the handover made that case — the one where the work is most thoroughly lost — read as an
+      // untouched editor at unmount. `save()` clears it once it has something that will write the
+      // edit, or has established there is nothing left to write.
       // `save()` REJECTS on terminal failure so an awaiting caller (ExportControl on a dirty
       // export) can skip shipping a stale file. The debounce fires it unattended, so the rejection
       // has to be swallowed HERE or it surfaces as an unhandled rejection — the banner and the

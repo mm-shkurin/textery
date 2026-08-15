@@ -6,14 +6,6 @@ from document.document_repository import DocumentRepository
 from document.export_format import ExportFormat
 from document.rendered_export import RenderedExport
 
-# Media type per target format, keyed by the enum so a new format (docx, Sc 2.2)
-# is a one-line addition here rather than a branch. An unmapped format would
-# KeyError loudly rather than silently serving the wrong Content-Type.
-_MEDIA_TYPE: dict[ExportFormat, str] = {
-    ExportFormat.PDF: "application/pdf",
-    ExportFormat.DOCX: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-}
-
 
 class ExportDocument:
     """Render one of the caller's own documents to PDF/DOCX."""
@@ -36,13 +28,10 @@ class ExportDocument:
         document = await self.document_repository.find_by_id_and_owner(document_id, owner_id)
         if document is None:
             return None
-        # Resolve the media type before rendering so an unmapped format fails fast
-        # rather than wasting a render and then KeyError-ing into a 500.
-        media_type = _MEDIA_TYPE[export_format]
         content = self.document_renderer.render(document.content, export_format)
         return RenderedExport(
             content=content,
-            media_type=media_type,
+            export_format=export_format,
             filename=self._derive_filename(document, export_format),
         )
 

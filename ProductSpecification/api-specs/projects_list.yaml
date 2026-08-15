@@ -1,0 +1,208 @@
+openapi: 3.0.3
+info:
+  title: List Projects
+  version: 1.0.0
+
+paths:
+  /api/v1/projects:
+    get:
+      summary: The caller's own feed — documents plus generations that never became one.
+      description: >
+        Scoped to the Bearer token's account: `owner_id` is a query predicate, never a
+        parameter. Offset-paginated, not keyset — `updated_at`, `title` and
+        `document_type` are all mutable, and a keyset anchor must be immutable, so the
+        four sort orders this screen needs cannot be served by a cursor. The cost is
+        that a row created or edited between two page requests shifts later rows: the
+        client must dedupe on the `(kind, id)` pair when appending, and must not assume
+        page-to-page disjointness.
+
+
+        A generation appears only when no `Document` links to it. Every other
+        generation is represented by its document, so the feed never shows one piece of
+        work twice.
+
+
+        Responses are per-account and must not be stored by a shared cache
+        (`Cache-Control: no-store`).
+      operationId: listProjects
+      tags:
+        - projects
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: >
+            1-based page number, 1..1000. Exact decimal integer; `2.5`, `1e3`, `+1` are
+            400. The bounds are documented here but enforced in the domain, not as
+            `Query(ge=…, le=…)` — a framework-level constraint answers in Pydantic's
+            envelope, and this project's 400s are `{error_code, message}`. Same reason
+            `list_generations` keeps `limit` out of the signature.
+          schema: {type: integer, default: 1}
+        - name: limit
+          in: query
+          required: false
+          description: 1..100, bounded in the domain for the same reason as `page`.
+          schema: {type: integer, default: 20}
+        - name: sort
+          in: query
+          required: false
+          description: >
+            Server-side allowlist mapped to columns — never interpolated into SQL. An
+            unrecognized value is 400, never a silent fallback to the default.
+            Per-kind key mapping: `created_*` and `updated_*` use the column of the same
+            name on both tables; `title_asc` uses `documents.title` and
+            `generations.topic`, with null/blank titles last; `type_asc` uses
+            `document_type`, which both tables carry as NOT NULL.
+            Every order is made total by a `(kind, id)` tiebreak.
+          schema:
+            type: string
+            enum: [created_desc, created_asc, updated_desc, title_asc, type_asc]
+            default: created_desc
+        - name: q
+          in: query
+          required: false
+          description: >
+            Case-insensitive substring match over document title, generation topic and
+            document content. Compared under an explicit collation and NFC-normalized on
+            both sides, so the result does not depend on the database's ambient locale.
+            `%`, `_` and `\` are escaped and match literally. Whitespace-only behaves as
+            no search. Bounded at 200 Unicode code points — not bytes.
+
+
+            Implemented as `ILIKE '%…%'` with no full-text index: a sequential scan of
+            the caller's rows. Deliberate scope trade, recorded as debt; see
+            `stories/12-my-projects/12_MyProjects_Notes.md`.
+
+
+            The 200 bound is code points and is enforced in the domain — OpenAPI's
+            `maxLength` counts UTF-16 units, which disagrees on astral-plane input at
+            exactly the boundary the tests assert.
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of the caller's feed.
+          headers:
+            Cache-Control:
+              schema: {type: string}
+              description: Always `no-store` — the body is account-specific.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectListResponse'
+        '400':
+          description: >-
+            INVALID_PAGE (non-integer, <1, or >1000), INVALID_LIMIT (outside 1..100),
+            INVALID_SORT (not in the allowlist), INVALID_QUERY (over 200 code points).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+        '401':
+          description: >-
+            Missing, malformed, expired, or non-access token — and also the case where
+            token validation or owner resolution cannot complete. The request fails
+            closed; it is never served as an unscoped or empty-but-200 feed.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+        '429':
+          description: >-
+            SEARCH_BUSY — per-account concurrency cap on searching requests. The content
+            scan is unindexed, so one client cannot be allowed to hold several of them
+            at once; a browser debounce is a UI affordance and does not bound this.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+        '503':
+          description: >-
+            QUERY_TIMEOUT — the statement exceeded the endpoint's 3s deadline (set below
+            the gateway read timeout, so the client is never told 504 while the scan runs
+            on unattended). Generic body with a correlation id; the underlying error is
+            logged under that id.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+        '500':
+          description: Internal server error
+
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error_code: {type: string}
+        message: {type: string}
+        correlation_id:
+          type: string
+          description: Present on 5xx. The only internal handle in the body — no SQL, no stack frame.
+    ProjectListResponse:
+      type: object
+      required: [items, page, limit, total]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/ProjectItem'}
+        page: {type: integer}
+        limit: {type: integer}
+        total:
+          type: integer
+          description: >
+            Count of the caller's rows matching `q`, over the same deduplicated
+            projection as `items` and read in the same snapshot. Over a **static** set,
+            summing `items` across every page equals this number exactly. Over a live
+            set it does not, and cannot: that is the offset trade named in the endpoint
+            description, and the reason the client dedupes on `(kind, id)`.
+    ProjectItem:
+      type: object
+      required: [kind, id, document_type, status, retryable, created_at, updated_at, preview]
+      properties:
+        kind:
+          type: string
+          enum: [document, generation]
+          description: >
+            Source discriminator only. It never encodes status, so a row's identity
+            cannot change when story 1 adds a generation status.
+        id:
+          type: string
+          format: uuid
+          description: >
+            Unique within its kind, not across kinds — `documents` and `generations` are
+            separate id spaces. The item key, the sort tiebreak and the client's dedupe
+            key are all the `(kind, id)` pair.
+        title:
+          type: string
+          nullable: true
+          description: Document title, or the generation's topic. Null/blank sorts last under title_asc.
+        preview:
+          type: string
+          description: >
+            Plain text, at most 200 Unicode code points, trimmed back rather than
+            splitting a grapheme cluster. Read as a bounded prefix in SQL, so the bytes
+            a page reads do not grow with stored document size. Server-derived only;
+            HTML in the stored content is stripped, as is markup in `title`/`topic`.
+        document_type: {type: string, description: доклад | эссе | сочинение | реферат}
+        status:
+          type: string
+          enum: [draft, ready, pending, in_progress, completed, failed, recovering, unknown]
+          description: >
+            Documents report their document status. Generations report `pending`,
+            `in_progress`, `failed`, `completed` (the orphan case — completed but no
+            document was ever made from it, which is the row this feed exists to
+            rescue), or `recovering` (non-terminal past the stale threshold; the sweep
+            is re-running it). A status this contract does not know fails closed to
+            `unknown` — never mapped onto a displayed one — and emits a log signal
+            carrying the id and the unrecognized value. Always present: an implementation
+            that omitted the field on the unknown branch would satisfy a looser schema
+            while doing exactly what the fail-closed rule forbids.
+        retryable:
+          type: boolean
+          description: >
+            True only for a `failed` generation that has not reached the per-source retry
+            ceiling. A pending/in_progress/recovering row is not retryable: the stale
+            sweep requeues it, and offering a retry there would duplicate work that is
+            still running. Always present — an absent key is not `false`.
+        created_at: {type: string, format: date-time, description: UTC ISO-8601 with explicit offset.}
+        updated_at: {type: string, format: date-time, description: UTC ISO-8601 with explicit offset.}

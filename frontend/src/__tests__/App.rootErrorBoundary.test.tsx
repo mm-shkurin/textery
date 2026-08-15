@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import App from '../app/App'
+import { App } from '../app/App'
 
 // LoginForm is the stand-in for "any non-editor route": auth, landing and history all render
 // outside DocumentGenerationFlow's boundary, so before the root boundary existed a throw in any

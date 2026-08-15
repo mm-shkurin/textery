@@ -26,7 +26,6 @@ from statements.resend_statements import ResendStatements
 # 200-line cap; re-imported here so pytest discovers them as conftest fixtures.
 from frontend_generation_fixtures import (  # noqa: F401
     chat_workspace_statements,
-    mode_modal_statements,
     manual_editor_statements,
     manual_editor_line_break_statements,
     manual_editor_save_payload_statements,
@@ -65,9 +64,18 @@ HANDOFF_CODE_TTL_ENV_VAR = "OAUTH_HANDOFF_CODE_TTL_SECONDS"
 PROVIDER_SECRET_ENV_VAR = "YANDEX_CLIENT_SECRET"
 MAX_TESTABLE_TTL_SECONDS = 10
 
-# Manual-editor Statements fixtures live in their own plugin module to keep this
-# root conftest under the 200-line file cap.
-pytest_plugins = ("statements.frontend.generation.manual_editor_fixtures",)
+# Every fixture module that exists only to keep this file under the 200-line cap is
+# registered HERE, as a plugin, rather than re-imported name by name below. This is the
+# root conftest, so `pytest_plugins` is permitted; a plugin entry costs one line where
+# the equivalent `from ... import (...)` cost up to seven, and the name list could drift
+# from the module it mirrored.
+pytest_plugins = (
+    "statements.frontend.generation.manual_editor_fixtures",
+    "project_feed_fixtures",
+    "profile_fixtures",
+    "profile_frontend_fixtures",
+    "document_page_settings_fixtures",
+)
 
 
 @pytest_asyncio.fixture
@@ -187,6 +195,3 @@ def verify_code_page_statements():
 @pytest.fixture
 def responsive_statements():
     return ResponsiveStatements()
-
-
-

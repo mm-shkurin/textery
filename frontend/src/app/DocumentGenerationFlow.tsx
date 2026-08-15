@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
-import { DOCUMENT_TYPE_LABELS } from '../shared/documentTypes'
-import { HistoryPage } from '../features/history/components/HistoryPage'
+import { DOCUMENT_TYPE_LABELS } from '../shared/copy/documentTypeCopy'
+import { ProjectsPage } from '../features/projects/components/ProjectsPage'
 import { LandingPage } from '../features/landing/components/LandingPage'
 import { ChatWorkspace } from '../features/generation/components/ChatWorkspace'
 import { ErrorBoundary } from '../shared/components/ErrorBoundary'
@@ -57,8 +57,20 @@ export function DocumentGenerationFlow() {
 
   // Below the isAuthenticated gate on purpose: history is owner-scoped by construction (both
   // endpoints 401 without a token), so it never renders for a signed-out visitor.
+  // «Мои проекты» (story 12) replaces the earlier «Мои работы» list at this step rather than
+  // sitting beside it: both list the same rows, and two screens answering the same question is
+  // how one of them silently rots. `HistoryPage` and its hook stay in the tree — the deprecated
+  // `GET /documents`/`GET /generations` endpoints they read still work, and removing the screen
+  // is a separate decision from replacing its entry point.
   if (step === 'history') {
-    return <HistoryPage onOpenDocument={flow.openDocumentFromHistory} onBack={flow.backToLanding} />
+    return (
+      <ProjectsPage
+        onOpenDocument={flow.openDocumentFromHistory}
+        onCreateProject={flow.startFlow}
+        onBack={flow.backToLanding}
+        onLogoutClick={flow.handleLogout}
+      />
+    )
   }
 
   if (step === 'form' && documentType && mode) {
@@ -105,7 +117,18 @@ export function DocumentGenerationFlow() {
               documentTypeLabel={documentTypeLabel}
               onBack={flow.backFromEditor}
               existingDocumentId={flow.openDocumentId ?? undefined}
-              generationId={flow.generation.generationId ?? undefined}
+              // The two ids are MUTUALLY EXCLUSIVE, and the editor resolves the collision the
+              // wrong way round: `fromGeneration` wins, so `useDocumentInit` returns early and
+              // the GET for the document the user actually clicked never fires. Passing both
+              // would open the previous generation's document over the chosen one.
+              //
+              // The collision is reachable: `openHistory` does not reset the generation, so a
+              // completed run is still in flow state while history is on screen. Decided here,
+              // at the seam that knows which path opened the editor, rather than left to
+              // whichever init hook happens to run first.
+              generationId={
+                flow.openDocumentId ? undefined : (flow.generation.generationId ?? undefined)
+              }
             />
           </Suspense>
         </ErrorBoundary>

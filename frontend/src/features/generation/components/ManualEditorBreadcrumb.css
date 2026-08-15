@@ -69,3 +69,34 @@
     margin-bottom: 16px;
   }
 }
+
+@media (max-width: 480px) {
+  /* "← Назад" is the ONLY way out of the editor — it carries no header actions — and at 13px
+     with zero padding it is a ~55×16px target. Padded to the 44px minimum and given a negative
+     inline margin so it still lines up with the text below it rather than sitting indented. */
+  .me-breadcrumb-back {
+    min-height: 44px;
+    padding: 0 8px;
+    margin-left: -8px;
+  }
+
+  /* nowrap on the BLOCK is what makes this row overflow at 375px: the chips carry an icon, a
+     server-owned type label ('сочинение' is already 10 characters) and, on the history path, a
+     second "Ручной режим" pill. Relaxing it to normal lets the line break BETWEEN the pills,
+     while each `.me-breadcrumb-chip` keeps its own nowrap so no pill is ever split down the
+     middle.
+
+     Deliberately NOT flex here. The chips block is read by an acceptance assertion as one
+     string ("Доклад · Ручной режим", manual_editor_statements.EXPECTED_DOKLAD_BREADCRUMB), and
+     flex strips the whitespace around the ` · ` separator's own inline box — the layout would
+     be fine and the asserted text would quietly lose its spaces. Inline-block flow keeps the
+     text identical to the desktop rendering. */
+  .me-breadcrumb-chips {
+    white-space: normal;
+    line-height: 2;
+  }
+
+  .me-breadcrumb-chip {
+    padding: 5px 12px;
+  }
+}

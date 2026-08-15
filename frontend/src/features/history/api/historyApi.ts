@@ -10,6 +10,7 @@
 //   ?limit=0 and ?limit=999                -> 400   (bounds enforced; 20 is the server default)
 //   no token                               -> 401 {"error_code":"UNAUTHORIZED"}
 import { send } from '../../../shared/api/send'
+import { API } from '../../../shared/api/endpoints'
 
 // One page of either list. `nextCursor === null` means the end — not an error, and not an empty
 // page: the last page carries items AND a null cursor, so paging must stop on the cursor, never
@@ -30,6 +31,9 @@ export interface DocumentSummary {
   documentId: string
   documentType: string
   status: string
+  // What the row is actually called. Null for a manual document created before titles existed,
+  // which is why every consumer must fall back to the type label rather than render an empty row.
+  title: string | null
   version: number
   createdAt: string
   updatedAt: string
@@ -39,6 +43,7 @@ interface DocumentSummaryWire {
   document_id: string
   document_type: string
   status: string
+  title: string | null
   version: number
   created_at: string
   updated_at: string
@@ -77,7 +82,7 @@ function pagePath(base: string, limit: number, cursor?: string): string {
 
 export async function listDocuments(limit = 20, cursor?: string): Promise<Page<DocumentSummary>> {
   const data = await send<PageWire<DocumentSummaryWire>>(
-    pagePath('/api/v1/documents', limit, cursor),
+    pagePath(API.documents.collection, limit, cursor),
     {},
     'Не удалось загрузить документы',
   )
@@ -86,6 +91,9 @@ export async function listDocuments(limit = 20, cursor?: string): Promise<Page<D
       documentId: item.document_id,
       documentType: item.document_type,
       status: item.status,
+      // `?? null` rather than a bare read: a backend that has not yet deployed the title field
+      // sends no key at all, and `undefined` would reach the row and render "undefined".
+      title: item.title ?? null,
       version: item.version,
       createdAt: item.created_at,
       updatedAt: item.updated_at,
@@ -99,7 +107,7 @@ export async function listGenerations(
   cursor?: string,
 ): Promise<Page<GenerationSummary>> {
   const data = await send<PageWire<GenerationSummaryWire>>(
-    pagePath('/api/v1/generations', limit, cursor),
+    pagePath(API.generations.collection, limit, cursor),
     {},
     'Не удалось загрузить генерации',
   )

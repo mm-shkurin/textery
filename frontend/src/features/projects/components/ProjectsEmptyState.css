@@ -1,0 +1,52 @@
+/* The two empty states, drawn from frames 527:1863 (desktop) and 1141:12494 (mobile). Split out of
+   ProjectsScreen.css, which is near the 200-line cap. Tokens from index.css. */
+
+/* Centred in a block tall enough that the illustration sits roughly where the first row of cards
+   would have been — the design puts it mid-page, not tucked under the section title. */
+.projects-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 380px;
+  padding: 40px 0;
+  text-align: center;
+}
+
+.projects-empty-art {
+  width: 88px;
+  height: auto;
+  margin-bottom: 14px;
+}
+
+.projects-empty-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.projects-empty-hint {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* `.projects-create-button` (ProjectsToolbar.css) carries the fill; only the spacing below it is
+   this block's business. */
+.projects-empty .projects-create-button {
+  margin-top: 18px;
+}
+
+/* The search arm has no illustration — a drawing of an empty inbox would be about the account, and
+   this state is about the query. It keeps a plain secondary control. */
+.projects-empty-secondary {
+  margin-top: 10px;
+  padding: 9px 18px;
+  border: 1px solid var(--projects-edge);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  font: inherit;
+  cursor: pointer;
+}

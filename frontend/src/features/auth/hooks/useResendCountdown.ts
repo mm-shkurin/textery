@@ -45,11 +45,19 @@ export function useResendCountdown(initialSeconds = RESEND_COUNTDOWN_SECONDS): R
     [deadline, now],
   )
 
+  // Keyed on the DEADLINE, not on the seconds remaining. Depending on `secondsLeft` tore the
+  // interval down and rebuilt it on every tick — sixty timers per countdown, each one a chance for
+  // the teardown and the next schedule to interleave differently. One timer per deadline, stopped
+  // by the tick that reaches it.
   useEffect(() => {
-    if (secondsLeft <= 0) return
-    const timer = setInterval(() => setNow(Date.now()), SECOND_MS)
+    if (deadline <= Date.now()) return
+    const timer = setInterval(() => {
+      const current = Date.now()
+      setNow(current)
+      if (current >= deadline) clearInterval(timer)
+    }, SECOND_MS)
     return () => clearInterval(timer)
-  }, [secondsLeft])
+  }, [deadline])
 
   return useMemo(
     () => ({

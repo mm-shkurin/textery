@@ -91,7 +91,7 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid rgba(17, 18, 20, 0.35);
+  border: 2px solid var(--border-swatch);
   border-top-color: var(--btn-primary-fg);
   animation: me-spin 0.7s linear infinite;
 }
@@ -132,5 +132,45 @@
      the save action is the one control in this toolbar that loses work when mis-tapped. */
   .me-save-btn {
     min-height: 44px;
+  }
+}
+
+/* Phones, matching ManualEditor.css's 480 block. The 768 rules above make the toolbar wrap;
+   these make what it wraps into tappable. */
+@media (max-width: 480px) {
+  /* 34px is a mouse target. Formatting is applied to a selection the user is holding with a
+     thumb, so a mis-tap here costs them the selection as well as the click. 40px + a 4px gap
+     still fits eight buttons across 375px, so the toolbar gains rows rather than a scrollbar. */
+  .me-toolbar-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .me-toolbar {
+    gap: 4px;
+    padding: 8px;
+  }
+
+  /* The dividers separate groups on one long desktop row. Once the row is three wrapped rows
+     they land in arbitrary places — a vertical rule mid-row that groups nothing — and each one
+     spends 17px of a width that has none to spare. The grouping they encode is not lost: the
+     wrap itself is now the visual break. */
+  .me-toolbar-divider {
+    display: none;
+  }
+
+  /* The status block is already full-width from the 768 block. Wrapping it too keeps a long
+     failure message ("Не удалось сохранить…") from squeezing Сохранить down to an ellipsis:
+     the message takes the row and the button drops beneath it, still full-size. */
+  .me-toolbar-status {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Full-width because it is the last control before the user leaves the page, and a thumb
+     reaching the bottom-right corner of a phone is the least reliable reach on the screen. */
+  .me-save-btn {
+    flex: 1;
+    justify-content: center;
   }
 }
