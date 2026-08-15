@@ -1,0 +1,105 @@
+openapi: 3.0.3
+info:
+  title: Read Own Avatar
+  version: 1.0.0
+
+paths:
+  /api/v1/auth/me/avatar:
+    get:
+      summary: The caller's avatar bytes, served as the type they were proven to be.
+      description: >
+        Written after the fact (2026-08-15): the route shipped in story 13 without a
+        contract file. This spec describes the code as it stands
+        (`avatar_router.py`, `dto/auth/avatar_response.py`).
+
+
+        The body is an image, not JSON, so the route declares no `response_model`.
+        **The headers are the contract here** — every one of them is load-bearing,
+        which is why they live in `avatar_response` and not inline in the route.
+
+
+        The image is fetched by an authenticated request, not by an `<img src>`: the
+        browser cannot attach a Bearer token to a plain image load, so the client
+        fetches the bytes and renders them from an object URL.
+      operationId: getOwnAvatar
+      tags:
+        - auth
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The stored bytes, unchanged — never decoded, re-encoded, resized or stripped.
+          headers:
+            Content-Type:
+              schema: {type: string, enum: [image/png, image/jpeg, image/webp, application/octet-stream]}
+              description: >-
+                The type proven from the bytes at upload time. Re-checked against the
+                allowlist on the way out, and **not** redundant: the stored value
+                outlives the code that wrote it, so a row from an older build, a
+                restored dump or a hand-edited record would otherwise choose the
+                `Content-Type` this origin answers with — which is the whole mechanism
+                behind serving an uploaded file as something executable. Anything
+                unrecognised is served as `application/octet-stream`.
+            X-Content-Type-Options:
+              schema: {type: string}
+              description: >-
+                Always `nosniff`. Without it a browser may ignore the declared type,
+                sniff the content, and decide a file we call an image is something it
+                should execute.
+            Cache-Control:
+              schema: {type: string}
+              description: >-
+                Always `private, no-cache`. `private` — the image belongs to one
+                account and the path is identical for every caller, so a shared cache
+                must never reuse it. `no-cache` — the client MAY store it but must
+                revalidate, so a replaced avatar is picked up instead of shown stale
+                until some TTL expires.
+            ETag:
+              schema: {type: string}
+              description: >-
+                Derived from the update instant at microsecond precision, not from the
+                bytes — hashing the image would mean reading all of it to answer a
+                revalidation, while the timestamp changes exactly when the resource
+                does. **Omitted entirely** when the instant is missing, rather than
+                emitted as a constant: a stable ETag over changing bytes is worse than
+                no ETag at all.
+          content:
+            image/png:
+              schema: {type: string, format: binary}
+            image/jpeg:
+              schema: {type: string, format: binary}
+            image/webp:
+              schema: {type: string, format: binary}
+        '401':
+          description: UNAUTHORIZED. Same auth boundary as every other `/me` route — see `auth_me_get.yaml`.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '404':
+          description: >-
+            NOT_FOUND — the account has no avatar. Rendered by the shared handler in
+            the canonical envelope. Never 403, and never a 200 with an empty body:
+            an empty 200 is indistinguishable from a broken image to a client.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '500':
+          description: INTERNAL_ERROR with the fixed generic message.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token from POST /api/v1/auth/login.
+  schemas:
+    Error:
+      type: object
+      required: [error_code, message]
+      properties:
+        error_code: {type: string}
+        message: {type: string}
