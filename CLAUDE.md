@@ -16,9 +16,12 @@ All backend modules live under `backend/`. Never place them in the project root.
 |--------|-------------|--------------|
 | `backend/domain` | Entities, value objects, exceptions | None (code generation only) |
 | `backend/usecase` | Application services, port interfaces | domain |
-| `backend/adapters/rest` | Web controllers, auth | usecase |
-| `backend/adapters/db` | Database repositories, migrations | usecase |
-| `backend/adapters/email` | Mail integration | usecase |
+| `backend/adapters/rest` | Web controllers, request/response DTOs, error envelope, middleware | usecase |
+| `backend/adapters/db` | SQLAlchemy repositories, models, Alembic migrations | usecase |
+| `backend/adapters/security` | Password hashing, JWT tokens, HTML sanitization | usecase |
+| `backend/adapters/generation_provider` | GigaChat HTTP client (generation engine) | usecase |
+| `backend/adapters/oauth_provider` | Yandex ID / VK ID OAuth clients | usecase |
+| `backend/adapters/rendering` | PDF / DOCX document rendering | usecase |
 | `backend/application` | Entry point, wiring | all modules |
 | `acceptance` | Black-box API tests (top-level) | None (HTTP + Selenium) |
 
