@@ -59,9 +59,16 @@ function pairs() {
   return out
 }
 
+// LF everywhere, on both sides of every comparison. Node does no newline translation,
+// so on a Windows checkout (source CRLF, committed copy LF) `--check` called all 20
+// files stale while every byte of content matched — a real staleness signal nobody
+// could see in the noise. Normalizing here, not in git config, keeps the script correct
+// whatever the developer's `core.autocrlf` says.
+const asLf = (text) => text.replace(/\r\n/g, '\n')
+
 const rendered = ({ source }) =>
-  banner(relative(join(FRONTEND_ROOT, '..'), source).split('\\').join('/')) +
-  readFileSync(source, 'utf8')
+  asLf(banner(relative(join(FRONTEND_ROOT, '..'), source).split('\\').join('/')) +
+  readFileSync(source, 'utf8'))
 
 function main(checkOnly) {
   if (!existsSync(SOURCE_ROOT)) {
@@ -74,7 +81,7 @@ function main(checkOnly) {
     return 1
   }
   const stale = all.filter(
-    (pair) => !existsSync(pair.target) || readFileSync(pair.target, 'utf8') !== rendered(pair),
+    (pair) => !existsSync(pair.target) || asLf(readFileSync(pair.target, 'utf8')) !== rendered(pair),
   )
   if (checkOnly) {
     if (stale.length > 0) {
@@ -87,9 +94,18 @@ function main(checkOnly) {
     console.log(`${all.length} test-case files are in sync.`)
     return 0
   }
-  // Full rebuild: a story renamed or a suite deleted upstream must not leave an orphan here — a
-  // test case the jury reads and the team no longer maintains.
-  if (existsSync(TARGET_ROOT)) rmSync(TARGET_ROOT, { recursive: true })
+  // Full rebuild of the GENERATED part: a story renamed or a suite deleted upstream must not
+  // leave an orphan here — a test case the jury reads and the team no longer maintains.
+  //
+  // Per-story directories only. Wiping TARGET_ROOT also took the hand-written
+  // docs/testing/README.md with it — the reader's entry point into these files, tracked in git,
+  // and not reproducible from any source this script has. Same defect fixed on the backend side
+  // (2026-08-15).
+  if (existsSync(TARGET_ROOT)) {
+    for (const entry of readdirSync(TARGET_ROOT, { withFileTypes: true })) {
+      if (entry.isDirectory()) rmSync(join(TARGET_ROOT, entry.name), { recursive: true })
+    }
+  }
   for (const pair of all) {
     mkdirSync(dirname(pair.target), { recursive: true })
     writeFileSync(pair.target, rendered(pair), 'utf8')

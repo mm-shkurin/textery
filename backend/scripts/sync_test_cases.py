@@ -89,10 +89,18 @@ def main(check_only: bool) -> int:
         return 0
 
     if TARGET_ROOT.exists():
-        # Full rebuild: a story renamed or a suite deleted upstream must not leave
-        # an orphan here, which would be a test case the jury reads and the team
-        # no longer maintains.
-        shutil.rmtree(TARGET_ROOT)
+        # Full rebuild of the GENERATED part: a story renamed or a suite deleted
+        # upstream must not leave an orphan here, which would be a test case the
+        # jury reads and the team no longer maintains.
+        #
+        # Per-story directories only. `rmtree(TARGET_ROOT)` also took the
+        # hand-written `docs/testing/README.md` with it -- the reader's entry point
+        # into these files, tracked in git, and not reproducible from any source
+        # this script has. Running the documented command deleted it silently
+        # (caught 2026-08-15).
+        for story_dir in TARGET_ROOT.iterdir():
+            if story_dir.is_dir():
+                shutil.rmtree(story_dir)
     for source, target in pairs:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(_rendered(source), encoding="utf-8")
