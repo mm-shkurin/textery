@@ -91,6 +91,13 @@ contexts.
 
 ## Deploy notes
 
+**The live public deploy is https://mmshkurin.ru.** Recorded here and in the root
+`README.md` and nowhere else — it was in no file at all until 2026-08-15, which
+matters because the season rules zero a sprint for a link that is missing or down.
+There is no IaC describing that host yet (known-debt #3: no cloud provider chosen,
+deploy is manual on an existing server), so this line is a pointer, not a source
+the deploy is driven from.
+
 This compose file is usable as-is for a single-host deploy (`docker compose
 -f infra/docker-compose.yml up -d --build`), given a populated `infra/.env`
 and `backend/.env` on that host. Before exposing it publicly:
