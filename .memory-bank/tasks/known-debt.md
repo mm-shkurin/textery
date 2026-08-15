@@ -3,6 +3,16 @@
 Tracked deliberately instead of fixed now — each entry says what's deferred, why, and
 where it must resurface.
 
+**Живой файл.** Остальная `.memory-bank/` заморожена (см. `index.md`), этот — нет:
+читать и дополнять.
+
+**Нумерация.** Номера присваиваются по мере появления и **не переиспользуются**;
+физический порядок ниже местами не совпадает с числовым (закрытый #12 стоит после #15 —
+он был дописан позже, при закрытии). Номер — это идентификатор для ссылок вида
+«known-debt #13», а не позиция в файле. До 15.08.2026 номер **14** носили две разные
+записи; вторая (поиск по `ILIKE`) стала **#16**, ссылки на «#14» означают
+Editor↔PDF.
+
 ## 1. CSS / browser-testing profile — CLOSED 2026-07-07
 `ProductSpecification/technology.md` now has `css: plain-css` (matches the already-
 regenerated mockups' hand-written CSS) and `browser-testing: selenium` (tech-lead
@@ -175,7 +185,13 @@ slice BEFORE building further on it, and reconcile progress.md checkboxes agains
 the hand-built code actually does (mark `[S]` with this note where covered-by-slice,
 or write the missing red test). Do not treat the green checkboxes as truth until then.
 
-## 11. Generation provider is GigaChat (Sber), not OpenRouter as technology.md states
+## 11. Generation provider is GigaChat (Sber), not OpenRouter — CLOSED in the docs 2026-07-20
+<!-- Заголовок до 15.08.2026 гласил «...not OpenRouter as technology.md states». -->
+**`technology.md`, `BriefProductDescription.md` и `ExpectedLoad.md` исправлены** ещё
+20.07 (`_project_audit/06_REAUDIT_2026-07-20.md`); story-спеки и тест-спеки истории 1
+получили корректирующую врезку 15.08. Ниже — исходная запись решения, как она была
+сделана 2026-07-09.
+
 Decided 2026-07-09: the neural provider for generation is **GigaChat** (Sber) using its
 own credentials, NOT OpenRouter/`openai` SDK as `technology.md` ("Generation engine:
 OpenRouter ... via `openai` Python SDK") and known-debt #3/#5 currently say. GigaChat
@@ -266,7 +282,10 @@ page, not worth a dedicated red/green cycle right now. Deprioritized, not delete
 **Resurfaces:** whenever scenario 1.1 (landing hero) gets touched again — drop the
 subheading assertion (or restore the subheading in the component, if it's coming back)
 and get the Selenium suite green again.
-## 14. Project search uses `ILIKE` over `content`, not a Postgres full-text index
+## 16. Project search uses `ILIKE` over `content`, not a Postgres full-text index
+<!-- Записана 2026-08-01 как «#14», что было вторым #14 в файле. Перенумерована в #16
+     15.08.2026 (аудит документации). Ссылок на неё по старому номеру не найдено. -->
+
 Decided 2026-08-01 during story 12's `/interview`. The «Мои проекты» search box must match
 on title, generation topic, **and document body**. Body search is implemented as
 `ILIKE '%term%'` over `content` — up to 200,000 characters per document, no index.
