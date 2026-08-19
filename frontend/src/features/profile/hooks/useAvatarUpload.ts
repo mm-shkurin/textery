@@ -15,6 +15,9 @@ export function useAvatarUpload() {
   const [busy, setBusy] = useState(false)
   const [rejection, setRejection] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
+  // How many avatar writes have landed — the confirmation toast keys off it, the same way the
+  // name form's does.
+  const [savedCount, setSavedCount] = useState(0)
   // Synchronous, unlike `busy`: two clicks in one tick both read the state React has not
   // re-rendered yet, and the account would get two uploads for one choice.
   const busyRef = useRef(false)
@@ -30,6 +33,9 @@ export function useAvatarUpload() {
     setFailed(false)
     try {
       await action()
+      // Counted only on the path that actually wrote: the design's «Изменения сохранены» alert
+      // fires «после загрузки/удаления фото», not after a refused file.
+      setSavedCount((count) => count + 1)
       retryRef.current = null
     } catch (error) {
       if (error instanceof AvatarRejectedError) {
@@ -82,5 +88,5 @@ export function useAvatarUpload() {
     if (action !== null) await run(action)
   }
 
-  return { busy, rejection, failed, upload, remove, retry }
+  return { busy, rejection, failed, savedCount, upload, remove, retry }
 }

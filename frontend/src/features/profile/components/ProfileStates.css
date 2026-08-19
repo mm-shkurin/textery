@@ -83,3 +83,30 @@
     flex-direction: column;
   }
 }
+
+/* The «Изменения сохранены» alert — node 1227:9790: a 637x64 black pill at a 16px radius, its
+   16/600 label in white, floating against the bottom of the viewport rather than sitting inside
+   the card that produced it. `fixed`, because the card can be scrolled off screen while the save
+   is still in flight and a confirmation the user cannot see is not a confirmation.
+
+   Black in BOTH themes, like the landing's footer slab: it is a notification surface rather than
+   a page surface, and a white pill on a dark page would be the brightest thing on it. */
+.profile-saved-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  width: min(637px, calc(100% - 32px));
+  min-height: 64px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--neutral-950);
+  color: var(--text-inverse);
+  font-size: 16px;
+  line-height: 19px;
+  font-weight: 600;
+  box-shadow: var(--shadow-dropdown);
+}

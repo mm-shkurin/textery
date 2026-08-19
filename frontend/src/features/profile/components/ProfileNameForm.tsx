@@ -2,6 +2,7 @@ import type { Profile } from '../../../shared/identity/api/profileApi'
 import { NAME_MAX_CODE_POINTS } from '../../../shared/identity/nameValue'
 import { SAVE_FAILED_MESSAGE } from '../utils/profileCopy'
 import { useProfileNameForm } from '../hooks/useProfileNameForm'
+import { ProfileSavedToast } from './ProfileSavedToast'
 
 interface ProfileNameFormProps {
   profile: Profile
@@ -100,6 +101,11 @@ export function ProfileNameForm({ profile, markDirty, markClean }: ProfileNameFo
           {form.saving ? 'Сохранение…' : 'Сохранить'}
         </button>
       </div>
+
+      {/* The save's own confirmation. Before this the form answered a successful PATCH by
+          removing the «Сохраняем имя…» line, which is indistinguishable from nothing having
+          happened. */}
+      <ProfileSavedToast saveCount={form.savedCount} />
     </form>
   )
 }

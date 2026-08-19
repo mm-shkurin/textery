@@ -3,6 +3,7 @@ import type { Profile } from '../../../shared/identity/api/profileApi'
 import { ALLOWED_AVATAR_TYPES } from '../utils/avatarImage'
 import { AVATAR_FAILED_MESSAGE } from '../utils/profileCopy'
 import { useAvatarUpload } from '../hooks/useAvatarUpload'
+import { ProfileSavedToast } from './ProfileSavedToast'
 
 interface ProfileAvatarFieldProps {
   profile: Profile
@@ -26,6 +27,9 @@ export function ProfileAvatarField({ profile }: ProfileAvatarFieldProps) {
 
   return (
     <div className="profile-avatar-field">
+      {/* Same confirmation as the name form's, for the same reason: an upload that finishes by
+          re-rendering one 64px disc is a change a user can easily miss. */}
+      <ProfileSavedToast saveCount={avatar.savedCount} />
       <div className="profile-avatar-buttons">
         {/* «Удалить фото» first, matching the mockup's order — and it exists only when there is a
             picture to delete, so the row does not offer to remove nothing. */}

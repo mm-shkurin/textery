@@ -1,6 +1,11 @@
 import { useEffect, useRef } from 'react'
 import type { Profile } from '../../../shared/identity/api/profileApi'
-import { DELETION_CONFIRM_TITLE, DELETION_PASSWORD_HINT, deletionEmailHint } from '../utils/profileCopy'
+import {
+  DELETION_CONFIRM_TITLE,
+  DELETION_CONSEQUENCE,
+  DELETION_PASSWORD_HINT,
+  deletionEmailHint,
+} from '../utils/profileCopy'
 import type { AccountDeletion } from '../hooks/useAccountDeletion'
 import { listenToDocument } from '../../../shared/lib/browser'
 
@@ -46,6 +51,10 @@ export function ProfileDeleteModal({ profile, deletion }: ProfileDeleteModalProp
         <h3 className="profile-modal-title" id="profile-delete-title">
           {DELETION_CONFIRM_TITLE}
         </h3>
+        {/* What is lost, before what to type. The frame puts this sentence under the title and
+            the product had only ever shown the instruction — so the irreversible half of an
+            irreversible dialog was the half missing from it. */}
+        <p className="profile-modal-warning">{DELETION_CONSEQUENCE}</p>
         <p className="profile-modal-hint">
           {deletion.kind === 'password' ? DELETION_PASSWORD_HINT : deletionEmailHint(profile.email)}
         </p>

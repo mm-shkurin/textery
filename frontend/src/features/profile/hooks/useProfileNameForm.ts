@@ -26,6 +26,9 @@ export function useProfileNameForm(profile: Profile, tracking: DirtyTracking) {
   const [saving, setSaving] = useState(false)
   const [fieldError, setFieldError] = useState<string | null>(null)
   const [saveFailed, setSaveFailed] = useState(false)
+  // How many saves have LANDED. The confirmation toast keys off it: a counter re-fires for a
+  // second save where a boolean, already true, would show nothing.
+  const [savedCount, setSavedCount] = useState(0)
   // A ref, not the `saving` state: two clicks in the same tick both read the state React has not
   // re-rendered yet, and the user gets two PATCHes for one save. Double-click and double-Enter
   // are the same event twice, and the guard has to be synchronous to see the second one.
@@ -73,6 +76,7 @@ export function useProfileNameForm(profile: Profile, tracking: DirtyTracking) {
       // No second GET: the PATCH response IS the profile, and it carries the normalized value.
       applyProfile(updated)
       setValue(updated.name ?? '')
+      setSavedCount((count) => count + 1)
       tracking.markClean()
     } catch (error) {
       if (error instanceof NameRejectedError) {
@@ -95,6 +99,7 @@ export function useProfileNameForm(profile: Profile, tracking: DirtyTracking) {
     canSave,
     changed,
     saving,
+    savedCount,
     error: fieldError ?? localError,
     saveFailed,
     change,
