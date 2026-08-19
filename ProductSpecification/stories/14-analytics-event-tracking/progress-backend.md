@@ -39,8 +39,21 @@ Infrastructure follow, in that order.
   added to `_DELIBERATELY_PUBLIC` with a reason; and value objects must guard
   `isinstance(raw, str)` first, since `uuid.UUID` raises `AttributeError`/`TypeError`
   on a non-string, not `ValueError`.
-- [~] red-usecase
-- [ ] green-usecase
+- [x] red-usecase — `usecase/tests/analytics/test_record_analytics_event_usecase.py` with
+  `AnalyticsIngestStatements` and a functional `FakeAnalyticsEventRepository`. Predicted
+  and actual failure matched on the first run: bare `NotImplementedError` at
+  `usecase/src/analytics/record_analytics_event.py:45`, raised in the when-phase before
+  any assertion, so the fake is never handed an event. A domain field gate kept only the
+  five fields a 1.1 line actually reads — `payload`, `degraded`, `id` and `sequence` are
+  deliberately NOT on the entity (each has its own later scenario; `sequence` is
+  database-assigned and the ADR forbids modelling it at all). `/test-review` replaced
+  three per-field assertions with one structural comparison against a fully-constructed
+  expected event: strictly stronger (it now also pins `user_id` and `event_time` inside
+  the "event is recorded" claim) and it makes the field gate self-enforcing — the next
+  field added to the entity turns 1.1 red until it states what an anonymous visit stores.
+  Note for green: `execute` needs no validation branch yet (nothing in 1.1 asserts a
+  refusal) and must NOT branch on `SaveOutcome` — only `STORED` is a path at 1.1.
+- [~] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
 
