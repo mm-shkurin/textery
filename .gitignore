@@ -60,3 +60,4 @@ bash.exe.stackdump
 .design/cache/imagefills.json
 .design/cache/all-frames.txt
 .design/cache/coords.txt
+.design/cache/_*
