@@ -25,8 +25,21 @@ Infrastructure follow, in that order.
   "nothing was written"), and selected `occurrence_key` back to be asserted.
   Note for green: the probe names `occurrence_key` in its SELECT list, so a migration that
   picks a different column name fails as `UndefinedColumnError` naming it.
-- [~] design
-- [ ] red-usecase
+- [x] design — hazard scan ran all 8 catalogue groups (46 GAPs). Shape folded per
+  `decisions/analytics-ingest-shape-decision.md`: `save_new -> SaveOutcome` with the
+  collapse decided by `ON CONFLICT` rather than a prior read; a PARTIAL unique index
+  `WHERE occurrence_key IS NOT NULL` (a plain UNIQUE is void on NULLs, and
+  `NULLS NOT DISTINCT` would collapse every server-emitted event for one visitor into a
+  single row); a `degraded` column; `sequence` narrowed to a stable sort key, explicitly
+  not a gap-safe cursor; `user_id` FK `ON DELETE SET NULL` with analytics rows
+  deliberately surviving account erasure. Limiter, payload-validation and failure-log
+  slots land as SHAPE only — each guard lands with its own scenario (3.x, 6.x, Infra 1.1).
+  Note for green: `POST /api/v1/analytics/events` turns
+  `application/tests/test_every_route_states_whether_it_needs_a_token.py` red until it is
+  added to `_DELIBERATELY_PUBLIC` with a reason; and value objects must guard
+  `isinstance(raw, str)` first, since `uuid.UUID` raises `AttributeError`/`TypeError`
+  on a non-string, not `ValueError`.
+- [~] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
 - [ ] green-acceptance
