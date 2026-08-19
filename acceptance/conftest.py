@@ -75,6 +75,7 @@ pytest_plugins = (
     "profile_fixtures",
     "profile_frontend_fixtures",
     "document_page_settings_fixtures",
+    "analytics_fixtures",
 )
 
 

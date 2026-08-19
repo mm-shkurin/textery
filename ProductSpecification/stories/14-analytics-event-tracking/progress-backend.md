@@ -15,8 +15,17 @@ Infrastructure follow, in that order.
 ## Backend Scenarios (01_API_Tests.md)
 
 ### 1.1 An event with no token is recorded as anonymous
-- [~] red-acceptance
-- [ ] design
+- [x] red-acceptance — acceptance suite `tests/backend/analytics/`, with the story's first
+  direct Postgres probe (`clients/database/analytics_event_probe.py`, precedent approved
+  2026-08-19 — see `progress.md` § Decisions). Predicted and actual failure matched on the
+  first run: `UndefinedTableError: relation "analytics_events" does not exist`, raised in
+  the given-phase before any assertion. `/test-review` re-scoped the row count to the
+  visitor rather than to `visitor_id AND occurrence_key` (the narrow scope could only ever
+  return rows that already carried the expected key, so a rewritten or NULL key read as
+  "nothing was written"), and selected `occurrence_key` back to be asserted.
+  Note for green: the probe names `occurrence_key` in its SELECT list, so a migration that
+  picks a different column name fails as `UndefinedColumnError` naming it.
+- [~] design
 - [ ] red-usecase
 - [ ] green-usecase
 - [ ] adapters-discovery
