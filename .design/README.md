@@ -1,23 +1,27 @@
 # Design alignment — Figma protocol
 
-Branch: `design/figma-alignment`. Worktree per session.
+Branch: `design/figma-alignment`. The work itself was done in one session; the per-session
+prompts that used to live in `prompts/` are gone with it. What stays is the rate-limit
+protocol below and the offline cache, which is what any future design pass should read.
 
 ## Rate limits (READ FIRST)
 
 Figma REST API returns **429** on burst usage; repeated 429 can lock the token
 for up to **36 hours**. Therefore:
 
-1. **Exactly one session (session 0) talks to Figma.** It runs `.design/fetch-figma.sh`
-   once, writes `.design/cache/`, and downloads every asset. It commits the cache.
-2. **All other sessions are offline.** They read `.design/cache/` only.
-   They must never run `curl` against `api.figma.com`, never re-fetch a node,
-   never re-export an image. If something is missing from the cache, they stop
-   and report the missing node id — session 0 batches it into a single follow-up call.
+1. **One fetch, then offline.** `.design/fetch-figma.sh` pulls the whole document once into
+   `.design/cache/file.json` (48 MB, gitignored) and exports assets in batches. Everything
+   after that — `prune.py`, `tokens.py`, `show.py` — reads the cache and never the network.
+2. **Read the cache, not the API.** `.design/cache/nodes/*.json` holds fifteen pruned frames
+   and `MANIFEST.md` maps them to node ids. Needing one more frame means adding it to
+   `TARGETS` in `prune.py` and re-running that script — no request involved. Only a frame
+   the document itself does not contain needs a fetch.
 3. **No polling, no retry loops.** A 429 is not retried automatically. On 429 stop
    immediately and wait — retrying is what turns a soft limit into a 36h ban.
-4. Budget for session 0: **1** `GET /v1/files/:key` call, **1** `GET /v1/files/:key/images`
-   call, and **at most 3** `GET /v1/images/:key?ids=...` calls (ids batched, comma-separated,
-   up to ~50 ids per call). That is the whole budget. Nothing else.
+4. Budget: **1** `GET /v1/files/:key` call, **1** `GET /v1/files/:key/images` call, and **at
+   most 3** `GET /v1/images/:key?ids=...` calls (ids batched, up to ~50 per call). The 2026-08-19
+   run spent all of it and still took a 429 on the last export — see MANIFEST for what that
+   left missing.
 
 ## Token
 
