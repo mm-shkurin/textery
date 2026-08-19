@@ -1,14 +1,10 @@
-/* The top bar's action buttons — Figma `Component 20` (secondary) and `Component 19` (primary),
-   read off the landing frame's header row (node 90:880, y=48.3..133.5).
+/* The top bar's action buttons.
 
-   The design draws them 85.2 tall: «Войти» 133.3 wide around a 50.1 wide label, «Создать
-   генерацию» 333.3 around 205.3. Those are FRAME units, and this file's frames are drawn at
-   1.3333x — so the button is 64 CSS px, its label 15px, and its air 31px either side on the
-   secondary against 48px on the primary. The asymmetry between the two is the design's and is
-   written out rather than shared.
-
-   Divided, not raw: taking 85.2 as CSS px put an 85px control in a bar that is 75px tall, which
-   is how the bar came to read as oversized on a laptop. The bar next door divides the same way.
+   Measured off the bars the product's own screens place — `Buttons/Main` and `Buttons/Secondary`
+   inside node 1134:12269 — not off the 1.3333x-drawn UI-kit component the landing header was read
+   from. Both are 43 tall with a 12px radius, 12/32 padding and a 16/600 label, and they are the
+   same two buttons the profile and generation screens use inside their cards. Reading the kit for
+   one screen and the frames for the others is what left the same control at three sizes.
 
    Class names are kept because three landing actions (Войти / Мои работы / Выйти) already use
    them. Sizes step down below the design's own width together with the bar around them. */
@@ -16,13 +12,13 @@
 .btn-ghost,
 .btn-light {
   border: none;
-  /* 10 in the frame. */
-  border-radius: 8px;
+  border-radius: 12px;
   font-family: inherit;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 16px;
+  line-height: 19px;
+  font-weight: 600;
   cursor: pointer;
-  height: 52px;
+  height: 43px;
 }
 
 /* `Component 20` — the secondary action: white fill, black label.
@@ -33,7 +29,7 @@
 .btn-ghost {
   background: var(--bg-surface);
   color: var(--text-primary);
-  padding: 0 26px;
+  padding: 0 32px;
 }
 
 .btn-ghost:hover {
@@ -46,7 +42,7 @@
 .btn-light {
   background: var(--accent);
   color: var(--text-inverse);
-  padding: 0 40px;
+  padding: 0 32px;
 }
 
 .btn-light:hover {
@@ -59,16 +55,13 @@
 @media (max-width: 1000px) {
   .btn-ghost,
   .btn-light {
-    height: 44px;
-    font-size: 13px;
+    height: 40px;
+    font-size: 15px;
   }
 
-  .btn-ghost {
-    padding: 0 22px;
-  }
-
+  .btn-ghost,
   .btn-light {
-    padding: 0 30px;
+    padding: 0 24px;
   }
 }
 
@@ -79,8 +72,8 @@
      neither. */
   .btn-ghost,
   .btn-light {
-    height: 38px;
-    font-size: 12px;
-    padding: 0 14px;
+    height: 36px;
+    font-size: 14px;
+    padding: 0 16px;
   }
 }

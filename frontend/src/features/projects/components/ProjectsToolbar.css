@@ -9,25 +9,32 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 16px;
   flex-wrap: wrap;
-  /* 37px under the subtitle in the frame, not 22 — the toolbar reads as its own band there
-     rather than as a continuation of the page title. */
-  margin: 34px 0 8px;
+  /* The frame's toolbar `Container` is a 12/0-padded band 20 under the title block. */
+  margin: 20px 0 0;
+  padding: 12px 0;
 }
 
-.projects-toolbar-filters,
+.projects-toolbar-filters {
+  display: flex;
+  align-items: center;
+  /* 12 between the search field and the two icon controls, 20 between the primary action and the
+     view toggle — the frame gives the two groups different gaps and they are written out. */
+  gap: 12px;
+}
+
 .projects-toolbar-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 20px;
 }
 
-/* The search field measures 200x50 in frame 484:1104 (x=140…339). It stays flexible rather than
-   fixed so the row can shrink, but it no longer grows past the design's width. */
+/* `Inputs/Search input` is 184x48. Flexible rather than fixed so the row can shrink, but it no
+   longer grows past the design's width. */
 .projects-search {
-  flex: 1 1 200px;
-  max-width: 200px;
+  flex: 1 1 184px;
+  max-width: 184px;
 }
 
 /* The magnifier sits INSIDE the field, so the field is the positioning context and the input gets
@@ -47,10 +54,10 @@
   pointer-events: none;
 }
 
-/* 50px tall, 12px radius, 14px text — the frame's `Tabs/Search tab`. */
+/* 48px tall, 12px radius, 14px text — the frame's `Inputs/Search input`. */
 .projects-search-input {
   width: 100%;
-  height: 50px;
+  height: 48px;
   padding: 0 14px 0 42px;
   border: 1px solid var(--projects-edge);
   border-radius: 12px;
@@ -72,7 +79,7 @@
 /* Matches the 48px/12px-radius icon buttons it stands in for (`Dropdown/Icon only`, `Tabs/Sort`),
    so the filter row is one band rather than three heights. */
 .projects-sort select {
-  height: 50px;
+  height: 48px;
   padding: 0 12px;
   border: 1px solid var(--projects-edge);
   border-radius: 12px;

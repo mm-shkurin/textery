@@ -21,50 +21,32 @@
   background: var(--profile-page-bg);
 }
 
-/* 1240, NOT the feed's 1640, and the two numbers are not interchangeable: `ui-conventions.md`
-   records the width as a rule per PAGE TYPE, and this is a single-column form. The bar above is
-   already on 1240 (`.navbar-profile-placement`), so a 1640 column here put the heading and the
-   cards to the LEFT of the bar that heads them — two columns on one screen, which reads as the
-   bar being the wrong size rather than the content being it.
+/* 1640, the same column as the feed — which is what the frame draws. Node 1127:10768 lays its
+   three cards out at x=140…1780 under a bar of exactly that width, so the "single-column form is
+   narrower" rule this shipped with was a convention applied over a measurement. At 1240 the cards
+   stopped 400px short of the bar heading them, which reads as the bar being too wide.
 
-   `width`, not `max-width` + padding: the padding version subtracts the gutter FROM the 1240,
+   `width`, not `max-width` + padding: the padding version subtracts the gutter FROM the 1640,
    which starts the cards inside the column the design draws rather than on its edge. */
 .profile-page {
-  width: min(1240px, 100% - 80px);
+  width: min(1640px, 100% - 80px);
   margin: 0 auto;
-  padding: 40px 0 64px;
-}
-
-/* The way back. Without it the only exits from this screen are «Выйти», which ends the session,
-   and the browser's own button, which is not on the page — so a user who came here to rename
-   themselves had to log out to leave. Mirrors «Назад» on the feed, and goes through the unsaved
-   guard: this screen has a form, and the feed's back button never had anything to lose. */
-.profile-back {
-  background: none;
-  border: 1px solid var(--border-hairline);
-  border-radius: 8px;
-  padding: 6px 12px;
-  margin-bottom: 16px;
-  font-family: inherit;
-  font-size: 14px;
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-.profile-back:hover {
-  background: var(--bg-sunken);
+  padding: 32px 0 64px;
 }
 
 .profile-heading {
   font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  line-height: 34px;
+  font-weight: 600;
 }
 
+/* 18/22 in #464551 — the darker grey the two page subtitles share. `--profile-row-fg` is the
+   lighter #6b7280 the frame keeps for values INSIDE a card. */
 .profile-subtitle {
-  margin-top: 8px;
+  margin-top: 12px;
   font-size: 18px;
-  color: var(--profile-row-fg);
+  line-height: 22px;
+  color: var(--text-divider);
 }
 
 /* ---- the three cards ---- */
@@ -111,9 +93,11 @@
   font-weight: 600;
 }
 
+/* 16/19 — a value is a size ABOVE its 14px label in the frame, not the same size as it. */
 .profile-row-value {
-  margin-top: 4px;
-  font-size: 14px;
+  margin-top: 12px;
+  font-size: 16px;
+  line-height: 19px;
   color: var(--profile-row-fg);
   max-width: 720px;
 }
@@ -155,7 +139,7 @@
 @media (max-width: 720px) {
   .profile-page {
     width: min(1640px, 100% - 28px);
-    padding: 28px 0 40px;
+    padding: 20px 0 40px;
   }
 
   .profile-heading {

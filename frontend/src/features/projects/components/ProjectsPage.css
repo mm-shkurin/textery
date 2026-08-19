@@ -35,7 +35,7 @@
   margin: 0 auto;
   padding: 24px 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, 220px);
+  grid-template-columns: repeat(auto-fill, 218px);
   gap: 20px;
 }
 
@@ -77,7 +77,8 @@
      and the blue version drew a faint halo around every card on the blue page. In dark
      `--projects-edge` steps up — see the note at the top of this file. */
   border: 1px solid var(--projects-edge);
-  border-radius: 14px;
+  /* 16 in the frame — `Cards/Heading and image` is r16 with an r8 thumbnail well inside it. */
+  border-radius: 16px;
   box-shadow: var(--shadow-card);
   overflow: hidden;
 }
@@ -90,37 +91,35 @@
   justify-content: center;
 }
 
-/* 45x56 in the frame's thumbnail well, not 52x64 — the glyph sat a size too large for a 128px
-   well and crowded the card's only piece of air. */
+/* 40x56 — the `Group` inside the frame's 64x64 `Icons/Files` instance. */
 .project-card-folder {
-  width: 45px;
+  width: 40px;
   height: 56px;
 }
 
-/* The body is 124px under a 128px thumbnail in the frame — the card totals 254. Every value here
-   is measured off it: the badge sits 16px below the thumbnail, the title 16px below the badge,
-   the date 12px below the title's last line, and 19px of air under that. */
+/* 124px of body under a 128px thumbnail — a 252px card. The frame's body is a 16px box with a
+   12px gap between the badge and the title block. */
 .project-card-body {
-  padding: 14px 16px 16px;
+  padding: 16px;
 }
 
 .project-card-type {
   display: inline-block;
-  /* 47x23 with an 8px radius in the frame, measured off the «Эссе» chip of the first card. */
-  padding: 3px 10px;
+  /* 23 tall with an 8px radius and 4/8 padding — `Badges/Type Badge`, 12/15 at 600. */
+  padding: 4px 8px;
   border-radius: 8px;
   font-size: 12px;
+  line-height: 15px;
   font-weight: 600;
 }
 
 .project-card-title {
-  font-weight: 700;
-  /* 15/1.25 rather than 13.5/1.35: the frame's two title lines sit ~19px apart with glyphs a
-     shade taller than the card shipped with. The tighter leading is what keeps a two-line title
-     and its date inside the card's 254px without the body growing. */
-  font-size: 15px;
-  line-height: 1.2;
-  margin: 8px 0 6px;
+  /* 14/17 at 600 — the frame's two title lines sit 17px apart. It shipped at 15/700, a size and
+     a weight above the badge it sits under, which made the title the loudest thing on the card. */
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 17px;
+  margin: 12px 0 8px;
   /* Two lines, then ellipsis — a title is free text and an unbounded one would push the date out
      of alignment with every neighbouring card in the row. */
   display: -webkit-box;
@@ -130,8 +129,10 @@
 }
 
 .project-card-date {
-  font-size: 13px;
-  color: var(--text-muted);
+  /* 12/15 in #464551 — the same grey the page subtitle uses, not the lighter `--text-muted`. */
+  font-size: 12px;
+  line-height: 15px;
+  color: var(--text-divider);
 }
 
 /* Per-type tints. Two swatches per type — the badge pair and the folder colour — kept adjacent so

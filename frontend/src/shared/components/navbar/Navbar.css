@@ -78,24 +78,20 @@
 
 /* --- pill: «Мои проекты» and «Мой профиль». A white card floating on the page. --- */
 
-/* The wordmark steps down inside the pill, and only there. Variant5 is drawn full-bleed across a
-   1920 frame; the pill is not that object — it is a card sitting INSIDE a 1240 or 1640 column,
-   with page background visible either side of it. A logo sized for the full-width bar reads as
-   oversized once the bar itself is inset, because the eye measures it against the card it sits in
-   rather than against the viewport. The plate steps down with it, for the same reason — a 75px
-   card heading a 1240 column of 60px-tall form rows outweighs what it heads. `flat` and `bar`
-   keep the frame's own 54 and 75: those two ARE the full-width object the frame draws. */
+/* The pill is NOT the 1.3333x-drawn `Variant5` component. It is the `Navbar` instance the real
+   screens place — node 573:4551 on «Мои проекты» and 1134:12269 on «Профиль», identical in both:
+   1640x84, radius 28, 12/32 padding, a 45px wordmark and a 44px account button. Those frames are
+   1:1 (their content column is the same raw 1640 `.projects-screen` and `.profile-page` already
+   use), so dividing this bar by 1.3333 while the column beneath it stayed raw is what left a
+   66px bar heading a 1640px page — the bar and the thing it heads on two different scales. */
 .navbar-pill .navbar-logo {
-  height: 42px;
+  height: 45px;
 }
 
 .navbar-pill {
-  min-height: 66px;
-  /* 5.5, not 6: the frame puts an 85.2 button in a 100 bar, which is 7.4 of air above and below,
-     and 64 + 5.5 + 5.5 is exactly the 75 this bar claims to be. At 6 the button pushes it to 76 —
-     one pixel, but the kind that makes a stated height a lie. */
-  padding: 5.5px 24px;
-  border-radius: 21px;
+  min-height: 84px;
+  padding: 12px 32px;
+  border-radius: 28px;
   background: var(--bg-surface);
   box-shadow: var(--shadow-navbar);
 }
@@ -119,12 +115,16 @@
 
   .navbar-pill,
   .navbar-bar {
-    min-height: 64px;
-    padding: 6px 20px;
+    min-height: 72px;
+    padding: 10px 24px;
   }
 
   .navbar-pill {
-    border-radius: 18px;
+    border-radius: 24px;
+  }
+
+  .navbar-pill .navbar-logo {
+    height: 40px;
   }
 
   /* The avatar comes from the shared ProfileMenu, so it is overridden HERE rather than there — at
@@ -163,12 +163,16 @@
 
   .navbar-pill,
   .navbar-bar {
-    min-height: 56px;
-    padding: 6px 16px;
+    min-height: 60px;
+    padding: 8px 16px;
   }
 
   .navbar-pill {
-    border-radius: 16px;
+    border-radius: 20px;
+  }
+
+  .navbar-pill .navbar-logo {
+    height: 34px;
   }
 
   .navbar .profile-avatar-trigger {

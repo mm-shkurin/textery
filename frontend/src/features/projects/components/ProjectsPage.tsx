@@ -60,121 +60,133 @@ function ProjectsPageScreen({
 
   // Stable across renders so the memoized cards are not invalidated by the page re-rendering
   // for an unrelated reason — a keystroke in the toolbar's search box, most of all.
-  const open = useCallback((project: ProjectSummary) => {
-    // Only a document has an editor to open. A generation card is a record of work that never
-    // became one, and its id comes from the other table entirely.
-    if (project.kind === 'document') onOpenDocument?.(project.id, project.documentType)
-  }, [onOpenDocument])
+  const open = useCallback(
+    (project: ProjectSummary) => {
+      // Only a document has an editor to open. A generation card is a record of work that never
+      // became one, and its id comes from the other table entirely.
+      if (project.kind === 'document') onOpenDocument?.(project.id, project.documentType)
+    },
+    [onOpenDocument],
+  )
 
   return (
-    <div className="projects-screen" data-testid="projects-screen">
-      <ProjectsNavbar onLogoutClick={onLogoutClick} />
+    // The shell paints the page. Frame 484:1104 is drawn on WHITE, not on the product's blue
+    // wash: the cards are white too, and the design separates them from the page by their
+    // hairline rather than by a tint. On `--bg-page` the whole feed read as one blue field with
+    // white patches on it.
+    <div className="projects-shell" data-testid="projects-screen">
+      <div className="projects-screen">
+        <ProjectsNavbar onLogoutClick={onLogoutClick} />
 
-      <div className="projects-header">
-        {onBack !== undefined && (
-          <button
-            type="button"
-            className="projects-back"
-            data-testid="projects-back"
-            onClick={onBack}
-          >
-            Назад
-          </button>
-        )}
-        <div className="projects-titles">
-          <h1 className="projects-heading">Мои проекты</h1>
-          {/* The one line of copy the screen has, and it is fixed rather than user-specific: it
+        <div className="projects-header">
+          {onBack !== undefined && (
+            <button
+              type="button"
+              className="projects-back"
+              data-testid="projects-back"
+              onClick={onBack}
+            >
+              Назад
+            </button>
+          )}
+          <div className="projects-titles">
+            <h1 className="projects-heading">Мои проекты</h1>
+            {/* The one line of copy the screen has, and it is fixed rather than user-specific: it
               names what the page holds, which is why it can live in the markup. */}
-          <p className="projects-subtitle" data-testid="projects-subtitle">
-            Все ваши рефераты, курсовые, статьи и другие работы — в одном месте
-          </p>
+            <p className="projects-subtitle" data-testid="projects-subtitle">
+              Все ваши рефераты, курсовые, статьи и другие работы — в одном месте
+            </p>
+          </div>
         </div>
-      </div>
 
-      <ProjectsToolbar
-        q={feed.q}
-        sort={feed.sort}
-        view={view}
-        resultCount={searching && !feed.loading && feed.error === null ? feed.total : null}
-        onQueryChange={(q) => feed.update({ q })}
-        onSortChange={(sort) => feed.update({ sort })}
-        onViewChange={setView}
-        onCreateProject={onCreateProject}
-      />
+        <ProjectsToolbar
+          q={feed.q}
+          sort={feed.sort}
+          view={view}
+          resultCount={searching && !feed.loading && feed.error === null ? feed.total : null}
+          onQueryChange={(q) => feed.update({ q })}
+          onSortChange={(sort) => feed.update({ sort })}
+          onViewChange={setView}
+          onCreateProject={onCreateProject}
+        />
 
-      {feed.error !== null && (
-        // `role="alert"` sits on the element carrying the sentence, not on an always-present
-        // wrapper: an assistive-technology user hears the failure only if the words are inside
-        // the live region at the moment it appears.
-        <div className="projects-error-block">
-          {/* The live region is the element carrying the SENTENCE, never a wrapper that also
+        {feed.error !== null && (
+          // `role="alert"` sits on the element carrying the sentence, not on an always-present
+          // wrapper: an assistive-technology user hears the failure only if the words are inside
+          // the live region at the moment it appears.
+          <div className="projects-error-block">
+            {/* The live region is the element carrying the SENTENCE, never a wrapper that also
               holds the retry button: an assistive-technology user would otherwise hear the
               failure and the word «Повторить» as one announcement, and any test reading the
               region's text would read the button's label as part of the message. */}
-          <p className="projects-error" data-testid="projects-error" role="alert">
-            {feed.error}
-          </p>
-          {/* Retrying re-issues the request with the SAME q and sort — a retry that reset them
+            <p className="projects-error" data-testid="projects-error" role="alert">
+              {feed.error}
+            </p>
+            {/* Retrying re-issues the request with the SAME q and sort — a retry that reset them
               would answer a different question than the one that failed. */}
-          <button type="button" data-testid="projects-error-retry" onClick={feed.reload}>
-            Повторить
-          </button>
-        </div>
-      )}
+            <button type="button" data-testid="projects-error-retry" onClick={feed.reload}>
+              Повторить
+            </button>
+          </div>
+        )}
 
-      {feed.loading && feed.error === null && (
-        <div className="projects-skeleton" data-testid="projects-loading" aria-hidden="true">
-          {Array.from({ length: RECENT_COUNT }, (_, index) => (
-            <div className="projects-skeleton-card" key={index} />
-          ))}
-        </div>
-      )}
+        {feed.loading && feed.error === null && (
+          <div className="projects-skeleton" data-testid="projects-loading" aria-hidden="true">
+            {Array.from({ length: RECENT_COUNT }, (_, index) => (
+              <div className="projects-skeleton-card" key={index} />
+            ))}
+          </div>
+        )}
 
-      {showRecent && (
-        <section className="projects-section projects-section-recent" data-testid="projects-recent">
-          <h2 className="projects-section-title">Недавние проекты</h2>
-          <ProjectsFeed
-            items={feed.items.slice(0, RECENT_COUNT)}
-            view="grid"
-            onOpen={open}
-            testIdPrefix="recent"
-          />
-        </section>
-      )}
+        {showRecent && (
+          <section
+            className="projects-section projects-section-recent"
+            data-testid="projects-recent"
+          >
+            <h2 className="projects-section-title">Недавние проекты</h2>
+            <ProjectsFeed
+              items={feed.items.slice(0, RECENT_COUNT)}
+              view="grid"
+              onOpen={open}
+              testIdPrefix="recent"
+            />
+          </section>
+        )}
 
-      {/* The heading stands whether or not the feed under it has rows — the empty frame
+        {/* The heading stands whether or not the feed under it has rows — the empty frame
           (527:1863) draws «Все проекты» above the illustration. It is the answer to "where am I",
           and a screen that drops its only structural landmark exactly when there is nothing else
           on it leaves the user with a page of whitespace. Held back only while the feed is
           unresolved: heading a section that turns out to be a load failure would title the error. */}
-      {feed.error === null && !feed.loading && (
-        <section className="projects-section">
-          <h2 className="projects-section-title">Все проекты</h2>
-          {feed.items.length === 0 ? (
-            <ProjectsEmptyState
-              searching={searching}
-              onClearSearch={() => feed.update({ q: '' })}
-              onCreateProject={onCreateProject}
-            />
-          ) : (
-            <ProjectsFeed
-              items={feed.items}
-              view={view}
-              onOpen={open}
-              onRetry={retry.retry}
-              retryingId={retry.pendingId}
-              retryError={retry.error}
-            />
-          )}
-        </section>
-      )}
+        {feed.error === null && !feed.loading && (
+          <section className="projects-section">
+            <h2 className="projects-section-title">Все проекты</h2>
+            {feed.items.length === 0 ? (
+              <ProjectsEmptyState
+                searching={searching}
+                onClearSearch={() => feed.update({ q: '' })}
+                onCreateProject={onCreateProject}
+              />
+            ) : (
+              <ProjectsFeed
+                items={feed.items}
+                view={view}
+                onOpen={open}
+                onRetry={retry.retry}
+                retryingId={retry.pendingId}
+                retryError={retry.error}
+              />
+            )}
+          </section>
+        )}
 
-      <ProjectsPager
-        page={feed.page}
-        limit={feed.limit}
-        total={feed.total}
-        onPage={(page) => feed.update({ page })}
-      />
+        <ProjectsPager
+          page={feed.page}
+          limit={feed.limit}
+          total={feed.total}
+          onPage={(page) => feed.update({ page })}
+        />
+      </div>
     </div>
   )
 }

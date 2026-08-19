@@ -40,9 +40,9 @@ export function ProfilePage() {
     navigate('/')
   }
 
-  // An explicit destination, not `navigate(-1)`: this screen is reachable straight from the URL
-  // and from a fresh tab, where there is no history entry to go back to and the browser would
-  // leave the product entirely.
+  // The bar's «Мои проекты». An explicit destination, not `navigate(-1)`: this screen is reachable
+  // straight from the URL and from a fresh tab, where there is no history entry to go back to and
+  // the browser would leave the product entirely.
   const handleBack = () => {
     if (!guard.confirmLeave()) return
     navigate('/projects')
@@ -50,17 +50,9 @@ export function ProfilePage() {
 
   return (
     <div className="profile-screen" data-testid="profile-screen">
-      <ProfileHeader onLogoutClick={handleLogout} />
+      <ProfileHeader onLogoutClick={handleLogout} onProjectsClick={handleBack} />
 
       <main className="profile-page">
-        <button
-          type="button"
-          className="profile-back"
-          data-testid="profile-back"
-          onClick={handleBack}
-        >
-          Назад
-        </button>
         <h1 className="profile-heading">Мой профиль</h1>
         <p className="profile-subtitle">
           Личные данные, внешний вид приложения и управление аккаунтом
