@@ -3,11 +3,16 @@
 Сначала прочитай `.design/prompts/_common.md` и `.design/cache/MANIFEST.md`.
 
 ## Источники
-- `.design/cache/nodes/create-project.json` — desktop-фрейм «Мои проекты - Создать проект».
-- `.design/cache/nodes/create-project-mobile.json` — мобильный фрейм рядом.
-- `.design/cache/nodes/cards-images.json` — `Cards/Images color folders`,
-  картинки для типов генерации.
-- Ассеты типов генерации: `.design/cache/assets/` (см. MANIFEST).
+- `.design/cache/nodes/create-project.json` — desktop-фрейм «Мои проекты - Создать проект» (node `788:5094`).
+- `.design/cache/nodes/create-project-mobile.json` — мобильный фрейм рядом (node `1227:9974`, ширина 360).
+- `.design/cache/nodes/cards-images.json` — `Cards/Images color folders` (node `788:6243`),
+  8 вариантов: Referat, Resume, Doklad, Sochinenia, Essay, Buisness plan, Summary, Letter.
+- Иконки типов файлов: `.design/cache/assets/file-*.svg` (referat, resume, doklad,
+  sochinenie, essay, buisness-plan, summary, letter) + `icon-*.svg`.
+- **`card-*.png` в кэше пока нет** — их экспорт упёрся в 429. Верстай карточки
+  на `file-*.svg`, место под картинку зарезервируй по геометрии из `cards-images.json`
+  и вынеси путь к ассету в маппинг, чтобы подмена на png была однострочной.
+  Сам за png в Figma НЕ ходи — это сделает сессия 0.
 
 ## Область (только эти пути)
 - `frontend/src/features/generation/**`

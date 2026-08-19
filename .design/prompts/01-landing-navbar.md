@@ -3,10 +3,13 @@
 Сначала прочитай `.design/prompts/_common.md` и `.design/cache/MANIFEST.md`.
 
 ## Источники
-- `.design/cache/nodes/landing-desktop.json` — фрейм `Desktop`, главная страница.
-- `.design/cache/nodes/navbar-variant5.json` — фрейм `Navbar/Variant5`,
+- `.design/cache/nodes/landing-desktop.json` — фрейм `Desktop` (node `90:880`), главная страница.
+- `.design/cache/nodes/navbar-variant5.json` — компонент `Navbar/Variant5` (node `1086:4929`),
   состояние навбара, когда пользователь **авторизован**.
-- Ассеты: `.design/cache/assets/` (иконки svg, иллюстрации png@2x).
+- Ассеты: `.design/cache/assets/icon-*.svg` — 37 иконок 24px (в т.ч. `icon-profile`,
+  `icon-settings`, `icon-logout`, `icon-plus`, `icon-home`, `icon-search`).
+- Токены: `.design/cache/tokens.json` — шрифт Inter, акцент `#004EE0`, текст
+  `#1F1F1F` / `#6B7280` / `#464551`, радиусы 8/12/16, тень `0 4 12 #00000017`.
 
 ## Область (только эти пути)
 - `frontend/src/features/landing/**`

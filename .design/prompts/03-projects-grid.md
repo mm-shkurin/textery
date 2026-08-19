@@ -2,8 +2,12 @@
 
 Сначала прочитай `.design/prompts/_common.md` и `.design/cache/MANIFEST.md`.
 
-## Источник
-`.design/cache/nodes/projects-grid.json` — фрейм «Мои проекты - вид сетка - вариант 1 (Dekstop)».
+## Источники
+- `.design/cache/nodes/projects-grid.json` — «Мои проекты - вид сетка - вариант 1 (Dekstop)» (node `484:1104`).
+- `.design/cache/nodes/projects-grid-mobile.json` — Mobile рядом (node `674:2534`, ширина 360).
+- Иконки: `.design/cache/assets/icon-grid.svg`, `icon-list.svg`, `icon-filter.svg`,
+  `icon-sort.svg`, `icon-search.svg`, `icon-rename.svg`, `icon-dublicate.svg`,
+  `icon-delete.svg`, `file-*.svg` (превью по типу документа).
 
 ## Область (только эти пути)
 - `frontend/src/features/projects/**`

@@ -1,48 +1,31 @@
-# Сессия 0 — извлечение дизайна из Figma (запускать ПЕРВОЙ, одну, ни с кем параллельно)
+# Сессия 0 — извлечение дизайна из Figma  ✅ ВЫПОЛНЕНО (коммит `bdbf7b37`)
 
-Ты единственная сессия, которой разрешено обращаться к Figma API. Все остальные
-сессии работают офлайн по кэшу, который ты создашь.
+Кэш собран, сессии 1–4 могут стартовать. Единственный остаток — 8 картинок карточек.
 
-## Жёсткие ограничения
-- Прочитай `.design/README.md` целиком до первой команды.
-- Бюджет запросов: 1 × `GET /v1/files/:key`, 1 × `/v1/files/:key/images`,
-  максимум 3 × `/v1/images/:key?ids=...` (id батчами через запятую).
-- **429 = стоп.** Не повторять запрос, не делать retry-цикл, не ходить по нодам
-  поштучно. Повторные 429 блокируют токен на 36 часов.
-- Токен берёшь из `infra/.env` (`FIGMA_TOKEN`). В репозиторий его не писать.
+## Что уже есть
+- `.design/cache/nodes/*.json` — 15 обрезанных фреймов (карта в `.design/cache/MANIFEST.md`).
+- `.design/cache/assets/*.svg` — 44 иконки (`icon-*`, `file-*`).
+- `.design/cache/tokens.json` — цвета, типографика, радиусы, тени, отступы.
 
-## Что сделать
-1. `FIGMA_TOKEN=... FIGMA_FILE_KEY=... bash .design/fetch-figma.sh` — получишь
-   `.design/cache/file.json`.
-2. Дальше **офлайн**, скриптами по `file.json`, найди по имени и выпиши node id:
-   | slug | имя фрейма в Figma |
-   |------|--------------------|
-   | `landing-desktop`  | Desktop (главная страница) |
-   | `navbar-variant5`  | Navbar/Variant5 (авторизованный пользователь) |
-   | `create-project`   | Мои проекты - Создать проект |
-   | `create-project-mobile` | Mobile рядом с «Создать проект» |
-   | `cards-images`     | Cards/Images color folders (картинки типов генерации) |
-   | `projects-grid`    | Мои проекты - вид сетка - вариант 1 (Dekstop) |
-   | `profile-personal` | Профиль - личные данные |
-   | `profile-mobile`   | Mobile рядом с «Профиль - личные данные» |
-3. Для каждого slug выпиши обрезанное поддерево в `.design/cache/nodes/<slug>.json`:
-   оставь только `name, type, absoluteBoundingBox, layoutMode, itemSpacing, padding*,
-   primaryAxisAlignItems, counterAxisAlignItems, layoutSizing*, constraints, fills,
-   strokes, strokeWeight, cornerRadius, effects, style (шрифт/размер/межстрочный/вес/
-   letterSpacing), characters, opacity, children`. Всё остальное выкинуть — иначе
-   файлы неподъёмные.
-4. Собери `.design/cache/tokens.json`: все уникальные цвета (hex + где встречается),
-   типографическую шкалу, радиусы, тени, шаги отступов. Сравни с
-   `frontend/src/styles` / `index.css` и отметь, какие токены в коде уже есть,
-   а каких не хватает.
-5. Составь `.design/export-ids.txt` (`<nodeid> <slug> <svg|png>`) для всех иконок,
-   иллюстраций и картинок типов генерации из `Cards/Images color folders`,
-   затем **один раз** перезапусти `fetch-figma.sh` — он добьёт экспорт батчем.
-   Иконки — `svg`, растровые иллюстрации — `png@2x`.
-6. Напиши `.design/cache/MANIFEST.md`: фрейм → node id → slug → список ассетов →
-   какие файлы фронтенда, вероятно, соответствуют (по `frontend/src/features/*`).
-7. Коммит: `design: figma cache and extracted design tokens`.
+## Остаток работы (только эта сессия, не раньше чем лимит остынет)
+Экспорт восьми `card-*.png` из `Cards/Images color folders` был прерван на **429**
+и не ретраился. Их id уже в `.design/export-ids.txt` (строки `png`). Добрать одним
+вызовом — svg-часть перескочит по кэшу:
 
-## Условие завершения
-Сессии 1–4 должны суметь сделать всю работу, ни разу не зайдя в сеть. Если чего-то
-не хватает — они сообщат node id, ты добавишь их одним батчем.
+```bash
+set -a; . ./infra/.env; set +a; bash .design/fetch-figma.sh
+```
+
+Если снова 429 — **остановиться и ждать**, не повторять. Повторные 429 блокируют
+токен на 36 часов. Сначала подожди хотя бы час с момента прошлой попытки.
+
+## Правила, если кэш придётся пересобирать
+- Бюджет: 1 × `GET /v1/files/:key`, 1 × `/v1/files/:key/images`, максимум 3 ×
+  `/v1/images/:key?ids=...` (id батчами через запятую).
+- `file.json` (48 МБ) и `imagefills.json` — в `.gitignore`, коммитятся только
+  производные из `.design/prune.py` и `.design/tokens.py`.
+- Токен в `infra/.env` (`FIGMA_TOKEN`), в репозиторий не писать.
+
+## Если сессия 1–4 сообщит о недостающей ноде
+Собрать все запросы в **один** батч, дописать в `export-ids.txt` или в `TARGETS`
+внутри `.design/prune.py`, прогнать `python .design/prune.py` (офлайн, без сети).
