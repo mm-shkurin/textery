@@ -1,0 +1,131 @@
+/* The footer in both of its forms.
+
+   `slab` — the landing's closing band, node 1362:8304: #161616 with white text, 60/210 of padding,
+   four link columns beside the wordmark, a hairline, then the legal line.
+   `strip` — what the app screens end on, node 788:5094 (y=16279): a 32/140 band on #F5F5F7 with
+   the wordmark, the copyright and three links, and no columns at all.
+
+   The slab does not flip with the theme: it is dark in the design as a contrast against the pale
+   page above it, and inverting it would leave one light band at the bottom of a dark page. */
+.site-footer {
+  --site-footer-fg: var(--text-primary);
+  padding: 60px 0 40px;
+}
+
+.site-footer-slab {
+  --site-footer-fg: var(--text-inverse);
+  background: var(--bg-inverse);
+  color: var(--site-footer-fg);
+}
+
+.site-footer-strip {
+  background: var(--bg-sunken);
+  padding: 32px 0;
+}
+
+.site-footer-inner,
+.site-footer-legal {
+  width: min(1640px, 100% - 80px);
+  margin: 0 auto;
+}
+
+.site-footer-inner {
+  display: flex;
+  justify-content: space-between;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.site-footer-logo {
+  height: 45px;
+  width: auto;
+  display: block;
+}
+
+/* The wordmark artwork is black, so on the dark slab it has to be lifted rather than swapped: the
+   dark export exists for the navbar, but it is drawn for a dark UI surface, not for this slab. */
+.site-footer-slab .site-footer-logo {
+  filter: invert(1) brightness(1.8);
+}
+
+.site-footer-note {
+  max-width: 420px;
+  margin-top: 15px;
+  font-size: 18px;
+  line-height: 22px;
+  color: var(--site-footer-fg);
+  opacity: 0.75;
+}
+
+.site-footer-columns {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.site-footer-column ul {
+  list-style: none;
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+  font-size: 16px;
+  line-height: 22px;
+  opacity: 0.8;
+}
+
+.site-footer-column-title {
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+/* The rule above the legal line is the slab's only divider, and it is white at low alpha for the
+   same reason the comparison table's is. */
+.site-footer-legal {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--footer-divider);
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.site-footer-strip .site-footer-legal {
+  margin-top: 24px;
+  padding-top: 0;
+  border-top: none;
+  color: var(--text-muted);
+}
+
+.site-footer-links {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  opacity: 0.75;
+}
+
+@media (max-width: 900px) {
+  .site-footer,
+  .site-footer-strip {
+    padding: 32px 0 24px;
+  }
+
+  .site-footer-inner,
+  .site-footer-legal {
+    width: min(1640px, 100% - 32px);
+  }
+
+  .site-footer-columns {
+    gap: 24px;
+  }
+
+  .site-footer-note {
+    font-size: 16px;
+  }
+}

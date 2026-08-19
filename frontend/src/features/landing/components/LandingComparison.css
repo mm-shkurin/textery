@@ -1,0 +1,105 @@
+/* `Comparison` (node 1358:7627): a full-bleed #161616 band with a 1160px table on it.
+
+   The slab and its white text do NOT flip with the theme, for the same reason the footer's do not:
+   the section is dark in the design because that is the contrast it draws against the pale page
+   above it, and inverting it in dark mode would make it the one light band on a dark page. */
+.comparison {
+  background: var(--bg-inverse);
+  color: var(--text-inverse);
+}
+
+.comparison-inner {
+  padding-bottom: 120px;
+}
+
+.comparison-eyebrow,
+.comparison-title,
+.comparison-lead {
+  color: var(--text-inverse);
+}
+
+.comparison-table {
+  width: min(1160px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: 20px;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 500;
+}
+
+.comparison-table thead th {
+  padding: 16px 20px;
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 600;
+  background: #000000;
+}
+
+/* The hairline between rows is white at low alpha rather than a border token: the band is a fixed
+   dark slab in both themes, so a themed border would go invisible in one of them. */
+.comparison-table tbody tr {
+  border-top: 1px solid var(--footer-divider);
+}
+
+.comparison-table tbody th {
+  font-weight: 500;
+}
+
+.comparison-ours {
+  font-weight: 600;
+}
+
+/* The two column chips. Ours is the brand blue; the competitors' keeps the slab's own fill with a
+   hairline, which is how the frame draws it. */
+.comparison-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 16px;
+  border: 1px solid var(--footer-divider);
+  border-radius: 6px;
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+.comparison-chip-ours {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.comparison-action {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+@media (max-width: 900px) {
+  .comparison-inner {
+    padding-bottom: 56px;
+  }
+
+  .comparison-table th,
+  .comparison-table td {
+    padding: 12px;
+    font-size: 15px;
+    line-height: 20px;
+  }
+
+  .comparison-table thead th {
+    padding: 12px;
+    font-size: 16px;
+    line-height: 20px;
+  }
+
+  .comparison-chip {
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+}

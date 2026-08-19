@@ -11,6 +11,7 @@ import type { ProjectSummary } from '../api/projectsApi'
 import './ProjectsPage.css'
 import './ProjectsScreen.css'
 import { QueryBoundary } from '../../../shared/query/QueryBoundary'
+import { SiteFooter } from '../../../shared/components/SiteFooter'
 
 // «Недавние проекты» is the first N items of the SAME response — never a second request for a
 // slice of data already in hand. It is hidden under an active search or a non-default order,
@@ -187,6 +188,10 @@ function ProjectsPageScreen({
           onPage={(page) => feed.update({ page })}
         />
       </div>
+
+      {/* The frame ends the screen on the pale footer strip (node 788:5094, y=16279) — the same
+          copyright and links the landing's slab carries, without its four columns. */}
+      <SiteFooter variant="strip" />
     </div>
   )
 }

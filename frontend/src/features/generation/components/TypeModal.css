@@ -3,8 +3,9 @@
    blurred copy of «Мои проекты», the title and one line of subtitle centred, a left-aligned
    «Учебные» label, then a row of four type cards.
 
-   Lengths are the frame's divided by 1.3333 (see index.css). The panel is 780x892 in the frame,
-   so 585 wide here, and 27 of horizontal padding leaves exactly 4x121.5 + 3x15 for the grid. */
+   Lengths are the frame's, 1:1 — the same scale as the navbar and the project cards behind the
+   blur, which the same frame draws. The panel is 780 wide with 36 of padding, which leaves
+   exactly 4x162 + 3x20 for the grid. */
 
 /* White, not the page wash: the modal in 788:5094 sits on a blurred copy of «Мои проекты» and is
    itself plain white, so the cards inside it are the only colour. */
@@ -12,11 +13,11 @@
   /* The close button's containing block. It is pinned to the PANEL's top-right corner in the
      frame — above the title's line, not level with it — so it cannot hang off the header. */
   position: relative;
-  width: 585px;
-  /* 39 at the foot rather than 36: the frame leaves more air under the last card than over the
-     title, and the difference is the one thing that keeps the grid from looking dropped. */
-  padding: 40px 27px 39px;
-  border-radius: var(--radius-lg);
+  width: 780px;
+  padding: 36px;
+  /* 24 in the frame — a step above the 16px `--radius-lg` every card uses, which is what makes
+     the panel read as sitting above them rather than as one more card. */
+  border-radius: 24px;
   background: var(--bg-surface);
   text-align: center;
 }
@@ -25,40 +26,45 @@
    centred on the PANEL rather than on the space left over beside the button. */
 .type-modal-panel .modal-header {
   display: block;
-  margin-bottom: 3px;
+  margin-bottom: 8px;
+  padding-top: 20px;
 }
 
+/* 24/29 at 600. */
 .type-modal-panel .modal-header h1 {
-  font-size: 18.75px;
+  font-size: 24px;
+  line-height: 29px;
+  font-weight: 600;
 }
 
-/* A bare ✕ at 13.5px, inset 14 from the top and 17 from the right — the frame draws no box, no
-   border and no fill behind it, which is what Modal.css's shared `.close-btn` gives every other
-   modal. */
+/* A bare ✕ in a 32px round hit area at the panel's top-right — the frame draws no box, no border
+   and no fill behind it, which is what Modal.css's shared `.close-btn` gives every other modal. */
 .type-modal-panel .close-btn {
   position: absolute;
-  top: 13px;
-  right: 14px;
+  top: 16px;
+  right: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
   border: none;
   background: none;
   color: var(--text-secondary);
-  /* The glyph, not the box, is what the frame measures at 13.5 square — and «×» draws at roughly
-     0.43 of its font size, so it takes 31px to reach that. The 20px box around it is the click
-     target. */
-  font-size: 31px;
+  /* The glyph the frame draws is 16 square, and «×» draws at roughly 0.43 of its font size, so
+     it takes 37px to reach that. The 32px round box around it is the click target. */
+  font-size: 37px;
   line-height: 1;
 }
 
 .type-modal-panel .modal-subtitle {
-  font-size: 14.5px;
+  /* 18/22 in #464551 — the same subtitle pair as the two page headers. */
+  font-size: 18px;
+  line-height: 22px;
   font-weight: 400;
-  color: var(--text-secondary);
-  margin-bottom: 17px;
+  color: var(--text-divider);
+  margin-bottom: 28px;
 }
 
 /* The design writes «тип документа» in the accent colour — the two words that say what the choice
@@ -69,8 +75,9 @@
 
 /* Left-aligned against the panel's padding while everything above it is centred. */
 .type-group-heading {
-  margin-bottom: 8px;
-  font-size: 13.5px;
+  margin-bottom: 12px;
+  font-size: 18px;
+  line-height: 22px;
   font-weight: 700;
   color: var(--text-primary);
   text-align: left;
@@ -78,14 +85,14 @@
 
 /* `minmax(0, 1fr)`, not `1fr`: a plain `1fr` floors at the column's min-content, and «Сочинение»
    plus its chevron is wider than the other three headings — which made the fourth card, and only
-   the fourth, grow past 121.5px and drop its tile out of line with the row. */
+   the fourth, grow past its 162 and drop its tile out of line with the row. */
 .type-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 15px;
+  gap: 20px;
 }
 
-/* Two per row on a phone: four 121.5px cards plus their gaps need 531px of content width, which a
+/* Two per row on a phone: four 162px cards plus their gaps need 708px of content width, which a
    360px screen does not have. The cards keep their proportions and take half the row each. */
 @media (max-width: 640px) {
   /* Restated here because `.modal`'s own mobile padding in Modal.css has equal specificity to
