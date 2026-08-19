@@ -20,6 +20,40 @@ paths:
           schema:
             type: string
             enum: [vk, yandex]
+        - name: utm_source
+          in: query
+          required: false
+          schema: { type: string, maxLength: 200 }
+          description: >
+            First-touch attribution carried into the OAuth handshake (story 14). The
+            account is created at `/callback`, two redirects away from any body the client
+            controls, so without these the entire OAuth sign-up channel would register
+            with NULL attribution and CAC-by-UTM would measure only the email channel.
+            The backend stores them against the `state` row it already keeps and reads
+            them back when the callback creates the account; they are never echoed to the
+            provider. Same bound, normalization and drop-not-truncate rule as
+            `auth_register.yaml` § UtmValue: a value over the bound, undecodable, or
+            unstorable makes the whole five-value set unstorable — all five are stored
+            NULL and the handshake proceeds. This route answers 302/404/500 and NO 400,
+            before story 14 and after it: a marketing link with a malformed parameter must
+            never end at a broken sign-in, and story 14 does not add a response class to
+            story 16's contract.
+        - name: utm_medium
+          in: query
+          required: false
+          schema: { type: string, maxLength: 200 }
+        - name: utm_campaign
+          in: query
+          required: false
+          schema: { type: string, maxLength: 200 }
+        - name: utm_content
+          in: query
+          required: false
+          schema: { type: string, maxLength: 200 }
+        - name: utm_term
+          in: query
+          required: false
+          schema: { type: string, maxLength: 200 }
       responses:
         '302':
           description: >
@@ -34,6 +68,9 @@ paths:
               description: Provider authorization URL.
         '404':
           description: Unknown provider (outside the vk|yandex enum).
+        # No '400'. This route has never had one and story 14 does not add one: the utm_*
+        # query parameters are fail-open analytics metadata, dropped when unusable, and a
+        # dropped parameter still redirects (see the utm_source description above).
         '500':
           description: >
             Internal server error (e.g. OAuth provider config unset). Fails closed —
