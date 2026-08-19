@@ -55,3 +55,4 @@ bash.exe.stackdump
 
 # Local project documentation (not committed)
 /Test/
+.design/cache/urls-*.json
