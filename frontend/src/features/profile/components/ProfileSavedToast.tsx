@@ -7,8 +7,9 @@ import { useEffect, useState } from 'react'
 // загрузки/удаления фото». Those are the three writes this screen makes, and until now each of
 // them finished in silence — the field simply stopped saying «Сохраняем имя…».
 //
-// `role="status"`, not `role="alert"`: this is a confirmation, and an assertive live region
-// interrupts whatever a screen-reader user is reading to announce that nothing went wrong.
+// An `<output>`: the element IS a polite live region natively, which is what a confirmation
+// wants — `role="alert"` would interrupt whatever a screen-reader user is reading to tell them
+// that nothing went wrong.
 const VISIBLE_MS = 3200
 
 interface ProfileSavedToastProps {
@@ -32,8 +33,8 @@ export function ProfileSavedToast({ saveCount }: ProfileSavedToastProps) {
   if (!visible) return null
 
   return (
-    <div className="profile-saved-toast" role="status" data-testid="profile-saved-toast">
+    <output className="profile-saved-toast" data-testid="profile-saved-toast">
       Изменения сохранены
-    </div>
+    </output>
   )
 }

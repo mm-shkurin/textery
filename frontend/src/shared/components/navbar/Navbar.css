@@ -161,23 +161,26 @@
     gap: 8px;
   }
 
+  /* The 360px frames (1311:7203, 674:2534) keep the pill's 28px radius and step it to 320x72
+     with 12/20 padding and a 28px wordmark — the bar shrinks, it does not change shape. */
   .navbar-pill,
   .navbar-bar {
-    min-height: 60px;
-    padding: 8px 16px;
+    min-height: 72px;
+    padding: 12px 20px;
   }
 
   .navbar-pill {
-    border-radius: 20px;
+    border-radius: 28px;
   }
 
   .navbar-pill .navbar-logo {
-    height: 34px;
+    height: 28px;
   }
 
+  /* 32 in the mobile frames' `Button`, against 44 on the desktop bar. */
   .navbar .profile-avatar-trigger {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     font-size: 13px;
   }
 

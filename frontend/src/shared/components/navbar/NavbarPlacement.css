@@ -49,7 +49,17 @@
     margin-bottom: 16px;
   }
 
+  /* 40 of air above the bar and 20 under it, per the 360px frames — as padding on the
+     transparent wrapper, never as a margin that would collapse out of the screen.
+     Only the profile's wrapper carries a width: the projects one sits INSIDE the feed's own
+     column, so a width here would inset it twice. */
   .navbar-profile-placement {
-    margin: 12px;
+    width: min(1640px, 100% - 40px);
+    padding-top: 40px;
+    padding-bottom: 20px;
+  }
+
+  .navbar-projects-placement {
+    padding-bottom: 20px;
   }
 }

@@ -1,13 +1,12 @@
 /* «Мои проекты» — the chrome around the feed: header, sections, list view, loading state and
-   pager. The grid and the cards are in ProjectsPage.css; the toolbar and the empty state in the
-   two files named after them. Tokens come from index.css. */
+   pager. Grid and cards live in ProjectsPage.css, the toolbar and empty state in their own
+   files. Tokens come from index.css. */
 
-/* `Main` runs x=140…1780 on a 1920 page — a 1640px column, the 140 either side being what
-   centring leaves over rather than padding inside it. `width`, not `max-width` + padding: the
-   padding version subtracts the gutter FROM the 1640 and narrows every column by 40. */
-/* The shell paints the page white — frame 484:1104 is drawn on #FFFFFF, and its cards are white
-   with a hairline rather than white patches on the product's blue wash. `--bg-surface` rather
-   than a literal: in dark the same relationship has to hold, and there the page is not white. */
+/* `Main` runs x=140…1780 on a 1920 page — a 1640 column, centred. `width`, not `max-width` +
+   padding: the padding version subtracts the gutter FROM the 1640. */
+/* The shell paints the page white — frame 484:1104 is drawn on #FFFFFF, its cards separated from
+   it by a hairline rather than by a tint. `--bg-surface`, not a literal: in dark the same
+   relationship holds on a page that is not white. */
 .projects-shell {
   min-height: 100vh;
   background: var(--bg-surface);
@@ -19,8 +18,7 @@
   padding: 0 0 48px;
 }
 
-/* «Назад» sits ABOVE the title, not beside it: stacked it reads as the way out of the screen,
-   before the screen names itself. */
+/* «Назад» sits ABOVE the title: stacked, it reads as the way out of the screen. */
 .projects-header {
   display: flex;
   flex-direction: column;
@@ -59,8 +57,8 @@
   background: var(--bg-sunken);
 }
 
-/* 20/24 at 600, 40 above and 20 below: the frame stacks `Section` blocks 40 apart (Main's own
-   gap) and puts 20 between a section's title and its row of cards (each Section's gap). */
+/* 20/24 at 600, 40 above and 20 below — `Main`'s gap between sections, and each `Section`'s own
+   gap between its title and its cards. */
 .projects-section-title {
   font-size: 20px;
   line-height: 24px;
@@ -83,8 +81,7 @@
   cursor: pointer;
 }
 
-/* The list view is the same components in one column: switching re-renders data already in
-   hand, so the rows must not need markup of their own. */
+/* The list view is the same components in one column — switching re-renders data in hand. */
 .projects-view-list {
   grid-template-columns: 1fr;
   gap: 10px;
@@ -109,10 +106,14 @@
   -webkit-line-clamp: 1;
 }
 
-/* The list view has no way IN on mobile — the toggle is hidden there — but a stored preference
-   from a wide viewport still arrives as `view="list"`, and the phone would then render rows the
-   design does not draw. The grid is what mobile shows, whatever the preference says. */
+/* No way IN to the list view on mobile — the toggle is hidden — but a stored preference still
+   arrives as `view="list"`. The grid is what mobile shows, whatever the preference says. */
 @media (max-width: 720px) {
+  /* 20 either side — `Main`'s padding in the 360px frame. */
+  .projects-screen {
+    width: min(1640px, 100% - 40px);
+  }
+
   /* 24/16 in the 360px frame 1141:12494 — the mobile heading is one step down from the desktop's
      28, and the subtitle one step down from its 18. */
   .projects-heading {
@@ -146,12 +147,11 @@
   }
 }
 
-/* Cards in outline, so the wait reads as "this is loading" rather than as an empty feed.
-   aria-hidden in the markup: four empty boxes tell an assistive-technology user nothing. */
+/* Cards in outline, so the wait reads as loading rather than as an empty feed. aria-hidden in
+   the markup: four empty boxes tell an assistive-technology user nothing. */
 .projects-skeleton {
   display: grid;
-  /* Same track and gap as the real feed, or the wait would lay out four wide boxes that jump to
-     six narrow cards the moment the response lands. */
+  /* Same track and gap as the real feed, or the wait lays out boxes that jump on arrival. */
   grid-template-columns: repeat(auto-fill, 218px);
   gap: 20px;
   padding: 24px 0;

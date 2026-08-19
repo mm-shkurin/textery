@@ -137,9 +137,10 @@
 }
 
 @media (max-width: 720px) {
+  /* 20 either side and a 16px band above the first card — `Main`'s padding in frame 1311:7203. */
   .profile-page {
-    width: min(1640px, 100% - 28px);
-    padding: 20px 0 40px;
+    width: min(1640px, 100% - 40px);
+    padding: 16px 0 40px;
   }
 
   .profile-heading {
@@ -151,7 +152,7 @@
   }
 
   .profile-card {
-    padding: 20px 18px;
+    padding: 24px 16px;
   }
 
   /* The row STACKS: a label and a 144px button cannot share 320px, and the button is what gets

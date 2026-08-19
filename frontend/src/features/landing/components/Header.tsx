@@ -48,16 +48,17 @@ export function Header({
             </button>
           )}
           {isAuthenticated === true && (
-            // Both history endpoints 401 without a token, so this is the one entry point to work
-            // that only exists once you are signed in. Signed-out visitors are not shown a door to
-            // an empty room.
+            // The one entry point to work that exists only once you are signed in. Labelled for
+            // the screen it opens: that step has been «Мои проекты» since story 12, and the
+            // button kept the name of the list it replaced — the same door, announced under two
+            // names depending on which side of it you stood on.
             <button
               type="button"
               className="btn-ghost header-history"
               data-testid="header-history-button"
               onClick={onHistoryClick}
             >
-              Мои работы
+              Мои проекты
             </button>
           )}
           <button

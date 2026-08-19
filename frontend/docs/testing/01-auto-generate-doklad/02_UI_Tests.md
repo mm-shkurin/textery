@@ -35,7 +35,7 @@ No prerequisite blocker screens apply to this story — there is no parent resou
 
 ```gherkin
 Given a visitor opens the landing page
-Then the "Textery — самая быстрая нейросеть для докладов" hero heading and subheading are visible
+Then the "Textery — самая быстрая нейросеть для учебных текстов" hero heading and subheading are visible
 And a "Создать генерацию" call-to-action button is visible
 ```
 

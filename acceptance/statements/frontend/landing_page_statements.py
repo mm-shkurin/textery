@@ -16,7 +16,7 @@ class LandingPageStatements(BaseFrontendStatements):
     # (node 90:880), which takes precedence over the older Claude-generated HTML mockup for
     # the Landing screen per ProductSpecification/stories/01-auto-generate-doklad/tests/
     # 02_UI_Tests.md. The heading renders as two spans; `.text` flattens them to one line.
-    EXPECTED_HERO_HEADING_TEXT: ClassVar[str] = "Textery — самая быстрая нейросеть для докладов"
+    EXPECTED_HERO_HEADING_TEXT: ClassVar[str] = "Textery — самая быстрая нейросеть для учебных текстов"
     EXPECTED_PRIMARY_CTA_TEXT: ClassVar[str] = "Создать генерацию"
 
     def navigate_to_landing_page(self, driver: WebDriver, app_url: str) -> None:

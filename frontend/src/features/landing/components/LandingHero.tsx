@@ -6,8 +6,10 @@ interface LandingHeroProps {
   onPromptSubmit?: () => void
 }
 
-// Figma `Desktop` (node 90:880): the hero is a two-line 44px heading whose second line is
-// split — "нейросеть" stays near-black, "для докладов" is brand blue.
+// Figma `Desktop` (node 90:880): the hero is a two-line 44/53 heading whose second line is brand
+// blue. The words are the frame's: «нейросеть для учебных текстов», not «для докладов» — the
+// product makes four kinds of text and naming one of them in the first line of the page reads as
+// a limit on what it can do.
 export function LandingHero({ onPromptSubmit }: LandingHeroProps) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -35,11 +37,12 @@ export function LandingHero({ onPromptSubmit }: LandingHeroProps) {
       </div>
 
       <h1 className="hero-title" data-testid="hero-heading">
-        Textery — самая быстрая <span className="hero-title-accent">нейросеть для докладов</span>
+        Textery — самая быстрая{' '}
+        <span className="hero-title-accent">нейросеть для учебных текстов</span>
       </h1>
 
       <p className="hero-subtitle">
-        Создавайте <strong>профессиональные доклады, как в Worde</strong>, с помощью искусственного
+        Создавайте <strong>профессиональные доклады, как в Word</strong>, с помощью искусственного
         интеллекта. Генерация докладов <strong>за 30 секунд</strong>
       </p>
 

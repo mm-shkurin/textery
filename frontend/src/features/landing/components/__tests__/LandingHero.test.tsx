@@ -7,7 +7,7 @@ describe('LandingHero', () => {
     render(<LandingHero />)
 
     expect(screen.getByTestId('hero-heading')).toHaveTextContent(
-      'Textery — самая быстрая нейросеть для докладов',
+      'Textery — самая быстрая нейросеть для учебных текстов',
     )
   })
 

@@ -1,0 +1,55 @@
+Mobile [FRAM] 360x1318 @6801,15072  VER gap0  #FFFFFF
+  Main [FRAM] 360x1115 @6801,15072  VER gap20.0  pad 40/20/40/20
+    Navbar [INST] 320x72 @6821,15112  HOR gap10.0  pad 12/20/12/20  r28.0  #FFFFFF
+      Logo [FRAM] 112x28 @6841,15134  VER gap6.36631965637207
+        Component 17 [INST] 112x28 @6841,15134
+      Container [FRAM] 60x48 @7061,15124  HOR gap12.0  pad 8/0/8/0
+        Button [FRAM] 60x32 @7061,15132  HOR gap4.0  r17.6
+    Section [FRAM] 320x232 @6821,15204  VER gap12.0
+      Title [FRAM] 320x79 @6821,15204  VER gap12.0
+        Мои проекты [TEXT] 320x29 @6821,15204  #000000  24.0/29 w600  «Мои проекты»
+        Все ваши рефераты, курсовые, статьи и другие работ [TEXT] 320x38 @6821,15245  #464551  16.0/19 w400  «Все ваши рефераты, курсовые, статьи и другие работы — в одном месте»
+      Container [FRAM] 320x141 @6821,15295  VER gap4.0  pad 12/0/12/0
+        Container [FRAM] 320x57 @6821,15307  HOR gap12.0  pad 4/0/4/0
+        Container [FRAM] 320x56 @6821,15368  HOR gap12.0  pad 4/0/4/0
+    Section [FRAM] 320x502 @6821,15456  VER gap20.0
+      Container [FRAM] 320x24 @6821,15456  HOR gap0
+        Недавние проекты [TEXT] 191x24 @6821,15456  #000000  20.0/24 w600  «Недавние проекты»
+      Container [FRAM] 320x458 @6821,15500  VER gap20.0
+        Cards/Heading and image [INST] 318x217 @6822,15501  VER gap0  r16.0  #FFFFFF
+        Cards/Heading and image [INST] 318x217 @6822,15740  VER gap0  r16.0  #FFFFFF
+    Section [FRAM] 320x980 @6821,15978  VER gap20.0
+      Container [FRAM] 320x24 @6821,15978  HOR gap585.0
+        Container [FRAM] 129x24 @6821,15978  HOR gap0
+      Container [FRAM] 320x936 @6821,16022  VER gap20.0
+        Cards/Heading and image [INST] 318x217 @6822,16023  VER gap0  r16.0  #FFFFFF
+        Cards/Heading and image [INST] 318x217 @6822,16262  VER gap0  r16.0  #FFFFFF
+        Cards/Heading and image [INST] 318x217 @6822,16501  VER gap0  r16.0  #FFFFFF
+        Cards/Heading and image [INST] 318x217 @6822,16740  VER gap0  r16.0  #FFFFFF
+  Footer [INST] 360x202 @6801,16187  HOR gap10.0  pad 20/32/20/32  #F5F5F7
+    Container [FRAM] 296x135 @6833,16221  VER gap16.0
+      Left [FRAM] 296x38 @6833,16221  HOR gap24.0
+        Logo [FRAM] 112x28 @6833,16226  VER gap6.36631965637207
+        Frame 1073713840 [FRAM] 159x38 @6969,16221  HOR gap10.0
+      Right [FRAM] 296x81 @6833,16275  VER gap12.0
+        Link [FRAM] 188x19 @6941,16275  VER gap0
+        Link [FRAM] 249x19 @6880,16306  VER gap0
+        Link [FRAM] 91x19 @7038,16337  VER gap0
+  Background blur [FRAM] 360x1321 @6801,15070  #000000
+  Modal [FRAM] 319x583 @6821,15440  VER gap0  pad 20/20/32/20  r24.0  #FFFFFF
+    Container [FRAM] 279x110 @6841,15460  VER gap8.0  pad 20/0/20/0
+      Heading 2 [FRAM] 279x24 @6841,15480  VER gap0
+        Создание проекта [TEXT] 185x24 @6888,15480  #000000  20.0/24 w600  «Создание проекта»
+      Paragraph [FRAM] 279x38 @6841,15512  VER gap0
+        Выберите тип документа, который соответствует ваше [TEXT] 279x38 @6841,15512  #464551  16.0/19 w400  «Выберите тип документа, | с которым будете работать»
+    Button [FRAM] 24x24 @7096,15460  HOR gap0  r25165800.0
+      Icons/Set 24px [INST] 18x18 @7099,15463
+        Vector [VECT] 12x12 @7102,15466
+    Frame 1073713844 [FRAM] 279x421 @6841,15570  VER gap20.0
+      Container [FRAM] 279x19 @6841,15570  HOR gap0
+        Учебные [TEXT] 71x19 @6841,15570  #000000  16.0/19 w700  «Учебные»
+      Container [FRAM] 279x382 @6841,15609  HOR gap12.0
+        Cards/Categorys [INST] 131x185 @6841,15609  VER gap8.0  pad 12/12/12/12  r9.6  #F4F6FB
+        Cards/Categorys [INST] 131x185 @6989,15609  VER gap8.0  pad 12/12/12/12  r9.6  #F4F6FB
+        Cards/Categorys [INST] 131x185 @6841,15806  VER gap8.0  pad 12/12/12/12  r9.6  #F4F6FB
+        Cards/Categorys [INST] 131x185 @6989,15806  VER gap8.0  pad 12/12/12/12  r9.6  #F4F6FB
