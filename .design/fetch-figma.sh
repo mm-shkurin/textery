@@ -23,7 +23,7 @@ api() { # api <path> <outfile>
 
 # 1/3 — whole document, one call. Everything else is derived from this file offline.
 if [ ! -s "$CACHE/file.json" ]; then
-  api "/v1/files/$FIGMA_FILE_KEY?geometry=paths" "$CACHE/file.json"
+  api "/v1/files/$FIGMA_FILE_KEY" "$CACHE/file.json"
 else
   echo "file.json cached — skipping fetch"
 fi
