@@ -10,10 +10,11 @@ from auth.oauth.oauth_error_codes import OAUTH_CALLBACK_FAILED, OAuthCallbackErr
 from auth.oauth.start_oauth import StartOAuth
 from dto.auth.login_response_dto import LoginResponseDto
 from dto.auth.oauth_exchange_request_dto import OAuthExchangeRequestDto
+from router import api_routes
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/auth/oauth", tags=["auth", "oauth"])
+router = APIRouter(prefix=api_routes.OAUTH, tags=["auth", "oauth"])
 
 # 302, not FastAPI's default 307: the browser is finishing a navigation, and the
 # provider/frontend legs of this handshake are plain GETs.

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 
 from auth.delete_account import DeleteAccount
 from dto.auth.delete_account_request_dto import DeleteAccountRequestDto
+from router import api_routes
 from security.current_owner import get_current_owner_id
 
 # POST, not `DELETE /api/v1/auth/me`. The operation needs a confirmation body, and
@@ -12,7 +13,7 @@ from security.current_owner import get_current_owner_id
 # be answered by the one refusal this endpoint has, and the user would be told
 # their password was wrong. A sub-resource that is CREATED ("a deletion") is also
 # an honest reading of POST, not a workaround.
-router = APIRouter(prefix="/api/v1/auth/me/deletion", tags=["auth"])
+router = APIRouter(prefix=api_routes.DELETION, tags=["auth"])
 
 
 def get_delete_account_usecase() -> DeleteAccount:

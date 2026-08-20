@@ -17,11 +17,12 @@ from generation.get_generation import GetGeneration
 from generation.list_generations import ListGenerations
 from generation.request_generation import RequestGeneration
 from generation.retry_generation import RetryGeneration
+from router import api_routes
 from security.current_owner import get_current_owner_id
 from shared.exceptions import NotFoundException
 from shared.page import DEFAULT_LIMIT
 
-router = APIRouter(prefix="/api/v1/generations", tags=["generations"])
+router = APIRouter(prefix=api_routes.GENERATIONS, tags=["generations"])
 
 
 def get_request_generation_usecase() -> RequestGeneration:

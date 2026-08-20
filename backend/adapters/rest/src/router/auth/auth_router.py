@@ -14,8 +14,9 @@ from dto.auth.resend_request_dto import ResendRequestDto
 from dto.auth.resend_response_dto import ResendResponseDto
 from dto.auth.verify_request_dto import VerifyRequestDto
 from dto.auth.verify_response_dto import VerifyResponseDto
+from router import api_routes
 
-router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+router = APIRouter(prefix=api_routes.AUTH, tags=["auth"])
 
 
 def get_register_user_usecase() -> RegisterUser:

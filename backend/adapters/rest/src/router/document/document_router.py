@@ -20,11 +20,12 @@ from dto.document.document_dtos import (
 from dto.document.export_media_type import media_type_for
 from dto.document.get_document_response_dto import GetDocumentResponseDto
 from dto.shared.page_dto import PageDto
+from router import api_routes
 from security.current_owner import get_current_owner_id
 from shared.exceptions import NotFoundException
 from shared.page import DEFAULT_LIMIT
 
-router = APIRouter(prefix="/api/v1/documents", tags=["documents"])
+router = APIRouter(prefix=api_routes.DOCUMENTS, tags=["documents"])
 
 
 def get_create_document_usecase() -> CreateDocument:

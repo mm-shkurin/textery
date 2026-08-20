@@ -11,9 +11,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Response
 
 from document.delete_document import DeleteDocument
+from router import api_routes
 from security.current_owner import get_current_owner_id
 
-router = APIRouter(prefix="/api/v1/documents", tags=["documents"])
+router = APIRouter(prefix=api_routes.DOCUMENTS, tags=["documents"])
 
 
 def get_delete_document_usecase() -> DeleteDocument:

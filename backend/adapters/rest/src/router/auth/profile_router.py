@@ -6,6 +6,7 @@ from auth.get_profile import GetProfile
 from auth.rename_account import RenameAccount
 from dto.auth.profile_response_dto import ProfileResponseDto
 from dto.auth.update_profile_request_dto import UpdateProfileRequestDto
+from router import api_routes
 from security.current_owner import get_current_owner_id
 
 # The same prefix auth_router carries, in a file of its own only because the
@@ -13,7 +14,7 @@ from security.current_owner import get_current_owner_id
 # alongside /auth/me, no POST /auth/me/name, and no re-GET after a rename --
 # PATCH answers with the full profile so the client refreshes its identity
 # snapshot from the response it already has.
-router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+router = APIRouter(prefix=api_routes.AUTH, tags=["auth"])
 
 
 def get_get_profile_usecase() -> GetProfile:

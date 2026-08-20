@@ -23,6 +23,8 @@ from typing import Any
 
 from starlette.datastructures import MutableHeaders
 
+from router import api_routes
+
 NO_STORE = "no-store"
 
 # The whole profile family, not the one path: `/api/v1/auth/me/avatar` and
@@ -30,7 +32,7 @@ NO_STORE = "no-store"
 # their 401/404/500 -- rendered by the handlers below, with whatever the route body
 # set discarded -- freely storable. A future `/auth/me*` route inherits no-store by
 # default, which is the safe direction for a route nobody has reviewed yet.
-PROFILE_PREFIX = "/api/v1/auth/me"
+PROFILE_PREFIX = api_routes.PROFILE
 
 
 def is_profile_path(path: str) -> bool:
