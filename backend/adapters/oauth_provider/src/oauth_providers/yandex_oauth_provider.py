@@ -2,14 +2,18 @@ import logging
 from urllib.parse import urlencode
 
 import httpx
+from oauth_providers.oauth_settings import YANDEX
 
 from auth.oauth.oauth_provider import OAuthProviderError, ProviderIdentity
 
 logger = logging.getLogger(__name__)
 
-AUTHORIZE_URL = "https://oauth.yandex.ru/authorize"
-TOKEN_URL = "https://oauth.yandex.ru/token"
-INFO_URL = "https://login.yandex.ru/info"
+# Configuration, read from oauth_endpoints.toml with an environment override each.
+# Kept under their old names: the adapter's tests assert the calls go to these,
+# and a test that repeats the literal it expects asserts nothing about the code.
+AUTHORIZE_URL = YANDEX.authorize
+TOKEN_URL = YANDEX.token
+INFO_URL = YANDEX.info
 
 
 class YandexOAuthProvider:
