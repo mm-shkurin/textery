@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useReducer, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { login, type LoginResult } from '../api/loginApi'
 import { saveSession } from '../../../shared/session/authSession'
@@ -10,6 +10,7 @@ import {
   readLockoutRetrySeconds,
 } from '../utils/loginErrorHandling'
 import { safeRedirectTarget } from '../utils/safeRedirectTarget'
+import { INITIAL_LOGIN_STATE, loginSubmitReducer } from '../utils/loginSubmitState'
 
 // The whole submit lifecycle of the login screen — credentials in, one of four outcomes out —
 // lives here rather than in LoginForm so the component is markup plus a state read. The four
@@ -20,21 +21,14 @@ export function useLoginSubmit() {
   const navigate = useNavigate()
   const location = useLocation()
   const redirectTo = safeRedirectTarget((location.state as { from?: unknown } | null)?.from)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [formError, setFormError] = useState<string | null>(null)
-  // A network/transport failure is a DIFFERENT state from a rejected credential: it renders its own
-  // retry-capable element, visually distinct from the field-level validation error, so the user is
-  // told the connection dropped rather than that their password was wrong.
-  const [networkError, setNetworkError] = useState(false)
-  // Non-null once the server reports a lockout: the seconds it wants us to wait. Its presence,
-  // not a message, is what swaps the whole screen for the account-locked one.
-  const [lockoutSeconds, setLockoutSeconds] = useState<number | null>(null)
+  // The four outcomes are one position, moved by named transitions — see loginSubmitState.
+  const [state, dispatch] = useReducer(loginSubmitReducer, INITIAL_LOGIN_STATE)
   const emailInputRef = useRef<HTMLInputElement>(null)
   const passwordInputRef = useRef<HTMLInputElement>(null)
 
   // Both the countdown elapsing and the user clicking "back to login" return to the form, so both
   // just clear the lockout. Stable identity so the screen's expiry effect doesn't re-run per tick.
-  const dismissLockout = useCallback(() => setLockoutSeconds(null), [])
+  const dismissLockout = useCallback(() => dispatch({ type: 'lockoutDismissed' }), [])
 
   // ONLY login()'s own rejection may reach here: lockout, transport/network, or a message
   // rejection. A throw from the post-login steps is a LOCAL fault (storage, routing), not a
@@ -44,17 +38,17 @@ export function useLoginSubmit() {
     // Lockout is not a message on the form — it replaces the form. Branch it out before the
     // message path so the account-locked screen owns the display (message stays '' from the api).
     if (isAccountLocked(error)) {
-      setLockoutSeconds(readLockoutRetrySeconds(error))
+      dispatch({ type: 'lockedOut', seconds: readLockoutRetrySeconds(error) })
       return
     }
     // A transport failure, a client-side timeout (a hung request), or a gateway 5xx is a
     // connection problem, not a bad credential — it gets the distinct, retry-capable
     // network-error state instead of the form-error message.
     if (isLoginNetworkError(error)) {
-      setNetworkError(true)
+      dispatch({ type: 'connectionFailed' })
       return
     }
-    setFormError(loginErrorMessage(error))
+    dispatch({ type: 'rejected', message: loginErrorMessage(error) })
   }
 
   function finishSignIn(session: LoginResult) {
@@ -62,13 +56,13 @@ export function useLoginSubmit() {
     // would drop the user into the app with no credential and fail later, somewhere that cannot
     // explain itself.
     if (!session.accessToken) {
-      setFormError(GENERIC_LOGIN_FAILURE_MESSAGE)
+      dispatch({ type: 'rejected', message: GENERIC_LOGIN_FAILURE_MESSAGE })
       return
     }
     if (!saveSession(session)) {
       // Storage refused (private mode, embedded webview). Say so rather than navigating into an
       // app that will behave as if signed out.
-      setFormError(SESSION_SAVE_FAILURE_MESSAGE)
+      dispatch({ type: 'rejected', message: SESSION_SAVE_FAILURE_MESSAGE })
       return
     }
     navigate(redirectTo, { replace: true })
@@ -76,10 +70,8 @@ export function useLoginSubmit() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (isSubmitting) return
-    setIsSubmitting(true)
-    setFormError(null)
-    setNetworkError(false)
+    if (state.isSubmitting) return
+    dispatch({ type: 'submitStarted' })
     // Wide finally: isSubmitting resets on EVERY exit path — a login rejection, a post-login
     // throw, or success — so the spinner never strands and the submit button always re-enables.
     try {
@@ -99,20 +91,20 @@ export function useLoginSubmit() {
       try {
         finishSignIn(session)
       } catch {
-        setFormError(GENERIC_LOGIN_FAILURE_MESSAGE)
+        dispatch({ type: 'rejected', message: GENERIC_LOGIN_FAILURE_MESSAGE })
       }
     } finally {
-      setIsSubmitting(false)
+      dispatch({ type: 'submitSettled' })
     }
   }
 
   return {
     emailInputRef,
     passwordInputRef,
-    isSubmitting,
-    formError,
-    networkError,
-    lockoutSeconds,
+    isSubmitting: state.isSubmitting,
+    formError: state.formError,
+    networkError: state.networkError,
+    lockoutSeconds: state.lockoutSeconds,
     dismissLockout,
     handleSubmit,
   }

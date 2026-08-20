@@ -5,6 +5,8 @@ import { MemoryRouter } from 'react-router-dom'
 import { OAuthCallback } from '../OAuthCallback'
 import * as oauthExchangeApi from '../../api/oauthExchangeApi'
 import * as authSession from '../../../../shared/session/authSession'
+import authFormStyles from '../AuthForm.module.css'
+import oauthCallbackStyles from '../OAuthCallback.module.css'
 
 // Scenario 3.2 — the exchange is issued EXACTLY ONCE per handoff code even when the callback's
 // effect runs twice. `StrictMode` is the real-world double-run: React dev mounts, tears down and
@@ -157,7 +159,7 @@ describe('OAuthCallback exactly-once exchange', () => {
   })
 
   // Carried from the 3.1 align-design review: the callback's whole visual shell rests on one
-  // `import './AuthForm.css'` plus these two shared classnames. jsdom applies no CSS, so if an
+  // `import authFormStyles from './AuthForm.module.css'` plus these two shared classnames. jsdom applies no CSS, so if an
   // import tidy-up or a classname rename drops the shell to a naked box, NOTHING else goes RED.
   // This pins the class contract itself. Born-green — 3.1 align-design already ships it.
   it('keeps the shared auth shell classes on the loading state', () => {
@@ -167,10 +169,13 @@ describe('OAuthCallback exactly-once exchange', () => {
 
     expect(screen.getByTestId('oauth-callback-loading')).toHaveAttribute(
       'class',
-      'auth-card oauth-callback-card',
+      `${authFormStyles['auth-card']} ${oauthCallbackStyles['oauth-callback-card']}`,
     )
     const subtitle = screen.getByText('Это займёт пару секунд. Не закрывайте страницу.')
-    expect(subtitle).toHaveAttribute('class', 'auth-subtitle oauth-callback-subtitle')
+    expect(subtitle).toHaveAttribute(
+      'class',
+      `${authFormStyles['auth-subtitle']} ${oauthCallbackStyles['oauth-callback-subtitle']}`,
+    )
     expect(subtitle.tagName).toBe('P')
   })
 })

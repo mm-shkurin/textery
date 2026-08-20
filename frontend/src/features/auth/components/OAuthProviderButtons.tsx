@@ -1,5 +1,5 @@
 import { OAUTH_PROVIDERS } from '../utils/oauthProviders'
-import './LoginForm.css'
+import loginFormStyles from './LoginForm.module.css'
 
 // OAuth providers as DATA, not duplicated JSX branches: an unknown provider is simply not in this
 // list, so it is not a reachable code path. The list lives in utils/oauthProviders so the callback
@@ -9,16 +9,16 @@ import './LoginForm.css'
 export function OAuthProviderButtons() {
   return (
     <>
-      <div className="auth-divider">или</div>
-      <div className="oauth-list">
+      <div className={loginFormStyles['auth-divider']}>или</div>
+      <div className={loginFormStyles['oauth-list']}>
         {OAUTH_PROVIDERS.map(({ provider, label, badgeSrc, startPath }) => (
           <a
             key={provider}
-            className={`btn-oauth btn-oauth-${provider}`}
+            className={`${loginFormStyles['btn-oauth']} btn-oauth-${provider}`}
             href={startPath}
             data-testid={`oauth-${provider}-button`}
           >
-            <span className="provider-badge" aria-hidden="true">
+            <span className={loginFormStyles['provider-badge']} aria-hidden="true">
               <img src={badgeSrc} alt="" />
             </span>
             {label}

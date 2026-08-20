@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { SECOND_MS } from '../../../shared/config/runtime'
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
 import { formatMmSs } from '../utils/formatDuration'
-import './AccountLockedScreen.css'
+import styles from './AccountLockedScreen.module.css'
+import authFormStyles from './AuthForm.module.css'
 
 // The locked-screen copy lives HERE, in the form-side component — never in the loginApi mapper
 // (round-8 premortem seam: the api reports the wire, the form owns display). The api sends
@@ -66,19 +67,22 @@ export function AccountLockedScreen({ retryAfterSeconds, onDismiss }: AccountLoc
   }, [remaining, onDismiss])
 
   return (
-    <div className="auth-card account-locked-card" data-testid="account-locked-screen">
-      <div className="al-icon-badge">
-        <PlaceholderImage className="al-icon" />
+    <div
+      className={`${authFormStyles['auth-card']} ${styles['account-locked-card']}`}
+      data-testid="account-locked-screen"
+    >
+      <div className={styles['al-icon-badge']}>
+        <PlaceholderImage className={styles['al-icon']} />
       </div>
       <h1>{HEADING}</h1>
-      <p className="auth-subtitle al-subtitle">{SUBTITLE}</p>
-      <div className="al-timer-pill">
+      <p className={`${authFormStyles['auth-subtitle']} ${styles['al-subtitle']}`}>{SUBTITLE}</p>
+      <div className={styles['al-timer-pill']}>
         {RETRY_PREFIX}
         <span data-testid="account-locked-countdown">{formatMmSs(remaining)}</span>
       </div>
       <button
         type="button"
-        className="al-back-button"
+        className={styles['al-back-button']}
         data-testid="account-locked-back-to-login"
         onClick={onDismiss}
       >

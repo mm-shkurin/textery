@@ -1,3 +1,5 @@
+import authFormStyles from './AuthForm.module.css'
+
 interface AuthSubmitButtonProps {
   testId: string
   isSubmitting: boolean
@@ -6,7 +8,12 @@ interface AuthSubmitButtonProps {
 
 export function AuthSubmitButton({ testId, isSubmitting, children }: AuthSubmitButtonProps) {
   return (
-    <button type="submit" className="auth-submit" data-testid={testId} disabled={isSubmitting}>
+    <button
+      type="submit"
+      className={authFormStyles['auth-submit']}
+      data-testid={testId}
+      disabled={isSubmitting}
+    >
       {children}
     </button>
   )

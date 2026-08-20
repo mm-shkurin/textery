@@ -1,5 +1,5 @@
 /* Account-locked screen. Reuses the shared .auth-card shell; only the deltas live here.
-   Re-skinned to the Figma light theme — the surfaces it used to borrow (#232428, white-alpha
+   Re-skinned to the Figma light theme — the surfaces it used to borrow (hex 232428, white-alpha
    borders) do not exist on a white card. */
 .account-locked-card {
   text-align: center;

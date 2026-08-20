@@ -7,9 +7,9 @@ import { OAuthErrorBanner } from './OAuthErrorBanner'
 import { AccountLockedScreen } from './AccountLockedScreen'
 import { useLoginSubmit } from '../hooks/useLoginSubmit'
 import { NETWORK_LOGIN_FAILURE_MESSAGE } from '../utils/authMessages'
-import './AuthForm.css'
-import './AuthStatus.css'
-import './LoginForm.css'
+import authFormStyles from './AuthForm.module.css'
+import authStatusStyles from './AuthStatus.module.css'
+import styles from './LoginForm.module.css'
 
 // The submit lifecycle — credentials in, one of lockout / network / rejection / success out — is
 // in ../hooks/useLoginSubmit; login-rejection interpretation is in ../utils/loginErrorHandling.
@@ -38,12 +38,14 @@ export function LoginForm() {
   }
 
   return (
-    <div className="auth-card login-card">
+    <div className={`${authFormStyles['auth-card']} ${styles['login-card']}`}>
       <OAuthErrorBanner />
       <h1>Вход в Textery AI</h1>
-      <p className="auth-subtitle login-subtitle">Введите свои данные для продолжения работы</p>
+      <p className={`${authFormStyles['auth-subtitle']} ${styles['login-subtitle']}`}>
+        Введите свои данные для продолжения работы
+      </p>
       <form onSubmit={handleSubmit}>
-        <div className="auth-field">
+        <div className={authFormStyles['auth-field']}>
           <label htmlFor="login-email">Email</label>
           <input
             id="login-email"
@@ -54,9 +56,9 @@ export function LoginForm() {
             ref={emailInputRef}
           />
         </div>
-        <div className="auth-field">
+        <div className={authFormStyles['auth-field']}>
           <label htmlFor="login-password">Пароль</label>
-          <div className="auth-field-wrap">
+          <div className={authFormStyles['auth-field-wrap']}>
             <input
               id="login-password"
               type={showPassword ? 'text' : 'password'}
@@ -67,7 +69,7 @@ export function LoginForm() {
             />
             <button
               type="button"
-              className="auth-password-toggle"
+              className={authFormStyles['auth-password-toggle']}
               data-testid="login-password-toggle"
               aria-pressed={showPassword}
               onClick={handleToggleShowPassword}
@@ -81,7 +83,11 @@ export function LoginForm() {
           // user sees it appear, and without the live region a screen-reader user gets nothing
           // but a button that re-enabled. The one error the module comments most insist must
           // reach the user was the one not announced.
-          <div className="auth-form-error" data-testid="login-form-error" role="alert">
+          <div
+            className={authStatusStyles['auth-form-error']}
+            data-testid="login-form-error"
+            role="alert"
+          >
             {formError}
           </div>
         )}
@@ -90,7 +96,11 @@ export function LoginForm() {
           // connection problem, not a rejected credential, so it must not be mistaken for either
           // one by a sighted or a screen-reader user. role="alert" announces it; the copy invites a
           // retry, and the submit button re-enables (finally clears isSubmitting) so the user can.
-          <div className="auth-network-error" data-testid="login-network-error" role="alert">
+          <div
+            className={authStatusStyles['auth-network-error']}
+            data-testid="login-network-error"
+            role="alert"
+          >
             {NETWORK_LOGIN_FAILURE_MESSAGE}
           </div>
         )}
@@ -100,7 +110,7 @@ export function LoginForm() {
         {isSubmitting && <AuthLoadingIndicator testId="login-loading-indicator" />}
       </form>
       <OAuthProviderButtons />
-      <p className="auth-footer-link">
+      <p className={authFormStyles['auth-footer-link']}>
         Нет аккаунта?{' '}
         <Link to="/register" data-testid="login-register-link">
           Зарегистрироваться

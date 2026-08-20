@@ -1,3 +1,5 @@
+import authFormStyles from './AuthForm.module.css'
+
 interface AuthLoadingIndicatorProps {
   testId: string
 }
@@ -8,7 +10,11 @@ interface AuthLoadingIndicatorProps {
 // leaving the one property it depends on to a default is how it quietly stops being announced.
 export function AuthLoadingIndicator({ testId }: AuthLoadingIndicatorProps) {
   return (
-    <output className="auth-loading-indicator" data-testid={testId} aria-live="polite">
+    <output
+      className={authFormStyles['auth-loading-indicator']}
+      data-testid={testId}
+      aria-live="polite"
+    >
       Загрузка...
     </output>
   )

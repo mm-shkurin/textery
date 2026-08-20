@@ -3,9 +3,9 @@ import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
 import { useRegisterSubmit } from '../hooks/useRegisterSubmit'
 import { CONFIRM_MISMATCH_MESSAGE, PASSWORD_POLICY_HINT } from '../utils/passwordPolicy'
-import './AuthForm.css'
-import './AuthStatus.css'
-import './RegisterForm.css'
+import authFormStyles from './AuthForm.module.css'
+import './AuthStatus.module.css'
+import styles from './RegisterForm.module.css'
 
 export function RegisterForm() {
   const {
@@ -24,13 +24,13 @@ export function RegisterForm() {
   } = useRegisterSubmit()
 
   return (
-    <div className="auth-card register-card">
+    <div className={`${authFormStyles['auth-card']} ${styles['register-card']}`}>
       <h1>Регистрация в Textery AI</h1>
-      <p className="auth-subtitle register-subtitle">
+      <p className={`${authFormStyles['auth-subtitle']} ${styles['register-subtitle']}`}>
         Создайте аккаунт по email, чтобы начать генерировать документы
       </p>
       <form onSubmit={handleSubmit}>
-        <div className="auth-field">
+        <div className={authFormStyles['auth-field']}>
           <label htmlFor="email">Email</label>
           <input
             id="email"
@@ -42,7 +42,7 @@ export function RegisterForm() {
           />
           {emailError && (
             <div
-              className="register-hint register-hint-error"
+              className={`${styles['register-hint']} ${styles['register-hint-error']}`}
               data-testid="register-email-error"
               role="alert"
             >
@@ -50,7 +50,7 @@ export function RegisterForm() {
             </div>
           )}
         </div>
-        <div className="auth-field">
+        <div className={authFormStyles['auth-field']}>
           <label htmlFor="password">Пароль</label>
           <input
             id="password"
@@ -65,14 +65,18 @@ export function RegisterForm() {
               always in the DOM, so `role="alert"` would announce the hint on first paint — hence
               the role appears only in the error state, where it is an alert and not a caption. */}
           <div
-            className={passwordError ? 'register-hint register-hint-error' : 'register-hint'}
+            className={
+              passwordError
+                ? `${styles['register-hint']} ${styles['register-hint-error']}`
+                : styles['register-hint']
+            }
             data-testid={passwordError ? 'register-password-error' : undefined}
             role={passwordError ? 'alert' : undefined}
           >
             {PASSWORD_POLICY_HINT}
           </div>
         </div>
-        <div className="auth-field">
+        <div className={authFormStyles['auth-field']}>
           <label htmlFor="confirm">Повторите пароль</label>
           <input
             id="confirm"
@@ -88,7 +92,7 @@ export function RegisterForm() {
               passwords disagree. It was the one validation error of the three announcing nothing. */}
           {confirmError && (
             <div
-              className="register-hint register-hint-error"
+              className={`${styles['register-hint']} ${styles['register-hint-error']}`}
               data-testid="register-confirm-error"
               role="alert"
             >
@@ -100,12 +104,12 @@ export function RegisterForm() {
           Зарегистрироваться
         </AuthSubmitButton>
         {isSubmitting && <AuthLoadingIndicator testId="register-loading-indicator" />}
-        <p className="register-terms">
+        <p className={styles['register-terms']}>
           Создавая аккаунт, вы соглашаетесь с нашими Условиями использования, Политикой
           конфиденциальности и Обработкой персональных данных
         </p>
       </form>
-      <p className="auth-footer-link">
+      <p className={authFormStyles['auth-footer-link']}>
         Уже есть аккаунт?{' '}
         <Link to="/login" data-testid="register-login-link" onClick={handleLeaveClick}>
           Войти

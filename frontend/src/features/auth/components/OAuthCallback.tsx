@@ -8,9 +8,9 @@ import { NETWORK_LOGIN_FAILURE_MESSAGE } from '../utils/authMessages'
 import { oauthProviderFailureMessage } from '../utils/oauthMessages'
 import { isMalformedCallback } from '../utils/oauthProviders'
 import { safeRedirectTarget } from '../utils/safeRedirectTarget'
-import './AuthForm.css'
-import './AuthStatus.css'
-import './OAuthCallback.css'
+import authFormStyles from './AuthForm.module.css'
+import './AuthStatus.module.css'
+import styles from './OAuthCallback.module.css'
 
 // The /auth/callback interstitial. The visitor arrives here from the provider with a one-time
 // handoff `code` in the query; the frontend exchanges it for a session (POST /oauth/exchange),
@@ -134,19 +134,27 @@ export function OAuthCallback() {
 
   if (failed) {
     return (
-      <div className="auth-card oauth-callback-card" data-testid="oauth-callback-error">
+      <div
+        className={`${authFormStyles['auth-card']} ${styles['oauth-callback-card']}`}
+        data-testid="oauth-callback-error"
+      >
         <h1>Не удалось завершить вход</h1>
-        <p className="auth-subtitle oauth-callback-subtitle">Попробуйте войти ещё раз.</p>
+        <p className={`${authFormStyles['auth-subtitle']} ${styles['oauth-callback-subtitle']}`}>
+          Попробуйте войти ещё раз.
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="auth-card oauth-callback-card" data-testid="oauth-callback-loading">
-      <div className="oauth-callback-spinner" aria-hidden="true" />
-      <output className="oauth-callback-status" aria-live="polite">
+    <div
+      className={`${authFormStyles['auth-card']} ${styles['oauth-callback-card']}`}
+      data-testid="oauth-callback-loading"
+    >
+      <div className={styles['oauth-callback-spinner']} aria-hidden="true" />
+      <output className={styles['oauth-callback-status']} aria-live="polite">
         <h1>Завершаем вход…</h1>
-        <p className="auth-subtitle oauth-callback-subtitle">
+        <p className={`${authFormStyles['auth-subtitle']} ${styles['oauth-callback-subtitle']}`}>
           Это займёт пару секунд. Не закрывайте страницу.
         </p>
       </output>
