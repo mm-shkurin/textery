@@ -12,12 +12,12 @@ import { ProfileAppearanceCard } from './ProfileAppearanceCard'
 import { ProfileLoadFailed } from './ProfileLoadFailed'
 import { ProfilePersonalCard } from './ProfilePersonalCard'
 import { ProfileSkeleton } from './ProfileSkeleton'
-import './ProfilePage.css'
-import './ProfileButtons.css'
-import './ProfileForm.css'
-import './ProfileTheme.css'
-import './ProfileModal.css'
-import './ProfileStates.css'
+import styles from './ProfilePage.module.css'
+import './ProfileButtons.module.css'
+import './ProfileForm.module.css'
+import './ProfileTheme.module.css'
+import './ProfileModal.module.css'
+import './ProfileStates.module.css'
 
 // «Мой профиль» — Figma nodes 1127:10768 (base), 1202:6364 (editing), 1227:9790 (saving) and
 // 1202:6227 (deleting).
@@ -52,12 +52,12 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="profile-screen" data-testid="profile-screen">
+    <div className={styles['profile-screen']} data-testid="profile-screen">
       <ProfileHeader onLogoutClick={handleLogout} onProjectsClick={handleBack} />
 
-      <main className="profile-page">
-        <h1 className="profile-heading">Мой профиль</h1>
-        <p className="profile-subtitle">
+      <main className={styles['profile-page']}>
+        <h1 className={styles['profile-heading']}>Мой профиль</h1>
+        <p className={styles['profile-subtitle']}>
           Личные данные, внешний вид приложения и управление аккаунтом
         </p>
 
@@ -77,11 +77,11 @@ export function ProfilePage() {
         ) : identity.status === 'failed' ? (
           // A message and «Повторить», never an endless spinner: a spinner with no bound is
           // indistinguishable from a hung tab, and this request can genuinely never answer.
-          <div className="profile-card">
+          <div className={styles['profile-card']}>
             <ProfileLoadFailed onRetry={reloadIdentity} onBack={() => navigate(-1)} />
           </div>
         ) : (
-          <div className="profile-card">
+          <div className={styles['profile-card']}>
             <ProfileSkeleton />
           </div>
         )}

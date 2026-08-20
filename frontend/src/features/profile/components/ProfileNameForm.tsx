@@ -3,6 +3,8 @@ import { NAME_MAX_CODE_POINTS } from '../../../shared/identity/nameValue'
 import { SAVE_FAILED_MESSAGE } from '../utils/profileCopy'
 import { useProfileNameForm } from '../hooks/useProfileNameForm'
 import { ProfileSavedToast } from './ProfileSavedToast'
+import profileFormStyles from './ProfileForm.module.css'
+import profileButtonsStyles from './ProfileButtons.module.css'
 
 interface ProfileNameFormProps {
   profile: Profile
@@ -17,7 +19,7 @@ export function ProfileNameForm({ profile, markDirty, markClean }: ProfileNameFo
 
   return (
     <form
-      className="profile-form"
+      className={profileFormStyles['profile-form']}
       onSubmit={(event) => {
         // Enter in the field submits, and the browser would reload the page doing it. The same
         // handler as the button, so a second Enter hits the same one-PATCH guard a second click
@@ -30,9 +32,17 @@ export function ProfileNameForm({ profile, markDirty, markClean }: ProfileNameFo
           card rather than an inline field error — the field is not what is wrong. The typed value
           is kept, the form stays usable, and «Повторить» is the same save again. */}
       {form.saveFailed && (
-        <div className="profile-save-failed" role="alert" data-testid="profile-save-failed">
+        <div
+          className={profileFormStyles['profile-save-failed']}
+          role="alert"
+          data-testid="profile-save-failed"
+        >
           <span>{SAVE_FAILED_MESSAGE}</span>
-          <button type="button" className="profile-btn-ghost" onClick={() => void form.save()}>
+          <button
+            type="button"
+            className={profileButtonsStyles['profile-btn-ghost']}
+            onClick={() => void form.save()}
+          >
             Повторить
           </button>
         </div>
@@ -42,12 +52,14 @@ export function ProfileNameForm({ profile, markDirty, markClean }: ProfileNameFo
           and the card it sits in is already titled «Личные данные». Two headings and a label for
           one text input is three names for the same thing. */}
       <div className="profile-field">
-        <div className="profile-label-row">
-          <label className="profile-label" htmlFor="profile-name-input">
+        <div className={profileFormStyles['profile-label-row']}>
+          <label className={profileFormStyles['profile-label']} htmlFor="profile-name-input">
             Имя
           </label>
           <span
-            className={`profile-counter${form.overLength ? ' profile-counter-over' : ''}`}
+            className={`${profileFormStyles['profile-counter']}${
+              form.overLength ? ' ' + profileFormStyles['profile-counter-over'] : ''
+            }`}
             data-testid="profile-name-counter"
           >
             {form.count} / {NAME_MAX_CODE_POINTS}
@@ -55,9 +67,9 @@ export function ProfileNameForm({ profile, markDirty, markClean }: ProfileNameFo
         </div>
         <input
           id="profile-name-input"
-          className={`profile-input${form.error !== null ? ' profile-input-error' : ''}${
-            form.saving ? ' profile-input-locked' : ''
-          }`}
+          className={`${profileFormStyles['profile-input']}${
+            form.error !== null ? ' ' + profileFormStyles['profile-input-error'] : ''
+          }${form.saving ? ' ' + profileFormStyles['profile-input-locked'] : ''}`}
           data-testid="profile-name-input"
           value={form.value}
           placeholder="Например, Анна Ковалёва"
@@ -65,13 +77,17 @@ export function ProfileNameForm({ profile, markDirty, markClean }: ProfileNameFo
           onChange={(event) => form.change(event.target.value)}
         />
         {form.error !== null ? (
-          <p className="profile-field-error" role="alert" data-testid="profile-name-error">
+          <p
+            className={profileFormStyles['profile-field-error']}
+            role="alert"
+            data-testid="profile-name-error"
+          >
             {form.error}
           </p>
         ) : form.saving ? (
-          <p className="profile-field-note">Сохраняем имя…</p>
+          <p className={profileFormStyles['profile-field-note']}>Сохраняем имя…</p>
         ) : (
-          <p className="profile-field-note">
+          <p className={profileFormStyles['profile-field-note']}>
             {profile.name === null
               ? 'Пока имени нет, везде показывается адрес почты.'
               : 'Очистите поле и сохраните, чтобы убрать имя — снова будет показываться почта.'}
@@ -79,10 +95,10 @@ export function ProfileNameForm({ profile, markDirty, markClean }: ProfileNameFo
         )}
       </div>
 
-      <div className="profile-actions">
+      <div className={profileFormStyles['profile-actions']}>
         <button
           type="button"
-          className="profile-btn-ghost"
+          className={profileButtonsStyles['profile-btn-ghost']}
           data-testid="profile-name-cancel"
           disabled={!form.changed || form.saving}
           onClick={form.cancel}
@@ -93,11 +109,13 @@ export function ProfileNameForm({ profile, markDirty, markClean }: ProfileNameFo
             button invites a request that would change nothing. */}
         <button
           type="submit"
-          className="profile-btn-primary"
+          className={profileButtonsStyles['profile-btn-primary']}
           data-testid="profile-name-save"
           disabled={!form.canSave}
         >
-          {form.saving && <span className="profile-spinner" aria-hidden="true" />}
+          {form.saving && (
+            <span className={profileButtonsStyles['profile-spinner']} aria-hidden="true" />
+          )}
           {form.saving ? 'Сохранение…' : 'Сохранить'}
         </button>
       </div>

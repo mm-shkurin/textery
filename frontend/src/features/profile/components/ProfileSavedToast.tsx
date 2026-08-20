@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { RUNTIME } from '../../../shared/config/runtime'
+import profileStatesStyles from './ProfileStates.module.css'
 
 // The «Изменения сохранены» alert — Figma node 1227:9790, a 637x64 black pill at a 16px radius,
 // centred against the bottom of the screen, with its 16/600 label in white.
@@ -35,7 +36,10 @@ export function ProfileSavedToast({ saveCount }: ProfileSavedToastProps) {
   if (!visible) return null
 
   return (
-    <output className="profile-saved-toast" data-testid="profile-saved-toast">
+    <output
+      className={profileStatesStyles['profile-saved-toast']}
+      data-testid="profile-saved-toast"
+    >
       Изменения сохранены
     </output>
   )

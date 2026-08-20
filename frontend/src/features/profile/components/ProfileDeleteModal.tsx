@@ -8,6 +8,8 @@ import {
 } from '../utils/profileCopy'
 import type { AccountDeletion } from '../hooks/useAccountDeletion'
 import { listenToDocument } from '../../../shared/lib/browser'
+import profileModalStyles from './ProfileModal.module.css'
+import profileButtonsStyles from './ProfileButtons.module.css'
 
 interface ProfileDeleteModalProps {
   profile: Profile
@@ -40,22 +42,22 @@ export function ProfileDeleteModal({ profile, deletion }: ProfileDeleteModalProp
   }, [deletion])
 
   return (
-    <div className="profile-modal-scrim">
+    <div className={profileModalStyles['profile-modal-scrim']}>
       <dialog
-        className="profile-modal"
+        className={profileModalStyles['profile-modal']}
         open
         aria-modal="true"
         aria-labelledby="profile-delete-title"
         data-testid="account-delete-confirm"
       >
-        <h3 className="profile-modal-title" id="profile-delete-title">
+        <h3 className={profileModalStyles['profile-modal-title']} id="profile-delete-title">
           {DELETION_CONFIRM_TITLE}
         </h3>
         {/* What is lost, before what to type. The frame puts this sentence under the title and
             the product had only ever shown the instruction — so the irreversible half of an
             irreversible dialog was the half missing from it. */}
-        <p className="profile-modal-warning">{DELETION_CONSEQUENCE}</p>
-        <p className="profile-modal-hint">
+        <p className={profileModalStyles['profile-modal-warning']}>{DELETION_CONSEQUENCE}</p>
+        <p className={profileModalStyles['profile-modal-hint']}>
           {deletion.kind === 'password' ? DELETION_PASSWORD_HINT : deletionEmailHint(profile.email)}
         </p>
 
@@ -64,7 +66,7 @@ export function ProfileDeleteModal({ profile, deletion }: ProfileDeleteModalProp
             no key. */}
         <input
           ref={inputRef}
-          className="profile-modal-input"
+          className={profileModalStyles['profile-modal-input']}
           data-testid={
             deletion.kind === 'password' ? 'deletion-password-input' : 'deletion-email-input'
           }
@@ -78,17 +80,21 @@ export function ProfileDeleteModal({ profile, deletion }: ProfileDeleteModalProp
         />
 
         {deletion.error !== null && (
-          <p className="profile-modal-error" role="alert" data-testid="deletion-error">
+          <p
+            className={profileModalStyles['profile-modal-error']}
+            role="alert"
+            data-testid="deletion-error"
+          >
             {deletion.error}
           </p>
         )}
 
-        <div className="profile-modal-actions">
+        <div className={profileModalStyles['profile-modal-actions']}>
           {/* Cancel first in the DOM and visually left of the destructive one: the way out is the
               more likely intention of somebody who has got this far and paused. */}
           <button
             type="button"
-            className="profile-btn-ghost"
+            className={profileButtonsStyles['profile-btn-ghost']}
             data-testid="deletion-cancel-button"
             disabled={deletion.busy}
             onClick={deletion.cancel}
@@ -97,7 +103,7 @@ export function ProfileDeleteModal({ profile, deletion }: ProfileDeleteModalProp
           </button>
           <button
             type="button"
-            className="profile-btn-danger"
+            className={profileButtonsStyles['profile-btn-danger']}
             data-testid="deletion-confirm-button"
             // Disabled until the confirmation actually matches. For the address that means an
             // exact match — the gesture is proving you know which account this is, and a near-miss

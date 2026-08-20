@@ -6,7 +6,7 @@
    All four are 44px tall with a 12px radius. That is not a coincidence in the file and it should
    not become one here: they sit in the same rows as each other. */
 
-/* #FF383C is the design's red and it is NOT `--error` (#ef4444) — near-misses retyped per
+/* hex FF383C is the design's red and it is NOT `--error` (hex ef4444) — near-misses retyped per
    component are exactly what makes a palette drift. Both themes are given: the light red measures
    3.3:1 on the dark surface and would be a stripe nobody can read. */
 

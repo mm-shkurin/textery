@@ -1,5 +1,6 @@
 import { Navbar } from '../../../shared/components/navbar/Navbar'
-import '../../../shared/components/navbar/NavbarPlacement.css'
+import navbarPlacementStyles from '../../../shared/components/navbar/NavbarPlacement.module.css'
+import navbarButtonsStyles from '../../../shared/components/navbar/NavbarButtons.module.css'
 
 interface ProfileHeaderProps {
   onLogoutClick: () => void
@@ -24,7 +25,7 @@ export function ProfileHeader({ onLogoutClick, onProjectsClick }: ProfileHeaderP
   // margin it escaped through `.profile-screen`, which has no padding or border of its own, and
   // opened a 24px band of page background above the header.
   return (
-    <div className="navbar-profile-placement">
+    <div className={navbarPlacementStyles['navbar-profile-placement']}>
       <Navbar
         variant="pill"
         testId="profile-navbar"
@@ -32,7 +33,7 @@ export function ProfileHeader({ onLogoutClick, onProjectsClick }: ProfileHeaderP
           onProjectsClick === undefined ? undefined : (
             <button
               type="button"
-              className="btn-light"
+              className={navbarButtonsStyles['btn-light']}
               data-testid="profile-to-projects"
               onClick={onProjectsClick}
             >

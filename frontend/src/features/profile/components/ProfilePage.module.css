@@ -10,8 +10,8 @@
    The form's own rules are in ProfileForm.css, the theme switch in ProfileTheme.css and the
    deletion dialog in ProfileModal.css. */
 
-/* The page is a COOLER grey than `--bg-page`, which is the product's blue wash (#e3f2ff). The
-   design puts these cards on #F4F6FB and the difference is visible when three white panels sit on
+/* The page is a COOLER grey than `--bg-page`, which is the product's blue wash (hex e3f2ff). The
+   design puts these cards on hex F4F6FB and the difference is visible when three white panels sit on
    it. Declared locally because the token sheets belong to another session this sprint; both themes
    are given here on purpose — a colour with only a light form is a white patch on a dark page. */
 
@@ -39,8 +39,8 @@
   font-weight: 600;
 }
 
-/* 18/22 in #464551 — the darker grey the two page subtitles share. `--profile-row-fg` is the
-   lighter #6b7280 the frame keeps for values INSIDE a card. */
+/* 18/22 in hex 464551 — the darker grey the two page subtitles share. `--profile-row-fg` is the
+   lighter hex 6b7280 the frame keeps for values INSIDE a card. */
 .profile-subtitle {
   margin-top: 12px;
   font-size: 18px;

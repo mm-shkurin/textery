@@ -4,6 +4,8 @@ import { ALLOWED_AVATAR_TYPES } from '../utils/avatarImage'
 import { AVATAR_FAILED_MESSAGE } from '../utils/profileCopy'
 import { useAvatarUpload } from '../hooks/useAvatarUpload'
 import { ProfileSavedToast } from './ProfileSavedToast'
+import profileFormStyles from './ProfileForm.module.css'
+import profileButtonsStyles from './ProfileButtons.module.css'
 
 interface ProfileAvatarFieldProps {
   profile: Profile
@@ -26,17 +28,17 @@ export function ProfileAvatarField({ profile }: ProfileAvatarFieldProps) {
   const hasPicture = profile.avatarUpdatedAt !== null
 
   return (
-    <div className="profile-avatar-field">
+    <div className={profileFormStyles['profile-avatar-field']}>
       {/* Same confirmation as the name form's, for the same reason: an upload that finishes by
           re-rendering one 64px disc is a change a user can easily miss. */}
       <ProfileSavedToast saveCount={avatar.savedCount} />
-      <div className="profile-avatar-buttons">
+      <div className={profileFormStyles['profile-avatar-buttons']}>
         {/* «Удалить фото» first, matching the mockup's order — and it exists only when there is a
             picture to delete, so the row does not offer to remove nothing. */}
         {hasPicture && (
           <button
             type="button"
-            className="profile-btn-quiet"
+            className={profileButtonsStyles['profile-btn-quiet']}
             data-testid="avatar-delete-button"
             disabled={avatar.busy}
             onClick={() => void avatar.remove()}
@@ -47,7 +49,7 @@ export function ProfileAvatarField({ profile }: ProfileAvatarFieldProps) {
 
         <button
           type="button"
-          className="profile-btn-ghost"
+          className={profileButtonsStyles['profile-btn-ghost']}
           data-testid="avatar-upload-button"
           disabled={avatar.busy}
           // The real control is the input; this button is the only visible one because a bare file
@@ -64,7 +66,7 @@ export function ProfileAvatarField({ profile }: ProfileAvatarFieldProps) {
       <input
         ref={inputRef}
         type="file"
-        className="profile-avatar-input"
+        className={profileFormStyles['profile-avatar-input']}
         data-testid="avatar-file-input"
         accept={ALLOWED_AVATAR_TYPES.join(',')}
         onChange={(event) => {
@@ -77,15 +79,27 @@ export function ProfileAvatarField({ profile }: ProfileAvatarFieldProps) {
       />
 
       {avatar.rejection !== null && (
-        <p className="profile-avatar-rejection" role="alert" data-testid="avatar-rejection">
+        <p
+          className={profileFormStyles['profile-avatar-rejection']}
+          role="alert"
+          data-testid="avatar-rejection"
+        >
           {avatar.rejection}
         </p>
       )}
 
       {avatar.failed && (
-        <div className="profile-avatar-failed" role="alert" data-testid="avatar-failed">
+        <div
+          className={profileFormStyles['profile-avatar-failed']}
+          role="alert"
+          data-testid="avatar-failed"
+        >
           <span>{AVATAR_FAILED_MESSAGE}</span>
-          <button type="button" className="profile-btn-ghost" onClick={() => void avatar.retry()}>
+          <button
+            type="button"
+            className={profileButtonsStyles['profile-btn-ghost']}
+            onClick={() => void avatar.retry()}
+          >
             Повторить
           </button>
         </div>
