@@ -72,7 +72,63 @@ Infrastructure follow, in that order.
   nothing drives it. That is 2.3's refusal to specify, not a gap here — and per the design
   note the guard must test `isinstance(raw, str)` first, since a non-string raises
   `AttributeError`/`TypeError`, not `ValueError`.
-- [~] adapters-discovery
+- [x] adapters-discovery — **Check 1 (ports):** `AnalyticsEventRepository` has no
+  implementation anywhere — no `analytics` under `adapters/db/src/access/` or `model/`, and
+  no migration creates `analytics_events` → `red-adapter db` / `green-adapter db`. `Clock`
+  and `UnitOfWork` are `[S]`: both already implemented and already exercised by the sibling
+  usecases this one was modelled on. The checklist's write-here-read-there rule does **not**
+  apply and is not being dodged — the port is write-only by design (`endpoints.md`: "reading
+  is Story 15"), so there is no reader usecase and no second port to read through. The
+  adapter test asserts through a direct SQL read, the same way the acceptance probe does,
+  because no read port exists to assert through.
+  **Check 2 (exceptions):** `[S]` — the 1.1 path raises no domain exception at all (no
+  validation branch, by design). `UUID(...)` can raise `ValueError`/`TypeError`, but that is
+  a stdlib parse failure on the 2.3 path, not a domain exception 1.1 can reach, and mapping
+  it is 2.3's work.
+  **Check 3 (response shape):** `POST /api/v1/analytics/events` is registered on no router —
+  the route does not exist → `red-adapter rest` / `green-adapter rest`. Contract is `204 No
+  Content`, no body. Note the acceptance test deliberately never asserts the status (the
+  claim is the stored row, not the answer), so the route existing is necessary but the test
+  will not catch a wrong success code here — §5.x is where a status becomes an assertion.
+  **Carried into `green-adapter db` — the outcome distinction must not be designed away.**
+  The ADR's `INSERT ... ON CONFLICT (visitor_id, occurrence_key) DO NOTHING RETURNING id`
+  returns zero rows for `ALREADY_RECORDED` *and* for `CONFLICTING_NAME`; telling them apart
+  needs a follow-up read of the stored row's `event_name`. 1.1 exercises only `STORED`, so
+  the TDD-minimal adapter would write `no row → ALREADY_RECORDED` and strand the third enum
+  member permanently. It is legitimate to defer the branch (it is code, not schema — unlike
+  the table itself, adding it later costs no migration on a hot table), but **not** to
+  foreclose it: `green-adapter db` must leave the zero-row case an explicit, single, named
+  decision point rather than a hardcoded return.
+  **Ownership correction (verified 2026-08-20, premortem finding on `538cb46c`).** The
+  `SaveOutcome` docstring, `record_analytics_event.execute`'s docstring and this file's
+  `green-usecase` note all say the 204-vs-409 branch lands at "§5.x". It does not:
+  `01_API_Tests.md` §5.1–§5.6 contain no conflicting-name scenario (§5.3 is a *malformed*
+  key). The only scenario asserting it is `tests/extended/01_API_Tests_Extended.md` §3.1,
+  which the header of this file excludes until the critical file is green — while
+  `endpoints.md` §2 mandates `409 OCCURRENCE_KEY_CONFLICT`. So the branch currently has no
+  bootstrapped owner. Correct the three "§5.x" pointers to `extended/01` §3.1 in the next
+  work unit that touches those files (`red-adapter db`), and fold extended §3.1 in when §5
+  goes green rather than leaving the 409 to be discovered by Story 15.
+- [~] red-adapter db — SQLAlchemy model + one Alembic migration creating the whole
+  `analytics_events` table per the ADR (partial unique index `WHERE occurrence_key IS NOT
+  NULL`, `degraded BOOLEAN NOT NULL DEFAULT false`, `sequence BIGINT GENERATED ALWAYS AS
+  IDENTITY`, `user_id` FK `ON DELETE SET NULL`, twelve-name CHECK), and `save_new` via
+  `ON CONFLICT ... DO NOTHING RETURNING id`. The whole table lands at once deliberately —
+  the ADR rejects the TDD-minimal split because both the unique index and `sequence` would
+  otherwise become migrations on the product's busiest write path.
+  Note: `SqlAlchemyAccountEraser`'s hand-maintained docstring gains `analytics_events` and
+  its `SET NULL` action — the ADR calls this table a deliberate departure from the repo's
+  `NO ACTION`-plus-ordered-delete convention.
+- [ ] green-adapter db
+- [ ] red-adapter rest — `POST /api/v1/analytics/events`, `204 No Content`, no body.
+  Request DTO fields typed permissively **and defaulted** per the ADR, so a bad value
+  reaches the domain and returns the canonical 400 rather than Pydantic's 422 echoing the
+  rejected input back on the product's only tokenless route.
+- [ ] green-adapter rest — also adds `("POST", "/api/v1/analytics/events")` to
+  `_DELIBERATELY_PUBLIC` with its reason in
+  `application/tests/test_every_route_states_whether_it_needs_a_token.py`, which goes red
+  the moment the route is registered. That is the deliberate reviewable line, not an
+  obstacle to route around.
 - [ ] green-acceptance
 
 ### 1.2 An event from a signed-in caller is attributed to that account
