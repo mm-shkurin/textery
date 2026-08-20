@@ -1,0 +1,61 @@
+# The product's size limits, in one place, as data.
+#
+# They were a dozen module constants scattered across the domain, and every one of
+# them is a number a product decision can change: how long a display name may be,
+# how big an avatar is stored, how many characters a search box accepts. Reading
+# them from here means such a change is reviewable as the policy change it is,
+# and that the whole set can be seen at once instead of grepped for.
+#
+# What is NOT here: anything a value object must enforce to stay valid regardless
+# of policy (an email having exactly one @, a password having a digit). Those are
+# rules, not sizes, and they live in the value object with the check they justify.
+
+[auth]
+# 254 is the RFC 5321 maximum for a complete address, and the reason the column is
+# varchar(254). Lowering it is a product choice; raising it is not, because
+# addresses longer than this cannot be delivered to.
+max_email_length = 254
+# Long enough for any passphrase a user will type, bounded so a megabyte of input
+# cannot be sent through the hash function.
+max_password_length = 128
+# Before trimming and NFC normalization. The stored name is shorter; this is the
+# ceiling on what the boundary will even look at.
+max_raw_name_length = 256
+# The stored avatar's longest side. Bigger costs storage and download on every
+# screen the avatar appears on; smaller starts to blur on a HiDPI display.
+max_avatar_side_pixels = 1024
+# The OAuth handoff code as it arrives in a URL. Sized to the longest provider
+# code seen plus room, and capped so a crafted URL cannot force an unbounded read.
+max_handoff_code_length = 512
+
+[document]
+# The search box. A query longer than this is not a search, it is a payload.
+max_query_length = 200
+# A generated title has to fit a card and a filename without being truncated in
+# both places by different rules.
+max_generated_title_length = 120
+# The client-supplied idempotency key.
+max_idempotency_key_length = 128
+
+[generation]
+# What the generation form accepts. All three are product choices: they bound the
+# prompt the provider is sent, and the provider's own context window is the reason
+# they cannot simply grow.
+max_topic_length = 500
+max_requirements_length = 2000
+max_extra_wishes_length = 2000
+
+[feed]
+# Keyset pagination's bounds. `page_max` stops a crafted `?page=` from asking the
+# database to count past anything a user will ever scroll to; `limit_max` bounds
+# one response, and `default_limit` is what the client gets when it asks for
+# nothing in particular.
+page_max = 1000
+limit_max = 100
+# The card preview: how much of the document the feed shows, and how much of it is
+# read to build that. Reading the whole document to show two lines is what the
+# source cap prevents.
+preview_max_code_points = 200
+preview_source_max_chars = 4000
+# The feed's search box, same ceiling as the document filter's.
+query_max_code_points = 200

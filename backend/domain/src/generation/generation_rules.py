@@ -6,13 +6,13 @@ keeps working -- moving a constant must not become a rename for every caller.
 """
 
 from document.document_type import SUPPORTED_DOCUMENT_TYPES
+from shared import limits
 
 MIN_VOLUME_PAGES = 1
 MAX_VOLUME_PAGES = 10
-MAX_TOPIC_LENGTH = 500
-MAX_REQUIREMENTS_LENGTH = 2000
-MAX_EXTRA_WISHES_LENGTH = 2000
-
+MAX_TOPIC_LENGTH = limits.MAX_TOPIC_LENGTH
+MAX_REQUIREMENTS_LENGTH = limits.MAX_REQUIREMENTS_LENGTH
+MAX_EXTRA_WISHES_LENGTH = limits.MAX_EXTRA_WISHES_LENGTH
 # Declared after the bounds and interpolated from them. These messages used to
 # restate each number as a literal five lines from the constant it described, so
 # changing a bound left the message quoting the old one -- the one place the

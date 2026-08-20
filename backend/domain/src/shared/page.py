@@ -1,8 +1,9 @@
+from shared import limits
 from shared.exceptions import ValidationException
 from shared.keyset_cursor import INVALID_CURSOR_MESSAGE, KeysetCursor
 
 MIN_LIMIT = 1
-MAX_LIMIT = 100
+MAX_LIMIT = limits.LIMIT_MAX
 DEFAULT_LIMIT = 20
 
 INVALID_LIMIT_MESSAGE = f"limit must be between {MIN_LIMIT} and {MAX_LIMIT}."

@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from project.project_item import ProjectItem
 from project.project_query import ProjectQuery
 from project.project_sort import ProjectSort
+from shared import limits
 from shared.exceptions import ValidationException
 
 # Both bounds are domain constants, not `Query(ge=..., le=...)` on the route.
@@ -10,9 +11,9 @@ from shared.exceptions import ValidationException
 # 400s are `{error_code, message}`, and the contract names an error code per
 # parameter.
 PAGE_MIN = 1
-PAGE_MAX = 1000
+PAGE_MAX = limits.PAGE_MAX
 LIMIT_MIN = 1
-LIMIT_MAX = 100
+LIMIT_MAX = limits.LIMIT_MAX
 LIMIT_DEFAULT = 20
 
 

@@ -1,5 +1,3 @@
-from typing import Any
-
 from pydantic import BaseModel
 
 
@@ -15,7 +13,7 @@ class DeleteAccountRequestDto(BaseModel):
     answer in FastAPI's 422 envelope instead, and would also tell the caller which
     field the server cares about for their account.
 
-    Both fields are typed `Any` for the reason the profile DTO's `name` is: a
+    Both fields are typed `object` for the reason the profile DTO's `name` is: a
     `str | None` annotation makes Pydantic refuse `{"password": 123}` first, and
     FastAPI renders that as a 422 in a different envelope THAT ECHOES THE REJECTED
     INPUT BACK -- here, a field that carries a password.
@@ -23,5 +21,5 @@ class DeleteAccountRequestDto(BaseModel):
     Neither value is ever logged, and neither appears in any response.
     """
 
-    password: Any = None
-    confirm_email: Any = None
+    password: object = None
+    confirm_email: object = None

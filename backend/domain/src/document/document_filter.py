@@ -22,10 +22,10 @@ feed.
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time
 
+from shared import limits
 from shared.exceptions import ValidationException
 
-MAX_QUERY_LENGTH = 200
-
+MAX_QUERY_LENGTH = limits.MAX_QUERY_LENGTH
 QUERY_TOO_LONG_MESSAGE = f"q must be at most {MAX_QUERY_LENGTH} characters"
 INVALID_DATE_MESSAGE = "date must be an ISO-8601 date (YYYY-MM-DD) or datetime"
 _DAY_END = time(23, 59, 59, 999999)

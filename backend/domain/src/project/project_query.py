@@ -1,14 +1,14 @@
 import unicodedata
 from dataclasses import dataclass
 
+from shared import limits
 from shared.exceptions import ValidationException
 
 # Unicode code points, not bytes and not UTF-16 units. A byte bound would refuse
 # a legal 200-character Cyrillic query, and OpenAPI's `maxLength` counts UTF-16
 # units, which disagrees with this on astral-plane input at exactly the boundary
 # the tests assert.
-QUERY_MAX_CODE_POINTS = 200
-
+QUERY_MAX_CODE_POINTS = limits.QUERY_MAX_CODE_POINTS
 # The character that makes `%` and `_` literal in a SQL LIKE pattern. Escaping it
 # first is not optional: a query containing a lone backslash would otherwise
 # escape whatever the caller typed next.

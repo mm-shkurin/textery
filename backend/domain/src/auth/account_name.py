@@ -1,13 +1,13 @@
 import unicodedata
 
 from auth.account_name_blankness import is_blank_after_stripping_invisibles
+from shared import limits
 from shared.exceptions import ValidationException
 
 # Cheap pre-normalization gate, on the raw input, before trim or NFC runs. Sized
 # generously on purpose: NFD is longer than NFC, and a decomposed value must not
 # be cut off before it has been given the chance to normalize down.
-MAX_RAW_NAME_LENGTH = 256
-
+MAX_RAW_NAME_LENGTH = limits.MAX_RAW_NAME_LENGTH
 # The stored bound, counted in CODE POINTS -- never bytes, never UTF-16 units. A
 # 60-emoji name is 60 code points, 120 UTF-16 units and 240 UTF-8 bytes, and only
 # one of those three numbers is the contract.

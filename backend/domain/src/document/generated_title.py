@@ -1,12 +1,13 @@
 import unicodedata
 
+from shared import limits
+
 # The stored title is what the history list shows and what story 17 derives the
 # export filename from. Capped because the topic it comes from is user input with
 # its own 500-character bound (Generation.MAX_TOPIC_LENGTH) — a title that long is
 # not a title, it is the first paragraph, and it would push every history row and
 # every Content-Disposition header out of shape.
-MAX_GENERATED_TITLE_LENGTH = 120
-
+MAX_GENERATED_TITLE_LENGTH = limits.MAX_GENERATED_TITLE_LENGTH
 # What a document is called when its generation carries no usable topic. Not an
 # empty string: an untitled document reaches the export filename derivation, and
 # blank there means "fall back to a default" one layer further out — saying it

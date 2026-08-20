@@ -1,4 +1,5 @@
 import logging
+from http import HTTPStatus
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Request
@@ -18,7 +19,7 @@ router = APIRouter(prefix=api_routes.OAUTH, tags=["auth", "oauth"])
 
 # 302, not FastAPI's default 307: the browser is finishing a navigation, and the
 # provider/frontend legs of this handshake are plain GETs.
-_REDIRECT_STATUS = 302
+_REDIRECT_STATUS = HTTPStatus.FOUND
 
 
 def get_start_oauth_usecase() -> StartOAuth:

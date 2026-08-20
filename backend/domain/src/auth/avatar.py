@@ -1,4 +1,5 @@
 from auth.avatar_format import detect_media_type, read_dimensions
+from shared import limits
 from shared.exceptions import ValidationException
 
 # 512 KiB. A 256x256 WebP is a few tens of KB; the headroom is for a client that
@@ -9,8 +10,7 @@ MAX_AVATAR_BYTES = 512 * 1024
 # so this is not the product's size rule -- it is the ceiling that keeps a
 # decompression bomb (a 100000x100000 PNG whose compressed form is a few KB) from
 # being handed to every browser that later renders the image.
-MAX_AVATAR_SIDE_PIXELS = 1024
-
+MAX_AVATAR_SIDE_PIXELS = limits.MAX_AVATAR_SIDE_PIXELS
 # And any side below this is refused too. A header declaring 0x0 passes a ceiling
 # check -- `max(0, 0)` is under any maximum -- so without a floor the one file
 # that states an impossible size is the one file that gets through. It is not a
