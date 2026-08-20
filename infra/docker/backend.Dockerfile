@@ -32,11 +32,17 @@ COPY backend/usecase backend/usecase
 COPY backend/adapters backend/adapters
 COPY backend/application backend/application
 
+# The layer roots, inner-first — the same map pytest gets from pyproject.toml's
+# `pythonpath`. This is what replaced nine sys.path.insert calls in the entry
+# point: a package setup the interpreter is told about, rather than one the
+# application patches at import time.
+ENV PYTHONPATH=/app/backend/domain/src:/app/backend/usecase/src:/app/backend/adapters/rest/src:/app/backend/adapters/db/src:/app/backend/adapters/security/src:/app/backend/adapters/generation_provider/src:/app/backend/adapters/oauth_provider/src:/app/backend/adapters/rendering/src:/app/backend/application/src:/app/backend/application/src/app
+
 EXPOSE 8000
 
 # Apply migrations, then serve. alembic.ini's script_location is relative, so
 # alembic must run with cwd = backend/adapters/db.
-CMD ["sh", "-c", "cd backend/adapters/db && alembic upgrade head && cd /app && uvicorn app.main:app --app-dir backend/application/src --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "cd backend/adapters/db && alembic upgrade head && cd /app && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
 
 # Probes /health, which the app owns and which actually checks its dependencies
 # (router/health/health_router.py answers 503 when one is down).

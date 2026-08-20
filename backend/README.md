@@ -29,7 +29,13 @@ FastAPI, ни про SQLAlchemy, `usecase` объявляет порты, а р�
 ```bash
 pip install -r requirements.txt          # только то, что нужно приложению
 alembic -c adapters/db/alembic.ini upgrade head        # применить миграции
-uvicorn main:app --app-dir application/src/app --reload
+# PYTHONPATH — те же корни слоёв, что получает pytest из pyproject.toml.
+# Раньше их подкладывал сам main.py девятью sys.path.insert; теперь путь
+# сообщается интерпретатору, а не патчится приложением на импорте.
+# Разделитель — `:` на Linux/macOS и `;` в Windows (os.pathsep), поэтому
+# строка ниже для POSIX; в PowerShell — те же корни через `;`.
+export PYTHONPATH=domain/src:usecase/src:adapters/rest/src:adapters/db/src:adapters/security/src:adapters/generation_provider/src:adapters/oauth_provider/src:adapters/rendering/src:application/src
+uvicorn app.main:app --reload
 ```
 
 Для разработки нужен второй файл — он подтягивает первый и добавляет
@@ -226,11 +232,15 @@ CI держит покрытие не ниже 90% (`--cov-fail-under`); фак�
 ничего.
 
 Корни слоёв подключаются через `pythonpath` в `pyproject.toml`, поэтому `pytest`
-запускается из этого каталога без настройки `PYTHONPATH`.
+запускается из этого каталога без настройки `PYTHONPATH`. Приложению тот же
+список сообщают образ (`ENV PYTHONPATH` в `Dockerfile`) и команда запуска выше —
+не сам `main.py`: девять `sys.path.insert` в точке входа были обходом сломанной
+упаковки, и порядок этих строк однажды уже стоил продакшену `ModuleNotFoundError`
+на экспорте.
 
 ## Тест-кейсы
 
-[`docs/testing/`](docs/testing/README.md) — 722 проектных тест-кейса по десяти
+[`docs/testing/`](docs/testing/README.md) — 579 проектных тест-кейсов по десяти
 историям: API, нагрузка, инфраструктура, безопасность, интеграция. Пишутся до
 кода, из них растёт TDD-цикл. Формат — Gherkin: `Given` — предусловия, `When` —
 шаги, `Then` — ожидаемый результат.
