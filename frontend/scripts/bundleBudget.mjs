@@ -29,7 +29,14 @@ export const BUDGETS = [
     // chunk already carries — no new runtime dependency rode in (the one library added, Tiptap's
     // table extension, lands in the lazily-loaded editor chunk below, which is what the split is
     // for). Measured at 132.9 kB after the change; 134 keeps the same narrow margin.
-    maxGzipKb: 134,
+    //
+    // Raised again from 134 for CSS modules. Component stylesheets are no longer global, which
+    // is the point — a class name in one slice can no longer restyle another. The cost is a
+    // class-name map per stylesheet compiled into JS, about 6 kB gzipped across ~50 of them.
+    // Production ships hashed names only (`[hash:base64:6]`, see vite.config.ts), which already
+    // took 1.5 kB back out; the rest is what scoping costs. Measured at 139.2 kB; 141 keeps the
+    // same narrow margin.
+    maxGzipKb: 141,
     why: 'the entry chunk is what a first visit blocks on',
   },
   {
@@ -43,7 +50,10 @@ export const BUDGETS = [
   },
   {
     pattern: /^index-.*\.css$/,
-    maxGzipKb: 12,
+    // Raised from 12 with the same change: hashed module class names are longer than the
+    // hand-written ones they replace, and there are more of them because a shared rule can no
+    // longer be reused across slices by accident. Measured at 12.0 kB.
+    maxGzipKb: 13,
     why: 'the global stylesheet is render-blocking',
   },
   {
