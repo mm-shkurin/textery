@@ -48,12 +48,7 @@ class SaveDocument:
         title: TitleUpdate | str | None = None,
     ) -> Document:
         self._validate_version(version)
-        # Length is checked here, before sanitizing: sanitizing first would make the
-        # parser chew through an adversarial payload before we decline it, and the
-        # cap is a contract about what the client sent, not about what survived
-        # cleaning. DocumentContent caps the raw string, NFC-normalizes, then re-caps.
-        normalized = self._validate_content(content)
-        sanitized = self.html_sanitizer.sanitize(normalized)
+        sanitized = self.html_sanitizer.sanitize(self._validate_content(content))
 
         saved = await self.document_repository.save_content_if_version_matches(
             document_id=document_id,
@@ -102,6 +97,13 @@ class SaveDocument:
             )
 
     def _validate_content(self, content: str) -> str:
+        """The content, proven within the cap and NFC-normalized.
+
+        Called BEFORE sanitizing: sanitizing first would make the parser chew
+        through an adversarial payload before we decline it, and the cap is a
+        contract about what the client sent, not about what survived cleaning.
+        DocumentContent caps the raw string, NFC-normalizes, then re-caps.
+        """
         try:
             return DocumentContent(content).value
         except ValueError as error:
