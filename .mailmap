@@ -1,0 +1,7 @@
+# The configured user.email carries a typo (`g,ail.com`), and two commits were
+# authored by a literal `git stash` identity after an interrupted stash. Neither
+# can be corrected in place without rewriting published history; a mailmap makes
+# `git shortlog`, `git log` and every host that honours it attribute all of them
+# to one person. Fix `git config user.email` too, or the list grows.
+mm shkurin <trape3977@gmail.com> <trape3977@g,ail.com>
+mm shkurin <trape3977@gmail.com> git stash <trape3977@g,ail.com>

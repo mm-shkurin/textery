@@ -1,8 +1,11 @@
 name: backend-ci
 
+# No branch filter, matching frontend-ci.yml. The gates existed but ran on `main`
+# and `dev` only, while this project lands commits straight on a working branch
+# and uses no pull requests -- so nothing checked the commits as they were made,
+# and a red tip was discovered days later by a manual run.
 on:
   push:
-    branches: [main, dev]
     paths:
       - 'backend/**'
       - '.github/workflows/backend-ci.yml'
