@@ -10,7 +10,7 @@
    fit in dark — and the token sheets belong to another session.
    `--projects-well` is the recessed fill: a card's thumbnail area, a skeleton, the chosen half of
    the view toggle. In light `--bg-sunken` is a grey step below white and reads as recessed. In
-   dark it is #12161b, which measures 1.03 against the page — the thumbnail area stops being part
+   dark it is hex 12161b, which measures 1.03 against the page — the thumbnail area stops being part
    of the card and becomes a hole punched through to the background, and the card loses the
    two-part silhouette the design gives it. "Recessed" on a dark page has to be a step UP, so the
    dark form is the card-muted fill (1.15 against the card, 1.30 against the page).
@@ -71,7 +71,7 @@
      click target of the one real button inside it. */
   position: relative;
   background: var(--bg-surface);
-  /* The card's hairline is the neutral #d9d9d9 of the frame, not the blue-tinted `--border-subtle`
+  /* The card's hairline is the neutral hex d9d9d9 of the frame, not the blue-tinted `--border-subtle`
      the rest of the screen uses: sampled at the card edge in the render it comes out flat grey,
      and the blue version drew a faint halo around every card on the blue page. In dark
      `--projects-edge` steps up — see the note at the top of this file. */
@@ -128,7 +128,7 @@
 }
 
 .project-card-date {
-  /* 12/15 in #464551 — the same grey the page subtitle uses, not the lighter `--text-muted`. */
+  /* 12/15 in hex 464551 — the same grey the page subtitle uses, not the lighter `--text-muted`. */
   font-size: 12px;
   line-height: 15px;
   color: var(--text-divider);
@@ -137,8 +137,8 @@
 /* Per-type tints. Two swatches per type — the badge pair and the folder colour — kept adjacent so
    a new document type is one block here and never another copy of the glyph. The Figma literals
    (frame 484:1104) moved to `--chip-*-bg/fg/icon` in the token sheets, because they were the one
-   remaining place where a light-theme fill was written into a component: a pale #e5f3fe badge is
-   a white patch on a dark page, and its #004ee0 text on that patch measures 1.3:1. */
+   remaining place where a light-theme fill was written into a component: a pale hex e5f3fe badge is
+   a white patch on a dark page, and its hex 004ee0 text on that patch measures 1.3:1. */
 .project-card-accent-blue .project-card-type {
   background: var(--chip-blue-bg);
   color: var(--chip-blue-fg);

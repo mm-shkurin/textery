@@ -5,6 +5,7 @@ import {
   RETRY_FAILURE_FALLBACK,
   type RetryOverrides,
 } from '../api/retryGenerationApi'
+import { useIdempotencyKeys } from './useIdempotencyKeys'
 
 export interface RetryState {
   pendingId: string | null
@@ -18,45 +19,38 @@ export interface RetryState {
  * click and removed on failure is indistinguishable, for the second it exists, from work that
  * actually started — and on this screen "it started" means a model was billed.
  *
- * The idempotency key is minted once per SOURCE and kept until an attempt for that source is
- * CONFIRMED, so a double-click, a second tab and a re-send after a lost response all collapse onto
- * one generation. It survives a failure on purpose: the failure this guards is the one where the
- * request reached the server and only the response was lost, and a fresh key there would bill a
- * second generation for work already running. It is dropped on success, because the user's next
- * «Повторить» on that row is a new command rather than a replay of the one that landed.
+ * A double-click, a second tab and a re-send after a lost response all collapse onto one
+ * generation — see useIdempotencyKeys for the key's lifetime and why it outlives a failure.
  */
 export function useRetryGeneration(onRetried: (generationId: string) => void) {
   const [state, setState] = useState<RetryState>({ pendingId: null, error: null })
-  const keys = useRef(new Map<string, string>())
+  const keys = useIdempotencyKeys()
   // In-flight ids live in a ref, not in state: two clicks in the same tick both read the state
   // value from before the first render, so a state-based guard lets the second through.
   const inFlight = useRef(new Set<string>())
+
+  const attempt = useCallback(
+    async (generationId: string, overrides?: RetryOverrides) => {
+      // The overrides travel with the key, not instead of it: a replay of the SAME click must
+      // still collapse onto the generation it already started, whatever it asked for.
+      await retryGeneration(generationId, keys.keyFor(generationId), overrides)
+      keys.confirm(generationId)
+      setState({ pendingId: null, error: null })
+      // The row is patched in the cache by the caller and the list is refreshed in the
+      // background: the server still decides the order, but the user sees their click land
+      // immediately instead of watching the whole grid reload.
+      onRetried(generationId)
+    },
+    [keys, onRetried],
+  )
 
   const retry = useCallback(
     async (generationId: string, overrides?: RetryOverrides) => {
       if (inFlight.current.has(generationId)) return
       inFlight.current.add(generationId)
-
-      let key = keys.current.get(generationId)
-      if (key === undefined) {
-        key = crypto.randomUUID()
-        keys.current.set(generationId, key)
-      }
-
       setState({ pendingId: generationId, error: null })
       try {
-        // The overrides travel with the key, not instead of it: a replay of the SAME click must
-        // still collapse onto the generation it already started, whatever it asked for.
-        await retryGeneration(generationId, key, overrides)
-        // Confirmed. The next click on this row is a NEW attempt and needs its own key — reusing
-        // this one would have the server collapse it onto the generation just produced, and the
-        // button would look broken.
-        keys.current.delete(generationId)
-        setState({ pendingId: null, error: null })
-        // The row is patched in the cache by the caller and the list is refreshed in the
-        // background: the server still decides the order, but the user sees their click land
-        // immediately instead of watching the whole grid reload.
-        onRetried(generationId)
+        await attempt(generationId, overrides)
       } catch (failure: unknown) {
         setState({
           pendingId: null,
@@ -66,7 +60,7 @@ export function useRetryGeneration(onRetried: (generationId: string) => void) {
         inFlight.current.delete(generationId)
       }
     },
-    [onRetried],
+    [attempt],
   )
 
   return { ...state, retry }

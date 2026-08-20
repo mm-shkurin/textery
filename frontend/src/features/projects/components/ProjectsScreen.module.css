@@ -4,7 +4,7 @@
 
 /* `Main` runs x=140…1780 on a 1920 page — a 1640 column, centred. `width`, not `max-width` +
    padding: the padding version subtracts the gutter FROM the 1640. */
-/* The shell paints the page white — frame 484:1104 is drawn on #FFFFFF, its cards separated from
+/* The shell paints the page white — frame 484:1104 is drawn on hex FFFFFF, its cards separated from
    it by a hairline rather than by a tint. `--bg-surface`, not a literal: in dark the same
    relationship holds on a page that is not white. */
 .projects-shell {
@@ -33,7 +33,7 @@
   margin: 0;
 }
 
-/* 18/22 in #464551, 12px below the heading — the same pair as «Мой профиль». */
+/* 18/22 in hex 464551, 12px below the heading — the same pair as «Мой профиль». */
 .projects-subtitle {
   margin: 12px 0 0;
   font-size: 18px;

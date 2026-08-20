@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { TEXT_STYLE_OPTIONS, type TextStyle } from '../../../shared/textStyles'
 import { VOLUME_PAGE_OPTIONS } from '../../../shared/volumePages'
 import type { RetryOverrides } from '../api/retryGenerationApi'
+import projectCardStyles from './ProjectCard.module.css'
 
 interface ProjectRetryControlsProps {
   generationId: string
@@ -42,10 +43,10 @@ export function ProjectRetryControls({
   }
 
   return (
-    <div className="project-card-retry-row">
+    <div className={projectCardStyles['project-card-retry-row']}>
       <button
         type="button"
-        className="project-card-retry"
+        className={projectCardStyles['project-card-retry']}
         data-testid={namespaced('project-card-retry')}
         // Disabled while its own request is in flight — the guard against a double-click is
         // in the hook, but a button that stays live through the wait invites one.
@@ -55,7 +56,7 @@ export function ProjectRetryControls({
         {retrying ? 'Повторяем…' : 'Повторить'}
       </button>
       <select
-        className="project-card-retry-select"
+        className={projectCardStyles['project-card-retry-select']}
         data-testid={namespaced('project-card-retry-style')}
         // Icon-less control with no visible label: the name has to live here or it announces as
         // nothing but "combo box".
@@ -75,7 +76,7 @@ export function ProjectRetryControls({
           an emptied number input reports NaN — the exact trap the composer documents. Enumerating
           the allowed lengths also means this control cannot produce a value the server refuses. */}
       <select
-        className="project-card-retry-select"
+        className={projectCardStyles['project-card-retry-select']}
         data-testid={namespaced('project-card-retry-volume')}
         aria-label="Объём для повторной генерации"
         value={volume}

@@ -3,6 +3,8 @@ import type { ProjectView } from '../hooks/useProjectView'
 import { ProjectCard } from './ProjectCard'
 import { projectKey } from '../utils/projectKey'
 import type { RetryOverrides } from '../api/retryGenerationApi'
+import projectsPageStyles from './ProjectsPage.module.css'
+import projectsScreenStyles from './ProjectsScreen.module.css'
 
 interface ProjectsFeedProps {
   items: ProjectSummary[]
@@ -35,7 +37,9 @@ export function ProjectsFeed({
 }: ProjectsFeedProps) {
   return (
     <div
-      className={`projects-page projects-view-${view}`}
+      className={`${projectsPageStyles['projects-page']} ${
+        projectsScreenStyles[`projects-view-${view}`] ?? ''
+      }`}
       data-testid={testIdPrefix ? `${testIdPrefix}-projects-page` : 'projects-page'}
     >
       {items.map((project) => (

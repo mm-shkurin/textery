@@ -90,10 +90,10 @@
   flex: 1 1 130px;
   min-width: 0;
   padding: 6px 8px;
-  border: 1px solid var(--border-subtle, #e5e7eb);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  background: var(--bg-surface, #fff);
-  color: var(--text-primary, #111827);
+  background: var(--bg-surface);
+  color: var(--text-primary);
   font: inherit;
   font-size: 13px;
   cursor: pointer;
