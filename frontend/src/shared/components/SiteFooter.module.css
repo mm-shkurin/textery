@@ -1,8 +1,8 @@
 /* The footer in both of its forms.
 
-   `slab` — the landing's closing band, node 1362:8304: #161616 with white text, 60/210 of padding,
+   `slab` — the landing's closing band, node 1362:8304: hex 161616 with white text, 60/210 of padding,
    four link columns beside the wordmark, a hairline, then the legal line.
-   `strip` — what the app screens end on, node 788:5094 (y=16279): a 32/140 band on #F5F5F7 with
+   `strip` — what the app screens end on, node 788:5094 (y=16279): a 32/140 band on hex F5F5F7 with
    the wordmark, the copyright and three links, and no columns at all.
 
    The slab does not flip with the theme: it is dark in the design as a contrast against the pale

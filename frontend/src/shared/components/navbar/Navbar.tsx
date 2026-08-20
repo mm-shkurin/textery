@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { ProfileMenu } from '../profile/ProfileMenu'
 import { ThemeSwitch } from './ThemeSwitch'
-import './Navbar.css'
-import './NavbarButtons.css'
+import styles from './Navbar.module.css'
+import './NavbarButtons.module.css'
 
 // The one top bar. Figma `Navbar/Variant5` (COMPONENT, node 1086:4929) — the design draws a single
 // bar for every authenticated screen, and the product had grown four: the landing header, the
@@ -37,6 +37,47 @@ interface NavbarProps {
   profileMenu?: { onLogoutClick: () => void; testIdPrefix: string }
 }
 
+// Exported from the Figma `Logo` component (node 577:2034) rather than redrawn, and one file per
+// theme for every screen, so the mark cannot drift between them.
+//
+// TWO files, swapped in CSS, rather than one filtered: the wordmark is black and has to become
+// near-white in the dark theme, but the glyph beside it is `--blue-700` and must NOT move. A CSS
+// filter cannot invert one and spare the other. Both are rendered and one is hidden, so the swap
+// costs no repaint and cannot flash the wrong mark between themes.
+//
+// `alt` on the visible one only — the hidden twin would otherwise announce the product name twice
+// to a screen reader.
+function NavbarLogo() {
+  return (
+    <>
+      <img
+        className={`${styles['navbar-logo']} ${styles['navbar-logo-light']}`}
+        src="/design/logo-textery.svg"
+        alt="Textery"
+      />
+      <img
+        className={`${styles['navbar-logo']} ${styles['navbar-logo-dark']}`}
+        src="/design/logo-textery-dark.svg"
+        alt=""
+      />
+    </>
+  )
+}
+
+// The theme switch appears only where the account menu does NOT — the menu already carries its own
+// theme row, and two controls for one setting in one bar is a bug report waiting to happen. Signed
+// out, the switch is the only way to reach the setting at all: the menu is behind the avatar,
+// which is behind the auth gate.
+function NavbarAccount({ profileMenu }: Pick<NavbarProps, 'profileMenu'>) {
+  if (profileMenu === undefined) return <ThemeSwitch />
+  return (
+    <ProfileMenu
+      onLogoutClick={profileMenu.onLogoutClick}
+      testIdPrefix={profileMenu.testIdPrefix}
+    />
+  )
+}
+
 export function Navbar({
   variant,
   as = 'header',
@@ -46,35 +87,14 @@ export function Navbar({
   profileMenu,
 }: NavbarProps) {
   const Element = as
-  const classes = ['navbar', `navbar-${variant}`, className].filter(Boolean).join(' ')
+  const classes = [styles.navbar, styles[`navbar-${variant}`], className].filter(Boolean).join(' ')
 
   return (
     <Element className={classes} data-testid={testId}>
-      {/* Exported from the Figma `Logo` component (node 577:2034) rather than redrawn, and one
-          file per theme for every screen, so the mark cannot drift between them.
-
-          TWO files, swapped in CSS, rather than one filtered: the wordmark is black and has to
-          become near-white in the dark theme, but the glyph beside it is `--blue-700` and must
-          NOT move. A CSS filter cannot invert one and spare the other. Both are rendered and one
-          is hidden, so the swap costs no repaint and cannot flash the wrong mark between themes.
-
-          `alt` on the visible one only — the hidden twin would otherwise announce the product
-          name twice to a screen reader. */}
-      <img className="navbar-logo navbar-logo-light" src="/design/logo-textery.svg" alt="Textery" />
-      <img className="navbar-logo navbar-logo-dark" src="/design/logo-textery-dark.svg" alt="" />
-      <div className="navbar-actions">
+      <NavbarLogo />
+      <div className={styles['navbar-actions']}>
         {actions}
-        {/* The theme switch appears only where the account menu does NOT — the menu already
-            carries its own theme row, and two controls for one setting in one bar is a bug
-            report waiting to happen. Signed out, this is the only way to reach the setting at
-            all: the menu is behind the avatar, which is behind the auth gate. */}
-        {profileMenu === undefined && <ThemeSwitch />}
-        {profileMenu !== undefined && (
-          <ProfileMenu
-            onLogoutClick={profileMenu.onLogoutClick}
-            testIdPrefix={profileMenu.testIdPrefix}
-          />
-        )}
+        <NavbarAccount profileMenu={profileMenu} />
       </div>
     </Element>
   )

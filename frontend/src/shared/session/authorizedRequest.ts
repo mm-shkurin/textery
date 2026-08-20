@@ -77,6 +77,36 @@ async function performRenewal(): Promise<boolean> {
   }
 }
 
+// A 401 answered: either somebody else already renewed while this request was in flight, or this
+// call renews once and replays. Exactly one retry — a 401 on the replay means the brand-new token
+// was refused, which is not a staleness problem and will not become one; looping on it is how a
+// client hammers an endpoint until the account is locked.
+async function replayAfterRenewal<T>(
+  path: string,
+  options: RequestOptions,
+  staleToken: string,
+): Promise<T> {
+  // A concurrent request may have already renewed while this one was in flight, so this 401
+  // answers a token that is already superseded. Refreshing again would be an auth call to
+  // re-derive what is sitting in storage. Replay with whatever is current instead.
+  const current = getAccessToken()
+  if (current && current !== staleToken) {
+    return await request<T>(path, withBearer(options, current))
+  }
+
+  if (!(await renewSession())) {
+    throw new SessionExpiredError()
+  }
+  const renewedToken = getAccessToken()
+  if (!renewedToken) {
+    throw new SessionExpiredError()
+  }
+  // Replayed with the ORIGINAL `options` on purpose: a POST carrying an `Idempotency-Key`
+  // must repeat the same key, or the backend treats the replay as a second, distinct request
+  // and the user gets two generations for one click.
+  return await request<T>(path, withBearer(options, renewedToken))
+}
+
 export async function authorizedRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const token = getAccessToken()
   // No token, no request. This endpoint needs a session; sending anonymously would ask the
@@ -104,29 +134,6 @@ export async function authorizedRequest<T>(path: string, options: RequestOptions
     if (!isUnauthorized(error)) {
       throw error
     }
-
-    // A concurrent request may have already renewed while this one was in flight, so this 401
-    // answers a token that is already superseded. Refreshing again would be an auth call to
-    // re-derive what is sitting in storage. Replay with whatever is current instead.
-    const current = getAccessToken()
-    if (current && current !== token) {
-      return await request<T>(path, withBearer(options, current))
-    }
-
-    if (!(await renewSession())) {
-      throw new SessionExpiredError()
-    }
-    const renewedToken = getAccessToken()
-    if (!renewedToken) {
-      throw new SessionExpiredError()
-    }
-    // Replayed with the ORIGINAL `options` on purpose: a POST carrying an `Idempotency-Key`
-    // must repeat the same key, or the backend treats the replay as a second, distinct request
-    // and the user gets two generations for one click.
-    //
-    // Exactly one retry. A 401 on the replay means the brand-new token was refused, which is
-    // not a staleness problem and will not become one — looping on it is how a client
-    // hammers an endpoint until the account is locked.
-    return await request<T>(path, withBearer(options, renewedToken))
+    return await replayAfterRenewal<T>(path, options, token)
   }
 }

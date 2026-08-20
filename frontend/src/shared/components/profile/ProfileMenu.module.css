@@ -19,12 +19,11 @@
   color: var(--text-secondary);
 }
 
-/* Figma `Button/Container` (node 573:4506): a linear gradient from #51a2ff to #4f39f6 at 135°,
-   the one gradient surface left in the UI. It moved to `--avatar-gradient` in the token sheets
-   when the dark theme landed — not because it changes there (it does not; a saturated gradient
-   reads on either page), but because it was the last colour literal in this file, and leaving one
-   behind is how the next one gets added. `--accent-gradient` is still the wrong token: it resolves
-   to the flat brand blues. */
+/* Figma `Button/Container` (node 573:4506): a 135° gradient, the one gradient surface left in the
+   UI. It moved to `--avatar-gradient` in the token sheets when the dark theme landed — not because
+   it changes there (it does not; a saturated gradient reads on either page), but because it was the
+   last colour literal in this file, and leaving one behind is how the next one gets added.
+   `--accent-gradient` is still the wrong token: it resolves to the flat brand blues. */
 .profile-avatar {
   display: inline-flex;
   align-items: center;

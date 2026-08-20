@@ -1,5 +1,6 @@
 import { useTheme } from '../../theme/useTheme'
 import { toggleTheme } from '../../theme/themeStore'
+import profileMenuStyles from './ProfileMenu.module.css'
 
 // The theme switch, as a row of the account menu — Figma has no node for it; it follows
 // «Мой профиль» and sits ABOVE «Выйти», because «Выйти» must stay the last thing in the panel:
@@ -26,7 +27,7 @@ export function ThemeMenuItem({ testIdPrefix }: { testIdPrefix: string }) {
       type="button"
       role="menuitemcheckbox"
       aria-checked={isDark}
-      className="profile-panel-item"
+      className={profileMenuStyles['profile-panel-item']}
       data-testid={`${testIdPrefix}-theme-toggle`}
       // The panel deliberately STAYS OPEN. Unlike «Мой профиль» and «Выйти», which navigate away,
       // this changes the page underneath the menu — closing it would hide the result of the click
@@ -45,7 +46,7 @@ export function ThemeMenuItem({ testIdPrefix }: { testIdPrefix: string }) {
 function ThemeIcon({ dark }: { dark: boolean }) {
   return (
     <svg
-      className="profile-menu-icon"
+      className={profileMenuStyles['profile-menu-icon']}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

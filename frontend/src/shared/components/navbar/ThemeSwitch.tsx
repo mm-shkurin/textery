@@ -1,6 +1,6 @@
 import { useTheme } from '../../theme/useTheme'
 import { toggleTheme } from '../../theme/themeStore'
-import './ThemeSwitch.css'
+import styles from './ThemeSwitch.module.css'
 
 // The theme control for a signed-OUT visitor.
 //
@@ -26,7 +26,7 @@ export function ThemeSwitch() {
       role="switch"
       aria-checked={isDark}
       aria-label={isDark ? 'Тёмная тема включена' : 'Тёмная тема выключена'}
-      className="theme-switch"
+      className={styles['theme-switch']}
       data-testid="theme-switch"
       onClick={toggleTheme}
     >
@@ -35,7 +35,7 @@ export function ThemeSwitch() {
           it is IN, which reads to half of users as the theme it would switch TO. */}
       <SunIcon />
       <MoonIcon />
-      <span className="theme-switch-knob" aria-hidden="true" />
+      <span className={styles['theme-switch-knob']} aria-hidden="true" />
     </button>
   )
 }
@@ -43,7 +43,7 @@ export function ThemeSwitch() {
 function SunIcon() {
   return (
     <svg
-      className="theme-switch-icon"
+      className={styles['theme-switch-icon']}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -60,7 +60,7 @@ function SunIcon() {
 function MoonIcon() {
   return (
     <svg
-      className="theme-switch-icon"
+      className={styles['theme-switch-icon']}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
