@@ -16,7 +16,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-textery}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      # Bound to the loopback interface: the backend reaches the database by
+      # service name over the compose network and needs no published port at all.
+      # The mapping stays only so a developer can attach psql -- on this host,
+      # not from anywhere that can route to it.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     # The API waits on this rather than on the container merely existing:

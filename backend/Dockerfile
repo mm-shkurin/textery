@@ -35,6 +35,12 @@ COPY usecase usecase
 COPY adapters adapters
 COPY application application
 
+# The app needs no write access to its own code and no root capability: it binds
+# 8000, which is unprivileged. A container escape from an application flaw lands
+# on an unprivileged account instead of root on the host's user namespace.
+RUN useradd --create-home --uid 10001 app && chown -R app:app /app
+USER app
+
 EXPOSE 8000
 
 # Migrate, then serve. alembic.ini's script_location is relative, so alembic must
