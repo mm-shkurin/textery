@@ -20,9 +20,9 @@
 // This calls `postJson` directly rather than `authorizedRequest`: the refresh token travels in
 // the body, no Authorization header is involved, and routing it through the retry layer would
 // have a failed refresh trigger a refresh.
-import { postJson } from '../../../shared/api/httpClient'
-import type { AuthSession } from '../utils/authSession'
-import { API } from '../../../shared/api/endpoints'
+import { postJson } from '../api/httpClient'
+import type { AuthSession } from './authSession'
+import { API } from '../api/endpoints'
 
 export async function refresh(refreshToken: string): Promise<AuthSession> {
   const body = await postJson<Record<string, unknown>>(API.auth.refresh, {

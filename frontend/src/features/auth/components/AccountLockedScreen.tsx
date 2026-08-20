@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { SECOND_MS } from '../../../shared/config/runtime'
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
 import { formatMmSs } from '../utils/formatDuration'
 import './AccountLockedScreen.css'
@@ -30,15 +31,31 @@ export function AccountLockedScreen({ retryAfterSeconds, onDismiss }: AccountLoc
     Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
       ? Math.floor(retryAfterSeconds)
       : DEFAULT_LOCKOUT_SECONDS
+  // The lock ends at a fixed INSTANT, computed once from the server's Retry-After. Everything
+  // displayed is derived from that deadline rather than counted down step by step.
+  const [deadline] = useState(() => Date.now() + initialSeconds * SECOND_MS)
   const [remaining, setRemaining] = useState(initialSeconds)
 
-  // One interval for the component's life, cleared on unmount — decrements every second and
-  // clamps at zero (never negative). Mount-once (empty deps) so back-to-login/expiry unmount is
-  // the only thing that stops it; a per-tick effect would churn timers and risk a leak.
+  // One self-rescheduling chain for the component's life, cleared on unmount. Not `setInterval`
+  // decrementing a counter: that made the displayed number a tally of how many times a timer had
+  // fired, which is not elapsed time. A browser throttles a hidden tab's timers to about once a
+  // minute, so a user who switched away came back to a lock claiming five minutes left after five
+  // minutes had passed — and the «lockout elapsed» effect below never fired. Reading the clock
+  // each tick means a dropped or late tick costs display latency, never correctness.
   useEffect(() => {
-    const id = setInterval(() => setRemaining((r) => Math.max(0, r - 1)), 1000)
-    return () => clearInterval(id)
-  }, [])
+    let timer: ReturnType<typeof setTimeout>
+    const tick = () => {
+      const left = Math.max(0, Math.ceil((deadline - Date.now()) / SECOND_MS))
+      setRemaining(left)
+      if (left <= 0) return
+      // Aimed at the next whole-second boundary rather than a flat second, so the chain re-syncs
+      // to the deadline after any drift instead of compounding it.
+      const untilNextBoundary = (deadline - Date.now()) % SECOND_MS || SECOND_MS
+      timer = setTimeout(tick, untilNextBoundary)
+    }
+    timer = setTimeout(tick, (deadline - Date.now()) % SECOND_MS || SECOND_MS)
+    return () => clearTimeout(timer)
+  }, [deadline])
 
   // Lockout elapsed → return to the login form. Separate from the ticking effect so "reached zero"
   // is expressed once, as a value, rather than entangled with the interval callback.

@@ -8,7 +8,7 @@
 // scenarios will match on, so the fallback reports a missing server message AS absence ('').
 import { postJson } from '../../../shared/api/httpClient'
 import { toAuthApiError } from './apiError'
-import { sessionTokensFromWire, type SessionTokens } from './sessionTokens'
+import { sessionTokensFromWire, type SessionTokens } from '../../../shared/session/sessionTokens'
 import { API } from '../../../shared/api/endpoints'
 
 export interface OAuthExchangeRequest {

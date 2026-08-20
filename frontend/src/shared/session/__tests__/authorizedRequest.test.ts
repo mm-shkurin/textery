@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { authorizedRequest, SessionExpiredError } from '../authorizedRequest'
-import { clearSession, getAccessToken, getRefreshToken, saveSession } from '../../utils/authSession'
+import { clearSession, getAccessToken, getRefreshToken, saveSession } from '../authSession'
 
 // fetch is stubbed rather than the refresh client mocked: the refresh round-trip IS the subject
 // here, and mocking it would leave the one thing that replaces tokens untested.

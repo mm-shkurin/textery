@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NameRejectedError, fetchProfile, saveProfileName } from '../profileApi'
-import { clearSession, saveSession } from '../../../../features/auth/utils/authSession'
+import { clearSession, saveSession } from '../../../session/authSession'
 
 // `GET` and `PATCH /api/v1/auth/me` against a stubbed transport. The subject is the wire→app
 // boundary: what is sent, and what a response is turned into. The rename in particular answers

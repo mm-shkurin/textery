@@ -4,7 +4,7 @@
 // Attaching the token here would make this module import the session, which would make the
 // /auth/refresh client import a client that refreshes — a cycle, and worse, a refresh call
 // that could recurse through its own 401 handling. So the auth concern lives exactly one layer
-// up, in `features/auth/api/authorizedRequest.ts`, and the unauthenticated clients
+// up, in `shared/session/authorizedRequest.ts`, and the unauthenticated clients
 // (login/register/verify/refresh) keep calling this module directly.
 //
 // Base URL defaults to '' so requests go through the Vite dev proxy (/api → backend).

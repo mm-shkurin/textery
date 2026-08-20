@@ -9,7 +9,7 @@
 // The response is 204 with no body. There is nothing to map, and a client that expected a profile
 // back would be waiting for a row that no longer exists.
 import { isHttpError } from '../../api/httpClient'
-import { authorizedRequest } from '../../../features/auth/api/authorizedRequest'
+import { authorizedRequest } from '../../session/authorizedRequest'
 import { DeletionRejectedError } from './profileErrors'
 import type { Profile } from './profileWire'
 import { API } from '../../../shared/api/endpoints'

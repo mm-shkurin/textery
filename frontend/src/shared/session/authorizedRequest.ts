@@ -4,8 +4,8 @@
 //
 // Access tokens live ~15 minutes. Without this layer every session turns into silent refusals
 // at the quarter-hour mark while a perfectly good refresh token sits unused in storage.
-import { isHttpError, request, type RequestOptions } from '../../../shared/api/httpClient'
-import { clearSession, getAccessToken, getRefreshToken, saveSession } from '../utils/authSession'
+import { isHttpError, request, type RequestOptions } from '../api/httpClient'
+import { clearSession, getAccessToken, getRefreshToken, saveSession } from './authSession'
 import { refresh } from './refreshApi'
 
 // The session is gone and could not be renewed — distinct from "the server rejected what you

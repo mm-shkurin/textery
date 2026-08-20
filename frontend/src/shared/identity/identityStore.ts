@@ -13,7 +13,7 @@
 // It is INVALIDATED on every session change. Signing out and back in as somebody else keeps
 // `isAuthenticated` at `true` throughout — only the identity changes — so a cache keyed on
 // "authenticated" alone would show the previous account's name and address to the new one.
-import { getAccessToken, subscribeAuthSession } from '../../features/auth/utils/authSession'
+import { getAccessToken, subscribeAuthSession } from '../session/authSession'
 import { fetchProfile, type Profile } from './api/profileApi'
 import { resetAvatar, syncAvatar } from './avatarStore'
 

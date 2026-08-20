@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { login, type LoginResult } from '../api/loginApi'
-import { saveSession } from '../utils/authSession'
+import { saveSession } from '../../../shared/session/authSession'
 import { GENERIC_LOGIN_FAILURE_MESSAGE, SESSION_SAVE_FAILURE_MESSAGE } from '../utils/authMessages'
 import {
   isAccountLocked,

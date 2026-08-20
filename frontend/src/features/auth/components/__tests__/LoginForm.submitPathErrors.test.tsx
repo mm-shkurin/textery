@@ -7,14 +7,14 @@ import {
   NETWORK_LOGIN_FAILURE_MESSAGE,
 } from '../../utils/authMessages'
 import * as api from '../../api/loginApi'
-import { saveSession } from '../../utils/authSession'
+import { saveSession } from '../../../../shared/session/authSession'
 
 // Two carried review CONCERNS on green commit 1b863fe, folded into the 5.6 indefinite-spinner RED
 // step because both edit the same submit/catch path. Both mock `login` at the module boundary,
 // like the sibling networkError test — a different seam from the indefinite-spinner file (which
 // drives the real transport), so they live apart to keep each file's mocking strategy honest.
 vi.mock('../../api/loginApi', () => ({ login: vi.fn() }))
-vi.mock('../../utils/authSession', () => ({ saveSession: vi.fn() }))
+vi.mock('../../../../shared/session/authSession', () => ({ saveSession: vi.fn() }))
 
 const EMAIL = 'user@example.com'
 const PASSWORD = 'Str0ng!Pass'

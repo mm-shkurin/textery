@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { LoginForm } from '../LoginForm'
 import * as api from '../../api/loginApi'
 import type { LoginResult } from '../../api/loginApi'
-import { saveSession } from '../../utils/authSession'
+import { saveSession } from '../../../../shared/session/authSession'
 
 // Scenario 6.1 — regression guard. The OAuth work (VK/Yandex buttons, the OAuthErrorBanner reading
 // location.state.oauthError, the /auth/callback route) was ADDITIVE; this pins that the classic
@@ -22,7 +22,7 @@ vi.mock('react-router-dom', async (importOriginal) => {
 })
 
 vi.mock('../../api/loginApi', () => ({ login: vi.fn() }))
-vi.mock('../../utils/authSession', () => ({ saveSession: vi.fn() }))
+vi.mock('../../../../shared/session/authSession', () => ({ saveSession: vi.fn() }))
 
 const EMAIL = 'user@example.com'
 const PASSWORD = 'Str0ng!Pass'

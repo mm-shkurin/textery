@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { authorizedRequest, SessionExpiredError } from '../authorizedRequest'
-import * as authSession from '../../utils/authSession'
-import { clearSession, getAccessToken, saveSession } from '../../utils/authSession'
+import * as authSession from '../authSession'
+import { clearSession, getAccessToken, saveSession } from '../authSession'
 
 // The renewal path when renewal does NOT work. The happy path is covered in
 // authorizedRequest.test.ts; what is exercised here is the set of exits that decide whether a

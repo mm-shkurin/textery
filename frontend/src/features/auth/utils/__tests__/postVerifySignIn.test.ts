@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { signInAfterVerification } from '../postVerifySignIn'
 import { forgetRegistration, rememberRegistration } from '../registrationHandoff'
-import { clearSession, getAccessToken } from '../authSession'
+import { clearSession, getAccessToken } from '../../../../shared/session/authSession'
 import * as loginApi from '../../api/loginApi'
 
 vi.mock('../../api/loginApi')

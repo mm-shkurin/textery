@@ -6,7 +6,7 @@
 // and because the form is a form, not a place to keep auth policy.
 import { login } from '../api/loginApi'
 import { consumeRegistration } from './registrationHandoff'
-import { saveSession } from './authSession'
+import { saveSession } from '../../../shared/session/authSession'
 
 export const LANDING_PATH = '/'
 export const LOGIN_PATH = '/login'

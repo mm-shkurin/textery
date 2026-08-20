@@ -1,4 +1,4 @@
-import { accountInitials } from '../../../features/auth/utils/accountEmail'
+import { accountInitials } from '../../session/accountEmail'
 import type { IdentityState } from '../../identity/identityStore'
 import { useAvatarUrl } from '../../identity/useAvatarUrl'
 

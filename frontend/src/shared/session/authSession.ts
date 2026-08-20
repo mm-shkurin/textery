@@ -1,4 +1,4 @@
-import { readStored, removeStored, writeStored } from '../../../shared/lib/browser'
+import { readStored, removeStored, writeStored } from '../lib/browser'
 // Where the auth tokens live.
 //
 // The backend returns tokens in the RESPONSE BODY, not an httpOnly cookie, so the client is

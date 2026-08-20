@@ -2,7 +2,10 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { register, type RegisterApiError } from '../api/registerApi'
 import { rememberRegistration } from '../utils/registrationHandoff'
-import { UNSAVED_LEAVE_MESSAGE_REGISTER, useUnsavedGuard } from '../utils/useUnsavedGuard'
+import {
+  UNSAVED_LEAVE_MESSAGE_REGISTER,
+  useUnsavedGuard,
+} from '../../../shared/hooks/useUnsavedGuard'
 import { GENERIC_REGISTER_FAILURE_MESSAGE, isUsableMessage } from '../utils/authMessages'
 import { isConfirmMismatched, isPasswordCompliant } from '../utils/passwordPolicy'
 

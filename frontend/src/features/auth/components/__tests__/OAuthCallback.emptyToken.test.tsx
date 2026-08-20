@@ -3,8 +3,8 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { OAuthCallback } from '../OAuthCallback'
 import * as oauthExchangeApi from '../../api/oauthExchangeApi'
-import * as authSession from '../../utils/authSession'
-import { sessionTokensFromWire, type SessionTokens } from '../../api/sessionTokens'
+import * as authSession from '../../../../shared/session/authSession'
+import { sessionTokensFromWire, type SessionTokens } from '../../../../shared/session/sessionTokens'
 
 // Scenario 4.6 — a 200 exchange WITHOUT a usable token must fail closed. The visitor lands on
 // /auth/callback with a VALID handoff code; the exchange RESOLVES 200 (not a rejection — the 4.x
@@ -40,8 +40,8 @@ vi.mock('../../api/oauthExchangeApi', async (importOriginal) => {
   return { ...actual, oauthExchange: vi.fn() }
 })
 
-vi.mock('../../utils/authSession', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../utils/authSession')>()
+vi.mock('../../../../shared/session/authSession', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../shared/session/authSession')>()
   return { ...actual, saveSession: vi.fn() }
 })
 
