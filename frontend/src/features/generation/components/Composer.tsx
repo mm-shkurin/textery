@@ -1,7 +1,9 @@
 import './ChatButton.css'
 import './Composer.css'
 import { ComposerParameters } from './ComposerParameters'
+import { TopicSuggestions } from './TopicSuggestions'
 import { isVolumeAcceptable, type GenerationParameters } from '../utils/generationParameters'
+import type { DocumentType } from '../../../shared/documentTypes'
 
 export const MAX_TOPIC_LENGTH = 500
 
@@ -10,6 +12,10 @@ interface ComposerProps {
   // hardcode 'Тема доклада' because a mockup depicts one type; this heading sits directly under a
   // breadcrumb naming the real one, so a literal here would name a different type than the chip.
   topicLabel: string
+  // The picked type, for the suggestions below the field. Passed alongside `topicLabel` rather
+  // than parsed back out of it: the label is display copy in a genitive case, and re-deriving a
+  // type from a Russian noun form is a lookup that would go wrong the first time a type is renamed.
+  documentType: DocumentType
   topic: string
   setTopic: (v: string) => void
   parameters: GenerationParameters
@@ -21,6 +27,7 @@ const TOPIC_LABEL_ID = 'composer-topic-label'
 
 export function Composer({
   topicLabel,
+  documentType,
   topic,
   setTopic,
   parameters,
@@ -58,6 +65,13 @@ export function Composer({
           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) onSend()
         }}
         rows={4}
+      />
+      <TopicSuggestions
+        documentType={documentType}
+        onPick={setTopic}
+        // Only while the field is empty. Once there is text, a suggestion click would silently
+        // replace what the user wrote — and there is no undo on a textarea they did not focus.
+        isVisible={topic.trim() === ''}
       />
       <ComposerParameters parameters={parameters} onChange={setParameters} />
       {/* Both required fields gate the button, not the topic alone. A volume outside 1..10 — or

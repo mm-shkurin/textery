@@ -26,6 +26,7 @@ class PromptRequest:
         volume_pages: int | None,
         requirements: str | None = None,
         extra_wishes: str | None = None,
+        text_style: str | None = None,
     ) -> None:
         self.document_type = document_type
         # Nullable, matching `Generation`'s own annotations. Narrowing them to
@@ -43,3 +44,7 @@ class PromptRequest:
         # and the storage hydration path rebuilds those rows as they are.
         self.requirements = requirements
         self.extra_wishes = extra_wishes
+        # Optional for the same reason the two above are: every generation made
+        # before the style picker existed has none, and the hydration path rebuilds
+        # those rows exactly as they were stored.
+        self.text_style = text_style

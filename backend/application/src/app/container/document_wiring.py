@@ -5,6 +5,7 @@ from access.generation.generation_storage import SqlAlchemyGenerationStorage
 from container.runtime import request_scoped
 from document.create_document import CreateDocument
 from document.create_document_from_generation import CreateDocumentFromGeneration
+from document.delete_document import DeleteDocument
 from document.export_document import ExportDocument
 from document.get_document import GetDocument
 from document.list_documents import ListDocuments
@@ -19,6 +20,16 @@ def create_create_document(session: AsyncSession) -> CreateDocument:
     return CreateDocument(
         document_repository=SqlAlchemyDocumentStorage(session),
         clock=SystemClock(),
+        unit_of_work=SqlAlchemyUnitOfWork(session),
+    )
+
+
+@request_scoped
+def create_delete_document(session: AsyncSession) -> DeleteDocument:
+    return DeleteDocument(
+        document_repository=SqlAlchemyDocumentStorage(session),
+        # The same session the repository holds, so the DELETE and its commit are
+        # one transaction — and so a failed delete leaves nothing half-applied.
         unit_of_work=SqlAlchemyUnitOfWork(session),
     )
 

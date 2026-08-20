@@ -2,6 +2,7 @@ import type { MutableRefObject } from 'react'
 import { useEditor, type Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import TextAlign from '@tiptap/extension-text-align'
+import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
 import { BlockPlaceholder } from './blockPlaceholder'
 import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from './editorDomSync'
 
@@ -35,6 +36,18 @@ export function useManualEditorInstance(noteEditRef: MutableRefObject<() => void
       // Alignment is a block attribute now, not a wrapping <div> mark: it renders
       // as `style="text-align: …"` on the heading/paragraph it applies to.
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      // «Вставить таблицу». All four nodes are registered together: Table alone has no
+      // rows or cells to hold, so a partial registration is a schema error at construction
+      // rather than a table that renders badly.
+      //
+      // `resizable: false` on purpose. Column resizing writes a `colwidth` attribute the
+      // server's sanitizer does not allow through (a comma-separated pixel list it would have
+      // to parse to trust), so a user could drag a column and lose the width on the next
+      // reload — a control that visibly does nothing is worse than no control.
+      Table.configure({ resizable: false }),
+      TableRow,
+      TableHeader,
+      TableCell,
       BlockPlaceholder,
     ],
     content: '',

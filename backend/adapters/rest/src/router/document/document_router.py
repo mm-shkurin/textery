@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Header, Response
 
 from document.create_document import CreateDocument
 from document.create_document_from_generation import CreateDocumentFromGeneration
+from document.document_filter import DocumentFilter
 from document.export_document import ExportDocument
 from document.get_document import GetDocument
 from document.list_documents import ListDocuments
@@ -54,6 +55,9 @@ def get_create_document_from_generation_usecase() -> CreateDocumentFromGeneratio
 async def list_documents(
     limit: int = DEFAULT_LIMIT,
     cursor: str | None = None,
+    q: str | None = None,
+    created_from: str | None = None,
+    created_to: str | None = None,
     owner_id: UUID = Depends(get_current_owner_id),
     usecase: ListDocuments = Depends(get_list_documents_usecase),
 ) -> PageDto[DocumentSummaryDto]:
@@ -62,8 +66,16 @@ async def list_documents(
     Declared before GET /{document_id} so the two cannot race: "" and "/{id}" are
     distinct paths to Starlette, but keeping the literal above the parameterised
     one is the habit that stops a future /documents/recent from being swallowed.
+
+    The three filter parameters arrive as raw `str | None` and are parsed by the
+    domain, not by Pydantic — same reason `parse_page_request` exists on the
+    projects feed: a `datetime` annotation here would answer a malformed date in
+    Pydantic's envelope rather than this API's {error_code, message}.
     """
-    page = await usecase.execute(owner_id=owner_id, limit=limit, cursor=cursor)
+    document_filter = DocumentFilter.parse(q=q, created_from=created_from, created_to=created_to)
+    page = await usecase.execute(
+        owner_id=owner_id, limit=limit, cursor=cursor, document_filter=document_filter
+    )
     return PageDto[DocumentSummaryDto](
         items=[DocumentSummaryDto.from_domain(document) for document in page.items],
         next_cursor=page.next_cursor,

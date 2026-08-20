@@ -79,6 +79,7 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
               <ComposerPanel
                 key={draftId}
                 topicLabel={topicFieldLabel(documentType)}
+                documentType={documentType}
                 onSubmit={onSubmit}
               />
             ) : (

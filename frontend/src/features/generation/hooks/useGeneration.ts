@@ -5,11 +5,7 @@ import { SessionExpiredError } from '../../auth/api/authorizedRequest'
 import type { DocumentType } from '../../../shared/documentTypes'
 import { describeFailure } from '../../../shared/api/send'
 import { RUNTIME } from '../../../shared/config/runtime'
-import {
-  generationReducer,
-  IDLE_GENERATION,
-  type GenerationUiState,
-} from './generationState'
+import { generationReducer, IDLE_GENERATION, type GenerationUiState } from './generationState'
 
 export type { GenerationUiState }
 

@@ -117,6 +117,49 @@ export const TOOLBAR_ACTIONS: ToolbarAction[] = [
     run: (editor) => editor.chain().focus().setTextAlign('center').run(),
     isActive: (editor) => editor.isActive({ textAlign: 'center' }),
   },
+  // The table group. Insert is always available; the three that operate on an existing table are
+  // disabled outside one, so the toolbar never offers an action that would silently no-op.
+  {
+    key: 'table',
+    label: '⊞',
+    ariaLabel: 'Вставить таблицу',
+    testId: 'toolbar-table',
+    // 3×3 with a header row — the shape a user inserting a table almost always then builds, and
+    // the one that needs the fewest presses to shrink if it is not.
+    run: (editor) =>
+      editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+    isActive: (editor) => editor.isActive('table'),
+  },
+  {
+    key: 'tableAddRow',
+    label: '+—',
+    ariaLabel: 'Добавить строку',
+    testId: 'toolbar-table-add-row',
+    run: (editor) => editor.chain().focus().addRowAfter().run(),
+    isActive: () => false,
+    // `can()` rather than `isActive('table')`: the command itself knows whether the current
+    // selection admits a row, which also covers a caret inside a nested structure the isActive
+    // check would answer wrongly.
+    disabled: (editor) => !editor.can().addRowAfter(),
+  },
+  {
+    key: 'tableAddColumn',
+    label: '+|',
+    ariaLabel: 'Добавить столбец',
+    testId: 'toolbar-table-add-column',
+    run: (editor) => editor.chain().focus().addColumnAfter().run(),
+    isActive: () => false,
+    disabled: (editor) => !editor.can().addColumnAfter(),
+  },
+  {
+    key: 'tableDelete',
+    label: '⌫⊞',
+    ariaLabel: 'Удалить таблицу',
+    testId: 'toolbar-table-delete',
+    run: (editor) => editor.chain().focus().deleteTable().run(),
+    isActive: () => false,
+    disabled: (editor) => !editor.can().deleteTable(),
+  },
   {
     key: 'link',
     label: '🔗',

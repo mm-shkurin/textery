@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  AUTOSAVE_DEBOUNCE_MS,
   typeAndFireAutosave,
   typeIntoEditor,
   useAutosaveFailureFakeTimers,
@@ -133,7 +134,14 @@ describe('ManualEditor — what the abandonment record must and must not say (H9
     expectNoSaveOnWire()
     // Nothing armed and nothing sent — the exact inverse of the case above, and the half of this
     // pair's discrimination the dirty flag on the next line cannot express.
-    expect(vi.getTimerCount()).toBe(0)
+    //
+    // Stated by running the clock PAST the debounce and finding the wire still silent, rather than
+    // by `vi.getTimerCount() === 0`. The count is a process-wide number that any editor extension
+    // may move for reasons of its own — the table plugin schedules one on mount — so it answers
+    // "is anything at all pending", which is not the question. Advancing time asks the question
+    // directly, and is the stronger claim: an armed debounce would have fired here.
+    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS)
+    expectNoSaveOnWire()
     // ARMED anyway — a freshly created document has never been saved. This is the assertion that
     // makes a green keyed on the dirty flag fail here while still passing the settled-write twin.
     expect(dispatchBeforeUnload()).toBe(true)

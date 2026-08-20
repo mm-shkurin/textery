@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Any
 from uuid import UUID
 
@@ -20,6 +21,7 @@ async def paginate_by_owner(
     owner_id: UUID,
     limit: int,
     cursor: KeysetCursor | None,
+    extra_predicates: Sequence[Any] = (),
 ) -> list[Any]:
     """One page of `model` rows owned by `owner_id`, newest first.
 
@@ -39,6 +41,12 @@ async def paginate_by_owner(
     the scan it exists for never happens.
     """
     statement = select(model).where(model.owner_id == owner_id)
+    # ANDed alongside the owner filter, never in place of it. Callers pass
+    # narrowing predicates (a title search, a creation-date window); the owner
+    # predicate above is not theirs to weaken, which is why this parameter adds
+    # to the WHERE clause and no caller is handed the statement itself.
+    for predicate in extra_predicates:
+        statement = statement.where(predicate)
     if cursor is not None:
         statement = statement.where(
             # `literal()` on the anchor half: SQLAlchemy coerces bare Python values

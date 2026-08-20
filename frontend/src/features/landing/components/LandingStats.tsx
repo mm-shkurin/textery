@@ -28,7 +28,9 @@ export function LandingStats() {
           <div className={styles['stat-chips']} aria-hidden="true">
             <span className={styles['stat-chip'] + ' ' + styles['stat-chip-back']} />
             <span className={styles['stat-chip'] + ' ' + styles['stat-chip-mid']} />
-            <span className={styles['stat-chip'] + ' ' + styles['stat-chip-front']}>{stat.icon}</span>
+            <span className={styles['stat-chip'] + ' ' + styles['stat-chip-front']}>
+              {stat.icon}
+            </span>
           </div>
           <p className={styles['stat-value']}>{stat.value}</p>
           <p className={styles['stat-text']}>{stat.text}</p>

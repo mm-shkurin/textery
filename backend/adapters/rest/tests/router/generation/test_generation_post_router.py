@@ -48,6 +48,10 @@ class TestCreateGenerationHappyPath:
             "topic": "Как работает фотосинтез",
             "volume_pages": 3,
             "document_type": "доклад",
+            # Echoed even when unset: the response states what the row holds,
+            # and an omitted key would be indistinguishable to a client from
+            # a style the server silently dropped.
+            "text_style": None,
         }, f"unexpected response body {response.json()}"
         # owner_id comes from the token, never the body -- a client that sent one
         # would have it ignored by Pydantic's extra="ignore".
@@ -58,6 +62,10 @@ class TestCreateGenerationHappyPath:
             requirements=None,
             extra_wishes=None,
             document_type="доклад",
+            # A body that names no style forwards None rather than a default: the
+            # register the model picks on its own is a different thing from the
+            # user having chosen "научный", and only one of them may be recorded.
+            text_style=None,
         )
         # The background task carries the owner too: it re-reads through the
         # owner-filtered query, so an id alone would find nothing and the generation

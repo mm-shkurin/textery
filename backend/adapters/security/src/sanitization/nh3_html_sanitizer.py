@@ -32,6 +32,24 @@ _ALLOWED_TAGS = {
     "pre",
     "code",
     "hr",
+    # The table half, added with the editor's «вставить таблицу» control. Every
+    # tag Tiptap's Table extension can emit is listed: a table whose <tbody> is
+    # stripped is not a degraded table, it is a pile of unwrapped cell text, and
+    # the loss is only discovered on reload.
+    "table",
+    "thead",
+    "tbody",
+    "tfoot",
+    "tr",
+    "th",
+    "td",
+    # `img` is deliberately NOT here, and its absence is a decision rather than
+    # an oversight. Both export renderers refuse outbound fetches on purpose
+    # (see WeasyPrintPdfRenderer._blocked_url_fetcher -- the document HTML is
+    # user-controlled, so resolving a src is an SSRF vector). An allowed <img>
+    # would therefore render in the editor and vanish from every PDF and DOCX
+    # the user downloads, which is a worse answer than not offering it: the loss
+    # is invisible until the file is opened somewhere else.
 }
 
 # `style` on the block nodes carries text alignment, which TextAlign renders as
@@ -41,6 +59,12 @@ _ALLOWED_TAGS = {
 # _strip_unsafe_styles below.
 _ALLOWED_ATTRIBUTES = {
     "a": {"href", "title"},
+    # Merged cells, and nothing else. `colwidth` -- which Tiptap writes when a
+    # column is resized -- is deliberately absent: it is a comma-separated pixel
+    # list this filter would have to parse to trust, and losing a column width is
+    # a cosmetic regression where losing a merge would corrupt the table's shape.
+    "th": {"colspan", "rowspan"},
+    "td": {"colspan", "rowspan"},
     "p": {"style"},
     "h1": {"style"},
     "h2": {"style"},

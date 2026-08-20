@@ -26,6 +26,7 @@ from generation.generation_validation import (
     required_topic,
     validate_document_type,
 )
+from generation.text_style import validate_text_style
 from shared.exceptions import ValidationException
 
 
@@ -46,6 +47,7 @@ class Generation:
         version: int = 1,
         idempotency_key: str | None = None,
         source_generation_id: UUID | None = None,
+        text_style: str | None = None,
     ) -> None:
         self.id = id
         # Required positionally, with no default: a default would let a caller that
@@ -68,6 +70,12 @@ class Generation:
         # index needs, since Postgres treats NULLs as distinct.
         self.idempotency_key = idempotency_key
         self.source_generation_id = source_generation_id
+        # Unvalidated here, like every other field on this path: __init__ is the
+        # storage hydration route, and a row written under an older allowlist must
+        # read back as it was rather than raise on a value the user cannot change.
+        # `style_instruction` is what degrades an unrecognised value to no
+        # sentence at all when the prompt is built.
+        self.text_style = text_style
 
     def mark_in_progress(self) -> None:
         self.status = IN_PROGRESS_STATUS
@@ -92,6 +100,7 @@ class Generation:
         requirements: str | None,
         extra_wishes: str | None,
         document_type: str,
+        text_style: str | None = None,
     ) -> "Generation":
         # Rebinding to the non-optional return is what lets the length check below
         # be honest: a predicate that answers True for None leaves `topic` typed
@@ -116,10 +125,13 @@ class Generation:
             requirements=requirements,
             extra_wishes=extra_wishes,
             document_type=validate_document_type(document_type),
+            text_style=validate_text_style(text_style),
         )
 
     @classmethod
-    def retry_of(cls, source: "Generation", idempotency_key: str) -> "Generation":
+    def retry_of(
+        cls, source: "Generation", idempotency_key: str, text_style: str | None = None
+    ) -> "Generation":
         """A fresh run of `source`, from the parameters stored on that row.
 
         Every field is copied from the source row rather than taken from the
@@ -148,4 +160,12 @@ class Generation:
             document_type=source.document_type,
             idempotency_key=idempotency_key,
             source_generation_id=source.id,
+            # The ONE field a retry may override, and the reason it is validated
+            # while nothing else on this path is: «перегенерировать в другом
+            # стиле» is a fresh choice the user makes at the moment of the retry,
+            # not a value copied off the stored row. An absent override keeps the
+            # source's own style, so the plain «Повторить» button stays bodiless.
+            text_style=(
+                source.text_style if text_style is None else validate_text_style(text_style)
+            ),
         )

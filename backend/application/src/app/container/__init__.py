@@ -32,6 +32,7 @@ from container.auth_wiring import (
 from container.document_wiring import (
     create_create_document,
     create_create_document_from_generation,
+    create_delete_document,
     create_export_document,
     create_get_document,
     create_list_documents,
@@ -74,6 +75,7 @@ __all__ = [
     "create_create_document",
     "create_create_document_from_generation",
     "create_exchange_handoff_code",
+    "create_delete_document",
     "create_export_document",
     "create_frontend_callback_url",
     "create_generate_document",

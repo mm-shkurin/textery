@@ -110,3 +110,18 @@
     flex: 1 1 auto;
   }
 }
+
+/* The style picker sits in the parameters block beside требования and объём. A native select
+   styled to match the text inputs around it, rather than a custom listbox: the register is one
+   choice out of a closed set, and the element already carries that meaning for free. */
+.composer-style-select {
+  appearance: auto;
+  cursor: pointer;
+}
+
+.composer-style-hint {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-muted, #6b7280);
+}

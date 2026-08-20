@@ -35,7 +35,23 @@ describe('ProjectCard retry affordance', () => {
     fireEvent.click(screen.getByTestId('project-card-retry'))
 
     expect(onRetry).toHaveBeenCalledTimes(1)
-    expect(onRetry).toHaveBeenCalledWith(GENERATION.id)
+    // `undefined` for the style, explicitly asserted rather than left off: the register picker
+    // beside this button defaults to «тот же стиль», and a plain repeat must forward NO override.
+    // Passing '' here instead would have the client send `text_style: ""`, which the server
+    // refuses — so the difference between the two is a broken button, not a detail.
+    expect(onRetry).toHaveBeenCalledWith(GENERATION.id, undefined)
+  })
+
+  it('asks to regenerate in the register the user picked', () => {
+    const onRetry = vi.fn()
+    render(<ProjectCard project={GENERATION} onRetry={onRetry} />)
+
+    fireEvent.change(screen.getByTestId('project-card-retry-style'), {
+      target: { value: 'художественный' },
+    })
+    fireEvent.click(screen.getByTestId('project-card-retry'))
+
+    expect(onRetry).toHaveBeenCalledWith(GENERATION.id, 'художественный')
   })
 
   // The guard against a double-click lives in the hook; a button that stays live through the wait

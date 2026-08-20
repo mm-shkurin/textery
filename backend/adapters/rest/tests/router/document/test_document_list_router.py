@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from document.document import Document
+from document.document_filter import DocumentFilter
 from shared.page import DEFAULT_LIMIT, Page
 
 _LONG_CONTENT = "<p>" + ("x" * 1000) + "</p>"
@@ -122,7 +123,16 @@ class TestListDocuments:
         async with list_client(usecase) as client:
             await client.get("/api/v1/documents?limit=5&cursor=anchor")
 
-        usecase.execute.assert_awaited_once_with(owner_id=owner_id, limit=5, cursor="anchor")
+        usecase.execute.assert_awaited_once_with(
+            owner_id=owner_id,
+            limit=5,
+            cursor="anchor",
+            # The unfiltered request still carries a filter object, and it must be
+            # the empty one: a request with no `q`/`created_from`/`created_to` has
+            # to reach the usecase asking for the whole history, not for whatever a
+            # partially-populated filter would narrow it to.
+            document_filter=DocumentFilter(),
+        )
 
     async def test_should_default_paging_when_unspecified(self, mocker, list_client, owner_id):
         usecase = mocker.Mock()
@@ -132,7 +142,7 @@ class TestListDocuments:
             await client.get("/api/v1/documents")
 
         usecase.execute.assert_awaited_once_with(
-            owner_id=owner_id, limit=DEFAULT_LIMIT, cursor=None
+            owner_id=owner_id, limit=DEFAULT_LIMIT, cursor=None, document_filter=DocumentFilter()
         )
 
     async def test_should_not_be_swallowed_by_the_by_id_route(self, mocker, list_client):

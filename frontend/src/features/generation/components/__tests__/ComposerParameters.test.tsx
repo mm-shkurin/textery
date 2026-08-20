@@ -18,6 +18,7 @@ function renderComposer(topic = 'Тема', parameters: GenerationParameters = E
   render(
     <Composer
       topicLabel={topicFieldLabel('doklad')}
+      documentType="doklad"
       topic={topic}
       setTopic={vi.fn()}
       parameters={parameters}
@@ -122,5 +123,21 @@ describe('the send button and the required fields', () => {
     renderComposer('Тема', { ...EMPTY_PARAMETERS, volumePages })
 
     expect(screen.getByTestId('topic-send')).toBeDisabled()
+  })
+})
+
+describe('Composer — дополнительные пожелания', () => {
+  it('reports what was typed into the wishes field', () => {
+    const { setParameters } = renderComposer()
+
+    fireEvent.change(screen.getByTestId('wishes-input'), {
+      target: { value: 'Добавь пример из практики' },
+    })
+
+    // The field is stored, validated and interpolated into the prompt, so a handler wired to the
+    // wrong key would be silent everywhere except in the generated text.
+    expect(setParameters).toHaveBeenCalledWith(
+      expect.objectContaining({ extraWishes: 'Добавь пример из практики' }),
+    )
   })
 })

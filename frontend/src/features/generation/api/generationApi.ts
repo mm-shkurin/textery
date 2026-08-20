@@ -75,6 +75,10 @@ export async function createGeneration(
         // have to re-interpret as absence. Deciding it here keeps one meaning of "not filled in".
         ...(parameters.requirements.trim() ? { requirements: parameters.requirements.trim() } : {}),
         ...(parameters.extraWishes.trim() ? { extra_wishes: parameters.extraWishes.trim() } : {}),
+        // Same omit-rather-than-empty rule as the two above, and here it is load-bearing: the
+        // server refuses '' as an invalid style, while an absent key means "no register chosen",
+        // which is exactly what the untouched picker represents.
+        ...(parameters.textStyle ? { text_style: parameters.textStyle } : {}),
       },
     },
     'Не удалось создать запрос',

@@ -1,3 +1,4 @@
+import { ComposerStyle } from './ComposerStyle'
 import {
   MAX_EXTRA_WISHES_LENGTH,
   MAX_REQUIREMENTS_LENGTH,
@@ -75,6 +76,8 @@ export function ComposerParameters({ parameters, onChange }: ComposerParametersP
           />
         </div>
       </div>
+
+      <ComposerStyle parameters={parameters} onChange={onChange} />
 
       <div className="composer-field">
         <span id={WISHES_LABEL_ID} className="composer-field-label">

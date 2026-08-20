@@ -49,6 +49,7 @@ from router.auth.avatar_router import router as avatar_router
 from router.auth.deletion_router import router as deletion_router
 from router.auth.oauth_router import router as oauth_router
 from router.auth.profile_router import router as profile_router
+from router.document.document_deletion_router import router as document_deletion_router
 from router.document.document_router import router as document_router
 from router.generation.generation_router import router as generation_router
 from router.health.health_router import router as health_router
@@ -107,6 +108,9 @@ app.include_router(avatar_router)
 app.include_router(deletion_router)
 app.include_router(oauth_router)
 app.include_router(document_router)
+# After document_router: both carry the /api/v1/documents prefix, and the literal
+# routes there must stay above any parameterised one registered later.
+app.include_router(document_deletion_router)
 app.include_router(health_router)
 app.include_router(project_router)
 # The three narrow handlers are suppressed below because Starlette types the

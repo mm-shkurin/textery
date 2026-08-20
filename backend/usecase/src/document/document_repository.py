@@ -3,6 +3,7 @@ from typing import Protocol
 from uuid import UUID
 
 from document.document import Document
+from document.document_filter import EMPTY, DocumentFilter
 from document.title_update import TitleUpdate
 from shared.keyset_cursor import KeysetCursor
 
@@ -48,9 +49,32 @@ class DocumentRepository(Protocol):
         ...
 
     async def list_by_owner(
-        self, owner_id: UUID, limit: int, cursor: KeysetCursor | None
+        self,
+        owner_id: UUID,
+        limit: int,
+        cursor: KeysetCursor | None,
+        document_filter: DocumentFilter = EMPTY,
     ) -> list[Document]:
-        """The owner's documents, newest first, starting after `cursor`."""
+        """The owner's documents, newest first, starting after `cursor`.
+
+        `document_filter` NARROWS the page and can never widen it: it is ANDed
+        with the owner predicate, which is not optional and not something a
+        filter may relax. It defaults to `EMPTY` so the unfiltered history — the
+        call every existing caller makes — reads unchanged.
+        """
+        ...
+
+    async def delete_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> bool:
+        """Delete one document, answering whether a row was actually removed.
+
+        A boolean rather than `None`, and derived from the rowcount rather than
+        from a preceding read: the caller turns "nothing matched" into its 404,
+        and a read-then-delete would report success for a row a concurrent
+        request had already taken.
+
+        Owner-scoped like everything else here, so a foreign document matches
+        zero rows and is indistinguishable from an absent one.
+        """
         ...
 
     async def save_content_if_version_matches(

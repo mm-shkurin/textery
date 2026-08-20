@@ -28,6 +28,7 @@ class RequestGeneration:
         requirements: str | None,
         extra_wishes: str | None,
         document_type: str,
+        text_style: str | None = None,
     ) -> Generation:
         generation = Generation.create(
             owner_id=owner_id,
@@ -36,6 +37,7 @@ class RequestGeneration:
             requirements=requirements,
             extra_wishes=extra_wishes,
             document_type=document_type,
+            text_style=text_style,
         )
         await self._storage.save(generation)
         await self._queue.enqueue(generation.id)

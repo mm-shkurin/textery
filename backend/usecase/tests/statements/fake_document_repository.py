@@ -10,6 +10,7 @@ from datetime import datetime
 from uuid import UUID
 
 from document.document import Document
+from document.document_filter import EMPTY, DocumentFilter
 from document.title_update import TitleUpdate
 from shared.exceptions import ConflictException
 from shared.keyset_cursor import KeysetCursor
@@ -75,23 +76,71 @@ class FakeDocumentRepository:
         )
 
     async def list_by_owner(
-        self, owner_id: UUID, limit: int, cursor: KeysetCursor | None
+        self,
+        owner_id: UUID,
+        limit: int,
+        cursor: KeysetCursor | None,
+        document_filter: DocumentFilter = EMPTY,
     ) -> list[Document]:
-        """Newest first, owner-scoped, anchored strictly after `cursor`.
+        """Newest first, owner-scoped, filtered, anchored strictly after `cursor`.
 
         The ordering and the strict `<` are mirrored from the real adapter rather
         than simplified away: a fake that returned insertion order would let a
         usecase that forgot to trim the has-next probe row look correct, and a
         fake using `<=` would hide a cursor that re-serves its own anchor row.
+
+        The filter is applied BEFORE the limit, matching the SQL: applied after,
+        a page could come back short while still reporting more to come, which is
+        precisely the bug the real predicate placement exists to avoid.
         """
         rows = sorted(
-            (d for d in self.documents if d.owner_id == owner_id),
+            (
+                d
+                for d in self.documents
+                if d.owner_id == owner_id and self._matches(d, document_filter)
+            ),
             key=lambda d: (d.created_at, d.id),
             reverse=True,
         )
         if cursor is not None:
             rows = [d for d in rows if (d.created_at, d.id) < (cursor.created_at, cursor.id)]
         return rows[:limit]
+
+    @staticmethod
+    def _matches(document: Document, document_filter: DocumentFilter) -> bool:
+        """Case-insensitive substring over title and content, plus the date window.
+
+        Case-insensitivity mirrors the adapter's `ILIKE` rather than the simpler
+        `in`: a fake that matched case-sensitively would let a usecase pass tests
+        the real database fails, and the search box on the history screen is not
+        a place a user capitalises carefully.
+        """
+        if document_filter.query is not None:
+            needle = document_filter.query.casefold()
+            haystack = f"{document.title or ''} {document.content or ''}".casefold()
+            if needle not in haystack:
+                return False
+        if document_filter.created_from is not None and (
+            document.created_at < document_filter.created_from
+        ):
+            return False
+        return document_filter.created_to is None or (
+            document.created_at <= document_filter.created_to
+        )
+
+    async def delete_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> bool:
+        """Drops the row and answers whether one was there, mirroring the rowcount.
+
+        The owner predicate is part of the match, not a separate check that raises:
+        a foreign document must fall out as "nothing deleted" exactly as it does
+        in SQL, so a usecase cannot tell it apart from an absent one here either.
+        """
+        remaining = [
+            d for d in self.documents if not (d.id == document_id and d.owner_id == owner_id)
+        ]
+        deleted = len(remaining) != len(self.documents)
+        self.documents = remaining
+        return deleted
 
     async def save_content_if_version_matches(
         self,

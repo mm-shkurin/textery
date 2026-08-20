@@ -75,3 +75,31 @@
   font-size: 12px;
   color: var(--text-muted);
 }
+
+/* The repeat button and its register picker share one line. Wrapping rather than shrinking: on a
+   narrow card the select drops under the button at full width instead of becoming a control too
+   small to read the chosen style out of. */
+.project-card-retry-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-card-retry-style {
+  flex: 1 1 140px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--border-subtle, #e5e7eb);
+  border-radius: 8px;
+  background: var(--bg-surface, #fff);
+  color: var(--text-primary, #111827);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.project-card-retry-style:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

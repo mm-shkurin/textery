@@ -23,7 +23,15 @@
 // directory does not exist and the script says so rather than failing a pipeline that cannot
 // possibly fix it.
 
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -67,8 +75,10 @@ function pairs() {
 const asLf = (text) => text.replace(/\r\n/g, '\n')
 
 const rendered = ({ source }) =>
-  asLf(banner(relative(join(FRONTEND_ROOT, '..'), source).split('\\').join('/')) +
-  readFileSync(source, 'utf8'))
+  asLf(
+    banner(relative(join(FRONTEND_ROOT, '..'), source).split('\\').join('/')) +
+      readFileSync(source, 'utf8'),
+  )
 
 function main(checkOnly) {
   if (!existsSync(SOURCE_ROOT)) {
@@ -81,7 +91,8 @@ function main(checkOnly) {
     return 1
   }
   const stale = all.filter(
-    (pair) => !existsSync(pair.target) || asLf(readFileSync(pair.target, 'utf8')) !== rendered(pair),
+    (pair) =>
+      !existsSync(pair.target) || asLf(readFileSync(pair.target, 'utf8')) !== rendered(pair),
   )
   if (checkOnly) {
     if (stale.length > 0) {

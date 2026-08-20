@@ -2,7 +2,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header
 
-from dto.generation.generation_request_dto import GenerationRequestDto
+from dto.generation.generation_request_dto import (
+    GenerationRequestDto,
+    RetryGenerationRequestDto,
+)
 from dto.generation.generation_response_dto import (
     GenerationCreatedDto,
     GenerationDetailDto,
@@ -77,6 +80,7 @@ async def create_generation(
         requirements=request.requirements,
         extra_wishes=request.extra_wishes,
         document_type=request.document_type,
+        text_style=request.text_style,
     )
     background_tasks.add_task(generate_document.execute, generation.id, generation.owner_id)
     return GenerationCreatedDto.from_domain(generation)
@@ -86,6 +90,9 @@ async def create_generation(
 async def retry_generation(
     generation_id: UUID,
     background_tasks: BackgroundTasks,
+    # Optional body, so the plain «Повторить» stays a bodiless POST and only the
+    # «в другом стиле» variant sends anything at all.
+    request: RetryGenerationRequestDto | None = None,
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     owner_id: UUID = Depends(get_current_owner_id),
     usecase: RetryGeneration = Depends(get_retry_generation_usecase),
@@ -106,7 +113,10 @@ async def retry_generation(
     what the key exists to prevent.
     """
     retry, created = await usecase.execute(
-        generation_id=generation_id, owner_id=owner_id, idempotency_key=idempotency_key
+        generation_id=generation_id,
+        owner_id=owner_id,
+        idempotency_key=idempotency_key,
+        text_style=request.text_style if request is not None else None,
     )
     if created:
         background_tasks.add_task(generate_document.execute, retry.id, retry.owner_id)

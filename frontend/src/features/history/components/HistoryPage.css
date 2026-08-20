@@ -148,3 +148,39 @@ button.history-row:hover {
     min-height: 44px;
   }
 }
+
+/* The row and its delete share one line: the row takes the remaining width, the ✕ keeps a fixed
+   hit target. Positioned as siblings rather than nesting the button inside the row — nested
+   interactive elements are invalid HTML and browsers drop the inner control. */
+.history-row-wrap {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.history-row-wrap > .history-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-row-delete {
+  flex: 0 0 auto;
+  width: 40px;
+  border: 1px solid var(--border-subtle, #e5e7eb);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted, #6b7280);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.history-row-delete:hover {
+  border-color: var(--danger, #dc2626);
+  color: var(--danger, #dc2626);
+}
+
+.history-row-delete[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: default;
+}

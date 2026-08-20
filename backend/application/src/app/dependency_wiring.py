@@ -20,6 +20,7 @@ from container import (
     create_create_document_from_generation,
     create_delete_account,
     create_delete_avatar,
+    create_delete_document,
     create_exchange_handoff_code,
     create_export_document,
     create_frontend_callback_url,
@@ -67,6 +68,7 @@ from router.auth.profile_router import (
     get_get_profile_usecase,
     get_rename_account_usecase,
 )
+from router.document.document_deletion_router import get_delete_document_usecase
 from router.document.document_router import (
     get_create_document_from_generation_usecase,
     get_create_document_usecase,
@@ -111,6 +113,7 @@ def install_dependency_overrides(app: FastAPI) -> None:
         create_create_document_from_generation
     )
     app.dependency_overrides[get_list_documents_usecase] = create_list_documents
+    app.dependency_overrides[get_delete_document_usecase] = create_delete_document
     app.dependency_overrides[get_save_document_usecase] = create_save_document
     app.dependency_overrides[get_token_service] = create_token_service
     app.dependency_overrides[get_account_existence] = create_account_existence

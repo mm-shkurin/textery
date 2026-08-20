@@ -15,6 +15,7 @@ function renderComposer(
   const view = render(
     <Composer
       topicLabel={topicLabel}
+      documentType="doklad"
       topic={topic}
       setTopic={setTopic}
       parameters={parameters}

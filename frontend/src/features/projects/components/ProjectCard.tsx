@@ -6,6 +6,8 @@ import { ProjectFolderIcon } from './ProjectFolderIcon'
 import { formatCardDate } from '../../../shared/formatCardDate'
 import { projectKey } from '../utils/projectKey'
 import './ProjectCard.css'
+import { ProjectRetryControls } from './ProjectRetryControls'
+import type { TextStyle } from '../../../shared/textStyles'
 
 interface ProjectCardProps {
   project: ProjectSummary
@@ -13,7 +15,7 @@ interface ProjectCardProps {
   // same row without two elements answering to the same identity lookup.
   testIdPrefix?: string
   onOpen?: (project: ProjectSummary) => void
-  onRetry?: (generationId: string) => void
+  onRetry?: (generationId: string, textStyle?: TextStyle) => void
   retrying?: boolean
   retryError?: string | null
 }
@@ -98,17 +100,12 @@ function ProjectCardComponent({
             deriving it from an enum it may not fully know would offer the button on a status it
             does not recognise, which is fail-open on a paid operation. */}
         {project.retryable && onRetry !== undefined && (
-          <button
-            type="button"
-            className="project-card-retry"
-            data-testid={namespaced('project-card-retry')}
-            // Disabled while its own request is in flight — the guard against a double-click is
-            // in the hook, but a button that stays live through the wait invites one.
-            disabled={retrying}
-            onClick={() => onRetry(project.id)}
-          >
-            {retrying ? 'Повторяем…' : 'Повторить'}
-          </button>
+          <ProjectRetryControls
+            generationId={project.id}
+            retrying={retrying}
+            onRetry={onRetry}
+            namespaced={namespaced}
+          />
         )}
         {retryError !== null && (
           <p

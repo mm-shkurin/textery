@@ -78,6 +78,12 @@ class GenerationModel(Base):
     volume_pages: Mapped[int] = mapped_column(Integer, nullable=False)
     requirements: Mapped[str | None] = mapped_column(String, nullable=True)
     extra_wishes: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Nullable with no server default, and deliberately no CHECK constraint: the
+    # allowlist lives in the domain (`text_style.SUPPORTED_TEXT_STYLES`) and a
+    # constraint here would have to be migrated in lockstep with it, turning a
+    # widened allowlist into an outage for the rows written first. NULL is "the
+    # user chose no register", which every row predating the picker genuinely is.
+    text_style: Mapped[str | None] = mapped_column(String, nullable=True)
     document_type: Mapped[str] = mapped_column(String, nullable=False)
     content: Mapped[str | None] = mapped_column(String, nullable=True)
     error_message: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -108,6 +114,7 @@ class GenerationModel(Base):
             volume_pages=generation.volume_pages,
             requirements=generation.requirements,
             extra_wishes=generation.extra_wishes,
+            text_style=generation.text_style,
             document_type=generation.document_type,
             content=generation.content,
             error_message=generation.error_message,
@@ -126,6 +133,7 @@ class GenerationModel(Base):
             volume_pages=self.volume_pages,
             requirements=self.requirements,
             extra_wishes=self.extra_wishes,
+            text_style=self.text_style,
             document_type=self.document_type,
             content=self.content,
             error_message=self.error_message,

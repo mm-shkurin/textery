@@ -1,3 +1,10 @@
+import { TEXT_STYLES, TEXT_STYLE_OPTIONS, type TextStyle } from '../../../shared/textStyles'
+
+// Re-exported, not redefined: the vocabulary lives in `shared/textStyles` because the projects
+// feature needs it too, and this feature's own callers should not have to know where it moved.
+export { TEXT_STYLES, TEXT_STYLE_OPTIONS }
+export type { TextStyle }
+
 // What the user fills in on the generation form, beyond the topic. One type rather than three
 // more positional arguments threaded through Composer -> ChatWorkspace -> useGeneration ->
 // generationApi: at four call sites, positional strings are transposable and the transposition
@@ -9,6 +16,10 @@ export interface GenerationParameters {
   volumePages: number
   requirements: string
   extraWishes: string
+  // '' means «не выбран» — the register the model picks on its own. Kept as the empty string
+  // rather than `null` because it is the value a `<select>` reports for its placeholder option,
+  // and translating at the boundary (below) is one conversion instead of one per render.
+  textStyle: TextStyle | ''
 }
 
 // The mockup's default (`<input type="number" min="1" max="10" value="5">`) and the value the
@@ -28,6 +39,10 @@ export const EMPTY_PARAMETERS: GenerationParameters = {
   volumePages: DEFAULT_VOLUME_PAGES,
   requirements: '',
   extraWishes: '',
+  // Deliberately not defaulted to 'научный'. Preselecting a register would send it on every
+  // untouched form, recording a choice the user never made — and «не выбран» is a real, different
+  // instruction to the model, not a missing value to be filled in.
+  textStyle: '',
 }
 
 /** True when the volume is an integer inside the range the server accepts. */

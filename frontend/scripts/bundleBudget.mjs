@@ -22,7 +22,14 @@ export const BUDGETS = [
     // so the bytes buy back more network than they cost on a session with any navigation in it.
     // Measured at 128.1 kB after the change; 132 keeps the same "just above today" margin the
     // other budgets have.
-    maxGzipKb: 132,
+    //
+    // Raised again from 132 for the MVP+ screens: «примеры готовых работ» on the landing, the
+    // search + date filter and delete confirmation on «Мои работы», the style picker and the
+    // topic suggestions on the composer. All of it is markup, copy and CSS for screens the entry
+    // chunk already carries — no new runtime dependency rode in (the one library added, Tiptap's
+    // table extension, lands in the lazily-loaded editor chunk below, which is what the split is
+    // for). Measured at 132.9 kB after the change; 134 keeps the same narrow margin.
+    maxGzipKb: 134,
     why: 'the entry chunk is what a first visit blocks on',
   },
   {
