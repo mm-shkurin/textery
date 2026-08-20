@@ -1,6 +1,6 @@
 // What a failed document save tells the user. Pure and React-free — the save state machine in
 // useDocumentSave consumes it, the same way it consumes autosaveRetryPolicy and autosaveDirtyGuard.
-import { SessionExpiredError } from '../../auth/api/authorizedRequest'
+import { SessionExpiredError } from '../../../shared/session/authorizedRequest'
 import { VersionConflictError } from '../../../shared/api/send'
 
 export const SAVE_ERROR_MESSAGE =

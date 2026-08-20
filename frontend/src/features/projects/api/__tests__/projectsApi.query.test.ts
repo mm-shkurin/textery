@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { listProjects } from '../projectsApi'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 import { FEED_PATH, stubFetchJson } from './projectsWireFixtures'
 
 // What `listProjects` puts on the URL, and — just as much the point — what it leaves off.

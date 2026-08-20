@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { useFlowNavigation } from '../useFlowNavigation'
 import * as api from '../../features/generation/api/generationApi'
-import { clearSession, saveSession } from '../../features/auth/utils/authSession'
+import { clearSession, saveSession } from '../../shared/session/authSession'
 
 // Story 18, scenario 1.1 — the caller-level half of "the type the user picked is the type that
 // gets generated".

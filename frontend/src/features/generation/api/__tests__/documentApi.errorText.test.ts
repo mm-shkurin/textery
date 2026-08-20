@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getDocument, saveDocument } from '../documentApi'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 import { describeFailure } from '../../../../shared/api/send'
 
 // What a REFUSED documents call rejects with, and what a person is told about it. Split out of

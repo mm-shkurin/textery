@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react'
 import { createGeneration, getGeneration } from '../api/generationApi'
 import type { GenerationParameters } from '../utils/generationParameters'
-import { SessionExpiredError } from '../../auth/api/authorizedRequest'
+import { SessionExpiredError } from '../../../shared/session/authorizedRequest'
 import type { DocumentType } from '../../../shared/documentTypes'
 import { describeFailure } from '../../../shared/api/send'
 import { RUNTIME } from '../../../shared/config/runtime'
@@ -9,20 +9,18 @@ import { generationReducer, IDLE_GENERATION, type GenerationUiState } from './ge
 
 export type { GenerationUiState }
 
-const POLL_INTERVAL_MS = RUNTIME.generationPollIntervalMs
+// The FIRST gap between status checks, and the two numbers that grow it. See
+// `shared/config/runtime` for why 1.5 and 30s.
+const POLL_BASE_INTERVAL_MS = RUNTIME.generationPollIntervalMs
+const POLL_BACKOFF_FACTOR = RUNTIME.generationPollBackoffFactor
+const POLL_MAX_INTERVAL_MS = RUNTIME.generationPollMaxIntervalMs
 const MAX_POLL_ATTEMPTS = RUNTIME.generationPollMaxAttempts
 
 // How many CONSECUTIVE failed status checks are tolerated before the generation is called lost.
-//
-// Not zero, which is what this was: a single rejection stopped the poll and declared `failed`. The
-// generation runs on the server for minutes, and one 502 from the proxy or one dropped packet
-// anywhere in that window would throw away work that was still running and completed fine — the
-// user is told it failed while the document is being written. Over ~5 minutes of polling, one
-// transient error is likely rather than exceptional, so treating it as fatal made the failure
-// mode routine.
-//
-// Three because it must be small: a status endpoint that is genuinely down should be reported
-// promptly, not after a minute of silent retrying. Three misses is ~15s of tolerance.
+// Not zero, which is what this was: a single rejection stopped the poll and declared `failed`,
+// so one 502 from the proxy threw away a document the server was still writing. Small all the
+// same — a status endpoint that is genuinely down must be reported promptly. See
+// `shared/config/runtime` for the number.
 const MAX_CONSECUTIVE_POLL_FAILURES = RUNTIME.generationPollMaxConsecutiveFailures
 
 export interface UseGeneration {
@@ -46,25 +44,34 @@ export interface UseGeneration {
 export function useGeneration(): UseGeneration {
   const [run, dispatch] = useReducer(generationReducer, IDLE_GENERATION)
   // Whatever the platform's timer id is: `number` in the browser, an object in Node's types.
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // The gap before the NEXT check. Grows while nothing changes, reset by any change of status.
+  const delayRef = useRef(POLL_BASE_INTERVAL_MS)
+  // Whether the chain should keep going. A `setTimeout` chain has no handle to cancel "the next
+  // link" while the current one is awaiting a response, so stopping has to be a fact the callback
+  // reads after its await, not only a `clearTimeout`.
+  const activeRef = useRef(false)
+  // The last status the server reported, to notice a transition.
+  const lastStatusRef = useRef<string | null>(null)
   const attemptsRef = useRef(0)
   // Consecutive, not total: reset by any successful check, so a poll that misses once every
   // couple of minutes rides out the whole generation instead of accumulating toward a limit.
   const consecutiveFailuresRef = useRef(0)
 
   const stopPolling = useCallback(() => {
-    if (intervalRef.current !== null) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
+    activeRef.current = false
+    if (timeoutRef.current !== null) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
     }
   }, [])
 
-  // A tick may arrive while the previous check is still out: the interval is 5s and the shared
-  // request timeout allows 25s, so a slow backend stacks up to five concurrent status calls for
-  // one generation. The duplicate traffic is the lesser problem — each stacked call also spends
-  // an attempt, so the MAX_POLL_ATTEMPTS budget drains without any extra time passing and the
-  // "~5 minutes" ceiling can expire in one. Skipping a tick costs nothing: the next one is 5s
-  // away and the status has not changed in the meantime.
+  // A tick may arrive while the previous check is still out: the first gap is 5s and the shared
+  // request timeout allows 25s, so a slow backend stacks concurrent status calls for one
+  // generation. The duplicate traffic is the lesser problem — each stacked call also spends an
+  // attempt, so the MAX_POLL_ATTEMPTS budget drains without any extra time passing and the
+  // "~5 minutes" ceiling can expire in one. Skipping a tick costs nothing: another one is
+  // scheduled and the status has not changed in the meantime.
   const inFlightRef = useRef(false)
 
   const runPollAttempt = useCallback(
@@ -78,6 +85,12 @@ export function useGeneration(): UseGeneration {
       try {
         const res = await getGeneration(id)
         consecutiveFailuresRef.current = 0
+        // A transition is the one moment the next answer is likely to be interesting again, so the
+        // backoff collapses back to the base interval; an unchanged status leaves it growing.
+        if (res.status !== lastStatusRef.current) {
+          lastStatusRef.current = res.status
+          delayRef.current = POLL_BASE_INTERVAL_MS
+        }
         if (res.status === 'completed') {
           stopPolling()
           dispatch({
@@ -126,25 +139,48 @@ export function useGeneration(): UseGeneration {
     [runPollAttempt],
   )
 
+  // A self-rescheduling chain rather than `setInterval`. An interval asks at a fixed cadence
+  // forever — sixty identical questions over a five-minute generation, all but the last few
+  // answered "still working" — and it keeps firing at full rate against a backend that is already
+  // struggling. Each link here waits longer than the last (up to the ceiling), so a run that drags
+  // on costs progressively less traffic, while a run that changes state pulls the delay back down.
+  //
+  // The next link is scheduled only after the current check has SETTLED, which also means a slow
+  // response can never be overtaken by its own successor.
+  const scheduleNextPoll = useCallback(
+    (id: string) => {
+      const delay = delayRef.current
+      delayRef.current = Math.min(POLL_MAX_INTERVAL_MS, Math.round(delay * POLL_BACKOFF_FACTOR))
+      timeoutRef.current = setTimeout(() => {
+        timeoutRef.current = null
+        void poll(id).finally(() => {
+          if (activeRef.current) scheduleNextPoll(id)
+        })
+      }, delay)
+    },
+    [poll],
+  )
+
   const submit = useCallback(
     async (topic: string, documentType?: DocumentType, parameters?: GenerationParameters) => {
       dispatch({ type: 'submitted' })
       stopPolling()
       attemptsRef.current = 0
       consecutiveFailuresRef.current = 0
+      delayRef.current = POLL_BASE_INTERVAL_MS
+      lastStatusRef.current = null
       try {
         const { generationId } = await createGeneration(topic, documentType, parameters)
         dispatch({ type: 'accepted', generationId })
+        activeRef.current = true
         void poll(generationId) // immediate first check
-        intervalRef.current = setInterval(() => {
-          void poll(generationId)
-        }, POLL_INTERVAL_MS)
+        scheduleNextPoll(generationId)
       } catch (e) {
         stopPolling()
         dispatch({ type: 'failed', message: describeFailure(e, 'Не удалось создать запрос') })
       }
     },
-    [poll, stopPolling],
+    [poll, scheduleNextPoll, stopPolling],
   )
 
   const reset = useCallback(() => {
@@ -152,7 +188,7 @@ export function useGeneration(): UseGeneration {
     dispatch({ type: 'reset' })
   }, [stopPolling])
 
-  // Clean up any running interval on unmount.
+  // Clean up any pending tick on unmount.
   useEffect(() => stopPolling, [stopPolling])
 
   return { ...run, submit, reset }

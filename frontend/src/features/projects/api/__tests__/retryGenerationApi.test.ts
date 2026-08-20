@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { retryGeneration, RETRY_FAILURE_FALLBACK } from '../retryGenerationApi'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 import { settle, stubFetchJson } from './projectsWireFixtures'
 
 // The «Повторить» endpoint, at the transport.

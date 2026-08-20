@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createGeneration } from '../generationApi'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 
 // Story 18, scenario 1.1 — "picking a document type goes straight to generation".
 //

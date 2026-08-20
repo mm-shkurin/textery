@@ -72,8 +72,10 @@ describe('useGeneration', () => {
       result.current.submit('тема')
     })
 
+    // The gap between checks grows to a 30s ceiling, so the attempt budget takes longer in wall
+    // time than 61 x 5s. Advancing past the worst case spends it either way.
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(5000 * 61)
+      await vi.advanceTimersByTimeAsync(30000 * 62)
     })
 
     expect(result.current.state).toBe('failed')

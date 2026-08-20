@@ -10,7 +10,7 @@ import {
 } from './projectsApi'
 import { describeFailure } from '../../../shared/api/send'
 import { isHttpError } from '../../../shared/api/httpClient'
-import { SessionExpiredError } from '../../auth/api/authorizedRequest'
+import { SessionExpiredError } from '../../../shared/session/authorizedRequest'
 
 // AN ALLOW-LIST, and it had to become one. The previous shape here was a deny-list of transport
 // types (`OPAQUE_TRANSPORT_FAILURES = [RequestTimeoutError]`) whose messages are English; it could

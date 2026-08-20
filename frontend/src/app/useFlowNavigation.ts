@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { logout } from '../features/auth/utils/authSession'
+import { logout } from '../shared/session/authSession'
 import { useAuthSession } from '../features/auth/hooks/useAuthSession'
 import {
   DEFAULT_DOCUMENT_TYPE,

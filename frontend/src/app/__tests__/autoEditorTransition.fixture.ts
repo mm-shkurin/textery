@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import * as api from '../../features/generation/api/generationApi'
 import * as documentApi from '../../features/generation/api/documentApi'
-import { saveSession } from '../../features/auth/utils/authSession'
+import { saveSession } from '../../shared/session/authSession'
 
 // The arming half of DocumentGenerationFlow.autoEditorTransition.test.tsx, split out under the
 // 200-line file cap. `vi.mock` stays in the test file — it is hoisted per module and cannot be

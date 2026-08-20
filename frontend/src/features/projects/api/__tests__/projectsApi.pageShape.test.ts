@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { INVALID_PAGE_MESSAGE, listProjects } from '../projectsApi'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 import { expectSingleFeedRequest, settle, stubFetchJson } from './projectsWireFixtures'
 
 // Scenario 1.1 — the SHAPE of the feed page, at the mapper. The sibling

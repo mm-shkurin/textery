@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDocument } from '../documentApi'
 import { VersionConflictError } from '../../../../shared/api/send'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 
 // 409 is not one thing, and `send` used to pretend it was — it mapped the bare STATUS to
 // VersionConflictError. `saveDocument`'s 409 does mean a stale version, but `createDocument`

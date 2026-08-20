@@ -1,7 +1,7 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 import {
   crossDebounceBoundary,
   editorContentHtml,

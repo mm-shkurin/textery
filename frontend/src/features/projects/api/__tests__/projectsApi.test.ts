@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { listProjects } from '../projectsApi'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 import { FEED_PATH, PROJECT_WIRE, stubFetchJson } from './projectsWireFixtures'
 
 // Scenario 1.1 — «Мои проекты» feed client. The transport is stubbed: `GET /api/v1/projects`

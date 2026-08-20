@@ -1,10 +1,13 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useGeneration } from '../useGeneration'
-import { SessionExpiredError } from '../../../auth/api/authorizedRequest'
+import { SessionExpiredError } from '../../../../shared/session/authorizedRequest'
 import * as api from '../../api/generationApi'
 
 vi.mock('../../api/generationApi')
+
+// Smaller than the shortest gap between two checks, so one step can never contain two of them.
+const STEP_MS = 250
 
 const PENDING = {
   generationId: 'gen-1',
@@ -40,10 +43,18 @@ describe('useGeneration — a status check that misses is not a generation that 
     return hook
   }
 
+  // The poll backs off — the gap between checks grows while the status does not change — so a
+  // test cannot advance a fixed 5s and assume a check happened. This drives the clock forward in
+  // small steps until exactly one more status check has been made (or until well past the ceiling,
+  // for the cases where the poll has already given up and no further check is coming).
   async function tick() {
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(5000)
-    })
+    const before = vi.mocked(api.getGeneration).mock.calls.length
+    for (let waited = 0; waited < 120000; waited += STEP_MS) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(STEP_MS)
+      })
+      if (vi.mocked(api.getGeneration).mock.calls.length > before) return
+    }
   }
 
   it('rides out a transient failure and completes the generation', async () => {

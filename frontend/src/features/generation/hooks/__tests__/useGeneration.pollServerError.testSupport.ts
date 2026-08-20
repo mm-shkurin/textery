@@ -12,7 +12,22 @@ import {
   type FetchMock,
 } from '../../../../shared/api/__tests__/originStubs'
 
-const POLL_INTERVAL_MS = 5000
+// The poll backs off — the gap between checks grows while the status does not change — so no
+// fixed advance means "one tick" any more. The drive steps the clock forward until one more
+// request has been recorded, or until well past the ceiling for the sample that must observe that
+// NO further check happens after the give-up.
+const STEP_MS = 250
+const GIVE_UP_OBSERVATION_MS = 120000
+
+async function advanceToNextCheck(fetchMock: FetchMock): Promise<void> {
+  const before = fetchMock.mock.calls.length
+  for (let waited = 0; waited < GIVE_UP_OBSERVATION_MS; waited += STEP_MS) {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(STEP_MS)
+    })
+    if (fetchMock.mock.calls.length > before) return
+  }
+}
 const GENERATION_ID = 'gen-1'
 const TOPIC = 'тема'
 const CREATE_REQUEST = 'POST /api/v1/generations'
@@ -76,9 +91,7 @@ export async function driveUntilItGivesUp(statusBody: Record<string, unknown>): 
   requests.push(requestLog(fetchMock))
 
   for (let tick = 0; tick < POLL_FAILURE_CEILING; tick += 1) {
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
-    })
+    await advanceToNextCheck(fetchMock)
     states.push(result.current.state)
     requests.push(requestLog(fetchMock))
   }
