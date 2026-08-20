@@ -143,7 +143,7 @@ Infrastructure follow, in that order.
   still reads `09:30` flat, so the two layers no longer name one instant. Harmless (each
   test asserts against its own constant) but worth aligning when something else touches
   that file.
-- [~] green-adapter db — must also (a) add `analytics_events` to `TRUNCATE_ALL` in
+- [x] green-adapter db — must also (a) add `analytics_events` to `TRUNCATE_ALL` in
   `statements/database_cleanup.py` with the migration — it cannot be added earlier without
   turning all 76 db tests red against a non-existent relation, and the module's rule is
   that the list enumerates every table by hand; and (b) add `analytics_events` + its
@@ -153,7 +153,23 @@ Infrastructure follow, in that order.
   The zero-row decision point stays on you, not on the test:
   `assert_the_store_reported_a_new_row` pins only `STORED`, so nothing here stops a
   hardcoded `no row → ALREADY_RECORDED` stranding `CONFLICTING_NAME`.
-- [ ] red-adapter rest — `POST /api/v1/analytics/events`, `204 No Content`, no body.
+  **Done.** `AnalyticsEventModel` (101 lines), the migration `c5d6e7f8a9b0` creating the
+  whole table, `save_new` via `ON CONFLICT ... DO NOTHING RETURNING id`, and the domain
+  catalogue `domain/src/analytics/event_names.py` the CHECK constraint is *iterated* from.
+  Both (a) and (b) landed; `migrations/env.py` also gained the model import, without which
+  autogenerate would propose dropping the table it just created. The skip marker was the
+  only test change. Tests: 77 passed (76 + the newly enabled one), 0 failed; domain 456,
+  usecase 298, application 66, all unchanged.
+  The zero-row case was NOT hardcoded away — it is `_what_the_conflicting_row_means()`, one
+  named method whose docstring records that `DO NOTHING` cannot distinguish
+  `ALREADY_RECORDED` from `CONFLICTING_NAME` and that the follow-up read lands there.
+  `/test-coverage db --focus`: model, eraser and `event_names` 100%; the storage adapter
+  16/18 lines and 1/2 branches — the three cold lines are exactly that zero-row cluster.
+  Ruled as §5.1's claim, not a 1.1 gap (1.1's Gherkin ends at one insert), so no steps were
+  inserted. Coverage also noted the partial index is already load-bearing at 1.1: Postgres
+  refuses an `ON CONFLICT` spec it cannot match a unique index to at plan time, so a wrong
+  `index_elements`/`index_where` fails the *non*-conflicting insert too.
+- [~] red-adapter rest — `POST /api/v1/analytics/events`, `204 No Content`, no body.
   Request DTO fields typed permissively **and defaulted** per the ADR, so a bad value
   reaches the domain and returns the canonical 400 rather than Pydantic's 422 echoing the
   rejected input back on the product's only tokenless route.
@@ -297,7 +313,13 @@ Infrastructure follow, in that order.
 - [ ] design
 - [ ] red-usecase
 - [ ] green-usecase
-- [ ] adapters-discovery
+- [ ] adapters-discovery — **do not mark db `[S]` on the grounds that the port is already
+  implemented** (coverage finding at 1.1 `green-adapter db`, 2026-08-20). By this point
+  `SqlAlchemyAnalyticsEventRepository` exists, which is the usual reason Check 1 skips the
+  layer — but the port existing is not the same as its *collapse* behavior being proven.
+  `save_new`'s zero-row path (`if inserted_id is None` → `_what_the_conflicting_row_means`)
+  is cold code that only §5.1 can reach. Skip db here and the partial-index collapse is
+  never asserted below acceptance for the rest of the story.
 - [ ] green-acceptance
 
 ### 5.2 Two distinct occurrences from one visitor are both recorded

@@ -1,15 +1,6 @@
-import pytest
-
 from statements.analytics_event_storage_statements import AnalyticsEventStorageStatements
 
 
-@pytest.mark.skip(
-    reason="RED (story 14, scenario 1.1): NotImplementedError at "
-    "access/analytics/analytics_event_storage.py:36 -- "
-    "SqlAlchemyAnalyticsEventRepository.save_new is a stub, raised in the when-phase "
-    "before any assertion. green-adapter db supplies the AnalyticsEventModel, the "
-    "migration creating analytics_events, and the ON CONFLICT insert."
-)
 class TestAnonymousEventIsRecordedAsAnonymous:
     """1.1 An event with no token is recorded as anonymous.
 
