@@ -293,3 +293,34 @@ the previous fix had not actually run.
   irreversible operation.
 - Single-author history (388 vs 3) with no PR gate; six live `features/*`
   branches across three remotes against two merge commits.
+
+## Iteration 13 — Score: 2.5 / 3.0 — 2026-08-20 — 30aee5f1
+### Fixed Issues:
+- `check_file_size.py` was red at HEAD: the retry-route suite reached 216 lines
+  when the volume override landed. Split by concern into
+  `test_generation_retry_router.py` (what the body may carry) and
+  `test_generation_retry_enqueue_router.py` (whether the run is started), with
+  the shared builder in `generation_retry_fixtures.py`.
+- `mypy` was red at HEAD: `test_document_delete_router.py` imported `OWNER_ID`
+  from `conftest`, which `pyproject.toml` excludes by configuration and mypy
+  therefore cannot resolve. Uses the `owner_id` fixture the conftest already
+  publishes.
+- The root `.github/workflows/backend-ci.yml` — the workflow that actually runs
+  on monorepo pushes — carried neither gate, nor `audit`, nor a coverage floor.
+  The three missing jobs and `--cov-fail-under=90` added from the layer
+  workflow, which is why both failures above went unseen.
+- The image ran as root; a non-root `app` user now owns `/app` and runs uvicorn.
+- `docker-compose.yml` published postgres on every interface; bound to the
+  loopback address, since only the backend service uses it and it does so by
+  service name.
+
+### Outstanding Blockers:
+- The release ref `gitverse-backend/main` is behind HEAD by the whole sprint.
+  Nothing above is graded until it is pushed.
+- Single-author history (412 vs 3) with two merge commits and no review gate on
+  the change path.
+- `pyproject.toml` declares `version = "0.1.0"` while `CHANGELOG.md` has never
+  moved off `[Unreleased]` — no release has been cut, so the version says nothing.
+- Disputed, not fixed: the auditor reported the README missing the test-suite
+  run and `TEST_DATABASE_URL`. Both are documented — `README.md:170` and the
+  «База для тестов `adapters/db`» section at `README.md:200`.

@@ -383,3 +383,28 @@ Outstanding итерации 5, но то, что удерживает план�
 - `safeRedirectTarget.ts` фактически мёртв: единственный вызов
   (`OAuthCallback.tsx:60`) передаёт `undefined`, функция может вернуть только `'/'`.
 - `ProfileMenu.css` (201) и два тест-файла профиля (269, 212) — над лимитом 200.
+
+## Iteration 4 — Score: 2.5 / 3.0 — 2026-08-20 — 30aee5f1
+### Fixed Issues:
+- The tip failed two of its own five CI gates. `npm run format:check` had nine
+  outstanding files; `npm run test:coverage` was under the declared floor on
+  functions (97.41% vs 98%) and branches (91.55% vs 92%).
+- The coverage gap was two modules with no suite at all. `shared/lib/browser.ts`
+  — the single answer to "are we in a browser", so every off-browser branch in
+  the product runs through it — now has one, including the storage calls that
+  THROW in private mode rather than returning null.
+- `ProfilePage` had its three exits untested; the unsaved-name guard sits at the
+  click seam because react-router navigation fires no `beforeunload`, so a
+  regression there discards a typed name silently.
+- Coverage after: functions 98.17%, branches 92.35%, 1041 tests passing.
+
+### Outstanding Blockers:
+- The release ref `gitverse-frontend/main` is behind HEAD by the sprint's work.
+- `4f2d7873` touches 56 files across five unrelated features — not atomic, not
+  revertible feature-wise.
+- Single-author history (603 vs 7); no review signal anywhere, and the project
+  forgoes PRs by policy.
+- `ProjectsPage.tsx` (212 lines) mixes query-string state, feed orchestration and
+  rendering; `httpClient.ts` (205) and `ProfileMenu.css` (201) are over the cap.
+- Only the editor is code-split: the main chunk is 133 kB gzip and carries the
+  router, the query client and every feature screen on first paint.
