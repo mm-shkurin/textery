@@ -6,9 +6,17 @@ query differs from an absent one, which date formats are accepted, that a window
 must not be inverted — are asked once, at construction, and every layer below
 holds something already proven valid.
 
-Absence and emptiness are kept apart deliberately. `?q=` is a client that sent the
-parameter and named nothing, and answering it with the unfiltered feed would serve
-every document to a search the user believes is active.
+An empty or whitespace-only value is folded down to absence rather than refused,
+and the two ends of that decision sit in different layers. HERE, `?q=` answers the
+unfiltered feed: a user who clears the search box, or tabs through a date input
+without picking anything, is asking for their whole history, and a 400 for that is
+a refusal of the most ordinary action on the screen.
+
+The guard against a search that LOOKS active while matching everything belongs to
+the client, which omits the parameter entirely rather than sending it empty — see
+`withFilter` in `frontend/src/features/history/api/historyApi.ts`. Verified against
+the running stack 2026-08-20: `GET /api/v1/documents?q=` answers 200 with the full
+feed.
 """
 
 from dataclasses import dataclass

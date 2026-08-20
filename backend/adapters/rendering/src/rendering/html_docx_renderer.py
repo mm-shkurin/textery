@@ -11,6 +11,19 @@ from shared.clock import Clock
 # leave in docProps -- the group-07 metadata-redaction guard for the download.
 _NEUTRAL_AUTHOR = "Textery"
 
+# htmldocx's own default is `None`, which means every converted table is inserted
+# with python-docx's "Normal Table" -- a style with no borders at all. The cells
+# were all there in the exported file and the lines between them were not, which
+# reads to the user as "the table did not export".
+#
+# OOXML has no cascading stylesheet, so this cannot share `export_styles.EXPORT_CSS`
+# with the PDF path; it expresses the same intent through the named style Word
+# ships. The two are kept in step by hand.
+#
+# "Table Grid" is part of python-docx's default template, so it resolves without
+# the document having to carry a style definition of its own.
+_TABLE_STYLE = "Table Grid"
+
 
 class HtmlDocxRenderer:
     """DocumentRenderer port implementation for DOCX, pure-Python.
@@ -33,7 +46,9 @@ class HtmlDocxRenderer:
         # export_format is DOCX here; the port stays uniform so this joins the
         # PDF renderer behind one signature (the dispatcher routes on the enum).
         document = Document()
-        HtmlToDocx().add_html_to_document(content, document)
+        parser = HtmlToDocx()
+        parser.table_style = _TABLE_STYLE
+        parser.add_html_to_document(content, document)
 
         now = self._clock.now()
         core = document.core_properties

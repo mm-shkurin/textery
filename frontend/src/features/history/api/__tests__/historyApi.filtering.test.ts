@@ -51,8 +51,11 @@ describe('historyApi — filtering and deletion', () => {
 
     await listDocuments(20, undefined, { query: '   ' })
 
-    // `?q=` is a client that sent the parameter and named nothing. The server refuses that rather
-    // than ignoring it, so an empty box would answer 400 instead of listing everything.
+    // Omitted, not sent empty. The server treats `?q=` as no filter and answers the whole feed
+    // (measured against the running stack: 200, every row) — so forwarding it would leave the
+    // screen showing every document under a search box the user believes is narrowing them.
+    // Omitting the parameter is what makes "no query" and "a query that matches everything"
+    // the same request rather than two indistinguishable ones.
     expect(requested(fetchMock).searchParams.has('q')).toBe(false)
   })
 
@@ -71,8 +74,9 @@ describe('historyApi — filtering and deletion', () => {
 
     await listDocuments(20, undefined, { createdFrom: '', createdTo: '' })
 
-    // A cleared `<input type="date">` reports ''. Forwarded, it is the same refused empty
-    // parameter as a blank search.
+    // A cleared `<input type="date">` reports ''. Forwarded it would be parsed as a boundary —
+    // `_parse_boundary` reads '' as absent today, but that is the domain's rule to change, and a
+    // client that sends a value it does not mean is relying on the far end to ignore it.
     const params = requested(fetchMock).searchParams
     expect(params.has('created_from')).toBe(false)
     expect(params.has('created_to')).toBe(false)
