@@ -1,6 +1,22 @@
 import { send } from '../../../shared/api/send'
 import type { TextStyle } from '../../../shared/textStyles'
 
+/**
+ * What a user re-chooses at the moment of a retry.
+ *
+ * An object rather than two more positional parameters: `retryGeneration(id, key, style, volume)`
+ * reads the same at every call site whether or not the last two are the right way round, and the
+ * next override added makes that worse. It is the lesson `GenerationParameters` records for the
+ * composer, applied before this signature grows a third field rather than after.
+ *
+ * Every field optional, and an omitted field means «keep what the failed run used» — never
+ * «clear it». Neither the register nor the length has an empty state a user would ask for.
+ */
+export interface RetryOverrides {
+  textStyle?: TextStyle
+  volumePages?: number
+}
+
 export const RETRY_FAILURE_FALLBACK = 'Не удалось повторить генерацию'
 
 // What the server says when the row is no longer in a state that can be retried — it completed,
@@ -21,26 +37,32 @@ interface RetryResponse {
  * here: a key created inside this function would be new on every call, so a retry after a lost
  * response would start a second generation — the one thing the header exists to prevent.
  *
- * The body carries at most ONE field, and only for «перегенерировать в другом стиле». Every other
- * parameter is copied from the stored source row, so a client cannot bind an owner, a status or a
- * document link even by accident — the register is the one thing the user genuinely re-chooses at
- * the moment of the retry, which is why it is the one thing the body may name.
+ * The body carries at most the two fields in `RetryOverrides` — «перегенерировать в другом стиле»
+ * and «изменить объём». Every other parameter is copied from the stored source row, so a client
+ * cannot bind an owner, a status or a document link even by accident.
  *
- * A plain «Повторить» sends NO body at all rather than `{text_style: null}`: an explicit null is a
- * client saying "clear the style", which would silently strip the register off a generation that
- * had one.
+ * A field the caller did not name is OMITTED from the body rather than sent as null: an explicit
+ * null is a client saying "clear this", which would silently strip the register off a generation
+ * that had one. A plain «Повторить» therefore sends no body at all, exactly as before these
+ * overrides existed.
  */
 export async function retryGeneration(
   generationId: string,
   idempotencyKey: string,
-  textStyle?: TextStyle,
+  overrides: RetryOverrides = {},
 ): Promise<RetryResponse> {
+  const body: Record<string, unknown> = {}
+  if (overrides.textStyle) body.text_style = overrides.textStyle
+  // `!== undefined`, not truthiness: 0 is not a length this picker can produce, but a truthiness
+  // test here is the kind that starts dropping a legitimate value the day the range changes.
+  if (overrides.volumePages !== undefined) body.volume_pages = overrides.volumePages
+
   return await send<RetryResponse>(
     `/api/v1/generations/${generationId}/retry`,
     {
       method: 'POST',
       headers: { 'Idempotency-Key': idempotencyKey },
-      ...(textStyle ? { body: { text_style: textStyle } } : {}),
+      ...(Object.keys(body).length > 0 ? { body } : {}),
     },
     RETRY_FAILURE_FALLBACK,
   )

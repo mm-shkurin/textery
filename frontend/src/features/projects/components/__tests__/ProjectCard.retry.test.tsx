@@ -35,10 +35,10 @@ describe('ProjectCard retry affordance', () => {
     fireEvent.click(screen.getByTestId('project-card-retry'))
 
     expect(onRetry).toHaveBeenCalledTimes(1)
-    // `undefined` for the style, explicitly asserted rather than left off: the register picker
-    // beside this button defaults to «тот же стиль», and a plain repeat must forward NO override.
-    // Passing '' here instead would have the client send `text_style: ""`, which the server
-    // refuses — so the difference between the two is a broken button, not a detail.
+    // `undefined` for the overrides, explicitly asserted rather than left off: both pickers beside
+    // this button default to «то же самое», and a plain repeat must forward NO override at all.
+    // An empty object here instead would still be a body on the wire, and `{text_style: ""}` is a
+    // value the server refuses — so the difference between the two is a broken button.
     expect(onRetry).toHaveBeenCalledWith(GENERATION.id, undefined)
   })
 
@@ -51,7 +51,61 @@ describe('ProjectCard retry affordance', () => {
     })
     fireEvent.click(screen.getByTestId('project-card-retry'))
 
-    expect(onRetry).toHaveBeenCalledWith(GENERATION.id, 'художественный')
+    expect(onRetry).toHaveBeenCalledWith(GENERATION.id, { textStyle: 'художественный' })
+  })
+
+  it('asks to regenerate at the length the user picked', () => {
+    const onRetry = vi.fn()
+    render(<ProjectCard project={GENERATION} onRetry={onRetry} />)
+
+    fireEvent.change(screen.getByTestId('project-card-retry-volume'), { target: { value: '8' } })
+    fireEvent.click(screen.getByTestId('project-card-retry'))
+
+    // A number, not the select's string: the wire field is an integer, and a string reaching the
+    // server is a 422 the user cannot act on from a card.
+    expect(onRetry).toHaveBeenCalledWith(GENERATION.id, { volumePages: 8 })
+  })
+
+  it('carries both choices when the user makes both', () => {
+    const onRetry = vi.fn()
+    render(<ProjectCard project={GENERATION} onRetry={onRetry} />)
+
+    fireEvent.change(screen.getByTestId('project-card-retry-style'), {
+      target: { value: 'научный' },
+    })
+    fireEvent.change(screen.getByTestId('project-card-retry-volume'), { target: { value: '2' } })
+    fireEvent.click(screen.getByTestId('project-card-retry'))
+
+    expect(onRetry).toHaveBeenCalledWith(GENERATION.id, {
+      textStyle: 'научный',
+      volumePages: 2,
+    })
+  })
+
+  it('leaves the length alone when only the register was picked', () => {
+    const onRetry = vi.fn()
+    render(<ProjectCard project={GENERATION} onRetry={onRetry} />)
+
+    fireEvent.change(screen.getByTestId('project-card-retry-style'), {
+      target: { value: 'научный' },
+    })
+    fireEvent.click(screen.getByTestId('project-card-retry'))
+
+    // The absent key is the point: present-and-undefined would still be a key the API client has
+    // to know to skip, and «изменить объём» must not fire because the register changed.
+    expect(onRetry.mock.calls[0][1]).not.toHaveProperty('volumePages')
+  })
+
+  it('offers only lengths the server accepts', () => {
+    render(<ProjectCard project={GENERATION} onRetry={vi.fn()} />)
+
+    const offered = Array.from(
+      screen.getByTestId('project-card-retry-volume').querySelectorAll('option'),
+    ).map((option) => option.getAttribute('value'))
+
+    // Enumerated from the shared bounds, so the picker cannot produce a length the domain refuses.
+    // '' is the «тот же объём» placeholder and sends nothing.
+    expect(offered).toEqual(['', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'])
   })
 
   // The guard against a double-click lives in the hook; a button that stays live through the wait

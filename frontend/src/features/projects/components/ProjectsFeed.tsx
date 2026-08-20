@@ -2,7 +2,7 @@ import type { ProjectSummary } from '../api/projectsApi'
 import type { ProjectView } from '../hooks/useProjectView'
 import { ProjectCard } from './ProjectCard'
 import { projectKey } from '../utils/projectKey'
-import type { TextStyle } from '../../../shared/textStyles'
+import type { RetryOverrides } from '../api/retryGenerationApi'
 
 interface ProjectsFeedProps {
   items: ProjectSummary[]
@@ -12,7 +12,7 @@ interface ProjectsFeedProps {
   // does, and two elements answering to `project-card-document-1` make an identity lookup
   // ambiguous — the one thing that testid exists to prevent.
   testIdPrefix?: string
-  onRetry?: (generationId: string, textStyle?: TextStyle) => void
+  onRetry?: (generationId: string, overrides?: RetryOverrides) => void
   retryingId?: string | null
   retryError?: { id: string; message: string } | null
 }

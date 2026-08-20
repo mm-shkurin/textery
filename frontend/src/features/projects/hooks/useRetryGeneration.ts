@@ -1,7 +1,10 @@
 import { useCallback, useRef, useState } from 'react'
 import { describeFailure } from '../../../shared/api/send'
-import { retryGeneration, RETRY_FAILURE_FALLBACK } from '../api/retryGenerationApi'
-import type { TextStyle } from '../../../shared/textStyles'
+import {
+  retryGeneration,
+  RETRY_FAILURE_FALLBACK,
+  type RetryOverrides,
+} from '../api/retryGenerationApi'
 
 export interface RetryState {
   pendingId: string | null
@@ -30,7 +33,7 @@ export function useRetryGeneration(onRetried: (generationId: string) => void) {
   const inFlight = useRef(new Set<string>())
 
   const retry = useCallback(
-    async (generationId: string, textStyle?: TextStyle) => {
+    async (generationId: string, overrides?: RetryOverrides) => {
       if (inFlight.current.has(generationId)) return
       inFlight.current.add(generationId)
 
@@ -42,9 +45,9 @@ export function useRetryGeneration(onRetried: (generationId: string) => void) {
 
       setState({ pendingId: generationId, error: null })
       try {
-        // The style travels with the key, not instead of it: a replay of the SAME click must
-        // still collapse onto the generation it already started, whichever register it asked for.
-        await retryGeneration(generationId, key, textStyle)
+        // The overrides travel with the key, not instead of it: a replay of the SAME click must
+        // still collapse onto the generation it already started, whatever it asked for.
+        await retryGeneration(generationId, key, overrides)
         // Confirmed. The next click on this row is a NEW attempt and needs its own key — reusing
         // this one would have the server collapse it onto the generation just produced, and the
         // button would look broken.

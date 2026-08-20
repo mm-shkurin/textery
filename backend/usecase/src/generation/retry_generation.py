@@ -35,6 +35,7 @@ class RetryGeneration:
         owner_id: UUID,
         idempotency_key: str | None,
         text_style: str | None = None,
+        volume_pages: int | None = None,
     ) -> tuple[Generation, bool]:
         """Returns the retry and whether THIS call created it.
 
@@ -78,11 +79,17 @@ class RetryGeneration:
         if await self._storage.count_retries_of(generation_id) >= RETRY_CEILING:
             raise ValidationException(message=RETRY_LIMIT_MESSAGE, error_code="RETRY_LIMIT_REACHED")
 
-        # `text_style` is the only client-supplied value on this path besides the
-        # key, and it is passed through rather than merged here: whether an absent
-        # override means "keep the source's style" is the entity's rule, not this
-        # usecase's, and duplicating it here is how the two answers drift.
-        retry = Generation.retry_of(source, idempotency_key=key, text_style=text_style)
+        # The two overrides are the only client-supplied values on this path
+        # besides the key, and they are passed straight through rather than merged
+        # here: whether an absent override means "keep the source's value" is the
+        # entity's rule, not this usecase's, and a second copy of it here is how
+        # the two answers drift.
+        retry = Generation.retry_of(
+            source,
+            idempotency_key=key,
+            text_style=text_style,
+            volume_pages=volume_pages,
+        )
         # Saved before enqueued, so a crash between the two leaves a row the sweep
         # can requeue rather than a job naming a generation that does not exist.
         await self._storage.save(retry)

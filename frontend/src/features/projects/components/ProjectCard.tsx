@@ -7,7 +7,7 @@ import { formatCardDate } from '../../../shared/formatCardDate'
 import { projectKey } from '../utils/projectKey'
 import './ProjectCard.css'
 import { ProjectRetryControls } from './ProjectRetryControls'
-import type { TextStyle } from '../../../shared/textStyles'
+import type { RetryOverrides } from '../api/retryGenerationApi'
 
 interface ProjectCardProps {
   project: ProjectSummary
@@ -15,7 +15,7 @@ interface ProjectCardProps {
   // same row without two elements answering to the same identity lookup.
   testIdPrefix?: string
   onOpen?: (project: ProjectSummary) => void
-  onRetry?: (generationId: string, textStyle?: TextStyle) => void
+  onRetry?: (generationId: string, overrides?: RetryOverrides) => void
   retrying?: boolean
   retryError?: string | null
 }

@@ -146,3 +146,17 @@ class TestCreateVolumeOutOfRange:
         assert str(excinfo.value) == OUT_OF_RANGE_VOLUME_MESSAGE, (
             f"expected message '{OUT_OF_RANGE_VOLUME_MESSAGE}', got '{excinfo.value}'"
         )
+
+    @pytest.mark.parametrize("volume_pages", [True, False])
+    def test_should_reject_a_boolean_rather_than_read_it_as_a_page_count(self, volume_pages):
+        """`bool` subclasses `int`, so a bare range check lets `True` through as 1.
+
+        Not theoretical: measured against the running stack 2026-08-20,
+        `POST /generations` with `{"volume_pages": true}` answered 201 for a
+        one-page generation the caller never asked for, and billed it — Pydantic
+        coerces the JSON boolean to `1` on the way in, and `1 <= 1 <= 10` passes.
+        """
+        with pytest.raises(ValidationException) as excinfo:
+            _create(volume_pages=volume_pages)
+
+        assert str(excinfo.value) == OUT_OF_RANGE_VOLUME_MESSAGE

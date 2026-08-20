@@ -114,6 +114,10 @@ def _returning(mock_usecase):
 _POST_PROVIDERS = ("get_request_generation_usecase", "get_generate_document_usecase")
 _GET_PROVIDERS = ("get_get_generation_usecase",)
 _LIST_PROVIDERS = ("get_list_generations_usecase",)
+# Two, in this order: the retry route enqueues the background run itself, so a
+# client wired only to the retry usecase fails inside FastAPI on the second
+# provider rather than in the test that forgot it.
+_RETRY_PROVIDERS = ("get_retry_generation_usecase", "get_generate_document_usecase")
 
 
 @pytest.fixture
@@ -129,6 +133,11 @@ def get_client(generation_app):
 @pytest.fixture
 def list_client(generation_app):
     return _client_factory(generation_app, _LIST_PROVIDERS)
+
+
+@pytest.fixture
+def retry_client(generation_app):
+    return _client_factory(generation_app, _RETRY_PROVIDERS)
 
 
 @pytest.fixture

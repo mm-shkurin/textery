@@ -25,6 +25,7 @@ from generation.generation_validation import (
     is_out_of_range_volume,
     required_topic,
     validate_document_type,
+    validated_retry_volume,
 )
 from generation.text_style import validate_text_style
 from shared.exceptions import ValidationException
@@ -130,23 +131,47 @@ class Generation:
 
     @classmethod
     def retry_of(
-        cls, source: "Generation", idempotency_key: str, text_style: str | None = None
+        cls,
+        source: "Generation",
+        idempotency_key: str,
+        *,
+        text_style: str | None = None,
+        volume_pages: int | None = None,
     ) -> "Generation":
         """A fresh run of `source`, from the parameters stored on that row.
 
-        Every field is copied from the source row rather than taken from the
-        request, which is what makes the retry endpoint bodiless: there is no
-        `owner_id`, `status`, `id` or timestamp for a client to over-bind,
-        because none of them is read from a client at all.
+        Every field EXCEPT the two named overrides is copied from the source row
+        rather than taken from the request, which is what keeps the retry endpoint
+        bodiless in its plain form: there is no `owner_id`, `status`, `id` or
+        timestamp for a client to over-bind, because none of them is read from a
+        client at all.
 
         The new row starts `pending` with a server-assigned id and creation
         instant -- never the source's status, and never `completed` carried
         across, which would produce a finished generation that was never run.
 
-        Validation is deliberately NOT re-run: the source row is already stored,
-        and refusing here would strand a user whose generation was created under
-        an older, wider rule with a button that can never succeed. A document
-        type that is no longer offered is caught downstream by the provider.
+        **Copied fields are deliberately NOT re-validated.** The source row is
+        already stored, and refusing here would strand a user whose generation was
+        created under an older, wider rule with a button that can never succeed. A
+        document type that is no longer offered is caught downstream by the
+        provider.
+
+        **The overrides ARE validated**, and the asymmetry is the point: a copied
+        value is history, which the user cannot change and must not be punished
+        for, while an override is a fresh choice arriving from a client right now.
+        The same value gets opposite treatment depending on where it came from,
+        which is why the two are resolved by `_overridden` below rather than by
+        one rule applied to the whole row.
+
+        `None` on an override means "not overridden", never "clear it". Neither
+        register nor length has a meaningful empty state a user would ask for, so
+        no caller needs to say the other thing and no caller can say it by
+        accident.
+
+        Keyword-only, and not for style: `text_style` is a `str` and
+        `volume_pages` an `int`, so a transposition would be caught today -- but a
+        third override of either type would not be, and the barrier costs nothing
+        now while adding it later costs every call site.
         """
         return cls(
             id=uuid4(),
@@ -154,18 +179,21 @@ class Generation:
             status=PENDING_STATUS,
             created_at=datetime.now(UTC),
             topic=source.topic,
-            volume_pages=source.volume_pages,
             requirements=source.requirements,
             extra_wishes=source.extra_wishes,
             document_type=source.document_type,
             idempotency_key=idempotency_key,
             source_generation_id=source.id,
-            # The ONE field a retry may override, and the reason it is validated
-            # while nothing else on this path is: «перегенерировать в другом
-            # стиле» is a fresh choice the user makes at the moment of the retry,
-            # not a value copied off the stored row. An absent override keeps the
-            # source's own style, so the plain «Повторить» button stays bodiless.
+            # «Перегенерировать в другом стиле» and «изменить объём»: the two
+            # things a user genuinely re-chooses at the moment of a retry. An
+            # absent override keeps the source's own value, so the plain
+            # «Повторить» button stays bodiless.
             text_style=(
                 source.text_style if text_style is None else validate_text_style(text_style)
+            ),
+            volume_pages=(
+                source.volume_pages
+                if volume_pages is None
+                else validated_retry_volume(volume_pages)
             ),
         )

@@ -164,7 +164,7 @@ class TestGenerationEntity:
         assert retry.text_style == HUDOZHESTVENNY
         assert source.text_style == NAUCHNY, "the source row must not be rewritten by its retry"
 
-    def test_should_refuse_an_override_outside_the_allowlist(self):
+    def test_should_refuse_a_style_override_outside_the_allowlist(self):
         source = Generation.create(
             owner_id=uuid4(),
             topic="Тема",

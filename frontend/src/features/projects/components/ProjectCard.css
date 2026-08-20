@@ -86,8 +86,8 @@
   gap: 8px;
 }
 
-.project-card-retry-style {
-  flex: 1 1 140px;
+.project-card-retry-select {
+  flex: 1 1 130px;
   min-width: 0;
   padding: 6px 8px;
   border: 1px solid var(--border-subtle, #e5e7eb);
@@ -99,7 +99,7 @@
   cursor: pointer;
 }
 
-.project-card-retry-style:disabled {
+.project-card-retry-select:disabled {
   opacity: 0.6;
   cursor: default;
 }

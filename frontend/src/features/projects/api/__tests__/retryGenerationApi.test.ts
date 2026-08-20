@@ -52,11 +52,63 @@ describe('retryGenerationApi', () => {
     // authorization in beside it, so an exact-object assertion would pin that unrelated detail
     // and would have to be edited every time the transport gains a header.
     expect(new Headers(init.headers).get('Idempotency-Key')).toBe('key-abc')
-    // No body, and this is a contract, not an omission: every parameter of the retried run is
-    // copied from the stored source row on the server. A client that could send one could bind an
-    // owner, a status or a document link to a generation it does not own.
+    // No body when the caller named no overrides, and this is a contract rather than an
+    // omission. The server copies every other parameter from the stored source row, so the
+    // narrow body is what stops a client binding an owner, a status or a document link to a
+    // generation it does not own — and a request that sends `{}` is still a request the plain
+    // «Повторить» had no reason to make.
     expect(init.body).toBeUndefined()
     expect(response).toEqual({ id: 'gen-2', status: 'queued' })
+  })
+
+  it('carries a register override under its contract name', async () => {
+    const fetchMock = stubFetchJson({ id: 'gen-2', status: 'queued' })
+
+    await retryGeneration(GENERATION_ID, 'key-abc', { textStyle: 'научный' })
+
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ text_style: 'научный' })
+  })
+
+  it('carries a length override as an integer under its contract name', async () => {
+    const fetchMock = stubFetchJson({ id: 'gen-2', status: 'queued' })
+
+    await retryGeneration(GENERATION_ID, 'key-abc', { volumePages: 8 })
+
+    // A number, not the string the picker reports: the wire field is an integer and a string is
+    // a 422 the user cannot act on from a card.
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ volume_pages: 8 })
+  })
+
+  it('carries both overrides when both were chosen', async () => {
+    const fetchMock = stubFetchJson({ id: 'gen-2', status: 'queued' })
+
+    await retryGeneration(GENERATION_ID, 'key-abc', { textStyle: 'научный', volumePages: 2 })
+
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+      text_style: 'научный',
+      volume_pages: 2,
+    })
+  })
+
+  it('omits the override the caller did not name rather than sending it null', async () => {
+    const fetchMock = stubFetchJson({ id: 'gen-2', status: 'queued' })
+
+    await retryGeneration(GENERATION_ID, 'key-abc', { volumePages: 4 })
+
+    // An explicit null is a client saying «clear this», which would strip the register off a
+    // generation that had one. Absent means «keep what the failed run used».
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).not.toHaveProperty('text_style')
+  })
+
+  it('sends no body for an overrides object with nothing in it', async () => {
+    const fetchMock = stubFetchJson({ id: 'gen-2', status: 'queued' })
+
+    await retryGeneration(GENERATION_ID, 'key-abc', {})
+
+    // The card passes `undefined` when both pickers are untouched, but an empty object must reach
+    // the same wire request: whether the plain repeat stays bodiless cannot depend on which of
+    // two equivalent shapes a caller happened to build.
+    expect(fetchMock.mock.calls[0][1].body).toBeUndefined()
   })
 
   it('sends a different key for a different click rather than minting one of its own', async () => {
