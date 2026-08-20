@@ -16,12 +16,12 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from document.document import ALLOWED_STATUSES, Document
+from document.document import DOCUMENT_STATUSES, Document
 from document.document_type import SUPPORTED_DOCUMENT_TYPES
 from document.page_settings import PageSettings
 from model.base import Base
 
-_ALLOWED_STATUSES_SQL = ", ".join(repr(status) for status in ALLOWED_STATUSES)
+_STATUSES_SQL = ", ".join(repr(status) for status in DOCUMENT_STATUSES)
 _ALLOWED_DOCUMENT_TYPES_SQL = ", ".join(repr(value) for value in SUPPORTED_DOCUMENT_TYPES)
 
 
@@ -35,7 +35,7 @@ class DocumentModel(Base):
             f"document_type IN ({_ALLOWED_DOCUMENT_TYPES_SQL})",
             name="ck_documents_document_type",
         ),
-        CheckConstraint(f"status IN ({_ALLOWED_STATUSES_SQL})", name="ck_documents_status"),
+        CheckConstraint(f"status IN ({_STATUSES_SQL})", name="ck_documents_status"),
         CheckConstraint("version >= 1", name="ck_documents_version_positive"),
         UniqueConstraint("owner_id", "idempotency_key", name="uq_documents_owner_idempotency_key"),
         # One document per generation, enforced by the database rather than by a

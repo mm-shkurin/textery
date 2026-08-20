@@ -1,109 +1,33 @@
+import tomllib
+from pathlib import Path
+
 import nh3
 
-# Matches what the editor can produce. Tiptap emits <strong>/<em>; the story's own
-# fixtures pin <b>/<i>. Both are kept -- an allowlist narrower than the editor
-# deletes users' formatting on save, silently.
-#
-# The block half (blockquote/pre/code/hr/s) was added when story 5 migrated the
-# editor to the StarterKit BLOCK schema: the toolbar grew Цитата, Блок кода,
-# горизонтальная линейка and зачёркивание, and this list did not. A tag the
-# editor can produce but the sanitizer strips is not a hardened boundary, it is
-# silent data loss discovered on reload -- the user formats, saves, comes back,
-# and the quote is a bare paragraph. The same tags are what a markdown-to-HTML
-# conversion emits (see MarkdownHtmlConverter), so the conversion path depends on
-# this list too.
-_ALLOWED_TAGS = {
-    "h1",
-    "h2",
-    "h3",
-    "p",
-    "ul",
-    "ol",
-    "li",
-    "strong",
-    "em",
-    "b",
-    "i",
-    "u",
-    "s",
-    "a",
-    "br",
-    "blockquote",
-    "pre",
-    "code",
-    "hr",
-    # The table half, added with the editor's «вставить таблицу» control. Every
-    # tag Tiptap's Table extension can emit is listed: a table whose <tbody> is
-    # stripped is not a degraded table, it is a pile of unwrapped cell text, and
-    # the loss is only discovered on reload.
-    "table",
-    "thead",
-    "tbody",
-    "tfoot",
-    "tr",
-    "th",
-    "td",
-    # `img` is deliberately NOT here, and its absence is a decision rather than
-    # an oversight. Both export renderers refuse outbound fetches on purpose
-    # (see WeasyPrintPdfRenderer._blocked_url_fetcher -- the document HTML is
-    # user-controlled, so resolving a src is an SSRF vector). An allowed <img>
-    # would therefore render in the editor and vanish from every PDF and DOCX
-    # the user downloads, which is a worse answer than not offering it: the loss
-    # is invisible until the file is opened somewhere else.
-}
+# The allow-lists are data, in sanitization_policy.toml beside this file: they
+# change whenever the editor grows a control, and each such change used to be a
+# Python edit. Loaded once at import -- the file ships with the adapter and the
+# process reads it before it serves anything.
+_POLICY_FILE = Path(__file__).with_name("sanitization_policy.toml")
 
-# `style` on the block nodes carries text alignment, which TextAlign renders as
-# `style="text-align: …"` on the heading/paragraph it applies to. Without it the
-# centre-align button was another silent-loss control. nh3 has no CSS property
-# filter, so the value is constrained before it ever reaches here -- see
-# _strip_unsafe_styles below.
-_ALLOWED_ATTRIBUTES = {
-    "a": {"href", "title"},
-    # Merged cells, and nothing else. `colwidth` -- which Tiptap writes when a
-    # column is resized -- is deliberately absent: it is a comma-separated pixel
-    # list this filter would have to parse to trust, and losing a column width is
-    # a cosmetic regression where losing a merge would corrupt the table's shape.
-    "th": {"colspan", "rowspan"},
-    "td": {"colspan", "rowspan"},
-    "p": {"style"},
-    "h1": {"style"},
-    "h2": {"style"},
-    "h3": {"style"},
-}
+with _POLICY_FILE.open("rb") as _handle:
+    _POLICY = tomllib.load(_handle)
 
-# Deliberately the same set the client's Link extension permits (see
-# 05-manual-mode/decisions/link-url-input-decision.md, which records Tiptap's
-# allowlist). A server list narrower than the client's is a data-loss bug that
-# only shows up on reload: the user creates a link, sees it render, saves, comes
-# back, and it is gone. `javascript:` is in neither list.
-_ALLOWED_URL_SCHEMES = {
-    "http",
-    "https",
-    "mailto",
-    "tel",
-    "ftp",
-    "ftps",
-    "callto",
-    "sms",
-    "cid",
-    "xmpp",
-}
 
-# Removed WITH their contents, not just unwrapped. Dropping only the tag would
-# leave `alert(1)` sitting in the document as text -- technically "stripped",
-# still the payload.
-_STRIP_WITH_CONTENTS = {"script", "style"}
+def _named_set(key: str) -> set[str]:
+    return set(_POLICY[key])
 
-# The ONLY declaration a stored style attribute may carry. nh3 filters tags,
-# attributes and URL schemes, but it does not parse CSS -- so allowing `style`
-# through unexamined would hand an attacker the whole property space: a
-# `position: fixed` overlay covering the page (clickjacking), `url(...)` fetching
-# a tracker on open, or a legacy `expression()`. The editor produces exactly one
-# style declaration, so the filter below is an allowlist of one property with an
-# allowlist of four values rather than an attempt to sanitize CSS in general.
-_ALIGN_PROPERTY = "text-align"
-_ALLOWED_ALIGNMENTS = {"left", "right", "center", "justify"}
-_STYLE_ATTRIBUTE = "style"
+
+def _per_tag_sets(key: str) -> dict[str, set[str]]:
+    return {tag: set(names) for tag, names in _POLICY[key].items()}
+
+
+_ALLOWED_TAGS = _named_set("tags")
+_ALLOWED_ATTRIBUTES = _per_tag_sets("attributes")
+_ALLOWED_URL_SCHEMES = _named_set("url_schemes")
+_STRIP_WITH_CONTENTS = _named_set("strip_with_contents")
+_STYLE_ATTRIBUTE = _POLICY["style"]["attribute"]
+_ALIGN_PROPERTY = _POLICY["style"]["property"]
+_ALLOWED_ALIGNMENTS = set(_POLICY["style"]["values"])
 
 
 class Nh3HtmlSanitizer:

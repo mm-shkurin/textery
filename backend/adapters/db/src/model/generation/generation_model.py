@@ -23,15 +23,16 @@ from generation.generation import (
 )
 from model.base import Base
 
-ALLOWED_STATUSES = (PENDING_STATUS, IN_PROGRESS_STATUS, COMPLETED_STATUS, FAILED_STATUS)
-_ALLOWED_STATUSES_SQL = ", ".join(repr(status) for status in ALLOWED_STATUSES)
+# The status field's value space, and the source of the table's CHECK constraint.
+GENERATION_STATUSES = (PENDING_STATUS, IN_PROGRESS_STATUS, COMPLETED_STATUS, FAILED_STATUS)
+_STATUSES_SQL = ", ".join(repr(status) for status in GENERATION_STATUSES)
 
 
 class GenerationModel(Base):
     __tablename__ = "generations"
     __table_args__ = (
         CheckConstraint(
-            f"status IN ({_ALLOWED_STATUSES_SQL})",
+            f"status IN ({_STATUSES_SQL})",
             name="ck_generations_status",
         ),
         # Serves the owner-scoped history keyset: equality on owner_id, then the

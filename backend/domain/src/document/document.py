@@ -7,7 +7,10 @@ from document.page_settings import PageSettings
 
 DRAFT_STATUS = "draft"
 
-ALLOWED_STATUSES = (DRAFT_STATUS,)
+# The status field's whole value space -- one member today. Not an allow-list a
+# deployment may edit: adding a status is a domain change plus a migration, since
+# the DB CHECK constraint is generated from this tuple.
+DOCUMENT_STATUSES = (DRAFT_STATUS,)
 
 
 class Document:
