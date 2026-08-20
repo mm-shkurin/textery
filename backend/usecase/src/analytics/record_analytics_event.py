@@ -46,7 +46,10 @@ class RecordAnalyticsEvent:
         The `SaveOutcome` the port answers with is deliberately not read here.
         Only `STORED` is a path at 1.1; the 204-vs-409 branch on
         `ALREADY_RECORDED` / `CONFLICTING_NAME` lands with the scenarios that
-        assert it (§5.x).
+        assert it -- `tests/extended/01_API_Tests_Extended.md` §3.1, not §5.x:
+        `01_API_Tests.md` §5.1-§5.6 hold no conflicting-name scenario (§5.3 is a
+        *malformed* key), so the earlier §5.x pointer named a scenario that does
+        not exist.
         """
         event = AnalyticsEvent(
             event_name=event_name,

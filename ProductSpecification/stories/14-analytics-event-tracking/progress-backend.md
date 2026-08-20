@@ -58,7 +58,9 @@ Infrastructure follow, in that order.
   strings, pass `user_id` through unread, stamp `event_time` from the injected `Clock`,
   `save_new`, `commit`. No validation branch, no branch on `SaveOutcome`, no
   `try`/`rollback_quietly`, no limiter or failure-log slots — each is absent by design,
-  owned by 2.x/3.x, 5.x, §12–§13 and 6.x/Infra 1.1 respectively. Tests: 1/1 target,
+  owned by 2.x/3.x, `extended/01` §3.1 (corrected from "5.x" in `red-adapter db` —
+  §5.1–§5.6 hold no conflicting-name scenario), §12–§13 and 6.x/Infra 1.1
+  respectively. Tests: 1/1 target,
   298/298 `backend/usecase`. `/test-coverage usecase --focus`: 14/14 lines, 0/0 branches
   on the touched file — the deliberate omissions read as *absent* branches rather than
   cold ones, which is why the number is 0/0 and not 2/6; no gaps, no steps inserted.
@@ -109,7 +111,7 @@ Infrastructure follow, in that order.
   bootstrapped owner. Correct the three "§5.x" pointers to `extended/01` §3.1 in the next
   work unit that touches those files (`red-adapter db`), and fold extended §3.1 in when §5
   goes green rather than leaving the 409 to be discovered by Story 15.
-- [~] red-adapter db — SQLAlchemy model + one Alembic migration creating the whole
+- [x] red-adapter db — SQLAlchemy model + one Alembic migration creating the whole
   `analytics_events` table per the ADR (partial unique index `WHERE occurrence_key IS NOT
   NULL`, `degraded BOOLEAN NOT NULL DEFAULT false`, `sequence BIGINT GENERATED ALWAYS AS
   IDENTITY`, `user_id` FK `ON DELETE SET NULL`, twelve-name CHECK), and `save_new` via
@@ -119,7 +121,38 @@ Infrastructure follow, in that order.
   Note: `SqlAlchemyAccountEraser`'s hand-maintained docstring gains `analytics_events` and
   its `SET NULL` action — the ADR calls this table a deliberate departure from the repo's
   `NO ACTION`-plus-ordered-delete convention.
-- [ ] green-adapter db
+  **Done.** Test `access/analytics/test_analytics_event_storage.py` (41 lines) +
+  `statements/analytics_event_storage_statements.py`, fixture registered in
+  `engine_scoped_fixtures.py` (`_EXPECTED_FIXTURES` 9 → 10). The red is the adapter's
+  absence, not the schema's: a `SqlAlchemyAnalyticsEventRepository.save_new` stub raises
+  before the fresh read ever runs, so the missing table is never what fails. Predicted and
+  actual matched on the first run (bare `NotImplementedError` at
+  `access/analytics/analytics_event_storage.py:36`, when-phase, before any assertion;
+  76 passed + 1 failed → 76 passed + 1 skipped after marking).
+  `/test-review` found the strictest assertion in the file was blind to a whole class of
+  error: `REPORTED_AT` had zero microseconds, so a `TIMESTAMP(0)` column truncating every
+  real event to the second would carry `09:30:00.000000` back unchanged and pass. Now
+  `09:30:12.345678` — same single structural assertion, but it discriminates a
+  full-precision column from a truncating one. The AcceptanceCriteria ask for exactly that
+  guard and no scenario in the story owned it (`grep -rn microsecond tests/` returned
+  nothing).
+  The three "§5.x" ownership pointers were corrected here to `extended/01` §3.1, per the
+  instruction left by `adapters-discovery`. Comment-only, verified inert against 754
+  usecase+domain tests.
+  Note for green: `_SERVER_NOW` in `usecase/tests/statements/analytics_ingest_statements.py`
+  still reads `09:30` flat, so the two layers no longer name one instant. Harmless (each
+  test asserts against its own constant) but worth aligning when something else touches
+  that file.
+- [~] green-adapter db — must also (a) add `analytics_events` to `TRUNCATE_ALL` in
+  `statements/database_cleanup.py` with the migration — it cannot be added earlier without
+  turning all 76 db tests red against a non-existent relation, and the module's rule is
+  that the list enumerates every table by hand; and (b) add `analytics_events` + its
+  `SET NULL` action to `SqlAlchemyAccountEraser`'s hand-maintained docstring, deferred
+  from `red-adapter db` because documenting an FK on a table that does not exist yet
+  would have been false.
+  The zero-row decision point stays on you, not on the test:
+  `assert_the_store_reported_a_new_row` pins only `STORED`, so nothing here stops a
+  hardcoded `no row → ALREADY_RECORDED` stranding `CONFLICTING_NAME`.
 - [ ] red-adapter rest — `POST /api/v1/analytics/events`, `204 No Content`, no body.
   Request DTO fields typed permissively **and defaulted** per the ADR, so a bad value
   reaches the domain and returns the canonical 400 rather than Pydantic's 422 echoing the

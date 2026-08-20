@@ -12,7 +12,12 @@ class SaveOutcome(Enum):
     (`decisions/analytics-ingest-shape-decision.md`). Scenario 1.1 exercises only
     `STORED`; `ALREADY_RECORDED` (a repeat under the same name, answered 204) and
     `CONFLICTING_NAME` (the same key under a different name, answered 409) are
-    asserted by §5.x, which is also where the usecase first branches on the value.
+    asserted by `tests/extended/01_API_Tests_Extended.md` §3.1, which is also where
+    the usecase first branches on the value. NOT §5.x: `01_API_Tests.md` §5.1-§5.6
+    contain no conflicting-name scenario at all (§5.3 is a *malformed* key), and the
+    earlier pointer here to §5.x left the `409 OCCURRENCE_KEY_CONFLICT` that
+    `endpoints.md` mandates with no bootstrapped owner. Extended §3.1 is folded in
+    when §5 goes green.
     """
 
     STORED = "STORED"
