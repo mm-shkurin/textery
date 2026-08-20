@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { deleteDocument, listDocuments } from '../historyApi'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 
 // The half of `historyApi` the component tests cannot reach: they mock the whole module, so the
 // query string the filter turns into — and the DELETE's method and path — were executed by

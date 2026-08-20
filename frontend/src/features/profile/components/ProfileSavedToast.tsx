@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { RUNTIME } from '../../../shared/config/runtime'
 
 // The «Изменения сохранены» alert — Figma node 1227:9790, a 637x64 black pill at a 16px radius,
 // centred against the bottom of the screen, with its 16/600 label in white.
@@ -10,7 +11,8 @@ import { useEffect, useState } from 'react'
 // An `<output>`: the element IS a polite live region natively, which is what a confirmation
 // wants — `role="alert"` would interrupt whatever a screen-reader user is reading to tell them
 // that nothing went wrong.
-const VISIBLE_MS = 3200
+//
+// How long it stays is a tunable, not a component's business: `RUNTIME.profileSavedToastMs`.
 
 interface ProfileSavedToastProps {
   // Bumped by the caller on every successful write. A counter rather than a boolean: two saves in
@@ -24,7 +26,7 @@ export function ProfileSavedToast({ saveCount }: ProfileSavedToastProps) {
   useEffect(() => {
     if (saveCount === 0) return
     setVisible(true)
-    const timer = setTimeout(() => setVisible(false), VISIBLE_MS)
+    const timer = setTimeout(() => setVisible(false), RUNTIME.profileSavedToastMs)
     // Cleared on the next save as well as on unmount, or a second save inside the window would
     // leave the first timer to hide the toast early.
     return () => clearTimeout(timer)

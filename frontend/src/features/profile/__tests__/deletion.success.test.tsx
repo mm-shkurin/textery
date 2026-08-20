@@ -4,7 +4,7 @@ import { ProfilePage } from '../components/ProfilePage'
 import { resetIdentity } from '../../../shared/identity/identityStore'
 import { fetchProfile } from '../../../shared/identity/api/profileApi'
 import { requestAccountDeletion } from '../../../shared/identity/api/deleteAccountApi'
-import { clearSession, getAccessToken, saveSession } from '../../../features/auth/utils/authSession'
+import { clearSession, getAccessToken, saveSession } from '../../../shared/session/authSession'
 import { profileWith, stubObjectUrls } from './avatarTestSupport'
 import { LANDING_MARKER, renderAtProfile } from './deletionTestSupport'
 

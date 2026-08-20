@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { listDocuments, listGenerations } from '../historyApi'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 
 // historyApi was the one API client with no test of its own: every HistoryPage test mocks the
 // whole module (`vi.mock('../../api/historyApi')`), so the part that can actually be wrong —

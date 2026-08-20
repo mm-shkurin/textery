@@ -1,6 +1,9 @@
 import { useNavigate } from 'react-router-dom'
-import { logout } from '../../auth/utils/authSession'
-import { UNSAVED_LEAVE_MESSAGE_PROFILE, useUnsavedGuard } from '../../auth/utils/useUnsavedGuard'
+import { logout } from '../../../shared/session/authSession'
+import {
+  UNSAVED_LEAVE_MESSAGE_PROFILE,
+  useUnsavedGuard,
+} from '../../../shared/hooks/useUnsavedGuard'
 import { reloadIdentity } from '../../../shared/identity/identityStore'
 import { useIdentity } from '../../../shared/identity/useIdentity'
 import { ProfileHeader } from './ProfileHeader'

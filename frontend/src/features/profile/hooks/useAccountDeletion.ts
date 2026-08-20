@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { clearSession } from '../../auth/utils/authSession'
+import { clearSession } from '../../../shared/session/authSession'
 import {
   deletionConfirmationKind,
   requestAccountDeletion,
