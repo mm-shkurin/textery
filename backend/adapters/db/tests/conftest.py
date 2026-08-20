@@ -12,14 +12,16 @@ from statements.database_url import (
 
 @pytest.fixture(scope="session", autouse=True)
 def require_database() -> None:
-    """Skip this whole suite with a named reason when there is no database.
+    """Fail this suite with a named reason when there is no database.
 
-    Without it, `pytest` on a machine with no Postgres does not fail -- it
-    *hangs*, because every fixture here opens a connection and waits out the
-    driver's own timeout, once per test. A contributor running the documented
-    `pytest` command sees no output and no reason, which reads as a broken
-    checkout rather than a missing service. CI provides Postgres, so this probe
-    passes there and gates nothing.
+    It used to skip. A skipped suite is a failing suite that looks green: ~70
+    integration tests reported nothing on a fresh checkout, and the run ended in
+    the same green line as a run that had exercised every one of them.
+
+    It cannot simply proceed either -- without this probe `pytest` does not fail,
+    it *hangs*, because every fixture here opens a connection and waits out the
+    driver's own timeout, once per test. So the failure is immediate and says
+    what to start. CI provides Postgres and never reaches this branch.
     """
     parts = urlsplit(resolve_test_database_url())
     host, port = parts.hostname or "localhost", parts.port or 5432
@@ -27,11 +29,16 @@ def require_database() -> None:
         with socket.create_connection((host, port), timeout=_PROBE_TIMEOUT_SECONDS):
             return
     except OSError as error:
-        pytest.skip(
+        pytest.fail(
             f"no database listening at {host}:{port} ({error}). These are the adapter's "
-            f"integration tests and need a real Postgres: set {TEST_DATABASE_URL_ENV_VAR}, "
-            f"or run `pytest domain usecase` for the layers that need no database.",
-            allow_module_level=True,
+            f"integration tests and they need a real Postgres:
+"
+            f"  docker compose up -d postgres
+"
+            f"  export {TEST_DATABASE_URL_ENV_VAR}=postgresql://textery:<password>@{host}:{port}/textery_test
+"
+            f"Run `pytest domain usecase` for the layers that need no database.",
+            pytrace=False,
         )
 
 

@@ -18,23 +18,37 @@ class TestEmailNormalization:
 
 
 class TestEmailNormalizationLocaleInvariance:
+    """The address must lowercase the same way wherever the process runs.
+
+    The hazard is the Turkish dotted/dotless I: a locale-sensitive lowercasing of
+    "I" yields "ı", so `Isa@Example.ru` and `isa@example.ru` become two
+    accounts on a Turkish host and one everywhere else.
+
+    Two assertions, because only one of them can run everywhere. The character
+    assertion holds on every runner and is the invariant itself; the locale one
+    runs where a Turkish locale is installed and proves the process-wide setting
+    cannot change the answer. Neither is skipped -- the suite used to skip the
+    whole class when the locale was missing, which reported nothing and looked
+    green.
+    """
+
+    def test_capital_i_lowercases_to_ascii_i_whatever_the_host_locale(self):
+        email = Email("Isa@Example.RU")
+
+        assert email.value == "isa@example.ru"
+        assert "ı" not in email.value
+
     def test_value_is_lowercased_the_same_way_under_turkish_locale(self):
         original_locale = locale.setlocale(locale.LC_ALL)
         try:
-            locale_set = False
             for candidate in _TURKISH_LOCALE_CANDIDATES:
                 try:
                     locale.setlocale(locale.LC_ALL, candidate)
-                    locale_set = True
-                    break
                 except locale.Error:
                     continue
-            if not locale_set:
-                pytest.skip("Turkish locale not installed on this runner")
-
-            email = Email("User@Example.RU")
-
-            assert email.value == "user@example.ru"
+                assert Email("User@Example.RU").value == "user@example.ru"
+                assert Email("Isa@Example.RU").value == "isa@example.ru"
+                return
         finally:
             locale.setlocale(locale.LC_ALL, original_locale)
 
