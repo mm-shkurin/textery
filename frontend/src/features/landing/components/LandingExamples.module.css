@@ -7,14 +7,14 @@
 }
 
 .example-card {
-  border: 1px solid var(--border-subtle, #e5e7eb);
+  border: 1px solid var(--border-subtle);
   border-radius: 16px;
-  background: var(--bg-surface, #fff);
+  background: var(--bg-surface);
   padding: 20px 24px;
 }
 
 .example-card[open] {
-  border-color: var(--accent, #6366f1);
+  border-color: var(--accent);
 }
 
 .example-summary {
@@ -33,7 +33,7 @@
 }
 
 .example-summary:focus-visible {
-  outline: 2px solid var(--accent, #6366f1);
+  outline: 2px solid var(--accent);
   outline-offset: 4px;
   border-radius: 8px;
 }
@@ -41,8 +41,8 @@
 .example-chip {
   padding: 4px 10px;
   border-radius: var(--radius-pill, 999px);
-  background: var(--bg-subtle, #f3f4f6);
-  color: var(--text-divider, #6b7280);
+  background: var(--bg-subtle);
+  color: var(--text-divider);
   font-size: 13px;
   white-space: nowrap;
 }
@@ -53,12 +53,12 @@
   font-size: 18px;
   line-height: 24px;
   font-weight: 500;
-  color: var(--text-hero, #111827);
+  color: var(--text-hero);
 }
 
 .example-volume {
   font-size: 14px;
-  color: var(--text-divider, #6b7280);
+  color: var(--text-divider);
   white-space: nowrap;
 }
 
@@ -67,7 +67,7 @@
   max-width: 900px;
   font-size: 16px;
   line-height: 26px;
-  color: var(--text-divider, #4b5563);
+  color: var(--text-divider);
 }
 
 .examples-action {

@@ -41,7 +41,7 @@ describe('LandingHero', () => {
   it('hides its decorative glass ornaments from assistive technology', () => {
     const { container } = render(<LandingHero />)
 
-    const images = container.querySelectorAll('.hero-glass img')
+    const images = container.querySelectorAll('[aria-hidden="true"] img')
     expect(images).toHaveLength(4)
     images.forEach((image) => {
       expect(image).toHaveAttribute('alt', '')

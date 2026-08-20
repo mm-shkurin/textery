@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react'
 
-import './LandingHero.css'
+import styles from './LandingHero.module.css'
 
 interface LandingHeroProps {
   onPromptSubmit?: () => void
@@ -17,7 +17,7 @@ export function LandingHero({ onPromptSubmit }: LandingHeroProps) {
   }
 
   return (
-    <section className="hero">
+    <section className={styles.hero}>
       {/* Decorative only (aria-hidden), and they used to cost 6.5 MB of PNG — more than the rest
           of the page put together, on the one screen a first-time visitor sees before anything
           else. Re-encoded to WebP at twice the CSS box each one actually renders at (798, 714,
@@ -27,21 +27,21 @@ export function LandingHero({ onPromptSubmit }: LandingHeroProps) {
           The renders themselves are the ones embedded in the design frame, not the versions that
           shipped first: those were a washed-out, near-white variant of the same four shapes, and
           on the pale blue page they read as smudges rather than glass. */}
-      <div className="hero-glass hero-glass-left" aria-hidden="true">
+      <div className={`${styles['hero-glass']} ${styles['hero-glass-left']}`} aria-hidden="true">
         <img src="/design/glass-16.webp" alt="" decoding="async" />
         <img src="/design/glass-8.webp" alt="" decoding="async" />
       </div>
-      <div className="hero-glass hero-glass-right" aria-hidden="true">
+      <div className={`${styles['hero-glass']} ${styles['hero-glass-right']}`} aria-hidden="true">
         <img src="/design/glass-24.webp" alt="" decoding="async" />
         <img src="/design/glass-9.webp" alt="" decoding="async" />
       </div>
 
-      <h1 className="hero-title" data-testid="hero-heading">
+      <h1 className={styles['hero-title']} data-testid="hero-heading">
         Textery — самая быстрая{' '}
-        <span className="hero-title-accent">нейросеть для учебных текстов</span>
+        <span className={styles['hero-title-accent']}>нейросеть для учебных текстов</span>
       </h1>
 
-      <p className="hero-subtitle">
+      <p className={styles['hero-subtitle']}>
         Создавайте <strong>профессиональные доклады, как в Word</strong>, с помощью искусственного
         интеллекта. Генерация докладов <strong>за 30 секунд</strong>
       </p>
@@ -49,15 +49,19 @@ export function LandingHero({ onPromptSubmit }: LandingHeroProps) {
       {/* The topic typed here is not yet carried into the generation flow — submitting opens
           the document-type step, same as the header CTA. Wiring the topic through requires a
           change in DocumentGenerationFlow and is deliberately left for that work unit. */}
-      <form className="hero-prompt" onSubmit={handleSubmit}>
+      <form className={styles['hero-prompt']} onSubmit={handleSubmit}>
         <input
-          className="hero-prompt-input"
+          className={styles['hero-prompt-input']}
           type="text"
           data-testid="hero-prompt-input"
           placeholder="Опишите тему доклада, реферата, эссе, сочинения..."
           aria-label="Тема документа"
         />
-        <button type="submit" className="hero-prompt-button" data-testid="hero-generate-button">
+        <button
+          type="submit"
+          className={styles['hero-prompt-button']}
+          data-testid="hero-generate-button"
+        >
           Сгенерировать
         </button>
       </form>

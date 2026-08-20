@@ -9,7 +9,7 @@ import { LandingProcess } from './LandingProcess'
 import { LandingShowcase } from './LandingShowcase'
 import { LandingStats } from './LandingStats'
 import { SiteFooter } from '../../../shared/components/SiteFooter'
-import './LandingPage.css'
+import styles from './LandingPage.module.css'
 
 interface LandingPageProps {
   onPrimaryCtaClick?: () => void
@@ -27,7 +27,7 @@ export function LandingPage({
   onHistoryClick,
 }: LandingPageProps) {
   return (
-    <div className="landing">
+    <div className={styles.landing}>
       <Header
         onPrimaryCtaClick={onPrimaryCtaClick}
         isAuthenticated={isAuthenticated}

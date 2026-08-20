@@ -1,5 +1,6 @@
-import './LandingSection.css'
-import './LandingCta.css'
+import landingSectionStyles from './LandingSection.module.css'
+import styles from './LandingCta.module.css'
+import navbarButtonsStyles from '../../../shared/components/navbar/NavbarButtons.module.css'
 
 interface LandingCtaProps {
   onPrimaryCtaClick?: () => void
@@ -14,23 +15,26 @@ interface LandingCtaProps {
 // keeps the frame's own composition without it.
 export function LandingCta({ onPrimaryCtaClick }: LandingCtaProps) {
   return (
-    <section className="landing-section landing-cta" data-testid="landing-cta">
-      <div className="landing-section-head">
-        <span className="landing-eyebrow">Передовой сервис</span>
-        <h2 className="landing-cta-title">
-          Создайте <span className="landing-cta-accent">первый текстовый документ</span> за 30
-          секунд
+    <section
+      className={`${landingSectionStyles['landing-section']} ${styles['landing-cta']}`}
+      data-testid="landing-cta"
+    >
+      <div className={landingSectionStyles['landing-section-head']}>
+        <span className={landingSectionStyles['landing-eyebrow']}>Передовой сервис</span>
+        <h2 className={styles['landing-cta-title']}>
+          Создайте <span className={styles['landing-cta-accent']}>первый текстовый документ</span>{' '}
+          за 30 секунд
         </h2>
-        <p className="landing-section-lead">
+        <p className={landingSectionStyles['landing-section-lead']}>
           Без регистрации. Без кредитной карты. Просто попробуйте прямо сейчас.
         </p>
       </div>
 
       {onPrimaryCtaClick !== undefined && (
-        <div className="landing-cta-action">
+        <div className={styles['landing-cta-action']}>
           <button
             type="button"
-            className="btn-light"
+            className={navbarButtonsStyles['btn-light']}
             data-testid="cta-primary-cta"
             onClick={onPrimaryCtaClick}
           >

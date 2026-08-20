@@ -1,5 +1,6 @@
-import './LandingSection.css'
-import './LandingComparison.css'
+import landingSectionStyles from './LandingSection.module.css'
+import styles from './LandingComparison.module.css'
+import navbarButtonsStyles from '../../../shared/components/navbar/NavbarButtons.module.css'
 
 // Figma `Desktop` → `Comparison` (node 1358:7627): a dark #161616 band carrying a 1160px table —
 // a header row of three 380px columns, then four rows separated by hairlines.
@@ -20,25 +21,39 @@ interface LandingComparisonProps {
 
 export function LandingComparison({ onPrimaryCtaClick }: LandingComparisonProps) {
   return (
-    <section className="comparison" data-testid="landing-comparison">
-      <div className="landing-section comparison-inner">
-        <div className="landing-section-head">
-          <span className="landing-eyebrow comparison-eyebrow">Сравните сами</span>
-          <h2 className="landing-section-title comparison-title">Почему выбирают Textery AI</h2>
-          <p className="landing-section-lead comparison-lead">
+    <section className={styles.comparison} data-testid="landing-comparison">
+      <div className={`${landingSectionStyles['landing-section']} ${styles['comparison-inner']}`}>
+        <div className={landingSectionStyles['landing-section-head']}>
+          <span
+            className={`${landingSectionStyles['landing-eyebrow']} ${styles['comparison-eyebrow']}`}
+          >
+            Сравните сами
+          </span>
+          <h2
+            className={`${landingSectionStyles['landing-section-title']} ${styles['comparison-title']}`}
+          >
+            Почему выбирают Textery AI
+          </h2>
+          <p
+            className={`${landingSectionStyles['landing-section-lead']} ${styles['comparison-lead']}`}
+          >
             Честное сравнение с главными конкурентами на рынке AI-генерации текстов
           </p>
         </div>
 
-        <table className="landing-section-body comparison-table">
+        <table
+          className={`${landingSectionStyles['landing-section-body']} ${styles['comparison-table']}`}
+        >
           <thead>
             <tr>
               <th scope="col">Возможность</th>
               <th scope="col">
-                <span className="comparison-chip comparison-chip-ours">Textery AI</span>
+                <span className={`${styles['comparison-chip']} ${styles['comparison-chip-ours']}`}>
+                  Textery AI
+                </span>
               </th>
               <th scope="col">
-                <span className="comparison-chip">Другие ИИ</span>
+                <span className={styles['comparison-chip']}>Другие ИИ</span>
               </th>
             </tr>
           </thead>
@@ -46,7 +61,7 @@ export function LandingComparison({ onPrimaryCtaClick }: LandingComparisonProps)
             {ROWS.map((row) => (
               <tr key={row.feature}>
                 <th scope="row">{row.feature}</th>
-                <td className="comparison-ours">{row.textery}</td>
+                <td className={styles['comparison-ours']}>{row.textery}</td>
                 <td>{row.others}</td>
               </tr>
             ))}
@@ -54,10 +69,10 @@ export function LandingComparison({ onPrimaryCtaClick }: LandingComparisonProps)
         </table>
 
         {onPrimaryCtaClick !== undefined && (
-          <div className="comparison-action">
+          <div className={styles['comparison-action']}>
             <button
               type="button"
-              className="btn-light"
+              className={navbarButtonsStyles['btn-light']}
               data-testid="comparison-primary-cta"
               onClick={onPrimaryCtaClick}
             >

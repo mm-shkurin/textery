@@ -1,4 +1,4 @@
-/* `Comparison` (node 1358:7627): a full-bleed #161616 band with a 1160px table on it.
+/* `Comparison` (node 1358:7627): a full-bleed hex 161616 band with a 1160px table on it.
 
    The slab and its white text do NOT flip with the theme, for the same reason the footer's do not:
    the section is dark in the design because that is the contrast it draws against the pale page
@@ -39,7 +39,7 @@
   font-size: 20px;
   line-height: 26px;
   font-weight: 600;
-  background: #000000;
+  background: var(--landing-comparison-head-bg);
 }
 
 /* The hairline between rows is white at low alpha rather than a border token: the band is a fixed

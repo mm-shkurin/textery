@@ -1,4 +1,5 @@
 import { Navbar } from '../../../shared/components/navbar/Navbar'
+import navbarButtonsStyles from '../../../shared/components/navbar/NavbarButtons.module.css'
 
 interface HeaderProps {
   onPrimaryCtaClick?: () => void
@@ -40,7 +41,7 @@ export function Header({
             // "start something new" — without it, signing in meant knowing to type /login.
             <button
               type="button"
-              className="btn-ghost header-login"
+              className={`${navbarButtonsStyles['btn-ghost']} header-login`}
               data-testid="header-login-button"
               onClick={onLoginClick}
             >
@@ -54,7 +55,7 @@ export function Header({
             // names depending on which side of it you stood on.
             <button
               type="button"
-              className="btn-ghost header-history"
+              className={`${navbarButtonsStyles['btn-ghost']} header-history`}
               data-testid="header-history-button"
               onClick={onHistoryClick}
             >
@@ -63,7 +64,7 @@ export function Header({
           )}
           <button
             type="button"
-            className="btn-light"
+            className={navbarButtonsStyles['btn-light']}
             data-testid="header-primary-cta-button"
             onClick={onPrimaryCtaClick}
           >

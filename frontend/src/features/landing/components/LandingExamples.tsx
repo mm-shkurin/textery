@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import styles from './LandingExamples.module.css'
-import './LandingSection.css'
+import landingSectionStyles from './LandingSection.module.css'
+import navbarButtonsStyles from '../../../shared/components/navbar/NavbarButtons.module.css'
 import { LANDING_EXAMPLES, type LandingExample } from '../utils/landingExamples'
 
 interface LandingExamplesProps {
@@ -32,16 +33,16 @@ export function LandingExamples({ onPrimaryCtaClick }: LandingExamplesProps) {
   const [openId, setOpenId] = useState<LandingExample['id'] | null>(LANDING_EXAMPLES[0].id)
 
   return (
-    <section className="landing-section" data-testid="landing-examples">
-      <div className="landing-section-head">
-        <span className="landing-eyebrow">Примеры</span>
-        <h2 className="landing-section-title">Примеры готовых работ</h2>
-        <p className="landing-section-lead">
+    <section className={landingSectionStyles['landing-section']} data-testid="landing-examples">
+      <div className={landingSectionStyles['landing-section-head']}>
+        <span className={landingSectionStyles['landing-eyebrow']}>Примеры</span>
+        <h2 className={landingSectionStyles['landing-section-title']}>Примеры готовых работ</h2>
+        <p className={landingSectionStyles['landing-section-lead']}>
           Так выглядит результат: тема, объём и первые абзацы текста, который вы получите
         </p>
       </div>
 
-      <div className={`landing-section-body ${styles['examples-grid']}`}>
+      <div className={`${landingSectionStyles['landing-section-body']} ${styles['examples-grid']}`}>
         {LANDING_EXAMPLES.map((example) => (
           <details
             key={example.id}
@@ -72,7 +73,7 @@ export function LandingExamples({ onPrimaryCtaClick }: LandingExamplesProps) {
       <div className={styles['examples-action']}>
         <button
           type="button"
-          className="btn-light"
+          className={navbarButtonsStyles['btn-light']}
           data-testid="examples-primary-cta-button"
           onClick={onPrimaryCtaClick}
         >

@@ -1,5 +1,5 @@
-import './LandingSection.css'
-import './LandingProcess.css'
+import landingSectionStyles from './LandingSection.module.css'
+import styles from './LandingProcess.module.css'
 
 // Figma `Desktop` → `Process` (node 1337:7098): three 462x397 cards in a row, each a white panel
 // at a 24px radius holding a recessed 438x240 well over a 24/29 step name and its 18/22 line.
@@ -21,25 +21,25 @@ const STEPS = [
 
 export function LandingProcess() {
   return (
-    <section className="landing-section" data-testid="landing-process">
-      <div className="landing-section-head">
-        <span className="landing-eyebrow">Процесс</span>
-        <h2 className="landing-section-title">
+    <section className={landingSectionStyles['landing-section']} data-testid="landing-process">
+      <div className={landingSectionStyles['landing-section-head']}>
+        <span className={landingSectionStyles['landing-eyebrow']}>Процесс</span>
+        <h2 className={landingSectionStyles['landing-section-title']}>
           Простой рабочий процесс. Максимальная автоматизация и минимум усилий
         </h2>
-        <p className="landing-section-lead">
+        <p className={landingSectionStyles['landing-section-lead']}>
           От темы до готового документа — три шага без лишних действий
         </p>
       </div>
 
-      <ol className="landing-section-body process-steps">
+      <ol className={`${landingSectionStyles['landing-section-body']} ${styles['process-steps']}`}>
         {STEPS.map((step, index) => (
-          <li className="process-card" key={step.title}>
-            <div className="process-well" aria-hidden="true">
-              <span className="process-step-number">{index + 1}</span>
+          <li className={styles['process-card']} key={step.title}>
+            <div className={styles['process-well']} aria-hidden="true">
+              <span className={styles['process-step-number']}>{index + 1}</span>
             </div>
-            <h3 className="process-title">{step.title}</h3>
-            <p className="process-text">{step.text}</p>
+            <h3 className={styles['process-title']}>{step.title}</h3>
+            <p className={styles['process-text']}>{step.text}</p>
           </li>
         ))}
       </ol>

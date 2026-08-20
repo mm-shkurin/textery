@@ -1,5 +1,6 @@
 import styles from './LandingShowcase.module.css'
-import './LandingSection.css'
+import landingSectionStyles from './LandingSection.module.css'
+import navbarButtonsStyles from '../../../shared/components/navbar/NavbarButtons.module.css'
 
 interface LandingShowcaseProps {
   onPrimaryCtaClick?: () => void
@@ -59,17 +60,21 @@ const SCORES = [
 
 export function LandingShowcase({ onPrimaryCtaClick }: LandingShowcaseProps) {
   return (
-    <section className="landing-section" data-testid="landing-showcase">
-      <div className="landing-section-head">
-        <span className="landing-eyebrow">Преимущества</span>
-        <h2 className="landing-section-title">Лучшее качество на русском языке</h2>
-        <p className="landing-section-lead">
+    <section className={landingSectionStyles['landing-section']} data-testid="landing-showcase">
+      <div className={landingSectionStyles['landing-section-head']}>
+        <span className={landingSectionStyles['landing-eyebrow']}>Преимущества</span>
+        <h2 className={landingSectionStyles['landing-section-title']}>
+          Лучшее качество на русском языке
+        </h2>
+        <p className={landingSectionStyles['landing-section-lead']}>
           Нативная поддержка русского против автоперевода конкурентов. Сравнение генерации одного
           промпта
         </p>
       </div>
 
-      <div className={`landing-section-body ${styles['showcase-panel']}`}>
+      <div
+        className={`${landingSectionStyles['landing-section-body']} ${styles['showcase-panel']}`}
+      >
         {SCORES.map((column) => (
           <article className={styles['showcase-card']} key={column.engine}>
             <p
@@ -100,7 +105,7 @@ export function LandingShowcase({ onPrimaryCtaClick }: LandingShowcaseProps) {
       <div className={styles['showcase-action']}>
         <button
           type="button"
-          className="btn-light"
+          className={navbarButtonsStyles['btn-light']}
           data-testid="features-primary-cta-button"
           onClick={onPrimaryCtaClick}
         >

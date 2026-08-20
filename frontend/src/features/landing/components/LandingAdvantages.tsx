@@ -1,5 +1,6 @@
-import './LandingSection.css'
-import './LandingAdvantages.css'
+import landingSectionStyles from './LandingSection.module.css'
+import styles from './LandingAdvantages.module.css'
+import navbarButtonsStyles from '../../../shared/components/navbar/NavbarButtons.module.css'
 
 interface LandingAdvantagesProps {
   onPrimaryCtaClick?: () => void
@@ -33,30 +34,34 @@ const ADVANTAGES = [
 
 export function LandingAdvantages({ onPrimaryCtaClick }: LandingAdvantagesProps) {
   return (
-    <section className="landing-section" data-testid="landing-advantages">
-      <div className="landing-section-head">
-        <span className="landing-eyebrow">Возможности</span>
-        <h2 className="landing-section-title">Учебные тексты под ключ на одной платформе</h2>
-        <p className="landing-section-lead">
+    <section className={landingSectionStyles['landing-section']} data-testid="landing-advantages">
+      <div className={landingSectionStyles['landing-section-head']}>
+        <span className={landingSectionStyles['landing-eyebrow']}>Возможности</span>
+        <h2 className={landingSectionStyles['landing-section-title']}>
+          Учебные тексты под ключ на одной платформе
+        </h2>
+        <p className={landingSectionStyles['landing-section-lead']}>
           Закрываем все этапы работы с текстом: от постановки задачи до готового файла
         </p>
       </div>
 
-      <div className="landing-section-body advantages-grid">
+      <div
+        className={`${landingSectionStyles['landing-section-body']} ${styles['advantages-grid']}`}
+      >
         {ADVANTAGES.map((item) => (
-          <article className="advantage-card" key={item.title}>
-            <div className="advantage-well" aria-hidden="true" />
-            <h3 className="advantage-title">{item.title}</h3>
-            <p className="advantage-text">{item.text}</p>
+          <article className={styles['advantage-card']} key={item.title}>
+            <div className={styles['advantage-well']} aria-hidden="true" />
+            <h3 className={styles['advantage-title']}>{item.title}</h3>
+            <p className={styles['advantage-text']}>{item.text}</p>
           </article>
         ))}
       </div>
 
       {onPrimaryCtaClick !== undefined && (
-        <div className="advantages-action">
+        <div className={styles['advantages-action']}>
           <button
             type="button"
-            className="btn-light"
+            className={navbarButtonsStyles['btn-light']}
             data-testid="advantages-primary-cta"
             onClick={onPrimaryCtaClick}
           >
