@@ -1,11 +1,3 @@
-import pytest
-
-
-@pytest.mark.skip(
-    reason="RED: RecordAnalyticsEvent.execute is a stub -- the reported visit fails "
-    "with NotImplementedError at usecase/src/analytics/record_analytics_event.py:45, "
-    "in the when-phase, before any assertion runs."
-)
 class TestAnonymousEventIsRecorded:
     """Scenario 1.1: An event with no token is recorded as anonymous.
 

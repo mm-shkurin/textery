@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from analytics.analytics_event import AnalyticsEvent
 from analytics.analytics_event_repository import AnalyticsEventRepository
 from shared.clock import Clock
 from shared.unit_of_work import UnitOfWork
@@ -41,5 +42,29 @@ class RecordAnalyticsEvent:
         carried -- the DTO types them permissively so a bad value reaches the
         domain and returns the canonical 400 rather than Pydantic's 422, which
         would echo the rejected input back on the product's only tokenless route.
+
+        The `SaveOutcome` the port answers with is deliberately not read here.
+        Only `STORED` is a path at 1.1; the 204-vs-409 branch on
+        `ALREADY_RECORDED` / `CONFLICTING_NAME` lands with the scenarios that
+        assert it (§5.x).
         """
-        raise NotImplementedError()
+        event = AnalyticsEvent(
+            event_name=event_name,
+            # Parsed, not stored as text: the entity types both identifiers as
+            # `UUID` so the four spellings of one visitor id (§2.4) resolve to
+            # one value before anything downstream sees them.
+            visitor_id=UUID(visitor_id),
+            occurrence_key=UUID(occurrence_key),
+            # Straight through from the caller. The usecase never reads an id
+            # out of the reported event, so a client cannot attribute its
+            # events to another account.
+            user_id=user_id,
+            # The injected Clock, never `datetime.now()` -- that is what keeps
+            # every later time-dependent scenario controllable.
+            event_time=self._clock.now(),
+        )
+        await self._analytics_event_repository.save_new(event)
+        # «The event is recorded» means durable: the acceptance test reads the
+        # row back on a separate connection, where an uncommitted insert is
+        # invisible.
+        await self._unit_of_work.commit()

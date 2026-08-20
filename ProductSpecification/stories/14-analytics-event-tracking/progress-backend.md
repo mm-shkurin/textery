@@ -53,8 +53,26 @@ Infrastructure follow, in that order.
   field added to the entity turns 1.1 red until it states what an anonymous visit stores.
   Note for green: `execute` needs no validation branch yet (nothing in 1.1 asserts a
   refusal) and must NOT branch on `SaveOutcome` — only `STORED` is a path at 1.1.
-- [~] green-usecase
-- [ ] adapters-discovery
+- [x] green-usecase — `execute` replaced its `NotImplementedError` with the five-line happy
+  path: construct `AnalyticsEvent`, parse both identifiers with `UUID(...)` from the wire
+  strings, pass `user_id` through unread, stamp `event_time` from the injected `Clock`,
+  `save_new`, `commit`. No validation branch, no branch on `SaveOutcome`, no
+  `try`/`rollback_quietly`, no limiter or failure-log slots — each is absent by design,
+  owned by 2.x/3.x, 5.x, §12–§13 and 6.x/Infra 1.1 respectively. Tests: 1/1 target,
+  298/298 `backend/usecase`. `/test-coverage usecase --focus`: 14/14 lines, 0/0 branches
+  on the touched file — the deliberate omissions read as *absent* branches rather than
+  cold ones, which is why the number is 0/0 and not 2/6; no gaps, no steps inserted.
+  Environment note (ruled on, not a result of this change): the Docker daemon is down on
+  this host so `adapters/db` tests skip by prerequisite, and
+  `rendering/tests/rendering/test_weasyprint_pdf_renderer.py` fails to collect on a
+  missing GTK system library. `backend/adapters/rendering` has no working-tree change and
+  a usecase test that only uses fakes cannot reach either — so the full-suite run was
+  narrowed rather than claimed clean.
+  Note for adapters-discovery: `UUID(visitor_id)` raises on a malformed string today and
+  nothing drives it. That is 2.3's refusal to specify, not a gap here — and per the design
+  note the guard must test `isinstance(raw, str)` first, since a non-string raises
+  `AttributeError`/`TypeError`, not `ValueError`.
+- [~] adapters-discovery
 - [ ] green-acceptance
 
 ### 1.2 An event from a signed-in caller is attributed to that account
