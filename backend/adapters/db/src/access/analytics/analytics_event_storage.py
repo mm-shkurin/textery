@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from analytics.analytics_event import AnalyticsEvent
 from analytics.analytics_event_repository import SaveOutcome
-from model.analytics.analytics_event_model import AnalyticsEventModel
+from model.analytics.analytics_event_model import CLIENT_ORIGIN_ROWS, AnalyticsEventModel
 
 
 class SqlAlchemyAnalyticsEventRepository:
@@ -48,10 +48,11 @@ class SqlAlchemyAnalyticsEventRepository:
             # `index_where` is not decoration: the unique index is PARTIAL, and
             # Postgres refuses to infer a partial index unless the statement
             # repeats its predicate ("no unique or exclusion constraint matching
-            # the ON CONFLICT specification").
+            # the ON CONFLICT specification"). Repeated by importing the index's
+            # own predicate rather than by spelling it out a second time.
             .on_conflict_do_nothing(
                 index_elements=["visitor_id", "occurrence_key"],
-                index_where=text("occurrence_key IS NOT NULL"),
+                index_where=text(CLIENT_ORIGIN_ROWS),
             )
             .returning(AnalyticsEventModel.id)
         )

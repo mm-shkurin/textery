@@ -18,13 +18,14 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from analytics.event_names import EVENT_NAMES
 from model.base import Base
+from model.check_constraints import one_of
 
-# Built by ITERATING the domain catalogue, never written out as twelve literals.
-# Same approach as ck_documents_document_type and ck_generations_status, and here
-# it is load-bearing: Infra §1.6 runs `alembic upgrade head` against the test
-# database in CI, so a thirteenth name added to `EVENT_NAMES` without a migration
-# goes red. Twelve literals would stay green through that drift forever.
-_EVENT_NAMES_SQL = ", ".join(repr(name) for name in EVENT_NAMES)
+# The predicate of the partial unique index below. It is a NAME rather than a
+# literal because `ON CONFLICT` has to repeat it verbatim -- Postgres refuses to
+# infer a partial index unless the statement carries the same WHERE -- so
+# `SqlAlchemyAnalyticsEventRepository` passes this same string as `index_where`
+# and the index and the statement that targets it cannot drift apart.
+CLIENT_ORIGIN_ROWS = "occurrence_key IS NOT NULL"
 
 
 class AnalyticsEventModel(Base):
@@ -39,8 +40,13 @@ class AnalyticsEventModel(Base):
 
     __tablename__ = "analytics_events"
     __table_args__ = (
+        # Built by ITERATING the domain catalogue, never written out as twelve
+        # literals. Here that is load-bearing: Infra §1.6 runs `alembic upgrade
+        # head` against the test database in CI, so a thirteenth name added to
+        # `EVENT_NAMES` without a migration goes red. Twelve literals would stay
+        # green through that drift forever.
         CheckConstraint(
-            f"event_name IN ({_EVENT_NAMES_SQL})",
+            one_of("event_name", EVENT_NAMES),
             name="ck_analytics_events_event_name",
         ),
         # PARTIAL, and that is the whole point. A plain UNIQUE is `NULLS DISTINCT`
@@ -55,7 +61,7 @@ class AnalyticsEventModel(Base):
             "visitor_id",
             "occurrence_key",
             unique=True,
-            postgresql_where=text("occurrence_key IS NOT NULL"),
+            postgresql_where=text(CLIENT_ORIGIN_ROWS),
         ),
     )
 
