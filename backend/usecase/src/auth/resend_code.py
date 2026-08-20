@@ -2,21 +2,18 @@ import logging
 from datetime import timedelta
 from uuid import UUID, uuid4
 
-from auth.account_repository import AccountRepository
+from auth.account_verification_deps import AccountVerificationDependencies
 from auth.email_validation import validate_email
 from auth.verification_code import VerificationCode
-from auth.verification_code_repository import VerificationCodeRepository
-from shared.clock import Clock
 from shared.exceptions import ValidationException
 from shared.rollback import rollback_quietly
-from shared.unit_of_work import NullUnitOfWork, UnitOfWork
 
 logger = logging.getLogger(__name__)
 
 _COOLDOWN = timedelta(seconds=60)
 
 
-class ResendCode:
+class ResendCode(AccountVerificationDependencies):
     """Resend a verification code for a pending account (scenario 4.x).
 
     A NEW top-level usecase, not a method on VerifyAccount: resend is a distinct
@@ -29,18 +26,6 @@ class ResendCode:
     COOLDOWN_MESSAGE = (
         "A verification code was recently sent. Please wait before requesting another."
     )
-
-    def __init__(
-        self,
-        account_repository: AccountRepository,
-        verification_code_repository: VerificationCodeRepository,
-        clock: Clock,
-        unit_of_work: UnitOfWork | None = None,
-    ) -> None:
-        self.account_repository = account_repository
-        self.verification_code_repository = verification_code_repository
-        self.clock = clock
-        self.unit_of_work = unit_of_work or NullUnitOfWork()
 
     async def execute(self, email: str) -> VerificationCode:
         normalized_email = validate_email(email).value

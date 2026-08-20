@@ -1,9 +1,9 @@
-from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, StrictInt
 
 from document.document import Document
+from dto.document.document_identity_dto import DocumentIdentityDto
 
 
 class CreateDocumentRequestDto(BaseModel):
@@ -43,7 +43,7 @@ class SaveDocumentRequestDto(BaseModel):
     version: StrictInt
 
 
-class DocumentSummaryDto(BaseModel):
+class DocumentSummaryDto(DocumentIdentityDto):
     """A document as it appears in the history list.
 
     Carries no `content`, deliberately -- and this is not a size micro-optimisation.
@@ -60,42 +60,20 @@ class DocumentSummaryDto(BaseModel):
     document that has never been titled; the client falls back to the type label.
     """
 
-    document_id: str
-    document_type: str
-    status: str
     title: str | None = None
-    version: int
-    created_at: datetime
-    updated_at: datetime
 
     @classmethod
     def from_domain(cls, document: Document) -> "DocumentSummaryDto":
-        return cls(
-            document_id=str(document.id),
-            document_type=document.document_type,
-            status=document.status,
-            title=document.title,
-            version=document.version,
-            created_at=document.created_at,
-            updated_at=document.updated_at,
-        )
+        return cls(**cls.identity_of(document), title=document.title)
 
 
-class DocumentResponseDto(BaseModel):
-    document_id: str
-    document_type: str
-    status: str
+class DocumentResponseDto(DocumentIdentityDto):
     content: str
     # Additive on the shape story 5 shipped (documents_from_generation.yaml says
     # so explicitly): null for a manual document, set for a converted one. Existing
     # consumers tolerate them because both are optional on the wire.
     title: str | None = None
     generation_id: str | None = None
-    # Plain int: this is an output field built from the domain entity, never parsed
-    # from client JSON, so there is no lax coercion to guard against here.
-    version: int
-    created_at: datetime
-    updated_at: datetime
 
     @classmethod
     def from_domain(cls, document: Document) -> "DocumentResponseDto":
@@ -103,13 +81,8 @@ class DocumentResponseDto(BaseModel):
         # That is what makes scenario 7.2 structural: the response cannot show
         # unsanitized content, because it never has access to it.
         return cls(
-            document_id=str(document.id),
-            document_type=document.document_type,
-            status=document.status,
+            **cls.identity_of(document),
             content=document.content,
             title=document.title,
             generation_id=str(document.generation_id) if document.generation_id else None,
-            version=document.version,
-            created_at=document.created_at,
-            updated_at=document.updated_at,
         )

@@ -1,3 +1,23 @@
+"""Persistence for manual documents, including the versioned content save.
+
+`save_content_if_version_matches` is **one statement.** The version is compared
+in the WHERE clause and the increment is computed in SQL; `RETURNING` hands back
+the new row, so there is no second read to race. Deliberately NOT the
+read-compare-write that `SqlAlchemyGenerationStorage.update()` uses: comparing
+the version in Python and then writing lets two concurrent sessions both read
+version=1, both pass the check, and both write version=2 -- a silently lost
+update under READ COMMITTED.
+
+Why this holds across processes (scenario 6.7): the loser blocks on the row lock,
+and when the winner commits Postgres re-evaluates the WHERE against the *updated*
+row, sees version=2, and matches zero rows. The database is the arbiter, so
+backend instance count is irrelevant.
+
+Owner and version are ANDed into one predicate: a foreign document never reaches
+the version comparison, so a correct-version guess against someone else's id is
+indistinguishable from a wrong one.
+"""
+
 from datetime import datetime
 from uuid import UUID
 
@@ -144,24 +164,8 @@ class SqlAlchemyDocumentStorage:
         """Compare-and-swap the content. Returns the new state, or None if the
         version did not match (or the document is absent/foreign).
 
-        **One statement.** The version is compared in the WHERE clause and the
-        increment is computed in SQL; `RETURNING` hands back the new row, so there
-        is no second read to race. Deliberately NOT the read-compare-write that
-        `SqlAlchemyGenerationStorage.update()` uses: comparing the version in
-        Python and then writing lets two concurrent sessions both read version=1,
-        both pass the check, and both write version=2 -- a silently lost update
-        under READ COMMITTED.
-
-        Why this holds across processes (scenario 6.7): the loser blocks on the
-        row lock, and when the winner commits Postgres re-evaluates the WHERE
-        against the *updated* row, sees version=2, and matches zero rows. The
-        database is the arbiter, so backend instance count is irrelevant.
-
-        Owner and version are ANDed into one predicate: a foreign document never
-        reaches the version comparison, so a correct-version guess against someone
-        else's id is indistinguishable from a wrong one.
+        See the module docstring for why this is one statement.
         """
-        values = update_values(content, updated_at, title)
         result = await self._session.execute(
             update(DocumentModel)
             .where(
@@ -169,7 +173,7 @@ class SqlAlchemyDocumentStorage:
                 DocumentModel.owner_id == owner_id,
                 DocumentModel.version == expected_version,
             )
-            .values(**values)
+            .values(**update_values(content, updated_at, title))
             .returning(DocumentModel)
         )
         model = result.scalar_one_or_none()

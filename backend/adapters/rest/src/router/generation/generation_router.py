@@ -1,3 +1,20 @@
+"""Routes for generation requests, retries, and the generation history.
+
+**`POST /{generation_id}/retry`** — «Повторить», re-running a failed generation
+from its own stored parameters. The body is OPTIONAL and carries at most the two
+values a user re-chooses at the moment of a retry — the register and the length.
+Everything else is copied from the source row, so there is no `owner_id`,
+`status` or timestamp for a client to over-bind. The header carries the remaining
+client-supplied value, and it is validated in the domain rather than as a
+`Header(max_length=...)` so a violation answers in this API's
+`{error_code, message}` shape.
+
+A replayed key returns the row the first attempt created and starts nothing: the
+usecase says whether THIS call created the retry, and only a created one is
+enqueued. Enqueuing on the replay path would run the work twice, which is what
+the key exists to prevent.
+"""
+
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header
@@ -99,30 +116,30 @@ async def retry_generation(
     usecase: RetryGeneration = Depends(get_retry_generation_usecase),
     generate_document: DocumentGenerator = Depends(get_generate_document_usecase),
 ) -> GenerationCreatedDto:
-    """«Повторить» — re-run a failed generation from its own stored parameters.
-
-    The body is OPTIONAL and carries at most the two values a user re-chooses at
-    the moment of a retry — the register and the length. Everything else is copied
-    from the source row, so there is no `owner_id`, `status` or timestamp for a
-    client to over-bind. The header carries the remaining client-supplied value,
-    and it is validated in the domain rather than as a `Header(max_length=...)` so
-    a violation answers in this API's `{error_code, message}` shape.
-
-    A replayed key returns the row the first attempt created and starts nothing:
-    the usecase says whether THIS call created the retry, and only a created one
-    is enqueued. Enqueuing on the replay path would run the work twice, which is
-    what the key exists to prevent.
-    """
+    """«Повторить» — re-run a failed generation. See the module docstring."""
+    text_style, volume_pages = _retry_overrides(request)
     retry, created = await usecase.execute(
         generation_id=generation_id,
         owner_id=owner_id,
         idempotency_key=idempotency_key,
-        text_style=request.text_style if request is not None else None,
-        volume_pages=request.volume_pages if request is not None else None,
+        text_style=text_style,
+        volume_pages=volume_pages,
     )
     if created:
+        # Only a created retry is enqueued: a replayed key returns the row the
+        # first attempt created and starts nothing, which is what the key exists
+        # to prevent.
         background_tasks.add_task(generate_document.execute, retry.id, retry.owner_id)
     return GenerationCreatedDto.from_domain(retry)
+
+
+def _retry_overrides(
+    request: RetryGenerationRequestDto | None,
+) -> tuple[str | None, int | None]:
+    """The at-most-two values a user re-chooses at the moment of a retry."""
+    if request is None:
+        return None, None
+    return request.text_style, request.volume_pages
 
 
 @router.get("/{generation_id}", response_model=GenerationDetailDto)

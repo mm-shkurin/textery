@@ -8,17 +8,18 @@ from auth.handoff_code import HandoffCode
 from auth.oauth.handoff_code_repository import HandoffCodeRepository
 from auth.oauth.oauth_error_codes import OAuthCallbackError
 from auth.oauth.oauth_identity_repository import OAuthIdentityRepository
+from auth.oauth.oauth_leg_dependencies import OAuthLegDependencies
 from auth.oauth.oauth_provider import OAuthProvider, OAuthProviderError, ProviderIdentity
 from auth.oauth.oauth_state_repository import OAuthStateRepository
 from auth.oauth.provider_registry import ProviderRegistry
 from auth.oauth.rate_limiter import OAuthRateGuard
 from auth.oauth_identity import OAuthIdentity
 from auth.oauth_state import OAuthState
-from shared.clock import Clock, SystemClock
-from shared.unit_of_work import NullUnitOfWork, UnitOfWork
+from shared.clock import Clock
+from shared.unit_of_work import UnitOfWork
 
 
-class CompleteOAuthCallback:
+class CompleteOAuthCallback(OAuthLegDependencies):
     """Leg 2: validate the provider's redirect and mint a one-time handoff code.
 
     Consumes the CSRF state, exchanges the provider code for an asserted identity,
@@ -39,15 +40,11 @@ class CompleteOAuthCallback:
         unit_of_work: UnitOfWork | None = None,
         rate_guard: OAuthRateGuard | None = None,
     ) -> None:
-        self._provider_registry = provider_registry
-        self._state_repository = state_repository
+        super().__init__(provider_registry, state_repository, clock, unit_of_work, rate_guard)
         self._identity_repository = identity_repository
         self._account_repository = account_repository
         self._handoff_code_repository = handoff_code_repository
         self._handoff_ttl_seconds = handoff_ttl_seconds
-        self._clock = clock or SystemClock()
-        self._unit_of_work = unit_of_work or NullUnitOfWork()
-        self._rate_guard = rate_guard or OAuthRateGuard()
 
     async def execute(self, provider_name: str, code: str, state: str, source: str = "") -> str:
         now = self._clock.now()

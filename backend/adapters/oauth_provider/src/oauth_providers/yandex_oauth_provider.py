@@ -1,7 +1,7 @@
 import logging
-from urllib.parse import urlencode
 
 import httpx
+from oauth_providers.authorization_request import authorization_url as build_authorization_url
 from oauth_providers.oauth_settings import YANDEX
 
 from auth.oauth.oauth_provider import OAuthProviderError, ProviderIdentity
@@ -35,15 +35,7 @@ class YandexOAuthProvider:
         return "yandex"
 
     def authorization_url(self, state: str) -> str:
-        query = urlencode(
-            {
-                "response_type": "code",
-                "client_id": self._client_id,
-                "redirect_uri": self._redirect_uri,
-                "state": state,
-            }
-        )
-        return f"{AUTHORIZE_URL}?{query}"
+        return build_authorization_url(AUTHORIZE_URL, self._client_id, self._redirect_uri, state)
 
     async def fetch_identity(self, authorization_code: str) -> ProviderIdentity:
         async with httpx.AsyncClient(timeout=10.0) as client:

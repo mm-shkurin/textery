@@ -1,9 +1,8 @@
-from datetime import datetime
-
 from pydantic import BaseModel
 
 from document.document import Document
 from document.page_settings import PageSettings
+from dto.document.document_identity_dto import DocumentIdentityDto
 
 
 class PageSettingsDto(BaseModel):
@@ -40,7 +39,7 @@ class PageSettingsDto(BaseModel):
         )
 
 
-class GetDocumentResponseDto(BaseModel):
+class GetDocumentResponseDto(DocumentIdentityDto):
     """The read shape, and only the read shape: GET /documents/{document_id}.
 
     Separate from DocumentResponseDto rather than an extension of it because the
@@ -57,28 +56,17 @@ class GetDocumentResponseDto(BaseModel):
     configured". No default preset is constructed anywhere on this path.
     """
 
-    document_id: str
-    document_type: str
-    status: str
     content: str
-    version: int
     page_settings: PageSettingsDto | None = None
-    created_at: datetime
-    updated_at: datetime
 
     @classmethod
     def from_domain(cls, document: Document) -> "GetDocumentResponseDto":
         return cls(
-            document_id=str(document.id),
-            document_type=document.document_type,
-            status=document.status,
+            **cls.identity_of(document),
             content=document.content,
-            version=document.version,
             page_settings=(
                 PageSettingsDto.from_domain(document.page_settings)
                 if document.page_settings is not None
                 else None
             ),
-            created_at=document.created_at,
-            updated_at=document.updated_at,
         )

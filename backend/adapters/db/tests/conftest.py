@@ -31,12 +31,9 @@ def require_database() -> None:
     except OSError as error:
         pytest.fail(
             f"no database listening at {host}:{port} ({error}). These are the adapter's "
-            f"integration tests and they need a real Postgres:
-"
-            f"  docker compose up -d postgres
-"
-            f"  export {TEST_DATABASE_URL_ENV_VAR}=postgresql://textery:<password>@{host}:{port}/textery_test
-"
+            f"integration tests and they need a real Postgres. Start one and point the "
+            f"suite at it: `docker compose up -d postgres`, then set "
+            f"{TEST_DATABASE_URL_ENV_VAR} to that database (its name must contain `test`). "
             f"Run `pytest domain usecase` for the layers that need no database.",
             pytrace=False,
         )
