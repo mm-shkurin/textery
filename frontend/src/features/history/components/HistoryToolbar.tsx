@@ -1,5 +1,5 @@
 import type { HistoryFilter } from '../api/historyApi'
-import './HistoryToolbar.css'
+import styles from './HistoryToolbar.module.css'
 
 interface HistoryToolbarProps {
   filter: HistoryFilter
@@ -23,19 +23,22 @@ export function HistoryToolbar({ filter, onChange, resultCount }: HistoryToolbar
   const isFiltered = Boolean(filter.query?.trim() || filter.createdFrom || filter.createdTo)
 
   return (
-    <div className="history-toolbar" data-testid="history-toolbar">
+    <div className={styles['history-toolbar']} data-testid="history-toolbar">
       {/* `<search>` carries the role natively — see ProjectsToolbar for why a duplicated
           `role="search"` is one more thing that can be typo'd into silence. The form makes Enter
           a submit the browser understands, and the default is prevented because a real submit
           would reload the page and throw the loaded pages away. */}
-      <search className="history-search">
-        <form className="history-search-field" onSubmit={(event) => event.preventDefault()}>
-          <span id={QUERY_LABEL_ID} className="history-toolbar-label">
+      <search className={styles['history-search']}>
+        <form
+          className={styles['history-search-field']}
+          onSubmit={(event) => event.preventDefault()}
+        >
+          <span id={QUERY_LABEL_ID} className={styles['history-toolbar-label']}>
             Поиск
           </span>
           <input
             type="search"
-            className="history-toolbar-input"
+            className={styles['history-toolbar-input']}
             data-testid="history-search"
             aria-labelledby={QUERY_LABEL_ID}
             placeholder="Название или текст работы"
@@ -45,22 +48,22 @@ export function HistoryToolbar({ filter, onChange, resultCount }: HistoryToolbar
         </form>
       </search>
 
-      <div className="history-dates">
-        <label className="history-date-field">
-          <span className="history-toolbar-label">С</span>
+      <div className={styles['history-dates']}>
+        <label className={styles['history-date-field']}>
+          <span className={styles['history-toolbar-label']}>С</span>
           <input
             type="date"
-            className="history-toolbar-input"
+            className={styles['history-toolbar-input']}
             data-testid="history-created-from"
             value={filter.createdFrom ?? ''}
             onChange={(event) => set({ createdFrom: event.target.value })}
           />
         </label>
-        <label className="history-date-field">
-          <span className="history-toolbar-label">По</span>
+        <label className={styles['history-date-field']}>
+          <span className={styles['history-toolbar-label']}>По</span>
           <input
             type="date"
-            className="history-toolbar-input"
+            className={styles['history-toolbar-input']}
             data-testid="history-created-to"
             value={filter.createdTo ?? ''}
             onChange={(event) => set({ createdTo: event.target.value })}
@@ -74,7 +77,7 @@ export function HistoryToolbar({ filter, onChange, resultCount }: HistoryToolbar
       {isFiltered && (
         <button
           type="button"
-          className="history-toolbar-reset"
+          className={styles['history-toolbar-reset']}
           data-testid="history-filter-reset"
           onClick={() => onChange({})}
         >
@@ -83,7 +86,7 @@ export function HistoryToolbar({ filter, onChange, resultCount }: HistoryToolbar
       )}
 
       {resultCount !== null && (
-        <span className="history-result-count" data-testid="history-result-count">
+        <span className={styles['history-result-count']} data-testid="history-result-count">
           Найдено: {resultCount}
         </span>
       )}

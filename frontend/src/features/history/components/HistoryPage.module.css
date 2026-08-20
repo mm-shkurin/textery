@@ -166,18 +166,18 @@ button.history-row:hover {
 .history-row-delete {
   flex: 0 0 auto;
   width: 40px;
-  border: 1px solid var(--border-subtle, #e5e7eb);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   background: transparent;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
   font-size: 15px;
   line-height: 1;
   cursor: pointer;
 }
 
 .history-row-delete:hover {
-  border-color: var(--danger, #dc2626);
-  color: var(--danger, #dc2626);
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .history-row-delete[aria-disabled='true'] {

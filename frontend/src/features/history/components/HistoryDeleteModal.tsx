@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { documentTypeLabelFromWire } from '../../../shared/copy/documentTypeCopy'
 import { listenToDocument } from '../../../shared/lib/browser'
 import type { DocumentSummary } from '../api/historyApi'
-import './HistoryDeleteModal.css'
+import styles from './HistoryDeleteModal.module.css'
 
 interface HistoryDeleteModalProps {
   entry: DocumentSummary
@@ -47,30 +47,34 @@ export function HistoryDeleteModal({
   const name = entry.title?.trim() || documentTypeLabelFromWire(entry.documentType)
 
   return (
-    <div className="history-modal-scrim">
+    <div className={styles['history-modal-scrim']}>
       <dialog
-        className="history-modal"
+        className={styles['history-modal']}
         open
         aria-modal="true"
         aria-labelledby="history-delete-title"
         data-testid="history-delete-confirm"
       >
-        <h3 className="history-modal-title" id="history-delete-title">
+        <h3 className={styles['history-modal-title']} id="history-delete-title">
           Удалить работу?
         </h3>
-        <p className="history-modal-text">
+        <p className={styles['history-modal-text']}>
           «{name}» будет удалена безвозвратно. Восстановить её будет нельзя.
         </p>
         {error !== null && (
-          <p className="history-modal-error" role="alert" data-testid="history-delete-error">
+          <p
+            className={styles['history-modal-error']}
+            role="alert"
+            data-testid="history-delete-error"
+          >
             {error}
           </p>
         )}
-        <div className="history-modal-actions">
+        <div className={styles['history-modal-actions']}>
           <button
             type="button"
             ref={cancelRef}
-            className="history-modal-cancel"
+            className={styles['history-modal-cancel']}
             data-testid="history-delete-cancel"
             onClick={onCancel}
             aria-disabled={isDeleting}
@@ -79,7 +83,7 @@ export function HistoryDeleteModal({
           </button>
           <button
             type="button"
-            className="history-modal-confirm"
+            className={styles['history-modal-confirm']}
             data-testid="history-delete-submit"
             onClick={onConfirm}
             aria-disabled={isDeleting}

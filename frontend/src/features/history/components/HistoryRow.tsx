@@ -1,6 +1,7 @@
 import { memo, useCallback } from 'react'
 import { documentTypeLabelFromWire } from '../../../shared/copy/documentTypeCopy'
 import type { DocumentSummary } from '../api/historyApi'
+import historyPageStyles from './HistoryPage.module.css'
 
 interface HistoryRowProps {
   entry: DocumentSummary
@@ -40,10 +41,10 @@ function HistoryRowComponent({
   // HTML, and browsers recover from them by dropping the inner control — so the delete would have
   // been unclickable in exactly the way that is hardest to notice from a jsdom test.
   return (
-    <div className="history-row-wrap">
+    <div className={historyPageStyles['history-row-wrap']}>
       <button
         type="button"
-        className="history-row"
+        className={historyPageStyles['history-row']}
         data-testid="history-document-row"
         onClick={open}
       >
@@ -51,10 +52,10 @@ function HistoryRowComponent({
           impossible: every row read "Доклад" and the user could not tell three reports apart.
           Falls back to the type label for a manual document created before titles existed — a
           blank row is a worse regression than a repeated one. */}
-        <span className="history-row-title">
+        <span className={historyPageStyles['history-row-title']}>
           {entry.title?.trim() || documentTypeLabelFromWire(entry.documentType)}
         </span>
-        <span className="history-row-meta">
+        <span className={historyPageStyles['history-row-meta']}>
           {documentTypeLabelFromWire(entry.documentType)} · {formatDate(entry.updatedAt)}
         </span>
       </button>
@@ -64,7 +65,7 @@ function HistoryRowComponent({
         // one action here that cannot be undone.
         <button
           type="button"
-          className="history-row-delete"
+          className={historyPageStyles['history-row-delete']}
           data-testid="history-document-delete"
           aria-label={`Удалить «${entry.title?.trim() || documentTypeLabelFromWire(entry.documentType)}»`}
           // aria-disabled, not the native attribute: a natively disabled button dispatches no

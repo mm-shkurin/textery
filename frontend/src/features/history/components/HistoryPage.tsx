@@ -3,7 +3,7 @@ import { listDocuments, type HistoryFilter } from '../api/historyApi'
 import { useHistoryList } from '../hooks/useHistoryList'
 import { useDeleteDocument } from '../hooks/useDeleteDocument'
 import { HistoryRows } from './HistoryRows'
-import './HistoryPage.css'
+import styles from './HistoryPage.module.css'
 import { HistoryRow } from './HistoryRow'
 import { HistoryToolbar } from './HistoryToolbar'
 import { HistoryDeleteModal } from './HistoryDeleteModal'
@@ -48,12 +48,17 @@ function HistoryPageScreen({ onOpenDocument, onBack }: HistoryPageProps) {
   const isFiltered = Boolean(filter.query?.trim() || filter.createdFrom || filter.createdTo)
 
   return (
-    <div className="history-page" data-testid="history-page">
-      <div className="history-head">
-        <button type="button" className="history-back" data-testid="history-back" onClick={onBack}>
+    <div className={styles['history-page']} data-testid="history-page">
+      <div className={styles['history-head']}>
+        <button
+          type="button"
+          className={styles['history-back']}
+          data-testid="history-back"
+          onClick={onBack}
+        >
           ← Назад
         </button>
-        <h1 className="history-title">Мои работы</h1>
+        <h1 className={styles['history-title']}>Мои работы</h1>
       </div>
 
       <HistoryToolbar
