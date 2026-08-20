@@ -123,5 +123,5 @@
   margin-top: 4px;
   font-size: 12px;
   line-height: 1.35;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
 }

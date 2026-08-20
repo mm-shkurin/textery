@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 import { normalizeHref } from './normalizeHref'
-import './LinkPopover.css'
+import styles from './LinkPopover.module.css'
+import manualEditorToolbarStyles from './ManualEditorToolbar.module.css'
 import { listenToDocument } from '../../../shared/lib/browser'
 
 export const LINK_INVALID_MESSAGE = 'Не удалось применить ссылку. Проверьте адрес.'
@@ -95,7 +96,7 @@ export function LinkPopover({ editor, onClose }: LinkPopoverProps) {
       const popover = popoverRef.current
       if (!popover) return
       const target = event.target as Node
-      const toolbar = popover.closest('.me-toolbar')
+      const toolbar = popover.closest(`.${manualEditorToolbarStyles['me-toolbar']}`)
       const editorDom = editor.view.dom
       if (popover.contains(target) || toolbar?.contains(target) || editorDom.contains(target)) {
         return
@@ -109,10 +110,10 @@ export function LinkPopover({ editor, onClose }: LinkPopoverProps) {
   }, [url])
 
   return (
-    <div className="me-link-popover" data-testid="link-popover" ref={popoverRef}>
+    <div className={styles['me-link-popover']} data-testid="link-popover" ref={popoverRef}>
       <input
         type="text"
-        className="me-link-input"
+        className={styles['me-link-input']}
         data-testid="link-url-input"
         aria-label="Адрес ссылки"
         placeholder="https://example.com"
@@ -123,13 +124,18 @@ export function LinkPopover({ editor, onClose }: LinkPopoverProps) {
           setError(null)
         }}
       />
-      <div className="me-link-actions">
-        <button type="button" className="me-link-apply" data-testid="link-apply" onClick={apply}>
+      <div className={styles['me-link-actions']}>
+        <button
+          type="button"
+          className={styles['me-link-apply']}
+          data-testid="link-apply"
+          onClick={apply}
+        >
           Применить
         </button>
         <button
           type="button"
-          className="me-link-cancel"
+          className={styles['me-link-cancel']}
           data-testid="link-cancel"
           onClick={onClose}
         >
@@ -137,7 +143,7 @@ export function LinkPopover({ editor, onClose }: LinkPopoverProps) {
         </button>
       </div>
       {error && (
-        <div className="me-link-error" role="alert">
+        <div className={styles['me-link-error']} role="alert">
           {error}
         </div>
       )}

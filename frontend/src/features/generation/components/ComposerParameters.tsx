@@ -6,6 +6,7 @@ import {
   MIN_VOLUME_PAGES,
   type GenerationParameters,
 } from '../utils/generationParameters'
+import composerStyles from './Composer.module.css'
 
 interface ComposerParametersProps {
   parameters: GenerationParameters
@@ -30,14 +31,16 @@ export function ComposerParameters({ parameters, onChange }: ComposerParametersP
   const set = (patch: Partial<GenerationParameters>) => onChange({ ...parameters, ...patch })
 
   return (
-    <div className="composer-parameters">
-      <div className="composer-parameters-row">
-        <div className="composer-field composer-field-grow">
-          <span id={REQUIREMENTS_LABEL_ID} className="composer-field-label">
+    <div className={composerStyles['composer-parameters']}>
+      <div className={composerStyles['composer-parameters-row']}>
+        <div
+          className={`${composerStyles['composer-field']} ${composerStyles['composer-field-grow']}`}
+        >
+          <span id={REQUIREMENTS_LABEL_ID} className={composerStyles['composer-field-label']}>
             Требования
           </span>
           <textarea
-            className="composer-field-input"
+            className={composerStyles['composer-field-input']}
             data-testid="requirements-input"
             aria-labelledby={REQUIREMENTS_LABEL_ID}
             placeholder="Например: официально-деловой стиль, ссылки на источники"
@@ -50,16 +53,21 @@ export function ComposerParameters({ parameters, onChange }: ComposerParametersP
           />
         </div>
 
-        <div className="composer-field composer-field-volume">
-          <span id={VOLUME_LABEL_ID} className="composer-field-label required">
+        <div
+          className={`${composerStyles['composer-field']} ${composerStyles['composer-field-volume']}`}
+        >
+          <span
+            id={VOLUME_LABEL_ID}
+            className={`${composerStyles['composer-field-label']} ${composerStyles.required}`}
+          >
             Объём, страниц
-            <span className="composer-required-marker" aria-hidden="true">
+            <span className={composerStyles['composer-required-marker']} aria-hidden="true">
               {' *'}
             </span>
           </span>
           <input
             type="number"
-            className="composer-field-input"
+            className={composerStyles['composer-field-input']}
             data-testid="volume-input"
             aria-labelledby={VOLUME_LABEL_ID}
             min={MIN_VOLUME_PAGES}
@@ -79,12 +87,12 @@ export function ComposerParameters({ parameters, onChange }: ComposerParametersP
 
       <ComposerStyle parameters={parameters} onChange={onChange} />
 
-      <div className="composer-field">
-        <span id={WISHES_LABEL_ID} className="composer-field-label">
+      <div className={composerStyles['composer-field']}>
+        <span id={WISHES_LABEL_ID} className={composerStyles['composer-field-label']}>
           Дополнительные пожелания
         </span>
         <textarea
-          className="composer-field-input"
+          className={composerStyles['composer-field-input']}
           data-testid="wishes-input"
           aria-labelledby={WISHES_LABEL_ID}
           placeholder="Что-то ещё, что стоит учесть при генерации"

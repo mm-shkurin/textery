@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { EditorContent } from '@tiptap/react'
-import './ManualEditor.css'
+import styles from './ManualEditor.module.css'
 import type { DocumentType } from '../../../shared/documentTypes'
 import { useDocumentInit } from '../hooks/useDocumentInit'
 import { useDocumentSave } from '../hooks/useDocumentSave'
@@ -101,10 +101,10 @@ export function ManualEditor({
   })
 
   return (
-    <div className="manual-editor-page" data-testid="manual-editor">
+    <div className={styles['manual-editor-page']} data-testid="manual-editor">
       <AppHeader />
-      <div className="me-container">
-        <div className="me-toolbar-row">
+      <div className={styles['me-container']}>
+        <div className={styles['me-toolbar-row']}>
           <ManualEditorBreadcrumb
             documentTypeLabel={documentTypeLabel}
             onBack={onBack}
@@ -116,7 +116,7 @@ export function ManualEditor({
             save={save}
           />
         </div>
-        <div className="me-editor-shell">
+        <div className={styles['me-editor-shell']}>
           <ManualEditorToolbar
             editor={editor}
             documentId={documentId}
@@ -130,7 +130,7 @@ export function ManualEditor({
           />
           {initError && <ManualEditorErrorBanner testId="me-init-error" message={initError} />}
           {saveError && <ManualEditorErrorBanner testId="me-save-error" message={saveError} />}
-          <div className="me-content-area">
+          <div className={styles['me-content-area']}>
             <EditorContent editor={editor} />
           </div>
         </div>

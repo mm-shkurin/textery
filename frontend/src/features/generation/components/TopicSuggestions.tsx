@@ -1,6 +1,6 @@
 import { suggestionsFor } from '../utils/topicSuggestions'
 import type { DocumentType } from '../../../shared/documentTypes'
-import './TopicSuggestions.css'
+import styles from './TopicSuggestions.module.css'
 
 interface TopicSuggestionsProps {
   documentType: DocumentType
@@ -22,14 +22,14 @@ export function TopicSuggestions({ documentType, onPick, isVisible }: TopicSugge
   if (!isVisible || suggestions.length === 0) return null
 
   return (
-    <div className="topic-suggestions" data-testid="topic-suggestions">
-      <span className="topic-suggestions-label">Например:</span>
-      <ul className="topic-suggestions-list">
+    <div className={styles['topic-suggestions']} data-testid="topic-suggestions">
+      <span className={styles['topic-suggestions-label']}>Например:</span>
+      <ul className={styles['topic-suggestions-list']}>
         {suggestions.map((suggestion) => (
           <li key={suggestion}>
             <button
               type="button"
-              className="topic-suggestion"
+              className={styles['topic-suggestion']}
               data-testid="topic-suggestion"
               onClick={() => onPick(suggestion)}
             >

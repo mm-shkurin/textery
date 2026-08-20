@@ -1,6 +1,7 @@
 import { expect } from 'vitest'
 import { screen } from '@testing-library/react'
 import { CREATE_FAILED_MESSAGE } from '../../hooks/useDocumentInit'
+import saveStatusStyles from '../ManualEditorSaveStatus.module.css'
 
 // Save-status vocabulary shared by EVERY ManualEditor suite that observes whether the document
 // reads clean or dirty — autosave suites and plain-editor suites alike. It lives apart from
@@ -18,20 +19,20 @@ export const DIRTY_STATUS = 'Черновик, ещё не сохранён'
 // keeps a badge assertion from being tautological: `getByText(SAVED_STATUS).textContent` can only
 // ever equal SAVED_STATUS — the query already matched on it — whereas the variant class is an
 // independent fact about WHICH of ManualEditorSaveStatus's mutually exclusive branches rendered.
-export const SAVE_STATUS_BASE_CLASS = 'me-save-status'
-export const SAVED_BADGE_CLASS = 'me-save-status--saved'
-export const DIRTY_BADGE_CLASS = 'me-save-status--dirty'
+export const SAVE_STATUS_BASE_CLASS = saveStatusStyles['me-save-status']
+export const SAVED_BADGE_CLASS = saveStatusStyles['me-save-status--saved']
+export const DIRTY_BADGE_CLASS = saveStatusStyles['me-save-status--dirty']
 // The branch H9.4 demands and ManualEditorSaveStatus does not render yet: "a save attempt failed and
 // is being retried". Declared here beside its three siblings rather than inside the one suite that
 // asserts it, so the badge vocabulary stays in a single place — a per-suite copy of a modifier name
 // is exactly how one suite ends up asserting a class GREEN later renamed.
-export const RETRYING_BADGE_CLASS = 'me-save-status--retrying'
+export const RETRYING_BADGE_CLASS = saveStatusStyles['me-save-status--retrying']
 // The fourth branch: "init failed, so there is no document to save TO". Unlike its three siblings it
 // is reachable ONLY through `!documentId && hasFailedToInitialize` (ManualEditorSaveStatus.tsx:25-30),
 // which is what makes it the screen-level proof that `documentId` is still null — a fact no test can
 // otherwise state without reaching into ManualEditor's state.
 export const INIT_FAILED_STATUS = 'Документ не создан'
-export const FAILED_BADGE_CLASS = 'me-save-status--failed'
+export const FAILED_BADGE_CLASS = saveStatusStyles['me-save-status--failed']
 
 // The badge's stable root element, found by the base class every branch renders. Derived from
 // SAVE_STATUS_BASE_CLASS rather than respelled as a literal '.me-save-status'.

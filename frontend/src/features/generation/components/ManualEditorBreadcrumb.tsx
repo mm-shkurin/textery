@@ -1,4 +1,4 @@
-import './ManualEditorBreadcrumb.css'
+import styles from './ManualEditorBreadcrumb.module.css'
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
 
 interface ManualEditorBreadcrumbProps {
@@ -26,23 +26,28 @@ export function ManualEditorBreadcrumb({
   showManualModeChip,
 }: ManualEditorBreadcrumbProps) {
   return (
-    <div className="me-breadcrumb">
-      <button type="button" className="me-breadcrumb-back" onClick={onBack} aria-label="Назад">
+    <div className={styles['me-breadcrumb']}>
+      <button
+        type="button"
+        className={styles['me-breadcrumb-back']}
+        onClick={onBack}
+        aria-label="Назад"
+      >
         <span aria-hidden="true">←</span>
         Назад
       </button>
-      <div data-testid="editor-breadcrumb" className="me-breadcrumb-chips">
-        <span className="me-breadcrumb-chip">
-          <span className="me-chip-icon">
+      <div data-testid="editor-breadcrumb" className={styles['me-breadcrumb-chips']}>
+        <span className={styles['me-breadcrumb-chip']}>
+          <span className={styles['me-chip-icon']}>
             <PlaceholderImage />
           </span>
           {documentTypeLabel}
         </span>
         {showManualModeChip && (
           <>
-            <span className="me-breadcrumb-sep"> · </span>
-            <span className="me-breadcrumb-chip">
-              <span className="me-chip-icon">
+            <span className={styles['me-breadcrumb-sep']}> · </span>
+            <span className={styles['me-breadcrumb-chip']}>
+              <span className={styles['me-chip-icon']}>
                 <PlaceholderImage />
               </span>
               Ручной режим

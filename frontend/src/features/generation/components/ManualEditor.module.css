@@ -50,7 +50,7 @@
    decorate, so InlinePlaceholder (inlinePlaceholder.ts) hangs is-editor-empty +
    data-placeholder on the ProseMirror root while empty; this ::before paints the
    attribute text as a non-interactive overlay on the empty first line. */
-.ProseMirror.is-editor-empty::before {
+:global(.ProseMirror.is-editor-empty)::before {
   content: attr(data-placeholder);
   color: var(--text-muted);
   font-size: 17px;
@@ -121,14 +121,14 @@
      word leaves the user scrolled sideways into a page they then have to pinch their way out of.
      The placeholder is sized with it so the empty state does not jump on the first keystroke. */
   .me-content-area,
-  .ProseMirror.is-editor-empty::before {
+  :global(.ProseMirror.is-editor-empty)::before {
     font-size: 16px;
   }
 }
 
 /* Tables inserted from the toolbar. The editor renders no table chrome of its own, so without
    these the cells have no borders and the grid is invisible while it is being filled in. */
-.ProseMirror table {
+:global(.ProseMirror) table {
   width: 100%;
   border-collapse: collapse;
   margin: 16px 0;
@@ -136,9 +136,9 @@
   overflow: hidden;
 }
 
-.ProseMirror th,
-.ProseMirror td {
-  border: 1px solid var(--border-subtle, #d1d5db);
+:global(.ProseMirror) th,
+:global(.ProseMirror) td {
+  border: 1px solid var(--border-subtle);
   padding: 8px 10px;
   vertical-align: top;
   /* A cell is a text container: without this a long unbroken token stretches the column past the
@@ -146,8 +146,8 @@
   word-break: break-word;
 }
 
-.ProseMirror th {
-  background: var(--bg-subtle, #f3f4f6);
+:global(.ProseMirror) th {
+  background: var(--bg-subtle);
   font-weight: 600;
   text-align: left;
 }
@@ -155,15 +155,15 @@
 /* ProseMirror's own class for a cell inside a multi-cell selection. Without a rule it is
    indistinguishable from an unselected one, so "add a row after these two" gives no feedback
    about which two. */
-.ProseMirror .selectedCell::after {
+:global(.ProseMirror) :global(.selectedCell)::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(99, 102, 241, 0.16);
+  background: var(--editor-cell-selected);
   pointer-events: none;
 }
 
-.ProseMirror td,
-.ProseMirror th {
+:global(.ProseMirror) td,
+:global(.ProseMirror) th {
   position: relative;
 }

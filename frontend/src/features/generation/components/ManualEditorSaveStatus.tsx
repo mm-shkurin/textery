@@ -1,5 +1,5 @@
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
-import './ManualEditorSaveStatus.css'
+import styles from './ManualEditorSaveStatus.module.css'
 
 interface ManualEditorSaveStatusProps {
   documentId: string | null
@@ -26,9 +26,13 @@ export function ManualEditorSaveStatus({
     if (hasFailedToInitialize) {
       // <output> rather than a span with role="status": it has the role implicitly, and this
       // line replaces "Создание документа…" in place, so it must be announced when it swaps in.
-      return <output className="me-save-status me-save-status--failed">Документ не создан</output>
+      return (
+        <output className={`${styles['me-save-status']} ${styles['me-save-status--failed']}`}>
+          Документ не создан
+        </output>
+      )
     }
-    return <span className="me-save-status">Создание документа…</span>
+    return <span className={styles['me-save-status']}>Создание документа…</span>
   }
 
   if (isRetryPending) {
@@ -36,18 +40,22 @@ export function ManualEditorSaveStatus({
     // swaps in over «Черновик…» with no focus change and nothing else moving on screen, so a
     // screen-reader user hears that a save failed only if the element announces itself.
     return (
-      <output className="me-save-status me-save-status--retrying">
+      <output className={`${styles['me-save-status']} ${styles['me-save-status--retrying']}`}>
         Не удалось сохранить, повторяем…
       </output>
     )
   }
 
   if (hasUnsavedChanges) {
-    return <span className="me-save-status me-save-status--dirty">Черновик, ещё не сохранён</span>
+    return (
+      <span className={`${styles['me-save-status']} ${styles['me-save-status--dirty']}`}>
+        Черновик, ещё не сохранён
+      </span>
+    )
   }
 
   return (
-    <span className="me-save-status me-save-status--saved">
+    <span className={`${styles['me-save-status']} ${styles['me-save-status--saved']}`}>
       <PlaceholderImage />
       Сохранено
     </span>

@@ -1,4 +1,5 @@
 import { TEXT_STYLE_OPTIONS, type GenerationParameters } from '../utils/generationParameters'
+import composerStyles from './Composer.module.css'
 
 interface ComposerStyleProps {
   parameters: GenerationParameters
@@ -22,12 +23,12 @@ export function ComposerStyle({ parameters, onChange }: ComposerStyleProps) {
   const selected = TEXT_STYLE_OPTIONS.find((option) => option.value === parameters.textStyle)
 
   return (
-    <div className="composer-field composer-field-style">
-      <span id={STYLE_LABEL_ID} className="composer-field-label">
+    <div className={`${composerStyles['composer-field']} composer-field-style`}>
+      <span id={STYLE_LABEL_ID} className={composerStyles['composer-field-label']}>
         Стиль текста
       </span>
       <select
-        className="composer-field-input composer-style-select"
+        className={`${composerStyles['composer-field-input']} ${composerStyles['composer-style-select']}`}
         data-testid="style-select"
         aria-labelledby={STYLE_LABEL_ID}
         value={parameters.textStyle}
@@ -51,7 +52,7 @@ export function ComposerStyle({ parameters, onChange }: ComposerStyleProps) {
           user guessing at the difference between публицистический and художественный, and the
           hint is the only place that difference is stated. */}
       {selected !== undefined && (
-        <span className="composer-style-hint" data-testid="style-hint">
+        <span className={composerStyles['composer-style-hint']} data-testid="style-hint">
           {selected.hint}
         </span>
       )}

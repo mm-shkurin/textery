@@ -1,5 +1,6 @@
-import './ChatButton.css'
-import './Composer.css'
+import chatButtonStyles from './ChatButton.module.css'
+import styles from './Composer.module.css'
+import chatWorkspaceDocStyles from './ChatWorkspaceDoc.module.css'
 import { ComposerParameters } from './ComposerParameters'
 import { TopicSuggestions } from './TopicSuggestions'
 import { isVolumeAcceptable, type GenerationParameters } from '../utils/generationParameters'
@@ -35,13 +36,13 @@ export function Composer({
   onSend,
 }: ComposerProps) {
   return (
-    <div className="composer">
+    <div className={styles.composer}>
       {/* Associated, not merely adjacent: the heading sat right above the field and named it to
           anyone who could see them together, while a screen reader announced an unlabelled text
           box. aria-labelledby rather than a <label> so the visible heading stays the one source
           of the name — a <label> here would either duplicate the text or replace the h3 and
           change the page's outline. */}
-      <h3 id={TOPIC_LABEL_ID} className="required">
+      <h3 id={TOPIC_LABEL_ID} className={styles.required}>
         {topicLabel}
         {/* The required marker is markup, not a `::after` on the heading: this h3 IS the
             textarea's accessible name, and a real browser folds CSS-generated content into the
@@ -49,12 +50,12 @@ export function Composer({
             'Тема доклада *' in every screen reader, a divergence jsdom (which applies no CSS)
             can never catch. aria-hidden keeps it decorative; `required` on the field itself is
             what conveys the constraint. */}
-        <span className="composer-required-marker" aria-hidden="true">
+        <span className={styles['composer-required-marker']} aria-hidden="true">
           {' *'}
         </span>
       </h3>
       <textarea
-        className="composer-input"
+        className={styles['composer-input']}
         data-testid="topic-input"
         aria-labelledby={TOPIC_LABEL_ID}
         placeholder="Например: Влияние искусственного интеллекта на образование"
@@ -79,7 +80,7 @@ export function Composer({
           with a 400 the user cannot act on from this screen. */}
       <button
         type="button"
-        className="cw-btn cw-btn-primary composer-send"
+        className={`${chatButtonStyles['cw-btn']} ${chatWorkspaceDocStyles['cw-btn']} ${chatButtonStyles['cw-btn-primary']} ${styles['composer-send']}`}
         data-testid="topic-send"
         onClick={onSend}
         disabled={!topic.trim() || !isVolumeAcceptable(parameters.volumePages)}
@@ -88,7 +89,7 @@ export function Composer({
       </button>
       {/* Mockup 04's submit-row hint: the wait is long enough that the user needs to be told
           up front, not only once the pending screen replaces this one. */}
-      <p className="composer-hint">Обычно занимает 1–2 минуты</p>
+      <p className={styles['composer-hint']}>Обычно занимает 1–2 минуты</p>
     </div>
   )
 }

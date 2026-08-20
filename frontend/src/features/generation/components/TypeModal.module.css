@@ -59,7 +59,7 @@
 }
 
 .type-modal-panel .modal-subtitle {
-  /* 18/22 in #464551 — the same subtitle pair as the two page headers. */
+  /* 18/22 in hex 464551 — the same subtitle pair as the two page headers. */
   font-size: 18px;
   line-height: 22px;
   font-weight: 400;
@@ -68,7 +68,7 @@
 }
 
 /* The design writes «тип документа» in the accent colour — the two words that say what the choice
-   below is about. #004ee0 in the frame, which is `--accent` exactly. */
+   below is about. hex 004ee0 in the frame, which is `--accent` exactly. */
 .modal-subtitle-accent {
   color: var(--accent);
 }

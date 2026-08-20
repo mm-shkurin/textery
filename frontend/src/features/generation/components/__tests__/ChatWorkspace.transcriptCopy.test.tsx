@@ -3,6 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import { ChatWorkspace } from '../ChatWorkspace'
 import type { ComponentProps } from 'react'
 import { DOCUMENT_TYPE_LABELS } from '../../../../shared/copy/documentTypeCopy'
+import chatButtonStyles from '../ChatButton.module.css'
 
 type WorkspaceProps = ComponentProps<typeof ChatWorkspace>
 
@@ -66,6 +67,6 @@ describe('ChatWorkspace transcript copy', () => {
 
     setState('failed', { error: 'Провайдер недоступен' })
 
-    expect(screen.getByTestId('error-reset')).toHaveClass('cw-btn')
+    expect(screen.getByTestId('error-reset')).toHaveClass(chatButtonStyles['cw-btn'])
   })
 })

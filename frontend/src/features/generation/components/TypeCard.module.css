@@ -15,7 +15,7 @@
   border: none;
   /* 9.6 in the frame — the same rounding as a 10px `--radius-md`. */
   border-radius: var(--radius-md);
-  /* Frame value #f4f6fb; `--bg-sunken` is #f7f8fa, three points of red apart from it. The token is
+  /* Frame value hex f4f6fb; `--bg-sunken` is hex f7f8fa, three points of red apart from it. The token is
      taken instead of a private colour because the difference is invisible and the token is the
      only one of the two that already has a dark-theme form. */
   background: var(--bg-sunken);

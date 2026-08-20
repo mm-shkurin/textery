@@ -1,5 +1,7 @@
 import ReactMarkdown from 'react-markdown'
-import './ChatButton.css'
+import chatButtonStyles from './ChatButton.module.css'
+import chatWorkspaceDocStyles from './ChatWorkspaceDoc.module.css'
+import docMarkdownStyles from './DocMarkdown.module.css'
 import type { GenerationUiState } from '../hooks/useGeneration'
 import { formatRelativeTime } from '../utils/formatRelativeTime'
 import { type DocumentType } from '../../../shared/documentTypes'
@@ -36,7 +38,7 @@ export function DocArea({
   if (state === 'completed') {
     return (
       <div className="doc-content">
-        <div className="doc-meta">
+        <div className={chatWorkspaceDocStyles['doc-meta']}>
           {label} · {volumePages ?? '—'} страниц · {formatRelativeTime(createdAt)}
         </div>
         {/* Server-supplied and user-influenced at once: the model writes this, answering a topic
@@ -45,13 +47,16 @@ export function DocArea({
             href is neutralized). Both are now pinned by DocArea.markdownSafety.test.tsx; do not
             add rehype-raw here without reading it. Tokens live in sessionStorage, so markup
             injected on this line is a session handover, not a defacement. */}
-        <div className="doc-body markdown-body" data-testid="doc-body">
+        <div
+          className={`${chatWorkspaceDocStyles['doc-body']} ${docMarkdownStyles['markdown-body']}`}
+          data-testid="doc-body"
+        >
           <ReactMarkdown>{content ?? ''}</ReactMarkdown>
         </div>
-        <div className="actions-row">
+        <div className={chatWorkspaceDocStyles['actions-row']}>
           <button
             type="button"
-            className="cw-btn cw-btn-primary"
+            className={`${chatButtonStyles['cw-btn']} ${chatWorkspaceDocStyles['cw-btn']} ${chatButtonStyles['cw-btn-primary']}`}
             data-testid="doc-reset"
             onClick={onReset}
           >
@@ -63,13 +68,13 @@ export function DocArea({
   }
   if (state === 'failed') {
     return (
-      <div className="doc-placeholder" data-testid="doc-error">
-        <div className="icon-circle">✕</div>
+      <div className={chatWorkspaceDocStyles['doc-placeholder']} data-testid="doc-error">
+        <div className={chatWorkspaceDocStyles['icon-circle']}>✕</div>
         <h2>{generationFailedTitle(documentType)}</h2>
         <p>{error ?? 'Попробуйте создать новый запрос — измените тему или требования.'}</p>
         <button
           type="button"
-          className="cw-btn cw-btn-primary"
+          className={`${chatButtonStyles['cw-btn']} ${chatWorkspaceDocStyles['cw-btn']} ${chatButtonStyles['cw-btn-primary']}`}
           data-testid="error-reset"
           onClick={onReset}
         >
@@ -83,15 +88,18 @@ export function DocArea({
     // subject). It is present only while a generation is in flight, so a Selenium wait on it
     // observes exactly the generating state and nothing else.
     return (
-      <div className="doc-placeholder" data-testid="generation-generating">
-        <div className="spinner" />
+      <div
+        className={chatWorkspaceDocStyles['doc-placeholder']}
+        data-testid="generation-generating"
+      >
+        <div className={chatWorkspaceDocStyles.spinner} />
         <h2>{generatingTitle(documentType)}</h2>
         <p>Обычно занимает 1–2 минуты — страница обновится автоматически</p>
       </div>
     )
   }
   return (
-    <div className="doc-placeholder">
+    <div className={chatWorkspaceDocStyles['doc-placeholder']}>
       <h2>{topicPromptTitle(documentType)}</h2>
       <p>Введите тему в панели слева — ИИ сгенерирует готовый текст.</p>
     </div>

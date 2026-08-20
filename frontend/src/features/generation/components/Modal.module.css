@@ -1,7 +1,7 @@
 /* The modal chrome only — backdrop, panel, header, close. Split from a 229-line
    Modal.css that both modals imported whole: each file is now owned by the component
    whose classes it holds, so a card change cannot touch the panel. */
-/* Figma `Generation screen` (node 422:1439): the modal sits over a blurred `#71b7fd` wash of
+/* Figma `Generation screen` (node 422:1439): the modal sits over a blurred `hex 71b7fd` wash of
    the landing behind it, not a dark scrim. That is a LIGHT-theme device — over a dark page the
    same pale blue is a bright fog that makes the backdrop louder than the panel — so the colour is
    `--scrim-modal` and the dark sheet swaps it for a conventional dark scrim. */
