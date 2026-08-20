@@ -2,6 +2,7 @@ from uuid import uuid4
 
 import pytest
 from fastapi import FastAPI
+from generation_retry_fixtures import a_retry
 from httpx import ASGITransport, AsyncClient
 
 from error_handling.exception_handlers import (
@@ -156,3 +157,13 @@ def unauthenticated_create_client(generation_app):
 def unauthenticated_get_client(generation_app):
     """No owner override — the real Bearer dependency runs."""
     return _client_factory(generation_app, _GET_PROVIDERS, override_owner=False)
+
+
+@pytest.fixture
+def usecases(mocker, owner_id):
+    """The retry route's pair: the usecase that creates the run, and the one that starts it."""
+    retry = mocker.Mock()
+    retry.execute = mocker.AsyncMock(return_value=(a_retry(owner_id), True))
+    generate = mocker.Mock()
+    generate.execute = mocker.AsyncMock()
+    return retry, generate

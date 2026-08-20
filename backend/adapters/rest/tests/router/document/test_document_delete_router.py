@@ -2,8 +2,6 @@
 
 from uuid import uuid4
 
-from conftest import OWNER_ID
-
 from shared.exceptions import NotFoundException
 
 
@@ -20,7 +18,9 @@ class TestDeleteDocument:
         # A 204 carrying a JSON `null` is a contradiction some proxies and clients handle badly.
         assert response.content == b""
 
-    async def test_should_pass_the_callers_own_owner_id_through(self, mocker, delete_client):
+    async def test_should_pass_the_callers_own_owner_id_through(
+        self, mocker, delete_client, owner_id
+    ):
         usecase = mocker.Mock()
         usecase.execute = mocker.AsyncMock(return_value=None)
         document_id = uuid4()
@@ -30,7 +30,7 @@ class TestDeleteDocument:
 
         # The owner comes from the token and is never a request parameter: without it in the call
         # the usecase would delete by id alone, which is an IDOR on an irreversible operation.
-        usecase.execute.assert_awaited_once_with(document_id=document_id, owner_id=OWNER_ID)
+        usecase.execute.assert_awaited_once_with(document_id=document_id, owner_id=owner_id)
 
     async def test_should_answer_404_when_nothing_of_the_callers_matched(
         self, mocker, delete_client

@@ -6,54 +6,9 @@ in the same three lines, and both are silent when wrong — a dropped field simp
 reruns the generation the user was trying to change.
 """
 
-from unittest.mock import AsyncMock
 from uuid import uuid4
 
-import pytest
-
-from generation.generation import Generation
-
-RETRY_KWARGS = {"generation_id", "owner_id", "idempotency_key", "text_style", "volume_pages"}
-
-
-def _retry(owner_id, volume_pages: int = 3, text_style: str | None = None) -> Generation:
-    """A saved retry row, built through __init__ — the storage hydration path.
-
-    Not through `retry_of`: this stands in for what the usecase RETURNS, and
-    building it with the factory under test would make these assertions depend on
-    the very resolution rule the domain suite owns.
-    """
-    seed = Generation.create(
-        owner_id=owner_id,
-        topic="Тема",
-        volume_pages=3,
-        requirements=None,
-        extra_wishes=None,
-        document_type="реферат",
-    )
-    return Generation(
-        id=uuid4(),
-        owner_id=owner_id,
-        status="pending",
-        created_at=seed.created_at,
-        topic="Тема",
-        volume_pages=volume_pages,
-        requirements=None,
-        extra_wishes=None,
-        document_type="реферат",
-        text_style=text_style,
-        idempotency_key="key-1",
-        source_generation_id=uuid4(),
-    )
-
-
-@pytest.fixture
-def usecases(mocker, owner_id):
-    retry = mocker.Mock()
-    retry.execute = mocker.AsyncMock(return_value=(_retry(owner_id), True))
-    generate = mocker.Mock()
-    generate.execute = mocker.AsyncMock()
-    return retry, generate
+from generation_retry_fixtures import RETRY_KWARGS
 
 
 class TestRetryBody:
@@ -186,31 +141,3 @@ class TestRetryBody:
         # The whole reason the body is a narrow DTO: a client must not be able to
         # re-aim a retry at another account, mark it finished, or rewrite the topic.
         assert set(retry.execute.await_args.kwargs) == RETRY_KWARGS
-
-
-class TestRetryEnqueue:
-    async def test_should_enqueue_the_run_it_created(self, retry_client, usecases, owner_id):
-        retry, generate = usecases
-        created = _retry(owner_id)
-        retry.execute = AsyncMock(return_value=(created, True))
-
-        async with retry_client(retry, generate) as client:
-            await client.post(
-                f"/api/v1/generations/{uuid4()}/retry", headers={"Idempotency-Key": "k7"}
-            )
-
-        generate.execute.assert_awaited_once_with(created.id, created.owner_id)
-
-    async def test_should_start_nothing_for_a_replayed_key(self, retry_client, usecases, owner_id):
-        retry, generate = usecases
-        retry.execute = AsyncMock(return_value=(_retry(owner_id), False))
-
-        async with retry_client(retry, generate) as client:
-            await client.post(
-                f"/api/v1/generations/{uuid4()}/retry", headers={"Idempotency-Key": "k8"}
-            )
-
-        # A replay answers with the row the first attempt created and starts
-        # nothing. Enqueuing here would run the work twice, which is what the key
-        # exists to prevent — and this route is the one that spends money.
-        generate.execute.assert_not_awaited()
