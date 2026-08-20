@@ -15,7 +15,6 @@
    it. Declared locally because the token sheets belong to another session this sprint; both themes
    are given here on purpose — a colour with only a light form is a white patch on a dark page. */
 
-
 .profile-screen {
   min-height: 100vh;
   background: var(--profile-page-bg);

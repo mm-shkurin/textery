@@ -6,8 +6,6 @@
    is a tested contract, so the panel grows to hold the field rather than the guard being dropped
    to fit the drawing. */
 
-
-
 /* The scrim DIMS but does not swallow clicks, and that is a compromise rather than a preference.
    A refused password leaves this dialog open with its error — and the acceptance suite then opens
    the account menu in the header to prove the session survived, without closing the dialog first.

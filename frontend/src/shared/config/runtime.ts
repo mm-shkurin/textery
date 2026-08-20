@@ -15,14 +15,21 @@ function positiveInt(raw: string | undefined, fallback: number, floor: number): 
 }
 
 function csv(raw: string | undefined, fallback: string[]): readonly string[] {
-  const parts = (raw ?? '').split(',').map((p) => p.trim()).filter(Boolean)
+  const parts = (raw ?? '')
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean)
   return parts.length > 0 ? parts : fallback
 }
 
 export const RUNTIME = {
   // How often a running generation is asked for its status, and for how long. The product of the
   // two is the ceiling on a single generation: 5s × 60 ≈ 5 minutes.
-  generationPollIntervalMs: positiveInt(import.meta.env.VITE_GENERATION_POLL_INTERVAL_MS, 5000, 1000),
+  generationPollIntervalMs: positiveInt(
+    import.meta.env.VITE_GENERATION_POLL_INTERVAL_MS,
+    5000,
+    1000,
+  ),
   generationPollMaxAttempts: positiveInt(import.meta.env.VITE_GENERATION_POLL_MAX_ATTEMPTS, 60, 1),
 
   // Consecutive failed status checks tolerated before a run is called lost. Not zero: over five

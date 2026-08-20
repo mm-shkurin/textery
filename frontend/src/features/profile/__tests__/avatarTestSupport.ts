@@ -51,9 +51,11 @@ export function stubCanvasPipeline(source: { width: number; height: number }): E
     'createImageBitmap',
     vi.fn(async () => source),
   )
-  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(partialDouble<CanvasRenderingContext2D>({
-    drawImage: vi.fn(),
-  }))
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+    partialDouble<CanvasRenderingContext2D>({
+      drawImage: vi.fn(),
+    }),
+  )
   vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (
     this: HTMLCanvasElement,
     callback: BlobCallback,

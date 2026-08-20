@@ -20,7 +20,6 @@
    edge on the screen at the threshold of visible. The dark form steps to `--border-strong` (1.7).
    Both are listed in the report for session 1 to fold into the token sheets. */
 
-
 /* The card is a FIXED 220px in frame 484:1104, not a sixth of the row. Measured off the render:
    the six cards of «Все проекты» sit at x=140…1559 inside a content column that runs to 1780 —
    a whole card's worth of empty space is left over on the right, which only happens if the track

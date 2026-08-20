@@ -5,7 +5,11 @@ import {
   type Profile,
 } from '../../../shared/identity/api/profileApi'
 import { applyProfile } from '../../../shared/identity/identityStore'
-import { nameRejectionMessage, overLengthMessage, RAW_INPUT_TOO_LARGE_MESSAGE } from '../utils/profileCopy'
+import {
+  nameRejectionMessage,
+  overLengthMessage,
+  RAW_INPUT_TOO_LARGE_MESSAGE,
+} from '../utils/profileCopy'
 import {
   countCodePoints,
   isNameChanged,
