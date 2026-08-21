@@ -34,10 +34,10 @@ class ProfileStatementsBase:
 
     def __init__(self) -> None:
         self.thrown_exception: Exception | None = None
-        self.account_repository = FakeAccountRepository()
-        self.password_hasher = FakePasswordHasher()
-        self.unit_of_work = FakeUnitOfWork()
-        self.clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
+        self._account_repository = FakeAccountRepository()
+        self._password_hasher = FakePasswordHasher()
+        self._unit_of_work = FakeUnitOfWork()
+        self._clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
         self.account: Account | None = None
         self.returned_account: Account | None = None
 
@@ -63,13 +63,13 @@ class ProfileStatementsBase:
         self.account = Account.reconstitute(
             id=uuid4(),
             email=self.EMAIL,
-            password_hash=self.password_hasher.hash(plain_password),
+            password_hash=self._password_hasher.hash(plain_password),
             created_at=self.CREATED_AT,
             is_verified=True,
             name=name,
             avatar_updated_at=avatar_updated_at,
         )
-        await self.account_repository.save(self.account)
+        await self._account_repository.save(self.account)
 
     async def given_an_oauth_account(self, name: str | None = None) -> None:
         """An account created through the OAuth callback: `password_hash=""`.
@@ -86,7 +86,7 @@ class ProfileStatementsBase:
             is_verified=True,
             name=name,
         )
-        await self.account_repository.save(self.account)
+        await self._account_repository.save(self.account)
 
     def given_no_account_exists_for_the_token_subject(self) -> None:
         """A structurally valid token whose account row is gone."""
@@ -114,12 +114,12 @@ class ProfileStatementsBase:
         assert self.thrown_exception.message == self.UNAUTHORIZED_MESSAGE
 
     def assert_nothing_was_committed(self) -> None:
-        assert self.unit_of_work.commit_attempt_count == 0, (
+        assert self._unit_of_work.commit_attempt_count == 0, (
             "expected no commit to have been attempted, got "
-            f"{self.unit_of_work.commit_attempt_count}"
+            f"{self._unit_of_work.commit_attempt_count}"
         )
 
     def assert_the_work_was_committed_once(self) -> None:
-        assert self.unit_of_work.commit_call_count == 1, (
-            f"expected exactly one commit, got {self.unit_of_work.commit_call_count}"
+        assert self._unit_of_work.commit_call_count == 1, (
+            f"expected exactly one commit, got {self._unit_of_work.commit_call_count}"
         )

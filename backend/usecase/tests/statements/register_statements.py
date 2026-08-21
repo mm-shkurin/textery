@@ -46,7 +46,7 @@ class RegisterStatements(RegisterStatementsBase):
         )
 
     async def attempt_registering_when_email_already_registered(self) -> None:
-        self.account_repository.raise_on_save = ConflictException(
+        self._account_repository.raise_on_save = ConflictException(
             "account with this email already exists"
         )
         await self._register_and_capture_result(RegisterRequestScope.builder())
@@ -79,13 +79,13 @@ class RegisterStatements(RegisterStatementsBase):
             self.EXPECTED_EMAIL_ALREADY_REGISTERED_ERROR_CODE,
             self.EXPECTED_EMAIL_ALREADY_REGISTERED_MESSAGE,
         )
-        assert self.verification_code_repository.saved_codes == [], (
+        assert self._verification_code_repository.saved_codes == [], (
             f"expected no VerificationCode to be persisted when registration is rejected "
-            f"for a duplicate email, got {self.verification_code_repository.saved_codes}"
+            f"for a duplicate email, got {self._verification_code_repository.saved_codes}"
         )
-        assert self.account_repository.saved_accounts == [], (
+        assert self._account_repository.saved_accounts == [], (
             f"expected no Account to be persisted when registration is rejected "
-            f"for a duplicate email, got {self.account_repository.saved_accounts}"
+            f"for a duplicate email, got {self._account_repository.saved_accounts}"
         )
 
     def assert_account_persisted_with_server_owned_fields(self) -> None:
@@ -110,9 +110,9 @@ class RegisterStatements(RegisterStatementsBase):
         assert self.returned_account is not None, (
             "expected RegisterUser.execute to return the persisted Account"
         )
-        assert self.password_hasher.hashed_values == [expected_normalized_password], (
+        assert self._password_hasher.hashed_values == [expected_normalized_password], (
             f"expected the hasher to receive exactly the NFC-normalized password "
-            f"{[expected_normalized_password]}, got {self.password_hasher.hashed_values}"
+            f"{[expected_normalized_password]}, got {self._password_hasher.hashed_values}"
         )
         assert self.returned_account.password_hash != expected_normalized_password, (
             "expected the persisted password_hash to be a hash, but it is the plaintext password"
@@ -140,15 +140,15 @@ class RegisterStatements(RegisterStatementsBase):
             f"expected returned Account.is_verified to be False, "
             f"got {self.returned_account.is_verified}"
         )
-        assert self.returned_account.created_at == self.clock.fixed_now, (
-            f"expected Account.created_at '{self.clock.fixed_now}' to come from "
+        assert self.returned_account.created_at == self._clock.fixed_now, (
+            f"expected Account.created_at '{self._clock.fixed_now}' to come from "
             f"the injected Clock, "
             f"got '{self.returned_account.created_at}'"
         )
-        assert self.account_repository.saved_accounts == [self.returned_account], (
+        assert self._account_repository.saved_accounts == [self.returned_account], (
             f"expected exactly one Account persisted via AccountRepository.save "
             f"equal to the returned Account, "
-            f"got {self.account_repository.saved_accounts}"
+            f"got {self._account_repository.saved_accounts}"
         )
 
     def assert_verification_code_issued(self) -> None:
@@ -167,7 +167,7 @@ class RegisterStatements(RegisterStatementsBase):
             f"expected VerificationCode.code to be a 6-digit zero-padded string, "
             f"got '{self.returned_verification_code.code}'"
         )
-        expected_expires_at = self.clock.fixed_now + timedelta(minutes=10)
+        expected_expires_at = self._clock.fixed_now + timedelta(minutes=10)
         assert self.returned_verification_code.expires_at == expected_expires_at, (
             f"expected VerificationCode.expires_at to be '{expected_expires_at}' "
             f"(clock.now() + 10 minutes), got '{self.returned_verification_code.expires_at}'"
@@ -176,10 +176,12 @@ class RegisterStatements(RegisterStatementsBase):
             f"expected VerificationCode.account_id to be '{self.returned_account.id}', "
             f"got '{self.returned_verification_code.account_id}'"
         )
-        assert self.verification_code_repository.saved_codes == [self.returned_verification_code], (
+        assert self._verification_code_repository.saved_codes == [
+            self.returned_verification_code
+        ], (
             f"expected exactly one VerificationCode persisted via VerificationCodeRepository.save "
             f"equal to the returned VerificationCode, "
-            f"got {self.verification_code_repository.saved_codes}"
+            f"got {self._verification_code_repository.saved_codes}"
         )
 
     async def _register_and_capture_result(self, scope: RegisterRequestScope) -> None:

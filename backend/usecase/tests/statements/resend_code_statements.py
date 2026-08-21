@@ -33,11 +33,11 @@ class ResendCodeStatements(ResendCodeAssertions):
     PAST_COOLDOWN = timedelta(seconds=61)
 
     def __init__(self) -> None:
-        self.account_repository = FakeAccountRepository()
-        self.password_hasher = FakePasswordHasher()
-        self.clock = FakeClock(fixed_now=self.T0)
-        self.verification_code_repository = FakeVerificationCodeRepository()
-        self.unit_of_work = FakeUnitOfWork()
+        self._account_repository = FakeAccountRepository()
+        self._password_hasher = FakePasswordHasher()
+        self._clock = FakeClock(fixed_now=self.T0)
+        self._verification_code_repository = FakeVerificationCodeRepository()
+        self._unit_of_work = FakeUnitOfWork()
         self.registered_email: str | None = None
         self.old_code: str | None = None
         self.old_code_entity: VerificationCode | None = None
@@ -54,13 +54,13 @@ class ResendCodeStatements(ResendCodeAssertions):
         return arranged(self.registered_email, "registered_email")
 
     async def given_pending_account_with_a_code_issued_at_t0(self) -> None:
-        self.clock.fixed_now = self.T0
+        self._clock.fixed_now = self.T0
         scope = RegisterRequestScope.builder()
         result = await RegisterUser(
-            password_hasher=self.password_hasher,
-            account_repository=self.account_repository,
-            verification_code_repository=self.verification_code_repository,
-            clock=self.clock,
+            password_hasher=self._password_hasher,
+            account_repository=self._account_repository,
+            verification_code_repository=self._verification_code_repository,
+            clock=self._clock,
         ).execute(
             email=scope.email,
             password=scope.password,
@@ -71,8 +71,8 @@ class ResendCodeStatements(ResendCodeAssertions):
         self.old_code_entity = result.verification_code
 
     async def resend_within_the_cooldown_window(self) -> None:
-        self.clock.fixed_now = self.T0 + self.WITHIN_COOLDOWN
-        self.codes_before_resend = len(self.verification_code_repository.saved_codes)
+        self._clock.fixed_now = self.T0 + self.WITHIN_COOLDOWN
+        self.codes_before_resend = len(self._verification_code_repository.saved_codes)
         await self._execute_resend()
 
     async def resend_after_the_cooldown_window(self) -> None:
@@ -89,10 +89,10 @@ class ResendCodeStatements(ResendCodeAssertions):
         # is 30s after code #2 but ~91s after the registration code -- inside code
         # #2's cooldown. It must be REJECTED, forcing green to measure the cooldown
         # from the NEWEST code (max(created_at)), not the oldest/registration code.
-        self.clock.fixed_now = self.T0 + self.PAST_COOLDOWN
+        self._clock.fixed_now = self.T0 + self.PAST_COOLDOWN
         await self._execute_resend()
-        self.clock.fixed_now = self.T0 + self.PAST_COOLDOWN + self.WITHIN_COOLDOWN
-        self.codes_before_resend = len(self.verification_code_repository.saved_codes)
+        self._clock.fixed_now = self.T0 + self.PAST_COOLDOWN + self.WITHIN_COOLDOWN
+        self.codes_before_resend = len(self._verification_code_repository.saved_codes)
         await self._execute_resend()
 
     async def resend_and_capture_result(self) -> None:
@@ -100,21 +100,21 @@ class ResendCodeStatements(ResendCodeAssertions):
         # VerificationCode it persisted so the HTTP 200 body carries a code that
         # actually verifies. Capture the return value (not saved_codes[-1]) so a
         # green that returns a different valid-shaped code is caught.
-        self.clock.fixed_now = self.T0 + self.PAST_COOLDOWN
-        self.codes_before_resend = len(self.verification_code_repository.saved_codes)
+        self._clock.fixed_now = self.T0 + self.PAST_COOLDOWN
+        self.codes_before_resend = len(self._verification_code_repository.saved_codes)
         self.returned_code = await ResendCode(
-            account_repository=self.account_repository,
-            verification_code_repository=self.verification_code_repository,
-            clock=self.clock,
-            unit_of_work=self.unit_of_work,
+            account_repository=self._account_repository,
+            verification_code_repository=self._verification_code_repository,
+            clock=self._clock,
+            unit_of_work=self._unit_of_work,
         ).execute(email=self.account_email)
 
     async def _resend_at(self, delta: timedelta) -> None:
-        self.clock.fixed_now = self.T0 + delta
-        self.codes_before_resend = len(self.verification_code_repository.saved_codes)
+        self._clock.fixed_now = self.T0 + delta
+        self.codes_before_resend = len(self._verification_code_repository.saved_codes)
         await self._execute_resend()
         if self.thrown_exception is None:
-            self.new_code = self.verification_code_repository.saved_codes[-1].code
+            self.new_code = self._verification_code_repository.saved_codes[-1].code
 
     async def verify_with_the_old_code_then_the_new_code(self) -> None:
         # Order matters: verify the OLD code first, while the account is still
@@ -131,10 +131,10 @@ class ResendCodeStatements(ResendCodeAssertions):
     async def _execute_resend(self) -> None:
         try:
             await ResendCode(
-                account_repository=self.account_repository,
-                verification_code_repository=self.verification_code_repository,
-                clock=self.clock,
-                unit_of_work=self.unit_of_work,
+                account_repository=self._account_repository,
+                verification_code_repository=self._verification_code_repository,
+                clock=self._clock,
+                unit_of_work=self._unit_of_work,
             ).execute(email=self.account_email)
         except Exception as exc:
             self.thrown_exception = exc
@@ -142,10 +142,10 @@ class ResendCodeStatements(ResendCodeAssertions):
     async def _execute_verify(self, code: str) -> Exception | None:
         try:
             await VerifyAccount(
-                account_repository=self.account_repository,
-                verification_code_repository=self.verification_code_repository,
-                clock=self.clock,
-                unit_of_work=self.unit_of_work,
+                account_repository=self._account_repository,
+                verification_code_repository=self._verification_code_repository,
+                clock=self._clock,
+                unit_of_work=self._unit_of_work,
             ).execute(email=self.account_email, code=code)
         except Exception as exc:
             return exc

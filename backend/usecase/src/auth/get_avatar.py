@@ -18,10 +18,10 @@ class GetAvatar:
     """
 
     def __init__(self, avatar_repository: AvatarRepository) -> None:
-        self.avatar_repository = avatar_repository
+        self._avatar_repository = avatar_repository
 
     async def execute(self, account_id: UUID) -> StoredAvatar:
-        avatar = await self.avatar_repository.find_avatar(account_id)
+        avatar = await self._avatar_repository.find_avatar(account_id)
         if avatar is None:
             raise NotFoundException(f"account {account_id} has no avatar")
         return avatar

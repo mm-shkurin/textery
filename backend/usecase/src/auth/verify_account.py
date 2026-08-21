@@ -47,10 +47,10 @@ class VerifyAccount(AccountVerificationDependencies):
         # both axes answers INVALID_EMAIL, matching RegisterUser's order.
         normalized_email = validate_email(email).value
         self._validate_code(code)
-        account = await self.account_repository.find_by_email(normalized_email)
+        account = await self._account_repository.find_by_email(normalized_email)
         if account is None:
             raise self._invalid_or_expired()
-        verification_code = await self.verification_code_repository.find_active_by_account_id(
+        verification_code = await self._verification_code_repository.find_active_by_account_id(
             account.id
         )
         if verification_code is None:
@@ -91,7 +91,7 @@ class VerifyAccount(AccountVerificationDependencies):
         """Wrong code and expired code answer identically -- neither confirms the other."""
         if not verification_code.matches(code):
             raise self._invalid_or_expired()
-        if self.clock.now() >= verification_code.expires_at:
+        if self._clock.now() >= verification_code.expires_at:
             raise self._invalid_or_expired()
 
     async def _apply_verification(
@@ -111,16 +111,16 @@ class VerifyAccount(AccountVerificationDependencies):
         # rows or synchronize_session rather than trust these stale in-memory
         # objects.
         try:
-            await self.account_repository.transition_to_verified(account.id)
-            await self.verification_code_repository.transition_to_consumed(
-                verification_code.id, self.clock.now()
+            await self._account_repository.transition_to_verified(account.id)
+            await self._verification_code_repository.transition_to_consumed(
+                verification_code.id, self._clock.now()
             )
-            await self.unit_of_work.commit()
+            await self._unit_of_work.commit()
         except Exception as error:
             # See RegisterUser: the client's answer is deliberately vague, so the
             # real cause has to be logged here or it is lost entirely.
             logger.exception("verification failed while persisting the verified account")
-            await rollback_quietly(self.unit_of_work)
+            await rollback_quietly(self._unit_of_work)
             raise VerificationFailedException(message=self.VERIFICATION_FAILED_MESSAGE) from error
 
     def _validate_code(self, code: str) -> VerificationCodeValue:

@@ -52,12 +52,12 @@ class CreateDocumentFromGeneration:
         clock: Clock,
         unit_of_work: UnitOfWork | None = None,
     ) -> None:
-        self.document_repository = document_repository
-        self.generation_storage = generation_storage
-        self.markdown_converter = markdown_converter
-        self.html_sanitizer = html_sanitizer
-        self.clock = clock
-        self.unit_of_work = unit_of_work or NullUnitOfWork()
+        self._document_repository = document_repository
+        self._generation_storage = generation_storage
+        self._markdown_converter = markdown_converter
+        self._html_sanitizer = html_sanitizer
+        self._clock = clock
+        self._unit_of_work = unit_of_work or NullUnitOfWork()
 
     async def execute(
         self, owner_id: UUID, generation_id: UUID, idempotency_key: str
@@ -73,13 +73,13 @@ class CreateDocumentFromGeneration:
             content=self._convert(generated_markdown),
             title=derive_generated_title(generation.topic),
             idempotency_key=idempotency_key,
-            created_at=self.clock.now(),
+            created_at=self._clock.now(),
         )
         try:
-            await self.document_repository.save_new(document)
+            await self._document_repository.save_new(document)
         except ConflictException:
             return await self._recover_existing(owner_id, generation_id)
-        await self.unit_of_work.commit()
+        await self._unit_of_work.commit()
         return DocumentCreationResult(document=document, is_replay=False)
 
     def _validate_key(self, idempotency_key: str) -> None:
@@ -108,7 +108,7 @@ class CreateDocumentFromGeneration:
         that established it is there. Re-reading the attribute afterwards would
         put the guarantee back on a convention nothing enforces.
         """
-        generation = await self.generation_storage.get_by_id_and_owner(generation_id, owner_id)
+        generation = await self._generation_storage.get_by_id_and_owner(generation_id, owner_id)
         if generation is None:
             raise NotFoundException(f"generation {generation_id} not found")
         # Fails CLOSED on anything that is not the one status we can convert --
@@ -137,7 +137,7 @@ class CreateDocumentFromGeneration:
         the markdown would let a document just under the limit grow past it and
         fail at the column instead of at the boundary.
         """
-        html = self.html_sanitizer.sanitize(self.markdown_converter.to_html(generated_markdown))
+        html = self._html_sanitizer.sanitize(self._markdown_converter.to_html(generated_markdown))
         try:
             return DocumentContent(html).value
         except ValueError as error:
@@ -167,8 +167,8 @@ class CreateDocumentFromGeneration:
         session is poisoned and the next query raises PendingRollbackError, so
         without it this read fails and a legitimate replay 500s.
         """
-        await self.unit_of_work.rollback()
-        existing = await self.document_repository.find_by_generation_id(owner_id, generation_id)
+        await self._unit_of_work.rollback()
+        existing = await self._document_repository.find_by_generation_id(owner_id, generation_id)
         if existing is not None:
             return DocumentCreationResult(document=existing, is_replay=True)
         raise ValidationException(

@@ -13,9 +13,9 @@ class DeleteAccountStatements(ProfileStatementsBase):
 
     def __init__(self) -> None:
         super().__init__()
-        self.account_eraser = FakeAccountEraser()
+        self._account_eraser = FakeAccountEraser()
         self.erase_failure = RuntimeError("the account row could not be deleted")
-        self.unit_of_work.rollback_hooks.append(self._undo_the_erase)
+        self._unit_of_work.rollback_hooks.append(self._undo_the_erase)
 
     def given_the_erase_fails_after_the_children_are_gone(self) -> None:
         """The one half-done state the real eraser can reach.
@@ -23,10 +23,10 @@ class DeleteAccountStatements(ProfileStatementsBase):
         Its five DELETEs run children-first, so a failure on the LAST one leaves a
         transaction in which the documents are gone and the account is not.
         """
-        self.account_eraser.erase_after_children_removed = self.erase_failure
+        self._account_eraser.erase_after_children_removed = self.erase_failure
 
     def given_the_commit_fails(self) -> None:
-        self.unit_of_work.raise_on_commit = self.erase_failure
+        self._unit_of_work.raise_on_commit = self.erase_failure
 
     async def delete_with_the_correct_password(self) -> None:
         await self._delete(password=self.PASSWORD)
@@ -52,32 +52,32 @@ class DeleteAccountStatements(ProfileStatementsBase):
     async def _delete(self, password: object = None, confirm_email: object = None) -> None:
         await self._capture(
             DeleteAccount(
-                account_repository=self.account_repository,
-                account_eraser=self.account_eraser,
-                password_hasher=self.password_hasher,
-                unit_of_work=self.unit_of_work,
+                account_repository=self._account_repository,
+                account_eraser=self._account_eraser,
+                password_hasher=self._password_hasher,
+                unit_of_work=self._unit_of_work,
             ).execute(self.account_id, password=password, confirm_email=confirm_email)
         )
 
     def _undo_the_erase(self) -> None:
-        self.account_eraser.removed_rows.clear()
+        self._account_eraser.removed_rows.clear()
 
     def assert_the_account_was_erased_once(self) -> None:
-        assert self.account_eraser.erase_calls == [self.account_id], (
-            f"expected one erase for the caller's own id, got {self.account_eraser.erase_calls!r}"
+        assert self._account_eraser.erase_calls == [self.account_id], (
+            f"expected one erase for the caller's own id, got {self._account_eraser.erase_calls!r}"
         )
 
     def assert_nothing_was_erased(self) -> None:
-        assert self.account_eraser.erase_calls == [], (
+        assert self._account_eraser.erase_calls == [], (
             "expected a refused confirmation to never reach the eraser, got "
-            f"{self.account_eraser.erase_calls!r}"
+            f"{self._account_eraser.erase_calls!r}"
         )
 
     def assert_no_rows_survived_the_removal(self) -> None:
-        assert self.account_eraser.removed_rows == [
-            *self.account_eraser.child_rows,
+        assert self._account_eraser.removed_rows == [
+            *self._account_eraser.child_rows,
             "accounts",
-        ], f"expected every row to be removed, got {self.account_eraser.removed_rows!r}"
+        ], f"expected every row to be removed, got {self._account_eraser.removed_rows!r}"
 
     def assert_every_removed_row_came_back(self) -> None:
         """The whole point of the single transaction.
@@ -86,9 +86,9 @@ class DeleteAccountStatements(ProfileStatementsBase):
         documents are gone -- the one outcome in this product that cannot be
         undone and that nothing downstream reports.
         """
-        assert self.account_eraser.removed_rows == [], (
+        assert self._account_eraser.removed_rows == [], (
             "expected the rollback to take the child deletions back too, but these "
-            f"rows stayed removed: {self.account_eraser.removed_rows!r}"
+            f"rows stayed removed: {self._account_eraser.removed_rows!r}"
         )
 
     def assert_the_failure_reached_the_caller(self) -> None:
@@ -98,8 +98,8 @@ class DeleteAccountStatements(ProfileStatementsBase):
         )
 
     def assert_the_work_was_rolled_back(self) -> None:
-        assert self.unit_of_work.rollback_call_count == 1, (
-            f"expected exactly one rollback, got {self.unit_of_work.rollback_call_count}"
+        assert self._unit_of_work.rollback_call_count == 1, (
+            f"expected exactly one rollback, got {self._unit_of_work.rollback_call_count}"
         )
 
     def assert_refused_as_an_invalid_confirmation(self) -> None:

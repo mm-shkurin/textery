@@ -35,17 +35,17 @@ class VerifyAccountAtomicTransitionStatements(VerifyAccountStatementsBase):
             f"expected the happy-path verify to succeed, got "
             f"{type(self.thrown_exception).__name__}: {self.thrown_exception}"
         )
-        account_id = self.account_repository.saved_accounts[0].id
-        assert self.account_repository.transition_to_verified_calls == [account_id], (
+        account_id = self._account_repository.saved_accounts[0].id
+        assert self._account_repository.transition_to_verified_calls == [account_id], (
             f"expected the verify path to call transition_to_verified exactly once "
             f"with the account's id {account_id}, got "
-            f"{self.account_repository.transition_to_verified_calls}"
+            f"{self._account_repository.transition_to_verified_calls}"
         )
-        code_id = self.verification_code_repository.saved_codes[0].id
-        assert self.verification_code_repository.transition_to_consumed_calls == [
+        code_id = self._verification_code_repository.saved_codes[0].id
+        assert self._verification_code_repository.transition_to_consumed_calls == [
             (code_id, self.FIXED_CLOCK_NOW)
         ], (
             f"expected the verify path to call transition_to_consumed exactly once "
             f"with (code id {code_id}, clock now {self.FIXED_CLOCK_NOW}), got "
-            f"{self.verification_code_repository.transition_to_consumed_calls}"
+            f"{self._verification_code_repository.transition_to_consumed_calls}"
         )

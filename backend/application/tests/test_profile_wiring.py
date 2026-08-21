@@ -26,15 +26,15 @@ from container.auth_wiring import (
 from session import SqlAlchemyUnitOfWork
 
 _WRITE_FACTORIES = [
-    pytest.param(create_rename_account, ["account_repository"], id="rename_account"),
+    pytest.param(create_rename_account, ["_account_repository"], id="rename_account"),
     pytest.param(
-        create_update_avatar, ["account_repository", "avatar_repository"], id="update_avatar"
+        create_update_avatar, ["_account_repository", "_avatar_repository"], id="update_avatar"
     ),
     pytest.param(
-        create_delete_avatar, ["account_repository", "avatar_repository"], id="delete_avatar"
+        create_delete_avatar, ["_account_repository", "_avatar_repository"], id="delete_avatar"
     ),
     pytest.param(
-        create_delete_account, ["account_repository", "account_eraser"], id="delete_account"
+        create_delete_account, ["_account_repository", "_account_eraser"], id="delete_account"
     ),
 ]
 
@@ -43,10 +43,10 @@ class TestEveryProfileWriteCommitsForReal:
     @pytest.mark.parametrize(("factory", "collaborators"), _WRITE_FACTORIES)
     async def test_should_wire_a_real_unit_of_work(self, factory, collaborators):  # noqa: ARG002 -- port shape
         async with wired_on_one_session(factory) as (usecase, _):
-            assert isinstance(usecase.unit_of_work, SqlAlchemyUnitOfWork), (
+            assert isinstance(usecase._unit_of_work, SqlAlchemyUnitOfWork), (
                 f"expected {factory.__name__} to wire a real SqlAlchemyUnitOfWork so the "
                 f"write is committed rather than silently discarded, got "
-                f"{usecase.unit_of_work!r}"
+                f"{usecase._unit_of_work!r}"
             )
 
     @pytest.mark.parametrize(("factory", "collaborators"), _WRITE_FACTORIES)
@@ -54,7 +54,7 @@ class TestEveryProfileWriteCommitsForReal:
         self, factory, collaborators
     ):
         async with wired_on_one_session(factory) as (usecase, sentinel_session):
-            assert usecase.unit_of_work._session is sentinel_session, (
+            assert usecase._unit_of_work._session is sentinel_session, (
                 "expected the UnitOfWork to share the wiring's single session so the "
                 "write and its commit are one transaction"
             )
@@ -69,10 +69,10 @@ class TestEveryProfileWriteCommitsForReal:
 class TestTheReadsShareTheirSessionToo:
     async def test_get_profile_reads_through_the_wirings_session(self):
         async with wired_on_one_session(create_get_profile) as (usecase, sentinel_session):
-            assert usecase.account_repository._session is sentinel_session
+            assert usecase._account_repository._session is sentinel_session
 
     async def test_get_avatar_reads_through_the_wirings_session(self):
         # No UnitOfWork on this one, and that is correct: it only reads.
         async with wired_on_one_session(create_get_avatar) as (usecase, sentinel_session):
-            assert usecase.avatar_repository._session is sentinel_session
-            assert not hasattr(usecase, "unit_of_work")
+            assert usecase._avatar_repository._session is sentinel_session
+            assert not hasattr(usecase, "_unit_of_work")

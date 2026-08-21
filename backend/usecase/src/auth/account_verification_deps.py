@@ -23,7 +23,7 @@ class AccountVerificationDependencies:
         clock: Clock,
         unit_of_work: UnitOfWork | None = None,
     ) -> None:
-        self.account_repository = account_repository
-        self.verification_code_repository = verification_code_repository
-        self.clock = clock
-        self.unit_of_work = unit_of_work or NullUnitOfWork()
+        self._account_repository = account_repository
+        self._verification_code_repository = verification_code_repository
+        self._clock = clock
+        self._unit_of_work = unit_of_work or NullUnitOfWork()

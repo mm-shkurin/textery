@@ -38,20 +38,20 @@ class LoginUser:
         unit_of_work: UnitOfWork | None = None,
         analytics_recorder: AnalyticsRecorder | None = None,
     ) -> None:
-        self.account_repository = account_repository
-        self.password_hasher = password_hasher
-        self.token_service = token_service
+        self._account_repository = account_repository
+        self._password_hasher = password_hasher
+        self._token_service = token_service
         # The wrong-password branch increments-then-commits the failed-attempt
         # counter on this UoW (scenario 5.3); NullUnitOfWork is the no-op default
         # for callers that do not supply one.
-        self.unit_of_work = unit_of_work or NullUnitOfWork()
+        self._unit_of_work = unit_of_work or NullUnitOfWork()
         # Null by default and fail-open at use: a sign-in that succeeded must
         # answer with its token pair whatever analytics does. The port's contract
         # is that `record` never raises, so there is no try here to forget.
         self._analytics_recorder = analytics_recorder or NullAnalyticsRecorder()
 
     async def execute(self, email: str, password: str) -> TokenPair:
-        account = await self.account_repository.find_by_email(self._normalized_email(email))
+        account = await self._account_repository.find_by_email(self._normalized_email(email))
         if account is None:
             raise self._invalid_credentials()
         await self._refuse_unless_admissible(account, password)
@@ -63,7 +63,7 @@ class LoginUser:
         await self._analytics_recorder.record(
             event_name=LOGIN_SUCCESS, visitor_id=None, user_id=account.id
         )
-        return self.token_service.issue_pair(account_id=account.id, email=account.email)
+        return self._token_service.issue_pair(account_id=account.id, email=account.email)
 
     async def _refuse_unless_admissible(self, account: Account, password: str) -> None:
         """The three refusals a real account can still earn, in the order they must run.
@@ -83,7 +83,7 @@ class LoginUser:
             raise ValidationException(
                 error_code=error_codes.ACCOUNT_LOCKED, message=self.ACCOUNT_LOCKED_MESSAGE
             )
-        if not self.password_hasher.verify(
+        if not self._password_hasher.verify(
             self._normalized_password(password), account.password_hash
         ):
             await self._record_failed_attempt(account.id)
@@ -101,11 +101,11 @@ class LoginUser:
         # a stale count is acceptable (worst case: the next failure trips lockout one
         # attempt early), so swallow + roll back and let the login proceed (ADR §4).
         try:
-            await self.account_repository.reset_failed_attempts(account_id)
-            await self.unit_of_work.commit()
+            await self._account_repository.reset_failed_attempts(account_id)
+            await self._unit_of_work.commit()
         except Exception:
             logger.exception("failed to persist the failed-attempt reset")
-            await rollback_quietly(self.unit_of_work)
+            await rollback_quietly(self._unit_of_work)
 
     async def _record_failed_attempt(self, account_id: UUID) -> None:
         # Increment-then-commit BEFORE the caller raises INVALID_CREDENTIALS, so
@@ -116,11 +116,11 @@ class LoginUser:
         # SAME generic INVALID_CREDENTIALS -- the client learns nothing new, and a
         # dropped increment is acceptable next to leaking the real error.
         try:
-            await self.account_repository.increment_failed_attempts(account_id)
-            await self.unit_of_work.commit()
+            await self._account_repository.increment_failed_attempts(account_id)
+            await self._unit_of_work.commit()
         except Exception:
             logger.exception("failed to persist the failed-attempt counter")
-            await rollback_quietly(self.unit_of_work)
+            await rollback_quietly(self._unit_of_work)
 
     def _normalized_email(self, email: str) -> str:
         try:

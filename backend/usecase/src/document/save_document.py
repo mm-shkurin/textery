@@ -34,10 +34,10 @@ class SaveDocument:
         unit_of_work: UnitOfWork | None = None,
         analytics_recorder: AnalyticsRecorder | None = None,
     ) -> None:
-        self.document_repository = document_repository
-        self.html_sanitizer = html_sanitizer
-        self.clock = clock
-        self.unit_of_work = unit_of_work or NullUnitOfWork()
+        self._document_repository = document_repository
+        self._html_sanitizer = html_sanitizer
+        self._clock = clock
+        self._unit_of_work = unit_of_work or NullUnitOfWork()
         # Null by default, fail-open at use: a save that persisted must answer
         # 200 whatever analytics does.
         self._analytics_recorder = analytics_recorder or NullAnalyticsRecorder()
@@ -55,14 +55,14 @@ class SaveDocument:
         title: TitleUpdate | str | None = None,
     ) -> Document:
         self._validate_version(version)
-        sanitized = self.html_sanitizer.sanitize(self._validate_content(content))
+        sanitized = self._html_sanitizer.sanitize(self._validate_content(content))
 
-        saved = await self.document_repository.save_content_if_version_matches(
+        saved = await self._document_repository.save_content_if_version_matches(
             document_id=document_id,
             owner_id=owner_id,
             content=sanitized,
             expected_version=version,
-            updated_at=self.clock.now(),
+            updated_at=self._clock.now(),
             title=self._title_intent(title),
         )
         if saved is None:
@@ -78,7 +78,7 @@ class SaveDocument:
         An event recorded first and a commit that then failed is a save in the
         analytics data that never happened in the product (§12.4).
         """
-        await self.unit_of_work.commit()
+        await self._unit_of_work.commit()
         await self._analytics_recorder.record(
             event_name=DOCUMENT_SAVED, visitor_id=None, user_id=owner_id
         )
@@ -147,7 +147,7 @@ class SaveDocument:
         6.7) two concurrent saves carrying *different* content cannot both pass:
         the loser's content will not match what landed.
         """
-        current = await self.document_repository.find_by_id_and_owner(document_id, owner_id)
+        current = await self._document_repository.find_by_id_and_owner(document_id, owner_id)
         if current is None:
             # Absent and foreign are one answer, always. A distinct response for
             # "exists but not yours" would confirm the id -- and a 409 here would

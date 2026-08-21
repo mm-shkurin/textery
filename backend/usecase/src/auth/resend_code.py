@@ -30,7 +30,7 @@ class ResendCode(AccountVerificationDependencies):
 
     async def execute(self, email: str) -> VerificationCode:
         normalized_email = validate_email(email).value
-        account = await self.account_repository.find_by_email(normalized_email)
+        account = await self._account_repository.find_by_email(normalized_email)
         if account is None:
             # No account-existence oracle: an unknown email answers with the same
             # generic rejection the verify path uses, per the resend ADR.
@@ -40,7 +40,7 @@ class ResendCode(AccountVerificationDependencies):
         # proven by the db-adapter race test is exercised in production (scenario 4.4).
         # Acquired AFTER resolving the id via find_by_email and BEFORE the cooldown
         # read, and threaded forward so ALL downstream work uses the LOCKED row.
-        account = await self.account_repository.lock_for_update(account.id)
+        account = await self._account_repository.lock_for_update(account.id)
         if account is None:
             # Defensive (premortem REMOTE): no delete path exists today, but if the row
             # vanished between find_by_email and the lock, answer with the same rejection.
@@ -54,7 +54,7 @@ class ResendCode(AccountVerificationDependencies):
             # (scenario 4.5).
             raise self._already_verified()
 
-        newest = await self.verification_code_repository.find_active_by_account_id(account.id)
+        newest = await self._verification_code_repository.find_active_by_account_id(account.id)
         if newest is not None:
             self._enforce_cooldown(newest)
 
@@ -64,7 +64,7 @@ class ResendCode(AccountVerificationDependencies):
         # Cooldown is measured from the NEWEST code's created_at (max(created_at)),
         # including the registration code, so a just-registered account cannot
         # resend immediately (abuse vector). Allowed when now - created_at >= 60s.
-        if self.clock.now() - newest.created_at < _COOLDOWN:
+        if self._clock.now() - newest.created_at < _COOLDOWN:
             raise ValidationException(
                 error_code=error_codes.RESEND_COOLDOWN_ACTIVE,
                 message=self.COOLDOWN_MESSAGE,
@@ -78,14 +78,14 @@ class ResendCode(AccountVerificationDependencies):
         verification_code = VerificationCode.generate(
             id=uuid4(),
             account_id=account_id,
-            created_at=self.clock.now(),
+            created_at=self._clock.now(),
         )
         try:
-            await self.verification_code_repository.save(verification_code)
-            await self.unit_of_work.commit()
+            await self._verification_code_repository.save(verification_code)
+            await self._unit_of_work.commit()
         except Exception:
             logger.exception("resend failed while saving the verification code")
-            await rollback_quietly(self.unit_of_work)
+            await rollback_quietly(self._unit_of_work)
             raise
         return verification_code
 

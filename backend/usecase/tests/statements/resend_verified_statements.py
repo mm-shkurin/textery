@@ -41,11 +41,11 @@ class ResendVerifiedStatements:
     ALREADY_VERIFIED_MESSAGE = "The account is already verified."
 
     def __init__(self) -> None:
-        self.account_repository = FakeAccountRepository()
-        self.password_hasher = FakePasswordHasher()
-        self.clock = FakeClock(fixed_now=self.T0)
-        self.verification_code_repository = FakeVerificationCodeRepository()
-        self.unit_of_work = FakeUnitOfWork()
+        self._account_repository = FakeAccountRepository()
+        self._password_hasher = FakePasswordHasher()
+        self._clock = FakeClock(fixed_now=self.T0)
+        self._verification_code_repository = FakeVerificationCodeRepository()
+        self._unit_of_work = FakeUnitOfWork()
         self.registered_email: str | None = None
         self.account_id: UUID | None = None
         self.thrown_exception: Exception | None = None
@@ -68,19 +68,19 @@ class ResendVerifiedStatements:
         # cooldown check -- exactly what the ordering gate must pre-empt.
         code = await self._register_at_t0()
         await VerifyAccount(
-            account_repository=self.account_repository,
-            verification_code_repository=self.verification_code_repository,
-            clock=self.clock,
-            unit_of_work=self.unit_of_work,
+            account_repository=self._account_repository,
+            verification_code_repository=self._verification_code_repository,
+            clock=self._clock,
+            unit_of_work=self._unit_of_work,
         ).execute(email=self.account_email, code=code)
-        self.clock.fixed_now = self.T0 + self.WITHIN_COOLDOWN
+        self._clock.fixed_now = self.T0 + self.WITHIN_COOLDOWN
 
     async def given_an_unverified_account_eligible_for_resend(self) -> None:
         # Register at T0 and leave the account UNVERIFIED. Push the clock past the
         # cooldown so an un-gated execute would SUCCEED (issue a fresh code) -- making
         # the RED for the post-lock guard a clean "no exception" rather than a cooldown.
         await self._register_at_t0()
-        self.clock.fixed_now = self.T0 + self.PAST_COOLDOWN
+        self._clock.fixed_now = self.T0 + self.PAST_COOLDOWN
 
     async def resend(self) -> None:
         await self._execute_resend()
@@ -97,18 +97,18 @@ class ResendVerifiedStatements:
             created_at=self.T0,
             is_verified=True,
         )
-        self.account_repository.lock_for_update_override_enabled = True
-        self.account_repository.lock_for_update_result = verified
+        self._account_repository.lock_for_update_override_enabled = True
+        self._account_repository.lock_for_update_result = verified
         await self._execute_resend()
 
     async def _register_at_t0(self) -> str:
-        self.clock.fixed_now = self.T0
+        self._clock.fixed_now = self.T0
         scope = RegisterRequestScope.builder()
         result = await RegisterUser(
-            password_hasher=self.password_hasher,
-            account_repository=self.account_repository,
-            verification_code_repository=self.verification_code_repository,
-            clock=self.clock,
+            password_hasher=self._password_hasher,
+            account_repository=self._account_repository,
+            verification_code_repository=self._verification_code_repository,
+            clock=self._clock,
         ).execute(
             email=scope.email,
             password=scope.password,
@@ -119,13 +119,13 @@ class ResendVerifiedStatements:
         return result.verification_code.code
 
     async def _execute_resend(self) -> None:
-        self.codes_before_resend = len(self.verification_code_repository.saved_codes)
+        self.codes_before_resend = len(self._verification_code_repository.saved_codes)
         try:
             await ResendCode(
-                account_repository=self.account_repository,
-                verification_code_repository=self.verification_code_repository,
-                clock=self.clock,
-                unit_of_work=self.unit_of_work,
+                account_repository=self._account_repository,
+                verification_code_repository=self._verification_code_repository,
+                clock=self._clock,
+                unit_of_work=self._unit_of_work,
             ).execute(email=self.account_email)
         except Exception as exc:
             self.thrown_exception = exc
@@ -139,8 +139,8 @@ class ResendVerifiedStatements:
         actual = (self.thrown_exception.error_code, self.thrown_exception.message)
         expected = (self.ALREADY_VERIFIED_CODE, self.ALREADY_VERIFIED_MESSAGE)
         assert actual == expected, f"expected {expected}, got {actual}"
-        assert len(self.verification_code_repository.saved_codes) == self.codes_before_resend, (
+        assert len(self._verification_code_repository.saved_codes) == self.codes_before_resend, (
             f"expected a resend against a verified account to issue NO new code, saved_codes "
             f"went from {self.codes_before_resend} to "
-            f"{len(self.verification_code_repository.saved_codes)}"
+            f"{len(self._verification_code_repository.saved_codes)}"
         )
