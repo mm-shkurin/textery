@@ -1,6 +1,6 @@
 // What a failed document save tells the user. Pure and React-free — the save state machine in
 // useDocumentSave consumes it, the same way it consumes autosaveRetryPolicy and autosaveDirtyGuard.
-import { SessionExpiredError } from '../../../shared/session/authorizedRequest'
+import { describeOperationFailure } from '../../../shared/api/failureText'
 import { VersionConflictError } from '../../../shared/api/send'
 
 export const SAVE_ERROR_MESSAGE =
@@ -17,11 +17,9 @@ export const CONFLICT_ERROR_MESSAGE =
 // Tiptap's in-memory state), so it warns the tab is the only copy instead.
 //
 // An expired session is not a failure of the save: the request was fine, the user is signed out.
-// `authorizedRequest` raises SessionExpiredError precisely so callers can tell the two apart, and
-// `send` goes out of its way to rethrow it untouched — but NOTHING narrowed it, so the whole
-// carve-out was unconsumed machinery and the save catch flattened it right back into "check your
-// connection", telling a signed-out user to retry a button that cannot work until they sign in.
-// Its own message ("Сессия истекла. Войдите снова.") is the accurate thing to show.
+// That rule, and the one about the server's own words, now live in `shared/api/failureText.ts` —
+// the projects feed was answering the same question in its own module. What is left here is the
+// part that is only true of a save.
 //
 // A VersionConflictError reaching here is the same mistake one branch over. `saveDocument` already
 // answers the FIRST 409 by refetching the version and retrying, so anything that arrives here has
@@ -30,7 +28,12 @@ export const CONFLICT_ERROR_MESSAGE =
 // branch cannot keep: another save holds the document, and the next click re-enters the same race.
 // Saying so lets the user reopen the document instead of clicking a button that will lose again.
 export function describeSaveFailure(error: unknown): string {
-  if (error instanceof SessionExpiredError) return error.message
+  // Checked BEFORE the shared rule: a version conflict is an `Error` subclass carrying the
+  // server's 409 text, and the sentence this screen needs is not that text but the one telling the
+  // user to reopen the document.
   if (error instanceof VersionConflictError) return CONFLICT_ERROR_MESSAGE
-  return SAVE_ERROR_MESSAGE
+  // `serverText: false` — this screen's sentence is an instruction, not a description of what
+  // went wrong, and a 4xx's own wording does not carry the "your text is only in this tab" part
+  // that is the whole point of showing anything here.
+  return describeOperationFailure(error, SAVE_ERROR_MESSAGE, { serverText: false })
 }
