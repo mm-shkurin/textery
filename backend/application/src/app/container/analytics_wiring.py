@@ -27,7 +27,6 @@ from access.analytics.analytics_event_storage import SqlAlchemyAnalyticsEventRep
 from access.analytics.registration_context_storage import SqlAlchemyRegistrationContextWriter
 from access.analytics.server_event_recorder import SqlAlchemyServerEventRecorder
 from access.auth.oauth_rate_limit_storage import SqlAlchemyRateLimiter
-from analytics.analytics_recorder import NullAnalyticsRecorder
 from analytics.record_analytics_event import RecordAnalyticsEvent
 from analytics.record_registration_context import RecordRegistrationContext
 from analytics.registration_context import Geolocation, NullGeolocation
@@ -94,10 +93,6 @@ def create_record_analytics_event(session: AsyncSession) -> RecordAnalyticsEvent
 
 def create_analytics_recorder() -> SqlAlchemyServerEventRecorder:
     return SqlAlchemyServerEventRecorder(session_factory=session_factory, clock=SystemClock())
-
-
-def create_null_analytics_recorder() -> NullAnalyticsRecorder:
-    return NullAnalyticsRecorder()
 
 
 def geolocation() -> Geolocation:
