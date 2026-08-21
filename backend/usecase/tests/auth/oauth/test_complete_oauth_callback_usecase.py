@@ -63,7 +63,7 @@ class TestCallbackFirstSignIn:
         assert len(f.accounts.saved_accounts) == 1
         assert f.accounts.saved_accounts[0].is_verified is True
         assert f.accounts.saved_accounts[0].email == _EMAIL
-        assert code and code in f.handoffs._by_value
+        assert code and f.handoffs.holds(code)
         assert f.uow.commit_call_count == 1
 
     async def test_binds_the_identity_to_the_new_account(self):
@@ -98,7 +98,7 @@ class TestCallbackReturningUser:
 
         assert len(f.accounts.saved_accounts) == 1
         assert len(f.identities.saved) == 1
-        assert f.handoffs._by_value[code].account_id == first_account_id
+        assert f.handoffs.find(code).account_id == first_account_id
 
 
 class TestCallbackStateValidation:
@@ -107,7 +107,7 @@ class TestCallbackStateValidation:
 
         with pytest.raises(OAuthCallbackError):
             await f.usecase.execute("yandex", "auth-code", "never-minted")
-        assert f.handoffs._by_value == {}
+        assert f.handoffs.stored == []
 
     async def test_refuses_a_replayed_state(self):
         f = _fixture()
@@ -143,7 +143,7 @@ class TestCallbackProviderFailure:
         with pytest.raises(OAuthCallbackError):
             await f.usecase.execute("yandex", "auth-code", state)
         assert f.accounts.saved_accounts == []
-        assert f.handoffs._by_value == {}
+        assert f.handoffs.stored == []
 
 
 class TestCallbackPasswordAccountCollision:
@@ -162,4 +162,4 @@ class TestCallbackPasswordAccountCollision:
         assert len(f.accounts.saved_accounts) == 1
         assert f.accounts.saved_accounts[0] is existing
         assert f.identities.saved == []
-        assert f.handoffs._by_value == {}
+        assert f.handoffs.stored == []
