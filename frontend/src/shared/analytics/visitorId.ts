@@ -12,6 +12,7 @@
 // browser that cannot store gets a per-load identity instead, and the fact that it could not
 // store is REPORTED (`degraded`) rather than hidden — two loads from such a browser are two
 // visitors, and analytics that cannot tell that apart from two people is analytics that lies.
+import { readStored, removeStored, writeStored } from '../lib/browser'
 import { mintUuid } from './uuid'
 
 const VISITOR_ID_KEY = 'textery.analytics.visitorId'
@@ -45,31 +46,18 @@ export function visitorId(): string {
 // Called when the account is deleted: the identity and everything keyed to it goes with it.
 export function forgetVisitor(): void {
   cached = null
-  safely(() => {
-    window.localStorage.removeItem(VISITOR_ID_KEY)
-  })
+  removeStored('local', VISITOR_ID_KEY)
 }
 
 function resolveIdentity(): VisitorIdentity {
-  const stored = safely(() => window.localStorage.getItem(VISITOR_ID_KEY))
+  const stored = readStored('local', VISITOR_ID_KEY)
   if (typeof stored === 'string' && UUID_PATTERN.test(stored)) {
     return { visitorId: stored.toLowerCase(), degraded: false }
   }
   const minted = mintUuid()
-  const persisted = safely(() => {
-    window.localStorage.setItem(VISITOR_ID_KEY, minted)
-    return true
-  })
-  return { visitorId: minted, degraded: persisted !== true }
-}
-
-// Every storage touch in this module goes through here. `localStorage` can throw on ACCESS, not
-// only on write — reading `window.localStorage` itself raises a SecurityError when cookies are
-// blocked — so the guard has to wrap the property access too, which is why it takes a thunk.
-export function safely<T>(read: () => T): T | null {
-  try {
-    return read()
-  } catch {
-    return null
-  }
+  // `writeStored` reports whether the value survived, which is exactly the degraded flag: it
+  // guards the property ACCESS too, because reading `localStorage` itself raises a SecurityError
+  // when cookies are blocked, not only writing to it.
+  const persisted = writeStored('local', VISITOR_ID_KEY, minted)
+  return { visitorId: minted, degraded: !persisted }
 }

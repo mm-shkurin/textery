@@ -8,7 +8,7 @@
 // It is frozen in the BROWSER because the account is created later — sometimes days later, and in
 // the OAuth case two redirects away from anything the client can put in a body. Whatever the
 // browser froze is what the registration carries.
-import { safely } from './visitorId'
+import { readStored, removeStored, writeStored } from '../lib/browser'
 
 const ATTRIBUTION_KEY = 'textery.analytics.attribution'
 
@@ -38,9 +38,7 @@ export function captureAttribution(search: string): void {
   // page.
   if (Object.keys(current).length === 0) return
   cached = current
-  safely(() => {
-    window.localStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(current))
-  })
+  writeStored('local', ATTRIBUTION_KEY, JSON.stringify(current))
 }
 
 // What a registration should carry. `{}` when nothing was ever frozen.
@@ -50,19 +48,17 @@ export function attributionForRegistration(): Attribution {
 
 export function forgetAttribution(): void {
   cached = null
-  safely(() => {
-    window.localStorage.removeItem(ATTRIBUTION_KEY)
-  })
+  removeStored('local', ATTRIBUTION_KEY)
 }
 
 function frozenAttribution(): Attribution | null {
   if (cached) return cached
-  const stored = safely(() => window.localStorage.getItem(ATTRIBUTION_KEY))
-  if (typeof stored !== 'string') return null
+  const stored = readStored('local', ATTRIBUTION_KEY)
+  if (stored === null) return null
   // Anything unreadable is treated as "nothing was frozen" rather than repaired: the value is
   // ours, so a corrupt one means a bug or a hand-edit, and the honest recovery is to let the next
   // real campaign link become the first touch.
-  const parsed = safely(() => JSON.parse(stored) as unknown)
+  const parsed = parseJson(stored)
   if (parsed === null || typeof parsed !== 'object') return null
   cached = onlyUtmStrings(parsed as Record<string, unknown>)
   return cached
@@ -89,4 +85,12 @@ function onlyUtmStrings(source: Record<string, unknown>): Attribution {
     if (typeof value === 'string' && value !== '') found[key] = value
   }
   return found
+}
+
+function parseJson(source: string): unknown {
+  try {
+    return JSON.parse(source) as unknown
+  } catch {
+    return null
+  }
 }

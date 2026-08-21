@@ -10,6 +10,7 @@
 // means. `SITE_VISITED` is once per load; `EDITOR_OPENED` is once per document, so opening a
 // second document in the same session is a second opening and opening the same one twice in one
 // gesture is not.
+import { browserWindow } from '../lib/browser'
 import { BROWSER_EVENTS, report } from './analyticsClient'
 import { captureAttribution } from './attribution'
 
@@ -23,7 +24,7 @@ export function resetTrackers(): void {
 
 // Called once, as early as the app can: it also freezes first-touch attribution, and the URL's
 // campaign parameters are only reliably present before the router has had a chance to rewrite it.
-export function trackSiteVisit(search: string = window.location.search): void {
+export function trackSiteVisit(search: string = browserWindow()?.location.search ?? ''): void {
   captureAttribution(search)
   reportOnce('site-visit', BROWSER_EVENTS.siteVisited)
 }
