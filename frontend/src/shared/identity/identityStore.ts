@@ -16,6 +16,7 @@
 import { getAccessToken, subscribeAuthSession } from '../session/authSession'
 import { fetchProfile, type Profile } from './api/profileApi'
 import { resetAvatar, syncAvatar } from './avatarStore'
+import { listenerSet } from '../lib/listeners'
 
 export type IdentityState =
   // 'idle' is never rendered: the first subscriber turns it into 'loading'. It exists so a
@@ -32,7 +33,7 @@ const IDLE: IdentityState = { status: 'idle', profile: null }
 let state: IdentityState = IDLE
 let inFlight = false
 let lastToken: string | null = null
-const listeners = new Set<() => void>()
+const listeners = listenerSet()
 
 // Referentially STABLE between changes: `useSyncExternalStore` re-renders on `Object.is`
 // inequality, so returning a fresh object per read would loop forever.
@@ -41,10 +42,7 @@ export function identitySnapshot(): IdentityState {
 }
 
 export function subscribeIdentity(listener: () => void): () => void {
-  listeners.add(listener)
-  return () => {
-    listeners.delete(listener)
-  }
+  return listeners.subscribe(listener)
 }
 
 function setState(next: IdentityState): void {
@@ -54,7 +52,7 @@ function setState(next: IdentityState): void {
   // a session change — is a path that may change the picture, and none of them should have to
   // remember to say so.
   syncAvatar(next.profile)
-  for (const listener of [...listeners]) listener()
+  listeners.notify()
 }
 
 // Bumped by `resetIdentity`, and read by every in-flight load when it settles. Without it a
@@ -138,5 +136,5 @@ subscribeAuthSession(() => {
   setState(IDLE)
   // Refetch only if somebody is looking and there is a session to ask about. A signed-out tab has
   // no identity to show and every header that displayed one has unmounted.
-  if (listeners.size > 0 && token !== null) load()
+  if (listeners.size() > 0 && token !== null) load()
 })
