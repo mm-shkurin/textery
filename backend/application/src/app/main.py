@@ -12,11 +12,13 @@ import asyncio
 import contextlib
 import logging
 from collections.abc import AsyncIterator
+from typing import cast
 
 from api_docs import docs_urls
 from dependency_wiring import install_dependency_overrides
 from fastapi import FastAPI
 from middleware.no_store import NoStoreMiddleware
+from starlette.types import ExceptionHandler
 
 from container import provider, run_stale_generation_sweep
 from error_handling.exception_handlers import (
@@ -97,16 +99,24 @@ app.include_router(document_deletion_router)
 app.include_router(health_router)
 app.include_router(project_router)
 app.include_router(analytics_router)
-# The three narrow handlers are suppressed below because Starlette types the
-# second argument as taking `Exception`, while it dispatches on the class given
-# in the first argument, so a handler narrowed to the class it is registered for
-# is the intended usage and cannot be called with anything else. Typing that
-# relationship needs a dependent signature Starlette does not express. Suppressed
-# per line, with the code named, rather than by loosening the handlers to
-# `Exception` -- that would erase a real guarantee to satisfy a stub.
-app.add_exception_handler(ValidationException, validation_exception_handler)  # type: ignore[arg-type]
-app.add_exception_handler(NotFoundException, not_found_exception_handler)  # type: ignore[arg-type]
-app.add_exception_handler(ConflictException, conflict_exception_handler)  # type: ignore[arg-type]
+
+
+def _narrow_handler(handler: object) -> ExceptionHandler:
+    """A handler declared for one exception class, as Starlette's stub wants it."""
+    return cast(ExceptionHandler, handler)
+
+
+# The three narrow handlers go through `_narrow_handler` because Starlette types
+# the second argument as taking `Exception`, while it dispatches on the class
+# given in the first argument -- so a handler narrowed to the class it is
+# registered for is the intended usage and cannot be called with anything else.
+# Expressing that needs a dependent signature Starlette does not have. The cast
+# states the relationship at the one argument it concerns, rather than loosening
+# the handlers to `Exception`, which would erase a real guarantee to satisfy a
+# stub.
+app.add_exception_handler(ValidationException, _narrow_handler(validation_exception_handler))
+app.add_exception_handler(NotFoundException, _narrow_handler(not_found_exception_handler))
+app.add_exception_handler(ConflictException, _narrow_handler(conflict_exception_handler))
 app.add_exception_handler(Exception, unhandled_exception_handler)
 # Stamps Cache-Control: no-store on every response the profile routes produce --
 # the 200 and, because it wraps the router rather than living inside a route body,

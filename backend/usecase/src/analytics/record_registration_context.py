@@ -10,6 +10,7 @@ Never raises. See `registration_context_recorder.py` for why that is the whole
 point rather than a convenience.
 """
 
+from collections.abc import Mapping
 from uuid import UUID
 
 from analytics.registration_context import Geolocation, RegistrationContextWriter
@@ -27,7 +28,7 @@ class RecordRegistrationContext:
     async def execute(
         self,
         account_id: UUID,
-        campaign_parameters: dict[str, str | None],
+        campaign_parameters: Mapping[str, object],
         client_ip: str | None,
         user_agent: str | None,
         accept_language: str | None,

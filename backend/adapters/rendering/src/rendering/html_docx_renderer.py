@@ -1,7 +1,7 @@
 import io
 
-from docx import Document  # type: ignore[import-untyped]
-from htmldocx import HtmlToDocx  # type: ignore[import-untyped]
+from docx import Document
+from htmldocx import HtmlToDocx
 
 from document.export_format import ExportFormat
 from shared.clock import Clock

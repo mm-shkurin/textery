@@ -20,6 +20,7 @@ is down, registers exactly as they would have before Story 14 existed.
 """
 
 import logging
+from collections.abc import Mapping
 from uuid import UUID
 
 from analytics.attribution import Attribution
@@ -46,7 +47,7 @@ class RegistrationContextRecorder:
     async def record(
         self,
         account_id: UUID,
-        campaign_parameters: dict[str, str | None],
+        campaign_parameters: Mapping[str, object],
         client_ip: str | None,
         user_agent: str | None,
         accept_language: str | None,
@@ -62,7 +63,7 @@ class RegistrationContextRecorder:
     async def _store(
         self,
         account_id: UUID,
-        campaign_parameters: dict[str, str | None],
+        campaign_parameters: Mapping[str, object],
         client_ip: str | None,
         user_agent: str | None,
         accept_language: str | None,

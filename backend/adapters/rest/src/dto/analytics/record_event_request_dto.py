@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class RecordEventRequestDto(BaseModel):
     """The reported event, typed as PERMISSIVELY as the contract requires.
 
-    `event_name`, `visitor_id` and `occurrence_key` are `Any`, not `str` and not
+    `event_name`, `visitor_id` and `occurrence_key` are `object`, not `str` and not
     `UUID`, and that is a contract decision rather than laziness
     (`endpoints.md`, "Residual this contract does not own"). A strict Pydantic
     annotation answers **422 with `{"detail": ...}` that ECHOES the rejected
@@ -25,9 +25,9 @@ class RecordEventRequestDto(BaseModel):
     because there is no branch to get wrong.
     """
 
-    event_name: Any = None
-    visitor_id: Any = None
-    occurrence_key: Any = None
+    event_name: object = None
+    visitor_id: object = None
+    occurrence_key: object = None
     payload: dict[str, Any] | None = None
     # The browser could not persist its visitor id, so this row is one page load
     # rather than one person. A client CAN set this one, deliberately: only the

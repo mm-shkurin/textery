@@ -11,13 +11,11 @@ from analytics.analytics_error_codes import (
     OCCURRENCE_KEY_CONFLICT_MESSAGE,
     RATE_LIMITED,
     RATE_LIMITED_MESSAGE,
-    UNKNOWN_EVENT_NAME,
-    UNKNOWN_EVENT_NAME_MESSAGE,
 )
 from analytics.analytics_event import AnalyticsEvent
 from analytics.analytics_event_repository import AnalyticsEventRepository, SaveOutcome
 from analytics.analytics_payload import validate_payload
-from analytics.event_names import BROWSER_ORIGIN_EVENT_NAMES
+from analytics.reported_values import accepted_name, identifier
 from shared.clock import Clock
 from shared.exceptions import ValidationException
 from shared.unit_of_work import UnitOfWork
@@ -75,9 +73,9 @@ class RecordAnalyticsEvent:
     async def execute(
         self,
         user_id: UUID | None,
-        event_name: str,
-        visitor_id: str,
-        occurrence_key: str,
+        event_name: object,
+        visitor_id: object,
+        occurrence_key: object,
         payload: dict[str, Any] | None = None,
         degraded: bool = False,
         source: str = "",
@@ -88,28 +86,13 @@ class RecordAnalyticsEvent:
         would echo the rejected input back on the product's only tokenless route.
         """
         await self._guard_the_rate(source)
-        event = AnalyticsEvent(
-            event_name=self._accepted_name(event_name),
-            # Parsed, not stored as text: the entity types both identifiers as
-            # `UUID` so the four spellings of one visitor id (§2.4) resolve to
-            # one value before anything downstream sees them.
-            visitor_id=self._identifier(visitor_id, INVALID_VISITOR_ID, INVALID_VISITOR_ID_MESSAGE),
-            occurrence_key=self._identifier(
-                occurrence_key, INVALID_OCCURRENCE_KEY, INVALID_OCCURRENCE_KEY_MESSAGE
-            ),
-            # Straight through from the caller. The usecase never reads an id
-            # out of the reported event, so a client cannot attribute its
-            # events to another account.
+        event = self._reported_event(
             user_id=user_id,
-            # The injected Clock, never `datetime.now()` -- that is what keeps
-            # every later time-dependent scenario controllable.
-            event_time=self._clock.now(),
-            payload=validate_payload(payload),
-            # The one field a client is trusted with, because only the browser
-            # knows its own storage failed. Nothing downstream decides anything
-            # on it: it marks a row as one page load rather than one person, so
-            # Story 15 can leave it out of unique-visitor counts (§4.1, §4.2).
-            degraded=bool(degraded),
+            event_name=event_name,
+            visitor_id=visitor_id,
+            occurrence_key=occurrence_key,
+            payload=payload,
+            degraded=degraded,
         )
         outcome = await self._analytics_event_repository.save_new(event)
         if outcome is SaveOutcome.CONFLICTING_NAME:
@@ -126,6 +109,40 @@ class RecordAnalyticsEvent:
         # write, and answering 204 without closing the transaction would leave
         # the read-after-write guarantee resting on an open one.
         await self._unit_of_work.commit()
+
+    def _reported_event(
+        self,
+        user_id: UUID | None,
+        event_name: object,
+        visitor_id: object,
+        occurrence_key: object,
+        payload: dict[str, Any] | None,
+        degraded: bool,
+    ) -> AnalyticsEvent:
+        """What the request said, once every field has been through the domain."""
+        return AnalyticsEvent(
+            event_name=accepted_name(event_name),
+            # Parsed, not stored as text: the entity types both identifiers as
+            # `UUID` so the four spellings of one visitor id (§2.4) resolve to
+            # one value before anything downstream sees them.
+            visitor_id=identifier(visitor_id, INVALID_VISITOR_ID, INVALID_VISITOR_ID_MESSAGE),
+            occurrence_key=identifier(
+                occurrence_key, INVALID_OCCURRENCE_KEY, INVALID_OCCURRENCE_KEY_MESSAGE
+            ),
+            # Straight through from the caller. The usecase never reads an id
+            # out of the reported event, so a client cannot attribute its
+            # events to another account.
+            user_id=user_id,
+            # The injected Clock, never `datetime.now()` -- that is what keeps
+            # every later time-dependent scenario controllable.
+            event_time=self._clock.now(),
+            payload=validate_payload(payload),
+            # The one field a client is trusted with, because only the browser
+            # knows its own storage failed. Nothing downstream decides anything
+            # on it: it marks a row as one page load rather than one person, so
+            # Story 15 can leave it out of unique-visitor counts (§4.1, §4.2).
+            degraded=bool(degraded),
+        )
 
     async def _guard_the_rate(self, source: str) -> None:
         """Refuse before anything is parsed, and fail CLOSED.
@@ -150,33 +167,3 @@ class RecordAnalyticsEvent:
             ) from error
         if not within_limit:
             raise ValidationException(message=RATE_LIMITED_MESSAGE, error_code=RATE_LIMITED)
-
-    def _accepted_name(self, event_name: object) -> str:
-        """One of the three names a browser legitimately produces, or a refusal.
-
-        The catalogue has twelve and the column's CHECK constraint lists all
-        twelve, so a later story can emit the subscription names without a
-        migration. The ROUTE accepts three: on a tokenless endpoint, "no client
-        is allowed to send the others" is not a rule unless something refuses
-        them.
-        """
-        if event_name not in BROWSER_ORIGIN_EVENT_NAMES:
-            raise ValidationException(
-                message=UNKNOWN_EVENT_NAME_MESSAGE, error_code=UNKNOWN_EVENT_NAME
-            )
-        return str(event_name)
-
-    def _identifier(self, raw: object, error_code: str, message: str) -> UUID:
-        """Parse one wire identifier, refusing anything that is not a UUID.
-
-        `isinstance` FIRST: `uuid.UUID(3)` raises `AttributeError`, and
-        `uuid.UUID(None)` a `TypeError` -- neither is a `ValueError`, so a
-        `except ValueError` alone would let a JSON number out of here as a 500 on
-        the one route that has no token in front of it.
-        """
-        if not isinstance(raw, str):
-            raise ValidationException(message=message, error_code=error_code)
-        try:
-            return UUID(raw)
-        except ValueError as error:
-            raise ValidationException(message=message, error_code=error_code) from error

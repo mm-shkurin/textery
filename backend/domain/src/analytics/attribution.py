@@ -15,6 +15,7 @@ marketing report rather than by a user.
 """
 
 import unicodedata
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from shared import limits
@@ -42,15 +43,19 @@ class Attribution:
     utm_term: str | None = None
 
     @classmethod
-    def of(cls, values: dict[str, str | None]) -> "Attribution":
+    def of(cls, values: Mapping[str, object]) -> "Attribution":
         """The five stored values for a link, or the empty set. Never raises."""
-        normalized: dict[str, str | None] = {}
+        normalized: list[str | None] = []
         for field_name in FIELD_NAMES:
             member = _normalized(values.get(field_name))
             if isinstance(member, _Unusable):
                 return cls()
-            normalized[field_name] = member
-        return cls(**normalized)  # type: ignore[arg-type]
+            normalized.append(member)
+        # Positionally, not `cls(**by_name)`: the dictionary form needs a static
+        # suppression, because mypy cannot see that its keys are exactly this
+        # dataclass's fields -- and a suppression is the one thing that would hide
+        # a real mismatch here if a sixth parameter were ever added.
+        return cls(*normalized)
 
     @property
     def is_empty(self) -> bool:

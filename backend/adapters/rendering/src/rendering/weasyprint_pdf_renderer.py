@@ -1,6 +1,6 @@
 from typing import Any
 
-import weasyprint  # type: ignore[import-untyped]
+import weasyprint
 
 from document.export_format import ExportFormat
 from rendering.export_styles import EXPORT_CSS

@@ -7,8 +7,6 @@ NOT swallowed. Each is checked here rather than four times over in the adapters,
 which is the point of naming the envelope at all.
 """
 
-import asyncio
-
 import pytest
 from sqlalchemy.exc import OperationalError
 
@@ -47,7 +45,7 @@ class TestTheDatabaseFails:
         [
             OperationalError("INSERT", {}, Exception("connection refused")),
             OSError("socket went away"),
-            asyncio.TimeoutError(),
+            TimeoutError(),
         ],
         ids=["driver", "socket", "deadline"],
     )
