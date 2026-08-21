@@ -9,9 +9,10 @@ also checks the tests -- was not.
 Ordered cheapest-first so a formatting mistake is reported in seconds rather than
 after the suite. Does NOT stop at the first failure: knowing all four verdicts is
 worth the extra seconds, and stopping early turns one fix-and-rerun cycle into
-four. `pytest` needs no database for the suites listed here; the db adapter's own
-suite skips itself without PostgreSQL, so it is included and simply reports its
-skips.
+four. The db adapter's suite needs a real PostgreSQL and FAILS with a named
+reason without one -- it used to skip, which let ~70 integration tests report
+nothing while the run still ended green. Run `pytest domain usecase` for the
+layers that need no database.
 
 Mirrors `.github/workflows/ci.yml`. If a gate is added there, add it here.
 """
