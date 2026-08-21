@@ -456,3 +456,29 @@ Outstanding итерации 5, но то, что удерживает план�
 - Auth tokens remain in `sessionStorage`; the accepted-risk note and the
   httpOnly-cookie end state are unchanged.
 
+## Publish — 2026-08-21 — gitverse-frontend/main 219d4bbf..5fc76ef0
+### What landed:
+- The mirror is the `frontend/` subtree with that directory as the root. Rewritten
+  with `python -m git_filter_repo --subdirectory-filter frontend` on a throwaway
+  clone: **4.6 seconds**, against the ~1.5 hours `git subtree split` takes walking
+  all 1756 monorepo commits.
+- `filter-repo` hashes are deterministic and the previous publish used it too, so all
+  603 already-published commits reproduced their hashes and `219d4bbf` came out an
+  ANCESTOR of the new history. The push was a plain fast-forward: **no `--force`,
+  nothing rewritten, no safety branch needed.** 662 commits now; the sprint's 59 are
+  59 commits, not the squashed dump that cost a mark last sprint.
+- `feat/figma-alignment` published as a new ref (`63de17f2`, 641 commits), tree
+  matching `feat/figma-alignment:frontend`, an ancestor of `main`.
+- Verified after: tree byte-identical to `HEAD:frontend`; no `node_modules/`, `dist/`
+  or `.env` tracked.
+
+### Outstanding Blockers:
+- `refactor(usecase): five flows stop carrying every step themselves` sits in the
+  frontend history under a backend title — it carries two zero-line frontend renames
+  the backend session's commit swept up. Content is correct; retitling it would mean
+  rewriting published history.
+- `GIT-BULK` and `GIT-DIRECT-MAIN` remain: history, not editable. The second is
+  waiver material — the no-PR policy it flags is documented at `README.md:237`.
+- The committer email on every frontend commit is `trape3977@g,ail.com`. Raised;
+  the owner chose to leave it.
+

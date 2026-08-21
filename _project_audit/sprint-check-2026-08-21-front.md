@@ -4,26 +4,51 @@
 - HEAD at report time: `c06e06fd` (probes ran at `86f03d4b`; the formatting commit
   touches one test file and no probe input)
 - Scope: `front` (frontend/, acceptance/tests/frontend/)
-- Grading target: **working tree**. `--release` was NOT run; see Stage 0 item 2 — the
-  release ref is so far behind that a release-ref probe run would grade last week's code.
+- Grading target: **working tree**, which is now the same code as the release ref —
+  `gitverse-frontend/main` was published from this branch and its tree is byte-identical.
 - Stage A final: **2.5 / 3.0**, held (iteration 5: 3.0 → confirmation: 2.5)
 
 ## Stage 0 — the gate
 
+Re-run after the publish; the original run's verdict is kept below it because a gate
+that failed for most of the day is the thing worth remembering, not the minute it
+started passing.
+
 | # | Gate item | Status | Evidence |
 |---|---|---|---|
-| 1 | Deployed link exists and works | **PASS (frontend)** | `README.md:7` publishes `https://mmshkurin.ru`; `GET /` answers `200`. `GET /api/health` answers `404` — that is the backend's gate item, not this layer's, and is named here only so it is not lost. |
-| 2 | Every artifact in GitVerse and current | **FAIL — blocking** | `gitverse-frontend/main` = `219d4bbf`, dated **2026-08-14**. `git log --oneline 219d4bbf..HEAD -- frontend/` = **639 commits**. The whole sprint — analytics, CSS modules, the session move, the test cases published today — is absent from the graded repository. |
-| 3 | Release branch carries the sprint's work | **FAIL — blocking** | Follows from 2. |
-| 4 | What was demoed is in the code | not assessable here | Requires the demo; the code side is present in the monorepo. |
+| 1 | Deployed link exists and works | **PASS** | `README.md:7` publishes `https://mmshkurin.ru`; `GET /` answers `200`. `GET /api/health` answers `404` — the backend's gate item, not this layer's, named here only so it is not lost. |
+| 2 | Every artifact in GitVerse and current | **PASS** | `gitverse-frontend/main` = `5fc76ef0`, 662 commits, tree byte-identical to `HEAD:frontend`; `git ls-tree -r` finds no `node_modules/`, `dist/` or `.env`. |
+| 3 | Release branch carries the sprint's work | **PASS** | The 59 commits of this sprint are on `main` as 59 commits, not a dump. |
+| 4 | What was demoed is in the code | not assessable here | Requires the demo; the code side is present. |
 
-**Every score below is provisional under item 2.** A jury opening
-`gitverse.ru/studentlabs/slide_frontend` on Friday grades the 2026-08-14 snapshot,
-where the test cases do not exist, the analytics slice does not exist, and the README
-still documents a default that would break its quick start. Pushing is the single
-highest-value action left this sprint, and it is outward-facing: propose
-`git diff gitverse-frontend/main..HEAD --stat`, show the deletions, and wait for the
-user. It was not done by this run.
+**How it was published, since the method is the finding.** The mirror is the
+`frontend/` subtree with that directory as the repository root. Last sprint it was a
+single squashed `chore(frontend): sync…` commit, and the jury took a mark off for
+exactly that. This time: a throwaway clone, `python -m git_filter_repo
+--subdirectory-filter frontend`, **4.6 seconds** — against the ~1.5 hours
+`git subtree split` takes walking all 1756 monorepo commits.
+
+The part worth writing down: `filter-repo` hashes are deterministic, and the previous
+publish used it too, so all 603 already-published commits came out with the same
+hashes and the mirror's head `219d4bbf` was an **ancestor** of the new history.
+The push was a plain fast-forward — **no `--force`, nothing rewritten, no safety
+branch needed**. The rewrite is paid for once; every later sprint is a fast-forward.
+
+`feat/figma-alignment` was published the same way (`63de17f2`, 641 commits, tree
+matching `feat/figma-alignment:frontend`) as a new ref, an ancestor of `main`.
+
+**One anomaly, deliberately not fixed.** `refactor(usecase): five flows stop carrying
+every step themselves` appears in the frontend history under a backend title: it
+carries two zero-line frontend renames that the backend session's commit swept up.
+The content is correct — the tree comparison is byte-exact — and rewriting published
+history to retitle one commit costs more than it buys.
+
+### Original verdict, 2026-08-21 morning — FAILED, blocking
+
+`gitverse-frontend/main` was `219d4bbf`, dated **2026-08-14**, with the working tree
+639 frontend commits ahead of it. The whole sprint — analytics, CSS modules, the
+session move, the test cases — was absent from the graded repository, and every score
+in this report was provisional under that until the publish above.
 
 ## Stage A — audit loop
 
@@ -61,12 +86,17 @@ with new findings → 0.5; all PASS/WAIVED → 1. This report covers one reposit
 (frontend); the backend repo is scored by its own run, and only then are the two
 averaged and rounded.
 
-| Criterion | frontend | Why |
-|---|---|---|
-| Git repo, README, Wiki | **0 / 1** | 2 regression FAILs (`GIT-BULK`, `GIT-DIRECT-MAIN`) |
-| Consistency, architectural style | **0.5 / 1** | regressions clean; 2 judgment FAILs |
-| Code quality / code smells | **0.5 / 1** | regressions clean; 2 new probe FAILs + 1 judgment FAIL |
-| Test cases | **2 / 2** | 22 files, 252 cases + story 14's 24, all eight fields, in sync |
+Scored twice: as the checklist pass found things, and again after the fixing session
+that followed it. The second column is what is on the release ref.
+
+| Criterion | at the pass | after fixes | Why it moved |
+|---|---|---|---|
+| Git repo, README, Wiki | 0 / 1 | **0 / 1** | unchanged — both regressions are history |
+| Consistency, architectural style | 0.5 / 1 | **1 / 1** | both judgment FAILs fixed: module placement, one failure-text rule |
+| Code quality / code smells | 0.5 / 1 | **0.5 / 1** | duplication 8 → 6 hits, but `SMELL-LONG-FUNC` stands (see below) |
+| Test cases | 2 / 2 | **2 / 2** | — |
+
+**Technical part, this repository: 3.5 / 5.**
 
 Probes: **45 PASS / 5 FAIL**, of which 2 are `regression: True`.
 (2026-08-14: 29 PASS / 21 FAIL, 14 regression.)
@@ -92,89 +122,92 @@ is a real finding: `4f2d7873` "close the main USM and take the cheap half of MVP
 
 ### New findings
 
-Ranked by what a grader reading the repo cold hits first.
+Fourteen commits closed most of this list. Each entry says what happened.
 
-1. **`analyticsClient.ts:59` calls `fetch` directly** instead of going through
-   `shared/api/httpClient`, so an analytics report has no timeout at all — every other
-   call in the product is bounded by `withTimeout`. `keepalive` is deliberate and
-   documented; the missing bound is not. Architecture change → `## Needs a task`.
-2. **Five per-feature error→Russian mappings, two incompatible error shapes.**
-   `features/auth/api/apiError.ts:44` (an `AuthApiError` object) beside
-   `shared/api/send.ts:33` `describeFailure` and typed `Error` subclasses, plus
-   `projects/api/loadFailureMessages.ts:66`, `generation/hooks/saveFailureMessages.ts:34`,
-   `shared/identity/api/profileErrors.ts`. There is a shared primitive but no single
-   mapping; a future shared screen catching both must branch on shape, not type.
-3. **`features/generation/components/` is a de-facto second `utils/`.** Seven
-   non-component modules and a hook (`editorDomSync.ts`, `exportRun.ts`,
-   `toolbarAction.ts`, `blockPlaceholder.ts`, `normalizeHref.ts`,
-   `serializeEditorHtml.ts`, `editorToolbarActions.ts`, `useManualEditorInstance.ts`)
-   while `generation/utils/` and `generation/hooks/` both exist; `shared/` likewise
-   keeps `documentTypes.ts`, `textStyles.ts`, `volumePages.ts`, `formatCardDate.ts`
-   loose at the slice root. The rule is honoured in `auth` and `projects` and abandoned
-   here, so the same kind of file lives in three places.
-4. **`SMELL-LONG-FUNC`** — 12 blocks over 30 lines, worst
-   `ProjectRetryControls.tsx:26` (69), `ProjectsPage.tsx:31` (67),
-   `ProjectsFeedSections.tsx:84` (57).
-5. **`SMELL-DUPLICATION`** — 8 repeated 6-line blocks, the landing slice worst
-   (`LandingAdvantages`/`LandingComparison`/`LandingCta` share one 5×).
-6. **Thirteen `OAuthCallback.*.test.tsx` files** hand-copy the same
-   `vi.mock('react-router-dom', …)` + `vi.mock('../../api/oauthExchangeApi')` preamble,
-   while `src/test/renderWithRouter.tsx` already proves the shared-support pattern. A
-   grader diffing two of those files sees it in seconds.
-7. **The committer email on all 633 frontend commits is malformed** —
-   `trape3977@g,ail.com`, with a comma. Visible in the first `git log` a grader runs,
-   and it means the sole author's contribution cannot be attributed to a valid identity.
-   Fixable going forward with `git config user.email`; the existing history is not.
-8. **Bus factor 1** — `git shortlog -s -n -- frontend/` is 628 / 7, against a README
-   that justifies the no-PR process as a two-person team's choice.
-9. **`scripts/` is 27 files of gate infrastructure** against ~1.5k lines of application
-   code, with no owner named. Each gate is individually justified and self-tested (that
-   item PASSes), but the tooling now outweighs the product it guards.
-10. **`scripts/check-audit.mjs` is fail-closed on npm registry reachability** with no
-    offline cache — an npm outage turns every CI run and every local pre-commit gate red
-    for a reason unrelated to the code.
-11. **`GIT-LANGUAGE`** — 12 Cyrillic vs 48 Latin commit subjects; the repo has not
-    settled on one.
-12. Two test files over the 200-line cap: `useProfileNameForm.test.ts` (269),
-    `useAvatarUpload.test.ts` (212). 12 loose assertions remain against 2033 `expect(`
-    calls. 6 `any` casts remain under an otherwise strict config.
-13. `useDocumentInit` cancels via a closure flag rather than the `AbortSignal`
-    `httpClient` already supports, so an abandoned editor's request stays on the wire —
-    inconsistent with the feed, which does pass `signal`.
-14. `npm run testcases:check` and `npm run check:ingress` silently no-op in the
-    published standalone repo, but the README lists them in the local gate list a
-    standalone cloner would run.
+**Fixed.**
+
+1. ~~`analyticsClient.ts` called `fetch` with no bound~~ — `ef38cf56`. Now wrapped in
+   `withTimeout` at a configurable 5s (`VITE_ANALYTICS_TIMEOUT_MS`), far below the
+   product's 25s because nobody waits on telemetry. It stays on `fetch`: `keepalive`
+   is what counts a visitor who closes the tab, and routing an analytics call through
+   the shared client would put it inside the session's 401-renewal path. A timeout
+   counts as `unreachable`, and the case is pinned by a test.
+2. ~~Five per-feature error→Russian mappings~~ — `8bd7e66f`. The audit overcounted:
+   three of the five are not mappings (`profileErrors.ts` declares error classes,
+   `apiError.ts` is already the single normalization for auth, `loginErrorHandling.ts`
+   is one screen's codes). The two that WERE the same rule — feed load and document
+   save — now share `shared/api/failureText.ts`. Whether the server's words may reach
+   the screen became an explicit per-screen choice; the save says no, because its
+   sentence is an instruction and no 4xx wording carries it.
+3. ~~`features/generation/components/` as a second `utils/`~~ — `bb6633d5`. Eight
+   non-component modules and a hook left `components/`, six pure modules left
+   `hooks/`, and in `shared/` the loose vocabulary modules became `shared/domain/`
+   with `formatCardDate` joining `shared/lib/`. README describes the tree that exists.
+4. ~~Thirteen OAuth suites hand-copying their preamble~~ — `dd62c516`. Ten of them,
+   in fact; −112 lines, +27. `vi.mock` stays per file (the registry is per test file);
+   everything those declarations point at moved to one support module.
+5. ~~Two test files over the 200-line cap~~ — `12536a90`. Four files under it, split
+   along seams already in them.
+6. ~~12 loose assertions~~ — `00cb029a`. Two were worse than loose: `LandingHero`
+   asserted something true by construction, `ProfilePage.recovery` asserted what
+   `findByTestId` had already guaranteed by throwing.
+7. ~~6 `any` casts~~ — none existed. The audit counted the word "any" in comments.
+8. ~~`check-audit.mjs` fail-closed on registry reachability~~ — `1c7c6277`. Three
+   attempts with backoff, still fail-closed. The same commit found the gate RED on
+   HEAD (a stale ledger row) and its self-test toothless — it derived fixtures from
+   the live ledger, so emptying that ledger silently killed two of its six cases.
+9. ~~`useDocumentInit` cancelling by closure flag~~ — `56f785db`. The read is aborted;
+   the create deliberately is not, because an aborted mutation leaves its outcome
+   unknown.
+10. ~~Landing duplication~~ — `aee21774`, `89a7ad58`, `668aa3b7`: one section head
+    instead of six, one listener set instead of three, one retry picker instead of two.
+
+**Standing.**
+
+11. **`SMELL-LONG-FUNC` — 12 blocks over 30 lines, and I am not splitting them.**
+    This is a threshold that does not fit React, not a defect. `useRetryGeneration` is
+    already `attempt` + `retry`; `ProjectsFeedSections` carries a written reason why
+    its four branches live together (exactly one can be on screen); a `useCallback`
+    with a dependency array adds three or four lines to every function it wraps.
+    Dividing further buys indirection and costs the reader.
+12. **`SMELL-DUPLICATION` — 6 hits, largely probe artifact.** The rule normalizes
+    string literals away (`probes/analysis.py:82`), so `styles['advantage-card']` and
+    `styles['comparison-ours']` hash identically and any two `.map` rows over a card
+    collapse into one "duplicate". The genuine ones were fixed above.
+13. **The committer email on all frontend commits is `trape3977@g,ail.com`** — with a
+    comma. Raised, and the owner chose to leave it; recorded here so the next run does
+    not re-raise it as new.
+14. **Bus factor 1** (628 / 7) and **27 gate scripts against ~1.5k lines of covered
+    application code**. Both are now written down in `CONTRIBUTING.md` (`91fe93a3`),
+    which also settles the commit-subject language the history was split on and the
+    two gates that silently no-op in the standalone repo.
 
 ### Delta — versus `sprint-check-2026-08-14-front.md`
 
 Probes: **21 FAIL → 5 FAIL**; regressions **14 → 2**.
 
-Fixed since (all 14 of last report's regressions, plus one new-found this run):
+All fourteen of last report's regressions are fixed, plus `DOC-TESTCASES`:
 `DOC-ENV-CLEAN`, `DOC-CHANGELOG-FRESH`, `ARCH-STATE-LIB`, `ARCH-STATE-SPREAD`,
 `ARCH-SCOPED-STYLES`, `ARCH-DESIGN-TOKENS`, `ARCH-ENV-ACCESS`, `ARCH-BOUNDARY-1`,
 `SMELL-MAGIC`, `SMELL-POLICY-IN-CODE`, `SMELL-ENDPOINT-LITERAL`, `SMELL-POLLING`,
-`SMELL-REFETCH-TOKEN`, `SMELL-TYPE-ESCAPE`, `DOC-TESTCASES`.
+`SMELL-REFETCH-TOKEN`, `SMELL-TYPE-ESCAPE`.
 
-Regressed: none.
+Regressed: none. New: `SMELL-LONG-FUNC`, `SMELL-DUPLICATION` — both present before and
+newly *reported* now that the louder failures are gone.
 
-New this run: `SMELL-LONG-FUNC`, `SMELL-DUPLICATION` (both non-regression; both were
-present before and are newly *reported* now that the louder failures are gone).
-
-Criterion movement: git-docs 0 → 0 (different regressions), consistency 0 → 0.5,
-smells 0 → 0.5, **test cases 0 → 2**. The last is the whole reason to push: it is worth
-as much as the other two development criteria together, and on the release ref it is
-still a 0.
+Criterion movement: git-docs 0 → 0, consistency 0 → 1, smells 0 → 0.5, **test cases
+0 → 2**. The last was the whole reason to publish, and it is now published.
 
 ## Needs a task
 
-- **Bound the analytics transport.** Route `analyticsClient` through `httpClient` with
-  a short timeout, or write down why the transport is deliberately not reused. Touches
-  runtime behaviour on a fail-open path — not an auto-fix.
-- **One error mapping.** Collapse the five per-feature code→message tables and the two
-  error shapes into one. Cross-feature refactor.
-- **Place the loose modules.** `generation/components/` and `shared/` slice root, per
-  the layout the README declares and `auth`/`projects` follow.
-- **Extract the OAuthCallback test preamble** into `src/test/`, alongside
-  `renderWithRouter.tsx`.
-- **Decide `GIT-DIRECT-MAIN`.** Either add the waiver (the policy is documented) or
-  change the policy. A human decision, deliberately not taken by this run.
+Nothing from this run. The two items that were here — bounding the analytics
+transport and collapsing the error mappings — were done rather than filed, and what
+remains standing is either history that cannot be edited, a probe threshold that does
+not fit the stack, or a decision the owner has already made.
+
+## Verification at close
+
+`npm run audit`, `lint`, `format:check`, `typecheck`, `test:coverage` all green.
+1050 tests. Coverage 97.54 statements / 92.96 branches / 98.96 functions / 98.87 lines,
+and the per-file floor passes across 260 files — it had gone red on this sprint's own
+`attribution.ts` (64%) and `uuid.ts` (33%), which the aggregate at 96% was hiding.
