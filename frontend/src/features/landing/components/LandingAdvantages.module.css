@@ -1,0 +1,74 @@
+/* The four cards of `Advantages` (node 1337:6860): 598x280 white panels at a 12px radius, two to
+   a row, each holding its illustration well above a 24/28 title and an 18/22 line under it. */
+.advantages-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 40px;
+  max-width: 1236px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.advantage-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 280px;
+  padding: 24px;
+  border-radius: 12px;
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-card);
+}
+
+/* Where the frame's illustration sits. `--bg-sunken` is the same recessed grey the process cards
+   and the project thumbnails use, so an empty well reads as part of the system rather than as a
+   missing image. */
+.advantage-well {
+  flex: 1;
+  min-height: 120px;
+  margin-bottom: 24px;
+  border-radius: 12px;
+  background: var(--bg-sunken);
+}
+
+.advantage-title {
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.advantage-text {
+  margin-top: 8px;
+  font-size: 18px;
+  line-height: 22px;
+  color: var(--text-divider);
+}
+
+/* The section's own action, centred under the grid — 40 below it, the same step the grid sits
+   under the heading. */
+.advantages-action {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+@media (max-width: 900px) {
+  .advantages-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .advantage-card {
+    min-height: 0;
+    padding: 20px;
+  }
+
+  .advantage-title {
+    font-size: 20px;
+    line-height: 24px;
+  }
+
+  .advantage-text {
+    font-size: 16px;
+  }
+}

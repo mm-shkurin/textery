@@ -45,7 +45,10 @@ describe('ManualEditor textAlign parseHTML', () => {
     renderReopenedEditor('<p>before</p><p style="text-align: center">hello world</p><p>after</p>')
 
     await waitFor(() => {
-      expect(documentApi.getDocument).toHaveBeenCalledExactlyOnceWith('doc-99')
+      expect(documentApi.getDocument).toHaveBeenCalledExactlyOnceWith(
+        'doc-99',
+        expect.any(AbortSignal),
+      )
     })
 
     const contentArea = await screen.findByTestId('editor-content-area')
@@ -70,7 +73,10 @@ describe('ManualEditor textAlign parseHTML', () => {
     renderReopenedEditor('<p>before</p><p>hello world</p><p>after</p>')
 
     await waitFor(() => {
-      expect(documentApi.getDocument).toHaveBeenCalledExactlyOnceWith('doc-99')
+      expect(documentApi.getDocument).toHaveBeenCalledExactlyOnceWith(
+        'doc-99',
+        expect.any(AbortSignal),
+      )
     })
 
     const contentArea = await screen.findByTestId('editor-content-area')

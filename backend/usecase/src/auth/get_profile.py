@@ -15,10 +15,10 @@ class GetProfile:
     """
 
     def __init__(self, account_repository: AccountRepository) -> None:
-        self.account_repository = account_repository
+        self._account_repository = account_repository
 
     async def execute(self, account_id: UUID) -> Account:
-        account = await self.account_repository.find_by_id(account_id)
+        account = await self._account_repository.find_by_id(account_id)
         if account is None:
             # A structurally valid token whose account row is gone answers exactly
             # as a forged one does -- 401, never 404. Distinguishing them tells the

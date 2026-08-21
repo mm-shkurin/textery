@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { ProjectCard } from '../ProjectCard'
 import { DOCUMENT, GENERATION, UNKNOWN_TYPE_PROJECT } from './projectFixtures'
+import projectCardStyles from '../ProjectCard.module.css'
 
 // Opening a card. Two rules decide whether the control exists at all — only a DOCUMENT has an
 // editor behind it, and only a screen that wired `onOpen` can go there — and the third is that the
@@ -38,11 +39,15 @@ describe('ProjectCard open affordance', () => {
   // the one part of "this card is openable" that no behavioural assertion above would catch.
   it('marks an openable card for the stylesheet and leaves the others alone', () => {
     const { unmount } = render(<ProjectCard project={DOCUMENT} onOpen={vi.fn()} />)
-    expect(screen.getByTestId('project-card')).toHaveClass('project-card-openable')
+    expect(screen.getByTestId('project-card')).toHaveClass(
+      projectCardStyles['project-card-openable'],
+    )
     unmount()
 
     render(<ProjectCard project={GENERATION} onOpen={vi.fn()} />)
-    expect(screen.getByTestId('project-card')).not.toHaveClass('project-card-openable')
+    expect(screen.getByTestId('project-card')).not.toHaveClass(
+      projectCardStyles['project-card-openable'],
+    )
   })
 
   // A document with no title is labelled by the start of its own text: naming every untitled

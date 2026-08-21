@@ -12,6 +12,7 @@ class GenerationCreatedDto(BaseModel):
     topic: str | None
     volume_pages: int | None
     document_type: str
+    text_style: str | None
 
     @classmethod
     def from_domain(cls, generation: Generation) -> "GenerationCreatedDto":
@@ -22,6 +23,7 @@ class GenerationCreatedDto(BaseModel):
             topic=generation.topic,
             volume_pages=generation.volume_pages,
             document_type=generation.document_type,
+            text_style=generation.text_style,
         )
 
 
@@ -39,6 +41,7 @@ class GenerationDetailDto(BaseModel):
     topic: str | None
     volume_pages: int | None
     document_type: str
+    text_style: str | None
     content: str | None
     error_message: str | None
 
@@ -51,6 +54,7 @@ class GenerationDetailDto(BaseModel):
             topic=generation.topic,
             volume_pages=generation.volume_pages,
             document_type=generation.document_type,
+            text_style=generation.text_style,
             content=generation.content,
             error_message=generation.error_message,
         )

@@ -8,7 +8,7 @@
 // cause. Manual mode is behind a session by product decision (2026-07-17): an unauthorized
 // visitor can neither generate nor write.
 import { send, VersionConflictError } from '../../../shared/api/send'
-import { WIRE_DOCUMENT_TYPE, type DocumentType } from '../../../shared/documentTypes'
+import { WIRE_DOCUMENT_TYPE, type DocumentType } from '../../../shared/domain/documentTypes'
 import { API } from '../../../shared/api/endpoints'
 
 // FAIL-CLOSED CONTRACT (H9.5). `version` is the optimistic-concurrency token every subsequent PUT
@@ -162,10 +162,13 @@ export async function exportDocument(documentId: string, format: ExportFormat): 
   )
 }
 
-export async function getDocument(documentId: string): Promise<GetDocumentResult> {
+export async function getDocument(
+  documentId: string,
+  signal?: AbortSignal,
+): Promise<GetDocumentResult> {
   const data = await send<DocumentWire>(
     API.documents.one(documentId),
-    {},
+    { signal },
     'Не удалось загрузить документ',
   )
   return {

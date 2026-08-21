@@ -1,0 +1,94 @@
+/* One column of wide cards rather than a 2×2 grid: each card carries a paragraph when open, and
+   a paragraph in a half-width column on a 1640 page sets at ~40 characters a line. */
+.examples-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.example-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: var(--bg-surface);
+  padding: 20px 24px;
+}
+
+.example-card[open] {
+  border-color: var(--accent);
+}
+
+.example-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  /* The default marker is a filled triangle that sits badly against a chip; the card's own border
+     colour change is what signals open, so nothing is lost by removing it. */
+  list-style: none;
+}
+
+.example-summary::-webkit-details-marker {
+  display: none;
+}
+
+.example-summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.example-chip {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--bg-subtle);
+  color: var(--text-divider);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.example-title {
+  flex: 1;
+  min-width: 200px;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 500;
+  color: var(--text-hero);
+}
+
+.example-volume {
+  font-size: 14px;
+  color: var(--text-divider);
+  white-space: nowrap;
+}
+
+.example-excerpt {
+  margin: 16px 0 0;
+  max-width: 900px;
+  font-size: 16px;
+  line-height: 26px;
+  color: var(--text-divider);
+}
+
+.examples-action {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+}
+
+@media (max-width: 900px) {
+  .example-card {
+    padding: 16px 18px;
+  }
+
+  .example-title {
+    font-size: 16px;
+    line-height: 22px;
+  }
+
+  /* The volume drops below the title on a narrow card rather than being hidden: it is half of
+     what the visitor is judging. */
+  .example-volume {
+    width: 100%;
+  }
+}

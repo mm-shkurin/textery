@@ -1,7 +1,7 @@
 // HTTP client for the login API (POST authenticate).
 import { postJson } from '../../../shared/api/httpClient'
 import { toAuthApiError, type AuthApiError } from './apiError'
-import { sessionTokensFromWire, type SessionTokens } from './sessionTokens'
+import { sessionTokensFromWire, type SessionTokens } from '../../../shared/session/sessionTokens'
 import { GENERIC_LOGIN_FAILURE_MESSAGE } from '../utils/authMessages'
 import { API } from '../../../shared/api/endpoints'
 

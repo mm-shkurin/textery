@@ -1,11 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AvatarRejectedError } from '../profileErrors'
 import { deleteAvatar, fetchAvatarBytes, uploadAvatar } from '../avatarApi'
-import {
-  clearSession,
-  getAccessToken,
-  saveSession,
-} from '../../../../features/auth/utils/authSession'
+import { clearSession, getAccessToken, saveSession } from '../../../session/authSession'
 
 // Two things decide the shape of this file. The bytes go in the body RAW — anything httpClient
 // does not recognise as a Blob is JSON-stringified into the string "{}" — and the three calls do

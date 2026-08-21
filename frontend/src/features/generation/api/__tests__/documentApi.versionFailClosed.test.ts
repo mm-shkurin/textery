@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDocument, getDocument, saveDocument, INVALID_VERSION_MESSAGE } from '../documentApi'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 
 // Scenario H9.5 (08_Editor_Extension_Hazard_Tests.md §9.5): a version that is missing or
 // unparseable must be REJECTED at the parse boundary, never a silent overwrite. Every feeder of a

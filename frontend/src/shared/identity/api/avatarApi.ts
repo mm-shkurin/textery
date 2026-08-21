@@ -11,7 +11,7 @@
 // user-initiated and go through `authorizedRequest`, where a dead session is honestly reported as
 // one.
 import { isHttpError } from '../../api/httpClient'
-import { authorizedRequest } from '../../../features/auth/api/authorizedRequest'
+import { authorizedRequest } from '../../session/authorizedRequest'
 import { identityRequest } from './identityRequest'
 import { AvatarRejectedError } from './profileErrors'
 import { toProfile, type Profile } from './profileWire'

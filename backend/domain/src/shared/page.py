@@ -1,8 +1,10 @@
+from shared import limits
+from shared.error_codes import ErrorCode
 from shared.exceptions import ValidationException
 from shared.keyset_cursor import INVALID_CURSOR_MESSAGE, KeysetCursor
 
 MIN_LIMIT = 1
-MAX_LIMIT = 100
+MAX_LIMIT = limits.LIMIT_MAX
 DEFAULT_LIMIT = 20
 
 INVALID_LIMIT_MESSAGE = f"limit must be between {MIN_LIMIT} and {MAX_LIMIT}."
@@ -36,9 +38,13 @@ class PageRequest:
         # bool before int: bool subclasses int, so JSON `true` would otherwise pass
         # as limit=1 rather than being rejected.
         if isinstance(limit, bool) or not isinstance(limit, int):
-            raise ValidationException(error_code="INVALID_LIMIT", message=INVALID_LIMIT_MESSAGE)
+            raise ValidationException(
+                error_code=ErrorCode.INVALID_LIMIT, message=INVALID_LIMIT_MESSAGE
+            )
         if limit < MIN_LIMIT or limit > MAX_LIMIT:
-            raise ValidationException(error_code="INVALID_LIMIT", message=INVALID_LIMIT_MESSAGE)
+            raise ValidationException(
+                error_code=ErrorCode.INVALID_LIMIT, message=INVALID_LIMIT_MESSAGE
+            )
         return limit
 
     @staticmethod
@@ -49,7 +55,7 @@ class PageRequest:
             return KeysetCursor.decode(cursor)
         except ValueError as error:
             raise ValidationException(
-                error_code="INVALID_CURSOR", message=INVALID_CURSOR_MESSAGE
+                error_code=ErrorCode.INVALID_CURSOR, message=INVALID_CURSOR_MESSAGE
             ) from error
 
 

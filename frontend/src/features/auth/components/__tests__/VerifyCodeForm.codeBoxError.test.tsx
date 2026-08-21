@@ -3,6 +3,7 @@ import { fireEvent, screen } from '@testing-library/react'
 import { renderWithRouter } from '../../../../test/renderWithRouter'
 import { VerifyCodeForm } from '../VerifyCodeForm'
 import * as verifyApi from '../../api/verifyApi'
+import verifyCodeFormStyles from '../VerifyCodeForm.module.css'
 
 // Scenario 5.5, visual half of the Gherkin: "the code boxes show an error state". The mockup
 // (02-verify-code `.code-box.error`) paints every box with a red border on a rejected code. The
@@ -27,7 +28,9 @@ describe('VerifyCodeForm code-box error state', () => {
     await screen.findByTestId('verify-form-error')
 
     for (let index = 0; index < 6; index++) {
-      expect(screen.getByTestId(`verify-code-input-${index}`)).toHaveClass('error')
+      expect(screen.getByTestId(`verify-code-input-${index}`)).toHaveClass(
+        verifyCodeFormStyles.error,
+      )
     }
   })
 
@@ -41,7 +44,7 @@ describe('VerifyCodeForm code-box error state', () => {
     fireEvent.click(screen.getByTestId('verify-confirm-button'))
     await screen.findByTestId('verify-form-error')
 
-    expect(screen.getByTestId('verify-code-input-0')).toHaveClass('error')
+    expect(screen.getByTestId('verify-code-input-0')).toHaveClass(verifyCodeFormStyles.error)
   })
 
   it('clears the error paint as soon as the user edits a box', async () => {
@@ -53,10 +56,10 @@ describe('VerifyCodeForm code-box error state', () => {
 
     fireEvent.click(screen.getByTestId('verify-confirm-button'))
     await screen.findByTestId('verify-form-error')
-    expect(screen.getByTestId('verify-code-input-0')).toHaveClass('error')
+    expect(screen.getByTestId('verify-code-input-0')).toHaveClass(verifyCodeFormStyles.error)
 
     fireEvent.change(screen.getByTestId('verify-code-input-0'), { target: { value: '7' } })
 
-    expect(screen.getByTestId('verify-code-input-0')).not.toHaveClass('error')
+    expect(screen.getByTestId('verify-code-input-0')).not.toHaveClass(verifyCodeFormStyles.error)
   })
 })

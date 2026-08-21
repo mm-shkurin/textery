@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'
+import manualEditorToolbarStyles from '../ManualEditorToolbar.module.css'
+import linkPopoverStyles from '../LinkPopover.module.css'
 
 vi.mock('../../api/documentApi')
 
@@ -64,7 +66,7 @@ describe('ManualEditorToolbar anchor-span wrapper (only for UI actions)', () => 
 
     const parent = screen.getByTestId('toolbar-bold').parentElement
     expect(parent?.tagName).toBe('DIV')
-    expect(parent?.classList.contains('me-toolbar')).toBe(true)
+    expect(parent?.classList.contains(manualEditorToolbarStyles['me-toolbar'])).toBe(true)
   })
 
   // GREEN today — regression guard. The link button must STILL sit inside its
@@ -74,6 +76,6 @@ describe('ManualEditorToolbar anchor-span wrapper (only for UI actions)', () => 
 
     const parent = screen.getByTestId('toolbar-link').parentElement
     expect(parent?.tagName).toBe('SPAN')
-    expect(parent?.classList.contains('me-link-popover-anchor')).toBe(true)
+    expect(parent?.classList.contains(linkPopoverStyles['me-link-popover-anchor'])).toBe(true)
   })
 })

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { clearSession } from '../../auth/utils/authSession'
+import { clearSession } from '../../../shared/session/authSession'
 import {
   deletionConfirmationKind,
   requestAccountDeletion,
@@ -25,12 +25,22 @@ import { DELETION_FAILED_MESSAGE } from '../utils/profileCopy'
 //   2. `clearSession()`   — drop the tokens, so nothing can start a new authenticated request.
 //   3. `navigate('/')`    — replace, so Back cannot return to a screen for an account that no
 //                           longer exists.
+// The confirmation gate's position, as ONE value: whether the panel is open, what has been typed
+// into it, whether a request holds it, and what refused. Every transition below writes at least
+// two of them — opening clears the field AND the complaint — and held apart they were four
+// switches kept in step by hand.
+interface DeletionState {
+  open: boolean
+  value: string
+  busy: boolean
+  error: string | null
+}
+
+const CLOSED: DeletionState = { open: false, value: '', busy: false, error: null }
+
 export function useAccountDeletion(profile: Profile) {
   const navigate = useNavigate()
-  const [open, setOpen] = useState(false)
-  const [value, setValue] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [state, setState] = useState<DeletionState>(CLOSED)
   // Synchronous, unlike `busy`: two clicks in one tick both read the state React has not
   // re-rendered yet. On every other screen that costs a duplicate request; here it would be a
   // second deletion attempt against an account that is already gone, which answers 401 and would
@@ -41,30 +51,25 @@ export function useAccountDeletion(profile: Profile) {
   // The address must match EXACTLY — same case, same characters. Only the surrounding whitespace
   // is forgiven, because a pasted address routinely carries a trailing space and refusing that
   // leaves the user staring at a disabled button with nothing on screen explaining why.
-  const confirmed = kind === 'password' ? value !== '' : value.trim() === profile.email
+  const confirmed = kind === 'password' ? state.value !== '' : state.value.trim() === profile.email
 
   function openConfirmation(): void {
-    setOpen(true)
-    setValue('')
-    setError(null)
+    setState({ ...CLOSED, open: true })
   }
 
   // Nothing is sent, nothing is kept. Cancelling has to be as cheap as it looks, or the next
   // person hesitates before opening the panel at all.
   function cancel(): void {
-    setOpen(false)
-    setValue('')
-    setError(null)
+    setState(CLOSED)
   }
 
   async function confirm(): Promise<void> {
     if (!confirmed || busyRef.current) return
     busyRef.current = true
-    setBusy(true)
-    setError(null)
+    setState((current) => ({ ...current, busy: true, error: null }))
     try {
       await requestAccountDeletion(
-        kind === 'password' ? { kind, password: value } : { kind, email: value.trim() },
+        kind === 'password' ? { kind, password: state.value } : { kind, email: state.value.trim() },
       )
       resetIdentity()
       clearSession()
@@ -74,16 +79,29 @@ export function useAccountDeletion(profile: Profile) {
       // with what they typed still in the field, and the tokens untouched — this is the one
       // failure on this screen where treating it as "you are signed out" would be actively
       // wrong.
-      setError(
-        rejection instanceof DeletionRejectedError ? rejection.message : DELETION_FAILED_MESSAGE,
-      )
+      setState((current) => ({
+        ...current,
+        error:
+          rejection instanceof DeletionRejectedError ? rejection.message : DELETION_FAILED_MESSAGE,
+      }))
     } finally {
       busyRef.current = false
-      setBusy(false)
+      setState((current) => ({ ...current, busy: false }))
     }
   }
 
-  return { kind, open, value, busy, error, confirmed, openConfirmation, cancel, confirm, setValue }
+  return {
+    kind,
+    open: state.open,
+    value: state.value,
+    busy: state.busy,
+    error: state.error,
+    confirmed,
+    openConfirmation,
+    cancel,
+    confirm,
+    setValue: (value: string) => setState((current) => ({ ...current, value })),
+  }
 }
 
 // Named so the modal can take the whole gate as one prop. Derived from the hook rather than

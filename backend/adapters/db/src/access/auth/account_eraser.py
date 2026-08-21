@@ -30,6 +30,15 @@ class SqlAlchemyAccountEraser:
     self-reference `source_generation_id` is `ON DELETE SET NULL`, which Postgres
     resolves within the same cascade.)
 
+    `analytics_events.user_id` is the one FK with `ondelete="SET NULL"`, and it is
+    absent from this method ON PURPOSE. Analytics rows SURVIVE account erasure with
+    the account detached -- Postgres nulls the column as part of the delete below.
+    That is a retention decision, not an oversight: Story 15's cohort figures need
+    the rows (`stories/14-analytics-event-tracking/decisions/analytics-ingest-shape-decision.md`).
+    It is also a deliberate departure from the convention this docstring describes,
+    and it makes `DeleteAccount`'s "removes an account and everything that belongs
+    to it" partially false -- the rows that remain belong to nobody and name nobody.
+
     `oauth_states` and `oauth_rate_limits` are NOT here and that is checked, not
     assumed: the first is keyed by the state value, the second by
     `(bucket_key, window_start)`. Neither carries an account id in any form, so

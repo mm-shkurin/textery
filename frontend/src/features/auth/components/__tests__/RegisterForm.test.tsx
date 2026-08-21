@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { renderWithRouter } from '../../../../test/renderWithRouter'
 import { RegisterForm } from '../RegisterForm'
+import authFormStyles from '../AuthForm.module.css'
 
 describe('RegisterForm', () => {
   it('displays email, password, confirm password fields and submit button', () => {
@@ -34,7 +35,7 @@ describe('RegisterForm', () => {
     fireEvent.click(submitButton)
 
     const indicator = screen.getByTestId('register-loading-indicator')
-    expect(indicator).toHaveClass('auth-loading-indicator')
+    expect(indicator).toHaveClass(authFormStyles['auth-loading-indicator'])
     // The computed role, not a role attribute — see LoginForm.test.tsx for why. <output> has
     // role="status" implicitly.
     expect(screen.getByRole('status')).toBe(indicator)

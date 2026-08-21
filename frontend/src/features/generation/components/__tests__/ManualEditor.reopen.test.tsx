@@ -33,7 +33,7 @@ describe('ManualEditor reopen flow', () => {
     )
 
     await waitFor(() => {
-      expect(documentApi.getDocument).toHaveBeenCalledWith('doc-99')
+      expect(documentApi.getDocument).toHaveBeenCalledWith('doc-99', expect.any(AbortSignal))
     })
     expect(documentApi.createDocument).not.toHaveBeenCalled()
 

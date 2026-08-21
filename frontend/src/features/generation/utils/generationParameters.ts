@@ -1,3 +1,18 @@
+import { TEXT_STYLES, TEXT_STYLE_OPTIONS, type TextStyle } from '../../../shared/domain/textStyles'
+import {
+  DEFAULT_VOLUME_PAGES,
+  MAX_VOLUME_PAGES,
+  MIN_VOLUME_PAGES,
+  isVolumeAcceptable,
+} from '../../../shared/domain/volumePages'
+
+// Re-exported, not redefined: both vocabularies live in `shared/` because the projects feature
+// needs them too (the register and the length are both re-chosen on a retry), and this feature's
+// own callers should not have to know where they moved.
+export { TEXT_STYLES, TEXT_STYLE_OPTIONS }
+export type { TextStyle }
+export { DEFAULT_VOLUME_PAGES, MAX_VOLUME_PAGES, MIN_VOLUME_PAGES, isVolumeAcceptable }
+
 // What the user fills in on the generation form, beyond the topic. One type rather than three
 // more positional arguments threaded through Composer -> ChatWorkspace -> useGeneration ->
 // generationApi: at four call sites, positional strings are transposable and the transposition
@@ -9,14 +24,11 @@ export interface GenerationParameters {
   volumePages: number
   requirements: string
   extraWishes: string
+  // '' means «не выбран» — the register the model picks on its own. Kept as the empty string
+  // rather than `null` because it is the value a `<select>` reports for its placeholder option,
+  // and translating at the boundary (below) is one conversion instead of one per render.
+  textStyle: TextStyle | ''
 }
-
-// The mockup's default (`<input type="number" min="1" max="10" value="5">`) and the value the
-// client hardcoded before the field existed, so an untouched form still asks for what it always
-// asked for.
-export const DEFAULT_VOLUME_PAGES = 5
-export const MIN_VOLUME_PAGES = 1
-export const MAX_VOLUME_PAGES = 10
 
 // The domain's caps (`MAX_REQUIREMENTS_LENGTH` / `MAX_EXTRA_WISHES_LENGTH`). Mirrored here so the
 // textarea stops accepting text the server would refuse — a `maxLength` the user meets is a
@@ -28,13 +40,8 @@ export const EMPTY_PARAMETERS: GenerationParameters = {
   volumePages: DEFAULT_VOLUME_PAGES,
   requirements: '',
   extraWishes: '',
-}
-
-/** True when the volume is an integer inside the range the server accepts. */
-export function isVolumeAcceptable(volumePages: number): boolean {
-  return (
-    Number.isInteger(volumePages) &&
-    volumePages >= MIN_VOLUME_PAGES &&
-    volumePages <= MAX_VOLUME_PAGES
-  )
+  // Deliberately not defaulted to 'научный'. Preselecting a register would send it on every
+  // untouched form, recording a choice the user never made — and «не выбран» is a real, different
+  // instruction to the model, not a missing value to be filled in.
+  textStyle: '',
 }

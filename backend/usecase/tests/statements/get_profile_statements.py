@@ -7,7 +7,7 @@ class GetProfileStatements(ProfileStatementsBase):
 
     async def read_the_profile(self) -> None:
         self.returned_account = await self._capture(
-            GetProfile(account_repository=self.account_repository).execute(self.account_id)
+            GetProfile(account_repository=self._account_repository).execute(self.account_id)
         )
 
     def assert_the_profile_is_the_arranged_account(self) -> None:
@@ -31,6 +31,6 @@ class GetProfileStatements(ProfileStatementsBase):
 
     def assert_the_read_asked_the_repository_for_the_callers_id_only(self) -> None:
         """No lookup by email, and no second query: the read is scoped by construction."""
-        assert self.account_repository.find_by_email_call_count == 0, (
+        assert self._account_repository.find_by_email_call_count == 0, (
             "expected the profile read to resolve by id alone, but it looked an account up by email"
         )

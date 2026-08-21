@@ -2,8 +2,10 @@ import secrets
 from datetime import datetime, timedelta
 from uuid import UUID
 
+from shared import limits
+
 HANDOFF_CODE_BYTES = 32
-MAX_HANDOFF_CODE_LENGTH = 512
+MAX_HANDOFF_CODE_LENGTH = limits.MAX_HANDOFF_CODE_LENGTH
 
 
 class HandoffCode:

@@ -28,15 +28,15 @@ class DeletionConfirmationStatements:
     ACCENTED_EMAIL_NFD = unicodedata.normalize("NFD", "renée@example.ru")
 
     def __init__(self) -> None:
-        self.password_hasher = FakePasswordHasher()
+        self._password_hasher = FakePasswordHasher()
         self.account: Account | None = None
         self.answer: bool | None = None
 
     def given_an_account_with_a_password(self, password: str | None = None) -> None:
-        self._build(self.password_hasher.hash(self.PASSWORD if password is None else password))
+        self._build(self._password_hasher.hash(self.PASSWORD if password is None else password))
 
     def given_an_account_with_an_accented_password_stored_precomposed(self) -> None:
-        self._build(self.password_hasher.hash(self.ACCENTED_PASSWORD_NFC))
+        self._build(self._password_hasher.hash(self.ACCENTED_PASSWORD_NFC))
 
     def given_an_oauth_account(self) -> None:
         """`password_hash=""` -- what `complete_oauth_callback` actually stores."""
@@ -69,7 +69,7 @@ class DeletionConfirmationStatements:
         return self.account
 
     def confirm_with_password(self, password: object) -> None:
-        self.answer = password_confirms(self._the_account(), password, self.password_hasher)
+        self.answer = password_confirms(self._the_account(), password, self._password_hasher)
 
     def confirm_with_the_correct_password(self) -> None:
         self.confirm_with_password(self.PASSWORD)
@@ -96,7 +96,7 @@ class DeletionConfirmationStatements:
         )
 
     def assert_the_hasher_was_never_reached(self) -> None:
-        assert self.password_hasher.verify_call_count == 0, (
+        assert self._password_hasher.verify_call_count == 0, (
             "expected the guard to answer before the hasher, so the most destructive "
             "path in the product does not depend on a library's error handling"
         )

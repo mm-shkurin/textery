@@ -37,7 +37,7 @@ export async function renderEditorReopeningDocument(content: string, onBack = vi
     />,
   )
   await waitFor(() => {
-    expect(documentApi.getDocument).toHaveBeenCalledWith('doc-reopen')
+    expect(documentApi.getDocument).toHaveBeenCalledWith('doc-reopen', expect.any(AbortSignal))
   })
   return screen.getByTestId('editor-content-area')
 }

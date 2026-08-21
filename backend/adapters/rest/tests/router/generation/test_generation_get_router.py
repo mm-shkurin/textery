@@ -40,6 +40,10 @@ class TestGetGenerationPending:
             "topic": "Как работает фотосинтез",
             "volume_pages": 3,
             "document_type": "доклад",
+            # Echoed even when unset: the response states what the row holds,
+            # and an omitted key would be indistinguishable to a client from
+            # a style the server silently dropped.
+            "text_style": None,
             "content": None,
             "error_message": None,
         }, f"unexpected response body {response.json()}"

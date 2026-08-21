@@ -30,7 +30,7 @@ from statements.database_url import resolve_test_database_url
 from statements.generation_storage_statements import GenerationStorageStatements
 from statements.verification_code_storage_statements import VerificationCodeStorageStatements
 
-_EXPECTED_FIXTURES = 9
+_EXPECTED_FIXTURES = 10
 
 
 @pytest_asyncio.fixture
@@ -99,6 +99,13 @@ def history_paging_statements(db_session: AsyncSession):
     from statements.history_paging_statements import HistoryPagingStatements
 
     return HistoryPagingStatements(db_session)
+
+
+@pytest.fixture
+def document_filter_storage_statements(db_session: AsyncSession):
+    from statements.document_filter_storage_statements import DocumentFilterStorageStatements
+
+    return DocumentFilterStorageStatements(db_session)
 
 
 # Computed, never typed out — see fixture_exports for what that is guarding against.

@@ -45,7 +45,7 @@ describe('DocArea — what the generated markdown is not allowed to become', () 
     // live javascript: URL. react-markdown's default urlTransform rewrites it to an empty href;
     // pinned by what it must NOT start with, so a future transform that neutralizes it a
     // different way (about:blank, dropping the attribute) also passes, and only a live one fails.
-    expect(link).not.toBeNull()
+    expect(link).toBeInstanceOf(HTMLAnchorElement)
     expect(link?.getAttribute('href') ?? '').not.toMatch(/^javascript:/i)
   })
 

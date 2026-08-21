@@ -23,222 +23,255 @@ itself specifies. Don't drop it just because Figma doesn't show it.
 No prerequisite blocker screens apply to this story — there is no parent resource
 (board/column-style dependency) that must exist before the flow can start.
 
+Shared test data for every case below, unless the case names its own:
+
+| Name | Value |
+|---|---|
+| Account A (the visitor) | `qa.doklad@textery.test` / `Qa!Doklad2026` |
+| Landing URL | `/` |
+| Valid topic | `Влияние искусственного интеллекта на образование` |
+| Valid volume | `5` (allowed range 1–10) |
+| Valid requirements | `Три раздела и вывод` |
+| Backend stub | `POST /api/v1/generations` → `201 {"generation_id": "3f8a1d02-9c47-4b6e-8e10-5d2c7a91f430", "status": "pending"}` |
+| Poll endpoint | `GET /api/v1/generations/3f8a1d02-9c47-4b6e-8e10-5d2c7a91f430` |
+| Disabled-card marker | `скоро` pill rendered by `TypeCard` (`.soon-pill`) |
+| Progress copy | chat panel (`data-testid="chat-panel"`) shows `ИИ пишет доклад` |
+
 ---
 
 ## 1. Landing
 
-### 1.1 The landing page displays the hero and primary CTA
+### TC-01-UI-1.1 — The landing page displays the hero and primary CTA
 
-```gherkin
-Given a visitor opens the landing page
-Then the "Textery — самая быстрая нейросеть для докладов" hero heading and subheading are visible
-And a "Создать генерацию" call-to-action button is visible
-```
+| Field | Value |
+|---|---|
+| Description | The hero and the single CTA are the entire entry point for this story; a landing that renders without them has no reachable flow. |
+| Preconditions | A visitor opens the application with an empty browser session. |
+| Test data | Hero heading `Textery — самая быстрая нейросеть для учебных текстов`; CTA label `Создать генерацию` |
+| Steps | 1. Navigate to `/`.<br>2. Read the hero heading and subheading.<br>3. Locate the primary call-to-action button. |
+| Expected result | The heading `Textery — самая быстрая нейросеть для учебных текстов` and its subheading are visible on screen; a button labelled exactly `Создать генерацию` is visible and enabled. |
+| Status | Not run |
 
-### 1.2 The primary CTA opens the document-type modal
+### TC-01-UI-1.2 — The primary CTA opens the document-type modal
 
-```gherkin
-Given a visitor is on the landing page
-When the visitor clicks "Создать генерацию"
-Then the document-type modal opens
-```
+| Field | Value |
+|---|---|
+| Description | The CTA is the only way into the flow; a click that navigates elsewhere or does nothing strands the visitor on the landing page. |
+| Preconditions | The visitor is on the landing page with no modal open. |
+| Test data | CTA label `Создать генерацию` |
+| Steps | 1. Navigate to `/`.<br>2. Click `Создать генерацию`. |
+| Expected result | The document-type modal is displayed over the landing page, showing the four type cards; the landing page is not navigated away from and no error appears. |
+| Status | Not run |
 
 ---
 
 ## 2. Document Type Modal
 
-### 2.1 The type modal shows all four document types, only доклад available
+### TC-01-UI-2.1 — The type modal shows all four document types, only доклад available
 
-```gherkin
-Given the document-type modal is open
-Then all four document type cards are shown: доклад, эссе, сочинение, реферат
-And "доклад" is shown as available and selectable
-And эссе, сочинение, and реферат are shown with a "скоро" badge and are not selectable
-```
+| Field | Value |
+|---|---|
+| Description | Three of the four types are not implemented this story. Rendering them as selectable would send the visitor into a flow that cannot finish. |
+| Preconditions | The document-type modal is open (via TC-01-UI-1.2). |
+| Test data | Cards `доклад`, `эссе`, `сочинение`, `реферат`; disabled treatment = reduced-opacity card + `скоро` pill |
+| Steps | 1. Open the type modal.<br>2. Read the label of each of the four cards.<br>3. Inspect each card for the `скоро` pill and for clickability. |
+| Expected result | Exactly four cards are shown, labelled `доклад`, `эссе`, `сочинение`, `реферат`; the `доклад` card carries no `скоро` pill and is clickable; `эссе`, `сочинение` and `реферат` each render a `скоро` pill, are visually dimmed, and do not respond to a click. |
+| Status | Not run |
 
-### 2.2 Selecting доклад opens the mode modal
+### TC-01-UI-2.2 — Selecting доклад opens the mode modal
 
-```gherkin
-Given the document-type modal is open
-When the visitor selects "доклад"
-Then the document-type modal closes
-And the mode modal opens
-```
+| Field | Value |
+|---|---|
+| Description | The two modals are a sequence, not a stack — leaving the first one mounted behind the second traps focus and leaves two dialogs on screen. |
+| Preconditions | The document-type modal is open. |
+| Test data | Card `доклад` |
+| Steps | 1. Open the type modal.<br>2. Click the `доклад` card. |
+| Expected result | The document-type modal is removed from the screen (its four cards are no longer present); the mode modal is displayed, showing the `Ручной режим` and `Автоматический режим` cards. |
+| Status | Not run |
 
 ---
 
 ## 3. Mode Modal
 
-### 3.1 The mode modal shows both modes, only Автоматический available
+### TC-01-UI-3.1 — The mode modal shows both modes, only Автоматический available
 
-```gherkin
-Given the mode modal is open
-Then "Ручной режим" and "Автоматический режим" cards are both shown
-And "Автоматический режим" is shown as available and selectable
-And "Ручной режим" is shown with a "скоро" badge and is not selectable
-```
+| Field | Value |
+|---|---|
+| Description | Ручной режим is not implemented this story; an enabled card would open an editor that does not exist. |
+| Preconditions | The mode modal is open (via TC-01-UI-2.2). |
+| Test data | Cards `Ручной режим`, `Автоматический режим`; disabled treatment = `скоро` pill |
+| Steps | 1. Reach the mode modal.<br>2. Read both card labels.<br>3. Inspect each for the `скоро` pill and for clickability. |
+| Expected result | Both cards are visible; `Автоматический режим` carries no `скоро` pill and is clickable; `Ручной режим` renders a `скоро` pill, is dimmed, and does not respond to a click. |
+| Status | Not run |
 
-### 3.2 Selecting Автоматический режим opens the generation form
+### TC-01-UI-3.2 — Selecting Автоматический режим opens the generation form
 
-```gherkin
-Given the mode modal is open
-When the visitor selects "Автоматический режим"
-Then the mode modal closes
-And the generation form is shown, scoped to document type "доклад"
-```
+| Field | Value |
+|---|---|
+| Description | The type chosen two screens earlier has to survive into the form; losing it would submit a request with the wrong or an empty `document_type`. |
+| Preconditions | The mode modal is open, having been reached by selecting `доклад`. |
+| Test data | Card `Автоматический режим`; expected form scope `доклад` |
+| Steps | 1. Reach the mode modal via `доклад`.<br>2. Click `Автоматический режим`. |
+| Expected result | The mode modal is removed from the screen; the generation form is displayed and shows `доклад` as its chosen type (breadcrumb chip), with no type selector control. |
+| Status | Not run |
 
 ---
 
 ## 4. Generation Form — Page Display
 
-### 4.1 The generation form displays the input fields for the chosen type
+### TC-01-UI-4.1 — The generation form displays the input fields for the chosen type
 
-```gherkin
-Given a visitor has reached the generation form via the modals
-Then the form shows it is creating a "доклад" (breadcrumb/chip, not a type selector —
-  type was already chosen in the modal)
-And the topic, volume, requirements, and extra wishes fields are visible
-```
+| Field | Value |
+|---|---|
+| Description | The type is already fixed by the modals; re-offering a type selector here is a second, contradictory source of truth for the same value. |
+| Preconditions | The visitor has reached the generation form via the two modals, having chosen `доклад`. |
+| Test data | Expected fields: тема (topic), объём (volume), требования (requirements), пожелания (extra wishes) |
+| Steps | 1. Reach the generation form via the modals.<br>2. Read the breadcrumb/chip area.<br>3. Enumerate the visible form inputs. |
+| Expected result | A non-interactive breadcrumb chip reads `Доклад` (clicking it does not open a type list); the four inputs — topic, volume, requirements, extra wishes — are all visible; no type-selector tabs or dropdown is rendered. |
+| Status | Not run |
 
 ---
 
 ## 5. User Interaction
 
-### 5.1 The submit button is disabled until required fields are filled
+### TC-01-UI-5.1 — The submit button is disabled until required fields are filled
 
-```gherkin
-Given a visitor is on the generation form
-And the topic field is empty
-Then the submit button is disabled
-
-Given the visitor fills in a topic and a volume within range
-Then the submit button becomes enabled
-```
+| Field | Value |
+|---|---|
+| Description | A submit that is always live sends a request the server will reject with a `400`, turning a form-level rule into a round trip and an error banner. |
+| Preconditions | The visitor is on the generation form with every field empty. |
+| Test data | Topic left empty, then topic `Влияние искусственного интеллекта на образование` and volume `5` |
+| Steps | 1. Open the generation form and leave the topic field empty.<br>2. Read the submit button's state.<br>3. Type the topic above and set volume to `5`.<br>4. Read the submit button's state again. |
+| Expected result | With an empty topic the submit button carries the `disabled` attribute and does not respond to a click; after a valid topic and a volume of `5` are entered it becomes enabled. |
+| Status | Not run |
 
 ---
 
 ## 6. Form Submission
 
-### 6.1 Submitting the form shows a loading state and transitions to the chat/progress view
+### TC-01-UI-6.1 — Submitting the form shows a loading state and transitions to the chat/progress view
 
-```gherkin
-Given a visitor has filled in a valid generation request
-When the visitor submits the form
-Then the submit button shows a loading state
-And the page transitions to the chat/progress view
-```
+| Field | Value |
+|---|---|
+| Description | The `201` arrives before the document exists; without a loading state and a transition, the visitor is left staring at the form they just submitted. |
+| Preconditions | The generation form is filled with a valid request; the backend stub answers `POST /api/v1/generations` with `201` after a 1-second delay. |
+| Test data | Topic, volume `5`, requirements as in the shared table; stubbed `generation_id = 3f8a1d02-9c47-4b6e-8e10-5d2c7a91f430` |
+| Steps | 1. Fill the form with the valid values.<br>2. Click submit.<br>3. Observe the button during the 1-second delay.<br>4. Observe the screen after the `201` lands. |
+| Expected result | During the request the submit button shows a spinner and is not clickable again; once the `201` returns, the chat/progress view for `3f8a1d02-9c47-4b6e-8e10-5d2c7a91f430` is displayed and the form is no longer shown. |
+| Status | Not run |
 
-### 6.2 Activating submit twice before a response arrives only creates one generation
+### TC-01-UI-6.2 — Activating submit twice before a response arrives only creates one generation
 
-```gherkin
-Given a visitor has filled in a valid generation request
-When the visitor activates the submit button twice in quick succession, before any
-  response has come back
-Then only one generation is created
-And the second activation has no additional effect
-```
+| Field | Value |
+|---|---|
+| Description | A double click on a slow network is the everyday way a user pays twice for one document; the client-side guard is the first of the two layers that prevent it. |
+| Preconditions | The generation form is filled with a valid request; the backend stub delays its `201` by 3 seconds and counts requests. |
+| Test data | Two activations within 200 ms of each other; stub delay `3 s` |
+| Steps | 1. Fill the form with valid values.<br>2. Click submit twice within 200 ms.<br>3. Wait for the response and read the stub's request count. |
+| Expected result | The stub records exactly one `POST /api/v1/generations`; the second activation is absorbed by the disabled/debounced button and produces no request, no second spinner and no error; one chat/progress view is opened. |
+| Status | Not run |
 
 ---
 
 ## 7. Validation Feedback
 
-### 7.1 An empty topic shows an inline error before submission reaches the server
+### TC-01-UI-7.1 — An empty topic shows an inline error before submission reaches the server
 
-```gherkin
-Given a visitor leaves the topic field empty and moves focus away
-Then an inline error is shown next to the topic field
-And the form is not submitted
-```
+| Field | Value |
+|---|---|
+| Description | Field-level rules the server already enforces should be answered next to the field, on blur, without a network round trip. |
+| Preconditions | The visitor is on the generation form; the network is being recorded. |
+| Test data | Topic field left empty, then focus moved to the volume field |
+| Steps | 1. Click into the topic field and leave it empty.<br>2. Move focus to the next field.<br>3. Read the area beneath the topic field and the recorded network calls. |
+| Expected result | An inline error message is rendered directly beneath the topic field; no `POST /api/v1/generations` appears in the recorded network calls; the form remains on screen with the entered values intact. |
+| Status | Not run |
 
-### 7.2 An out-of-range volume shows an inline error
+### TC-01-UI-7.2 — An out-of-range volume shows an inline error
 
-```gherkin
-Given a visitor enters a volume outside the 1-10 range
-Then an inline error is shown next to the volume field
-And the form is not submitted
-```
+| Field | Value |
+|---|---|
+| Description | The 1–10 range is the same bound the server enforces; catching it in the field stops the user discovering it as a server error after submitting. |
+| Preconditions | The visitor is on the generation form with a valid topic entered. |
+| Test data | Volume `0`, then volume `11`; allowed range 1–10 |
+| Steps | 1. Enter volume `0` and move focus away.<br>2. Read the area beneath the volume field.<br>3. Repeat with volume `11`. |
+| Expected result | Both values render an inline error beneath the volume field naming the 1–10 range; no `POST /api/v1/generations` is issued in either case; the form is not submitted. |
+| Status | Not run |
 
 ---
 
 ## 8. Chat/Progress Screen — Server Response Display
 
-### 8.1 A pending/in-progress generation shows a loading indicator, not real streaming
+### TC-01-UI-8.1 — A pending/in-progress generation shows a loading indicator, not real streaming
 
-```gherkin
-Given the visitor's generation is pending or in progress
-Then the chat/progress screen shows a plain loading indicator (e.g. "ИИ пишет...")
-And no token-by-token content is streamed in (see known-debt.md #5 — deliberately
-  simplified for this sprint)
-```
+| Field | Value |
+|---|---|
+| Description | Token streaming was deliberately deferred (known-debt #5); an implementation that appears to stream would be asserting a capability the backend does not have. |
+| Preconditions | The chat/progress view is open for a generation the poll endpoint reports as `pending`, then `in_progress`. |
+| Test data | Poll response `{"status": "pending", "content": null}`, then `{"status": "in_progress", "content": null}`; expected copy `ИИ пишет доклад` |
+| Steps | 1. Open the chat/progress view for the stubbed generation.<br>2. Let the client poll `GET /api/v1/generations/{id}` several times.<br>3. Read the chat panel and watch for incremental text. |
+| Expected result | The chat panel (`data-testid="chat-panel"`) shows the static progress line `ИИ пишет доклад` for the whole pending/in-progress period; no document text appears character-by-character or chunk-by-chunk before `completed`. |
+| Status | Not run |
+| Note | Deliberately simplified for this sprint — see `known-debt.md` #5. |
 
-### 8.2 A completed generation displays the document content
+### TC-01-UI-8.2 — A completed generation displays the document content
 
-```gherkin
-Given the visitor's generation has finished successfully
-When the chat/progress screen refreshes its status
-Then the page shows the "completed" status
-And the generated document's content is displayed
-```
+| Field | Value |
+|---|---|
+| Description | The polled `completed` response is the only delivery of the finished document; a view that keeps polling or keeps the spinner would hide it. |
+| Preconditions | The chat/progress view is open; the poll endpoint switches from `pending` to `completed` on the third poll. |
+| Test data | Completed poll response `{"status": "completed", "content": "Доклад о влиянии ИИ на образование. Введение...", "error_message": null}` |
+| Steps | 1. Open the chat/progress view.<br>2. Let the client poll until the `completed` response is served.<br>3. Read the screen. |
+| Expected result | The progress line is replaced by the completed state; the text `Доклад о влиянии ИИ на образование. Введение...` is displayed in full on screen; no spinner and no error remain. |
+| Status | Not run |
 
-### 8.3 A failed generation displays an error state
+### TC-01-UI-8.3 — A failed generation displays an error state
 
-```gherkin
-Given the visitor's generation has failed
-When the chat/progress screen refreshes its status
-Then the page shows the "failed" status
-And a friendly error message is displayed
-And no internal error detail is shown
-```
+| Field | Value |
+|---|---|
+| Description | A failure is a normal outcome of a paid external call. It must read as a friendly, actionable state — and must not print the provider's own error text, which can carry internal detail. |
+| Preconditions | The chat/progress view is open; the poll endpoint returns the failed response below. |
+| Test data | Poll response `{"status": "failed", "content": null, "error_message": "Не удалось сгенерировать документ. Попробуйте позже."}`; forbidden strings: any stack frame, host name, provider name, or HTTP status from upstream |
+| Steps | 1. Open the chat/progress view.<br>2. Let the client poll until the `failed` response is served.<br>3. Read the whole rendered page text. |
+| Expected result | The failed state is shown with the message `Не удалось сгенерировать документ. Попробуйте позже.`; the spinner is gone; the rendered page contains no upstream status code, no exception class, no file path and no provider error body. |
+| Status | Not run |
 
 ---
 
 ## 9. Navigation
 
-### 9.1 "Create a new report" navigates back to the generation form
+### TC-01-UI-9.1 — "Create a new report" navigates back to the generation form
 
-```gherkin
-Given the visitor is viewing a completed document
-When the visitor clicks "create a new report"
-Then the visitor is returned to the generation form (document type "доклад" still
-  scoped — does not require going back through the modals)
-```
+| Field | Value |
+|---|---|
+| Description | Sending the visitor back through both modals to change one topic is the flow's most likely abandonment point; the chosen type must be carried, not re-asked. |
+| Preconditions | The visitor is viewing a completed document in the chat/result view, having chosen `доклад`. |
+| Test data | Action button on the completed view that starts a new report |
+| Steps | 1. Reach the completed view.<br>2. Click the "create a new report" action. |
+| Expected result | The generation form is displayed with empty fields; the breadcrumb chip still reads `Доклад`; neither the type modal nor the mode modal is shown at any point in the transition. |
+| Status | Not run |
 
-### 9.2 "Create a new request" from the failed state navigates back to the generation form
+### TC-01-UI-9.2 — "Create a new request" from the failed state navigates back to the generation form
 
-```gherkin
-Given the visitor is viewing a failed generation
-When the visitor clicks "create a new request"
-Then the visitor is returned to the generation form
-```
+| Field | Value |
+|---|---|
+| Description | A failed generation with no way forward is a dead end — the error screen must offer the same route back that the success screen does. |
+| Preconditions | The visitor is viewing a failed generation in the chat/result view. |
+| Test data | Action button on the failed view that starts a new request |
+| Steps | 1. Reach the failed view (via TC-01-UI-8.3).<br>2. Click the "create a new request" action. |
+| Expected result | The generation form is displayed with empty fields and the visitor can submit again; the failed view is no longer shown. |
+| Status | Not run |
 
 ---
 
 ## 10. Unsaved Input Protection
 
-### 10.1 Navigating away with unfilled-but-entered form data warns before discarding it
+### TC-01-UI-10.1 — Navigating away with unfilled-but-entered form data warns before discarding it
 
-```gherkin
-Given a visitor has entered a topic and some requirements text but has not submitted
-When the visitor attempts to navigate away or refresh the page
-Then the visitor is warned that unsaved input will be lost
-```
-
----
-
-## DSL Technical Reference
-
-| DSL Statement | Technical Implementation |
+| Field | Value |
 |---|---|
-| `the document-type modal` | modal opened from the Landing CTA; 4 type cards (доклад/эссе/сочинение/реферат) |
-| `shown with a "скоро" badge and is not selectable` | reduced-opacity card + "скоро" badge, non-interactive — this story's addition on top of the Figma layout (Figma itself renders all cards uniformly) |
-| `the mode modal` | modal opened after type selection; 2 mode cards (Ручной/Автоматический) |
-| `breadcrumb/chip` | small non-interactive indicator on the generation form showing the type chosen in the modal, replacing the old inline type-selector tabs |
-| `the submit button is disabled` | `<button disabled>` until `topic` and `volume_pages` (1-10) are both valid |
-| `loading state` | button shows spinner, `POST /api/v1/generations` in flight |
-| `chat/progress view` | client navigates to the status-polling screen for the returned `generation_id` |
-| `plain loading indicator, not real streaming` | client polls `GET /api/v1/generations/{generation_id}`; UI shows a static/looping "writing" indicator while status is `pending`/`in_progress`, then reveals the full content once `completed` — no incremental/token-by-token rendering (known-debt #5) |
-| `inline error` | field-level validation message rendered on blur, before any network call |
-| `no internal error detail is shown` | UI renders only the generic failed-state copy, never a raw provider error |
-| `create a new report` / `create a new request` | button linking back to the generation form route, type still scoped to "доклад" |
-| `activates the submit button twice in quick succession` | second click fires while the same client-generated `Idempotency-Key` is still in flight from the first click; button is disabled/debounced after the first activation |
-| `warned that unsaved input will be lost` | browser `beforeunload` confirm prompt (or an in-app confirm dialog for in-app navigation) fires only when the topic/requirements/extra_wishes fields are non-empty |
+| Description | The topic and requirements are the only text the user writes by hand in this story; losing them to a stray refresh means retyping everything. |
+| Preconditions | The visitor is on the generation form and has typed into topic and requirements but has not submitted. |
+| Test data | Topic `Влияние искусственного интеллекта на образование`, requirements `Три раздела и вывод`; then a page refresh and an in-app navigation away |
+| Steps | 1. Enter the topic and requirements above; do not submit.<br>2. Refresh the page (or close the tab).<br>3. Dismiss the warning, then attempt an in-app navigation away from the form.<br>4. Clear both fields and repeat step 2. |
+| Expected result | Steps 2 and 3 each raise a confirmation before leaving — the browser `beforeunload` prompt for the refresh, an in-app confirm dialog for the in-app navigation; step 4, with both fields empty, raises no prompt at all. |
+| Status | Not run |

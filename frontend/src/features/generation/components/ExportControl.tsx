@@ -1,11 +1,7 @@
 import { useState } from 'react'
-import { exportDocument, type ExportFormat } from '../api/documentApi'
-import './ExportControl.css'
-import { browserDocument } from '../../../shared/lib/browser'
-
-// What the saved file is called before its extension. A literal `document.${format}` inside the
-// template read as a property access on the DOM global to every reader and every scanner.
-const EXPORT_BASENAME = 'document'
+import type { ExportFormat } from '../api/documentApi'
+import styles from './ExportControl.module.css'
+import { runExport } from '../utils/exportRun'
 
 // Scenario 1.1: the control DISPLAY — a trigger that reveals a PDF and a DOCX choice.
 // Scenario 2.1: clicking a choice fires the export request and the control locks while it is
@@ -20,24 +16,26 @@ const EXPORT_FORMATS: ExportFormat[] = ['pdf', 'docx']
 // ("boom") must not leak raw wording into the banner, so the message is fixed here, not derived.
 const EXPORT_ERROR_MESSAGE = 'Не удалось экспортировать документ'
 
-// Scenario 5.1: a successful export resolves a Blob that must reach the browser as a downloaded
-// file. The standard idiom: mint an object URL for the blob, drive a DOM-connected anchor's click
-// (a connected anchor is required for a real Firefox download), then release the URL so repeated
-// exports do not leak blob URLs. Revoke is synchronous right after the click — the resolved blob
-// is fully captured by the object URL before click(), so the eager release is safe here; the
-// selenium 5.1 real-browser test is the backstop.
-function triggerBrowserDownload(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob)
-  const doc = browserDocument()
-  if (!doc) return
-  const anchor = doc.createElement('a')
-  anchor.href = url
-  anchor.download = filename
-  doc.body.appendChild(anchor)
-  anchor.click()
-  doc.body.removeChild(anchor)
-  URL.revokeObjectURL(url)
+// The control's whole position, as one value: whether the menu is revealed, whether a request
+// holds the lock, what failed, and which format the failure was for. They move together — a
+// dispatch opens the lock AND records the format, a success clears the banner — and held apart
+// they were four switches that had to be kept in step by hand.
+interface ExportState {
+  // Conditional mount, not a hidden toggle — the options are absent from the DOM
+  // until the trigger is clicked, mirroring the link popover's open/close pattern.
+  isOpen: boolean
+  // A genuine in-flight lock, not an accident of the menu unmounting: while a request is
+  // pending the options are disabled so a second click cannot dispatch a second export.
+  isExporting: boolean
+  // Scenario 3.2: a rejected export surfaces inline as the fixed EXPORT_ERROR_MESSAGE (never the
+  // caught error's own text) plus a retry. Null = no failure to show.
+  error: string | null
+  // The format of the last dispatched attempt, captured so retry re-dispatches the SAME
+  // format — a docx failure must retry docx, not a hardcoded pdf.
+  lastFormat: ExportFormat | null
 }
+
+const IDLE: ExportState = { isOpen: false, isExporting: false, error: null, lastFormat: null }
 
 interface ExportControlProps {
   // Null until the document has been created/loaded — there is nothing to export before then,
@@ -54,127 +52,107 @@ interface ExportControlProps {
   save?: () => void | Promise<void>
 }
 
+function ExportErrorBar({ error, onRetry }: { error: string; onRetry: () => void }) {
+  return (
+    <div className={styles['me-export-error-bar']}>
+      <span className={styles['me-export-error']} role="alert" data-testid="export-error">
+        {error}
+      </span>
+      <button
+        type="button"
+        className={styles['me-export-retry']}
+        data-testid="export-retry"
+        aria-label="Повторить"
+        onClick={onRetry}
+      >
+        Повторить
+      </button>
+    </div>
+  )
+}
+
+function ExportMenu({
+  isExporting,
+  onExport,
+}: {
+  isExporting: boolean
+  onExport: (format: ExportFormat) => void
+}) {
+  return (
+    <div className={styles['me-export-menu']} role="menu" data-testid="export-menu">
+      {EXPORT_FORMATS.map((format) => (
+        <button
+          key={format}
+          type="button"
+          className={styles['me-export-option']}
+          role="menuitem"
+          data-testid={`export-option-${format}`}
+          disabled={isExporting}
+          aria-disabled={isExporting}
+          onClick={() => onExport(format)}
+        >
+          {format.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export function ExportControl({ documentId, hasUnsavedChanges = false, save }: ExportControlProps) {
-  // Conditional mount, not a hidden toggle — the options are absent from the DOM
-  // until the trigger is clicked, mirroring the link popover's open/close pattern.
-  const [isOpen, setIsOpen] = useState(false)
-  // A genuine in-flight lock, not an accident of the menu unmounting: while a request is
-  // pending the options are disabled so a second click cannot dispatch a second export.
-  const [isExporting, setIsExporting] = useState(false)
-  // Scenario 3.2: a rejected export surfaces inline as the fixed EXPORT_ERROR_MESSAGE (never the
-  // caught error's own text) plus a retry. Null = no failure to show.
-  const [error, setError] = useState<string | null>(null)
-  // The format of the last dispatched attempt, captured so retry re-dispatches the SAME
-  // format — a docx failure must retry docx, not a hardcoded pdf.
-  const [lastFormat, setLastFormat] = useState<ExportFormat | null>(null)
+  const [state, setState] = useState<ExportState>(IDLE)
 
   const handleExport = (format: ExportFormat) => {
-    if (isExporting || !documentId) return
-    // Set the in-flight lock BEFORE any save — the save happens inside this window so a
-    // double-click during it cannot slip past the guard and double-dispatch.
-    setIsExporting(true)
-    // Remember the format so retry re-dispatches the SAME one (docx retries docx, not pdf).
-    setLastFormat(format)
-    // Scenario 4.1: on a dirty editor, persist first and dispatch only after save resolves so the
-    // export never ships stale stored html. `await save()` before the export; if save REJECTS the
-    // export is skipped (a failed save must not ship a stale file) and the failure surfaces as the
-    // fixed banner. A clean editor skips the save entirely and exports straight through.
-    const run = async () => {
-      if (hasUnsavedChanges && save) {
-        // Await ONLY a promise-returning save so the export waits for persistence to settle
-        // (Scenario 4.1's pinned ordering). A fire-and-forget save that returns void is kicked
-        // off and not awaited — awaiting `undefined` would add nothing and would needlessly defer
-        // the dispatch a microtask, so we keep the synchronous path for void saves.
-        const saving = save()
-        if (saving && typeof saving.then === 'function') {
-          try {
-            await saving
-          } catch {
-            // Save FAILED: skip the export (never ship a stale file) AND do not set the generic
-            // export banner. useDocumentSave already surfaced the accurate data-loss message
-            // (SessionExpired / VersionConflict) in ManualEditor's save-error banner; the generic
-            // "Не удалось экспортировать" would only mask it. Returning here (rather than rethrowing)
-            // leaves that banner to speak. The `finally` below still releases the in-flight lock.
-            return
-          }
-        }
-      }
-      const blob = await exportDocument(documentId, format)
-      // Deliver the resolved blob to the browser as a download. The extension is derived from the
-      // export format (…​.pdf / …​.docx), never hardcoded, so a docx export ships a .docx file.
-      triggerBrowserDownload(blob, `${EXPORT_BASENAME}.${format}`)
-      // Clear the error ONLY on success — never optimistically at dispatch time. This keeps a
+    if (state.isExporting || !documentId) return
+    // The in-flight lock is set BEFORE any save — the save happens inside this window so a
+    // double-click during it cannot slip past the guard and double-dispatch — and the format is
+    // recorded with it so retry re-dispatches the SAME one (docx retries docx, not pdf).
+    setState((current) => ({ ...current, isExporting: true, lastFormat: format }))
+    runExport(documentId, format, hasUnsavedChanges ? save : undefined)
+      // Cleared ONLY on a delivered file — never optimistically at dispatch time. This keeps a
       // failed export's banner visible through the retry's whole in-flight window and drops it
-      // the moment the retry succeeds; a still-failing retry leaves the banner up.
-      setError(null)
-    }
-    run()
-      // Surface any rejection (failed save OR failed export) as inline error state, keeping the
-      // rejection handled — no unhandled promise rejection. If the retry also rejects, re-raised.
-      .catch(() => {
-        setError(EXPORT_ERROR_MESSAGE)
+      // the moment the retry succeeds; a still-failing retry leaves the banner up. A skipped
+      // export (the save failed) leaves the banner exactly as it was — ManualEditor's save-error
+      // banner is the accurate one there, and this generic message would only mask it.
+      .then((delivered) => {
+        if (delivered) setState((current) => ({ ...current, error: null }))
       })
+      // Surface an export rejection as inline error state, keeping the rejection handled — no
+      // unhandled promise rejection.
+      .catch(() => setState((current) => ({ ...current, error: EXPORT_ERROR_MESSAGE })))
       // `finally` releases the lock on BOTH resolve and reject: a lock that only cleared on
       // success would leave the control permanently dead after the first failed export.
-      .finally(() => {
-        setIsExporting(false)
-      })
-  }
-
-  const handleRetry = () => {
-    if (lastFormat) handleExport(lastFormat)
+      .finally(() => setState((current) => ({ ...current, isExporting: false })))
   }
 
   return (
-    <div className="me-export-control">
+    <div className={styles['me-export-control']}>
       <button
         type="button"
-        className="me-export-trigger"
+        className={styles['me-export-trigger']}
         data-testid="export-control-trigger"
         aria-haspopup="menu"
-        aria-expanded={isOpen}
+        aria-expanded={state.isOpen}
         disabled={!documentId}
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={() => setState((current) => ({ ...current, isOpen: !current.isOpen }))}
       >
         Экспорт
       </button>
-      {isExporting && (
-        <span data-testid="export-spinner" className="me-export-spinner" aria-hidden="true" />
+      {state.isExporting && (
+        <span
+          data-testid="export-spinner"
+          className={styles['me-export-spinner']}
+          aria-hidden="true"
+        />
       )}
-      {error && (
-        <div className="me-export-error-bar">
-          <span className="me-export-error" role="alert" data-testid="export-error">
-            {error}
-          </span>
-          <button
-            type="button"
-            className="me-export-retry"
-            data-testid="export-retry"
-            aria-label="Повторить"
-            onClick={handleRetry}
-          >
-            Повторить
-          </button>
-        </div>
+      {state.error && (
+        <ExportErrorBar
+          error={state.error}
+          onRetry={() => {
+            if (state.lastFormat) handleExport(state.lastFormat)
+          }}
+        />
       )}
-      {isOpen && (
-        <div className="me-export-menu" role="menu" data-testid="export-menu">
-          {EXPORT_FORMATS.map((format) => (
-            <button
-              key={format}
-              type="button"
-              className="me-export-option"
-              role="menuitem"
-              data-testid={`export-option-${format}`}
-              disabled={isExporting}
-              aria-disabled={isExporting}
-              onClick={() => handleExport(format)}
-            >
-              {format.toUpperCase()}
-            </button>
-          ))}
-        </div>
-      )}
+      {state.isOpen && <ExportMenu isExporting={state.isExporting} onExport={handleExport} />}
     </div>
   )
 }

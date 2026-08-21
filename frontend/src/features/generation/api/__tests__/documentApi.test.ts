@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDocument, getDocument, saveDocument } from '../documentApi'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 
 // Signing in is SETUP here, not subject: all three calls go through `authorizedRequest`, so
 // without a session every one of them fails before fetch is reached. The refresh/replay

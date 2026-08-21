@@ -29,6 +29,17 @@ function requireProxyTarget(): string {
 // variable the tests never use.
 export default defineConfig(({ command }) => ({
   plugins: [react()],
+  css: {
+    modules: {
+      // Component styles are CSS modules, so every class name in the bundle is
+      // `File_class_hash`. Readable in devtools and, across ~50 stylesheets,
+      // 1.5 kB gzipped of repeated file names in the shipped CSS — enough on its
+      // own to push the render-blocking sheet past its budget. Development keeps
+      // the readable form; production ships the hash only.
+      generateScopedName:
+        command === 'build' ? '[hash:base64:6]' : '[name]__[local]__[hash:base64:4]',
+    },
+  },
   server: {
     host: '127.0.0.1',
     port: frontendPort,

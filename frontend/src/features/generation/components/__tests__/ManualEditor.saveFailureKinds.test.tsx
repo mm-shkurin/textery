@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 import * as documentApi from '../../api/documentApi'
-import { SessionExpiredError } from '../../../auth/api/authorizedRequest'
+import { SessionExpiredError } from '../../../../shared/session/authorizedRequest'
 import { VersionConflictError } from '../../../../shared/api/send'
 import { CONFLICT_ERROR_MESSAGE, SAVE_ERROR_MESSAGE } from '../../hooks/useDocumentSave'
 import { renderEditorWithDocumentCreated } from './ManualEditor.testSupport'

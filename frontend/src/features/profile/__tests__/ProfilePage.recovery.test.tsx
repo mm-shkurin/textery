@@ -60,7 +60,10 @@ describe('recovering from a failure', () => {
 
     fireEvent.click(retry)
 
-    expect(await screen.findByTestId('profile-name-input')).toBeTruthy()
+    // The value, not the mere presence: a retry that re-rendered the card from a failed read
+    // would satisfy `toBeTruthy` with an empty field.
+    expect(await screen.findByTestId('profile-name-input')).toHaveValue('')
+    expect(screen.getByText(PROFILE.email)).toBeInTheDocument()
     expect(screen.queryByTestId('profile-load-failed')).toBeNull()
   })
 

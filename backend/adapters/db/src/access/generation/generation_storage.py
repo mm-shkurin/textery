@@ -1,7 +1,30 @@
+"""Persistence for generations, including the versioned compare-and-swap update.
+
+`update()` is **one statement.** The version is compared in the WHERE clause and
+the increment computed in SQL; RETURNING hands back the new row. Comparing the
+version in Python and then writing would let two sessions both read version=1,
+both pass the check, and both write version=2 -- a silently lost update under
+READ COMMITTED. The stale sweep runs in every replica, so two instances do reach
+that method for the same row.
+
+Why it holds across processes: the loser blocks on the row lock, and when the
+winner commits Postgres re-evaluates the WHERE against the updated row, sees the
+bumped version, and matches zero rows. The database is the arbiter, so the
+instance count is irrelevant.
+
+Zero rows matched is ambiguous -- absent or version-mismatched -- and callers
+need those as different exceptions, so one follow-up read decides which. It runs
+only when the write has already failed.
+
+Same shape as `SqlAlchemyDocumentStorage.save_content_if_version_matches`;
+`test_generation_storage_cas_shape.py` pins it, since a concurrency test cannot
+(see that file).
+"""
+
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import Update, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from access.keyset_pagination import paginate_by_owner
@@ -74,27 +97,21 @@ class SqlAlchemyGenerationStorage:
     async def update(self, generation: Generation) -> None:
         """Compare-and-swap the generation's state on its version.
 
-        **One statement.** The version is compared in the WHERE clause and the
-        increment computed in SQL; RETURNING hands back the new row. Comparing the
-        version in Python and then writing would let two sessions both read
-        version=1, both pass the check, and both write version=2 -- a silently
-        lost update under READ COMMITTED. The stale sweep runs in every replica,
-        so two instances do reach this method for the same row.
-
-        Why it holds across processes: the loser blocks on the row lock, and when
-        the winner commits Postgres re-evaluates the WHERE against the updated
-        row, sees the bumped version, and matches zero rows. The database is the
-        arbiter, so the instance count is irrelevant.
-
-        Zero rows matched is ambiguous -- absent or version-mismatched -- and
-        callers need those as different exceptions, so one follow-up read decides
-        which. It runs only when the write has already failed.
-
-        Same shape as `SqlAlchemyDocumentStorage.save_content_if_version_matches`;
-        `test_generation_storage_cas_shape.py` pins it, since a concurrency test
-        cannot (see that file).
+        See the module docstring for why this is one statement and why it holds
+        across replicas.
         """
-        result = await self._session.execute(
+        result = await self._session.execute(self._compare_and_swap(generation))
+        model = result.scalar_one_or_none()
+        if model is None:
+            await self._session.rollback()
+            raise await self._explain_failed_update(generation)
+        await self._session.commit()
+        generation.version = model.version
+
+    @staticmethod
+    def _compare_and_swap(generation: Generation) -> Update:
+        """The single UPDATE ... WHERE version = ... RETURNING statement."""
+        return (
             update(GenerationModel)
             .where(
                 GenerationModel.id == generation.id,
@@ -112,12 +129,6 @@ class SqlAlchemyGenerationStorage:
             )
             .returning(GenerationModel)
         )
-        model = result.scalar_one_or_none()
-        if model is None:
-            await self._session.rollback()
-            raise await self._explain_failed_update(generation)
-        await self._session.commit()
-        generation.version = model.version
 
     async def _explain_failed_update(self, generation: Generation) -> Exception:
         """Decide which error a zero-row UPDATE meant. Failure path only."""

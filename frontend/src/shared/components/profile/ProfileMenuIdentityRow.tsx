@@ -1,6 +1,7 @@
 import { identityLabel } from '../../identity/identityLabel'
 import type { IdentityState } from '../../identity/identityStore'
 import { ProfileAvatar } from './ProfileAvatar'
+import profileMenuStyles from './ProfileMenu.module.css'
 
 interface ProfileMenuIdentityRowProps {
   identity: IdentityState
@@ -20,18 +21,27 @@ interface ProfileMenuIdentityRowProps {
 // slightly old name.
 export function ProfileMenuIdentityRow({ identity, testIdPrefix }: ProfileMenuIdentityRowProps) {
   return (
-    <div className="profile-panel-account">
+    <div className={profileMenuStyles['profile-panel-account']}>
       <ProfileAvatar identity={identity} size="menu" />
       {identity.status === 'ready' ? (
-        <span className="profile-panel-email" data-testid={`${testIdPrefix}-profile-email`}>
+        <span
+          className={profileMenuStyles['profile-panel-email']}
+          data-testid={`${testIdPrefix}-profile-email`}
+        >
           {identityLabel(identity.profile)}
         </span>
       ) : identity.status === 'failed' ? (
-        <span className="profile-panel-degraded" data-testid={`${testIdPrefix}-profile-degraded`}>
+        <span
+          className={profileMenuStyles['profile-panel-degraded']}
+          data-testid={`${testIdPrefix}-profile-degraded`}
+        >
           Данные профиля недоступны
         </span>
       ) : (
-        <span className="profile-panel-skeleton profile-shimmer" aria-hidden="true" />
+        <span
+          className={`${profileMenuStyles['profile-panel-skeleton']} ${profileMenuStyles['profile-shimmer']}`}
+          aria-hidden="true"
+        />
       )}
     </div>
   )

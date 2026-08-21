@@ -47,6 +47,7 @@ describe('useDocumentInit under StrictMode', () => {
     // SAME key — true for one call, and the whole point for two.
     const keys = vi.mocked(documentApi.createDocument).mock.calls.map(([, key]) => key)
     expect(new Set(keys).size).toBe(1)
-    expect(keys[0]).toBeTruthy()
+    // And it is a real minted key, not an empty string that would also collapse to a set of one.
+    expect(keys[0]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
   })
 })

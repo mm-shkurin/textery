@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { getAccessToken, subscribeAuthSession } from '../utils/authSession'
+import { getAccessToken, subscribeAuthSession } from '../../../shared/session/authSession'
 
 // Whether a session exists, as a value React actually re-renders on.
 //

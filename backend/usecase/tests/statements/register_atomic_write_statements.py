@@ -17,28 +17,28 @@ class RegisterAtomicWriteStatements(RegisterStatementsBase):
         await self._run_register(RegisterRequestScope.builder())
 
     async def attempt_registering_when_verification_code_save_fails(self) -> None:
-        self.verification_code_repository.raise_on_save = RuntimeError(
+        self._verification_code_repository.raise_on_save = RuntimeError(
             f"verification code insert failed: {self.RAW_DRIVER_ERROR_SENTINEL}"
         )
         await self._run_register(RegisterRequestScope.builder())
 
     async def attempt_registering_when_final_commit_fails(self) -> None:
-        self.unit_of_work.raise_on_commit = RuntimeError(
+        self._unit_of_work.raise_on_commit = RuntimeError(
             f"commit failed: {self.RAW_DRIVER_ERROR_SENTINEL}"
         )
         await self._run_register(RegisterRequestScope.builder())
 
     async def attempt_registering_when_verification_code_save_and_rollback_both_fail(self) -> None:
-        self.verification_code_repository.raise_on_save = RuntimeError(
+        self._verification_code_repository.raise_on_save = RuntimeError(
             f"verification code insert failed: {self.RAW_DRIVER_ERROR_SENTINEL}"
         )
-        self.unit_of_work.raise_on_rollback = RuntimeError(
+        self._unit_of_work.raise_on_rollback = RuntimeError(
             f"rollback failed: {self.RAW_DRIVER_ERROR_SENTINEL}"
         )
         await self._run_register(RegisterRequestScope.builder())
 
     async def attempt_registering_when_account_save_fails_with_non_conflict_error(self) -> None:
-        self.account_repository.raise_on_save = RuntimeError(
+        self._account_repository.raise_on_save = RuntimeError(
             f"account insert failed: {self.RAW_DRIVER_ERROR_SENTINEL}"
         )
         await self._run_register(RegisterRequestScope.builder())
@@ -51,16 +51,16 @@ class RegisterAtomicWriteStatements(RegisterStatementsBase):
         work to roll back. Handing it the base's FakeUnitOfWork would test the
         opposite of what the name says.
         """
-        self.verification_code_repository.raise_on_save = RuntimeError(
+        self._verification_code_repository.raise_on_save = RuntimeError(
             f"verification code insert failed: {self.RAW_DRIVER_ERROR_SENTINEL}"
         )
         scope = RegisterRequestScope.builder()
         try:
             await RegisterUser(
-                password_hasher=self.password_hasher,
-                account_repository=self.account_repository,
-                clock=self.clock,
-                verification_code_repository=self.verification_code_repository,
+                password_hasher=self._password_hasher,
+                account_repository=self._account_repository,
+                clock=self._clock,
+                verification_code_repository=self._verification_code_repository,
             ).execute(
                 email=scope.email,
                 password=scope.password,
@@ -74,21 +74,21 @@ class RegisterAtomicWriteStatements(RegisterStatementsBase):
             f"expected no exception to be raised, got "
             f"{type(self.thrown_exception).__name__}: {self.thrown_exception}"
         )
-        assert self.unit_of_work.commit_call_count == 1, (
+        assert self._unit_of_work.commit_call_count == 1, (
             f"expected UnitOfWork.commit to be called exactly once, "
-            f"got {self.unit_of_work.commit_call_count}"
+            f"got {self._unit_of_work.commit_call_count}"
         )
-        assert self.unit_of_work.rollback_call_count == 0, (
+        assert self._unit_of_work.rollback_call_count == 0, (
             f"expected UnitOfWork.rollback to never be called when both saves succeed, "
-            f"got {self.unit_of_work.rollback_call_count}"
+            f"got {self._unit_of_work.rollback_call_count}"
         )
-        assert len(self.account_repository.saved_accounts) == 1, (
+        assert len(self._account_repository.saved_accounts) == 1, (
             f"expected exactly one account to be saved, "
-            f"got {len(self.account_repository.saved_accounts)}"
+            f"got {len(self._account_repository.saved_accounts)}"
         )
-        assert len(self.verification_code_repository.saved_codes) == 1, (
+        assert len(self._verification_code_repository.saved_codes) == 1, (
             f"expected exactly one verification code to be saved, "
-            f"got {len(self.verification_code_repository.saved_codes)}"
+            f"got {len(self._verification_code_repository.saved_codes)}"
         )
 
     def _assert_registration_failed_shape(self) -> None:
@@ -109,35 +109,35 @@ class RegisterAtomicWriteStatements(RegisterStatementsBase):
         self, expected_saved_codes_count: int, expected_saved_accounts_count: int = 1
     ) -> None:
         self._assert_registration_failed_shape()
-        assert self.unit_of_work.rollback_call_count == 1, (
+        assert self._unit_of_work.rollback_call_count == 1, (
             f"expected UnitOfWork.rollback to be called exactly once, "
-            f"got {self.unit_of_work.rollback_call_count}"
+            f"got {self._unit_of_work.rollback_call_count}"
         )
-        assert self.unit_of_work.commit_call_count == 0, (
+        assert self._unit_of_work.commit_call_count == 0, (
             f"expected UnitOfWork.commit to never be called on this path, "
-            f"got {self.unit_of_work.commit_call_count}"
+            f"got {self._unit_of_work.commit_call_count}"
         )
-        assert len(self.account_repository.saved_accounts) == expected_saved_accounts_count, (
+        assert len(self._account_repository.saved_accounts) == expected_saved_accounts_count, (
             f"expected {expected_saved_accounts_count} account(s) saved, "
-            f"got {len(self.account_repository.saved_accounts)}"
+            f"got {len(self._account_repository.saved_accounts)}"
         )
-        assert len(self.verification_code_repository.saved_codes) == expected_saved_codes_count, (
+        assert len(self._verification_code_repository.saved_codes) == expected_saved_codes_count, (
             f"expected {expected_saved_codes_count} verification code(s) saved before rollback, "
-            f"got {len(self.verification_code_repository.saved_codes)}"
+            f"got {len(self._verification_code_repository.saved_codes)}"
         )
 
     def assert_registration_failed_error_raised_without_injected_unit_of_work(self) -> None:
         self._assert_registration_failed_shape()
-        assert self.unit_of_work.rollback_call_count == 0, (
+        assert self._unit_of_work.rollback_call_count == 0, (
             f"expected the injected fake UnitOfWork (unused by this scenario) "
             f"to record no rollback calls, "
-            f"got {self.unit_of_work.rollback_call_count}"
+            f"got {self._unit_of_work.rollback_call_count}"
         )
-        assert len(self.account_repository.saved_accounts) == 1, (
+        assert len(self._account_repository.saved_accounts) == 1, (
             f"expected the account save to have already succeeded before rollback, "
-            f"got {len(self.account_repository.saved_accounts)}"
+            f"got {len(self._account_repository.saved_accounts)}"
         )
-        assert len(self.verification_code_repository.saved_codes) == 0, (
+        assert len(self._verification_code_repository.saved_codes) == 0, (
             f"expected 0 verification code(s) saved before rollback, "
-            f"got {len(self.verification_code_repository.saved_codes)}"
+            f"got {len(self._verification_code_repository.saved_codes)}"
         )

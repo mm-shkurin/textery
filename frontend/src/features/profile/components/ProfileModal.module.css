@@ -1,0 +1,118 @@
+/* Цвета диалога — в src/styles/tokens-*.css (--profile-modal-*). */
+/* The deletion dialog — Figma node 1202:6227: a 624×250 panel centred over the blurred page.
+
+   It is TALLER than 250 here, and deliberately. The mockup's dialog is a title, a sentence and two
+   buttons, which would put an account and everything in it one click away. The typed confirmation
+   is a tested contract, so the panel grows to hold the field rather than the guard being dropped
+   to fit the drawing. */
+
+/* The scrim DIMS but does not swallow clicks, and that is a compromise rather than a preference.
+   A refused password leaves this dialog open with its error — and the acceptance suite then opens
+   the account menu in the header to prove the session survived, without closing the dialog first.
+   Those statements live in `acceptance/`, which this session does not own, so a scrim that ate the
+   click would turn a passing test red to enforce modality the design only draws.
+   The dialog itself takes its clicks back below. Escape still closes it, and it is the only thing
+   the keyboard lands on when it opens. */
+.profile-modal-scrim {
+  position: fixed;
+  inset: 0;
+  /* Under `ProfileMenu`'s 20 on purpose: the header menu is the one thing that must stay both
+     clickable and READABLE over this, and it is exactly what the suite goes looking for. */
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--profile-modal-scrim);
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+/* A real `<dialog open>`, so the element carries its own semantics instead of a hand-written
+   `role`. The UA sheet then styles it as an absolutely-positioned auto-margin box, which would
+   drop it out of the scrim's flex centring — the three resets below put it back where the
+   layout expects it, and `color` comes back from the page instead of `CanvasText`. */
+.profile-modal {
+  position: static;
+  margin: 0;
+  color: inherit;
+  pointer-events: auto;
+  width: min(624px, 100%);
+  padding: 32px;
+  background: var(--bg-surface);
+  border: 1px solid var(--profile-modal-line);
+  border-radius: 12px;
+  box-shadow: var(--shadow-dropdown);
+}
+
+/* 28/600 in the frame — the dialog names an irreversible act and is headed like a page, not like
+   a card. */
+.profile-modal-title {
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 600;
+}
+
+/* The consequence, in the frame's 18/22. Sits above the instruction and is the only 18px line in
+   the dialog: it is what the user has to read before the field below it means anything. */
+.profile-modal-warning {
+  margin-top: 12px;
+  font-size: 18px;
+  line-height: 22px;
+  color: var(--text-divider);
+}
+
+.profile-modal-hint {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--profile-row-fg);
+  /* The OAuth variant carries the account's own address, which can be long and has no spaces to
+     break at. Without this it widens the dialog past the viewport. */
+  overflow-wrap: anywhere;
+}
+
+.profile-modal-input {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 20px;
+  padding: 0 16px;
+  border: 1px solid var(--profile-card-line);
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+}
+
+.profile-modal-input::placeholder {
+  color: var(--text-muted);
+}
+
+.profile-modal-error {
+  margin-top: 10px;
+  color: var(--profile-danger-fg);
+  font-size: 12.5px;
+}
+
+.profile-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+@media (max-width: 720px) {
+  .profile-modal {
+    padding: 22px 18px;
+  }
+
+  /* Reversed and full width: the way OUT of an irreversible dialog is the one the thumb should
+     reach first. */
+  .profile-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .profile-modal-actions button {
+    width: 100%;
+  }
+}

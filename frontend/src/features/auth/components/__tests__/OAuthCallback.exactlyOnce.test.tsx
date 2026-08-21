@@ -4,7 +4,10 @@ import { act, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { OAuthCallback } from '../OAuthCallback'
 import * as oauthExchangeApi from '../../api/oauthExchangeApi'
-import * as authSession from '../../utils/authSession'
+import * as authSession from '../../../../shared/session/authSession'
+import authFormStyles from '../AuthForm.module.css'
+import oauthCallbackStyles from '../OAuthCallback.module.css'
+import { deferred, navigate } from './oauthCallbackTestSupport'
 
 // Scenario 3.2 — the exchange is issued EXACTLY ONCE per handoff code even when the callback's
 // effect runs twice. `StrictMode` is the real-world double-run: React dev mounts, tears down and
@@ -29,7 +32,6 @@ const SESSION = {
   refreshTokenExpiresAt: '2026-07-29T10:00:00Z',
 }
 
-const navigate = vi.fn()
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>()
   return { ...actual, useNavigate: () => navigate }
@@ -40,18 +42,10 @@ vi.mock('../../api/oauthExchangeApi', async (importOriginal) => {
   return { ...actual, oauthExchange: vi.fn() }
 })
 
-vi.mock('../../utils/authSession', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../utils/authSession')>()
+vi.mock('../../../../shared/session/authSession', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../shared/session/authSession')>()
   return { ...actual, saveSession: vi.fn() }
 })
-
-function deferred<T>() {
-  let resolve!: (value: T) => void
-  const promise = new Promise<T>((res) => {
-    resolve = res
-  })
-  return { promise, resolve }
-}
 
 function renderUnderDoubleMount() {
   return render(
@@ -157,7 +151,7 @@ describe('OAuthCallback exactly-once exchange', () => {
   })
 
   // Carried from the 3.1 align-design review: the callback's whole visual shell rests on one
-  // `import './AuthForm.css'` plus these two shared classnames. jsdom applies no CSS, so if an
+  // `import authFormStyles from './AuthForm.module.css'` plus these two shared classnames. jsdom applies no CSS, so if an
   // import tidy-up or a classname rename drops the shell to a naked box, NOTHING else goes RED.
   // This pins the class contract itself. Born-green — 3.1 align-design already ships it.
   it('keeps the shared auth shell classes on the loading state', () => {
@@ -167,10 +161,13 @@ describe('OAuthCallback exactly-once exchange', () => {
 
     expect(screen.getByTestId('oauth-callback-loading')).toHaveAttribute(
       'class',
-      'auth-card oauth-callback-card',
+      `${authFormStyles['auth-card']} ${oauthCallbackStyles['oauth-callback-card']}`,
     )
     const subtitle = screen.getByText('Это займёт пару секунд. Не закрывайте страницу.')
-    expect(subtitle).toHaveAttribute('class', 'auth-subtitle oauth-callback-subtitle')
+    expect(subtitle).toHaveAttribute(
+      'class',
+      `${authFormStyles['auth-subtitle']} ${oauthCallbackStyles['oauth-callback-subtitle']}`,
+    )
     expect(subtitle.tagName).toBe('P')
   })
 })

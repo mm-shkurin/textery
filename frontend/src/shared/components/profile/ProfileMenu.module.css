@@ -1,0 +1,200 @@
+/* Figma group `profile navbar` (node 1218:5171). Values are taken from that group at 1:1 — it is
+   drawn at CSS scale (a 44px avatar, 14px menu text), unlike the `Pallete` frame that index.css
+   divides by 1.3333. */
+
+.profile-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.profile-trigger {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+/* Figma `Button/Container` (node 573:4506): a 135° gradient, the one gradient surface left in the
+   UI. It moved to `--avatar-gradient` in the token sheets when the dark theme landed — not because
+   it changes there (it does not; a saturated gradient reads on either page), but because it was the
+   last colour literal in this file, and leaving one behind is how the next one gets added.
+   `--accent-gradient` is still the wrong token: it resolves to the flat brand blues. */
+.profile-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: var(--radius-pill);
+  background: var(--avatar-gradient);
+  color: var(--text-inverse);
+  font-weight: 700;
+  /* Both drop shadows of the Figma node, kept as two: together they read as a soft lift, and the
+     single merged shadow that replaced them looked pasted onto the white pill behind it. */
+  box-shadow: var(--avatar-shadow);
+}
+
+.profile-avatar svg {
+  width: 60%;
+  height: 60%;
+}
+
+/* 44 — this group's own node, which the header of this file records as drawn at CSS scale. It was
+   briefly 48, taken from `Navbar/Variant4` (node 1086:4934) read as 1:1; under the 1.3333 division
+   the bar actually uses, that same component is 36, and neither number belongs here. The disc
+   sitting in a 75px bar is this node's 44. */
+.profile-avatar-trigger {
+  width: 44px;
+  height: 44px;
+  font-size: 16px;
+}
+
+.profile-avatar-menu {
+  width: 28px;
+  height: 28px;
+  font-size: 10px;
+}
+
+.profile-avatar-card {
+  width: 72px;
+  height: 72px;
+  font-size: 24px;
+}
+
+/* The two non-ready discs. Both override the `background` SHORTHAND above, which is what silently
+   drops the gradient AND its size — the mockup's first cut shipped a placeholder that did not
+   move at all for exactly this reason, leaving загрузка and отказ apart only by a hairline. */
+.profile-avatar-placeholder {
+  color: var(--text-muted);
+  box-shadow: none;
+  background: linear-gradient(90deg, var(--bg-sunken), var(--skeleton-highlight), var(--bg-sunken));
+  background-size: 200% 100%;
+  animation: profile-shimmer 1.3s ease-in-out infinite;
+}
+
+/* Static, dashed, carrying an alert glyph: a failure that shimmered would read as "still
+   loading", and one that looked healthy would read as "an account with no name". */
+.profile-avatar-degraded {
+  background: var(--bg-sunken);
+  border: 1.5px dashed var(--border-strong);
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+.profile-shimmer {
+  background: linear-gradient(90deg, var(--bg-sunken), var(--skeleton-highlight), var(--bg-sunken));
+  background-size: 200% 100%;
+  animation: profile-shimmer 1.3s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+@keyframes profile-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.profile-chevron {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  transition: transform 120ms ease;
+}
+
+.profile-chevron-up {
+  transform: rotate(180deg);
+}
+
+.profile-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  /* Anchored to the trigger's right edge: the menu lives in the top-right corner, so growing
+     leftwards is the only direction that keeps it on screen. */
+  right: 0;
+  z-index: 20;
+  width: 238px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--border-hairline);
+  border-radius: 6px;
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.profile-panel-account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px 12px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.profile-panel-email {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  /* An address longer than the panel must not widen it or spill past the border. */
+  overflow-wrap: anywhere;
+}
+
+.profile-panel-degraded {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.profile-panel-skeleton {
+  display: block;
+  width: 130px;
+  height: 12px;
+}
+
+.profile-panel-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.profile-panel-item:hover,
+.profile-panel-item:focus-visible {
+  background: var(--accent-soft);
+}
+
+.profile-menu-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 640px) {
+  .profile-avatar-trigger {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .profile-trigger {
+    gap: 4px;
+  }
+}

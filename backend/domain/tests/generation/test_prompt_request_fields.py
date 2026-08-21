@@ -31,6 +31,11 @@ EXPECTED_PROMPT_REQUEST_SIGNATURE = (
     # validated, stored and echoed back for weeks while never reaching the model.
     ("requirements", inspect.Parameter.POSITIONAL_OR_KEYWORD),
     ("extra_wishes", inspect.Parameter.POSITIONAL_OR_KEYWORD),
+    # Added with the style picker, and admitted on the same grounds as the two
+    # above: it is a value the USER chooses on the form, and the template's whole
+    # job is to turn it into an instruction. It is not server-owned state, which
+    # is the category this view exists to exclude.
+    ("text_style", inspect.Parameter.POSITIONAL_OR_KEYWORD),
 )
 
 # The attributes a built `PromptRequest` may carry. Asserted separately from the
@@ -44,6 +49,7 @@ EXPECTED_PROMPT_REQUEST_ATTRIBUTES = (
     "volume_pages",
     "requirements",
     "extra_wishes",
+    "text_style",
 )
 
 
@@ -56,7 +62,7 @@ class TestPromptRequestCarriesOnlyTheFieldsATemplateMayRead:
     grows by accident silently undoes that, so it is declared, not grown.
     """
 
-    def test_should_accept_exactly_the_three_declared_fields(self):
+    def test_should_accept_exactly_the_declared_fields(self):
         parameters = inspect.signature(PromptRequest.__init__).parameters
         accepted = tuple(
             (name, parameter.kind) for name, parameter in parameters.items() if name != "self"

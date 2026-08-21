@@ -144,7 +144,7 @@ describe('ManualEditor line break — load round-trip', () => {
     )
 
     await waitFor(() => {
-      expect(documentApi.getDocument).toHaveBeenCalledWith('doc-99')
+      expect(documentApi.getDocument).toHaveBeenCalledWith('doc-99', expect.any(AbortSignal))
     })
 
     const contentArea = await screen.findByTestId('editor-content-area')

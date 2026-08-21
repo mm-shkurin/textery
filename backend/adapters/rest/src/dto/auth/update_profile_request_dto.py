@@ -1,5 +1,3 @@
-from typing import Any
-
 from pydantic import BaseModel
 
 NAME_FIELD = "name"
@@ -12,7 +10,7 @@ class UpdateProfileRequestDto(BaseModel):
     the same object: the response carries `email` and `created_at`, neither of
     which a client may write, and a shared model would make them look writable.
 
-    **The field is typed `Any` on purpose.** `{"name": 123}` must answer
+    **The field is typed `object` on purpose.** `{"name": 123}` must answer
     `400 {error_code, message}` from the domain. A `str | None` annotation would
     make Pydantic refuse it first, and FastAPI renders that as a **422 in a
     different envelope which echoes the rejected input back** -- a shape this
@@ -38,7 +36,7 @@ class UpdateProfileRequestDto(BaseModel):
     field it did not mention.
     """
 
-    name: Any = None
+    name: object = None
 
     def has_name(self) -> bool:
         return NAME_FIELD in self.model_fields_set

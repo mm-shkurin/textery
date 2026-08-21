@@ -56,7 +56,7 @@ class TestExchangeSuccess:
 
         await f.usecase.execute(code)
 
-        assert code not in f.handoffs._by_value
+        assert not f.handoffs.holds(code)
         assert f.uow.commit_call_count == 1
 
 

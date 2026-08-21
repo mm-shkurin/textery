@@ -2,9 +2,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from access.document.document_storage import SqlAlchemyDocumentStorage
 from access.generation.generation_storage import SqlAlchemyGenerationStorage
+from container.analytics_wiring import create_analytics_recorder
 from container.runtime import request_scoped
 from document.create_document import CreateDocument
 from document.create_document_from_generation import CreateDocumentFromGeneration
+from document.delete_document import DeleteDocument
 from document.export_document import ExportDocument
 from document.get_document import GetDocument
 from document.list_documents import ListDocuments
@@ -19,6 +21,16 @@ def create_create_document(session: AsyncSession) -> CreateDocument:
     return CreateDocument(
         document_repository=SqlAlchemyDocumentStorage(session),
         clock=SystemClock(),
+        unit_of_work=SqlAlchemyUnitOfWork(session),
+    )
+
+
+@request_scoped
+def create_delete_document(session: AsyncSession) -> DeleteDocument:
+    return DeleteDocument(
+        document_repository=SqlAlchemyDocumentStorage(session),
+        # The same session the repository holds, so the DELETE and its commit are
+        # one transaction — and so a failed delete leaves nothing half-applied.
         unit_of_work=SqlAlchemyUnitOfWork(session),
     )
 
@@ -63,6 +75,9 @@ def create_save_document(session: AsyncSession) -> SaveDocument:
         # One session across the repository and the unit of work, so the usecase's
         # commit is what makes the CAS durable.
         unit_of_work=SqlAlchemyUnitOfWork(session),
+        # NOT on that session: the recorder opens its own, so a failed analytics
+        # INSERT cannot roll the save back.
+        analytics_recorder=create_analytics_recorder(),
     )
 
 

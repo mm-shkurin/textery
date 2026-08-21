@@ -1,13 +1,9 @@
 import { useCallback, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useIdentity } from '../../identity/useIdentity'
 import { identityLabel } from '../../identity/identityLabel'
 import { useDismissOnOutside } from '../../hooks/useDismissOnOutside'
-import { ProfileAvatar } from './ProfileAvatar'
-import { ProfileMenuIdentityRow } from './ProfileMenuIdentityRow'
-import { ChevronIcon, ProfileItemIcon, SignOutIcon } from './profileMenuIcons'
-import { ThemeMenuItem } from './ThemeMenuItem'
-import './ProfileMenu.css'
+import { ProfileMenuPanel, ProfileMenuTrigger } from './ProfileMenuPanel'
+import styles from './ProfileMenu.module.css'
 
 interface ProfileMenuProps {
   onLogoutClick: () => void
@@ -38,7 +34,6 @@ interface ProfileMenuProps {
 //     `dangerouslySetInnerHTML`, here or on the avatar's aria-label. Never.
 export function ProfileMenu({ onLogoutClick, testIdPrefix }: ProfileMenuProps) {
   const identity = useIdentity()
-  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -53,64 +48,23 @@ export function ProfileMenu({ onLogoutClick, testIdPrefix }: ProfileMenuProps) {
 
   useDismissOnOutside(open, containerRef, close)
 
-  const label = identity.profile === null ? null : identityLabel(identity.profile)
-
   return (
-    <div className="profile-menu" ref={containerRef}>
-      <button
-        type="button"
-        ref={triggerRef}
-        className="profile-trigger"
-        data-testid={`${testIdPrefix}-profile-button`}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        // The avatar is a picture of initials, so it names nothing on its own. The identity makes
-        // the control identifiable when several accounts are open in different tabs. Plain string
-        // interpolation into a prop — React escapes attribute values too.
-        aria-label={label === null ? 'Меню профиля' : `Меню профиля: ${label}`}
-        onClick={() => setOpen((wasOpen) => !wasOpen)}
-      >
-        <ProfileAvatar identity={identity} size="trigger" />
-        <ChevronIcon expanded={open} />
-      </button>
-
+    <div className={styles['profile-menu']} ref={containerRef}>
+      <ProfileMenuTrigger
+        identity={identity}
+        label={identity.profile === null ? null : identityLabel(identity.profile)}
+        open={open}
+        triggerRef={triggerRef}
+        testIdPrefix={testIdPrefix}
+        onToggle={() => setOpen((wasOpen) => !wasOpen)}
+      />
       {open && (
-        <div className="profile-panel" role="menu" data-testid={`${testIdPrefix}-profile-menu`}>
-          <ProfileMenuIdentityRow identity={identity} testIdPrefix={testIdPrefix} />
-
-          <button
-            type="button"
-            role="menuitem"
-            className="profile-panel-item"
-            data-testid={`${testIdPrefix}-profile-link`}
-            onClick={() => {
-              setOpen(false)
-              navigate('/profile')
-            }}
-          >
-            <ProfileItemIcon />
-            Мой профиль
-          </button>
-
-          <ThemeMenuItem testIdPrefix={testIdPrefix} />
-
-          <button
-            type="button"
-            role="menuitem"
-            className="profile-panel-item"
-            data-testid={`${testIdPrefix}-logout-button`}
-            onClick={() => {
-              // Closed before the action, not after: signing out unmounts the screen this menu
-              // lives on, and leaving the panel open until then means the last frame before the
-              // landing still shows a menu for a session that has ended.
-              setOpen(false)
-              onLogoutClick()
-            }}
-          >
-            <SignOutIcon />
-            Выйти
-          </button>
-        </div>
+        <ProfileMenuPanel
+          identity={identity}
+          testIdPrefix={testIdPrefix}
+          onClose={() => setOpen(false)}
+          onLogoutClick={onLogoutClick}
+        />
       )}
     </div>
   )

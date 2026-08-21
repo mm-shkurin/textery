@@ -25,11 +25,31 @@ from generation.generation_validation import (
     is_out_of_range_volume,
     required_topic,
     validate_document_type,
+    validated_retry_volume,
 )
+from generation.text_style import validate_text_style
 from shared.exceptions import ValidationException
 
 
+def _overridden_style(source: "Generation", text_style: str | None) -> str | None:
+    """The retry's register: the source's own unless the client re-chose one."""
+    return source.text_style if text_style is None else validate_text_style(text_style)
+
+
+def _overridden_volume(source: "Generation", volume_pages: int | None) -> int | None:
+    """The retry's length: the source's own unless the client re-chose one."""
+    return source.volume_pages if volume_pages is None else validated_retry_volume(volume_pages)
+
+
 class Generation:
+    """A generation request and the state of the run it stands for.
+
+    Three construction paths, and the rules each applies -- hydration validating
+    nothing, `create` validating every field, `retry_of` copying history
+    unvalidated while validating the two overrides -- are set out in the
+    `generation_rules` module docstring, alongside the bounds they enforce.
+    """
+
     def __init__(
         self,
         id: UUID,
@@ -46,28 +66,49 @@ class Generation:
         version: int = 1,
         idempotency_key: str | None = None,
         source_generation_id: UUID | None = None,
+        text_style: str | None = None,
+    ) -> None:
+        self._assign_identity(id, owner_id, status, created_at, version)
+        self._assign_request(topic, volume_pages, requirements, extra_wishes, document_type)
+        self._assign_outcome(content, error_message)
+        self._assign_retry_link(idempotency_key, source_generation_id, text_style)
+
+    def _assign_identity(
+        self, id: UUID, owner_id: UUID, status: str, created_at: datetime, version: int
     ) -> None:
         self.id = id
-        # Required positionally, with no default: a default would let a caller that
-        # forgot the owner construct an unowned generation and only fail later at the
-        # NOT NULL column, far from the mistake.
         self.owner_id = owner_id
         self.status = status
         self.created_at = created_at
         self.version = version
+
+    def _assign_request(
+        self,
+        topic: str | None,
+        volume_pages: int | None,
+        requirements: str | None,
+        extra_wishes: str | None,
+        document_type: str,
+    ) -> None:
         self.topic = topic
         self.volume_pages = volume_pages
         self.requirements = requirements
         self.extra_wishes = extra_wishes
         self.document_type = document_type
+
+    def _assign_outcome(self, content: str | None, error_message: str | None) -> None:
         self.content = content
         self.error_message = error_message
-        # Both default to None because every generation created before retries
-        # existed has neither. NULL is "no key was ever supplied", which is a
-        # different statement from "the empty key" -- and the one the unique
-        # index needs, since Postgres treats NULLs as distinct.
+
+    def _assign_retry_link(
+        self,
+        idempotency_key: str | None,
+        source_generation_id: UUID | None,
+        text_style: str | None,
+    ) -> None:
         self.idempotency_key = idempotency_key
         self.source_generation_id = source_generation_id
+        self.text_style = text_style
 
     def mark_in_progress(self) -> None:
         self.status = IN_PROGRESS_STATUS
@@ -83,20 +124,14 @@ class Generation:
     def requeue(self) -> None:
         self.status = PENDING_STATUS
 
-    @classmethod
-    def create(
-        cls,
-        owner_id: UUID,
+    @staticmethod
+    def _validated_create_fields(
         topic: str | None,
         volume_pages: int | None,
         requirements: str | None,
         extra_wishes: str | None,
-        document_type: str,
-    ) -> "Generation":
-        # Rebinding to the non-optional return is what lets the length check below
-        # be honest: a predicate that answers True for None leaves `topic` typed
-        # `str | None` afterwards, and `len(topic)` was only safe by reading the
-        # two lines together. The validator returns the narrowed value instead.
+    ) -> str:
+        """Apply every `create` bound, returning the topic narrowed to `str`."""
         topic = required_topic(topic)
         if len(topic) > MAX_TOPIC_LENGTH:
             raise ValidationException(TOPIC_TOO_LONG_MESSAGE)
@@ -106,6 +141,20 @@ class Generation:
             raise ValidationException(REQUIREMENTS_TOO_LONG_MESSAGE)
         if extra_wishes is not None and len(extra_wishes) > MAX_EXTRA_WISHES_LENGTH:
             raise ValidationException(EXTRA_WISHES_TOO_LONG_MESSAGE)
+        return topic
+
+    @classmethod
+    def create(
+        cls,
+        owner_id: UUID,
+        topic: str | None,
+        volume_pages: int | None,
+        requirements: str | None,
+        extra_wishes: str | None,
+        document_type: str,
+        text_style: str | None = None,
+    ) -> "Generation":
+        topic = cls._validated_create_fields(topic, volume_pages, requirements, extra_wishes)
         return cls(
             id=uuid4(),
             owner_id=owner_id,
@@ -116,25 +165,22 @@ class Generation:
             requirements=requirements,
             extra_wishes=extra_wishes,
             document_type=validate_document_type(document_type),
+            text_style=validate_text_style(text_style),
         )
 
     @classmethod
-    def retry_of(cls, source: "Generation", idempotency_key: str) -> "Generation":
+    def retry_of(
+        cls,
+        source: "Generation",
+        idempotency_key: str,
+        *,
+        text_style: str | None = None,
+        volume_pages: int | None = None,
+    ) -> "Generation":
         """A fresh run of `source`, from the parameters stored on that row.
 
-        Every field is copied from the source row rather than taken from the
-        request, which is what makes the retry endpoint bodiless: there is no
-        `owner_id`, `status`, `id` or timestamp for a client to over-bind,
-        because none of them is read from a client at all.
-
-        The new row starts `pending` with a server-assigned id and creation
-        instant -- never the source's status, and never `completed` carried
-        across, which would produce a finished generation that was never run.
-
-        Validation is deliberately NOT re-run: the source row is already stored,
-        and refusing here would strand a user whose generation was created under
-        an older, wider rule with a button that can never succeed. A document
-        type that is no longer offered is caught downstream by the provider.
+        What is copied, what is re-validated, and why the two differ is set out
+        under "CONSTRUCTION: `retry_of`" in the `generation_rules` docstring.
         """
         return cls(
             id=uuid4(),
@@ -142,10 +188,11 @@ class Generation:
             status=PENDING_STATUS,
             created_at=datetime.now(UTC),
             topic=source.topic,
-            volume_pages=source.volume_pages,
             requirements=source.requirements,
             extra_wishes=source.extra_wishes,
             document_type=source.document_type,
             idempotency_key=idempotency_key,
             source_generation_id=source.id,
+            text_style=_overridden_style(source, text_style),
+            volume_pages=_overridden_volume(source, volume_pages),
         )

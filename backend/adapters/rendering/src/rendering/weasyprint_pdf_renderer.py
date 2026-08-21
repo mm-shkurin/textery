@@ -1,8 +1,9 @@
 from typing import Any
 
-import weasyprint  # type: ignore[import-untyped]
+import weasyprint
 
 from document.export_format import ExportFormat
+from rendering.export_styles import EXPORT_CSS
 
 
 def _blocked_url_fetcher(url: str, *args: Any, **kwargs: Any) -> dict[str, Any]:
@@ -36,4 +37,14 @@ class WeasyPrintPdfRenderer:
         # (Sc 2.2) can join behind the same signature. write_pdf(target=None)
         # returns the PDF as bytes.
         document = weasyprint.HTML(string=content, url_fetcher=_blocked_url_fetcher)
-        return document.write_pdf()
+        # The stylesheet is passed as an OBJECT, not embedded in the HTML string as
+        # a `<style>` block. Embedding would mean concatenating our CSS onto
+        # user-controlled markup, where an unclosed construct in the document could
+        # swallow it -- and it would also put a `<style>` tag into content the
+        # sanitizer strips `<style>` from, which is a contradiction the next reader
+        # would have to resolve. `stylesheets=` keeps the two separate all the way
+        # into the rendering engine.
+        #
+        # `url_fetcher` still refuses every outbound request: a local CSS object is
+        # not a fetch, so the SSRF guard is untouched by this.
+        return document.write_pdf(stylesheets=[weasyprint.CSS(string=EXPORT_CSS)])

@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react'
 import { renderWithRouter } from '../../../test/renderWithRouter'
 import { ProfileMenu } from '../../../shared/components/profile/ProfileMenu'
 import { resetIdentity } from '../../../shared/identity/identityStore'
-import { clearSession, saveSession } from '../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../shared/session/authSession'
 
 // UI scenario 5 — one identity per PAGE, not one per component.
 //

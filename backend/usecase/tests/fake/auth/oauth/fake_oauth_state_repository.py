@@ -16,3 +16,10 @@ class FakeOAuthStateRepository:
     async def consume(self, value: str) -> OAuthState | None:
         self.consume_calls.append(value)
         return self._by_value.pop(value, None)
+
+    # What a test may look at. The dictionary behind it is this fake's own
+    # bookkeeping: a test asserting on it is coupled to a rename that changes
+    # nothing about the usecase under test.
+    @property
+    def stored(self) -> list[OAuthState]:
+        return list(self._by_value.values())

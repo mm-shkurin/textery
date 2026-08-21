@@ -1,4 +1,6 @@
 import { LOAD_FAILED_BODY, LOAD_FAILED_TITLE } from '../utils/profileCopy'
+import profileStatesStyles from './ProfileStates.module.css'
+import profileButtonsStyles from './ProfileButtons.module.css'
 
 interface ProfileLoadFailedProps {
   onRetry: () => void
@@ -13,15 +15,15 @@ interface ProfileLoadFailedProps {
 // working menu with a working «Выйти», not a redirect to the login screen.
 export function ProfileLoadFailed({ onRetry, onBack }: ProfileLoadFailedProps) {
   return (
-    <div className="profile-state" data-testid="profile-load-failed">
-      <h2 className="profile-state-title" role="alert">
+    <div className={profileStatesStyles['profile-state']} data-testid="profile-load-failed">
+      <h2 className={profileStatesStyles['profile-state-title']} role="alert">
         {LOAD_FAILED_TITLE}
       </h2>
-      <p className="profile-state-body">{LOAD_FAILED_BODY}</p>
-      <div className="profile-state-actions">
+      <p className={profileStatesStyles['profile-state-body']}>{LOAD_FAILED_BODY}</p>
+      <div className={profileStatesStyles['profile-state-actions']}>
         <button
           type="button"
-          className="profile-btn-primary"
+          className={profileButtonsStyles['profile-btn-primary']}
           data-testid="profile-load-retry"
           onClick={onRetry}
         >
@@ -30,7 +32,11 @@ export function ProfileLoadFailed({ onRetry, onBack }: ProfileLoadFailedProps) {
         {/* «Назад» rather than the mockup's «К проектам»: «Мои проекты» is a step of the flow's
             internal state and has no URL of its own, so a link to it would have to invent one.
             Browser history is the honest destination until that screen gets a route. */}
-        <button type="button" className="profile-btn-ghost" onClick={onBack}>
+        <button
+          type="button"
+          className={profileButtonsStyles['profile-btn-ghost']}
+          onClick={onBack}
+        >
           Назад
         </button>
       </div>

@@ -14,7 +14,7 @@ DATABASE_URL_ENV_VAR = "DATABASE_URL"
 # 30 minutes. Comfortably under the idle timeouts a managed Postgres or a
 # connection proxy typically imposes, and long enough that recycling is not itself
 # a source of churn.
-RECYCLE_CONNECTIONS_AFTER_SECONDS = 1800
+RECYCLE_CONNECTIONS_AFTER_SECONDS = int(os.environ.get("DB_CONNECTION_RECYCLE_SECONDS", "1800"))
 
 
 def to_async_database_url(database_url: str) -> str:

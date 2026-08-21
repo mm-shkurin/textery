@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { renderWithRouter } from '../../../test/renderWithRouter'
 import { ProfilePage } from '../components/ProfilePage'
 import { resetIdentity } from '../../../shared/identity/identityStore'
-import { clearSession, getAccessToken, saveSession } from '../../auth/utils/authSession'
+import { clearSession, getAccessToken, saveSession } from '../../../shared/session/authSession'
 
 // UI scenario 4 — a `GET /me` that fails does NOT end the session.
 //

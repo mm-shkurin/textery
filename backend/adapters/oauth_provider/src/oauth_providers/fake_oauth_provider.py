@@ -1,4 +1,4 @@
-from urllib.parse import urlencode
+from oauth_providers.authorization_request import authorization_url as build_authorization_url
 
 from auth.oauth.oauth_provider import OAuthProviderError, ProviderIdentity
 
@@ -25,15 +25,9 @@ class FakeOAuthProvider:
         return self._name
 
     def authorization_url(self, state: str) -> str:
-        query = urlencode(
-            {
-                "response_type": "code",
-                "client_id": self._client_id,
-                "redirect_uri": self._redirect_uri,
-                "state": state,
-            }
+        return build_authorization_url(
+            self._authorize_url, self._client_id, self._redirect_uri, state
         )
-        return f"{self._authorize_url}?{query}"
 
     async def fetch_identity(self, authorization_code: str) -> ProviderIdentity:
         fields = dict(part.split("=", 1) for part in authorization_code.split(";") if "=" in part)

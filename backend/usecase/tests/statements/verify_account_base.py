@@ -37,11 +37,11 @@ class VerifyAccountStatementsBase:
 
     def __init__(self) -> None:
         self.thrown_exception: Exception | None = None
-        self.account_repository = FakeAccountRepository()
-        self.password_hasher = FakePasswordHasher()
-        self.clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
-        self.verification_code_repository = FakeVerificationCodeRepository()
-        self.unit_of_work = FakeUnitOfWork()
+        self._account_repository = FakeAccountRepository()
+        self._password_hasher = FakePasswordHasher()
+        self._clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
+        self._verification_code_repository = FakeVerificationCodeRepository()
+        self._unit_of_work = FakeUnitOfWork()
         self.registered_email: str | None = None
         self.issued_code: str | None = None
         self.original_account_snapshot: dict[str, object] | None = None
@@ -52,10 +52,10 @@ class VerifyAccountStatementsBase:
     async def given_pending_account_with_verification_code(self) -> None:
         scope = RegisterRequestScope.builder()
         result = await RegisterUser(
-            password_hasher=self.password_hasher,
-            account_repository=self.account_repository,
-            clock=self.clock,
-            verification_code_repository=self.verification_code_repository,
+            password_hasher=self._password_hasher,
+            account_repository=self._account_repository,
+            clock=self._clock,
+            verification_code_repository=self._verification_code_repository,
         ).execute(
             email=scope.email,
             password=scope.password,
@@ -79,9 +79,9 @@ class VerifyAccountStatementsBase:
         """
         await self.given_pending_account_with_verification_code()
         await self._execute_verify(self.account_email, self.account_code)
-        self.account_saves_after_first_verify = len(self.account_repository.saved_accounts)
-        self.code_saves_after_first_verify = len(self.verification_code_repository.saved_codes)
-        self.commits_after_first_verify = self.unit_of_work.commit_call_count
+        self.account_saves_after_first_verify = len(self._account_repository.saved_accounts)
+        self.code_saves_after_first_verify = len(self._verification_code_repository.saved_codes)
+        self.commits_after_first_verify = self._unit_of_work.commit_call_count
 
     @property
     def account_email(self) -> str:
@@ -99,10 +99,10 @@ class VerifyAccountStatementsBase:
     async def _execute_verify(self, email: str, code: str) -> None:
         try:
             await VerifyAccount(
-                account_repository=self.account_repository,
-                verification_code_repository=self.verification_code_repository,
-                clock=self.clock,
-                unit_of_work=self.unit_of_work,
+                account_repository=self._account_repository,
+                verification_code_repository=self._verification_code_repository,
+                clock=self._clock,
+                unit_of_work=self._unit_of_work,
             ).execute(email=email, code=code)
         except Exception as exc:
             self.thrown_exception = exc

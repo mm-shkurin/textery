@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { App } from '../app/App'
 import * as api from '../features/generation/api/generationApi'
 import * as documentApi from '../features/generation/api/documentApi'
-import { saveSession, clearSession, getAccessToken } from '../features/auth/utils/authSession'
+import { saveSession, clearSession, getAccessToken } from '../shared/session/authSession'
 
 vi.mock('../features/generation/api/generationApi')
 vi.mock('../features/generation/api/documentApi')

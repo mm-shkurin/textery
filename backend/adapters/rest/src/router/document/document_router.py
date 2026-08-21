@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Header, Response
 
 from document.create_document import CreateDocument
 from document.create_document_from_generation import CreateDocumentFromGeneration
+from document.document_filter import DocumentFilter
 from document.export_document import ExportDocument
 from document.get_document import GetDocument
 from document.list_documents import ListDocuments
@@ -19,11 +20,13 @@ from dto.document.document_dtos import (
 from dto.document.export_media_type import media_type_for
 from dto.document.get_document_response_dto import GetDocumentResponseDto
 from dto.shared.page_dto import PageDto
+from dto.shared.query_int import exact_int
+from router import api_routes
 from security.current_owner import get_current_owner_id
 from shared.exceptions import NotFoundException
 from shared.page import DEFAULT_LIMIT
 
-router = APIRouter(prefix="/api/v1/documents", tags=["documents"])
+router = APIRouter(prefix=api_routes.DOCUMENTS, tags=["documents"])
 
 
 def get_create_document_usecase() -> CreateDocument:
@@ -52,8 +55,11 @@ def get_create_document_from_generation_usecase() -> CreateDocumentFromGeneratio
 
 @router.get("", response_model=PageDto[DocumentSummaryDto])
 async def list_documents(
-    limit: int = DEFAULT_LIMIT,
+    limit: str | None = None,
     cursor: str | None = None,
+    q: str | None = None,
+    created_from: str | None = None,
+    created_to: str | None = None,
     owner_id: UUID = Depends(get_current_owner_id),
     usecase: ListDocuments = Depends(get_list_documents_usecase),
 ) -> PageDto[DocumentSummaryDto]:
@@ -62,8 +68,21 @@ async def list_documents(
     Declared before GET /{document_id} so the two cannot race: "" and "/{id}" are
     distinct paths to Starlette, but keeping the literal above the parameterised
     one is the habit that stops a future /documents/recent from being swallowed.
+
+    Every query parameter arrives as raw `str | None`, `limit` included — same
+    reason `parse_page_request` exists on the projects feed: a `datetime` or an
+    `int` annotation here would answer a malformed value in Pydantic's envelope
+    rather than this API's {error_code, message}. The filters are parsed by the
+    domain; `limit` is turned into a number here and range-checked by the domain's
+    PageRequest, so `?limit=abc` and `?limit=999` answer in the same shape.
     """
-    page = await usecase.execute(owner_id=owner_id, limit=limit, cursor=cursor)
+    document_filter = DocumentFilter.parse(q=q, created_from=created_from, created_to=created_to)
+    page = await usecase.execute(
+        owner_id=owner_id,
+        limit=exact_int(limit, DEFAULT_LIMIT, "INVALID_LIMIT", "limit"),
+        cursor=cursor,
+        document_filter=document_filter,
+    )
     return PageDto[DocumentSummaryDto](
         items=[DocumentSummaryDto.from_domain(document) for document in page.items],
         next_cursor=page.next_cursor,

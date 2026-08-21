@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import './ChatWorkspace.css'
-import './ChatWorkspaceDoc.css'
-import './DocMarkdown.css'
+import styles from './ChatWorkspace.module.css'
+import chatWorkspaceDocStyles from './ChatWorkspaceDoc.module.css'
+import './DocMarkdown.module.css'
 import type { GenerationUiState } from '../hooks/useGeneration'
 import { ComposerPanel } from './ComposerPanel'
 import type { GenerationParameters } from '../utils/generationParameters'
@@ -9,7 +9,7 @@ import { Progress } from './Progress'
 import { DocArea } from './DocArea'
 import { GenerationHeading } from './GenerationHeading'
 import { AppHeader } from '../../../shared/components/AppHeader'
-import { type DocumentType } from '../../../shared/documentTypes'
+import { type DocumentType } from '../../../shared/domain/documentTypes'
 import { topicFieldLabel } from '../../../shared/copy/documentTypeCopy'
 
 interface ChatWorkspaceProps {
@@ -58,9 +58,9 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
   }
 
   return (
-    <div className="chat-page">
+    <div className={styles['chat-page']}>
       <AppHeader onLogoutClick={onLogoutClick} />
-      <div className="cw-container">
+      <div className={styles['cw-container']}>
         {/* Two different mockups own this slot. Before anything is submitted the surface is
             mockup 04 (breadcrumb naming the picked type + page title); from the moment a
             generation exists it is mockups 05-07, whose status badge tells the user where the
@@ -68,24 +68,28 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
         {state === 'idle' ? (
           <GenerationHeading documentTypeLabel={documentTypeLabel} />
         ) : (
-          <div className={`cw-badge cw-badge-${state}`}>
-            <span className="cw-dot" />
+          <div className={`${styles['cw-badge']} ${styles[`cw-badge-${state}`]}`}>
+            <span className={styles['cw-dot']} />
             {BADGE[state]}
           </div>
         )}
-        <div className="cw-layout">
-          <aside className="chat-panel" data-testid="chat-panel">
+        <div className={styles['cw-layout']}>
+          <aside className={styles['chat-panel']} data-testid="chat-panel">
             {state === 'idle' ? (
               <ComposerPanel
                 key={draftId}
                 topicLabel={topicFieldLabel(documentType)}
+                documentType={documentType}
                 onSubmit={onSubmit}
               />
             ) : (
               <Progress state={state} documentType={documentType} />
             )}
           </aside>
-          <section className="doc-area" data-testid="doc-area">
+          <section
+            className={`${styles['doc-area']} ${chatWorkspaceDocStyles['doc-area']}`}
+            data-testid="doc-area"
+          >
             <DocArea
               state={state}
               content={content}

@@ -39,6 +39,27 @@ class AccountModel(Base):
     avatar_updated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # The ten registration-context columns. Mapped so the model matches the
+    # schema (Infra: `alembic upgrade head` against a model that omits a column
+    # is a drift nothing catches), and ABSENT from `from_domain`/`to_domain` on
+    # purpose -- the same arrangement `avatar_bytes` uses, and for the stronger
+    # reason here. They are analytics metadata, not account behaviour: nothing in
+    # the product reads them, they are written once by
+    # `SqlAlchemyRegistrationContextWriter`'s targeted UPDATE, and putting them
+    # on the entity would add them to three hand-kept column lists whose
+    # docstring already names "a field added to two of them" as the standing
+    # hazard. Analytics adapts to the application; the application does not grow
+    # ten fields for it.
+    utm_source: Mapped[str | None] = mapped_column(Text, nullable=True)
+    utm_medium: Mapped[str | None] = mapped_column(Text, nullable=True)
+    utm_campaign: Mapped[str | None] = mapped_column(Text, nullable=True)
+    utm_content: Mapped[str | None] = mapped_column(Text, nullable=True)
+    utm_term: Mapped[str | None] = mapped_column(Text, nullable=True)
+    registration_ip: Mapped[str | None] = mapped_column(Text, nullable=True)
+    registration_country: Mapped[str | None] = mapped_column(Text, nullable=True)
+    device_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    operating_system: Mapped[str | None] = mapped_column(Text, nullable=True)
+    device_language: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     @classmethod
     def from_domain(cls, account: Account) -> "AccountModel":

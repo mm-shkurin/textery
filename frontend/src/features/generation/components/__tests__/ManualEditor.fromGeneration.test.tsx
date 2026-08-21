@@ -44,7 +44,7 @@ describe('ManualEditor on the auto path — a generation becomes an editable doc
     renderGeneratedEditor()
 
     const area = await screen.findByTestId('editor-content-area')
-    await waitFor(() => expect(area.querySelector('h1')).not.toBeNull())
+    await waitFor(() => expect(area.querySelector('h1')).toBeInstanceOf(HTMLHeadingElement))
 
     // Real block elements, not text that merely LOOKS converted: `toHaveTextContent` would pass on
     // a literal "# Доклад" string, which is exactly the bug this path exists to fix.

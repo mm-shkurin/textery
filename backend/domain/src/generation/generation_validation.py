@@ -18,7 +18,9 @@ from generation.generation_rules import (
     MAX_VOLUME_PAGES,
     MIN_VOLUME_PAGES,
     MISSING_TOPIC_MESSAGE,
+    OUT_OF_RANGE_VOLUME_MESSAGE,
 )
+from shared.error_codes import ErrorCode
 from shared.exceptions import ValidationException
 
 
@@ -37,18 +39,35 @@ def validate_document_type(document_type: str) -> str:
     try:
         return DocumentType(document_type).value
     except ValueError as error:
-        # error_code="INVALID_DOCUMENT_TYPE", matching CreateDocument, rather than
+        # error_code=ErrorCode.INVALID_DOCUMENT_TYPE, matching CreateDocument, rather than
         # the bare VALIDATION_ERROR this factory's other rules raise. It is the
         # same field under the same allowlist, so a client that learned to handle
         # the code from /documents handles it here unchanged -- and the shared
         # handler already maps it to 422.
         raise ValidationException(
-            error_code="INVALID_DOCUMENT_TYPE",
+            error_code=ErrorCode.INVALID_DOCUMENT_TYPE,
             message=INVALID_DOCUMENT_TYPE_MESSAGE,
         ) from error
 
 
 def is_out_of_range_volume(volume_pages: int | None) -> bool:
+    """True for anything this field may not be: absent, out of bounds, or a bool.
+
+    `bool` is excluded EXPLICITLY, and it is not a theoretical case. `bool`
+    subclasses `int`, so Pydantic coerces a JSON `true` to `1` on the way in and
+    `1 <= 1 <= 10` then passes -- measured against the running stack 2026-08-20:
+    `{"volume_pages": true}` produced a one-page generation the caller never asked
+    for, on both the create and the retry path, and billed it.
+
+    The same trap is already guarded in two other places for the same reason --
+    `PageRequest._validated_limit` (a JSON `true` limit) and
+    `prompt_template._is_renderable_volume` (which would otherwise render
+    "True стр."). This is the third, and it is the one that decides whether the
+    row is written at all, so closing it here is what stops the value reaching
+    either of the others.
+    """
+    if isinstance(volume_pages, bool):
+        return True
     if volume_pages is None:
         return True
     return not (MIN_VOLUME_PAGES <= volume_pages <= MAX_VOLUME_PAGES)
@@ -72,3 +91,25 @@ def required_topic(topic: str | None) -> str:
     if not visible_chars:
         raise ValidationException(MISSING_TOPIC_MESSAGE)
     return topic
+
+
+def validated_retry_volume(volume_pages: int) -> int:
+    """A retry's requested length, proven inside the range the form allows.
+
+    `is_out_of_range_volume` answers the question; this raises the refusal, so the
+    caller holds an `int` afterwards instead of a value it has to remember is
+    already checked -- the same shape `required_topic` has, for the same reason.
+
+    Reuses the predicate and the message `Generation.create` applies, so «изменить
+    объём» cannot accept a length the original form would have refused. Without
+    it a client could ask for 500 pages, the row would store it, and `build_prompt`
+    would then reject the value as unrenderable -- turning a client mistake into a
+    generation that fails after the work was queued.
+
+    It is NOT applied to the volume a retry COPIES from its source. That value is
+    history: a row created under an older, wider rule must stay retryable, which
+    is the whole reason `retry_of` re-validates overrides and nothing else.
+    """
+    if is_out_of_range_volume(volume_pages):
+        raise ValidationException(OUT_OF_RANGE_VOLUME_MESSAGE)
+    return volume_pages

@@ -30,7 +30,10 @@ describe('ManualEditor underline parseHTML', () => {
     )
 
     await waitFor(() => {
-      expect(documentApi.getDocument).toHaveBeenCalledExactlyOnceWith('doc-99')
+      expect(documentApi.getDocument).toHaveBeenCalledExactlyOnceWith(
+        'doc-99',
+        expect.any(AbortSignal),
+      )
     })
 
     const contentArea = await screen.findByTestId('editor-content-area')

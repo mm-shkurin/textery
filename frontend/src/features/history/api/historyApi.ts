@@ -80,9 +80,46 @@ function pagePath(base: string, limit: number, cursor?: string): string {
   return `${base}?${params.toString()}`
 }
 
-export async function listDocuments(limit = 20, cursor?: string): Promise<Page<DocumentSummary>> {
+// The narrowing «поиск по истории» and «фильтровать по дате создания» apply. Every field is
+// optional and an empty string means "not set": the date inputs report `''` when cleared, and
+// forwarding that as `?created_from=` would be a client saying it sent the parameter and named
+// nothing — which the server refuses rather than ignores.
+export interface HistoryFilter {
+  query?: string
+  createdFrom?: string
+  createdTo?: string
+}
+
+// Appended to the paging parameters rather than replacing them: the filter narrows a keyset page,
+// it does not switch to a different pagination scheme, so the cursor keeps travelling with it.
+function withFilter(path: string, filter?: HistoryFilter): string {
+  if (!filter) return path
+  const url = new URL(path, 'http://placeholder')
+  const { query, createdFrom, createdTo } = filter
+  if (query?.trim()) url.searchParams.set('q', query.trim())
+  if (createdFrom) url.searchParams.set('created_from', createdFrom)
+  if (createdTo) url.searchParams.set('created_to', createdTo)
+  return `${url.pathname}${url.search}`
+}
+
+/**
+ * Remove one document from the history. 204 on success, 404 when it is already gone.
+ *
+ * A 404 is NOT swallowed into success here. The server refuses a second delete on purpose, and a
+ * client that reported "удалено" for a row that was never there would hide a delete aimed at the
+ * wrong id — the one mistake on this path the user cannot undo.
+ */
+export async function deleteDocument(documentId: string): Promise<void> {
+  await send<void>(API.documents.one(documentId), { method: 'DELETE' }, 'Не удалось удалить работу')
+}
+
+export async function listDocuments(
+  limit = 20,
+  cursor?: string,
+  filter?: HistoryFilter,
+): Promise<Page<DocumentSummary>> {
   const data = await send<PageWire<DocumentSummaryWire>>(
-    pagePath(API.documents.collection, limit, cursor),
+    withFilter(pagePath(API.documents.collection, limit, cursor), filter),
     {},
     'Не удалось загрузить документы',
   )

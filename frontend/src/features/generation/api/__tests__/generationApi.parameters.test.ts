@@ -33,6 +33,7 @@ describe('the generation parameters on the wire', () => {
       volumePages: 3,
       requirements: 'Официально-деловой стиль',
       extraWishes: 'Добавь пример',
+      textStyle: '',
     })
 
     expect(postedBody()).toMatchObject({

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createGeneration, getGeneration } from '../generationApi'
-import { SessionExpiredError } from '../../../auth/api/authorizedRequest'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { SessionExpiredError } from '../../../../shared/session/authorizedRequest'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 import { describeFailure } from '../../../../shared/api/send'
 
 // Signing in is SETUP here, not subject: both endpoints now go through `authorizedRequest`, so

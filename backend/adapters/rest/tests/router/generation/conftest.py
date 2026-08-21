@@ -2,6 +2,7 @@ from uuid import uuid4
 
 import pytest
 from fastapi import FastAPI
+from generation_retry_fixtures import a_retry
 from httpx import ASGITransport, AsyncClient
 
 from error_handling.exception_handlers import (
@@ -114,6 +115,10 @@ def _returning(mock_usecase):
 _POST_PROVIDERS = ("get_request_generation_usecase", "get_generate_document_usecase")
 _GET_PROVIDERS = ("get_get_generation_usecase",)
 _LIST_PROVIDERS = ("get_list_generations_usecase",)
+# Two, in this order: the retry route enqueues the background run itself, so a
+# client wired only to the retry usecase fails inside FastAPI on the second
+# provider rather than in the test that forgot it.
+_RETRY_PROVIDERS = ("get_retry_generation_usecase", "get_generate_document_usecase")
 
 
 @pytest.fixture
@@ -132,6 +137,11 @@ def list_client(generation_app):
 
 
 @pytest.fixture
+def retry_client(generation_app):
+    return _client_factory(generation_app, _RETRY_PROVIDERS)
+
+
+@pytest.fixture
 def unauthenticated_list_client(generation_app):
     """No owner override — the real Bearer dependency runs."""
     return _client_factory(generation_app, _LIST_PROVIDERS, override_owner=False)
@@ -147,3 +157,13 @@ def unauthenticated_create_client(generation_app):
 def unauthenticated_get_client(generation_app):
     """No owner override — the real Bearer dependency runs."""
     return _client_factory(generation_app, _GET_PROVIDERS, override_owner=False)
+
+
+@pytest.fixture
+def usecases(mocker, owner_id):
+    """The retry route's pair: the usecase that creates the run, and the one that starts it."""
+    retry = mocker.Mock()
+    retry.execute = mocker.AsyncMock(return_value=(a_retry(owner_id), True))
+    generate = mocker.Mock()
+    generate.execute = mocker.AsyncMock()
+    return retry, generate

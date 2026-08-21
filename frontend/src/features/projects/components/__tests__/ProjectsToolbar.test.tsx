@@ -46,7 +46,7 @@ describe('ProjectsToolbar', () => {
   it('swallows the form submit rather than navigating', () => {
     renderToolbar({ q: 'a' })
     const form = screen.getByTestId('projects-search').closest('form')
-    expect(form).not.toBeNull()
+    expect(form).toBeInstanceOf(HTMLFormElement)
 
     // `fireEvent.submit` returns false when a handler called preventDefault.
     expect(fireEvent.submit(form!)).toBe(false)
@@ -143,7 +143,7 @@ describe('ProjectsToolbar', () => {
       />,
     )
     const landmark = container.querySelector('search')
-    expect(landmark).not.toBeNull()
-    expect(landmark!.querySelector('input[type="search"]')).not.toBeNull()
+    expect(landmark).toBeInstanceOf(HTMLElement)
+    expect(landmark!.querySelector('input[type="search"]')).toBeInstanceOf(HTMLInputElement)
   })
 })

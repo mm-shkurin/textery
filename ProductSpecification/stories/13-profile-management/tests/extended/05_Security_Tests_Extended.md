@@ -2,80 +2,111 @@
 
 # Profile management — Security Tests (Extended)
 
+Shared test data for every case below, unless the case names its own:
+
+| Name | Value |
+|---|---|
+| Account A | `qa.profile@textery.test` / `Qa!Profile2026`, `name = "Мария Соколова"` |
+| 401 body | `{"error_code": "UNAUTHORIZED", "message": "A valid access token is required."}` |
+| Script payload | `<script>alert(1)</script>` |
+| Log-forging payload | `Мария\nWARNING:root:ADMIN GRANTED to qa.profile@textery.test` |
+| Homoglyph payload | `Мaрия Coкoлoва` (Latin `a`, `C`, `o` inside Cyrillic text) |
+| Identity surfaces | `/projects` header, `/profile` screen, the avatar menu panel, the avatar `aria-label`/`title` |
+| Snapshot store | the single `/me`-backed identity store the header and screen both read |
+| Browser storage | `sessionStorage` and `localStorage` |
+
 ---
 
 ## 1. Output Sinks Beyond the Header
 
-### 1.1 A name carrying markup renders as text wherever else identity is shown
-```gherkin
-Given an account whose stored name is a script tag
-When any page that shows the account's identity renders
-Then the name appears literally as text in every such place
-And no element is created and no handler is bound from that value
-```
+### TC-13-SEC-1.1e — A name carrying markup renders as text wherever else identity is shown
 
-### 1.2 A name carrying a line break does not forge a second log record
-```gherkin
-Given an account whose stored name contains line breaks and a fabricated log prefix
-When an operation involving that account is logged
-Then the log holds one record for that operation
-And the fabricated prefix does not appear as a record of its own
-```
+| Field | Value |
+|---|---|
+| Description | The main file pins three sinks. Any *other* place the identity appears — the menu panel row, a page title, a tooltip, a future breadcrumb — is a fourth sink with its own escaping. |
+| Preconditions | Account A's stored `name` set to the script payload; signed in through the browser. |
+| Test data | `name = "<script>alert(1)</script>"`; every route that mounts the header, plus `/profile`; a global `alert` spy installed before load. |
+| Steps | 1. Enumerate every place the identity is rendered: header identity, menu panel row, screen identity, name input, avatar `aria-label`/`title`, `document.title`.<br>2. Visit each authenticated route and read each of those values.<br>3. Query for `script` elements added since load and for any injected event-handler attribute.<br>4. Read the `alert` spy. |
+| Expected result | Every one of those places holds the payload literally as text (`textContent` / attribute value equal to `<script>alert(1)</script>`); `document.querySelectorAll('script')` gains no element on any route; no injected handler attribute exists; the `alert` spy is never called on any page. |
+| Status | Not run |
+
+### TC-13-SEC-1.2e — A name carrying a line break does not forge a second log record
+
+| Field | Value |
+|---|---|
+| Description | An unescaped newline in a logged value splits one record into two, and the forged half can claim anything an operator or a log-parsing alert would believe. |
+| Preconditions | Account A signed in; the application log captured; an operation that logs something about the account (a refused rename or an audited write). |
+| Test data | Submitted name `"Мария\nWARNING:root:ADMIN GRANTED to qa.profile@textery.test"` (a real newline in the JSON string). |
+| Steps | 1. `PATCH /api/v1/auth/me` with that value.<br>2. Trigger the operation that logs about the account.<br>3. Count log records produced for that request.<br>4. Search the log for a record whose own level/prefix is `WARNING:root:ADMIN GRANTED`. |
+| Expected result | Exactly one log record exists for the operation; no record begins with the forged `WARNING:root:ADMIN GRANTED` prefix — the newline is escaped (`\n`) or the value is redacted, so the fabricated text can only appear inside a field of the single genuine record, never as a record of its own. |
+| Status | Not run |
 
 ---
 
 ## 2. Impersonation Through Look-Alikes
 
-### 2.1 A look-alike name is stored as written, not silently folded
-```gherkin
-Given an authenticated account
-When it submits a name using characters that look like another alphabet's
-Then the rename is accepted
-And a fresh read of the stored profile returns exactly what was submitted
-```
+### TC-13-SEC-2.1e — A look-alike name is stored as written, not silently folded
 
-*Recorded rather than guarded: display names are not identifiers on this product, so
-homoglyph folding would cost more than it buys. The guard is that nothing silently rewrites
-the value — a rewrite would break the round-trip assertions the main files rely on.*
+| Field | Value |
+|---|---|
+| Description | Recorded rather than guarded: display names are not identifiers on this product, so homoglyph folding would cost more than it buys. The guard is that nothing silently rewrites the value — a rewrite would break the round-trip assertions the main files rely on. |
+| Preconditions | Account A signed in. |
+| Test data | `{"name": "Мaрия Coкoлoва"}` — Cyrillic `М`, `р`, `и`, `я` mixed with Latin `a` (U+0061), `C` (U+0043), `o` (U+006F). |
+| Steps | 1. `PATCH /api/v1/auth/me` with that value.<br>2. Read the response `name` code point by code point.<br>3. Re-read account A's row in a new session and compare code point by code point. |
+| Expected result | `200 OK`; both the response and the stored value are code-point-identical to what was sent — the Latin `a`/`C`/`o` are still U+0061/U+0043/U+006F, not folded to their Cyrillic look-alikes and not refused. |
+| Status | Not run |
 
 ---
 
 ## 3. Token Handling Edges
 
-### 3.1 A malformed authorization header is refused like a missing one
-```gherkin
-Given a header carrying a token with no scheme
-And a header carrying a scheme this product does not use
-And a header carrying a scheme with an empty token
-When each is presented to read and to rename
-Then every attempt is refused as unauthorized
-```
+### TC-13-SEC-3.1e — A malformed authorization header is refused like a missing one
 
-### 3.2 A token signed with the wrong key or algorithm is refused
-```gherkin
-Given a token signed with a different key
-And a token whose signature algorithm was swapped
-When each is presented to read the profile
-Then both are refused as unauthorized
-```
+| Field | Value |
+|---|---|
+| Description | A header parser that falls through on an unexpected shape can end up treating a malformed header as absent-but-authorized, or as a token to be trusted. |
+| Preconditions | Account A registered with a stored name; a valid access token available for constructing the malformed variants. |
+| Test data | (a) `Authorization: <raw token>` (no scheme); (b) `Authorization: Basic <raw token>`; (c) `Authorization: Token <raw token>`; (d) `Authorization: Bearer ` (empty token); (e) `Authorization: Bearer  <token>` (double space). |
+| Steps | 1. `GET /api/v1/auth/me` with each of the five headers.<br>2. `PATCH /api/v1/auth/me` with `{"name": "Взломано"}` with each of the five.<br>3. Re-read account A's row in a new session. |
+| Expected result | All ten answer `401 Unauthorized` with body `{"error_code": "UNAUTHORIZED", "message": "A valid access token is required."}` and `Cache-Control: no-store` — never `200`, never `500`; step 3 shows `name` still `Мария Соколова`. |
+| Status | Not run |
+
+### TC-13-SEC-3.2e — A token signed with the wrong key or algorithm is refused
+
+| Field | Value |
+|---|---|
+| Description | The `alg: none` and HS/RS confusion attacks both produce a structurally perfect token; only signature verification pinned to the configured algorithm refuses them. |
+| Preconditions | Account A registered; the app's configured signing key and algorithm known to the test. |
+| Test data | (a) a token with correct claims signed with a different HMAC key; (b) the same claims with the header rewritten to `{"alg": "none"}` and the signature stripped; (c) the same claims signed with a different algorithm than the app configures. |
+| Steps | 1. `GET /api/v1/auth/me` with token (a).<br>2. Repeat with (b).<br>3. Repeat with (c).<br>4. Compare all three responses with one another. |
+| Expected result | All three answer `401 Unauthorized` with the `UNAUTHORIZED` body, byte-identical to one another and to the missing-token refusal; none returns any profile field. |
+| Status | Not run |
 
 ---
 
 ## 4. Storage Hygiene
 
-### 4.1 The identity snapshot never outlives the session it belongs to
-```gherkin
-Given a signed-in user whose profile has been read
-When the session ends for any reason
-Then no browser storage key holds their address or name
-```
+### TC-13-SEC-4.1e — The identity snapshot never outlives the session it belongs to
 
-### 4.2 A refused rename leaves the shared identity snapshot untouched
-```gherkin
-Given a signed-in user whose header shows their saved name
-When a rename is refused as invalid
-Then the header still shows the previously saved name
-```
+| Field | Value |
+|---|---|
+| Description | A snapshot left behind is readable by whoever uses the machine next, and by any script running on the origin afterwards — regardless of *how* the session ended. |
+| Preconditions | Account A signed in through the browser, `/profile` visited so the snapshot is populated. |
+| Test data | Session-end causes: (a) «Выйти»; (b) the refresh flow failing and ending the session; (c) the session key removed by another tab. |
+| Steps | 1. Sign in and populate the snapshot.<br>2. End the session by cause (a); enumerate every `sessionStorage` and `localStorage` key/value.<br>3. Repeat for (b) and for (c). |
+| Expected result | After each of the three, no value in either store contains `qa.profile@textery.test` or `Мария Соколова` as a substring — including inside JSON blobs and cache keys; the identity store key is removed, not merely emptied of one field. |
+| Status | Not run |
+
+### TC-13-SEC-4.2e — A refused rename leaves the shared identity snapshot untouched
+
+| Field | Value |
+|---|---|
+| Description | Writing the typed value into the shared snapshot optimistically means a refused rename shows an unsaved name in every mounted header until the next page load. |
+| Preconditions | Account A signed in on `/profile` with the header showing `Мария Соколова`; `PATCH /api/v1/auth/me` answering `400 {"error_code": "INVALID_NAME", …}`. |
+| Test data | Typed name `"я" × 61`; refused with `400 INVALID_NAME`. |
+| Steps | 1. Type the 61-character name and click «Сохранить».<br>2. Read the header identity and the avatar initials.<br>3. Read the identity snapshot in browser storage. |
+| Expected result | The header still shows `Мария Соколова` with initials `МС`; the stored snapshot still holds `Мария Соколова` — the refused value was never written into it; the typed value remains only in the form field. |
+| Status | Not run |
 
 ---
 

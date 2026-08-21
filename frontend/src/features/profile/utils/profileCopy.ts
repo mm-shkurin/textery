@@ -55,7 +55,12 @@ export function avatarRejectionMessage(errorCode: string): string {
 export const DELETION_TITLE = 'Удаление аккаунта'
 export const DELETION_WARNING =
   'Аккаунт, все ваши документы и генерации будут удалены безвозвратно. Отменить это будет нельзя.'
-export const DELETION_CONFIRM_TITLE = 'Подтвердите удаление'
+// The frame's own words (node 1202:6227): the dialog names the act in its title and spells out
+// what is lost before it asks for anything.
+export const DELETION_CONFIRM_TITLE = 'Удалить аккаунт?'
+export const DELETION_CONSEQUENCE =
+  'Действие необратимо: будут удалены все проекты, сгенерированные документы и история правок. ' +
+  'Восстановить данные после подтверждения невозможно.'
 export const DELETION_PASSWORD_HINT = 'Введите пароль от аккаунта, чтобы подтвердить удаление.'
 export const DELETION_FAILED_MESSAGE =
   'Не удалось удалить аккаунт — сервер не ответил. Аккаунт на месте, попробуйте ещё раз.'

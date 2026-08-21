@@ -1,5 +1,5 @@
 import { Navbar } from '../../../shared/components/navbar/Navbar'
-import '../../../shared/components/navbar/NavbarPlacement.css'
+import navbarPlacementStyles from '../../../shared/components/navbar/NavbarPlacement.module.css'
 
 interface ProjectsNavbarProps {
   onLogoutClick?: () => void
@@ -18,7 +18,7 @@ export function ProjectsNavbar({ onLogoutClick }: ProjectsNavbarProps) {
   // would grow the white plate, and a bottom margin can collapse out through a parent that has no
   // padding or border — the same way the profile screen's top gap became a blue band.
   return (
-    <div className="navbar-projects-placement">
+    <div className={navbarPlacementStyles['navbar-projects-placement']}>
       <Navbar
         as="nav"
         variant="pill"

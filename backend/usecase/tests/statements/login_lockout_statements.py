@@ -30,12 +30,12 @@ class LoginLockoutStatements(LoginFailedAttemptStatements):
         account = Account.reconstitute(
             id=uuid4(),
             email="locked@example.ru",
-            password_hash=self.password_hasher.hash(self.KNOWN_PASSWORD),
+            password_hash=self._password_hasher.hash(self.KNOWN_PASSWORD),
             created_at=self.FIXED_CLOCK_NOW,
             is_verified=True,
             failed_attempt_count=count,
         )
-        await self.account_repository.save(account)
+        await self._account_repository.save(account)
         self.account_email = account.email
         self.account_id = account.id
         self.account_password = self.KNOWN_PASSWORD
@@ -51,24 +51,24 @@ class LoginLockoutStatements(LoginFailedAttemptStatements):
         # with the distinct 403 code, no token is minted, and verify() is never
         # reached (so a correct password cannot slip through).
         self._assert_validation_exception("ACCOUNT_LOCKED", self.ACCOUNT_LOCKED_MESSAGE)
-        assert self.token_service.issued_for == [], (
+        assert self._token_service.issued_for == [], (
             f"expected no token pair to be issued for a locked account, "
-            f"got {self.token_service.issued_for}"
+            f"got {self._token_service.issued_for}"
         )
-        assert self.password_hasher.verify_call_count == 0, (
+        assert self._password_hasher.verify_call_count == 0, (
             f"expected the lockout gate to short-circuit BEFORE password "
             f"verification, but verify() was called "
-            f"{self.password_hasher.verify_call_count} time(s)"
+            f"{self._password_hasher.verify_call_count} time(s)"
         )
 
     def _assert_reset_attempted_once(self) -> None:
         # Exactly one atomic reset for the authenticated account. Shared by the
         # committed-happy-path guard and the commit-fails coverage branch (which
         # cannot reuse the full committed guard: commit_call_count is 0 there).
-        assert self.account_repository.reset_failed_attempts_calls == [self.account_id], (
+        assert self._account_repository.reset_failed_attempts_calls == [self.account_id], (
             f"expected exactly one atomic reset for the authenticated account "
             f"{self.account_id}, got "
-            f"{self.account_repository.reset_failed_attempts_calls}"
+            f"{self._account_repository.reset_failed_attempts_calls}"
         )
 
     def _assert_reset_committed_once(self) -> None:
@@ -76,9 +76,9 @@ class LoginLockoutStatements(LoginFailedAttemptStatements):
         # AND exactly one commit to persist it (a reset that never commits is silently
         # rolled back on session.close() -- 5.3 premortem carry).
         self._assert_reset_attempted_once()
-        assert self.unit_of_work.commit_call_count == 1, (
+        assert self._unit_of_work.commit_call_count == 1, (
             f"expected exactly one commit to persist the reset, got "
-            f"{self.unit_of_work.commit_call_count}"
+            f"{self._unit_of_work.commit_call_count}"
         )
 
     def assert_authenticated_and_reset_the_counter(self) -> None:
@@ -100,7 +100,7 @@ class LoginLockoutStatements(LoginFailedAttemptStatements):
         # Coverage 5.4: a stale failed-attempt count must NEVER block a valid login
         # (ADR §4). Arm the shared UoW to blow up on the reset's commit, then drive
         # the SUCCESS/reset branch (not the wrong-password branch 5.3 covers).
-        self.unit_of_work.raise_on_commit = RuntimeError("commit failed")
+        self._unit_of_work.raise_on_commit = RuntimeError("commit failed")
         await self.login_with_the_correct_password()
 
     def assert_authenticated_despite_the_failed_reset_commit(self) -> None:
@@ -109,11 +109,11 @@ class LoginLockoutStatements(LoginFailedAttemptStatements):
         # attempted, and the poisoned txn was rolled back quietly.
         self.assert_token_pair_issued_for_the_account()
         self._assert_reset_attempted_once()
-        assert self.unit_of_work.commit_attempt_count == 1, (
+        assert self._unit_of_work.commit_attempt_count == 1, (
             f"expected exactly one commit attempt to persist the reset, got "
-            f"{self.unit_of_work.commit_attempt_count}"
+            f"{self._unit_of_work.commit_attempt_count}"
         )
-        assert self.unit_of_work.rollback_call_count == 1, (
+        assert self._unit_of_work.rollback_call_count == 1, (
             f"expected exactly one rollback after the reset commit failed, got "
-            f"{self.unit_of_work.rollback_call_count}"
+            f"{self._unit_of_work.rollback_call_count}"
         )

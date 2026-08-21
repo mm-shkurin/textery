@@ -1,4 +1,6 @@
 import { ProfileThemeSwitch } from './ProfileThemeSwitch'
+import profilePageStyles from './ProfilePage.module.css'
+import profileButtonsStyles from './ProfileButtons.module.css'
 
 // The middle card of the three the design draws — Figma node 1127:10768, the 1640×221 panel at
 // y=801.
@@ -8,12 +10,16 @@ import { ProfileThemeSwitch } from './ProfileThemeSwitch'
 // promised an account-wide setting would be describing a feature that does not exist.
 export function ProfileAppearanceCard() {
   return (
-    <section className="profile-card" data-testid="profile-appearance">
-      <h2 className="profile-card-title">Внешний вид</h2>
-      <p className="profile-card-subtitle">Оформление интерфейса на этом устройстве</p>
+    <section className={profilePageStyles['profile-card']} data-testid="profile-appearance">
+      <h2 className={profilePageStyles['profile-card-title']}>Внешний вид</h2>
+      <p className={profilePageStyles['profile-card-subtitle']}>
+        Оформление интерфейса на этом устройстве
+      </p>
 
-      <div className="profile-row profile-row-divided">
-        <div className="profile-row-label">Тема оформления</div>
+      <div
+        className={`${profileButtonsStyles['profile-row']} ${profilePageStyles['profile-row']} ${profilePageStyles['profile-row-divided']}`}
+      >
+        <div className={profilePageStyles['profile-row-label']}>Тема оформления</div>
         <ProfileThemeSwitch />
       </div>
     </section>

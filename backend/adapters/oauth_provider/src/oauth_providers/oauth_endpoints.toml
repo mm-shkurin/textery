@@ -1,0 +1,15 @@
+# The OAuth providers' own endpoints — data, not code.
+#
+# A provider moving a path, or a deployment pointing at a sandbox tenant, is a
+# configuration change. It was a source edit, which is why the sandbox URLs never
+# existed: nobody was going to open a pull request to try one.
+#
+# Each key names the environment variable that overrides it.
+[yandex]
+# YANDEX_AUTHORIZE_URL
+authorize = "https://oauth.yandex.ru/authorize"
+# YANDEX_TOKEN_URL
+token = "https://oauth.yandex.ru/token"
+# YANDEX_INFO_URL — the account-info endpoint lives on a different host from the
+# token endpoint, which is Yandex's split and not a mistake here.
+info = "https://login.yandex.ru/info"

@@ -1,13 +1,14 @@
 import { useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
-import { serializeEditorHtml } from '../components/serializeEditorHtml'
-import { MAX_AUTOSAVE_ATTEMPTS } from './autosaveRetryPolicy'
-import { isAlreadySaved } from './autosaveDirtyGuard'
-import { performWrite } from './autosaveWriteChain'
-import { createSaveCycle } from './autosaveSaveCycle'
-import type { MutableRef } from './autosaveSaveCycle'
+import { serializeEditorHtml } from '../utils/serializeEditorHtml'
+import { MAX_AUTOSAVE_ATTEMPTS } from '../utils/autosaveRetryPolicy'
+import { isAlreadySaved } from '../utils/autosaveDirtyGuard'
+import { performWrite } from '../utils/autosaveWriteChain'
+import { createSaveCycle } from '../utils/autosaveSaveCycle'
+import type { MutableRef } from '../utils/autosaveSaveCycle'
 import { useAbandonedSaveRecord } from './autosaveAbandonment'
-import { CONFLICT_ERROR_MESSAGE, SAVE_ERROR_MESSAGE } from './saveFailureMessages'
+import { useSaveStatus } from './useSaveStatus'
+import { CONFLICT_ERROR_MESSAGE, SAVE_ERROR_MESSAGE } from '../utils/saveFailureMessages'
 
 // Re-exported so callers (and the retry-backoff / failure-copy tests) keep importing the attempt
 // ceiling and the failure copy from the save hook — one definition lives in autosaveRetryPolicy and
@@ -45,10 +46,11 @@ export interface DocumentSave {
 // The save state machine, extracted from ManualEditor — which was over the 200-line limit and
 // held this, the editor construction, and the layout all at once.
 //
-// It is a state machine written as callbacks, and the four pieces of state are not redundant:
+// It is a state machine written as callbacks, and the pieces of state are not redundant:
 // `isSavingRef`/`saveAgainRequested` are refs because the in-flight resolve handler reads them
 // from a closure minted before the click that changed them, and a state read there would be
-// stale. `isSaving` is the same fact as `isSavingRef` in a form that re-renders the toolbar.
+// stale. The status object's `isSaving` is the same fact as `isSavingRef` in a form that
+// re-renders the toolbar — see useSaveStatus for why the three reported facts are one value.
 export function useDocumentSave({
   documentId,
   editor,
@@ -58,9 +60,7 @@ export function useDocumentSave({
   // Every document starts at version 1; useDocumentInit calls setVersion with the server's value
   // for an existing document, and each save's resolve advances it.
   const [version, setVersion] = useState(1)
-  const [isSaving, setIsSaving] = useState(false)
-  const [isRetryPending, setIsRetryPending] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
+  const { status, setIsSaving, setRetryPending, setSaveError } = useSaveStatus()
   const isSavingRef = useRef(false)
   const saveAgainRequested = useRef(false)
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -72,7 +72,7 @@ export function useDocumentSave({
     retryTimerRef,
     lastSavedContentRef,
     setIsSaving,
-    setRetryPending: setIsRetryPending,
+    setRetryPending,
     setSaveError,
     onSaved,
   })
@@ -113,9 +113,9 @@ export function useDocumentSave({
 
   return {
     hasPendingEditRef,
-    isSaving,
-    isRetryPending,
-    saveError,
+    isSaving: status.isSaving,
+    isRetryPending: status.isRetryPending,
+    saveError: status.saveError,
     setVersion,
     // An edit that lands while a save is already in flight must queue a re-save even without an
     // explicit second click: otherwise the in-flight save's resolve handler has no signal that

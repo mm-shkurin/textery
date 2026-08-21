@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { Composer, MAX_TOPIC_LENGTH } from '../Composer'
 import { topicFieldLabel } from '../../../../shared/copy/documentTypeCopy'
 import { EMPTY_PARAMETERS, type GenerationParameters } from '../../utils/generationParameters'
+import composerStyles from '../Composer.module.css'
 
 function renderComposer(
   topic: string,
@@ -15,6 +16,7 @@ function renderComposer(
   const view = render(
     <Composer
       topicLabel={topicLabel}
+      documentType="doklad"
       topic={topic}
       setTopic={setTopic}
       parameters={parameters}
@@ -53,7 +55,7 @@ describe('Composer', () => {
   it('keeps every required marker out of the accessible name', () => {
     const { container } = renderComposer('')
 
-    const markers = container.querySelectorAll('.composer-required-marker')
+    const markers = container.querySelectorAll(`.${composerStyles['composer-required-marker']}`)
     expect(markers).toHaveLength(2)
     markers.forEach((marker) => expect(marker).toHaveAttribute('aria-hidden', 'true'))
   })

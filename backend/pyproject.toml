@@ -1,6 +1,6 @@
 [project]
 name = "textery-backend"
-version = "0.1.0"
+version = "0.2.0"
 description = "Textery backend — FastAPI, Clean Architecture (domain → usecase → adapters → application)."
 requires-python = ">=3.12"
 dynamic = ["dependencies"]
@@ -26,6 +26,7 @@ pythonpath = [
     "adapters/security/src",
     "adapters/generation_provider/src",
     "adapters/oauth_provider/src",
+    "adapters/geolocation_provider/src",
     "adapters/rendering/src",
     "application/src/app",
     # Test-support roots, for the `statements` test-DSL packages. The two
@@ -57,6 +58,7 @@ source = [
     "adapters/security/src",
     "adapters/generation_provider/src",
     "adapters/oauth_provider/src",
+    "adapters/geolocation_provider/src",
     "adapters/rendering/src",
     "application/src",
 ]
@@ -90,6 +92,17 @@ ignore = [
 # never throttles, so ignoring the bucket key and the clock is its whole
 # definition -- narrowing the signature would break the port instead.
 "usecase/src/auth/oauth/rate_limiter.py" = ["ARG002"]
+# ARG002: the same reason, four more times. Every analytics port ships a null
+# object that ignores its arguments BY DEFINITION -- a recorder that records
+# nothing, a writer that stores nothing, a geolocation that locates nothing, a
+# visitor log that remembers nothing. Each exists so that a usecase constructed
+# without analytics still runs, which is the shape of the story's fail-open
+# guarantee; narrowing the signatures would break the ports they implement.
+"usecase/src/analytics/analytics_recorder.py" = ["ARG002"]
+"usecase/src/analytics/registration_context.py" = ["ARG002"]
+"usecase/src/analytics/generation_visitor_log.py" = ["ARG002"]
+"usecase/src/analytics/record_analytics_event.py" = ["ARG002"]
+"usecase/src/analytics/oauth_attribution_parking.py" = ["ARG002"]
 # ARG002: both renderers implement the one DocumentRenderer port, and the
 # dispatcher has already routed on the enum by the time either is called -- each
 # class owns exactly one format, so its own `export_format` is settled. Dropping
@@ -130,6 +143,7 @@ mypy_path = [
     "adapters/security/src",
     "adapters/generation_provider/src",
     "adapters/oauth_provider/src",
+    "adapters/geolocation_provider/src",
     "adapters/rendering/src",
     "application/src/app",
     "domain/tests",
@@ -189,6 +203,7 @@ ignore_missing_imports = true
 [tool.ruff.lint.isort]
 known-first-party = [
     "access",
+    "analytics",
     "auth",
     "container",
     "document",

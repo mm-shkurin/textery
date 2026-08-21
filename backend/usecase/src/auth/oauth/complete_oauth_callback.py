@@ -1,6 +1,9 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
+from analytics.analytics_recorder import AnalyticsRecorder, NullAnalyticsRecorder
+from analytics.oauth_attribution_parking import OAuthAttributionParking
+from analytics.registration_context_recorder import RegistrationContextRecorder
 from auth.account import Account
 from auth.account_repository import AccountRepository
 from auth.email import Email
@@ -8,17 +11,19 @@ from auth.handoff_code import HandoffCode
 from auth.oauth.handoff_code_repository import HandoffCodeRepository
 from auth.oauth.oauth_error_codes import OAuthCallbackError
 from auth.oauth.oauth_identity_repository import OAuthIdentityRepository
+from auth.oauth.oauth_leg_dependencies import OAuthLegDependencies
 from auth.oauth.oauth_provider import OAuthProvider, OAuthProviderError, ProviderIdentity
+from auth.oauth.oauth_sign_in_analytics import SignInAnalytics
 from auth.oauth.oauth_state_repository import OAuthStateRepository
 from auth.oauth.provider_registry import ProviderRegistry
 from auth.oauth.rate_limiter import OAuthRateGuard
 from auth.oauth_identity import OAuthIdentity
 from auth.oauth_state import OAuthState
-from shared.clock import Clock, SystemClock
-from shared.unit_of_work import NullUnitOfWork, UnitOfWork
+from shared.clock import Clock
+from shared.unit_of_work import UnitOfWork
 
 
-class CompleteOAuthCallback:
+class CompleteOAuthCallback(OAuthLegDependencies):
     """Leg 2: validate the provider's redirect and mint a one-time handoff code.
 
     Consumes the CSRF state, exchanges the provider code for an asserted identity,
@@ -38,29 +43,91 @@ class CompleteOAuthCallback:
         clock: Clock | None = None,
         unit_of_work: UnitOfWork | None = None,
         rate_guard: OAuthRateGuard | None = None,
+        attribution_parking: OAuthAttributionParking | None = None,
+        analytics_recorder: AnalyticsRecorder | None = None,
+        registration_context: RegistrationContextRecorder | None = None,
     ) -> None:
-        self._provider_registry = provider_registry
-        self._state_repository = state_repository
+        super().__init__(
+            provider_registry,
+            state_repository,
+            clock,
+            unit_of_work,
+            rate_guard,
+            attribution_parking,
+        )
         self._identity_repository = identity_repository
         self._account_repository = account_repository
         self._handoff_code_repository = handoff_code_repository
         self._handoff_ttl_seconds = handoff_ttl_seconds
-        self._clock = clock or SystemClock()
-        self._unit_of_work = unit_of_work or NullUnitOfWork()
-        self._rate_guard = rate_guard or OAuthRateGuard()
+        # Collaborators, NOT the `RecordRegistrationContext` usecase: a usecase may
+        # not call another usecase, and this leg genuinely needs the same behaviour
+        # the register route does -- it is the only other place an account is born.
+        self._sign_in_analytics = SignInAnalytics(
+            recorder=analytics_recorder or NullAnalyticsRecorder(),
+            registration_context=registration_context or RegistrationContextRecorder(),
+            attribution_parking=self._attribution_parking,
+        )
 
-    async def execute(self, provider_name: str, code: str, state: str, source: str = "") -> str:
+    async def execute(
+        self,
+        provider_name: str,
+        code: str,
+        state: str,
+        source: str = "",
+        client_ip: str | None = None,
+        user_agent: str | None = None,
+        accept_language: str | None = None,
+    ) -> str:
+        """The three request facts are parameters because `/callback` is itself a
+        browser request: IP, User-Agent and `Accept-Language` are present here
+        exactly as they are at `/register`, so a provider-created account carries
+        the same technical context as a registered one. They are never accepted
+        from a query parameter -- the provider drives this redirect, and a value a
+        client could set is a value it could fabricate.
+        """
         now = self._clock.now()
         await self._rate_guard.check("callback", source, now)
         provider = self._provider_registry.get(provider_name)
         self._validate_state(await self._state_repository.consume(state), provider_name, now)
         identity = await self._fetch_identity(provider, code)
-        email = self._normalize_email(identity.email)
-        account_id = await self._resolve_account(provider_name, identity.subject, email, now)
+        existing = await self._identity_repository.find(provider_name, identity.subject)
+        account_id = await self._account_behind(existing, provider_name, identity, now)
+        handoff = await self._issued_handoff(account_id, now)
+        await self._sign_in_analytics.record(
+            account_id,
+            is_new_account=existing is None,
+            state_value=state,
+            client_ip=client_ip,
+            user_agent=user_agent,
+            accept_language=accept_language,
+        )
+        return handoff.value
+
+    async def _account_behind(
+        self,
+        existing: OAuthIdentity | None,
+        provider_name: str,
+        identity: ProviderIdentity,
+        now: datetime,
+    ) -> UUID:
+        """The account this provider identity belongs to, creating it on first sight."""
+        if existing is not None:
+            return existing.account_id
+        return await self._auto_create(
+            provider_name, identity.subject, self._normalize_email(identity.email), now
+        )
+
+    async def _issued_handoff(self, account_id: UUID, now: datetime) -> HandoffCode:
+        """The one-time code the browser carries back, committed before it is answered.
+
+        Committed here rather than at the end of `execute`: everything after this
+        point is analytics, and an analytics failure must not be able to undo a
+        sign-in that has already produced a code.
+        """
         handoff = HandoffCode.generate(account_id, now, self._handoff_ttl_seconds)
         await self._handoff_code_repository.save(handoff)
         await self._unit_of_work.commit()
-        return handoff.value
+        return handoff
 
     def _validate_state(self, state: OAuthState | None, provider_name: str, now: datetime) -> None:
         # A None state covers all three of forged, missing and replayed: none of them
@@ -79,14 +146,6 @@ class CompleteOAuthCallback:
             return Email(raw_email).value
         except ValueError as error:
             raise OAuthCallbackError("the provider asserted an unusable email") from error
-
-    async def _resolve_account(
-        self, provider_name: str, subject: str, email: str, now: datetime
-    ) -> UUID:
-        existing = await self._identity_repository.find(provider_name, subject)
-        if existing is not None:
-            return existing.account_id
-        return await self._auto_create(provider_name, subject, email, now)
 
     async def _auto_create(
         self, provider_name: str, subject: str, email: str, now: datetime

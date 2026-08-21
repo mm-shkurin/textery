@@ -1,10 +1,14 @@
-import { useRef, useState } from 'react'
+import { useReducer, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { register, type RegisterApiError } from '../api/registerApi'
 import { rememberRegistration } from '../utils/registrationHandoff'
-import { UNSAVED_LEAVE_MESSAGE_REGISTER, useUnsavedGuard } from '../utils/useUnsavedGuard'
+import {
+  UNSAVED_LEAVE_MESSAGE_REGISTER,
+  useUnsavedGuard,
+} from '../../../shared/hooks/useUnsavedGuard'
 import { GENERIC_REGISTER_FAILURE_MESSAGE, isUsableMessage } from '../utils/authMessages'
 import { isConfirmMismatched, isPasswordCompliant } from '../utils/passwordPolicy'
+import { INITIAL_REGISTER_STATE, registerSubmitReducer } from '../utils/registerSubmitState'
 
 // 'EMAIL_ALREADY_REGISTERED' is what the backend actually sends on 409 — confirmed by curl
 // against the live stack on 2026-07-16. This branch previously matched 'EMAIL_ALREADY_EXISTS',
@@ -39,10 +43,8 @@ function applyRegisterError(error: unknown): string {
 // two independent fields: touching the password re-checks the confirm that was already typed.
 export function useRegisterSubmit() {
   const navigate = useNavigate()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [emailError, setEmailError] = useState<string | null>(null)
-  const [passwordError, setPasswordError] = useState(false)
-  const [confirmError, setConfirmError] = useState(false)
+  // The three complaints and the in-flight flag are one position — see registerSubmitState.
+  const [state, dispatch] = useReducer(registerSubmitReducer, INITIAL_REGISTER_STATE)
   // Whether the confirm field has ever been blurred. Until it has, a password blur must not
   // light up a mismatch against a field the user has not reached yet.
   const confirmTouchedRef = useRef(false)
@@ -53,8 +55,8 @@ export function useRegisterSubmit() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (isSubmitting) return
-    setIsSubmitting(true)
+    if (state.isSubmitting) return
+    dispatch({ type: 'submitStarted' })
     const password = passwordInputRef.current?.value ?? ''
     try {
       const result = await register(
@@ -62,7 +64,7 @@ export function useRegisterSubmit() {
         password,
         confirmInputRef.current?.value ?? '',
       )
-      setEmailError(null)
+      dispatch({ type: 'accepted' })
       // The input has been sent — it is no longer unsaved, so release the guard BEFORE the
       // navigation below. A failed submit skips this (we never reach here on throw), keeping
       // the still-unsaved data guarded — scenario 5.8 case 4.
@@ -80,24 +82,29 @@ export function useRegisterSubmit() {
         state: { email: result.email, verificationCode: result.verificationCode },
       })
     } catch (error) {
-      setEmailError(applyRegisterError(error))
+      dispatch({ type: 'rejected', message: applyRegisterError(error) })
     } finally {
-      setIsSubmitting(false)
+      dispatch({ type: 'submitSettled' })
     }
   }
 
   function handlePasswordBlur(event: React.FocusEvent<HTMLInputElement>) {
     const password = event.target.value
-    setPasswordError(password.length > 0 && !isPasswordCompliant(password))
-
-    if (confirmTouchedRef.current) {
-      setConfirmError(isConfirmMismatched(password, confirmInputRef.current?.value ?? ''))
-    }
+    dispatch({
+      type: 'passwordBlurred',
+      passwordError: password.length > 0 && !isPasswordCompliant(password),
+      confirmError: confirmTouchedRef.current
+        ? isConfirmMismatched(password, confirmInputRef.current?.value ?? '')
+        : undefined,
+    })
   }
 
   function handleConfirmBlur(event: React.FocusEvent<HTMLInputElement>) {
     confirmTouchedRef.current = true
-    setConfirmError(isConfirmMismatched(passwordInputRef.current?.value ?? '', event.target.value))
+    dispatch({
+      type: 'confirmBlurred',
+      confirmError: isConfirmMismatched(passwordInputRef.current?.value ?? '', event.target.value),
+    })
   }
 
   // In-app react-router navigation does not raise `beforeunload`, so guard the footer login
@@ -113,10 +120,10 @@ export function useRegisterSubmit() {
     emailInputRef,
     passwordInputRef,
     confirmInputRef,
-    isSubmitting,
-    emailError,
-    passwordError,
-    confirmError,
+    isSubmitting: state.isSubmitting,
+    emailError: state.emailError,
+    passwordError: state.passwordError,
+    confirmError: state.confirmError,
     markDirty,
     handleSubmit,
     handlePasswordBlur,

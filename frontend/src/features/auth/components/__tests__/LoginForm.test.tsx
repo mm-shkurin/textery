@@ -4,6 +4,7 @@ import { renderWithRouter } from '../../../../test/renderWithRouter'
 import { LoginForm } from '../LoginForm'
 import * as api from '../../api/loginApi'
 import type { LoginResult } from '../../api/loginApi'
+import authFormStyles from '../AuthForm.module.css'
 
 vi.mock('../../api/loginApi', () => ({
   login: vi.fn(),
@@ -55,7 +56,7 @@ describe('LoginForm', () => {
   it('prevents native form navigation on submit (Enter-key or button)', () => {
     renderWithRouter(<LoginForm />)
     const form = screen.getByTestId('login-submit-button').closest('form')
-    expect(form).not.toBeNull()
+    expect(form).toBeInstanceOf(HTMLFormElement)
 
     const submitEvent = fireEvent.submit(form as HTMLFormElement)
 
@@ -124,7 +125,7 @@ describe('LoginForm', () => {
     fireEvent.click(submitButton)
 
     const indicator = screen.getByTestId('login-loading-indicator')
-    expect(indicator).toHaveClass('auth-loading-indicator')
+    expect(indicator).toHaveClass(authFormStyles['auth-loading-indicator'])
     // The ROLE, not a role attribute: the indicator is an <output>, which carries role="status"
     // implicitly, and what must hold is that assistive tech computes that role — not that one
     // particular spelling of it appears in the markup. Asserting the attribute pinned the

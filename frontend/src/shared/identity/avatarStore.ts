@@ -15,27 +15,25 @@
 // because the store owns the value.
 import { fetchAvatarBytes } from './api/avatarApi'
 import type { Profile } from './api/profileWire'
+import { listenerSet } from '../lib/listeners'
 
 let currentKey: string | null = null
 let url: string | null = null
 // Which key the in-flight request belongs to, so a response that arrives after a newer upload is
 // dropped instead of overwriting it.
 let pendingKey: string | null = null
-const listeners = new Set<() => void>()
+const listeners = listenerSet()
 
 export function avatarSnapshot(): string | null {
   return url
 }
 
 export function subscribeAvatar(listener: () => void): () => void {
-  listeners.add(listener)
-  return () => {
-    listeners.delete(listener)
-  }
+  return listeners.subscribe(listener)
 }
 
 function notify(): void {
-  for (const listener of [...listeners]) listener()
+  listeners.notify()
 }
 
 function release(): void {

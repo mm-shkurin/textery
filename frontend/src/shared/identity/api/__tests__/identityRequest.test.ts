@@ -5,7 +5,7 @@ import {
   getAccessToken,
   getRefreshToken,
   saveSession,
-} from '../../../../features/auth/utils/authSession'
+} from '../../../session/authSession'
 
 // The rule this module exists for: a read that fires unprompted on every authenticated page must
 // never conclude the session is dead. `performRenewal` calls `clearSession()` on ANY renewal

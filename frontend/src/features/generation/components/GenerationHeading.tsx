@@ -1,4 +1,4 @@
-import './GenerationHeading.css'
+import styles from './GenerationHeading.module.css'
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
 
 interface GenerationHeadingProps {
@@ -18,16 +18,16 @@ interface GenerationHeadingProps {
 export function GenerationHeading({ documentTypeLabel }: GenerationHeadingProps) {
   return (
     <>
-      <div className="cw-breadcrumb">
-        <span className="cw-breadcrumb-chip" data-testid="generation-breadcrumb">
-          <span className="cw-chip-icon">
+      <div className={styles['cw-breadcrumb']}>
+        <span className={styles['cw-breadcrumb-chip']} data-testid="generation-breadcrumb">
+          <span className={styles['cw-chip-icon']}>
             <PlaceholderImage />
           </span>
           {documentTypeLabel}
         </span>
       </div>
-      <h1 className="cw-title">Новая генерация</h1>
-      <p className="cw-subtitle">Опишите, что нужно получить</p>
+      <h1 className={styles['cw-title']}>Новая генерация</h1>
+      <p className={styles['cw-subtitle']}>Опишите, что нужно получить</p>
     </>
   )
 }

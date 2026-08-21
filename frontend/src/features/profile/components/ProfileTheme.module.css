@@ -1,0 +1,74 @@
+/* Цвета переключателя — в src/styles/tokens-*.css (--profile-track-*). */
+/* The «Тема оформления» segmented control — Figma node 1127:10768, the 289×48 track at x=1446 with
+   its three pills at 109 / 90 / 83. */
+
+.profile-theme-switch {
+  display: inline-flex;
+  gap: 0;
+  padding: 3px;
+  background: var(--profile-track-bg);
+  border: 1px solid var(--profile-card-line);
+  border-radius: 12px;
+}
+
+.profile-theme-segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--profile-row-fg);
+  cursor: pointer;
+  /* The pill only ever changes its fill, and a transition on `background` alone cannot be what
+     makes the label jump: the text stays the same weight selected or not. */
+  transition: background 0.12s ease-out;
+}
+
+/* The chosen one is the RAISED one — white on the recessed track, which is the only difference the
+   design draws between the three. It carries a border of its own so the shape survives a forced-
+   colours mode, where backgrounds are dropped and an unbordered pill loses its selection entirely. */
+.profile-theme-segment-on {
+  background: var(--bg-surface);
+  border: 1px solid var(--profile-card-line);
+  color: var(--text-primary);
+  font-weight: 600;
+  /* Compensates the border this one has and the others do not, so the three keep their widths and
+     the track does not resize as the choice moves. */
+  margin: -1px;
+}
+
+/* The radio itself is the control — focus and arrow keys are its behaviour, not the label's. It is
+   clipped rather than `display: none`, which would take it out of the tab order and leave the
+   switch reachable by mouse only. */
+.profile-theme-radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Focus lands on the hidden input, so the ring has to be drawn by its label instead — without this
+   the keyboard user moving through the group sees nothing move. */
+.profile-theme-segment:has(.profile-theme-radio:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .profile-theme-switch {
+    display: flex;
+  }
+
+  .profile-theme-segment {
+    flex: 1;
+    padding: 0 8px;
+  }
+}

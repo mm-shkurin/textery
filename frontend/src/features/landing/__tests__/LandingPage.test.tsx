@@ -11,7 +11,7 @@ describe('LandingPage', () => {
     // `matches()`), not exact equality -- asserting on `.textContent` with `toBe` instead
     // so a partial-text render (e.g. missing a word) fails the test.
     expect(screen.getByTestId('hero-heading').textContent).toBe(
-      'Textery — самая быстрая нейросеть для докладов',
+      'Textery — самая быстрая нейросеть для учебных текстов',
     )
   })
 

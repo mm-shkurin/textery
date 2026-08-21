@@ -12,7 +12,7 @@
 //   httpClient      — transport, knows nothing
 //   send            — transport + session + human-readable refusal
 import { RequestTimeoutError, isHttpError, type RequestOptions } from './httpClient'
-import { authorizedRequest, SessionExpiredError } from '../../features/auth/api/authorizedRequest'
+import { authorizedRequest, SessionExpiredError } from '../session/authorizedRequest'
 
 // A stale `version` on PUT — the lost-update guard firing (409 VERSION_CONFLICT). Kept as its
 // own type for the same reason as SessionExpiredError: it is not a failure of the save, it is

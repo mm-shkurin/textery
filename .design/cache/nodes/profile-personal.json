@@ -1,0 +1,3707 @@
+{
+ "id": "1127:10768",
+ "name": "Профиль - личные данные",
+ "type": "FRAME",
+ "absoluteBoundingBox": {
+  "x": 4809.0,
+  "y": 19137.3984375,
+  "width": 1920.0,
+  "height": 1458.0
+ },
+ "layoutMode": "VERTICAL",
+ "primaryAxisSizingMode": "FIXED",
+ "counterAxisSizingMode": "FIXED",
+ "layoutWrap": "NO_WRAP",
+ "layoutSizingHorizontal": "FIXED",
+ "layoutSizingVertical": "FIXED",
+ "constraints": {
+  "vertical": "TOP",
+  "horizontal": "LEFT"
+ },
+ "fills": [
+  {
+   "blendMode": "NORMAL",
+   "type": "SOLID",
+   "color": {
+    "r": 0.95686274766922,
+    "g": 0.9647058844566345,
+    "b": 0.9843137264251709,
+    "a": 1.0
+   }
+  }
+ ],
+ "strokeWeight": 1.0,
+ "strokeAlign": "INSIDE",
+ "clipsContent": true,
+ "children": [
+  {
+   "id": "1134:12268",
+   "name": "Main",
+   "type": "FRAME",
+   "absoluteBoundingBox": {
+    "x": 4809.0,
+    "y": 19137.3984375,
+    "width": 1920.0,
+    "height": 1458.0
+   },
+   "layoutMode": "VERTICAL",
+   "itemSpacing": 40.0,
+   "paddingLeft": 140.0,
+   "paddingRight": 140.0,
+   "paddingTop": 40.0,
+   "paddingBottom": 40.0,
+   "primaryAxisSizingMode": "FIXED",
+   "counterAxisSizingMode": "FIXED",
+   "layoutWrap": "NO_WRAP",
+   "layoutSizingHorizontal": "FIXED",
+   "layoutSizingVertical": "FILL",
+   "layoutGrow": 1.0,
+   "constraints": {
+    "vertical": "TOP",
+    "horizontal": "LEFT"
+   },
+   "strokeWeight": 1.0,
+   "strokeAlign": "INSIDE",
+   "clipsContent": false,
+   "children": [
+    {
+     "id": "1134:12269",
+     "name": "Navbar",
+     "type": "INSTANCE",
+     "absoluteBoundingBox": {
+      "x": 4949.0,
+      "y": 19177.3984375,
+      "width": 1640.0,
+      "height": 84.0
+     },
+     "layoutMode": "HORIZONTAL",
+     "itemSpacing": 10.0,
+     "paddingLeft": 32.0,
+     "paddingRight": 32.0,
+     "paddingTop": 12.0,
+     "paddingBottom": 12.0,
+     "primaryAxisAlignItems": "SPACE_BETWEEN",
+     "counterAxisAlignItems": "CENTER",
+     "primaryAxisSizingMode": "FIXED",
+     "layoutWrap": "NO_WRAP",
+     "layoutSizingHorizontal": "FILL",
+     "layoutSizingVertical": "HUG",
+     "layoutGrow": 0.0,
+     "constraints": {
+      "vertical": "TOP",
+      "horizontal": "LEFT"
+     },
+     "fills": [
+      {
+       "blendMode": "NORMAL",
+       "type": "SOLID",
+       "color": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+       }
+      }
+     ],
+     "strokeWeight": 1.0,
+     "strokeAlign": "INSIDE",
+     "cornerRadius": 28.0,
+     "effects": [
+      {
+       "type": "DROP_SHADOW",
+       "visible": true,
+       "color": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.09000000357627869
+       },
+       "blendMode": "NORMAL",
+       "offset": {
+        "x": 0.0,
+        "y": 4.0
+       },
+       "radius": 12.0,
+       "showShadowBehindNode": false
+      }
+     ],
+     "clipsContent": true,
+     "componentId": "949:2772",
+     "children": [
+      {
+       "id": "I1134:12269;949:2773",
+       "name": "Logo",
+       "type": "FRAME",
+       "absoluteBoundingBox": {
+        "x": 4981.0,
+        "y": 19196.8984375,
+        "width": 177.0,
+        "height": 45.0
+       },
+       "layoutMode": "VERTICAL",
+       "itemSpacing": 10.0,
+       "layoutWrap": "NO_WRAP",
+       "layoutSizingHorizontal": "HUG",
+       "layoutSizingVertical": "HUG",
+       "layoutGrow": 0.0,
+       "constraints": {
+        "vertical": "TOP",
+        "horizontal": "LEFT"
+       },
+       "strokeWeight": 1.0,
+       "strokeAlign": "INSIDE",
+       "clipsContent": false,
+       "children": [
+        {
+         "id": "I1134:12269;949:2774",
+         "name": "Component 17",
+         "type": "INSTANCE",
+         "absoluteBoundingBox": {
+          "x": 4981.0,
+          "y": 19196.8984375,
+          "width": 177.0,
+          "height": 45.0
+         },
+         "layoutSizingHorizontal": "FIXED",
+         "layoutSizingVertical": "FIXED",
+         "layoutGrow": 0.0,
+         "constraints": {
+          "vertical": "TOP",
+          "horizontal": "LEFT"
+         },
+         "fills": [
+          {
+           "blendMode": "NORMAL",
+           "visible": false,
+           "type": "SOLID",
+           "color": {
+            "r": 1.0,
+            "g": 1.0,
+            "b": 1.0,
+            "a": 1.0
+           }
+          }
+         ],
+         "strokeWeight": 1.0,
+         "strokeAlign": "INSIDE",
+         "clipsContent": false,
+         "componentId": "316:1986",
+         "children": [
+          {
+           "id": "I1134:12269;949:2774;316:1975",
+           "name": "Subtract",
+           "type": "BOOLEAN_OPERATION",
+           "absoluteBoundingBox": {
+            "x": 4981.0,
+            "y": 19198.375,
+            "width": 34.5361328125,
+            "height": 41.6343879699707
+           },
+           "constraints": {
+            "vertical": "SCALE",
+            "horizontal": "SCALE"
+           },
+           "fills": [
+            {
+             "blendMode": "NORMAL",
+             "type": "SOLID",
+             "color": {
+              "r": 0.0,
+              "g": 0.30588236451148987,
+              "b": 0.8784313797950745,
+              "a": 1.0
+             }
+            }
+           ],
+           "strokeWeight": 0.0,
+           "strokeAlign": "INSIDE",
+           "children": [
+            {
+             "id": "I1134:12269;949:2774;316:1976",
+             "name": "Rectangle 5",
+             "type": "VECTOR",
+             "absoluteBoundingBox": {
+              "x": 4981.0,
+              "y": 19197.49609375,
+              "width": 34.53658676147461,
+              "height": 43.39285659790039
+             },
+             "constraints": {
+              "vertical": "SCALE",
+              "horizontal": "SCALE"
+             },
+             "strokeWeight": 1.0,
+             "strokeAlign": "INSIDE",
+             "cornerRadius": 5.0,
+             "opacity": 0.5
+            },
+            {
+             "id": "I1134:12269;949:2774;316:1977",
+             "name": "Rectangle 6",
+             "type": "VECTOR",
+             "absoluteBoundingBox": {
+              "x": 5003.66455078125,
+              "y": 19204.728515625,
+              "width": 21.585365295410156,
+              "height": 28.39285659790039
+             },
+             "constraints": {
+              "vertical": "SCALE",
+              "horizontal": "SCALE"
+             },
+             "fills": [
+              {
+               "blendMode": "NORMAL",
+               "type": "SOLID",
+               "color": {
+                "r": 0.5176282525062561,
+                "g": 0.3857325613498688,
+                "b": 0.3857325613498688,
+                "a": 1.0
+               }
+              }
+             ],
+             "strokeWeight": 1.0,
+             "strokeAlign": "INSIDE",
+             "cornerRadius": 5.0,
+             "opacity": 0.5
+            }
+           ]
+          },
+          {
+           "id": "I1134:12269;949:2774;316:1978",
+           "name": "Textery",
+           "type": "TEXT",
+           "absoluteBoundingBox": {
+            "x": 5028.48779296875,
+            "y": 19196.8984375,
+            "width": 129.51219177246094,
+            "height": 45.0
+           },
+           "constraints": {
+            "vertical": "SCALE",
+            "horizontal": "SCALE"
+           },
+           "fills": [
+            {
+             "blendMode": "NORMAL",
+             "type": "SOLID",
+             "color": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 1.0
+             }
+            }
+           ],
+           "strokeWeight": 1.0,
+           "strokeAlign": "OUTSIDE",
+           "style": {
+            "fontFamily": "Inter",
+            "fontPostScriptName": "Inter-SemiBold",
+            "fontStyle": "Semi Bold",
+            "fontWeight": 600,
+            "fontSize": 32.0,
+            "textAlignHorizontal": "LEFT",
+            "textAlignVertical": "CENTER",
+            "letterSpacing": -0.64,
+            "lineHeightPx": 38.727272033691406,
+            "lineHeightPercent": 100.0,
+            "lineHeightUnit": "INTRINSIC_%"
+           },
+           "characters": "Textery"
+          },
+          {
+           "id": "I1134:12269;949:2774;316:1979",
+           "name": "Vector 7",
+           "type": "VECTOR",
+           "absoluteBoundingBox": {
+            "x": 4986.396484375,
+            "y": 19211.36328125,
+            "width": 13.490853309631348,
+            "height": 16.071428298950195
+           },
+           "constraints": {
+            "vertical": "SCALE",
+            "horizontal": "SCALE"
+           },
+           "fills": [
+            {
+             "blendMode": "NORMAL",
+             "type": "SOLID",
+             "color": {
+              "r": 0.9803921580314636,
+              "g": 0.9921568632125854,
+              "b": 1.0,
+              "a": 1.0
+             }
+            }
+           ],
+           "strokeWeight": 1.0,
+           "strokeAlign": "CENTER"
+          },
+          {
+           "id": "I1134:12269;949:2774;316:1980",
+           "name": "Rectangle 7",
+           "type": "VECTOR",
+           "absoluteBoundingBox": {
+            "x": 5005.28369140625,
+            "y": 19207.40625,
+            "width": 18.887195587158203,
+            "height": 23.571428298950195
+           },
+           "constraints": {
+            "vertical": "SCALE",
+            "horizontal": "SCALE"
+           },
+           "fills": [
+            {
+             "blendMode": "NORMAL",
+             "type": "SOLID",
+             "color": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 1.0
+             }
+            }
+           ],
+           "strokeWeight": 1.0,
+           "strokeAlign": "INSIDE",
+           "cornerRadius": 5.0
+          },
+          {
+           "id": "I1134:12269;949:2774;316:1981",
+           "name": "Vector 8",
+           "type": "VECTOR",
+           "absoluteBoundingBox": {
+            "x": 5010.6796875,
+            "y": 19216.18359375,
+            "width": 5.935975551605225,
+            "height": 6.4285712242126465
+           },
+           "constraints": {
+            "vertical": "SCALE",
+            "horizontal": "SCALE"
+           },
+           "fills": [
+            {
+             "blendMode": "NORMAL",
+             "type": "SOLID",
+             "color": {
+              "r": 0.9803921580314636,
+              "g": 0.9921568632125854,
+              "b": 1.0,
+              "a": 1.0
+             }
+            }
+           ],
+           "strokeWeight": 1.0,
+           "strokeAlign": "CENTER"
+          },
+          {
+           "id": "I1134:12269;949:2774;316:1982",
+           "name": "Rectangle 8",
+           "type": "RECTANGLE",
+           "absoluteBoundingBox": {
+            "x": 5017.1552734375,
+            "y": 19216.18359375,
+            "width": 1.0792683362960815,
+            "height": 6.4285712242126465
+           },
+           "constraints": {
+            "vertical": "SCALE",
+            "horizontal": "SCALE"
+           },
+           "fills": [
+            {
+             "blendMode": "NORMAL",
+             "type": "SOLID",
+             "color": {
+              "r": 0.9803921580314636,
+              "g": 0.9921568632125854,
+              "b": 1.0,
+              "a": 1.0
+             }
+            }
+           ],
+           "strokeWeight": 1.0,
+           "strokeAlign": "INSIDE"
+          },
+          {
+           "id": "I1134:12269;949:2774;316:1983",
+           "name": "Vector 9",
+           "type": "VECTOR",
+           "absoluteBoundingBox": {
+            "x": 5012.83837890625,
+            "y": 19217.255859375,
+            "width": 1.6189024448394775,
+            "height": 2.6785714626312256
+           },
+           "constraints": {
+            "vertical": "SCALE",
+            "horizontal": "SCALE"
+           },
+           "fills": [
+            {
+             "blendMode": "NORMAL",
+             "type": "SOLID",
+             "color": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 1.0
+             }
+            }
+           ],
+           "strokeWeight": 1.0,
+           "strokeAlign": "CENTER",
+           "rectangleCornerRadii": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "I1134:12269;949:2775",
+       "name": "Container",
+       "type": "FRAME",
+       "absoluteBoundingBox": {
+        "x": 6261.0,
+        "y": 19189.3984375,
+        "width": 296.0,
+        "height": 60.0
+       },
+       "layoutMode": "HORIZONTAL",
+       "itemSpacing": 20.0,
+       "paddingLeft": 12.0,
+       "paddingRight": 12.0,
+       "paddingTop": 8.0,
+       "paddingBottom": 8.0,
+       "counterAxisAlignItems": "CENTER",
+       "layoutWrap": "NO_WRAP",
+       "layoutSizingHorizontal": "HUG",
+       "layoutSizingVertical": "HUG",
+       "layoutGrow": 0.0,
+       "constraints": {
+        "vertical": "TOP",
+        "horizontal": "LEFT"
+       },
+       "strokeWeight": 1.0,
+       "strokeAlign": "INSIDE",
+       "clipsContent": false,
+       "children": [
+        {
+         "id": "I1134:12269;949:2928",
+         "name": "Buttons/Main",
+         "type": "INSTANCE",
+         "absoluteBoundingBox": {
+          "x": 6273.0,
+          "y": 19197.8984375,
+          "width": 172.0,
+          "height": 43.0
+         },
+         "layoutMode": "HORIZONTAL",
+         "itemSpacing": 12.0,
+         "paddingLeft": 32.0,
+         "paddingRight": 32.0,
+         "paddingTop": 12.0,
+         "paddingBottom": 12.0,
+         "primaryAxisAlignItems": "CENTER",
+         "counterAxisAlignItems": "CENTER",
+         "layoutWrap": "NO_WRAP",
+         "layoutSizingHorizontal": "HUG",
+         "layoutSizingVertical": "HUG",
+         "layoutGrow": 0.0,
+         "constraints": {
+          "vertical": "TOP",
+          "horizontal": "LEFT"
+         },
+         "fills": [
+          {
+           "blendMode": "NORMAL",
+           "type": "SOLID",
+           "color": {
+            "r": 0.0,
+            "g": 0.30588236451148987,
+            "b": 0.8784313797950745,
+            "a": 1.0
+           }
+          }
+         ],
+         "strokeWeight": 1.0,
+         "strokeAlign": "INSIDE",
+         "cornerRadius": 12.0,
+         "clipsContent": false,
+         "componentId": "481:1072",
+         "children": [
+          {
+           "id": "I1134:12269;949:2928;481:1070",
+           "name": "Текст",
+           "type": "TEXT",
+           "absoluteBoundingBox": {
+            "x": 6305.0,
+            "y": 19209.8984375,
+            "width": 108.0,
+            "height": 19.0
+           },
+           "layoutSizingHorizontal": "HUG",
+           "layoutSizingVertical": "HUG",
+           "layoutGrow": 0.0,
+           "constraints": {
+            "vertical": "TOP",
+            "horizontal": "LEFT"
+           },
+           "fills": [
+            {
+             "blendMode": "NORMAL",
+             "type": "SOLID",
+             "color": {
+              "r": 1.0,
+              "g": 1.0,
+              "b": 1.0,
+              "a": 1.0
+             }
+            }
+           ],
+           "strokeWeight": 1.0,
+           "strokeAlign": "OUTSIDE",
+           "style": {
+            "fontFamily": "Inter",
+            "fontPostScriptName": null,
+            "fontStyle": "Semi Bold",
+            "fontWeight": 600,
+            "textAutoResize": "WIDTH_AND_HEIGHT",
+            "fontSize": 16.0,
+            "textAlignHorizontal": "CENTER",
+            "textAlignVertical": "TOP",
+            "letterSpacing": 0.0,
+            "lineHeightPx": 19.363636016845703,
+            "lineHeightPercent": 100.0,
+            "lineHeightUnit": "INTRINSIC_%"
+           },
+           "characters": "Мои проекты"
+          }
+         ]
+        },
+        {
+         "id": "I1134:12269;949:2777",
+         "name": "Button",
+         "type": "FRAME",
+         "absoluteBoundingBox": {
+          "x": 6465.0,
+          "y": 19197.3984375,
+          "width": 80.0,
+          "height": 44.0
+         },
+         "layoutMode": "HORIZONTAL",
+         "itemSpacing": 12.0,
+         "counterAxisAlignItems": "CENTER",
+         "layoutWrap": "NO_WRAP",
+         "layoutSizingHorizontal": "HUG",
+         "layoutSizingVertical": "HUG",
+         "layoutGrow": 0.0,
+         "constraints": {
+          "vertical": "TOP",
+          "horizontal": "LEFT"
+         },
+         "strokeWeight": 1.2597402334213257,
+         "strokeAlign": "INSIDE",
+         "cornerRadius": 17.636363983154297,
+         "clipsContent": false,
+         "children": [
+          {
+           "id": "I1134:12269;949:2778",
+           "name": "Container",
+           "type": "FRAME",
+           "absoluteBoundingBox": {
+            "x": 6465.0,
+            "y": 19197.3984375,
+            "width": 44.0,
+            "height": 44.0
+           },
+           "layoutMode": "HORIZONTAL",
+           "primaryAxisAlignItems": "CENTER",
+           "counterAxisAlignItems": "CENTER",
+           "primaryAxisSizingMode": "FIXED",
+           "counterAxisSizingMode": "FIXED",
+           "layoutWrap": "NO_WRAP",
+           "layoutSizingHorizontal": "FIXED",
+           "layoutSizingVertical": "FIXED",
+           "layoutGrow": 0.0,
+           "constraints": {
+            "vertical": "TOP",
+            "horizontal": "LEFT"
+           },
+           "fills": [
+            {
+             "blendMode": "NORMAL",
+             "type": "GRADIENT_LINEAR",
+             "gradientHandlePositions": [
+              {
+               "x": 0.0,
+               "y": 0.0
+              },
+              {
+               "x": 1.0,
+               "y": 1.0
+              },
+              {
+               "x": -1.0,
+               "y": 1.0
+              }
+             ],
+             "gradientStops": [
+              {
+               "color": {
+                "r": 0.3176470696926117,
+                "g": 0.6352941393852234,
+                "b": 1.0,
+                "a": 1.0
+               },
+               "position": 0.0
+              },
+              {
+               "color": {
+                "r": 0.30980393290519714,
+                "g": 0.2235294133424759,
+                "b": 0.9647058844566345,
+                "a": 1.0
+               },
+               "position": 1.0
+              }
+             ]
+            }
+           ],
+           "strokeWeight": 1.2597402334213257,
+           "strokeAlign": "INSIDE",
+           "cornerRadius": 42269828.0,
+           "effects": [
+            {
+             "type": "DROP_SHADOW",
+             "visible": true,
+             "color": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.10000000149011612
+             },
+             "blendMode": "NORMAL",
+             "offset": {
+              "x": 0.0,
+              "y": 1.2597402334213257
+             },
+             "radius": 2.5194804668426514,
+             "spread": -1.2597402334213257,
+             "showShadowBehindNode": false
+            },
+            {
+             "type": "DROP_SHADOW",
+             "visible": true,
+             "color": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.10000000149011612
+             },
+             "blendMode": "NORMAL",
+             "offset": {
+              "x": 0.0,
+              "y": 1.2597402334213257
+             },
+             "radius": 3.7792205810546875,
+             "showShadowBehindNode": false
+            }
+           ],
+           "clipsContent": false,
+           "children": [
+            {
+             "id": "I1134:12269;949:2779",
+             "name": "АИ",
+             "type": "TEXT",
+             "absoluteBoundingBox": {
+              "x": 6475.0,
+              "y": 19207.8984375,
+              "width": 24.0,
+              "height": 23.0
+             },
+             "layoutSizingHorizontal": "HUG",
+             "layoutSizingVertical": "HUG",
+             "layoutGrow": 0.0,
+             "constraints": {
+              "vertical": "TOP",
+              "horizontal": "LEFT"
+             },
+             "fills": [
+              {
+               "blendMode": "NORMAL",
+               "type": "SOLID",
+               "color": {
+                "r": 1.0,
+                "g": 1.0,
+                "b": 1.0,
+                "a": 1.0
+               },
+               "boundVariables": {
+                "color": {
+                 "type": "VARIABLE_ALIAS",
+                 "id": "VariableID:6fd023318d8459ebec2a0d477159280ee7a626fd/17003:78"
+                }
+               }
+              }
+             ],
+             "strokeWeight": 1.2597402334213257,
+             "strokeAlign": "OUTSIDE",
+             "style": {
+              "fontFamily": "Inter",
+              "fontPostScriptName": null,
+              "fontStyle": "Bold",
+              "fontWeight": 700,
+              "textAutoResize": "WIDTH_AND_HEIGHT",
+              "fontSize": 16.0,
+              "textAlignHorizontal": "CENTER",
+              "textAlignVertical": "TOP",
+              "letterSpacing": 0.0,
+              "lineHeightPx": 22.675323486328125,
+              "lineHeightPercent": 117.10260772705078,
+              "lineHeightPercentFontSize": 141.72076416015625,
+              "lineHeightUnit": "PIXELS"
+             },
+             "characters": "АИ"
+            }
+           ]
+          },
+          {
+           "id": "I1134:12269;949:2782",
+           "name": "Icons/Set 24px",
+           "type": "INSTANCE",
+           "absoluteBoundingBox": {
+            "x": 6521.0,
+            "y": 19207.3984375,
+            "width": 24.0,
+            "height": 24.0
+           },
+           "layoutSizingHorizontal": "FIXED",
+           "layoutSizingVertical": "FIXED",
+           "layoutGrow": 0.0,
+           "constraints": {
+            "vertical": "TOP",
+            "horizontal": "LEFT"
+           },
+           "fills": [
+            {
+             "blendMode": "NORMAL",
+             "visible": false,
+             "type": "SOLID",
+             "color": {
+              "r": 1.0,
+              "g": 1.0,
+              "b": 1.0,
+              "a": 1.0
+             }
+            }
+           ],
+           "strokeWeight": 1.0,
+           "strokeAlign": "INSIDE",
+           "clipsContent": true,
+           "componentId": "610:2336",
+           "children": [
+            {
+             "id": "I1134:12269;949:2782;610:2339",
+             "name": "Vector",
+             "type": "VECTOR",
+             "absoluteBoundingBox": {
+              "x": 6528.0,
+              "y": 19217.3984375,
+              "width": 10.0,
+              "height": 5.0
+             },
+             "constraints": {
+              "vertical": "SCALE",
+              "horizontal": "SCALE"
+             },
+             "strokes": [
+              {
+               "blendMode": "NORMAL",
+               "type": "SOLID",
+               "color": {
+                "r": 0.27450981736183167,
+                "g": 0.2705882489681244,
+                "b": 0.3176470696926117,
+                "a": 1.0
+               }
+              }
+             ],
+             "strokeWeight": 2.0,
+             "strokeAlign": "CENTER"
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "1148:5043",
+     "name": "Container",
+     "type": "FRAME",
+     "absoluteBoundingBox": {
+      "x": 4949.0,
+      "y": 19301.3984375,
+      "width": 1640.0,
+      "height": 1254.0
+     },
+     "layoutMode": "HORIZONTAL",
+     "itemSpacing": 40.0,
+     "primaryAxisSizingMode": "FIXED",
+     "counterAxisSizingMode": "FIXED",
+     "layoutWrap": "NO_WRAP",
+     "layoutSizingHorizontal": "FILL",
+     "layoutSizingVertical": "FILL",
+     "layoutGrow": 1.0,
+     "constraints": {
+      "vertical": "TOP",
+      "horizontal": "LEFT"
+     },
+     "strokeWeight": 1.0,
+     "strokeAlign": "INSIDE",
+     "clipsContent": false,
+     "children": [
+      {
+       "id": "1148:5194",
+       "name": "Container",
+       "type": "FRAME",
+       "absoluteBoundingBox": {
+        "x": 4949.0,
+        "y": 19301.3984375,
+        "width": 1640.0,
+        "height": 1254.0
+       },
+       "layoutMode": "VERTICAL",
+       "itemSpacing": 24.0,
+       "paddingTop": 32.0,
+       "paddingBottom": 32.0,
+       "primaryAxisSizingMode": "FIXED",
+       "counterAxisSizingMode": "FIXED",
+       "layoutWrap": "NO_WRAP",
+       "layoutSizingHorizontal": "FILL",
+       "layoutSizingVertical": "FILL",
+       "layoutGrow": 1.0,
+       "constraints": {
+        "vertical": "TOP",
+        "horizontal": "LEFT"
+       },
+       "strokeWeight": 1.0,
+       "strokeAlign": "INSIDE",
+       "clipsContent": false,
+       "children": [
+        {
+         "id": "1148:5188",
+         "name": "Container",
+         "type": "FRAME",
+         "absoluteBoundingBox": {
+          "x": 4949.0,
+          "y": 19333.3984375,
+          "width": 1640.0,
+          "height": 68.0
+         },
+         "layoutMode": "VERTICAL",
+         "itemSpacing": 12.0,
+         "counterAxisSizingMode": "FIXED",
+         "layoutWrap": "NO_WRAP",
+         "layoutSizingHorizontal": "FILL",
+         "layoutSizingVertical": "HUG",
+         "layoutGrow": 0.0,
+         "constraints": {
+          "vertical": "TOP",
+          "horizontal": "LEFT"
+         },
+         "strokeWeight": 1.0,
+         "strokeAlign": "INSIDE",
+         "clipsContent": false,
+         "children": [
+          {
+           "id": "1148:5189",
+           "name": "Section",
+           "type": "FRAME",
+           "absoluteBoundingBox": {
+            "x": 4949.0,
+            "y": 19333.3984375,
+            "width": 1640.0,
+            "height": 68.0
+           },
+           "layoutMode": "VERTICAL",
+           "itemSpacing": 20.0,
+           "counterAxisSizingMode": "FIXED",
+           "layoutWrap": "NO_WRAP",
+           "layoutSizingHorizontal": "FILL",
+           "layoutSizingVertical": "HUG",
+           "layoutGrow": 0.0,
+           "constraints": {
+            "vertical": "TOP",
+            "horizontal": "LEFT"
+           },
+           "strokeWeight": 1.0,
+           "strokeAlign": "INSIDE",
+           "clipsContent": false,
+           "children": [
+            {
+             "id": "1148:5190",
+             "name": "Title",
+             "type": "FRAME",
+             "absoluteBoundingBox": {
+              "x": 4949.0,
+              "y": 19333.3984375,
+              "width": 602.0,
+              "height": 68.0
+             },
+             "layoutMode": "VERTICAL",
+             "itemSpacing": 12.0,
+             "layoutWrap": "NO_WRAP",
+             "layoutSizingHorizontal": "HUG",
+             "layoutSizingVertical": "HUG",
+             "layoutGrow": 0.0,
+             "constraints": {
+              "vertical": "TOP",
+              "horizontal": "LEFT"
+             },
+             "strokeWeight": 1.0,
+             "strokeAlign": "INSIDE",
+             "clipsContent": false,
+             "children": [
+              {
+               "id": "1148:5191",
+               "name": "Мой профиль",
+               "type": "TEXT",
+               "absoluteBoundingBox": {
+                "x": 4949.0,
+                "y": 19333.3984375,
+                "width": 602.0,
+                "height": 34.0
+               },
+               "layoutSizingHorizontal": "FILL",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 0.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "fills": [
+                {
+                 "blendMode": "NORMAL",
+                 "type": "SOLID",
+                 "color": {
+                  "r": 0.0,
+                  "g": 0.0,
+                  "b": 0.0,
+                  "a": 1.0
+                 }
+                }
+               ],
+               "strokeWeight": 1.0,
+               "strokeAlign": "OUTSIDE",
+               "style": {
+                "fontFamily": "Inter",
+                "fontPostScriptName": "Inter-SemiBold",
+                "fontStyle": "Semi Bold",
+                "fontWeight": 600,
+                "textAutoResize": "HEIGHT",
+                "fontSize": 28.0,
+                "textAlignHorizontal": "LEFT",
+                "textAlignVertical": "TOP",
+                "letterSpacing": 0.0,
+                "lineHeightPx": 33.8863639831543,
+                "lineHeightPercent": 100.0,
+                "lineHeightUnit": "INTRINSIC_%"
+               },
+               "characters": "Мой профиль"
+              },
+              {
+               "id": "1148:5192",
+               "name": "Все ваши рефераты, курсовые, статьи и другие работ",
+               "type": "TEXT",
+               "absoluteBoundingBox": {
+                "x": 4949.0,
+                "y": 19379.3984375,
+                "width": 602.0,
+                "height": 22.0
+               },
+               "layoutSizingHorizontal": "FILL",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 0.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "fills": [
+                {
+                 "blendMode": "NORMAL",
+                 "type": "SOLID",
+                 "color": {
+                  "r": 0.27450981736183167,
+                  "g": 0.2705882489681244,
+                  "b": 0.3176470696926117,
+                  "a": 1.0
+                 }
+                }
+               ],
+               "strokeWeight": 1.0,
+               "strokeAlign": "OUTSIDE",
+               "style": {
+                "fontFamily": "Inter",
+                "fontPostScriptName": null,
+                "fontStyle": "Regular",
+                "fontWeight": 400,
+                "textAutoResize": "HEIGHT",
+                "fontSize": 18.0,
+                "textAlignHorizontal": "LEFT",
+                "textAlignVertical": "TOP",
+                "letterSpacing": 0.0,
+                "lineHeightPx": 21.784090042114258,
+                "lineHeightPercent": 100.0,
+                "lineHeightUnit": "INTRINSIC_%"
+               },
+               "characters": "Личные данные, внешний вид приложения и управление аккаунтом"
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "id": "1148:5051",
+         "name": "Container",
+         "type": "FRAME",
+         "absoluteBoundingBox": {
+          "x": 4949.0,
+          "y": 19425.3984375,
+          "width": 1640.0,
+          "height": 490.0
+         },
+         "layoutMode": "VERTICAL",
+         "paddingLeft": 32.0,
+         "paddingRight": 32.0,
+         "paddingTop": 32.0,
+         "paddingBottom": 32.0,
+         "counterAxisSizingMode": "FIXED",
+         "layoutWrap": "NO_WRAP",
+         "layoutSizingHorizontal": "FILL",
+         "layoutSizingVertical": "HUG",
+         "layoutGrow": 0.0,
+         "constraints": {
+          "vertical": "TOP",
+          "horizontal": "LEFT"
+         },
+         "fills": [
+          {
+           "blendMode": "NORMAL",
+           "type": "SOLID",
+           "color": {
+            "r": 1.0,
+            "g": 1.0,
+            "b": 1.0,
+            "a": 1.0
+           }
+          }
+         ],
+         "strokes": [
+          {
+           "blendMode": "NORMAL",
+           "type": "SOLID",
+           "color": {
+            "r": 0.8509804010391235,
+            "g": 0.8509804010391235,
+            "b": 0.8509804010391235,
+            "a": 1.0
+           }
+          }
+         ],
+         "strokeWeight": 1.0,
+         "strokeAlign": "OUTSIDE",
+         "cornerRadius": 12.0,
+         "clipsContent": false,
+         "children": [
+          {
+           "id": "1148:5052",
+           "name": "Text",
+           "type": "FRAME",
+           "absoluteBoundingBox": {
+            "x": 4981.0,
+            "y": 19457.3984375,
+            "width": 1576.0,
+            "height": 54.0
+           },
+           "layoutMode": "HORIZONTAL",
+           "itemSpacing": 12.0,
+           "paddingTop": 16.0,
+           "paddingBottom": 16.0,
+           "counterAxisAlignItems": "CENTER",
+           "primaryAxisSizingMode": "FIXED",
+           "layoutWrap": "NO_WRAP",
+           "layoutSizingHorizontal": "FILL",
+           "layoutSizingVertical": "HUG",
+           "layoutGrow": 0.0,
+           "constraints": {
+            "vertical": "TOP",
+            "horizontal": "LEFT"
+           },
+           "strokeWeight": 1.0,
+           "strokeAlign": "INSIDE",
+           "clipsContent": false,
+           "children": [
+            {
+             "id": "1148:5053",
+             "name": "Label",
+             "type": "FRAME",
+             "absoluteBoundingBox": {
+              "x": 4981.0,
+              "y": 19473.3984375,
+              "width": 1576.0,
+              "height": 22.0
+             },
+             "layoutMode": "HORIZONTAL",
+             "itemSpacing": 8.0,
+             "counterAxisAlignItems": "CENTER",
+             "primaryAxisSizingMode": "FIXED",
+             "layoutWrap": "NO_WRAP",
+             "layoutSizingHorizontal": "FILL",
+             "layoutSizingVertical": "HUG",
+             "layoutGrow": 1.0,
+             "constraints": {
+              "vertical": "TOP",
+              "horizontal": "LEFT"
+             },
+             "strokeWeight": 1.0,
+             "strokeAlign": "INSIDE",
+             "clipsContent": false,
+             "children": [
+              {
+               "id": "1148:5054",
+               "name": "Личные данные",
+               "type": "TEXT",
+               "absoluteBoundingBox": {
+                "x": 4981.0,
+                "y": 19473.3984375,
+                "width": 145.0,
+                "height": 22.0
+               },
+               "layoutSizingHorizontal": "HUG",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 0.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "fills": [
+                {
+                 "blendMode": "NORMAL",
+                 "type": "SOLID",
+                 "color": {
+                  "r": 0.0,
+                  "g": 0.0,
+                  "b": 0.0,
+                  "a": 1.0
+                 }
+                }
+               ],
+               "strokeWeight": 1.0,
+               "strokeAlign": "OUTSIDE",
+               "style": {
+                "fontFamily": "Inter",
+                "fontPostScriptName": "Inter-Bold",
+                "fontStyle": "Bold",
+                "fontWeight": 700,
+                "textAutoResize": "WIDTH_AND_HEIGHT",
+                "fontSize": 18.0,
+                "textAlignHorizontal": "LEFT",
+                "textAlignVertical": "TOP",
+                "letterSpacing": 0.0,
+                "lineHeightPx": 21.784090042114258,
+                "lineHeightPercent": 100.0,
+                "lineHeightUnit": "INTRINSIC_%"
+               },
+               "characters": "Личные данные"
+              },
+              {
+               "id": "1148:5055",
+               "name": "Text",
+               "type": "FRAME",
+               "absoluteBoundingBox": {
+                "x": 5134.0,
+                "y": 19475.8984375,
+                "width": 114.0,
+                "height": 17.0
+               },
+               "layoutMode": "VERTICAL",
+               "layoutWrap": "NO_WRAP",
+               "layoutSizingHorizontal": "HUG",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 0.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "strokeWeight": 1.0,
+               "strokeAlign": "INSIDE",
+               "clipsContent": false
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "id": "1161:8495",
+           "name": "Fields",
+           "type": "FRAME",
+           "absoluteBoundingBox": {
+            "x": 4981.0,
+            "y": 19511.3984375,
+            "width": 1576.0,
+            "height": 372.0
+           },
+           "layoutMode": "VERTICAL",
+           "itemSpacing": 12.0,
+           "counterAxisSizingMode": "FIXED",
+           "layoutWrap": "NO_WRAP",
+           "layoutSizingHorizontal": "FILL",
+           "layoutSizingVertical": "HUG",
+           "layoutGrow": 0.0,
+           "constraints": {
+            "vertical": "TOP",
+            "horizontal": "LEFT"
+           },
+           "strokeWeight": 1.0,
+           "strokeAlign": "INSIDE",
+           "clipsContent": false,
+           "children": [
+            {
+             "id": "1151:8173",
+             "name": "Container",
+             "type": "FRAME",
+             "absoluteBoundingBox": {
+              "x": 4981.0,
+              "y": 19511.3984375,
+              "width": 1576.0,
+              "height": 96.0
+             },
+             "layoutMode": "HORIZONTAL",
+             "itemSpacing": 12.0,
+             "paddingRight": 12.0,
+             "paddingTop": 16.0,
+             "paddingBottom": 16.0,
+             "primaryAxisAlignItems": "SPACE_BETWEEN",
+             "counterAxisAlignItems": "CENTER",
+             "primaryAxisSizingMode": "FIXED",
+             "layoutWrap": "NO_WRAP",
+             "layoutSizingHorizontal": "FILL",
+             "layoutSizingVertical": "HUG",
+             "layoutGrow": 0.0,
+             "constraints": {
+              "vertical": "TOP",
+              "horizontal": "LEFT"
+             },
+             "strokeWeight": 1.0,
+             "strokeAlign": "INSIDE",
+             "clipsContent": false,
+             "children": [
+              {
+               "id": "1159:8377",
+               "name": "Left",
+               "type": "FRAME",
+               "absoluteBoundingBox": {
+                "x": 4981.0,
+                "y": 19527.3984375,
+                "width": 177.0,
+                "height": 64.0
+               },
+               "layoutMode": "HORIZONTAL",
+               "itemSpacing": 12.0,
+               "counterAxisAlignItems": "CENTER",
+               "layoutWrap": "NO_WRAP",
+               "layoutSizingHorizontal": "HUG",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 0.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "strokeWeight": 1.0,
+               "strokeAlign": "INSIDE",
+               "clipsContent": false,
+               "children": [
+                {
+                 "id": "1151:8150",
+                 "name": "Icons/Profile 24,48px",
+                 "type": "INSTANCE",
+                 "absoluteBoundingBox": {
+                  "x": 4981.0,
+                  "y": 19527.3984375,
+                  "width": 64.0,
+                  "height": 64.0
+                 },
+                 "layoutMode": "HORIZONTAL",
+                 "primaryAxisAlignItems": "CENTER",
+                 "counterAxisAlignItems": "CENTER",
+                 "primaryAxisSizingMode": "FIXED",
+                 "counterAxisSizingMode": "FIXED",
+                 "layoutWrap": "NO_WRAP",
+                 "layoutSizingHorizontal": "FIXED",
+                 "layoutSizingVertical": "FIXED",
+                 "layoutGrow": 0.0,
+                 "constraints": {
+                  "vertical": "TOP",
+                  "horizontal": "LEFT"
+                 },
+                 "fills": [
+                  {
+                   "blendMode": "NORMAL",
+                   "type": "GRADIENT_LINEAR",
+                   "gradientHandlePositions": [
+                    {
+                     "x": 0.0,
+                     "y": 0.0
+                    },
+                    {
+                     "x": 1.0,
+                     "y": 1.0
+                    },
+                    {
+                     "x": -1.0,
+                     "y": 1.0
+                    }
+                   ],
+                   "gradientStops": [
+                    {
+                     "color": {
+                      "r": 0.3176470696926117,
+                      "g": 0.6352941393852234,
+                      "b": 1.0,
+                      "a": 1.0
+                     },
+                     "position": 0.0
+                    },
+                    {
+                     "color": {
+                      "r": 0.30980393290519714,
+                      "g": 0.2235294133424759,
+                      "b": 0.9647058844566345,
+                      "a": 1.0
+                     },
+                     "position": 1.0
+                    }
+                   ]
+                  }
+                 ],
+                 "strokeWeight": 1.6796536445617676,
+                 "strokeAlign": "INSIDE",
+                 "cornerRadius": 100.0,
+                 "effects": [
+                  {
+                   "type": "DROP_SHADOW",
+                   "visible": true,
+                   "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.10000000149011612
+                   },
+                   "blendMode": "NORMAL",
+                   "offset": {
+                    "x": 0.0,
+                    "y": 1.6796536445617676
+                   },
+                   "radius": 3.359307289123535,
+                   "spread": -1.6796536445617676,
+                   "showShadowBehindNode": false
+                  },
+                  {
+                   "type": "DROP_SHADOW",
+                   "visible": true,
+                   "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.10000000149011612
+                   },
+                   "blendMode": "NORMAL",
+                   "offset": {
+                    "x": 0.0,
+                    "y": 1.6796536445617676
+                   },
+                   "radius": 5.038960933685303,
+                   "showShadowBehindNode": false
+                  }
+                 ],
+                 "clipsContent": false,
+                 "componentId": "1151:8153",
+                 "children": [
+                  {
+                   "id": "I1151:8150;1151:8154",
+                   "name": "АИ",
+                   "type": "TEXT",
+                   "absoluteBoundingBox": {
+                    "x": 4996.5,
+                    "y": 19543.8984375,
+                    "width": 33.0,
+                    "height": 31.0
+                   },
+                   "layoutSizingHorizontal": "HUG",
+                   "layoutSizingVertical": "HUG",
+                   "layoutGrow": 0.0,
+                   "constraints": {
+                    "vertical": "TOP",
+                    "horizontal": "LEFT"
+                   },
+                   "fills": [
+                    {
+                     "blendMode": "NORMAL",
+                     "type": "SOLID",
+                     "color": {
+                      "r": 1.0,
+                      "g": 1.0,
+                      "b": 1.0,
+                      "a": 1.0
+                     },
+                     "boundVariables": {
+                      "color": {
+                       "type": "VARIABLE_ALIAS",
+                       "id": "VariableID:6fd023318d8459ebec2a0d477159280ee7a626fd/17003:78"
+                      }
+                     }
+                    }
+                   ],
+                   "strokeWeight": 1.6796536445617676,
+                   "strokeAlign": "OUTSIDE",
+                   "style": {
+                    "fontFamily": "Inter",
+                    "fontPostScriptName": null,
+                    "fontStyle": "Bold",
+                    "fontWeight": 700,
+                    "textAutoResize": "WIDTH_AND_HEIGHT",
+                    "fontSize": 22.0,
+                    "textAlignHorizontal": "CENTER",
+                    "textAlignVertical": "TOP",
+                    "letterSpacing": 0.0,
+                    "lineHeightPx": 30.2337646484375,
+                    "lineHeightPercent": 113.55404663085938,
+                    "lineHeightPercentFontSize": 137.42620849609375,
+                    "lineHeightUnit": "PIXELS"
+                   },
+                   "characters": "АИ"
+                  }
+                 ]
+                },
+                {
+                 "id": "1161:8379",
+                 "name": "Фото профиля",
+                 "type": "TEXT",
+                 "absoluteBoundingBox": {
+                  "x": 5057.0,
+                  "y": 19550.8984375,
+                  "width": 101.0,
+                  "height": 17.0
+                 },
+                 "layoutSizingHorizontal": "HUG",
+                 "layoutSizingVertical": "HUG",
+                 "layoutGrow": 0.0,
+                 "constraints": {
+                  "vertical": "TOP",
+                  "horizontal": "LEFT"
+                 },
+                 "fills": [
+                  {
+                   "blendMode": "NORMAL",
+                   "type": "SOLID",
+                   "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 1.0
+                   }
+                  }
+                 ],
+                 "strokeWeight": 1.0,
+                 "strokeAlign": "OUTSIDE",
+                 "style": {
+                  "fontFamily": "Inter",
+                  "fontPostScriptName": null,
+                  "fontStyle": "Semi Bold",
+                  "fontWeight": 600,
+                  "textAutoResize": "WIDTH_AND_HEIGHT",
+                  "fontSize": 14.0,
+                  "textAlignHorizontal": "LEFT",
+                  "textAlignVertical": "TOP",
+                  "letterSpacing": 0.0,
+                  "lineHeightPx": 16.94318199157715,
+                  "lineHeightPercent": 100.0,
+                  "lineHeightUnit": "INTRINSIC_%"
+                 },
+                 "characters": "Фото профиля"
+                }
+               ]
+              },
+              {
+               "id": "1159:8373",
+               "name": "Buttons",
+               "type": "FRAME",
+               "absoluteBoundingBox": {
+                "x": 6215.0,
+                "y": 19537.8984375,
+                "width": 330.0,
+                "height": 43.0
+               },
+               "layoutMode": "HORIZONTAL",
+               "itemSpacing": 12.0,
+               "counterAxisAlignItems": "CENTER",
+               "layoutWrap": "NO_WRAP",
+               "layoutSizingHorizontal": "HUG",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 0.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "strokeWeight": 1.0,
+               "strokeAlign": "INSIDE",
+               "clipsContent": false,
+               "children": [
+                {
+                 "id": "1159:8361",
+                 "name": "Buttons/Link button",
+                 "type": "INSTANCE",
+                 "absoluteBoundingBox": {
+                  "x": 6215.0,
+                  "y": 19537.8984375,
+                  "width": 175.0,
+                  "height": 43.0
+                 },
+                 "layoutMode": "HORIZONTAL",
+                 "itemSpacing": 12.0,
+                 "paddingLeft": 32.0,
+                 "paddingRight": 32.0,
+                 "paddingTop": 12.0,
+                 "paddingBottom": 12.0,
+                 "primaryAxisAlignItems": "CENTER",
+                 "counterAxisAlignItems": "CENTER",
+                 "layoutWrap": "NO_WRAP",
+                 "layoutSizingHorizontal": "HUG",
+                 "layoutSizingVertical": "HUG",
+                 "layoutGrow": 0.0,
+                 "constraints": {
+                  "vertical": "TOP",
+                  "horizontal": "LEFT"
+                 },
+                 "fills": [
+                  {
+                   "blendMode": "NORMAL",
+                   "type": "SOLID",
+                   "color": {
+                    "r": 1.0,
+                    "g": 1.0,
+                    "b": 1.0,
+                    "a": 1.0
+                   }
+                  }
+                 ],
+                 "strokeWeight": 1.0,
+                 "strokeAlign": "OUTSIDE",
+                 "cornerRadius": 12.0,
+                 "clipsContent": false,
+                 "componentId": "1159:8364",
+                 "children": [
+                  {
+                   "id": "I1159:8361;1159:8365",
+                   "name": "Текст",
+                   "type": "TEXT",
+                   "absoluteBoundingBox": {
+                    "x": 6247.0,
+                    "y": 19549.8984375,
+                    "width": 111.0,
+                    "height": 19.0
+                   },
+                   "layoutSizingHorizontal": "HUG",
+                   "layoutSizingVertical": "HUG",
+                   "layoutGrow": 0.0,
+                   "constraints": {
+                    "vertical": "TOP",
+                    "horizontal": "LEFT"
+                   },
+                   "fills": [
+                    {
+                     "blendMode": "NORMAL",
+                     "type": "SOLID",
+                     "color": {
+                      "r": 0.0,
+                      "g": 0.0,
+                      "b": 0.0,
+                      "a": 1.0
+                     }
+                    }
+                   ],
+                   "strokeWeight": 1.0,
+                   "strokeAlign": "OUTSIDE",
+                   "style": {
+                    "fontFamily": "Inter",
+                    "fontPostScriptName": null,
+                    "fontStyle": "Semi Bold",
+                    "fontWeight": 600,
+                    "textAutoResize": "WIDTH_AND_HEIGHT",
+                    "fontSize": 16.0,
+                    "textAlignHorizontal": "CENTER",
+                    "textAlignVertical": "TOP",
+                    "letterSpacing": 0.0,
+                    "lineHeightPx": 19.363636016845703,
+                    "lineHeightPercent": 100.0,
+                    "lineHeightUnit": "INTRINSIC_%"
+                   },
+                   "characters": "Удалить фото"
+                  }
+                 ]
+                },
+                {
+                 "id": "1151:8168",
+                 "name": "Buttons/Secondary",
+                 "type": "INSTANCE",
+                 "absoluteBoundingBox": {
+                  "x": 6402.0,
+                  "y": 19537.8984375,
+                  "width": 143.0,
+                  "height": 43.0
+                 },
+                 "layoutMode": "HORIZONTAL",
+                 "itemSpacing": 12.0,
+                 "paddingLeft": 32.0,
+                 "paddingRight": 32.0,
+                 "paddingTop": 12.0,
+                 "paddingBottom": 12.0,
+                 "primaryAxisAlignItems": "CENTER",
+                 "counterAxisAlignItems": "CENTER",
+                 "layoutWrap": "NO_WRAP",
+                 "layoutSizingHorizontal": "HUG",
+                 "layoutSizingVertical": "HUG",
+                 "layoutGrow": 0.0,
+                 "constraints": {
+                  "vertical": "TOP",
+                  "horizontal": "LEFT"
+                 },
+                 "fills": [
+                  {
+                   "blendMode": "NORMAL",
+                   "type": "SOLID",
+                   "color": {
+                    "r": 1.0,
+                    "g": 1.0,
+                    "b": 1.0,
+                    "a": 1.0
+                   }
+                  }
+                 ],
+                 "strokes": [
+                  {
+                   "blendMode": "NORMAL",
+                   "type": "SOLID",
+                   "color": {
+                    "r": 0.8509804010391235,
+                    "g": 0.8509804010391235,
+                    "b": 0.8509804010391235,
+                    "a": 1.0
+                   }
+                  }
+                 ],
+                 "strokeWeight": 1.0,
+                 "strokeAlign": "OUTSIDE",
+                 "cornerRadius": 12.0,
+                 "clipsContent": false,
+                 "componentId": "481:1084",
+                 "children": [
+                  {
+                   "id": "I1151:8168;481:1079",
+                   "name": "Текст",
+                   "type": "TEXT",
+                   "absoluteBoundingBox": {
+                    "x": 6434.0,
+                    "y": 19549.8984375,
+                    "width": 79.0,
+                    "height": 19.0
+                   },
+                   "layoutSizingHorizontal": "HUG",
+                   "layoutSizingVertical": "HUG",
+                   "layoutGrow": 0.0,
+                   "constraints": {
+                    "vertical": "TOP",
+                    "horizontal": "LEFT"
+                   },
+                   "fills": [
+                    {
+                     "blendMode": "NORMAL",
+                     "type": "SOLID",
+                     "color": {
+                      "r": 0.0,
+                      "g": 0.0,
+                      "b": 0.0,
+                      "a": 1.0
+                     }
+                    }
+                   ],
+                   "strokeWeight": 1.0,
+                   "strokeAlign": "OUTSIDE",
+                   "style": {
+                    "fontFamily": "Inter",
+                    "fontPostScriptName": null,
+                    "fontStyle": "Semi Bold",
+                    "fontWeight": 600,
+                    "textAutoResize": "WIDTH_AND_HEIGHT",
+                    "fontSize": 16.0,
+                    "textAlignHorizontal": "CENTER",
+                    "textAlignVertical": "TOP",
+                    "letterSpacing": 0.0,
+                    "lineHeightPx": 19.363636016845703,
+                    "lineHeightPercent": 100.0,
+                    "lineHeightUnit": "INTRINSIC_%"
+                   },
+                   "characters": "Изменить"
+                  }
+                 ]
+                }
+               ]
+              }
+             ]
+            },
+            {
+             "id": "1161:8397",
+             "name": "Field",
+             "type": "INSTANCE",
+             "absoluteBoundingBox": {
+              "x": 4981.0,
+              "y": 19619.3984375,
+              "width": 1576.0,
+              "height": 80.0
+             },
+             "layoutMode": "HORIZONTAL",
+             "itemSpacing": 12.0,
+             "paddingRight": 12.0,
+             "paddingTop": 16.0,
+             "primaryAxisAlignItems": "SPACE_BETWEEN",
+             "counterAxisAlignItems": "CENTER",
+             "primaryAxisSizingMode": "FIXED",
+             "layoutWrap": "NO_WRAP",
+             "layoutSizingHorizontal": "FILL",
+             "layoutSizingVertical": "HUG",
+             "layoutGrow": 0.0,
+             "constraints": {
+              "vertical": "TOP",
+              "horizontal": "LEFT"
+             },
+             "strokes": [
+              {
+               "blendMode": "NORMAL",
+               "type": "SOLID",
+               "color": {
+                "r": 0.8509804010391235,
+                "g": 0.8509804010391235,
+                "b": 0.8509804010391235,
+                "a": 1.0
+               }
+              }
+             ],
+             "strokeWeight": 1.0,
+             "strokeAlign": "INSIDE",
+             "clipsContent": false,
+             "componentId": "1161:8404",
+             "children": [
+              {
+               "id": "I1161:8397;1161:8405",
+               "name": "Headline",
+               "type": "FRAME",
+               "absoluteBoundingBox": {
+                "x": 4981.0,
+                "y": 19635.3984375,
+                "width": 1421.0,
+                "height": 64.0
+               },
+               "layoutMode": "VERTICAL",
+               "itemSpacing": 12.0,
+               "paddingTop": 8.0,
+               "paddingBottom": 8.0,
+               "primaryAxisAlignItems": "CENTER",
+               "counterAxisSizingMode": "FIXED",
+               "layoutWrap": "NO_WRAP",
+               "layoutSizingHorizontal": "FILL",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 1.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "strokeWeight": 1.0,
+               "strokeAlign": "INSIDE",
+               "clipsContent": false,
+               "children": [
+                {
+                 "id": "I1161:8397;1161:8406",
+                 "name": "Заголовок",
+                 "type": "TEXT",
+                 "absoluteBoundingBox": {
+                  "x": 4981.0,
+                  "y": 19643.3984375,
+                  "width": 30.0,
+                  "height": 17.0
+                 },
+                 "layoutSizingHorizontal": "HUG",
+                 "layoutSizingVertical": "HUG",
+                 "layoutGrow": 0.0,
+                 "constraints": {
+                  "vertical": "TOP",
+                  "horizontal": "LEFT"
+                 },
+                 "fills": [
+                  {
+                   "blendMode": "NORMAL",
+                   "type": "SOLID",
+                   "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 1.0
+                   }
+                  }
+                 ],
+                 "strokeWeight": 1.0,
+                 "strokeAlign": "OUTSIDE",
+                 "style": {
+                  "fontFamily": "Inter",
+                  "fontPostScriptName": null,
+                  "fontStyle": "Semi Bold",
+                  "fontWeight": 600,
+                  "textAutoResize": "WIDTH_AND_HEIGHT",
+                  "fontSize": 14.0,
+                  "textAlignHorizontal": "LEFT",
+                  "textAlignVertical": "TOP",
+                  "letterSpacing": 0.0,
+                  "lineHeightPx": 16.94318199157715,
+                  "lineHeightPercent": 100.0,
+                  "lineHeightUnit": "INTRINSIC_%"
+                 },
+                 "characters": "Имя"
+                },
+                {
+                 "id": "I1161:8397;1161:8407",
+                 "name": "Данные",
+                 "type": "TEXT",
+                 "absoluteBoundingBox": {
+                  "x": 4981.0,
+                  "y": 19672.3984375,
+                  "width": 92.0,
+                  "height": 19.0
+                 },
+                 "layoutSizingHorizontal": "HUG",
+                 "layoutSizingVertical": "HUG",
+                 "layoutGrow": 0.0,
+                 "constraints": {
+                  "vertical": "TOP",
+                  "horizontal": "LEFT"
+                 },
+                 "fills": [
+                  {
+                   "blendMode": "NORMAL",
+                   "type": "SOLID",
+                   "color": {
+                    "r": 0.41960784792900085,
+                    "g": 0.4470588266849518,
+                    "b": 0.501960813999176,
+                    "a": 1.0
+                   }
+                  }
+                 ],
+                 "strokeWeight": 1.0,
+                 "strokeAlign": "OUTSIDE",
+                 "style": {
+                  "fontFamily": "Inter",
+                  "fontPostScriptName": null,
+                  "fontStyle": "Regular",
+                  "fontWeight": 400,
+                  "textAutoResize": "WIDTH_AND_HEIGHT",
+                  "fontSize": 16.0,
+                  "textAlignHorizontal": "LEFT",
+                  "textAlignVertical": "TOP",
+                  "letterSpacing": 0.0,
+                  "lineHeightPx": 19.363636016845703,
+                  "lineHeightPercent": 100.0,
+                  "lineHeightUnit": "INTRINSIC_%"
+                 },
+                 "characters": "Не введено"
+                }
+               ]
+              },
+              {
+               "id": "I1161:8397;1161:8408",
+               "name": "Buttons/Secondary",
+               "type": "INSTANCE",
+               "absoluteBoundingBox": {
+                "x": 6402.0,
+                "y": 19645.8984375,
+                "width": 143.0,
+                "height": 43.0
+               },
+               "layoutMode": "HORIZONTAL",
+               "itemSpacing": 12.0,
+               "paddingLeft": 32.0,
+               "paddingRight": 32.0,
+               "paddingTop": 12.0,
+               "paddingBottom": 12.0,
+               "primaryAxisAlignItems": "CENTER",
+               "counterAxisAlignItems": "CENTER",
+               "layoutWrap": "NO_WRAP",
+               "layoutSizingHorizontal": "HUG",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 0.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "fills": [
+                {
+                 "blendMode": "NORMAL",
+                 "type": "SOLID",
+                 "color": {
+                  "r": 1.0,
+                  "g": 1.0,
+                  "b": 1.0,
+                  "a": 1.0
+                 }
+                }
+               ],
+               "strokes": [
+                {
+                 "blendMode": "NORMAL",
+                 "type": "SOLID",
+                 "color": {
+                  "r": 0.8509804010391235,
+                  "g": 0.8509804010391235,
+                  "b": 0.8509804010391235,
+                  "a": 1.0
+                 }
+                }
+               ],
+               "strokeWeight": 1.0,
+               "strokeAlign": "OUTSIDE",
+               "cornerRadius": 12.0,
+               "clipsContent": false,
+               "componentId": "481:1084",
+               "children": [
+                {
+                 "id": "I1161:8397;1161:8408;481:1079",
+                 "name": "Текст",
+                 "type": "TEXT",
+                 "absoluteBoundingBox": {
+                  "x": 6434.0,
+                  "y": 19657.8984375,
+                  "width": 79.0,
+                  "height": 19.0
+                 },
+                 "layoutSizingHorizontal": "HUG",
+                 "layoutSizingVertical": "HUG",
+                 "layoutGrow": 0.0,
+                 "constraints": {
+                  "vertical": "TOP",
+                  "horizontal": "LEFT"
+                 },
+                 "fills": [
+                  {
+                   "blendMode": "NORMAL",
+                   "type": "SOLID",
+                   "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 1.0
+                   }
+                  }
+                 ],
+                 "strokeWeight": 1.0,
+                 "strokeAlign": "OUTSIDE",
+                 "style": {
+                  "fontFamily": "Inter",
+                  "fontPostScriptName": null,
+                  "fontStyle": "Semi Bold",
+                  "fontWeight": 600,
+                  "textAutoResize": "WIDTH_AND_HEIGHT",
+                  "fontSize": 16.0,
+                  "textAlignHorizontal": "CENTER",
+                  "textAlignVertical": "TOP",
+                  "letterSpacing": 0.0,
+                  "lineHeightPx": 19.363636016845703,
+                  "lineHeightPercent": 100.0,
+                  "lineHeightUnit": "INTRINSIC_%"
+                 },
+                 "characters": "Изменить"
+                }
+               ]
+              }
+             ]
+            },
+            {
+             "id": "1161:8410",
+             "name": "Field",
+             "type": "INSTANCE",
+             "absoluteBoundingBox": {
+              "x": 4981.0,
+              "y": 19711.3984375,
+              "width": 1576.0,
+              "height": 80.0
+             },
+             "layoutMode": "HORIZONTAL",
+             "itemSpacing": 12.0,
+             "paddingRight": 12.0,
+             "paddingTop": 16.0,
+             "primaryAxisAlignItems": "SPACE_BETWEEN",
+             "counterAxisAlignItems": "CENTER",
+             "primaryAxisSizingMode": "FIXED",
+             "layoutWrap": "NO_WRAP",
+             "layoutSizingHorizontal": "FILL",
+             "layoutSizingVertical": "HUG",
+             "layoutGrow": 0.0,
+             "constraints": {
+              "vertical": "TOP",
+              "horizontal": "LEFT"
+             },
+             "strokes": [
+              {
+               "blendMode": "NORMAL",
+               "type": "SOLID",
+               "color": {
+                "r": 0.8509804010391235,
+                "g": 0.8509804010391235,
+                "b": 0.8509804010391235,
+                "a": 1.0
+               }
+              }
+             ],
+             "strokeWeight": 1.0,
+             "strokeAlign": "INSIDE",
+             "clipsContent": false,
+             "componentId": "1161:8396",
+             "children": [
+              {
+               "id": "I1161:8410;1161:8389",
+               "name": "Headline",
+               "type": "FRAME",
+               "absoluteBoundingBox": {
+                "x": 4981.0,
+                "y": 19727.3984375,
+                "width": 1564.0,
+                "height": 64.0
+               },
+               "layoutMode": "VERTICAL",
+               "itemSpacing": 12.0,
+               "paddingTop": 8.0,
+               "paddingBottom": 8.0,
+               "primaryAxisAlignItems": "CENTER",
+               "counterAxisSizingMode": "FIXED",
+               "layoutWrap": "NO_WRAP",
+               "layoutSizingHorizontal": "FILL",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 1.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "strokeWeight": 1.0,
+               "strokeAlign": "INSIDE",
+               "clipsContent": false,
+               "children": [
+                {
+                 "id": "I1161:8410;1161:8381",
+                 "name": "Заголовок",
+                 "type": "TEXT",
+                 "absoluteBoundingBox": {
+                  "x": 4981.0,
+                  "y": 19735.3984375,
+                  "width": 43.0,
+                  "height": 17.0
+                 },
+                 "layoutSizingHorizontal": "HUG",
+                 "layoutSizingVertical": "HUG",
+                 "layoutGrow": 0.0,
+                 "constraints": {
+                  "vertical": "TOP",
+                  "horizontal": "LEFT"
+                 },
+                 "fills": [
+                  {
+                   "blendMode": "NORMAL",
+                   "type": "SOLID",
+                   "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 1.0
+                   }
+                  }
+                 ],
+                 "strokeWeight": 1.0,
+                 "strokeAlign": "OUTSIDE",
+                 "style": {
+                  "fontFamily": "Inter",
+                  "fontPostScriptName": null,
+                  "fontStyle": "Semi Bold",
+                  "fontWeight": 600,
+                  "textAutoResize": "WIDTH_AND_HEIGHT",
+                  "fontSize": 14.0,
+                  "textAlignHorizontal": "LEFT",
+                  "textAlignVertical": "TOP",
+                  "letterSpacing": 0.0,
+                  "lineHeightPx": 16.94318199157715,
+                  "lineHeightPercent": 100.0,
+                  "lineHeightUnit": "INTRINSIC_%"
+                 },
+                 "characters": "Почта"
+                },
+                {
+                 "id": "I1161:8410;1161:8385",
+                 "name": "Данные",
+                 "type": "TEXT",
+                 "absoluteBoundingBox": {
+                  "x": 4981.0,
+                  "y": 19764.3984375,
+                  "width": 174.0,
+                  "height": 19.0
+                 },
+                 "layoutSizingHorizontal": "HUG",
+                 "layoutSizingVertical": "HUG",
+                 "layoutGrow": 0.0,
+                 "constraints": {
+                  "vertical": "TOP",
+                  "horizontal": "LEFT"
+                 },
+                 "fills": [
+                  {
+                   "blendMode": "NORMAL",
+                   "type": "SOLID",
+                   "color": {
+                    "r": 0.41960784792900085,
+                    "g": 0.4470588266849518,
+                    "b": 0.501960813999176,
+                    "a": 1.0
+                   }
+                  }
+                 ],
+                 "strokeWeight": 1.0,
+                 "strokeAlign": "OUTSIDE",
+                 "style": {
+                  "fontFamily": "Inter",
+                  "fontPostScriptName": null,
+                  "fontStyle": "Regular",
+                  "fontWeight": 400,
+                  "textAutoResize": "WIDTH_AND_HEIGHT",
+                  "fontSize": 16.0,
+                  "textAlignHorizontal": "LEFT",
+                  "textAlignVertical": "TOP",
+                  "letterSpacing": 0.0,
+                  "lineHeightPx": 19.363636016845703,
+                  "lineHeightPercent": 100.0,
+                  "lineHeightUnit": "INTRINSIC_%"
+                 },
+                 "characters": "emailname@gmail.com"
+                }
+               ]
+              }
+             ]
+            },
+            {
+             "id": "1161:8420",
+             "name": "Field",
+             "type": "INSTANCE",
+             "absoluteBoundingBox": {
+              "x": 4981.0,
+              "y": 19803.3984375,
+              "width": 1576.0,
+              "height": 80.0
+             },
+             "layoutMode": "HORIZONTAL",
+             "itemSpacing": 12.0,
+             "paddingRight": 12.0,
+             "paddingTop": 16.0,
+             "primaryAxisAlignItems": "SPACE_BETWEEN",
+             "counterAxisAlignItems": "CENTER",
+             "primaryAxisSizingMode": "FIXED",
+             "layoutWrap": "NO_WRAP",
+             "layoutSizingHorizontal": "FILL",
+             "layoutSizingVertical": "HUG",
+             "layoutGrow": 0.0,
+             "constraints": {
+              "vertical": "TOP",
+              "horizontal": "LEFT"
+             },
+             "strokes": [
+              {
+               "blendMode": "NORMAL",
+               "type": "SOLID",
+               "color": {
+                "r": 0.8509804010391235,
+                "g": 0.8509804010391235,
+                "b": 0.8509804010391235,
+                "a": 1.0
+               }
+              }
+             ],
+             "strokeWeight": 1.0,
+             "strokeAlign": "INSIDE",
+             "clipsContent": false,
+             "componentId": "1161:8396",
+             "children": [
+              {
+               "id": "I1161:8420;1161:8389",
+               "name": "Headline",
+               "type": "FRAME",
+               "absoluteBoundingBox": {
+                "x": 4981.0,
+                "y": 19819.3984375,
+                "width": 1564.0,
+                "height": 64.0
+               },
+               "layoutMode": "VERTICAL",
+               "itemSpacing": 12.0,
+               "paddingTop": 8.0,
+               "paddingBottom": 8.0,
+               "primaryAxisAlignItems": "CENTER",
+               "counterAxisSizingMode": "FIXED",
+               "layoutWrap": "NO_WRAP",
+               "layoutSizingHorizontal": "FILL",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 1.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "strokeWeight": 1.0,
+               "strokeAlign": "INSIDE",
+               "clipsContent": false,
+               "children": [
+                {
+                 "id": "I1161:8420;1161:8381",
+                 "name": "Заголовок",
+                 "type": "TEXT",
+                 "absoluteBoundingBox": {
+                  "x": 4981.0,
+                  "y": 19827.3984375,
+                  "width": 70.0,
+                  "height": 17.0
+                 },
+                 "layoutSizingHorizontal": "HUG",
+                 "layoutSizingVertical": "HUG",
+                 "layoutGrow": 0.0,
+                 "constraints": {
+                  "vertical": "TOP",
+                  "horizontal": "LEFT"
+                 },
+                 "fills": [
+                  {
+                   "blendMode": "NORMAL",
+                   "type": "SOLID",
+                   "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 1.0
+                   }
+                  }
+                 ],
+                 "strokeWeight": 1.0,
+                 "strokeAlign": "OUTSIDE",
+                 "style": {
+                  "fontFamily": "Inter",
+                  "fontPostScriptName": null,
+                  "fontStyle": "Semi Bold",
+                  "fontWeight": 600,
+                  "textAutoResize": "WIDTH_AND_HEIGHT",
+                  "fontSize": 14.0,
+                  "textAlignHorizontal": "LEFT",
+                  "textAlignVertical": "TOP",
+                  "letterSpacing": 0.0,
+                  "lineHeightPx": 16.94318199157715,
+                  "lineHeightPercent": 100.0,
+                  "lineHeightUnit": "INTRINSIC_%"
+                 },
+                 "characters": "Подписка"
+                },
+                {
+                 "id": "I1161:8420;1161:8385",
+                 "name": "Данные",
+                 "type": "TEXT",
+                 "absoluteBoundingBox": {
+                  "x": 4981.0,
+                  "y": 19856.3984375,
+                  "width": 120.0,
+                  "height": 19.0
+                 },
+                 "layoutSizingHorizontal": "HUG",
+                 "layoutSizingVertical": "HUG",
+                 "layoutGrow": 0.0,
+                 "constraints": {
+                  "vertical": "TOP",
+                  "horizontal": "LEFT"
+                 },
+                 "fills": [
+                  {
+                   "blendMode": "NORMAL",
+                   "type": "SOLID",
+                   "color": {
+                    "r": 0.41960784792900085,
+                    "g": 0.4470588266849518,
+                    "b": 0.501960813999176,
+                    "a": 1.0
+                   }
+                  }
+                 ],
+                 "strokeWeight": 1.0,
+                 "strokeAlign": "OUTSIDE",
+                 "style": {
+                  "fontFamily": "Inter",
+                  "fontPostScriptName": null,
+                  "fontStyle": "Regular",
+                  "fontWeight": 400,
+                  "textAutoResize": "WIDTH_AND_HEIGHT",
+                  "fontSize": 16.0,
+                  "textAlignHorizontal": "LEFT",
+                  "textAlignVertical": "TOP",
+                  "letterSpacing": 0.0,
+                  "lineHeightPx": 19.363636016845703,
+                  "lineHeightPercent": 100.0,
+                  "lineHeightUnit": "INTRINSIC_%"
+                 },
+                 "characters": "Базовый тариф"
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "id": "1161:8496",
+         "name": "Container",
+         "type": "FRAME",
+         "absoluteBoundingBox": {
+          "x": 4949.0,
+          "y": 19939.3984375,
+          "width": 1640.0,
+          "height": 220.0
+         },
+         "layoutMode": "VERTICAL",
+         "itemSpacing": 12.0,
+         "paddingLeft": 32.0,
+         "paddingRight": 32.0,
+         "paddingTop": 32.0,
+         "paddingBottom": 32.0,
+         "counterAxisSizingMode": "FIXED",
+         "layoutWrap": "NO_WRAP",
+         "layoutSizingHorizontal": "FILL",
+         "layoutSizingVertical": "HUG",
+         "layoutGrow": 0.0,
+         "constraints": {
+          "vertical": "TOP",
+          "horizontal": "LEFT"
+         },
+         "fills": [
+          {
+           "blendMode": "NORMAL",
+           "type": "SOLID",
+           "color": {
+            "r": 1.0,
+            "g": 1.0,
+            "b": 1.0,
+            "a": 1.0
+           }
+          }
+         ],
+         "strokes": [
+          {
+           "blendMode": "NORMAL",
+           "type": "SOLID",
+           "color": {
+            "r": 0.8509804010391235,
+            "g": 0.8509804010391235,
+            "b": 0.8509804010391235,
+            "a": 1.0
+           }
+          }
+         ],
+         "strokeWeight": 1.0,
+         "strokeAlign": "OUTSIDE",
+         "cornerRadius": 12.0,
+         "clipsContent": false,
+         "children": [
+          {
+           "id": "1161:8497",
+           "name": "Text",
+           "type": "FRAME",
+           "absoluteBoundingBox": {
+            "x": 4981.0,
+            "y": 19971.3984375,
+            "width": 1576.0,
+            "height": 79.0
+           },
+           "layoutMode": "VERTICAL",
+           "itemSpacing": 8.0,
+           "paddingTop": 16.0,
+           "paddingBottom": 16.0,
+           "primaryAxisAlignItems": "CENTER",
+           "counterAxisSizingMode": "FIXED",
+           "layoutWrap": "NO_WRAP",
+           "layoutSizingHorizontal": "FILL",
+           "layoutSizingVertical": "HUG",
+           "layoutGrow": 0.0,
+           "constraints": {
+            "vertical": "TOP",
+            "horizontal": "LEFT"
+           },
+           "strokeWeight": 1.0,
+           "strokeAlign": "INSIDE",
+           "clipsContent": false,
+           "children": [
+            {
+             "id": "1161:8499",
+             "name": "Внешний вид",
+             "type": "TEXT",
+             "absoluteBoundingBox": {
+              "x": 4981.0,
+              "y": 19987.3984375,
+              "width": 120.0,
+              "height": 22.0
+             },
+             "layoutSizingHorizontal": "HUG",
+             "layoutSizingVertical": "HUG",
+             "layoutGrow": 0.0,
+             "constraints": {
+              "vertical": "TOP",
+              "horizontal": "LEFT"
+             },
+             "fills": [
+              {
+               "blendMode": "NORMAL",
+               "type": "SOLID",
+               "color": {
+                "r": 0.0,
+                "g": 0.0,
+                "b": 0.0,
+                "a": 1.0
+               }
+              }
+             ],
+             "strokeWeight": 1.0,
+             "strokeAlign": "OUTSIDE",
+             "style": {
+              "fontFamily": "Inter",
+              "fontPostScriptName": "Inter-Bold",
+              "fontStyle": "Bold",
+              "fontWeight": 700,
+              "textAutoResize": "WIDTH_AND_HEIGHT",
+              "fontSize": 18.0,
+              "textAlignHorizontal": "LEFT",
+              "textAlignVertical": "TOP",
+              "letterSpacing": 0.0,
+              "lineHeightPx": 21.784090042114258,
+              "lineHeightPercent": 100.0,
+              "lineHeightUnit": "INTRINSIC_%"
+             },
+             "characters": "Внешний вид"
+            },
+            {
+             "id": "1161:8865",
+             "name": "Оформление интерфейса на этом устройстве",
+             "type": "TEXT",
+             "absoluteBoundingBox": {
+              "x": 4981.0,
+              "y": 20017.3984375,
+              "width": 314.0,
+              "height": 17.0
+             },
+             "layoutSizingHorizontal": "HUG",
+             "layoutSizingVertical": "HUG",
+             "layoutGrow": 0.0,
+             "constraints": {
+              "vertical": "TOP",
+              "horizontal": "LEFT"
+             },
+             "fills": [
+              {
+               "blendMode": "NORMAL",
+               "type": "SOLID",
+               "color": {
+                "r": 0.41960784792900085,
+                "g": 0.4470588266849518,
+                "b": 0.501960813999176,
+                "a": 1.0
+               }
+              }
+             ],
+             "strokeWeight": 1.0,
+             "strokeAlign": "OUTSIDE",
+             "style": {
+              "fontFamily": "Inter",
+              "fontPostScriptName": null,
+              "fontStyle": "Regular",
+              "fontWeight": 400,
+              "textAutoResize": "WIDTH_AND_HEIGHT",
+              "fontSize": 14.0,
+              "textAlignHorizontal": "LEFT",
+              "textAlignVertical": "TOP",
+              "letterSpacing": 0.0,
+              "lineHeightPx": 16.94318199157715,
+              "lineHeightPercent": 100.0,
+              "lineHeightUnit": "INTRINSIC_%"
+             },
+             "characters": "Оформление интерфейса на этом устройстве"
+            }
+           ]
+          },
+          {
+           "id": "1161:8509",
+           "name": "Field",
+           "type": "INSTANCE",
+           "absoluteBoundingBox": {
+            "x": 4981.0,
+            "y": 20062.3984375,
+            "width": 1576.0,
+            "height": 65.0
+           },
+           "layoutMode": "HORIZONTAL",
+           "itemSpacing": 12.0,
+           "paddingRight": 12.0,
+           "paddingTop": 16.0,
+           "primaryAxisAlignItems": "SPACE_BETWEEN",
+           "counterAxisAlignItems": "CENTER",
+           "primaryAxisSizingMode": "FIXED",
+           "layoutWrap": "NO_WRAP",
+           "layoutSizingHorizontal": "FILL",
+           "layoutSizingVertical": "HUG",
+           "layoutGrow": 0.0,
+           "constraints": {
+            "vertical": "TOP",
+            "horizontal": "LEFT"
+           },
+           "strokes": [
+            {
+             "blendMode": "NORMAL",
+             "type": "SOLID",
+             "color": {
+              "r": 0.8509804010391235,
+              "g": 0.8509804010391235,
+              "b": 0.8509804010391235,
+              "a": 1.0
+             }
+            }
+           ],
+           "strokeWeight": 1.0,
+           "strokeAlign": "INSIDE",
+           "clipsContent": false,
+           "componentId": "1161:8528",
+           "children": [
+            {
+             "id": "I1161:8509;1161:8529",
+             "name": "Headline",
+             "type": "FRAME",
+             "absoluteBoundingBox": {
+              "x": 4981.0,
+              "y": 20086.3984375,
+              "width": 1274.0,
+              "height": 33.0
+             },
+             "layoutMode": "VERTICAL",
+             "itemSpacing": 12.0,
+             "paddingTop": 8.0,
+             "paddingBottom": 8.0,
+             "primaryAxisAlignItems": "CENTER",
+             "counterAxisSizingMode": "FIXED",
+             "layoutWrap": "NO_WRAP",
+             "layoutSizingHorizontal": "FILL",
+             "layoutSizingVertical": "HUG",
+             "layoutGrow": 1.0,
+             "constraints": {
+              "vertical": "TOP",
+              "horizontal": "LEFT"
+             },
+             "strokeWeight": 1.0,
+             "strokeAlign": "INSIDE",
+             "clipsContent": false,
+             "children": [
+              {
+               "id": "I1161:8509;1161:8530",
+               "name": "Заголовок",
+               "type": "TEXT",
+               "absoluteBoundingBox": {
+                "x": 4981.0,
+                "y": 20094.3984375,
+                "width": 128.0,
+                "height": 17.0
+               },
+               "layoutSizingHorizontal": "HUG",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 0.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "fills": [
+                {
+                 "blendMode": "NORMAL",
+                 "type": "SOLID",
+                 "color": {
+                  "r": 0.0,
+                  "g": 0.0,
+                  "b": 0.0,
+                  "a": 1.0
+                 }
+                }
+               ],
+               "strokeWeight": 1.0,
+               "strokeAlign": "OUTSIDE",
+               "style": {
+                "fontFamily": "Inter",
+                "fontPostScriptName": null,
+                "fontStyle": "Semi Bold",
+                "fontWeight": 600,
+                "textAutoResize": "WIDTH_AND_HEIGHT",
+                "fontSize": 14.0,
+                "textAlignHorizontal": "LEFT",
+                "textAlignVertical": "TOP",
+                "letterSpacing": 0.0,
+                "lineHeightPx": 16.94318199157715,
+                "lineHeightPercent": 100.0,
+                "lineHeightUnit": "INTRINSIC_%"
+               },
+               "characters": "Тема оформления"
+              }
+             ]
+            },
+            {
+             "id": "I1161:8509;1161:8650",
+             "name": "Tabs/Tab three-segment",
+             "type": "INSTANCE",
+             "absoluteBoundingBox": {
+              "x": 6255.0,
+              "y": 20078.3984375,
+              "width": 290.0,
+              "height": 49.0
+             },
+             "layoutMode": "HORIZONTAL",
+             "paddingLeft": 4.0,
+             "paddingRight": 4.0,
+             "paddingTop": 4.0,
+             "paddingBottom": 4.0,
+             "counterAxisAlignItems": "CENTER",
+             "layoutWrap": "NO_WRAP",
+             "layoutSizingHorizontal": "HUG",
+             "layoutSizingVertical": "HUG",
+             "layoutGrow": 0.0,
+             "constraints": {
+              "vertical": "TOP",
+              "horizontal": "LEFT"
+             },
+             "fills": [
+              {
+               "blendMode": "NORMAL",
+               "type": "SOLID",
+               "color": {
+                "r": 0.9607843160629272,
+                "g": 0.9607843160629272,
+                "b": 0.9686274528503418,
+                "a": 1.0
+               }
+              }
+             ],
+             "strokes": [
+              {
+               "blendMode": "NORMAL",
+               "type": "SOLID",
+               "color": {
+                "r": 0.8509804010391235,
+                "g": 0.8509804010391235,
+                "b": 0.8509804010391235,
+                "a": 1.0
+               }
+              }
+             ],
+             "strokeWeight": 1.0,
+             "strokeAlign": "INSIDE",
+             "cornerRadius": 12.0,
+             "clipsContent": false,
+             "componentId": "1161:8649",
+             "children": [
+              {
+               "id": "I1161:8509;1161:8650;1161:8642",
+               "name": "menubar item",
+               "type": "INSTANCE",
+               "absoluteBoundingBox": {
+                "x": 6259.0,
+                "y": 20082.3984375,
+                "width": 109.0,
+                "height": 41.0
+               },
+               "layoutMode": "HORIZONTAL",
+               "paddingLeft": 16.0,
+               "paddingRight": 16.0,
+               "paddingTop": 12.0,
+               "paddingBottom": 12.0,
+               "counterAxisAlignItems": "CENTER",
+               "layoutWrap": "NO_WRAP",
+               "layoutSizingHorizontal": "HUG",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 0.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "fills": [
+                {
+                 "blendMode": "NORMAL",
+                 "type": "SOLID",
+                 "color": {
+                  "r": 0.9607843160629272,
+                  "g": 0.9607843160629272,
+                  "b": 0.9686274528503418,
+                  "a": 1.0
+                 }
+                }
+               ],
+               "strokeWeight": 1.0,
+               "strokeAlign": "INSIDE",
+               "cornerRadius": 12.0,
+               "clipsContent": false,
+               "componentId": "1161:8535",
+               "children": [
+                {
+                 "id": "I1161:8509;1161:8650;1161:8642;8:303",
+                 "name": "File",
+                 "type": "TEXT",
+                 "absoluteBoundingBox": {
+                  "x": 6275.0,
+                  "y": 20094.3984375,
+                  "width": 77.0,
+                  "height": 17.0
+                 },
+                 "layoutSizingHorizontal": "HUG",
+                 "layoutSizingVertical": "HUG",
+                 "layoutGrow": 0.0,
+                 "constraints": {
+                  "vertical": "TOP",
+                  "horizontal": "LEFT"
+                 },
+                 "fills": [
+                  {
+                   "blendMode": "NORMAL",
+                   "type": "SOLID",
+                   "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 1.0
+                   }
+                  }
+                 ],
+                 "strokeWeight": 1.0,
+                 "strokeAlign": "OUTSIDE",
+                 "style": {
+                  "fontFamily": "Inter",
+                  "fontPostScriptName": null,
+                  "fontStyle": "Medium",
+                  "fontWeight": 500,
+                  "textAutoResize": "WIDTH_AND_HEIGHT",
+                  "fontSize": 14.0,
+                  "textAlignHorizontal": "LEFT",
+                  "textAlignVertical": "TOP",
+                  "letterSpacing": 0.0,
+                  "lineHeightPx": 16.94318199157715,
+                  "lineHeightPercent": 100.0,
+                  "lineHeightUnit": "INTRINSIC_%"
+                 },
+                 "characters": "Системная"
+                }
+               ]
+              },
+              {
+               "id": "I1161:8509;1161:8650;1161:8643",
+               "name": "menubar item",
+               "type": "INSTANCE",
+               "absoluteBoundingBox": {
+                "x": 6368.0,
+                "y": 20082.3984375,
+                "width": 90.0,
+                "height": 41.0
+               },
+               "layoutMode": "HORIZONTAL",
+               "paddingLeft": 16.0,
+               "paddingRight": 16.0,
+               "paddingTop": 12.0,
+               "paddingBottom": 12.0,
+               "counterAxisAlignItems": "CENTER",
+               "layoutWrap": "NO_WRAP",
+               "layoutSizingHorizontal": "HUG",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 0.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "fills": [
+                {
+                 "blendMode": "NORMAL",
+                 "type": "SOLID",
+                 "color": {
+                  "r": 1.0,
+                  "g": 1.0,
+                  "b": 1.0,
+                  "a": 1.0
+                 }
+                }
+               ],
+               "strokeWeight": 1.0,
+               "strokeAlign": "INSIDE",
+               "cornerRadius": 12.0,
+               "clipsContent": false,
+               "componentId": "1161:8537",
+               "children": [
+                {
+                 "id": "I1161:8509;1161:8650;1161:8643;8:306",
+                 "name": "Edit",
+                 "type": "TEXT",
+                 "absoluteBoundingBox": {
+                  "x": 6384.0,
+                  "y": 20094.3984375,
+                  "width": 58.0,
+                  "height": 17.0
+                 },
+                 "layoutSizingHorizontal": "HUG",
+                 "layoutSizingVertical": "HUG",
+                 "layoutGrow": 0.0,
+                 "constraints": {
+                  "vertical": "TOP",
+                  "horizontal": "LEFT"
+                 },
+                 "fills": [
+                  {
+                   "blendMode": "NORMAL",
+                   "type": "SOLID",
+                   "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 1.0
+                   }
+                  }
+                 ],
+                 "strokeWeight": 1.0,
+                 "strokeAlign": "OUTSIDE",
+                 "style": {
+                  "fontFamily": "Inter",
+                  "fontPostScriptName": null,
+                  "fontStyle": "Medium",
+                  "fontWeight": 500,
+                  "textAutoResize": "WIDTH_AND_HEIGHT",
+                  "fontSize": 14.0,
+                  "textAlignHorizontal": "LEFT",
+                  "textAlignVertical": "TOP",
+                  "letterSpacing": 0.0,
+                  "lineHeightPx": 16.94318199157715,
+                  "lineHeightPercent": 100.0,
+                  "lineHeightUnit": "INTRINSIC_%"
+                 },
+                 "characters": "Светлая"
+                }
+               ]
+              },
+              {
+               "id": "I1161:8509;1161:8650;1161:8644",
+               "name": "menubar item",
+               "type": "INSTANCE",
+               "absoluteBoundingBox": {
+                "x": 6458.0,
+                "y": 20082.3984375,
+                "width": 83.0,
+                "height": 41.0
+               },
+               "layoutMode": "HORIZONTAL",
+               "paddingLeft": 16.0,
+               "paddingRight": 16.0,
+               "paddingTop": 12.0,
+               "paddingBottom": 12.0,
+               "counterAxisAlignItems": "CENTER",
+               "layoutWrap": "NO_WRAP",
+               "layoutSizingHorizontal": "HUG",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 0.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "fills": [
+                {
+                 "blendMode": "NORMAL",
+                 "type": "SOLID",
+                 "color": {
+                  "r": 0.9607843160629272,
+                  "g": 0.9607843160629272,
+                  "b": 0.9686274528503418,
+                  "a": 1.0
+                 }
+                }
+               ],
+               "strokeWeight": 1.0,
+               "strokeAlign": "INSIDE",
+               "cornerRadius": 12.0,
+               "clipsContent": false,
+               "componentId": "1161:8535",
+               "children": [
+                {
+                 "id": "I1161:8509;1161:8650;1161:8644;8:303",
+                 "name": "File",
+                 "type": "TEXT",
+                 "absoluteBoundingBox": {
+                  "x": 6474.0,
+                  "y": 20094.3984375,
+                  "width": 51.0,
+                  "height": 17.0
+                 },
+                 "layoutSizingHorizontal": "HUG",
+                 "layoutSizingVertical": "HUG",
+                 "layoutGrow": 0.0,
+                 "constraints": {
+                  "vertical": "TOP",
+                  "horizontal": "LEFT"
+                 },
+                 "fills": [
+                  {
+                   "blendMode": "NORMAL",
+                   "type": "SOLID",
+                   "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 1.0
+                   }
+                  }
+                 ],
+                 "strokeWeight": 1.0,
+                 "strokeAlign": "OUTSIDE",
+                 "style": {
+                  "fontFamily": "Inter",
+                  "fontPostScriptName": null,
+                  "fontStyle": "Medium",
+                  "fontWeight": 500,
+                  "textAutoResize": "WIDTH_AND_HEIGHT",
+                  "fontSize": 14.0,
+                  "textAlignHorizontal": "LEFT",
+                  "textAlignVertical": "TOP",
+                  "letterSpacing": 0.0,
+                  "lineHeightPx": 16.94318199157715,
+                  "lineHeightPercent": 100.0,
+                  "lineHeightUnit": "INTRINSIC_%"
+                 },
+                 "characters": "Темная"
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "id": "1161:8877",
+         "name": "Container",
+         "type": "FRAME",
+         "absoluteBoundingBox": {
+          "x": 4949.0,
+          "y": 20183.3984375,
+          "width": 1640.0,
+          "height": 306.0
+         },
+         "layoutMode": "VERTICAL",
+         "itemSpacing": 12.0,
+         "paddingLeft": 32.0,
+         "paddingRight": 32.0,
+         "paddingTop": 32.0,
+         "paddingBottom": 32.0,
+         "counterAxisSizingMode": "FIXED",
+         "layoutWrap": "NO_WRAP",
+         "layoutSizingHorizontal": "FILL",
+         "layoutSizingVertical": "HUG",
+         "layoutGrow": 0.0,
+         "constraints": {
+          "vertical": "TOP",
+          "horizontal": "LEFT"
+         },
+         "fills": [
+          {
+           "blendMode": "NORMAL",
+           "type": "SOLID",
+           "color": {
+            "r": 1.0,
+            "g": 1.0,
+            "b": 1.0,
+            "a": 1.0
+           }
+          }
+         ],
+         "strokes": [
+          {
+           "blendMode": "NORMAL",
+           "type": "SOLID",
+           "color": {
+            "r": 0.8509804010391235,
+            "g": 0.8509804010391235,
+            "b": 0.8509804010391235,
+            "a": 1.0
+           }
+          }
+         ],
+         "strokeWeight": 1.0,
+         "strokeAlign": "OUTSIDE",
+         "cornerRadius": 12.0,
+         "clipsContent": false,
+         "children": [
+          {
+           "id": "1161:8878",
+           "name": "Text",
+           "type": "FRAME",
+           "absoluteBoundingBox": {
+            "x": 4981.0,
+            "y": 20215.3984375,
+            "width": 1576.0,
+            "height": 79.0
+           },
+           "layoutMode": "VERTICAL",
+           "itemSpacing": 8.0,
+           "paddingTop": 16.0,
+           "paddingBottom": 16.0,
+           "primaryAxisAlignItems": "CENTER",
+           "counterAxisSizingMode": "FIXED",
+           "layoutWrap": "NO_WRAP",
+           "layoutSizingHorizontal": "FILL",
+           "layoutSizingVertical": "HUG",
+           "layoutGrow": 0.0,
+           "constraints": {
+            "vertical": "TOP",
+            "horizontal": "LEFT"
+           },
+           "strokeWeight": 1.0,
+           "strokeAlign": "INSIDE",
+           "clipsContent": false,
+           "children": [
+            {
+             "id": "1161:8879",
+             "name": "Аккаунт",
+             "type": "TEXT",
+             "absoluteBoundingBox": {
+              "x": 4981.0,
+              "y": 20231.3984375,
+              "width": 76.0,
+              "height": 22.0
+             },
+             "layoutSizingHorizontal": "HUG",
+             "layoutSizingVertical": "HUG",
+             "layoutGrow": 0.0,
+             "constraints": {
+              "vertical": "TOP",
+              "horizontal": "LEFT"
+             },
+             "fills": [
+              {
+               "blendMode": "NORMAL",
+               "type": "SOLID",
+               "color": {
+                "r": 0.0,
+                "g": 0.0,
+                "b": 0.0,
+                "a": 1.0
+               }
+              }
+             ],
+             "strokeWeight": 1.0,
+             "strokeAlign": "OUTSIDE",
+             "style": {
+              "fontFamily": "Inter",
+              "fontPostScriptName": "Inter-Bold",
+              "fontStyle": "Bold",
+              "fontWeight": 700,
+              "textAutoResize": "WIDTH_AND_HEIGHT",
+              "fontSize": 18.0,
+              "textAlignHorizontal": "LEFT",
+              "textAlignVertical": "TOP",
+              "letterSpacing": 0.0,
+              "lineHeightPx": 21.784090042114258,
+              "lineHeightPercent": 100.0,
+              "lineHeightUnit": "INTRINSIC_%"
+             },
+             "characters": "Аккаунт"
+            },
+            {
+             "id": "1161:8880",
+             "name": "Выход из системы и управление данными",
+             "type": "TEXT",
+             "absoluteBoundingBox": {
+              "x": 4981.0,
+              "y": 20261.3984375,
+              "width": 291.0,
+              "height": 17.0
+             },
+             "layoutSizingHorizontal": "HUG",
+             "layoutSizingVertical": "HUG",
+             "layoutGrow": 0.0,
+             "constraints": {
+              "vertical": "TOP",
+              "horizontal": "LEFT"
+             },
+             "fills": [
+              {
+               "blendMode": "NORMAL",
+               "type": "SOLID",
+               "color": {
+                "r": 0.41960784792900085,
+                "g": 0.4470588266849518,
+                "b": 0.501960813999176,
+                "a": 1.0
+               }
+              }
+             ],
+             "strokeWeight": 1.0,
+             "strokeAlign": "OUTSIDE",
+             "style": {
+              "fontFamily": "Inter",
+              "fontPostScriptName": null,
+              "fontStyle": "Regular",
+              "fontWeight": 400,
+              "textAutoResize": "WIDTH_AND_HEIGHT",
+              "fontSize": 14.0,
+              "textAlignHorizontal": "LEFT",
+              "textAlignVertical": "TOP",
+              "letterSpacing": 0.0,
+              "lineHeightPx": 16.94318199157715,
+              "lineHeightPercent": 100.0,
+              "lineHeightUnit": "INTRINSIC_%"
+             },
+             "characters": "Выход из системы и управление данными"
+            }
+           ]
+          },
+          {
+           "id": "1161:8881",
+           "name": "Field",
+           "type": "INSTANCE",
+           "absoluteBoundingBox": {
+            "x": 4981.0,
+            "y": 20306.3984375,
+            "width": 1576.0,
+            "height": 80.0
+           },
+           "layoutMode": "HORIZONTAL",
+           "itemSpacing": 12.0,
+           "paddingRight": 12.0,
+           "paddingTop": 16.0,
+           "primaryAxisAlignItems": "SPACE_BETWEEN",
+           "counterAxisAlignItems": "CENTER",
+           "primaryAxisSizingMode": "FIXED",
+           "layoutWrap": "NO_WRAP",
+           "layoutSizingHorizontal": "FILL",
+           "layoutSizingVertical": "HUG",
+           "layoutGrow": 0.0,
+           "constraints": {
+            "vertical": "TOP",
+            "horizontal": "LEFT"
+           },
+           "strokes": [
+            {
+             "blendMode": "NORMAL",
+             "type": "SOLID",
+             "color": {
+              "r": 0.8509804010391235,
+              "g": 0.8509804010391235,
+              "b": 0.8509804010391235,
+              "a": 1.0
+             }
+            }
+           ],
+           "strokeWeight": 1.0,
+           "strokeAlign": "INSIDE",
+           "clipsContent": false,
+           "componentId": "1161:8404",
+           "children": [
+            {
+             "id": "I1161:8881;1161:8405",
+             "name": "Headline",
+             "type": "FRAME",
+             "absoluteBoundingBox": {
+              "x": 4981.0,
+              "y": 20322.3984375,
+              "width": 1449.0,
+              "height": 64.0
+             },
+             "layoutMode": "VERTICAL",
+             "itemSpacing": 12.0,
+             "paddingTop": 8.0,
+             "paddingBottom": 8.0,
+             "primaryAxisAlignItems": "CENTER",
+             "counterAxisSizingMode": "FIXED",
+             "layoutWrap": "NO_WRAP",
+             "layoutSizingHorizontal": "FILL",
+             "layoutSizingVertical": "HUG",
+             "layoutGrow": 1.0,
+             "constraints": {
+              "vertical": "TOP",
+              "horizontal": "LEFT"
+             },
+             "strokeWeight": 1.0,
+             "strokeAlign": "INSIDE",
+             "clipsContent": false,
+             "children": [
+              {
+               "id": "I1161:8881;1161:8406",
+               "name": "Заголовок",
+               "type": "TEXT",
+               "absoluteBoundingBox": {
+                "x": 4981.0,
+                "y": 20330.3984375,
+                "width": 123.0,
+                "height": 17.0
+               },
+               "layoutSizingHorizontal": "HUG",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 0.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "fills": [
+                {
+                 "blendMode": "NORMAL",
+                 "type": "SOLID",
+                 "color": {
+                  "r": 0.0,
+                  "g": 0.0,
+                  "b": 0.0,
+                  "a": 1.0
+                 }
+                }
+               ],
+               "strokeWeight": 1.0,
+               "strokeAlign": "OUTSIDE",
+               "style": {
+                "fontFamily": "Inter",
+                "fontPostScriptName": null,
+                "fontStyle": "Semi Bold",
+                "fontWeight": 600,
+                "textAutoResize": "WIDTH_AND_HEIGHT",
+                "fontSize": 14.0,
+                "textAlignHorizontal": "LEFT",
+                "textAlignVertical": "TOP",
+                "letterSpacing": 0.0,
+                "lineHeightPx": 16.94318199157715,
+                "lineHeightPercent": 100.0,
+                "lineHeightUnit": "INTRINSIC_%"
+               },
+               "characters": "Выйти из аккунта"
+              },
+              {
+               "id": "I1161:8881;1161:8407",
+               "name": "Данные",
+               "type": "TEXT",
+               "absoluteBoundingBox": {
+                "x": 4981.0,
+                "y": 20359.3984375,
+                "width": 297.0,
+                "height": 19.0
+               },
+               "layoutSizingHorizontal": "HUG",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 0.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "fills": [
+                {
+                 "blendMode": "NORMAL",
+                 "type": "SOLID",
+                 "color": {
+                  "r": 0.41960784792900085,
+                  "g": 0.4470588266849518,
+                  "b": 0.501960813999176,
+                  "a": 1.0
+                 }
+                }
+               ],
+               "strokeWeight": 1.0,
+               "strokeAlign": "OUTSIDE",
+               "style": {
+                "fontFamily": "Inter",
+                "fontPostScriptName": null,
+                "fontStyle": "Regular",
+                "fontWeight": 400,
+                "textAutoResize": "WIDTH_AND_HEIGHT",
+                "fontSize": 16.0,
+                "textAlignHorizontal": "LEFT",
+                "textAlignVertical": "TOP",
+                "letterSpacing": 0.0,
+                "lineHeightPx": 19.363636016845703,
+                "lineHeightPercent": 100.0,
+                "lineHeightUnit": "INTRINSIC_%"
+               },
+               "characters": "Завершить сеанс на этом устройстве"
+              }
+             ]
+            },
+            {
+             "id": "I1161:8881;1161:8408",
+             "name": "Buttons/Secondary",
+             "type": "INSTANCE",
+             "absoluteBoundingBox": {
+              "x": 6430.0,
+              "y": 20332.8984375,
+              "width": 115.0,
+              "height": 43.0
+             },
+             "layoutMode": "HORIZONTAL",
+             "itemSpacing": 12.0,
+             "paddingLeft": 32.0,
+             "paddingRight": 32.0,
+             "paddingTop": 12.0,
+             "paddingBottom": 12.0,
+             "primaryAxisAlignItems": "CENTER",
+             "counterAxisAlignItems": "CENTER",
+             "layoutWrap": "NO_WRAP",
+             "layoutSizingHorizontal": "HUG",
+             "layoutSizingVertical": "HUG",
+             "layoutGrow": 0.0,
+             "constraints": {
+              "vertical": "TOP",
+              "horizontal": "LEFT"
+             },
+             "fills": [
+              {
+               "blendMode": "NORMAL",
+               "type": "SOLID",
+               "color": {
+                "r": 1.0,
+                "g": 1.0,
+                "b": 1.0,
+                "a": 1.0
+               }
+              }
+             ],
+             "strokes": [
+              {
+               "blendMode": "NORMAL",
+               "type": "SOLID",
+               "color": {
+                "r": 0.8509804010391235,
+                "g": 0.8509804010391235,
+                "b": 0.8509804010391235,
+                "a": 1.0
+               }
+              }
+             ],
+             "strokeWeight": 1.0,
+             "strokeAlign": "OUTSIDE",
+             "cornerRadius": 12.0,
+             "clipsContent": false,
+             "componentId": "481:1084",
+             "children": [
+              {
+               "id": "I1161:8881;1161:8408;481:1079",
+               "name": "Текст",
+               "type": "TEXT",
+               "absoluteBoundingBox": {
+                "x": 6462.0,
+                "y": 20344.8984375,
+                "width": 51.0,
+                "height": 19.0
+               },
+               "layoutSizingHorizontal": "HUG",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 0.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "fills": [
+                {
+                 "blendMode": "NORMAL",
+                 "type": "SOLID",
+                 "color": {
+                  "r": 0.0,
+                  "g": 0.0,
+                  "b": 0.0,
+                  "a": 1.0
+                 }
+                }
+               ],
+               "strokeWeight": 1.0,
+               "strokeAlign": "OUTSIDE",
+               "style": {
+                "fontFamily": "Inter",
+                "fontPostScriptName": null,
+                "fontStyle": "Semi Bold",
+                "fontWeight": 600,
+                "textAutoResize": "WIDTH_AND_HEIGHT",
+                "fontSize": 16.0,
+                "textAlignHorizontal": "CENTER",
+                "textAlignVertical": "TOP",
+                "letterSpacing": 0.0,
+                "lineHeightPx": 19.363636016845703,
+                "lineHeightPercent": 100.0,
+                "lineHeightUnit": "INTRINSIC_%"
+               },
+               "characters": "Выйти"
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "id": "1161:9138",
+           "name": "Field",
+           "type": "INSTANCE",
+           "absoluteBoundingBox": {
+            "x": 4981.0,
+            "y": 20398.3984375,
+            "width": 1576.0,
+            "height": 59.0
+           },
+           "layoutMode": "HORIZONTAL",
+           "itemSpacing": 12.0,
+           "paddingRight": 12.0,
+           "paddingTop": 16.0,
+           "primaryAxisAlignItems": "SPACE_BETWEEN",
+           "counterAxisAlignItems": "CENTER",
+           "primaryAxisSizingMode": "FIXED",
+           "layoutWrap": "NO_WRAP",
+           "layoutSizingHorizontal": "FILL",
+           "layoutSizingVertical": "HUG",
+           "layoutGrow": 0.0,
+           "constraints": {
+            "vertical": "TOP",
+            "horizontal": "LEFT"
+           },
+           "strokes": [
+            {
+             "blendMode": "NORMAL",
+             "type": "SOLID",
+             "color": {
+              "r": 0.8509804010391235,
+              "g": 0.8509804010391235,
+              "b": 0.8509804010391235,
+              "a": 1.0
+             }
+            }
+           ],
+           "strokeWeight": 1.0,
+           "strokeAlign": "INSIDE",
+           "clipsContent": false,
+           "componentId": "1161:8404",
+           "children": [
+            {
+             "id": "I1161:9138;1161:8405",
+             "name": "Headline",
+             "type": "FRAME",
+             "absoluteBoundingBox": {
+              "x": 4981.0,
+              "y": 20419.3984375,
+              "width": 1365.0,
+              "height": 33.0
+             },
+             "layoutMode": "VERTICAL",
+             "itemSpacing": 12.0,
+             "paddingTop": 8.0,
+             "paddingBottom": 8.0,
+             "primaryAxisAlignItems": "CENTER",
+             "counterAxisSizingMode": "FIXED",
+             "layoutWrap": "NO_WRAP",
+             "layoutSizingHorizontal": "FILL",
+             "layoutSizingVertical": "HUG",
+             "layoutGrow": 1.0,
+             "constraints": {
+              "vertical": "TOP",
+              "horizontal": "LEFT"
+             },
+             "strokeWeight": 1.0,
+             "strokeAlign": "INSIDE",
+             "clipsContent": false,
+             "children": [
+              {
+               "id": "I1161:9138;1161:8406",
+               "name": "Заголовок",
+               "type": "TEXT",
+               "absoluteBoundingBox": {
+                "x": 4981.0,
+                "y": 20427.3984375,
+                "width": 118.0,
+                "height": 17.0
+               },
+               "layoutSizingHorizontal": "HUG",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 0.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "fills": [
+                {
+                 "blendMode": "NORMAL",
+                 "type": "SOLID",
+                 "color": {
+                  "r": 0.0,
+                  "g": 0.0,
+                  "b": 0.0,
+                  "a": 1.0
+                 }
+                }
+               ],
+               "strokeWeight": 1.0,
+               "strokeAlign": "OUTSIDE",
+               "style": {
+                "fontFamily": "Inter",
+                "fontPostScriptName": null,
+                "fontStyle": "Semi Bold",
+                "fontWeight": 600,
+                "textAutoResize": "WIDTH_AND_HEIGHT",
+                "fontSize": 14.0,
+                "textAlignHorizontal": "LEFT",
+                "textAlignVertical": "TOP",
+                "letterSpacing": 0.0,
+                "lineHeightPx": 16.94318199157715,
+                "lineHeightPercent": 100.0,
+                "lineHeightUnit": "INTRINSIC_%"
+               },
+               "characters": "Удалить аккаунт"
+              }
+             ]
+            },
+            {
+             "id": "I1161:9138;1161:8408",
+             "name": "Buttons/Secondary",
+             "type": "INSTANCE",
+             "absoluteBoundingBox": {
+              "x": 6346.0,
+              "y": 20414.3984375,
+              "width": 199.0,
+              "height": 43.0
+             },
+             "layoutMode": "HORIZONTAL",
+             "itemSpacing": 12.0,
+             "paddingLeft": 32.0,
+             "paddingRight": 32.0,
+             "paddingTop": 12.0,
+             "paddingBottom": 12.0,
+             "primaryAxisAlignItems": "CENTER",
+             "counterAxisAlignItems": "CENTER",
+             "layoutWrap": "NO_WRAP",
+             "layoutSizingHorizontal": "HUG",
+             "layoutSizingVertical": "HUG",
+             "layoutGrow": 0.0,
+             "constraints": {
+              "vertical": "TOP",
+              "horizontal": "LEFT"
+             },
+             "fills": [
+              {
+               "blendMode": "NORMAL",
+               "type": "SOLID",
+               "color": {
+                "r": 1.0,
+                "g": 1.0,
+                "b": 1.0,
+                "a": 1.0
+               }
+              }
+             ],
+             "strokes": [
+              {
+               "blendMode": "NORMAL",
+               "type": "SOLID",
+               "color": {
+                "r": 1.0,
+                "g": 0.21960784494876862,
+                "b": 0.23529411852359772,
+                "a": 1.0
+               }
+              }
+             ],
+             "strokeWeight": 1.0,
+             "strokeAlign": "OUTSIDE",
+             "cornerRadius": 12.0,
+             "clipsContent": false,
+             "componentId": "481:1084",
+             "children": [
+              {
+               "id": "I1161:9138;1161:8408;481:1079",
+               "name": "Текст",
+               "type": "TEXT",
+               "absoluteBoundingBox": {
+                "x": 6378.0,
+                "y": 20426.3984375,
+                "width": 135.0,
+                "height": 19.0
+               },
+               "layoutSizingHorizontal": "HUG",
+               "layoutSizingVertical": "HUG",
+               "layoutGrow": 0.0,
+               "constraints": {
+                "vertical": "TOP",
+                "horizontal": "LEFT"
+               },
+               "fills": [
+                {
+                 "blendMode": "NORMAL",
+                 "type": "SOLID",
+                 "color": {
+                  "r": 1.0,
+                  "g": 0.21960784494876862,
+                  "b": 0.23529411852359772,
+                  "a": 1.0
+                 }
+                }
+               ],
+               "strokeWeight": 1.0,
+               "strokeAlign": "OUTSIDE",
+               "style": {
+                "fontFamily": "Inter",
+                "fontPostScriptName": null,
+                "fontStyle": "Semi Bold",
+                "fontWeight": 600,
+                "textAutoResize": "WIDTH_AND_HEIGHT",
+                "fontSize": 16.0,
+                "textAlignHorizontal": "CENTER",
+                "textAlignVertical": "TOP",
+                "letterSpacing": 0.0,
+                "lineHeightPx": 19.363636016845703,
+                "lineHeightPercent": 100.0,
+                "lineHeightUnit": "INTRINSIC_%"
+               },
+               "characters": "Удалить аккаунт"
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,3 +1,5 @@
+import projectsScreenStyles from './ProjectsScreen.module.css'
+
 interface ProjectsPagerProps {
   page: number
   limit: number
@@ -17,7 +19,11 @@ export function ProjectsPager({ page, limit, total, onPage }: ProjectsPagerProps
   if (pageCount <= 1) return null
 
   return (
-    <nav className="projects-pager" data-testid="projects-pager" aria-label="Страницы проектов">
+    <nav
+      className={projectsScreenStyles['projects-pager']}
+      data-testid="projects-pager"
+      aria-label="Страницы проектов"
+    >
       <button
         type="button"
         data-testid="projects-page-prev"

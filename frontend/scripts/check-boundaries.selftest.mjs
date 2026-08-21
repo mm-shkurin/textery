@@ -54,18 +54,32 @@ expect({
   quotes: ['Module boundaries OK'],
 })
 
-// The session layer is the one cross-feature edge the architecture actually has. Every screen needs
-// a signed-in identity, and the alternative is per-feature token handling that disagrees with
-// itself about whether a session is still valid.
+// The session layer lives in `shared/session` — every screen needs a signed-in identity, and the
+// alternative is per-feature token handling that disagrees with itself about whether a session is
+// still valid. It is reached the way anything in `shared` is, which is the whole point of moving it
+// out of `features/auth`: no exception, no special case, just the normal inward direction.
 expect({
-  what: 'a feature importing the session layer is allowed',
+  what: 'a feature importing the session layer in shared is allowed',
   files: {
     'features/history/api/historyApi.ts':
-      "import { request } from '../../auth/api/authorizedRequest'\n",
-    'features/auth/api/authorizedRequest.ts': 'export const request = () => {}\n',
+      "import { request } from '../../../shared/session/authorizedRequest'\n",
+    'shared/session/authorizedRequest.ts': 'export const request = () => {}\n',
   },
   code: 0,
   quotes: ['Module boundaries OK'],
+})
+
+// The direction that used to need eight written exceptions. `shared/session` is the module those
+// rows said would delete them, so this case guards the deletion: reaching the session layer is
+// legal because it is shared, and a shared -> feature import is red again even for `auth`.
+expect({
+  what: 'shared importing the auth feature is not allowed, session layer or not',
+  files: {
+    'shared/api/send.ts': "import { request } from '../../features/auth/api/authorizedRequest'\n",
+    'features/auth/api/authorizedRequest.ts': 'export const request = () => {}\n',
+  },
+  code: 1,
+  quotes: ['shared/api/send.ts', 'boundaryRules.mjs'],
 })
 
 // Upside down by definition, and the reason the exception list exists rather than a blanket
@@ -121,5 +135,5 @@ reportAndExit({
   subject: 'Module boundaries',
   subjectIs: 'check-boundaries.mjs',
   script: 'scripts/check-boundaries.mjs',
-  tail: 'cross-feature import, shared and session-layer edges, unlisted shared->feature, every written exception, a re-export, and app',
+  tail: 'cross-feature import, shared and session-layer edges, shared->feature in both the unlisted and the auth shape, every written exception, a re-export, and app',
 })

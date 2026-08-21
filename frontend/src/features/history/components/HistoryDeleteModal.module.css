@@ -1,0 +1,72 @@
+.history-modal-scrim {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--history-modal-scrim);
+  z-index: 40;
+  padding: 16px;
+}
+
+.history-modal {
+  width: min(440px, 100%);
+  margin: 0;
+  padding: 24px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: var(--history-modal-shadow);
+}
+
+.history-modal-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.history-modal-text {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.history-modal-error {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--danger);
+}
+
+.history-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.history-modal-cancel,
+.history-modal-confirm {
+  padding: 9px 16px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.history-modal-cancel {
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.history-modal-confirm {
+  border: 1px solid transparent;
+  background: var(--danger);
+  color: var(--text-inverse);
+}
+
+.history-modal-cancel[aria-disabled='true'],
+.history-modal-confirm[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: default;
+}

@@ -55,3 +55,9 @@ bash.exe.stackdump
 
 # Local project documentation (not committed)
 /Test/
+.design/cache/urls-*.json
+.design/cache/file.json
+.design/cache/imagefills.json
+.design/cache/all-frames.txt
+.design/cache/coords.txt
+.design/cache/_*

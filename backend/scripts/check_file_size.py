@@ -11,11 +11,14 @@ Run from `backend/`:
     python scripts/check_file_size.py
 """
 
+import os
 import subprocess
 import sys
 from pathlib import Path
 
-MAX_LINES = 200
+# The limit itself is configuration: .claude/rules/coding-rules.md sets 200, and a
+# repository adopting this script sets its own without editing it.
+MAX_LINES = int(os.environ.get("MAX_FILE_LINES", "200"))
 
 # Alembic's own template writes these, and their length is a function of how many
 # columns a migration touches. They are excluded from the formatter and the linter

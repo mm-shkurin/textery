@@ -1,5 +1,6 @@
 from enum import Enum
 
+from shared.error_codes import ErrorCode
 from shared.exceptions import ValidationException
 
 INVALID_FORMAT_MESSAGE = "The format must be pdf or docx."
@@ -28,5 +29,5 @@ class ExportFormat(Enum):
             return cls(value)
         except ValueError as error:
             raise ValidationException(
-                error_code="INVALID_FORMAT", message=INVALID_FORMAT_MESSAGE
+                error_code=ErrorCode.INVALID_FORMAT, message=INVALID_FORMAT_MESSAGE
             ) from error

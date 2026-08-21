@@ -1,0 +1,200 @@
+/* «Мои проекты» — the chrome around the feed: header, sections, list view, loading state and
+   pager. Grid and cards live in ProjectsPage.css, the toolbar and empty state in their own
+   files. Tokens come from index.css. */
+
+/* `Main` runs x=140…1780 on a 1920 page — a 1640 column, centred. `width`, not `max-width` +
+   padding: the padding version subtracts the gutter FROM the 1640. */
+/* The shell paints the page white — frame 484:1104 is drawn on hex FFFFFF, its cards separated from
+   it by a hairline rather than by a tint. `--bg-surface`, not a literal: in dark the same
+   relationship holds on a page that is not white. */
+.projects-shell {
+  min-height: 100vh;
+  background: var(--bg-surface);
+}
+
+.projects-screen {
+  width: min(1640px, 100% - 80px);
+  margin: 0 auto;
+  padding: 0 0 48px;
+}
+
+/* «Назад» sits ABOVE the title: stacked, it reads as the way out of the screen. */
+.projects-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* 28/34 at 600 — one size and a half above the section titles under it. */
+.projects-heading {
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* 18/22 in hex 464551, 12px below the heading — the same pair as «Мой профиль». */
+.projects-subtitle {
+  margin: 12px 0 0;
+  font-size: 18px;
+  line-height: 22px;
+  color: var(--text-divider);
+}
+
+.projects-back {
+  background: none;
+  border: 1px solid var(--projects-edge);
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin-bottom: 16px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.projects-back:hover {
+  background: var(--bg-sunken);
+}
+
+/* 20/24 at 600, 40 above and 20 below — `Main`'s gap between sections, and each `Section`'s own
+   gap between its title and its cards. */
+.projects-section-title {
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 600;
+  margin: 40px 0 20px;
+}
+
+.projects-error-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.projects-error-block button {
+  padding: 6px 14px;
+  border: 1px solid var(--projects-edge);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  cursor: pointer;
+}
+
+/* The list view is the same components in one column — switching re-renders data in hand. */
+.projects-view-list {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.projects-view-list .project-card {
+  display: flex;
+  align-items: center;
+}
+
+.projects-view-list .project-card-thumb {
+  width: 96px;
+  height: 76px;
+  flex: none;
+}
+
+.projects-view-list .project-card-body {
+  padding: 10px 16px;
+}
+
+.projects-view-list .project-card-title {
+  -webkit-line-clamp: 1;
+}
+
+/* No way IN to the list view on mobile — the toggle is hidden — but a stored preference still
+   arrives as `view="list"`. The grid is what mobile shows, whatever the preference says. */
+@media (max-width: 720px) {
+  /* 20 either side — `Main`'s padding in the 360px frame. */
+  .projects-screen {
+    width: min(1640px, 100% - 40px);
+  }
+
+  /* 24/16 in the 360px frame 1141:12494 — the mobile heading is one step down from the desktop's
+     28, and the subtitle one step down from its 18. */
+  .projects-heading {
+    font-size: 24px;
+  }
+
+  .projects-subtitle {
+    font-size: 16px;
+    margin-top: 8px;
+  }
+
+  .projects-section-title {
+    margin-top: 28px;
+  }
+
+  .projects-view-list .project-card {
+    display: block;
+  }
+
+  .projects-view-list .project-card-thumb {
+    width: auto;
+    height: 128px;
+  }
+
+  .projects-view-list .project-card-body {
+    padding: 14px 16px 18px;
+  }
+
+  .projects-view-list .project-card-title {
+    -webkit-line-clamp: 2;
+  }
+}
+
+/* Cards in outline, so the wait reads as loading rather than as an empty feed. aria-hidden in
+   the markup: four empty boxes tell an assistive-technology user nothing. */
+.projects-skeleton {
+  display: grid;
+  /* Same track and gap as the real feed, or the wait lays out boxes that jump on arrival. */
+  grid-template-columns: repeat(auto-fill, 218px);
+  gap: 20px;
+  padding: 24px 0;
+}
+
+.projects-skeleton-card {
+  /* The card's own height in the frame: 128px of thumbnail plus a 124px body. */
+  height: 252px;
+  border-radius: 16px;
+  background: var(--projects-well);
+  animation: projects-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes projects-skeleton-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Motion is decoration here; a user who asked the OS to stop it gets a static placeholder. */
+@media (prefers-reduced-motion: reduce) {
+  .projects-skeleton-card {
+    animation: none;
+  }
+}
+
+.projects-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.projects-pager button {
+  padding: 8px 16px;
+  border: 1px solid var(--projects-edge);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  cursor: pointer;
+}
+
+.projects-pager button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

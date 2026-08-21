@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { Editor } from '@tiptap/react'
 import { createDocumentFromGeneration } from '../api/documentApi'
 import { describeFailure } from '../../../shared/api/send'
+import { trackEditorOpened } from '../../../shared/analytics/trackers'
 
 export const CONVERT_FAILED_MESSAGE =
   'Не удалось открыть сгенерированный документ. Проверьте соединение и обновите страницу — до этого сохранение недоступно.'
@@ -64,6 +65,11 @@ export function useGeneratedDocumentInit({
       .then((result) => {
         if (cancelled) return
         setDocumentId(result.documentId)
+        // One opening per DOCUMENT, not per render and not per effect run. The tracker is keyed
+        // on the id, so opening the same document twice in one gesture -- which this very hook's
+        // comment records StrictMode doing -- is one opening, while opening a second document
+        // later in the session is a second one.
+        trackEditorOpened(result.documentId)
         // The server's version, not a guess: `useState(1)` would ship a stale token on the first
         // save and collect a 409 blaming a concurrent save that never happened.
         setVersion(result.version)

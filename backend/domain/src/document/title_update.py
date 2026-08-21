@@ -59,6 +59,41 @@ class TitleUpdate:
     down to preserve, so the 2x2 product collapses back to the three-point sum.
     Both rules live on the TYPE rather than on one classmethod or one caller --
     see decisions/blank-title-semantics-decision.md.
+
+    **Why `__post_init__` rejects the contradiction BEFORE normalising blank.**
+    That order is load-bearing and is why those are two statements rather than
+    one expression. Normalising first folds `(value="", clears=True)` down to
+    `(value=None, clears=True)`, which is indistinguishable from a legitimate
+    `clear()` -- so a caller confusing "the user emptied the field" with "the
+    user asked for an erasure" gets its wipe honoured instead of refused.
+    Exactly one test catches the swap:
+    `TestTitleUpdateRefusesToCarryAValueAndAClearAtOnce
+    ::test_should_reject_a_flagged_blank_before_normalising_it_away`.
+
+    Blankness used to be decided by `SaveDocument._title_intent`, one caller
+    deep. Anything else that built an intent -- the rest route mapping a
+    Pydantic field, a create-with-title endpoint, an import -- could hand
+    `TitleUpdate(value="")` straight to the CAS and reopen `SET title = ''`
+    over a stored title. Here it is unreachable by construction.
+
+    A blank NORMALISES rather than raising: `of()` is reached from the raw wire
+    arm with whatever the client sent, and a save must never fail over a blank
+    title -- the content update riding along with it would be lost.
+
+    Blankness is TESTED, never applied: only an all-whitespace value is
+    replaced, so a legitimate `" Отчёт "` keeps its padding byte for byte. The
+    rejected `value.strip() or None` would have trimmed every real title as a
+    side effect.
+
+    A value plus `clears` is a CONTRADICTION, not a state, and its two readers
+    resolve it oppositely -- the db CAS writes the value and ignores the flag, a
+    clears-first reader nulls the column and discards the value. Raising is what
+    stops "which consumer read it" from deciding a user's data.
+
+    It raises a `ValidationException`, never a builtin: the rest stack registers
+    handlers for that family only, so a `ValueError` there would leave as a mute
+    `500 INTERNAL_ERROR` telling the caller nothing, on the same save whose
+    content update is already lost.
     """
 
     # No default: `TitleUpdate()` would be a second, unnamed way to build the
@@ -70,45 +105,20 @@ class TitleUpdate:
     def __post_init__(self) -> None:
         """Reject the contradiction, THEN normalise blank -- on every construction path.
 
-        That order is load-bearing and is why these are two statements rather
-        than one expression. Normalising first folds `(value="", clears=True)`
-        down to `(value=None, clears=True)`, which is indistinguishable from a
-        legitimate `clear()` -- so a caller confusing "the user emptied the
-        field" with "the user asked for an erasure" gets its wipe honoured
-        instead of refused. Exactly one test catches the swap:
-        `TestTitleUpdateRefusesToCarryAValueAndAClearAtOnce
-        ::test_should_reject_a_flagged_blank_before_normalising_it_away`.
-
-        Blankness used to be decided by `SaveDocument._title_intent`, one caller
-        deep. Anything else that built an intent -- the rest route mapping a
-        Pydantic field, a create-with-title endpoint, an import -- could hand
-        `TitleUpdate(value="")` straight to the CAS and reopen `SET title = ''`
-        over a stored title. Here it is unreachable by construction.
-
-        A blank NORMALISES rather than raising: `of()` is reached from the raw
-        wire arm with whatever the client sent, and a save must never fail over a
-        blank title -- the content update riding along with it would be lost.
-
-        Blankness is TESTED, never applied: only an all-whitespace value is
-        replaced, so a legitimate `" Отчёт "` keeps its padding byte for byte.
-        The rejected `value.strip() or None` would have trimmed every real title
-        as a side effect.
-
-        A value plus `clears` is a CONTRADICTION, not a state, and its two readers
-        resolve it oppositely -- the db CAS writes the value and ignores the flag,
-        a clears-first reader nulls the column and discards the value. Raising is
-        what stops "which consumer read it" from deciding a user's data.
-
-        It raises a `ValidationException`, never a builtin: the rest stack
-        registers handlers for that family only, so a `ValueError` here would
-        leave as a mute `500 INTERNAL_ERROR` telling the caller nothing, on the
-        same save whose content update is already lost.
+        Both rules, and why they run in that order, are set out in the class
+        docstring above.
         """
+        self._reject_a_value_carried_with_a_clear()
+        self._normalise_a_blank_value_to_preserve()
+
+    def _reject_a_value_carried_with_a_clear(self) -> None:
         if self.clears and self.value is not None:
             raise ValidationException(
                 error_code=INVALID_TITLE_INTENT_ERROR_CODE,
                 message=INVALID_TITLE_INTENT_MESSAGE,
             ) from ValueError(_CONTRADICTION_DETAIL)
+
+    def _normalise_a_blank_value_to_preserve(self) -> None:
         if self.value is not None and self.value.strip() == "":
             object.__setattr__(self, "value", None)
 

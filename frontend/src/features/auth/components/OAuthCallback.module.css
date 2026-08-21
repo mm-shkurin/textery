@@ -1,0 +1,40 @@
+/* The /auth/callback interstitial. Reuses the shared .auth-card shell; only the
+   callback-specific deltas live here: taller centred padding, the spinner, and the status
+   rhythm. The spinner now sweeps the brand blue rather than the retired violet gradient. */
+.oauth-callback-card {
+  padding: 48px 40px;
+  text-align: center;
+}
+
+.oauth-callback-spinner {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 24px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, var(--accent), var(--accent-hover), transparent 75%);
+  /* `--mask-opaque` is NOT a colour: in a mask only the alpha channel is read, so it means
+     "opaque here" and any opaque value would do. It is a token so this sheet holds no literal,
+     but it is a THEME-INDEPENDENT one on purpose — a themed value would make the ring's SHAPE
+     follow the theme. */
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), var(--mask-opaque) 0);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), var(--mask-opaque) 0);
+  animation: oauth-callback-spin 0.9s linear infinite;
+}
+
+@keyframes oauth-callback-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.oauth-callback-status {
+  display: block;
+}
+
+.oauth-callback-card h1 {
+  margin-bottom: 12px;
+}
+
+.oauth-callback-subtitle {
+  line-height: 1.5;
+}

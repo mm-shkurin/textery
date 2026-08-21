@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { CODE_LENGTH, VerifyCodeInputs } from '../VerifyCodeInputs'
+import verifyCodeFormStyles from '../VerifyCodeForm.module.css'
 
 // The six boxes behave like ONE field, and every rule that makes them do so — advance on entry,
 // step back on backspace, spread a paste, drop non-digits — lived only in a comment: the
@@ -156,13 +157,13 @@ describe('VerifyCodeInputs', () => {
     renderInputs(Array(CODE_LENGTH).fill('1'), true)
 
     for (let index = 0; index < CODE_LENGTH; index++) {
-      expect(box(index)).toHaveClass('error')
+      expect(box(index)).toHaveClass(verifyCodeFormStyles.error)
     }
   })
 
   it('leaves the boxes unpainted by default', () => {
     renderInputs()
 
-    expect(box(0)).not.toHaveClass('error')
+    expect(box(0)).not.toHaveClass(verifyCodeFormStyles.error)
   })
 })

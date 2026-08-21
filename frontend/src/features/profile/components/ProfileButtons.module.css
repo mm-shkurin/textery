@@ -1,0 +1,108 @@
+/* Цвет опасного действия — в src/styles/tokens-*.css (--profile-danger-*). */
+/* «Мой профиль» — the four button shapes the design uses, in one file so a fifth cannot be
+   invented per component. Figma node 1127:10768: the outlined 144×44 at x=1592, the filled 172×43
+   at x=1464, the borderless 175×43 at x=1406, and the red-outlined 200×44 at x=1536.
+
+   All four are 44px tall with a 12px radius. That is not a coincidence in the file and it should
+   not become one here: they sit in the same rows as each other. */
+
+/* hex FF383C is the design's red and it is NOT `--error` (hex ef4444) — near-misses retyped per
+   component are exactly what makes a palette drift. Both themes are given: the light red measures
+   3.3:1 on the dark surface and would be a stripe nobody can read. */
+
+.profile-btn-primary,
+.profile-btn-ghost,
+.profile-btn-quiet,
+.profile-btn-danger {
+  min-height: 44px;
+  padding: 0 24px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.profile-btn-primary {
+  background: var(--accent);
+  color: var(--text-inverse);
+}
+
+.profile-btn-primary:hover:enabled {
+  background: var(--accent-hover);
+}
+
+.profile-btn-ghost {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--profile-card-line);
+}
+
+/* The one control with no frame of its own — «Удалить фото» in the mockup is a label, not a box.
+   It keeps the 44px height so the row's two buttons share a baseline. */
+.profile-btn-quiet {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.profile-btn-quiet:hover:enabled {
+  color: var(--profile-danger-fg);
+}
+
+/* OUTLINED, not filled — the mockup draws both destructive buttons as a red rule on white. The
+   earlier implementation filled them on the argument that a tentative-looking destructive button
+   gets clicked to find out what it does; the design's answer is that the red outline is already
+   the loudest thing in its card, and it is the design's call. */
+.profile-btn-danger {
+  background: var(--bg-surface);
+  color: var(--profile-danger-fg);
+  border-color: var(--profile-danger-fg);
+}
+
+.profile-btn-danger:hover:enabled {
+  background: var(--error-soft-bg);
+}
+
+.profile-btn-primary:disabled,
+.profile-btn-ghost:disabled,
+.profile-btn-quiet:disabled,
+.profile-btn-danger:disabled {
+  background: var(--bg-sunken);
+  color: var(--text-muted);
+  border-color: var(--border-subtle);
+  cursor: not-allowed;
+}
+
+.profile-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex: none;
+  /* Keyed to the button's own foreground, not to the page: this ring only ever spins on the filled
+     primary button, which is saturated blue in both themes. */
+  border: 2px solid var(--spinner-track);
+  border-top-color: var(--btn-primary-fg);
+  animation: profile-spin 0.7s linear infinite;
+}
+
+@keyframes profile-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  /* Full width inside a stacked row: a 144px button floating in a 320px column reads as unfinished,
+     and the thumb wants the whole edge. */
+  .profile-row > .profile-btn-primary,
+  .profile-row > .profile-btn-ghost,
+  .profile-row > .profile-btn-danger {
+    width: 100%;
+  }
+}

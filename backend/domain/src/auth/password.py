@@ -1,9 +1,10 @@
 import re
 import unicodedata
 
-MIN_PASSWORD_LENGTH = 8
-MAX_PASSWORD_LENGTH = 128
+from shared import limits
 
+MIN_PASSWORD_LENGTH = 8
+MAX_PASSWORD_LENGTH = limits.MAX_PASSWORD_LENGTH
 _DIGIT_PATTERN = re.compile(r"\d")
 _UPPERCASE_PATTERN = re.compile(r"[A-Z]")
 _LOWERCASE_PATTERN = re.compile(r"[a-z]")

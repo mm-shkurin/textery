@@ -48,7 +48,10 @@ describe('ManualEditor block-schema round-trip', () => {
     )
 
     await waitFor(() => {
-      expect(documentApi.getDocument).toHaveBeenCalledExactlyOnceWith('doc-99')
+      expect(documentApi.getDocument).toHaveBeenCalledExactlyOnceWith(
+        'doc-99',
+        expect.any(AbortSignal),
+      )
     })
     // Let setContent apply the loaded document before saving.
     await screen.findByTestId('editor-content-area')

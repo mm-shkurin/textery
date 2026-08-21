@@ -7,7 +7,10 @@ from document.page_settings import PageSettings
 
 DRAFT_STATUS = "draft"
 
-ALLOWED_STATUSES = (DRAFT_STATUS,)
+# The status field's whole value space -- one member today. Not an allow-list a
+# deployment may edit: adding a status is a domain change plus a migration, since
+# the DB CHECK constraint is generated from this tuple.
+DOCUMENT_STATUSES = (DRAFT_STATUS,)
 
 
 class Document:
@@ -29,6 +32,30 @@ class Document:
     lives in a single SQL CAS statement instead (see SqlAlchemyDocumentStorage).
     The save path here is anemic on purpose: the invariant genuinely lives in the
     database, and modelling it in Python would only pretend otherwise.
+
+    `page_settings` defaults to `None`, and `None` is "nobody has configured this
+    document", NOT "configured to today's preset" -- the two must stay
+    distinguishable all the way to the wire, so nothing here constructs a
+    default. It is deliberately absent from `create`/`create_from_generation`:
+    same mass-assignment guard shape as status/content/version.
+
+    **`create_from_generation` is a sibling of `create`, not a parameter on it.**
+    The two differ in what they are ALLOWED to accept, and collapsing them would
+    hand the manual path a `content` argument it must never have. `create`'s
+    empty content is the mass-assignment guard for manual documents (Security
+    2.1) -- a client POSTing `content` to /documents cannot seed a document,
+    because the signature has nowhere to put it. On the generation path content
+    is server-derived: it is the sanitized conversion of text the model wrote,
+    and the request body carries only a `generation_id`. `title` is likewise
+    server-derived (see derive_generated_title) and `version` starts at 1 like
+    any other draft -- the conversion is the document's first state, not an edit
+    of one.
+
+    **`reconstitute` is separate from `create`** because `create` hardcodes
+    draft/empty/version=1: story 7 hit exactly this bug when AccountModel
+    .to_domain used the constructor and read every account back unverified. A
+    stored document must round-trip its real status, content and version, or
+    every save would reset the CAS token to 1.
     """
 
     def __init__(
@@ -57,11 +84,6 @@ class Document:
         self.updated_at = updated_at
         self.title = title
         self.generation_id = generation_id
-        # `None` is "nobody has configured this document", NOT "configured to
-        # today's preset" -- the two must stay distinguishable all the way to the
-        # wire, so nothing here constructs a default. Deliberately absent from
-        # `create`/`create_from_generation`: same mass-assignment guard shape as
-        # status/content/version.
         self.page_settings = page_settings
 
     @classmethod
@@ -105,18 +127,8 @@ class Document:
     ) -> "Document":
         """Build the editable draft that a completed generation becomes.
 
-        Sibling of `create`, not a parameter on it: the two differ in what they
-        are ALLOWED to accept, and collapsing them would hand the manual path a
-        `content` argument it must never have. `create`'s empty content is the
-        mass-assignment guard for manual documents (Security 2.1) -- a client
-        POSTing `content` to /documents cannot seed a document, because the
-        signature has nowhere to put it. Here content is server-derived: it is the
-        sanitized conversion of text the model wrote, and the request body carries
-        only a `generation_id`.
-
-        `title` is likewise server-derived (see derive_generated_title) and
-        `version` starts at 1 like any other draft -- the conversion is the
-        document's first state, not an edit of one.
+        Why this is a sibling of `create` rather than an argument on it, and why
+        `content` and `title` are accepted here only, is in the class docstring.
         """
         return cls(
             id=uuid4(),
@@ -148,14 +160,7 @@ class Document:
         generation_id: UUID | None = None,
         page_settings: PageSettings | None = None,
     ) -> "Document":
-        """Rehydrate a stored document, preserving every persisted field.
-
-        Separate from `create` because `create` hardcodes draft/empty/version=1:
-        story 7 hit exactly this bug when AccountModel.to_domain used the
-        constructor and read every account back unverified. A stored document
-        must round-trip its real status, content and version, or every save
-        would reset the CAS token to 1.
-        """
+        """Rehydrate a stored document, preserving every persisted field (see class docstring)."""
         return cls(
             id=id,
             owner_id=owner_id,

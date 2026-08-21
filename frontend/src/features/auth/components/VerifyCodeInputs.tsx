@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import verifyCodeFormStyles from './VerifyCodeForm.module.css'
 
 export const CODE_LENGTH = 6
 
@@ -65,7 +66,7 @@ export function VerifyCodeInputs({ digits, onChange, hasError = false }: VerifyC
     // grouping form controls is the entire job it exists for. Named with aria-label instead of a
     // <legend>: a legend would render the words "Код подтверждения" a second time directly under
     // the h1 that already says them. The name is for the people who cannot see that h1.
-    <fieldset className="verify-code-inputs" aria-label="Код подтверждения">
+    <fieldset className={verifyCodeFormStyles['verify-code-inputs']} aria-label="Код подтверждения">
       {Array.from({ length: CODE_LENGTH }, (_, index) => (
         <input
           key={index}
@@ -73,7 +74,7 @@ export function VerifyCodeInputs({ digits, onChange, hasError = false }: VerifyC
             inputRefs.current[index] = element
           }}
           type="text"
-          className={hasError ? 'error' : undefined}
+          className={hasError ? verifyCodeFormStyles.error : undefined}
           inputMode="numeric"
           // Only the first box claims the OTP: naming all six makes a browser offer to fill the
           // whole code into each one.

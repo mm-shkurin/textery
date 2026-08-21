@@ -7,6 +7,7 @@ from generation.prompt_request import PromptRequest
 # The per-type texts live next door; this module owns the rules that apply to all
 # of them. Re-exported because every caller imports `PromptRequest` from here.
 from generation.prompt_templates_by_type import TEMPLATES
+from generation.text_style import style_instruction
 from shared.exceptions import DomainException
 
 __all__ = [
@@ -168,6 +169,14 @@ def build_prompt(request: PromptRequest) -> str:
     """
     _reject_unrenderable_fields(request)
     parts = [_select_template(request.document_type)(request)]
+    # Directly after the template and BEFORE the user's own fenced sections: the
+    # register is a property of the work the template just described, and a user
+    # requirement that contradicts it should be read as the later, more specific
+    # word. Unfenced on purpose — unlike `requirements`, this text is ours, chosen
+    # from a three-value allowlist, so there is no untrusted input to delimit.
+    instruction = style_instruction(request.text_style)
+    if instruction is not None:
+        parts.append(instruction)
     parts.extend(_user_supplied_sections(request))
     if _requires_ban(request.document_type):
         parts.append(BAN_SENTENCE)

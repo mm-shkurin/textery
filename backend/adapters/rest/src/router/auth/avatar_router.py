@@ -8,10 +8,11 @@ from auth.get_avatar import GetAvatar
 from auth.update_avatar import UpdateAvatar
 from dto.auth.avatar_response import avatar_response
 from dto.auth.profile_response_dto import ProfileResponseDto
+from router import api_routes
 from security.current_owner import get_current_owner_id
 from shared.exceptions import ValidationException
 
-router = APIRouter(prefix="/api/v1/auth/me/avatar", tags=["auth"])
+router = APIRouter(prefix=api_routes.AVATAR, tags=["auth"])
 
 
 def get_update_avatar_usecase() -> UpdateAvatar:

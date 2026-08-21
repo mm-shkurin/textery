@@ -58,19 +58,19 @@ class DeleteAccount:
         password_hasher: PasswordHasher,
         unit_of_work: UnitOfWork | None = None,
     ) -> None:
-        self.account_repository = account_repository
-        self.account_eraser = account_eraser
-        self.password_hasher = password_hasher
+        self._account_repository = account_repository
+        self._account_eraser = account_eraser
+        self._password_hasher = password_hasher
         # A real UnitOfWork bound to the eraser's own session is not optional
         # here. NullUnitOfWork.commit() is a silent no-op, so a mis-wired usecase
         # would answer 204 while the session rolled every DELETE back on close --
         # "your account is gone" over an account that is still there.
-        self.unit_of_work = unit_of_work or NullUnitOfWork()
+        self._unit_of_work = unit_of_work or NullUnitOfWork()
 
     async def execute(
         self, account_id: UUID, password: object = None, confirm_email: object = None
     ) -> None:
-        account = await self.account_repository.find_by_id(account_id)
+        account = await self._account_repository.find_by_id(account_id)
         if account is None:
             # The token resolved but the row is gone -- already deleted, or deleted
             # by a racing request. Same 401 the auth boundary gives a forgery.
@@ -81,11 +81,11 @@ class DeleteAccount:
             # rollback that has to work.
             raise confirmation_invalid()
         try:
-            await self.account_eraser.erase(account_id)
-            await self.unit_of_work.commit()
+            await self._account_eraser.erase(account_id)
+            await self._unit_of_work.commit()
         except Exception:
             logger.exception("failed to delete the account")
-            await rollback_quietly(self.unit_of_work)
+            await rollback_quietly(self._unit_of_work)
             raise
 
     def _confirmed(self, account: Account, password: object, confirm_email: object) -> bool:
@@ -93,7 +93,7 @@ class DeleteAccount:
             # Only the password path. `confirm_email` is not even looked at: an
             # account with a password must not be deletable by retyping an address
             # that is on screen.
-            return password_confirms(account, password, self.password_hasher)
+            return password_confirms(account, password, self._password_hasher)
         # No password on the account, so no password could ever confirm it --
         # including `""`, which is what is actually stored.
         return email_confirms(account, confirm_email)

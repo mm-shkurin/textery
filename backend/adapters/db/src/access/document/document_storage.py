@@ -1,13 +1,36 @@
+"""Persistence for manual documents, including the versioned content save.
+
+`save_content_if_version_matches` is **one statement.** The version is compared
+in the WHERE clause and the increment is computed in SQL; `RETURNING` hands back
+the new row, so there is no second read to race. Deliberately NOT the
+read-compare-write that `SqlAlchemyGenerationStorage.update()` uses: comparing
+the version in Python and then writing lets two concurrent sessions both read
+version=1, both pass the check, and both write version=2 -- a silently lost
+update under READ COMMITTED.
+
+Why this holds across processes (scenario 6.7): the loser blocks on the row lock,
+and when the winner commits Postgres re-evaluates the WHERE against the *updated*
+row, sees version=2, and matches zero rows. The database is the arbiter, so
+backend instance count is irrelevant.
+
+Owner and version are ANDed into one predicate: a foreign document never reaches
+the version comparison, so a correct-version guess against someone else's id is
+indistinguishable from a wrong one.
+"""
+
 from datetime import datetime
-from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access.affected_rows import affected_rows
+from access.document.document_filter_sql import filter_predicates
+from access.document.document_update_values import update_values
 from access.keyset_pagination import paginate_by_owner
 from document.document import Document
+from document.document_filter import EMPTY, DocumentFilter
 from document.title_update import TitleUpdate
 from model.document.document_model import DocumentModel
 from shared.exceptions import ConflictException
@@ -91,14 +114,43 @@ class SqlAlchemyDocumentStorage:
         return model.to_domain() if model else None
 
     async def list_by_owner(
-        self, owner_id: UUID, limit: int, cursor: KeysetCursor | None
+        self,
+        owner_id: UUID,
+        limit: int,
+        cursor: KeysetCursor | None,
+        document_filter: DocumentFilter = EMPTY,
     ) -> list[Document]:
         return [
             model.to_domain()
             for model in await paginate_by_owner(
-                self._session, DocumentModel, owner_id, limit, cursor
+                self._session,
+                DocumentModel,
+                owner_id,
+                limit,
+                cursor,
+                filter_predicates(document_filter),
             )
         ]
+
+    async def delete_by_id_and_owner(self, document_id: UUID, owner_id: UUID) -> bool:
+        """Delete one document. Answers whether a row was actually removed.
+
+        Owner-scoped in SQL like every other method here, and the return value is
+        derived from the rowcount rather than from a preceding read: a
+        read-then-delete would report success for a row a concurrent request had
+        already removed, and would answer "found" for a document that vanishes
+        before the DELETE lands.
+
+        Flush, not commit — the calling usecase owns the transaction boundary.
+        """
+        result = await self._session.execute(
+            delete(DocumentModel).where(
+                DocumentModel.id == document_id,
+                DocumentModel.owner_id == owner_id,
+            )
+        )
+        await self._session.flush()
+        return affected_rows(result) > 0
 
     async def save_content_if_version_matches(
         self,
@@ -112,24 +164,8 @@ class SqlAlchemyDocumentStorage:
         """Compare-and-swap the content. Returns the new state, or None if the
         version did not match (or the document is absent/foreign).
 
-        **One statement.** The version is compared in the WHERE clause and the
-        increment is computed in SQL; `RETURNING` hands back the new row, so there
-        is no second read to race. Deliberately NOT the read-compare-write that
-        `SqlAlchemyGenerationStorage.update()` uses: comparing the version in
-        Python and then writing lets two concurrent sessions both read version=1,
-        both pass the check, and both write version=2 -- a silently lost update
-        under READ COMMITTED.
-
-        Why this holds across processes (scenario 6.7): the loser blocks on the
-        row lock, and when the winner commits Postgres re-evaluates the WHERE
-        against the *updated* row, sees version=2, and matches zero rows. The
-        database is the arbiter, so backend instance count is irrelevant.
-
-        Owner and version are ANDed into one predicate: a foreign document never
-        reaches the version comparison, so a correct-version guess against someone
-        else's id is indistinguishable from a wrong one.
+        See the module docstring for why this is one statement.
         """
-        values = self._update_values(content, updated_at, title)
         result = await self._session.execute(
             update(DocumentModel)
             .where(
@@ -137,43 +173,8 @@ class SqlAlchemyDocumentStorage:
                 DocumentModel.owner_id == owner_id,
                 DocumentModel.version == expected_version,
             )
-            .values(**values)
+            .values(**update_values(content, updated_at, title))
             .returning(DocumentModel)
         )
         model = result.scalar_one_or_none()
         return model.to_domain() if model else None
-
-    @staticmethod
-    def _update_values(content: str, updated_at: datetime, title: TitleUpdate) -> dict[str, Any]:
-        """The SET clause. `title` is included ONLY when the caller carries an intent.
-
-        A content-only autosave omits it, and SETting title = NULL unconditionally
-        would silently wipe the user's title.
-
-        Whether an intent names a title is `TitleUpdate`'s own question, asked as
-        `carries_a_value()` -- the adapter does not re-derive `preserve()` by
-        null-testing `value`.
-
-        A raw `str` is no longer accepted, and the blank path is closed at the
-        source: `TitleUpdate.__post_init__` folds a blank value down to preserve
-        on EVERY construction path, so no intent reaching here can carry `""` and
-        `SET title = ''` is unreachable. Blankness is no longer decided one layer
-        up in `SaveDocument`; it is an invariant of the type, which is why an
-        adapter built by some other caller cannot reopen it.
-
-        There is no `| None` arm: the absent case reaches here as `preserve()`,
-        so the intent is always named.
-
-        ⚠️ STILL TWO BRANCHES, and the third state is UNMAPPED: `clear()` is also
-        `carries_a_value() == False`, so it currently falls into the omit branch
-        and no-ops. The `SET title = NULL` arm (ask `title.erases()` first) is
-        owned by the routed `adapters-discovery` (b) step.
-        """
-        values: dict[str, Any] = {
-            "content": content,
-            "version": DocumentModel.version + 1,
-            "updated_at": updated_at,
-        }
-        if title.carries_a_value():
-            values["title"] = title.value
-        return values

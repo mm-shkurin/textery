@@ -9,6 +9,7 @@ from error_handling.exception_handlers import (
     not_found_exception_handler,
     validation_exception_handler,
 )
+from router.document import document_deletion_router as deletion_router_module
 from router.document import document_router as document_router_module
 from security.current_owner import get_account_existence, get_current_owner_id, get_token_service
 from shared.exceptions import (
@@ -131,3 +132,36 @@ def owner_id():
 def unauthenticated_create_client(document_app):
     """No owner override — the real Bearer dependency runs."""
     return _client_factory(document_app, "get_create_document_usecase", override_owner=False)
+
+
+# The deletion endpoint lives on its own router module (document_router was at the 200-line cap),
+# so it needs its own app: including only the router under test keeps a 404 here a real 404 rather
+# than a path swallowed by a sibling route registered first.
+@pytest.fixture
+def deletion_app():
+    app = FastAPI()
+    app.include_router(deletion_router_module.router)
+    app.add_exception_handler(NotFoundException, not_found_exception_handler)
+    # Registered even though the endpoint raises no ValidationException of its own: the Bearer
+    # dependency does, and without the handler an unauthenticated request dies as a raw exception
+    # instead of the 401 the contract promises.
+    app.add_exception_handler(ValidationException, validation_exception_handler)
+    app.dependency_overrides[get_account_existence] = _EveryAccountExists
+    app.dependency_overrides[get_token_service] = lambda: _RejectingTokenService()
+    return app
+
+
+@pytest.fixture
+def delete_client(deletion_app):
+    """`authenticated=False` leaves the real Bearer dependency in place, matching the
+    `override_owner` switch the other clients in this file use."""
+
+    def _make(mock_usecase, *, authenticated: bool = True):
+        deletion_app.dependency_overrides[deletion_router_module.get_delete_document_usecase] = (
+            lambda: mock_usecase
+        )
+        if authenticated:
+            deletion_app.dependency_overrides[get_current_owner_id] = lambda: OWNER_ID
+        return AsyncClient(transport=ASGITransport(app=deletion_app), base_url="http://test")
+
+    return _make

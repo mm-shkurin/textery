@@ -14,7 +14,7 @@
 
 /* `Rectangle 118/121/122` — 386x213 at 12px radius. The fill in Figma is the neutral placeholder
    grey; the rendered frame shows the frosted panel the glass sits behind, so it is drawn here as a
-   translucent white card rather than a flat #d9d9d9 block. */
+   translucent white card rather than a flat hex d9d9d9 block. */
 .stat-card {
   position: relative;
   padding: 66px 30px 24px;

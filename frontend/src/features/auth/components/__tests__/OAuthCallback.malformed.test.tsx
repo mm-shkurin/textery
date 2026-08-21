@@ -1,9 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
-import { OAuthCallback } from '../OAuthCallback'
+import { screen } from '@testing-library/react'
 import * as oauthExchangeApi from '../../api/oauthExchangeApi'
-import * as authSession from '../../utils/authSession'
+import * as authSession from '../../../../shared/session/authSession'
+import { navigate, neverResolves, renderCallbackAt } from './oauthCallbackTestSupport'
 
 // Scenario 4.4 — the visitor lands on /auth/callback with a MALFORMED handoff, and the callback
 // must resolve to the terminal error state WITHOUT ever issuing an exchange. Malformed means
@@ -25,7 +24,6 @@ import * as authSession from '../../utils/authSession'
 // that is the happy path already covered by OAuthCallback.success.test.tsx, so it is not re-fired
 // here. This file asserts only the negative: malformed → error state, no exchange.
 
-const navigate = vi.fn()
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>()
   return { ...actual, useNavigate: () => navigate }
@@ -36,22 +34,10 @@ vi.mock('../../api/oauthExchangeApi', async (importOriginal) => {
   return { ...actual, oauthExchange: vi.fn() }
 })
 
-vi.mock('../../utils/authSession', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../utils/authSession')>()
+vi.mock('../../../../shared/session/authSession', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../shared/session/authSession')>()
   return { ...actual, saveSession: vi.fn(), isAuthenticated: () => false }
 })
-
-function neverResolves<T>() {
-  return new Promise<T>(() => {})
-}
-
-function renderAtCallback(query: string) {
-  return render(
-    <MemoryRouter initialEntries={[`/auth/callback${query}`]}>
-      <OAuthCallback />
-    </MemoryRouter>,
-  )
-}
 
 function assertMalformed() {
   // No spendable handoff — the exchange POST must never be sent for a malformed callback.
@@ -62,6 +48,10 @@ function assertMalformed() {
   // Nothing was stored and no navigation happened — the visitor rests on the error state.
   expect(authSession.saveSession).not.toHaveBeenCalled()
   expect(navigate).not.toHaveBeenCalled()
+}
+
+function renderAtCallback(query: string) {
+  return renderCallbackAt(`${query}`)
 }
 
 describe('OAuthCallback malformed-callback validation', () => {
