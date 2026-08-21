@@ -55,41 +55,75 @@ export function ProjectRetryControls({
       >
         {retrying ? 'Повторяем…' : 'Повторить'}
       </button>
-      <select
-        className={projectCardStyles['project-card-retry-select']}
-        data-testid={namespaced('project-card-retry-style')}
-        // Icon-less control with no visible label: the name has to live here or it announces as
-        // nothing but "combo box".
-        aria-label="Стиль для повторной генерации"
+      <RetryChoice
+        testId={namespaced('project-card-retry-style')}
+        label="Стиль для повторной генерации"
+        unchanged="Тот же стиль"
         value={style}
         disabled={retrying}
-        onChange={(event) => setStyle(event.target.value as TextStyle | '')}
-      >
-        <option value="">Тот же стиль</option>
-        {TEXT_STYLE_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        onChange={(next) => setStyle(next as TextStyle | '')}
+        options={TEXT_STYLE_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+      />
       {/* A select, not the composer's number input. The retry needs a real "unchanged" state, and
           an emptied number input reports NaN — the exact trap the composer documents. Enumerating
           the allowed lengths also means this control cannot produce a value the server refuses. */}
-      <select
-        className={projectCardStyles['project-card-retry-select']}
-        data-testid={namespaced('project-card-retry-volume')}
-        aria-label="Объём для повторной генерации"
+      <RetryChoice
+        testId={namespaced('project-card-retry-volume')}
+        label="Объём для повторной генерации"
+        unchanged="Тот же объём"
         value={volume}
         disabled={retrying}
-        onChange={(event) => setVolume(event.target.value)}
-      >
-        <option value="">Тот же объём</option>
-        {VOLUME_PAGE_OPTIONS.map((pages) => (
-          <option key={pages} value={String(pages)}>
-            {pages} стр.
-          </option>
-        ))}
-      </select>
+        onChange={setVolume}
+        options={VOLUME_PAGE_OPTIONS.map((pages) => ({
+          value: String(pages),
+          label: `${pages} стр.`,
+        }))}
+      />
     </div>
+  )
+}
+
+interface RetryChoiceProps {
+  testId: string
+  label: string
+  // What the empty value reads as. `''` means "keep what the failed run used", which is a real
+  // choice and not a prompt to be dismissed — so it is an option with words, not a placeholder.
+  unchanged: string
+  value: string
+  disabled: boolean
+  onChange: (value: string) => void
+  options: readonly { value: string; label: string }[]
+}
+
+// The two pickers differ only in their words and their list. Written out twice they were the
+// longest thing in this file and the easiest place for the pair to drift — one of them losing its
+// `aria-label`, or staying live while a retry is in flight.
+function RetryChoice({
+  testId,
+  label,
+  unchanged,
+  value,
+  disabled,
+  onChange,
+  options,
+}: RetryChoiceProps) {
+  return (
+    <select
+      className={projectCardStyles['project-card-retry-select']}
+      data-testid={testId}
+      // Icon-less control with no visible label: the name has to live here or it announces as
+      // nothing but "combo box".
+      aria-label={label}
+      value={value}
+      disabled={disabled}
+      onChange={(event) => onChange(event.target.value)}
+    >
+      <option value="">{unchanged}</option>
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
   )
 }
