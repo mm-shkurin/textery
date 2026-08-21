@@ -20,6 +20,7 @@ import json
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request, Response
+from pydantic import ValidationError
 
 from analytics.analytics_error_codes import (
     INVALID_PAYLOAD_MESSAGE,
@@ -93,7 +94,12 @@ def _parsed(body: bytes) -> RecordEventRequestDto:
     """
     try:
         return RecordEventRequestDto(**json.loads(body))
-    except Exception as error:
+    except (
+        json.JSONDecodeError,
+        UnicodeDecodeError,
+        TypeError,
+        ValidationError,
+    ) as error:
         raise ValidationException(
             message=INVALID_PAYLOAD_MESSAGE, error_code=INVALID_PAYLOAD
         ) from error
