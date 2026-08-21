@@ -26,6 +26,7 @@ from error_handling.exception_handlers import (
     validation_exception_handler,
 )
 from logging_config import configure_logging
+from router.analytics.analytics_router import router as analytics_router
 from router.auth.auth_router import router as auth_router
 from router.auth.avatar_router import router as avatar_router
 from router.auth.deletion_router import router as deletion_router
@@ -95,6 +96,7 @@ app.include_router(document_router)
 app.include_router(document_deletion_router)
 app.include_router(health_router)
 app.include_router(project_router)
+app.include_router(analytics_router)
 # The three narrow handlers are suppressed below because Starlette types the
 # second argument as taking `Exception`, while it dispatches on the class given
 # in the first argument, so a handler narrowed to the class it is registered for

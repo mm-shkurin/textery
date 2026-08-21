@@ -17,8 +17,9 @@ the key exists to prevent.
 
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, Request
 
+from analytics.client_context import visitor_id_of
 from dto.generation.generation_request_dto import (
     GenerationRequestDto,
     RetryGenerationRequestDto,
@@ -86,6 +87,7 @@ async def list_generations(
 @router.post("", status_code=201, response_model=GenerationCreatedDto)
 async def create_generation(
     request: GenerationRequestDto,
+    http_request: Request,
     background_tasks: BackgroundTasks,
     owner_id: UUID = Depends(get_current_owner_id),
     usecase: RequestGeneration = Depends(get_request_generation_usecase),
@@ -99,6 +101,10 @@ async def create_generation(
         extra_wishes=request.extra_wishes,
         document_type=request.document_type,
         text_style=request.text_style,
+        # From the `X-Visitor-Id` header, never from the body: the request
+        # contract of this endpoint is unchanged by Story 14, and a browser that
+        # sends no header simply has no visitor recorded.
+        visitor_id=visitor_id_of(http_request),
     )
     background_tasks.add_task(generate_document.execute, generation.id, generation.owner_id)
     return GenerationCreatedDto.from_domain(generation)

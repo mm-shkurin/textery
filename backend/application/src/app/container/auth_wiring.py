@@ -18,6 +18,7 @@ from auth.resend_code import ResendCode
 from auth.token_service import TokenService
 from auth.update_avatar import UpdateAvatar
 from auth.verify_account import VerifyAccount
+from container.analytics_wiring import create_analytics_recorder
 from container.runtime import request_scoped, token_service
 from hashing.bcrypt_password_hasher import BcryptPasswordHasher
 from session import SqlAlchemyUnitOfWork
@@ -41,6 +42,10 @@ def create_login_user(session: AsyncSession) -> LoginUser:
         password_hasher=BcryptPasswordHasher(),
         token_service=token_service,
         unit_of_work=SqlAlchemyUnitOfWork(session),
+        # On its own session inside the recorder, never this one: a failed
+        # analytics INSERT must not roll back the failed-attempt reset that
+        # `unit_of_work` just committed.
+        analytics_recorder=create_analytics_recorder(),
     )
 
 
@@ -59,6 +64,7 @@ def create_verify_account(session: AsyncSession) -> VerifyAccount:
         verification_code_repository=SqlAlchemyVerificationCodeRepository(session),
         clock=SystemClock(),
         unit_of_work=SqlAlchemyUnitOfWork(session),
+        analytics_recorder=create_analytics_recorder(),
     )
 
 

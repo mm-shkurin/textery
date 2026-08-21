@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
+from analytics.client_context import accept_language_of, client_ip_of, user_agent_of
+from analytics.record_registration_context import RecordRegistrationContext
 from auth.login_user import LoginUser
 from auth.refresh_access_token import RefreshAccessToken
 from auth.register_user import RegisterUser
@@ -23,6 +25,21 @@ def get_register_user_usecase() -> RegisterUser:
     raise NotImplementedError("wired by the application composition root")
 
 
+def get_record_registration_context_usecase() -> RecordRegistrationContext:
+    """The ONE dependency in this codebase that does not raise when unwired.
+
+    Every other stub here raises `NotImplementedError`, which is right: a route
+    served without its usecase would answer nonsense, and failing loudly at the
+    first request is how that is caught. This one is the opposite case. If the
+    composition root ever stops overriding it, a raise would turn EVERY
+    REGISTRATION into a 500 -- the product's most sensitive route broken by a
+    missing analytics binding, which is precisely the coupling this story's
+    governing decision forbids. Unwired, the null ports store nothing and the
+    registration is unaffected.
+    """
+    return RecordRegistrationContext()
+
+
 def get_verify_account_usecase() -> VerifyAccount:
     raise NotImplementedError("wired by the application composition root")
 
@@ -42,12 +59,35 @@ def get_resend_code_usecase() -> ResendCode:
 @router.post("/register", status_code=201, response_model=RegisterResponseDto)
 async def register(
     request: RegisterRequestDto,
+    http_request: Request,
     usecase: RegisterUser = Depends(get_register_user_usecase),
+    registration_context: RecordRegistrationContext = Depends(
+        get_record_registration_context_usecase
+    ),
 ) -> RegisterResponseDto:
+    """Unchanged for the caller, whatever the attribution does.
+
+    `RegisterUser` is not passed a single analytics value -- the account is
+    created exactly as it was before Story 14, and the context is stored
+    afterwards by a collaborator that cannot raise. That ordering is the whole
+    guarantee: a visitor who arrives on a malformed marketing link, from a
+    browser we cannot classify, behind a geolocation service that is down, still
+    gets their 201 and their verification code.
+    """
     result = await usecase.execute(
         email=request.email,
         password=request.password,
         confirm_password=request.confirm_password,
+    )
+    await registration_context.execute(
+        account_id=result.account.id,
+        campaign_parameters=request.campaign_parameters(),
+        # Server-observed, never accepted from the body: a client that could set
+        # its own country or device type could fabricate the segmentation the
+        # business is measured by, and nothing in the data would reveal it.
+        client_ip=client_ip_of(http_request),
+        user_agent=user_agent_of(http_request),
+        accept_language=accept_language_of(http_request),
     )
     return RegisterResponseDto.from_domain(result)
 

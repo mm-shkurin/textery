@@ -2,6 +2,8 @@ import logging
 import unicodedata
 from uuid import UUID
 
+from analytics.analytics_recorder import AnalyticsRecorder, NullAnalyticsRecorder
+from analytics.event_names import LOGIN_SUCCESS
 from auth.account_repository import AccountRepository
 from auth.email import Email
 from auth.password_hasher import PasswordHasher
@@ -32,6 +34,7 @@ class LoginUser:
         password_hasher: PasswordHasher,
         token_service: TokenService,
         unit_of_work: UnitOfWork | None = None,
+        analytics_recorder: AnalyticsRecorder | None = None,
     ) -> None:
         self.account_repository = account_repository
         self.password_hasher = password_hasher
@@ -40,6 +43,10 @@ class LoginUser:
         # counter on this UoW (scenario 5.3); NullUnitOfWork is the no-op default
         # for callers that do not supply one.
         self.unit_of_work = unit_of_work or NullUnitOfWork()
+        # Null by default and fail-open at use: a sign-in that succeeded must
+        # answer with its token pair whatever analytics does. The port's contract
+        # is that `record` never raises, so there is no try here to forget.
+        self._analytics_recorder = analytics_recorder or NullAnalyticsRecorder()
 
     async def execute(self, email: str, password: str) -> TokenPair:
         account = await self.account_repository.find_by_email(self._normalized_email(email))
@@ -68,6 +75,13 @@ class LoginUser:
         if not account.is_verified:
             raise ValidationException(error_code="UNVERIFIED", message=self.UNVERIFIED_MESSAGE)
         await self._reset_failed_attempts(account.id)
+        # No occurrence key: every sign-in is its own event, and two sign-ins by
+        # one account are two facts rather than a replay to collapse. This is
+        # emitted only on the path that issued a pair -- a refused password, a
+        # locked account and an unverified one all raise above it.
+        await self._analytics_recorder.record(
+            event_name=LOGIN_SUCCESS, visitor_id=None, user_id=account.id
+        )
         return self.token_service.issue_pair(account_id=account.id, email=account.email)
 
     async def _reset_failed_attempts(self, account_id: UUID) -> None:

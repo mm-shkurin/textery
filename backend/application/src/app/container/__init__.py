@@ -14,6 +14,11 @@ unchanged -- main.py's import list is the contract, and moving code between file
 should not touch it.
 """
 
+from container.analytics_wiring import (
+    create_analytics_recorder,
+    create_record_analytics_event,
+    create_record_registration_context,
+)
 from container.auth_wiring import (
     create_account_existence,
     create_delete_account,
@@ -65,6 +70,9 @@ from container.runtime import (
 
 __all__ = [
     "DEFAULT_STALE_AFTER_MINUTES",
+    "create_analytics_recorder",
+    "create_record_analytics_event",
+    "create_record_registration_context",
     "GENERATION_PROVIDER_ENV_VAR",
     "JWT_SECRET_ENV_VAR",
     "NoOpGenerationQueue",

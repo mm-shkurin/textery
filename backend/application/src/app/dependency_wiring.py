@@ -33,6 +33,8 @@ from container import (
     create_list_generations,
     create_list_projects,
     create_login_user,
+    create_record_analytics_event,
+    create_record_registration_context,
     create_refresh_access_token,
     create_register_user,
     create_rename_account,
@@ -45,8 +47,10 @@ from container import (
     create_update_avatar,
     create_verify_account,
 )
+from router.analytics.analytics_router import get_record_analytics_event_usecase
 from router.auth.auth_router import (
     get_login_user_usecase,
+    get_record_registration_context_usecase,
     get_refresh_access_token_usecase,
     get_register_user_usecase,
     get_resend_code_usecase,
@@ -101,6 +105,14 @@ def install_dependency_overrides(app: FastAPI) -> None:
     _override_documents(app)
     _override_platform(app)
     _override_oauth(app)
+    _override_analytics(app)
+
+
+def _override_analytics(app: FastAPI) -> None:
+    app.dependency_overrides[get_record_analytics_event_usecase] = create_record_analytics_event
+    app.dependency_overrides[get_record_registration_context_usecase] = (
+        create_record_registration_context
+    )
 
 
 def _override_generation(app: FastAPI) -> None:

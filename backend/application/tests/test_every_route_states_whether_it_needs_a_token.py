@@ -33,6 +33,13 @@ _DELIBERATELY_PUBLIC = {
     ("GET", "/api/v1/auth/oauth/{provider}/start"),
     ("GET", "/api/v1/auth/oauth/{provider}/callback"),
     ("POST", "/api/v1/auth/oauth/exchange"),
+    # The analytics ingest route, the product's only tokenless WRITE. A browser
+    # reports a site visit before it has an account at all, so requiring a token
+    # would measure only signed-in traffic -- i.e. exactly the population the
+    # funnel exists to compare against. It resolves a token when one IS sent
+    # (`get_optional_owner_id`), so a signed-in visitor's events are still
+    # attributed; what it never does is require one.
+    ("POST", "/api/v1/analytics/events"),
     # Probed by the container's HEALTHCHECK and by the orchestrator, neither of
     # which holds an account.
     ("GET", "/health"),

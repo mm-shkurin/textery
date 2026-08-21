@@ -1,5 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 
@@ -17,11 +18,9 @@ class AnalyticsEvent:
     do that, and a string kept here would reach the adapter as the four different
     values §5.6 warns about.
 
-    Absent on purpose, each waiting for the scenario that first reads it:
-    `payload` and `degraded` (§3.x and the degraded-visitor scenario), `id` (the
-    store mints it), and `sequence`, which is deliberately never on this entity
-    at all -- it is assigned by the database at INSERT
-    (`decisions/analytics-ingest-shape-decision.md`).
+    Absent on purpose: `id` (the store mints it) and `sequence`, which is
+    deliberately never on this entity at all -- it is assigned by the database at
+    INSERT (`decisions/analytics-ingest-shape-decision.md`).
 
     `event_name` is a plain `str` for the same reason: nothing in 1.1 refuses a
     name, and the catalogue-validating `EventName` arrives with §2.1/§2.2, which
@@ -29,8 +28,13 @@ class AnalyticsEvent:
     """
 
     event_name: str
-    visitor_id: UUID
-    occurrence_key: UUID
+    visitor_id: UUID | None
+    # NULL on server-emitted rows: the key is CLIENT-minted, and an event the
+    # server raised from a state transition has no client to mint one. The unique
+    # index is partial (`WHERE occurrence_key IS NOT NULL`) exactly so those rows
+    # sit outside it -- a non-partial index would collapse every server-emitted
+    # event for one visitor into a single row.
+    occurrence_key: UUID | None
     # NULL is a value here, not a missing one: an anonymous event carries no
     # account, and §1.3 forbids ever reaching this state from a token that was
     # sent but unusable.
@@ -38,3 +42,13 @@ class AnalyticsEvent:
     # Assigned from the server's injected Clock. The request schema carries no
     # client timestamp at all, so there is no caller-supplied value to prefer.
     event_time: datetime
+    # Absent, explicit null and `{}` all arrive here as `{}`: the column is NOT
+    # NULL with a `{}` default, so Story 15 never has two spellings of "no
+    # context" to handle at every read (`endpoints.md` § five decisions, 1).
+    payload: dict[str, Any] = field(default_factory=dict)
+    # Its own field, not a `payload` key: `payload` is free-form and stored
+    # verbatim, and a marker that governs whether a row counts toward unique
+    # visitors cannot live inside the blob it qualifies. True when the browser
+    # could not persist its visitor id, so this visitor is one page load rather
+    # than one person.
+    degraded: bool = False

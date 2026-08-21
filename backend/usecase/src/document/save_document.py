@@ -1,5 +1,7 @@
 from uuid import UUID
 
+from analytics.analytics_recorder import AnalyticsRecorder, NullAnalyticsRecorder
+from analytics.event_names import DOCUMENT_SAVED
 from document.document import Document
 from document.document_content import MAX_CONTENT_LENGTH, DocumentContent
 from document.document_repository import DocumentRepository
@@ -29,11 +31,15 @@ class SaveDocument:
         html_sanitizer: HtmlSanitizer,
         clock: Clock,
         unit_of_work: UnitOfWork | None = None,
+        analytics_recorder: AnalyticsRecorder | None = None,
     ) -> None:
         self.document_repository = document_repository
         self.html_sanitizer = html_sanitizer
         self.clock = clock
         self.unit_of_work = unit_of_work or NullUnitOfWork()
+        # Null by default, fail-open at use: a save that persisted must answer
+        # 200 whatever analytics does.
+        self._analytics_recorder = analytics_recorder or NullAnalyticsRecorder()
 
     async def execute(
         self,
@@ -59,8 +65,16 @@ class SaveDocument:
             title=self._title_intent(title),
         )
         if saved is None:
+            # A save that persisted NOTHING records nothing (§9.7): the miss
+            # branch either raises or resolves an idempotent replay, and neither
+            # is a save the funnel should count.
             return await self._explain_miss(document_id, owner_id, sanitized, version)
         await self.unit_of_work.commit()
+        # After the commit, never before: an event recorded first and a commit
+        # that then failed is a save in the data that never happened (§12.4).
+        await self._analytics_recorder.record(
+            event_name=DOCUMENT_SAVED, visitor_id=None, user_id=owner_id
+        )
         return saved
 
     @staticmethod

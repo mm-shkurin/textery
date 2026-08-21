@@ -51,3 +51,15 @@ EVENT_NAMES = (
     SUBSCRIPTION_ACTIVATED,
     AUTO_RENEW_DISABLED,
 )
+
+# The only three names the public ingest route accepts. The catalogue stays
+# twelve -- the column's CHECK constraint and Story 15 need every name -- but the
+# tokenless route enforces the narrow set: "no client is allowed to send the
+# others" is not a rule unless something refuses them, and on a route anyone can
+# reach with `curl` an unenforced rule means forged SUBSCRIPTION_ACTIVATED and
+# GENERATION_COMPLETED rows in the table revenue is computed from.
+BROWSER_ORIGIN_EVENT_NAMES = (
+    SITE_VISITED,
+    REGISTRATION_STARTED,
+    EDITOR_OPENED,
+)

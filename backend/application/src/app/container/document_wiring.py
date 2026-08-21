@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from access.document.document_storage import SqlAlchemyDocumentStorage
 from access.generation.generation_storage import SqlAlchemyGenerationStorage
+from container.analytics_wiring import create_analytics_recorder
 from container.runtime import request_scoped
 from document.create_document import CreateDocument
 from document.create_document_from_generation import CreateDocumentFromGeneration
@@ -74,6 +75,9 @@ def create_save_document(session: AsyncSession) -> SaveDocument:
         # One session across the repository and the unit of work, so the usecase's
         # commit is what makes the CAS durable.
         unit_of_work=SqlAlchemyUnitOfWork(session),
+        # NOT on that session: the recorder opens its own, so a failed analytics
+        # INSERT cannot roll the save back.
+        analytics_recorder=create_analytics_recorder(),
     )
 
 

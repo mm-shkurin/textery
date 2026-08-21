@@ -45,7 +45,7 @@ USER app
 # `pythonpath`. This is what replaced nine sys.path.insert calls in the entry
 # point: a package setup the interpreter is told about, rather than one the
 # application patches at import time.
-ENV PYTHONPATH=/app/domain/src:/app/usecase/src:/app/adapters/rest/src:/app/adapters/db/src:/app/adapters/security/src:/app/adapters/generation_provider/src:/app/adapters/oauth_provider/src:/app/adapters/rendering/src:/app/application/src:/app/application/src/app
+ENV PYTHONPATH=/app/domain/src:/app/usecase/src:/app/adapters/rest/src:/app/adapters/db/src:/app/adapters/security/src:/app/adapters/generation_provider/src:/app/adapters/oauth_provider/src:/app/adapters/geolocation_provider/src:/app/adapters/rendering/src:/app/application/src:/app/application/src/app
 
 EXPOSE 8000
 

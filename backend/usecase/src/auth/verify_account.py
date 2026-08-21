@@ -1,12 +1,18 @@
 import logging
 
+from analytics.analytics_recorder import AnalyticsRecorder, NullAnalyticsRecorder, occurrence_of
+from analytics.event_names import REGISTRATION_COMPLETED
 from auth.account import Account
+from auth.account_repository import AccountRepository
 from auth.account_verification_deps import AccountVerificationDependencies
 from auth.email_validation import validate_email
 from auth.verification_code import VerificationCode
+from auth.verification_code_repository import VerificationCodeRepository
 from auth.verification_code_value import VerificationCodeValue
+from shared.clock import Clock
 from shared.exceptions import ValidationException, VerificationFailedException
 from shared.rollback import rollback_quietly
+from shared.unit_of_work import UnitOfWork
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +21,24 @@ class VerifyAccount(AccountVerificationDependencies):
     VERIFICATION_FAILED_MESSAGE = (
         "Verification could not be completed due to an unexpected error. Please try again."
     )
+
+    def __init__(
+        self,
+        account_repository: AccountRepository,
+        verification_code_repository: VerificationCodeRepository,
+        clock: Clock,
+        unit_of_work: UnitOfWork | None = None,
+        analytics_recorder: AnalyticsRecorder | None = None,
+    ) -> None:
+        """The four shared ports, plus a fifth this usecase alone has.
+
+        The recorder is NOT on `AccountVerificationDependencies`: `ResendCode`
+        holds the same four collaborators and emits nothing, and widening the
+        shared base would hand it a dependency it has no use for. One extra
+        constructor here is cheaper than a port nobody in the other usecase calls.
+        """
+        super().__init__(account_repository, verification_code_repository, clock, unit_of_work)
+        self._analytics_recorder = analytics_recorder or NullAnalyticsRecorder()
 
     async def execute(self, email: str, code: str) -> None:
         # Both shape checks run before any repository lookup, so a malformed
@@ -47,6 +71,17 @@ class VerifyAccount(AccountVerificationDependencies):
             raise self._invalid_or_expired()
 
         await self._apply_verification(account, verification_code)
+        # AFTER the transition is committed, and only on the path that actually
+        # performed it. The already-verified branch above returns without
+        # reaching here, so confirming the same code twice records ONE
+        # registration (§8.2) -- and the derived occurrence key collapses the
+        # two that race each other into one row as well (§8.3).
+        await self._analytics_recorder.record(
+            event_name=REGISTRATION_COMPLETED,
+            visitor_id=None,
+            user_id=account.id,
+            occurrence_key=occurrence_of(REGISTRATION_COMPLETED, account.id),
+        )
 
     async def _apply_verification(
         self, account: Account, verification_code: VerificationCode

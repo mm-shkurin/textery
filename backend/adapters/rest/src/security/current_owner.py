@@ -105,3 +105,23 @@ def _unauthorized() -> ValidationException:
     # A ValidationException, so it lands in the canonical error shape through the
     # existing handler and its _ERROR_CODE_STATUS_MAP entry -- no new handler.
     return ValidationException(error_code="UNAUTHORIZED", message=UNAUTHORIZED_MESSAGE)
+
+
+async def get_optional_owner_id(
+    authorization: str | None = Header(default=None),
+    token_service: TokenService = Depends(get_token_service),
+    accounts: AccountExistence = Depends(get_account_existence),
+) -> UUID | None:
+    """The caller's account id, `None` when they presented no token at all.
+
+    For the analytics ingest route, which is the product's only endpoint that
+    serves signed-in and anonymous callers through one path. `None` is reserved
+    for "no `Authorization` header": a header that IS present and does not
+    resolve raises the same refusal as everywhere else, never a downgrade to
+    anonymous. A downgrade would detach a signed-in user's events from their
+    account every time a token expired -- and it would read in the data as a
+    genuine fall in signed-in activity, with nothing to reveal the cause.
+    """
+    if authorization is None:
+        return None
+    return await get_current_owner_id(authorization, token_service, accounts)

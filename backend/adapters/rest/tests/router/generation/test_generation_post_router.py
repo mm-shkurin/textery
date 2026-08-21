@@ -66,6 +66,11 @@ class TestCreateGenerationHappyPath:
             # register the model picks on its own is a different thing from the
             # user having chosen "научный", and only one of them may be recorded.
             text_style=None,
+            # From the `X-Visitor-Id` header, which this request does not send.
+            # Asserted rather than ignored: the route must pass the parameter
+            # explicitly, so a browser that DOES send one cannot be silently
+            # dropped by a route that forgot to read it.
+            visitor_id=None,
         )
         # The background task carries the owner too: it re-reads through the
         # owner-filtered query, so an id alone would find nothing and the generation

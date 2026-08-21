@@ -41,6 +41,13 @@ _ERROR_CODE_STATUS_MAP = {
     "NOT_RETRYABLE": 409,
     "RETRY_LIMIT_REACHED": 429,
     "CONVERTED_CONTENT_TOO_LONG": 422,
+    # POST /api/v1/analytics/events, the only route with new codes in Story 14.
+    # UNKNOWN_EVENT_NAME, INVALID_VISITOR_ID, INVALID_OCCURRENCE_KEY and
+    # INVALID_PAYLOAD are absent deliberately -- they are 400, which is the
+    # default. These three are not.
+    "OCCURRENCE_KEY_CONFLICT": 409,
+    "RATE_LIMITED": 429,
+    "REQUEST_BODY_TOO_LARGE": 413,
     # CONTENT_TOO_LONG is absent deliberately: documents_save.yaml specifies 400 for
     # it, which is the default.
 }
