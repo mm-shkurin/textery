@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import type { MutableRef } from './autosaveSaveCycle'
+import type { MutableRef } from '../utils/autosaveSaveCycle'
 
 // What the editor leaves behind when it dies with a write still unfinished (H9.4). Extracted from
 // useDocumentSave — which is at the 200-line limit — rather than grown inline.

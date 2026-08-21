@@ -1,12 +1,12 @@
 import type { ChainedCommands } from '@tiptap/react'
-import type { ToolbarAction, ToolbarActionKey, ToolbarRunAction } from './toolbarAction'
+import type { ToolbarAction, ToolbarActionKey, ToolbarRunAction } from '../utils/toolbarAction'
 
 export type {
   ToolbarAction,
   ToolbarActionKey,
   ToolbarRunAction,
   ToolbarUiAction,
-} from './toolbarAction'
+} from '../utils/toolbarAction'
 
 export const TOOLBAR_DIVIDER_BEFORE: Set<ToolbarActionKey> = new Set(['bold'])
 

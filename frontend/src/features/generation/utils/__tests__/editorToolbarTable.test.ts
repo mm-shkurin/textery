@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { TOOLBAR_ACTIONS } from '../editorToolbarActions'
-import type { ToolbarRunAction } from '../toolbarAction'
+import { TOOLBAR_ACTIONS } from '../../utils/editorToolbarActions'
+import type { ToolbarRunAction } from '../../utils/toolbarAction'
 
 // A chainable command recorder. Every Tiptap chain method returns the chain, so one Proxy stands in
 // for the whole surface and records what was called — which is the only thing these actions do.

@@ -9,7 +9,7 @@ import {
   DEFAULT_DOCUMENT_TYPE,
   WIRE_DOCUMENT_TYPE,
   type DocumentType,
-} from '../../../shared/documentTypes'
+} from '../../../shared/domain/documentTypes'
 import { visitorId } from '../../../shared/analytics/visitorId'
 import { API } from '../../../shared/api/endpoints'
 

@@ -2,10 +2,14 @@ import { useCallback, useEffect, useReducer, useRef } from 'react'
 import { createGeneration, getGeneration } from '../api/generationApi'
 import type { GenerationParameters } from '../utils/generationParameters'
 import { SessionExpiredError } from '../../../shared/session/authorizedRequest'
-import type { DocumentType } from '../../../shared/documentTypes'
+import type { DocumentType } from '../../../shared/domain/documentTypes'
 import { describeFailure } from '../../../shared/api/send'
 import { RUNTIME } from '../../../shared/config/runtime'
-import { generationReducer, IDLE_GENERATION, type GenerationUiState } from './generationState'
+import {
+  generationReducer,
+  IDLE_GENERATION,
+  type GenerationUiState,
+} from '../utils/generationState'
 
 export type { GenerationUiState }
 

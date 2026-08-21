@@ -4,7 +4,7 @@ import { Composer } from '../Composer'
 import { topicFieldLabel } from '../../../../shared/copy/documentTypeCopy'
 import { EMPTY_PARAMETERS } from '../../utils/generationParameters'
 import { suggestionsFor } from '../../utils/topicSuggestions'
-import type { DocumentType } from '../../../../shared/documentTypes'
+import type { DocumentType } from '../../../../shared/domain/documentTypes'
 
 function renderComposer(topic = '', documentType: DocumentType = 'doklad') {
   const setTopic = vi.fn()

@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { EditorView } from '@tiptap/pm/view'
-import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from '../editorDomSync'
+import {
+  flushDomObserverOnInput,
+  syncNativeSelectionToProseMirror,
+} from '../../utils/editorDomSync'
 import { partialDouble } from '../../../../test/doubles'
 
 // The guards in editorDomSync, each of which exists because something reaches these two functions

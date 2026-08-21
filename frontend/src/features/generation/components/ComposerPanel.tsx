@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { Composer, MAX_TOPIC_LENGTH } from './Composer'
 import { EMPTY_PARAMETERS, type GenerationParameters } from '../utils/generationParameters'
-import type { DocumentType } from '../../../shared/documentTypes'
+import type { DocumentType } from '../../../shared/domain/documentTypes'
 
 interface ComposerPanelProps {
   topicLabel: string

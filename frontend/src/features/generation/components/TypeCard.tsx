@@ -1,4 +1,4 @@
-import type { DocumentType } from '../../../shared/documentTypes'
+import type { DocumentType } from '../../../shared/domain/documentTypes'
 import type { DocumentTypeOption } from '../../../shared/copy/documentTypeCopy'
 import styles from './TypeCard.module.css'
 

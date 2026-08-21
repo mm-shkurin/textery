@@ -1,5 +1,5 @@
 import { suggestionsFor } from '../utils/topicSuggestions'
-import type { DocumentType } from '../../../shared/documentTypes'
+import type { DocumentType } from '../../../shared/domain/documentTypes'
 import styles from './TopicSuggestions.module.css'
 
 interface TopicSuggestionsProps {

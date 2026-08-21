@@ -1,5 +1,5 @@
 import { send } from '../../../shared/api/send'
-import type { TextStyle } from '../../../shared/textStyles'
+import type { TextStyle } from '../../../shared/domain/textStyles'
 
 /**
  * What a user re-chooses at the moment of a retry.

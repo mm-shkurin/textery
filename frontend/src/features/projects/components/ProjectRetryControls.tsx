@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { TEXT_STYLE_OPTIONS, type TextStyle } from '../../../shared/textStyles'
-import { VOLUME_PAGE_OPTIONS } from '../../../shared/volumePages'
+import { TEXT_STYLE_OPTIONS, type TextStyle } from '../../../shared/domain/textStyles'
+import { VOLUME_PAGE_OPTIONS } from '../../../shared/domain/volumePages'
 import type { RetryOverrides } from '../api/retryGenerationApi'
 import projectCardStyles from './ProjectCard.module.css'
 

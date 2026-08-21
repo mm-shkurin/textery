@@ -3,8 +3,8 @@
 // flow. React-free by construction: the refs arrive as plain `{ current }` boxes and the two state
 // setters as plain callbacks, so nothing here imports React — the same shape as autosaveRetryPolicy,
 // autosaveDirtyGuard and saveFailureMessages.
-import { backoffDelay } from './autosaveRetryPolicy'
-import { describeSaveFailure } from './saveFailureMessages'
+import { backoffDelay } from '../utils/autosaveRetryPolicy'
+import { describeSaveFailure } from '../utils/saveFailureMessages'
 
 // Structurally what `useRef` hands back, without depending on React's ref type. Exported because
 // autosaveAbandonment reads two of the very refs declared below (isSavingRef, retryTimerRef) and

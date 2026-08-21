@@ -1,14 +1,14 @@
 import { useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
-import { serializeEditorHtml } from '../components/serializeEditorHtml'
-import { MAX_AUTOSAVE_ATTEMPTS } from './autosaveRetryPolicy'
-import { isAlreadySaved } from './autosaveDirtyGuard'
-import { performWrite } from './autosaveWriteChain'
-import { createSaveCycle } from './autosaveSaveCycle'
-import type { MutableRef } from './autosaveSaveCycle'
+import { serializeEditorHtml } from '../utils/serializeEditorHtml'
+import { MAX_AUTOSAVE_ATTEMPTS } from '../utils/autosaveRetryPolicy'
+import { isAlreadySaved } from '../utils/autosaveDirtyGuard'
+import { performWrite } from '../utils/autosaveWriteChain'
+import { createSaveCycle } from '../utils/autosaveSaveCycle'
+import type { MutableRef } from '../utils/autosaveSaveCycle'
 import { useAbandonedSaveRecord } from './autosaveAbandonment'
 import { useSaveStatus } from './useSaveStatus'
-import { CONFLICT_ERROR_MESSAGE, SAVE_ERROR_MESSAGE } from './saveFailureMessages'
+import { CONFLICT_ERROR_MESSAGE, SAVE_ERROR_MESSAGE } from '../utils/saveFailureMessages'
 
 // Re-exported so callers (and the retry-backoff / failure-copy tests) keep importing the attempt
 // ceiling and the failure copy from the save hook — one definition lives in autosaveRetryPolicy and

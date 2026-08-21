@@ -12,7 +12,7 @@ import {
   DOCUMENT_TYPE_IDS,
   documentTypeFromWire,
   type DocumentType,
-} from '../documentTypes'
+} from '../domain/documentTypes'
 
 export interface DocumentTypeOption {
   id: DocumentType

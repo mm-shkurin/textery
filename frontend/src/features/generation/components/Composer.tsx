@@ -4,7 +4,7 @@ import chatWorkspaceDocStyles from './ChatWorkspaceDoc.module.css'
 import { ComposerParameters } from './ComposerParameters'
 import { TopicSuggestions } from './TopicSuggestions'
 import { isVolumeAcceptable, type GenerationParameters } from '../utils/generationParameters'
-import type { DocumentType } from '../../../shared/documentTypes'
+import type { DocumentType } from '../../../shared/domain/documentTypes'
 
 export const MAX_TOPIC_LENGTH = 500
 

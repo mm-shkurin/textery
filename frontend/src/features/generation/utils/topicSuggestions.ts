@@ -1,4 +1,4 @@
-import type { DocumentType } from '../../../shared/documentTypes'
+import type { DocumentType } from '../../../shared/domain/documentTypes'
 
 /**
  * «Увидеть примеры запросов» — the prompts offered under the topic field.

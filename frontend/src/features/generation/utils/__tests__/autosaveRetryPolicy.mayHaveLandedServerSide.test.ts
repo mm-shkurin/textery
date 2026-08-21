@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { type HttpError, RequestTimeoutError } from '../../../../shared/api/httpClient'
 import { SessionExpiredError } from '../../../../shared/session/authorizedRequest'
-import { isTransientFailure, mayHaveLandedServerSide } from '../autosaveRetryPolicy'
+import { isTransientFailure, mayHaveLandedServerSide } from '../../utils/autosaveRetryPolicy'
 
 // Scenario H9.4 — the axis the autosave dirty guard turns on, pinned as ONE named predicate.
 //

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { ChatWorkspace } from '../ChatWorkspace'
-import type { DocumentType } from '../../../../shared/documentTypes'
+import type { DocumentType } from '../../../../shared/domain/documentTypes'
 import { DOCUMENT_TYPE_LABELS } from '../../../../shared/copy/documentTypeCopy'
 
 // The generating screen is the whole subject here, so every case renders the same workspace in

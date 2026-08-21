@@ -1,4 +1,4 @@
-import type { DocumentType } from '../../../shared/documentTypes'
+import type { DocumentType } from '../../../shared/domain/documentTypes'
 
 /**
  * The finished works shown on the landing under «Примеры готовых работ».

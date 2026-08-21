@@ -1,5 +1,5 @@
 import { TypeCard } from './TypeCard'
-import { type DocumentType } from '../../../shared/documentTypes'
+import { type DocumentType } from '../../../shared/domain/documentTypes'
 import { DOCUMENT_TYPES } from '../../../shared/copy/documentTypeCopy'
 import modalStyles from './Modal.module.css'
 import styles from './TypeModal.module.css'

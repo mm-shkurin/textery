@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import type { MutableRef } from './autosaveSaveCycle'
+import type { MutableRef } from '../utils/autosaveSaveCycle'
 
 // How long typing must be quiet before an edit autosaves. Landing a save exactly on this boundary
 // (not "somewhere after it") is what the E3.1 test pins, so the constant is the single source both

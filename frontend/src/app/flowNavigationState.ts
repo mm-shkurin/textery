@@ -1,4 +1,4 @@
-import { documentTypeFromWire, type DocumentType } from '../shared/documentTypes'
+import { documentTypeFromWire, type DocumentType } from '../shared/domain/documentTypes'
 
 // 'auto' generates from a topic, 'manual' opens the editor. Both are real destinations, not a
 // request flag — they are different screens. Story 18 dropped the mode-select modal, so on the

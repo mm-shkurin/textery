@@ -1,5 +1,5 @@
 import { exportDocument, type ExportFormat } from '../api/documentApi'
-import { triggerBrowserDownload } from './exportDownload'
+import { triggerBrowserDownload } from '../utils/exportDownload'
 
 // What the saved file is called before its extension. A literal `document.${format}` inside the
 // template read as a property access on the DOM global to every reader and every scanner.

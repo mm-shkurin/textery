@@ -4,7 +4,7 @@ import chatWorkspaceDocStyles from './ChatWorkspaceDoc.module.css'
 import docMarkdownStyles from './DocMarkdown.module.css'
 import type { GenerationUiState } from '../hooks/useGeneration'
 import { formatRelativeTime } from '../utils/formatRelativeTime'
-import { type DocumentType } from '../../../shared/documentTypes'
+import { type DocumentType } from '../../../shared/domain/documentTypes'
 import {
   generatingTitle,
   generationFailedTitle,

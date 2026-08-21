@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { ExportFormat } from '../api/documentApi'
 import styles from './ExportControl.module.css'
-import { runExport } from './exportRun'
+import { runExport } from '../utils/exportRun'
 
 // Scenario 1.1: the control DISPLAY — a trigger that reveals a PDF and a DOCX choice.
 // Scenario 2.1: clicking a choice fires the export request and the control locks while it is

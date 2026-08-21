@@ -3,8 +3,8 @@ import { useEditor, type Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import TextAlign from '@tiptap/extension-text-align'
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
-import { BlockPlaceholder } from './blockPlaceholder'
-import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from './editorDomSync'
+import { BlockPlaceholder } from '../utils/blockPlaceholder'
+import { flushDomObserverOnInput, syncNativeSelectionToProseMirror } from '../utils/editorDomSync'
 
 // The Tiptap editor construction for ManualEditor, extracted so the component keeps to its layout
 // and wiring concerns. `noteEditRef` (not the raw noteEdit) is threaded in because useEditor's

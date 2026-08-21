@@ -5,18 +5,18 @@
 // boxes, so nothing here imports React.
 import type { Editor } from '@tiptap/react'
 import { saveDocument } from '../api/documentApi'
-import { serializeEditorHtml } from '../components/serializeEditorHtml'
+import { serializeEditorHtml } from '../utils/serializeEditorHtml'
 import {
   MAX_AUTOSAVE_ATTEMPTS,
   isTransientFailure,
   mayHaveLandedServerSide,
-} from './autosaveRetryPolicy'
+} from '../utils/autosaveRetryPolicy'
 import {
   isAlreadySaved,
   savedContentAfterResolve,
   shouldAdoptPersistedContent,
-} from './autosaveDirtyGuard'
-import type { MutableRef, SaveCycle } from './autosaveSaveCycle'
+} from '../utils/autosaveDirtyGuard'
+import type { MutableRef, SaveCycle } from '../utils/autosaveSaveCycle'
 
 export interface WriteChainDeps {
   documentId: string

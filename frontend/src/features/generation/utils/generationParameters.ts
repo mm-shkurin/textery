@@ -1,10 +1,10 @@
-import { TEXT_STYLES, TEXT_STYLE_OPTIONS, type TextStyle } from '../../../shared/textStyles'
+import { TEXT_STYLES, TEXT_STYLE_OPTIONS, type TextStyle } from '../../../shared/domain/textStyles'
 import {
   DEFAULT_VOLUME_PAGES,
   MAX_VOLUME_PAGES,
   MIN_VOLUME_PAGES,
   isVolumeAcceptable,
-} from '../../../shared/volumePages'
+} from '../../../shared/domain/volumePages'
 
 // Re-exported, not redefined: both vocabularies live in `shared/` because the projects feature
 // needs them too (the register and the length are both re-chosen on a retry), and this feature's

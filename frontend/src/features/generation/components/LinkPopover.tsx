@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
-import { normalizeHref } from './normalizeHref'
+import { normalizeHref } from '../utils/normalizeHref'
 import styles from './LinkPopover.module.css'
 import manualEditorToolbarStyles from './ManualEditorToolbar.module.css'
 import { listenToDocument } from '../../../shared/lib/browser'

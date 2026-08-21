@@ -1,4 +1,4 @@
-import { formatCardDate } from '../../../shared/formatCardDate'
+import { formatCardDate } from '../../../shared/lib/formatCardDate'
 import type { Profile } from '../../../shared/identity/api/profileApi'
 import profilePageStyles from './ProfilePage.module.css'
 

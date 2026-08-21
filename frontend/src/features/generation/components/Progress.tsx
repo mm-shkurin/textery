@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { GenerationUiState } from '../hooks/useGeneration'
-import { type DocumentType } from '../../../shared/documentTypes'
+import { type DocumentType } from '../../../shared/domain/documentTypes'
 import {
   writingProgressMessage,
   writtenProgressMessage,

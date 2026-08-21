@@ -1,4 +1,4 @@
-import { EARLIEST_PLAUSIBLE_YEAR, LATEST_PLAUSIBLE_YEAR } from './config/runtime'
+import { EARLIEST_PLAUSIBLE_YEAR, LATEST_PLAUSIBLE_YEAR } from '../config/runtime'
 
 // Day + month for this year, day + month + year for anything older — both formats are in the
 // mockup (`15 июля` alongside `2 сентября 2025` and `16 декабря 2024`). Dropping the year

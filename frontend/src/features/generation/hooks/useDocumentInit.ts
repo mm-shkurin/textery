@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { Editor } from '@tiptap/react'
 import { createDocument, getDocument } from '../api/documentApi'
-import type { DocumentType } from '../../../shared/documentTypes'
+import type { DocumentType } from '../../../shared/domain/documentTypes'
 import { describeFailure } from '../../../shared/api/send'
 
 export const CREATE_FAILED_MESSAGE =
