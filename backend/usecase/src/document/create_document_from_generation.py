@@ -10,6 +10,7 @@ from document.idempotency_key import IdempotencyKey
 from document.markdown_converter import MarkdownConverter
 from generation.generation import COMPLETED_STATUS, Generation
 from generation.generation_storage import GenerationStorage
+from shared import error_codes
 from shared.clock import Clock
 from shared.exceptions import ConflictException, NotFoundException, ValidationException
 from shared.unit_of_work import NullUnitOfWork, UnitOfWork
@@ -86,7 +87,8 @@ class CreateDocumentFromGeneration:
             IdempotencyKey(idempotency_key)
         except ValueError as error:
             raise ValidationException(
-                error_code="INVALID_IDEMPOTENCY_KEY", message=self.INVALID_IDEMPOTENCY_KEY_MESSAGE
+                error_code=error_codes.INVALID_IDEMPOTENCY_KEY,
+                message=self.INVALID_IDEMPOTENCY_KEY_MESSAGE,
             ) from error
 
     async def _load_completed_generation(
@@ -116,7 +118,7 @@ class CreateDocumentFromGeneration:
         # would hand the user a truncated document as if it were finished.
         if generation.status != COMPLETED_STATUS or not generation.content:
             raise ValidationException(
-                error_code="GENERATION_NOT_COMPLETED", message=self.NOT_COMPLETED_MESSAGE
+                error_code=error_codes.GENERATION_NOT_COMPLETED, message=self.NOT_COMPLETED_MESSAGE
             )
         return generation, generation.content
 
@@ -140,7 +142,8 @@ class CreateDocumentFromGeneration:
             return DocumentContent(html).value
         except ValueError as error:
             raise ValidationException(
-                error_code="CONVERTED_CONTENT_TOO_LONG", message=self.CONTENT_TOO_LONG_MESSAGE
+                error_code=error_codes.CONVERTED_CONTENT_TOO_LONG,
+                message=self.CONTENT_TOO_LONG_MESSAGE,
             ) from error
 
     async def _recover_existing(
@@ -169,5 +172,5 @@ class CreateDocumentFromGeneration:
         if existing is not None:
             return DocumentCreationResult(document=existing, is_replay=True)
         raise ValidationException(
-            error_code="IDEMPOTENCY_KEY_REUSED", message=self.KEY_REUSED_MESSAGE
+            error_code=error_codes.IDEMPOTENCY_KEY_REUSED, message=self.KEY_REUSED_MESSAGE
         )

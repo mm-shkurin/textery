@@ -1,7 +1,7 @@
 import unicodedata
 from dataclasses import dataclass
 
-from shared import limits
+from shared import error_codes, limits
 from shared.exceptions import ValidationException
 
 # Unicode code points, not bytes and not UTF-16 units. A byte bound would refuse
@@ -52,7 +52,7 @@ class ProjectQuery:
         if len(normalized) > QUERY_MAX_CODE_POINTS:
             raise ValidationException(
                 message=f"q must be at most {QUERY_MAX_CODE_POINTS} characters.",
-                error_code="INVALID_QUERY",
+                error_code=error_codes.INVALID_QUERY,
             )
         return cls(text=normalized)
 

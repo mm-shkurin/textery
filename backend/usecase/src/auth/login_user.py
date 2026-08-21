@@ -9,6 +9,7 @@ from auth.email import Email
 from auth.password_hasher import PasswordHasher
 from auth.token_pair import TokenPair
 from auth.token_service import TokenService
+from shared import error_codes
 from shared.exceptions import ValidationException
 from shared.rollback import rollback_quietly
 from shared.unit_of_work import NullUnitOfWork, UnitOfWork
@@ -59,7 +60,7 @@ class LoginUser:
         # can be locked (ADR §3).
         if account.failed_attempt_count >= self.LOCKOUT_THRESHOLD:
             raise ValidationException(
-                error_code="ACCOUNT_LOCKED", message=self.ACCOUNT_LOCKED_MESSAGE
+                error_code=error_codes.ACCOUNT_LOCKED, message=self.ACCOUNT_LOCKED_MESSAGE
             )
         if not self.password_hasher.verify(
             self._normalized_password(password), account.password_hash
@@ -73,7 +74,9 @@ class LoginUser:
         # know, and 5.1 requires the distinct code so the client can send them to
         # the verify screen instead of showing "wrong password".
         if not account.is_verified:
-            raise ValidationException(error_code="UNVERIFIED", message=self.UNVERIFIED_MESSAGE)
+            raise ValidationException(
+                error_code=error_codes.UNVERIFIED, message=self.UNVERIFIED_MESSAGE
+            )
         await self._reset_failed_attempts(account.id)
         # No occurrence key: every sign-in is its own event, and two sign-ins by
         # one account are two facts rather than a replay to collapse. This is
@@ -137,6 +140,6 @@ class LoginUser:
         # One error for "no such account" and "wrong password": 5.2 requires them
         # to be indistinguishable, or the response enumerates registered emails.
         return ValidationException(
-            error_code="INVALID_CREDENTIALS",
+            error_code=error_codes.INVALID_CREDENTIALS,
             message=self.INVALID_CREDENTIALS_MESSAGE,
         )

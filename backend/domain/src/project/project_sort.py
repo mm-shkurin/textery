@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
+from shared import error_codes
 from shared.exceptions import ValidationException
 
 
@@ -49,5 +50,5 @@ class ProjectSort:
         except ValueError:
             raise ValidationException(
                 message="sort must be one of: " + ", ".join(k.value for k in SortKey) + ".",
-                error_code="INVALID_SORT",
+                error_code=error_codes.INVALID_SORT,
             ) from None

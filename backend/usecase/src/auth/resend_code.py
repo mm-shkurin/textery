@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 from auth.account_verification_deps import AccountVerificationDependencies
 from auth.email_validation import validate_email
 from auth.verification_code import VerificationCode
+from shared import error_codes
 from shared.exceptions import ValidationException
 from shared.rollback import rollback_quietly
 
@@ -65,7 +66,7 @@ class ResendCode(AccountVerificationDependencies):
         # resend immediately (abuse vector). Allowed when now - created_at >= 60s.
         if self.clock.now() - newest.created_at < _COOLDOWN:
             raise ValidationException(
-                error_code="RESEND_COOLDOWN_ACTIVE",
+                error_code=error_codes.RESEND_COOLDOWN_ACTIVE,
                 message=self.COOLDOWN_MESSAGE,
             )
 
@@ -93,12 +94,12 @@ class ResendCode(AccountVerificationDependencies):
         # already transitioned, so a resend is a genuine 409 conflict, not the
         # generic state-hiding rejection.
         return ValidationException(
-            error_code="ALREADY_VERIFIED",
+            error_code=error_codes.ALREADY_VERIFIED,
             message="The account is already verified.",
         )
 
     def _invalid_or_expired(self) -> ValidationException:
         return ValidationException(
-            error_code="INVALID_OR_EXPIRED_CODE",
+            error_code=error_codes.INVALID_OR_EXPIRED_CODE,
             message="The verification code is invalid or has expired.",
         )

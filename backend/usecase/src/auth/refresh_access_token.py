@@ -1,6 +1,7 @@
 from auth.account_repository import AccountRepository
 from auth.token_pair import TokenPair
 from auth.token_service import TokenService
+from shared import error_codes
 from shared.exceptions import InvalidTokenException, ValidationException
 
 
@@ -35,6 +36,6 @@ class RefreshAccessToken:
         # anything more specific tells an attacker which of their guesses was
         # closer.
         return ValidationException(
-            error_code="INVALID_REFRESH_TOKEN",
+            error_code=error_codes.INVALID_REFRESH_TOKEN,
             message=self.INVALID_REFRESH_MESSAGE,
         )

@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from project.project_item import ProjectItem
 from project.project_query import ProjectQuery
 from project.project_sort import ProjectSort
-from shared import limits
+from shared import error_codes, limits
 from shared.exceptions import ValidationException
 
 # Both bounds are domain constants, not `Query(ge=..., le=...)` on the route.
@@ -53,13 +53,13 @@ class ProjectPageRequest:
         if not PAGE_MIN <= page <= PAGE_MAX:
             raise ValidationException(
                 message=f"page must be between {PAGE_MIN} and {PAGE_MAX}.",
-                error_code="INVALID_PAGE",
+                error_code=error_codes.INVALID_PAGE,
             )
         limit = _as_exact_int(self.limit, "INVALID_LIMIT", "limit")
         if not LIMIT_MIN <= limit <= LIMIT_MAX:
             raise ValidationException(
                 message=f"limit must be between {LIMIT_MIN} and {LIMIT_MAX}.",
-                error_code="INVALID_LIMIT",
+                error_code=error_codes.INVALID_LIMIT,
             )
 
     @property

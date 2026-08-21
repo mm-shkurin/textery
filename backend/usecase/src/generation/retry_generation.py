@@ -4,6 +4,7 @@ from document.idempotency_key import IdempotencyKey
 from generation.generation import FAILED_STATUS, Generation
 from generation.generation_queue import GenerationQueue
 from generation.generation_storage import GenerationStorage
+from shared import error_codes
 from shared.exceptions import NotFoundException, ValidationException
 
 # Retries of ONE source generation. The fresh-key rule that keeps the button
@@ -92,7 +93,7 @@ class RetryGeneration:
             # them a run of something they did not ask for.
             raise ValidationException(
                 message="This idempotency key was already used for another generation.",
-                error_code="IDEMPOTENCY_KEY_REUSED",
+                error_code=error_codes.IDEMPOTENCY_KEY_REUSED,
             )
         return replayed
 
@@ -109,21 +110,25 @@ class RetryGeneration:
             # Only `failed`. A pending or in-progress row is still alive -- the
             # stale sweep requeues it -- and retrying there runs one piece of work
             # twice: two documents, two model bills.
-            raise ValidationException(message=NOT_RETRYABLE_MESSAGE, error_code="NOT_RETRYABLE")
+            raise ValidationException(
+                message=NOT_RETRYABLE_MESSAGE, error_code=error_codes.NOT_RETRYABLE
+            )
 
         if await self._storage.count_retries_of(generation_id) >= RETRY_CEILING:
-            raise ValidationException(message=RETRY_LIMIT_MESSAGE, error_code="RETRY_LIMIT_REACHED")
+            raise ValidationException(
+                message=RETRY_LIMIT_MESSAGE, error_code=error_codes.RETRY_LIMIT_REACHED
+            )
         return source
 
     @staticmethod
     def _validated_key(raw: str | None) -> str:
         if raw is None:
             raise ValidationException(
-                message=INVALID_KEY_MESSAGE, error_code="INVALID_IDEMPOTENCY_KEY"
+                message=INVALID_KEY_MESSAGE, error_code=error_codes.INVALID_IDEMPOTENCY_KEY
             )
         try:
             return IdempotencyKey(raw).value
         except ValueError:
             raise ValidationException(
-                message=INVALID_KEY_MESSAGE, error_code="INVALID_IDEMPOTENCY_KEY"
+                message=INVALID_KEY_MESSAGE, error_code=error_codes.INVALID_IDEMPOTENCY_KEY
             ) from None

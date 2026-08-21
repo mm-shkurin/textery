@@ -6,6 +6,7 @@ to grow a message the other does not have, and the whole point of this refusal i
 that a caller cannot tell which condition produced it.
 """
 
+from shared import error_codes
 from shared.exceptions import ValidationException
 
 # The same string `security/current_owner.py` answers a missing or forged header
@@ -18,4 +19,4 @@ def unauthorized() -> ValidationException:
     # UNAUTHORIZED is already in the rest layer's _ERROR_CODE_STATUS_MAP as 401,
     # so this needs no new handler and lands in the canonical {error_code, message}
     # envelope like every other refusal.
-    return ValidationException(error_code="UNAUTHORIZED", message=UNAUTHORIZED_MESSAGE)
+    return ValidationException(error_code=error_codes.UNAUTHORIZED, message=UNAUTHORIZED_MESSAGE)

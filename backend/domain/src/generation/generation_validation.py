@@ -20,6 +20,7 @@ from generation.generation_rules import (
     MISSING_TOPIC_MESSAGE,
     OUT_OF_RANGE_VOLUME_MESSAGE,
 )
+from shared import error_codes
 from shared.exceptions import ValidationException
 
 
@@ -38,13 +39,13 @@ def validate_document_type(document_type: str) -> str:
     try:
         return DocumentType(document_type).value
     except ValueError as error:
-        # error_code="INVALID_DOCUMENT_TYPE", matching CreateDocument, rather than
+        # error_code=error_codes.INVALID_DOCUMENT_TYPE, matching CreateDocument, rather than
         # the bare VALIDATION_ERROR this factory's other rules raise. It is the
         # same field under the same allowlist, so a client that learned to handle
         # the code from /documents handles it here unchanged -- and the shared
         # handler already maps it to 422.
         raise ValidationException(
-            error_code="INVALID_DOCUMENT_TYPE",
+            error_code=error_codes.INVALID_DOCUMENT_TYPE,
             message=INVALID_DOCUMENT_TYPE_MESSAGE,
         ) from error
 

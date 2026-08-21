@@ -2,6 +2,7 @@ from uuid import UUID
 
 from project.project_feed_repository import ProjectFeedRepository, SearchSlots
 from project.project_page import ProjectPage, ProjectPageRequest
+from shared import error_codes
 from shared.clock import Clock
 from shared.exceptions import ValidationException
 
@@ -31,6 +32,6 @@ class ListProjects:
         if owner_id is None:
             raise ValidationException(
                 message="Authentication is required to view your projects.",
-                error_code="UNAUTHENTICATED",
+                error_code=error_codes.UNAUTHENTICATED,
             )
         return await self._project_feed_repository.list_feed(owner_id, request)
