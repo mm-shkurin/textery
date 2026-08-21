@@ -4,18 +4,22 @@ from oauth_providers.fake_oauth_provider import FakeOAuthProvider
 from oauth_providers.yandex_oauth_provider import YandexOAuthProvider
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access.analytics.oauth_attribution_storage import SqlAlchemyOAuthAttributionParking
+from access.analytics.registration_context_storage import SqlAlchemyRegistrationContextWriter
 from access.auth.account_storage import SqlAlchemyAccountRepository
 from access.auth.handoff_code_storage import SqlAlchemyHandoffCodeRepository
 from access.auth.oauth_identity_storage import SqlAlchemyOAuthIdentityRepository
 from access.auth.oauth_rate_limit_storage import SqlAlchemyRateLimiter
 from access.auth.oauth_state_storage import SqlAlchemyOAuthStateRepository
+from analytics.registration_context_recorder import RegistrationContextRecorder
 from auth.oauth.complete_oauth_callback import CompleteOAuthCallback
 from auth.oauth.exchange_handoff_code import ExchangeHandoffCode
 from auth.oauth.oauth_provider import OAuthConfigurationError
 from auth.oauth.provider_registry import ProviderRegistry
 from auth.oauth.rate_limiter import OAuthRateGuard
 from auth.oauth.start_oauth import StartOAuth
-from container.runtime import request_scoped, token_service
+from container.analytics_wiring import create_analytics_recorder, geolocation
+from container.runtime import request_scoped, session_factory, token_service
 from session import SqlAlchemyUnitOfWork
 from shared.clock import SystemClock
 
@@ -104,6 +108,10 @@ def create_start_oauth(session: AsyncSession) -> StartOAuth:
         clock=SystemClock(),
         unit_of_work=SqlAlchemyUnitOfWork(session),
         rate_guard=_rate_guard(session),
+        # Parked on the session factory, not this session: the campaign is written
+        # after the state's own transaction commits, and a failure to park must
+        # never be able to fail the redirect.
+        attribution_parking=SqlAlchemyOAuthAttributionParking(session_factory),
     )
 
 
@@ -119,6 +127,14 @@ def create_complete_oauth_callback(session: AsyncSession) -> CompleteOAuthCallba
         clock=SystemClock(),
         unit_of_work=SqlAlchemyUnitOfWork(session),
         rate_guard=_rate_guard(session),
+        attribution_parking=SqlAlchemyOAuthAttributionParking(session_factory),
+        analytics_recorder=create_analytics_recorder(),
+        # The same recorder the register route uses, so an account created through
+        # a provider carries the same ten columns as one created with a password.
+        registration_context=RegistrationContextRecorder(
+            context_writer=SqlAlchemyRegistrationContextWriter(session_factory),
+            geolocation=geolocation(),
+        ),
     )
 
 

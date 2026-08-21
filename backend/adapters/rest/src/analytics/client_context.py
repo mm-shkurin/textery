@@ -98,3 +98,20 @@ def visitor_id_of(request: Request) -> UUID | None:
         return UUID(raw)
     except ValueError:
         return None
+
+
+# The five names a marketing link carries, in the order `endpoints.md` lists them.
+UTM_PARAMETERS = ("utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term")
+
+
+def campaign_parameters_of(request: Request) -> dict[str, str | None]:
+    """The five `utm_*` as the query string carried them, unvalidated.
+
+    Read off the query string rather than declared as route parameters, and that
+    is the whole point on `/auth/oauth/{provider}/start`: a declared parameter
+    with a type is a parameter FastAPI can REFUSE, and that route answers
+    302/404/500 with no 400 at all. Whatever is here is decided by
+    `Attribution.of` when it is stored, where an unusable member costs the
+    marketing report and never the visitor.
+    """
+    return {name: request.query_params.get(name) for name in UTM_PARAMETERS}

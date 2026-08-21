@@ -30,7 +30,7 @@ from access.auth.oauth_rate_limit_storage import SqlAlchemyRateLimiter
 from analytics.analytics_recorder import NullAnalyticsRecorder
 from analytics.record_analytics_event import RecordAnalyticsEvent
 from analytics.record_registration_context import RecordRegistrationContext
-from analytics.registration_context import NullGeolocation
+from analytics.registration_context import Geolocation, NullGeolocation
 from container.runtime import request_scoped, session_factory
 from session import SqlAlchemyUnitOfWork
 from shared.clock import SystemClock
@@ -100,8 +100,19 @@ def create_null_analytics_recorder() -> NullAnalyticsRecorder:
     return NullAnalyticsRecorder()
 
 
+def geolocation() -> Geolocation:
+    """The configured lookup, or the null one. Never `None` to a caller.
+
+    Exposed so the OAuth callback can build the same registration-context
+    recorder the register route gets: an account created through a provider must
+    carry the same technical context as one created with a password, and two
+    places choosing their own geolocation is how the two drift apart.
+    """
+    return _geolocation or NullGeolocation()
+
+
 def create_record_registration_context() -> RecordRegistrationContext:
     return RecordRegistrationContext(
         context_writer=SqlAlchemyRegistrationContextWriter(session_factory=session_factory),
-        geolocation=_geolocation or NullGeolocation(),
+        geolocation=geolocation(),
     )

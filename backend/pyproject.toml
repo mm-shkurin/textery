@@ -102,6 +102,7 @@ ignore = [
 "usecase/src/analytics/registration_context.py" = ["ARG002"]
 "usecase/src/analytics/generation_visitor_log.py" = ["ARG002"]
 "usecase/src/analytics/record_analytics_event.py" = ["ARG002"]
+"usecase/src/analytics/oauth_attribution_parking.py" = ["ARG002"]
 # ARG002: both renderers implement the one DocumentRenderer port, and the
 # dispatcher has already routed on the enum by the time either is called -- each
 # class owns exactly one format, so its own `export_format` is settled. Dropping

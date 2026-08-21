@@ -5,6 +5,12 @@ from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 
+from analytics.client_context import (
+    accept_language_of,
+    campaign_parameters_of,
+    client_ip_of,
+    user_agent_of,
+)
 from auth.oauth.complete_oauth_callback import CompleteOAuthCallback
 from auth.oauth.exchange_handoff_code import ExchangeHandoffCode
 from auth.oauth.oauth_error_codes import OAUTH_CALLBACK_FAILED, OAuthCallbackError
@@ -56,16 +62,23 @@ def client_source(request: Request) -> str:
 @router.get("/{provider}/start")
 async def start(
     provider: str,
+    request: Request,
     source: str = Depends(client_source),
     usecase: StartOAuth = Depends(get_start_oauth_usecase),
 ) -> RedirectResponse:
-    authorization_url = await usecase.execute(provider, source)
+    # The five `utm_*` are read off the query string rather than declared as
+    # parameters, deliberately: a declared parameter with a type is a parameter
+    # FastAPI can refuse, and this route answers 302/404/500 with no 400 at all.
+    # Story 14 does not give it one — a broken marketing link must not end at a
+    # broken sign-in. Anything unusable is dropped when it is parked.
+    authorization_url = await usecase.execute(provider, source, campaign_parameters_of(request))
     return RedirectResponse(authorization_url, status_code=_REDIRECT_STATUS)
 
 
 @router.get("/{provider}/callback")
 async def callback(
     provider: str,
+    request: Request,
     code: str = "",
     state: str = "",
     source: str = Depends(client_source),
@@ -79,7 +92,19 @@ async def callback(
     # any other casing raises UNKNOWN_OAUTH_PROVIDER before reaching here, so the
     # frontend's exact-match guard never sees `Yandex`/`YANDEX`.
     try:
-        handoff_code = await usecase.execute(provider, code, state, source)
+        handoff_code = await usecase.execute(
+            provider,
+            code,
+            state,
+            source,
+            # `/callback` IS a browser request, so the caller's address, agent and
+            # language are present here exactly as they are at `/register` — which
+            # is what lets a provider-created account carry the same technical
+            # context as a registered one, with no trick needed.
+            client_ip=client_ip_of(request),
+            user_agent=user_agent_of(request),
+            accept_language=accept_language_of(request),
+        )
         params = {"code": handoff_code, "provider": provider}
     except OAuthCallbackError as error:
         # The client only ever sees the generic ?error=; the operator-facing reason
