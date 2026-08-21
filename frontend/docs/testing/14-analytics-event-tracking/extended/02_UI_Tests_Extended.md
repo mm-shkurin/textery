@@ -1,3 +1,7 @@
+<!-- COPIED FILE. Source of truth: ProductSpecification/stories/14-analytics-event-tracking/tests/extended/02_UI_Tests_Extended.md
+     Regenerate with `node scripts/sync-test-cases.mjs` from the monorepo.
+     Edits made here are overwritten by the next sync. -->
+
 > These are additional edge case tests. Implement after core tests pass.
 
 # Analytics Event Tracking — UI Tests (Extended)

@@ -1,3 +1,7 @@
+<!-- COPIED FILE. Source of truth: ProductSpecification/stories/14-analytics-event-tracking/tests/02_UI_Tests.md
+     Regenerate with `node scripts/sync-test-cases.mjs` from the monorepo.
+     Edits made here are overwritten by the next sync. -->
+
 > **Implementation Order**: sequential TDD — mint and reuse the visitor identity → freeze
 > attribution → emit from the three browser surfaces → degrade without showing it → clean up
 > after account deletion.
