@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { OAuthCallback } from '../OAuthCallback'
 import * as oauthExchangeApi from '../../api/oauthExchangeApi'
 import * as authSession from '../../../../shared/session/authSession'
+import { SESSION, deferred, navigate } from './oauthCallbackTestSupport'
 
 // Scenario 3.1 — the visitor lands on /auth/callback with a VALID one-time handoff code. The
 // callback screen shows a loading state while POST /oauth/exchange is in flight, and on a valid
@@ -28,14 +29,7 @@ const CODE = 'handoff-abc123'
 // A distinctive session sentinel. The exchange really maps the /auth/login body shape, but it is
 // mocked here — the test's job is to prove the component pipes the returned tokens into
 // authSession and does not fabricate its own.
-const SESSION = {
-  accessToken: 'acc-9f3ab',
-  refreshToken: 'ref-7b2cd',
-  accessTokenExpiresAt: '2026-07-22T10:00:00Z',
-  refreshTokenExpiresAt: '2026-07-29T10:00:00Z',
-}
 
-const navigate = vi.fn()
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>()
   return { ...actual, useNavigate: () => navigate }
@@ -50,14 +44,6 @@ vi.mock('../../../../shared/session/authSession', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../../shared/session/authSession')>()
   return { ...actual, saveSession: vi.fn() }
 })
-
-function deferred<T>() {
-  let resolve!: (value: T) => void
-  const promise = new Promise<T>((res) => {
-    resolve = res
-  })
-  return { promise, resolve }
-}
 
 // RED: OAuthCallback + oauthExchangeApi are empty stubs — skipped so the suite stays green
 // between red and green. green-frontend un-skips after implementing the loading + exchange flow.

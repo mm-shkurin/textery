@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { OAuthCallback } from '../OAuthCallback'
 import * as oauthExchangeApi from '../../api/oauthExchangeApi'
 import * as authSession from '../../../../shared/session/authSession'
+import { navigate } from './oauthCallbackTestSupport'
 
 // Scenario 3.3 — a LATE duplicate rejection after a stored success is ignored.
 //
@@ -24,7 +25,6 @@ import * as authSession from '../../../../shared/session/authSession'
 
 const CODE = 'handoff-dup-33'
 
-const navigate = vi.fn()
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>()
   return { ...actual, useNavigate: () => navigate }

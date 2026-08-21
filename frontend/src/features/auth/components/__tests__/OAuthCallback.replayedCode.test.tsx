@@ -1,9 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
-import { OAuthCallback } from '../OAuthCallback'
+import { act, screen } from '@testing-library/react'
 import * as oauthExchangeApi from '../../api/oauthExchangeApi'
 import * as authSession from '../../../../shared/session/authSession'
+import { navigate, renderCallbackAt } from './oauthCallbackTestSupport'
 
 // Scenario 4.3 — a REPLAYED or EXPIRED handoff code shows an error, NOT a second sign-in.
 //
@@ -25,7 +24,6 @@ import * as authSession from '../../../../shared/session/authSession'
 
 const CODE = 'already-used-xyz'
 
-const navigate = vi.fn()
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>()
   return { ...actual, useNavigate: () => navigate }
@@ -42,11 +40,7 @@ vi.mock('../../../../shared/session/authSession', async (importOriginal) => {
 })
 
 function renderAtCallback() {
-  return render(
-    <MemoryRouter initialEntries={[`/auth/callback?code=${CODE}&provider=vk`]}>
-      <OAuthCallback />
-    </MemoryRouter>,
-  )
+  return renderCallbackAt(`?code=${CODE}&provider=vk`)
 }
 
 describe('OAuthCallback replayed / expired code', () => {

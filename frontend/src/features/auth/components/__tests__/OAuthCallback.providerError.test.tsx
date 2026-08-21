@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
-import { OAuthCallback } from '../OAuthCallback'
+import { screen } from '@testing-library/react'
 import * as oauthExchangeApi from '../../api/oauthExchangeApi'
+import { navigate, neverResolves, renderCallbackAt } from './oauthCallbackTestSupport'
 
 // Scenario 4.1 — the visitor lands on /auth/callback with an ERROR param (provider error or a
 // user-cancel: ?error=access_denied), NOT a handoff code. The callback must NOT attempt an
@@ -19,7 +18,6 @@ const VK_ERROR_MESSAGE = 'Не удалось войти через VK ID. По�
 const YANDEX_ERROR_MESSAGE = 'Не удалось войти через Yandex ID. Попробуйте снова.'
 const GENERIC_ERROR_MESSAGE = 'Не удалось войти через провайдера. Попробуйте снова.'
 
-const navigate = vi.fn()
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>()
   return { ...actual, useNavigate: () => navigate }
@@ -30,16 +28,8 @@ vi.mock('../../api/oauthExchangeApi', async (importOriginal) => {
   return { ...actual, oauthExchange: vi.fn() }
 })
 
-function neverResolves<T>() {
-  return new Promise<T>(() => {})
-}
-
 function renderAtCallback(query: string) {
-  return render(
-    <MemoryRouter initialEntries={[`/auth/callback${query}`]}>
-      <OAuthCallback />
-    </MemoryRouter>,
-  )
+  return renderCallbackAt(`${query}`)
 }
 
 describe('OAuthCallback provider-error routing', () => {

@@ -7,6 +7,7 @@ import * as oauthExchangeApi from '../../api/oauthExchangeApi'
 import * as authSession from '../../../../shared/session/authSession'
 import authFormStyles from '../AuthForm.module.css'
 import oauthCallbackStyles from '../OAuthCallback.module.css'
+import { deferred, navigate } from './oauthCallbackTestSupport'
 
 // Scenario 3.2 — the exchange is issued EXACTLY ONCE per handoff code even when the callback's
 // effect runs twice. `StrictMode` is the real-world double-run: React dev mounts, tears down and
@@ -31,7 +32,6 @@ const SESSION = {
   refreshTokenExpiresAt: '2026-07-29T10:00:00Z',
 }
 
-const navigate = vi.fn()
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>()
   return { ...actual, useNavigate: () => navigate }
@@ -46,14 +46,6 @@ vi.mock('../../../../shared/session/authSession', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../../shared/session/authSession')>()
   return { ...actual, saveSession: vi.fn() }
 })
-
-function deferred<T>() {
-  let resolve!: (value: T) => void
-  const promise = new Promise<T>((res) => {
-    resolve = res
-  })
-  return { promise, resolve }
-}
 
 function renderUnderDoubleMount() {
   return render(

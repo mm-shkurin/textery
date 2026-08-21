@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { OAuthCallback } from '../OAuthCallback'
 import * as oauthExchangeApi from '../../api/oauthExchangeApi'
 import * as authSession from '../../../../shared/session/authSession'
+import { SESSION, deferred, navigate } from './oauthCallbackTestSupport'
 
 // Scenario 5.1 — the post-sign-in redirect target is validated. A crafted EXTERNAL redirect
 // target is injected through every channel the callback could plausibly read (router `state.from`
@@ -24,14 +25,7 @@ const CODE = 'handoff-abc123'
 const EVIL_ABSOLUTE = 'https://evil.example.com/steal'
 const EVIL_PROTOCOL_RELATIVE = '//evil.example.com'
 const EVIL_HTTPS = 'https://evil.example.com'
-const SESSION = {
-  accessToken: 'acc-9f3ab',
-  refreshToken: 'ref-7b2cd',
-  accessTokenExpiresAt: '2026-07-22T10:00:00Z',
-  refreshTokenExpiresAt: '2026-07-29T10:00:00Z',
-}
 
-const navigate = vi.fn()
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>()
   return { ...actual, useNavigate: () => navigate }
@@ -46,14 +40,6 @@ vi.mock('../../../../shared/session/authSession', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../../shared/session/authSession')>()
   return { ...actual, saveSession: vi.fn() }
 })
-
-function deferred<T>() {
-  let resolve!: (value: T) => void
-  const promise = new Promise<T>((res) => {
-    resolve = res
-  })
-  return { promise, resolve }
-}
 
 // Mount the callback with a valid code plus a crafted external target injected via `search` and/or
 // router `state`, resolve the exchange, and let a usable session store succeed.
