@@ -20,9 +20,15 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 # same way again. The list still enumerates every table, because CASCADE only
 # reaches tables connected by a foreign key -- `oauth_states` and
 # `oauth_rate_limits` have none and would otherwise never be cleaned.
+# `analytics_events` joined the list with the migration that created it, not
+# before: the list names every table by hand, and a name here that Postgres cannot
+# resolve fails the whole statement -- adding it while the relation did not exist
+# would have turned every test in this suite red at cleanup rather than at any
+# assertion.
 TRUNCATE_ALL = (
     "TRUNCATE TABLE generations, documents, verification_codes, oauth_identities, "
-    "oauth_handoff_codes, oauth_states, oauth_rate_limits, accounts CASCADE"
+    "oauth_handoff_codes, oauth_states, oauth_rate_limits, analytics_events, "
+    "accounts CASCADE"
 )
 
 

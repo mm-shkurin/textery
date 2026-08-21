@@ -22,7 +22,7 @@ from session import create_engine, create_session_factory
 from statements.database_cleanup import truncate_all
 from statements.database_url import resolve_test_database_url
 
-_EXPECTED_FIXTURES = 9
+_EXPECTED_FIXTURES = 10
 
 
 async def _engine_scoped(build: Callable[..., object]) -> AsyncIterator[object]:
@@ -111,6 +111,20 @@ async def verification_code_concurrency_statements():
     )
 
     async for statements in _engine_scoped(VerificationCodeConcurrencyStatements):
+        yield statements
+
+
+@pytest_asyncio.fixture
+async def analytics_storage_statements():
+    # Engine-scoped, not session-scoped: the claim is what a DIFFERENT connection
+    # sees after the commit. `expire_on_commit=False` means a re-read inside the
+    # writing session comes from the identity map, which passes on a row Postgres
+    # never received.
+    from statements.analytics_event_storage_statements import (
+        AnalyticsEventStorageStatements,
+    )
+
+    async for statements in _engine_scoped(AnalyticsEventStorageStatements):
         yield statements
 
 

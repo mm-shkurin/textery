@@ -22,19 +22,16 @@ from generation.generation import (
     Generation,
 )
 from model.base import Base
+from model.check_constraints import one_of
 
 # The status field's value space, and the source of the table's CHECK constraint.
 GENERATION_STATUSES = (PENDING_STATUS, IN_PROGRESS_STATUS, COMPLETED_STATUS, FAILED_STATUS)
-_STATUSES_SQL = ", ".join(repr(status) for status in GENERATION_STATUSES)
 
 
 class GenerationModel(Base):
     __tablename__ = "generations"
     __table_args__ = (
-        CheckConstraint(
-            f"status IN ({_STATUSES_SQL})",
-            name="ck_generations_status",
-        ),
+        CheckConstraint(one_of("status", GENERATION_STATUSES), name="ck_generations_status"),
         # Serves the owner-scoped history keyset: equality on owner_id, then the
         # (created_at, id) pair the cursor seeks on, DESC to match ORDER BY. Leads
         # with owner_id, so it also covers every plain by-owner lookup -- which is

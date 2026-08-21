@@ -20,22 +20,19 @@ from document.document import DOCUMENT_STATUSES, Document
 from document.document_type import SUPPORTED_DOCUMENT_TYPES
 from document.page_settings import PageSettings
 from model.base import Base
-
-_STATUSES_SQL = ", ".join(repr(status) for status in DOCUMENT_STATUSES)
-_ALLOWED_DOCUMENT_TYPES_SQL = ", ".join(repr(value) for value in SUPPORTED_DOCUMENT_TYPES)
+from model.check_constraints import one_of
 
 
 class DocumentModel(Base):
     __tablename__ = "documents"
     __table_args__ = (
-        # The allowlists live in the domain; the DB only constrains. Built from the
-        # domain constants so the two cannot drift -- same approach as
-        # GenerationModel's ck_generations_status.
+        # The allowlists live in the domain; the DB only constrains. Iterated from
+        # the domain constants so the two cannot drift.
         CheckConstraint(
-            f"document_type IN ({_ALLOWED_DOCUMENT_TYPES_SQL})",
+            one_of("document_type", SUPPORTED_DOCUMENT_TYPES),
             name="ck_documents_document_type",
         ),
-        CheckConstraint(f"status IN ({_STATUSES_SQL})", name="ck_documents_status"),
+        CheckConstraint(one_of("status", DOCUMENT_STATUSES), name="ck_documents_status"),
         CheckConstraint("version >= 1", name="ck_documents_version_positive"),
         UniqueConstraint("owner_id", "idempotency_key", name="uq_documents_owner_idempotency_key"),
         # One document per generation, enforced by the database rather than by a

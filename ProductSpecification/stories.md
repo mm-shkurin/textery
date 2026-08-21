@@ -16,10 +16,18 @@
 | 10 | Editor pages (pagination, page setup, headers/footers) | ✅ | 🔧 | — | — | — | — | — | 0/70 | 0% |
 | 12 | Мои проекты (list/search/sort, grid + list view) | ✅ | 🔧 | — | 🔧 | — | — | — | 1/177 | 1% |
 | 13 | Profile management                     | ✅   | 🔧   | —    | 🔧  | —     | —    | —     | n/t   | n/t |
+| 14 | Analytics Event Tracking (server-emitted events + browser ingest) | ✅ | 🔧 | — | — | — | — | — | 1/171 | 1% |
 
 **Легенда `Tests`/`%`.** `n/t` — «not tracked»: код фазы существует и смержен, но
 per-scenario чеклист под него не заводился, поэтому знаменатель из тест-спеки не
 применим. Это честнее нуля, который читается как «работы не было».
+
+**Note on #14 (Analytics Event Tracking).** Promoted from Backlog on 2026-08-19 —
+spec phase complete (interview, story, api-spec, test-spec; `mockups` `[S]`, the story adds
+no new UI surface). `1/171` is not work done: the one counted scenario is
+`03_Load_Tests.md` §3.1, marked `[S]` out of scope because it would require bounding
+`GenerationStorage.list_stale` and this story changes no existing behaviour — carried as
+`tasks/7-refactoring-bound-stale-generation-sweep/`. Backend starts at API §1.1.
 
 **Note on #16 (OAuth sign-in).** До 15.08 строка стояла в `·` («папки истории нет»)
 по всем backend-фазам — это было просто неверно: папка `stories/16-oauth-signin/` есть,
@@ -75,7 +83,6 @@ types) may run in any order relative to each other and may interleave with #5–
 |----|----------------------------------------|------|------|------|-----|-------|------|-------|-------|----|
 | 9  | Landing & Marketing                    |      |      |      |     |       |      |       |       |    |
 | 11 | Document Management (rename/delete/duplicate) |      |      |      |     |       |      |       |       |    |
-| 14 | Analytics Event Tracking                |      |      |      |     |       |      |       |       |    |
 | 15 | Funnels & Reports (CSV export)          |      |      |      |     |       |      |       |       |    |
 
 **Note on #12 (Мои проекты).** Promoted to In Progress on 2026-08-01 — `/interview` ran,

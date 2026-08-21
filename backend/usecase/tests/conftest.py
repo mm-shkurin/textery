@@ -1,5 +1,6 @@
 import pytest
 
+from statements.analytics_ingest_statements import AnalyticsIngestStatements
 from statements.avatar_statements import AvatarStatements
 from statements.delete_account_statements import DeleteAccountStatements
 from statements.deletion_confirmation_statements import DeletionConfirmationStatements
@@ -133,6 +134,11 @@ def project_feed_row_statements():
 @pytest.fixture
 def project_item_shape_statements():
     return ProjectItemShapeStatements()
+
+
+@pytest.fixture
+def analytics_ingest_statements():
+    return AnalyticsIngestStatements()
 
 
 @pytest.fixture

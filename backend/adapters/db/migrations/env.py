@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 # ordinary top-level imports. The model imports are unused by name and kept for
 # their side effect: each registers its table on Base.metadata, which is what
 # autogenerate diffs against. Drop one and Alembic proposes dropping its table.
+from model.analytics.analytics_event_model import AnalyticsEventModel  # noqa: F401
 from model.auth.account_model import AccountModel  # noqa: F401
 from model.auth.verification_code_model import VerificationCodeModel  # noqa: F401
 from model.base import Base
