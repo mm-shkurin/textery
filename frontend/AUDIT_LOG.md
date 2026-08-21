@@ -408,3 +408,51 @@ Outstanding итерации 5, но то, что удерживает план�
   rendering; `httpClient.ts` (205) and `ProfileMenu.css` (201) are over the cap.
 - Only the editor is code-split: the main chunk is 133 kB gzip and carries the
   router, the query client and every feature screen on first paint.
+
+## Iteration 5 — Score: 3.0 / 3.0 — 2026-08-21 — c2bb0a4a
+### Fixed Issues:
+- The analytics slice, shipped the same day, had reinvented the storage guard the
+  jury's `useDismissOnOutside` remark was about: `safely()` in `visitorId.ts` plus
+  bare `window.localStorage` and `window.location` in three modules. All of it now
+  goes through `shared/lib/browser.ts`, and `writeStored`'s boolean return IS the
+  visitor identity's `degraded` flag rather than a second guard beside it.
+- `useProfileNameForm` held four `useState`s describing one save attempt. They only
+  ever changed together, so each transition was three or four calls a future edit
+  could get half-right — one `SaveAttempt` object now.
+- CHANGELOG had gone 26 commits without an entry (limit 25).
+
+### Outstanding Blockers:
+- The release ref `gitverse-frontend/main` is 639 frontend commits behind HEAD,
+  dated 2026-08-14. Nothing from this sprint is on the graded repository.
+- Single-author history (628 vs 7), and the committer email on all of them is
+  malformed: `trape3977@g,ail.com` — visible in the first `git log` a grader runs.
+- `GIT-BULK`: four commits over 40 files, `4f2d7873` (56 files) the worst.
+
+## Iteration 6 — Score: 2.5 / 3.0 — 2026-08-21 — 86f03d4b — confirmation
+### Fixed Issues:
+- Story 14's UI test cases existed only as Gherkin in `ProductSpecification` and
+  had never been published: this sprint's only frontend work had no test case a
+  jury could open, and `sync-test-cases.mjs --check` was announcing the hole. 24
+  cases rewritten into the executable eight-field template and synced.
+- The README's quick start could not be followed: it documented a default for
+  `VITE_API_PROXY_TARGET` that `requireProxyTarget()` does not have, so
+  `npm install && npm run dev` died on a variable the README called optional. The
+  `docker run` example proxied `/api` to the container's own loopback.
+- `format:check` was red on HEAD — `fbf7e5fb` committed `reporting.test.ts`
+  unformatted.
+
+### Outstanding Blockers:
+- `analyticsClient.ts:59` calls `fetch` directly rather than through `httpClient`,
+  so a hung analytics request has no bound at all; only `keepalive` is deliberate.
+- Five per-feature error→Russian mappings (`auth/api/apiError.ts`,
+  `projects/api/loadFailureMessages.ts`, `generation/hooks/saveFailureMessages.ts`,
+  `shared/identity/api/profileErrors.ts`, `shared/api/send.ts`) with two
+  incompatible error shapes — no single mapping.
+- `features/generation/components/` holds seven non-component modules and a hook
+  while `utils/` and `hooks/` exist beside it; `shared/` keeps four modules loose
+  at the slice root.
+- Thirteen `OAuthCallback.*.test.tsx` files repeat the same router + exchange mock
+  preamble by hand.
+- Auth tokens remain in `sessionStorage`; the accepted-risk note and the
+  httpOnly-cookie end state are unchanged.
+
