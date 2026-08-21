@@ -48,7 +48,7 @@ class Attribution:
         normalized: dict[str, str | None] = {}
         for field_name in FIELD_NAMES:
             member = _normalized(values.get(field_name))
-            if member is _UNUSABLE:
+            if isinstance(member, _Unusable):
                 return cls()
             normalized[field_name] = member
         return cls(**normalized)  # type: ignore[arg-type]
@@ -64,10 +64,15 @@ class Attribution:
 # A sentinel rather than an exception: "this member is unusable" has to travel
 # out of the per-field step without becoming a refusal anywhere up the stack,
 # and `None` already means the legitimate "this member was not sent".
-_UNUSABLE = object()
+class _Unusable:
+    """The sentinel's own type, so a caller that checks for it is left with the
+    two storable answers -- `str` and `None` -- rather than with `object`."""
 
 
-def _normalized(raw: object) -> str | None | object:
+_UNUSABLE = _Unusable()
+
+
+def _normalized(raw: object) -> "str | None | _Unusable":
     """One member's stored value, `None` when absent, `_UNUSABLE` when it is not.
 
     An explicitly empty parameter and an omitted one are the same stored state
