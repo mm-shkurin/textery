@@ -10,6 +10,7 @@ import {
   WIRE_DOCUMENT_TYPE,
   type DocumentType,
 } from '../../../shared/documentTypes'
+import { visitorId } from '../../../shared/analytics/visitorId'
 import { API } from '../../../shared/api/endpoints'
 
 export interface CreateGenerationResult {
@@ -63,7 +64,14 @@ export async function createGeneration(
       method: 'POST',
       // Generated once per call, so an internal 401-retry replays the SAME key and the backend
       // collapses the replay onto the first request instead of billing a second generation.
-      headers: { 'Idempotency-Key': crypto.randomUUID() },
+      headers: {
+        'Idempotency-Key': crypto.randomUUID(),
+        // The browser's analytics identity, so the backend can attribute this generation's
+        // start AND its completion — which happens minutes later, in a background task — to the
+        // visitor who asked for it. A HEADER, not a body field: the request contract of this
+        // endpoint is unchanged, and a server that ignores the header behaves exactly as before.
+        'X-Visitor-Id': visitorId(),
+      },
       body: {
         // The wire type is Cyrillic ("доклад"); the backend rejects the app value ("doklad")
         // with 422 INVALID_DOCUMENT_TYPE. Map here, same as documentApi.createDocument does.

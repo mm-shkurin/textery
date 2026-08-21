@@ -16,6 +16,7 @@ import { postJson } from '../../../shared/api/httpClient'
 import { toAuthApiError, type AuthApiError } from './apiError'
 import { GENERIC_REGISTER_FAILURE_MESSAGE } from '../utils/authMessages'
 import { API } from '../../../shared/api/endpoints'
+import { attributionForRegistration } from '../../../shared/analytics/attribution'
 
 export interface RegisterResult {
   userId: string
@@ -47,6 +48,11 @@ export async function register(
       email,
       password,
       confirm_password: confirmPassword,
+      // The FROZEN set, not the current URL's parameters. The visitor may have arrived from a
+      // campaign days ago and be registering from a bookmark today; the first touch is what the
+      // account is credited to. Spread, so a browser that never saw a campaign link sends no
+      // `utm_*` keys at all rather than five nulls.
+      ...attributionForRegistration(),
     })
     return {
       userId: String(body.user_id ?? ''),

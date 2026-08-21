@@ -52,6 +52,12 @@ describe('generationApi createGeneration — the picked document type reaches th
       'Content-Type': 'application/json',
       'Idempotency-Key': 'idem-1',
       Authorization: 'Bearer access-1',
+      // The analytics visitor id, so the backend can attribute this generation's start and its
+      // later completion to the browser that asked. Same stubbed `crypto.randomUUID` as the
+      // idempotency key, hence the identical value -- the assertion that matters here is that
+      // the header is PRESENT, since a request without it silently drops the visitor from the
+      // funnel while every other assertion stays green.
+      'X-Visitor-Id': 'idem-1',
     })
     // The Cyrillic wire value, not the app-internal id — the backend 422s on 'referat'.
     // toEqual over the whole body, not toMatchObject: a dropped, renamed, or extra wire field

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthSubmitButton } from './AuthSubmitButton'
 import { AuthLoadingIndicator } from './AuthLoadingIndicator'
@@ -6,8 +7,19 @@ import { CONFIRM_MISMATCH_MESSAGE, PASSWORD_POLICY_HINT } from '../utils/passwor
 import authFormStyles from './AuthForm.module.css'
 import './AuthStatus.module.css'
 import styles from './RegisterForm.module.css'
+import { trackRegistrationStarted } from '../../../shared/analytics/trackers'
+
+// The registration screen was REACHED — reported on arrival, not on submit. The number the
+// funnel needs is how many people who saw the form finished it, and an event that only fires when
+// they do makes that unanswerable.
+function useRegistrationStartedReport(): void {
+  useEffect(() => {
+    trackRegistrationStarted()
+  }, [])
+}
 
 export function RegisterForm() {
+  useRegistrationStartedReport()
   const {
     emailInputRef,
     passwordInputRef,

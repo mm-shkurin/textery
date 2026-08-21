@@ -20,6 +20,11 @@ export const API_VERSION = 'v1'
 const V1 = `/${MOUNT}/${API_VERSION}`
 
 export const API = {
+  // The one tokenless WRITE this app makes. Grouped like everything else rather than inlined at
+  // the call site, so a version bump moves it with the rest of the URL space.
+  analytics: {
+    events: `${V1}/analytics/events`,
+  },
   auth: {
     login: `${V1}/auth/login`,
     register: `${V1}/auth/register`,
