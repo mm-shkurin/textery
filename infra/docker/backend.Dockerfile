@@ -36,7 +36,7 @@ COPY backend/application backend/application
 # `pythonpath`. This is what replaced nine sys.path.insert calls in the entry
 # point: a package setup the interpreter is told about, rather than one the
 # application patches at import time.
-ENV PYTHONPATH=/app/backend/domain/src:/app/backend/usecase/src:/app/backend/adapters/rest/src:/app/backend/adapters/db/src:/app/backend/adapters/security/src:/app/backend/adapters/generation_provider/src:/app/backend/adapters/oauth_provider/src:/app/backend/adapters/rendering/src:/app/backend/application/src:/app/backend/application/src/app
+ENV PYTHONPATH=/app/backend/domain/src:/app/backend/usecase/src:/app/backend/adapters/rest/src:/app/backend/adapters/db/src:/app/backend/adapters/security/src:/app/backend/adapters/generation_provider/src:/app/backend/adapters/oauth_provider/src:/app/backend/adapters/geolocation_provider/src:/app/backend/adapters/rendering/src:/app/backend/application/src:/app/backend/application/src/app
 
 EXPOSE 8000
 
