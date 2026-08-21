@@ -53,4 +53,49 @@ describe('first-touch attribution', () => {
     // A registration after a deletion must not be attributed to the deleted account's campaign.
     expect(attributionForRegistration()).toEqual({})
   })
+  // Everything below reads storage a fresh page load would read — the module caches per load, so
+  // `forgetAttribution()` in `beforeEach` is what makes these a second visit rather than the same
+  // one continuing.
+  it('reads a set frozen by an earlier page load', () => {
+    window.localStorage.setItem(
+      'textery.analytics.attribution',
+      JSON.stringify({ utm_source: 'vk', utm_campaign: 'august' }),
+    )
+
+    expect(attributionForRegistration()).toEqual({ utm_source: 'vk', utm_campaign: 'august' })
+  })
+
+  it('treats a stored value that is not JSON as nothing frozen, rather than throwing', () => {
+    // A corrupt value is ours, so it means a bug or a hand-edit. Letting it throw would take down
+    // every registration from that browser for the sake of an analytics field.
+    window.localStorage.setItem('textery.analytics.attribution', 'not json{')
+
+    expect(attributionForRegistration()).toEqual({})
+  })
+
+  it('treats a stored value that is not an object as nothing frozen', () => {
+    window.localStorage.setItem('textery.analytics.attribution', '"vk"')
+
+    expect(attributionForRegistration()).toEqual({})
+  })
+
+  it('keeps only the campaign keys, and only the ones carrying text', () => {
+    // A hand-edited or future-version blob must not put arbitrary keys on a registration body,
+    // and an empty string is the same as an absent parameter everywhere else in this module.
+    window.localStorage.setItem(
+      'textery.analytics.attribution',
+      JSON.stringify({ utm_source: 'vk', utm_term: '', evil: 'x', utm_medium: 7 }),
+    )
+
+    expect(attributionForRegistration()).toEqual({ utm_source: 'vk' })
+  })
+
+  it('forgets a frozen set, in storage as well as in memory', () => {
+    captureAttribution('?utm_source=vk')
+
+    forgetAttribution()
+
+    expect(window.localStorage.getItem('textery.analytics.attribution')).toBeNull()
+    expect(attributionForRegistration()).toEqual({})
+  })
 })
