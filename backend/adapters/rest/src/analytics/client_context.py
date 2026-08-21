@@ -14,6 +14,7 @@ address by padding the header; too low and the address stored is our own proxy's
 Infra §2.5 asserts the configured number against the deployment's actual chain.
 """
 
+from dataclasses import dataclass
 from uuid import UUID
 
 from fastapi import Request
@@ -59,6 +60,33 @@ def user_agent_of(request: Request) -> str | None:
 
 def accept_language_of(request: Request) -> str | None:
     return request.headers.get("Accept-Language")
+
+
+@dataclass(frozen=True)
+class ObservedContext:
+    """What the SERVER saw about the request, never what the body claimed.
+
+    The three travel together everywhere an account can be born -- `/register`
+    and the OAuth callback -- because an account created either way has to carry
+    the same technical context. Read as one value so the two routes cannot come
+    to read a different set, and so a fourth fact is added in one place.
+
+    Never accepted from a request body: a client that could set its own country
+    or device type could fabricate the segmentation the business is measured by,
+    and nothing in the stored data would reveal it.
+    """
+
+    client_ip: str | None
+    user_agent: str | None
+    accept_language: str | None
+
+
+def observed_context(request: Request) -> ObservedContext:
+    return ObservedContext(
+        client_ip=client_ip_of(request),
+        user_agent=user_agent_of(request),
+        accept_language=accept_language_of(request),
+    )
 
 
 VISITOR_ID_HEADER = "X-Visitor-Id"

@@ -57,20 +57,10 @@ class VerifyAccount(AccountVerificationDependencies):
             raise self._invalid_or_expired()
 
         if account.is_verified:
-            # Already verified: the transition already happened. Do NOT run the
-            # consume/save/commit tail again (no duplicate state transition,
-            # scenario 3.4). This sits BEFORE the expiry check on purpose:
-            # re-clicking the verify link with the same code after the TTL is
-            # still idempotent success, not a 400.
-            if verification_code.matches(code):
-                return
-            raise self._already_verified()
+            self._settle_an_already_verified_account(verification_code, code)
+            return
 
-        if not verification_code.matches(code):
-            raise self._invalid_or_expired()
-        if self.clock.now() >= verification_code.expires_at:
-            raise self._invalid_or_expired()
-
+        self._refuse_unless_usable(verification_code, code)
         await self._apply_verification(account, verification_code)
         # AFTER the transition is committed, and only on the path that actually
         # performed it. The already-verified branch above returns without
@@ -83,6 +73,26 @@ class VerifyAccount(AccountVerificationDependencies):
             user_id=account.id,
             occurrence_key=occurrence_of(REGISTRATION_COMPLETED, account.id),
         )
+
+    def _settle_an_already_verified_account(
+        self, verification_code: VerificationCode, code: str
+    ) -> None:
+        """The transition already happened, so it must not happen a second time.
+
+        Returning rather than running the consume/save/commit tail again is what
+        makes a re-clicked link idempotent (scenario 3.4). Checked BEFORE expiry
+        on purpose: re-clicking with the same code after the TTL is still
+        idempotent success, not a 400.
+        """
+        if not verification_code.matches(code):
+            raise self._already_verified()
+
+    def _refuse_unless_usable(self, verification_code: VerificationCode, code: str) -> None:
+        """Wrong code and expired code answer identically -- neither confirms the other."""
+        if not verification_code.matches(code):
+            raise self._invalid_or_expired()
+        if self.clock.now() >= verification_code.expires_at:
+            raise self._invalid_or_expired()
 
     async def _apply_verification(
         self, account: Account, verification_code: VerificationCode

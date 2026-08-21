@@ -5,12 +5,7 @@ from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 
-from analytics.client_context import (
-    accept_language_of,
-    campaign_parameters_of,
-    client_ip_of,
-    user_agent_of,
-)
+from analytics.client_context import campaign_parameters_of, observed_context
 from auth.oauth.complete_oauth_callback import CompleteOAuthCallback
 from auth.oauth.exchange_handoff_code import ExchangeHandoffCode
 from auth.oauth.oauth_error_codes import OAUTH_CALLBACK_FAILED, OAuthCallbackError
@@ -92,18 +87,19 @@ async def callback(
     # any other casing raises UNKNOWN_OAUTH_PROVIDER before reaching here, so the
     # frontend's exact-match guard never sees `Yandex`/`YANDEX`.
     try:
+        # `/callback` IS a browser request, so the caller's address, agent and
+        # language are present here exactly as they are at `/register` — which is
+        # what lets a provider-created account carry the same technical context as
+        # a registered one, with no trick needed.
+        observed = observed_context(request)
         handoff_code = await usecase.execute(
             provider,
             code,
             state,
             source,
-            # `/callback` IS a browser request, so the caller's address, agent and
-            # language are present here exactly as they are at `/register` — which
-            # is what lets a provider-created account carry the same technical
-            # context as a registered one, with no trick needed.
-            client_ip=client_ip_of(request),
-            user_agent=user_agent_of(request),
-            accept_language=accept_language_of(request),
+            client_ip=observed.client_ip,
+            user_agent=observed.user_agent,
+            accept_language=observed.accept_language,
         )
         params = {"code": handoff_code, "provider": provider}
     except OAuthCallbackError as error:

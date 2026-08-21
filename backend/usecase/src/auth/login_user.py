@@ -4,6 +4,7 @@ from uuid import UUID
 
 from analytics.analytics_recorder import AnalyticsRecorder, NullAnalyticsRecorder
 from analytics.event_names import LOGIN_SUCCESS
+from auth.account import Account
 from auth.account_repository import AccountRepository
 from auth.email import Email
 from auth.password_hasher import PasswordHasher
@@ -53,30 +54,7 @@ class LoginUser:
         account = await self.account_repository.find_by_email(self._normalized_email(email))
         if account is None:
             raise self._invalid_credentials()
-        # Lockout gate runs BEFORE password verification (but after the null check):
-        # a locked account is refused even with the correct password, and verify()
-        # must never be reached. Placed after `account is None` so an unknown email
-        # still takes the generic 401 path -- only a real, demonstrably-existing row
-        # can be locked (ADR §3).
-        if account.failed_attempt_count >= self.LOCKOUT_THRESHOLD:
-            raise ValidationException(
-                error_code=error_codes.ACCOUNT_LOCKED, message=self.ACCOUNT_LOCKED_MESSAGE
-            )
-        if not self.password_hasher.verify(
-            self._normalized_password(password), account.password_hash
-        ):
-            await self._record_failed_attempt(account.id)
-            raise self._invalid_credentials()
-        # Verified is checked AFTER the password, deliberately. The other order
-        # would answer UNVERIFIED to anyone who merely guessed the email, turning
-        # a 403 into an account-existence oracle. Answering it only once the
-        # password is already proven correct tells the caller nothing they did not
-        # know, and 5.1 requires the distinct code so the client can send them to
-        # the verify screen instead of showing "wrong password".
-        if not account.is_verified:
-            raise ValidationException(
-                error_code=error_codes.UNVERIFIED, message=self.UNVERIFIED_MESSAGE
-            )
+        await self._refuse_unless_admissible(account, password)
         await self._reset_failed_attempts(account.id)
         # No occurrence key: every sign-in is its own event, and two sign-ins by
         # one account are two facts rather than a replay to collapse. This is
@@ -86,6 +64,34 @@ class LoginUser:
             event_name=LOGIN_SUCCESS, visitor_id=None, user_id=account.id
         )
         return self.token_service.issue_pair(account_id=account.id, email=account.email)
+
+    async def _refuse_unless_admissible(self, account: Account, password: str) -> None:
+        """The three refusals a real account can still earn, in the order they must run.
+
+        Lockout FIRST: a locked account is refused even with the correct password,
+        and `verify()` must never be reached. It runs after the caller's own
+        `account is None` check, so an unknown email still takes the generic 401
+        path -- only a real, demonstrably-existing row can be locked (ADR §3).
+
+        Verified LAST, after the password is already proven correct. The other
+        order would answer UNVERIFIED to anyone who merely guessed an email,
+        turning a 403 into an account-existence oracle; answered here it tells the
+        caller nothing they did not know, and 5.1 needs the distinct code so the
+        client can offer the verify screen rather than "wrong password".
+        """
+        if account.failed_attempt_count >= self.LOCKOUT_THRESHOLD:
+            raise ValidationException(
+                error_code=error_codes.ACCOUNT_LOCKED, message=self.ACCOUNT_LOCKED_MESSAGE
+            )
+        if not self.password_hasher.verify(
+            self._normalized_password(password), account.password_hash
+        ):
+            await self._record_failed_attempt(account.id)
+            raise self._invalid_credentials()
+        if not account.is_verified:
+            raise ValidationException(
+                error_code=error_codes.UNVERIFIED, message=self.UNVERIFIED_MESSAGE
+            )
 
     async def _reset_failed_attempts(self, account_id: UUID) -> None:
         # "Consecutive" means a successful login zeroes the counter. This reset lands

@@ -70,9 +70,15 @@ class SaveDocument:
             # branch either raises or resolves an idempotent replay, and neither
             # is a save the funnel should count.
             return await self._explain_miss(document_id, owner_id, sanitized, version)
+        return await self._committed(saved, owner_id)
+
+    async def _committed(self, saved: Document, owner_id: UUID) -> Document:
+        """Close the transaction, then report it -- in that order.
+
+        An event recorded first and a commit that then failed is a save in the
+        analytics data that never happened in the product (§12.4).
+        """
         await self.unit_of_work.commit()
-        # After the commit, never before: an event recorded first and a commit
-        # that then failed is a save in the data that never happened (§12.4).
         await self._analytics_recorder.record(
             event_name=DOCUMENT_SAVED, visitor_id=None, user_id=owner_id
         )

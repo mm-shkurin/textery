@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Request
 
-from analytics.client_context import accept_language_of, client_ip_of, user_agent_of
+from analytics.client_context import observed_context
 from analytics.record_registration_context import RecordRegistrationContext
 from auth.login_user import LoginUser
 from auth.refresh_access_token import RefreshAccessToken
@@ -79,15 +79,13 @@ async def register(
         password=request.password,
         confirm_password=request.confirm_password,
     )
+    observed = observed_context(http_request)
     await registration_context.execute(
         account_id=result.account.id,
         campaign_parameters=request.campaign_parameters(),
-        # Server-observed, never accepted from the body: a client that could set
-        # its own country or device type could fabricate the segmentation the
-        # business is measured by, and nothing in the data would reveal it.
-        client_ip=client_ip_of(http_request),
-        user_agent=user_agent_of(http_request),
-        accept_language=accept_language_of(http_request),
+        client_ip=observed.client_ip,
+        user_agent=observed.user_agent,
+        accept_language=observed.accept_language,
     )
     return RegisterResponseDto.from_domain(result)
 

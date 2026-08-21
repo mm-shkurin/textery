@@ -1,8 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from analytics.analytics_recorder import AnalyticsRecorder, NullAnalyticsRecorder, occurrence_of
-from analytics.event_names import LOGIN_SUCCESS, REGISTRATION_COMPLETED
+from analytics.analytics_recorder import AnalyticsRecorder, NullAnalyticsRecorder
 from analytics.oauth_attribution_parking import OAuthAttributionParking
 from analytics.registration_context_recorder import RegistrationContextRecorder
 from auth.account import Account
@@ -14,6 +13,7 @@ from auth.oauth.oauth_error_codes import OAuthCallbackError
 from auth.oauth.oauth_identity_repository import OAuthIdentityRepository
 from auth.oauth.oauth_leg_dependencies import OAuthLegDependencies
 from auth.oauth.oauth_provider import OAuthProvider, OAuthProviderError, ProviderIdentity
+from auth.oauth.oauth_sign_in_analytics import SignInAnalytics
 from auth.oauth.oauth_state_repository import OAuthStateRepository
 from auth.oauth.provider_registry import ProviderRegistry
 from auth.oauth.rate_limiter import OAuthRateGuard
@@ -59,11 +59,14 @@ class CompleteOAuthCallback(OAuthLegDependencies):
         self._account_repository = account_repository
         self._handoff_code_repository = handoff_code_repository
         self._handoff_ttl_seconds = handoff_ttl_seconds
-        self._analytics_recorder = analytics_recorder or NullAnalyticsRecorder()
-        # A collaborator, NOT the `RecordRegistrationContext` usecase: a usecase may
+        # Collaborators, NOT the `RecordRegistrationContext` usecase: a usecase may
         # not call another usecase, and this leg genuinely needs the same behaviour
         # the register route does -- it is the only other place an account is born.
-        self._registration_context = registration_context or RegistrationContextRecorder()
+        self._sign_in_analytics = SignInAnalytics(
+            recorder=analytics_recorder or NullAnalyticsRecorder(),
+            registration_context=registration_context or RegistrationContextRecorder(),
+            attribution_parking=self._attribution_parking,
+        )
 
     async def execute(
         self,
@@ -87,17 +90,10 @@ class CompleteOAuthCallback(OAuthLegDependencies):
         provider = self._provider_registry.get(provider_name)
         self._validate_state(await self._state_repository.consume(state), provider_name, now)
         identity = await self._fetch_identity(provider, code)
-        email = self._normalize_email(identity.email)
         existing = await self._identity_repository.find(provider_name, identity.subject)
-        account_id = (
-            existing.account_id
-            if existing is not None
-            else await self._auto_create(provider_name, identity.subject, email, now)
-        )
-        handoff = HandoffCode.generate(account_id, now, self._handoff_ttl_seconds)
-        await self._handoff_code_repository.save(handoff)
-        await self._unit_of_work.commit()
-        await self._record_sign_in(
+        account_id = await self._account_behind(existing, provider_name, identity, now)
+        handoff = await self._issued_handoff(account_id, now)
+        await self._sign_in_analytics.record(
             account_id,
             is_new_account=existing is None,
             state_value=state,
@@ -107,44 +103,31 @@ class CompleteOAuthCallback(OAuthLegDependencies):
         )
         return handoff.value
 
-    async def _record_sign_in(
+    async def _account_behind(
         self,
-        account_id: UUID,
-        is_new_account: bool,
-        state_value: str,
-        client_ip: str | None,
-        user_agent: str | None,
-        accept_language: str | None,
-    ) -> None:
-        """A FIRST sign-in through a provider is two events; a later one is one.
-
-        Both are emitted after the commit, so neither can name an account the
-        transaction went on to roll back. The registration's occurrence key is
-        derived from the account, so two callbacks racing the same first sign-in
-        still record one registration.
-
-        The technical context and the parked campaign are stored only for a new
-        account: rewriting them on every sign-in would move an existing account's
-        first-touch attribution to whichever link its owner happened to click last,
-        which is the exact opposite of what a first-touch model means.
-        """
-        if is_new_account:
-            await self._analytics_recorder.record(
-                event_name=REGISTRATION_COMPLETED,
-                visitor_id=None,
-                user_id=account_id,
-                occurrence_key=occurrence_of(REGISTRATION_COMPLETED, account_id),
-            )
-            await self._registration_context.record(
-                account_id,
-                await self._attribution_parking.take(state_value),
-                client_ip,
-                user_agent,
-                accept_language,
-            )
-        await self._analytics_recorder.record(
-            event_name=LOGIN_SUCCESS, visitor_id=None, user_id=account_id
+        existing: OAuthIdentity | None,
+        provider_name: str,
+        identity: ProviderIdentity,
+        now: datetime,
+    ) -> UUID:
+        """The account this provider identity belongs to, creating it on first sight."""
+        if existing is not None:
+            return existing.account_id
+        return await self._auto_create(
+            provider_name, identity.subject, self._normalize_email(identity.email), now
         )
+
+    async def _issued_handoff(self, account_id: UUID, now: datetime) -> HandoffCode:
+        """The one-time code the browser carries back, committed before it is answered.
+
+        Committed here rather than at the end of `execute`: everything after this
+        point is analytics, and an analytics failure must not be able to undo a
+        sign-in that has already produced a code.
+        """
+        handoff = HandoffCode.generate(account_id, now, self._handoff_ttl_seconds)
+        await self._handoff_code_repository.save(handoff)
+        await self._unit_of_work.commit()
+        return handoff
 
     def _validate_state(self, state: OAuthState | None, provider_name: str, now: datetime) -> None:
         # A None state covers all three of forged, missing and replayed: none of them
